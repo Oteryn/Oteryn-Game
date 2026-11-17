@@ -40,9 +40,8 @@ readonly COMPOSE_FILE=tools/qualification/wp5_s3a/compose.yml
 readonly COMPOSE_S3B=tools/qualification/wp5_s3b/compose.override.yml
 readonly COMPOSE_OVERLAY=tools/qualification/node_boot/compose.override.yml
 readonly PG_IMAGE=postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
-# Local parallel stacks override the service user, base directory, Compose project and
-# ports; CI keeps the defaults. Everything is checked before any sudo or Docker use:
-# cleanup kills the service user's processes and removes BASE as root.
+# Local parallel stacks override the service user, base, Compose project and ports.
+# Validate them before provisioning, then record the resources acquired by this run.
 SERVICE_USER="${NODE_BOOT_SERVICE_USER:-oteryn-node-boot}"
 BASE="${NODE_BOOT_BASE:-/srv/oteryn-node-boot}"
 [[ "$SERVICE_USER" =~ ^oteryn-node-boot(-[a-z0-9]{1,16})?$ ]] || { echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_service_user'; exit 2; }
@@ -107,12 +106,45 @@ esac
 # Keep every fixture-only transport/door assertion intact in its own disposable pass.
 NODE_BOOT_WORLD="${NODE_BOOT_WORLD:-1}"
 case "$NODE_BOOT_WORLD" in 0|1) ;; *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_world_mode'; exit 2 ;; esac
+if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "$NODE_BOOT_REUSE_STACK" == 0 && -z "${NODE_BOOT_LIFECYCLE:-}" ]]; then
+  if (( PVP_GAME_PORT > 65535 || PVP_GAME_PORT == ${NODE_BOOT_PG_PORT:-15433} || PVP_GAME_PORT == ${NODE_BOOT_PLATFORM_PORT:-18463} )) \
+    || ! python3 - "$PVP_GAME_PORT" <<'PY_PORT'
+import socket
+import sys
+
+with socket.socket() as listener:
+    listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    listener.bind(("127.0.0.1", int(sys.argv[1])))
+PY_PORT
+  then
+    echo 'NODE_BOOT_RESULT=BLOCKED reason=pvp_port_unavailable'; exit 2
+  fi
+fi
 # A kept or reused stack is one topology, so it never runs the separate basic pass.
 # The game_platform lifecycle owns one Platform stack, so it never runs the basic pass either.
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "${NODE_BOOT_SKIP_BASIC:-0}" != 1 \
   && -z "${NODE_BOOT_LIFECYCLE:-}" \
   && "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
-  NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
+  stop_basic_pass() {
+    trap '' INT TERM
+    kill -TERM -- "-$basic_pid" 2>/dev/null || true
+    local limit=$((SECONDS + 50))
+    while kill -0 "$basic_pid" 2>/dev/null && (( SECONDS < limit )); do sleep 0.1; done
+    kill -KILL -- "-$basic_pid" 2>/dev/null || true
+    wait "$basic_pid" 2>/dev/null || true
+    echo 'NODE_BOOT_RESULT=NODE_BOOT_FAIL reason=interrupted_basic_pass'
+    exit "$1"
+  }
+  set -m
+  NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh" &
+  basic_pid=$!
+  set +m
+  trap 'stop_basic_pass 130' INT
+  trap 'stop_basic_pass 143' TERM
+  basic_exit=0
+  wait "$basic_pid" || basic_exit=$?
+  trap - INT TERM
+  [[ "$basic_exit" == 0 ]] || exit "$basic_exit"
 fi
 if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
 BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")
@@ -155,6 +187,15 @@ if [[ "$NODE_BOOT_SPELLS" == 1 && "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
     bash "$GAME_SOURCE/tools/qualification/spells/run.sh" map "$NODE_BOOT_SPELL_MANIFEST"
 fi
 
+stage_timeout_default=10800
+if [[ "$NODE_BOOT_WORLD" == 1 && -n "${E2E_ALL_CAPTURE_DIR:-}" ]]; then
+  # Capture mode selects the whole row registry instead of a hosted shard.
+  stage_timeout_default=43200
+fi
+NODE_BOOT_STAGE_TIMEOUT_SECONDS="${NODE_BOOT_STAGE_TIMEOUT_SECONDS:-$stage_timeout_default}"
+if [[ ! "$NODE_BOOT_STAGE_TIMEOUT_SECONDS" =~ ^[1-9][0-9]{0,4}$ ]]; then
+  echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_stage_timeout'; exit 2
+fi
 WORK="$(mktemp -d "${RUNNER_TEMP:-/tmp}/node-boot.XXXXXX")"
 node_log="$WORK/node.log"
 failed_node_log="$WORK/failed-node.log"
@@ -177,12 +218,58 @@ CONTROL_PASSWORD="$(openssl rand -hex 24)"
 RUNTIME_PASSWORD="$(openssl rand -hex 24)"
 NODE_PID=""
 RUNTIME_DIAGNOSTICS_PID=""
+STAGE_PID=""
+STAGE_TIMER_PID=""
 ACTIVE_STAGE=setup
 # Redacted PostgreSQL samples and stage dumps (pg_observe.py); kept with node.log on failure.
 PG_OBS="$WORK/postgres"
 PG_SAMPLER_PID=""
 STACK_KEPT=0
+BASE_OWNED=0
+BASE_IDENTITY=""
+COMPOSE_OWNED=0
+REUSE_STATE_OWNED=0
+PG_CONTAINER_ID=""
 REUSE_STATE="${TMPDIR:-/tmp}/node-boot-reuse-$WP5_PROJECT.env"
+# Keep reuse and teardown mutually exclusive. Docker's container name also
+# serializes acquisition across callers using different temporary directories.
+lock_directory="${TMPDIR:-/tmp}/node-boot-locks-$(id -u)"
+mkdir -m 700 -- "$lock_directory" 2>/dev/null || true
+if [[ ! -d "$lock_directory" || -L "$lock_directory" || ! -O "$lock_directory" \
+  || "$(stat -c %a "$lock_directory")" != 700 ]] \
+  || ! { exec 9>>"$lock_directory/$WP5_PROJECT"; flock -n 9; }; then
+  rm -rf -- "$WORK"
+  echo 'NODE_BOOT_RESULT=BLOCKED reason=project_in_use'; exit 2
+fi
+if [[ "$NODE_BOOT_REUSE_STACK" == 0 && -e "$REUSE_STATE" ]]; then
+  rm -rf -- "$WORK"
+  echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_exists'; exit 2
+fi
+docker() { timeout --foreground --kill-after=5s 600s docker "$@"; }
+signal_node_process() { # signal, supervisor directory
+  local wanted=$1 directory=$2 pid started
+  [[ "${kept_boot_id:-$(</proc/sys/kernel/random/boot_id)}" == "$(</proc/sys/kernel/random/boot_id)" ]] || return 1
+  IFS=$' \t\r' read -r pid started < "$directory/process" || return 1
+  [[ "$pid" =~ ^[1-9][0-9]*$ && "$started" =~ ^[0-9]+$ ]] || return 1
+  timeout --foreground --kill-after=2s 5s sudo python3 - "$pid" "$started" "$wanted" <<'PY_SIGNAL'
+import os
+from pathlib import Path
+import signal
+import sys
+
+pid = int(sys.argv[1])
+try:
+    # The descriptor holds the process identity across the /proc check and signal.
+    process = os.pidfd_open(pid)
+    fields = Path(f"/proc/{pid}/stat").read_text().rsplit(") ", 1)[1].split()
+    if fields[19] != sys.argv[2] or fields[0] == "Z":
+        sys.exit(1)
+    wanted = 0 if sys.argv[3] == "0" else getattr(signal, f"SIG{sys.argv[3]}")
+    signal.pidfd_send_signal(process, wanted)
+except (OSError, IndexError):
+    sys.exit(1)
+PY_SIGNAL
+}
 if [[ "$NODE_BOOT_REUSE_STACK" != 0 ]]; then
   rm -rf -- "$WORK"
   # Owner-only state from the NODE_BOOT_KEEP_STACK run; it holds the disposable stack's secrets.
@@ -194,31 +281,50 @@ if [[ "$NODE_BOOT_REUSE_STACK" != 0 ]]; then
   if [[ "${kept_mode:-}" != "$NODE_BOOT_WORLD/$NODE_BOOT_SPELLS/${NODE_BOOT_GAME_PORT:-17181}" ]]; then
     echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_mode_mismatch'; exit 2
   fi
+  if [[ "${kept_base:-}" != "$BASE" || "${kept_service_user:-}" != "$SERVICE_USER" \
+    || "${kept_project:-}" != "$WP5_PROJECT" || "${kept_lifecycle:-}" != "${NODE_BOOT_LIFECYCLE:-}" \
+    || -z "${kept_base_identity:-}" || "$(stat -c '%d:%i' -- "$BASE" 2>/dev/null)" != "$kept_base_identity" \
+    || -z "${PG_CONTAINER_ID:-}" || "$(docker inspect -f '{{.Id}}' "$PG_CONTAINER" 2>/dev/null)" != "$PG_CONTAINER_ID" ]]; then
+    echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_identity_mismatch'; exit 2
+  fi
   if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
-    if [[ "$(docker inspect -f '{{.State.Running}}' "$PG_CONTAINER" 2>/dev/null)" != true ]] \
-      || ! sudo kill -0 "$NODE_PID" 2>/dev/null || ! sudo test -S "$BASE/run/control.sock"; then
+    if [[ "$(docker inspect -f '{{.State.Running}}' "$PG_CONTAINER_ID" 2>/dev/null)" != true ]] \
+      || [[ "$(</proc/sys/kernel/random/boot_id)" != "$kept_boot_id" ]] \
+      || ! signal_node_process 0 "$NODE_PROCESS_DIR" 2>/dev/null || ! sudo test -S "$BASE/run/control.sock"; then
       echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_not_running'; exit 2
     fi
     STACK_KEPT=1
   fi
+  BASE_OWNED=1
+  BASE_IDENTITY=$kept_base_identity
+  COMPOSE_OWNED=1
+  REUSE_STATE_OWNED=1
 fi
 
 result=NODE_BOOT_FAIL
 compose() {
-  docker compose --project-name "$WP5_PROJECT" --file "$GAME_SOURCE/$COMPOSE_FILE" \
+  local seconds=600
+  case "$1" in
+    down) seconds=45 ;;
+    logs) seconds=20 ;;
+  esac
+  timeout --foreground --kill-after=5s "$seconds" docker compose --project-name "$WP5_PROJECT" --file "$GAME_SOURCE/$COMPOSE_FILE" \
     --file "$GAME_SOURCE/$COMPOSE_S3B" --file "$GAME_SOURCE/$COMPOSE_OVERLAY" "$@"
 }
-psql_admin() { docker exec -i "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 -qAt -U oteryn_node_boot_admin -d "$1"; }
+psql_admin() { timeout --foreground --kill-after=2s 20s docker exec -i "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 -qAt -U oteryn_node_boot_admin -d "$1"; }
 evidence() { printf 'NODE_BOOT_EVIDENCE %s\n' "$*"; }
 fail() { echo "NODE_BOOT_FAILURE $*"; return 1; }
 stop_runtime_diagnostics() {
   [[ -z "$RUNTIME_DIAGNOSTICS_PID" ]] || {
     kill -TERM "$RUNTIME_DIAGNOSTICS_PID" 2>/dev/null || true
+    local limit=$((SECONDS + 5))
+    while kill -0 "$RUNTIME_DIAGNOSTICS_PID" 2>/dev/null && (( SECONDS < limit )); do sleep 0.1; done
+    kill -KILL "$RUNTIME_DIAGNOSTICS_PID" 2>/dev/null || true
     wait "$RUNTIME_DIAGNOSTICS_PID" 2>/dev/null || true
     RUNTIME_DIAGNOSTICS_PID=""
   }
 }
-pg_observe() { python3 "$GAME_SOURCE/tools/qualification/node_boot/pg_observe.py" "$@" --container "$PG_CONTAINER" --user oteryn_node_boot_admin --database oteryn_node_boot; }
+pg_observe() { python3 "$GAME_SOURCE/tools/qualification/node_boot/pg_observe.py" "$@" --container "$PG_CONTAINER" --user oteryn_node_boot_admin --database oteryn_node_boot --other-database "${PVP_DATABASE:-}"; }
 start_pg_sampler() {
   mkdir -p "$PG_OBS"
   # Start python3 itself in the background, not a subshell running pg_observe:
@@ -227,13 +333,16 @@ start_pg_sampler() {
   # stdout open, so the caller's `run.sh | tee` never saw EOF and the step hung
   # after NODE_BOOT_RESULT until the job timeout. Its stdout is not the run's pipe.
   python3 "$GAME_SOURCE/tools/qualification/node_boot/pg_observe.py" sample --out "$PG_OBS/activity.log" \
-    --container "$PG_CONTAINER" --user oteryn_node_boot_admin --database oteryn_node_boot \
+    --container "$PG_CONTAINER" --user oteryn_node_boot_admin --database oteryn_node_boot --other-database "${PVP_DATABASE:-}" \
     < /dev/null > /dev/null 2>> "$PG_OBS/sampler.err" &
   PG_SAMPLER_PID=$!
 }
 stop_pg_sampler() {
   [[ -z "${PG_SAMPLER_PID:-}" ]] || {
     kill -TERM "$PG_SAMPLER_PID" 2>/dev/null || true
+    local limit=$((SECONDS + 12))
+    while kill -0 "$PG_SAMPLER_PID" 2>/dev/null && (( SECONDS < limit )); do sleep 0.1; done
+    kill -KILL "$PG_SAMPLER_PID" 2>/dev/null || true
     wait "$PG_SAMPLER_PID" 2>/dev/null || true
     PG_SAMPLER_PID=""
   }
@@ -247,15 +356,35 @@ pg_observability_dump() { # stage exit: statements, lock waits and slow statemen
 save_reuse_state() { # the seam stage's inputs, for NODE_BOOT_REUSE_STACK=1
   local names=(WORK node_log failed_node_log WP5_PKI WP5_SCRATCH WP5_PORT WP5_DB_PASSWORD WP5_DB_ROOT_PASSWORD
     WP5_APP_KEY PG_PORT PG_ADMIN_PASSWORD CONTROL_PASSWORD RUNTIME_PASSWORD ADMIN_URL FRESH_SEED_HEX
-    RECOVERY_SEED_HEX MAP_REVISION NODE_PID NODE_CLOCK_FEATURES NODE_SPAWN_FEATURES NODE_GAMEPLAY_ENV PG_OBS)
+    RECOVERY_SEED_HEX MAP_REVISION NODE_PID NODE_PROCESS_DIR PG_CONTAINER_ID NODE_CLOCK_FEATURES NODE_SPAWN_FEATURES NODE_GAMEPLAY_ENV PG_OBS)
   [[ -z "${OTERYN_QUALIFICATION_CLOCK_FILE:-}" ]] || names+=(OTERYN_QUALIFICATION_CLOCK_FILE)
-  ( umask 077
-    { declare -p "${names[@]}"
-      printf 'kept_mode=%q\n' "$NODE_BOOT_WORLD/$NODE_BOOT_SPELLS/${NODE_BOOT_GAME_PORT:-17181}"
-    } > "$REUSE_STATE" )
+  local pending identity
+  identity=$(stat -c '%d:%i' -- "$BASE")
+  pending=$(mktemp "$REUSE_STATE.XXXXXX")
+  if ! {
+    declare -p "${names[@]}" &&
+    printf 'kept_base=%q\nkept_service_user=%q\nkept_project=%q\nkept_lifecycle=%q\n' \
+      "$BASE" "$SERVICE_USER" "$WP5_PROJECT" "${NODE_BOOT_LIFECYCLE:-}" &&
+    printf 'kept_base_identity=%q\nkept_boot_id=%q\n' "$identity" "$(</proc/sys/kernel/random/boot_id)" &&
+    printf 'kept_mode=%q\n' "$NODE_BOOT_WORLD/$NODE_BOOT_SPELLS/${NODE_BOOT_GAME_PORT:-17181}"
+  } > "$pending"; then
+    rm -f -- "$pending"
+    return 1
+  fi
+  REUSE_STATE_OWNED=1
+  if ! mv -f -- "$pending" "$REUSE_STATE"; then
+    rm -f -- "$pending"
+    return 1
+  fi
   STACK_KEPT=1
 }
 interrupted() {
+  [[ -z "${STAGE_TIMER_PID:-}" ]] || kill -KILL -- "-$STAGE_TIMER_PID" 2>/dev/null || true
+  if [[ -n "${STAGE_PID:-}" ]]; then
+    kill -TERM -- "-$STAGE_PID" 2>/dev/null || true
+    sleep 0.2
+    kill -KILL -- "-$STAGE_PID" 2>/dev/null || true
+  fi
   result=NODE_BOOT_FAIL
   evidence "interrupted signal=$1 stage=$ACTIVE_STAGE world_bundle=$NODE_BOOT_WORLD"
   exit "$2"
@@ -270,23 +399,50 @@ cleanup() {
   if [[ ${STACK_KEPT:-0} == 1 ]]; then
     evidence "stack=kept project=$WP5_PROJECT rerun=NODE_BOOT_REUSE_STACK=1 remove=NODE_BOOT_REUSE_STACK=teardown"
   else
-    [[ -z "$NODE_PID" ]] || sudo kill -TERM "$NODE_PID" 2>/dev/null || true
-    sudo pkill -TERM -u "$SERVICE_USER" 2>/dev/null || true
-    if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
-      game_platform_cleanup
-    else
-      compose down --volumes --remove-orphans --timeout 15 >/dev/null 2>&1 || true
+    local process attempt
+    for process in "$WORK"/node-process.*; do
+      [[ -f "$process/process" && ! -f "$process/exit" ]] || continue
+      signal_node_process TERM "$process" 2>/dev/null || continue
+      for attempt in {1..20}; do
+        [[ ! -f "$process/exit" ]] || break
+        sleep 0.1
+      done
+      [[ -f "$process/exit" ]] || signal_node_process KILL "$process" 2>/dev/null || true
+    done
+    if [[ ${COMPOSE_OWNED:-0} == 1 ]]; then
+      if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
+        game_platform_cleanup
+      else
+        compose down --volumes --remove-orphans --timeout 15 >/dev/null 2>&1 || true
+      fi
     fi
-    docker rm --force --volumes "$PG_CONTAINER" >/dev/null 2>&1 || true
-    sudo rm -rf "$BASE" || true
-    [[ -z "${REUSE_STATE:-}" ]] || rm -f -- "$REUSE_STATE"
+    [[ -z "${PG_CONTAINER_ID:-}" ]] || timeout --foreground --kill-after=5s 45s docker rm --force --volumes "$PG_CONTAINER_ID" >/dev/null 2>&1 || true
+    if [[ ${BASE_OWNED:-0} == 1 && "$(stat -c '%d:%i' -- "$BASE" 2>/dev/null)" == "$BASE_IDENTITY" ]]; then
+      timeout --foreground --kill-after=5s 60s sudo rm -rf -- "$BASE" || true
+    fi
+    [[ ${REUSE_STATE_OWNED:-0} != 1 ]] || rm -f -- "$REUSE_STATE"
   fi
   if [[ $rc != 0 && -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" ]]; then
     mkdir -p "$NODE_BOOT_FAILURE_LOG_DIR"
     if [[ -f "$failed_node_log" ]]; then
       cp "$failed_node_log" "$NODE_BOOT_FAILURE_LOG_DIR/node.log"
+    elif [[ "$ACTIVE_STAGE" == pvp_* && -f "$WORK/pvp-node.log" ]]; then
+      cp "$WORK/pvp-node.log" "$NODE_BOOT_FAILURE_LOG_DIR/node.log"
     elif [[ -f "$node_log" ]]; then
       cp "$node_log" "$NODE_BOOT_FAILURE_LOG_DIR/node.log"
+    fi
+    local snapshot
+    for snapshot in "$WORK"/failed-stage-*.log; do
+      [[ -f "$snapshot" ]] || continue
+      cp "$snapshot" "$NODE_BOOT_FAILURE_LOG_DIR/"
+      # The upload caller retains node.log. Include every failed incarnation there.
+      if ! cmp -s "$snapshot" "$failed_node_log"; then
+        printf '\n--- %s ---\n' "${snapshot##*/}" >> "$NODE_BOOT_FAILURE_LOG_DIR/node.log"
+        cat "$snapshot" >> "$NODE_BOOT_FAILURE_LOG_DIR/node.log"
+      fi
+    done
+    if [[ -f "$WORK/pvp-node.log" ]]; then
+      cp "$WORK/pvp-node.log" "$NODE_BOOT_FAILURE_LOG_DIR/"
     fi
     # The basic and World passes share the directory; each keeps its own PostgreSQL record.
     [[ ! -d "${PG_OBS:-}" ]] || cp -R "$PG_OBS" "$NODE_BOOT_FAILURE_LOG_DIR/postgres-world$NODE_BOOT_WORLD-spells$NODE_BOOT_SPELLS"
@@ -355,17 +511,23 @@ evidence "pins platform=$NODE_BOOT_PLATFORM_PIN topology=$NODE_BOOT_TOPOLOGY gam
 # (after 200 ms), deadlocks and statements of 500 ms or more without parameter values,
 # and loads pg_stat_statements, so every run carries its own database evidence.
 chmod 644 "$WP5_PKI/db.crt" "$WP5_PKI/db.key"
-docker run --detach --name "$PG_CONTAINER" --publish "127.0.0.1:$PG_PORT:5432" \
+PG_CONTAINER_ID="$(docker create --name "$PG_CONTAINER" --publish "127.0.0.1:$PG_PORT:5432" \
   --env POSTGRES_USER=oteryn_node_boot_admin --env POSTGRES_PASSWORD="$PG_ADMIN_PASSWORD" \
   --env POSTGRES_DB=postgres --volume "$WP5_PKI/db.crt:/tls/db.crt:ro" \
   --volume "$WP5_PKI/db.key:/tls/db.key:ro" --entrypoint bash "$PG_IMAGE" -c \
-  'install -o postgres -m 0600 /tls/db.key /tmp/db.key && install -o postgres -m 0644 /tls/db.crt /tmp/db.crt && exec docker-entrypoint.sh postgres -c ssl=on -c ssl_cert_file=/tmp/db.crt -c ssl_key_file=/tmp/db.key -c log_lock_waits=on -c deadlock_timeout=200ms -c log_min_duration_statement=500 -c log_parameter_max_length=0 -c log_parameter_max_length_on_error=0 -c shared_preload_libraries=pg_stat_statements -c "log_line_prefix=%m [%p] %u "' >/dev/null
+  'install -o postgres -m 0600 /tls/db.key /tmp/db.key && install -o postgres -m 0644 /tls/db.crt /tmp/db.crt && exec docker-entrypoint.sh postgres -c ssl=on -c ssl_cert_file=/tmp/db.crt -c ssl_key_file=/tmp/db.key -c log_lock_waits=on -c deadlock_timeout=200ms -c log_min_duration_statement=500 -c log_parameter_max_length=0 -c log_parameter_max_length_on_error=0 -c shared_preload_libraries=pg_stat_statements -c "log_line_prefix=%m [%p] %u "' )"
+if ! timeout --foreground --kill-after=2s 10s sudo mkdir -- "$BASE"; then
+  fail "base acquisition failed: $BASE"
+fi
+BASE_OWNED=1
+BASE_IDENTITY="$(stat -c '%d:%i' -- "$BASE")"
+docker start "$PG_CONTAINER_ID" >/dev/null
 chmod 600 "$WP5_PKI/db.key"
 # Probe over TCP: the entrypoint's temporary init server listens on the unix socket only
 # and is shut down after init, so a socket probe can pass before the real server is up.
 pg_ready=0
 for _ in $(seq 1 60); do
-  docker exec "$PG_CONTAINER" pg_isready -h 127.0.0.1 -p 5432 -U oteryn_node_boot_admin -d postgres >/dev/null 2>&1 && { pg_ready=1; break; }
+  timeout --foreground --kill-after=1s 4s docker exec "$PG_CONTAINER" pg_isready -h 127.0.0.1 -p 5432 -U oteryn_node_boot_admin -d postgres >/dev/null 2>&1 && { pg_ready=1; break; }
   sleep 1
 done
 [[ $pg_ready == 1 ]] || fail "postgres_ready"
@@ -375,6 +537,15 @@ echo "CREATE EXTENSION pg_stat_statements" | psql_admin postgres
 [[ "$(echo 'SHOW server_version_num' | psql_admin oteryn_node_boot)" == 180006 ]] || fail "postgres_version"
 [[ "$(echo 'SHOW ssl' | psql_admin oteryn_node_boot)" == on ]] || fail "postgres_tls"
 ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_PORT/oteryn_node_boot"
+
+# Refuse existing Compose resources before claiming this project's topology.
+for resource in container network volume; do
+  list_args=()
+  [[ "$resource" != container ]] || list_args=(--all)
+  existing="$(docker "$resource" ls "${list_args[@]}" -q --filter "label=com.docker.compose.project=$WP5_PROJECT")"
+  [[ -z "$existing" ]] || fail "compose project already owns $resource resources"
+done
+COMPOSE_OWNED=1
 
 # The Platform topology.
 if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
@@ -403,9 +574,9 @@ if [[ "$NODE_BOOT_WORLD" == 1 && "$OTERYN_NODE_BOOT_REAL_CLOCK" == 0 ]]; then
   NODE_CLOCK_FEATURES=(--features qualification-clock)
 fi
 # Shipped binaries and the SEAM client harness.
-cargo +1.100.0 build --locked -p oteryn-game-server --bins "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
-cargo +1.100.0 test --locked -p oteryn-game-server --lib --no-run "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
-TARGET="$GAME_SOURCE/target/debug"
+timeout --foreground --kill-after=5s 3600s cargo +1.100.0 build --locked -p oteryn-game-server --bins "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
+timeout --foreground --kill-after=5s 3600s cargo +1.100.0 test --locked -p oteryn-game-server --lib --no-run "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
+TARGET="$(cargo +1.100.0 metadata --locked --no-deps --format-version 1 | python3 -c 'import json, sys; print(json.load(sys.stdin)["target_directory"])')/debug"
 
 # Deployment administration: service user, directories, roles, migration.
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER" 2>/dev/null || true
@@ -627,12 +798,55 @@ fi
 fi # NODE_BOOT_REUSE_STACK == 0
 start_pg_sampler
 
-ops() { sudo env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
+ops() { sudo timeout --foreground --kill-after=5s 600s env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
+start_node_process() { # log, configuration, then hand the supervisor directory back to the caller
+  local log=$1 config=$2
+  NODE_PROCESS_DIR=$(mktemp -d "$WORK/node-process.XXXXXX")
+  # The supervisor owns the wait across stage subshells. The service account
+  # reports the PID that execs serve, so neither TERM nor KILL depends on sudo
+  # forwarding signals or on polling a sudo monitor's lifetime.
+  setsid bash -c '
+    directory=$1; shift
+    "$@" > "$directory/process"
+    printf "%s\n" "$?" > "$directory/exit.tmp"
+    mv -- "$directory/exit.tmp" "$directory/exit"
+  ' node-supervisor "$NODE_PROCESS_DIR" sudo -u "$SERVICE_USER" env "${NODE_GAMEPLAY_ENV[@]}" bash -c '
+    IFS= read -r stat < "/proc/$$/stat" || exit 1
+    read -r -a fields <<< "${stat##*) }"
+    printf "%s %s\n" "$$" "${fields[19]}"
+    exec "$@"
+  ' node-exec "$BASE/bin/oteryn-game-server" serve --config "$config" \
+    < /dev/null > /dev/null 2> "$log" 9>&- &
+  local attempt started
+  for attempt in {1..100}; do
+    if [[ -s "$NODE_PROCESS_DIR/process" ]] && IFS=$' \t\r' read -r NODE_PID started < "$NODE_PROCESS_DIR/process" \
+      && [[ "$NODE_PID" =~ ^[1-9][0-9]*$ && "$started" =~ ^[0-9]+$ ]]; then
+      return 0
+    fi
+    [[ ! -s "$NODE_PROCESS_DIR/exit" ]] || break
+    sleep 0.05
+  done
+  fail "node process identity unavailable"
+}
 start_node() {
-  # Detached from the stage's output pipe, so the stage ends while it serves.
-  sudo -u "$SERVICE_USER" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" \
-    < /dev/null > /dev/null 2> "$node_log" &
-  NODE_PID=$!
+  start_node_process "$node_log" "$BASE/node/node.toml"
+  remember NODE_PROCESS_DIR "$NODE_PROCESS_DIR"
+}
+stop_node() { # supervisor directory
+  local directory=$1 code attempt
+  if [[ ! -s "$directory/exit" ]]; then
+    signal_node_process TERM "$directory" || true
+  fi
+  for attempt in {1..30}; do
+    if [[ -s "$directory/exit" ]]; then
+      read -r code < "$directory/exit"
+      [[ "$code" == 0 ]] || { fail "node shutdown exit=$code"; return 1; }
+      return
+    fi
+    sleep 1
+  done
+  signal_node_process KILL "$directory" || true
+  fail "node shutdown deadline exceeded"
 }
 await_log() { # pattern seconds
   for _ in $(seq 1 "$2"); do grep -q "$1" "$node_log" && return 0; sleep 1; done
@@ -872,10 +1086,44 @@ finally:
 PY_RUNTIME_DIAGNOSTICS
   RUNTIME_DIAGNOSTICS_PID=$!
 }
-# Scenario ids of the e2e rows with the given status in a stage log, one per line.
-stage_rows() { grep -oE "e2e_all scenario=[^ ]+ status=$2( |$)" "$1" | sed -E 's/e2e_all scenario=([^ ]+) .*/\1/' | sort -u || true; }
-# Row ids listed in the known-failure file (first field, comments skipped); a missing file lists none.
-known_rows() { [[ -f $1 ]] && grep -vE '^[[:space:]]*(#|$)' "$1" | awk '{print $1}' || true; }
+# Classify FAIL records by the typed cause and root captured in the debt list.
+classify_stage_rows() {
+  local log=$1 known=$2
+  [[ -e "$known" ]] || known=/dev/null
+  awk '
+    FILENAME == ARGV[1] {
+      if ($1 !~ /^#/ && $3 == "at" && $4 != "") {
+        if ($4 ~ /;$/) {
+          reason = $0
+          sub(/^[^;]*;[[:space:]]*/, "", reason)
+          prefixes[$1] = reason
+        }
+        sub(/;$/, "", $4)
+        expected[$1] = $2 " " $4
+      }
+      next
+    }
+    $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" {
+      row = $3; sub(/^scenario=/, "", row)
+      if ($4 != "status=FAIL") {
+        if (row in expected) print "stale", row
+        next
+      }
+      cause = root = detail = ""
+      for (i = 6; i <= NF; i++) {
+        if ($i ~ /^cause=/) cause = substr($i, 7)
+        if ($i ~ /^root=/) root = substr($i, 6)
+        if ($i ~ /^evidence=/) detail = substr($i, 10)
+      }
+      if ((row in expected) && expected[row] == cause " " root &&
+          (!(row in prefixes) || index(detail, prefixes[row]) == 1)) print "known", row
+      else {
+        print "new", row
+        if (row in expected) print "stale", row
+      }
+    }
+  ' "$known" "$log"
+}
 
 stage() { # name prerequisite... -- function
   local name=$1; shift
@@ -895,8 +1143,70 @@ stage() { # name prerequisite... -- function
   evidence "stage=$name state=start world_bundle=$NODE_BOOT_WORLD spells=$NODE_BOOT_SPELLS"
   case "$name" in seam_stages|spell_scenarios) start_runtime_diagnostics "$name" ;; esac
   set +e
-  ( set -Eeuo pipefail; source "$VARS"; "$@" ) 2>&1 | tee "$WORK/stage-$name.log"
-  local rc=${PIPESTATUS[0]}
+  local stage_log="$WORK/stage-$name.log"
+  # Failure reports and snapshots follow the node used by the stage.
+  local node_log="$node_log"
+  [[ "$name" != pvp_* ]] || node_log="$WORK/pvp-node.log"
+  local deadline_marker="$WORK/stage-$name.deadline"
+  # A background job group leaves the caller in an interruptible wait and
+  # lets cancellation reach both the stage command and the evidence writer.
+  set -m
+  (
+    set +m
+    ( set -Eeuo pipefail; source "$VARS"; "$@" ) 2>&1 | tee "$stage_log"
+    pipeline_status=("${PIPESTATUS[@]}")
+    if [[ ${pipeline_status[1]} != 0 ]]; then
+      echo "NODE_BOOT_FAILURE stage=$name evidence_log=unavailable"
+      exit 1
+    fi
+    exit "${pipeline_status[0]}"
+  ) &
+  STAGE_PID=$!
+  (
+    set +m
+    command sleep "${NODE_BOOT_STAGE_TIMEOUT_SECONDS:-10800}" || exit
+    : > "$deadline_marker"
+    kill -TERM -- "-$STAGE_PID" 2>/dev/null || true
+  ) &
+  STAGE_TIMER_PID=$!
+  set +m
+  local rc=0
+  wait "$STAGE_PID" 2>/dev/null || rc=$?
+  kill -KILL -- "-$STAGE_TIMER_PID" 2>/dev/null || true
+  wait "$STAGE_TIMER_PID" 2>/dev/null || true
+  STAGE_TIMER_PID=""
+  if [[ -f "$deadline_marker" ]]; then
+    kill -KILL -- "-$STAGE_PID" 2>/dev/null || true
+    echo "NODE_BOOT_FAILURE stage=$name deadline=exceeded"
+    rc=124
+  elif ! cat -- "$stage_log" > /dev/null; then
+    echo "NODE_BOOT_FAILURE stage=$name evidence_log=unavailable"
+    rc=1
+  fi
+  STAGE_PID=""
+  case "$name" in
+    seam_stages|spell_scenarios)
+      if [[ $rc == 0 ]] && ! grep -Eq '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$stage_log"; then
+        echo "NODE_BOOT_FAILURE stage=$name qualification_test_count=unproven"
+        rc=1
+      fi
+      if [[ $rc == 0 ]]; then
+        local qualification_case=basic
+        if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
+          qualification_case=spells
+        elif [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+          qualification_case=world
+          local selection=("--groups=${NODE_BOOT_E2E_ONLY:-}")
+          if [[ -n "${E2E_ALL_CAPTURE_DIR:-}" ]]; then
+            selection+=(--batch=all)
+          elif [[ -v OTERYN_E2E_ROW_BATCH ]]; then
+            selection+=("--batch=$OTERYN_E2E_ROW_BATCH")
+          fi
+          python3 "$GAME_SOURCE/tools/qualification/node_boot/matrix.py" verify-world "$stage_log" "${selection[@]}" || rc=$?
+        fi
+        [[ $rc != 0 ]] || evidence "qualification_case=$qualification_case"
+      fi ;;
+  esac
   stop_runtime_diagnostics
   pg_observability_dump "$name" "$rc"
   set -e
@@ -906,30 +1216,47 @@ stage() { # name prerequisite... -- function
     STATUS[$name]=PASS
     # A FAIL row fails its stage even when the stage process exits 0, unless the row is
     # listed in known_fail_rows.txt (debt that every run prints).
-    local known_fail="$GAME_SOURCE/tools/qualification/node_boot/known_fail_rows.txt" new_rows known_hit stale_rows
-    new_rows=$(stage_rows "$WORK/stage-$name.log" FAIL | grep -vxFf <(known_rows "$known_fail") | paste -sd, - || true)
-    known_hit=$(stage_rows "$WORK/stage-$name.log" FAIL | grep -xFf <(known_rows "$known_fail") | paste -sd, - || true)
-    stale_rows=$(stage_rows "$WORK/stage-$name.log" PASS | grep -xFf <(known_rows "$known_fail") | paste -sd, - || true)
+    local known_fail="$GAME_SOURCE/tools/qualification/node_boot/known_fail_rows.txt" classified new_rows known_hit stale_rows
+    if ! classified=$(classify_stage_rows "$stage_log" "$known_fail"); then
+      STATUS[$name]="FAIL(evidence)"
+      return 0
+    fi
+    new_rows=$(awk '$1 == "new" {print $2}' <<< "$classified" | sort -u | paste -sd, -)
+    known_hit=$(awk '$1 == "known" {print $2}' <<< "$classified" | sort -u | paste -sd, -)
+    stale_rows=$(awk '$1 == "stale" {print $2}' <<< "$classified" | sort -u | paste -sd, -)
     [[ -z $known_hit ]] || echo "NODE_BOOT_KNOWN_FAIL $name rows=$known_hit"
     [[ -z $stale_rows ]] || echo "NODE_BOOT_KNOWN_FAIL_STALE $name rows=$stale_rows"
     if [[ -n $new_rows ]]; then
       STATUS[$name]="FAIL(rows)"
       echo "NODE_BOOT_STAGE_FAILED $name rows=$new_rows"
+      if [[ -f "$node_log" ]]; then
+        cp "$node_log" "$WORK/failed-stage-$name.log" || true
+        [[ -f "$failed_node_log" ]] || cp "$node_log" "$failed_node_log" || true
+      fi
+      if [[ "$name" == seam_stages && -f "$WORK/pvp-node.log" ]]; then
+        cp "$WORK/pvp-node.log" "$WORK/failed-stage-$name-pvp.log" || true
+      fi
     fi
     if grep -q 'e2e_all scenario=.* status=FAIL' "$WORK/stage-$name.log"; then
       echo "--- session close events behind failed e2e rows"
-      grep -E 'event=(serve_end|serve_command_end|command_guard_failed|join_prepare_failed|connection_[a-z_]+)( |$)' "$node_log" 2>/dev/null | tail -n 120 || true
+      grep -E 'event=(serve_end|serve_command_end|command_guard_failed|join_prepare_failed|transport_close|connection_[a-z_]+)( |$)' "$node_log" 2>/dev/null | tail -n 120 || true
     fi
   else
     STATUS[$name]="FAIL(exit $rc)"
     # Later probes start new server incarnations and truncate node_log. Preserve
     # the first failed incarnation now so cleanup uploads the log that explains
     # the qualification failure rather than a subsequent successful shutdown.
-    [[ -f "$failed_node_log" || ! -f "$node_log" ]] || cp "$node_log" "$failed_node_log"
+    if [[ -f "$node_log" ]]; then
+      cp "$node_log" "$WORK/failed-stage-$name.log" || true
+      [[ -f "$failed_node_log" ]] || cp "$node_log" "$failed_node_log" || true
+    fi
+    if [[ "$name" == seam_stages && -f "$WORK/pvp-node.log" ]]; then
+      cp "$WORK/pvp-node.log" "$WORK/failed-stage-$name-pvp.log" || true
+    fi
     echo "NODE_BOOT_STAGE_FAILED $name exit=$rc"
     report_character_authority_failures "$name"
     echo "--- session close events"
-    grep -E 'event=(serve_end|serve_command_end|command_guard_failed|join_prepare_failed)( |$)' "$node_log" 2>/dev/null | tail -n 40 || true
+    grep -E 'event=(serve_end|serve_command_end|command_guard_failed|join_prepare_failed|transport_close)( |$)' "$node_log" 2>/dev/null | tail -n 40 || true
     echo "--- last node events"; durability_report_lines < "$node_log" 2>/dev/null | grep -v 'DURABILITY_' | tail -n 40 || true
     # Repeated background-pass retries hide the event that took the root down.
     echo "--- node events without background retries"
@@ -968,11 +1295,13 @@ stage() { # name prerequisite... -- function
       | psql_admin oteryn_node_boot 2>&1 | tail -n 30 || true
     # The holder is alive but always busy: show which statements and tables keep it so.
     echo "--- postgres statements on the holder (200 samples)"
+    local pg_sample_deadline=$((SECONDS + 20))
     for _ in $(seq 1 200); do
+      (( SECONDS < pg_sample_deadline )) || break
       echo "SELECT state || ' ' || left(regexp_replace(query, '\\s+', ' ', 'g'), 200) FROM pg_stat_activity WHERE datname = 'oteryn_node_boot' AND usename <> 'oteryn_node_boot_admin'" \
         | psql_admin oteryn_node_boot 2>/dev/null || true
       sleep 0.02
-    done | sort | uniq -c | sort -rn | head -n 25
+    done | sort | uniq -c | sort -rn | head -n 25 || true
     echo "--- postgres table writes and scans over 10 s"
     psql_admin oteryn_node_boot 2>&1 <<'SQL' | tail -n 30 || true
 CREATE TEMP TABLE node_boot_stat_before AS
@@ -985,7 +1314,7 @@ SELECT s.relname, (s.n_tup_ins + s.n_tup_upd + s.n_tup_del) - b.writes AS writes
   WHERE (s.n_tup_ins + s.n_tup_upd + s.n_tup_del) - b.writes + (coalesce(s.seq_scan, 0) + coalesce(s.idx_scan, 0)) - b.scans > 0
   ORDER BY 2 DESC, 3 DESC LIMIT 25;
 SQL
-    echo "--- postgres"; docker logs --tail 40 "$PG_CONTAINER" 2>&1 | grep -E 'ERROR|FATAL|STATEMENT' || true
+    echo "--- postgres"; timeout --foreground --kill-after=2s 15s docker logs --tail 40 "$PG_CONTAINER" 2>&1 | grep -E 'ERROR|FATAL|STATEMENT' || true
     echo "--- platform"; compose logs --no-color --tail 40 platform nginx 2>&1 || true
   fi
 }
@@ -993,15 +1322,34 @@ node_field() { # log field
   sed -n "s/.*awaiting_assignment.*$2=\([^ \"]*\).*/\1/p" "$1" | tail -n 1
 }
 
+assert_operator_replay() { # database, receipt query, first outcome, replay command ...
+  local database=$1 query=$2 first=$3 before after replay
+  shift 3
+  before=$(psql_admin "$database" <<< "$query") || return
+  [[ -n "$before" ]] || { fail "operator receipt missing before replay"; return 1; }
+  replay=$("$@") || return
+  after=$(psql_admin "$database" <<< "$query") || return
+  [[ "$replay" == "$first" && "$after" == "$before" ]] || {
+    fail "operator replay changed the outcome or durable receipt"
+    return 1
+  }
+  printf '%s\n' "$replay"
+}
+
 operator_setup() { # §4.1 operator setup before the node starts
   ops authorization issue --file launch-a.json --binding node-boot-a
   write_node_config launch-a.json
   ops s2 issue --node-config "$BASE/node/node.toml" --file s2-fresh-store.json --namespace node-boot --authorization disposable-qualification
-  if ops character interpretation --profile "${INTERPRETATION[0]}" --ruleset "${INTERPRETATION[1]}" --content "${INTERPRETATION[2]}" --starter "${INTERPRETATION[3]}"; then
-    fail "interpretation configured before the fresh store"
-  fi
-  ops character fresh-store --request fresh-store.json
-  ops character fresh-store --request fresh-store.json
+  local refusal code=0 first
+  refusal=$(ops character interpretation --profile "${INTERPRETATION[0]}" --ruleset "${INTERPRETATION[1]}" --content "${INTERPRETATION[2]}" --starter "${INTERPRETATION[3]}" 2>&1) || code=$?
+  printf '%s\n' "$refusal"
+  [[ $code == 6 && "$refusal" == *'interpretation refused until generation 1 is admitted (Rejected)'* ]] \
+    || fail "expected interpretation refusal before fresh-store admission (exit=$code)"
+  first=$(ops character fresh-store --request fresh-store.json)
+  [[ "$first" == 'character_recovery=admitted generation=1' ]] || fail "unexpected fresh-store outcome"
+  printf '%s\n' "$first"
+  assert_operator_replay oteryn_node_boot 'SELECT row_to_json(r) FROM game_character_recovery_admissions r ORDER BY recovery_generation' \
+    "$first" ops character fresh-store --request fresh-store.json
   ops character interpretation --profile "${INTERPRETATION[0]}" --ruleset "${INTERPRETATION[1]}" --content "${INTERPRETATION[2]}" --starter "${INTERPRETATION[3]}"
   evidence "operator=authorization,s2_issuance,fresh_store,interpretation interpretation_before_store=refused fresh_store_rerun=idempotent"
 }
@@ -1015,7 +1363,7 @@ configuration_negatives() { # exit before binding, no secret in output
   local config code failed=0
   for config in insecure link missing over; do
     set +e
-    sudo -u "$SERVICE_USER" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/$config.toml" 2>> "$WORK/negative.log"
+    sudo -u "$SERVICE_USER" timeout --foreground --kill-after=5s 120s env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/$config.toml" 2>> "$WORK/negative.log"
     code=$?
     set -e
     echo "configuration $config exit=$code"
@@ -1070,8 +1418,12 @@ node_complete_assignment() {
   ops content activate --request content-ungranted.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty || code=$?
   [[ $code == 6 ]] || fail "content activation without an exact-scope grant exit=$code"
   node_deployment_grants
-  ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty
-  ops content activate --request content-1.json
+  local activation
+  activation=$(ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty)
+  [[ "$activation" == 'content_activation=recorded activation_sequence=1 '* ]] || fail "unexpected content activation outcome"
+  printf '%s\n' "$activation"
+  assert_operator_replay oteryn_node_boot 'SELECT row_to_json(r) FROM game_content_activations r ORDER BY world_id, channel_id, activation_sequence' \
+    "$activation" ops content activate --request content-1.json
   local -a report_args=()
   if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
     report_args=(--report-config "$BASE/ops/assignment-report.toml" --node-config "$BASE/node/node.toml"
@@ -1107,24 +1459,34 @@ node_complete_assignment() {
   evidence "node registered=1 assignment=operator ungranted=refused content_activation=sequence_1 content_ungranted=refused content_replay=exact content_stale=refused readiness=true control_socket=uid${SERVICE_UID}_0600"
 }
 
-control_socket_peer() { # a non-root peer is closed without an answer
-  sudo -u "$SERVICE_USER" python3 - "$BASE/run/control.sock" "${INTENT_OPERATIONS[0]}" <<'PY'
-import socket, sys
-s = socket.socket(socket.AF_UNIX)
-s.connect(sys.argv[1])
-try:
-    s.sendall(sys.argv[2].encode() + b"\n")
-    s.shutdown(socket.SHUT_WR)
-    answer = s.recv(64)
-except OSError:
-    answer = b""
-sys.exit(0 if answer == b"" else 1)
-PY
+control_socket_peer() { # require a UID refusal for this exact connection
+  local peer_pid offset
+  offset=$(stat -c %s "$node_log")
+  peer_pid=$(sudo -u "$SERVICE_USER" python3 - "$BASE/run/control.sock" <<'PY_PROBE'
+import os
+import socket
+import sys
+
+with socket.socket(socket.AF_UNIX) as stream:
+    stream.settimeout(2)
+    stream.connect(sys.argv[1])
+    # The UID is checked before the server reads any request bytes.
+    if stream.recv(1) != b"":
+        sys.exit("unexpected reply to non-root control peer")
+print(os.getpid())
+PY_PROBE
+  ) || fail "non-root control peer did not receive bounded EOF"
+  [[ "$peer_pid" =~ ^[1-9][0-9]*$ ]] || fail "non-root control peer PID unavailable"
+  if ! tail -c "+$((offset + 1))" "$node_log" \
+    | grep -F 'event=control_peer_rejected ' \
+    | grep -F 'detail="peer_pid='"$peer_pid"' peer_uid='"$SERVICE_UID"'"' >/dev/null; then
+    fail "control EOF was not attributed to the service-user UID"
+  fi
   evidence "control_socket service_user_peer=closed"
 }
 
 character_bootstrap() { # §4.5 Characters from real Platform intents
-  local index=0 account operation name failed=0
+  local index=0 account operation name first failed=0
   for account in "${BOOTSTRAP_ACCOUNTS[@]}"; do
     operation="${INTENT_OPERATIONS[$index]}"
     name="${INTENT_NAMES[$index]}"
@@ -1134,9 +1496,11 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
       failed=1
       continue
     fi
-    ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation" || { failed=1; continue; }
-    # An exact retry of the same operation id is idempotent.
-    ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation" || failed=1
+    first=$(ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation") || { failed=1; continue; }
+    [[ "$first" == 'character_bootstrap=committed' ]] || { failed=1; continue; }
+    printf '%s\n' "$first"
+    assert_operator_replay oteryn_node_boot "SELECT row_to_json(r) FROM game_character_operation_receipts r WHERE operation_id='$operation'" \
+      "$first" ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation" || failed=1
   done
   [[ $failed == 0 ]]
   evidence "characters=${#BOOTSTRAP_ACCOUNTS[@]} source=platform_intents path=control_socket retry=idempotent"
@@ -1154,6 +1518,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
     test_env+=("NODE_BOOT_WORLD_BUNDLE=$BASE/world/world.otbundle" "NODE_BOOT_WORLD_PIN=$BASE/world/world.json" "NODE_BOOT_MAP_REVISION=$MAP_REVISION" "RUST_MIN_STACK=${RUST_MIN_STACK:-67108864}")
     test_env+=("NODE_BOOT_PACKET_ACCOUNT_ID=$PACKET_ACCOUNT_ID" "NODE_BOOT_PACKET_SECOND_ACCOUNT_ID=$SECOND_PACKET_ACCOUNT_ID")
+    [[ -z "${E2E_ALL_CAPTURE_DIR:-}" ]] || test_env+=("OTERYN_E2E_ROW_BATCH=all")
   fi
   if [[ "$NODE_BOOT_WORLD" == 1 && -z "${NODE_BOOT_LIFECYCLE:-}" ]]; then
     # MP01's PvP rows run against the Open PvP World's own node and database.
@@ -1185,22 +1550,20 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     "qualification::$qualification" -- --ignored --exact --nocapture
 }
 
+assert_shutdown_guards() {
+  local database=$1
+  [[ "$(echo 'SELECT count(*) > 0 AND count(*) FILTER (WHERE ready) = 0 FROM game_durability_admission_runtime_guards' | psql_admin "$database")" == t ]] || {
+    echo 'NODE_BOOT_GUARD_DIAGNOSTIC ready_scopes:' >&2
+    echo "SELECT encode(scope_key,'hex') AS scope_key,ownership_generation,publication_revision FROM game_durability_admission_runtime_guards WHERE ready ORDER BY scope_key LIMIT 16" | psql_admin "$database" >&2 || true
+    fail "guard still ready or absent"
+  }
+}
 graceful_shutdown() { # ready=false first, socket removed
-  sudo kill -TERM "$NODE_PID"
-  local code=0
-  wait "$NODE_PID" 2>/dev/null || code=$?
-  # A process started by another stage's subshell is not our child; wait for it.
-  for _ in $(seq 1 30); do sudo kill -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done
+  stop_node "$NODE_PROCESS_DIR"
   grep -q "event=readiness .*ready=false" "$node_log" || fail "no ready=false on shutdown"
   grep -q "event=shutdown .*state=complete" "$node_log" || fail "no clean shutdown"
   [[ ! -e "$BASE/run/control.sock" ]] || fail "socket left after graceful shutdown"
-  [[ "$(echo 'SELECT count(*) > 0 AND count(*) FILTER (WHERE ready) = 0 FROM game_durability_admission_runtime_guards' | psql_admin oteryn_node_boot)" == t ]] || {
-    # Distinguish an actual ready scope from an invalid empty guard table. Scope
-    # keys and generations identify the guard without exposing Character data.
-    echo 'NODE_BOOT_GUARD_DIAGNOSTIC ready_scopes:' >&2
-    echo "SELECT encode(scope_key,'hex') AS scope_key,ownership_generation,publication_revision FROM game_durability_admission_runtime_guards WHERE ready ORDER BY scope_key LIMIT 16" | psql_admin oteryn_node_boot >&2 || true
-    fail "guard still ready"
-  }
+  assert_shutdown_guards oteryn_node_boot
   evidence "shutdown ready=false socket=removed"
 }
 
@@ -1208,7 +1571,7 @@ restart_without_supersession() { # fails at S2 custody, never ready
   ops authorization issue --file launch-b.json --binding node-boot-b
   write_node_config launch-b.json
   local code=0
-  sudo -u "$SERVICE_USER" env "${NODE_GAMEPLAY_ENV[@]}" timeout 120 "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" 2> "$WORK/restart.log" || code=$?
+  sudo -u "$SERVICE_USER" timeout --foreground --kill-after=5s 120s env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" 2> "$WORK/restart.log" || code=$?
   cat "$WORK/restart.log"
   [[ $code == 13 ]] || fail "restart without supersession exit=$code"
   local line node revision
@@ -1232,9 +1595,10 @@ superseding_replacement() { # claims custody, ready by CAS after replace
   # A new incarnation starts with no active Content and reactivates only the current issuance.
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" 60
-  sudo kill -TERM "$NODE_PID"
-  for _ in $(seq 1 30); do sudo kill -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done
+  stop_node "$NODE_PROCESS_DIR"
   grep -q "event=shutdown .*state=complete" "$node_log" || fail "replacement did not shut down cleanly"
+  [[ ! -e "$BASE/run/control.sock" ]] || fail "socket left after replacement shutdown"
+  assert_shutdown_guards oteryn_node_boot
   evidence "replacement=superseding custody=claimed content=reactivated_current_issuance readiness=cas"
 }
 
@@ -1244,15 +1608,12 @@ signal_before_ready() { # SIGTERM in the assignment wait: clean exit, never read
   : > "$node_log"
   start_node
   await_log awaiting_assignment 120
-  sudo kill -TERM "$NODE_PID"
-  local code=0
-  wait "$NODE_PID" 2>/dev/null || code=$?
+  stop_node "$NODE_PROCESS_DIR"
   cat "$node_log"
-  [[ $code == 0 ]] || fail "signal in the assignment wait exit=$code"
   grep -q 'event=shutdown .*signal before ready' "$node_log" || fail "no pre-ready shutdown event"
   ! grep -q "event=readiness .*ready=true" "$node_log" || fail "ready published after the signal"
   [[ ! -e "$BASE/run/control.sock" ]] || fail "socket left after a pre-ready signal"
-  [[ "$(echo 'SELECT count(*) > 0 AND count(*) FILTER (WHERE ready) = 0 FROM game_durability_admission_runtime_guards' | psql_admin oteryn_node_boot)" == t ]] || fail "guard became ready"
+  assert_shutdown_guards oteryn_node_boot
   evidence "signal_in_assignment_wait exit=0 ready=never socket=absent"
 }
 
@@ -1262,7 +1623,7 @@ signal_before_ready() { # SIGTERM in the assignment wait: clean exit, never read
 # so this World gets its own database in the same PostgreSQL container and its own node.
 # Platform, PKI, secrets, binaries, bundle and gameplay inputs are shared; the steps mirror
 # operator_setup, node_deployment_grants, node_complete_assignment and character_bootstrap.
-pvp_ops() { sudo env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$PVP_BASE/ops/ops.toml" "$@"; }
+pvp_ops() { sudo timeout --foreground --kill-after=5s 600s env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$PVP_BASE/ops/ops.toml" "$@"; }
 pvp_fail() { echo "--- PvP node log"; tail -n 120 "$WORK/pvp-node.log" 2>/dev/null || true; fail "$@"; }
 pvp_await_log() { # pattern seconds
   for _ in $(seq 1 "$2"); do grep -q "$1" "$WORK/pvp-node.log" && return 0; sleep 1; done
@@ -1302,9 +1663,8 @@ pvp_world_ready() {
   pvp_ops s2 issue --node-config "$PVP_BASE/node/node.toml" --file s2-fresh-store.json --namespace node-boot-pvp --authorization disposable-qualification
   pvp_ops character fresh-store --request fresh-store.json
   pvp_ops character interpretation --profile "${INTERPRETATION[0]}" --ruleset "${INTERPRETATION[1]}" --content "${INTERPRETATION[2]}" --starter "${INTERPRETATION[3]}"
-  sudo -u "$SERVICE_USER" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$PVP_BASE/node/node.toml" \
-    < /dev/null > /dev/null 2> "$WORK/pvp-node.log" &
-  remember PVP_NODE_PID "$!"
+  start_node_process "$WORK/pvp-node.log" "$PVP_BASE/node/node.toml"
+  remember PVP_PROCESS_DIR "$NODE_PROCESS_DIR"
   pvp_await_log awaiting_assignment 120
   local node revision
   node="$(node_field "$WORK/pvp-node.log" node_id)"; revision="$(node_field "$WORK/pvp-node.log" registration_revision)"
@@ -1335,7 +1695,7 @@ SQL
 }
 
 pvp_character_bootstrap() { # two level-qualifiable Characters from real Platform intents
-  local index account operation name failed=0
+  local index account operation name first failed=0
   php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"${PVP_ACCOUNT_IDS[0]}"'","nb-five@example.invalid"],["'"${PVP_ACCOUNT_IDS[1]}"'","nb-six@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); }'
   for index in 0 1; do
     account="${PVP_ACCOUNT_IDS[$index]}"; operation="${PVP_INTENT_OPERATIONS[$index]}"; name="${PVP_INTENT_NAMES[$index]}"
@@ -1344,8 +1704,11 @@ pvp_character_bootstrap() { # two level-qualifiable Characters from real Platfor
       failed=1
       continue
     fi
-    pvp_ops character bootstrap --socket "$PVP_BASE/run/control.sock" --operation-id "$operation" || { failed=1; continue; }
-    pvp_ops character bootstrap --socket "$PVP_BASE/run/control.sock" --operation-id "$operation" || failed=1
+    first=$(pvp_ops character bootstrap --socket "$PVP_BASE/run/control.sock" --operation-id "$operation") || { failed=1; continue; }
+    [[ "$first" == 'character_bootstrap=committed' ]] || { failed=1; continue; }
+    printf '%s\n' "$first"
+    assert_operator_replay "$PVP_DATABASE" "SELECT row_to_json(r) FROM game_character_operation_receipts r WHERE operation_id='$operation'" \
+      "$first" pvp_ops character bootstrap --socket "$PVP_BASE/run/control.sock" --operation-id "$operation" || failed=1
   done
   [[ $failed == 0 ]] || pvp_fail "PvP Character bootstrap"
   [[ "$(echo "SELECT count(*) FROM game_character_roots WHERE world_id='$PVP_WORLD_ID'" | psql_admin "$PVP_DATABASE")" == 2 ]] || fail "PvP World Characters"
@@ -1353,10 +1716,10 @@ pvp_character_bootstrap() { # two level-qualifiable Characters from real Platfor
 }
 
 pvp_world_shutdown() { # the Open PvP World's node ends cleanly before the lifecycle probes
-  sudo kill -TERM "$PVP_NODE_PID"
-  for _ in $(seq 1 30); do sudo kill -0 "$PVP_NODE_PID" 2>/dev/null || break; sleep 1; done
+  stop_node "$PVP_PROCESS_DIR"
   grep -q "event=shutdown .*state=complete" "$WORK/pvp-node.log" || pvp_fail "PvP node did not shut down cleanly"
   [[ ! -e "$PVP_BASE/run/control.sock" ]] || fail "PvP socket left after graceful shutdown"
+  assert_shutdown_guards "$PVP_DATABASE"
   evidence "pvp_world shutdown=complete socket=removed"
 }
 
@@ -1394,8 +1757,8 @@ elif [[ ${STATUS[node_assigned_ready]:-PASS} == PASS ]]; then
   if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
     # The node was started inside a stage subshell; its pid is in $VARS.
     # shellcheck source=/dev/null
-    NODE_PID="$(source "$VARS"; printf '%s' "${NODE_PID:-}")"
-    [[ -z "$NODE_PID" ]] || save_reuse_state
+    source "$VARS"
+    [[ -z "${NODE_PROCESS_DIR:-}" ]] || save_reuse_state
   fi
   ORDER+=(stack_kept)
   STATUS[stack_kept]="SKIP(shutdown and restart stages not run)"
@@ -1412,7 +1775,12 @@ for name in "${ORDER[@]}"; do
 done
 unset FRESH_SEED_HEX RECOVERY_SEED_HEX
 if [[ $failures == 0 ]]; then
-  result=NODE_BOOT_PASS
+  selected_groups="${NODE_BOOT_E2E_ONLY:-}"
+  if [[ "$NODE_BOOT_WORLD" == 1 && ( -n "${selected_groups//[[:space:]]/}" || -v OTERYN_E2E_ROW_BATCH || -n "${E2E_ALL_CAPTURE_DIR:-}" ) ]]; then
+    result=NODE_BOOT_SELECTION_PASS
+  else
+    result=NODE_BOOT_PASS
+  fi
 elif [[ $failures == 1 && ${STATUS[stack_kept]:-} == SKIP* ]]; then
   # Every stage that ran passed and the stack stays up; still not a qualification pass.
   result=NODE_BOOT_PARTIAL

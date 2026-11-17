@@ -89,8 +89,22 @@ fn required(name: &str) -> Result<String, io::Error> {
     env::var(name).map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, name))
 }
 
+static JOURNEY_VERDICTS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+fn journey_verdicts() -> usize {
+    JOURNEY_VERDICTS.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+fn journey_group_completed(group: &str, before: usize) {
+    let count = journey_verdicts() - before;
+    evidence(&format!("e2e_group name={group} verdicts={count}"));
+}
+
 fn evidence(line: &str) {
     if let Some(line) = client_world::verdict::indexed_evidence(e2e_result_line(line)) {
+        if line.starts_with("e2e_all scenario=") || line.starts_with("e2e_capture scenario=") {
+            JOURNEY_VERDICTS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        }
         println!("SEAM_EVIDENCE {line}");
     }
 }

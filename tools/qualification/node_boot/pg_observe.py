@@ -5,17 +5,19 @@ run.sh starts the container with lock-wait, slow-statement and
 pg_stat_statements settings and then uses two commands:
 
   pg_observe.py sample --container C --user U --database D --out FILE
-      Every 2 s, append one PG_ACTIVITY line per backend of database D that
+      Every 2 s, append one PG_ACTIVITY line per backend in the observed databases that
       waits on a lock, is blocked, is idle in a transaction or has a
       transaction older than 300 ms. Stops on SIGTERM/SIGINT.
 
   pg_observe.py dump --container C --user U --database D --stage S --dir DIR
                      [--activity FILE] [--verbose]
-      At the end of a stage: write the top-20 statements by total time
-      (statements-S.txt, then reset the counters), append the new lock-wait,
+      At the end of a stage: write the top 20 statements per database by total time
+      (statements-S.txt, then reset those databases' counters), append the new lock-wait,
       deadlock and slow-statement server log lines (server-lock-slow.log) and
       print one NODE_BOOT_PG summary line; --verbose (a failed stage) also
       prints a bounded excerpt.
+
+Both commands accept --other-database for the PvP World.
 
 Query text comes only from pg_stat_statements' normalized text, and every SQL
 fragment, including server log statements, passes through redact_sql: string,
@@ -33,7 +35,6 @@ import subprocess
 import sys
 import time
 
-TOP_STATEMENTS = 20
 ACTIVITY_LIMIT = 20000
 EXCERPT = 10
 
@@ -62,6 +63,7 @@ def redact_sql(text: str, limit: int = 200) -> str:
 ACTIVITY_SQL = r"""
 SELECT 'PG_ACTIVITY ts=' || (extract(epoch FROM clock_timestamp()) * 1000)::bigint
   || ' pid=' || a.pid
+  || ' database=' || a.datname
   || ' user=' || coalesce(a.usename::text, '-')
   || ' state=' || replace(coalesce(a.state, '-'), ' ', '_')
   || ' wait=' || coalesce(a.wait_event_type, '-') || '.' || coalesce(a.wait_event, '-')
@@ -73,9 +75,11 @@ SELECT 'PG_ACTIVITY ts=' || (extract(epoch FROM clock_timestamp()) * 1000)::bigi
   || ' query=' || coalesce(regexp_replace(left(s.query, 400), '\s+', ' ', 'g'), '-')
 FROM pg_stat_activity a
 LEFT JOIN LATERAL (
-  SELECT p.query FROM pg_stat_statements p WHERE p.queryid = a.query_id LIMIT 1
+  SELECT p.query FROM pg_stat_statements p
+  WHERE p.dbid = a.datid AND p.userid = a.usesysid AND p.queryid = a.query_id
+  LIMIT 1
 ) s ON true
-WHERE a.datname = :'db' AND a.pid <> pg_backend_pid() AND a.backend_type = 'client backend'
+WHERE a.datname IN (:'db', :'other_db') AND a.pid <> pg_backend_pid() AND a.backend_type = 'client backend'
   AND (a.wait_event_type = 'Lock'
        OR a.state LIKE 'idle in transaction%'
        OR clock_timestamp() - a.xact_start > interval '300 milliseconds'
@@ -84,17 +88,23 @@ ORDER BY a.pid;
 """
 
 STATEMENTS_SQL = r"""
-SELECT 'calls=' || p.calls
+SELECT 'database=' || d.datname || ' calls=' || p.calls
   || ' total_ms=' || round(p.total_exec_time)::bigint
   || ' mean_ms=' || round(p.mean_exec_time::numeric, 1)
   || ' max_ms=' || round(p.max_exec_time)::bigint
   || ' rows=' || p.rows
   || ' query=' || regexp_replace(left(p.query, 400), '\s+', ' ', 'g')
-FROM pg_stat_statements p JOIN pg_database d ON d.oid = p.dbid
-WHERE d.datname = :'db'
-ORDER BY p.total_exec_time DESC LIMIT 20;
+FROM pg_database d
+CROSS JOIN LATERAL (
+  SELECT * FROM pg_stat_statements p WHERE p.dbid = d.oid
+  ORDER BY p.total_exec_time DESC LIMIT 20
+) p
+WHERE d.datname IN (:'db', :'other_db')
+ORDER BY d.datname, p.total_exec_time DESC;
 \o /dev/null
-SELECT pg_stat_statements_reset();
+SELECT pg_stat_statements_reset(0, d.oid, 0)
+FROM pg_database d
+WHERE d.datname IN (:'db', :'other_db');
 """
 
 
@@ -106,14 +116,15 @@ def redact_record(line: str) -> str:
     return f'{head} query={redact_sql(query)}'
 
 
-def psql(container: str, user: str, database: str, sql: str, timeout: float) -> list[str]:
+def psql(container: str, user: str, database: str, sql: str, timeout: float,
+         other_database: str = '') -> list[str]:
     # The admin connects through the container's local socket; no URL or password.
     result = subprocess.run(
         ['docker', 'exec', '-i', container, 'psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1',
-         '-v', f'db={database}', '-U', user, '-d', 'postgres'],
+         '-v', f'db={database}', '-v', f'other_db={other_database}', '-U', user, '-d', 'postgres'],
         input=sql, capture_output=True, text=True, timeout=timeout, check=False)
     if result.returncode != 0:
-        raise RuntimeError(f'psql exit={result.returncode}')
+        raise RuntimeError(f'psql exit={result.returncode}: {redact_sql(result.stderr)}')
     return [line for line in result.stdout.splitlines() if line]
 
 
@@ -202,13 +213,14 @@ def sample(args: argparse.Namespace) -> int:
         while not stopping:
             started = time.monotonic()
             try:
-                records = psql(args.container, args.user, args.database, ACTIVITY_SQL, 10)
+                records = psql(args.container, args.user, args.database, ACTIVITY_SQL, 10, args.other_database)
                 failures = 0
-            except (RuntimeError, subprocess.TimeoutExpired, OSError):
+            except (RuntimeError, subprocess.TimeoutExpired, OSError) as error:
                 records = []
                 failures += 1
                 if failures == 1:
                     stream.write(f'PG_ACTIVITY_UNAVAILABLE ts={int(time.time() * 1000)}\n')
+                    print(error, file=sys.stderr)
             for record in records:
                 if written >= ACTIVITY_LIMIT:
                     stream.write(f'PG_ACTIVITY_LIMIT records={written}\n')
@@ -250,26 +262,35 @@ def dump(args: argparse.Namespace) -> int:
     stage = re.sub(r'[^A-Za-z0-9_.-]', '_', args.stage)
     try:
         statements = [redact_record(line) for line in
-                      psql(args.container, args.user, args.database, STATEMENTS_SQL, 30)]
-    except (RuntimeError, subprocess.TimeoutExpired, OSError):
-        statements = ['statements unavailable']
+                      psql(args.container, args.user, args.database, STATEMENTS_SQL, 30, args.other_database)]
+    except (RuntimeError, subprocess.TimeoutExpired, OSError) as error:
+        statements = [f'statements unavailable: {error}']
     (directory / f'statements-{stage}.txt').write_text('\n'.join(statements) + '\n')
 
     offset_file = directory / '.server-log-lines'
     offset = read_offset(offset_file)
+    server = None
     try:
         logs = subprocess.run(['docker', 'logs', args.container], capture_output=True,
                               text=True, errors='replace', timeout=30, check=False)
+        logs.check_returncode()
         server = (logs.stdout + logs.stderr).splitlines()
-    except (subprocess.TimeoutExpired, OSError):
-        server = []
-    if len(server) < offset:
-        offset = 0
-    offset_file.write_text(str(len(server)))
-    server_lines = filter_server_log(server[offset:])
+    except (subprocess.SubprocessError, OSError) as error:
+        server_lines = []
+        server_summary = f'server_logs=unavailable cause={type(error).__name__}'
+    else:
+        if len(server) < offset:
+            offset = 0
+        server_lines = filter_server_log(server[offset:])
+        slow = sum(' duration: ' in line for line in server_lines)
+        lock_waits = sum('still waiting for' in line for line in server_lines)
+        deadlocks = sum('deadlock detected' in line for line in server_lines)
+        server_summary = f'slow_statements={slow} lock_wait_logs={lock_waits} deadlocks={deadlocks}'
     if server_lines:
         with (directory / 'server-lock-slow.log').open('a', encoding='utf-8') as stream:
             stream.write(f'--- stage {stage}\n' + '\n'.join(server_lines) + '\n')
+    if server is not None:
+        offset_file.write_text(str(len(server)))
 
     activity: list[str] = []
     if args.activity:
@@ -282,11 +303,8 @@ def dump(args: argparse.Namespace) -> int:
         activity_offset_file.write_text(str(len(all_activity)))
         activity = all_activity[activity_offset:]
     waits, blocked, longest = activity_summary(activity)
-    slow = sum(' duration: ' in line for line in server_lines)
-    lock_waits = sum('still waiting for' in line for line in server_lines)
-    deadlocks = sum('deadlock detected' in line for line in server_lines)
-    print(f'NODE_BOOT_PG stage={stage} slow_statements={slow} lock_wait_logs={lock_waits} '
-          f'deadlocks={deadlocks} sampled={len(activity)} sampled_lock_waits={waits} '
+    print(f'NODE_BOOT_PG stage={stage} {server_summary} '
+          f'sampled={len(activity)} sampled_lock_waits={waits} '
           f'sampled_blocked={blocked}')
     if args.verbose:
         print(f'--- postgres top statements by total time (stage {stage})')
@@ -309,6 +327,7 @@ def main(argv: list[str]) -> int:
         command.add_argument('--container', required=True)
         command.add_argument('--user', required=True)
         command.add_argument('--database', required=True)
+        command.add_argument('--other-database', default='')
     commands.choices['sample'].add_argument('--out', required=True)
     commands.choices['sample'].add_argument('--interval', type=float, default=2.0)
     commands.choices['dump'].add_argument('--stage', required=True)

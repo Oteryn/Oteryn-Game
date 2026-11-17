@@ -828,6 +828,10 @@ impl Groups {
         Ok(Self(Some(selected)))
     }
 
+    pub(super) fn explicitly_selected(&self) -> bool {
+        self.0.is_some()
+    }
+
     pub(super) fn runs(&self, group: &str) -> bool {
         self.0
             .as_ref()

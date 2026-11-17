@@ -2233,60 +2233,6 @@ async fn reach_route_serviced(
     }))
 }
 
-const REACH_SEARCH_NODES: usize = 3_000_000;
-const REACH_CHUNK: usize = 20_000;
-
-/// Like `route` without its 160-tile and two-floor window: it searches the whole bundle (stairs,
-/// ladders and floor changes included) up to `REACH_SEARCH_NODES` tiles. The search yields to the
-/// connection every `REACH_CHUNK` expansions so liveness is served and the harness sees progress.
-/// `Ok(Err(searched))` means the goal is not reachable (or the cap was hit) after `searched` tiles.
-pub(super) async fn reach_route(
-    client: &mut oteryn_dev_client::DevClientSession,
-    world: &BundleWorld,
-    from: TilePos,
-    goal: impl Fn(TilePos) -> bool,
-) -> TestResult<Result<Vec<StepDirection>, usize>> {
-    let mut queue = VecDeque::from([from]);
-    let mut parents = BTreeMap::from([(from, None)]);
-    let mut expanded = 0usize;
-    while let Some(at) = queue.pop_front() {
-        if goal(at) {
-            let mut path = Vec::new();
-            let mut cursor = at;
-            while let Some(Some((previous, direction))) = parents.get(&cursor) {
-                path.push(*direction);
-                cursor = *previous;
-            }
-            path.reverse();
-            return Ok(Ok(path));
-        }
-        if parents.len() > REACH_SEARCH_NODES {
-            break;
-        }
-        expanded += 1;
-        if expanded.is_multiple_of(REACH_CHUNK) {
-            verdict::Harness::global().progress("route-search");
-            client.service_liveness(Duration::from_millis(1)).await?;
-        }
-        for direction in [
-            StepDirection::North,
-            StepDirection::East,
-            StepDirection::South,
-            StepDirection::West,
-        ] {
-            let Some(next) = destination(world, at, direction) else {
-                continue;
-            };
-            if parents.contains_key(&next) {
-                continue;
-            }
-            parents.insert(next, Some((at, direction)));
-            queue.push_back(next);
-        }
-    }
-    Ok(Err(parents.len()))
-}
-
 /// Use the production floor resolver over the production bundle's collision facts.
 fn destination(world: &BundleWorld, from: TilePos, direction: StepDirection) -> Option<TilePos> {
     use crate::map::floor::{Ground, resolve_landing};
@@ -2545,6 +2491,7 @@ pub(super) async fn journeys(
         // Explicit groups can isolate those packets from the row batch.
         include!("full_e2ef6_mount.rs");
         if groups.runs("rows") {
+            let before = journey_verdicts();
             release_row_characters(clients).await?;
             if e2e_row_selected(1) {
                 verdict::indexed("C03.full", async {
@@ -4137,21 +4084,27 @@ pub(super) async fn journeys(
                 })
                 .await;
             }
+            journey_group_completed("rows_early", before);
         }
         if groups.runs("f5") {
+            let before = journey_verdicts();
             full_e2ef5::run(clients, world).await;
+            journey_group_completed("f5", before);
         }
         for index in 0..clients.accounts.len() {
             wait_character_released(clients, index).await?;
         }
         if groups.runs("f4") {
+            let before = journey_verdicts();
             include!("full_e2ef4_mount.rs");
+            journey_group_completed("f4", before);
         }
         // F4 can drop its socket; require terminal release before the next journey.
         for index in 0..clients.accounts.len() {
             wait_character_released(clients, index).await?;
         }
         if groups.runs("rows") {
+            let before = journey_verdicts();
             if e2e_row_selected(233) {
                 verdict::indexed("G01.full", async {
                     full_row_g01::run_packet(clients).await;
@@ -4782,6 +4735,7 @@ pub(super) async fn journeys(
                 })
                 .await;
             }
+            journey_group_completed("rows_late", before);
         }
         for index in 0..clients.accounts.len() {
             wait_character_released(clients, index).await?;
@@ -4794,18 +4748,25 @@ pub(super) async fn journeys(
     if groups.runs("creature_sweep") {
         #[path = "creature_sweep.rs"]
         mod creature_sweep;
+        let before = journey_verdicts();
         creature_sweep::run(clients, world, &metadata.spawns).await?;
+        if groups.explicitly_selected() {
+            journey_group_completed("creature_sweep", before);
+        }
     }
     if groups.runs("mp") {
         #[path = "mp/mount.rs"]
         mod mp;
+        let before = journey_verdicts();
         mp::run(clients, packet_clients, world, &metadata.manifest.subareas).await;
+        journey_group_completed("mp", before);
     }
     // The core/profile pair has not inherited packet movement, loot or death.
     if !groups.runs("core") {
         evidence("e2e_groups core=skipped");
         return Ok(());
     }
+    let before = journey_verdicts();
     let profile_result = profile_journey(clients, world, &bytes, &metadata.spawns).await;
     if let Err(error) = &profile_result {
         evidence(&format!("world_profile state=failed error={error}"));
@@ -4928,7 +4889,9 @@ pub(super) async fn journeys(
     ));
 
     drop(client);
-    profile_result
+    profile_result?;
+    journey_group_completed("core", before);
+    Ok(())
 }
 
 async fn profile_journey(

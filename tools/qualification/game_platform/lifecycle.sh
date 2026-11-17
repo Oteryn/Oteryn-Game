@@ -52,7 +52,7 @@ game_platform_cleanup() {
     [[ ! -f "$node_log" ]] || cp "$node_log" "$NODE_BOOT_FAILURE_LOG_DIR/node.log"
     [[ ! -f "$WORK/portal-harness.log" ]] || cp "$WORK/portal-harness.log" "$NODE_BOOT_FAILURE_LOG_DIR/portal-harness.log"
   fi
-  [[ -z "$GP_PG_CONTAINER" ]] || docker rm --force --volumes "$GP_PG_CONTAINER" >/dev/null 2>&1 || true
+  [[ -z "$GP_PG_CONTAINER" ]] || timeout --foreground --kill-after=5s 45s docker rm --force --volumes "$GP_PG_CONTAINER" >/dev/null 2>&1 || true
 }
 game_platform_start() {
   local password port deadline ready=0
@@ -60,10 +60,10 @@ game_platform_start() {
   port="${GAME_PLATFORM_PLATFORM_PG_PORT:-15436}"
   [[ "$port" =~ ^[1-9][0-9]{3,4}$ && "$port" -le 65535 && "$port" != "$PG_PORT" ]] \
     || game_platform_fail preflight invalid_platform_pg_port
-  GP_PG_CONTAINER="$WP5_PROJECT-portal-postgres"
-  docker run --detach --name "$GP_PG_CONTAINER" --publish "127.0.0.1:$port:5432" \
+  GP_PG_CONTAINER="$(docker create --name "$WP5_PROJECT-portal-postgres" --publish "127.0.0.1:$port:5432" \
     --env POSTGRES_USER=game_platform_admin --env POSTGRES_PASSWORD="$password" \
-    --env POSTGRES_DB=postgres "$PG_IMAGE" >/dev/null
+    --env POSTGRES_DB=postgres "$PG_IMAGE")"
+  docker start "$GP_PG_CONTAINER" >/dev/null
   deadline=$((SECONDS + 60))
   until docker exec "$GP_PG_CONTAINER" pg_isready -h 127.0.0.1 -U game_platform_admin >/dev/null 2>&1; do
     (( SECONDS < deadline )) || game_platform_fail platform postgres_readiness_timeout
@@ -93,7 +93,7 @@ game_platform_start() {
   export OTERYN_PUBLIC_ORIGIN="http://127.0.0.1:$PORTAL_E2E_HTTP_PORT"
   export PORTAL_E2E_NATIVE_SCOPES="[\"$WORLD_ID/$CHANNEL_ID\"]"
   setsid bash "$PLATFORM_SOURCE/portal-rs/e2e/start.sh" --seed-plan "$WORK/seed-plan.json" \
-    > "$WORK/portal-report.json" 2> "$WORK/portal-harness.log" &
+    > "$WORK/portal-report.json" 2> "$WORK/portal-harness.log" 9>&- &
   GP_HARNESS_PID=$!
   deadline=$((SECONDS + 180))
   while kill -0 "$GP_HARNESS_PID" 2>/dev/null; do
@@ -166,7 +166,8 @@ game_platform_identity() {
   [[ ${STATUS[node_assigned_ready]} == PASS ]] || game_platform_fail game assignment_or_readiness_failed
   # stage runs in a subshell; recover the actual registered process, never start a substitute.
   # shellcheck source=/dev/null
-  NODE_PID="$(source "$VARS"; printf '%s' "$NODE_PID")"
+  local process_directory
+  process_directory="$(source "$VARS"; printf '%s' "$NODE_PROCESS_DIR")"
   ACTIVE_STAGE=character_bootstrap
   python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap "$WORK" "$SECOND_ACCOUNT_ID" "$WORLD_ID" "${INTENT_OPERATIONS[1]}" "${INTERPRETATION[@]}" \
     || game_platform_fail character_bootstrap intent_issue_failed
@@ -185,7 +186,7 @@ game_platform_identity() {
     timeout --kill-after=1s 60s cargo test --locked -p oteryn-security-auth-tests --test native_ticket_and_gateway_fail_closed \
       native_ticket_gateway_admits -- --exact --nocapture > "$WORK/native_ticket_gateway_admits.log" 2>&1 \
     || game_platform_fail native_ticket_gateway_admits journey_assertion_failed
-  kill -0 "$NODE_PID" 2>/dev/null || game_platform_fail game node_exited_during_admission
+  signal_node_process 0 "$process_directory" 2>/dev/null || game_platform_fail game node_exited_during_admission
   grep -Fx 'NODE_BOOT_EVIDENCE flow=native_ticket_gateway result=pass game_admissions=1 identity_character_scope=exact' "$WORK/native_ticket_gateway_admits.log" \
     || game_platform_fail native_ticket_gateway_admits evidence_missing
   stage graceful_shutdown node_assigned_ready -- graceful_shutdown

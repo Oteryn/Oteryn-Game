@@ -5,12 +5,18 @@ import importlib.util
 import json
 import os
 import re
+import select
+import signal
+import socket
 import stat
+import struct
+import sys
 import subprocess
 import tempfile
 import textwrap
 import time
 import unittest
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 # NODE_BOOT_RUN_SH runs the run.sh tests against another copy (a saved baseline).
@@ -48,6 +54,18 @@ KNOBS = section('# Local parallel stacks', 'GAME_SOURCE=')
 
 
 class KnobTests(unittest.TestCase):
+    def test_world_rejects_out_of_range_and_occupied_pvp_port(self):
+        validation = section('NODE_BOOT_WORLD="${NODE_BOOT_WORLD:-1}"', '# A kept or reused stack')
+        script = 'set -Eeuo pipefail\n' + KNOBS + '\nNODE_BOOT_SPELLS=0\n' + validation
+        with socket.socket() as listener:
+            listener.bind(('127.0.0.1', 0))
+            listener.listen()
+            for primary in (65535, listener.getsockname()[1] - 1):
+                with self.subTest(primary=primary):
+                    result = bash(script, {'NODE_BOOT_GAME_PORT': str(primary)})
+                    self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                    self.assertIn('reason=pvp_port_unavailable', result.stdout)
+
     def knobs(self, **env):
         script = 'set -Eeuo pipefail\n' + KNOBS + 'printf "%s|%s|%s|%s" "$SERVICE_USER" "$BASE" "$NODE_BOOT_KEEP_STACK" "$NODE_BOOT_REUSE_STACK"\n'
         return bash(script, env)
@@ -108,10 +126,11 @@ class ReuseTests(unittest.TestCase):
             BASE={temp}/base
             NODE_BOOT_REUSE_STACK={mode}
             NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0
-            PG_CONTAINER=fixture-postgres
+            PG_CONTAINER=fixture-postgres; WP5_PROJECT=fixture; SERVICE_USER=fixture
             STACK_KEPT=0
             REUSE_STATE={temp}/state.env
-            docker() {{ echo true; }}
+            docker() {{ if [[ $3 == *State.Running* ]]; then echo true; else echo fixture-container; fi; }}
+            signal_node_process() {{ sudo kill -0 4242; }}
             sudo() {{ return 0; }}
             {extra}
             ''') + guard + 'printf "kept=%s work=%s pid=%s fresh=%s\\n" "$STACK_KEPT" "$WORK" "$NODE_PID" "$([[ -e ' + f'{temp}/fresh' + ' ]] && echo yes || echo no)"\n'
@@ -121,6 +140,9 @@ class ReuseTests(unittest.TestCase):
         script = textwrap.dedent(f'''\
             set -Eeuo pipefail
             REUSE_STATE={temp}/state.env
+            BASE={temp}/base; mkdir -p "$BASE"
+            SERVICE_USER=fixture; WP5_PROJECT=fixture; PG_CONTAINER_ID=fixture-container
+            NODE_PROCESS_DIR={temp}/kept/node-process.1
             NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0; STACK_KEPT=0
             WORK={temp}/kept; node_log="$WORK/node.log"; failed_node_log="$WORK/failed-node.log"
             WP5_PKI="$WORK/pki"; WP5_SCRATCH="$WORK/scratch"; WP5_PORT=18463
@@ -166,10 +188,117 @@ class ReuseTests(unittest.TestCase):
     def test_kept_or_reused_stack_never_reports_a_pass(self):
         self.assertIn('STATUS[stack_kept]="SKIP(shutdown and restart stages not run)"', RUN_TEXT)
         self.assertIn('result=NODE_BOOT_PARTIAL\n  exit 3', RUN_TEXT)
-        self.assertIn('"$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then\n  NODE_BOOT_WORLD=0 bash', RUN_TEXT)
+        self.assertIn('"$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then', RUN_TEXT)
+        self.assertIn('NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"', RUN_TEXT)
+
+    def test_entry_term_reaches_the_default_basic_child(self):
+        recursion = section('# A kept or reused stack is one topology', 'if [[ "$NODE_BOOT_SPELLS" == 1 ]];')
+        with tempfile.TemporaryDirectory() as temp:
+            child = Path(temp, 'tools/qualification/node_boot/run.sh')
+            child.parent.mkdir(parents=True)
+            child.write_text("trap 'exit 143' TERM\necho ready\nfor i in {1..10}; do sleep 1; done\n")
+            script = '''
+                set -Eeuo pipefail
+                NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0; NODE_BOOT_KEEP_STACK=0; NODE_BOOT_REUSE_STACK=0
+            ''' + recursion
+            proc = subprocess.Popen(['bash', '-c', script], env=dict(os.environ, GAME_SOURCE=temp),
+                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, start_new_session=True)
+            try:
+                self.assertTrue(select.select([proc.stdout], [], [], 5)[0])
+                self.assertEqual(proc.stdout.readline().strip(), 'ready')
+                proc.send_signal(signal.SIGTERM)
+                proc.communicate(timeout=5)
+                self.assertEqual(proc.returncode, 143)
+            finally:
+                try:
+                    os.killpg(proc.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                proc.wait()
+
+    def test_kept_stack_rejects_a_different_base_or_service_account(self):
+        with tempfile.TemporaryDirectory() as temp:
+            self.save_state(temp)
+            for override in ('BASE=/srv/other', 'SERVICE_USER=oteryn-node-boot-other'):
+                with self.subTest(override=override):
+                    result = self.run_guard(temp, 'teardown', override)
+                    self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                    self.assertIn('reason=kept_stack_identity_mismatch', result.stdout)
+
+    def test_cleanup_leaves_resources_that_setup_did_not_acquire(self):
+        with tempfile.TemporaryDirectory() as temp:
+            setup = f'''
+                set -Eeuo pipefail
+                WORK={temp}/test; mkdir "$WORK"
+                BASE={temp}/base; mkdir "$BASE"
+                REUSE_STATE={temp}/kept; touch "$REUSE_STATE"
+                STACK_KEPT=0; NODE_PID=""; SERVICE_USER=test; WP5_PROJECT=test; PG_CONTAINER=test
+                ACTIVE_STAGE=setup; NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0; result=NODE_BOOT_FAIL
+                stop_runtime_diagnostics() {{ :; }}; stop_pg_sampler() {{ :; }}; evidence() {{ :; }}
+                compose() {{ echo "unexpected compose"; }}
+                docker() {{ echo "unexpected docker"; }}
+                sudo() {{ echo "unexpected sudo"; }}
+            '''
+            result = bash(setup + function('cleanup') + '\ntrap cleanup EXIT\nexit 1')
+            self.assertNotIn('unexpected', result.stdout)
+            self.assertTrue(Path(temp, 'kept').exists())
+
+    def test_platform_caller_does_not_claim_a_conflicting_postgres_container(self):
+        platform = (HERE.parent / 'game_platform' / 'lifecycle.sh').read_text()
+        start = re.search(r'(?ms)^game_platform_start\(\).*?^}', platform).group(0)
+        result = bash('''
+            set -Eeuo pipefail
+            PG_PORT=15433; PG_IMAGE=fixture; WP5_PROJECT=fixture; GP_PG_CONTAINER=""
+            openssl() { echo fixture; }
+            docker() { return 1; }
+            trap 'printf "owned=%s\\n" "$GP_PG_CONTAINER"' EXIT
+        ''' + start + '\ngame_platform_start')
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stdout.strip(), 'owned=')
 
 
 class SeamPassThroughTests(unittest.TestCase):
+    def test_selected_world_run_uses_a_selection_verdict(self):
+        final = RUN_TEXT[RUN_TEXT.index('unset FRESH_SEED_HEX RECOVERY_SEED_HEX'):]
+        result = bash('''
+            set -Eeuo pipefail
+            NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0; failures=0
+            declare -A STATUS=()
+            trap 'echo "$result"' EXIT
+        ''' + final, {'NODE_BOOT_E2E_ONLY': 'core'})
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout.strip(), 'NODE_BOOT_SELECTION_PASS')
+
+    def test_capture_mode_uses_all_world_rows(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fake = Path(temp, 'cargo')
+            fake.write_text('#!/bin/sh\nprintf "%s\\n" "${OTERYN_E2E_ROW_BATCH-unset}"\n')
+            fake.chmod(0o755)
+            setup = f'''
+                set -Eeuo pipefail
+                export PATH={temp}:$PATH E2E_ALL_CAPTURE_DIR={temp}/captures
+                unset OTERYN_E2E_ROW_BATCH
+                sleep() {{ :; }}
+                NODE_BOOT_SPELLS=0; NODE_BOOT_WORLD=1; NODE_BOOT_LIFECYCLE=game_platform
+                NODE_GAMEPLAY_ENV=(); NODE_CLOCK_FEATURES=(); NODE_SPAWN_FEATURES=()
+                BASE=/srv/x; WP5_PKI=/x; ADMIN_URL=u; WORLD_ID=w; CHANNEL_ID=c; WP5_PORT=1
+                ACCOUNT_ID=a; SECOND_ACCOUNT_ID=b; PACKET_ACCOUNT_ID=p; SECOND_PACKET_ACCOUNT_ID=q
+                FRESH_KEY_ID=f; FRESH_SEED_HEX=s; RECOVERY_KEY_ID=r; RECOVERY_SEED_HEX=t; MAP_REVISION=m
+            '''
+            result = bash(setup + function('seam_stages') + '\nseam_stages\n')
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.strip(), 'all')
+
+    def test_install_reads_cargo_target_directory(self):
+        target_assignment = re.search(r'^TARGET=.*$', RUN_TEXT, re.M).group(0)
+        script = """set -Eeuo pipefail
+            GAME_SOURCE=/checkout
+            cargo() { printf '%s\\n' '{"target_directory":"/cargo/shared output"}'; }
+        """
+        result = bash(script + target_assignment + '\nprintf "%s\\n" "$TARGET"')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), '/cargo/shared output/debug')
+
     def test_seam_stage_passes_harness_knobs_only_when_set(self):
         with tempfile.TemporaryDirectory() as temp:
             fake = Path(temp, 'cargo')
@@ -191,12 +320,13 @@ class SeamPassThroughTests(unittest.TestCase):
 
 
 class StageDumpTests(unittest.TestCase):
-    def run_stage(self, command):
+    def run_stage(self, command, setup='', name='sample'):
         with tempfile.TemporaryDirectory() as temp:
             script = textwrap.dedent(f'''\
                 set -Eeuo pipefail
                 WORK={temp}; VARS={temp}/vars; : > "$VARS"; node_log={temp}/node.log
                 failed_node_log={temp}/failed-node.log; PG_OBS={temp}/postgres
+                GAME_SOURCE={HERE.parents[2]}; : > "$node_log"
                 NODE_BOOT_WORLD=0; NODE_BOOT_SPELLS=0; ACTIVE_STAGE=setup
                 RUNTIME_DIAGNOSTICS_PID=""; PG_SAMPLER_PID=4242; PG_CONTAINER=x
                 declare -A STATUS=(); ORDER=()
@@ -204,8 +334,195 @@ class StageDumpTests(unittest.TestCase):
                 durability_report_lines() {{ cat; }}; sleep() {{ :; }}
                 start_runtime_diagnostics() {{ :; }}; stop_runtime_diagnostics() {{ :; }}
                 pg_observe() {{ echo "PG_OBSERVE $*"; }}
-                ''') + function('pg_observability_dump') + '\n' + function('stage') + f'\nstage sample -- {command}\n'
+                report_character_authority_failures() {{ :; }}
+                ''') + function('pg_observability_dump') + '\n' + function('classify_stage_rows') + '\n' + function('stage') + (
+                    f'\n{setup}\nstage {name} -- {command}\nprintf "status=%s\\n" "${{STATUS[{name}]}}"\n'
+                    'if [[ -f $failed_node_log ]]; then cat "$failed_node_log"; fi\n')
             return bash(script).stdout
+
+    def test_failed_evidence_writer_fails_the_stage_with_zero_command_exit(self):
+        self.assertIn('status=FAIL', self.run_stage('true', 'tee() { cat > /dev/null; return 1; }'))
+
+    def test_stage_deadline_fails_a_stalled_command(self):
+        setup = 'NODE_BOOT_STAGE_TIMEOUT_SECONDS=1; stall() { command sleep 5; }'
+        started = time.monotonic()
+        self.assertIn('status=FAIL(exit 124)', self.run_stage('stall', setup))
+        self.assertLess(time.monotonic() - started, 4)
+
+    def test_zero_selected_libtest_cases_fail_both_qualification_stages(self):
+        setup = '''
+            cargo_stub() {
+                printf 'running 0 tests\\ntest result: ok. 0 passed; 0 failed; 0 ignored;\\n'
+            }
+        '''
+        for name in ('seam_stages', 'spell_scenarios'):
+            with self.subTest(name=name):
+                self.assertIn('status=FAIL', self.run_stage('cargo_stub', setup, name))
+
+    def test_failure_diagnostics_allow_stage_processing_to_continue(self):
+        output = self.run_stage('false', 'sort() { cat; return 141; }')
+        self.assertIn('status=FAIL(exit 1)', output)
+
+    def test_failure_snapshot_uses_the_failing_stage_node_and_preserves_row_failures(self):
+        setup = '''
+            echo primary_snapshot > "$node_log"
+            echo pvp_snapshot > "$WORK/pvp-node.log"
+            row_fail() { echo 'SEAM_EVIDENCE e2e_all scenario=new.full status=FAIL seconds=1'; }
+        '''
+        pvp = self.run_stage('false', setup, 'pvp_world_ready')
+        self.assertEqual(pvp.splitlines()[-1], 'pvp_snapshot')
+        primary = self.run_stage('row_fail', setup)
+        self.assertEqual(primary.splitlines()[-1], 'primary_snapshot')
+
+    def test_operator_setup_rejects_unrelated_refusal_or_changed_replay(self):
+        setup = r'''
+            set -Eeuo pipefail
+            INTERPRETATION=(profile ruleset content starter)
+            write_node_config() { :; }
+            psql_admin() { cat >/dev/null; echo same_durable_snapshot; }
+            evidence() { echo "$*"; }
+            fail() { echo "$*"; return 1; }
+            ops() {
+                case "$1/$2" in
+                    character/interpretation)
+                        if [[ ! -f "$BASE/first" ]]; then
+                            echo "$REFUSAL" >&2
+                            return 6
+                        fi ;;
+                    character/fresh-store)
+                        if [[ -f "$BASE/first" ]]; then echo "$REPLAY"
+                        else touch "$BASE/first"; echo 'character_recovery=admitted generation=1'
+                        fi ;;
+                esac
+            }
+        '''
+        scripts = '\n'.join(function(name) for name in ('assert_operator_replay', 'operator_setup'))
+        for refusal, replay in (
+            ('interpretation refused until generation 1 is admitted (Durability(Unavailable))',
+             'character_recovery=admitted generation=1'),
+            ('interpretation refused until generation 1 is admitted (Rejected)',
+             'character_recovery=admitted generation=2'),
+        ):
+            with self.subTest(refusal=refusal, replay=replay), tempfile.TemporaryDirectory() as temp:
+                result = bash(setup + scripts + '\noperator_setup', {
+                    'BASE': temp, 'REFUSAL': refusal, 'REPLAY': replay,
+                })
+                self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+
+    def test_shutdown_rejects_a_failed_exit_after_the_complete_marker(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / 'node.log').write_text('event=readiness now ready=false\nevent=shutdown now state=complete\n')
+            (root / 'exit').write_text('23\n')
+            script = '''
+                set -Eeuo pipefail
+                sudo() { [[ $2 != -0 ]]; }
+                psql_admin() { cat >/dev/null; echo t; }
+                evidence() { echo "$*"; }
+                fail() { echo "$*"; return 1; }
+                NODE_PID=4242
+                NODE_PROCESS_DIR=$BASE
+                node_log=$BASE/node.log
+            '''
+            functions = ('signal_node_process', 'stop_node',
+                         'assert_shutdown_guards', 'graceful_shutdown')
+            result = bash(script + '\n'.join(map(function, functions)) + '\ngraceful_shutdown', {'BASE': temp})
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            self.assertIn('exit=23', result.stdout)
+
+    def test_detached_supervisor_signals_the_server_and_retains_its_exit(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / 'bin').mkdir()
+            sudo = root / 'bin/sudo'
+            # This supervisor does not forward signals to its child.
+            sudo.write_text('#!/bin/bash\nif [[ $1 == -u ]]; then shift 2; "$@"; else exec "$@"; fi\n')
+            sudo.chmod(0o755)
+            server = root / 'bin/oteryn-game-server'
+            server.write_text(f'''#!{sys.executable}
+import signal
+import sys
+signal.signal(signal.SIGTERM, lambda *_: sys.exit(23))
+signal.signal(signal.SIGALRM, lambda *_: sys.exit(99))
+signal.alarm(6)
+print("server-ready", file=sys.stderr, flush=True)
+signal.pause()
+''')
+            server.chmod(0o755)
+            setup = '''
+                set -Eeuo pipefail
+                PATH=$BASE/bin:$PATH; WORK=$BASE; SERVICE_USER=test; NODE_GAMEPLAY_ENV=()
+                fail() { echo "$*"; return 1; }
+                sleep() { command sleep 0.05; }
+            '''
+            functions = ('signal_node_process', 'start_node_process', 'stop_node')
+            script = setup + '\n'.join(map(function, functions)) + '''
+                (start_node_process "$BASE/node.log" "$BASE/config"; printf '%s' "$NODE_PROCESS_DIR" > "$BASE/node-dir")
+                for i in {1..50}; do
+                    if grep -q server-ready "$BASE/node.log"; then break; fi
+                    sleep 0.05
+                done
+                stop_node "$(<"$BASE/node-dir")"
+            '''
+            result = bash(script, {'BASE': temp})
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            self.assertIn('exit=23', result.stdout)
+
+    def test_replacement_and_pvp_shutdown_check_their_durable_readiness_guards(self):
+        for stage, database in (('superseding_replacement', 'oteryn_node_boot'),
+                                ('pvp_world_shutdown', '"$PVP_DATABASE"')):
+            with self.subTest(stage=stage):
+                self.assertIn(f'assert_shutdown_guards {database}', function(stage))
+        with tempfile.TemporaryDirectory() as temp:
+            Path(temp, 'pvp-node.log').write_text('event=shutdown now state=complete\n')
+            setup = '''
+                set -Eeuo pipefail
+                WORK=$BASE; PVP_BASE=$BASE/pvp; PVP_PROCESS_DIR=$BASE/process; PVP_DATABASE=pvp
+                stop_node() { :; }
+                psql_admin() { cat >/dev/null; printf 'database=%s\\n' "$1" >&2; echo f; }
+                fail() { echo "$*"; return 1; }
+                evidence() { echo "$*"; }
+            '''
+            result = bash(setup + function('assert_shutdown_guards') + '\n' + function('pvp_world_shutdown')
+                          + '\npvp_world_shutdown', {'BASE': temp})
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            self.assertIn('database=pvp', result.stderr)
+            self.assertIn('guard still ready', result.stdout)
+
+    def test_control_probe_rejects_an_unattributed_eof_and_a_stalled_peer(self):
+        for outcome in ('eof', 'stalled', 'uid_refused'):
+            with self.subTest(outcome=outcome), tempfile.TemporaryDirectory() as temp, socket.socket(socket.AF_UNIX) as listener:
+                root = Path(temp)
+                (root / 'run').mkdir()
+                (root / 'node.log').touch()
+                listener.bind(str(root / 'run/control.sock'))
+                listener.listen()
+                script = '''
+                    set -Eeuo pipefail
+                    SERVICE_USER=fixture; SERVICE_UID=$(id -u)
+                    node_log=$BASE/node.log
+                    sudo() { shift 2; "$@"; }
+                    evidence() { echo "$*"; }
+                    fail() { echo "$*"; return 1; }
+                ''' + function('control_socket_peer') + '\ncontrol_socket_peer'
+                proc = subprocess.Popen(['bash', '-c', script], env=dict(os.environ, BASE=temp),
+                                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                try:
+                    listener.settimeout(5)
+                    with listener.accept()[0] as peer:
+                        if outcome == 'uid_refused':
+                            pid, uid, _ = struct.unpack('3i', peer.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, 12))
+                            (root / 'node.log').write_text(
+                                f'event=control_peer_rejected detail="peer_pid={pid} peer_uid={uid}"\n')
+                        if outcome != 'stalled':
+                            peer.shutdown(socket.SHUT_WR)
+                        output, _ = proc.communicate(timeout=5)
+                    self.assertEqual(proc.returncode == 0, outcome == 'uid_refused', output)
+                    self.assertEqual('service_user_peer=closed' in output, outcome == 'uid_refused', output)
+                finally:
+                    if proc.poll() is None:
+                        proc.kill()
+                        proc.communicate()
 
     def test_each_stage_end_dumps_postgres_and_a_failed_stage_is_verbose(self):
         passed = self.run_stage('true')
@@ -285,6 +602,33 @@ LEAKS = ('Leaky', '01934f10', 'parameter-value-leak', 'pw-leak', 'deadlock-liter
 
 class PgObserveTests(unittest.TestCase):
     pg = load('pg_observe')
+
+    def test_sampling_and_statement_reset_are_scoped_to_both_world_databases(self):
+        self.assertIn("a.datname IN (:'db', :'other_db')", self.pg.ACTIVITY_SQL)
+        self.assertIn("d.datname IN (:'db', :'other_db')", self.pg.STATEMENTS_SQL)
+        self.assertIn("pg_stat_statements_reset(0, d.oid, 0)", self.pg.STATEMENTS_SQL)
+        self.assertNotIn("pg_stat_statements_reset()", self.pg.STATEMENTS_SQL)
+        self.assertIn("p.dbid = a.datid", self.pg.ACTIVITY_SQL)
+
+    def test_failed_log_read_preserves_the_cursor_and_reports_unavailable(self):
+        with tempfile.TemporaryDirectory() as temp:
+            cursor = Path(temp, '.server-log-lines')
+            cursor.write_text('8')
+            args = type('Args', (), dict(dir=temp, stage='seam', container='c', user='u',
+                                         database='db', other_database='', activity=None, verbose=False))()
+            for failure in (subprocess.CompletedProcess([], 1, '', 'daemon unavailable'),
+                            subprocess.TimeoutExpired('docker logs', 30)):
+                with self.subTest(failure=failure), mock.patch.object(self.pg, 'psql', return_value=[]):
+                    with mock.patch.object(self.pg.subprocess, 'run') as command:
+                        if isinstance(failure, Exception):
+                            command.side_effect = failure
+                        else:
+                            command.return_value = failure
+                        with mock.patch('builtins.print') as output:
+                            self.pg.dump(args)
+                        self.assertIn('server_logs=unavailable', str(output.call_args_list))
+                        self.assertNotIn('slow_statements=0', str(output.call_args_list))
+                        self.assertEqual(cursor.read_text(), '8')
 
     def test_redact_sql_keeps_shape_and_drops_values(self):
         redact = self.pg.redact_sql

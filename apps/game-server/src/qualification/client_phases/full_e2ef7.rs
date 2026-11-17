@@ -783,19 +783,29 @@ mod tests {
 // additional row's admission, deadline and verdict from the preceding row.
 pub(super) async fn run_packet(clients: &SeamClients<'_>, groups: &verdict::Groups) {
     if groups.runs("f7run") {
+        let before = journey_verdicts();
         run(clients).await;
+        journey_group_completed("f7run", before);
     }
     if groups.runs("f7clock") {
+        let before = journey_verdicts();
         clock_packet(clients).await;
+        journey_group_completed("f7clock", before);
     }
     if groups.runs("f7add") {
+        let before = journey_verdicts();
         additional_rows(clients).await;
+        journey_group_completed("f7add", before);
     }
     if groups.runs("f7cont") {
+        let before = journey_verdicts();
         continuation_rows(clients).await;
+        journey_group_completed("f7cont", before);
     }
     if groups.runs("f7forge") {
+        let before = journey_verdicts();
         forge_row(clients).await;
+        journey_group_completed("f7forge", before);
     }
 }
 

@@ -28,7 +28,9 @@ Subcommands:
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import json
+import os
 from pathlib import Path
 import re
 import sys
@@ -45,7 +47,7 @@ PR_ROW_BATCHES = ((0, 5), (5, 5), (10, 5))
 # The last batch is open-ended so rows added after planning still run.
 OPEN_END = 1_000_000
 MAX_SHARDS = 64
-SHARD_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,62}$")
+SHARD_NAME = re.compile(r"^[a-z0-9][a-z0-9_-]{0,62}$")
 SHA = re.compile(r"^[0-9a-f]{40}$")
 ENTRIES = ("node_boot", "game_platform")
 # Knobs a shard may set, with the values each accepts. Every key must be read
@@ -56,9 +58,36 @@ SCENARIO = re.compile(
     r"SEAM_EVIDENCE e2e_all scenario=([A-Za-z0-9_.-]{1,64}) status=([A-Z0-9_-]{1,32}) "
     r"seconds=([0-9]{1,7}(?:\.[0-9]{1,6})?)(?:\s|$)"
 )
-NODE_BOOT_RESULT = re.compile(r"(?:^|\s)NODE_BOOT_RESULT=([A-Z_]{1,40})(?:\s|$)")
-GAME_PLATFORM_RESULT = re.compile(r"(?:^|\s)GAME_PLATFORM_RESULT=(PASS|FAIL|BLOCKED)(?:\s|$)")
+CAPTURE = re.compile(r"^SEAM_EVIDENCE e2e_capture scenario=([A-Za-z0-9_.-]{1,64}) status=CAPTURED(?:\s|$)")
+CREATURE_BATCH = re.compile(r"^SEAM_EVIDENCE creature_sweep batch start=\d+ len=\d+ selected=(\d+)$")
+NODE_BOOT_RESULT = re.compile(r"^NODE_BOOT_RESULT=([A-Z_]{1,40})(?:\s|$)")
+GAME_PLATFORM_RESULT = re.compile(r"^GAME_PLATFORM_RESULT=(PASS|FAIL|BLOCKED)(?:\s|$)")
 INCOMPLETE = re.compile(r"SEAM_EVIDENCE E2EF1_INCOMPLETE(?:\s|$)")
+
+GROUP_VERDICTS = re.compile(r"^SEAM_EVIDENCE e2e_group name=([a-z0-9_]+) verdicts=([0-9]+)$")
+QUALIFICATION_CASE = re.compile(r"^NODE_BOOT_EVIDENCE qualification_case=(basic|world|spells)$")
+WORLD_SELECTION = re.compile(
+    r"^NODE_BOOT_EVIDENCE world_selection groups=([a-z0-9_,]+) batch=(all|[0-9]+:[0-9]+) scope=(default|selection)$"
+)
+
+# Stable coverage assertions for the grouped dispatchers. Group counters also
+# cover their additional evidence and the dynamic creature census.
+GROUP_SCENARIOS = {
+    "core": ("M01.turn-result", "S18.say-echo", "S18.whisper-echo", "W15a.list-relogin",
+             "M01.step-relogin", "M03.floor-step-relogin", "I01.root-view-relogin", "I16.starter-weight-relogin",
+             "I01.full", "I04.full", "I06.full", "I07.full", "I08.full", "I09.full",
+             "I12.full", "I13.full", "I15.full", "I16.full"),
+    "f4": tuple(f"{row}.full" for row in ("E01", "E03", "E04", "E05", "E07", "S01", "S03", "S09", "S18")),
+    "f5": tuple(f"{row}.full" for row in ("C17a", "C17c", "C16b", "C16a", "C18a", "C17d", "C13", "C16c", "C16d")),
+    "f6_starter": ("C19a.full",),
+    "f6": tuple(f"{row}.full" for row in ("C20d", "S16a", "C20a", "C20b", "P16", "C20c", "P10")),
+    "f7run": ("S11.full",),
+    "f7clock": ("W20a.full",),
+    "f7add": ("W20b.full", "S13a.full", "S13b.full"),
+    "f7cont": ("S08.full", "P21.full"),
+    "f7forge": ("P19.full",),
+    "mp": ("MP01.full", "MP09.full"),
+}
 
 
 class PlanError(ValueError):
@@ -74,7 +103,7 @@ def journey_groups(root: Path = ROOT) -> list[str]:
     block = re.search(r"const GROUPS: &\[\(&str, &\[&str\]\)\] = &\[(.*?)\n\];", source, re.DOTALL)
     if block is None:
         raise PlanError("GROUPS registry not found in verdict.rs")
-    names = re.findall(r'^\s*\("([a-z0-9]+)",', block[1], re.MULTILINE)
+    names = re.findall(r'^\s*\("([a-z0-9_]+)",', block[1], re.MULTILINE)
     if not names or "rows" not in names or len(set(names)) != len(names):
         raise PlanError("GROUPS registry is empty, has duplicates or lacks rows")
     return names
@@ -89,6 +118,67 @@ def row_indices(root: Path = ROOT) -> list[int]:
     if len(set(indices)) != len(indices):
         raise PlanError("a row index is selected by two call sites")
     return sorted(indices)
+
+
+def indexed_rows(root: Path = ROOT) -> dict[int, str]:
+    """Resolve each indexed dispatcher entry to the scenario its reporter owns."""
+    source = read(root, CLIENT_PHASES / "world.rs")
+    rows = {}
+    for match in re.finditer(r'\be2e_row_selected\((\d+)\)\s*\{\s*(?:'
+                             r'verdict::indexed\(\s*"([\w.-]+)"|([a-z0-9_]+)::run_\w+\()', source):
+        index, scenario, module = match.groups()
+        if scenario is None:
+            reporter = read(root, CLIENT_PHASES / f"{module}.rs")
+            declared = set(re.findall(r"e2e_all scenario=([\w.-]+) status=", reporter))
+            if len(declared) != 1:
+                raise PlanError(f"cannot resolve scenario for row index {index}")
+            scenario = declared.pop()
+        rows[int(index)] = scenario
+    if sorted(rows) != row_indices(root) or len(set(rows.values())) != len(rows):
+        raise PlanError("indexed dispatch and scenario registry disagree")
+    return rows
+
+
+def world_selection(groups: str, batch: str | None) -> tuple[str, str]:
+    registry = set(journey_groups())
+    names = [name.strip() for name in groups.split(",")] if groups.strip() else []
+    if names and (set(names) - registry or len(set(names)) != len(names)):
+        raise PlanError("invalid World journey group selection")
+    if batch is None:
+        source = read(ROOT, CLIENT_PHASES / "e2e_row_batch.rs")
+        default = re.search(r"E2E_ROW_BATCH_DEFAULT: \(usize, usize\) = \((\d+), (\d+)\);", source)
+        if default is None:
+            raise PlanError("World default row batch is missing")
+        batch = ":".join(default.groups())
+    if batch != "all":
+        if not ROW_BATCH.fullmatch(batch):
+            raise PlanError("invalid World row batch")
+        start, length = map(int, batch.split(":"))
+        if length == 0:
+            raise PlanError("invalid World row batch")
+        if not any(start <= index < start + length for index in row_indices()):
+            raise PlanError("World row batch selects no journeys")
+    return ",".join(sorted(names)) or "default", batch
+
+
+def expected_world(groups: str, batch: str) -> tuple[set[str], set[str]]:
+    names = set(journey_groups()) - {"creature_sweep"} if groups == "default" else set(groups.split(","))
+    rows: set[str] = set()
+    if "rows" in names:
+        dispatch = indexed_rows()
+        if batch == "all":
+            rows = set(dispatch.values())
+        else:
+            start, length = map(int, batch.split(":"))
+            rows = {scenario for index, scenario in dispatch.items() if start <= index < start + length}
+        if not rows:
+            raise PlanError("World row batch selects no journeys")
+        names.remove("rows")
+        names.update(("rows_early", "rows_late"))
+    if "f6" in names:
+        names.add("f6_starter")
+    rows.update(scenario for name in names for scenario in GROUP_SCENARIOS.get(name, ()))
+    return names, rows
 
 
 def pinned_sha(root: Path, relative: Path, variable: str) -> str:
@@ -151,7 +241,7 @@ def plan(
         raise PlanError(f"unknown set {set_name!r}")
     if set_name != "custom" and (groups.strip() or rows.strip()):
         raise PlanError("groups and rows inputs apply only to the custom set")
-    if not re.fullmatch(r"[0-9]{1,3}", batch or ""):
+    if not re.fullmatch(r"[0-9]{1,3}", batch or "") or int(batch) == 0:
         raise PlanError("batch must be a positive integer")
     size = int(batch)
     registry = journey_groups(root)
@@ -263,27 +353,113 @@ def export_env(item: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+def log_evidence(log: Path, pattern: re.Pattern) -> dict:
+    result = {"result": "NONE", "incomplete": False, "scenarios": [],
+              "groups": [], "cases": [], "selections": [], "creature_batches": []}
+    with log.open(encoding="utf-8", errors="replace") as stream:
+        for line in stream:
+            line = line.rstrip("\n")
+            if match := SCENARIO.match(line):
+                result["scenarios"].append({"id": match[1], "status": match[2], "seconds": float(match[3])})
+            elif match := CAPTURE.match(line):
+                result["scenarios"].append({"id": match[1], "status": "CAPTURED", "seconds": 0.0})
+            if match := CREATURE_BATCH.fullmatch(line):
+                result["creature_batches"].append(int(match[1]))
+            if match := pattern.search(line):
+                result["result"] = match[1]
+            if INCOMPLETE.match(line):
+                result["incomplete"] = True
+            if match := GROUP_VERDICTS.fullmatch(line):
+                result["groups"].append((match[1], int(match[2])))
+            if match := QUALIFICATION_CASE.fullmatch(line):
+                result["cases"].append(match[1])
+            if match := WORLD_SELECTION.fullmatch(line):
+                result["selections"].append(list(match.groups()))
+    return result
+
+
 def extract(log: Path, *, name: str, entry: str, exit_code: int, seconds: int) -> dict:
     if not SHARD_NAME.fullmatch(name) or entry not in ENTRIES:
         raise PlanError("invalid shard identity")
-    text = log.read_text(encoding="utf-8", errors="replace") if log.is_file() else ""
-    scenarios = [{"id": m[1], "status": m[2], "seconds": float(m[3])} for m in SCENARIO.finditer(text)]
     pattern = GAME_PLATFORM_RESULT if entry == "game_platform" else NODE_BOOT_RESULT
-    results = pattern.findall(text)
-    return {
-        "shard": name,
-        "entry": entry,
-        "exit_code": exit_code,
-        "seconds": seconds,
-        "result": results[-1] if results else "NONE",
-        "incomplete": bool(INCOMPLETE.search(text)),
-        "scenarios": scenarios,
-    }
+    try:
+        data = log_evidence(log, pattern)
+    except OSError:
+        data = {"result": "NONE", "incomplete": False, "scenarios": [], "groups": [], "cases": [], "selections": [], "creature_batches": []}
+    return {**data, "shard": name, "entry": entry, "exit_code": exit_code, "seconds": seconds}
 
 
-def shard_passed(result: dict) -> bool:
-    expected = "PASS" if result["entry"] == "game_platform" else "NODE_BOOT_PASS"
-    return result["exit_code"] == 0 and result["result"] == expected
+def world_problems(result: dict, groups: str, batch: str) -> list[str]:
+    problems = []
+    expected_groups, expected_rows = expected_world(groups, batch)
+    evidence = result["groups"]
+    actual_groups = {group for group, _ in evidence}
+    if actual_groups != expected_groups or len(actual_groups) != len(evidence):
+        problems.append("World group completion mismatch"
+                        f" (missing={','.join(sorted(expected_groups - actual_groups)) or '-'},"
+                        f" extra={','.join(sorted(actual_groups - expected_groups)) or '-'})")
+    empty = sorted(group for group, count in evidence if not count and group not in ("rows_early", "rows_late"))
+    if empty:
+        problems.append(f"World groups ran no scenario: {', '.join(empty)}")
+    scenarios = Counter(row["id"] for row in result["scenarios"])
+    missing = sorted(expected_rows - scenarios.keys())
+    if missing:
+        problems.append(f"missing World row verdicts: {', '.join(missing)}")
+    duplicates = sorted(row for row, count in scenarios.items() if count > 1)
+    if duplicates:
+        problems.append(f"duplicate World row verdicts: {', '.join(duplicates)}")
+    if "creature_sweep" in expected_groups:
+        creature_count = sum(sid.startswith("CS.") and sid.endswith(".full") for sid in scenarios)
+        if creature_count == 0 or result.get("creature_batches") != [creature_count]:
+            problems.append("creature sweep verdicts disagree with selected species")
+    if sum(count for _, count in evidence) != sum(scenarios.values()):
+        problems.append("World scenario count disagrees with completed groups")
+    if not scenarios:
+        problems.append("World shard ran no scenario")
+    if result["incomplete"]:
+        problems.append("E2EF1_INCOMPLETE")
+    return problems
+
+
+def qualification_problems(result: dict, env: dict | None = None, world: bool | None = None) -> list[str]:
+    if result["entry"] == "game_platform":
+        return []
+    cases = result.get("cases", [])
+    selections = result.get("selections", [])
+    if env is not None:
+        expected_cases = ["spells"] if env.get("NODE_BOOT_SPELLS") == "1" else ["basic"]
+        if world:
+            expected_cases = ["world"] if env.get("NODE_BOOT_SKIP_BASIC") == "1" else ["basic", "world"]
+        expected_selection = []
+        if world:
+            groups = env.get("NODE_BOOT_E2E_ONLY", "")
+            batch = env.get("OTERYN_E2E_ROW_BATCH")
+            scope = "selection" if groups.strip() or batch is not None else "default"
+            expected_selection = [[*world_selection(groups, batch), scope]]
+    else:
+        expected_cases = cases if cases in (["basic"], ["world"], ["basic", "world"], ["spells"]) else []
+        expected_selection = selections if "world" in cases and len(selections) == 1 else []
+    problems = []
+    if not expected_cases or cases != expected_cases:
+        problems.append("qualification test completion mismatch")
+    if selections != expected_selection or ("world" in expected_cases and len(selections) != 1):
+        problems.append("World selection evidence disagrees with the plan")
+    if "world" in expected_cases and (expected_selection or selections):
+        try:
+            problems.extend(world_problems(result, *(expected_selection or selections)[0][:2]))
+        except PlanError as error:
+            problems.append(str(error))
+    elif "world" not in expected_cases and (result["incomplete"] or result["scenarios"]):
+        problems.append("unexpected World evidence")
+    return problems
+
+
+def shard_passed(result: dict, env: dict | None = None, world: bool | None = None) -> bool:
+    if result["entry"] == "game_platform":
+        return result["exit_code"] == 0 and result["result"] == "PASS"
+    expected = ("NODE_BOOT_SELECTION_PASS" if any(scope == "selection" for _, _, scope in result.get("selections", []))
+                else "NODE_BOOT_PASS")
+    return result["exit_code"] == 0 and result["result"] == expected and not qualification_problems(result, env, world)
 
 
 def redact(source: Path, destination: Path) -> None:
@@ -316,7 +492,7 @@ def summarize(shards: list[dict], directory: Path, prefix: str, *, missing_fatal
             path = directory / "result.json"
         try:
             result = json.loads(path.read_text(encoding="utf-8"))
-            if result.get("shard") != item["name"]:
+            if result.get("shard") != item["name"] or result.get("entry") != item["entry"]:
                 raise ValueError("shard mismatch")
         except (OSError, ValueError):
             problems.append(f"{item['name']}: no result evidence")
@@ -332,16 +508,20 @@ def summarize(shards: list[dict], directory: Path, prefix: str, *, missing_fatal
                 details.append(f"- `{item['name']}` {scenario['id']} {status}")
         if counts["MISSING"] and missing_fatal:
             problems.append(f"{item['name']}: {counts['MISSING']} MISSING scenario(s)")
-        if item["world"] and not result["scenarios"]:
-            problems.append(f"{item['name']}: World shard ran no scenario")
+        issues = qualification_problems(result, item["env"], item["world"])
+        problems.extend(f"{item['name']}: {issue}" for issue in issues)
+        passed = shard_passed(result, item["env"], item["world"])
+        if not passed and not issues:
+            problems.append(f"{item['name']}: unsuccessful shard verdict")
         if result["incomplete"]:
             details.append(f"- `{item['name']}` E2EF1_INCOMPLETE")
-        verdict = result["result"] + ("" if shard_passed(result) else " (failed)")
+        verdict = result["result"] + ("" if passed else " (failed)")
         rows.append(
             f"| {item['name']} | {verdict} | {result['exit_code']} | {result['seconds'] / 60:.1f} | "
             f"{len(result['scenarios'])} | {counts['PASS']} | {counts['FAIL']} | {counts['MISSING']} | {counts['other']} |"
         )
     overlaps = sorted(f"{sid} ({', '.join(names)})" for sid, names in owners.items() if len(names) > 1)
+    problems.extend(f"duplicate scenario across shards: {entry}" for entry in overlaps)
     out = ["## Node boot shards", "", *rows, ""]
     if details:
         out += ["### Scenarios not passing", "", *details, ""]
@@ -378,6 +558,10 @@ def main(argv: list[str] | None = None) -> int:
     x.add_argument("--entry", required=True)
     x.add_argument("--exit-code", type=int, required=True)
     x.add_argument("--seconds", type=int, required=True)
+    v = sub.add_parser("verify-world")
+    v.add_argument("log", type=Path)
+    v.add_argument("--groups", default="")
+    v.add_argument("--batch")
     r = sub.add_parser("redact")
     r.add_argument("source", type=Path)
     r.add_argument("destination", type=Path)
@@ -402,7 +586,20 @@ def main(argv: list[str] | None = None) -> int:
             args.destination.write_text(json.dumps(result, indent=1) + "\n", encoding="utf-8")
             print(f"NODE_BOOT_SHARD shard={result['shard']} result={result['result']} "
                   f"exit={result['exit_code']} scenarios={len(result['scenarios'])}")
-            return 0 if shard_passed(result) else 1
+            env = {key: os.environ[key] for key in ("NODE_BOOT_SKIP_BASIC", "NODE_BOOT_SPELLS",
+                   "NODE_BOOT_E2E_ONLY", "OTERYN_E2E_ROW_BATCH") if key in os.environ}
+            world = os.environ.get("SHARD_WORLD")
+            return 0 if shard_passed(result, env if world is not None else None, world == "1") else 1
+        elif args.command == "verify-world":
+            groups, batch = world_selection(args.groups, args.batch)
+            result = log_evidence(args.log, NODE_BOOT_RESULT)
+            problems = world_problems(result, groups, batch)
+            if problems:
+                for problem in problems:
+                    print(f"NODE_BOOT_COVERAGE_FAILURE {problem}")
+                return 1
+            scope = "selection" if args.groups.strip() or args.batch is not None else "default"
+            print(f"NODE_BOOT_EVIDENCE world_selection groups={groups} batch={batch} scope={scope}")
         elif args.command == "redact":
             redact(args.source, args.destination)
         else:

@@ -33,7 +33,7 @@ def function(name):
 
 class RuntimeEvidenceTests(unittest.TestCase):
     def test_shutdown_guard_check_handles_multiple_runtime_scopes(self):
-        sql = re.search(r"echo '([^']+)' \| psql_admin oteryn_node_boot", function('graceful_shutdown')).group(1)
+        sql = re.search(r"echo '([^']+)' \| psql_admin \"\$database\"", function('assert_shutdown_guards')).group(1)
         with sqlite3.connect(':memory:') as database:
             database.execute('CREATE TABLE game_durability_admission_runtime_guards (ready boolean)')
             for values, expected in [([], False), ([False], True), ([False, False], True), ([False, True], False)]:
@@ -269,7 +269,7 @@ class RuntimeEvidenceTests(unittest.TestCase):
         self.assertIn('kind=Actor', result.stdout)
         self.assertNotIn('secret', result.stdout)
 
-    def exercise(self, signum):
+    def exercise(self, signum, *, entry_shell_only=False):
         inbound_phases = (
             'frame', 'frame_error', 'held', 'step_due', 'probe', 'server_message',
             'serene', 'quest_log', 'chat', 'visibility', 'combat', 'chase',
@@ -377,7 +377,10 @@ stage seam_stages -- blocked
                 # Deliver INT/TERM to the fixture group while its stage waits on tee.
                 # GitHub entry-shell cancellation is a separate signal boundary.
                 until(b'NODE_BOOT_RUNTIME_LIMIT', 3)
-                os.killpg(process.pid, signum)
+                if entry_shell_only:
+                    os.kill(process.pid, signum)
+                else:
+                    os.killpg(process.pid, signum)
                 remainder, _ = process.communicate(timeout=5)
                 output.extend(remainder)
             finally:
@@ -418,32 +421,54 @@ stage seam_stages -- blocked
     def test_int_preserves_bounded_safe_evidence_before_cleanup(self):
         self.exercise(signal.SIGINT)
 
+    def test_entry_shell_term_cancels_a_blocked_stage(self):
+        self.exercise(signal.SIGTERM, entry_shell_only=True)
+
 
 class KnownFailRowsTests(unittest.TestCase):
     """A FAIL row fails its stage unless known_fail_rows.txt lists it."""
 
     def rows(self, log, status, known):
-        helpers = '\n'.join(re.search(rf"(?m)^{name}\(\).*$", TEXT).group(0) for name in ('stage_rows', 'known_rows'))
         with tempfile.TemporaryDirectory() as tmp:
             Path(tmp, 'stage.log').write_text(log)
             Path(tmp, 'known.txt').write_text(known)
-            script = (helpers + '\nstage_rows "$1/stage.log" "$2" | grep -vxFf <(known_rows "$1/known.txt") | paste -sd, - || true\n'
-                      'stage_rows "$1/stage.log" "$2" | grep -xFf <(known_rows "$1/known.txt") | paste -sd, - || true\n')
-            out = subprocess.run(['bash', '-c', 'set -Eeuo pipefail\n' + script, 'x', tmp, status],
-                                 capture_output=True, text=True, check=True).stdout.split('\n')
-        return out[0], out[1]
+            script = function('classify_stage_rows') + '\nclassify_stage_rows "$1/stage.log" "$1/known.txt"'
+            out = subprocess.run(['bash', '-c', 'set -Eeuo pipefail\n' + script, 'x', tmp],
+                                 capture_output=True, text=True, check=True).stdout
+        records = [line.split() for line in out.splitlines()]
+        label = 'known' if status == 'FAIL' else 'stale'
+        return tuple(','.join(row for kind, row in records if kind == item) for item in ('new', label))
 
     def test_new_failure_is_not_hidden_and_known_failure_is_listed(self):
-        log = ('SEAM_EVIDENCE e2e_all scenario=C01.full status=FAIL seconds=1 cause=assertion\n'
+        log = ('SEAM_EVIDENCE e2e_all scenario=C01.full status=FAIL seconds=1 cause=assertion root=C01.full/admission\n'
                'SEAM_EVIDENCE e2e_all scenario=Q01a.full status=FAIL seconds=1 cause=assertion\n'
                'SEAM_EVIDENCE e2e_all scenario=C03.full status=PASS seconds=1\n')
-        known = '# comment\n\nC01.full assertion at C01.full/admission\nC03.full flaky\n'
+        known = '# comment\n\nC01.full assertion at C01.full/admission\nC03.full assertion at C03.full/admission\n'
         self.assertEqual(self.rows(log, 'FAIL', known), ('Q01a.full', 'C01.full'))
         self.assertEqual(self.rows(log, 'PASS', known)[1], 'C03.full')
 
     def test_missing_list_hides_nothing(self):
         log = 'SEAM_EVIDENCE e2e_all scenario=C01.full status=FAIL seconds=1\n'
         self.assertEqual(self.rows(log, 'FAIL', ''), ('C01.full', ''))
+
+    def test_known_failure_requires_the_recorded_cause_and_root(self):
+        known = 'C01.full assertion at C01.full/admission\nC20a.full blocked-by at S16a/oressa-reachable\n'
+        for row, cause, root in (
+            ('C01.full', 'transport', 'C01.full/admission'),
+            ('C01.full', 'assertion', 'C01.full/baseline'),
+            ('C20a.full', 'blocked-by', 'S16a/new-check'),
+        ):
+            with self.subTest(row=row, cause=cause, root=root):
+                log = f'SEAM_EVIDENCE e2e_all scenario={row} status=FAIL seconds=1 cause={cause} root={root}\n'
+                self.assertEqual(self.rows(log, 'FAIL', known), (row, ''))
+
+    def test_known_failure_requires_its_recorded_evidence_prefix(self):
+        known = 'C02.full no-progress at C02.full/walk; watch-aborted-before-verdict\n'
+        log = ('SEAM_EVIDENCE e2e_all scenario=C02.full status=FAIL seconds=1 '
+               'evidence=unclean-exit cause=no-progress root=C02.full/walk\n')
+        self.assertEqual(self.rows(log, 'FAIL', known), ('C02.full', ''))
+        self.assertEqual(self.rows(log.replace('unclean-exit', 'watch-aborted-before-verdict'), 'FAIL', known),
+                         ('', 'C02.full'))
 
     def test_seed_list_has_one_reason_per_row(self):
         listed = SOURCE.with_name('known_fail_rows.txt').read_text().splitlines()
