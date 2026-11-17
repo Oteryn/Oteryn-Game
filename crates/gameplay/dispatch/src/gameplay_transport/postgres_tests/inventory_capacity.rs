@@ -173,14 +173,18 @@ fn inventory_capacity_real_connection_postgres() -> TestResult {
         )
         .execute(&mut *tx)
         .await?;
+        // Retain the granted command's kind and actor: the scope-grant trigger decodes
+        // these fields even for this synthetic successor used to model a lost scope row.
         sqlx::query(
             "INSERT INTO game_runtime_scope_assignment_receipts (operation_key, command, scope_key, \
              ownership_generation, state, holder_node_id, holder_registration_revision, \
              source_revision, decision_identity, decided_at) \
-             SELECT sha256(a.operation_key), '\\x01'::bytea, a.scope_key, a.ownership_generation + 1, \
+             SELECT sha256(a.operation_key), r.command, a.scope_key, a.ownership_generation + 1, \
              a.state, a.holder_node_id, a.holder_registration_revision, \
              w.source_revision_high_water, 'invcap-superseded-assignment', a.decided_at \
-             FROM game_runtime_scope_assignments a, game_runtime_scope_assignment_writer w \
+             FROM game_runtime_scope_assignments a \
+             JOIN game_runtime_scope_assignment_receipts r ON r.operation_key = a.operation_key, \
+             game_runtime_scope_assignment_writer w \
              WHERE a.scope_key = $1 AND w.writer_id = 1",
         )
         .bind(&scope_key)

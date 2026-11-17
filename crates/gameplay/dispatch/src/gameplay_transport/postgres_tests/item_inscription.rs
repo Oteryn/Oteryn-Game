@@ -39,7 +39,10 @@ fn item_inscription_read_returns_carried_text_and_refuses_foreign_items_postgres
             let read=async |admitted:crate::gameplay_transport::connection::AdmittedSession,item:[u8;16]| owner.item_inscription_read(admitted,Some(ItemKey::Instance(item))).await.map(|bytes| Reply::decode(&bytes));
             admitted.continuity.selected_capabilities=SelectedCapabilities::select(owner.offered_capabilities(),&[4,6,115]).ok_or("mail offer")?;
             assert_eq!(read(admitted,id(72)).await,None,"unselected capability is refused");
-            admitted.continuity.selected_capabilities=SelectedCapabilities::select(owner.offered_capabilities(),&[4,6,115,511]).ok_or("inscription offer")?;
+            // This direct owner has entry-room movement; 511 is offered only on bundle Worlds.
+            // Model that negotiated offer explicitly instead of silently dropping 511.
+            admitted.continuity.selected_capabilities=SelectedCapabilities::select(crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,&[4,6,115,511]).ok_or("inscription offer")?;
+            assert!(admitted.continuity.selected_capabilities.contains(511));
             assert_eq!(read(admitted,id(72)).await,Some(Some(Reply{text:String::new(),max_length:1_999,writable:true})));
             let payload=encode_intent(&MailIntent::WriteText{item_handle:1,text:"One inscription: żółw 🐢".into()}).map_err(debug)?;
             assert_eq!(owner.mail_command(deps.actor,admitted,1,&payload,Some(ItemKey::Instance(id(72))),None).await,Some(MailOutcome::TextWritten));
