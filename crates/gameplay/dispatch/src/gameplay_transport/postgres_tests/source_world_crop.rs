@@ -191,7 +191,14 @@ pub(super) fn compiled_region(
             .all(|d| !(minimum.floor..=maximum.floor).contains(&d.floor)
                 || !(minimum.x..=maximum.x).contains(&d.x)
                 || !(minimum.y..=maximum.y).contains(&d.y)),
-        "unresolved source quest geometry"
+        "unresolved source quest geometry: {:?}",
+        compiled
+            .diagnostics
+            .iter()
+            .filter(|d| (minimum.floor..=maximum.floor).contains(&d.floor)
+                && (minimum.x..=maximum.x).contains(&d.x)
+                && (minimum.y..=maximum.y).contains(&d.y))
+            .collect::<Vec<_>>()
     );
     let pins = crate::map::BundlePins {
         digest: compiled.digest,
