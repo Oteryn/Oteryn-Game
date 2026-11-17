@@ -50,11 +50,15 @@ async fn premium(
         authority_valid_until_us: PREMIUM_T0 + 3_600_000_000,
         refresh_after_us: PREMIUM_T0 + 1_800_000_000,
     });
+    assert!(consumer.premium_current(
+        id(40),
+        production_server::premium::TrustedNow::new(PREMIUM_T0 + 60_000_000, 0)
+    ));
     h.root
         .latch_premium_activation("reward-level-test", PREMIUM_T0, PREMIUM_T0 + 60_000_000)
         .await
         .map_err(debug)?;
-    Ok(SpellPremiumCoordinator::new(
+    let coordinator = SpellPremiumCoordinator::new(
         consumer,
         Some(Arc::new(PremiumClock)),
         Some(PremiumActivation {
@@ -62,7 +66,20 @@ async fn premium(
             switch_over_us: PREMIUM_T0,
         }),
         Some(h.root.clone()),
-    ))
+    );
+    let mut tx = h.pool.begin().await?;
+    assert!(
+        crate::durability::quest_state::grizzly::GrizzlyPremiumGate::task_permitted(
+            &coordinator,
+            &mut tx,
+            id(40)
+        )
+        .await
+        .map_err(debug)?,
+        "fixture Premium gate must be current"
+    );
+    tx.rollback().await?;
+    Ok(coordinator)
 }
 
 #[test]
@@ -167,6 +184,11 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
             .catalogue()
             .clone(),
     );
+    sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
+        .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).execute(&h.pool).await?;
+    sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
+        .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(native.source_digest().as_slice())
+        .bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
     super::engnpc2_live_transport::fresh(h).await?;
     let (current, _) =
         crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
@@ -388,38 +410,6 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
     .bind(key)
     .fetch_one(&h.pool)
     .await?;
-    if (spirit || level <= 24) && outcome.disposition != NpcIntentDisposition::Ok {
-        let sequencer =
-            crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new();
-        let mut slot = sequencer.acquire(fence.character_id).await;
-        let weights = super::engitem_reward_text::Weights(native);
-        let diagnostic = slot
-            .commit_quest_reward(
-                &h.root,
-                &authority,
-                &h.node,
-                fence,
-                crate::durability::quest_state::QuestTransitionRequest {
-                    transition_key: callback.key.clone(),
-                    cause: crate::durability::quest_state::QuestCause::Command(
-                        super::engitem_reward_text::command(17001)?,
-                    ),
-                },
-                Arc::clone(owner.quest_catalogue.as_ref().ok_or("catalogue")?),
-                crate::durability::reward_claim_mint::QuestRewardAdmission {
-                    native,
-                    weights: &weights,
-                    fee_payment: None,
-                    actor_conditions: None,
-                    carried_use: None,
-                    creature_use: None,
-                    peer_use: None,
-                },
-                &owner.premium_coordinator,
-            )
-            .await;
-        return Err(format!("NPC rejected: unknown={}, receipts={receipts}, gold={gold}; durable diagnostic={diagnostic:?}", outcome.unknown).into());
-    }
     if !spirit && level > 24 {
         assert_eq!(outcome.disposition, NpcIntentDisposition::Rejected);
         assert_eq!(gold, 0);
@@ -432,7 +422,8 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
         assert_eq!(
             outcome.disposition,
             NpcIntentDisposition::Ok,
-            "conversation: {:?}",
+            "unknown={}, gold={gold}, receipts={receipts}, conversation: {:?}",
+            outcome.unknown,
             outcome
                 .conversation
                 .as_ref()
