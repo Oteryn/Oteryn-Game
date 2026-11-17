@@ -32,3 +32,15 @@ Crystal Lua was read at `201189f871d23597b82caf88fd611454a2ddefb8`, using the re
 OPEN-FACTS: current wiki page and spoiler revision IDs, premium and Feaster enforcement points, global access, Soul Mender delivery, item pool and counts, standalone quest XP, achievements, outfit addons, cooldown and Soul Cage expiry.
 
 PARTIAL: current-global comparison, placement and unique/action readback, detailed zone and boss progression, NPC callback parity, and runtime qualification for the historical differences. This pass produced an audit report. There are zero gameplay corrections and zero new regression cases.
+
+## Supplied MediaWiki capture, 2026-11-17
+
+The original API access issue is superseded by the wikitext supplied on the qfacts branch. The current comparison uses [quest curid 91798, oldid 1192477](https://tibia.fandom.com/?curid=91798&oldid=1192477) and [spoiler curid 91800, oldid 1213730](https://tibia.fandom.com/?curid=91800&oldid=1213730).
+
+- Entry requires premium, level 250 and completed Feaster of Souls. The hub dialogue is `task` → `yes`. The native hunt step checks level and acceptance. The exact premium and Feaster enforcement points still need end-to-end readback.
+- The spoiler confirms a maximum of five players, 20-hour access-boss cooldowns and a 68-hour final cooldown. The live native recipe's 72-hour value is a confirmed 4-hour discrepancy. Its generator deliberately captures the 72-hour donor literal, and existing Python and Rust tests assert that value. Implementing the change requires a runtime policy override or coordinated changes to the source-capture generator and assertions outside the listed ownership paths.
+- The 14-second Soul Cage expiry is confirmed. `crates/gameplay/encounters/src/bosses/goshnars_malice.rs:172` sets the live expiry to 40 seconds in Rust. This is distinct from the 40-second spawn cadence at line 98. Correcting the expiry requires an edit outside the listed ownership paths.
+- The spoiler confirms 20 Hazardous Phantoms, 25 of each of the five vocation apparitions, the Crater charging task, the Wasteland shrines and three Inferno raids. It specifies loss of access progress on leaving the corresponding area and fresh credit for all five access bosses per final attempt. The prior open readback of reset wiring and physical gates remains.
+- The quest grants one random Soul Set item once per character from the Brass-Shod Chest, the base Revenant outfit via Flickering Soul, and the Soul Mender achievement under unspecified conditions. Soul Mender is an achievement. The native pool and one-item count match the donor; the capture gives no numeric item IDs. Neither page specifies standalone quest XP or outfit addons. The spoiler also confirms a forcefield to Thais depot; its exact map placement remains to be verified.
+
+OPEN-FACTS for this capture: Soul Mender conditions, numeric global item IDs, standalone XP, and exact map selectors for remaining portals. The current cooldown and cage deadline are confirmed. Their corrections and dispatch regressions remain pending beyond the listed ownership paths.
