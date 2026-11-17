@@ -923,7 +923,7 @@ pub(super) async fn exercise(
                 ("mask-start", None, None, None),
                 ("mask", Some((3403, 5)), None, Some(1)),
             ],
-            154,
+            158,
         ),
         _ => return Err("unknown outfit story".into()),
     };
