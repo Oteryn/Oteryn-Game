@@ -133,6 +133,7 @@ fn callback(
         actor_kind: Default::default(),
         selector: Selector {
             position_aliases: Vec::new(),
+            area: None,
             ordinal: None,
             native: Some(NativeSelector {
                 position,

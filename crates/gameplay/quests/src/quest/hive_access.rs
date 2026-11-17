@@ -779,6 +779,7 @@ pub fn callbacks() -> Vec<Callback> {
         key:gate_key(index),quest:super::shared_world_progress::HIVE_QUEST.into(),trigger:Trigger::Use,
         selector:Selector {
         position_aliases: Vec::new(),
+        area: None,
         ordinal: None,native: None,position:Some(gate.position),unique:None,action:None,appearance:Some(gate.appearance)},
         lever:None,reversible:false,passages:vec![],teleport:Some(gate.position),storage:vec![],minimum_level:None, character_requirements: None,
         experience: None, world_change: None,monk_reward:None,offerings:vec![],item_on_target:None,return_on_failure:false,

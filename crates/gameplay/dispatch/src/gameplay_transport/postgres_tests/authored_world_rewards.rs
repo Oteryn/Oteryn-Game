@@ -51,6 +51,7 @@ pub(super) fn placeholder(at: Position) -> TestResult<Callback> {
         action: None,
         appearance: Some(100),
         position_aliases: Vec::new(),
+        area: None,
     };
     callback.lever = None;
     callback.reversible = false;

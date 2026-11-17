@@ -57,8 +57,10 @@
       "keys": [
         "oteryn:quest-callback/order-of-the-stag-boat-return",
         "oteryn:quest-callback/order-of-the-stag-boat-to-ada",
+        "oteryn:quest-callback/order-of-the-stag-certificate",
         "oteryn:quest-callback/order-of-the-stag-crypt-exit",
-        "oteryn:quest-callback/order-of-the-stag-mark-wall"
+        "oteryn:quest-callback/order-of-the-stag-mark-wall",
+        "oteryn:quest-callback/order-of-the-stag-mines"
       ]
     },
     {

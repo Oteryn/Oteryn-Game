@@ -32,6 +32,7 @@ pub(crate) fn reset_callback() -> super::world_callbacks::Callback {
     callback.trigger = Trigger::StepIn;
     callback.selector = Selector {
         position_aliases: Vec::new(),
+        area: None,
         ordinal: None,
         native: None,
         position: None,

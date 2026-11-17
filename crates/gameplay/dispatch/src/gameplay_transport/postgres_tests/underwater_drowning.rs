@@ -447,6 +447,7 @@ fn scenario_in_world(
                 disguise: None,
                 selector: Selector {
                     position_aliases: Vec::new(),
+                    area: None,
                     native: None,
                     ordinal: None,
                     position: Some(position(trigger)),

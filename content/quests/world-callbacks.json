@@ -7041,6 +7041,46 @@
       "success_message": "After a rough journey, you reach the shore of the Isle of Ada."
     },
     {
+      "key": "oteryn:quest-callback/order-of-the-stag-certificate",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32401,
+          "y": 32469,
+          "floor": -5
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/bounac_cathedral.lua:134-153",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/others/order_of_the_stag.lua:13-27"
+      ],
+      "success_message": "You have found an ice-covered certificate of ancestry.",
+      "item_reward": {
+        "item": "oteryn:item.tibia.i52586",
+        "count": 1,
+        "contents": []
+      }
+    },
+    {
       "key": "oteryn:quest-callback/order-of-the-stag-crypt-exit",
       "quest": "oteryn:quest.the_order_of_the_stag_quest",
       "trigger": "use",
@@ -7108,6 +7148,79 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:134-145",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/others/order_of_the_stag.lua:50-82"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/order-of-the-stag-mines",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33866,
+          "y": 32186,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "area": {
+          "rectangles": [
+            {
+              "floor": -6,
+              "x": [
+                33866,
+                33877
+              ],
+              "y": [
+                32186,
+                32195
+              ]
+            },
+            {
+              "floor": -7,
+              "x": [
+                33866,
+                33877
+              ],
+              "y": [
+                32186,
+                32195
+              ]
+            }
+          ],
+          "excluded": [
+            {
+              "x": 33872,
+              "y": 32192,
+              "floor": -7
+            },
+            {
+              "x": 33873,
+              "y": 32192,
+              "floor": -7
+            }
+          ]
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:56-80",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/others/order_of_the_stag.lua:13-27"
+      ],
+      "success_message": "Your questlog has been updated. You have found your way through the mines."
     },
     {
       "key": "oteryn:quest-callback/outlaw-camp-door",

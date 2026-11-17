@@ -32,6 +32,7 @@ pub(crate) fn callbacks() -> [Callback; 1] {
     ignite.quest = QUEST.into();
     ignite.selector = Selector {
         position_aliases: Vec::new(),
+        area: None,
         ordinal: None,
         native: Some(NativeSelector {
             position: SOURCE,

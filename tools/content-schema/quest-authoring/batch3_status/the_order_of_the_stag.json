@@ -33,7 +33,7 @@
   "content_counts": {
     "npc_rules_source_only": 99,
     "world_callbacks_enabled": 0,
-    "world_callbacks_held": 4,
+    "world_callbacks_held": 6,
     "death_rules_source_only": 1
   },
   "content_inputs": [
@@ -45,8 +45,8 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json",
-      "sha256": "5f53a5a7cf55177743f1c78a680f1b0bdc76fd40d70dd2145efdcd47059a059e",
-      "count": 4,
+      "sha256": "7dd5dca25a58bc8e279764b4eef4d7b93f295a11fc906dfab8b80f2c09586dd5",
+      "count": 6,
       "category": "world_callbacks_held"
     },
     {
@@ -190,12 +190,12 @@
         "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
         "import_mode": "RĘCZNIE"
       },
-      "implementation_status": "left_out",
+      "implementation_status": "source_held_callback_contract",
       "classification": "DERIVED",
       "delivery": "source_only_or_left_out",
       "new_runtime_callback": false,
-      "done": "",
-      "left_out": "Requires shared world startup/time/area selector or physical item mutation and cleanup. Existing callback format has no bounded area selector for the source mine region; its fixed128 callback limit is preserved. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "done": "STAGPOS: Position-only USE oteryn:quest-callback/order-of-the-stag-certificate retained in held-world/the_order_of_the_stag.json and projected into the active registry by batch3_world.py.",
+      "left_out": "",
       "question_urls": [
         "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
       ],
@@ -203,7 +203,10 @@
         "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
         "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
       ],
-      "implementation_paths": [],
+      "implementation_paths": [
+        "tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json",
+        "content/quests/world-callbacks.json"
+      ],
       "sources": [
         "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/bounac_cathedral.lua:134",
         "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
@@ -465,12 +468,12 @@
         "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
         "import_mode": "RĘCZNIE"
       },
-      "implementation_status": "left_out",
+      "implementation_status": "source_held_callback_contract",
       "classification": "DERIVED",
       "delivery": "source_only_or_left_out",
       "new_runtime_callback": false,
-      "done": "",
-      "left_out": "Requires shared world startup/time/area selector or physical item mutation and cleanup. Existing callback format has no bounded area selector for the source mine region; its fixed128 callback limit is preserved. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "done": "STAGPOS: Bounded STEP area selector (two floor rectangles, two excluded ramps, 238 tiles) oteryn:quest-callback/order-of-the-stag-mines retained in held-world/the_order_of_the_stag.json and projected into the active registry by batch3_world.py.",
+      "left_out": "",
       "question_urls": [
         "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
       ],
@@ -478,7 +481,10 @@
         "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
         "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
       ],
-      "implementation_paths": [],
+      "implementation_paths": [
+        "tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json",
+        "content/quests/world-callbacks.json"
+      ],
       "sources": [
         "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:56",
         "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",

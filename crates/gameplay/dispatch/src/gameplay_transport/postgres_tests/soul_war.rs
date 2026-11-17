@@ -720,6 +720,7 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
                     action: None,
                     appearance: None,
                     position_aliases: Vec::new(),
+                    area: None,
                 },
                 lever: None,
                 reversible: false,

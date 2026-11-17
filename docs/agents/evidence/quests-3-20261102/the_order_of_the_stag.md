@@ -11,7 +11,7 @@ Inwentaryzacja: **38 kroków**; AUTO 2, RĘCZNIE 36. Identyfikator kroku obejmuj
 | Rodzaj danych | Liczba | Znaczenie |
 | --- | ---: | --- |
 | Callbacki w aktywnym źródle starego formatu | 0 | Zakres pojedynczych interakcji; kompletność questa i końcowy head kwalifikuje się osobno. |
-| Pełne callbacki held | 4 | Zachowano parametry i źródła; wykluczone z aktywnego agregatu. |
+| Pełne callbacki held | 6 | Zachowano parametry i źródła; wykluczone z aktywnego agregatu. |
 | Reguły NPC source-only | 99 | Pełne teksty i reguły; bez nowego adaptera rozmów. |
 | Reguły śmierci source-only | 1 | runtime_enabled=false; parser i adapter C wycofane. |
 
@@ -95,7 +95,7 @@ Identyfikator: `a6347f3f27565cc1a5288730fbff49f0eb00504b3116276a4435ca04956105b9
 
 ### 004. Certificate
 
-Identyfikator: `a63bea771657219151cec09143fe44cd85f766bc73901cbe56e4a8bd169149b5`. Status: `left_out`. Rodzaj: `source_only_or_left_out`.
+Identyfikator: `a63bea771657219151cec09143fe44cd85f766bc73901cbe56e4a8bd169149b5`. Status: `source_held_callback_contract`. Rodzaj: `source_only_or_left_out`.
 
 | Pole | Wartość |
 | --- | --- |
@@ -103,8 +103,8 @@ Identyfikator: `a63bea771657219151cec09143fe44cd85f766bc73901cbe56e4a8bd169149b5
 | Wyzwalacz | chest(32401,32469,5) |
 | Warunek | stage==1 i addItem52586 sukces |
 | Efekt źródłowy | item52586; stage=2 |
-| Zrobione | — |
-| Left out | Requires shared world startup/time/area selector or physical item mutation and cleanup. Existing callback format has no bounded area selector for the source mine region; its fixed128 callback limit is preserved. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out. |
+| Zrobione | STAGPOS: Position-only USE oteryn:quest-callback/order-of-the-stag-certificate retained in held-world/the_order_of_the_stag.json and projected into the active registry by batch3_world.py. |
+| Left out | — |
 | QUESTION | [QUESTION 6589772967](https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967) |
 | ANSWER | [ANSWER 6589517205](https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205); [ANSWER 6589900671](https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671) |
 
@@ -114,6 +114,11 @@ Identyfikator: `a63bea771657219151cec09143fe44cd85f766bc73901cbe56e4a8bd169149b5
 - `zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22`
 - `zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49`
 - `zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37`
+
+Pliki implementacji/danych:
+
+- `tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json`
+- `content/quests/world-callbacks.json`
 
 ### 005. Wyjście z krypty
 
@@ -251,7 +256,7 @@ Identyfikator: `fa38151d16d54efa5002311be1b4543294034368c1b58cc20ade4f47629af7ff
 
 ### 011. Odkrycie kopalni
 
-Identyfikator: `9fced987b74941aaf2b970db6151b9659666ab32a97d679b26729973585e3dd6`. Status: `left_out`. Rodzaj: `source_only_or_left_out`.
+Identyfikator: `9fced987b74941aaf2b970db6151b9659666ab32a97d679b26729973585e3dd6`. Status: `source_held_callback_contract`. Rodzaj: `source_only_or_left_out`.
 
 | Pole | Wartość |
 | --- | --- |
@@ -259,8 +264,8 @@ Identyfikator: `9fced987b74941aaf2b970db6151b9659666ab32a97d679b26729973585e3dd6
 | Wyzwalacz | StepIn 238 pozycji: x33866..33877,y32186..32195,z6/7 oprócz2ramp z7 |
 | Warunek | stage==4 |
 | Efekt źródłowy | stage=5 |
-| Zrobione | — |
-| Left out | Requires shared world startup/time/area selector or physical item mutation and cleanup. Existing callback format has no bounded area selector for the source mine region; its fixed128 callback limit is preserved. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out. |
+| Zrobione | STAGPOS: Bounded STEP area selector (two floor rectangles, two excluded ramps, 238 tiles) oteryn:quest-callback/order-of-the-stag-mines retained in held-world/the_order_of_the_stag.json and projected into the active registry by batch3_world.py. |
+| Left out | — |
 | QUESTION | [QUESTION 6589772967](https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967) |
 | ANSWER | [ANSWER 6589517205](https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205); [ANSWER 6589900671](https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671) |
 
@@ -270,6 +275,11 @@ Identyfikator: `9fced987b74941aaf2b970db6151b9659666ab32a97d679b26729973585e3dd6
 - `zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22`
 - `zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49`
 - `zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37`
+
+Pliki implementacji/danych:
+
+- `tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json`
+- `content/quests/world-callbacks.json`
 
 ### 012. Zlecenie dziobów
 
@@ -834,7 +844,7 @@ Identyfikator: `c154d99ca1746d5b4f261119955b2caf2a616270f64af67009d62e7798fb2fad
 | Plik | SHA256 | Rekordy |
 | --- | --- | ---: |
 | `content/dialogues/quest-rules/quest-batch3-c-the_order_of_the_stag.json` | `59c313d88006e8ce720c358932b3932907c8b5900a9dcf30cdee9a5a91a3ae63` | 99 |
-| `tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json` | `5f53a5a7cf55177743f1c78a680f1b0bdc76fd40d70dd2145efdcd47059a059e` | 4 |
+| `tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json` | `7dd5dca25a58bc8e279764b4eef4d7b93f295a11fc906dfab8b80f2c09586dd5` | 6 |
 | `tools/content-schema/quest-authoring/batch3_c/deaths/the_order_of_the_stag.json` | `de84b8174627b5aadb26161effd7ef5c731a7172e7b374cda70d575ebc9e273d` | 1 |
 
 ## Decyzje zakresu

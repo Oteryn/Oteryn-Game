@@ -89,7 +89,7 @@ def outputs(root):
     paths += sorted((root / 'tools/content-schema/quest-authoring/batch3_c/world').glob('*.json'))
     shards = {path.relative_to(root).as_posix(): read(path) for path in paths}
     # QUESTPC: exact literal USEs and genuine read-only Stag guards now have
-    # production owners. Historical held records remain source evidence.
+    # production owners; STAGPOS adds the positional Stag writ and mines rows. Historical held records remain source evidence.
     choices = {
         'content/quests/world-callbacks-held/batch3-a-the_way_of_the_monk.json': None,
         'content/quests/world-callbacks-held/batch3-b-a_pirates_tail_quest.json': {'oteryn:quest-callback/pirates-tail-cheesy-exit'},
@@ -98,7 +98,8 @@ def outputs(root):
     for name, keys in choices.items():
         callbacks = [row for row in read(root / name)['callbacks']
                      if keys is None or row['key'] in keys]
-        expected = 1 if keys else 4
+        # STAGPOS adds the frozen-chest writ and the bounded mines setter.
+        expected = 1 if keys else 6 if name.endswith('the_order_of_the_stag.json') else 4
         if len(callbacks) != expected:
             raise ValueError(f'QUESTPC callback source changed: {name}')
         shards[name] = {'schema': 1, 'callbacks': callbacks}

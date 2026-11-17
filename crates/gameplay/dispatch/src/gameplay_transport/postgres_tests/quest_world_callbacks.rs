@@ -1241,6 +1241,8 @@ mod literal_uses;
 mod rotten_blood;
 #[path = "quest_world_callbacks/scenario.rs"]
 mod scenario;
+#[path = "quest_world_callbacks/stag_positional.rs"]
+mod stag_positional;
 #[path = "quest_world_callbacks/stateless.rs"]
 mod stateless;
 #[path = "quest_world_callbacks/unnatural_selection.rs"]
