@@ -143,7 +143,7 @@ fn scenario() -> TestResult {
         use sha2::{Digest, Sha256};
         let confirm = (3..100)
             .find(|command| {
-                let occurrence = super::super::npc_trade_command::derived(
+                let occurrence = crate::gameplay_transport::npc_trade_command::derived(
                     b"oteryn:npc-horse-rental:v1:0",
                     session,
                     *command,
