@@ -581,12 +581,16 @@ impl KillSettlementQueue {
         let Some((epoch, _)) = runtime.world_change_cycles() else {
             return;
         };
-        if !runtime
-            .world_spawn_cohort(target)
-            .is_some_and(|(key, _, _)| key == "the_mage_s_tower")
+        const RAGING_MAGE: &str = "oteryn:creature.raging_mage";
+        let is_mage = runtime.matches_live_creature_identity(target, RAGING_MAGE.as_bytes())
+            || (!runtime.contains_live_creature(target)
+                && runtime
+                    .companion_snapshot_including_dead(target)
+                    .is_ok_and(|view| view.state.policy.definition_key == RAGING_MAGE));
+        if !is_mage
             || !runtime
-                .companion_snapshot_including_dead(target)
-                .is_ok_and(|view| view.state.policy.definition_key == "oteryn:creature.raging_mage")
+                .world_spawn_cohort(target)
+                .is_some_and(|(key, _, _)| key == "the_mage_s_tower")
         {
             return;
         }
