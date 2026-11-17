@@ -8,8 +8,8 @@
 //! Source: `content/quests/world-callbacks.json` (boat to Ada, boat return, mark wall, crypt
 //! exit), `content/dialogues/quest-rules/quest-batch3-c-the_order_of_the_stag.json` (Kesar) and
 //! `content/quests/native-death-bindings/quest-batch3-c-the_order_of_the_stag.json` (Court Warlock).
-//! The quest needs level 250 and a premium account, and the node-boot fixture builds level 100
-//! only, so the setup step is a FAIL until a level-250 profile exists.
+//! The quest needs level 250 and a premium account; setup raises the character with the node-boot
+//! fixture's `sweep` build (knight, level 1000), the way Q01 uses the knight build.
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
@@ -179,16 +179,23 @@ async fn crossed(
     }
 }
 
-/// Setup: the character must be level 250. No fixture profile reaches it (level 100).
-async fn setup(client: &mut DevClientSession) -> TestResult<String> {
-    let level = full_row_q01::level(client).await?;
-    if level < QUEST_LEVEL {
+/// Setup: the character must be level 250. A lower character gets the fixture `sweep` build
+/// (knight, level 1000) through the fenced fixture, then a fresh admission.
+async fn setup(clients: &SeamClients<'_>, client: &mut DevClientSession) -> TestResult<String> {
+    let before = full_row_q01::level(client).await?;
+    if before >= QUEST_LEVEL {
+        return Ok(format!("level={before}"));
+    }
+    let after = full_row_q01::provision(clients, client, 0xe6, 1, "sweep", "Q02").await?;
+    if after < QUEST_LEVEL {
         return Err(format!(
-            "setup: needs level {QUEST_LEVEL}; the character is level {level} and every node-boot profile builds level 100 (qualification_fixture.rs)"
+            "setup: needs level {QUEST_LEVEL}; the sweep fixture build left the character at level {after} (before {before})"
         )
         .into());
     }
-    Ok(format!("level={level}"))
+    Ok(format!(
+        "level_before={before} level={after} profile=sweep reload=fresh_admission"
+    ))
 }
 
 /// Talk to Kesar as a player: walk to him and say hi, problem, help, help, help.
@@ -307,7 +314,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_character(clients, 0xe6, 1).await?;
     let mut row = Row { failed: 0 };
     let c = &mut client;
-    row.check("setup", setup(c).await);
+    row.check("setup", setup(clients, c).await);
     row.check(
         "boat_refusal",
         refused(

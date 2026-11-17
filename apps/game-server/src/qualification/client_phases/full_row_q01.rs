@@ -213,7 +213,31 @@ async fn setup(
     if chest.quest == "noble_armor" {
         below_level_check(client, planner, chest, label, before).await?;
     }
+    let after = provision(clients, client, chest.tag, chest.character, "knight", label).await?;
+    evidence(&format!(
+        "Q01_CHECK {label} setup:fixture_level={after} profile=knight level_before={before} reload=fresh_admission"
+    ));
+    if after < DOOR_LEVEL {
+        return Err(format!(
+            "{label} fixture left the character at level {after}, below {DOOR_LEVEL}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
+/// The node-boot fixture build for `profile` (fenced, as provision.py does it), then logout,
+/// a fresh admission and the level read back.
+pub(super) async fn provision(
+    clients: &SeamClients<'_>,
+    client: &mut oteryn_dev_client::DevClientSession,
+    tag: u8,
+    character: usize,
+    profile: &str,
+    label: &str,
+) -> TestResult<u32> {
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
+    let profile = profile.to_owned();
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
@@ -227,7 +251,7 @@ async fn setup(
                 "--session",
                 &session,
                 "--profile",
-                "knight",
+                &profile,
             ])
             .status()
     })
@@ -241,18 +265,8 @@ async fn setup(
         return Err(format!("{label} fixture setup logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
     // The old session is logged out; the fresh admission replaces it and is logged out by the row.
-    *client = connect_character(clients, chest.tag, chest.character).await?;
-    let after = level(client).await?;
-    evidence(&format!(
-        "Q01_CHECK {label} setup:fixture_level={after} profile=knight level_before={before} reload=fresh_admission"
-    ));
-    if after < DOOR_LEVEL {
-        return Err(format!(
-            "{label} fixture left the character at level {after}, below {DOOR_LEVEL}"
-        )
-        .into());
-    }
-    Ok(())
+    *client = connect_character(clients, tag, character).await?;
+    level(client).await
 }
 
 /// Evidence only: the route a fresh character would take from the start town, without a rope.
