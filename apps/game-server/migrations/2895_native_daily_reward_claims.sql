@@ -46,4 +46,15 @@ BEGIN
             WHERE character_id=v_character AND claim_key=v_plan #>> '{world_claim,key}'
               AND claimed_xact_id=pg_current_xact_id()
         ) WHEN game_quest_native_claim_plan(v_plan)$proof$);
+    -- Daily reclaims retain the original, immutable quest completion revision.
+    SELECT pg_get_functiondef('game_quest_reward_completion_exact()'::regprocedure) INTO STRICT body;
+    anchor := 's.completed_character_revision=v_receipt.committed_character_revision';
+    IF strpos(body, anchor) = 0 THEN
+        RAISE EXCEPTION 'native daily claim requires the existing quest completion proof';
+    END IF;
+    EXECUTE replace(body, anchor, $proof$(s.completed_character_revision=v_receipt.committed_character_revision
+        OR (game_quest_native_claim_plan(NEW.plan)
+            AND NEW.plan #> '{world_claim,daily}' = 'true'::jsonb
+            AND s.committed_character_revision=v_receipt.committed_character_revision
+            AND s.completed_character_revision<v_receipt.committed_character_revision))$proof$);
 END $migration$;
