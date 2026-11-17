@@ -72,5 +72,56 @@ class ProvisionTests(unittest.TestCase):
         self.assertIn("node_answer=b''", str(refused.exception))
 
 
+class SpawnTests(unittest.TestCase):
+    KEY = "oteryn:creature.rat"
+    IDENTITY = "0123456789abcdef0123456789abcdef"
+
+    def exchange(self, answer):
+        with tempfile.TemporaryDirectory() as directory:
+            path = str(Path(directory) / "control.sock")
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:
+                listener.bind(path)
+                listener.listen(1)
+                listener.settimeout(3)
+
+                def serve():
+                    with listener.accept()[0] as connection:
+                        connection.settimeout(3)
+                        request = bytearray()
+                        while chunk := connection.recv(128):
+                            request.extend(chunk)
+                            self.assertLessEqual(len(request), 256)
+                        self.assertEqual(request, f"spawn {SESSION} {self.KEY}\n".encode())
+                        connection.sendall(answer)
+
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    served = executor.submit(serve)
+                    try:
+                        return PROVISION.spawn(path, SESSION, self.KEY)
+                    finally:
+                        served.result(timeout=3)
+
+    def test_spawned_reply_is_returned(self):
+        reply = f"spawned {self.IDENTITY} 7\n".encode()
+        self.assertEqual(self.exchange(reply), f"spawned {self.IDENTITY} 7")
+
+    def test_refusal_retains_the_exact_node_answer(self):
+        with self.assertRaises(RuntimeError) as refused:
+            self.exchange(b"rejected reason=unknown_creature\n")
+        self.assertIn(
+            "node_answer=b'rejected reason=unknown_creature\\n'", str(refused.exception)
+        )
+
+    def test_invalid_requests_never_reach_the_socket(self):
+        for session, key in (
+            ("not-a-session", self.KEY),
+            (SESSION, ""),
+            (SESSION, "bad key"),
+            (SESSION, "key\n"),
+        ):
+            with self.assertRaises(ValueError):
+                PROVISION.spawn("/nonexistent.sock", session, key)
+
+
 if __name__ == "__main__":
     unittest.main()
