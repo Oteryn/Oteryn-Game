@@ -23,6 +23,20 @@ fn m06q_quest_door_resolves_the_named_durable_quest_track() {
     assert!(copy.meets_door_storage(10089));
 }
 
+#[test]
+fn rathleton_access_door_admits_access_door_holders_without_a_citizen_rank() {
+    // Crystal 201189f8 door_quest.lua:65-72 + quest_door.lua onUse: action 50403 opens on
+    // `getStorageValue(50403) ~= -1`; strange_pipe.lua:62 sets it; no rank check.
+    let mut copy = QuestStateCopy::default();
+    let track = "oteryn:quest-progress/hero_rathleton/access_door";
+    let rank = "oteryn:quest-progress/chosen/rathleton-quest/rank";
+    copy.tracks.insert(rank.into(), 4);
+    assert!(!copy.meets_door_storage(50403));
+    copy.tracks.insert(rank.into(), 0);
+    copy.tracks.insert(track.into(), 1);
+    assert!(copy.meets_door_storage(50403));
+}
+
 fn id(tag: u8) -> [u8; 16] {
     [tag, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag]
 }
