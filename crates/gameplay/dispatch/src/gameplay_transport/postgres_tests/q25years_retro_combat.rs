@@ -138,6 +138,9 @@ fn cast(runtime: &mut ChannelRuntimeV1, issuer: ExactActorRef, spell: &str) -> T
         .map_err(debug)?,
         intent: AiAbilityAdapter::normalize(&actor, &[&actor]).map_err(debug)?,
     };
-    assert!(super::super::retro_combat::execute(runtime, &proposal, 1_000_000).map_err(debug)?);
+    assert!(
+        crate::gameplay_transport::retro_combat::execute(runtime, &proposal, 1_000_000)
+            .map_err(debug)?
+    );
     Ok(())
 }
