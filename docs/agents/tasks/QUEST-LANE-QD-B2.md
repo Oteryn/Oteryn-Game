@@ -1,6 +1,7 @@
 # QUEST-LANE-QD-B2: travel, door and trigger quests, batch 2
 
-- Branch: `claude/happy-davinci-ijz3wy-qd-b2` (from `origin/main` a3048eb3); batch 1 is
+- Branch: `claude/happy-davinci-ijz3wy-qd-b2`. The first batch 2 commit has parent
+  `e2152d050038cecdb3728c222af2ac184e1cac5a`. Batch 1 is
   `QUEST-LANE-QD.md` on `claude/happy-davinci-ijz3wy-qd` (PR #3264). No PR is opened by this lane.
 - Done-bar (owner): the quest passes a real-dispatch PostgreSQL case and its rewards and
   mechanics match Tibia global (TibiaWiki). Global wins over a Canary/Crystal donor.
@@ -25,6 +26,15 @@ Notes:
   profiles were regenerated with `register_spell_families.py`.
 - Gap (P3 backlog): the spoiler notes that Jerom pays 200 gp when the necklace was lost; the
   Crystal donor and this route have no such branch.
+
+## Validation
+
+- The quest reward, greeting ownership, NPC item custody and item profile Python suites
+  passed all 55 cases. `cargo fmt --check` passed.
+- Native regeneration updated the equipment custody census and the Grizzly room inventory
+  input digest for the two Troll Sabotage items. The World `pin-check` passed.
+- Run the dispatch cases with the two PostgreSQL shard build files from PR #3272
+  applied locally on the pushed candidate.
 
 ## Not in qd
 
