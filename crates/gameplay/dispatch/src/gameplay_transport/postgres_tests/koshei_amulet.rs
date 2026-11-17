@@ -360,8 +360,21 @@ pub(super) async fn exercise_ground(
         before, after,
         "target and contents retain their native lifecycle"
     );
-    let effects = owner.bundle_map().ok_or("map")?.facts.movement_effects_since(0);
-    assert_eq!(effects.iter().filter(|(_,at,effect)| *effect == 14 && at.x == ground_at.x && at.y == ground_at.y && at.floor == ground_at.floor).count(),1);
+    let effects = owner
+        .bundle_map()
+        .ok_or("map")?
+        .facts
+        .movement_effects_since(0);
+    assert_eq!(
+        effects
+            .iter()
+            .filter(|(_, at, effect)| *effect == 14
+                && at.x == ground_at.x
+                && at.y == ground_at.y
+                && at.floor == ground_at.floor)
+            .count(),
+        1
+    );
 
     Ok(())
 }

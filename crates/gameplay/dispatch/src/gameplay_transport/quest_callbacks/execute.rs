@@ -1601,7 +1601,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, snapshot.position()),
             );
         }
-        if let Some(effect) = callback.effects.target_magic && let Some((position, _)) = crate::map::view::placement_of(key) {
+        if let Some(effect) = callback.effects.target_magic
+            && let Some((position, _)) = crate::map::view::placement_of(key)
+        {
             map.facts.emit_movement_effect(position, effect);
         }
         if let Some(magic) = &callback.effects.magic {

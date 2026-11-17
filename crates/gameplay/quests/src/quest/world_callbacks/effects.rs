@@ -398,8 +398,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
-    if effects.target_magic.is_some_and(|effect| effect == 0 || effect > 255 || callback.selector.target_definition.is_none())
-        || inputs.len() > 8
+    if effects.target_magic.is_some_and(|effect| {
+        effect == 0 || effect > 255 || callback.selector.target_definition.is_none()
+    }) || inputs.len() > 8
         || unique.len() != inputs.len()
         || inputs.iter().any(|input| {
             input.count == 0
