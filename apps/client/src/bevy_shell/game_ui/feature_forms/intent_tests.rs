@@ -682,3 +682,58 @@ fn hireling_management_buttons_map_to_configuration_purchases() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn oversized_replacements_reject_the_entire_form_action() -> TestResult {
+    use crate::play::PlayLink;
+    for (title, open, length, actions) in [
+        (
+            "Guild bank",
+            PlayLink::guild_bank_open as fn(&PlayLink),
+            8000,
+            &[1, 2][..],
+        ),
+        ("Timed items", PlayLink::timed_item_open, 65, &[0]),
+        ("House move-out", PlayLink::house_move_out_open, 513, &[1]),
+        ("Training", PlayLink::training_open, 8000, &[1]),
+        (
+            "Character information",
+            PlayLink::character_info_open,
+            8000,
+            &[0],
+        ),
+        ("Guild wars", PlayLink::guild_war_open, 8000, &[0]),
+        ("Staff authorized actions", PlayLink::staff_open, 8193, &[0]),
+    ] {
+        let (mut app, mut commands, _) = capable()?;
+        with_link(&app, |link| {
+            if title == "Guild bank" {
+                link.guild_bank_edit(1, "100".into());
+            }
+            open(link);
+        })?;
+        app.update();
+        let form = with_link(&app, |link| {
+            FeatureForm::all()
+                .iter()
+                .copied()
+                .find(|form| form.title(link) == title)
+        })?
+        .ok_or("missing form")?;
+        let before = with_link(&app, |link| link.feature_form_view(form))?;
+        assert!(before.open && !before.pending, "{title}");
+        drain(&mut commands);
+        // A valid sibling draft makes partial application observable even when
+        // the feature would refuse the command for a separate reason.
+        set(&mut app, 0, "01010101010171018101010101010101");
+        set(&mut app, 1, &"9".repeat(length));
+        for &action in actions {
+            click(&mut app, Some(action))?;
+            assert!(commands.try_recv().is_err(), "{title} action {action}");
+            let after = with_link(&app, |link| link.feature_form_view(form))?;
+            assert_eq!(after.fields, before.fields, "{title} action {action}");
+            assert_eq!(after.text, before.text, "{title} action {action}");
+        }
+    }
+    Ok(())
+}
