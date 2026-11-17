@@ -1,5 +1,6 @@
 //! Ordinary windows stack by focus inside one z band, below dialogs that stay modal.
 //! The frontmost window is the one the modal fence lets act, so Escape closes it first.
+use super::WindowId;
 use crate::bevy_shell::game_ui::GameModal;
 use bevy::{
     ecs::system::SystemParam,
@@ -12,29 +13,77 @@ use bevy::{
 /// 100), below the dialogs a window opens (150 and up).
 pub(in crate::bevy_shell) const BAND: (i32, i32) = (110, 139);
 
-/// The stacking node of an ordinary window: a full-screen overlay that lets the pointer
-/// through to the windows behind it.
-#[derive(Component, Clone, Copy, Debug, Default)]
-#[require(Pickable = THROUGH, GlobalZIndex)]
-pub(in crate::bevy_shell) struct WindowLayer;
+/// The stacking node of an ordinary window, named by its `WindowLayouts` id: either a
+/// full-screen overlay holding the window as its first child, or the window itself.
+#[derive(Component, Clone, Copy, Debug)]
+#[require(GlobalZIndex)]
+pub(in crate::bevy_shell) struct WindowLayer(pub &'static str);
 
+/// A window overlay lets the pointer through to the windows and the world behind it.
 const THROUGH: Pickable = Pickable {
     should_block_lower: false,
     is_hoverable: false,
 };
 
-/// Open windows from back to front.
+/// Open windows from back to front, by id, so a window rebuilt on refresh keeps its place.
 #[derive(Resource, Default, Debug)]
-pub(in crate::bevy_shell) struct WindowStack(Vec<Entity>);
+pub(in crate::bevy_shell) struct WindowStack(Vec<(&'static str, Entity)>);
 
 impl WindowStack {
     pub(in crate::bevy_shell) fn front(&self) -> Option<Entity> {
-        self.0.last().copied()
+        self.0.last().map(|(_, entity)| *entity)
     }
     fn raise(&mut self, layer: Entity) {
-        if self.front() != Some(layer) {
-            self.0.retain(|entity| *entity != layer);
-            self.0.push(layer);
+        if self.front() != Some(layer)
+            && let Some(index) = self.0.iter().position(|(_, entity)| *entity == layer)
+        {
+            let window = self.0.remove(index);
+            self.0.push(window);
+        }
+    }
+}
+
+fn overlay(node: &Node) -> bool {
+    node.width == percent(100.) && node.height == percent(100.)
+}
+
+type Layers<'w, 's> = Query<
+    'w,
+    's,
+    (
+        Entity,
+        &'static WindowLayer,
+        &'static Node,
+        Option<&'static Children>,
+        Option<&'static Pickable>,
+    ),
+>;
+
+/// Gives each window layer its layout id and grips: an overlay's first child is the window
+/// and the overlay itself lets the pointer through; otherwise the layer is the window.
+pub(in crate::bevy_shell) fn adopt(
+    mut commands: Commands,
+    layers: Layers,
+    panels: Query<Has<WindowId>, With<Node>>,
+) {
+    for (entity, layer, node, children, pickable) in &layers {
+        let window = if overlay(node) {
+            if pickable != Some(&THROUGH) {
+                commands.entity(entity).insert(THROUGH);
+            }
+            children.and_then(|children| {
+                if children.iter().any(|child| panels.get(child) == Ok(true)) {
+                    return None;
+                }
+                children.iter().find(|child| panels.contains(*child))
+            })
+        } else {
+            Some(entity)
+        };
+        if let Some(window) = window
+            && panels.get(window) == Ok(false)
+        {
+            commands.entity(window).insert(WindowId(layer.0));
         }
     }
 }
@@ -107,20 +156,24 @@ pub(in crate::bevy_shell) fn raise_on_press(
 /// layout, so the modal fence of the same frame already sees the new front window.
 pub(in crate::bevy_shell) fn project(
     mut stack: ResMut<WindowStack>,
-    windows: Query<Entity, With<WindowLayer>>,
+    windows: Query<(Entity, &WindowLayer)>,
     layers: Query<(), With<WindowLayer>>,
     tree: Tree,
     parents: Query<&ChildOf>,
     focus: Option<Res<InputFocus>>,
     mut depths: Query<&mut GlobalZIndex, With<WindowLayer>>,
 ) {
-    let open: Vec<Entity> = windows
+    let open: Vec<(&'static str, Entity)> = windows
         .iter()
-        .filter(|window| shown(*window, &tree))
+        .filter(|(window, _)| shown(*window, &tree))
+        .map(|(window, layer)| (layer.0, window))
         .collect();
-    if stack.0.iter().any(|window| !open.contains(window)) {
-        stack.0.retain(|window| open.contains(window));
+    for (id, entity) in &mut stack.0 {
+        if let Some((_, rebuilt)) = open.iter().find(|(open, _)| open == id) {
+            *entity = *rebuilt;
+        }
     }
+    stack.0.retain(|window| open.contains(window));
     for window in open {
         if !stack.0.contains(&window) {
             stack.0.push(window);
@@ -134,7 +187,7 @@ pub(in crate::bevy_shell) fn project(
     {
         stack.raise(layer);
     }
-    for (index, window) in stack.0.iter().enumerate() {
+    for (index, (_, window)) in stack.0.iter().enumerate() {
         let depth = GlobalZIndex((BAND.0 + index as i32).min(BAND.1));
         if let Ok(mut current) = depths.get_mut(*window)
             && *current != depth

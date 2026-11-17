@@ -29,7 +29,7 @@ pub(in crate::bevy_shell) fn install(app: &mut App) {
         .add_systems(
             PostUpdate,
             (
-                (project, stack::project)
+                (stack::adopt, project, stack::project)
                     .chain()
                     .before(bevy::ui::UiSystems::Layout),
                 resize::anchor.after(bevy::ui::UiSystems::Layout),
@@ -58,11 +58,34 @@ const fn geometry(width: f32, height: Option<f32>, min: [f32; 2]) -> Geometry {
 
 /// Ordered by window id.
 pub(in crate::bevy_shell) const WINDOWS: &[(&str, Geometry)] = &[
+    ("bestiary", geometry(940., Some(650.), [660., 460.])),
+    ("bosstiary", geometry(650., None, [460., 300.])),
     ("cyclopedia", geometry(700., Some(538.), [560., 400.])),
+    ("cyclopedia_items", geometry(820., Some(620.), [580., 430.])),
+    ("cyclopedia_map", geometry(700., None, [490., 300.])),
+    ("depot", geometry(640., None, [450., 300.])),
+    ("forge", geometry(760., None, [530., 300.])),
+    ("gem_atelier", geometry(760., None, [530., 300.])),
+    ("highscores", geometry(1050., Some(620.), [740., 430.])),
+    ("houses", geometry(540., None, [380., 300.])),
+    ("imbuing", geometry(760., None, [530., 300.])),
+    ("journal", geometry(785., Some(620.), [550., 430.])),
     ("market", geometry(1000., Some(634.), [800., 480.])),
     ("npc", geometry(600., None, [420., 350.])),
     ("options", geometry(685., Some(534.), [560., 420.])),
+    ("outfit", geometry(760., None, [530., 300.])),
+    ("prey", geometry(860., None, [600., 300.])),
+    ("proficiency", geometry(1000., Some(600.), [700., 420.])),
+    ("quick_loot", geometry(700., None, [490., 300.])),
+    ("reward_wall", geometry(760., None, [530., 300.])),
+    ("satellite_map", geometry(500., None, [350., 300.])),
     ("selection", geometry(745., None, [560., 300.])),
+    ("stash", geometry(620., None, [430., 300.])),
+    ("store", geometry(940., Some(620.), [660., 430.])),
+    ("store_inbox", geometry(620., None, [430., 300.])),
+    ("task_board", geometry(650., None, [460., 300.])),
+    ("team_finder", geometry(720., None, [500., 300.])),
+    ("wheel", geometry(780., None, [550., 300.])),
 ];
 
 #[derive(Clone, Copy, Debug, PartialEq)]

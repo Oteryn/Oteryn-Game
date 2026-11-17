@@ -542,7 +542,10 @@ fn reset_window_layout_restores_global_position_size_and_zoom_and_saves() -> Tes
 }
 
 mod stacking {
-    use super::super::{WindowLayer, WindowStack, install, menu, stack::BAND};
+    use super::super::{
+        MAX_ZOOM, MIN_ZOOM, WINDOWS, WindowId, WindowLayer, WindowLayouts, WindowStack, install,
+        menu, resize::ResizeGrip, stack::BAND,
+    };
     use super::TestResult;
     use crate::bevy_shell::{
         game_ui::{GameModal, modal::ModalGuard},
@@ -597,24 +600,25 @@ mod stacking {
         app
     }
 
-    /// A full-screen window overlay with its panel, as the market and the cyclopedia build them.
+    /// A full-screen window overlay with its panel, as the market and the bestiary build them.
     fn window(app: &mut App, id: &'static str, z: i32) -> (Entity, Entity) {
         let overlay = app
             .world_mut()
             .spawn((
                 GameModal,
-                WindowLayer,
+                WindowLayer(id),
                 GlobalZIndex(z),
                 Node {
                     display: Display::None,
+                    width: percent(100.),
+                    height: percent(100.),
                     ..default()
                 },
             ))
             .id();
-        let (_, panel) = super::super::window(id, Node::default());
         let panel = app
             .world_mut()
-            .spawn((super::super::WindowId(id), panel, ChildOf(overlay)))
+            .spawn((Node::default(), ChildOf(overlay)))
             .id();
         (overlay, panel)
     }
@@ -876,6 +880,87 @@ mod stacking {
             0,
             "a press outside closes the menu"
         );
+        Ok(())
+    }
+
+    #[test]
+    fn every_registered_window_opens_as_a_stacked_resizable_window_with_bounded_zoom() -> TestResult
+    {
+        let mut app = app();
+        app.world_mut().spawn((
+            Window {
+                resolution: bevy::window::WindowResolution::new(4000, 3000),
+                ..default()
+            },
+            bevy::window::PrimaryWindow,
+        ));
+        let mut opened = Vec::new();
+        for (index, (id, _)) in WINDOWS.iter().enumerate() {
+            let (overlay, panel) = window(&mut app, id, 150 + index as i32);
+            show(&mut app, overlay)?;
+            opened.push((*id, overlay, panel));
+        }
+        for (id, overlay, panel) in opened {
+            assert_eq!(app.world().get::<WindowId>(panel).map(|id| id.0), Some(id));
+            assert!(app.world().get::<WindowLayer>(overlay).is_some(), "{id}");
+            let grips = app.world().get::<Children>(panel).map_or(0, |children| {
+                children
+                    .iter()
+                    .filter(|child| app.world().get::<ResizeGrip>(*child).is_some())
+                    .count()
+            });
+            assert_eq!(grips, 8, "{id} grips");
+            let z = depth(&app, overlay)?;
+            assert!((BAND.0..=BAND.1).contains(&z), "{id} at {z}");
+            let mut layouts = app.world_mut().resource_mut::<WindowLayouts>();
+            let layout = layouts.0.get_mut(id).ok_or(format!("{id} layout"))?;
+            layout.set_zoom(0.1, Vec2::splat(4000.));
+            assert_eq!(layout.zoom, MIN_ZOOM, "{id}");
+            layout.set_zoom(9., Vec2::splat(4000.));
+            assert_eq!(layout.zoom, MAX_ZOOM, "{id}");
+            app.update();
+            let node = app.world().get::<Node>(panel).ok_or("panel")?;
+            let min = app
+                .world()
+                .resource::<WindowLayouts>()
+                .0
+                .get(id)
+                .map(|layout| layout.min())
+                .ok_or("layout")?;
+            assert_eq!(
+                (node.min_width, node.min_height),
+                (px(min.x), px(min.y)),
+                "{id}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn bestiary_prey_and_market_stack_raise_on_click_and_close_front_to_back() -> TestResult {
+        let mut app = app();
+        let (bestiary, bestiary_panel) = window(&mut app, "bestiary", 165);
+        let (prey, _) = window(&mut app, "prey", 158);
+        let (market, _) = window(&mut app, "market", 157);
+        for overlay in [bestiary, prey, market] {
+            show(&mut app, overlay)?;
+        }
+        assert_eq!(app.world().resource::<WindowStack>().front(), Some(market));
+
+        press(&mut app, bestiary_panel);
+        assert_eq!(
+            app.world().resource::<WindowStack>().front(),
+            Some(bestiary)
+        );
+        assert!(depth(&app, bestiary)? > depth(&app, market)?);
+        assert!(depth(&app, market)? > depth(&app, prey)?);
+
+        escape(&mut app);
+        assert!(!open(&app, bestiary) && open(&app, market) && open(&app, prey));
+        escape(&mut app);
+        assert!(!open(&app, market) && open(&app, prey));
+        escape(&mut app);
+        assert!(!open(&app, prey));
         Ok(())
     }
 }

@@ -81,7 +81,7 @@ fn setup(mut commands: Commands) {
     commands.spawn((
         Overlay,
         GameModal,
-        crate::bevy_shell::ui::window_layout::WindowLayer,
+        crate::bevy_shell::ui::window_layout::WindowLayer("market"),
         GlobalZIndex(157),
         Node {
             display: Display::None,

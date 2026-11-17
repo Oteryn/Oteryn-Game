@@ -178,6 +178,7 @@ fn project(
             BackgroundColor(Color::srgb(0.08, 0.08, 0.08)),
             GlobalZIndex(20),
             super::GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("satellite_map"),
         ))
         .id();
     let title = commands

@@ -14,7 +14,7 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins) -> Widgets {
     let overlay = commands
         .spawn((
             GameModal,
-            crate::bevy_shell::ui::window_layout::WindowLayer,
+            crate::bevy_shell::ui::window_layout::WindowLayer("cyclopedia"),
             GlobalZIndex(165),
             TabGroup {
                 order: 2,

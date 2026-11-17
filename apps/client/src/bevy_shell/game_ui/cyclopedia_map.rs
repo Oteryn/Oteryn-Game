@@ -207,6 +207,7 @@ fn project(
             BackgroundColor(Color::srgb(0.08, 0.08, 0.08)),
             GlobalZIndex(20),
             GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("cyclopedia_map"),
             bevy::input_focus::tab_navigation::TabGroup {
                 order: 2,
                 modal: true,
