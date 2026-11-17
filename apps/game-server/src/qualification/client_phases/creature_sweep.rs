@@ -565,7 +565,7 @@ async fn hunt(
         .map_err(|error| failure("spawn", "precondition", format!("stats:{error}")))?;
 
     let name = definition.name.as_str();
-    let named = |entry: &oteryn_dev_client::EntityRef| {
+    let named = |entry: &oteryn_dev_client::WorldSpatialEntity| {
         entry.kind == EntityKind::Creature
             && matches!(entry.detail, EntityDetail::Actor { .. })
             && entry.display_name.is_some_and(|label| {
