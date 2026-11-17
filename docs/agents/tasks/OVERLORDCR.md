@@ -48,8 +48,10 @@ Passed: `cargo clippy --locked -p oteryn-gameplay-dispatch --all-targets --all-f
 | Duplicate settlement creates no duplicate | Authority replay and later-death checks `authority_cases/overlordcr.rs:153-208`; dispatch `srvenc_source_deaths.rs:667` | Owner replay passed in PG; full death-path case not executed |
 | Four overlords map to donor key | `quest/source_deaths.rs:161-190`; authority `overlordcr.rs:52-64` | All four owner transactions passed in PG |
 
-Clippy for the touched server authority target is still running; pin/lock verification follows it. The embedded catalogue was loaded successfully for each of the four executed PG mappings, so catalogue loading is already covered by that proof.
+Clippy for the touched server authority target and pin/lock verification passed. The embedded catalogue was loaded successfully for each of the four executed PG mappings, so catalogue loading is already covered by that proof.
 
 Passed: `cargo clippy --locked -p oteryn-game-server --test character_authority_postgres --quiet -- -D warnings` (exit 0).
 
-Passed final checks: `oteryn-world-bundle-compiler pin-check . /tmp/overlordcr-pin-check` (oteryn pin digest `9aa91f7abe59f92ff7b159151f9588cb6fd42f0bfb8ef1826520e48d9921a82b`), `cargo metadata --locked --no-deps --format-version 1`, `cargo fmt --all -- --check`, explicit rustfmt checks for every touched Rust file, and `git diff --check`. No generated pins or lockfile were changed. Dispatch clippy is being refreshed after the final test-module formatting change.
+Passed final checks: `oteryn-world-bundle-compiler pin-check . /tmp/overlordcr-pin-check` (oteryn pin digest `9aa91f7abe59f92ff7b159151f9588cb6fd42f0bfb8ef1826520e48d9921a82b`), `cargo metadata --locked --no-deps --format-version 1`, `cargo fmt --all -- --check`, explicit rustfmt checks for every touched Rust file, and `git diff --check`. No generated pins or lockfile were changed. The final all-target/all-feature dispatch clippy refresh after that formatting change passed (exit 0).
+
+Final qualification remains partial only for execution of the full dispatch lethal-path PG cases and behavioral red-to-green evidence. All authored cases remain enabled; the supplemental owner proof, all requested touched-code clippy checks, formatting, pin/lock verification and governance checks passed. No PR was created, no force push was used, and no origin/main merge was performed.
