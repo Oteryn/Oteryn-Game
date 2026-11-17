@@ -77,7 +77,7 @@ pub(super) fn world(
                     "/../../../content/world/placements/region-z14-x126-y124.b3"
                 )),
                 region: (14, 126, 124),
-                bounds: (32452, 31963, 32457, 31968),
+                bounds: (32452, 31963, 32458, 31969),
                 start: (32455, 31966),
                 expected: vec![
                     ExpectedTile {
