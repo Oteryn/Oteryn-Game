@@ -277,7 +277,10 @@ fn scenario(case: Case) -> TestResult {
             supported.as_slice(),
             "the physical reward fixture must negotiate every required capability"
         );
-        if matches!(case, Case::NativeDeath | Case::ProductionNativeDeath | Case::LargePrivateCorpse) {
+        if matches!(
+            case,
+            Case::NativeDeath | Case::ProductionNativeDeath | Case::LargePrivateCorpse
+        ) {
             let creature = if matches!(case, Case::ProductionNativeDeath) {
                 "oteryn:creature.grand_mother_foulscale"
             } else {
@@ -441,7 +444,9 @@ fn scenario(case: Case) -> TestResult {
             )
             .await
             .map_err(|error| format!("W03 expiry scenario: {error}"))?,
-            Case::NativeDeath | Case::ProductionNativeDeath | Case::LargePrivateCorpse => return Err("native scenario already returned".into()),
+            Case::NativeDeath | Case::ProductionNativeDeath | Case::LargePrivateCorpse => {
+                return Err("native scenario already returned".into());
+            }
             Case::OfflineReward => {
                 assert_eq!(
                     sqlx::query_scalar::<_, i32>(
