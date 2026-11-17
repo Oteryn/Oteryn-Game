@@ -449,14 +449,23 @@ impl NpcRuleCatalog {
                 let definition = native
                     .track(&track.key)
                     .ok_or_else(|| NpcRuleError::MissingTrack(track.key.clone()))?;
+                let predecessor_start = || {
+                    native
+                        .npc_legacy
+                        .get(&track.quest)
+                        .is_some_and(|(_, defaults)| defaults.get(&track.key) == Some(&0))
+                        || native
+                            .predecessors
+                            .get(&track.quest)
+                            .is_some_and(|entries| {
+                                entries
+                                    .iter()
+                                    .any(|entry| entry.defaults.get(&track.key) == Some(&0))
+                            })
+                };
                 if definition.quest != track.quest
                     || (definition.initial != track.initial
-                        && !(definition.initial == 0
-                            && track.initial == -1
-                            && native
-                                .npc_legacy
-                                .get(&track.quest)
-                                .is_some_and(|(_, defaults)| defaults.get(&track.key) == Some(&0))))
+                        && !(definition.initial == 0 && track.initial == -1 && predecessor_start()))
                     || writes
                         .get(&track.key)
                         .is_some_and(|&(min, max)| definition.min > min || definition.max < max)
@@ -796,7 +805,7 @@ fn extend_from(
     source: &NpcRuleCatalog,
 ) -> Result<super::QuestStateCatalogue, String> {
     let mut legacy = catalogue.npc_legacy.clone();
-    let predecessors = catalogue.predecessors.clone();
+    let mut predecessors = catalogue.predecessors.clone();
     for program in source.programs() {
         let quest = &program.document.quest;
         if program.document.schema == 1
@@ -812,18 +821,20 @@ fn extend_from(
                 || additive_legacy_owner(program))
             && let Some(hash) = catalogue.definition_hash(quest)
         {
-            legacy.insert(
-                quest.clone(),
-                (
-                    hash,
-                    catalogue
-                        .tracks
-                        .values()
-                        .filter(|track| &track.quest == quest)
-                        .map(|track| (track.key.clone(), track.initial))
-                        .collect(),
-                ),
-            );
+            let defaults = catalogue
+                .tracks
+                .values()
+                .filter(|track| &track.quest == quest)
+                .map(|track| (track.key.clone(), track.initial))
+                .collect();
+            if quest == "oteryn:quest.the_postman_missions_quest" {
+                predecessors
+                    .entry(quest.clone())
+                    .or_default()
+                    .push(super::NpcDefinitionPredecessor { hash, defaults });
+            } else {
+                legacy.insert(quest.clone(), (hash, defaults));
+            }
         }
     }
     let mut tracks = catalogue.tracks.clone();

@@ -56,6 +56,8 @@ impl DurabilityRoot {
         premium: &G,
         admission: NpcTeleportAdmission,
     ) -> Result<NpcProgramCommit> {
+        let source = NpcRuleCatalog::runtime_for_npc(&request.npc)
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
         self.commit_npc_program_source(
             authority,
             node,
@@ -65,7 +67,7 @@ impl DurabilityRoot {
             catalogue,
             items,
             premium,
-            NpcRuleCatalog::runtime().map_err(|_| CharacterProgressionError::InvalidInput)?,
+            source,
             Some(admission),
         )
         .await
@@ -82,7 +84,9 @@ pub fn preview_teleport(
     Option<NpcTeleportPlan>,
     oteryn_gameplay_quests::quest::npc_rules::NpcRuleError,
 > {
-    let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
+    let Some(source) =
+        NpcRuleCatalog::runtime_for_npc(&request.npc)?.admitted_for_npc(&request.npc, catalogue)?
+    else {
         return Ok(None);
     };
     evaluate(
