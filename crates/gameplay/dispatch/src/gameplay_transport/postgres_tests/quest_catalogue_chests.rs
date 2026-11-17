@@ -173,9 +173,84 @@ fn cases_including(include: impl Fn(&str) -> bool) -> TestResult<Vec<CatalogueCh
     Ok(cases)
 }
 
+const CATALOGUE_SLICE_COUNT: usize = 8;
+
+fn catalogue_slice(index: usize, len: usize) -> std::ops::Range<usize> {
+    index * len / CATALOGUE_SLICE_COUNT..(index + 1) * len / CATALOGUE_SLICE_COUNT
+}
+
+fn run_catalogue_slice(index: usize) -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    let mut cases = cases()?;
+    let range = catalogue_slice(index, cases.len());
+    execute(cases.drain(range).collect())
+}
+
 #[test]
-fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal() -> TestResult {
-    execute(cases()?)?;
+fn quest_catalogue_chests_slices_cover_every_supported_source_placement() -> TestResult {
+    let cases = cases()?;
+    assert_eq!(cases.len(), 334);
+    let mut seen = vec![false; cases.len()];
+    for index in 0..CATALOGUE_SLICE_COUNT {
+        let range = catalogue_slice(index, cases.len());
+        assert!(!range.is_empty(), "slice {index} is empty");
+        for placement in range {
+            assert!(!seen[placement], "placement {placement} appears twice");
+            seen[placement] = true;
+        }
+    }
+    assert!(seen.into_iter().all(|visited| visited));
+    Ok(())
+}
+
+#[test]
+fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_1_of_8()
+-> TestResult {
+    run_catalogue_slice(0)
+}
+
+#[test]
+fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_2_of_8()
+-> TestResult {
+    run_catalogue_slice(1)
+}
+
+#[test]
+fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_3_of_8()
+-> TestResult {
+    run_catalogue_slice(2)
+}
+
+#[test]
+fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_4_of_8()
+-> TestResult {
+    run_catalogue_slice(3)
+}
+
+#[test]
+fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_5_of_8()
+-> TestResult {
+    run_catalogue_slice(4)
+}
+
+#[test]
+fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_6_of_8()
+-> TestResult {
+    run_catalogue_slice(5)
+}
+
+#[test]
+fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_7_of_8()
+-> TestResult {
+    run_catalogue_slice(6)
+}
+
+#[test]
+fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_8_of_8()
+-> TestResult {
+    run_catalogue_slice(7)?;
     super::falcon_chests::falcon_chests_postgres_real_use_frozen_draw_refusal_restart_and_fences()
 }
 
@@ -227,19 +302,19 @@ fn quest_catalogue_chests_mixed_binding_requires_all_crystal_sources() -> TestRe
         .find(|row| row.key.as_str() == claim)
         .ok_or("Crystal claim")?;
     assert_eq!(served.placements.len(), 4);
-    let unbound: Vec<_> = report.unbound.iter().filter(|row| row.claim == claim).collect();
+    let unbound: Vec<_> = report
+        .unbound
+        .iter()
+        .filter(|row| row.claim == claim)
+        .collect();
     assert_eq!(unbound.len(), 1);
     assert_eq!(unbound[0].index, 0);
     assert_eq!(
         unbound[0].reason,
         crate::content::world_reward_claims::UnboundReason::NoCrystalUniqueId
     );
-    let incomplete = super::quest_callbacks::source_world(
-        native.position,
-        native.unique,
-        native.appearance,
-        0,
-    )?;
+    let incomplete =
+        super::quest_callbacks::source_world(native.position, native.unique, native.appearance, 0)?;
     let report = crate::content::world_reward_claims::bind_embedded_reward_claims(
         incomplete.base().as_ref(),
         &|_| true,
@@ -1086,7 +1161,9 @@ pub(super) fn catalogue_source_worlds(
                 }) {
                     continue;
                 }
-                let ids = binding["legacy_unique_ids"].as_array().ok_or("source ids")?;
+                let ids = binding["legacy_unique_ids"]
+                    .as_array()
+                    .ok_or("source ids")?;
                 // Preserve a Canary-only selector as a negative source-alias
                 // fixture. The production binder must still refuse to serve it.
                 let unique = ids
