@@ -27,6 +27,15 @@ The retained canonical recipe explicitly substitutes six field missions for all
 seventeen missions and removes specimen-decay timers. It cannot be cited as
 proof of the requested complete global route.
 
+## Update 2026-11-17 (server lane via Content)
+
+The two Ratha skull bag container rewards are lowered natively on `main`
+a3048eb32 (`world_reward_claims.rs:395` -> `native_reward_claims.rs:168`), so
+their `claim_native_lowering_missing` holds can be lifted on the content side.
+That note does not cover the Hengis book hold. The quest is now allocated to a
+Codex qcx task, so this lane neither lifts the holds nor authors the quest; the
+qcx owner does.
+
 ## Source evidence
 
 On 2026-11-17 both required honest-UA MediaWiki requests returned verbatim:
