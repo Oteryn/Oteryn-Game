@@ -43,6 +43,11 @@ DO $$
 DECLARE body TEXT; changed TEXT;
 BEGIN
     body := pg_get_functiondef('game_character_progression_consistency_guard()'::regprocedure);
+    IF position('EXISTS (SELECT 1 FROM game_character_build_state WHERE character_id = v_character)' IN body)=0
+       OR position('IS DISTINCT FROM (''none'', 0, 0, 10' IN body)=0
+       OR position('AND NOT EXISTS (SELECT 1 FROM build_chain))' IN body)=0 THEN
+        RAISE EXCEPTION 'expected all three Character build seed guard arms';
+    END IF;
     changed := replace(body,
         'EXISTS (SELECT 1 FROM game_character_build_state WHERE character_id = v_character)',
         'EXISTS (SELECT 1 FROM game_character_build_state WHERE character_id = v_character AND NOT game_character_creation_build_seed(v_character))');

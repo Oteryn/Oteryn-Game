@@ -45,8 +45,8 @@ fn intents_are_classified_conflict_unsupported_then_invalid() {
         classify_intent(INTENT.as_bytes(), "RenameCharacter", OP),
         Rejected(OPERATION_CONFLICT)
     );
-    let v2 = INTENT.replace(r#""contract_version":2"#, r#""contract_version":1"#);
-    assert_eq!(classify(&v2), Rejected(UNSUPPORTED));
+    let retired = INTENT.replace(r#""contract_version":2"#, r#""contract_version":1"#);
+    assert_eq!(classify(&retired), Rejected(UNSUPPORTED));
     let variant = INTENT.replace("PLATFORM_USER_CREATE", "PLATFORM_ADMIN_CREATE");
     assert_eq!(classify(&variant), Rejected(UNSUPPORTED));
     for invalid in [
@@ -181,31 +181,65 @@ fn platform_v2_create_goldens() -> Result<(), Box<dyn std::error::Error>> {
     let directory = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .ancestors()
         .map(|root| root.join("docs/contracts/fixtures/character-create-v2"))
-        .find(|path| path.is_dir()).ok_or("missing create fixture directory")?;
-    let manifest: serde_json::Value = serde_json::from_slice(&std::fs::read(directory.join("manifest.json"))?)?;
+        .find(|path| path.is_dir())
+        .ok_or("missing create fixture directory")?;
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(directory.join("manifest.json"))?)?;
     for file in manifest["files"].as_array().ok_or("missing files")? {
         use sha2::{Digest, Sha256};
         let raw = std::fs::read(directory.join(file["file"].as_str().ok_or("missing filename")?))?;
-        assert_eq!(raw.len() as u64, file["bytes"].as_u64().ok_or("missing byte count")?);
-        assert_eq!(format!("{:x}", Sha256::digest(&raw)), file["sha256"]);
+        assert_eq!(
+            raw.len() as u64,
+            file["bytes"].as_u64().ok_or("missing byte count")?
+        );
+        assert_eq!(
+            Sha256::digest(&raw)
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>(),
+            file["sha256"]
+        );
     }
     for case in manifest["cases"].as_array().ok_or("missing cases")? {
         let raw = std::fs::read(directory.join(case["file"].as_str().ok_or("missing file")?))?;
         let value: serde_json::Value = serde_json::from_slice(&raw)?;
-        let decoded = classify_intent(&raw, CREATE_COMMAND, value["operation_id"].as_str().ok_or("missing operation")?);
+        let decoded = classify_intent(
+            &raw,
+            CREATE_COMMAND,
+            value["operation_id"].as_str().ok_or("missing operation")?,
+        );
         if case["outcome"] == "reject" {
             assert_eq!(decoded, Classified::Rejected(INTENT_INVALID), "{case}");
             continue;
         }
-        let Classified::Create(intent) = decoded else { return Err(format!("refused {case}").into()); };
-        assert_eq!(intent.requested_sex, case["requested_sex"].as_str().ok_or("missing sex")?);
-        assert_eq!(intent.requested_vocation, case["requested_vocation"].as_str().ok_or("missing vocation")?);
+        let Classified::Create(intent) = decoded else {
+            return Err(format!("refused {case}").into());
+        };
+        assert_eq!(
+            intent.requested_sex,
+            case["requested_sex"].as_str().ok_or("missing sex")?
+        );
+        assert_eq!(
+            intent.requested_vocation,
+            case["requested_vocation"]
+                .as_str()
+                .ok_or("missing vocation")?
+        );
         assert_eq!(intent.requested_name, value["requested_name"]);
         assert_eq!(intent.source_revision.to_string(), value["source_revision"]);
         assert_eq!(uuid_string(&intent.account_id), value["account_id"]);
-        assert_eq!(uuid_string(&intent.target_world_id), value["target_world_id"]);
-        assert_eq!(intent.issued_at_source.to_string(), value["issued_at_source"]);
-        assert_eq!(intent.expires_at_source.to_string(), value["expires_at_source"]);
+        assert_eq!(
+            uuid_string(&intent.target_world_id),
+            value["target_world_id"]
+        );
+        assert_eq!(
+            intent.issued_at_source.to_string(),
+            value["issued_at_source"]
+        );
+        assert_eq!(
+            intent.expires_at_source.to_string(),
+            value["expires_at_source"]
+        );
     }
     Ok(())
 }

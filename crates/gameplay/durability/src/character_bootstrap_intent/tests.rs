@@ -152,7 +152,13 @@ fn platform_v4_bootstrap_goldens() -> Result<(), Box<dyn std::error::Error>> {
             raw.len() as u64,
             file["bytes"].as_u64().ok_or("missing byte count")?
         );
-        assert_eq!(format!("{:x}", Sha256::digest(&raw)), file["sha256"]);
+        assert_eq!(
+            Sha256::digest(&raw)
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>(),
+            file["sha256"]
+        );
     }
     for case in manifest["cases"].as_array().ok_or("missing cases")? {
         let raw = std::fs::read(directory.join(case["file"].as_str().ok_or("missing file")?))?;
