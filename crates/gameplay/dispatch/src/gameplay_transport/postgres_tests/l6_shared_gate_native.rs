@@ -172,17 +172,17 @@ fn l6_native_gate_open_50137() -> TestResult {
     run("l6-tomb-gate-native-open-50137")
 }
 #[test]
-fn l6_native_gate_closed_50138() -> TestResult {
+fn l6_native_gate_50138_rejects_global_count_with_personal_four() -> TestResult {
     run("l6-tomb-gate-native-closed-50138")
 }
 #[test]
-fn l6_native_gate_open_50138() -> TestResult {
+fn l6_native_gate_50138_accepts_personal_five_without_global_count() -> TestResult {
     run("l6-tomb-gate-native-open-50138")
 }
 fn run(name: &'static str) -> TestResult {
-    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
     let trigger = position(name)?;
     let started = std::time::Instant::now();
     eprintln!("POSTGRES_CASE_STARTED {name}");
@@ -425,11 +425,39 @@ pub(super) async fn exercise(
     let actor = admitted.runtime_actor.ok_or("native actor")?;
     let case = spec(name)?;
     let open = name.contains("-open-");
-    let count = if open {
-        case.required
-    } else {
-        case.required - 1
+    let count = match (case.action, open) {
+        (12123, true) => 0,
+        (12123, false) | (_, true) => case.required,
+        (_, false) => case.required - 1,
     };
+    if case.action == 12123 {
+        let personal_count = if open { 5_i64 } else { 4 };
+        let character = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(debug)?
+            .ok_or("native gate character fence")?
+            .character_id;
+        // Establish the source's personal storage as a historical predecessor.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        let inserted = sqlx::query(
+            "INSERT INTO game_character_quest_tracks
+             (character_id,track_key,quest_key,value,committed_character_revision)
+             SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots
+             WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(character.as_bytes().as_slice())
+        .bind("oteryn:quest-progress/quest/u7_4/the_ancient_tombs/ashmunrah_switches_global_storage")
+        .bind("oteryn:quest.the_ancient_tombs_quest")
+        .bind(personal_count)
+        .execute(&mut *tx)
+        .await?;
+        assert_eq!(inserted.rows_affected(), 1);
+        tx.commit().await?;
+    }
     let before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
         .fetch_one(&h.pool)
         .await?;
