@@ -146,21 +146,29 @@ pub(in crate::play) fn submit(
 }
 impl PlayLink {
     #[cfg(bevy_shell)]
-    pub(crate) fn house_submit(&self, revision: u64, expected: &oteryn_client_ui::house::Panel, expected_fields: &[String; 7], fields: [String; 7], selection: usize) -> bool {
-    let mut mailbox = lock(&self.mailbox);
+    pub(crate) fn house_submit(
+        &self,
+        revision: u64,
+        expected: &oteryn_client_ui::house::Panel,
+        expected_fields: &[String; 7],
+        fields: [String; 7],
+        selection: usize,
+    ) -> bool {
+        let mut mailbox = lock(&self.mailbox);
         let current = &mut mailbox.properties.house;
-    if current.activity_revision != revision || current.model != *expected
-        || current.fields != *expected_fields
-        || fields
-            .iter()
-            .any(|value| !oteryn_client_ui::modal_dialogs::TextEditor::accepts(value, 8192))
-        || current.model.pending.is_some()
-    {
-        return false;
-    }
-    current.fields = fields;
-    submit(&mut mailbox, &self.commands, selection);
-    true
+        if current.activity_revision != revision
+            || current.model != *expected
+            || current.fields != *expected_fields
+            || fields
+                .iter()
+                .any(|value| !oteryn_client_ui::modal_dialogs::TextEditor::accepts(value, 8192))
+            || current.model.pending.is_some()
+        {
+            return false;
+        }
+        current.fields = fields;
+        submit(&mut mailbox, &self.commands, selection);
+        true
     }
     pub(crate) fn house_world(&self, world: &str) {
         lock(&self.mailbox).properties.house.fields[0] = world.into();
