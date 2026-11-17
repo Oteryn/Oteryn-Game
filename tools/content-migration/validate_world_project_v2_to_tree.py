@@ -844,6 +844,8 @@ def _main() -> int:
     apply_tainted_talisman(legacy_items, ROOT)
     from engclaim_item_profiles import apply_admissions as apply_engclaim_items
     apply_engclaim_items(legacy_items, ROOT)
+    from qaitems_item_profiles import apply_admissions as apply_quest_reward_items
+    apply_quest_reward_items(legacy_items, ROOT)
     # ITEMGLOB: replay the producer's captured Global client weights.
     from import_cyclopedia_global import apply_admissions as apply_client_weights
     apply_client_weights(legacy_items, ROOT)
