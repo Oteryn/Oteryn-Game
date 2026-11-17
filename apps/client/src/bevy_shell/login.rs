@@ -140,13 +140,18 @@ pub(super) fn install(app: &mut App) {
     app.init_resource::<super::ui::window_layout::WindowLayouts>()
         .add_systems(
             Update,
-            (super::ui::project_art, super::ui::window_layout::zoom),
+            (
+                super::ui::project_art,
+                super::ui::window_layout::zoom,
+                super::ui::window_layout::persist,
+            ),
         )
         .add_systems(
             PostUpdate,
             (
                 submission::finish.after(bevy::text::EditableTextSystems),
                 super::ui::window_layout::project.before(bevy::ui::UiSystems::Layout),
+                super::ui::window_layout::anchor.after(bevy::ui::UiSystems::Layout),
             ),
         );
 }

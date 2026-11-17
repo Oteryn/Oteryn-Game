@@ -4,15 +4,16 @@
 //! then the entries live here and every window derives its sizes from them.
 use bevy::{
     input::mouse::AccumulatedMouseScroll,
-    picking::{
-        events::{PointerDrag, PointerDragStart},
-        hover::HoverMap,
-        pointer::PointerId,
-    },
+    picking::{hover::HoverMap, pointer::PointerId},
     prelude::*,
+    text::{FontSize, LineHeight},
     window::PrimaryWindow,
 };
-use std::collections::BTreeMap;
+use serde::{Deserialize, Serialize};
+use std::{collections::BTreeMap, io, path::Path};
+
+mod resize;
+pub(in crate::bevy_shell) use resize::{ResizeCursor, anchor};
 
 pub(in crate::bevy_shell) const MIN_ZOOM: f32 = 0.5;
 pub(in crate::bevy_shell) const MAX_ZOOM: f32 = 2.;
@@ -48,6 +49,8 @@ pub(in crate::bevy_shell) struct Layout {
     /// `None` until the user resizes a content-sized window.
     pub size: Option<Vec2>,
     pub zoom: f32,
+    /// The user's move from the window's laid-out position, in UI pixels.
+    pub offset: Vec2,
 }
 
 impl Layout {
@@ -58,6 +61,7 @@ impl Layout {
                 .height
                 .map(|height| Vec2::new(geometry.width, height)),
             zoom: 1.,
+            offset: Vec2::ZERO,
         }
     }
     pub(in crate::bevy_shell) fn scaled(&self, value: f32) -> f32 {
@@ -130,6 +134,84 @@ impl Default for WindowLayouts {
     }
 }
 
+/// What persists per window: size, zoom and position; the Global geometry is code.
+#[derive(Serialize, Deserialize)]
+struct Saved {
+    size: Option<[f32; 2]>,
+    zoom: f32,
+    offset: [f32; 2],
+}
+
+impl Serialize for WindowLayouts {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let saved: BTreeMap<&str, Saved> = self
+            .0
+            .iter()
+            .map(|(id, layout)| {
+                (
+                    *id,
+                    Saved {
+                        size: layout.size.map(|size| size.to_array()),
+                        zoom: layout.zoom,
+                        offset: layout.offset.to_array(),
+                    },
+                )
+            })
+            .collect();
+        saved.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for WindowLayouts {
+    /// Unknown windows are dropped and out-of-range values fall back, so a stale
+    /// or hand-edited file can never place a window below its minimum.
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let saved = BTreeMap::<String, Saved>::deserialize(deserializer)?;
+        let mut layouts = Self::default();
+        for (id, layout) in &mut layouts.0 {
+            let Some(saved) = saved.get(*id) else {
+                continue;
+            };
+            if saved.zoom.is_finite() {
+                layout.zoom = saved.zoom.clamp(MIN_ZOOM, MAX_ZOOM);
+            }
+            let offset = Vec2::from_array(saved.offset);
+            if offset.is_finite() {
+                layout.offset = offset;
+            }
+            if let Some(size) = saved.size.map(Vec2::from_array)
+                && size.is_finite()
+            {
+                layout.size = Some(size.max(layout.min()));
+            }
+        }
+        Ok(layouts)
+    }
+}
+
+impl WindowLayouts {
+    /// A missing file is the first start: every window at its Global size.
+    pub(in crate::bevy_shell) fn load(path: &Path) -> io::Result<Self> {
+        match std::fs::read(path) {
+            Ok(bytes) => serde_json::from_slice(&bytes)
+                .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error)),
+            Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(Self::default()),
+            Err(error) => Err(error),
+        }
+    }
+    /// Writes beside the target and renames, so a crash never leaves half a file.
+    pub(in crate::bevy_shell) fn save(&self, path: &Path) -> io::Result<()> {
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let bytes = serde_json::to_vec_pretty(self)
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
+        let staging = path.with_extension("json.tmp");
+        std::fs::write(&staging, bytes)?;
+        std::fs::rename(staging, path)
+    }
+}
+
 /// Marks a window root whose node follows its `WindowLayouts` entry.
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
 pub(in crate::bevy_shell) struct WindowId(pub &'static str);
@@ -173,13 +255,13 @@ pub(in crate::bevy_shell) fn window(id: &'static str, mut node: Node) -> (Window
     (WindowId(id), node)
 }
 
-/// The bottom-right corner a user drags to resize the window, like a desktop window.
-#[derive(Component, Default)]
-pub(in crate::bevy_shell) struct ResizeGrip {
-    start: Option<Vec2>,
+/// Base font size and line height at 100% for text inside a window.
+#[derive(Component, Clone, Copy, Debug, PartialEq)]
+pub(in crate::bevy_shell) struct FontBase {
+    size: f32,
+    line: Option<f32>,
 }
 
-const GRIP: f32 = 12.;
 const ZOOM_STEP: f32 = 0.1;
 
 /// The primary window's size in UI pixels: global UI scale and DPI already applied.
@@ -193,39 +275,6 @@ fn viewport(
         .ok()
         .map(|screen| Vec2::new(screen.width(), screen.height()) / factor)
         .filter(|viewport| viewport.is_finite() && viewport.min_element() > 0.)
-}
-
-fn grip_start(
-    mut event: On<PointerDragStart>,
-    mut grips: Query<(&ChildOf, &mut ResizeGrip)>,
-    nodes: Query<&ComputedNode>,
-) {
-    event.propagate(false);
-    if let Ok((parent, mut grip)) = grips.get_mut(event.entity)
-        && let Ok(node) = nodes.get(parent.parent())
-    {
-        grip.start = Some(node.size() * node.inverse_scale_factor());
-    }
-}
-
-fn grip_drag(
-    mut event: On<PointerDrag>,
-    grips: Query<(&ChildOf, &ResizeGrip)>,
-    ids: Query<&WindowId>,
-    screens: Query<&Window, With<PrimaryWindow>>,
-    scale: Option<Res<UiScale>>,
-    mut layouts: ResMut<WindowLayouts>,
-) {
-    event.propagate(false);
-    let factor = scale.as_deref().map_or(1., |scale| scale.0);
-    if let Ok((parent, grip)) = grips.get(event.entity)
-        && let Some(start) = grip.start
-        && let Ok(id) = ids.get(parent.parent())
-        && let Some(viewport) = viewport(&screens, scale.as_deref())
-        && let Some(layout) = layouts.0.get_mut(id.0)
-    {
-        layout.resize(start + event.distance / factor, viewport);
-    }
 }
 
 /// Ctrl+wheel over a window zooms its content; Ctrl+0 resets it to 100%.
@@ -282,16 +331,95 @@ pub(in crate::bevy_shell) fn zoom(
     }
 }
 
-/// Clamps every window to the logical screen and projects sizes and zoom.
-#[allow(clippy::too_many_arguments, clippy::type_complexity)]
+fn zoom_of(
+    entity: Entity,
+    parents: &Query<&ChildOf>,
+    ids: &Query<&WindowId>,
+    layouts: &WindowLayouts,
+) -> Option<f32> {
+    parents
+        .iter_ancestors(entity)
+        .find_map(|ancestor| ids.get(ancestor).ok())
+        .and_then(|id| layouts.0.get(id.0))
+        .map(|layout| layout.zoom)
+}
+
+// Window roots, zoomed nodes and zoomed text are disjoint projections of one registry.
+type Roots<'w, 's> = Query<
+    'w,
+    's,
+    (
+        Entity,
+        Ref<'static, WindowId>,
+        &'static mut Node,
+        Option<&'static mut UiTransform>,
+    ),
+    Without<Scaled>,
+>;
+type Fonts<'w, 's> = Query<
+    'w,
+    's,
+    (
+        Entity,
+        &'static mut TextFont,
+        Option<&'static mut LineHeight>,
+        Option<&'static FontBase>,
+    ),
+>;
+
+/// How long the layout must stay unchanged before it is written, so a drag writes once.
+const SAVE_DELAY: std::time::Duration = std::time::Duration::from_secs(1);
+
+#[derive(Default)]
+pub(in crate::bevy_shell) struct Persistence {
+    loaded: bool,
+    pending: Option<std::time::Duration>,
+}
+
+/// Loads the saved layout once, then writes it after each settled change.
+pub(in crate::bevy_shell) fn persist(
+    owner: Option<NonSend<crate::bevy_shell::owner::HostOwner>>,
+    time: Res<Time<Real>>,
+    mut layouts: ResMut<WindowLayouts>,
+    mut state: Local<Persistence>,
+) {
+    let Some(path) = owner.and_then(|owner| owner.window_layouts_path()) else {
+        return;
+    };
+    let now = time.elapsed();
+    if !state.loaded {
+        state.loaded = true;
+        match WindowLayouts::load(&path) {
+            Ok(saved) => *layouts = saved,
+            Err(error) => eprintln!("Could not load window layouts: {error}"),
+        }
+        return;
+    }
+    if layouts.is_changed() {
+        state.pending = Some(now);
+    }
+    if state
+        .pending
+        .is_some_and(|since| now.saturating_sub(since) >= SAVE_DELAY)
+    {
+        state.pending = None;
+        if let Err(error) = layouts.save(&path) {
+            leprintln!("Could not save window layout: {error}", error = error);
+        }
+    }
+}
+
+/// Clamps every window to the logical screen and projects sizes, position and zoom.
+#[allow(clippy::too_many_arguments)]
 pub(in crate::bevy_shell) fn project(
     mut commands: Commands,
     mut layouts: ResMut<WindowLayouts>,
     screens: Query<&Window, With<PrimaryWindow>>,
     scale: Option<Res<UiScale>>,
     mut seen: Local<Option<Vec2>>,
-    mut roots: Query<(Entity, Ref<WindowId>, &mut Node), Without<Scaled>>,
+    mut roots: Roots,
     mut scaled: Query<(Entity, Ref<Scaled>, &mut Node), Without<WindowId>>,
+    mut fonts: Fonts,
     parents: Query<&ChildOf>,
     ids: Query<&WindowId>,
 ) {
@@ -307,41 +435,61 @@ pub(in crate::bevy_shell) fn project(
         }
     }
     let changed = layouts.is_changed();
-    for (entity, id, mut node) in &mut roots {
+    for (entity, id, mut node, transform) in &mut roots {
+        let Some(layout) = layouts.0.get(id.0).copied() else {
+            continue;
+        };
         if id.is_added() {
-            commands
-                .spawn((
-                    ResizeGrip::default(),
-                    Name::new("window.resize"),
-                    Node {
-                        position_type: PositionType::Absolute,
-                        right: px(0.),
-                        bottom: px(0.),
-                        width: px(GRIP),
-                        height: px(GRIP),
-                        ..default()
-                    },
-                    ChildOf(entity),
-                ))
-                .observe(grip_start)
-                .observe(grip_drag);
+            resize::spawn(&mut commands, entity);
         }
-        if (changed || id.is_added())
-            && let Some(layout) = layouts.0.get(id.0)
-        {
+        if let Some(mut transform) = transform {
+            if id.is_added() {
+                transform.translation = Val2::px(layout.offset.x, layout.offset.y);
+            } else if transform.is_changed()
+                && let (Val::Px(x), Val::Px(y)) = (transform.translation.x, transform.translation.y)
+                && Vec2::new(x, y) != layout.offset
+                && let Some(entry) = layouts.0.get_mut(id.0)
+            {
+                entry.offset = Vec2::new(x, y);
+            }
+        }
+        if changed || id.is_added() {
             layout.apply(&mut node, *seen);
         }
     }
     for (entity, base, mut node) in &mut scaled {
-        if !(changed || base.is_added()) {
-            continue;
+        if changed || base.is_added() {
+            let zoom = zoom_of(entity, &parents, &ids, &layouts).unwrap_or(1.);
+            base.apply(zoom, &mut node);
         }
-        let zoom = parents
-            .iter_ancestors(entity)
-            .find_map(|ancestor| ids.get(ancestor).ok())
-            .and_then(|id| layouts.0.get(id.0))
-            .map_or(1., |layout| layout.zoom);
-        base.apply(zoom, &mut node);
+    }
+    for (entity, mut font, line, base) in &mut fonts {
+        let base = match base {
+            Some(base) if changed => *base,
+            None if font.is_added() => {
+                let FontSize::Px(size) = font.font_size else {
+                    continue;
+                };
+                if zoom_of(entity, &parents, &ids, &layouts).is_none() {
+                    continue;
+                }
+                let base = FontBase {
+                    size,
+                    line: match line.as_deref() {
+                        Some(LineHeight::Px(line)) => Some(*line),
+                        _ => None,
+                    },
+                };
+                commands.entity(entity).insert(base);
+                base
+            }
+            _ => continue,
+        };
+        let zoom = zoom_of(entity, &parents, &ids, &layouts).unwrap_or(1.);
+        if let (Some(mut line), Some(height)) = (line, base.line) {
+            *line = LineHeight::Px(height * zoom);
+        }
+        font.font_size = FontSize::Px(base.size * zoom);
     }
 }
 
