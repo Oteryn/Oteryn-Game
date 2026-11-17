@@ -60,7 +60,7 @@ game_platform_start() {
   port="${GAME_PLATFORM_PLATFORM_PG_PORT:-15436}"
   [[ "$port" =~ ^[1-9][0-9]{3,4}$ && "$port" -le 65535 && "$port" != "$PG_PORT" ]] \
     || game_platform_fail preflight invalid_platform_pg_port
-  run_interruptible docker create --label "org.oteryn.node-boot.owner=$COMPOSE_OWNER" --name "$WP5_PROJECT-portal-postgres" --publish "127.0.0.1:$port:5432" \
+  create_owned_postgres --label "org.oteryn.node-boot.owner=$COMPOSE_OWNER" --name "$WP5_PROJECT-portal-postgres" --publish "127.0.0.1:$port:5432" \
     --env POSTGRES_USER=game_platform_admin --env POSTGRES_PASSWORD="$password" \
     --env POSTGRES_DB=postgres "$PG_IMAGE" > "$WORK/portal-postgres.id"
   GP_PG_CONTAINER="$(<"$WORK/portal-postgres.id")"
@@ -94,9 +94,14 @@ game_platform_start() {
   export PORTAL_E2E_GATEWAY_PORT="${GAME_PLATFORM_GATEWAY_PORT:-18090}"
   export OTERYN_PUBLIC_ORIGIN="http://127.0.0.1:$PORTAL_E2E_HTTP_PORT"
   export PORTAL_E2E_NATIVE_SCOPES="[\"$WORLD_ID/$CHANNEL_ID\"]"
-  setsid bash "$PLATFORM_SOURCE/portal-rs/e2e/start.sh" --seed-plan "$WORK/seed-plan.json" \
-    > "$WORK/portal-report.json" 2> "$WORK/portal-harness.log" 9>&- &
+  local launching=portal previous_pid=${!:-}
+  # Bash job control establishes the group before the PID handoff.
+  set -m
+  ( set +m; exec bash "$PLATFORM_SOURCE/portal-rs/e2e/start.sh" --seed-plan "$WORK/seed-plan.json" ) \
+    < /dev/null > "$WORK/portal-report.json" 2> "$WORK/portal-harness.log" 9>&- &
   GP_HARNESS_PID=$!
+  launching=""
+  set +m
   deadline=$((SECONDS + 180))
   while kill -0 "$GP_HARNESS_PID" 2>/dev/null; do
     if python3 "$GAME_SOURCE/tools/qualification/game_platform/report.py" "$WORK/portal-report.json" "$WORK" >/dev/null 2>&1; then
@@ -106,7 +111,7 @@ game_platform_start() {
     sleep 0.2
   done
   [[ "$ready" == 1 ]] || game_platform_fail platform harness_not_ready
-  python3 "$GAME_SOURCE/tools/qualification/game_platform/route_check.py" "$WORK" \
+  run_interruptible python3 "$GAME_SOURCE/tools/qualification/game_platform/route_check.py" "$WORK" \
     || game_platform_fail platform route_seed_conflict_failed
   evidence "flow=route_seed result=pass revision_format=1 idempotent=1 conflict_exit=2"
   # node_boot's unassigned identity phase needs only NativeEvidence credentials.

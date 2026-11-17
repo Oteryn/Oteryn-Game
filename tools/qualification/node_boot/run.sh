@@ -381,13 +381,20 @@ interrupted() {
     case "$launching" in
       worker) worker=$! ;;
       timer) timer=$! ;;
+      portal) GP_HARNESS_PID=$! ;;
     esac
   fi
   [[ -z "$timer" ]] || kill -KILL -- "-$timer" 2>/dev/null || true
   if [[ -n "$worker" ]]; then
-    kill -TERM -- "-$worker" 2>/dev/null || true
-    sleep 0.2
-    kill -KILL -- "-$worker" 2>/dev/null || true
+    if [[ ${drain_postgres_create:-0} == 1 ]]; then
+      # The daemon can register the container after the client disconnects.
+      # Drain the bounded create before cleanup looks up the owned container.
+      wait "$worker" || true
+    else
+      kill -TERM -- "-$worker" 2>/dev/null || true
+      sleep 0.2
+      kill -KILL -- "-$worker" 2>/dev/null || true
+    fi
   fi
   result=NODE_BOOT_FAIL
   evidence "interrupted signal=$1 stage=$ACTIVE_STAGE world_bundle=$NODE_BOOT_WORLD"
@@ -418,6 +425,10 @@ run_interruptible() {
   fi
   STAGE_PID=""
   return "$rc"
+}
+create_owned_postgres() {
+  local drain_postgres_create=1
+  run_interruptible docker create "$@"
 }
 acquire_base() {
   timeout --foreground --kill-after=2s 10s sudo mkdir -- "$BASE_PENDING" || return
@@ -493,7 +504,7 @@ cleanup() {
     if [[ -n "${BASE_PENDING:-}" ]]; then
       timeout --foreground --kill-after=2s 10s sudo rmdir -- "$BASE_PENDING" 2>/dev/null || true
     fi
-    if [[ ${BASE_OWNED:-0} != 1 && -s "$WORK/base.identity" ]]; then
+    if [[ -z "${BASE_IDENTITY:-}" && -s "$WORK/base.identity" ]]; then
       BASE_IDENTITY="$(<"$WORK/base.identity")"
       BASE_OWNED=1
     fi
@@ -597,7 +608,7 @@ evidence "pins platform=$NODE_BOOT_PLATFORM_PIN topology=$NODE_BOOT_TOPOLOGY gam
 # (after 200 ms), deadlocks and statements of 500 ms or more without parameter values,
 # and loads pg_stat_statements, so every run carries its own database evidence.
 chmod 644 "$WP5_PKI/db.crt" "$WP5_PKI/db.key"
-run_interruptible docker create --label "org.oteryn.node-boot.owner=$COMPOSE_OWNER" --cidfile "$WORK/game-postgres.cid" --name "$PG_CONTAINER" --publish "127.0.0.1:$PG_PORT:5432" \
+create_owned_postgres --label "org.oteryn.node-boot.owner=$COMPOSE_OWNER" --cidfile "$WORK/game-postgres.cid" --name "$PG_CONTAINER" --publish "127.0.0.1:$PG_PORT:5432" \
   --env POSTGRES_USER=oteryn_node_boot_admin --env POSTGRES_PASSWORD="$PG_ADMIN_PASSWORD" \
   --env POSTGRES_DB=postgres --volume "$WP5_PKI/db.crt:/tls/db.crt:ro" \
   --volume "$WP5_PKI/db.key:/tls/db.key:ro" --entrypoint bash "$PG_IMAGE" -c \
@@ -607,8 +618,8 @@ BASE_PENDING="$(dirname -- "$BASE")/.oteryn-node-boot-$COMPOSE_OWNER"
 if ! run_interruptible acquire_base; then
   fail "base acquisition failed: $BASE"
 fi
-BASE_OWNED=1
 BASE_IDENTITY="$(<"$WORK/base.identity")"
+BASE_OWNED=1
 BASE_PENDING=""
 run_interruptible docker start "$PG_CONTAINER_ID" >/dev/null
 chmod 600 "$WP5_PKI/db.key"

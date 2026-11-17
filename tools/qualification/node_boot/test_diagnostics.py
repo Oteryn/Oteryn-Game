@@ -15,7 +15,7 @@ import unittest
 # The workflows run this file only; it carries the node boot tool tests with it.
 from test_node_boot_tools import (  # noqa: F401
     FailureSummaryTests, KnobTests, PgObserveTests, ReuseTests, SeamPassThroughTests,
-    StageDumpTests, TimelineTests,
+    RoundTwoCallerTests, StageDumpTests, TimelineTests,
 )
 
 SOURCE = Path(__file__).resolve().with_name('run.sh')

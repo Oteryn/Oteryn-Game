@@ -257,7 +257,7 @@ class ReuseTests(unittest.TestCase):
             openssl() { echo fixture; }
             docker() { return 1; }
             trap 'printf "owned=%s\\n" "$GP_PG_CONTAINER"' EXIT
-        ''' + start + '\ngame_platform_start', {'WORK': temp})
+        ''' + function('create_owned_postgres') + '\n' + start + '\ngame_platform_start', {'WORK': temp})
         self.assertEqual(result.returncode, 1)
         self.assertEqual(result.stdout.strip(), 'owned=')
 
@@ -400,13 +400,118 @@ class RoundTwoCallerTests(unittest.TestCase):
             self.assertTrue(line.startswith('run_interruptible '), line)
         self.assertIn('run_interruptible compose up ', RUN_TEXT)
 
+    def test_term_cleans_base_with_unloaded_identity(self):
+        with tempfile.TemporaryDirectory() as temp:
+            setup = r"""
+                set -eu
+                mkdir "$WORK"
+                BASE=$WORK/../base
+                mkdir "$BASE"
+                stat -c '%d:%i' "$BASE" > "$WORK/base.identity"
+                BASE_OWNED=1 BASE_IDENTITY="" PG_CONTAINER=empty PG_CONTAINER_ID=""
+                ACTIVE_STAGE=setup NODE_BOOT_WORLD=0 NODE_BOOT_SPELLS=0
+                stop_runtime_diagnostics() { :; }
+                stop_pg_sampler() { :; }
+                evidence() { :; }
+                timeout() { while [[ $1 == --* ]]; do shift; done; shift; "$@"; }
+                sudo() { "$@"; }
+            """
+            result = bash(setup + function('interrupted') + '\n' + function('cleanup')
+                          + "\ntrap cleanup EXIT; trap 'interrupted TERM 143' TERM; kill -TERM $$",
+                          {'WORK': f'{temp}/work'})
+            self.assertEqual(result.returncode, 143, result.stderr)
+            self.assertFalse(Path(temp, 'base').exists())
+
+    def test_term_drains_postgres_creation_before_cleanup(self):
+        lifecycle = Path(os.environ.get('NODE_BOOT_PLATFORM_LIFECYCLE',
+                                        HERE.parent / 'game_platform/lifecycle.sh')).read_text()
+        for service, source in [('game', RUN_TEXT), ('portal', lifecycle)]:
+            with self.subTest(service=service), tempfile.TemporaryDirectory() as temp:
+                create = next(line.strip().removesuffix(' \\') for line in source.splitlines()
+                              if 'docker create --label' in line or 'create_owned_postgres --label' in line)
+                setup = r"""
+                    set -Eeuo pipefail
+                    WP5_PROJECT=fixture PG_CONTAINER=fixture-postgres PG_PORT=5432 port=5433
+                    COMPOSE_OWNER=fixture ACTIVE_STAGE=setup NODE_BOOT_WORLD=0
+                    evidence() { :; }
+                    docker() {
+                        python3 -c 'import subprocess, sys; subprocess.Popen(
+                            ["bash", "-c", "sleep 0.5; touch -- \"$1\"", "publisher", sys.argv[1]],
+                            start_new_session=True, stdin=subprocess.DEVNULL,
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)' "$WORK/registered"
+                        echo creating
+                        until [[ -f "$WORK/registered" ]]; do command sleep 0.02; done
+                    }
+                    verify_cleanup() {
+                        [[ ! -f "$WORK/registered" ]] || touch "$WORK/removed"
+                    }
+                    trap verify_cleanup EXIT
+                    trap 'interrupted TERM 143' TERM
+                """
+                script = '\n'.join(function(name) for name in
+                                   ('interrupted', 'run_interruptible', 'create_owned_postgres'))
+                with subprocess.Popen(['bash', '-c', script + '\n' + setup + '\n' + create],
+                                      env=dict(os.environ, WORK=temp), stdout=subprocess.PIPE,
+                                      stderr=subprocess.STDOUT, text=True, start_new_session=True) as proc:
+                    try:
+                        self.assertTrue(select.select([proc.stdout], [], [], 3)[0])
+                        self.assertEqual(proc.stdout.readline().strip(), 'creating')
+                        proc.send_signal(signal.SIGTERM)
+                        proc.communicate(timeout=3)
+                        self.assertEqual(proc.returncode, 143)
+                        deadline = time.monotonic() + 2
+                        while not Path(temp, 'registered').exists() and time.monotonic() < deadline:
+                            time.sleep(0.02)
+                        self.assertTrue(Path(temp, 'registered').exists())
+                        self.assertTrue(Path(temp, 'removed').exists())
+                    finally:
+                        if proc.poll() is None:
+                            os.killpg(proc.pid, signal.SIGKILL)
+
+    def test_term_cleans_portal_before_pid_assignment(self):
+        lifecycle = Path(os.environ.get('NODE_BOOT_PLATFORM_LIFECYCLE',
+                                        HERE.parent / 'game_platform/lifecycle.sh')).read_text()
+        cleanup = re.search(r'(?ms)^game_platform_cleanup\(\).*?^}', lifecycle).group(0)
+        launch = lifecycle.split('  export PORTAL_E2E_NATIVE_SCOPES=')[1].split('\n', 1)[1]
+        launch = launch.split('  deadline=', 1)[0]
+        launch = launch.replace('bash "$PLATFORM_SOURCE/portal-rs/e2e/start.sh" --seed-plan "$WORK/seed-plan.json"',
+                                "bash -c 'exec sleep 5'")
+        with tempfile.TemporaryDirectory() as temp:
+            setup = r"""
+                set -ETeu
+                GP_HARNESS_PID="" GP_PG_CONTAINER="" WP5_PROJECT=fixture
+                game_platform_retain_test_logs() { :; }
+                cleanup_owned_postgres() { :; }
+                evidence() { :; }
+                ACTIVE_STAGE=setup NODE_BOOT_WORLD=1
+                exec 9>/dev/null
+                trap game_platform_cleanup EXIT
+                trap 'interrupted TERM 143' TERM
+                trap 'if [[ "$BASH_COMMAND" == "GP_HARNESS_PID=\$!" ]]; then
+                    printf "%s\n" "$!" > "$WORK/pid"
+                    kill -TERM "$$"
+                fi' DEBUG
+            """
+            script = '\n'.join((function('interrupted'), cleanup, setup, 'launch_portal() {', launch, '}', 'launch_portal'))
+            result = bash(script, {'WORK': temp})
+            pid = int(Path(temp, 'pid').read_text())
+            try:
+                self.assertEqual(result.returncode, 143, result.stderr)
+                stat_file = Path(f'/proc/{pid}/stat')
+                self.assertTrue(not stat_file.exists() or stat_file.read_text().rsplit(') ', 1)[1].startswith('Z '))
+            finally:
+                try:
+                    os.killpg(pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+
     def test_entry_term_interrupts_setup_and_stage_diagnostics(self):
         lifecycle = Path(os.environ.get('NODE_BOOT_PLATFORM_LIFECYCLE',
                                         HERE.parent / 'game_platform/lifecycle.sh')).read_text()
         portal = re.search(r'(?ms)^game_platform_start\(\).*?^}', lifecycle).group(0)
         bootstrap = lifecycle.split('  ACTIVE_STAGE=character_bootstrap\n')[1].split('  local character\n')[0]
         with tempfile.TemporaryDirectory() as temp:
-            for phase in ('setup', 'dump', 'secret', 'portal', 'bootstrap', 'replay'):
+            for phase in ('setup', 'dump', 'secret', 'portal', 'bootstrap', 'replay', 'route'):
                 with self.subTest(phase=phase):
                     setup = r"""
                         set -Eeuo pipefail
@@ -421,7 +526,7 @@ class RoundTwoCallerTests(unittest.TestCase):
                         pg_observe() { blocked; }
                         timeout() { blocked; }
                     """
-                    functions = ('interrupted', 'pg_observability_dump', 'stage', 'secret_to')
+                    functions = ('interrupted', 'pg_observability_dump', 'stage', 'secret_to', 'create_owned_postgres')
                     helper = function('run_interruptible')
                     invocation = ('run_interruptible blocked' if 'set -m' in helper else 'blocked') if phase == 'setup' else 'stage sample -- true'
                     if phase == 'secret':
@@ -429,9 +534,14 @@ class RoundTwoCallerTests(unittest.TestCase):
                     if phase == 'portal':
                         setup += r'''
                             PG_PORT=15433 PG_IMAGE=fixture WP5_PROJECT=fixture COMPOSE_OWNER=fixture
-                            docker() { blocked; }
+                            docker() {
+                                if [[ "$1" == create ]]; then echo fixture-id; else blocked; fi
+                            }
                         ''' + portal + '\n'
                         invocation = 'game_platform_start'
+                    if phase == 'route':
+                        setup += '\nGAME_SOURCE=.\npython3() { blocked; }\n'
+                        invocation = re.search(r'(?m)^  .*python3 ".*?/route_check.py".*?\n    .*$', portal).group(0)
                     if phase in ('bootstrap', 'replay'):
                         setup += r'''
                             GAME_SOURCE=. BASE=. SECOND_ACCOUNT_ID=account WORLD_ID=world
@@ -464,8 +574,17 @@ class RoundTwoCallerTests(unittest.TestCase):
                             output, _ = proc.communicate(timeout=1.5)
                             self.assertEqual(proc.returncode, 143, output)
                         finally:
-                            if proc.poll() is None:
-                                os.killpg(proc.pid, signal.SIGKILL)
+                            # Bash job control can put the worker and watchdog in
+                            # separate groups within this fixture's private session.
+                            groups = subprocess.run(
+                                ['ps', '-s', str(proc.pid), '-o', 'pgid='],
+                                capture_output=True, text=True, check=False, timeout=3,
+                            ).stdout.split()
+                            for group in set(map(int, groups)):
+                                try:
+                                    os.killpg(group, signal.SIGKILL)
+                                except ProcessLookupError:
+                                    pass
 
     def test_spell_timeout_closes_descendant_output(self):
         budget = next(line for line in RUN_TEXT.splitlines()
