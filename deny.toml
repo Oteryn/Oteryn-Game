@@ -8,6 +8,14 @@ targets = [
 [advisories]
 version = 2
 yanked = "deny"
+# Scoped, reviewed exceptions only. Each names the single path that pulls the crate in.
+ignore = [
+    # humantime 2.4.0 is unmaintained (no safe upgrade). Its only path is
+    # console-subscriber, behind oteryn-game-server's optional `diagnostics`
+    # feature (tokio-console build, `--cfg tokio_unstable`); production binaries
+    # do not contain it. Drop this entry when console-subscriber leaves humantime.
+    { id = "RUSTSEC-2026-0542", reason = "unmaintained; diagnostics-only console-subscriber dependency, absent from production" },
+]
 
 [licenses]
 version = 2
