@@ -912,6 +912,8 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                 && !super::dreamer_death_ring::shared_reset(callback))
             || (callback.key == super::dreamer_carrot::KEY
                 && !super::dreamer_carrot::shared_input(callback))
+            || (callback.key == super::outlaw_power_burn::KEY
+                && !super::outlaw_power_burn::shared_input(callback))
             || (callback.key == nomads_window::KEY && !nomads_window::exact(callback))
             || operation_tracks.len() != callback.operation_count()
             || !operation_tracks.is_disjoint(&unique_storage)
@@ -1036,7 +1038,8 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || (!callback.world_requirements.is_empty()
                 && ((callback.has_personal_state() && !callback.requires_world_admission)
                     || ((!callback.offerings.is_empty() || callback.item_on_target.is_some())
-                        && !callback.requires_world_admission)
+                        && !callback.requires_world_admission
+                        && !super::outlaw_power_burn::shared_input(callback))
                     || (callback.minimum_level.is_some()
                         && !native_trials::level_guard_admitted(callback))
                     || callback.requires_premium
@@ -1259,7 +1262,8 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                         .contains(&key)
                     })
             })
-            || (!callback.offerings.is_empty() && !callback.has_personal_state())
+            || (!callback.offerings.is_empty() && !callback.has_personal_state()
+                && !super::outlaw_power_burn::shared_input(callback))
             || (callback.key.starts_with("oteryn:quest-callback/m01b/")
                 && !imported_explore::admitted(callback))
             || (((callback

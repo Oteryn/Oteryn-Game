@@ -28,10 +28,15 @@ fn scenario_case(
     stateless_destination: Option<Position>,
     admin_override: Option<String>,
 ) -> TestResult {
-    use super::super::outlaw_camp_oven;
+    use super::super::{outlaw_camp_oven, outlaw_camp_power};
     let oven = match name {
         outlaw_camp_oven::CASE => Some(2535),
         outlaw_camp_oven::LIT_CASE => Some(2536),
+        _ => None,
+    };
+    let power = match name {
+        outlaw_camp_power::SWITCH_CASE => Some(false),
+        outlaw_camp_power::BURN_CASE => Some(true),
         _ => None,
     };
     let sidec_npc = name.starts_with("sidec-");
@@ -686,8 +691,8 @@ fn scenario_case(
         super::super::questpc8_life_ring::world()?
     } else if name == "authored-life-ring-bridge" {
         super::super::questpc8_life_ring_bridge::world()?
-    } else if name == super::super::outlaw_camp_power::SWITCH_CASE {
-        super::super::outlaw_camp_power::world()?
+    } else if let Some(burn) = power {
+        outlaw_camp_power::world(burn)?
     } else if let Some(appearance) = oven {
         outlaw_camp_oven::world(appearance)?
     } else if let Some(route) = super::super::questpc8_retrieval_routes::route(name) {
@@ -2800,6 +2805,22 @@ fn scenario_case(
                 &mut admitted,
             ))
             .await?;
+        } else if let Some(burn) = power {
+            if burn {
+                Box::pin(outlaw_camp_power::exercise_burn(
+                    &mut owner,
+                    &mut admitted,
+                    &h,
+                ))
+                .await?;
+            } else {
+                Box::pin(outlaw_camp_power::exercise_switch(
+                    &mut owner,
+                    &mut admitted,
+                    &h,
+                ))
+                .await?;
+            }
         } else if let Some(appearance) = oven {
             Box::pin(outlaw_camp_oven::exercise(
                 &mut owner,

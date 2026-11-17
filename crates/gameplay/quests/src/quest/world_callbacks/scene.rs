@@ -106,7 +106,8 @@ pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
         && callback.lever.is_some()
         && callback.passages.is_empty()
         && callback.teleport.is_none()
-        && callback.offerings.is_empty()
+        && (callback.offerings.is_empty()
+            || super::super::outlaw_power_burn::shared_input(callback))
         && callback.item_on_target.is_none()
         && callback.native_rule.is_none()
         && callback.experience.is_none()
@@ -120,7 +121,10 @@ pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
         && !callback.premium_required
         && (!scene.open.is_empty() || scene.remove_self)
         && (!scene.remove_self || (!callback.reversible && scene.close.is_empty()))
-        && (!callback.reversible || !scene.close.is_empty())
+        && (!callback.reversible
+            || !scene.close.is_empty()
+            || super::super::outlaw_power_burn::shared_input(callback)
+            || callback.key == "oteryn:quest-callback/authored-outlaw-camp-power-switch")
         && relocation_valid
         && (scene.relocations.is_empty()
             || (scene.evacuate_open.is_empty() && scene.evacuate_close.is_empty()))

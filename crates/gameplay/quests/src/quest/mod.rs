@@ -74,6 +74,7 @@ pub mod native_kills;
 pub mod native_rules;
 pub mod npc_magic;
 pub mod npc_rules;
+pub mod outlaw_power_burn;
 pub mod planegazer_finale;
 mod quests_2_focus;
 pub mod reward_callbacks;
@@ -480,6 +481,7 @@ impl QuestStateCatalogue {
                 && !transition.completes
                 && !dreamer_fire_bug::shared_transition(&transition)
                 && !dreamer_carrot::shared_transition(&transition)
+                && !outlaw_power_burn::shared_transition(&transition)
                 && !(((transition.key == "oteryn:quest-transition/worldchange/benevola/handover"
                     && transition.quest == "oteryn:quest/worldchange/benevola")
                     || transition.key.starts_with("oteryn:quest-reward/"))

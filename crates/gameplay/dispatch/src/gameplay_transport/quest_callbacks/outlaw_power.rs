@@ -10,7 +10,7 @@ use crate::gameplay_transport::{
 use crate::map::{overlay::TilePos, view::EntryFacts};
 
 pub(super) const SWITCH: &str = "oteryn:quest-callback/authored-outlaw-camp-power-switch";
-const RING: &str = "oteryn:item.tibia.i3050";
+use oteryn_gameplay_quests::quest::outlaw_power_burn as burn;
 const PEDESTAL: TilePos = TilePos {
     x: 32594,
     y: 32214,
@@ -82,25 +82,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             _ => return UseDisposition::Rejected,
         };
         if !already_moved {
-            let facts = ground.facts(&map.facts);
-            let Ok(Some(pedestal)) =
-                crate::map::view::compose_tile(ground.overlay(), &facts, PEDESTAL)
-            else {
-                return UseDisposition::Rejected;
-            };
-            let ring = pedestal.entries.iter().find_map(|entry| {
-                let crate::map::view::EntrySource::Ground(instance) = entry.source else {
-                    return None;
-                };
-                let oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference) =
-                    entry.facts.definition
-                else {
-                    return None;
-                };
-                let (key, _) = index.definition_at(reference)?;
-                (key == RING).then_some(instance)
-            });
-            let Some(item) = ring else {
+            let Some(item) = ground_item_at(&ground, map, index, PEDESTAL, burn::RING) else {
                 return toggle(None);
             };
             let Some(pickup_cell) = ground.pickup_cell(&item) else {
@@ -154,4 +136,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         outcome
     }
+}
+
+pub(super) fn ground_item_at(
+    ground: &loop_move::LoopGroundOverlay,
+    map: &BundleMap,
+    index: &crate::content::item_ref::ItemDefinitionIndex,
+    position: TilePos,
+    production_key: &str,
+) -> Option<[u8; 16]> {
+    use crate::map::view::EntrySource;
+    use oteryn_protocol_oteryn::world_map::MapDefinition;
+    let facts = ground.facts(&map.facts);
+    let composed = crate::map::view::compose_tile(ground.overlay(), &facts, position).ok()??;
+    composed.entries.iter().find_map(|entry| {
+        let (EntrySource::Ground(instance), MapDefinition::Item(reference)) =
+            (entry.source, entry.facts.definition)
+        else {
+            return None;
+        };
+        let (key, _) = index.definition_at(reference)?;
+        (key == production_key).then_some(instance)
+    })
 }

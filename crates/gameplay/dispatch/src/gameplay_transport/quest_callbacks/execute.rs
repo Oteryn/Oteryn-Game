@@ -214,6 +214,61 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await;
         }
+        use oteryn_gameplay_quests::quest::outlaw_power_burn;
+        let outlaw_burn = outlaw_power_burn::shared_input(callback);
+        if outlaw_burn {
+            let reconciling =
+                self.states
+                    .quest_callbacks
+                    .records
+                    .lock()
+                    .ok()
+                    .is_some_and(|records| {
+                        records
+                            .get(&session)
+                            .is_some_and(|record| record.cause == cause && record.context.is_some())
+                    });
+            let barrel = crate::gameplay_transport::item_ref_admission::pinned_index(
+                runtime,
+                self.active_generation,
+            )
+            .zip(
+                self.states
+                    .loop_ground
+                    .current_for(runtime, map.overlay.base()),
+            )
+            .and_then(|(index, ground)| {
+                super::outlaw_power::ground_item_at(
+                    &ground,
+                    map,
+                    index,
+                    tile(outlaw_power_burn::BARREL_POSITION),
+                    outlaw_power_burn::BARREL,
+                )
+            });
+            if close
+                || !world_requirements_match(map, callback)
+                || (barrel.is_none() && !reconciling)
+            {
+                let Some(pair) = callback.lever else {
+                    return UseDisposition::Rejected;
+                };
+                after.appearance_id = pair[usize::from(!close)];
+                return if map.facts.apply_quest_callback(
+                    key,
+                    expected_revision,
+                    after,
+                    &[],
+                    &[],
+                    close,
+                    None,
+                ) {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::StaleState
+                };
+            }
+        }
         if !close
             && (!world_requirements_match(map, callback)
                 || !self.ground_requirements_match(runtime, map, callback)
@@ -1278,6 +1333,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     eprintln!("quest callback {} unavailable: {error:?}", callback.key);
                     // A storage error can hide a committed receipt; reconcile its original cause.
                     return UseDisposition::Rejected;
+                }
+                Ok(QuestTransitionOutcome::Refused(oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch))
+                    if outlaw_burn => {
+                    if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
+                        pending.remove(&session);
+                    }
+                    return if map.facts.apply_quest_callback(key, expected_revision, after, &[], &[], close, None) {
+                        UseDisposition::Committed
+                    } else {
+                        UseDisposition::StaleState
+                    };
                 }
                 Ok(QuestTransitionOutcome::Refused(oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch))
                     if flame.as_ref().and_then(|input|input.no_change()).is_some() => {

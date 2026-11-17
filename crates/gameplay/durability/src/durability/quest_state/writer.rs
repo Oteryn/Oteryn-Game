@@ -848,7 +848,8 @@ impl DurabilityRoot {
             && world_callbacks.iter().any(|callback| {
                 callback.key == request.transition_key
                     && (oteryn_gameplay_quests::quest::dreamer_fire_bug::shared_input(callback)
-                        || oteryn_gameplay_quests::quest::dreamer_carrot::shared_input(callback))
+                        || oteryn_gameplay_quests::quest::dreamer_carrot::shared_input(callback)
+                        || oteryn_gameplay_quests::quest::outlaw_power_burn::shared_input(callback))
                     && matches!(
                         (callback.trigger, request.cause),
                         (
@@ -867,9 +868,13 @@ impl DurabilityRoot {
                         || oteryn_gameplay_quests::quest::dreamer_carrot::shared_transition(
                             transition,
                         )
+                        || oteryn_gameplay_quests::quest::outlaw_power_burn::shared_transition(
+                            transition,
+                        )
                 });
         if (request.transition_key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE
-            || request.transition_key == oteryn_gameplay_quests::quest::dreamer_carrot::KEY)
+            || request.transition_key == oteryn_gameplay_quests::quest::dreamer_carrot::KEY
+            || request.transition_key == oteryn_gameplay_quests::quest::outlaw_power_burn::KEY)
             != shared_entrance
         {
             return Err(CharacterProgressionError::InvalidInput);

@@ -11,6 +11,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 pub(super) const SWITCH_CASE: &str = "authored-outlaw-camp-power-switch";
+pub(super) const BURN_CASE: &str = "authored-outlaw-camp-power-burn";
 const RING: &str = "oteryn:item.tibia.i3050";
 const LEVER: TilePos = TilePos {
     x: 32594,
@@ -51,7 +52,52 @@ fn outlaw_camp_power_switch_moves_exact_ring_and_opens_wall_postgres() -> TestRe
     })
 }
 
-pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
+const BURN_LEVER: TilePos = TilePos {
+    x: 32616,
+    y: 32222,
+    floor: -10,
+};
+const BURN_START: TilePos = TilePos {
+    x: BURN_LEVER.x - 1,
+    ..BURN_LEVER
+};
+const BURN_WALL: TilePos = TilePos {
+    x: 32614,
+    y: 32205,
+    ..BURN_LEVER
+};
+const STONE: TilePos = TilePos {
+    y: 32206,
+    ..BURN_WALL
+};
+const BARREL: TilePos = TilePos {
+    y: 32209,
+    ..BURN_WALL
+};
+const SECOND_FIRE: TilePos = TilePos {
+    y: 32221,
+    ..BURN_START
+};
+
+#[test]
+fn outlaw_camp_power_burn_uses_ring_only_with_barrel_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run(BURN_CASE, move || {
+        quest_world_callbacks::scenario_with_admin(
+            BURN_CASE,
+            Position {
+                x: BURN_LEVER.x,
+                y: BURN_LEVER.y,
+                floor: BURN_LEVER.floor,
+            },
+            admin,
+        )
+    })
+}
+
+pub(super) fn world(burn: bool) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
@@ -61,6 +107,10 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
         (1, 2772, bundle::TerrainKind::Common),
         (2, 1271, bundle::TerrainKind::Wall),
         (3, 2321, bundle::TerrainKind::Common),
+        (4, 1270, bundle::TerrainKind::Wall),
+        (5, 1791, bundle::TerrainKind::Common),
+        (6, 6477, bundle::TerrainKind::Common),
+        (7, 2118, bundle::TerrainKind::Field),
     ] {
         data.manifest.palette.push(bundle::PaletteEntry {
             key: format!("oteryn:terrain.tibia.i{appearance}"),
@@ -80,15 +130,34 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
         attrs: Default::default(),
     };
     let mut grouped = std::collections::BTreeMap::<(i8, u16, u16), Vec<sector::Tile>>::new();
-    for (pos, extra) in [
-        (START, None),
-        (LEVER, Some(1)),
-        (PEDESTAL, Some(3)),
-        (WALL, Some(2)),
-        (RECEIVER, Some(3)),
-    ] {
+    let (start, fixture) = if burn {
+        (
+            BURN_START,
+            vec![
+                (BURN_START, vec![]),
+                (BURN_LEVER, vec![6, 1]),
+                (BURN_WALL, vec![4]),
+                (STONE, vec![5]),
+                (BARREL, vec![]),
+                (RECEIVER, vec![3]),
+                (SECOND_FIRE, vec![]),
+            ],
+        )
+    } else {
+        (
+            START,
+            vec![
+                (START, vec![]),
+                (LEVER, vec![1]),
+                (PEDESTAL, vec![3]),
+                (WALL, vec![2]),
+                (RECEIVER, vec![3]),
+            ],
+        )
+    };
+    for (pos, extra) in fixture {
         let mut items = vec![item(0)];
-        items.extend(extra.map(item));
+        items.extend(extra.into_iter().map(item));
         grouped
             .entry((pos.floor, pos.y / 32, pos.x / 32))
             .or_default()
@@ -103,19 +172,22 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
     }
     let sectors: Vec<_> = grouped
         .into_iter()
-        .map(|((floor, sy, sx), tiles)| bundle::Sector {
-            floor,
-            sx,
-            sy,
-            tiles,
+        .map(|((floor, sy, sx), mut tiles)| {
+            tiles.sort_by_key(|tile| (tile.y, tile.x));
+            bundle::Sector {
+                floor,
+                sx,
+                sy,
+                tiles,
+            }
         })
         .collect();
     data.manifest.world = bundle::Extent {
         min_x: START.x,
-        min_y: LEVER.y,
-        max_x: RECEIVER.x + 1,
-        max_y: RECEIVER.y + 1,
-        floors: vec![-10, -9],
+        min_y: BURN_WALL.y,
+        max_x: BURN_LEVER.x + 1,
+        max_y: BURN_LEVER.y + 1,
+        floors: if burn { vec![-10] } else { vec![-10, -9] },
     };
     let bytes = oteryn_world_bundle::writer::write(&data.manifest, &sectors, &Default::default())?;
     pins.digest = bundle::read(&bytes)?.digest;
@@ -125,7 +197,7 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
         &crate::map::boot::BootPins {
             map_revision: crate::map::overlay::map_revision(&base),
             bundle: pins,
-            start: START,
+            start,
         },
         crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
         crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
@@ -194,5 +266,92 @@ pub(super) async fn exercise_switch(
         UseDisposition::Committed
     );
     assert!(hidden(owner)?);
+    Ok(())
+}
+
+pub(super) async fn exercise_burn(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    harness: &Harness,
+) -> TestResult {
+    let wall = placement_key(BURN_WALL, 1).ok_or("wall placement")?;
+    let fence = admitted.item_fence.ok_or("Ground fence")?;
+    quest_world_callbacks::input_item(
+        owner,
+        fence,
+        &Offering {
+            position: Position {
+                x: RECEIVER.x,
+                y: RECEIVER.y,
+                floor: RECEIVER.floor,
+            },
+            item: RING.into(),
+            count: 1,
+        },
+        31,
+        false,
+    )
+    .await?;
+    for command in [1, 2] {
+        let target = object_target(owner, BURN_LEVER, 2)?;
+        assert_eq!(
+            use_target(owner, admitted, command, &target).await?,
+            UseDisposition::Committed
+        );
+        assert!(!owner.bundle_map().ok_or("map")?.facts.base_hidden(wall));
+    }
+    let (digest, frame) = {
+        let runtime = owner.runtime.lock().await;
+        (
+            runtime.content_pin().server_artifact_digest(),
+            runtime.content_pin().frame_binding_digest(),
+        )
+    };
+    let revision =
+        crate::map::overlay::map_revision(owner.bundle_map().ok_or("map")?.overlay.base());
+    super::outlaw_camp_rope::seed_barrel(harness, &revision, digest, frame, BARREL).await?;
+    owner.states.loop_ground.invalidate();
+    let target = object_target(owner, BURN_LEVER, 2)?;
+    assert_eq!(
+        use_target(owner, admitted, 3, &target).await?,
+        UseDisposition::Committed
+    );
+    let map = owner.bundle_map().ok_or("map")?;
+    assert!(map.facts.base_hidden(wall));
+    let stone = map
+        .overlay
+        .base()
+        .tile(STONE.x, STONE.y, STONE.floor)
+        .ok_or("stone tile")?;
+    assert_eq!(
+        map.facts
+            .base_entry(STONE, 1, stone.ids()[1])
+            .map(|entry| entry.appearance_id),
+        Some(1270)
+    );
+    for position in [RECEIVER, SECOND_FIRE] {
+        assert_eq!(
+            map.facts
+                .movement_items(position)
+                .iter()
+                .filter(|entry| entry.facts.appearance_id == 2118)
+                .count(),
+            1
+        );
+    }
+    let consumed: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_quest_callback_consumptions WHERE transition_key=$1",
+    )
+    .bind(format!("oteryn:quest-callback/{BURN_CASE}"))
+    .fetch_one(&harness.pool)
+    .await?;
+    assert_eq!(consumed, 1);
+    let active_roots: Vec<String> = sqlx::query_scalar("SELECT i.definition_production_key FROM game_item_instances i JOIN game_item_ground_locations g USING (item_instance_id) WHERE i.definition_production_key IN ($1, $2)")
+        .bind(RING).bind("oteryn:item.tibia.i2523").fetch_all(&harness.pool).await?;
+    assert_eq!(active_roots, ["oteryn:item.tibia.i2523"]);
+    assert_eq!(
+        use_target(owner, admitted, 3, &target).await?,
+        UseDisposition::Committed
+    );
     Ok(())
 }

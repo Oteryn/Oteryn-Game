@@ -141,6 +141,7 @@ async fn scenario(admin: String, barrel_move: Option<(TilePos, TilePos)>) -> Tes
         map.map_revision(),
         pin.identity().server_artifact_digest(),
         frame,
+        BELOW,
     )
     .await?;
 
@@ -393,7 +394,13 @@ fn cell(pos: TilePos) -> Vec<u8> {
     .concat()
 }
 
-async fn seed_barrel(h: &Harness, map: &str, content: [u8; 32], frame: [u8; 32]) -> TestResult {
+pub(super) async fn seed_barrel(
+    h: &Harness,
+    map: &str,
+    content: [u8; 32],
+    frame: [u8; 32],
+    position: TilePos,
+) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
@@ -413,7 +420,7 @@ async fn seed_barrel(h: &Harness, map: &str, content: [u8; 32], frame: [u8; 32])
           spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,stack_ordinal)
          VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,$4,$5,$6,
           'sha256:'||encode($7,'hex'),$8,nextval('game_item_ground_stack_ordinal_seq'))",
-    ).bind(id(85).as_slice()).bind(id(42).as_slice()).bind(id(43).as_slice()).bind(cell(BELOW))
+    ).bind(id(85).as_slice()).bind(id(42).as_slice()).bind(id(43).as_slice()).bind(cell(position))
         .bind(reference).bind(map).bind(content.as_slice()).bind(frame.as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
     Ok(())

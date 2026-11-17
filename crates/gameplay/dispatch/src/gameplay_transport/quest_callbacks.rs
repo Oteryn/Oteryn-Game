@@ -1181,7 +1181,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
-            if callback.key == outlaw_power::SWITCH {
+            if matches!(callback.key.as_str(), outlaw_power::SWITCH | oteryn_gameplay_quests::quest::outlaw_power_burn::KEY) {
                 let index = {
                     let runtime = self.runtime.lock().await;
                     super::item_ref_admission::pinned_index(&runtime, self.active_generation)
