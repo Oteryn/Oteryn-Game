@@ -21,7 +21,12 @@ fn q25years_retro_propagates_native_spell_damage_in_instance() -> TestResult {
             super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
         let active = controller.active().ok_or("active content")?;
         let native = active.native_gameplay().ok_or("native content")?;
-        let prototype = native.policies().policies().first().ok_or("base policy")?;
+        let prototype = native
+            .policies()
+            .policies()
+            .iter()
+            .find(|policy| policy.definition_key == "oteryn:creature.rat")
+            .ok_or("rat policy")?;
         let start = activated.qualified_room().entry_start();
         let pin = activated.into_channel_pin();
         super::boss_activity::issue_content_and_reset(&h, &pin).await?;
@@ -78,10 +83,10 @@ fn q25years_retro_propagates_native_spell_damage_in_instance() -> TestResult {
             };
             let actor = runtime
                 .admit_encounter_actor(&key, 1_000, at)
-                .map_err(debug)?;
+                .map_err(|error| format!("admit {key} at {at:?}: {error:?}"))?;
             runtime
                 .install_creature_policy(actor, &key)
-                .map_err(debug)?;
+                .map_err(|error| format!("install {key}: {error:?}"))?;
             Ok(actor)
         };
         let distortion = spawn("time_distortion", 0)?;
@@ -147,7 +152,7 @@ fn cast(runtime: &mut ChannelRuntimeV1, issuer: ExactActorRef, spell: &str) -> T
     };
     assert!(
         crate::gameplay_transport::retro_combat::execute(runtime, &proposal, 1_000_000)
-            .map_err(debug)?
+            .map_err(|error| format!("dispatch {spell} from {issuer:?}: {error:?}"))?
     );
     Ok(())
 }

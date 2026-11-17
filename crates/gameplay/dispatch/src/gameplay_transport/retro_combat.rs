@@ -103,6 +103,9 @@ pub(super) fn execute(
     }
     if !castles.is_empty() {
         let occurrence = proposal.occurrence.id().as_str().as_bytes();
+        let mut binding = occurrence.to_vec();
+        binding.push(0);
+        binding.extend_from_slice(b"retro-blissful-blast");
         runtime
             .borrow_exact_actor_commit_at_us(now_us)
             .commit_raw_creature_damage_batch(
@@ -110,7 +113,7 @@ pub(super) fn execute(
                 OwnerDamageCommand {
                     target: PARCEL_CASTLE.as_bytes(),
                     occurrence,
-                    binding: occurrence,
+                    binding: &binding,
                     damage,
                 },
                 |_| Ok(()),
