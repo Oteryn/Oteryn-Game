@@ -53,7 +53,8 @@ Validation recorded so far:
 | Initial focused dispatch regression | Build killed by SIGKILL before tests; no behavioral red result claimed |
 | Focused retry | Fixed a test calling a private parser by using the public binding validator; corrected build running with `CARGO_BUILD_JOBS=1` and normal profiles |
 | Quest-authoring checks | First run ended with a killed subprocess; rerun separately after Rust build |
-| Quest-authoring unit-tests runner | Running serially; no reported failure yet |
+| Quest-authoring unit-tests runner | Serial runner paused at low resident memory while dispatch compiles; resume after Rust; no reported failure yet |
+| Direct donor/data comparison | Passed: both inputs, output item/count/tile, storage gates, AID, native control stacks and literal feedback |
 | Clippy, full regeneration and pin verification | Pending |
 
 The cancelled compiler was explicitly terminated after Cargo exited, leaving only
