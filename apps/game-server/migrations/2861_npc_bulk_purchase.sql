@@ -9,7 +9,7 @@ DO $$ DECLARE c RECORD; extension TEXT; BEGIN
    WHEN 'game_npc_trades_quantity_check' THEN 'quantity BETWEEN 1 AND 10000'
    WHEN 'game_npc_trades_item_units_check' THEN 'item_units BETWEEN 1 AND 10000'
    WHEN 'game_npc_trades_line_count_check' THEN 'line_count BETWEEN 1 AND 150'
-   ELSE 'side=1 AND NOT sell_all AND bank_debit_gold_units=0 AND burned_gold_units-minted_gold_units=total_gold_units AND line_count BETWEEN 1 AND 150' END;
+   ELSE 'side=1 AND NOT sell_all AND burned_gold_units-minted_gold_units+bank_debit_gold_units=total_gold_units AND line_count BETWEEN 1 AND 150' END;
   EXECUTE format('ALTER TABLE game_npc_trades DROP CONSTRAINT %I',c.conname);
   EXECUTE format('ALTER TABLE game_npc_trades ADD CONSTRAINT %I CHECK ((NOT purchase_v2 AND %s) OR (purchase_v2 AND %s))',c.conname,substr(c.definition,7),extension);
  END LOOP;
@@ -50,7 +50,7 @@ DECLARE t game_npc_trades%ROWTYPE; p game_npc_purchase_details%ROWTYPE;
  o game_npc_purchase_outputs%ROWTYPE; expected_quantity BIGINT; bag_id UUID;
 BEGIN
  SELECT * INTO t FROM game_npc_trades WHERE transaction_id=p_transaction;
- IF NOT FOUND OR NOT t.purchase_v2 OR t.side<>1 OR t.sell_all OR t.house_key IS NOT NULL OR t.bank_debit_gold_units<>0 OR t.created_xact_id<>pg_current_xact_id() THEN RETURN FALSE; END IF;
+ IF NOT FOUND OR NOT t.purchase_v2 OR t.side<>1 OR t.sell_all OR t.house_key IS NOT NULL OR t.created_xact_id<>pg_current_xact_id() THEN RETURN FALSE; END IF;
  SELECT * INTO p FROM game_npc_purchase_details WHERE transaction_id=p_transaction;
  IF NOT FOUND OR p.created_xact_id<>pg_current_xact_id() THEN RETURN FALSE; END IF;
  stacks:=(t.quantity+p.stack_size-1)/p.stack_size;
@@ -68,8 +68,8 @@ BEGIN
  SELECT coalesce(sum((quantity_before-quantity_after)*coin_worth) FILTER(WHERE line_kind=1),0),coalesce(sum(quantity_after*coin_worth) FILTER(WHERE line_kind=2),0)
  INTO burned,minted FROM game_npc_trade_lines WHERE transaction_id=p_transaction;
  SELECT coin_worth INTO last_worth FROM game_npc_trade_lines WHERE transaction_id=p_transaction AND line_kind=1 ORDER BY line_ordinal DESC LIMIT 1;
- IF burned<>t.burned_gold_units OR minted<>t.minted_gold_units OR burned-minted<>t.total_gold_units
-  OR (last_worth IS NULL AND t.total_gold_units<>0) OR minted>=coalesce(last_worth,1)
+ IF burned<>t.burned_gold_units OR minted<>t.minted_gold_units OR burned-minted+t.bank_debit_gold_units<>t.total_gold_units
+  OR (last_worth IS NULL AND t.total_gold_units-t.bank_debit_gold_units<>0) OR minted>=coalesce(last_worth,1)
   OR EXISTS(SELECT 1 FROM game_npc_trade_lines a JOIN game_npc_trade_lines b USING(transaction_id) WHERE a.transaction_id=p_transaction AND a.line_ordinal<b.line_ordinal AND ((a.line_kind<>1 AND b.line_kind=1) OR (a.line_kind=4 AND b.line_kind<>4) OR (a.line_kind=2 AND b.line_kind=2 AND a.coin_worth<=b.coin_worth)))
   OR EXISTS(SELECT 1 FROM game_npc_trade_lines l JOIN game_item_instances i USING(item_instance_id)
    WHERE l.transaction_id=p_transaction AND (i.world_id<>t.world_id OR i.quantity<>l.quantity_after OR i.lifecycle<>CASE WHEN l.quantity_after=0 THEN 2 ELSE 1 END

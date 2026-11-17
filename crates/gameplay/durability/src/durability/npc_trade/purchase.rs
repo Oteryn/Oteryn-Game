@@ -107,7 +107,7 @@ pub(super) async fn prepare(
     backpack: [u8; 16],
     entries: &[Entry],
     capacity: usize,
-    _tuple: Type2EventTuple,
+    tuple: Type2EventTuple,
 ) -> Result<PreparedPurchase> {
     if request.cause.side != NpcTradeSide::Buy
         || request.quantity != 1
@@ -157,8 +157,8 @@ pub(super) async fn prepare(
         1,
         usize::MAX,
         entries,
-        Type2EventTuple::V1,
-        false,
+        tuple,
+        super::super::bank::fee_payer_is_junior(fence.character_id),
     )?;
     plan.lines
         .retain(|line| line.kind != NpcTradeLineKind::ItemMint);
