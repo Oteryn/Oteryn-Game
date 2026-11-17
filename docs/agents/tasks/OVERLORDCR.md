@@ -1,41 +1,37 @@
-# OVERLORDCR
+# OVERLORDCR — implementation complete, validation partial
 
-Base: e2152d050038cecdb3728c222af2ac184e1cac5a. Branch: claude/happy-davinci-ijz3wy-overlordcr.
+Branch: `claude/happy-davinci-ijz3wy-overlordcr`. Base: `e2152d050038cecdb3728c222af2ac184e1cac5a`.
 
-Crystal reference checkout: /workspace/crystal at 201189f871d23597b82caf88fd611454a2ddefb8; the original packet revision 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d was also inspected.
+## Donor evidence
 
-`data-global/scripts/quests/elemental_spheres/creaturescripts_overlord_kill.lua:2-5` maps energy, fire, ice and earth overlords to the same player `Storage.Quest.U8_2.ElementalSpheres.BossStorage`. Lines 24-26 call `onDeathForDamagingPlayers`, check `< 1` and set `1`. `data-global/lib/core/storages.lua:1084` defines BossStorage as 41652. The distinct globalStorage keys in lines 2-5 control spawn availability, not per-character kill credit.
+Checkout `/workspace/crystal` resolves `201189f8` to `201189f871d23597b82caf88fd611454a2ddefb8`. The relevant overlord script is identical at packet revision `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`.
 
-Implementation plan: register four source-death rules against one quest track. Use the existing lethal damage-share capture, quest recipient freeze, native death queue and fenced quest-state transaction. Do not introduce a second storage owner or infer nearby/party participants. Verify two damaging characters, a nearby observer, other creature deaths, duplicate settlement and all four source mappings through PostgreSQL.
+- `data-global/scripts/quests/elemental_spheres/creaturescripts_overlord_kill.lua:2-5`: all four overlords use player `Storage.Quest.U8_2.ElementalSpheres.BossStorage`; the four distinct globalStorage keys govern spawn availability.
+- Same file, lines 24-26: `onDeathForDamagingPlayers`; player storage `< 1` is set to `1`.
+- `data-global/lib/core/storages.lua:1084`: `BossStorage = 41652`.
+- `data/libs/functions/functions.lua:1075-1082`: iterate `creature:getDamageMap()`, resolve `Player(key)`, invoke the callback for resolved players.
 
-WIP: production rules are registered in `crates/gameplay/quests/src/quest/source_deaths.rs`. Mounted dispatch regressions cover shared donor mapping, two damaging Characters, a nearby observer, a non-overlord death and duplicate projection/settlement. The pre-change quest dependency was compiled before production registration; that attempt failed during dispatch compilation before any test ran. The single-job retry is pending. Formatting passed. Governance validation and all 135 governance unit tests passed. PostgreSQL execution, clippy and pin verification remain pending.
+## Production path
 
-Validation attempt: `cargo test -p oteryn-gameplay-dispatch --lib overlordcr -- --nocapture` failed before test execution: `error: could not compile `oteryn-gameplay-dispatch` (lib test)`; rustc ended with `(signal: 9, SIGKILL: kill)`. The cgroup reported one OOM kill. This is not behavioral RED evidence. Cleaned only dispatch build output and retried with `CARGO_BUILD_JOBS=1`; the retry includes the production rules.
+Four source-death rules share `oteryn:quest-progress/quest/u8_2/elemental_spheres/boss_storage`, initial -1, guard `< 1`, write 1. Existing lethal capture freezes damage recipients (`grizzly_kills::capture` → `quest_batch3_c::capture`); the existing death queue calls `quest_kills::settle` and the fenced native quest-state transaction before ordinary reward release. No new storage owner, migration, capability, command, content input or generated pin.
 
-Whole-diff self-review: no new storage owner, SQL migration, capability, command, content input or generated pin. The four rules share the donor flag, require damage rather than social-party/proximity membership, and use the existing native quest writer and occurrence receipts. Existing authority checks are unchanged. New tests retain the original source-death scenario assertions and add independently admitted damager/observer assertions. Runtime PostgreSQL validation remains pending.
+## Validation
 
-Second dispatch test attempt: after `cargo clean -p oteryn-gameplay-dispatch`, `CARGO_BUILD_JOBS=1 cargo test -p oteryn-gameplay-dispatch --lib overlordcr -- --nocapture` again ended with `(signal: 9, SIGKILL: kill)` before any test executed. The repository PG workflow documents extra swap for this target; this container has no swap or administrative capabilities. Full lethal-path tests remain intact. Added a separate mounted authority-case proof of the quest-owner transaction to obtain supplemental PostgreSQL evidence without compiling dispatch library tests.
-
-Passed: `cargo clippy --locked -p oteryn-gameplay-quests --all-targets --quiet -- -D warnings`. Supplemental authority PG test compilation is in progress.
-
-Current validation table (ci-local.sh is absent at this base):
+`ci-local.sh` is absent at this base.
 
 | Check | Result |
 | --- | --- |
-| cargo fmt plus explicit mounted-file rustfmt | Passed |
+| cargo fmt and explicit mounted-file rustfmt | Passed |
 | quest crate clippy, all targets, warnings denied | Passed |
-| governance validator and unit tests | Passed, 135 tests |
-| full dispatch lethal-path PG regressions | Two compiler OOM failures, including clean single-job retry; no test execution |
-| supplemental authority PG proof | Passed: 1 test, 0 failures, 138.002037182 seconds |
-| dispatch clippy, all targets/all features | Pending |
-| game-server touched authority target clippy | Pending |
+| governance validator and unit tests | Passed; 135 unit tests |
+| supplemental authority PostgreSQL proof | Passed: 1 test, 0 failures, 138.002037182 seconds |
+| full dispatch lethal-path PostgreSQL cases | Not executed: two compiler OOM failures, including clean single-job retry |
+| dispatch clippy, all targets/all features, warnings denied | Running with one job |
+| touched server authority-target clippy | Pending |
+| focused catalogue validation | Pending |
 | pin/lock verification | Pending |
-| behavioral red-to-green proof | Not obtained; initial red attempt failed in compiler |
+| behavioral red-to-green proof | Not obtained: initial red attempt failed during compilation |
 
-Donor key rechecked on the current 201189f8 checkout: `data-global/lib/core/storages.lua:1084`, `BossStorage = 41652`. Its overlord death script is byte-identical to packet revision 9f5a72c for the relevant file. The supplemental build has progressed past the content crate into gameplay dependencies.
+PG command: `cargo test --locked -p oteryn-game-server --test character_authority_postgres overlordcr -- --nocapture`. Passed `overlordcr_quest_owner_rejects_non_damage_and_replays_all_four_flags_postgres`; marker `OVERLORDCR_OWNER_PG_EXECUTED duration=138.002037182s`. It verifies all four mappings, non-damage/non-overlord rejection, duplicate receipt replay and a distinct later overlord preserving the shared flag.
 
-Additional donor participant witness: `data/libs/functions/functions.lua:1075-1082` implements `onDeathForDamagingPlayers` by iterating `creature:getDamageMap()`, resolving each key with `Player(key)`, and invoking the callback for resolved players. This confirms damage-map rather than proximity/party eligibility. Supplemental PG compilation has progressed through production dispatch and into the final application/client dependency chain; it has not reported a test outcome yet.
-
-PG GREEN: `cargo test --locked -p oteryn-game-server --test character_authority_postgres overlordcr -- --nocapture` passed `overlordcr_quest_owner_rejects_non_damage_and_replays_all_four_flags_postgres`: one passed, zero failed, marker `OVERLORDCR_OWNER_PG_EXECUTED duration=138.002037182s`. This proves the native quest-state transaction for all four flags, rejection of non-damage/non-overlord requests, duplicate receipt replay and a distinct later overlord preserving the shared flag. It does not replace execution of the full dispatch lethal-path cases.
-
-Checkpoint after the PG green run: dispatch clippy is running with `--all-targets --all-features -D warnings` and `CARGO_BUILD_JOBS=1`. No new production or test diagnostic has been reported so far. Remaining local actions are its completion, the touched server target clippy, focused catalogue validation, pin/lock verification and a final report that explicitly distinguishes the real owner PG pass from the two unexecuted dispatch PG cases.
+Full production lethal-path regressions remain intact in mounted dispatch tests: two damaging Characters, nearby observer, non-overlord death, duplicate projection/settlement, all four mappings. Both attempted runs failed before test execution with `error: could not compile `oteryn-gameplay-dispatch` (lib test)` and `(signal: 9, SIGKILL: kill)`. Retried after `cargo clean -p oteryn-gameplay-dispatch` with `CARGO_BUILD_JOBS=1`. The repository PG workflow documents extra swap for this target; this container has no swap or administrative capabilities. No tests were skipped, loosened or removed to obtain the supplemental proof.
