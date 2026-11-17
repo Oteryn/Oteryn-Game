@@ -10,6 +10,7 @@ use oteryn_gameplay_dispatch::gameplay_transport::composed_test_owner::{
     self, ComposedTestOwner, FreshAdmissionAuthority, UseCommand,
 };
 use oteryn_gameplay_dispatch::gameplay_transport::{ComposedFreshAdmission, FreshEvidenceSource};
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_world::map::{
     boot::{BundleCollisionIndexExt, BundleMap},
     overlay::TilePos,

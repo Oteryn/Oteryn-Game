@@ -1542,6 +1542,7 @@ fn scenario_case(
         )
         .map_err(debug)?;
         if name == super::super::lersatio_use::NAME {
+            use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
             generation
                 .native_gameplay()
                 .ok_or("Lersatio native policies")?
