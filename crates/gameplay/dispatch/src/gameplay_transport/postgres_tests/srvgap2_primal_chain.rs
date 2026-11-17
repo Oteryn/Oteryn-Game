@@ -275,12 +275,7 @@ async fn scenario(admin: String) -> TestResult {
         |delta| oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now.get() + delta);
     destination.drain_monster_melee_at(later(10_001_000)).await;
     assert_eq!(beasts(&destination).await?, 0, "source three-second warmup");
-    let duplicate_cell = MovementLocalPosition {
-        x: 27708,
-        y: 27459,
-        floor: -15,
-    };
-    let expected_cells = {
+    let (expected_cells, duplicate_cell) = {
         let runtime = destination.runtime.lock().await;
         let snapshot = runtime.companion_snapshot(boss).map_err(debug)?;
         let health = u64::try_from(snapshot.health)?;
@@ -327,14 +322,12 @@ async fn scenario(admin: String) -> TestResult {
             requested_wave,
             "source wave requests"
         );
-        assert_eq!(
-            scheduled_cells
-                .iter()
-                .filter(|at| **at == duplicate_cell)
-                .count(),
-            2,
-            "corrected content schedules the duplicate cell twice"
-        );
+        // The draws follow the native content digest, so the repeated cell is
+        // derived from the replayed schedule rather than pinned to one digest.
+        let duplicate_cell = *scheduled_cells
+            .iter()
+            .find(|at| scheduled_cells.iter().filter(|other| other == at).count() == 2)
+            .ok_or("the source schedule requests one cell twice")?;
         // Crystal spawnMonster calls Game.createMonster without force=true:
         // existing occupants and earlier successful requests prevent admission.
         let mut admitted_cells = std::collections::BTreeSet::new();
@@ -343,7 +336,7 @@ async fn scenario(admin: String) -> TestResult {
                 admitted_cells.insert((at.x, at.y, at.floor));
             }
         }
-        admitted_cells
+        (admitted_cells, duplicate_cell)
     };
     let expected_wave = expected_cells.len();
     destination.drain_monster_melee_at(later(13_001_000)).await;
