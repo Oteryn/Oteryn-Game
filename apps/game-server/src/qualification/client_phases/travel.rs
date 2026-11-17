@@ -1,0 +1,656 @@
+//! FLOOR-E2E: multi-floor route planning over the production bundle, travelled by real play.
+//!
+//! Every planned edge is a command a player sends:
+//! - a STEP, resolved by the production floor resolver, so stairs, ramps, holes and teleports
+//!   change floor by stepping;
+//! - a STEP onto a closed door, after USE on that door (level and quest doors answer `Locked`
+//!   below their predicate, which ends the journey with that exact refusal);
+//! - USE on an immovable ladder, and USE of a carried rope on a rope spot. Both land one floor up
+//!   on the first free tile in the server's order (`crates/gameplay/world/src/map/floor/rope.rs`,
+//!   `OFFSETS`).
+//!
+//! Levers are not planned: no bundle fact maps a lever to the passage its quest callback opens.
+//! A caller that needs one walks next to it with `travel_to` and sends `use_map_object` first.
+use super::*;
+use oteryn_dev_client::DevClientSession;
+use oteryn_protocol_oteryn::world_object::UseDisposition;
+use std::cmp::Reverse;
+use std::collections::{BinaryHeap, HashMap};
+
+const DIRECTIONS: [StepDirection; 4] = [
+    StepDirection::North,
+    StepDirection::East,
+    StepDirection::South,
+    StepDirection::West,
+];
+/// `rope.rs` `OFFSETS`: south, north, east, west, then the diagonals.
+const OFFSETS: [(i16, i16); 8] = [
+    (0, 1),
+    (0, -1),
+    (1, 0),
+    (-1, 0),
+    (-1, 1),
+    (1, 1),
+    (-1, -1),
+    (1, -1),
+];
+/// `rope.rs` `ROPE_GROUND` (canary data/global.lua:83-84) and its top-item rope spot 12935.
+const ROPE_GROUND: &[u16] = &[
+    386, 421, 7762, 12202, 12936, 14238, 17238, 21965, 21966, 21967, 21968, 23363,
+];
+const ROPE_TOP: u16 = 12935;
+const ROPE_ITEM: u32 = 3003;
+/// Tiles around the start-to-target box that a detour may use.
+const MARGIN: u16 = 160;
+/// The search gives up after this many settled tiles instead of exhausting memory.
+const SEARCH_LIMIT: usize = 6_000_000;
+const MAX_REPLANS: usize = 8;
+
+/// One player action of a route.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum Leg {
+    Step(StepDirection),
+    Ladder { at: TilePos, ordinal: u8 },
+    Rope { at: TilePos, ordinal: u8 },
+}
+
+pub(super) struct Planner<'a> {
+    world: &'a BundleWorld,
+    /// Door tile -> (placement key, authored action id).
+    doors: HashMap<TilePos, (u64, u16)>,
+    ladders: HashMap<TilePos, u8>,
+    ropes: HashMap<TilePos, u8>,
+    /// Authored `unique` attribute -> its tile and top-level ordinal.
+    pub(super) uniques: HashMap<u16, (TilePos, u8)>,
+}
+
+impl<'a> Planner<'a> {
+    /// Door facts only; `scan` adds the bundle's ladders, rope spots and unique ids.
+    pub(super) fn new(world: &'a BundleWorld) -> Self {
+        let mut doors = HashMap::new();
+        for key in world.facts().doors().keys() {
+            if let Some((at, _)) = crate::map::view::placement_of(key) {
+                doors.entry(at).or_insert((key, 0));
+            }
+        }
+        Self {
+            world,
+            doors,
+            ladders: HashMap::new(),
+            ropes: HashMap::new(),
+            uniques: HashMap::new(),
+        }
+    }
+
+    pub(super) fn load(world: &'a BundleWorld, bytes: &[u8]) -> TestResult<Self> {
+        let mut planner = Self::new(world);
+        let Self {
+            doors,
+            ladders,
+            ropes,
+            uniques,
+            ..
+        } = &mut planner;
+        let visited = oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
+            for tile in sector.tiles {
+                let at = TilePos {
+                    x: tile.x,
+                    y: tile.y,
+                    floor: sector.floor,
+                };
+                for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate()
+                {
+                    let Ok(ordinal) = u8::try_from(ordinal) else {
+                        continue;
+                    };
+                    if let Some(unique) = item.attrs.unique {
+                        uniques.entry(unique).or_insert((at, ordinal));
+                    }
+                    if let Some(door) = doors.get_mut(&at)
+                        && crate::map::view::placement_key(at, ordinal) == Some(door.0)
+                    {
+                        door.1 = item.attrs.action.unwrap_or(0);
+                    }
+                    let entry = &manifest.palette[item.palette as usize];
+                    let Some(id) = crate::map::palette_appearance(&entry.key) else {
+                        continue;
+                    };
+                    if crate::map::floor::is_ladder_appearance(id) {
+                        ladders.entry(at).or_insert(ordinal);
+                    }
+                    let ground = entry.terrain.is_some_and(|terrain| {
+                        terrain.kind == oteryn_world_bundle::bundle::TerrainKind::Ground
+                    });
+                    if (ground && ROPE_GROUND.contains(&id)) || (!ground && id == ROPE_TOP) {
+                        ropes.entry(at).or_insert(ordinal);
+                    }
+                }
+            }
+            Ok(())
+        })?;
+        if visited.digest != world.base().digest() {
+            return Err("travel planner and boot world have different bundle digests".into());
+        }
+        Ok(planner)
+    }
+
+    fn walkable(&self, at: TilePos, through_doors: bool) -> bool {
+        self.world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| tile.walkable())
+            && (self.world.enterable(at) || (through_doors && self.doors.contains_key(&at)))
+    }
+
+    /// The production floor resolver, with every door tile enterable: the walker opens a closed
+    /// door with USE before it steps, as a player does.
+    pub(super) fn step(&self, from: TilePos, direction: StepDirection) -> Option<TilePos> {
+        use crate::map::floor::{Ground, resolve_landing};
+        use crate::movement::CardinalStep;
+        let direction = match direction {
+            StepDirection::North => CardinalStep::North,
+            StepDirection::East => CardinalStep::East,
+            StepDirection::South => CardinalStep::South,
+            StepDirection::West => CardinalStep::West,
+            StepDirection::NorthEast => CardinalStep::NorthEast,
+            StepDirection::SouthEast => CardinalStep::SouthEast,
+            StepDirection::SouthWest => CardinalStep::SouthWest,
+            StepDirection::NorthWest => CardinalStep::NorthWest,
+        };
+        let position = |(x, y, z): (i32, i32, i32)| {
+            Some(TilePos {
+                x: u16::try_from(x).ok()?,
+                y: u16::try_from(y).ok()?,
+                floor: -i8::try_from(z).ok().filter(|z| (0..=15).contains(z))?,
+            })
+        };
+        let ground = |cell| match position(cell) {
+            Some(pos) if self.walkable(pos, true) => Ground::Walkable,
+            Some(pos) if self.world.base().tile(pos.x, pos.y, pos.floor).is_some() => {
+                Ground::Blocked
+            }
+            _ => Ground::Absent,
+        };
+        let next = resolve_landing(
+            self.world.floors(),
+            ground,
+            |_| true,
+            (i32::from(from.x), i32::from(from.y), -i32::from(from.floor)),
+            direction,
+        )
+        .ok()?;
+        position(next)
+    }
+
+    /// Ladder and rope landing: one floor up, the first walkable tile in `OFFSETS` order.
+    fn climb(&self, spot: TilePos) -> Option<TilePos> {
+        first_landing(spot, |at| self.walkable(at, false))
+    }
+
+    fn edges(&self, at: TilePos, rope: bool, out: &mut Vec<(Leg, TilePos)>) {
+        for direction in DIRECTIONS {
+            if let Some(next) = self.step(at, direction) {
+                out.push((Leg::Step(direction), next));
+            }
+        }
+        for dy in -1..=1 {
+            for dx in -1..=1 {
+                let (Some(x), Some(y)) = (at.x.checked_add_signed(dx), at.y.checked_add_signed(dy))
+                else {
+                    continue;
+                };
+                let spot = TilePos { x, y, ..at };
+                if let Some(&ordinal) = self.ladders.get(&spot)
+                    && let Some(next) = self.climb(spot)
+                {
+                    out.push((Leg::Ladder { at: spot, ordinal }, next));
+                }
+                if rope
+                    && let Some(&ordinal) = self.ropes.get(&spot)
+                    && let Some(next) = self.climb(spot)
+                {
+                    out.push((Leg::Rope { at: spot, ordinal }, next));
+                }
+            }
+        }
+    }
+
+    /// A route of player actions from `from` to a tile satisfying `goal`, searched inside the
+    /// start-to-`target` box plus `MARGIN`. Weighted toward `target`, so not always the shortest.
+    pub(super) fn plan(
+        &self,
+        from: TilePos,
+        target: TilePos,
+        goal: &dyn Fn(TilePos) -> bool,
+        rope: bool,
+    ) -> Option<Vec<(Leg, TilePos)>> {
+        let (low_x, high_x) = (
+            from.x.min(target.x).saturating_sub(MARGIN),
+            from.x.max(target.x).saturating_add(MARGIN),
+        );
+        let (low_y, high_y) = (
+            from.y.min(target.y).saturating_sub(MARGIN),
+            from.y.max(target.y).saturating_add(MARGIN),
+        );
+        search(
+            from,
+            goal,
+            |at| {
+                10 * (u32::from(at.x.abs_diff(target.x))
+                    + u32::from(at.y.abs_diff(target.y))
+                    + u32::from(at.floor.abs_diff(target.floor)))
+            },
+            |at, out| {
+                self.edges(at, rope, out);
+                out.retain(|(_, next)| {
+                    (low_x..=high_x).contains(&next.x) && (low_y..=high_y).contains(&next.y)
+                });
+            },
+            SEARCH_LIMIT,
+        )
+    }
+
+    fn door(&self, at: TilePos) -> Option<(u64, u16)> {
+        self.doors.get(&at).copied()
+    }
+
+    /// Evidence lines naming every walk run, door, floor change, ladder and rope of `route`.
+    pub(super) fn describe(&self, from: TilePos, route: &[(Leg, TilePos)]) -> Vec<String> {
+        describe(from, route, |at| self.door(at).map(|(_, action)| action))
+    }
+
+    pub(super) fn placement(&self, at: TilePos, ordinal: u8) -> TestResult<Vec<u8>> {
+        let key = crate::map::view::placement_key(at, ordinal)
+            .ok_or_else(|| format!("no placement key for {} #{ordinal}", show(at)))?;
+        let mut placement = self.world.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        Ok(placement)
+    }
+}
+
+/// The first tile of `OFFSETS` around `spot`, one floor up, that `free` accepts.
+fn first_landing(spot: TilePos, free: impl Fn(TilePos) -> bool) -> Option<TilePos> {
+    let floor = spot.floor.checked_add(1).filter(|floor| *floor <= 0)?;
+    OFFSETS.iter().find_map(|&(dx, dy)| {
+        let at = TilePos {
+            x: spot.x.checked_add_signed(dx)?,
+            y: spot.y.checked_add_signed(dy)?,
+            floor,
+        };
+        free(at).then_some(at)
+    })
+}
+
+/// Weighted A* over player actions; every action costs one step.
+fn search<E: Copy>(
+    from: TilePos,
+    goal: &dyn Fn(TilePos) -> bool,
+    estimate: impl Fn(TilePos) -> u32,
+    mut edges: impl FnMut(TilePos, &mut Vec<(E, TilePos)>),
+    limit: usize,
+) -> Option<Vec<(E, TilePos)>> {
+    let mut open = BinaryHeap::from([Reverse((estimate(from), 0u32, from))]);
+    let mut costs = HashMap::from([(from, 0u32)]);
+    let mut parents: HashMap<TilePos, (TilePos, E)> = HashMap::new();
+    let mut buffer = Vec::new();
+    while let Some(Reverse((_, cost, at))) = open.pop() {
+        if costs.get(&at) != Some(&cost) {
+            continue;
+        }
+        if goal(at) {
+            let mut path = Vec::new();
+            let mut cursor = at;
+            while cursor != from {
+                let &(previous, edge) = parents.get(&cursor)?;
+                path.push((edge, cursor));
+                cursor = previous;
+            }
+            path.reverse();
+            return Some(path);
+        }
+        if costs.len() > limit {
+            return None;
+        }
+        buffer.clear();
+        edges(at, &mut buffer);
+        for &(edge, next) in &buffer {
+            let candidate = cost.saturating_add(10);
+            if costs.get(&next).is_none_or(|&old| candidate < old) {
+                costs.insert(next, candidate);
+                parents.insert(next, (at, edge));
+                open.push(Reverse((
+                    candidate.saturating_add(estimate(next)),
+                    candidate,
+                    next,
+                )));
+            }
+        }
+    }
+    None
+}
+
+fn show(at: TilePos) -> String {
+    format!("{},{},{}", at.x, at.y, -i16::from(at.floor))
+}
+
+fn neighbour(at: TilePos, direction: StepDirection) -> Option<TilePos> {
+    let (dx, dy) = match direction {
+        StepDirection::North => (0, -1),
+        StepDirection::East => (1, 0),
+        StepDirection::South => (0, 1),
+        StepDirection::West => (-1, 0),
+        StepDirection::NorthEast => (1, -1),
+        StepDirection::SouthEast => (1, 1),
+        StepDirection::SouthWest => (-1, 1),
+        StepDirection::NorthWest => (-1, -1),
+    };
+    Some(TilePos {
+        x: at.x.checked_add_signed(dx)?,
+        y: at.y.checked_add_signed(dy)?,
+        floor: at.floor,
+    })
+}
+
+fn describe(
+    from: TilePos,
+    route: &[(Leg, TilePos)],
+    door: impl Fn(TilePos) -> Option<u16>,
+) -> Vec<String> {
+    let mut segments = Vec::new();
+    let mut run = 0usize;
+    let mut at = from;
+    for &(leg, landed) in route {
+        let segment = match leg {
+            Leg::Step(direction) => {
+                let entered = neighbour(at, direction);
+                match entered.and_then(|entered| door(entered).map(|action| (entered, action))) {
+                    Some((entered, action)) => {
+                        Some(format!("door@{}(action={action})", show(entered)))
+                    }
+                    None if landed.floor != at.floor => {
+                        Some(format!("floor-step@{}->{}", show(at), show(landed)))
+                    }
+                    None => None,
+                }
+            }
+            Leg::Ladder { at: spot, .. } => {
+                Some(format!("ladder-USE@{}->{}", show(spot), show(landed)))
+            }
+            Leg::Rope { at: spot, .. } => {
+                Some(format!("rope-USE@{}->{}", show(spot), show(landed)))
+            }
+        };
+        match segment {
+            Some(segment) => {
+                if run != 0 {
+                    segments.push(format!("walk({run})->{}", show(at)));
+                    run = 0;
+                }
+                segments.push(segment);
+            }
+            None => run += 1,
+        }
+        at = landed;
+    }
+    if run != 0 {
+        segments.push(format!("walk({run})->{}", show(at)));
+    }
+    segments.chunks(24).map(|chunk| chunk.join(" ")).collect()
+}
+
+fn overlay_revision(client: &DevClientSession, placement: &[u8]) -> u64 {
+    client
+        .world_object_overlay()
+        .iter()
+        .find(|entry| entry.placement == placement)
+        .map_or(0, |entry| entry.revision)
+}
+
+/// USE on a map object at the revision this client last saw, as a player's click sends it.
+/// An `Exhausted` answer (the stair-hop cooldown) is retried a bounded number of times.
+pub(super) async fn use_map_object(
+    client: &mut DevClientSession,
+    placement: &[u8],
+) -> TestResult<UseDisposition> {
+    let mut disposition = UseDisposition::Exhausted;
+    for _ in 0..10 {
+        let revision = overlay_revision(client, placement);
+        disposition = client.use_object(placement, revision).await?.disposition;
+        if disposition != UseDisposition::Exhausted {
+            break;
+        }
+        client.service_liveness(Duration::from_millis(300)).await?;
+        client.take_events();
+    }
+    Ok(disposition)
+}
+
+/// One STEP with the town walker's bounded retry of a stationary `Rejected` (pacing).
+async fn paced_step(
+    client: &mut DevClientSession,
+    direction: StepDirection,
+) -> TestResult<(StepDisposition, String)> {
+    let before = client.world_spatial().actor_position;
+    let mut outcome = client.step_retrying(direction).await?;
+    for attempt in 1..=6 {
+        let Some(delay) = town_route_retry_delay(
+            outcome.disposition,
+            client.world_spatial().actor_position == before,
+            attempt,
+        ) else {
+            break;
+        };
+        tokio::time::sleep(delay).await;
+        outcome = client.step_retrying(direction).await?;
+    }
+    // A `Moved` reply without a published position change is checked by the caller's landing.
+    Ok((outcome.disposition, format!("{outcome:?}")))
+}
+
+impl Planner<'_> {
+    async fn execute(
+        &self,
+        client: &mut DevClientSession,
+        label: &str,
+        at: TilePos,
+        leg: Leg,
+    ) -> TestResult<TilePos> {
+        match leg {
+            Leg::Step(direction) => {
+                let (mut disposition, mut detail) = paced_step(client, direction).await?;
+                let door = neighbour(at, direction)
+                    .and_then(|entered| self.door(entered).map(|door| (entered, door)));
+                if disposition == StepDisposition::Blocked
+                    && let Some((entered, (key, action))) = door
+                {
+                    let mut placement = self.world.base().digest().to_vec();
+                    placement.extend_from_slice(&key.to_be_bytes());
+                    let reply = use_map_object(client, &placement).await?;
+                    evidence(&format!(
+                        "TRAVEL_DOOR {label} door={} action={action} use={reply:?}",
+                        show(entered)
+                    ));
+                    if reply != UseDisposition::Committed {
+                        let level = (action > 1000)
+                            .then(|| format!(" (level door, requires level {})", action - 1000))
+                            .unwrap_or_default();
+                        return Err(format!(
+                            "{label} door {} action={action} USE refused: {reply:?}{level}",
+                            show(entered)
+                        )
+                        .into());
+                    }
+                    (disposition, detail) = paced_step(client, direction).await?;
+                }
+                if disposition != StepDisposition::Moved {
+                    return Err(format!(
+                        "{label} STEP {direction:?} from {} refused: {detail}",
+                        show(at)
+                    )
+                    .into());
+                }
+            }
+            Leg::Ladder { at: spot, ordinal } | Leg::Rope { at: spot, ordinal } => {
+                let kind = if matches!(leg, Leg::Ladder { .. }) {
+                    "ladder"
+                } else {
+                    "rope"
+                };
+                let reply = if kind == "ladder" {
+                    use_map_object(client, &self.placement(spot, ordinal)?).await?
+                } else {
+                    self.use_rope(client, spot, ordinal).await?
+                };
+                evidence(&format!(
+                    "TRAVEL_CLIMB {label} {kind}={} use={reply:?}",
+                    show(spot)
+                ));
+                if reply != UseDisposition::Committed {
+                    return Err(format!(
+                        "{label} {kind} USE at {} from {} refused: {reply:?}",
+                        show(spot),
+                        show(at)
+                    )
+                    .into());
+                }
+                let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+                loop {
+                    let landed = tile(client.world_spatial().actor_position)?;
+                    if landed.floor == spot.floor + 1
+                        && landed.x.abs_diff(spot.x).max(landed.y.abs_diff(spot.y)) <= 1
+                    {
+                        break;
+                    }
+                    if tokio::time::Instant::now() >= deadline {
+                        return Err(format!(
+                            "{label} {kind} USE at {} committed but no landing one floor up was published (at {})",
+                            show(spot),
+                            show(landed)
+                        )
+                        .into());
+                    }
+                    client.service_liveness(Duration::from_millis(50)).await?;
+                    client.take_events();
+                }
+            }
+        }
+        client.take_events();
+        verdict::Harness::global().progress("walk");
+        tile(client.world_spatial().actor_position)
+    }
+
+    async fn use_rope(
+        &self,
+        client: &mut DevClientSession,
+        spot: TilePos,
+        ordinal: u8,
+    ) -> TestResult<UseDisposition> {
+        use oteryn_protocol_oteryn::world_object::*;
+        let reference = provisioning::item_reference(&provisioning::item_index()?, ROPE_ITEM)?;
+        let source = client
+            .inventory()
+            .and_then(|inventory| {
+                inventory
+                    .entries
+                    .iter()
+                    .find(|item| item.item_definition_ref == reference)
+            })
+            .ok_or("planned rope is no longer carried")?
+            .handle;
+        let placement = self.placement(spot, ordinal)?;
+        let intent = UseIntent {
+            target: UseTarget::Item(source),
+            use_with: None,
+            use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
+                expected_revision: overlay_revision(client, &placement),
+                placement,
+            })),
+            use_with_position: None,
+        };
+        let payload =
+            encode_item_use_intent(&intent).map_err(|error| format!("rope encode: {error:?}"))?;
+        let response = client
+            .session_mut()
+            .gated_command(CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, &payload)
+            .await?;
+        if response.status != CommandStatus::Accepted {
+            return Err(format!("rope USE command not accepted: {response:?}").into());
+        }
+        decode_use_result(&response.payload)
+            .map_err(|error| format!("rope USE result: {error:?}").into())
+    }
+}
+
+fn carries(client: &DevClientSession, item: u32) -> TestResult<bool> {
+    let reference = provisioning::item_reference(&provisioning::item_index()?, item)?;
+    Ok(client.inventory().is_some_and(|inventory| {
+        inventory
+            .entries
+            .iter()
+            .any(|entry| entry.item_definition_ref == reference)
+    }))
+}
+
+/// Reach a tile satisfying `goal` near `target` by real STEP and USE commands only. The route is
+/// printed before it is walked; a divergent landing (an occupied ladder landing) replans from
+/// where the server put the character.
+pub(super) async fn travel_to(
+    client: &mut DevClientSession,
+    planner: &Planner<'_>,
+    label: &str,
+    target: TilePos,
+    goal: &dyn Fn(TilePos) -> bool,
+) -> TestResult {
+    let rope = carries(client, ROPE_ITEM)?;
+    for attempt in 0..=MAX_REPLANS {
+        let from = tile(client.world_spatial().actor_position)?;
+        if goal(from) {
+            return Ok(());
+        }
+        let route = planner.plan(from, target, goal, rope).ok_or_else(|| {
+            format!(
+                "{label} no route by step, door, stairs, hole, ladder{} from {} to {}",
+                if rope { " or rope" } else { "" },
+                show(from),
+                show(target)
+            )
+        })?;
+        evidence(&format!(
+            "TRAVEL_ROUTE {label} attempt={attempt} from={} to={} actions={}",
+            show(from),
+            show(target),
+            route.len()
+        ));
+        for line in planner.describe(from, &route) {
+            evidence(&format!("TRAVEL_ROUTE {label} {line}"));
+        }
+        let mut at = from;
+        let mut diverged = false;
+        for &(leg, expected) in &route {
+            let landed = planner.execute(client, label, at, leg).await?;
+            if landed != expected {
+                evidence(&format!(
+                    "TRAVEL_REPLAN {label} leg={leg:?} expected={} landed={}",
+                    show(expected),
+                    show(landed)
+                ));
+                diverged = true;
+                break;
+            }
+            at = landed;
+        }
+        if !diverged {
+            return Ok(());
+        }
+    }
+    Err(format!("{label} route still diverged after {MAX_REPLANS} replans").into())
+}
+
+/// Next to `at` on its floor (Chebyshev distance at most one), where USE reaches an object.
+pub(super) fn beside(at: TilePos) -> impl Fn(TilePos) -> bool {
+    move |here| here.floor == at.floor && here.x.abs_diff(at.x).max(here.y.abs_diff(at.y)) <= 1
+}
+
+#[cfg(test)]
+#[path = "travel_tests.rs"]
+mod tests;

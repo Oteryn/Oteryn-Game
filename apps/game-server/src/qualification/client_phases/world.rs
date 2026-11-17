@@ -217,6 +217,7 @@ include!("full_row_p04_mount.rs");
 include!("full_row_p03_mount.rs");
 include!("full_row_p02_mount.rs");
 include!("full_row_p01_mount.rs");
+include!("full_row_q01_mount.rs");
 include!("full_row_e10_mount.rs");
 include!("full_row_e09_mount.rs");
 include!("full_row_e08_mount.rs");
@@ -326,6 +327,8 @@ include!("quest_journal.rs");
 mod spatial_basis;
 #[path = "starter_inventory.rs"]
 mod starter_inventory;
+#[path = "travel.rs"]
+mod travel;
 #[path = "verdict.rs"]
 pub(crate) mod verdict;
 
@@ -2789,6 +2792,41 @@ pub(super) async fn journeys(
             if e2e_row_selected(305) {
                 verdict::indexed("G38.full", async {
                     full_row_g38::run_packet(clients).await;
+                    release_row_characters(clients).await
+                })
+                .await;
+            }
+            if e2e_row_selected(306) {
+                verdict::indexed("Q01a.full", async {
+                    full_row_q01::run_packet(clients, &full_row_q01::CHESTS[0]).await;
+                    release_row_characters(clients).await
+                })
+                .await;
+            }
+            if e2e_row_selected(307) {
+                verdict::indexed("Q01b.full", async {
+                    full_row_q01::run_packet(clients, &full_row_q01::CHESTS[1]).await;
+                    release_row_characters(clients).await
+                })
+                .await;
+            }
+            if e2e_row_selected(308) {
+                verdict::indexed("Q01c.full", async {
+                    full_row_q01::run_packet(clients, &full_row_q01::CHESTS[2]).await;
+                    release_row_characters(clients).await
+                })
+                .await;
+            }
+            if e2e_row_selected(309) {
+                verdict::indexed("Q01d.full", async {
+                    full_row_q01::run_packet(clients, &full_row_q01::CHESTS[3]).await;
+                    release_row_characters(clients).await
+                })
+                .await;
+            }
+            if e2e_row_selected(310) {
+                verdict::indexed("Q01e.full", async {
+                    full_row_q01::run_packet(clients, &full_row_q01::CHESTS[4]).await;
                     release_row_characters(clients).await
                 })
                 .await;
