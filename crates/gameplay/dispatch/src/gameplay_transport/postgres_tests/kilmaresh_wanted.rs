@@ -40,7 +40,8 @@ fn exercise(timeout: bool) -> TestResult {
             y: 31478,
             floor: 6,
         };
-        let scene = super::srx3_soul_war_world_fixture::source_world(start)?;
+        let (scene, _, _) =
+            super::srx3_soul_war_world_fixture::source_world_with_input(start, qualify_neferi_loot)?;
         let active = scene.controller.active().ok_or("active World")?;
         let native = active.native_gameplay().ok_or("native World")?;
         let candidate = captured_boss_levers()
@@ -218,4 +219,32 @@ fn exercise(timeout: bool) -> TestResult {
         drop(seal);
         h.cleanup().await
     })
+}
+
+// The test exercises admission and return without waiting for the production
+// Item publication. Keep the pinned Neferi table and its existing yields.
+fn qualify_neferi_loot(input: &mut crate::content::native_gameplay::NativeGameplayInput) -> TestResult {
+    use sha2::{Digest, Sha256};
+    let section = input.loot_tables.as_mut().ok_or("pinned loot section")?;
+    let mut loot: serde_json::Value = serde_json::from_slice(&section.bytes)?;
+    let expected = [
+        "oteryn:item.tibia.i31323",
+        "oteryn:item.tibia.i31324",
+        "oteryn:item.tibia.i36982",
+        "oteryn:item.tibia.i37002",
+        "oteryn:item.tibia.i37003",
+    ];
+    let items = loot["items"].as_array_mut().ok_or("loot item facts")?;
+    for key in expected {
+        let item = items.iter_mut().find(|item| item["item"]["key"] == key)
+            .ok_or("existing Neferi item fact")?;
+        item["materializable"] = true.into();
+        if key == "oteryn:item.tibia.i36982" {
+            // Crystal 201189f8 data/items/items.xml:69079–69084.
+            item["container_capacity"] = 30.into();
+        }
+    }
+    section.bytes = serde_json::to_vec(&loot)?;
+    section.sha256 = format!("{:x}", Sha256::digest(&section.bytes));
+    Ok(())
 }

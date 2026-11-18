@@ -17,13 +17,23 @@ pub(super) fn source_world_with_bundle(
     crate::map::boot::BundleWorld,
     ChannelContentPin,
 )> {
+    source_world_with_input(origin, |_| Ok(()))
+}
+
+pub(super) fn source_world_with_input(
+    origin: MovementLocalPosition,
+    configure: impl FnOnce(&mut crate::content::native_gameplay::NativeGameplayInput) -> TestResult,
+) -> TestResult<(SourceScene, crate::map::boot::BundleWorld, ChannelContentPin)> {
     let world = super::fixture::fence(1)?.runtime_scope.world_id();
     let channel = super::fixture::fence(1)?
         .runtime_scope
         .channel_id()
         .ok_or("World Channel")?;
+    let mut input = super::death_ml_loss_composed::production_input_with_source("content-1", None)?;
+    configure(&mut input)?;
     let (controller, baseline) =
-        super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+        crate::content::native_gameplay::test_support::try_activate_input(world, &input)
+            .map_err(debug)?;
     let active = controller.active().ok_or("actual active content")?;
     let native = active
         .native_gameplay()
