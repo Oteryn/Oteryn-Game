@@ -240,6 +240,94 @@
         "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_prisoner.lua:125",
         "content/quests/authoring/paradox-tower.md"
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/to-blind-the-enemy-accept",
+      "quest": "oteryn:quest.to_blind_the_enemy_quest",
+      "npc": "oteryn:npc.eroth",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/to_blind_the_enemy/questline",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3463",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Recently we found out that they are in the possession of a scrying crystal ball. They can hear all our discussions about tactics and upcoming attacks. ...",
+        "No wonder that they always have been so well prepared. Now you come into play, destroy the scrying crystal ball in Elvenbane. It should be on the top floor. ...",
+        "We don't really know how to destroy it but we suppose it may work if you reflect the invisible power of the ball. The beam should be adjusted to Ab'Dendriel. Take this mirror and give it a try. Good luck."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=22845&oldid=749434",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eroth.lua:71-80"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/to-blind-the-enemy-return",
+      "quest": "oteryn:quest.to_blind_the_enemy_quest",
+      "npc": "oteryn:npc.eroth",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/to_blind_the_enemy/questline",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "completes": true,
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3082",
+        "count": 1,
+        "additional": [
+          {
+            "item": "oteryn:item.tibia.i3035",
+            "count": 10
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I heard the blow! The reflection must have caused a overcharge of magical energy leading to the contraction and the implosion. Just like I hoped! Please take this as a reward. Thank you very much."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=20031&oldid=1091434",
+        "https://tibia.fandom.com/?curid=22845&oldid=749434",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eroth.lua:64-69"
+      ]
+    }
+  ],
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_1/to_blind_the_enemy/questline",
+      "quest": "oteryn:quest.to_blind_the_enemy_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 3,
+      "writable": true,
+      "sources": [
+        "https://tibia.fandom.com/?curid=22845&oldid=749434",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eroth.lua:60-80"
+      ]
     }
   ]
 }

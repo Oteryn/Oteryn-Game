@@ -80,6 +80,25 @@
       "reply": [
         "Are you ready to finish the lesson?"
       ]
+    },
+    {
+      "npc": "oteryn:npc.eroth",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/to_blind_the_enemy/questline",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "Have you ever heard of Elvenbane? It is the castle west of Ab'Dendriel which is inhabited by villains from all over the continent. Any support in this war is welcome. Are you willing to help?"
+      ]
     }
   ]
 }
