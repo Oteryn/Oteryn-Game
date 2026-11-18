@@ -88,6 +88,9 @@ pub struct CallbackEffects {
     /// Restore the exact pre-transform source revision after this delay.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reset_after_ms: Option<u32>,
+    /// Return a staged transformation to its declared resting appearance.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reset_appearance: Option<u16>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub target_transform: Option<TargetTransform>,
     /// Restore remote passage objects independently of the source object.
@@ -641,6 +644,15 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || effects.item_cycle.is_some()
                 || effects.encounter.is_some()
                 || (!callback.passages.is_empty() && effects.passages_reset_after_ms.is_none())
+        })
+        || effects.reset_appearance.is_some_and(|appearance| {
+            appearance == 0
+                || effects.reset_after_ms.is_none()
+                || effects.transform.is_none()
+                || effects.transform == Some(appearance)
+                || callback.trigger != Trigger::Use
+                || callback.reversible
+                || callback.lever.is_some()
         })
         || effects.passages_reset_after_ms.is_some_and(|delay| {
             !(1..=3_600_000).contains(&delay)
