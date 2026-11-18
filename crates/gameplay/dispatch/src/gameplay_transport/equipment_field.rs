@@ -17,6 +17,12 @@ use oteryn_gameplay_items::equipment_effects::{
     EquipmentEffectInput, apply_protection, derive_equipment_effects,
 };
 
+#[derive(Clone, Copy)]
+enum ProtectionSource {
+    Field { initial: bool },
+    Direct,
+}
+
 impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
     /// Called only after harm legality, before mana shield and HP, in the field's transaction.
     pub(in crate::gameplay_transport) async fn equipped_field_damage(
@@ -26,6 +32,50 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         element: DotElement,
         damage: u32,
         initial: bool,
+        cycle: [u8; 32],
+    ) -> Result<u32, DurabilityError> {
+        let element = match element {
+            DotElement::Fire => ReferenceResistanceKind::Fire,
+            DotElement::Energy => ReferenceResistanceKind::Energy,
+            DotElement::Poison => ReferenceResistanceKind::Earth,
+            _ => return Err(DurabilityError::Unavailable),
+        };
+        self.equipped_damage(
+            tx,
+            read,
+            element,
+            damage,
+            ProtectionSource::Field { initial },
+            cycle,
+        )
+        .await
+    }
+
+    /// The direct hit already accounts for passive protection. Read active
+    /// timed protection from equipment custody and spend only applicable charges.
+    pub(in crate::gameplay_transport) async fn equipped_step_damage(
+        &self,
+        tx: &mut Type2Transaction<'_>,
+        read: &StandingTileRead,
+        element: ReferenceResistanceKind,
+        damage: u32,
+        cycle: [u8; 32],
+    ) -> Result<u32, DurabilityError> {
+        self.equipped_damage(tx, read, element, damage, ProtectionSource::Direct, cycle)
+            .await
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "protection is bound to the current transaction and damage occurrence"
+    )]
+    async fn equipped_damage(
+        &self,
+        tx: &mut Type2Transaction<'_>,
+        read: &StandingTileRead,
+        element: ReferenceResistanceKind,
+        damage: u32,
+        source: ProtectionSource,
         cycle: [u8; 32],
     ) -> Result<u32, DurabilityError> {
         let unavailable = || DurabilityError::Unavailable;
@@ -43,12 +93,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
             .map_err(|_| unavailable())?;
-        let element = match element {
-            DotElement::Fire => ReferenceResistanceKind::Fire,
-            DotElement::Energy => ReferenceResistanceKind::Energy,
-            DotElement::Poison => ReferenceResistanceKind::Earth,
-            _ => return Err(unavailable()),
-        };
+        let field = matches!(source, ProtectionSource::Field { .. });
         let mut inputs = Vec::new();
         let mut charged = Vec::new();
         let mut mantra = 0_i64;
@@ -67,16 +112,18 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             let semantics = &policy.record().semantics;
             // Mantra reads the seven body/Extra slots, independently of the
             // six basic EQUIP abilities (Canary Player::getMantra).
-            if matches!(
-                slot,
-                EquipmentSlot::Head
-                    | EquipmentSlot::Necklace
-                    | EquipmentSlot::Armor
-                    | EquipmentSlot::Legs
-                    | EquipmentSlot::Feet
-                    | EquipmentSlot::Ring
-                    | EquipmentSlot::Ammo
-            ) && let F::Known(group) = &semantics.skill_modifiers
+            if matches!(source, ProtectionSource::Field { initial: true })
+                && matches!(
+                    slot,
+                    EquipmentSlot::Head
+                        | EquipmentSlot::Necklace
+                        | EquipmentSlot::Armor
+                        | EquipmentSlot::Legs
+                        | EquipmentSlot::Feet
+                        | EquipmentSlot::Ring
+                        | EquipmentSlot::Ammo
+                )
+                && let F::Known(group) = &semantics.skill_modifiers
                 && let F::Known(modifiers) = &group.modifiers
             {
                 for modifier in modifiers {
@@ -94,6 +141,23 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             }
             let mut profile = item_ability_profile(semantics).map_err(|_| unavailable())?;
+            if !field && !profile.timed {
+                continue;
+            }
+            profile.abilities.retain_mut(|ability| match ability {
+                ItemAbility::Protection {
+                    element: kind,
+                    field_only,
+                    ..
+                } if *kind == element && (field || !*field_only) => {
+                    *field_only = false;
+                    true
+                }
+                _ => false,
+            });
+            if !field && profile.abilities.is_empty() {
+                continue;
+            }
             let timed = if profile.timed {
                 let (facts, target) =
                     crate::gameplay_transport::timed_item_content::facts(content, &item.definition)
@@ -130,18 +194,6 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
-            // Both general and field-only protection join the same element sum.
-            profile.abilities.retain_mut(|ability| match ability {
-                ItemAbility::Protection {
-                    element: kind,
-                    field_only,
-                    ..
-                } if *kind == element => {
-                    *field_only = false;
-                    true
-                }
-                _ => false,
-            });
             if let Some((facts, target, revision)) = timed {
                 let own = derive_equipment_effects(vec![EquipmentEffectInput {
                     slot,
@@ -166,9 +218,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         }
         // Canary combatBlockHit applies Mantra to the initial hit, before blockHit's
         // equipment absorption; subsequent condition pulses bypass Mantra.
-        let damage = i64::from(damage)
-            .saturating_sub(if initial { mantra.max(0) } else { 0 })
-            .max(0);
+        let damage = i64::from(damage).saturating_sub(mantra.max(0)).max(0);
         let effects = derive_equipment_effects(inputs).ok_or_else(unavailable)?;
         let reduced = effects
             .protections
