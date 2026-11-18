@@ -31,6 +31,7 @@ mod scene;
 mod scene_actors;
 mod scene_items;
 mod shared_gate;
+mod shulgrax;
 mod soul_war_reward;
 mod source_transforms;
 mod timed_encounter;
@@ -99,6 +100,7 @@ struct ObservedWorldCallback {
 pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     personal: personal_encounter::Cohorts,
+    flower_puzzle: std::sync::Mutex<shulgrax::FlowerPuzzle>,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
     carrot_refusal:
@@ -964,6 +966,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             super::world_map::resolve_map_target(&source, target, |_| None::<()>).ok()?
         };
+        if selected_tool.is_none()
+            && let Some(outcome) = self
+                .use_flower_lever(actor, command, map, target.expected_revision, &resolved)
+                .await
+        {
+            return Some(outcome);
+        }
         let mut selected = self
             .callback_content()
             .iter()

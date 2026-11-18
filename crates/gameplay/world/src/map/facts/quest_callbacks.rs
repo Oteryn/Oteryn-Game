@@ -101,6 +101,7 @@ pub enum QuestCallbackProjection {
     TimedPassages {
         due: u64,
         entries: Vec<QuestTimedPassage>,
+        presence: Option<(TilePos, EntryFacts)>,
         source_reset: Option<(u64, EntryFacts)>,
     },
     /// Each read revision, including cells which do not change, fences the batch.
@@ -313,9 +314,25 @@ impl CallbackStates {
             QuestCallbackProjection::TimedPassages {
                 due,
                 entries,
+                presence,
                 source_reset,
             } => {
-                if close || !self.project_timed_passages(owner, *due, entries, *source_reset) {
+                if close
+                    || (!entries.is_empty()
+                        && !self.project_timed_passages(owner, *due, entries, *source_reset))
+                {
+                    return false;
+                }
+                if let Some((position, entry)) = presence
+                    && !self.project(
+                        owner,
+                        &QuestCallbackProjection::ItemPresence {
+                            position: *position,
+                            entry: *entry,
+                        },
+                        false,
+                    )
+                {
                     return false;
                 }
             }
@@ -1616,6 +1633,7 @@ impl BundleFacts {
         let projection_capacity = match projection {
             Some(QuestCallbackProjection::TimedPassages {
                 entries,
+                presence,
                 source_reset,
                 ..
             }) => {
@@ -1623,10 +1641,9 @@ impl BundleFacts {
                 if !passages.is_empty() || !replacements.is_empty() {
                     return false;
                 }
-                entries
-                    .len()
-                    .saturating_mul(3)
-                    .saturating_add(1 + usize::from(source_reset.is_some()))
+                entries.len().saturating_mul(3).saturating_add(
+                    1 + usize::from(source_reset.is_some()) + 2 * usize::from(presence.is_some()),
+                )
             }
             Some(QuestCallbackProjection::Scene { mutations, .. }) => {
                 mutations.len().saturating_mul(3).saturating_add(1)
@@ -1654,9 +1671,14 @@ impl BundleFacts {
                 QuestCallbackProjection::Portals { endpoints, .. } => endpoints
                     .iter()
                     .any(|(pos, _, _)| states.position_reserved(*pos)),
-                QuestCallbackProjection::TimedPassages { entries, .. } => entries
-                    .iter()
-                    .any(|entry| states.reserved.contains(&entry.key)),
+                QuestCallbackProjection::TimedPassages {
+                    entries, presence, ..
+                } => {
+                    entries
+                        .iter()
+                        .any(|entry| states.reserved.contains(&entry.key))
+                        || presence.is_some_and(|(position, _)| states.position_reserved(position))
+                }
                 QuestCallbackProjection::TimedRemoteTransform { key, .. }
                 | QuestCallbackProjection::TimedTargetTransform { key, .. } => {
                     states.key_reserved(*key)

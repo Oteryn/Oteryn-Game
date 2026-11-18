@@ -32,6 +32,7 @@ fn m07_remote_wall_and_lever_restore_on_distinct_source_deadlines() -> Result<()
             after: None,
             passable: false,
         }],
+        presence: None,
         source_reset: Some((8_000_000, lever)),
     };
     assert!(facts.quest_timed_passages_ready(1, 1, &walls));
@@ -47,6 +48,7 @@ fn m07_remote_wall_and_lever_restore_on_distinct_source_deadlines() -> Result<()
             after: Some(entry(2075)),
             passable: true,
         }],
+        presence: None,
         source_reset: None,
     };
     assert!(facts.apply_quest_callback(4, 1, lever, &[], &[], false, Some(&pagodas)));
@@ -90,6 +92,7 @@ fn m07_remote_reset_cannot_overwrite_newer_revision_or_partially_publish() -> Re
     let stale = QuestCallbackProjection::TimedPassages {
         due: 7,
         entries: vec![change(2, 1), change(3, 0)],
+        presence: None,
         source_reset: None,
     };
     assert!(!facts.quest_timed_passages_ready(1, 1, &stale));
@@ -100,6 +103,7 @@ fn m07_remote_reset_cannot_overwrite_newer_revision_or_partially_publish() -> Re
     let valid = QuestCallbackProjection::TimedPassages {
         due: 7,
         entries: vec![change(2, 1)],
+        presence: None,
         source_reset: None,
     };
     assert!(facts.apply_quest_callback(1, 1, lever, &[], &[], false, Some(&valid)));

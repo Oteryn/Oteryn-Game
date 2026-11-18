@@ -175,6 +175,7 @@ pub(super) fn prepare(
     let projection = QuestCallbackProjection::TimedPassages {
         due,
         entries,
+        presence: None,
         source_reset,
     };
     if !map

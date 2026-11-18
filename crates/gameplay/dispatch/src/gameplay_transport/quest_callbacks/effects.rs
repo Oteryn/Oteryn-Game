@@ -147,10 +147,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(pos) = native(entered.position()) else {
             return entered;
         };
-        let Some(to) = map
-            .facts
-            .quest_portal_destination(pos, self.owner_now().get())
-        else {
+        let destination = || {
+            let now = self.owner_now().get();
+            self.states
+                .quest_callbacks
+                .flower_puzzle
+                .lock()
+                .ok()
+                .and_then(|puzzle| puzzle.destination(pos, session, now))
+                .or_else(|| map.facts.quest_portal_destination(pos, now))
+        };
+        let Some(to) = destination() else {
             return entered;
         };
         let optional_pvp = self.special_movement_policy(permit, actor, session).await;
@@ -179,11 +186,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // The policy lookup awaited outside the owner. A lever/expiry may have
         // removed the pair while it was in flight; never teleport through that stale read.
-        if map
-            .facts
-            .quest_portal_destination(pos, self.owner_now().get())
-            != Some(to)
-        {
+        if destination() != Some(to) {
             return entered;
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
