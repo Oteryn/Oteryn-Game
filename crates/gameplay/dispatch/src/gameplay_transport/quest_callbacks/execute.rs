@@ -1672,6 +1672,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             map.facts
                 .emit_movement_effect(tile(magic.position), magic.effect);
         }
+        for magic in &callback.effects.switch_magic {
+            map.facts
+                .emit_movement_effect(tile(magic.position), magic.effect);
+        }
         if let Some(effect) = callback.effects.teleport_effect
             && let Some(destination) = callback.teleport
         {

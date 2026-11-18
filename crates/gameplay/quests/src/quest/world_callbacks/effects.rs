@@ -99,6 +99,9 @@ pub struct CallbackEffects {
     /// Cue emitted at a guarded switch when the shared readset does not match.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub requirement_failure_magic: Option<u16>,
+    /// Additional positional cues after a guarded switch advances the circuit.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub switch_magic: Vec<MagicEffect>,
     /// This sequence's first eligible press primes the shared circuit.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sequence_prime: Option<String>,
@@ -671,6 +674,13 @@ pub(super) fn valid(callback: &Callback) -> bool {
             .sequence_prime
             .as_ref()
             .is_some_and(|key| !super::super::valid_quest_key(key) || !callback.guarded_switch())
+        || (!effects.switch_magic.is_empty()
+            && (!callback.guarded_switch()
+                || effects.switch_magic.len() > MAX_EFFECTS
+                || effects
+                    .switch_magic
+                    .iter()
+                    .any(|magic| !pos(magic.position) || !(1..=255).contains(&magic.effect))))
         || (effects.visual_passages
             && (callback.actor_kind != ActorKind::Player
                 || callback.reversible
