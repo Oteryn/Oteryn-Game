@@ -373,20 +373,22 @@ pub(super) async fn exercise_world(
         .await
         .map_err(|()| "fence")?
         .ok_or("fence")?;
-    owner
-        .runtime
-        .lock()
-        .await
-        .bind_attacker_lease(
-            admitted.runtime_actor.ok_or("actor")?,
-            admitted.game_session_id,
-            CharacterLease::new(
-                CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
-                fence.character_lease_generation,
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let origin = {
+        let mut runtime = owner.runtime.lock().await;
+        runtime
+            .bind_attacker_lease(
+                actor,
+                admitted.game_session_id,
+                CharacterLease::new(
+                    CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+                    fence.character_lease_generation,
+                )
+                .map_err(debug)?,
             )
-            .map_err(debug)?,
-        )
-        .map_err(debug)?;
+            .map_err(debug)?;
+        runtime.read_actor_position(actor).map_err(debug)?.position()
+    };
     let key = oteryn_world_bundle::bundle::placement_key(trigger.floor, trigger.x, trigger.y, 1)
         .ok_or("placement key")?;
     let mut placement = owner
@@ -502,6 +504,29 @@ pub(super) async fn exercise_world(
     assert_eq!(audits().await?, after);
     assert_eq!(track(h, &written.track).await?, expected);
     // A new use is refused: the stage moved, the counter is spent or the item is gone.
+    // Return from the successful teleport so the new command reaches the quest gate.
+    if let Some(destination) = callback.teleport {
+        let map = owner.bundle_map().ok_or("map")?;
+        let doors = crate::map::floor::BundleDoors(map.facts.doors());
+        let mut runtime = owner.runtime.lock().await;
+        let expected = runtime.read_actor_position(actor).map_err(debug)?;
+        assert_eq!(
+            expected.position(),
+            super::quest_world_callbacks::local(destination)
+        );
+        let proof = crate::map::floor::prepare_quest_callback_teleport(
+            &runtime,
+            owner.movement_cells(),
+            actor,
+            admitted.game_session_id,
+            expected,
+            origin,
+            false,
+            &doors,
+        )
+        .map_err(debug)?;
+        runtime.commit_source_step(proof).map_err(debug)?;
+    }
     let next = admitted.continuity.next_command_id;
     let revision = owner.bundle_map().ok_or("map")?.facts.object_revision(key);
     assert_eq!(
