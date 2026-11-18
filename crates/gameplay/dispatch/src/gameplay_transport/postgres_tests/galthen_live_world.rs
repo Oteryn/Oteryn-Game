@@ -65,14 +65,16 @@ fn galthen_live_travel_postgres() -> TestResult {
     };
     drop(admin);
     for (name, source, _) in ROUTES {
-        super::kill_reward_e2e::scenario_thread::run(name, move || scenario(name, source, false))?;
+        super::kill_reward_e2e::scenario_thread::run(name, move || scenario(name, source, false))
+            .map_err(|error| format!("{name}: {error}"))?;
     }
     for (name, source) in [
         (COOLDOWN, ROUTES[5].1),
         ("galthen-forest-1-low-level", ROUTES[0].1),
         ("galthen-iksupan-entrance-low-level", ROUTES[2].1),
     ] {
-        super::kill_reward_e2e::scenario_thread::run(name, move || scenario(name, source, false))?;
+        super::kill_reward_e2e::scenario_thread::run(name, move || scenario(name, source, false))
+            .map_err(|error| format!("{name}: {error}"))?;
     }
     Ok(())
 }
