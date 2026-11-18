@@ -29,7 +29,7 @@ fn claim_case(
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated_pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
@@ -49,7 +49,7 @@ fn claim_case(
                 ))
             })
             .collect::<TestResult<Vec<_>>>()?;
-        let world = super::quest_callbacks::source_world_positions(chest, &positions, appearance)?;
+        let world = super::quest_callbacks_fixtures::source_world_positions(chest, &positions, appearance)?;
         let placements = positions.iter().enumerate().map(|(index, (x, y, _uid))| {
             let mut reward = serde_json::json!({"items": [{"item": {"family": "Item", "key": if !filled && index > 0 { "oteryn:item.tibia.i3354" } else { reward }, "revision": "definition-r1"}, "count": quantity}]});
             if filled {

@@ -1,6 +1,6 @@
 //! QREADY2: Purple Tome source book claims through literal dispatch USE.
 use super::fixture::{Harness, debug, id, run};
-use super::quest_callbacks::{source_world, wire_use_targets, wire_uses};
+use super::quest_callbacks_fixtures::{source_world, wire_use_targets, wire_uses};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::durability::item_mint::TypedDefinitionRef;
@@ -66,7 +66,7 @@ fn scenario(case: Case) -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated_pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;

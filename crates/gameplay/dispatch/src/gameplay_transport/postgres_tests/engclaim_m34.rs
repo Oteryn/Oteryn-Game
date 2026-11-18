@@ -87,7 +87,7 @@ fn claim_case(suffix: &'static str) -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated_pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
@@ -112,7 +112,7 @@ fn claim_case(suffix: &'static str) -> TestResult {
                 ))
             })
             .collect::<TestResult<Vec<_>>>()?;
-        let world = super::quest_callbacks::source_world_positions(chest, &positions, appearance)?;
+        let world = super::quest_callbacks_fixtures::source_world_positions(chest, &positions, appearance)?;
         let shards = [shard];
         let mut start = world.start();
         if siblings.len() > 1 {
@@ -352,7 +352,7 @@ fn claim_case(suffix: &'static str) -> TestResult {
                 }
 
                 if suffix.starts_with("magic") {
-                    super::l6_paradox::raise_level(&owner, &admitted, &authority, &harness, 100)
+                    super::l6_paradox_fixtures::raise_level(&owner, &admitted, &authority, &harness, 100)
                         .await?;
                     owner
                         .refresh_quest_session(admitted.game_session_id, false)
@@ -425,7 +425,7 @@ async fn wire(
 ) -> TestResult<Vec<UseDisposition>> {
     let commands = commands.iter().map(|&id| (id, target)).collect::<Vec<_>>();
     Ok(
-        super::quest_callbacks::wire_use_targets_retained(owner, admitted, &commands)
+        super::quest_callbacks_fixtures::wire_use_targets_retained(owner, admitted, &commands)
             .await?
             .into_iter()
             .map(|(_, disposition)| disposition)

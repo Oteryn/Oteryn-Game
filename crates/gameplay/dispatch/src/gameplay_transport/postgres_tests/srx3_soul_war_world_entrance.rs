@@ -9,11 +9,11 @@ fn srx3_soul_war_actual_world_hunt_entry_rejects_missing_quest_access_postgres()
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-soul-war-world-entry", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-soul-war-world-entry", || {
         run(async |admin| {
             reset();
             // Crystal201189f moveevent-soul_war_entrances.lua3/24–30.
-            let scene = super::srx3_soul_war_world_fixture::source_world(MovementLocalPosition {
+            let scene = super::srx3_soul_war_world_fixture_fixtures::source_world(MovementLocalPosition {
                 x: 33615,
                 y: 31421,
                 floor: 10,
@@ -26,8 +26,8 @@ fn srx3_soul_war_actual_world_hunt_entry_rejects_missing_quest_access_postgres()
                 false,
             )
             .await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -39,7 +39,7 @@ fn srx3_soul_war_actual_world_hunt_entry_rejects_missing_quest_access_postgres()
             owner.active_generation = scene.controller.active();
             owner.rooms =
                 crate::gameplay_transport::SeamRooms::new(Some(&scene.room), Some(&scene.room));
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             super::srx3_activity_source_fixture::prepare_player(&h, &owner, &mut admitted, 1999)
                 .await?;

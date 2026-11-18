@@ -1,0 +1,834 @@
+use super::fixture::{Harness, debug, id, run};
+
+use super::{Dependencies, TestResult, prepare_current_session};
+
+use crate::content::channel_content_pin::ChannelContentPin;
+
+use crate::durability::item_mint::TypedDefinitionRef;
+
+use crate::foundation::{
+    ChannelRuntimeV1, MessageType, MovementLocalPosition, decode_wire_envelope,
+};
+
+use crate::gameplay_transport::connection::{AdmittedSession, FirstEntryOutcome};
+
+use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
+
+use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+
+// Canary's Steel Helmet Quest coin chest, not an injected entry-room claim.
+pub(super) const CLAIM: &str = "oteryn:reward-claim.kv.steelhelmet1";
+
+pub(super) const CHEST: (u16, u16, i8) = (32460, 31951, -5);
+
+pub(super) fn source_world(
+    chest: (u16, u16, i8),
+    unique: u16,
+    appearance: u16,
+    offset: u16,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_choices(chest, &[(chest.0 + offset, unique)], appearance)
+}
+
+/// Several source chests on one row exercise a shared claim's reward choices.
+pub(super) fn source_world_choices(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16)],
+    appearance: u16,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_positions(
+        chest,
+        &choices
+            .iter()
+            .map(|(x, unique)| (*x, chest.1, *unique))
+            .collect::<Vec<_>>(),
+        appearance,
+    )
+}
+
+/// Preserve all source placements of one shared claim, including different rows.
+pub(super) fn source_world_positions(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, u16)],
+    appearance: u16,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_positions_with_door(chest, choices, appearance, None)
+}
+
+pub(super) fn source_world_choices_with_door(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16)],
+    appearance: u16,
+    native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_positions_with_door(
+        chest,
+        &choices
+            .iter()
+            .map(|(x, unique)| (*x, chest.1, *unique))
+            .collect::<Vec<_>>(),
+        appearance,
+        native,
+    )
+}
+
+pub(super) fn source_world_positions_with_door(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, u16)],
+    appearance: u16,
+    native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    let rows: Vec<_> = choices.iter().map(|(_, y, _)| (*y, appearance)).collect();
+    source_world_rectangle_positions(chest, choices, appearance, 1, 2, &[], &rows, native)
+}
+
+pub(super) fn source_world_rectangle(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16)],
+    appearance: u16,
+    height: u16,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_rectangle_with_prefix(chest, choices, appearance, height, 2, &[])
+}
+
+/// Preserve native top-level scenery preceding a reward object in its tile stack.
+pub(super) fn source_world_rectangle_with_prefix(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16)],
+    appearance: u16,
+    height: u16,
+    west: u16,
+    prefix: &[u16],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_rectangle_with_prefix_rows(
+        chest,
+        choices,
+        appearance,
+        height,
+        west,
+        prefix,
+        &[(chest.1, appearance)],
+    )
+}
+
+/// Several native cache rows may share the same appearance and column.
+pub(super) fn source_world_rectangle_with_prefix_rows(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16)],
+    appearance: u16,
+    height: u16,
+    west: u16,
+    prefix: &[u16],
+    rows: &[(u16, u16)],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    let positions: Vec<_> = choices
+        .iter()
+        .flat_map(|(x, unique)| rows.iter().map(move |(y, _)| (*x, *y, *unique)))
+        .collect();
+    source_world_rectangle_positions(
+        chest, &positions, appearance, height, west, prefix, rows, None,
+    )
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "fixture composes source geometry with the admitted door owner"
+)]
+fn source_world_rectangle_positions(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, u16)],
+    appearance: u16,
+    height: u16,
+    west: u16,
+    prefix: &[u16],
+    rows: &[(u16, u16)],
+    native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_position_rows(
+        chest, choices, appearance, height, west, prefix, rows, native,
+    )
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "fixture composes source geometry with the admitted door owner"
+)]
+fn source_world_position_rows(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, u16)],
+    appearance: u16,
+    height: u16,
+    west: u16,
+    prefix: &[u16],
+    rows: &[(u16, u16)],
+    native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_spatial_layout(
+        chest,
+        &choices
+            .iter()
+            .map(|(x, y, uid)| {
+                let appearance = rows
+                    .iter()
+                    .find(|(row, _)| row == y)
+                    .map_or(appearance, |(_, appearance)| *appearance);
+                (*x, *y, chest.2, *uid, appearance)
+            })
+            .collect::<Vec<_>>(),
+        height,
+        west,
+        prefix,
+        native,
+    )
+}
+
+/// Preserve each source chest's position, UID and individual appearance.
+pub(super) fn source_world_objects(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, u16, u16)],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_spatial(
+        chest,
+        &choices
+            .iter()
+            .map(|(x, y, uid, appearance)| (*x, *y, chest.2, *uid, *appearance))
+            .collect::<Vec<_>>(),
+    )
+}
+
+/// Source endpoints may occupy different floors of the same immutable map.
+pub(super) fn source_world_spatial(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, i8, u16, u16)],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_spatial_layout(chest, choices, 1, 2, &[], None)
+}
+
+fn source_world_spatial_layout(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, i8, u16, u16)],
+    height: u16,
+    west: u16,
+    prefix: &[u16],
+    native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    use oteryn_world_bundle::{bundle, sector};
+    let (bytes, mut pins) = crate::map::boot::tests::bundle();
+    let mut data = bundle::read(&bytes)?;
+    // A terrain carrier is legal for a placed chest (the binder also validates
+    // Item carriers). Its appearance and unique id must both match the shard.
+    data.manifest.palette.truncate(1);
+    let appearances: std::collections::BTreeSet<_> = choices
+        .iter()
+        .map(|c| c.4)
+        .chain(prefix.iter().copied())
+        .collect();
+    let mut palettes = std::collections::BTreeMap::new();
+    for appearance in appearances {
+        let id = u32::try_from(data.manifest.palette.len())?;
+        palettes.insert(appearance, id);
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: format!("oteryn:terrain.tibia.i{appearance}"),
+            family: bundle::Family::Terrain,
+            id,
+            terrain: Some(bundle::Terrain {
+                kind: bundle::TerrainKind::Common,
+                walkable: None,
+                ground_speed: None,
+                blocks_projectile: None,
+            }),
+        });
+    }
+    let door_palette = if let Some(native) = native {
+        let reference = native
+            .item_index()
+            .and_then(|index| {
+                index.definition_ref("Item", "oteryn:item.tibia.i5113", "definition-r1")
+            })
+            .ok_or("native reward door definition")?;
+        let palette = u32::try_from(data.manifest.palette.len())?;
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: "oteryn:item.tibia.i5113".into(),
+            family: bundle::Family::Item,
+            id: reference.get() - 1,
+            terrain: None,
+        });
+        Some(palette)
+    } else {
+        None
+    };
+    let ground = || sector::Item {
+        palette: 0,
+        depth: 0,
+        attrs: sector::Attrs::default(),
+    };
+    let min_x = choices
+        .iter()
+        .map(|(x, _, _, _, _)| x.saturating_sub(2))
+        .min()
+        .ok_or("source choices")?
+        .min(chest.0 - west);
+    let max_x = choices
+        .iter()
+        .map(|(x, _, _, _, _)| *x)
+        .max()
+        .ok_or("source choices")?
+        .max(chest.0);
+    let min_y = choices
+        .iter()
+        .map(|(_, y, _, _, _)| *y)
+        .min()
+        .ok_or("source choices")?
+        .min(chest.1);
+    let max_y = choices
+        .iter()
+        .map(|(_, y, _, _, _)| *y)
+        .max()
+        .ok_or("source choices")?
+        .max(chest.1 + height - 1);
+    let floors: std::collections::BTreeSet<_> = choices
+        .iter()
+        .map(|c| c.2)
+        .chain(std::iter::once(chest.2))
+        .collect();
+    data.manifest.world = bundle::Extent {
+        min_x,
+        min_y,
+        max_x: max_x + 1,
+        max_y: max_y + 1,
+        floors: floors.iter().copied().collect(),
+    };
+    let mut grouped = std::collections::BTreeMap::<(i8, u16, u16), Vec<sector::Tile>>::new();
+    for floor in floors {
+        for y in min_y..=max_y {
+            for x in min_x..=max_x {
+                let items = if let Some(palette) = door_palette
+                    && floor == chest.2
+                    && x == chest.0 - 1
+                    && y == chest.1
+                {
+                    vec![
+                        ground(),
+                        sector::Item {
+                            palette,
+                            depth: 0,
+                            attrs: sector::Attrs {
+                                action: Some(10102),
+                                ..Default::default()
+                            },
+                        },
+                    ]
+                } else if let Some((_, _, _, unique, appearance)) = choices
+                    .iter()
+                    .find(|(px, py, pf, _, _)| (*px, *py, *pf) == (x, y, floor))
+                {
+                    std::iter::once(ground())
+                        .chain(prefix.iter().map(|appearance| sector::Item {
+                            palette: palettes[appearance],
+                            depth: 0,
+                            attrs: sector::Attrs::default(),
+                        }))
+                        .chain(std::iter::once(sector::Item {
+                            palette: palettes[appearance],
+                            depth: 0,
+                            attrs: sector::Attrs {
+                                unique: (*unique != 0).then_some(*unique),
+                                ..Default::default()
+                            },
+                        }))
+                        .collect()
+                } else {
+                    vec![ground()]
+                };
+                grouped
+                    .entry((floor, x / 32, y / 32))
+                    .or_default()
+                    .push(sector::Tile {
+                        x,
+                        y,
+                        flags: 0,
+                        house: 0,
+                        zones: Vec::new(),
+                        items,
+                    });
+            }
+        }
+    }
+    let mut sectors = grouped
+        .into_iter()
+        .map(|((floor, sx, sy), tiles)| bundle::Sector {
+            floor,
+            sx,
+            sy,
+            tiles,
+        })
+        .collect::<Vec<_>>();
+    sectors.sort_by_key(bundle::order);
+    let bytes = oteryn_world_bundle::writer::write(&data.manifest, &sectors, &Default::default())?;
+    pins.digest = bundle::read(&bytes)?.digest;
+    let base = crate::map::load(&bytes, &pins).map_err(debug)?;
+    crate::map::boot::boot(
+        &bytes,
+        &crate::map::boot::BootPins {
+            map_revision: crate::map::overlay::map_revision(&base),
+            bundle: pins,
+            start: crate::map::overlay::TilePos {
+                x: if native.is_some() {
+                    chest.0
+                } else {
+                    chest.0 - 1
+                },
+                y: chest.1,
+                floor: chest.2,
+            },
+        },
+        crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
+        crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
+        |key| {
+            use crate::content::{ReferenceItemField, ReferenceItemType};
+            let native = native?;
+            let policy = native.item_policy(key, "definition-r1")?.record();
+            Some(crate::map::facts::ItemDefinition {
+                reference: native
+                    .item_index()?
+                    .definition_ref("Item", key, "definition-r1")?,
+                solid: policy.attributes.blocks_movement,
+                blocks_projectile: policy.attributes.blocks_projectile.unwrap_or(true),
+                pickupable: matches!(&policy.semantics.physical, ReferenceItemField::Known(p)
+                    if p.pickupable == ReferenceItemField::Known(true)),
+                door: matches!(&policy.semantics.classification, ReferenceItemField::Known(c)
+                    if c.item_type == ReferenceItemField::Known(ReferenceItemType::Door)),
+            })
+        },
+    )
+    .map_err(debug)
+}
+
+pub(super) async fn wire_uses(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    commands: &[u64],
+    target: &WorldObjectTarget,
+) -> TestResult<Vec<UseDisposition>> {
+    let commands: Vec<_> = commands.iter().map(|&command| (command, target)).collect();
+    Ok(wire_use_targets(owner, admitted, &commands)
+        .await?
+        .into_iter()
+        .map(|(_, disposition)| disposition)
+        .collect())
+}
+
+pub(super) async fn wire_use_targets(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: AdmittedSession,
+    commands: &[(u64, &WorldObjectTarget)],
+) -> TestResult<Vec<(oteryn_protocol_oteryn::CommandStatus, UseDisposition)>> {
+    wire_use_targets_retained(owner, &mut admitted, commands).await
+}
+
+pub(super) async fn wire_use_targets_retained(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    commands: &[(u64, &WorldObjectTarget)],
+) -> TestResult<Vec<(oteryn_protocol_oteryn::CommandStatus, UseDisposition)>> {
+    use crate::gameplay_transport::connection::{IDLE_LIVENESS, serve_admitted};
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let peer = async {
+        let mut results = Vec::new();
+        for &(command_id, target) in commands {
+            let payload =
+                oteryn_protocol_oteryn::world_object::encode_use_intent(target).map_err(debug)?;
+            let frame = oteryn_protocol_oteryn::encode_client_command(
+                admitted.continuity.connection_generation,
+                &oteryn_protocol_oteryn::ClientCommandValue {
+                    command_id,
+                    command_type: 2,
+                    payload: &payload,
+                },
+            )
+            .map_err(debug)?;
+            client
+                .write_all(&u32::try_from(frame.len())?.to_be_bytes())
+                .await?;
+            client.write_all(&frame).await?;
+            loop {
+                let length = client.read_u32().await?;
+                let mut bytes = vec![0; usize::try_from(length)?];
+                client.read_exact(&mut bytes).await?;
+                let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
+                if envelope.message_type() == MessageType::CommandResult {
+                    let value = oteryn_protocol_oteryn::decode_command_result(envelope.payload())
+                        .map_err(debug)?;
+                    assert_eq!(value.command_id, command_id);
+                    results.push((
+                        value.status,
+                        oteryn_protocol_oteryn::world_object::decode_use_result(value.payload)
+                            .map_err(debug)?,
+                    ));
+                    break;
+                }
+            }
+            // Respect the real 200ms world_action cooldown before another USE.
+            tokio::time::sleep(std::time::Duration::from_millis(210)).await;
+        }
+        client.shutdown().await?;
+        Ok::<_, Box<dyn std::error::Error>>(results)
+    };
+    let (end, results) = tokio::time::timeout(
+        std::time::Duration::from_secs(30),
+        super::fixture::join_two(
+            async {
+                let end = serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS).await;
+                drop(server);
+                end
+            },
+            peer,
+        ),
+    )
+    .await?;
+    use crate::gameplay_transport::connection::ConnectionEnd;
+    if let ConnectionEnd::AdmittedThenDisconnected(next)
+    | ConnectionEnd::AdmittedThenClosed(next, _) = &end
+    {
+        *admitted = *next;
+    }
+    results.map_err(|error| format!("{end:?}: {error}").into())
+}
+
+#[derive(Clone, Copy)]
+pub(super) enum DefinitionReadyClaim {
+    RuneEmblem,
+    BloodHerb,
+}
+
+pub(super) fn scenario_with_definition_ready_claim(
+    quest: bool,
+    ready: Option<DefinitionReadyClaim>,
+) -> TestResult {
+    let definition_ready = ready.is_some();
+    let (claim, chest, unique, appearance, reward, quantity) =
+        if matches!(ready, Some(DefinitionReadyClaim::BloodHerb)) {
+            (
+                "oteryn:reward-claim.kv.bloodherb",
+                (32769, 31968, -7),
+                6111,
+                3634,
+                "oteryn:item.tibia.i3734",
+                1,
+            )
+        } else if definition_ready {
+            (
+                "oteryn:reward-claim.kv.adoreduh",
+                (33136, 31601, -15),
+                6025,
+                2469,
+                "oteryn:item.tibia.i11603",
+                1,
+            )
+        } else if quest {
+            (
+                "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots",
+                (32582, 31405, -15),
+                6284,
+                2472,
+                "oteryn:item.tibia.i9019",
+                1,
+            )
+        } else {
+            (CLAIM, CHEST, 6176, 2434, "oteryn:item.tibia.i3031", 56)
+        };
+    let transition =
+        "oteryn:quest-transition/quest/u8_4/the_hidden_city_of_beregar/firewalker_boots/chest";
+    let track = "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/firewalker_boots";
+    run(async |admin| {
+        let harness = Harness::create_with_admission_seed(
+            admin,
+            if quest {
+                "quest_bundle_chest"
+            } else {
+                "quest_callbacks"
+            },
+            false,
+            false,
+        )
+        .await?;
+        if definition_ready {
+            let server: String = sqlx::query_scalar("SELECT version()")
+                .fetch_one(&harness.pool)
+                .await?;
+            assert!(server.starts_with("PostgreSQL "));
+            eprintln!("QENGINE2_DEFINITION_READY_SERVER {server}");
+        }
+        prepare_current_session(&harness).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let mut deps = Dependencies::new()?;
+        let (controller, activated_pin) =
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                deps.admitted.world_id,
+                "content-1",
+            )?;
+        let generation = controller.active().ok_or("active generation")?;
+        let native = generation.native_gameplay().ok_or("native")?;
+        let world = source_world(chest, unique, appearance, 0)?;
+        // Blood Herb deliberately reaches literal USE without a preflight check:
+        // its regression must expose missing native admission at real dispatch.
+        if quest || matches!(ready, Some(DefinitionReadyClaim::RuneEmblem)) {
+            let facts = crate::gameplay_transport::item_ref_admission::generation_item_facts(
+                native,
+                &TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: reward.into(),
+                    revision_ref: "definition-r1".into(),
+                },
+            )
+            .map_err(debug)?;
+            assert_ne!(
+                facts.stack,
+                crate::durability::item_transfer::ItemStackClass::Unknown
+            );
+            let report = crate::content::world_reward_claims::bind_embedded_reward_claims(
+                world.base().as_ref(),
+                &|_| true,
+            )?;
+            assert!(
+                report
+                    .served
+                    .iter()
+                    .any(|entry| entry.key.as_str() == claim),
+                "source claim did not bind: {:?}",
+                report
+                    .unbound
+                    .iter()
+                    .filter(|entry| entry.claim == claim)
+                    .collect::<Vec<_>>()
+            );
+        }
+        let cells = world
+            .movement_cells(deps.room.movement_cells())
+            .map_err(debug)?;
+        let pin = ChannelContentPin::from_activation(
+            deps.admitted.world_id,
+            1,
+            generation.identity().server_artifact_digest(),
+            generation.identity().client_artifact_digest(),
+            activated_pin.frame_binding().digest(),
+            world.map_revision_digest(),
+            (
+                i32::from(chest.0) - 1,
+                i32::from(chest.1),
+                -i16::from(chest.2),
+            ),
+        );
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            deps.admitted.world_id,
+            deps.admitted.channel_id,
+            crate::foundation::NodeId::decode(&id(1)).map_err(debug)?,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            2,
+            pin,
+        )
+        .map_err(debug)?;
+        let reservation = runtime
+            .reserve_fresh_session(deps.admitted.game_session_id)
+            .map_err(debug)?;
+        deps.actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(
+                deps.actor,
+                MovementLocalPosition {
+                    x: i32::from(chest.0) - 1,
+                    y: i32::from(chest.1),
+                    floor: -i16::from(chest.2),
+                },
+            )
+            .map_err(debug)?;
+        deps.runtime = tokio::sync::Mutex::new(runtime);
+        let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
+            harness.root.clone(),
+        )
+        .current_session_at(deps.admitted.game_session_id)
+        .await?
+        .0;
+        let fence = crate::gameplay_transport::item_fence_of(current).ok_or("fence")?;
+        sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
+            .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
+            .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice())
+            .bind(generation.identity().client_artifact_digest().as_slice()).bind(activated_pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
+        let weights = NativeItemWeights(native);
+        let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
+        harness
+            .root
+            .initialize_admission_equipment(
+                &authority,
+                &harness.node,
+                &fence,
+                generation.identity().server_artifact_digest(),
+                fresh.operation(),
+            )
+            .await
+            .map_err(debug)?;
+        let template = crate::durability::starter_grant::StarterTemplate {
+            definition: TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: "oteryn:item.tibia.i2854".into(),
+                revision_ref: "definition-r1".into(),
+            },
+            ..crate::durability::starter_grant::StarterTemplate::main()
+        };
+        harness
+            .root
+            .grant_starter_items(&authority, &harness.node, &fence, &weights, &template)
+            .await
+            .map_err(debug)?;
+        let mut admitted = deps.admitted;
+        admitted.first_entry = FirstEntryOutcome::Positioned;
+        admitted.item_fence = Some(fence);
+        let key = oteryn_world_bundle::bundle::placement_key(chest.2, chest.0, chest.1, 1)
+            .ok_or("key")?;
+        let mut placement = world.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        let target = WorldObjectTarget {
+            placement,
+            expected_revision: 0,
+        };
+        if definition_ready {
+            let mut owner = deps.owner(&harness, &authority);
+            owner.active_generation = Some(generation);
+            owner.movement_cells = (&cells).into();
+            owner.admit_progression_session(&mut admitted).await;
+            deps.initialize(&owner).await;
+            let mut attempt = admitted;
+            let mut stale_fence = fence;
+            stale_fence.character_lease_generation += 1;
+            attempt.item_fence = Some(stale_fence);
+            assert_eq!(
+                wire_uses(&owner, attempt, &[1], &target).await?,
+                [UseDisposition::Rejected]
+            );
+            let receipts: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_receipts")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            assert_eq!(receipts, 0);
+        }
+        if quest {
+            let lowered =
+                oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                    .map_err(debug)?;
+            let mounted = std::sync::Arc::new(lowered.catalogue().clone());
+            for (catalogue, stale) in [
+                (None, false),
+                (Some(super::quest_runtime_fixture::catalogue()?), false),
+                (Some(mounted), true),
+            ] {
+                let mut owner = deps.owner(&harness, &authority);
+                owner.active_generation = Some(generation);
+                owner.movement_cells = (&cells).into();
+                owner.quest_catalogue = catalogue;
+                owner.admit_progression_session(&mut admitted).await;
+                deps.initialize(&owner).await;
+                let mut attempt = admitted;
+                if stale {
+                    let mut stale_fence = fence;
+                    stale_fence.character_lease_generation += 1;
+                    attempt.item_fence = Some(stale_fence);
+                }
+                // Invalid catalogue or current authority refuses before minting. Each
+                // attempt has its own owner and command stream, as does a fresh admission.
+                assert_eq!(
+                    wire_uses(&owner, attempt, &[1], &target)
+                        .await
+                        .map_err(|e| format!("catalogue/fence refusal: {e}"))?,
+                    [UseDisposition::Rejected]
+                );
+                let counts: (i64, i64, i64) = sqlx::query_as(
+                    "SELECT (SELECT count(*) FROM game_reward_claim_mint_receipts), \
+                    (SELECT count(*) FROM game_character_quest_obligations), \
+                    (SELECT count(*) FROM game_character_quest_receipts)",
+                )
+                .fetch_one(&harness.pool)
+                .await?;
+                assert_eq!(counts, (0, 0, 0));
+            }
+        }
+        // The second USE is a new command on the live connection. Rebuild the owner
+        // for the replay so no Foundation command-result cache can satisfy it.
+        for (commands, expected) in [
+            (
+                &[1, 2][..],
+                &[UseDisposition::Committed, UseDisposition::NothingToUse][..],
+            ),
+            (&[1][..], &[UseDisposition::Committed][..]),
+        ] {
+            let mut owner = deps.owner(&harness, &authority);
+            owner.active_generation = Some(generation);
+            owner.movement_cells = (&cells).into();
+            owner.admit_progression_session(&mut admitted).await;
+            deps.initialize(&owner).await;
+            // The definition-ready KV claims carry a quest transition
+            // (content/interactions/reward_claims/reward-claims-00000-00099.json,
+            // kv/adoreduh/chest and kv/bloodherb/chest), so their USE resolves it
+            // against the owner's loaded catalogue as production does.
+            if quest || definition_ready {
+                let lowered =
+                    oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                        .map_err(debug)?;
+                owner.quest_catalogue = Some(std::sync::Arc::new(lowered.catalogue().clone()));
+                owner.admit_quest_session(&admitted).await;
+            }
+            assert_eq!(
+                wire_uses(&owner, admitted, commands, &target)
+                    .await
+                    .map_err(|e| format!("quest={quest} commands={commands:?}: {e}"))?,
+                expected
+            );
+            let bag = harness
+                .root
+                .read_character_backpack(&authority, fence.character_id)
+                .await
+                .map_err(debug)?
+                .ok_or("bag")?;
+            assert_eq!(bag.entries.len(), 1);
+            assert_eq!(bag.entries[0].item.quantity, quantity);
+            assert_eq!(bag.entries[0].item.definition.production_key, reward);
+            if quest {
+                let sessions = owner.states.quest_sessions.lock().map_err(debug)?;
+                let copy = sessions
+                    .get(&admitted.game_session_id)
+                    .and_then(|session| session.copy.as_ref())
+                    .ok_or("refreshed quest copy")?;
+                assert_eq!(copy.tracks().get(track), Some(&1));
+            }
+        }
+        if quest {
+            let copy = harness
+                .root
+                .read_character_quest_state(&authority, fence.character_id)
+                .await
+                .map_err(debug)?;
+            assert_eq!(copy.tracks().get(track), Some(&1));
+            let outcome: (i64, i64, i64) = sqlx::query_as(
+                "SELECT (SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1), \
+                (SELECT count(*) FROM game_character_quest_obligations WHERE transition_key=$1 AND state='CONSUMED'), \
+                (SELECT count(*) FROM game_character_quest_obligations WHERE transition_key=$1 AND state <> 'CONSUMED')")
+                .bind(transition).fetch_one(&harness.pool).await?;
+            assert_eq!(outcome, (1, 1, 0));
+        }
+        let claims: (i64, i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_reward_claims WHERE character_id=encode($1,'hex')::uuid AND claim_production_key=$2), (SELECT count(*) FROM game_reward_claim_mint_receipts)")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(claim).fetch_one(&harness.pool).await?;
+        assert_eq!(claims, (1, 1));
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}

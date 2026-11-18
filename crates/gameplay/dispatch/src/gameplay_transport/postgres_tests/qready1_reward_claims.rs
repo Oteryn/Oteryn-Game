@@ -119,7 +119,7 @@ fn claim_case(
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated_pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
@@ -131,7 +131,7 @@ fn claim_case(
         let world = if claim == "oteryn:reward-claim.kv.doublet" {
             retained_world(chest, native)?
         } else {
-            super::quest_callbacks::source_world_choices(chest, choices, appearance)?
+            super::quest_callbacks_fixtures::source_world_choices(chest, choices, appearance)?
         };
         let start = world.start();
         let report = crate::content::world_reward_claims::bind_embedded_reward_claims(
@@ -269,7 +269,7 @@ fn claim_case(
             owner.admit_quest_session(&admitted).await;
             deps.initialize(&owner).await;
             assert_eq!(
-                super::quest_callbacks::wire_uses(&owner, admitted, commands, &target)
+                super::quest_callbacks_fixtures::wire_uses(&owner, admitted, commands, &target)
                     .await
                     .map_err(|e| format!("claim={claim} commands={commands:?}: {e}"))?,
                 expected

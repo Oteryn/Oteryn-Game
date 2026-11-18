@@ -37,7 +37,7 @@ fn revocation_generation_cause_replay_and_terminal_reconnect_postgres() -> TestR
                 let result: TestResult = async {
                     prepare_current_session(&h).await?;
                     let fixed_now:i64=sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&h.pool).await?;
-                    let _clock=super::preadmission::FrozenAdmissionClock::install(&h,fixed_now).await?;
+                    let _clock=super::preadmission_fixtures::FrozenAdmissionClock::install(&h,fixed_now).await?;
                     let mut connection=h.root.try_acquire_ready()?;
                     sqlx::query("SET ROLE oteryn_game_runtime").execute(&mut *connection).await?;
                     let returned=connection.return_to_pool_observed_until(std::time::Instant::now()+std::time::Duration::from_secs(5)).await;
@@ -72,7 +72,7 @@ fn revocation_generation_cause_replay_and_terminal_reconnect_postgres() -> TestR
                     assert_eq!(applied,1);
                     assert_eq!(h.root.platform_stream_cursor(PlatformStream::SecurityRevocations).await.map_err(debug)?.as_deref(),Some("v1:1"));
                     if terminal {
-                        let held = super::house_transfer::RecoverySource::token(97)?;
+                        let held = super::house_transfer_fixtures::RecoverySource::token(97)?;
                         let captured=owner.resume(ResumeAttempt { game_session_id:session,recovery_material:held.as_bytes(),last_applied_server_sequence:0,transport:crate::foundation::AuthenticatedTransportRefV1::decode(&[97;16]).map_err(debug)?,supported_capabilities:&[] }).await;
                         assert!(matches!(captured,Err(AdmissionRefusal::Rejected)),"captured session refuses before terminal release");
                         for candidate in [false,true] {
@@ -85,7 +85,7 @@ fn revocation_generation_cause_replay_and_terminal_reconnect_postgres() -> TestR
                         }
                         assert_eq!(owner.release_staff_session(deps.admitted).await,GraceExpiryResult::Released);
                         assert_eq!(FreshAdmissionStore::from_root(h.root.clone()).current_session(session).await?.session_state(),GameSessionState::Terminal);
-                        let held = super::house_transfer::RecoverySource::token(97)?;
+                        let held = super::house_transfer_fixtures::RecoverySource::token(97)?;
                         let refusal=owner.resume(ResumeAttempt { game_session_id:session, recovery_material:held.as_bytes(), last_applied_server_sequence:0, transport:crate::foundation::AuthenticatedTransportRefV1::decode(&[97;16]).map_err(debug)?, supported_capabilities:&[] }).await;
                         assert!(matches!(refusal,Err(AdmissionRefusal::Rejected)));
                         use crate::durability::admission_authority_guards::AdmissionGuardStore;
@@ -156,8 +156,8 @@ fn revocation_freshness_case(only_flag_off: bool) -> TestResult {
                     .fetch_one(&h.pool)
                     .await?;
                     let _clock =
-                        super::preadmission::FrozenAdmissionClock::install(&h, now).await?;
-                    let source = super::house_transfer::RecoverySource::start_at(
+                        super::preadmission_fixtures::FrozenAdmissionClock::install(&h, now).await?;
+                    let source = super::house_transfer_fixtures::RecoverySource::start_at(
                         &h,
                         Some(u64::try_from(now)?),
                     )
@@ -343,7 +343,7 @@ fn revocation_freshness_case(only_flag_off: bool) -> TestResult {
 fn fixed_recovery_token(now: i64, nonce: u8) -> TestResult<String> {
     use base64::Engine as _;
     use ed25519_dalek::Signer as _;
-    let token = super::house_transfer::RecoverySource::token(nonce)?;
+    let token = super::house_transfer_fixtures::RecoverySource::token(nonce)?;
     let mut parts = token.split('.');
     let header = parts.next().ok_or("header")?;
     let payload = parts.next().ok_or("payload")?;
@@ -367,7 +367,7 @@ fn revocation_millisecond_read_timestamp_postgres() -> TestResult {
   let result:TestResult=async {
    sqlx::query("UPDATE game_platform_stream_cursors SET advanced_at=to_timestamp(100.777) WHERE stream=3").execute(&h.pool).await?;
    assert_eq!(h.root.security_revocation_last_read_ms().await.map_err(debug)?,Some(100777));
-   let _clock=super::preadmission::FrozenAdmissionClock::install(&h,130).await?;
+   let _clock=super::preadmission_fixtures::FrozenAdmissionClock::install(&h,130).await?;
    sqlx::query("ALTER TABLE preadm_clock.instant ALTER COLUMN value TYPE NUMERIC").execute(&h.pool).await?;
    sqlx::query("UPDATE game_platform_stream_cursors SET advanced_at=to_timestamp(100.000) WHERE stream=3").execute(&h.pool).await?;
    assert!(h.root.security_revocation_read_fresh_now().await.map_err(debug)?);
@@ -379,58 +379,4 @@ fn revocation_millisecond_read_timestamp_postgres() -> TestResult {
   }.await;let cleanup=h.cleanup().await;result?;cleanup
  }).map_err(|e|e.to_string()))?.join().map_err(|_|"millisecond case panicked")??;
     Ok(())
-}
-/// Advance the injected database clock after the transaction's capability check.
-/// The separate connection can commit while admission relations are locked.
-pub(super) struct RecoveryExpiryClock {
-    clock: super::preadmission::FrozenAdmissionClock,
-    worker: std::thread::JoinHandle<Result<(), String>>,
-    pub(super) check: crate::durability::fresh_admission::CurrentCapabilityCheck,
-    observed: std::sync::Arc<std::sync::atomic::AtomicBool>,
-}
-impl RecoveryExpiryClock {
-    pub(super) async fn install(h: &Harness, now: i64) -> TestResult<Self> {
-        use sqlx::Connection as _;
-        let clock = super::preadmission::FrozenAdmissionClock::install(h, now).await?;
-        sqlx::query("ALTER TABLE preadm_clock.instant ALTER COLUMN value TYPE NUMERIC").execute(&h.pool).await?;
-        sqlx::query("UPDATE game_platform_stream_cursors SET advanced_at=to_timestamp($1::double precision-30) WHERE stream=3").bind(now as f64).execute(&h.pool).await?;
-        assert!(h.root.security_revocation_read_fresh_now().await.map_err(debug)?);
-        let options = h.pool.connect_options();
-        let (request, requests) = std::sync::mpsc::sync_channel(1);
-        let (answer, answers) = std::sync::mpsc::sync_channel(1);
-        let worker = std::thread::spawn(move || -> Result<(), String> {
-            let runtime=crate::bestiary_postgres_harness::runtime().map_err(|e|e.to_string())?;
-            runtime.block_on(async {
-                let mut connection=sqlx::PgConnection::connect_with(&options).await.map_err(|e|format!("{e:?}"))?;
-                requests.recv_timeout(std::time::Duration::from_secs(15)).map_err(|e|format!("recovery clock capability stage: {e}"))?;
-                sqlx::query("UPDATE preadm_clock.instant SET value=$1::text::numeric/1000").bind((now*1000+1).to_string()).execute(&mut connection).await.map_err(|e|format!("{e:?}"))?;
-                answer.send(()).map_err(|e|e.to_string())?;
-                Ok(())
-            })
-        });
-        let observed=std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
-        let invoked=observed.clone();
-        let answers=std::sync::Mutex::new(answers);
-        let check: crate::durability::fresh_admission::CurrentCapabilityCheck=std::sync::Arc::new(move |_,_,_| {
-            let advanced=request.send(()).is_ok() && answers.lock().is_ok_and(|reply|reply.recv_timeout(std::time::Duration::from_secs(15)).is_ok());
-            invoked.store(advanced,std::sync::atomic::Ordering::SeqCst);
-            advanced
-        });
-        Ok(Self {clock,worker,check,observed})
-    }
-    pub(super) async fn finish(self,h:&Harness)->TestResult {
-        assert!(self.observed.load(std::sync::atomic::Ordering::SeqCst),"deciding capability check must run before freshness expires");
-        self.worker.join().map_err(|_|"recovery clock worker panicked")??;
-        let mut connection=tokio::time::timeout(std::time::Duration::from_secs(15),async {
-            loop {
-                if let Ok(connection)=h.root.try_acquire_ready() {break connection;}
-                tokio::task::yield_now().await;
-            }
-        }).await?;
-        sqlx::query("SET search_path=pg_catalog,public").execute(&mut *connection).await?;
-        let returned=connection.return_to_pool_observed_until(std::time::Instant::now()+std::time::Duration::from_secs(5)).await;
-        assert!(matches!(returned,sqlx::pool::PoolConnectionReturnDisposition::ReturnedToIdle));
-        drop(self.clock);
-        Ok(())
-    }
 }

@@ -121,7 +121,7 @@ fn srx3_heal_malice_native_defense_heals_named_boss_and_dispels_nearby_player_po
         return Ok(());
     }
     let started = std::time::Instant::now();
-    pg::kill_reward_e2e::scenario_thread::run("srx3-malice-area-heal", || {
+    pg::kill_reward_e2e_fixtures::scenario_thread::run("srx3-malice-area-heal", || {
         run(async |admin| {
             reset();
             // Crystal201189f lib/quests/soul_war.lua:332-354: literal first
@@ -147,8 +147,8 @@ fn srx3_heal_malice_native_defense_heals_named_boss_and_dispels_nearby_player_po
             sqlx::query("INSERT INTO game_character_soul_war(character_id,teleport_access,defeated_bosses,first_taint_at,megalomania_completed,final_reward_claimed) VALUES(encode($1,'hex')::uuid,true,0,NULL,false,false)")
                 .bind(id(41).as_slice()).execute(&mut *historical).await?;
             historical.commit().await?;
-            let evidence = pg::house_transfer::RecoverySource::start(&h).await?;
-            pg::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = pg::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            pg::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -158,7 +158,7 @@ fn srx3_heal_malice_native_defense_heals_named_boss_and_dispels_nearby_player_po
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             install_scene(&mut owner, &scene, PinnedActivitySourceRoom::GoshnarsMalice)?;
-            pg::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            pg::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             admitted.continuity.selected_capabilities = SelectedCapabilities::select(
                 BUNDLE_WORLD_OFFERED_CAPABILITIES,
@@ -178,9 +178,9 @@ fn srx3_heal_malice_native_defense_heals_named_boss_and_dispels_nearby_player_po
             .ok_or("actual native boss capabilities")?;
             // Use the same supported native level as the other Malice scenarios.
             prepare_player(&h, &owner, &mut admitted, 1999).await?;
-            let instance = pg::activity_runtime::allocate_ready_instance(&h, 215).await?;
+            let instance = pg::activity_runtime_fixtures::allocate_ready_instance(&h, 215).await?;
             let mut frames = Vec::new();
-            let (_, reply, barrier) = pg::boss_activity::exchange_capture(
+            let (_, reply, barrier) = pg::boss_activity_fixtures::exchange_capture(
                 &owner,
                 &mut admitted,
                 "oteryn:creature.goshnar_s_malice",
