@@ -5,8 +5,8 @@ use oteryn_gameplay_encounters::bosses::phase_controller::ferumbras::{
     CRYSTALS, CrystalCharge, Crystals,
 };
 
-const VOID: &str = "oteryn:creature.void";
-const VOID_POSITION: MovementLocalPosition = MovementLocalPosition {
+// Crystal world-monster.xml:177192-177194 and traps/void.lua:53-59.
+const INVADER_SOURCE: MovementLocalPosition = MovementLocalPosition {
     x: 33391,
     y: 31461,
     floor: 14,
@@ -53,7 +53,6 @@ pub(in crate::gameplay_transport) struct Fight {
     crystals: Crystals,
     splinters: Vec<ExactActorRef>,
     summons: Vec<ExactActorRef>,
-    void: Option<ExactActorRef>,
     invader: Option<ExactActorRef>,
     next_summon: u64,
     exit_due: u64,
@@ -84,7 +83,6 @@ impl Fight {
             crystals: Crystals::default(),
             splinters: Vec::new(),
             summons: actors.to_vec(),
-            void: None,
             invader: None,
             next_summon: now.saturating_add(SUMMON_INTERVAL_US),
             exit_due: now.saturating_add(FIGHT_TIMEOUT_US),
@@ -360,15 +358,7 @@ impl Fight {
                 .invader
                 .is_none_or(|actor| !runtime.contains_live_creature(actor))
         {
-            if self
-                .void
-                .is_none_or(|actor| !runtime.contains_live_creature(actor))
-            {
-                self.void = self.spawn(runtime, VOID, VOID_POSITION);
-            }
-            if self.void.is_some() {
-                self.invader = self.spawn(runtime, INVADER, VOID_POSITION);
-            }
+            self.invader = self.spawn(runtime, INVADER, INVADER_SOURCE);
             self.next_summon = now.saturating_add(SUMMON_INTERVAL_US);
         }
         self.consume_essences(runtime, now);
