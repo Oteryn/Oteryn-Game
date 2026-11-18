@@ -214,6 +214,23 @@ fn cults_source_hook_replaces_stops_and_retries_refused_native_spawn() {
         y: 100,
         floor: 7,
     };
+    let mut replacement = NativePhaseOwner::bind(&runtime, keys, &party).unwrap();
+    // A stale second removal must roll back the first removal and leave the role pending.
+    assert!(
+        replacement
+            .spawn_role(
+                &mut runtime,
+                0,
+                essence_at,
+                &[stops[0], stops[0]],
+                None,
+                |_, _| true,
+            )
+            .is_err()
+    );
+    assert!(runtime.contains_live_creature(stops[0]));
+    assert!(replacement.pending().any(|(role, _)| role == 0));
+
     let mut encounter =
         cults::CultsEncounter::bind(&mut runtime, &party, pillars, stops, essence_at).unwrap();
     let stop_key = format!("{}_stop", keys.roles[5].creature);
