@@ -88,6 +88,7 @@ mod gameplay_idle_presence;
 mod grizzly_boss;
 mod grizzly_kills;
 mod grizzly_rewards;
+mod group_transfer;
 mod guild_bank;
 mod guild_chat;
 mod guild_war;

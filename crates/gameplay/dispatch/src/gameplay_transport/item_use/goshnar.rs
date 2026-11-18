@@ -1,6 +1,7 @@
 //! Crystal 201189f8 fluids.lua:36-48 and 151-184.
+use super::super::group_transfer::GroupTransfer;
 use super::*;
-use crate::foundation::{MovementLocalPosition, MovementPositionSnapshot};
+use crate::foundation::MovementLocalPosition;
 use crate::map::{boot::BundleMap, overlay::TilePos};
 use oteryn_protocol_oteryn::world_object::WorldObjectTarget;
 
@@ -17,70 +18,6 @@ pub(super) fn target_matches(map: &BundleMap, placement_key: u64, fluid: u8) -> 
         && map
             .facts
             .quest_callback_matches(placement_key, None, Some(GRAVESTONE_AID), None)
-}
-
-pub(super) struct GroupTransfer {
-    members: Vec<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>,
-    destination: MovementLocalPosition,
-    due_us: u64,
-    optional_pvp: Option<bool>,
-}
-
-impl GroupTransfer {
-    pub(super) fn project(
-        self,
-        owner: &ComposedFreshAdmission<'_, '_, '_>,
-        runtime: &mut ChannelRuntimeV1,
-        states: &mut ChannelSpellStates,
-    ) {
-        let now = owner.owner_now().get();
-        if now < self.due_us || self.members.is_empty() {
-            return;
-        }
-        let Some(map) = owner.bundle_map() else {
-            return;
-        };
-        let closed = crate::map::floor::BundleDoors(&map.facts);
-        let proofs = self
-            .members
-            .iter()
-            .map(|(actor, session, before)| {
-                crate::map::floor::prepare_quest_encounter_ejection(
-                    runtime,
-                    owner.movement_cells(),
-                    *actor,
-                    *session,
-                    *before,
-                    self.destination,
-                    &closed,
-                )
-            })
-            .collect::<Result<Vec<_>, _>>();
-        let Ok(proofs) = proofs else { return };
-        let Ok(snapshots) = runtime.commit_quest_relocation(proofs, || true) else {
-            return;
-        };
-        for ((actor, session, before), after) in self.members.into_iter().zip(snapshots) {
-            states.stage_special_movement_step(
-                runtime,
-                map,
-                actor,
-                session,
-                now,
-                Some(before.position()),
-                after.position(),
-                self.optional_pvp,
-            );
-            states.stage_underwater_step(
-                runtime,
-                actor,
-                session,
-                now,
-                super::super::paced_movement::underwater_drown::underwater(map, before.position()),
-                super::super::paced_movement::underwater_drown::underwater(map, after.position()),
-            );
-        }
-    }
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -137,11 +74,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
                 .collect()
         };
-        Some(GroupTransfer {
+        Some(GroupTransfer::new(
             members,
-            destination: DESTINATION,
-            due_us: self.owner_now().get(),
+            DESTINATION,
+            self.owner_now().get(),
             optional_pvp,
-        })
+        ))
     }
 }

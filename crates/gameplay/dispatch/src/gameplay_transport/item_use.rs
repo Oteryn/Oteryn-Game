@@ -1200,7 +1200,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
 enum FluidEffect {
     Restore(ReferencePotionRestore),
-    Transfer(goshnar::GroupTransfer),
+    Transfer(super::group_transfer::GroupTransfer),
 }
 
 fn fluid_map_target_in_range(ax: i32, ay: i32, af: i16, tx: i32, ty: i32, tf: i16) -> bool {
