@@ -352,8 +352,8 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                         let blocker_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
                             .fetch_one(&mut *blocker)
                             .await?;
-                        sqlx::query("SELECT i.item_instance_id FROM game_item_instances i JOIN game_primal_pod_callbacks p USING(item_instance_id) WHERE p.source_transaction_id=encode($1,'hex')::uuid FOR UPDATE OF i")
-                            .bind(first.0.as_slice()).fetch_one(&mut *blocker).await?;
+                        let (holder_ready, wait_for_holder) = tokio::sync::oneshot::channel();
+                        let (row_locked, wait_for_row_lock) = tokio::sync::oneshot::channel();
                         let epoch_before = crate::gameplay_transport::primal_callbacks::normal_map_read_epoch_for_test();
                         let view = owner.runtime_view(&registered);
                         {
@@ -385,14 +385,31 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                             "i.definition_revision_ref,i.quantity,i.state_revision::text,%",
                         );
                         let (drained, observed) = tokio::join!(
-                            Box::pin(super::srx3_primal::drain_actual_native_through(
-                                &view, normal_now, true,
-                            ))
+                            Box::pin(
+                                crate::gameplay_transport::primal_callbacks::NORMAL_MAP_READ_GATE
+                                    .scope(
+                                        std::cell::RefCell::new(Some((
+                                            holder_ready,
+                                            wait_for_row_lock
+                                        ))),
+                                        super::srx3_primal::drain_actual_native_through(
+                                            &view, normal_now, true,
+                                        ),
+                                    )
+                            )
                                 as std::pin::Pin<
                                     Box<dyn std::future::Future<Output = TestResult> + '_>,
                                 >,
                             Box::pin(async {
                                 let observation: TestResult = async {
+                                    // Earlier map reads run freely. Lock the row only when the
+                                    // Primal read itself has checked out and proved its holder.
+                                    tokio::time::timeout(std::time::Duration::from_secs(8), wait_for_holder)
+                                        .await
+                                        .map_err(|_| "prerequisite: actual Primal map-read holder was not proved")??;
+                                    sqlx::query("SELECT i.item_instance_id FROM game_item_instances i JOIN game_primal_pod_callbacks p USING(item_instance_id) WHERE p.source_transaction_id=encode($1,'hex')::uuid FOR UPDATE OF i")
+                                        .bind(first.0.as_slice()).fetch_one(&mut *blocker).await?;
+                                    row_locked.send(()).map_err(|()| "actual Primal read ended before external row lock")?;
                                     let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(8);
                                     loop {
                                         let blocked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND $1=ANY(pg_blocking_pids(pid)) AND wait_event_type='Lock' AND query LIKE $2)")
