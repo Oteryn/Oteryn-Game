@@ -32,6 +32,7 @@ use super::{
     DurabilityError, character_progression::CurrentCharacterGameplayFence,
     spell_owner_commit::SpellLanePermit,
 };
+use oteryn_gameplay_quests::quest::npc_rules::legacy_defaults;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
@@ -138,6 +139,7 @@ impl super::DurabilityRoot {
                      FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2",
                 ).bind(fence.character_id.as_bytes().as_slice()).bind(&callback.quest)
                     .fetch_optional(&mut *tx).await?;
+                let mut historical_defaults = None;
                 if let Some(pin) = pin {
                     let pin = super::quest_state::QuestStateRecord {
                         pinned_content_revision: pin.try_get("pinned_content_revision")?,
@@ -148,6 +150,9 @@ impl super::DurabilityRoot {
                     if !read_only_pin_allows(&pin, &catalogue, &callback.quest)? {
                         return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
                     }
+                    historical_defaults = legacy_defaults(
+                        &catalogue, &callback.quest, &pin.definition_hash,
+                    );
                 }
                 for storage in &callback.storage {
                     let Some(track) = catalogue.track(&storage.track).filter(|track| track.quest == callback.quest) else {
@@ -158,7 +163,9 @@ impl super::DurabilityRoot {
                          WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND quest_key=$3",
                     ).bind(fence.character_id.as_bytes().as_slice()).bind(&storage.track)
                         .bind(&callback.quest).fetch_optional(&mut *tx).await?;
-                    if !(storage.minimum..=storage.maximum).contains(&value.unwrap_or(track.initial)) {
+                    let value = value.or_else(|| historical_defaults?.get(&storage.track).copied())
+                        .unwrap_or(track.initial);
+                    if !(storage.minimum..=storage.maximum).contains(&value) {
                         return Ok(Ok(false));
                     }
                 }
@@ -177,9 +184,11 @@ fn read_only_pin_allows(
     let current_hash = catalogue
         .definition_hash(quest)
         .ok_or(DurabilityError::InvalidStoredState)?;
-    // QUEST-STATE-0 §6: unchanged definitions retain their historical content
-    // pin; completed quests keep access even when the definition changes.
-    Ok(stored.definition_hash == current_hash || stored.completed)
+    // Read the existing progress under its saved pin. Only exact registered
+    // predecessors qualify alongside the active definition and completed saves.
+    Ok(stored.definition_hash == current_hash
+        || stored.completed
+        || legacy_defaults(catalogue, quest, &stored.definition_hash).is_some())
 }
 
 struct Input {
