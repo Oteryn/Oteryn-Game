@@ -40,6 +40,24 @@ fn scenario(admin: String) -> TestResult {
         let harness =
             Harness::create_with_admission_seed(admin, "cotrev_army", false, false).await?;
         prepare_current_session(&harness).await?;
+        let now = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&harness.pool)
+            .await?;
+        let guest = crate::world_party_runtime_postgres_cases::committed_fresh_player_owned(
+            &crate::world_party_runtime_postgres_cases::FreshPlayerOwners {
+                root: harness.root.clone(),
+                node: harness.node.clone(),
+                recovery: &harness.recovery,
+            },
+            61,
+            63,
+            71,
+            now,
+        )
+        .await?;
+        let guest_session = guest.current_game_session_id();
+        let guest_lease = guest.current_character_lease();
+        let guest_character = guest_lease.character_id();
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
             .root
@@ -146,17 +164,7 @@ fn scenario(admin: String) -> TestResult {
             },
             deps.admitted.world_id,
             deps.admitted.channel_id,
-            |key| {
-                use crate::content::{ReferenceItemField, ReferenceItemType};
-                let policy = native.item_policy(key, "definition-r1")?.record();
-                Some(crate::map::facts::ItemDefinition {
-                    reference: reference(key)?,
-                    solid: policy.attributes.blocks_movement,
-                    blocks_projectile: policy.attributes.blocks_projectile.unwrap_or(true),
-                    pickupable: matches!(&policy.semantics.physical, ReferenceItemField::Known(p) if p.pickupable == ReferenceItemField::Known(true)),
-                    door: matches!(&policy.semantics.classification, ReferenceItemField::Known(c) if c.item_type == ReferenceItemField::Known(ReferenceItemType::Door)),
-                })
-            },
+            |key| crate::map::boot::native_item_definition(Some(native), key),
         )
         .map_err(debug)?;
         let cells = map
@@ -230,19 +238,30 @@ fn scenario(admin: String) -> TestResult {
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *seed)
             .await?;
-        sqlx::query("UPDATE game_character_roots SET character_revision=2 WHERE character_id=encode($1,'hex')::uuid")
-            .bind(id(41).as_slice()).execute(&mut *seed).await?;
-        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,'oteryn:quest.children_of_the_revolution_quest',19,2)")
-            .bind(id(41).as_slice()).bind(QUESTLINE).execute(&mut *seed).await?;
+        for character in [id(41), *guest_character.as_bytes()] {
+            sqlx::query("UPDATE game_character_roots SET character_revision=greatest(character_revision,2) WHERE character_id=encode($1,'hex')::uuid")
+                .bind(character.as_slice()).execute(&mut *seed).await?;
+            sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,'oteryn:quest.children_of_the_revolution_quest',19,2)")
+                .bind(character.as_slice()).bind(QUESTLINE).execute(&mut *seed).await?;
+        }
         seed.commit().await?;
         owner.admit_quest_session(&admitted).await;
         let players = {
             let mut runtime = owner.runtime.lock().await;
             let mut players = Vec::new();
             for (tag, x, y) in [(51, 33266, 31084), (52, 33259, 31089), (53, 33263, 31093)] {
-                let session = GameSessionId::decode(&id(tag)).map_err(debug)?;
+                let session = if tag == 51 {
+                    guest_session
+                } else {
+                    GameSessionId::decode(&id(tag)).map_err(debug)?
+                };
                 let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
                 let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+                if session == guest_session {
+                    runtime
+                        .bind_attacker_lease(actor, session, guest_lease)
+                        .map_err(debug)?;
+                }
                 runtime
                     .initialize_pinned_test_position(
                         actor,
@@ -253,6 +272,8 @@ fn scenario(admin: String) -> TestResult {
             }
             players
         };
+        let (guest, guest_session) = players[0];
+        deps.initialize_player(&owner, guest, guest_session).await;
         let key = crate::map::view::placement_key(STAIR, 1).ok_or("stair key")?;
         let appearance = || -> TestResult<u16> {
             Ok(map
@@ -314,18 +335,45 @@ fn scenario(admin: String) -> TestResult {
                 .floor,
             7
         );
-        let (guest, guest_session) = players[0];
+        arrive(
+            &owner,
+            deps.actor,
+            admitted.game_session_id,
+            MovementLocalPosition {
+                x: 33268,
+                y: 31119,
+                floor: 7,
+            },
+        )
+        .await?;
         arrive(
             &owner,
             guest,
             guest_session,
             MovementLocalPosition {
-                x: 33267,
-                y: 31115,
-                floor: 7,
+                x: 33264,
+                y: 31116,
+                floor: 8,
             },
         )
         .await?;
+        time(started + 10_000_000);
+        let step = owner
+            .ordinary_paced_step(guest, guest_session, StepDirection::East, None, None)
+            .await
+            .0;
+        assert_eq!(step.disposition, StepDisposition::Moved);
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(guest)
+                .map_err(debug)?
+                .position()
+                .floor,
+            7
+        );
 
         time(started + 29_999_999);
         owner.drain_quest_encounter_deadlines().await;
@@ -396,12 +444,11 @@ fn scenario(admin: String) -> TestResult {
                 .is_empty()
         );
         drop(runtime);
-        let state: i64 =
-            sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
-                .bind(QUESTLINE)
-                .fetch_one(&harness.pool)
-                .await?;
-        assert_eq!(state, 20, "survivor credit reached PostgreSQL");
+        for character in [id(41), *guest_character.as_bytes()] {
+            let state: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
+                .bind(character.as_slice()).bind(QUESTLINE).fetch_one(&harness.pool).await?;
+            assert_eq!(state, 20, "survivor credit reached PostgreSQL");
+        }
         drop(owner);
         drop(authority);
         drop(seal);

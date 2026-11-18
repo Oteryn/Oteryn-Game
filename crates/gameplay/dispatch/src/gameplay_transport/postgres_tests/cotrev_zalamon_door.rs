@@ -75,17 +75,7 @@ fn scenario(admin: String) -> TestResult {
             },
             deps.admitted.world_id,
             deps.admitted.channel_id,
-            |key| {
-                use crate::content::{ReferenceItemField, ReferenceItemType};
-                let policy = native.item_policy(key, "definition-r1")?.record();
-                Some(crate::map::facts::ItemDefinition {
-                    reference: reference(key)?,
-                    solid: policy.attributes.blocks_movement,
-                    blocks_projectile: policy.attributes.blocks_projectile.unwrap_or(true),
-                    pickupable: matches!(&policy.semantics.physical, ReferenceItemField::Known(p) if p.pickupable == ReferenceItemField::Known(true)),
-                    door: matches!(&policy.semantics.classification, ReferenceItemField::Known(c) if c.item_type == ReferenceItemField::Known(ReferenceItemType::Door)),
-                })
-            },
+            |key| crate::map::boot::native_item_definition(Some(native), key),
         )
         .map_err(debug)?;
         let cells = map

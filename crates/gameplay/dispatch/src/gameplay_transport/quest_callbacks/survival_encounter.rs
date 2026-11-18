@@ -151,7 +151,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &[],
             &[],
             false,
-            Some(&QuestCallbackProjection::TimedTransform { due, restore }),
+            Some(&QuestCallbackProjection::TimedPassableTransform { due, restore }),
         ) {
             return;
         }

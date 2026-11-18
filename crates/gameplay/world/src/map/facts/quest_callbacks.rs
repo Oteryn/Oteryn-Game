@@ -74,6 +74,8 @@ struct DynamicPortal {
 pub enum QuestCallbackProjection {
     /// Restore exactly this revision at an original source deadline.
     TimedTransform { due: u64, restore: EntryFacts },
+    /// Restore an opening's appearance and collision override together.
+    TimedPassableTransform { due: u64, restore: EntryFacts },
     /// A source glyph and its native portal share one revision-fenced deadline.
     TimedEntrance {
         due: u64,
@@ -350,7 +352,18 @@ impl CallbackStates {
                     }
                 }
             }
-            QuestCallbackProjection::TimedTransform { due, restore } => {
+            QuestCallbackProjection::TimedTransform { due, restore }
+            | QuestCallbackProjection::TimedPassableTransform { due, restore } => {
+                let overlay = matches!(
+                    projection,
+                    QuestCallbackProjection::TimedPassableTransform { .. }
+                )
+                .then(|| {
+                    (
+                        self.hidden.contains(&owner),
+                        self.passable.get(&owner).copied(),
+                    )
+                });
                 let Some(revision) = self
                     .changed
                     .get(&owner)
@@ -364,9 +377,12 @@ impl CallbackStates {
                     MovementDecay {
                         revision,
                         restore: *restore,
-                        overlay: None,
+                        overlay,
                     },
                 );
+                if overlay.is_some() {
+                    self.passable.insert(owner, true);
+                }
             }
             QuestCallbackProjection::Portals { endpoints, expires } => {
                 if close {
@@ -1674,7 +1690,8 @@ impl BundleFacts {
                         }
                     })
                 }
-                QuestCallbackProjection::TimedTransform { .. } => false,
+                QuestCallbackProjection::TimedTransform { .. }
+                | QuestCallbackProjection::TimedPassableTransform { .. } => false,
             })
             || expected == u64::MAX
             || passages.len() + replacements.len() > 8
