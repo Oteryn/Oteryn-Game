@@ -2315,7 +2315,8 @@ pub(super) async fn lock_admission_relations(
 pub(super) async fn try_lock_admission_relations(
     transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
 ) -> Result<(), DurabilityError> {
-    sqlx::query(&format!("{ADMISSION_RELATIONS_LOCK} NOWAIT"))
+    // Both parts are fixed SQL; no caller input enters the lock statement.
+    sqlx::query(sqlx::AssertSqlSafe(format!("{ADMISSION_RELATIONS_LOCK} NOWAIT")))
         .execute(&mut **transaction)
         .await?;
     Ok(())
