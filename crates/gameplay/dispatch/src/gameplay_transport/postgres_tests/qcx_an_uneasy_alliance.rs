@@ -195,6 +195,21 @@ fn scenario() -> TestResult {
                 }
             }
 
+            // Resume the orc-credit checkpoint under its pre-package definition pin.
+            let mut prior_save = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *prior_save)
+                .await?;
+            let updated = sqlx::query(
+                "UPDATE game_character_quest_states SET definition_hash=decode($1,'hex') WHERE quest_key='oteryn:quest.an_uneasy_alliance_quest' AND completed_character_revision IS NULL",
+            )
+            .bind("5bd6915a3824b432e3e312bbdca7d301065770ee64cda78a1d1bc925b88732f5")
+            .execute(&mut *prior_save)
+            .await?;
+            assert_eq!(updated.rows_affected(), 1);
+            prior_save.commit().await?;
+            owner.refresh_quest_session(admitted.game_session_id, false).await;
+
             let lines =
                 super::classic_quests::talk(&mut owner, &admitted, curos, 106, "mission").await?;
             assert!(

@@ -375,6 +375,7 @@ pub(super) fn lower_embedded_quest_state(
             }
         }
     }
+    super::package_quest_predecessors::register(&mut lowered.catalogue);
     restrict_runtime_scope(lowered, content_revision)
 }
 

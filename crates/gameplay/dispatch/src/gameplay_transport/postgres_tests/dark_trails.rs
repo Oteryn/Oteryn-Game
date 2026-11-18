@@ -220,6 +220,20 @@ pub(super) fn scenario(audit: bool) -> TestResult {
             return Ok(());
         }
 
+        let active_catalogue = owner.quest_catalogue.clone().ok_or("active catalogue")?;
+        let prior_catalogue = quest::pre_package_catalogue(&active_catalogue)?;
+        let prior_hash = prior_catalogue
+            .definition_hash(quest::QUEST)
+            .ok_or("prior pin")?;
+        assert_eq!(
+            prior_hash
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>(),
+            "d5afbe8d80c2deea5f4b932f58c99c7fa9182eb792aa497fb136a36bdab21966"
+        );
+        owner.quest_catalogue = Some(std::sync::Arc::new(prior_catalogue));
+
         let [ezebeth, beggar, rapanaio] = install(
             &owner,
             &admitted,
@@ -338,6 +352,17 @@ pub(super) fn scenario(audit: bool) -> TestResult {
             talk(&mut owner, &admitted, ezebeth, 3011, "bye").await?,
             ["Good bye, [|PLAYERNAME|] ${name} %s."]
         );
+        let stored_hash: Vec<u8> = sqlx::query_scalar(
+            "SELECT definition_hash FROM game_character_quest_states WHERE quest_key=$1 AND completed_character_revision IS NULL",
+        )
+        .bind(quest::QUEST)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(stored_hash, prior_hash);
+        owner.quest_catalogue = Some(active_catalogue);
+        owner
+            .refresh_quest_session(admitted.game_session_id, false)
+            .await;
         talk(&mut owner, &admitted, beggar, 3012, "hi").await?;
         talk(&mut owner, &admitted, beggar, 3013, "yes").await?;
         talk(&mut owner, &admitted, beggar, 3014, "want").await?;

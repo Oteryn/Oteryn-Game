@@ -251,6 +251,33 @@ impl Book {
     }
 }
 
+/// Rebuild the pre-package durable catalogue for the dispatch upgrade test.
+#[cfg(any(test, feature = "test-support"))]
+pub fn pre_package_catalogue(
+    active: &super::QuestStateCatalogue,
+) -> Result<super::QuestStateCatalogue, String> {
+    let mut transitions = active.transitions.clone();
+    let ritual = transitions
+        .get_mut(&transition_key("barazbaz-ritual"))
+        .ok_or("missing Barazbaz ritual")?;
+    let vote_track = format!("{TRACK_PREFIX}mission08");
+    ritual.effects.retain(|effect| effect.track != vote_track);
+    let mut previous = super::QuestStateCatalogue::new(
+        active.content_revision.clone(),
+        active.tracks.values().cloned().collect(),
+        transitions.into_values().collect(),
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    previous.hashes.extend(
+        active
+            .hashes
+            .iter()
+            .filter(|(quest, _)| quest.as_str() != QUEST)
+            .map(|(quest, hash)| (quest.clone(), *hash)),
+    );
+    Ok(previous)
+}
+
 pub(super) fn extend(
     catalogue: super::QuestStateCatalogue,
 ) -> Result<super::QuestStateCatalogue, String> {

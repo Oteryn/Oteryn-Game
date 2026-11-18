@@ -2170,7 +2170,7 @@ mod tests {
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
         // Shared, QuestPC7, other registered shards, M43 peer, Kingsday journal.
-        assert_eq!(load()?.len(), 207 + 59 + 124 + 1 + 1);
+        assert_eq!(load()?.len(), 209 + 59 + 127 + 1 + 1);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2203,6 +2203,8 @@ mod tests {
             "oteryn:quest-reward/l2-wizard-shield",
             "oteryn:quest-reward/l2-wizard-skull",
             "oteryn:quest-reward/l2-wizard-start",
+            "oteryn:quest-reward/lost-brother-return",
+            "oteryn:quest-reward/lost-brother-start",
             "oteryn:quest-reward/m36-rock-steady-confirm",
             "oteryn:quest-reward/m36-rock-steady-first",
             "oteryn:quest-reward/m36-rock-steady-second",
@@ -2215,7 +2217,7 @@ mod tests {
             .filter(|key| added_keys.contains(key))
             .collect();
         assert_eq!(added, BTreeSet::from(added_keys));
-        assert_eq!(legacy.len(), 207);
+        assert_eq!(legacy.len(), 209);
         let original: Vec<_> = legacy
             .iter()
             .filter(|callback| !added_keys.contains(&callback.key.as_str()))

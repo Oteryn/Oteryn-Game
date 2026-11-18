@@ -74,6 +74,7 @@ pub mod native_kills;
 pub mod native_rules;
 pub mod npc_magic;
 pub mod npc_rules;
+mod package_quest_predecessors;
 pub mod planegazer_finale;
 mod quests_2_focus;
 pub mod reward_callbacks;

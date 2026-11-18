@@ -439,6 +439,32 @@ fn scenario(explorer: bool) -> TestResult {
             .map_err(|e| format!("callback starter items: {e:?}"))?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
+        // Seed an incomplete Guild save that predates both new callback families.
+        super::qengine_outfit_stories::seed_quest_prerequisites(
+            &h,
+            &owner,
+            &admitted,
+            &[("oteryn:quest-progress/quest/u9_80/adventurers_guild/quest_line".into(), 1)],
+            110,
+        ).await?;
+        let mut prior_save = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *prior_save)
+            .await?;
+        let imported = sqlx::query(
+            "INSERT INTO game_character_quest_states
+                (character_id, quest_key, pinned_content_revision, definition_hash,
+                 started_character_revision, committed_character_revision)
+             SELECT character_id, 'oteryn:quest.adventurers_guild', 'content-1',
+                    decode($2,'hex'), character_revision, character_revision
+             FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(41).as_slice())
+        .bind("ae3b30a75e15f42fef0701e744bb27e91596aec92d794c9b969244d4668e7eae")
+        .execute(&mut *prior_save)
+        .await?;
+        assert_eq!(imported.rows_affected(), 1);
+        prior_save.commit().await?;
         owner.admit_quest_session(&admitted).await;
         if explorer {
             return claim_scale(&owner, &mut admitted, &h).await;
