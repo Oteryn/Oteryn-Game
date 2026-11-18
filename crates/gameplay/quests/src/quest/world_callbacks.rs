@@ -491,7 +491,7 @@ pub struct Callback {
     /// Opening predicates for value-free map puzzles, evaluated under the Channel turn.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub world_requirements: Vec<WorldRequirement>,
-    /// Checked against the progression owner in the same fenced quest transaction.
+    /// Checked against Character progression by the fenced writer or the stateless STEP gate.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_level: Option<u32>,
     /// Rechecked through the existing transaction-bound Premium owner.
@@ -585,6 +585,18 @@ impl Callback {
         actor.floor == target.floor
             && actor.x.abs_diff(target.x) <= u16::from(self.use_range)
             && actor.y.abs_diff(target.y) <= u16::from(self.use_range)
+    }
+
+    /// A movement gate that reads Character level without starting a quest.
+    #[must_use]
+    pub fn stateless_step_minimum_level(&self) -> Option<u32> {
+        (self.trigger == Trigger::StepIn
+            && self.actor_kind == ActorKind::Player
+            && !self.requires_durable_commit()
+            && self.teleport.is_some()
+            && self.return_on_failure)
+            .then_some(self.minimum_level)
+            .flatten()
     }
 
     /// A pure quest-state predicate, with no Quest mutation or receipt.
@@ -1190,7 +1202,11 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || callback.storage.len() + callback.operation_count() > MAX_EFFECTS
             || callback
                 .minimum_level
-                .is_some_and(|level| level == 0 || !callback.has_personal_state())
+                .is_some_and(|level| {
+                    level == 0
+                        || (!callback.has_personal_state()
+                            && callback.stateless_step_minimum_level().is_none())
+                })
             || callback.admission.as_ref().is_some_and(|a| {
                 (!a.regular_blessings && !a.promotion && !a.premium)
                     || callback.actor_kind != ActorKind::Player
