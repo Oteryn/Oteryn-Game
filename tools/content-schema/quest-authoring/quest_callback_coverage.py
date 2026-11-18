@@ -267,6 +267,50 @@ QUALIFIED.update({FALCON_PREFIX + suffix:
     for suffix in FALCON_SOURCES})
 
 
+QUALIFIED.update({
+    'oteryn:reward-claim.kv.bloodkiss_flower':
+        'quest_catalogue_chests_qchk2_shadows_of_yalahar_use_replay_and_refusal',
+    'oteryn:reward-claim.kv.dark_essence':
+        'quest_catalogue_chests_qchk2_shadows_of_yalahar_use_replay_and_refusal',
+    'oteryn:reward-claim.kv.deep_crystal':
+        'quest_catalogue_chests_qchk2_shadows_of_yalahar_use_replay_and_refusal',
+    'oteryn:reward-claim.kv.golem_blueprint':
+        'quest_catalogue_chests_qchk2_shadows_of_yalahar_use_replay_and_refusal',
+    'oteryn:reward-claim.kv.golem_head':
+        'quest_catalogue_chests_qchk2_shadows_of_yalahar_use_replay_and_refusal',
+    'oteryn:reward-claim.kv.golem_wrench':
+        'quest_catalogue_chests_qchk2_shadows_of_yalahar_use_replay_and_refusal',
+    'oteryn:reward-claim.kv.old_power_core':
+        'quest_catalogue_chests_qchk2_shadows_of_yalahar_use_replay_and_refusal',
+    'oteryn:reward-claim.kv.shadow_orb':
+        'quest_catalogue_chests_qchk2_shadows_of_yalahar_use_replay_and_refusal',
+    'oteryn:reward-claim.kv.stabilizer':
+        'quest_catalogue_chests_qchk2_shadows_of_yalahar_use_replay_and_refusal',
+    'oteryn:reward-claim.kv.worm_queen_tooth':
+        'quest_catalogue_chests_qchk2_shadows_of_yalahar_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u8_1.secret_service.ahx17_l89':
+        'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u8_1.secret_service.book':
+        'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u8_1.secret_service.building_plans':
+        'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u8_1.secret_service.family_signet_ring':
+        'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u8_1.secret_service.intelligence_reports':
+        'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u8_1.secret_service.lottery_ticket':
+        'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u8_1.secret_service.magic_spellbook':
+        'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u8_1.secret_service.poem_scroll':
+        'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u8_1.secret_service.rotten_heart_of_tree':
+        'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u8_1.secret_service.suspicious_documents':
+        'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+})
+
+
 def falcon_supported(definition):
     key = definition["identity"]["key"]
     expected = FALCON_SOURCES.get(key.removeprefix(FALCON_PREFIX)) if key.startswith(FALCON_PREFIX) else None
