@@ -175,13 +175,13 @@ impl Case {
             row["requires_world_admission"] = json!(true);
             row["failure_message"] = json!("The pile of bones is empty.");
             row["success_message"] = json!("You have found a tinder box.");
-            row["state_ops"] = json!([{
+            // Use the clock spelling bound into the durable physical USE receipt.
+            row["state_operations"] = json!([{
                 "track":CHYLLFROEST_REWARD_CLOCK,
                 "from":{"kind":"elapsed_at_least","seconds":CHYLLFROEST_REWARD_WAIT},
                 "effect":{"kind":"set_now"}
             }]);
             row["effects"]["item_reward"] = json!({"item":"oteryn:item.tibia.i20357","count":1,"contents":[]});
-            row["effects"]["item_reward_cycle"] = json!(CHYLLFROEST_REWARD_CLOCK);
             row["sources"] = json!([CHYLLFROEST_REWARD_SOURCE]);
         }
         if matches!(self, Self::Inquisition { .. }) {
