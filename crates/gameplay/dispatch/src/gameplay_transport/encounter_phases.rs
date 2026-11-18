@@ -18,6 +18,7 @@ pub(super) struct ActivePhase {
     credits: Vec<grizzly_kills::EncounterCredit>,
     frozen: Option<(ExactActorRef, Vec<super::quest_kills::Recipient>)>,
     cells: crate::content::NativeEntryMovementCells,
+    fire: Option<crate::map::overlay::TilePos>,
 }
 
 #[derive(Debug)]
@@ -101,7 +102,7 @@ impl Registry {
         let mut active = self.active.lock().map_err(|_| CarrierError::PlanConflict)?;
         active.retain_mut(|phase| {
             if !phase.fight.is_current(runtime) {
-                return false;
+                return !phase.clear_fire();
             }
             match phase.fight.victors(runtime) {
                 Ok(Some(_)) => {
@@ -227,6 +228,7 @@ pub(super) fn bind(
             credits,
             frozen: None,
             cells,
+            fire: None,
         });
     }
     if encounter.phase != Some(EncounterPhase::Cults) || actors.len() != 10 {
@@ -284,6 +286,7 @@ pub(super) fn bind(
         credits,
         frozen: None,
         cells,
+        fire: None,
     })
 }
 
@@ -325,12 +328,104 @@ fn placement(
         )
 }
 
+impl ActivePhase {
+    fn clear_fire(&mut self) -> bool {
+        let Some(fire) = self.fire else { return true };
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            self.cells.index()
+        else {
+            return false;
+        };
+        if !index
+            .map()
+            .facts
+            .project_arbaziloth_fire(self.key, fire, true)
+        {
+            return false;
+        }
+        self.fire = None;
+        true
+    }
+
+    fn tick_fire(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        now_ms: u64,
+    ) -> Result<(), CarrierError> {
+        use crate::map::overlay::TilePos;
+        let Fight::Arbaziloth(fight) = &self.fight else {
+            return Ok(());
+        };
+        let Some(boss) = fight.normal_boss() else {
+            return Ok(());
+        };
+        if !runtime
+            .arbaziloth_shields(boss)
+            .is_some_and(|shields| shields.needs_fire())
+        {
+            return Ok(());
+        }
+        let position = runtime.read_actor_position(boss)?.position();
+        if let Some(fire) = self.fire {
+            let on_fire = position.x == i32::from(fire.x)
+                && position.y == i32::from(fire.y)
+                && position.floor == -i16::from(fire.floor);
+            if on_fire
+                && let Some(shields) = runtime.arbaziloth_shields_mut(boss)
+                && self.clear_fire()
+            {
+                shields.step_on_fire();
+            }
+            return Ok(());
+        }
+
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            self.cells.index()
+        else {
+            return Err(CarrierError::PlanConflict);
+        };
+        let map = index.map();
+        // Crystal 201189f8 arbaziloth_fight.lua: bounded random search of walkable arena tiles.
+        let candidates: Vec<_> = (34026..=34040)
+            .flat_map(|x| (32324..=32340).map(move |y| TilePos { x, y, floor: -14 }))
+            .filter(|at| {
+                let candidate = MovementLocalPosition {
+                    x: i32::from(at.x),
+                    y: i32::from(at.y),
+                    floor: 14,
+                };
+                candidate != position
+                    && placement(&self.cells, runtime, candidate)
+                    && map.floors().teleport(*at).is_none()
+            })
+            .collect();
+        let count = u64::try_from(candidates.len()).map_err(|_| CarrierError::PlanConflict)?;
+        let selected = now_ms
+            .checked_rem(count)
+            .ok_or(CarrierError::PlanConflict)?;
+        let fire = candidates[usize::try_from(selected).map_err(|_| CarrierError::PlanConflict)?];
+        if !map.facts.project_arbaziloth_fire(self.key, fire, false) {
+            return Err(CarrierError::PlanConflict);
+        }
+        self.fire = Some(fire);
+        Ok(())
+    }
+}
+
 pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, now_ms: u64) {
     let Ok(mut active) = states.encounter_phases.active.lock() else {
         return;
     };
-    active.retain(|phase| phase.fight.is_current(runtime));
     active.retain_mut(|phase| {
+        if !phase.fight.is_current(runtime) {
+            return !phase.clear_fire();
+        }
+        if let Err(error) = phase.tick_fire(runtime, now_ms) {
+            super::operator_event(&format!(
+                "encounter_phase_fire_deferred key={} reason={error:?}",
+                phase.key
+            ));
+        }
         let ActivePhase {
             key, fight, cells, ..
         } = phase;

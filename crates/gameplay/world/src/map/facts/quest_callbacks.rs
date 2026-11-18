@@ -892,6 +892,30 @@ impl BundleFacts {
         }
         changed
     }
+    /// Publish or consume the volatile fire owned by an admitted Arbaziloth lever.
+    pub fn project_arbaziloth_fire(&self, owner: u64, position: TilePos, close: bool) -> bool {
+        let Some(facts) = self.movement_item_facts(49362) else {
+            return false;
+        };
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        if self.house_tile(position)
+            || states.position_reserved(position)
+            || (!close && !states.has_capacity(2))
+        {
+            return false;
+        }
+        Arc::make_mut(&mut states).project(
+            owner,
+            &QuestCallbackProjection::ItemPresence {
+                position,
+                entry: facts,
+            },
+            close,
+        )
+    }
+
     /// A movement callback may use a served Item even if the bundle never places that state.
     /// Unlike lever callbacks, house furniture movement is explicitly allowed by the source.
     pub fn movement_item_facts(&self, appearance: u16) -> Option<EntryFacts> {

@@ -6,6 +6,7 @@
 #[path = "drome_cube_use.rs"]
 pub(super) mod drome_cube;
 
+mod arbaziloth_rod;
 #[path = "item_use_gourmet.rs"]
 pub(super) mod gourmet;
 mod rotten_essence;
