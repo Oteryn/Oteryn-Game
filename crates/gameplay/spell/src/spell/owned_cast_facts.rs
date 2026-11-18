@@ -141,6 +141,9 @@ impl OwnedCastFacts {
     pub fn durable_build(&self) -> &DurableBuildState {
         &self.build
     }
+    pub const fn level(&self) -> u32 {
+        self.level
+    }
     /// An original pending roll cannot grant a now-expired account/learning benefit.
     pub fn check_current_access(
         &self,

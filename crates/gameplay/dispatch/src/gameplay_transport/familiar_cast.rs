@@ -468,6 +468,42 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             crate::gameplay_transport::character_gameplay_fence::current(self, session, false)
                 .await
                 .ok_or(())?;
+        if fence.expected_character_revision.get() != owned.binding().character_revision {
+            return Err(());
+        }
+        let Some(Execution::NativeProfile(profile)) =
+            self.spells.indexed(index).map(|spell| &spell.execution)
+        else {
+            return Err(());
+        };
+        let parameters = &profile.spell()["execution"]["native_behavior"]["parameters"];
+        let minimum_level = parameters["login"]["minimum_level"].as_u64().ok_or(())?;
+        if u64::from(owned.level()) < minimum_level {
+            let projection = self
+                .root
+                .read_character_familiar_state(self.character, fence.character_id)
+                .await
+                .map_err(|_| ())?;
+            let state = projection.state();
+            let session_id = crate::gameplay_transport::canonical_uuid(session.as_bytes());
+            let has_lifecycle_to_reconcile = state.lifecycle.as_ref().map_or(
+                state.saved_expiry_unix != 0,
+                |lifecycle| {
+                    lifecycle.open
+                        || lifecycle.familiar_remaining_ms != 0
+                        || lifecycle.clean_end_game_session_id.as_deref() == Some(session_id.as_str())
+                },
+            );
+            // Below the login level gate, an empty projection has no familiar, cooldown or
+            // vocation look to reconcile. A newly created Character can reach this point before
+            // progression is initialized or Premium has been observed.
+            if !has_lifecycle_to_reconcile
+                && state.cooldowns.is_empty()
+                && state.granted_looks.is_empty()
+            {
+                return Ok(None);
+            }
+        }
         let group = {
             let runtime = self.runtime.lock().await;
             if !current_owner(&runtime, &fence, actor, session)
