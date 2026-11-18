@@ -71,7 +71,7 @@ fn alyxo() -> TestResult {
             .bind(generation.identity().server_artifact_digest().as_slice())
             .bind(generation.identity().client_artifact_digest().as_slice())
             .bind(activation.frame_binding().digest().as_slice()).execute(&h.pool).await?;
-        super::super::item_look::seed_main_backpack(&h, &[]).await?;
+        super::item_look::seed_main_backpack(&h, &[]).await?;
         let permit = owner.spell_lane_permit().await.ok_or("NPC item lane")?;
 
         // Create durable hand-in states at the claim boundary.
