@@ -6,18 +6,21 @@ use super::quest_world_callbacks::{local, scenario, wire, world_cells};
 use crate::gameplay_transport::{AdmittedSession, ComposedFreshAdmission};
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
-    world_callbacks::{self, Callback, GridGroup, Position},
+    world_callbacks::{self, Callback, GridAxis, GridGroup, Position},
 };
 use oteryn_protocol_oteryn::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
     encode_step_intent,
 };
 
+const DOWN: &str = "dreamers-grid-column-shift";
 const RIGHT: &str = "dreamers-grid-shift";
 const SOLVED: &str = "dreamers-grid-solved";
 const UNSOLVED: &str = "dreamers-grid-unsolved";
 const COLORS: [u16; 4] = [2394, 2396, 2395, 2397];
 const SHIFT: Position = at(32816, 32334, -9);
+// Crystal data-global/startup/tables/item.lua:370-380 registers the column plates.
+const COLUMN_PLATE: Position = at(32818, 32332, -9);
 // Crystal data-global/startup/tables/item.lua:5084-5087 maps UID 50147 here.
 const TRIGGER: Position = at(32826, 32347, -9);
 const DESTINATION: Position = at(32766, 32275, -14);
@@ -28,11 +31,26 @@ const fn at(x: u16, y: u16, floor: i8) -> Position {
 }
 
 fn trigger(name: &str) -> Position {
-    if name == RIGHT { SHIFT } else { TRIGGER }
+    plate(name).map_or(TRIGGER, |(position, _, _)| position)
+}
+
+fn plate(name: &str) -> Option<(Position, GridAxis, u16)> {
+    match name {
+        DOWN => Some((COLUMN_PLATE, GridAxis::Y, 2246)),
+        RIGHT => Some((SHIFT, GridAxis::X, 2245)),
+        _ => None,
+    }
+}
+
+fn line_cells(position: Position, axis: GridAxis) -> impl Iterator<Item = Position> {
+    (2..8).map(move |offset| match axis {
+        GridAxis::X => at(position.x + offset, position.y, position.floor),
+        GridAxis::Y => at(position.x, position.y + offset, position.floor),
+    })
 }
 
 pub(super) fn matches(name: &str) -> bool {
-    matches!(name, RIGHT | SOLVED | UNSOLVED)
+    matches!(name, DOWN | RIGHT | SOLVED | UNSOLVED)
 }
 
 fn groups() -> Vec<GridGroup> {
@@ -56,10 +74,15 @@ fn groups() -> Vec<GridGroup> {
 }
 
 pub(super) fn binding(name: &str) -> TestResult<Callback> {
-    let (selector, grid, destination, refund, effect, source) = if name == RIGHT {
+    let (selector, grid, destination, refund, effect, source) = if let Some((
+        position,
+        axis,
+        action,
+    )) = plate(name)
+    {
         (
-            serde_json::json!({"position":SHIFT,"action":2245,"appearance":431}),
-            serde_json::json!({"mode":"shift","axis":"x","offset":2,"length":6,"colors":[2394,2395,2396,2397,900]}),
+            serde_json::json!({"position":position,"action":action,"appearance":431}),
+            serde_json::json!({"mode":"shift","axis":axis,"offset":2,"length":6,"colors":[2394,2395,2396,2397,900]}),
             None,
             false,
             serde_json::json!({"transform":430}),
@@ -89,11 +112,8 @@ pub(super) fn binding(name: &str) -> TestResult<Callback> {
 }
 
 pub(super) fn world(callback: &Callback, name: &str) -> TestResult<crate::map::boot::BundleWorld> {
-    let mut objects = if name == RIGHT {
-        (0..6)
-            .map(|x| at(32818 + x, 32334, -9))
-            .zip(PATTERN)
-            .collect::<Vec<_>>()
+    let mut objects = if let Some((position, axis, _)) = plate(name) {
+        line_cells(position, axis).zip(PATTERN).collect::<Vec<_>>()
     } else {
         groups()
             .into_iter()
@@ -131,11 +151,11 @@ pub(super) fn catalogue(
     name: &str,
 ) -> TestResult<std::sync::Arc<QuestStateCatalogue>> {
     let mut callbacks = vec![serde_json::to_value(callback)?];
-    if name == RIGHT {
+    if let Some((position, _, action)) = plate(name) {
         callbacks.push(serde_json::json!({
             "key":"oteryn:quest-callback/dreamers-challenge-color-grid-release",
             "quest":"oteryn:quest.dreamer_s_challenge_quest",
-            "trigger":"step_out", "selector":{"position":SHIFT,"action":2245},
+            "trigger":"step_out", "selector":{"position":position,"action":action},
             "reversible":false, "return_on_failure":false,
             "passages":[], "storage":[], "offerings":[],
             "effects":{"transform":431},
@@ -146,6 +166,15 @@ pub(super) fn catalogue(
     Ok(std::sync::Arc::new(
         world_callbacks::with_fixture_world_document(base, &document)?,
     ))
+}
+
+#[test]
+fn dreamers_color_grid_column_plate_rotates_its_six_cells_and_releases_on_step_out() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(DOWN, || scenario(DOWN, COLUMN_PLATE, false))
 }
 
 #[test]
@@ -199,8 +228,8 @@ pub(super) async fn exercise(
             .ok_or("current color")?;
         Ok(facts.appearance_id)
     };
-    let cells = if name == RIGHT {
-        (0..6).map(|x| at(32818 + x, 32334, -9)).collect::<Vec<_>>()
+    let cells = if let Some((position, axis, _)) = plate(name) {
+        line_cells(position, axis).collect::<Vec<_>>()
     } else {
         groups().into_iter().flat_map(|group| group.cells).collect()
     };
@@ -209,6 +238,11 @@ pub(super) async fn exercise(
         .copied()
         .map(read)
         .collect::<Result<Vec<_>, _>>()?;
+    let cue_cursor = map
+        .facts
+        .movement_effects_since(0)
+        .last()
+        .map_or(0, |effect| effect.0);
     let reply = wire(
         owner,
         admitted,
@@ -223,6 +257,7 @@ pub(super) async fn exercise(
     );
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let landing = match name {
+        DOWN => COLUMN_PLATE,
         RIGHT => SHIFT,
         SOLVED => DESTINATION,
         _ => at(TRIGGER.x - 1, TRIGGER.y, TRIGGER.floor),
@@ -237,15 +272,25 @@ pub(super) async fn exercise(
             .position(),
         local(landing)
     );
+    if plate(name).is_none() {
+        let cues = map.facts.movement_effects_since(cue_cursor);
+        let [(_, pos, effect)] = cues.as_slice() else {
+            return Err(format!("expected one portal effect, got {cues:?}").into());
+        };
+        assert_eq!(
+            (pos.x, pos.y, pos.floor, *effect),
+            (landing.x, landing.y, landing.floor, 11)
+        );
+    }
     let after = cells
         .iter()
         .copied()
         .map(read)
         .collect::<Result<Vec<_>, _>>()?;
     match name {
-        RIGHT => {
+        DOWN | RIGHT => {
             assert_eq!(after, vec![2395, 2394, 2395, 2396, 2397, 2394]);
-            assert_eq!(read(SHIFT)?, 430);
+            assert_eq!(read(landing)?, 430);
             let reply = wire(
                 owner,
                 admitted,
@@ -258,7 +303,7 @@ pub(super) async fn exercise(
                 decode_step_result(&reply).map_err(debug)?,
                 StepDisposition::Moved
             );
-            assert_eq!(read(SHIFT)?, 431);
+            assert_eq!(read(landing)?, 431);
             assert_eq!(
                 cells
                     .iter()
