@@ -3,7 +3,7 @@ use super::{
     AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult,
     fixture::{Harness, debug},
 };
-use crate::foundation::MovementLocalPosition;
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition};
 use oteryn_gameplay_quests::quest::world_callbacks::{
     Callback, EncounterPhase, Position, ZelosPassages,
 };
@@ -232,21 +232,19 @@ pub(super) async fn exercise_full_party(
     assert_placement((103, 100, 7)).await
 }
 
+fn live_actor(runtime: &ChannelRuntimeV1, key: &str) -> TestResult<Option<ExactActorRef>> {
+    Ok(runtime
+        .current_live_creature_census()
+        .map_err(debug)?
+        .into_iter()
+        .find(|&actor| runtime.matches_live_creature_identity(actor, key.as_bytes())))
+}
+
 pub(super) async fn exercise(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     partner: &AdmittedSession,
 ) -> TestResult {
-    let find = |runtime: &crate::foundation::ChannelRuntimeV1, name: &str| {
-        runtime
-            .current_live_creature_census()
-            .map(|actors| {
-                actors
-                    .into_iter()
-                    .find(|actor| runtime.matches_live_creature_identity(*actor, name.as_bytes()))
-            })
-            .map_err(debug)
-    };
     let player = admitted.runtime_actor.ok_or("admitted player")?;
     let partner_session = partner.game_session_id;
     let partner = partner.runtime_actor.ok_or("second admitted player")?;
@@ -259,7 +257,7 @@ pub(super) async fn exercise(
                 .position();
             assert_eq!((at.x, at.y, at.floor), (116, 117, 7));
         }
-        find(&runtime, KNIGHTS[1])?.ok_or("Nargol spawned by native USE")?
+        live_actor(&runtime, KNIGHTS[1])?.ok_or("Nargol spawned by native USE")?
     };
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
     let (step, _) = owner
@@ -410,9 +408,12 @@ pub(super) async fn exercise(
     let mass = "oteryn:creature.regenerating_mass";
     {
         let runtime = owner.runtime.lock().await;
-        assert!(find(&runtime, mass)?.is_some(), "mass replaces Nargol");
         assert!(
-            find(&runtime, "oteryn:creature.fetter")?.is_some(),
+            live_actor(&runtime, mass)?.is_some(),
+            "mass replaces Nargol"
+        );
+        assert!(
+            live_actor(&runtime, "oteryn:creature.fetter")?.is_some(),
             "Rewar room starts Fetter waves"
         );
     }
@@ -445,34 +446,37 @@ pub(super) async fn exercise(
     tick_at(owner, unlock - 1).await;
     {
         let runtime = owner.runtime.lock().await;
-        assert!(find(&runtime, "oteryn:creature.rewar_the_bloody_inv")?.is_some());
+        assert!(live_actor(&runtime, "oteryn:creature.rewar_the_bloody_inv")?.is_some());
     }
     tick_at(owner, unlock).await;
     {
         let runtime = owner.runtime.lock().await;
-        assert!(find(&runtime, KNIGHTS[2])?.is_some());
+        assert!(live_actor(&runtime, KNIGHTS[2])?.is_some());
     }
     tick_at(owner, now + 29_999_999).await;
     {
         let runtime = owner.runtime.lock().await;
         assert!(
-            find(&runtime, mass)?.is_some(),
+            live_actor(&runtime, mass)?.is_some(),
             "mass survives until the deadline"
         );
         for add in [
             "oteryn:creature.vampiric_blood",
             "oteryn:creature.risen_soldier",
         ] {
-            assert!(find(&runtime, add)?.is_some(), "ritual replenishes {add}");
+            assert!(
+                live_actor(&runtime, add)?.is_some(),
+                "ritual replenishes {add}"
+            );
         }
     }
     let blood = {
         let runtime = owner.runtime.lock().await;
-        find(&runtime, "oteryn:creature.vampiric_blood")?.ok_or("vampiric blood")?
+        live_actor(&runtime, "oteryn:creature.vampiric_blood")?.ok_or("vampiric blood")?
     };
     let red_before = {
         let runtime = owner.runtime.lock().await;
-        let red = find(&runtime, KNIGHTS[3])?.ok_or("red knight")?;
+        let red = live_actor(&runtime, KNIGHTS[3])?.ok_or("red knight")?;
         runtime.companion_snapshot(red).map_err(debug)?.health
     };
     super::engenc2_cults::kill(
@@ -485,7 +489,7 @@ pub(super) async fn exercise(
     .await?;
     {
         let runtime = owner.runtime.lock().await;
-        let red = find(&runtime, KNIGHTS[3])?.ok_or("red survives the first drowning hit")?;
+        let red = live_actor(&runtime, KNIGHTS[3])?.ok_or("red survives the first drowning hit")?;
         let red_after = runtime.companion_snapshot(red).map_err(debug)?.health;
         assert!((20_000..=25_000).contains(&(red_before - red_after)));
     }
@@ -493,14 +497,14 @@ pub(super) async fn exercise(
     {
         let runtime = owner.runtime.lock().await;
         assert!(
-            find(&runtime, mass)?.is_none(),
+            live_actor(&runtime, mass)?.is_none(),
             "mass expires at 30 seconds"
         );
         assert_ne!(
-            find(&runtime, KNIGHTS[1])?.ok_or("regenerated Nargol")?,
+            live_actor(&runtime, KNIGHTS[1])?.ok_or("regenerated Nargol")?,
             nargol
         );
-        let king = find(&runtime, "oteryn:creature.king_zelos")?.ok_or("admitted king")?;
+        let king = live_actor(&runtime, "oteryn:creature.king_zelos")?.ok_or("admitted king")?;
         assert!(
             runtime
                 .encounter_hooks()
@@ -514,7 +518,7 @@ pub(super) async fn exercise(
     };
     let (magnor, blocker) = {
         let mut runtime = owner.runtime.lock().await;
-        let actor = find(&runtime, KNIGHTS[0])?.ok_or("admitted Magnor")?;
+        let actor = live_actor(&runtime, KNIGHTS[0])?.ok_or("admitted Magnor")?;
         let spawn = runtime.read_actor_position(actor).map_err(debug)?;
         runtime
             .borrow_movement_position()
@@ -626,7 +630,7 @@ pub(super) async fn exercise(
     {
         let runtime = owner.runtime.lock().await;
         assert!(
-            find(&runtime, shard_key)?.is_none(),
+            live_actor(&runtime, shard_key)?.is_none(),
             "one hit kills the linked shards"
         );
         let states = owner.states.spell_states.lock().await;
@@ -643,6 +647,38 @@ pub(super) async fn exercise(
             );
         }
     }
+    exercise_slow_ritual(owner, admitted, now).await?;
+    tick_at(owner, now + 24 * 60 * 1_000_000).await;
+    let runtime = owner.runtime.lock().await;
+    for knight in KNIGHTS.into_iter().chain([
+        "oteryn:creature.king_zelos",
+        "oteryn:creature.rewar_the_bloody_inv",
+    ]) {
+        assert!(
+            live_actor(&runtime, knight)?.is_none(),
+            "timeout cleans up {knight}"
+        );
+    }
+    for member in [player, partner] {
+        let exit = runtime
+            .read_actor_position(member)
+            .map_err(debug)?
+            .position();
+        assert_eq!((exit.x, exit.y, exit.floor), (103, 100, 7));
+    }
+    Ok(())
+}
+
+async fn exercise_slow_ritual(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    now: u64,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+
+    let player = admitted.runtime_actor.ok_or("admitted player")?;
+    let fetter = "oteryn:creature.fetter";
+    let mass = "oteryn:creature.regenerating_mass";
     let fetters = {
         let runtime = owner.runtime.lock().await;
         runtime
@@ -658,7 +694,7 @@ pub(super) async fn exercise(
     tick_at(owner, owner.owner_now().get() + 200_000).await;
     let live = async |key: &str| -> TestResult<_> {
         let runtime = owner.runtime.lock().await;
-        find(&runtime, key)
+        live_actor(&runtime, key)
     };
     let rewar = live(KNIGHTS[2]).await?.ok_or("vulnerable Rewar")?;
     super::engenc2_cults::kill(owner, admitted, rewar, KNIGHTS[2], 310).await?;
@@ -718,6 +754,17 @@ pub(super) async fn exercise(
         );
     }
     tick_at(owner, ritual_due).await;
+    assert!(
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .encounter_phases
+            .next_due_us()
+            .is_some_and(|due| due > ritual_due),
+        "the owner consumes the gate deadline at exactly 300 ms"
+    );
     tick_at(owner, ritual_due + 2_000_000).await;
     let (opened, _) = owner
         .ordinary_paced_step(
@@ -748,24 +795,6 @@ pub(super) async fn exercise(
         let runtime = owner.runtime.lock().await;
         let health = runtime.companion_snapshot(king).map_err(debug)?;
         assert_eq!(health.health, health.maximum_health.div_ceil(2));
-    }
-    tick_at(owner, now + 24 * 60 * 1_000_000).await;
-    let runtime = owner.runtime.lock().await;
-    for knight in KNIGHTS.into_iter().chain([
-        "oteryn:creature.king_zelos",
-        "oteryn:creature.rewar_the_bloody_inv",
-    ]) {
-        assert!(
-            find(&runtime, knight)?.is_none(),
-            "timeout cleans up {knight}"
-        );
-    }
-    for member in [player, partner] {
-        let exit = runtime
-            .read_actor_position(member)
-            .map_err(debug)?
-            .position();
-        assert_eq!((exit.x, exit.y, exit.floor), (103, 100, 7));
     }
     Ok(())
 }
