@@ -118,17 +118,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .and_then(|id| id.parse::<u16>().ok())
         };
         let tool_id = entry.and_then(|entry| source_id(&entry.item.definition.production_key));
-        if !tool_id
-            .zip(source_id(&ground.definition().production_key))
-            .and_then(|(tool, target)| {
-                oteryn_gameplay_items::fishing::corpse_skinning_rule(tool, target)
-            })
-            .is_some_and(|(target, _)| {
-                matches!(
-                    target,
-                    oteryn_gameplay_items::fishing::GatheringTarget::Corpse { spent_item: 1.. }
-                )
-            })
+        let corpse_id = source_id(&ground.definition().production_key);
+        let fresh_rabbit = (tool_id, corpse_id) == (Some(5908), Some(6017));
+        if !fresh_rabbit
+            && !tool_id
+                .zip(corpse_id)
+                .and_then(|(tool, target)| {
+                    oteryn_gameplay_items::fishing::corpse_skinning_rule(tool, target)
+                })
+                .is_some_and(|(target, _)| {
+                    matches!(
+                        target,
+                        oteryn_gameplay_items::fishing::GatheringTarget::Corpse { spent_item: 1.. }
+                    )
+                })
         {
             return Ok(None);
         }
@@ -160,6 +163,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .map_err(|_| ())?
                 .position();
             request.actor_position = [position.x, position.y, i32::from(position.floor)];
+        }
+        if fresh_rabbit {
+            let cell = ground.position();
+            if request.actor_position[0].abs_diff(cell.x) <= 1
+                && request.actor_position[1].abs_diff(cell.y) <= 1
+                && request.actor_position[2] == i32::from(cell.floor)
+            {
+                self.states.chat.push_quest_feedback(
+                    command.game_session_id,
+                    "You have to wait a bit before you can skin this animal.",
+                );
+            }
+            return Ok(outcome(UseDisposition::NothingToUse));
         }
         request.craft.source = tool;
         request.corpse = corpse;
