@@ -28,14 +28,17 @@ PASSAGE = (441, 408, 408, 442)
 REPLACED_ROW = 31381
 ADDED_ROWS = (31382, 31383, 31384)
 NEW_CLOSING_ROW = 31385
+ADDED_TILE_COUNT = len(XS) * (len(ADDED_ROWS) + 1)
 EVIDENCE = {
     "schema": "OTERYN_AUTHORED_WORLD_STUB/v1",
     "basis": "CHOSEN_OTERYN_APPROXIMATION",
     "quest": "oteryn:quest.authored.top_of_the_city_quest",
     "evidence": [
-        "https://github.com/tibiamaps/tibia-map-data floor-06-map.png and "
-        "floor-06-path.png (main; frame xMin 31744, yMin 30976): walkable "
-        "x32857..32858 from y31370 through y31383",
+        (
+            "https://github.com/tibiamaps/tibia-map-data floor-06-map.png and "
+            "floor-06-path.png (main; frame xMin 31744, yMin 30976): walkable "
+            "x32857..32858 from y31370 through y31383"
+        ),
         "TibiaWiki Jimmy NPC map mark 32857,31383,6 (owner browser evidence 2026-11-17)",
         "Polish TibiaWiki Jimmy map mark 32857,31383,6 (owner browser evidence 2026-11-17)",
     ],
@@ -85,7 +88,7 @@ def proof(added_items):
         "sha256": digest(canonical(EVIDENCE)),
         "region": REGION,
         "tiles_replaced": len(XS),
-        "tiles_added": len(XS) * (len(ADDED_ROWS) + 1),
+        "tiles_added": ADDED_TILE_COUNT,
         "items_added": added_items,
     }
 
@@ -93,7 +96,7 @@ def proof(added_items):
 def overlay_outputs(outputs, root=ROOT):
     index = json.loads(_read(outputs, root, INDEX))
     if SOURCE in index["source"]:
-        if index["source"][SOURCE] != proof(len(XS) * (len(ADDED_ROWS) + 1)):
+        if index["source"][SOURCE] != proof(ADDED_TILE_COUNT):
             raise ValueError("QH_JIMMY_STUB_EVIDENCE_CHANGED_REQUIRES_REBUILD")
         validate_overlay(outputs, root, index)
         return
@@ -118,7 +121,10 @@ def overlay_outputs(outputs, root=ROOT):
         for tile in tiles:
             at = tile[:2]
             if at in replaced:
-                if not _plain(tile) or palette[tile[5][0][0]]["source_item_id"] != replaced[at]:
+                if (
+                    not _plain(tile)
+                    or palette[tile[5][0][0]]["source_item_id"] != replaced[at]
+                ):
                     raise ValueError("QH_JIMMY_STUB_SOURCE_WALL_DRIFT")
                 tile = (*at, 0, 0, (), [(lookup[wanted[at][0]], 0, None)])
                 seen.add(at)
@@ -160,7 +166,7 @@ def donor_delta(summary):
     declared = summary.get("source", {}).get(SOURCE)
     if declared is None:
         return {"tiles": 0, "items": 0}
-    if declared != proof(declared.get("items_added")):
+    if declared != proof(ADDED_TILE_COUNT):
         raise ValueError("QH_JIMMY_STUB_EVIDENCE_DRIFT")
     return {"tiles": declared["tiles_added"], "items": declared["items_added"]}
 

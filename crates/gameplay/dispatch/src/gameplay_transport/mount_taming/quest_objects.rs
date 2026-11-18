@@ -82,12 +82,10 @@ mod tests {
     }
     #[test]
     fn authored_top_of_the_city_dig_reaches_the_carried_tool_owner() -> Result<(), String> {
-        let bindings = oteryn_gameplay_quests::quest::authored_bindings::Bindings::parse(
-            include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../../../content/quests/authored-bindings/top_of_the_city_quest.json"
-            )),
-        )?;
+        let bindings =
+            oteryn_gameplay_quests::quest::authored_bindings::Bindings::parse(include_bytes!(
+                "../../../../../../content/quests/authored-bindings/top_of_the_city_quest.json"
+            ))?;
         let dig = bindings
             .world_callbacks()
             .find(|callback| callback.key == TOP_OF_THE_CITY_DIG)

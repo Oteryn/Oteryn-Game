@@ -46,21 +46,37 @@ class Synthetic(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         base = Path(temporary.name)
         palette = [
-            {"key": f"oteryn:item.tibia.i{i}", "provisional": False, "source_item_id": i}
+            {
+                "key": f"oteryn:item.tibia.i{i}",
+                "provisional": False,
+                "source_item_id": i,
+            }
             for i in IDS
         ]
         at = {i: n for n, i in enumerate(IDS)}
         tiles = []
         for y, row in [(31380, stub.PASSAGE), (31381, closing)]:
-            tiles += [(x, y, 0, 0, (), [(at[i], 0, None)]) for x, i in zip(stub.XS, row)]
+            tiles += [
+                (x, y, 0, 0, (), [(at[i], 0, None)]) for x, i in zip(stub.XS, row)
+            ]
         sx, sy = stub.XS[0] // 32, 31381 // 32
         raw = codec.encode_region(
-            6, 128, 122, {(sy % 8) * 8 + sx % 8: codec.encode_sector_tiles(sx, sy, tiles)}
+            6,
+            128,
+            122,
+            {(sy % 8) * 8 + sx % 8: codec.encode_sector_tiles(sx, sy, tiles)},
         )
         totals = {"regions": 1, "sectors": 1, "tiles": 8, "items": 8}
         index = {
             "source": {},
-            "regions": [{"path": stub.REGION, "sha256": stub.digest(raw), "tiles": 8, "items": 8}],
+            "regions": [
+                {
+                    "path": stub.REGION,
+                    "sha256": stub.digest(raw),
+                    "tiles": 8,
+                    "items": 8,
+                }
+            ],
             "palette": palette,
             "totals": totals,
         }
@@ -97,6 +113,11 @@ class Synthetic(unittest.TestCase):
         again = {}
         stub.overlay_outputs(again, base)
         self.assertEqual(again, {})
+
+    def test_donor_delta_refuses_incorrect_items_added(self):
+        summary = {"source": {stub.SOURCE: stub.proof(17)}}
+        with self.assertRaisesRegex(ValueError, "QH_JIMMY_STUB_EVIDENCE_DRIFT"):
+            stub.donor_delta(summary)
 
     def test_refuses_a_drifted_source_wall(self):
         base = self.build(closing=(450, 408, 440, 449))
