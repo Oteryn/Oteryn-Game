@@ -262,31 +262,20 @@ pub(super) async fn exercise_tree(
     use oteryn_protocol_oteryn::world_spatial::{
         StepDirection, StepDisposition, decode_step_result, encode_step_intent,
     };
+    let prerequisites = EARTH_TREE_REQUIREMENTS.map(|(track, count)| (track.to_owned(), count));
+    super::qengine_outfit_stories::seed_quest_prerequisites(
+        harness,
+        owner,
+        admitted,
+        &prerequisites,
+        198,
+    )
+    .await?;
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
         .map_err(|()| "quest fence")?
         .ok_or("quest fence")?;
-    let mut tx = harness.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *tx)
-        .await?;
-    // The two prerequisite tracks represent historical progress before the phial use.
-    for update in [
-        "UPDATE game_character_roots SET character_revision=2 WHERE character_id=encode($1,'hex')::uuid AND character_revision=1",
-        "UPDATE game_character_progression_state SET character_revision=2 WHERE character_id=encode($1,'hex')::uuid AND character_revision=1",
-    ] {
-        sqlx::query(update)
-            .bind(fence.character_id.as_bytes().as_slice())
-            .execute(&mut *tx)
-            .await?;
-    }
-    for (track, value) in EARTH_TREE_REQUIREMENTS {
-        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision)
-            SELECT character_id,$2,'oteryn:quest.forgotten_knowledge_quest',$3,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
-            .bind(fence.character_id.as_bytes().as_slice()).bind(track).bind(value).execute(&mut *tx).await?;
-    }
-    tx.commit().await?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
