@@ -241,10 +241,15 @@ class ReuseTests(unittest.TestCase):
 
 
 class SeamPassThroughTests(unittest.TestCase):
+    def test_seam_runs_spawn_fence_regression_with_database_url(self):
+        seam = function('seam_stages')
+        self.assertIn('OTERYN_TEST_POSTGRES_ADMIN_URL="$ADMIN_URL"', seam)
+        self.assertIn('qualification_spawn_transaction_returns_pool_and_bounds_backend', seam)
+
     def test_seam_stage_passes_harness_knobs_only_when_set(self):
         with tempfile.TemporaryDirectory() as temp:
             fake = Path(temp, 'cargo')
-            fake.write_text('#!/bin/sh\nenv | grep -E "^NODE_BOOT_(E2E_ONLY|NO_FAILFAST|NO_PROGRESS_S)=" | sort\n')
+            fake.write_text('#!/bin/sh\ncase "$*" in *qualification_spawn_transaction*) exit 0;; esac\nenv | grep -E "^NODE_BOOT_(E2E_ONLY|NO_FAILFAST|NO_PROGRESS_S)=" | sort\n')
             fake.chmod(0o755)
             script = textwrap.dedent(f'''\
                 set -Eeuo pipefail

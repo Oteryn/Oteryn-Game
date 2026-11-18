@@ -210,10 +210,13 @@ async fn spawn_placed(
     key: &str,
     refuse: impl Fn(&'static str, Option<&str>) -> String,
 ) -> String {
-    let placed = tokio::time::timeout(
-        Duration::from_secs(10),
-        place(root, authority, proof, native, owners, session, key),
-    )
+    let budget = SpawnBudget::new(tokio::time::Instant::now());
+    let placed = spawn_with_watchdog(budget.reply_deadline, async |published| {
+        place(
+            root, authority, proof, native, owners, session, key, budget, published,
+        )
+        .await
+    })
     .await;
     match placed {
         Ok(Ok(creature)) => {
@@ -250,6 +253,45 @@ async fn spawn_placed(
 }
 
 #[cfg(any(test, feature = "qualification-spawn"))]
+#[derive(Clone, Copy)]
+struct SpawnBudget {
+    work_deadline: tokio::time::Instant,
+    backend_deadline: tokio::time::Instant,
+    release_deadline: tokio::time::Instant,
+    reply_deadline: tokio::time::Instant,
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+impl SpawnBudget {
+    fn new(start: tokio::time::Instant) -> Self {
+        Self {
+            work_deadline: start + Duration::from_secs(8),
+            backend_deadline: start + Duration::from_secs(9),
+            release_deadline: start + Duration::from_millis(9_500),
+            reply_deadline: start + Duration::from_secs(10),
+        }
+    }
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+async fn spawn_with_watchdog<T>(
+    deadline: tokio::time::Instant,
+    operation: impl AsyncFnOnce(&mut Option<T>) -> Result<(), wild_spawn::SpawnRefusal>,
+) -> Result<Result<T, wild_spawn::SpawnRefusal>, tokio::time::error::Elapsed> {
+    let mut published = None;
+    let result = tokio::time::timeout_at(deadline, operation(&mut published)).await;
+    if let Some(published) = published {
+        return Ok(Ok(published));
+    }
+    result.map(|result| {
+        result.and(Err(wild_spawn::SpawnRefusal::Fence(
+            "qualification spawn produced no receipt".into(),
+        )))
+    })
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+#[allow(clippy::too_many_arguments)]
 async fn place(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -258,20 +300,26 @@ async fn place(
     owners: SpawnOwners<'_>,
     session: [u8; 16],
     key: &str,
-) -> Result<crate::foundation::CompanionSnapshot, wild_spawn::SpawnRefusal> {
+    budget: SpawnBudget,
+    published: &mut Option<crate::foundation::CompanionSnapshot>,
+) -> Result<(), wild_spawn::SpawnRefusal> {
     let fence = wild_spawn::SpawnRefusal::Fence;
     let session = crate::foundation::GameSessionId::decode(&session)
         .map_err(|_| wild_spawn::SpawnRefusal::SessionUnknown)?;
     let source = wild_spawn::next_command_source()?;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
     let mut runtime = owners.runtime.lock().await;
-    let plan =
-        wild_spawn::snapshot_adjacent_spawn(owners.room, native, &mut runtime, key, session)?;
+    let mut plan = Some(wild_spawn::snapshot_adjacent_spawn(
+        owners.room,
+        native,
+        &mut runtime,
+        key,
+        session,
+    )?);
     drop(runtime);
     let acquire_holder = async || {
         qualification_build::retry_holder(
             Some(root),
-            deadline,
+            budget.work_deadline,
             |error| matches!(error, DurabilityError::RootUnavailable),
             async || root.try_acquire_ready(),
         )
@@ -279,91 +327,155 @@ async fn place(
         .map_err(|error| fence(format!("qualification spawn holder: {error:?}")))
     };
     let mut holder = acquire_holder().await?;
-    let mut tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(
-        &mut holder,
-        deadline.into_std(),
-    )
-    .await
-    .map_err(|error| fence(format!("qualification spawn transaction: {error:?}")))?;
-    let eligible = wild_spawn::read_spawn_tiles(&mut tx, root, authority, proof, &plan).await?;
-    tx.commit()
-        .await
-        .map_err(|error| fence(format!("qualification spawn commit: {error:?}")))?;
+    let eligible = spawn_transaction(&mut holder, budget, true, async |tx| {
+        let plan = plan
+            .as_ref()
+            .ok_or_else(|| fence("missing qualification spawn plan".into()))?;
+        wild_spawn::read_spawn_tiles(tx, root, authority, proof, plan).await
+    })
+    .await;
+    let mut eligible = match eligible {
+        Ok(eligible) => eligible,
+        Err(error) => {
+            if return_spawn_holder(&mut holder, budget).await.is_err() {
+                root.request_ready();
+            }
+            return Err(error);
+        }
+    };
 
     loop {
-        if tokio::time::Instant::now() >= deadline {
-            return Err(fence("qualification spawn publication deadline".into()));
-        }
-        // Own the socket directly while holding the Ground fence. Cancellation
-        // closes it instead of handing a locked transaction to the pool.
-        use sqlx::Connection as _;
-        let mut connection = holder.detach();
-        let mut collision_guard = tokio::time::timeout_at(deadline, connection.begin())
-            .await
-            .map_err(|_| fence("qualification spawn collision begin deadline".into()))?
-            .map_err(|error| fence(format!("qualification collision guard: {error:?}")))?;
-        let fresh = tokio::time::timeout_at(deadline, async {
-            keep_collision_fence(&mut collision_guard)
-                .await
-                .map_err(|error| {
-                    fence(format!("qualification collision guard timeout: {error:?}"))
-                })?;
-            wild_spawn::read_spawn_tiles(&mut collision_guard, root, authority, proof, &plan).await
+        let result = spawn_collision(&mut holder, budget, async |tx| {
+            let fresh = wild_spawn::read_spawn_tiles(
+                tx,
+                root,
+                authority,
+                proof,
+                plan.as_ref()
+                    .ok_or_else(|| fence("missing qualification spawn plan".into()))?,
+            )
+            .await?;
+            if let Ok(mut runtime) = owners.runtime.try_lock() {
+                if tokio::time::Instant::now() >= budget.work_deadline {
+                    return Err(fence("qualification spawn publication deadline".into()));
+                }
+                let plan = plan
+                    .take()
+                    .ok_or_else(|| fence("missing qualification spawn plan".into()))?;
+                let tiles = publication_candidates(fresh, std::mem::take(&mut eligible));
+                *published = Some(wild_spawn::publish_spawn(
+                    &mut runtime,
+                    plan,
+                    source,
+                    key,
+                    &tiles,
+                )?);
+            }
+            Ok(())
         })
         .await;
-        let result = match fresh {
-            Ok(Ok(fresh)) => {
-                if let Ok(mut runtime) = owners.runtime.try_lock() {
-                    let placed = if tokio::time::Instant::now() >= deadline {
-                        Err(fence("qualification spawn publication deadline".into()))
-                    } else {
-                        let eligible = publication_candidates(fresh, eligible);
-                        wild_spawn::publish_spawn(&mut runtime, plan, source, key, &eligible)
-                    };
-                    drop(runtime);
-                    let _ = tokio::time::timeout(
-                        Duration::from_millis(500),
-                        collision_guard.rollback(),
-                    )
-                    .await;
-                    drop(connection);
-                    return placed;
-                }
-                Ok(())
-            }
-            Ok(Err(error)) => Err(error),
-            Err(_) => Err(fence("qualification spawn collision read deadline".into())),
-        };
-        // The raw socket closes even if the rollback cannot receive a reply.
-        let release =
-            tokio::time::timeout(Duration::from_millis(500), collision_guard.rollback()).await;
-        drop(connection);
-        result?;
-        release
-            .map_err(|_| fence("qualification spawn collision release deadline".into()))?
-            .map_err(|error| fence(format!("qualification collision release: {error:?}")))?;
-        drop(owners.runtime.lock().await);
+        if let Err(error) = result {
+            root.request_ready();
+            return Err(error);
+        }
+        if published.is_some() {
+            return Ok(());
+        }
+        // Gameplay may hold the runtime while waiting on Ground. Retry only
+        // after the previous transaction and holder have been released.
+        drop(
+            tokio::time::timeout_at(budget.work_deadline, owners.runtime.lock())
+                .await
+                .map_err(|_| fence("qualification spawn runtime deadline".into()))?,
+        );
         holder = acquire_holder().await?;
     }
 }
 
 #[cfg(any(test, feature = "qualification-spawn"))]
-async fn keep_collision_fence(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-) -> Result<(), sqlx::Error> {
-    // PostgreSQL retains an already armed shorter timer when the setting
-    // increases. Disarm it before installing the fallback and taking any locks.
-    sqlx::query("SET LOCAL transaction_timeout = 0")
-        .execute(&mut **tx)
-        .await?;
-    sqlx::query(
-        "SELECT set_config('transaction_timeout', '10s', true), \
-         set_config('idle_in_transaction_session_timeout', '10s', true), \
-         set_config('statement_timeout', '8s', true), set_config('lock_timeout', '8s', true)",
+async fn begin_spawn_transaction(
+    holder: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
+    backend_deadline: tokio::time::Instant,
+) -> Result<sqlx::Transaction<'_, sqlx::Postgres>, wild_spawn::SpawnRefusal> {
+    let fence = wild_spawn::SpawnRefusal::Fence;
+    let setup = Duration::from_millis(500);
+    let started = tokio::time::Instant::now();
+    // Reserve one setup round trip between the server timer and the backend
+    // cutoff. A slower setup may have armed the timer late, so take no locks.
+    let tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(
+        holder,
+        (backend_deadline - setup).into_std(),
     )
-    .execute(&mut **tx)
-    .await?;
-    Ok(())
+    .await
+    .map_err(|error| fence(format!("qualification spawn transaction: {error:?}")))?;
+    if started.elapsed() >= setup {
+        return Err(fence(
+            "qualification spawn transaction setup deadline".into(),
+        ));
+    }
+    Ok(tx)
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+async fn spawn_transaction<T>(
+    holder: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
+    budget: SpawnBudget,
+    commit: bool,
+    operation: impl AsyncFnOnce(
+        &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    ) -> Result<T, wild_spawn::SpawnRefusal>,
+) -> Result<T, wild_spawn::SpawnRefusal> {
+    let fence = wild_spawn::SpawnRefusal::Fence;
+    tokio::time::timeout_at(budget.work_deadline, async {
+        let mut tx = begin_spawn_transaction(holder, budget.backend_deadline).await?;
+        let result = operation(&mut tx).await;
+        let released = if commit && result.is_ok() {
+            tx.commit().await
+        } else {
+            tx.rollback().await
+        };
+        let value = result?;
+        released.map_err(|error| {
+            fence(format!(
+                "qualification spawn transaction release: {error:?}"
+            ))
+        })?;
+        Ok(value)
+    })
+    .await
+    .map_err(|_| fence("qualification spawn work deadline".into()))?
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+async fn spawn_collision<T>(
+    holder: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
+    budget: SpawnBudget,
+    operation: impl AsyncFnOnce(
+        &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    ) -> Result<T, wild_spawn::SpawnRefusal>,
+) -> Result<T, wild_spawn::SpawnRefusal> {
+    let result = spawn_transaction(holder, budget, false, operation).await;
+    let released = return_spawn_holder(holder, budget).await;
+    let value = result?;
+    released?;
+    Ok(value)
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+async fn return_spawn_holder(
+    holder: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
+    budget: SpawnBudget,
+) -> Result<(), wild_spawn::SpawnRefusal> {
+    use sqlx::pool::PoolConnectionReturnDisposition;
+    match holder
+        .return_to_pool_observed_until(budget.release_deadline.into_std())
+        .await
+    {
+        PoolConnectionReturnDisposition::ReturnedToIdle => Ok(()),
+        _ => Err(wild_spawn::SpawnRefusal::Fence(
+            "qualification spawn holder was retired".into(),
+        )),
+    }
 }
 
 #[cfg(any(test, feature = "qualification-spawn"))]
@@ -736,7 +848,7 @@ mod tests {
     fn control_spawn_source() -> Result<&'static str, &'static str> {
         include_str!("qualification_fixture.rs")
             .split_once("async fn place(")
-            .and_then(|(_, body)| body.split_once("/// This fixture"))
+            .and_then(|(_, body)| body.split_once("async fn begin_spawn_transaction("))
             .map(|(body, _)| body)
             .ok_or("missing control spawn boundary")
     }
@@ -758,71 +870,144 @@ mod tests {
     #[test]
     fn qualification_spawn_keeps_collision_fence_until_publication() -> Result<(), &'static str> {
         let source = control_spawn_source()?;
+        let probe = source
+            .find("spawn_transaction(&mut holder, budget, true")
+            .ok_or("missing committed probe")?;
         let guard = source
-            .find("keep_collision_fence(&mut collision_guard)")
-            .ok_or("server can expire collision guard")?;
+            .find("spawn_collision(&mut holder, budget,")
+            .ok_or("missing collision transaction")?;
         let fresh = source
             .rfind("read_spawn_tiles(")
             .ok_or("missing fresh collision read")?;
         let publish = source.find("publish_spawn(").ok_or("missing publish")?;
-        let commit = source
-            .find("tx.commit()")
-            .ok_or("missing first fence commit")?;
-        let release = source
-            .find("collision_guard.rollback()")
-            .ok_or("missing collision rollback")?;
-        assert!(commit < guard && guard < fresh && fresh < publish && publish < release);
-        assert!(source[fresh..publish].contains(">= deadline"));
+        assert!(probe < guard && guard < fresh && fresh < publish);
+        assert!(source[fresh..publish].contains(">= budget.work_deadline"));
         Ok(())
     }
 
-    #[cfg(feature = "test-support")]
+    #[test]
+    fn qualification_spawn_watchdog_caller_contract() -> Result<(), &'static str> {
+        let source = control_spawn_source()?;
+        assert!(
+            source.contains("return_spawn_holder(&mut holder, budget)"),
+            "pool return must be observed"
+        );
+        assert!(
+            !source.contains(".detach()"),
+            "successful spawn must preserve the ready holder"
+        );
+        assert!(
+            source.contains("spawn_collision(&mut holder, budget,"),
+            "backend expiry must share the request clock"
+        );
+        assert!(
+            source.contains("published"),
+            "the caller must retain a published receipt"
+        );
+        Ok(())
+    }
+
     #[tokio::test]
-    async fn qualification_collision_guard_outlives_server_transaction_timeout()
+    async fn qualification_spawn_reports_publication_if_cleanup_stalls() -> Result<(), &'static str>
+    {
+        let deadline = tokio::time::Instant::now() + Duration::from_millis(50);
+        let reply = spawn_with_watchdog(deadline, async |published| {
+            *published = Some(17);
+            std::future::pending().await
+        })
+        .await;
+        assert!(matches!(reply, Ok(Ok(17))));
+        let rejected = spawn_with_watchdog(deadline, async |_: &mut Option<()>| {
+            std::future::pending().await
+        })
+        .await;
+        assert!(rejected.is_err());
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn qualification_spawn_transaction_returns_pool_and_bounds_backend()
     -> Result<(), Box<dyn std::error::Error>> {
         use sqlx::Connection as _;
-        let url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
-        tokio::time::timeout(Duration::from_secs(15), async {
-            let mut reader = sqlx::PgConnection::connect(&url).await?;
+        let url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL").map_err(
+            |_| "OTERYN_TEST_POSTGRES_ADMIN_URL is required for the spawn transaction regression",
+        )?;
+        tokio::time::timeout(Duration::from_secs(12), async {
+            let pool = sqlx::postgres::PgPoolOptions::new()
+                .max_connections(1)
+                .connect(&url)
+                .await?;
+            let mut holder = pool.acquire().await?;
             let mut writer = sqlx::PgConnection::connect(&url).await?;
-            let mut tx = reader.begin().await?;
-            let key: i64 = sqlx::query_scalar("SELECT pg_backend_pid()::bigint")
-                .fetch_one(&mut *tx)
+            let start = tokio::time::Instant::now();
+            let budget = SpawnBudget::new(start);
+            spawn_transaction(&mut holder, budget, true, async |tx| {
+                sqlx::query("CREATE TEMP TABLE qualification_spawn_committed_probe (id integer)")
+                    .execute(&mut **tx)
+                    .await
+                    .map_err(|e| wild_spawn::SpawnRefusal::Fence(e.to_string()))?;
+                Ok(())
+            })
+            .await
+            .map_err(|e| format!("{}: {:?}", e.token(), e.detail()))?;
+            let key = spawn_collision(&mut holder, budget, async |tx| {
+                let committed: bool = sqlx::query_scalar(
+                    "SELECT to_regclass('pg_temp.qualification_spawn_committed_probe') IS NOT NULL",
+                )
+                .fetch_one(&mut **tx)
+                .await
+                .map_err(|e| wild_spawn::SpawnRefusal::Fence(e.to_string()))?;
+                assert!(
+                    committed,
+                    "the first probe must commit before the collision guard"
+                );
+                let key = sqlx::query_scalar::<_, i64>("SELECT pg_backend_pid()::bigint")
+                    .fetch_one(&mut **tx)
+                    .await
+                    .map_err(|e| wild_spawn::SpawnRefusal::Fence(e.to_string()))?;
+                sqlx::query("SELECT pg_advisory_xact_lock($1)")
+                    .bind(key)
+                    .execute(&mut **tx)
+                    .await
+                    .map_err(|e| wild_spawn::SpawnRefusal::Fence(e.to_string()))?;
+                let could_write: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock($1)")
+                    .bind(key)
+                    .fetch_one(&mut writer)
+                    .await
+                    .map_err(|e| wild_spawn::SpawnRefusal::Fence(e.to_string()))?;
+                assert!(!could_write);
+                Ok(key)
+            })
+            .await
+            .map_err(|e| format!("{}: {:?}", e.token(), e.detail()))?;
+            let mut holder = pool
+                .try_acquire()
+                .ok_or("spawn did not return the ready holder")?;
+            let pid: i64 = sqlx::query_scalar("SELECT pg_backend_pid()::bigint")
+                .fetch_one(&mut *holder)
                 .await?;
-            sqlx::query("SET LOCAL transaction_timeout = '250ms'")
-                .execute(&mut *tx)
-                .await?;
-            keep_collision_fence(&mut tx).await?;
+            assert_eq!(key, pid);
+
+            // Arm the actual backend deadline. Keep the client connected and idle
+            // with the lock held to model a stalled rollback or missing FIN.
+            let mut tx = begin_spawn_transaction(
+                &mut holder,
+                tokio::time::Instant::now() + Duration::from_secs(1),
+            )
+            .await
+            .map_err(|e| format!("{}: {:?}", e.token(), e.detail()))?;
             sqlx::query("SELECT pg_advisory_xact_lock($1)")
                 .bind(key)
                 .execute(&mut *tx)
                 .await?;
-            tokio::time::sleep(Duration::from_millis(300)).await;
-            let mut ground = writer.begin().await?;
-            let lock = "SELECT pg_try_advisory_xact_lock($1)";
-            let could_write: bool = sqlx::query_scalar(lock)
-                .bind(key)
-                .fetch_one(&mut *ground)
-                .await?;
-            assert!(!could_write, "Ground writer bypassed the publishing fence");
-            let timeout: String = sqlx::query_scalar("SHOW transaction_timeout")
-                .fetch_one(&mut *tx)
-                .await?;
-            assert_eq!(timeout, "10s", "database must bound a stalled reader");
-            let idle_timeout: String =
-                sqlx::query_scalar("SHOW idle_in_transaction_session_timeout")
-                    .fetch_one(&mut *tx)
-                    .await?;
-            assert_eq!(idle_timeout, "10s");
-            drop(tx);
-            drop(reader);
             tokio::time::timeout(
-                Duration::from_secs(2),
+                Duration::from_secs(1),
                 sqlx::query("SELECT pg_advisory_xact_lock($1)")
                     .bind(key)
-                    .execute(&mut *ground),
+                    .execute(&mut writer),
             )
             .await??;
+            drop(tx);
             Ok(())
         })
         .await?
@@ -849,13 +1034,22 @@ mod tests {
 
     #[test]
     fn qualification_spawn_commits_before_placement() -> Result<(), &'static str> {
-        let source = control_spawn_source()?;
-        let commit = source.find("tx.commit()").ok_or("missing fence commit")?;
-        let publish = source
+        let place = control_spawn_source()?;
+        let probe = place
+            .find("spawn_transaction(&mut holder, budget, true")
+            .ok_or("missing committed fence probe")?;
+        let publish = place
             .find("publish_spawn(")
-            .or_else(|| source.find("realize_creature_in_transaction("))
             .ok_or("missing runtime placement")?;
-        assert!(commit < publish);
+        assert!(probe < publish);
+        let source = include_str!("qualification_fixture.rs");
+        let transaction = source
+            .split_once("async fn spawn_transaction<T>(")
+            .and_then(|(_, body)| body.split_once("async fn spawn_collision<T>("))
+            .map(|(body, _)| body)
+            .ok_or("missing spawn transaction boundary")?;
+        assert!(transaction.contains("if commit && result.is_ok()"));
+        assert!(transaction.contains("tx.commit().await"));
         Ok(())
     }
 

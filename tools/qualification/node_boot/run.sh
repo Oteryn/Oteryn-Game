@@ -1173,6 +1173,9 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
 }
 
 seam_stages() { # §4.6 every #823 stage against the node's own port
+  OTERYN_TEST_POSTGRES_ADMIN_URL="$ADMIN_URL" \
+    cargo +1.100.0 test --locked -p oteryn-game-server --lib "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}" \
+    node::serve::qualification_fixture::tests::qualification_spawn_transaction_returns_pool_and_bounds_backend -- --exact || return
   # The bootstrap evidence ages past five seconds, so each admission fetches its own.
   sleep 6
   local qualification=node_boot_seam_against_running_node
