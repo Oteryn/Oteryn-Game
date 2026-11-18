@@ -272,6 +272,9 @@ async fn next_daily_save(_client: &mut DevClientSession, clients: &SeamClients<'
         if advanced.rows_affected()!=1 || !consecutive_published_save(Some(published.parse()?), Some(last.parse()?)) {
             return Err("P10 fixture did not publish exactly the next owner-backed window".into());
         }
+        crate::durability::world_event::record_qualification_reset(
+            &mut tx, WorldId::decode(&clients.world)?, next.parse()?,
+        ).await.map_err(|error| format!("P10 native World reset decisions: {error:?}"))?;
         tx.commit().await?;
         Ok(())
     }).await?
@@ -292,9 +295,7 @@ const QUALIFICATION_DAILY_EPOCH: &str =
                            WHERE j.world_id=a.world_id AND j.reset_epoch=a.reset_epoch)
          RETURNING world_id,reset_epoch
      )
-     INSERT INTO game_world_event_epochs(world_id,reset_epoch,active,announcement)
-     SELECT world_id,reset_epoch,false,'' FROM next
-     RETURNING reset_epoch::text";
+     SELECT reset_epoch::text FROM next";
 
 fn consecutive_published_save(current: Option<u64>, last: Option<u64>) -> bool {
     last.and_then(|last| last.checked_add(1))
@@ -2710,13 +2711,59 @@ async fn pvp_meet(
     }
 }
 
+pub(super) async fn set_open_pvp_aggression(client: &mut DevClientSession) -> TestResult {
+    use oteryn_protocol_oteryn::{attack, pvp_expert as wire};
+    let modes = wire::ExpertFightModes {
+        modes: attack::FightModes {
+            fight_mode: attack::FightMode::Offensive,
+            secure: false,
+            ..attack::FightModes::DEFAULT
+        },
+        expert: wire::ExpertMode::RedFist,
+    };
+    let reply = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_PVP_EXPERT_V1,
+            wire::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT,
+            &wire::encode_expert_fight_modes(&modes),
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted
+        || attack::decode_attack_intent_result(&reply.payload)
+            .map_err(|error| format!("expert mode reply: {error:?}"))?
+            != attack::AttackIntentDisposition::Ok
+    {
+        return Err(format!("PvP expert controls unavailable/refused: {reply:?}").into());
+    }
+    loop {
+        let delta = client
+            .session_mut()
+            .read_gated_delta(wire::STATE_DOMAIN_EXPERT_FIGHT_MODES, 1)
+            .await?;
+        if delta.server_sequence <= reply.server_sequence {
+            continue;
+        }
+        let actual = wire::decode_expert_fight_modes(&delta.payload)
+            .map_err(|error| format!("expert frame: {error:?}"))?;
+        if actual != modes {
+            return Err(format!(
+                "PvP world prerequisite blocked: RedFist/secure-off not served: {actual:?}"
+            )
+            .into());
+        }
+        break;
+    }
+    Ok(())
+}
+
 async fn observed_pvp_death(
     victim: &mut DevClientSession,
     attacker: &mut DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult<((u64, u32), (u64, u32))> {
-    use oteryn_protocol_oteryn::{attack, pvp_expert as wire};
+    use oteryn_protocol_oteryn::attack;
     let target = pvp_meet(victim, attacker, world, spawns).await?;
     let view = attacker
         .world_entities()
@@ -2749,47 +2796,7 @@ async fn observed_pvp_death(
         .ok_or("PvP initial vitals missing")?
         .health;
     victim.take_events();
-    let modes = wire::ExpertFightModes {
-        modes: attack::FightModes {
-            fight_mode: attack::FightMode::Offensive,
-            secure: false,
-            ..attack::FightModes::DEFAULT
-        },
-        expert: wire::ExpertMode::RedFist,
-    };
-    let reply = attacker
-        .session_mut()
-        .gated_command(
-            wire::CAPABILITY_PVP_EXPERT_V1,
-            wire::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT,
-            &wire::encode_expert_fight_modes(&modes),
-        )
-        .await?;
-    if reply.status != CommandStatus::Accepted
-        || attack::decode_attack_intent_result(&reply.payload)
-            .map_err(|error| format!("expert mode reply: {error:?}"))?
-            != attack::AttackIntentDisposition::Ok
-    {
-        return Err(format!("PvP expert controls unavailable/refused: {reply:?}").into());
-    }
-    loop {
-        let delta = attacker
-            .session_mut()
-            .read_gated_delta(wire::STATE_DOMAIN_EXPERT_FIGHT_MODES, 1)
-            .await?;
-        if delta.server_sequence <= reply.server_sequence {
-            continue;
-        }
-        let actual = wire::decode_expert_fight_modes(&delta.payload)
-            .map_err(|error| format!("expert frame: {error:?}"))?;
-        if actual != modes {
-            return Err(format!(
-                "PvP world prerequisite blocked: RedFist/secure-off not served: {actual:?}"
-            )
-            .into());
-        }
-        break;
-    }
+    set_open_pvp_aggression(attacker).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let mut damaged = false;
     let mut player_hit = false;
@@ -3350,4 +3357,44 @@ fn daily_claim_cannot_advance_without_a_consecutive_world_owner_epoch() {
     assert!(!consecutive_published_save(Some(7), Some(7)));
     assert!(!consecutive_published_save(Some(9), Some(7)));
     assert!(consecutive_published_save(Some(8), Some(7)));
+}
+
+#[test]
+fn qualification_daily_epoch_has_native_event_and_change_decisions() -> TestResult {
+    use sqlx::Connection as _;
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("qualification daily epoch PostgreSQL replay requires the configured admin");
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        let (url, _) = crate::qualification::database().await?;
+        let result: TestResult = async {
+            let mut connection = sqlx::PgConnection::connect(&url).await?;
+            let mut tx = connection.begin().await?;
+            let world_bytes = [1, 0x90, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 42];
+            let world = WorldId::decode(&world_bytes)?;
+            sqlx::query("INSERT INTO game_world_reset_epochs VALUES(encode($1,'hex')::uuid,1,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,'2026-11-18T12:00:00Z','2026-11')")
+                .bind(world_bytes.as_slice()).bind([1_u8;32].as_slice()).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,1)")
+                .bind(world_bytes.as_slice()).execute(&mut *tx).await?;
+            crate::durability::world_event::record_qualification_reset(&mut tx, world, 1)
+                .await.map_err(|e| format!("native fixture reset decisions: {e:?}"))?;
+            let (active, announcement, change): (bool,String,String) = sqlx::query_as(
+                "SELECT e.active,e.announcement,d.decision->>'reset_epoch'
+                 FROM game_world_reset_active a JOIN game_world_event_epochs e USING(world_id,reset_epoch)
+                 JOIN game_world_change_days d USING(world_id,reset_epoch)
+                 WHERE a.world_id=encode($1,'hex')::uuid",
+            ).bind(world_bytes.as_slice()).fetch_one(&mut *tx).await?;
+            if !active || announcement.is_empty() || change != "1" {
+                return Err(format!("odd fixture epoch lacks native decisions: {active} {announcement:?} {change}").into());
+            }
+            tx.rollback().await?;
+            Ok(())
+        }.await;
+        let admin_url = required("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
+        let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
+        let name = url.rsplit_once('/').ok_or("missing PostgreSQL test database name")?.1;
+        sqlx::query(sqlx::AssertSqlSafe(format!("DROP DATABASE {name} WITH (FORCE)"))).execute(&mut admin).await?;
+        result
+    })
 }

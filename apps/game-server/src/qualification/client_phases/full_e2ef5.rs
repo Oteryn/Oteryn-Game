@@ -320,6 +320,15 @@ async fn prepare_rune_progression(
     };
     prepare_spell_progression(client, world, spell).await?;
     if u32::from(observed_magic_level(client).await?) < magic_level {
+        provision_rune_fixture(client, clients, "rune-training", SUPPORT_CHARACTER).await?;
+    }
+    rune_magic_eligible(observed_magic_level(client).await?, magic_level)?;
+    Ok(())
+}
+
+async fn provision_rune_fixture(
+    client: &mut DevClientSession, clients: &SeamClients<'_>, profile: &'static str, character: usize,
+) -> TestResult {
         let arena_world = std::env::var("NODE_BOOT_PVP_WORLD_ID").ok()
             .and_then(|world| crate::node::uuid_bytes(&world));
         let socket = required(if arena_world == Some(clients.world) {
@@ -332,7 +341,7 @@ async fn prepare_rune_progression(
             .join("../../tools/qualification/node_boot/provision.py");
         let task = tokio::task::spawn_blocking(move || {
             std::process::Command::new("sudo").args(["-n", "python3"]).arg(script)
-                .args(["--socket", &socket, "--session", &session, "--profile", "rune-training"])
+                .args(["--socket", &socket, "--session", &session, "--profile", profile])
                 .status().map_err(|error| error.to_string())
         });
         if !wait_fixture_command(task, async || {
@@ -340,12 +349,11 @@ async fn prepare_rune_progression(
             client.take_events();
             Ok(())
         }).await?.success() {
-            return Err("fenced rune training fixture refused".into());
+            return Err("fenced rune fixture profile refused".into());
         }
-        player_logout(client).await?;
-        *client = connect_character(clients, 0xba, SUPPORT_CHARACTER).await?;
-    }
-    rune_magic_eligible(observed_magic_level(client).await?, magic_level)?;
+    player_logout(client).await?;
+    wait_character_released(clients, character).await?;
+    *client = connect_character(clients, 0xba, character).await?;
     Ok(())
 }
 
@@ -1589,6 +1597,12 @@ async fn paralyze(
     let spell = book
         .rune(3165)
         .ok_or("C16b Paralyze rune not in pinned spell book")?;
+    if level(client).await? < spell.level {
+        provision_rune_fixture(client, clients, "druid", SUPPORT_CHARACTER).await?;
+    }
+    if level(client).await? < spell.level {
+        return Err("C16b fixture did not publish the authored caster level".into());
+    }
     prepare_rune_progression(client, clients, world, spell).await?;
     let (reference, sequence) = acquire_rune(client, world, 3165).await?;
     row.pass("acquire-paralyze", sequence);
@@ -1597,12 +1611,13 @@ async fn paralyze(
         illegal_floor(client, reference).await?,
     );
     let mut peer = with_observer_liveness(client, connect_character(clients, 0xb1, 1)).await?;
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    with_observer_liveness(client, super::full_e2ef6::earn_death_prerequisites(
-        &mut peer, world, &metadata.spawns, 8, 0,
-    )).await?;
     let result: TestResult = tokio::time::timeout(Duration::from_secs(140), async {
+        if with_observer_liveness(client, level(&mut peer)).await? < 8 {
+            with_observer_liveness(client, provision_rune_fixture(&mut peer, clients, "knight", 1)).await?;
+        }
+        if with_observer_liveness(client, level(&mut peer)).await? < 8 {
+            return Err("C16b fixture did not publish the target protection level".into());
+        }
         let path = route(world, tile(peer.world_spatial().actor_position)?, |at| rune_corridor(world, at).is_some())
             .ok_or("C16b no reachable non-PZ equal-ground target corridor")?;
         with_observer_liveness(client, walk(&mut peer, world, &path)).await?;
@@ -1631,6 +1646,7 @@ async fn paralyze(
         if client.world_entities().is_none_or(|entities| !entities.iter().any(|entity| entity.entity == target)) {
             return Err("C16b independent target generation is not visible to caster".into());
         }
+        with_observer_liveness(&mut peer, super::full_e2ef6::set_open_pvp_aggression(client)).await?;
         let vitals = client.actor_vitals().copied().ok_or("C16b caster vitals absent")?;
         let started = tokio::time::Instant::now();
         let (_, remaining) = cast_rune(client, spell, reference, Some(target), None).await?;

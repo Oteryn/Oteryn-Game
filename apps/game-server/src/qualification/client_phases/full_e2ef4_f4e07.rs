@@ -368,15 +368,41 @@ pub(super) fn successful_storage_reply(status: CommandStatus, payload_success: b
     status == CommandStatus::Accepted && payload_success
 }
 
-fn depot_probe_definition(definitions: &[u32]) -> Option<u32> {
-    let mut counts = BTreeMap::new();
-    for &definition in definitions {
-        *counts.entry(definition).or_insert(0) += 1;
-    }
-    definitions
-        .iter()
-        .copied()
-        .find(|definition| counts[definition] == 1)
+struct DepotProbe {
+    definition: u32,
+    count: u32,
+    stack_max: Option<u32>,
+    has_children: bool,
+}
+
+fn depot_probe_index(lots: &[DepotProbe]) -> Option<usize> {
+    lots.iter().enumerate().position(|(index, lot)| {
+        !lot.has_children
+            && lot.stack_max.is_some_and(|max| {
+                max == 1
+                    || lots.iter().enumerate().all(|(other, candidate)| {
+                        index == other
+                            || lot.definition != candidate.definition
+                            || candidate.count >= max
+                    })
+            })
+    })
+}
+
+type DepotInstances = BTreeMap<u64, Vec<u8>>;
+
+async fn depot_instances(clients: &SeamClients<'_>, town: u16) -> TestResult<DepotInstances> {
+    use sqlx::Connection as _;
+    tokio::time::timeout(Duration::from_secs(5), async {
+        let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+        let rows: Vec<(String, Vec<u8>)> = sqlx::query_as(
+            "SELECT ordinal::text,uuid_send(item_instance_id) FROM game_item_character_depot_locations
+             WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid
+               AND town_id=$3 AND box_number=1",
+        ).bind(clients.characters[1].as_slice()).bind(clients.world.as_slice())
+            .bind(i32::from(town)).fetch_all(&mut connection).await?;
+        rows.into_iter().map(|(ordinal,id)| Ok((ordinal.parse()?,id))).collect()
+    }).await?
 }
 
 fn depot_custody_matches(
@@ -464,32 +490,11 @@ async fn storage_journey(
     use oteryn_dev_client::{client_runtime::stash as runtime, client_ui::stash as ui};
     use oteryn_protocol_oteryn::depot;
     locker(client, world).await?;
-    for box_number in [1] {
-        let payload = depot::encode_depot_intent(depot::DepotIntent {
-            town: None,
-            box_number,
-            page: 0,
-            action: depot::DepotAction::Browse,
-        })
-        .map_err(|e| format!("depot intent: {e:?}"))?;
-        let reply = client
-            .session_mut()
-            .gated_command(
-                depot::CAPABILITY_DEPOT_V1,
-                depot::COMMAND_TYPE_DEPOT_INTENT,
-                &payload,
-            )
-            .await?;
-        let reply =
-            depot::decode_depot_reply(&reply.payload).map_err(|e| format!("depot reply: {e:?}"))?;
-        if reply.outcome != depot::DepotOutcome::Opened
-            || reply.box_number != box_number
-            || reply.town.is_none()
-        {
-            return Err(format!("depot/inbox browse: {reply:?}").into());
-        }
-        // Open views alone do not prove depot/inbox custody.
+    let browse = depot_call(client, None, depot::DepotAction::Browse).await?;
+    if browse.outcome != depot::DepotOutcome::Opened || browse.box_number != 1 || browse.page != 0 {
+        return Err(format!("depot/inbox browse: {browse:?}").into());
     }
+    let town = browse.town.ok_or("depot browse named no town")?;
     // Depot custody round trip: deposit a whole carried stack, prove the locker holds exactly it,
     // then withdraw that locker entry by ordinal and prove the backpack is whole again.
     {
@@ -497,26 +502,75 @@ async fn storage_journey(
             .inventory()
             .ok_or("depot input inventory absent")?
             .entries;
-        let definitions: Vec<_> = entries
-            .iter()
-            .map(|entry| entry.item_definition_ref.get())
-            .collect();
-        let selected = depot_probe_definition(&definitions).ok_or(
-            "no unambiguous direct-backpack lot for an identity-preserving depot withdrawal",
-        )?;
-        let leaf = entries
-            .iter()
-            .find(|entry| entry.item_definition_ref.get() == selected)
-            .copied()
-            .ok_or("selected depot lot absent")?;
         let whole = inventory_units(client)?;
         let originals = backpack_instances(clients, 1, client).await?;
-        let original = offered_instance(client, &originals, leaf)?;
-        let town = {
-            let browse = depot_call(client, None, depot::DepotAction::Browse).await?;
-            browse.town.ok_or("depot browse named no town")?
-        };
+        let profiles: crate::content::native_gameplay::ItemProfilesDocument =
+            serde_json::from_slice(
+                &native_input()?
+                    .item_profiles
+                    .as_ref()
+                    .ok_or("depot item profiles absent")?
+                    .bytes,
+            )?;
+        let definitions = provisioning::item_index()?;
+        use crate::content::{ReferenceItemField::Known, native_gameplay::NativeItemStackClass};
+        use sqlx::Connection as _;
+        let parents: Vec<Vec<u8>> = tokio::time::timeout(Duration::from_secs(5), async {
+            let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+            sqlx::query_scalar(
+                "SELECT DISTINCT uuid_send(parent_item_instance_id) FROM game_item_nested_entries
+                 WHERE parent_item_instance_id IN (SELECT encode(x,'hex')::uuid FROM unnest($1::bytea[]) x)",
+            ).bind(&originals).fetch_all(&mut connection).await
+        }).await??;
+        let lots: Vec<_> = entries
+            .iter()
+            .zip(&originals)
+            .map(|(entry, id)| {
+                let stack_max = definitions
+                    .definition_at(entry.item_definition_ref)
+                    .and_then(|(key, revision)| {
+                        let record = profiles.records.iter().find(|record| {
+                            record.production_definition.production_key == key
+                                && record.production_definition.revision_ref == revision
+                                && record.admission.materializable
+                        })?;
+                        use crate::domain::item_definition::ItemStackClass;
+                        let class = match record.admission.stack_class {
+                            NativeItemStackClass::NonStackable => ItemStackClass::NonStackable,
+                            NativeItemStackClass::StackCapable => ItemStackClass::Stackable {
+                                proven_maximum: match &record.semantics.stack {
+                                    Known(stack) => match stack.stack_max {
+                                        Known(max) => Some(u32::from(max)),
+                                        _ => None,
+                                    },
+                                    _ => None,
+                                },
+                            },
+                        };
+                        oteryn_gameplay_items::stacking::stack_maximum(class)
+                            .ok()
+                            .map(|(maximum, _)| maximum)
+                    });
+                DepotProbe {
+                    definition: entry.item_definition_ref.get(),
+                    count: entry.count.get(),
+                    stack_max,
+                    has_children: parents.contains(id),
+                }
+            })
+            .collect();
+        let selected = depot_probe_index(&lots).ok_or("no empty, identity-preserving depot lot")?;
+        let leaf = entries[selected];
+        let original = &originals[selected];
         let initial = depot_entries(client, town).await?;
+        let initial_instances = depot_instances(clients, town).await?;
+        if initial_instances.len() != initial.len()
+            || initial
+                .iter()
+                .any(|entry| !initial_instances.contains_key(&entry.ordinal))
+        {
+            return Err("depot initial wire and durable ordinals differ".into());
+        }
         let previous: BTreeSet<_> = initial.iter().map(|entry| entry.ordinal).collect();
         let moved =
             depot_call(client, Some(town), depot::DepotAction::Deposit(leaf.handle)).await?;
@@ -551,24 +605,9 @@ async fn storage_journey(
         if !depot_custody_matches(&initial, &other_entries) {
             return Err("depot deposit changed unrelated locker custody".into());
         }
-        use sqlx::Connection as _;
-        let deposited: Option<Vec<u8>> = tokio::time::timeout(Duration::from_secs(5), async {
-            let mut connection = sqlx::PgConnection::connect(clients.url).await?;
-            sqlx::query_scalar(
-                "SELECT uuid_send(item_instance_id) FROM game_item_character_depot_locations
-                 WHERE character_id = encode($1,'hex')::uuid AND world_id = encode($2,'hex')::uuid
-                   AND town_id = $3 AND box_number = 1 AND ordinal = $4::text::numeric",
-            )
-            .bind(clients.characters[1].as_slice())
-            .bind(clients.world.as_slice())
-            .bind(i32::from(town))
-            .bind(ordinal.to_string())
-            .fetch_optional(&mut connection)
-            .await
-        })
-        .await??;
-        if deposited.as_ref() != Some(original) {
-            return Err("depot ordinal does not hold the offered instance".into());
+        let mut deposited = depot_instances(clients, town).await?;
+        if deposited.remove(&ordinal).as_ref() != Some(original) || deposited != initial_instances {
+            return Err("depot deposit changed the offered or unrelated instance identity".into());
         }
         let moved = depot_call(client, Some(town), depot::DepotAction::Withdraw(ordinal)).await?;
         if moved.outcome != depot::DepotOutcome::Moved {
@@ -580,7 +619,9 @@ async fn storage_journey(
             return Err("depot withdrawal returned a different backpack instance set".into());
         }
         let after = depot_entries(client, town).await?;
-        if !depot_custody_matches(&initial, &after) {
+        if !depot_custody_matches(&initial, &after)
+            || depot_instances(clients, town).await? != initial_instances
+        {
             return Err("depot withdrawal changed unrelated locker custody".into());
         }
         row.pass("depot", "deposit-exact-stack-then-withdraw-by-ordinal");
@@ -783,8 +824,14 @@ mod storage_review_tests {
 
     #[test]
     fn depot_probe_selects_a_lot_that_cannot_merge_with_a_spare() {
-        assert_eq!(depot_probe_definition(&[10, 20, 10]), Some(20));
-        assert_eq!(depot_probe_definition(&[10, 10]), None);
+        let lot = |count, has_children| DepotProbe {
+            definition: 10,
+            count,
+            stack_max: Some(100),
+            has_children,
+        };
+        assert_eq!(depot_probe_index(&[lot(50, false), lot(30, false)]), None);
+        assert_eq!(depot_probe_index(&[lot(100, true)]), None);
     }
 
     #[test]
@@ -809,4 +856,16 @@ mod storage_review_tests {
         let observed = BTreeMap::from([(selected.clone(), 4), (key("b"), 2), (key("c"), 3)]);
         assert!(!stash_custody_matches(&expected, &observed));
     }
+}
+
+#[test]
+fn full_duplicate_lots_are_valid_for_depot_probe() {
+    // Both stacks are full, so neither can receive a unit from the other.
+    let lot = || DepotProbe {
+        definition: 10,
+        count: 100,
+        stack_max: Some(100),
+        has_children: false,
+    };
+    assert_eq!(depot_probe_index(&[lot(), lot()]), Some(0));
 }

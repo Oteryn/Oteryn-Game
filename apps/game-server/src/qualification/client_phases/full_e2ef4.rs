@@ -1206,6 +1206,10 @@ async fn make_gold_lot(
 async fn provision_converters(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
+    row: &mut Row,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+    refs: &[std::num::NonZeroU32; 3],
 ) -> TestResult {
     let defs = provisioning::item_index()?;
     let temporary = provisioning::item_reference(&defs, 25719)?;
@@ -1220,6 +1224,31 @@ async fn provision_converters(
             now.get(&magic.get()) == Some(&1) && !now.contains_key(&active.get())
         })
         .await?;
+    }
+    let durable = converter_state(clients).await?;
+    if let Some((id, _)) = durable
+        .iter()
+        .find(|(_, (key, charges))| key == "oteryn:item.tibia.i28525" && *charges == 1)
+    {
+        withdraw_denominations(row, client, world, npcs, refs, &[100]).await?;
+        make_gold_lot(client, refs).await?;
+        let tool = carried_coin(client, magic, |_| true)
+            .ok_or("E03 spent Magic converter handle absent")?;
+        let before = coin_counts(&inventory_units(client)?, refs);
+        let activated = client.use_item(tool.handle).await?;
+        if activated.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+        {
+            return Err(format!("E03 final Magic charge activation refused: {activated:?}").into());
+        }
+        settle(client, "magic-final-charge", |now| {
+            coin_counts(now, refs) == [before[0] - 100, before[1] + 1, before[2]]
+                && !now.contains_key(&magic.get())
+                && !now.contains_key(&active.get())
+        })
+        .await?;
+        if !converter_retired(clients, id).await? {
+            return Err("E03 final Magic charge did not retire the exact converter".into());
+        }
     }
     if carried_coin(client, temporary, |_| true).is_some()
         && carried_coin(client, magic, |_| true).is_some()
@@ -1310,7 +1339,7 @@ async fn coins(
         }
         beat(row);
     }
-    provision_converters(client, clients).await?;
+    provision_converters(client, clients, row, world, npcs, &refs).await?;
     withdraw_denominations(row, client, world, npcs, &refs, &[100]).await?;
     make_gold_lot(client, &refs).await?;
     if let Err(error) = converter_checks(row, client, clients, &refs).await {

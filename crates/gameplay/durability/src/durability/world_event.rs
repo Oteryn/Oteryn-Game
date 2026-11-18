@@ -65,6 +65,17 @@ fn announcement(base: String, seasonal: &[String]) -> String {
     parts.join(" ")
 }
 
+/// Record the native decisions for an epoch inserted by the disposable
+/// qualification fixture, in the fixture's still-uncommitted transaction.
+#[cfg(feature = "test-support")]
+pub async fn record_qualification_reset(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    epoch: u64,
+) -> Result<(), DurabilityError> {
+    record_reset(tx, world, epoch, true, &prepare_catalogue()?).await
+}
+
 /// Called exclusively inside reset finalization, including unknown-commit replay.
 pub(super) async fn record_reset(
     tx: &mut Transaction<'_, Postgres>,

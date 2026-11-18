@@ -409,7 +409,7 @@ async fn prepare_build(
 // Fixture claims use the ordinary fenced/audited reward owner, never SQL item
 // inserts. They are setup evidence only, not proof of player chest interaction.
 fn fixture_item_claim_key(id: u32, session: &[u8; 16]) -> String {
-    if id == 25719 {
+    if matches!(id, 25719 | 28525) {
         format!("oteryn:qualification.item.i{id}.{}", uuid_text(session))
     } else {
         format!("oteryn:qualification.item.i{id}")
@@ -823,7 +823,7 @@ fn temporary_converter_occurrences_are_replayable_and_replenishable() {
         fixture_item_claim_key(25719, &[1; 16]),
         fixture_item_claim_key(25719, &[2; 16])
     );
-    assert_eq!(
+    assert_ne!(
         fixture_item_claim_key(28525, &[1; 16]),
         fixture_item_claim_key(28525, &[2; 16])
     );
