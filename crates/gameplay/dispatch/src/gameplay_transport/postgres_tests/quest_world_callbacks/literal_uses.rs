@@ -120,12 +120,27 @@ fn worldchg_coral_mine_use_grants_crate_and_advances_crystal() -> TestResult {
     })
 }
 
+#[test]
+fn worldchg_deepling_ramp_use_advances_stage_on_save() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::super::kill_reward_e2e::scenario_thread::run("deepling-ramp-use", || {
+        let mut ramp = callback("deeplings-ramp-1106")?;
+        ramp.selector.position = Some(position((33509, 31189, -14)));
+        exercise(ramp, 14164, 1, Some(12))
+    })
+}
+
 fn position((x, y, floor): (u16, u16, i8)) -> Position {
     Position { x, y, floor }
 }
 
 fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>) -> TestResult {
     let coral = callback.key == "oteryn:quest-callback/deeplings-coral-crate";
+    let ramp = callback.key == "oteryn:quest-callback/deeplings-ramp-1106";
+    let writes_progress = coral || ramp;
     let started = std::time::Instant::now();
     let trigger = callback.selector.position.ok_or("position")?;
     let world = world_ordinal(&callback, trigger, appearance, ordinal)?;
@@ -218,6 +233,17 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice())
             .bind(generation.identity().client_artifact_digest().as_slice()).bind(activated.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+        if ramp {
+            owner.reset_epoch = 1;
+            sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,1,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp(0),'1970-01')")
+                .bind(admitted.world_id.as_bytes().as_slice()).bind([7u8;32].as_slice()).execute(&h.pool).await?;
+            sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,1)")
+                .bind(admitted.world_id.as_bytes().as_slice()).execute(&h.pool).await?;
+            h.root.world_changes(admitted.world_id, 1).await?.ok_or("active Deeplings save")?;
+            let seeded = sqlx::query("UPDATE game_world_change_counters SET state=state || jsonb_build_object('stage',2,'condition',false) WHERE world_id=encode($1,'hex')::uuid AND change_key='deeplings'")
+                .bind(admitted.world_id.as_bytes().as_slice()).execute(&h.pool).await?;
+            assert_eq!(seeded.rows_affected(), 1);
+        }
         let fresh = super::super::fresh_fixture::fresh::Source::new(0)?.request()?;
         h.root
             .initialize_admission_equipment(
@@ -238,6 +264,9 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
             },
             ..crate::durability::starter_grant::StarterTemplate::main()
         };
+        if ramp {
+            super::super::item_look::seed_main_backpack(&h, &[("oteryn:item.tibia.i14165", 1)]).await?;
+        } else {
         h.root
             .grant_starter_items(
                 &authority,
@@ -248,6 +277,7 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
             )
             .await
             .map_err(debug)?;
+        }
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
@@ -286,7 +316,7 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
                         completes: false,
                         experience: None,
                     }];
-                        if coral {
+                        if writes_progress {
                             transitions.push(
                                 oteryn_gameplay_quests::quest::world_callbacks::primary_transition(&callback)
                                     .map_err(debug)?,
@@ -380,7 +410,7 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
                 .read_actor_position(deps.actor)
                 .map_err(debug)?
                 .position(),
-            if allowed && !coral {
+            if allowed && !writes_progress {
                 local(callback.teleport.ok_or("destination")?)
             } else {
                 origin
@@ -401,14 +431,14 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
             .read_character_quest_state(&authority, fence.character_id)
             .await
             .map_err(debug)?;
-        if !coral {
+        if !writes_progress {
             assert_eq!(before, after, "literal USE changed durable quest state");
         }
         let receipts: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
                 .fetch_one(&h.pool)
                 .await?;
-        if coral {
+        if writes_progress {
             assert_eq!(receipts, receipts_before + 1);
             let progress: i64 = sqlx::query_scalar(
                 "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
@@ -416,13 +446,28 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
             .bind(&callback.storage[0].track)
             .fetch_one(&h.pool)
             .await?;
-            assert_eq!(progress, 12);
+            assert_eq!(progress, if ramp { 13 } else { 12 });
             let crates: i64 = sqlx::query_scalar(
                 "SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i14165' AND lifecycle=1",
             )
             .fetch_one(&h.pool)
             .await?;
-            assert_eq!(crates, 1);
+            assert_eq!(crates, if ramp { 0 } else { 1 });
+            if ramp {
+                use oteryn_gameplay_world_change::counter::{CounterKind, CounterState};
+                let state: serde_json::Value = sqlx::query_scalar(
+                    "SELECT state FROM game_world_change_counters WHERE world_id=encode($1,'hex')::uuid AND change_key='deeplings'",
+                )
+                .bind(admitted.world_id.as_bytes().as_slice())
+                .fetch_one(&h.pool)
+                .await?;
+                let state: CounterState = serde_json::from_value(state)?;
+                assert_eq!(state.stage, 2);
+                assert!(state.condition, "ramp commit records the stage-three condition");
+                let parameters = crate::durability::world_event::changes::counters::bindings()?.parameters;
+                let saved = state.at_save(CounterKind::Deeplings, 2, false, &parameters, 1).map_err(debug)?;
+                assert_eq!(saved.stage, 3);
+            }
         } else {
             assert_eq!(receipts, receipts_before);
         }
