@@ -28,6 +28,7 @@ const ANNUAL: &str = "qengine-rewards-qonce-annual";
 const FULL_BACKPACK: &str = "qengine-rewards-qonce-full-backpack";
 const HOARD: &str = "qengine-rewards-qonce-hoard";
 const STEP: &str = "qengine-rewards-qonce-step";
+const SOCKET_WINDOW: &str = "qengine-rewards-qonce-socket-window";
 const QUEST: &str = "oteryn:quest.authored.draccoon_herald_outfits_quest";
 const CLAIM: &str = "oteryn:quest-callback/qonce-dispatch-claim";
 const LEDGER: &str = "oteryn:quest-progress/qonce-dispatch/ledger";
@@ -53,6 +54,17 @@ const ANNUAL_INELIGIBLE: &str = "You are not eligible to claim these rewards yet
 const FEATHERS: &str = "oteryn:quest-progress/qonce-dispatch/feathers";
 const HOARD_REFUSAL: &str = "You try to pick a treasure, but you hear further dragons approaching. You should kill some more before picking out something.";
 const AT: Position = Position { x: 33294, y: 31677, floor: -15 };
+// A compact test room uses the donor's actual sockets, gems, fields and centre art.
+const SOCKETS: [(Position, u16, u16, u16); 4] = [
+    (AT, 21441, 3030, 21462),
+    (Position { x: AT.x - 1, y: AT.y - 1, ..AT }, 21442, 3029, 21463),
+    (Position { x: AT.x - 2, ..AT }, 21440, 3033, 21464),
+    (Position { x: AT.x - 1, y: AT.y + 1, ..AT }, 21437, 9057, 21465),
+];
+const CENTRE: Position = Position { x: AT.x - 2, y: AT.y + 1, ..AT };
+const SOCKET_PHASE: &str = "oteryn:quest-progress/qonce-dispatch/socket-phase";
+const THUNDER: u16 = 73;
+const SOCKET_SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/gems.lua:35-89,130-189";
 
 #[test]
 fn once_only_well_restores_saved_and_live_vitals_and_grants_achievement_postgres() -> TestResult {
@@ -87,6 +99,26 @@ pub(super) fn map_fixture(name: &str, callback: &mut Callback) {
         callback.selector.appearance = Some(LIONS_FOUNTAIN);
         callback.effects.transform = Some(LIONS_SANCTUARY_ROCK);
     }
+    if name == SOCKET_WINDOW {
+        callback.selector.appearance = Some(SOCKETS[0].1);
+    }
+}
+
+pub(super) fn socket_world(name: &str, callback: &Callback) -> Option<TestResult<crate::map::boot::BundleWorld>> {
+    (name == SOCKET_WINDOW).then(|| {
+        let mut objects: Vec<_> = SOCKETS.iter().skip(1).map(|(pos, appearance, _, _)| (*pos, *appearance)).collect();
+        objects.push((CENTRE, LIONS_SANCTUARY_ROCK));
+        let mut appearances: Vec<_> = SOCKETS.iter().map(|(_, _, _, field)| *field).collect();
+        appearances.push(LIONS_FOUNTAIN);
+        super::quest_world_callbacks::world_with_objects(callback, AT, &objects, &appearances)
+    })
+}
+
+#[test]
+fn paid_lions_sockets_open_the_shared_fountain_and_expire_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::qengine_rewards::scenario(SOCKET_WINDOW)
 }
 
 #[test]
@@ -174,6 +206,99 @@ async fn use_claim(
         map,
         &target,
     ).await.ok_or("claim callback did not dispatch")?.disposition)
+}
+
+async fn socket_window(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use crate::map::overlay::TilePos;
+    use oteryn_gameplay_quests::quest::world_callbacks::Offering;
+    use std::sync::atomic::Ordering;
+
+    let mut stages = Vec::new();
+    let fence = owner.current_quest_fence(admitted.game_session_id).await
+        .map_err(|()| "socket fence unavailable")?.ok_or("socket fence")?;
+    for (index, (position, appearance, gem, field)) in SOCKETS.into_iter().enumerate() {
+        let phase = i64::try_from(index)? + 6;
+        let mut tool = json!({"item":format!("oteryn:item.tibia.i{gem}"),"count":1});
+        tool["selected_instance"] = json!(false);
+        stages.push(json!({"key":format!("socket-{index}"),"completes":false,
+            "trigger":{"kind":"map_use","callback":{
+                "key":format!("oteryn:quest-callback/qonce-dispatch-socket-{index}"),
+                "quest":QUEST,"trigger":"use",
+                "selector":{"position":position,"appearance":appearance,"unique":(index == 0).then_some(63001)},
+                "requires_world_admission":true,"reversible":false,"passages":[],
+                "storage":[storage(SOCKET_PHASE,phase,phase,phase+1)],"offerings":[],
+                "return_on_failure":false,"sources":[SOCKET_SOURCE],"item_on_target":tool,
+                "effects":{"timed_presence":{"position":position,"appearance":field,
+                    "spawn_after_ms":2000,"expires_after_ms":60000,"window":{
+                        "position":CENTRE,"from":LIONS_SANCTUARY_ROCK,"to":LIONS_FOUNTAIN,
+                        "count":4,"effect":THUNDER
+                    }}}
+            }}
+        }));
+        super::quest_world_callbacks::input_item(owner, fence.item_fence(), &Offering {
+            position, item: format!("oteryn:item.tibia.i{gem}"), count: 1,
+        }, 70 + u64::try_from(index)?, true).await?;
+    }
+    let recipe_sha256: String = Sha256::digest(serde_json::to_vec(&stages)?)
+        .iter().map(|byte| format!("{byte:02x}")).collect();
+    let bindings = Bindings::parse(&serde_json::to_vec(&json!({"schema":1,"quests":[{
+        "quest":QUEST,"recipe_sha256":recipe_sha256,"sources":[SOCKET_SOURCE],
+        "tracks":[track(SOCKET_PHASE,6,6,10)],"stages":stages
+    }]}))?)?;
+    let revision = owner.quest_catalogue.as_deref().ok_or("catalogue")?.content_revision();
+    let base = QuestStateCatalogue::empty(revision).ok_or("revision")?;
+    owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
+    let _clock = owner.freeze_owner_clock_for_test();
+    let map = owner.bundle_map().ok_or("socket map")?;
+    let key = |at: Position| {
+        oteryn_world_bundle::bundle::placement_key(at.floor, at.x, at.y, 1).ok_or("socket key")
+    };
+    let centre = key(CENTRE)?;
+    let actor = admitted.runtime_actor.ok_or("claimant")?;
+    let mut expiry = Vec::new();
+    for (index, (position, _, gem, field)) in SOCKETS.into_iter().enumerate() {
+        // Crystal gems.lua:179-188 stages a field two seconds after the paid USE.
+        let at = 5_000_000 + 3_000_000 * u64::try_from(index)?;
+        owner.states.test_owner_time.store(at, Ordering::Relaxed);
+        owner.states.world_gate.lock().map_err(|_| "socket gate")?.begin_turn();
+        let key = key(position)?;
+        let mut placement = map.overlay.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        let target = WorldObjectTarget { placement, expected_revision: map.facts.object_revision(key) };
+        let before = super::qengine_voucher_stories::quantity(h, gem).await?;
+        let outcome = owner.use_quest_callback(actor, UseCommand {
+            game_session_id: admitted.game_session_id, command_id: 21 + u64::try_from(index)?,
+            item_fence: admitted.item_fence,
+        }, map, &target).await.ok_or("socket did not dispatch")?;
+        assert_eq!(outcome.disposition, UseDisposition::Committed);
+        assert_eq!(super::qengine_voucher_stories::quantity(h, gem).await?, before - 1);
+        assert_eq!(track_value(h, SOCKET_PHASE).await?, i64::try_from(index)? + 7);
+        let tile = TilePos { x: position.x, y: position.y, floor: position.floor };
+        let present = || map.facts.movement_items(tile).into_iter()
+            .any(|item| item.facts.appearance_id == field);
+        let starts = at + 2_000_000;
+        assert_eq!(map.facts.next_movement_decay_time(), Some(starts));
+        assert_eq!(map.facts.expire_movement_items(starts - 1), 0);
+        assert!(!present());
+        assert_eq!(map.facts.expire_movement_items(starts), 1);
+        assert!(present());
+        assert_eq!(map.facts.object_revision(centre), if index == 3 { 1 } else { 0 });
+        expiry.push((at + 60_000_000, tile));
+    }
+    let centre_tile = TilePos { x: CENTRE.x, y: CENTRE.y, floor: CENTRE.floor };
+    assert_eq!(map.facts.movement_effects_since(0).into_iter()
+        .filter(|(_, at, effect)| *at == centre_tile && *effect == THUNDER).count(), 1);
+    for (deadline, tile) in expiry {
+        assert_eq!(map.facts.expire_movement_items(deadline - 1), 0);
+        assert_eq!(map.facts.expire_movement_items(deadline), 1);
+        assert!(map.facts.movement_items(tile).is_empty());
+    }
+    assert_eq!(map.facts.object_revision(centre), 1, "fields expire while the fountain stays open for its claim");
+    Ok(())
 }
 
 async fn contend_for_daily_claim(
@@ -447,6 +572,10 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+
+    if name == SOCKET_WINDOW {
+        return Box::pin(socket_window(owner, admitted, h)).await;
+    }
 
     // The source tile is installed by the common dispatch fixture. Build the binding
     // independently so its guards and effects come entirely from this scenario.

@@ -648,7 +648,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if name == "authored-wrath-crystals" {
+    let world = if let Some(world) = super::super::quest_claims::socket_world(name, &callback) {
+        world?
+    } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::world()?
     } else if name == "nx6-wayfarer" {
         super::super::questpc8_wrath_source_dragon::world()?
