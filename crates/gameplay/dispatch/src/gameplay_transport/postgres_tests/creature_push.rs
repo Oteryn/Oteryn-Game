@@ -47,7 +47,7 @@ pub(super) fn bundle(trap: Option<u16>) -> TestResult<(Vec<u8>, crate::map::Bund
             blocks_projectile: None,
         }),
     };
-    let manifest = Manifest {
+    let mut manifest = Manifest {
         subareas: Default::default(),
         format: writer::FORMAT.into(),
         min_reader_version: writer::VERSION,
@@ -112,11 +112,21 @@ pub(super) fn bundle(trap: Option<u16>) -> TestResult<(Vec<u8>, crate::map::Bund
         spawns: Default::default(),
         npcs: Default::default(),
     };
+    if trap == Some(12187) {
+        for (id, appearance) in [(7, 12187), (8, 12189)] {
+            manifest.palette.push(PaletteEntry {
+                key: format!("oteryn:item.tibia.i{appearance}"),
+                family: Family::Item,
+                id,
+                terrain: None,
+            });
+        }
+    }
     let mut tiles = Vec::new();
     for y in 0..=8 {
         for x in 0..=12 {
             let mut palettes = vec![if (x, y) == (3, 5) { 2 } else { 0 }];
-            if let Some(trap) = trap
+            if let Some(trap) = trap.filter(|id| *id != 12187)
                 && (x, y) == (4, 2)
             {
                 palettes.push(if trap == 12368 { 5 } else { 3 });
@@ -180,7 +190,7 @@ fn creature_push_real_dispatch_moves_and_refuses_on_postgres() -> TestResult {
         .map_err(Into::into)
 }
 
-fn scenario(seed: &'static str, unpushable: bool, trap: Option<u16>) -> Result<(), String> {
+pub(super) fn scenario(seed: &'static str, unpushable: bool, trap: Option<u16>) -> Result<(), String> {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, seed, true, false).await?;
         prepare_current_session(&h).await?;
@@ -222,6 +232,8 @@ fn scenario(seed: &'static str, unpushable: bool, trap: Option<u16>) -> Result<(
                         "oteryn:item.tibia.i3945" => 5,
                         "oteryn:item.tibia.i12368" => 6,
                         "oteryn:item.tibia.i12369" => 7,
+                        "oteryn:item.tibia.i12187" => 8,
+                        "oteryn:item.tibia.i12189" => 9,
                         _ => return None,
                     })?,
                     solid: Some(false),
@@ -292,7 +304,9 @@ fn scenario(seed: &'static str, unpushable: bool, trap: Option<u16>) -> Result<(
         );
         let (mut server, mut client) = tokio::io::duplex(1 << 20);
         let client_flow = async {
-            let result = if let Some(trap) = trap {
+            let result = if trap == Some(12187) {
+                super::rottin_bushwhacking::exercise(&mut client, &owner, admitted).await
+            } else if let Some(trap) = trap {
                 relocation_tiles_scenario(&mut client, &owner, admitted, trap).await
             } else if unpushable {
                 unpushable_scenario(&mut client, &owner).await
@@ -355,7 +369,7 @@ async fn position(
         .position())
 }
 
-async fn reference(
+pub(super) async fn reference(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
 ) -> TestResult<EntityRef> {
@@ -374,7 +388,7 @@ async fn reference(
     })
 }
 
-async fn spawn(
+pub(super) async fn spawn(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     key: &str,
     at: MovementLocalPosition,
@@ -423,7 +437,7 @@ async fn raw(client: &mut DuplexStream, id: u64, payload: &[u8]) -> TestResult<u
 }
 
 /// Waits for the first snapshot and installs the content's companion policies.
-async fn prepare(
+pub(super) async fn prepare(
     client: &mut DuplexStream,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
 ) -> TestResult {
