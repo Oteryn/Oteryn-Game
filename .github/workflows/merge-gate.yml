@@ -1011,6 +1011,27 @@ jobs:
           echo 'completed=true' >> "$GITHUB_OUTPUT"
           exit "$code"
 
+      # The native client's Bevy game UI (`bevy-shell` feature) is outside the default feature set,
+      # so the step above never builds its library tests. Owner consent 2026-11-18.
+      - name: Unit-test the native client game UI (bevy-shell, nextest shard ${{ matrix.shard }})
+        if: matrix.kind == 'tests' && steps.jr_hit.outputs.hit != 'true'
+        env:
+          SHARD: ${{ matrix.shard }}
+          CARGO_BUILD_JOBS: "1"
+          LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
+        run: |
+          set -euo pipefail
+          if ! cut -f1 "$RUNNER_TEMP/rust-fast-run.tsv" | grep -qx 'oteryn-client'; then
+            echo 'NOT_APPLICABLE: oteryn-client is not among the changed crates'
+            exit 0
+          fi
+          if [[ "$RUNNER_ENVIRONMENT" == 'github-hosted' ]]; then
+            sudo apt-get update
+            sudo apt-get install -y libasound2-dev libudev-dev
+          fi
+          cargo +1.100.0 nextest run --locked -p oteryn-client --features bevy-shell --lib \
+            --partition "hash:${SHARD}" --no-tests=pass --no-fail-fast < /dev/null
+
       - name: Record passed crates in the job-result ledger
         id: jr_record
         if: >-
