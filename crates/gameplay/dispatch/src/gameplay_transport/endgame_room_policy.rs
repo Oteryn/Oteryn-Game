@@ -62,7 +62,9 @@ mod tests {
 
     #[test]
     fn fknow_lore_keeper_requires_the_source_party_window() {
-        use oteryn_gameplay_encounter_rules::boss_room::BossRoomPolicy;
+        use oteryn_gameplay_encounter_rules::boss_room::{
+            AdmissionRefusal, BossRoomPolicy, ParticipantFact, plan_fresh_room, plan_timeout,
+        };
         let mut policy = BossRoomPolicy {
             minimum_players: 1,
             maximum_players: 15,
@@ -74,6 +76,32 @@ mod tests {
                 .collect(),
         };
         assert!(matches_lore_keeper(&policy));
+        let mut party = [
+            ParticipantFact {
+                character: [1; 16],
+                position: (32019, 32844, 14),
+                level: 8,
+                cooldown_until_ms: 0,
+            },
+            ParticipantFact {
+                character: [2; 16],
+                position: (32020, 32845, 14),
+                level: 8,
+                cooldown_until_ms: 0,
+            },
+        ];
+        let admitted = plan_fresh_room(&policy, &party, 1).expect("staged party");
+        assert_eq!(admitted.cooldown_until_ms, 1 + LORE_KEEPER_COOLDOWN_MS);
+        assert_eq!(admitted.deadline_ms, 1 + LORE_KEEPER_LIMIT_MS);
+        assert_eq!(
+            plan_timeout(&admitted.participants).kick_characters,
+            vec![[1; 16], [2; 16]]
+        );
+        party[1].cooldown_until_ms = 2;
+        assert_eq!(
+            plan_fresh_room(&policy, &party, 1),
+            Err(AdmissionRefusal::Cooldown)
+        );
         policy.cooldown_ms -= 1;
         assert!(!matches_lore_keeper(&policy));
         policy.cooldown_ms += 1;
