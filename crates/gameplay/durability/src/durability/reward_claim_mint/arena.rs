@@ -14,7 +14,7 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         gameplay: CurrentCharacterGameplayFence,
-        request: RewardClaimMintRequest,
+        mut request: RewardClaimMintRequest,
         rank: u8,
         category: u8,
         choice: u8,
@@ -32,6 +32,7 @@ impl DurabilityRoot {
             || request.achievement.is_some()
             || request.quest_transition.is_some()
             || request.key_number.is_some()
+            || request.root_text.is_some()
             || !contents::weight_pin_matches(&request, weights)
             || request.contents.iter().zip(&expected.contents).any(
                 |(actual, (source, quantity))| {
@@ -44,7 +45,6 @@ impl DurabilityRoot {
             return Err(RewardClaimMintError::InvalidInput);
         }
         let fence = gameplay.item_fence();
-        let binding = intent_binding(&request, fence.character_id)?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| RewardClaimMintError::AuthorityRejected)?;
@@ -60,7 +60,12 @@ impl DurabilityRoot {
             let state=arena::load_state(&mut tx,gameplay).await?;
             let masks=arena::claimed_masks(&mut tx,gameplay).await?;
             let refusal=if state.completed<rank || state.phase!=3 {Some(D::WrongState)}
-                else if masks[usize::from(rank-1)]&(1<<(category-1))!=0 {Some(D::AlreadyClaimed)} else {None};
+                else {
+                    // TibiaWiki Barbarian Arena Quest/Spoiler (curid 34102, oldid 668035):
+                    // the three weapons, present and backpack share one choice per tier.
+                    let mask = if category == 4 { 0b1000 } else { 0b0111 };
+                    (masks[usize::from(rank-1)] & mask != 0).then_some(D::AlreadyClaimed)
+                };
             if let Some(disposition)=refusal {
                 let bytes=finish(&mut tx,gameplay,&request,&payload,&state,disposition).await?;
                 tx.commit(deadline).await?;return Ok(Ok(bytes));
@@ -82,6 +87,18 @@ impl DurabilityRoot {
                 let bytes=finish(&mut tx,gameplay,&request,&payload,&state,D::InventoryFull).await?;
                 tx.commit(deadline).await?;return Ok(Ok(bytes));
             }
+            if category == 4 {
+                let name: String = sqlx::query_scalar(
+                    "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+                )
+                .bind(fence.character_id.as_bytes().as_slice())
+                .fetch_one(&mut **tx)
+                .await?;
+                request.root_text = Some(format!("Awarded to {name}."));
+                validate_request(&request).map_err(|_| DurabilityError::InvalidStoredState)?;
+            }
+            let binding = intent_binding(&request, fence.character_id)
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
             insert_reservation(&mut tx,&request,&binding,&reservation).await?;
             sqlx::query("UPDATE game_reward_claim_mint_reservations SET work_units_used=1 WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
                 .bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).execute(&mut **tx).await?;
