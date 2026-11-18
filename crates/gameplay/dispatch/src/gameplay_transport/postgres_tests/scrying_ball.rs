@@ -74,21 +74,24 @@ fn scenario(admin: String) -> TestResult {
             let (key, _) = placement(map, trigger, 2)?;
             let (decoy_key, _) = placement(map, decoy, 1)?;
             let clock = owner.freeze_owner_clock_for_test();
+            let used_at = 2_000_000;
+            let deadline = used_at + 60_000_000;
+            // The frozen clock reserves zero as the real-clock sentinel.
             owner
                 .states
                 .test_owner_time
-                .store(2_000_000, Ordering::Relaxed);
+                .store(used_at + 1, Ordering::Relaxed);
             let (_, result) = use_tool(owner, admitted, fence, MIRROR, trigger, 2).await?;
             assert_eq!(result, UseDisposition::Committed);
             assert!(map.facts.base_hidden(key));
             assert!(!map.facts.base_hidden(decoy_key));
             assert_eq!(map.facts.object_revision(key), 1);
             assert_eq!(map.facts.object_revision(decoy_key), 0);
-            assert_eq!(map.facts.next_movement_decay_time(), Some(62_000_000));
-            assert_eq!(map.facts.expire_movement_items(61_999_999), 0);
+            assert_eq!(map.facts.next_movement_decay_time(), Some(deadline));
+            assert_eq!(map.facts.expire_movement_items(deadline - 1), 0);
             assert!(map.facts.base_hidden(key));
             // Use the same Channel owner cycle as serving, without a connection tick.
-            owner.states.test_owner_time.store(62_000_000, Ordering::Relaxed);
+            owner.states.test_owner_time.store(deadline + 1, Ordering::Relaxed);
             let stop = oteryn_foundation::CancellationToken::new();
             let observe = async {
                 while map.facts.base_hidden(key) {
@@ -105,7 +108,7 @@ fn scenario(admin: String) -> TestResult {
             assert_eq!(map.facts.object_revision(key), 2);
             assert_eq!(map.facts.object_revision(decoy_key), 0);
             assert_eq!(map.facts.next_movement_decay_time(), None);
-            assert_eq!(map.facts.expire_movement_items(62_000_001), 0);
+            assert_eq!(map.facts.expire_movement_items(deadline + 1), 0);
             let copy = owner
                 .root
                 .read_character_quest_state(owner.character, fence.character_id)

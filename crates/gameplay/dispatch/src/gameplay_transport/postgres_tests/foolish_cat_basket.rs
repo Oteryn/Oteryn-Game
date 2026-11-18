@@ -75,10 +75,13 @@ fn scenario(admin: String) -> TestResult {
         ],
         async |owner, admitted, h, fence| {
             let _clock = owner.freeze_owner_clock_for_test();
+            let used_at = 2_000_000;
+            let deadline = used_at + 10_000_000;
+            // The frozen clock reserves zero as the real-clock sentinel.
             owner
                 .states
                 .test_owner_time
-                .store(2_000_000, Ordering::Relaxed);
+                .store(used_at + 1, Ordering::Relaxed);
             let map = owner.bundle_map().ok_or("basket map")?;
             let (_, target) = tool_fixture::placement(map, basket, 2)?;
             let outcome = owner
@@ -139,13 +142,13 @@ fn scenario(admin: String) -> TestResult {
             owner
                 .states
                 .test_owner_time
-                .store(11_999_999, Ordering::Relaxed);
+                .store(deadline, Ordering::Relaxed);
             owner.drain_quest_encounter_deadlines().await;
             assert!(owner.runtime.lock().await.contains_live_creature(kitty));
             owner
                 .states
                 .test_owner_time
-                .store(12_000_000, Ordering::Relaxed);
+                .store(deadline + 1, Ordering::Relaxed);
             owner.drain_quest_encounter_deadlines().await;
             assert!(!owner.runtime.lock().await.contains_live_creature(kitty));
             let copy = owner
