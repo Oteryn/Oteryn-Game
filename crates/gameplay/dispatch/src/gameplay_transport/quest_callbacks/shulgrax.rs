@@ -43,7 +43,7 @@ impl FlowerPuzzle {
         session: GameSessionId,
         now: u64,
     ) -> Option<TilePos> {
-        if at != PORTAL || now >= self.shared_until {
+        if at != PORTAL || self.shared_until == 0 {
             return None;
         }
         Some(
@@ -103,9 +103,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let _permit = self.spell_lane_permit().await?;
         let runtime = self.runtime.lock().await;
         let session = command.game_session_id;
-        if !runtime
-            .player_control_facts(actor, session)
-            .is_ok_and(|facts| facts.control_loss.is_none())
+        let spell_states = self.states.spell_states.try_lock().ok()?;
+        if spell_states.is_dead(actor)
+            || !spell_states.spell_idle(&runtime, actor, session)
+            || !self.states.player_trades.physical(session, None)
+            || !runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
             || map.facts.object_revision(key) != revision
             || map.facts.base_hidden(key)
         {

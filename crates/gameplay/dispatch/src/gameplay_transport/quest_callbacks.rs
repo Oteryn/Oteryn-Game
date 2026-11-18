@@ -119,9 +119,15 @@ pub(super) struct PendingCallbacks {
 
 impl PendingCallbacks {
     pub(super) fn flower_portal_destination(
-        &self, at: TilePos, session: GameSessionId, now: u64,
+        &self,
+        at: TilePos,
+        session: GameSessionId,
+        now: u64,
     ) -> Option<TilePos> {
-        self.flower_puzzle.lock().ok()?.destination(at, session, now)
+        self.flower_puzzle
+            .lock()
+            .ok()?
+            .destination(at, session, now)
     }
 
     pub(super) fn complete_native_quest(

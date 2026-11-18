@@ -149,7 +149,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let destination = || {
             let now = self.owner_now().get();
-            self.states.quest_callbacks.flower_portal_destination(pos, session, now)
+            self.states
+                .quest_callbacks
+                .flower_portal_destination(pos, session, now)
                 .or_else(|| map.facts.quest_portal_destination(pos, now))
         };
         let Some(to) = destination() else {
