@@ -8,25 +8,41 @@ use oteryn_simulation_determinism::{
 };
 use sha2::{Digest, Sha256};
 
-pub(super) fn matches_current(
+pub(super) fn matches_bound(
     map: &BundleMap,
     at: TilePos,
     ordinal: u8,
+    callback: &Callback,
     charge: &ChargeWindow,
 ) -> bool {
-    map.overlay
-        .base()
-        .tile(at.x, at.y, at.floor)
-        .and_then(|base| {
-            base.ids()
-                .iter()
-                .zip(base.depths())
-                .filter(|(_, depth)| **depth == 0)
-                .nth(usize::from(ordinal))
-                .map(|(id, _)| *id)
+    let Some((source, source_ordinal, initial)) = world_callbacks::charge_source(callback) else {
+        return false;
+    };
+    if tile(source) != at || source_ordinal.is_some_and(|index| ordinal != index) {
+        return false;
+    }
+    let Some(base) = map.overlay.base().tile(at.x, at.y, at.floor) else {
+        return false;
+    };
+    let candidates: Vec<_> = base
+        .ids()
+        .iter()
+        .zip(base.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .enumerate()
+        .filter_map(|(index, (id, _))| {
+            let index = u8::try_from(index).ok()?;
+            if source_ordinal.is_some_and(|source| source != index) {
+                return None;
+            }
+            let key = placement_key(at, index)?;
+            map.facts
+                .quest_callback_native_object(key, *id, initial)
+                .then_some((index, *id))
         })
-        .and_then(|id| map.facts.base_entry(at, ordinal, id))
-        .is_some_and(|entry| charge.accepts(entry.appearance_id))
+        .collect();
+    matches!(candidates.as_slice(), [(index, id)] if *index == ordinal && map.facts
+        .base_entry(at, ordinal, *id).is_some_and(|facts| charge.accepts(facts.appearance_id)))
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -70,13 +86,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some((tool, intent)),
             QuestCause::Use(command),
             Ok(position),
-            Some(source),
+            Some((_, _, initial)),
         ) = (
             fence,
             selected,
             cause,
             runtime.read_actor_position(actor),
-            &callback.selector.native,
+            world_callbacks::charge_source(callback),
         )
         else {
             return refused;
@@ -104,7 +120,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let Some(reset) = map
             .facts
-            .quest_callback_replacement(key, source.appearance)
+            .quest_callback_replacement(key, initial)
             .filter(|f| !f.pickupable)
         else {
             return refused;

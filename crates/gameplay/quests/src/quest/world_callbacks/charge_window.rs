@@ -82,8 +82,24 @@ fn same_tool_and_disjoint_storage(left: &Callback, right: &Callback) -> bool {
         })
 }
 
+/// The retained base Source can be qualified by an exact position and a unique
+/// original appearance, even when an import does not retain a stable ordinal.
+pub fn charge_source(callback: &Callback) -> Option<(super::Position, Option<u8>, u16)> {
+    if let Some(source) = &callback.selector.native {
+        return Some((source.position, Some(source.ordinal), source.appearance));
+    }
+    let selector = &callback.selector;
+    if selector.action.is_some()
+        || selector.unique.is_some()
+        || !selector.position_aliases.is_empty()
+    {
+        return None;
+    }
+    Some((selector.position?, selector.ordinal, selector.appearance?))
+}
+
 pub(super) fn valid(callback: &Callback, charge: &ChargeWindow) -> bool {
-    let Some(source) = &callback.selector.native else {
+    let Some((_, _, initial)) = charge_source(callback) else {
         return false;
     };
     if callback.trigger != Trigger::Use
@@ -127,7 +143,7 @@ pub(super) fn valid(callback: &Callback, charge: &ChargeWindow) -> bool {
                 && (1..=8).contains(&phases.len())
                 && sources.len() == phases.len()
                 && burning.len() == phases.len()
-                && sources.contains(&source.appearance)
+                && sources.contains(&initial)
                 && sources.is_disjoint(&burning)
                 && phases.iter().all(|phase| {
                     phase.from != 0
@@ -147,7 +163,7 @@ pub(super) fn valid(callback: &Callback, charge: &ChargeWindow) -> bool {
             radius,
             ..
         } => {
-            *active != source.appearance
+            *active != initial
                 && *active != 0
                 && text_valid(announcement, *radius)
                 && callback.requires_world_admission

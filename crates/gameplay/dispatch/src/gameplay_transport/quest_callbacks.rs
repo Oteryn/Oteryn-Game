@@ -257,10 +257,8 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
         return false;
     };
-    if let Some(charge) = &callback.effects.charge_window
-        && !charge_window::matches_current(map, pos, ordinal, charge)
-    {
-        return false;
+    if let Some(charge) = &callback.effects.charge_window {
+        return charge_window::matches_bound(map, pos, ordinal, callback, charge);
     }
     // These source-bound World ingresses retain no startup UID/AID in B3.
     // An appearance elsewhere in the stack cannot impersonate their source.

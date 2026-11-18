@@ -29,7 +29,7 @@ pub(super) fn callback(spend: bool) -> TestResult<Callback> {
     let mut row = serde_json::json!({
         "key": if spend { "oteryn:quest-callback/nexus-spend-fixture" } else { "oteryn:quest-callback/nexus-charge-fixture" },
         "quest":QUEST,"trigger":"use","selector":{
-            "appearance":7925,"native":{"position":TARGET,"ordinal":1,"appearance":7925}
+            "appearance":7925,"position":TARGET
         },
         "reversible":false,"passages":[],"offerings":[],"storage":[],"return_on_failure":false,
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:105-135"]
