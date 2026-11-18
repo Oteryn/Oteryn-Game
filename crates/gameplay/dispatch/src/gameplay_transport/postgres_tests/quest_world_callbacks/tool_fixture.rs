@@ -12,6 +12,7 @@ use crate::map::{
 };
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue, QuestTrack,
+    authored_bindings::{Bindings, BoundQuest, Stage, Track, Trigger},
     world_callbacks::{self, Callback, Offering, Position},
 };
 use oteryn_protocol_oteryn::world_object::{
@@ -111,20 +112,43 @@ pub(in super::super) fn run_world(
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
         owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&room));
-        owner.quest_catalogue = Some(std::sync::Arc::new(
-            QuestStateCatalogue::new(
-                "content-1",
-                tracks,
-                vec![world_callbacks::primary_transition(&callback)?],
-            )
-            .map_err(debug)?,
-        ));
-        owner
-            .states
-            .quest_callbacks
-            .fixture
-            .set(vec![callback])
-            .map_err(|_| "callback fixture already installed")?;
+        let quest = callback.quest.clone();
+        let completes = callback.completes;
+        let trigger = match callback.trigger {
+            world_callbacks::Trigger::Use => Trigger::MapUse {
+                callback: Box::new(callback),
+            },
+            world_callbacks::Trigger::StepIn => Trigger::StepIn {
+                callback: Box::new(callback),
+            },
+            _ => return Err("unsupported fixture trigger".into()),
+        };
+        let base = QuestStateCatalogue::empty("content-1").ok_or("fixture base catalogue")?;
+        let bindings = Bindings {
+            schema: 1,
+            quests: vec![BoundQuest {
+                quest,
+                recipe_sha256: "1".repeat(64),
+                occurrence: None,
+                admission: None,
+                tracks: tracks
+                    .into_iter()
+                    .map(|track| Track {
+                        key: track.key,
+                        initial: track.initial,
+                        minimum: track.min,
+                        maximum: track.max,
+                    })
+                    .collect(),
+                stages: vec![Stage {
+                    key: "source".into(),
+                    completes,
+                    trigger,
+                }],
+                sources: vec!["PostgreSQL dispatch fixture".into()],
+            }],
+        };
+        owner.quest_catalogue = Some(std::sync::Arc::new(bindings.attach(&base)?));
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
         let fence = owner

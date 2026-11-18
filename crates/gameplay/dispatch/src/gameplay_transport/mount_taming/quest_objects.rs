@@ -2,12 +2,18 @@
 use oteryn_gameplay_quests::quest::{targuna_ram, world_callbacks::Callback};
 
 pub(crate) fn accepts(callback: &Callback) -> bool {
-    callback.item_on_target.is_some()
-        && (callback.key == targuna_ram::KEY
-            || matches!(
-                callback.native_rule,
-                Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { .. })
-            ))
+    let Some(tool) = &callback.item_on_target else {
+        return false;
+    };
+    callback.key == targuna_ram::KEY
+        || matches!(
+            callback.native_rule,
+            Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { .. })
+        )
+        || (tool.selected_instance
+            && callback.requires_world_admission
+            && (callback.effects.creature_spawn.is_some()
+                || (tool.target_remove && callback.effects.reset_after_ms.is_some())))
 }
 
 /// Select only the wire subject observed in the fenced inventory snapshot.
