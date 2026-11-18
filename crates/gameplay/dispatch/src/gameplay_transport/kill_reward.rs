@@ -1939,6 +1939,10 @@ pub fn record_creature_kill(
         .ok()
         .filter(|s| s.state.master.is_none())
         .and_then(|s| s.forge.zip(s.state.policy.forge_difficulty));
+    let slime_death = snapshot.as_ref().ok().and_then(|view| {
+        (wild && super::warzone_callbacks::is_slime(&view.state.policy.definition_key))
+            .then_some(view.position)
+    });
     let creature = snapshot.map(|s| s.state.policy.definition_key.clone());
     let pin = runtime.content_pin();
     let hex = |bytes: [u8; 32]| bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
@@ -1960,6 +1964,9 @@ pub fn record_creature_kill(
         .is_err()
     {
         return;
+    }
+    if let Some(position) = slime_death {
+        super::warzone_callbacks::slime_death(runtime, target, position);
     }
     if let Some(states) = sink.prey {
         states
