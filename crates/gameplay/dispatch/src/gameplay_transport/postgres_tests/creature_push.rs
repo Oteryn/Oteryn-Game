@@ -212,12 +212,15 @@ pub(super) fn scenario(
     run(async |admin| {
         let merchant_loot = seed == "rottin_merchant_loot";
         let merchant_wave = seed == "rottin_merchant_wave";
-        let h = if merchant_loot || merchant_wave {
+        let weighted_reward = seed == "rottin_weighted_reward";
+        let h = if merchant_loot || merchant_wave || weighted_reward {
             Harness::create_quest_reward(admin, seed, false).await?
         } else {
             Harness::create_with_admission_seed(admin, seed, true, false).await?
         };
-        if merchant_wave {
+        if weighted_reward {
+            super::rottin_rewards::seed_inventory(&h).await?;
+        } else if merchant_wave {
             super::item_look::seed_main_backpack(&h, &[("oteryn:item.tibia.i12186", 1)]).await?;
         } else if merchant_loot {
             super::item_look::seed_main_backpack(&h, &[]).await?;
@@ -351,6 +354,21 @@ pub(super) fn scenario(
             admitted.continuity.selected_capabilities.as_slice(),
             &[4, 6, 13, 82]
         );
+        if weighted_reward {
+            owner.quest_catalogue = Some(std::sync::Arc::new(super::rottin_rewards::catalogue()?));
+            owner.reset_epoch = h
+                .root
+                .active_world_reset_epoch(owner.world_id)
+                .await?
+                .ok_or("active reset epoch")?;
+            owner.admit_progression_session(&mut admitted).await;
+            deps.initialize(&owner).await;
+            super::rottin_rewards::exercise(&mut owner, &mut admitted, &h).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         let (mut server, mut client) = tokio::io::duplex(1 << 20);
         let client_flow = async {
             let result = if merchant_wave {

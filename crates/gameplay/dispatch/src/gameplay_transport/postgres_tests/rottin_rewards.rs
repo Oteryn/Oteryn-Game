@@ -1,13 +1,12 @@
 //! Exercise the authored reward owner through live Rottin TALK and PostgreSQL.
 use super::classic_quests::{install, talk};
+use super::creature_push::scenario;
 use super::fixture::Harness;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use oteryn_gameplay_quests::quest::QuestStateCatalogue;
 use oteryn_gameplay_quests::quest::authored_bindings::Bindings;
-use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use serde_json::json;
 use sha2::{Digest, Sha256};
-use std::sync::Arc;
 
 const QUEST: &str = "oteryn:quest.rottin_wood_and_the_married_men_quest";
 const TRACK: &str =
@@ -25,24 +24,15 @@ fn rottin_lucky_loop_talk_mints_one_weighted_bundle_postgres() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("rottin-weighted-reward", || {
-        super::quest_world_callbacks::scenario(
-            "rottin-weighted-reward",
-            Position {
-                x: 33294,
-                y: 31677,
-                floor: -15,
-            },
-            false,
-        )
-    })
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| scenario("rottin_weighted_reward", false, None))?
+        .join()
+        .map_err(|_| "Rottin reward PostgreSQL thread panicked")?
+        .map_err(Into::into)
 }
 
-pub(super) async fn exercise(
-    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &mut AdmittedSession,
-    h: &Harness,
-) -> TestResult {
+pub(super) fn catalogue() -> TestResult<QuestStateCatalogue> {
     // This transaction fixture exercises the two gold bundles with admitted
     // output definitions. The quest unit case also checks the horn interval.
     let digest = format!("{:x}", Sha256::digest(DONOR.as_bytes()));
@@ -76,12 +66,21 @@ pub(super) async fn exercise(
         }]
     }))?)?;
     let base = QuestStateCatalogue::empty("content-1").ok_or("quest catalogue")?;
-    owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
+    Ok(bindings.attach(&base)?)
+}
+
+pub(super) async fn seed_inventory(h: &Harness) -> TestResult {
+    super::item_look::seed_main_backpack(h, &[(CHARM, 1); 7]).await
+}
+
+pub(super) async fn exercise(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
-    // Each charm is a separate carried item, as in the donor hand-in.
-    super::item_look::seed_main_backpack(h, &[(CHARM, 1); 7]).await?;
     let [npc] = install(owner, admitted, [ROTTIN]).await?;
     talk(owner, admitted, npc, 1701, "hi").await?;
     assert_eq!(

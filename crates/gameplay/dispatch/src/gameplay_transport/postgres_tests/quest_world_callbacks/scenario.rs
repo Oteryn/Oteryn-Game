@@ -342,7 +342,6 @@ fn scenario_case(
                 | "questpc2-albinius-portals-exact"
                 | "questpc2-albinius-portals-combined"
                 | "classic-rottin-disrepair"
-                | "rottin-weighted-reward"
                 | "threatened-dreams-npc"
                 | "conditional-quest-greetings"
         );
@@ -932,7 +931,6 @@ fn scenario_case(
     run(async |admin| {
         let h = if shared_rewards
             || qengine_reward
-            || name == "rottin-weighted-reward"
             || outfit_world
             || matches!(
                 name,
@@ -3061,8 +3059,6 @@ fn scenario_case(
                 &authority,
             ))
             .await?;
-        } else if name == "rottin-weighted-reward" {
-            Box::pin(super::super::rottin_rewards::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == "classic-rottin-disrepair" {
             Box::pin(super::super::classic_quests::exercise_rottin(
                 &mut owner,
