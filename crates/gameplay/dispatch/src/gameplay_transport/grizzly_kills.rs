@@ -1037,6 +1037,68 @@ mod encounter_credit_tests {
                 .iter()
                 .all(|recipient| recipient.character != outsider.character)
         );
+        use oteryn_gameplay_quests::quest::source_deaths::{
+            ARBAZILOTH_ENRAGED, arbaziloth_hard_counter, is_arbaziloth_hard_counter,
+        };
+        let enraged = ExactActorRef(runtime.admit_encounter_fixture_actor(
+            ActorState(0),
+            ARBAZILOTH_ENRAGED,
+            100,
+            Some(LocalPosition {
+                x: 102,
+                y: 100,
+                floor: 7,
+            }),
+        )?);
+        for (participant, damage) in credits.iter_mut().zip([20, 30, 50]) {
+            participant.hard_counter = arbaziloth_hard_counter(&Default::default());
+            runtime
+                .borrow_exact_actor_commit()
+                .commit_damage_for_bound_attacker(
+                    enraged,
+                    participant.actor,
+                    CommandRef::new(
+                        participant.session,
+                        CommandId::new(2).map_err(|_| CarrierError::PlanConflict)?,
+                    ),
+                    0,
+                    OwnerDamageCommand {
+                        target: ARBAZILOTH_ENRAGED.as_bytes(),
+                        occurrence: b"hard-win",
+                        binding: b"hard-win",
+                        damage,
+                    },
+                )?;
+        }
+        let mut death = runtime.borrow_combat_death();
+        let lethal = death.committed_lethal_receipt(enraged)?;
+        death.project_committed_lethal(lethal)?;
+        let (occurrence, _) = death.projected_death(enraged)?;
+        let hard_shares = death.reward_damage_shares(enraged)?;
+        let hard = freeze_encounter_credit(
+            &runtime,
+            &states,
+            ARBAZILOTH_ENRAGED,
+            &credits[..2],
+            &hard_shares,
+            Some(occurrence),
+        );
+        for admitted in &credits[..2] {
+            assert_eq!(
+                hard.iter()
+                    .filter(|recipient| {
+                        recipient.character == admitted.character
+                            && is_arbaziloth_hard_counter(&recipient.death.transition)
+                    })
+                    .count(),
+                1,
+            );
+        }
+        assert!(
+            hard.iter()
+                .all(|recipient| recipient.character != credits[2].character)
+        );
+
         runtime.remove_test_actor(credits[0].actor)?;
         let result = freeze_encounter_credit(
             &runtime,
