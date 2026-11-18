@@ -623,7 +623,7 @@ fn run(admin: String, case: Case) -> TestResult {
                 .fetch_one(&h.pool)
                 .await?;
         let mut players = Vec::new();
-        let two_station_party = case.is_window() || case.has_shields();
+        let two_station_party = case.is_window() || case.has_outcome();
         for index in 0..if two_station_party { 2 } else { 3 } {
             let (current, _) =
                 crate::world_party_runtime_postgres_cases::committed_fresh_player_with_operation(
@@ -1127,21 +1127,39 @@ async fn exercise_outcome(
                 .facts
                 .quest_callback_replacement(key, 1946)
                 .ok_or("lever appearance")?;
-            assert_eq!(
+            let revision = map.facts.object_revision(key);
+            let origins = players.iter().map(|player| runtime.read_actor_position(player.actor))
+                .collect::<Result<Vec<_>, _>>().map_err(debug)?;
+            let creature_count = runtime.visible_entities().creatures.len();
+            let use_lever = |runtime: &mut ChannelRuntimeV1,
+                             states: &mut crate::gameplay_transport::actor_spell::ChannelSpellStates,
+                             revision| {
                 owner.execute_quest_encounter(
-                    &mut runtime,
-                    &mut states,
+                    runtime,
+                    states,
                     player.actor,
                     player.session,
                     map,
                     &callback,
                     key,
-                    map.facts.object_revision(key),
+                    revision,
                     after,
                     false,
                     crate::durability::quest_state::QuestCause::Use(command),
                     None,
-                ),
+                )
+            };
+            assert_eq!(
+                use_lever(&mut runtime, &mut states, revision.checked_add(1).ok_or("stale revision")?),
+                oteryn_protocol_oteryn::world_object::UseDisposition::Rejected
+            );
+            assert_eq!(map.facts.object_revision(key), revision);
+            assert_eq!(runtime.visible_entities().creatures.len(), creature_count);
+            for (member, origin) in players.iter().zip(origins) {
+                assert_eq!(runtime.read_actor_position(member.actor).map_err(debug)?, origin);
+            }
+            assert_eq!(
+                use_lever(&mut runtime, &mut states, revision),
                 oteryn_protocol_oteryn::world_object::UseDisposition::Committed
             );
             for (player, expected) in players.iter().zip(room) {
