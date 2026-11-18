@@ -53,6 +53,10 @@ pub(super) async fn exercise(
         .await?;
     println!("POSTGRES_PLAYER_JOURNEY M40 server_version={version}");
     let actor = admitted.runtime_actor.ok_or("actor")?;
+    owner
+        .states
+        .chat
+        .admit(admitted.game_session_id, "Dancer", owner.owner_now());
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
@@ -147,7 +151,10 @@ pub(super) async fn exercise(
         super::quest_progress_magic::assert_hint(owner, &mut magic_cursor, Some(5))?;
         super::quest_progress_magic::assert_speech(owner, admitted, Some(RESET_SPEECH))?;
 
-        assert_eq!(step(owner, admitted, Dir::SouthEast).await?.0.disposition, D::Moved);
+        assert_eq!(
+            step(owner, admitted, Dir::SouthEast).await?.0.disposition,
+            D::Moved
+        );
         assert_eq!(stage(h, dance::DANCE_STATUS_TRACK).await?, Some(2));
         super::quest_progress_magic::assert_hint(owner, &mut magic_cursor, Some(7))?;
         super::quest_progress_magic::assert_speech(owner, admitted, Some(START_SPEECH))?;
