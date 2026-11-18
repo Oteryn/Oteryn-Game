@@ -1421,6 +1421,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if callback.requires_live_premium() {
             let _ = self.session_premium_gate(session).await;
         }
+        let step_minimum_level = callback.stateless_step_minimum_level();
         let operation = async {
             let fence = if character_fence_required(callback) {
                 self.current_quest_fence(session).await.ok().flatten()
@@ -1430,6 +1431,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut slot = match fence {
                 Some(f) => Some(self.revision_sequencer.acquire(f.character_id).await),
                 None => None,
+            };
+            let level_allowed = match (step_minimum_level, fence) {
+                (None, _) => true,
+                (Some(minimum), Some(fence)) => self
+                    .root
+                    .read_character_progression(self.character, fence.character_id)
+                    .await
+                    .is_ok_and(|progression| {
+                        progression.is_some_and(|progression| {
+                            progression.character_revision == fence.expected_character_revision
+                                && progression.level >= minimum
+                        })
+                    }),
+                (Some(_), None) => false,
             };
             let read_only_gate = if callback.is_read_only() {
                 if let (Some(fence), Some(catalogue)) = (fence, self.quest_catalogue.as_ref()) {
@@ -1503,8 +1518,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if runtime.read_actor_position(actor) != Ok(entered) {
                 return entered;
             }
+            let level_scope_current = step_minimum_level.is_none()
+                || fence.is_some_and(|fence| {
+                    runtime.binding().runtime_scope() == fence.runtime_scope
+                        && runtime.binding().scope_generation() == fence.scope_ownership_generation
+                        && runtime
+                            .bound_attacker_lease(actor, session)
+                            .is_ok_and(|lease| {
+                                lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                                    && lease.generation() == fence.character_lease_generation
+                            })
+                });
             let result = match observation {
-                Ok(observation) => {
+                Ok(observation) if level_allowed && level_scope_current => {
                     Box::pin(self.execute_quest_callback(
                         permit,
                         &mut runtime,
@@ -1525,6 +1551,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ))
                     .await
                 }
+                Ok(_) => UseDisposition::Rejected,
                 Err(disposition) => disposition,
             };
             let unresolved =
@@ -1557,9 +1584,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         match tokio::time::timeout(std::time::Duration::from_secs(10), operation).await {
             Ok(snapshot) => snapshot,
-            Err(_) if callback.is_read_only() => {
-                // This path cannot have a durable commit to reconcile. A cancelled
-                // read returns to the step origin rather than reserving a write.
+            Err(_) if callback.is_read_only() || step_minimum_level.is_some() => {
+                // These read-only gates cannot leave a durable commit to reconcile.
                 let optional_pvp = self.special_movement_policy(permit, actor, session).await;
                 let mut runtime = self.runtime.lock().await;
                 let mut states = self.states.spell_states.lock().await;
