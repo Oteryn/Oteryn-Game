@@ -14,6 +14,9 @@ type Fixture = (
     Outbox,
 );
 fn fixture(selected: bool) -> Result<Fixture> {
+    fixture_with_layout(selected, false)
+}
+fn fixture_with_layout(selected: bool, layout: bool) -> Result<Fixture> {
     let (link, rx, outbox) = play_channel();
     link.use_shared_frontend();
     outbox.bevy_team_selected(selected);
@@ -24,22 +27,29 @@ fn fixture(selected: bool) -> Result<Fixture> {
     owner.phase = Phase::Playing;
     owner.play.as_ref().ok_or("play")?.link.discovery_open(232);
     let mut app = App::new();
-    app.add_plugins((
-        MinimalPlugins,
-        bevy::asset::AssetPlugin::default(),
-        bevy::text::TextPlugin,
-    ))
-    .init_resource::<UiScale>()
-    .init_resource::<bevy::text::RemSize>()
-    .add_systems(
-        PostUpdate,
-        bevy::ui::widget::update_editable_text_styles.before(bevy::text::EditableTextSystems),
-    )
-    .add_systems(Startup, test_font.after(crate::bevy_shell::ui::setup))
-    .init_asset::<Image>()
-    .init_resource::<InputFocus>()
-    .insert_non_send(owner)
-    .add_systems(Startup, crate::bevy_shell::ui::setup);
+    if layout {
+        super::super::pointer_layout::install(&mut app, UVec2::new(1200, 900));
+        app.add_message::<bevy::window::Ime>()
+            .add_message::<bevy::picking::events::PointerRelease>()
+            .add_plugins(bevy::ui_widgets::TextInputPlugin);
+    } else {
+        app.add_plugins((
+            MinimalPlugins,
+            bevy::asset::AssetPlugin::default(),
+            bevy::text::TextPlugin,
+        ))
+        .init_resource::<UiScale>()
+        .init_resource::<bevy::text::RemSize>()
+        .add_systems(
+            PostUpdate,
+            bevy::ui::widget::update_editable_text_styles.before(bevy::text::EditableTextSystems),
+        );
+    }
+    app.add_systems(Startup, test_font.after(crate::bevy_shell::ui::setup))
+        .init_asset::<Image>()
+        .init_resource::<InputFocus>()
+        .insert_non_send(owner)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
     super::super::modal::install(&mut app);
     install(&mut app);
     app.update();
@@ -762,5 +772,116 @@ fn selection_preserves_a_search_paste_that_completes_later() -> Result {
         .discovery_panel()
         .teams;
     assert_eq!(panel.filter.name, "second");
+    Ok(())
+}
+
+#[test]
+fn regression_publish_survives_applicants_reply_before_projection() -> Result {
+    listing_action_after_applicants_reply(Kind::Publish(Vec::new()), 390)
+}
+
+#[test]
+fn regression_withdraw_survives_applicants_reply_before_projection() -> Result {
+    listing_action_after_applicants_reply(Kind::Withdraw, 391)
+}
+
+fn listing_action_after_applicants_reply(kind: Kind, command_type: u32) -> Result {
+    let (mut app, mut rx, outbox) = manage_team(Some(advertised(10)))?;
+    click(&mut app, Kind::Applicants(false))?;
+    command(&mut rx)?;
+    app.update();
+    reply(
+        &outbox,
+        encode_result(&applicants_page(Some(advertised(10))))
+            .map_err(|error| format!("{error:?}"))?,
+    );
+    click(&mut app, kind)?;
+    assert_eq!(command(&mut rx)?.command_type, command_type);
+    Ok(())
+}
+
+#[test]
+fn regression_rejected_equivalent_publish_keeps_raw_draft() -> Result {
+    let (mut app, mut rx, outbox) = manage_team(Some(advertised(10)))?;
+    listing_texts(&mut app, ["010", "100", "15", "4", "3", "0", "1", "1", ""]);
+    click(&mut app, Kind::Publish(Vec::new()))?;
+    command(&mut rx)?;
+    leader_reply(&outbox, oteryn_session::CommandStatus::Rejected);
+    app.update();
+    assert!(shown(
+        &mut app,
+        tr!("Advertisement refused or invalid reply")
+    ));
+    assert_eq!(editors(&mut app)[0], "010");
+    Ok(())
+}
+
+#[test]
+fn regression_browse_reply_keeps_ime_commit_destination() -> Result {
+    use bevy::window::Ime;
+    let (mut app, mut rx, outbox) = fixture_with_layout(true, true)?;
+    click(&mut app, Kind::Browse(false))?;
+    command(&mut rx)?;
+    app.update();
+    let name = app
+        .world_mut()
+        .query::<(Entity, &Field)>()
+        .iter(app.world())
+        .find_map(|(entity, field)| matches!(field, Field::Name).then_some(entity))
+        .ok_or("name editor")?;
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(name, bevy::input_focus::FocusCause::Pressed);
+    reply(
+        &outbox,
+        encode_result(&page(MemberStatus::None)).map_err(|error| format!("{error:?}"))?,
+    );
+    app.world_mut().write_message(Ime::Preedit {
+        window: Entity::PLACEHOLDER,
+        value: "り".into(),
+        cursor: None,
+    });
+    app.update();
+    assert_eq!(app.world().resource::<InputFocus>().get(), Some(name));
+    let editor = app.world().get::<EditableText>(name).ok_or("name editor")?;
+    assert!(editor.is_composing());
+    assert!(editor.pending_edits.is_empty());
+    app.world_mut().write_message(Ime::Commit {
+        window: Entity::PLACEHOLDER,
+        value: "李".into(),
+    });
+    app.update();
+    app.update();
+    click(&mut app, Kind::Filter(TeamFilter::default()))?;
+    let owner = app.world().non_send::<HostOwner>();
+    let panel = owner.play.as_ref().ok_or("play")?.link.discovery_panel();
+    assert_eq!(panel.teams.filter.name, "李");
+    Ok(())
+}
+
+#[test]
+fn regression_selection_has_laid_out_controls_in_the_same_frame() -> Result {
+    let (mut app, mut rx, outbox) = fixture_with_layout(true, true)?;
+    click(&mut app, Kind::Browse(false))?;
+    command(&mut rx)?;
+    reply(
+        &outbox,
+        encode_result(&page(MemberStatus::None)).map_err(|error| format!("{error:?}"))?,
+    );
+    app.update();
+    click(&mut app, Kind::Select(1))?;
+    app.update();
+    assert!(shown(&mut app, "> Second"));
+    let close = app
+        .world_mut()
+        .query::<(&Control, &ComputedNode)>()
+        .iter(app.world())
+        .find_map(|(control, node)| (control.kind == Kind::Close).then_some(node))
+        .ok_or("close button")?;
+    assert!(
+        close.size().cmpgt(Vec2::ZERO).all(),
+        "close size: {:?}",
+        close.size()
+    );
     Ok(())
 }

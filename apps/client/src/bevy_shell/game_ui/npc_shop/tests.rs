@@ -51,6 +51,15 @@ fn publish(outbox: &crate::play::Outbox, revision: u64, price: u32) {
 }
 #[test]
 fn idle_shop_frame_skips_catalogue_formatting() -> Result {
+    test_large_buy_catalogue(false)
+}
+
+#[test]
+fn regression_unrelated_inventory_delta_keeps_buy_offer_entities() -> Result {
+    test_large_buy_catalogue(true)
+}
+
+fn test_large_buy_catalogue(inventory_delta: bool) -> Result {
     use std::{hint::black_box, time::Instant};
     let (host, _, outbox) = fixture()?;
     let mut window = host
@@ -73,6 +82,25 @@ fn idle_shop_frame_skips_catalogue_formatting() -> Result {
         new_revision: 8,
         value: window,
     })]);
+    let backpack = oteryn_session::ItemEntry {
+        appearance_id: 0,
+        handle: 6.try_into()?,
+        item_definition_ref: 1026.try_into()?,
+        count: 1.try_into()?,
+        sub_type: 0,
+    };
+    if inventory_delta {
+        outbox.push(vec![SessionEvent::Inventory(AppliedDelta {
+            server_sequence: 8,
+            base_revision: 0,
+            new_revision: 1,
+            value: oteryn_session::CharacterInventory {
+                main_backpack: Some(backpack),
+                entries: vec![],
+                equipment: vec![],
+            },
+        })]);
+    }
     let mut app = App::new();
     app.add_plugins((
         MinimalPlugins,
@@ -105,6 +133,30 @@ fn idle_shop_frame_skips_catalogue_formatting() -> Result {
     };
     let before = offers(&mut app);
     assert_eq!(before.len(), 1024);
+    if inventory_delta {
+        outbox.push(vec![SessionEvent::Inventory(AppliedDelta {
+            server_sequence: 9,
+            base_revision: 1,
+            new_revision: 2,
+            value: oteryn_session::CharacterInventory {
+                main_backpack: Some(backpack),
+                entries: vec![oteryn_session::ItemEntry {
+                    appearance_id: 0,
+                    handle: 7.try_into()?,
+                    item_definition_ref: 1025.try_into()?,
+                    count: 1.try_into()?,
+                    sub_type: 0,
+                }],
+                equipment: vec![],
+            },
+        })]);
+        app.update();
+        assert!(
+            offers(&mut app) == before,
+            "inventory delta rebuilt offer rows"
+        );
+        return Ok(());
+    }
     let toggle = app
         .world_mut()
         .query::<(Entity, &Action)>()

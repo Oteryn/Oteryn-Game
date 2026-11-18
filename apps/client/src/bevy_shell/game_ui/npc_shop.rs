@@ -5,7 +5,7 @@ use super::{
     modal::ModalGuard,
 };
 use bevy::{input_focus::InputFocus, prelude::*, text::EditableText, ui_widgets::Activate};
-use oteryn_client_ui::npc_shop::{NpcTradeSide, Quote};
+use oteryn_client_ui::npc_shop::{LiveShop, NpcTradeSide, Quote};
 use oteryn_client_ui_bevy as source;
 mod conversation;
 mod submission;
@@ -36,12 +36,7 @@ enum Kind {
     OnlyOwned,
     OpenBackpack,
 }
-type RenderedOffers = (
-    oteryn_client_ui::npc_shop::LiveShop,
-    Option<NpcTradeSide>,
-    String,
-    Option<Quote>,
-);
+type RenderedOffers = (LiveShop, Option<NpcTradeSide>, String, Option<Quote>);
 
 #[derive(Resource, Default)]
 struct State {
@@ -182,6 +177,39 @@ fn activate(
         }
     }
 }
+// Inventory affects offer rows only through the carried count in each caption.
+fn same_offer_inventory(
+    previous: &mut LiveShop,
+    current: &LiveShop,
+    side: Option<NpcTradeSide>,
+) -> bool {
+    let before = previous
+        .inventory
+        .as_ref()
+        .map(|inventory| &inventory.entries);
+    let after = current
+        .inventory
+        .as_ref()
+        .map(|inventory| &inventory.entries);
+    if before == after {
+        return true;
+    }
+    let unchanged = before.is_some() == after.is_some()
+        && current
+            .window
+            .offers
+            .iter()
+            .filter(|offer| side.is_none_or(|side| offer.side == side))
+            .all(|offer| {
+                previous.owned(offer.item_definition_ref)
+                    == current.owned(offer.item_definition_ref)
+            });
+    if unchanged {
+        previous.inventory.clone_from(&current.inventory);
+    }
+    unchanged
+}
+
 // One retained model, its fields and source widget entities compose this floating panel.
 #[allow(clippy::too_many_arguments)]
 fn project(
@@ -261,31 +289,34 @@ fn project(
     let Some(widgets) = state.widgets else {
         return;
     };
-    let changed_rows = if !state
-        .rendered
-        .as_ref()
-        .is_some_and(|(shop, side, query, selected)| {
-            shop.window == panel.live.window
-                && shop.inventory.as_ref().map(|inventory| &inventory.entries)
-                    == panel
-                        .live
-                        .inventory
-                        .as_ref()
-                        .map(|inventory| &inventory.entries)
-                && (state.side == Some(NpcTradeSide::Buy)
-                    || shop.options.only_owned == panel.live.options.only_owned)
-                && *side == state.side
-                && query == &state.query
-                && *selected == state.selection
-        }) {
-        let rows = panel.live.filtered_quotes(state.side, &state.query);
-        if state.selection.is_some_and(|quote| !rows.contains(&quote)) {
-            state.selection = None;
-        }
-        Some(rows)
-    } else {
-        None
-    };
+    let State {
+        rendered,
+        side,
+        query,
+        selection,
+        ..
+    } = &mut *state;
+    let changed_rows =
+        if !rendered
+            .as_mut()
+            .is_some_and(|(shop, shown_side, shown_query, shown_selection)| {
+                shop.window == panel.live.window
+                    && (*side == Some(NpcTradeSide::Buy)
+                        || shop.options.only_owned == panel.live.options.only_owned)
+                    && shown_side == side
+                    && shown_query == query
+                    && shown_selection == selection
+                    && same_offer_inventory(shop, &panel.live, *side)
+            })
+        {
+            let rows = panel.live.filtered_quotes(state.side, &state.query);
+            if state.selection.is_some_and(|quote| !rows.contains(&quote)) {
+                state.selection = None;
+            }
+            Some(rows)
+        } else {
+            None
+        };
     for (caption, mut text) in &mut options {
         let checked = match caption.0 {
             Kind::IgnoreCapacity => panel.live.options.ignore_capacity,

@@ -15,6 +15,7 @@ use crate::play::feature_0232_team_finder_members::input::{
 };
 use bevy::{input_focus::InputFocus, prelude::*, text::EditableText, ui_widgets::Activate};
 use oteryn_client_ui::{
+    localization::{Language, translate},
     team_finder::Panel,
     team_finder_leader::{LeaderListing, Panel as Leader},
 };
@@ -56,14 +57,11 @@ struct Submission {
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
-        .add_systems(Update, keyboard)
+        // Rebuild before PostUpdate propagates visibility and lays out the replacement.
+        .add_systems(Update, (keyboard, project).chain())
         .add_systems(
             PostUpdate,
-            (finish_edit, project)
-                .chain()
-                .after(bevy::text::EditableTextSystems)
-                .before(bevy::ui::UiSystems::PostLayout)
-                .before(bevy::ui::UiSystems::Stack),
+            finish_edit.after(bevy::text::EditableTextSystems),
         );
 }
 fn project(
@@ -122,6 +120,10 @@ fn project(
         if let Some((_, _, after)) = &snapshot
             && !after.pending
             && let Some(submission) = state.submission.take()
+            // The mailbox stores the reply caption in the language active at receipt.
+            && Language::ALL.into_iter().any(|language| {
+                after.feedback == translate(language, "Advertisement confirmed")
+            })
             && after.confirmed == submission.listing
             && state.draft.as_ref() == Some(&submission.fields)
         {
@@ -173,7 +175,7 @@ fn project(
     }
     state.snapshot = snapshot;
 }
-fn perform(owner: &HostOwner, state: &State, control: &Control, deferred: bool) -> bool {
+fn perform(owner: &HostOwner, state: &State, control: &Control) -> bool {
     let Some((generation, expected, leader)) = &state.snapshot else {
         return false;
     };
@@ -187,15 +189,6 @@ fn perform(owner: &HostOwner, state: &State, control: &Control, deferred: bool) 
     if let Some(play) = &owner.play
         && (control.kind == Kind::Close || !play.view.gameplay_input_blocked(&play.link))
     {
-        // An applicants reply changes the member view while a listing edit settles.
-        // The listing control stays bound to the same leader observation.
-        if deferred && matches!(control.kind, Kind::Publish(_)) {
-            let current = play.link.discovery_panel();
-            return current.leader == *leader
-                && play
-                    .link
-                    .team_dispatch_bound(&current.teams, leader, control.kind.clone());
-        }
         return play
             .link
             .team_dispatch_bound(expected, leader, control.kind.clone());
@@ -222,11 +215,12 @@ fn activate(
             state.pending_editor_action = Some(event.entity);
             return;
         }
-        dispatch(&owner, &mut state, control, &fields, false);
+        dispatch(&owner, &mut state, control, &fields);
     }
 }
 fn editing(text: &EditableText) -> bool {
-    text.pending_paste.is_some()
+    text.is_composing()
+        || text.pending_paste.is_some()
         || text
             .pending_edits
             .iter()
@@ -245,7 +239,6 @@ fn dispatch(
     state: &mut State,
     control: &Control,
     fields: &Query<(&Field, &EditableText)>,
-    deferred: bool,
 ) {
     let mut control = control.clone();
     if let Kind::Filter(ref mut filter) = control.kind {
@@ -280,7 +273,7 @@ fn dispatch(
                 .map(|value| value.trim().to_owned())
                 .collect();
         }
-        if perform(owner, state, &control, deferred) {
+        if perform(owner, state, &control) {
             state.submission = Some(Submission {
                 listing: match &control.kind {
                     Kind::Publish(values) => listing_from_fields(values),
@@ -291,7 +284,7 @@ fn dispatch(
         }
         return;
     }
-    perform(owner, state, &control, deferred);
+    perform(owner, state, &control);
 }
 fn finish_edit(
     owner: NonSend<HostOwner>,
@@ -307,7 +300,7 @@ fn finish_edit(
         if waiting_for_editor(control, &fields) {
             state.pending_editor_action = Some(entity);
         } else {
-            dispatch(&owner, &mut state, control, &fields, true);
+            dispatch(&owner, &mut state, control, &fields);
         }
     }
 }
@@ -335,7 +328,6 @@ fn keyboard(
                 key: state.key,
                 kind: Kind::Close,
             },
-            false,
         );
     }
 }

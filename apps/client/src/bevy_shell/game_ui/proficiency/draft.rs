@@ -46,12 +46,15 @@ pub(super) fn perform(
     if d.applying {
         if matches!(kind, Kind::Close) {
             d.close = true;
-            d.feedback = "Closing after the server confirms the draft.".into();
+            d.feedback = tr!("Waiting for the server").into();
             state.dirty = true;
         }
         return;
     }
-    if link.weapon_proficiency_panel() != *panel
+    // Save and close records the intent against the displayed draft; advance rechecks
+    // the catalogue before sending, even if the refresh reply has already arrived.
+    let save_after_refresh = panel.pending && matches!(kind, Kind::SaveClose);
+    if (!save_after_refresh && link.weapon_proficiency_panel() != *panel)
         || (panel.pending
             && !matches!(
                 kind,
@@ -99,7 +102,7 @@ pub(super) fn perform(
             d.close = matches!(kind, Kind::SaveClose);
             d.ask_close = false;
             if panel.pending {
-                d.feedback = "Waiting for the refresh before saving the draft.".into();
+                d.feedback = tr!("Waiting for the server").into();
             } else {
                 send_next(link, d, panel);
             }

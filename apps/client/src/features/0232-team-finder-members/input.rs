@@ -153,13 +153,16 @@ impl PlayLink {
             MemberStatus, TeamFinderResult, leader as decide, member, query,
         };
         let mut mailbox = lock(&self.mailbox);
-        if mailbox.discovery.teams != *expected
-            || mailbox.discovery.leader != *leader
-            || !mailbox.discovery.teams.open
-        {
+        let teams = &mailbox.discovery.teams;
+        if !teams.open || mailbox.discovery.leader != *leader {
             return false;
         }
         if matches!(action, TeamControl::Publish(_) | TeamControl::Withdraw) {
+            // Listing actions depend on the leader observation, even when a reply
+            // has changed the applicants page under the same mailbox lock.
+            if teams.applicants != expected.applicants {
+                return false;
+            }
             let panel = &mut mailbox.discovery.leader;
             let listing = match action {
                 TeamControl::Publish(fields) => {
@@ -191,6 +194,18 @@ impl PlayLink {
                 return false;
             }
             return true;
+        }
+        if teams != expected {
+            // Text edits can settle after layout. Filtering the same page is still
+            // valid when the only unprojected change is the selection highlight.
+            if !matches!(action, TeamControl::Filter(_)) {
+                return false;
+            }
+            let mut expected = expected.clone();
+            expected.selected_row = teams.selected_row;
+            if *teams != expected {
+                return false;
+            }
         }
         let panel = &mut mailbox.discovery.teams;
         if action == TeamControl::Close {
