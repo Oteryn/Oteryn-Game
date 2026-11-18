@@ -216,8 +216,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(expiry) = &visit.expires else {
                 return visit.active(runtime);
             };
+            let shared_players;
+            let participants = if visit.join_until.is_some() {
+                // Crystal actions_portal_brain_head.lua:93 removes the zone census
+                // at the deadline, including players arriving through another entrance.
+                let Ok(census) = runtime.positioned_melee_census() else {
+                    return true;
+                };
+                shared_players = census
+                    .into_iter()
+                    .filter_map(|(actor, at, session)| {
+                        session
+                            .filter(|&session| {
+                                room_contains(&visit.room, at.position())
+                                    && runtime.player_control_facts(actor, session).is_ok()
+                            })
+                            .map(|session| (actor, session))
+                    })
+                    .collect::<Vec<_>>();
+                &shared_players
+            } else {
+                &visit.participants
+            };
             if expiry.due > now {
-                let occupied = visit.participants.iter().any(|&(actor, session)| {
+                let occupied = participants.iter().any(|&(actor, session)| {
                     runtime.player_control_facts(actor, session).is_ok()
                         && runtime
                             .read_actor_position(actor)
@@ -234,7 +256,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             // Crystal movement_kroazur_room.lua:67-72. Eject the admitted
             // player only while their exact incarnation remains in this visit.
-            for &(actor, session) in &visit.participants {
+            for &(actor, session) in participants {
                 let Ok(expected) = runtime.read_actor_position(actor) else {
                     continue;
                 };
