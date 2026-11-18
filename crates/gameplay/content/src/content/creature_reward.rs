@@ -746,10 +746,12 @@ fn source_plain_corpse_pair(creature: &str, corpse: &SectionRef) -> bool {
         && corpse.revision == "definition-r1"
         && matches!(
             (creature, corpse.key.as_str()),
-            (
-                "oteryn:creature.symbol_of_hatred",
-                "oteryn:item.tibia.i33792"
-            ) | ("oteryn:creature.hateful_soul", "oteryn:item.tibia.i33793")
+            ("oteryn:creature.slime", "oteryn:item.tibia.i2127")
+                | (
+                    "oteryn:creature.symbol_of_hatred",
+                    "oteryn:item.tibia.i33792"
+                )
+                | ("oteryn:creature.hateful_soul", "oteryn:item.tibia.i33793")
                 | ("oteryn:creature.weeping_soul", "oteryn:item.tibia.i33876")
                 | ("oteryn:creature.poor_soul", "oteryn:item.tibia.i33891")
                 | (
@@ -767,6 +769,7 @@ fn verified_soul_war_corpses(
     items: Option<&super::native_gameplay::ItemProfilesDocument>,
 ) -> HashSet<String> {
     use super::native_gameplay::{NativeItemDestination, NativeItemStackClass};
+    use super::reference_playable::{ReferenceMilliseconds, ReferenceTemporalMode};
     use super::{ReferenceItemField as F, ReferenceItemType};
     let Some(items) = items else {
         return HashSet::new();
@@ -799,6 +802,19 @@ fn verified_soul_war_corpses(
             | "oteryn:item.tibia.i33891" | "oteryn:item.tibia.i33949" | "oteryn:item.tibia.i33984")
             && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::NotApplicable)
             && record.semantics.container == F::NotApplicable;
+        // Crystal 201189f8 data-global/monster/slimes/slime.lua:37 and
+        // data/items/items.xml:4356-4360. The gas is the original terminal corpse.
+        let slime_gas = definition.production_key == "oteryn:item.tibia.i2127"
+            && record.admission.legal_destinations == [NativeItemDestination::Ground]
+            && record.attributes.field_condition.is_none()
+            && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::NotApplicable)
+            && matches!(&record.semantics.physical, F::Known(value)
+                if value.weight == F::Known(0) && value.movable == F::Known(false) && value.pickupable == F::Known(false))
+            && record.semantics.container == F::NotApplicable
+            && matches!(&record.semantics.temporal, F::Known(value)
+                if value.duration == F::Known(ReferenceMilliseconds(2000))
+                    && value.consumption_mode == F::Known(ReferenceTemporalMode::DurableAbsoluteDeadline)
+                    && value.stop_duration == F::Known(false) && value.decay_target == F::NotApplicable);
         let questpc7_capacity = match definition.production_key.as_str() {
             "oteryn:item.tibia.i6048" => Some(36),
             "oteryn:item.tibia.i20972" => Some(38),
@@ -811,7 +827,7 @@ fn verified_soul_war_corpses(
             && matches!(&record.semantics.physical, F::Known(value)
                 if value.weight == F::Known(0) && value.movable == F::Known(false) && value.pickupable == F::Known(false))
             && matches!(&record.semantics.container, F::Known(value) if value.capacity == F::Known(capacity)));
-        source_48 || source_plain || source_questpc7
+        source_48 || source_plain || slime_gas || source_questpc7
     }).map(|record| record.production_definition.production_key.clone()).collect()
 }
 

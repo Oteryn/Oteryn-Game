@@ -80,3 +80,30 @@ BEGIN
 END $$;
 
 REVOKE ALL ON FUNCTION game_quest_floor_reward_before_insert(), game_quest_floor_reward_source(uuid) FROM PUBLIC;
+
+-- Crystal 201189f8 data-global/monster/slimes/slime.lua:37 and
+-- data/items/items.xml:4356-4360. Slime gas is a single-stage two-second corpse.
+DO $$
+DECLARE body TEXT; anchor TEXT;
+BEGIN
+    body := pg_get_functiondef('game_summer_corpse_chain(text)'::regprocedure);
+    anchor := 'WHEN ''oteryn:item.tibia.i33792'' THEN ARRAY[33792]';
+    IF (length(body)-length(replace(body,anchor,'')))/length(anchor) <> 1 THEN
+        RAISE EXCEPTION 'quest poison gas corpse chain anchor changed';
+    END IF;
+    EXECUTE replace(body, anchor, 'WHEN ''oteryn:item.tibia.i2127'' THEN ARRAY[2127] ' || anchor);
+
+    body := pg_get_functiondef('game_source_corpse_durations_v1(text)'::regprocedure);
+    anchor := 'WHEN p_key=''oteryn:item.tibia.i33792'' THEN';
+    IF (length(body)-length(replace(body,anchor,'')))/length(anchor) <> 1 THEN
+        RAISE EXCEPTION 'quest poison gas corpse deadline anchor changed';
+    END IF;
+    EXECUTE replace(body, anchor, 'WHEN p_key=''oteryn:item.tibia.i2127'' THEN ARRAY[2000]::BIGINT[] ' || anchor);
+
+    body := pg_get_functiondef('game_item_plain_corpse_source(uuid)'::regprocedure);
+    anchor := 'i.definition_production_key IN (''oteryn:item.tibia.i33792'',';
+    IF (length(body)-length(replace(body,anchor,'')))/length(anchor) <> 1 THEN
+        RAISE EXCEPTION 'quest poison gas Ground source anchor changed';
+    END IF;
+    EXECUTE replace(body, anchor, 'i.definition_production_key IN (''oteryn:item.tibia.i2127'',''oteryn:item.tibia.i33792'',');
+END $$;
