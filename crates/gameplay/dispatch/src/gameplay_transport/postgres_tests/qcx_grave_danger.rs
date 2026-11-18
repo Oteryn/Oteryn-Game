@@ -131,10 +131,14 @@ async fn place_jack(
             .map_err(debug)?,
         )
         .map_err(debug)?;
-    let at = runtime
-        .read_actor_position(actor)
-        .map_err(debug)?
-        .position();
+    let at = MovementLocalPosition {
+        x: 33294,
+        y: 31677,
+        floor: 15,
+    };
+    runtime
+        .initialize_pinned_test_position(actor, at)
+        .map_err(debug)?;
     runtime
         .place_npcs(
             &NpcPlacementTable {
