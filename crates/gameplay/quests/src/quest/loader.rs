@@ -344,6 +344,7 @@ pub(super) fn lower_embedded_quest_state(
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::death_objectives::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    super::reward_callbacks::retain_qc_reward_predecessors(&mut lowered.catalogue);
     super::native_kill_goals::validate_closed(&lowered.catalogue).map_err(QuestLoadError::Json)?;
     // Crystal 201189f, data-global/scripts/lib/register_actions.lua:921-926.
     // This tool-owned auxiliary flag is outside the captured NPC track inventory.

@@ -9,7 +9,7 @@
         "position": {
           "x": 33456,
           "y": 31648,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -59,7 +59,7 @@
         "position": {
           "x": 33444,
           "y": 31741,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -109,7 +109,7 @@
         "position": {
           "x": 33500,
           "y": 31775,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -159,7 +159,7 @@
         "position": {
           "x": 33474,
           "y": 31859,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -209,7 +209,7 @@
         "position": {
           "x": 33411,
           "y": 31890,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -259,7 +259,7 @@
         "position": {
           "x": 33394,
           "y": 31886,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -312,7 +312,7 @@
         "position": {
           "x": 33394,
           "y": 31892,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -365,7 +365,7 @@
         "position": {
           "x": 33459,
           "y": 31666,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -418,7 +418,7 @@
         "position": {
           "x": 33462,
           "y": 31671,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -471,7 +471,7 @@
         "position": {
           "x": 33463,
           "y": 31658,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -524,7 +524,7 @@
         "position": {
           "x": 33468,
           "y": 31671,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -577,7 +577,7 @@
         "position": {
           "x": 33469,
           "y": 31666,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -630,7 +630,7 @@
         "position": {
           "x": 33470,
           "y": 31850,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -683,7 +683,7 @@
         "position": {
           "x": 33490,
           "y": 31804,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -736,7 +736,7 @@
         "position": {
           "x": 33421,
           "y": 31894,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -748,7 +748,7 @@
       "teleport": {
         "x": 33422,
         "y": 31897,
-        "floor": -8
+        "floor": -15
       },
       "storage": [
         {
@@ -782,7 +782,7 @@
         "position": {
           "x": 33422,
           "y": 31894,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -794,7 +794,7 @@
       "teleport": {
         "x": 33422,
         "y": 31897,
-        "floor": -8
+        "floor": -15
       },
       "storage": [
         {
@@ -828,7 +828,7 @@
         "position": {
           "x": 33423,
           "y": 31894,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -840,7 +840,7 @@
       "teleport": {
         "x": 33422,
         "y": 31897,
-        "floor": -8
+        "floor": -15
       },
       "storage": [
         {
@@ -874,7 +874,7 @@
         "position": {
           "x": 33424,
           "y": 31894,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -886,7 +886,7 @@
       "teleport": {
         "x": 33422,
         "y": 31897,
-        "floor": -8
+        "floor": -15
       },
       "storage": [
         {
@@ -920,7 +920,7 @@
         "position": {
           "x": 33422,
           "y": 31898,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -963,7 +963,7 @@
         "position": {
           "x": 33434,
           "y": 31765,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -1006,7 +1006,7 @@
         "position": {
           "x": 33391,
           "y": 31794,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -1049,7 +1049,7 @@
         "position": {
           "x": 33538,
           "y": 31636,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -1102,7 +1102,7 @@
         "position": {
           "x": 33542,
           "y": 31636,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -1155,7 +1155,7 @@
         "position": {
           "x": 33546,
           "y": 31636,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,
@@ -1208,7 +1208,7 @@
         "position": {
           "x": 33394,
           "y": 31889,
-          "floor": -8
+          "floor": -15
         },
         "unique": null,
         "action": null,

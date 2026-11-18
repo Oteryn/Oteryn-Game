@@ -49,6 +49,20 @@ fn qc_skull_of_ratha_three_source_chests_use_replay_and_refusal() -> TestResult 
     Ok(())
 }
 
+#[test]
+fn qc_sanctuary_pinned_legion_helmet_chest_uses_live_uid() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let cases: Vec<_> = super::quest_catalogue_chests::cases()?
+        .into_iter()
+        .filter(|case| case.claim == "oteryn:reward-claim.kv.legiondawnport")
+        .collect();
+    assert_eq!(cases.len(), 1);
+    assert_eq!(cases[0].unique, 6006);
+    super::quest_catalogue_chests::execute(cases)
+}
+
 fn run(name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());

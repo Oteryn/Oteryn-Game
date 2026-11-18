@@ -78,6 +78,13 @@ fn run(name: &'static str) -> TestResult {
     let started = std::time::Instant::now();
     let trigger = if matches_chain(name) {
         START
+    } else if name == super::qc_pinned_world::PILE {
+        // Crystal 201189f8, data-global/world/world.otbm, tile (33456, 31648, 15).
+        Position {
+            x: 33456,
+            y: 31648,
+            floor: -15,
+        }
     } else {
         oteryn_gameplay_quests::quest::world_callbacks::load()?
             .into_iter()
@@ -404,8 +411,22 @@ pub(super) async fn exercise_world(
             .map_err(debug)?;
         runtime.read_actor_position(actor).map_err(debug)?.position()
     };
-    let key = oteryn_world_bundle::bundle::placement_key(trigger.floor, trigger.x, trigger.y, 1)
-        .ok_or("placement key")?;
+    let ordinal = if callback.key.ends_with(super::qc_pinned_world::PILE) {
+        let base = owner.bundle_map().ok_or("map")?.overlay.base();
+        let tile = base
+            .tile(trigger.x, trigger.y, trigger.floor)
+            .ok_or("live pile tile")?;
+        super::qc_pinned_world::ordinal(
+            tile,
+            callback.selector.appearance.ok_or("pile appearance")?,
+            None,
+        )?
+    } else {
+        1
+    };
+    let key =
+        oteryn_world_bundle::bundle::placement_key(trigger.floor, trigger.x, trigger.y, ordinal)
+            .ok_or("placement key")?;
     let mut placement = owner
         .bundle_map()
         .ok_or("map")?
