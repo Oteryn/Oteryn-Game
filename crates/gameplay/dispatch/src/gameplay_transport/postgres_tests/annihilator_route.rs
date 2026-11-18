@@ -30,6 +30,7 @@ enum Route {
     Ashmunrah,
     CathedralNote,
     CoalBasin,
+    Demonrage,
     Lord,
     Combat,
     Complete,
@@ -81,6 +82,10 @@ pub(super) fn coal_basin_arrival(admin: String) -> TestResult {
     run_with_admin(Route::CoalBasin, admin)
 }
 
+pub(super) fn demonrage_switches(admin: String) -> TestResult {
+    run_with_admin(Route::Demonrage, admin)
+}
+
 pub(super) fn lord_switches(admin: String) -> TestResult {
     run_with_admin(Route::Lord, admin)
 }
@@ -105,6 +110,7 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
             | Route::Ashmunrah
             | Route::CathedralNote
             | Route::CoalBasin
+            | Route::Demonrage
             | Route::Lord
     );
     let start = if route == Route::Lord {
@@ -113,6 +119,8 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         super::quest_switch_windows::CATHEDRAL_START
     } else if route == Route::CoalBasin {
         super::quest_coal_basin::START
+    } else if route == Route::Demonrage {
+        super::quest_demonrage::START
     } else if route == Route::Ashmunrah {
         super::l6_shared_gate_native::start("l6-tomb-gate-native-open-50138")?
     } else if matches!(
@@ -173,6 +181,7 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
                     route,
                     Route::ElvenbaneCombat | Route::ElvenbaneDefenders | Route::ElvenbaneComplete
                 ),
+                if route == Route::Demonrage { &[(126,124)] } else { &[] },
             )?
         };
         let now: i64 =
@@ -183,7 +192,7 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         let mut operations = Vec::new();
         let participants = match route {
             Route::CathedralNote | Route::TimedPassage => 1,
-            Route::Ashmunrah | Route::CoalBasin | Route::Lord => 2,
+            Route::Ashmunrah | Route::CoalBasin | Route::Demonrage | Route::Lord => 2,
             _ => 4,
         };
         for index in 0..participants {
@@ -512,6 +521,14 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         let map = index.map();
         if route == Route::CoalBasin {
             let result = super::quest_coal_basin::exercise(&mut owner, &mut admitted, &h.pool).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
+        }
+        if route == Route::Demonrage {
+            let result = super::quest_demonrage::exercise(&mut owner, &mut admitted, map).await;
             drop(owner);
             drop(authority);
             drop(seal);
@@ -882,11 +899,14 @@ fn source_world(
     native: &crate::content::native_gameplay::NativeGameplayState,
     start: Position,
     elvenbane_combat: bool,
+    extra_regions: &[(u16,u16)],
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::bundle;
     use oteryn_world_bundle_compiler::{compile, project, source};
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    let mut project = source::project_regions(&root, &[(start.x / 256, start.y / 256)])?;
+    let mut regions = vec![(start.x / 256, start.y / 256)];
+    regions.extend_from_slice(extra_regions);
+    let mut project = source::project_regions(&root, &regions)?;
     if elvenbane_combat {
         let goals = oteryn_gameplay_quests::quest::native_kill_goals::load().map_err(debug)?;
         for source in &mut project.families.spawns {
