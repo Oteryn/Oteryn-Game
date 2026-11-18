@@ -88,8 +88,16 @@ impl DeathWindows {
                 exit.count.saturating_add(1)
             };
             if exit.count == exit.rule.required_deaths {
-                exit.opened_by = Some(target);
-                exit.due = when.saturating_add(u64::from(exit.rule.duration_ms));
+                exit.opened_by.get_or_insert(target);
+                let due = when.saturating_add(u64::from(exit.rule.duration_ms));
+                // A repeat kill cannot extend the original scheduled reset.
+                // Crystal201189f creaturescripts_inquisition_boss.lua:25-29
+                // and creaturescripts_bosses_kill.lua:126-134.
+                exit.due = if exit.due == 0 {
+                    due
+                } else {
+                    exit.due.min(due)
+                };
             }
         }
     }
