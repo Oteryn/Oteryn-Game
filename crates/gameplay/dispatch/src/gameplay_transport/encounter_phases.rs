@@ -22,8 +22,8 @@ pub(super) struct ActivePhase {
 
 #[derive(Debug)]
 enum Fight {
-    Arbaziloth(ArbazilothEncounter),
-    Cults(CultsEncounter),
+    Arbaziloth(Box<ArbazilothEncounter>),
+    Cults(Box<CultsEncounter>),
 }
 
 impl Fight {
@@ -223,7 +223,7 @@ pub(super) fn bind(
         )?;
         return Ok(ActivePhase {
             key,
-            fight: Fight::Arbaziloth(fight),
+            fight: Fight::Arbaziloth(Box::new(fight)),
             credits,
             frozen: None,
             cells,
