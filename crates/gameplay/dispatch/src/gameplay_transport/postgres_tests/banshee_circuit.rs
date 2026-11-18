@@ -293,20 +293,34 @@ fn scenario(circuit: Circuit) -> TestResult {
 
             let permit = owner.spell_lane_permit().await.ok_or("spell lane")?;
             let (origin, entered) = {
+                use crate::movement::CardinalStep;
                 let mut runtime = owner.runtime.lock().await;
                 let origin = runtime.read_actor_position(actor).map_err(debug)?;
                 let closed = crate::map::floor::BundleDoors(&map.facts);
-                let proof = crate::map::floor::prepare_quest_callback_teleport(
+                let approach = crate::map::floor::prepare_bundle_step(
                     &runtime,
                     owner.movement_cells(),
                     actor,
                     session,
                     origin,
-                    local(plate),
+                    CardinalStep::North,
                     false,
                     &closed,
                 )
                 .map_err(debug)?;
+                let origin = runtime.commit_source_step(approach).map_err(debug)?;
+                let proof = crate::map::floor::prepare_bundle_step(
+                    &runtime,
+                    owner.movement_cells(),
+                    actor,
+                    session,
+                    origin,
+                    CardinalStep::East,
+                    false,
+                    &closed,
+                )
+                .map_err(debug)?;
+                assert_eq!(proof.destination(), local(plate));
                 let entered = runtime.commit_source_step(proof).map_err(debug)?;
                 (origin, entered)
             };
@@ -346,6 +360,13 @@ fn world(circuit: Circuit) -> TestResult<boot::BundleWorld> {
     ];
     if let Some(plate) = circuit.plate {
         records.push((plate, None));
+        records.push((
+            TilePos {
+                x: circuit.start().x,
+                ..circuit.passage
+            },
+            None,
+        ));
     }
     scene_world(
         circuit.start(),
