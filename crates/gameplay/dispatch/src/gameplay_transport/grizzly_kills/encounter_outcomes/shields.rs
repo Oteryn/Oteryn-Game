@@ -149,11 +149,11 @@ impl Fight {
         runtime: &mut ChannelRuntimeV1,
         boss: ExactActorRef,
         command: u64,
+        session: super::GameSessionId,
         now: u64,
     ) -> Result<(), CarrierError> {
         if !matches!(self.state, Shield::Cracked)
-            || draw(b"encounter.shield.rod", boss, command) % 100
-                < u32::from(self.rule.dodge_percent)
+            || draw(session.as_bytes(), boss, command) % 100 < u32::from(self.rule.dodge_percent)
         {
             return Ok(());
         }

@@ -1211,6 +1211,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    async fn use_encounter_tool(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: &oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.use_encounter_tool_impl(actor, command, intent, source)
+            .await
+    }
+
     async fn use_event_item(
         &self,
         actor: ExactActorRef,

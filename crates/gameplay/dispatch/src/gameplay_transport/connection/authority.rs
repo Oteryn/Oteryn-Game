@@ -685,6 +685,17 @@ pub trait FreshAdmissionAuthority {
         async { Ok(None) }
     }
 
+    /// Targeted carried tools on an exact encounter actor use the existing USE intent.
+    fn use_encounter_tool(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: &UseIntent,
+        _source: Option<ItemKey>,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
+    }
+
     fn use_event_item(
         &self,
         _actor: ExactActorRef,

@@ -1,5 +1,6 @@
 //! The latest admitted encounter owns its outcome until the next admission.
 mod shields;
+mod tool_use;
 
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, CreatureDeathOccurrenceKey, ExactActorRef, GameSessionId,
@@ -142,6 +143,15 @@ impl Outcomes {
                 run.shield = None;
             }
         }
+    }
+
+    fn for_tool(&mut self, runtime: &ChannelRuntimeV1, target: ExactActorRef) -> Option<&mut Run> {
+        self.0.values_mut().find(|run| {
+            run.target == target
+                && run.current(runtime)
+                && run.shield.is_some()
+                && run.death.is_none()
+        })
     }
 
     pub(in crate::gameplay_transport) fn observe(
