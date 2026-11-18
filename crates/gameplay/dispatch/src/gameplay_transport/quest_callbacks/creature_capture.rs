@@ -8,7 +8,6 @@ use crate::durability::{
 use oteryn_gameplay_domain::domain::condition::{ConditionValues, SpeedRange, StatusKind};
 use oteryn_gameplay_foundation::foundation::condition::{ApplicationFacts, ConditionDefinition};
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
-use std::collections::HashMap;
 
 const MAX_CAPTURE_WORK: usize = 64;
 
@@ -26,7 +25,7 @@ struct Capture {
 #[derive(Default)]
 pub(super) struct Captures {
     pending: Vec<Capture>,
-    cooldowns: HashMap<ExactActorRef, u64>,
+    cooldowns: Vec<(ExactActorRef, u64)>,
 }
 
 impl Captures {
@@ -94,10 +93,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         captures
             .cooldowns
-            .retain(|caster, due| *due > now && runtime.contains_live_creature(*caster));
+            .retain(|(caster, _)| runtime.contains_live_creature(*caster));
         if captures.pending.len() >= MAX_CAPTURE_WORK
-            || captures.cooldowns.len() >= MAX_CAPTURE_WORK
-            || captures.cooldowns.contains_key(&source)
             || captures
                 .pending
                 .iter()
@@ -105,15 +102,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        let Some(next) = now.checked_add(u64::from(rule.interval_ms) * 1_000) else {
+            return;
+        };
+        if let Some(index) = captures
+            .cooldowns
+            .iter()
+            .position(|(caster, _)| *caster == source)
+        {
+            if captures.cooldowns[index].1 > now {
+                return;
+            }
+        } else {
+            if captures.cooldowns.len() < MAX_CAPTURE_WORK {
+                captures.cooldowns.push((source, next));
+            }
+            return;
+        }
         let Some(proof) = QualifiedCreatureCapture::prepare(
             runtime, catalogue, callback, source, target, session, now,
         ) else {
             return;
         };
-        let Some(next) = now.checked_add(u64::from(rule.interval_ms) * 1_000) else {
-            return;
-        };
-        captures.cooldowns.insert(source, next);
+        if let Some((_, due)) = captures
+            .cooldowns
+            .iter_mut()
+            .find(|(caster, _)| *caster == source)
+        {
+            *due = next;
+        }
         captures.pending.push(Capture {
             source,
             target,
@@ -210,10 +227,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     async fn project_capture_conditions(&self, capture: &Capture) {
-        let Some(native) = self.active_generation.and_then(|g| g.native_gameplay()) else {
+        let Some(native_content) = self.active_generation.and_then(|g| g.native_gameplay()) else {
             return;
         };
-        let Some(appearance) = native
+        let Some(appearance) = native_content
             .spell_appearances()
             .and_then(|a| a.for_look_type(u32::from(capture.rule.look_type)))
         else {
@@ -238,7 +255,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 "oteryn:condition.quest-capture.outfit",
                 1,
                 ConditionValues::Outfit {
-                    look_type: capture.rule.look_type,
+                    look_type: u32::from(capture.rule.look_type),
                     duration_ms: capture.rule.condition_ms,
                 },
             )
@@ -258,7 +275,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         };
         let occurrence = capture.proof.occurrence();
-        let decision_root = GameplayDecisionRoot::from_bytes(native.source_digest());
+        let decision_root = GameplayDecisionRoot::from_bytes(native_content.source_digest());
         let facts = ApplicationFacts {
             now: capture.attack_at,
             base_speed,
@@ -269,7 +286,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             decision_root: &decision_root,
             occurrence: DecisionOccurrenceId::from_bytes(occurrence),
         };
-        let _ = states.native_composite_conditions(
+        let applied = states.native_composite_conditions(
             &runtime,
             capture.target,
             capture.session,
@@ -283,6 +300,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None,
             stamp,
         );
+        if applied.is_some()
+            && let Some(map) = self.bundle_map()
+            && let (Ok(from), Ok(to)) = (
+                runtime.read_actor_position(capture.source),
+                runtime.read_actor_position(capture.target),
+            )
+            && let (Some(from), Some(to)) = (native(from.position()), native(to.position()))
+        {
+            use crate::map::facts::CreatureVisualCue;
+            for cue in [
+                CreatureVisualCue::effect(
+                    &runtime,
+                    stamp,
+                    capture.source,
+                    to,
+                    capture.rule.combat_effect,
+                ),
+                CreatureVisualCue::missile(
+                    &runtime,
+                    stamp,
+                    capture.source,
+                    from,
+                    to,
+                    capture.rule.projectile,
+                ),
+            ]
+            .into_iter()
+            .flatten()
+            {
+                map.facts.emit_creature_visual(&runtime, cue);
+            }
+        }
         self.states
             .chat
             .push_quest_feedback(capture.session, &capture.rule.message);

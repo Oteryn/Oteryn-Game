@@ -57,7 +57,7 @@ fn document() -> serde_json::Value {
          "storage":[{"track":TRACK,"minimum":4,"maximum":4,"set":2}],
          "effects":{"invisibility_ms":120000,
            "creature_capture":{"creature":QUEEN,"interval_ms":5000,"range":1,"track":TRACK,"value":4,
-               "condition_ms":30000,"look_type":422,"speed":[-300,-450],"teleport_delay_ms":4500,
+               "condition_ms":30000,"combat_effect":17,"projectile":15,"look_type":422,"speed":[-300,-450],"teleport_delay_ms":4500,
                "landing":NEST,"message":"The spider queen caught you in her net and paralysed you!"}},
          "sources":[GREASE,WRAP,ATTACK]},
         {"key":"oteryn:quest-callback/rookie-guard-web-sample", "quest":QUEST, "trigger":"use",

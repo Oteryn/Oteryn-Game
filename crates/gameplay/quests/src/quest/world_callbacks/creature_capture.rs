@@ -13,6 +13,8 @@ pub struct CreatureCapture {
     pub track: String,
     pub value: i64,
     pub condition_ms: u32,
+    pub combat_effect: u16,
+    pub projectile: u16,
     pub look_type: u16,
     /// Source speed coefficients in thousandths, in the donor's order.
     pub speed: [i32; 2],
@@ -40,6 +42,8 @@ impl CreatureCapture {
             && (1..=600_000).contains(&self.condition_ms)
             && (1..=self.condition_ms).contains(&self.teleport_delay_ms)
             && self.look_type != 0
+            && self.combat_effect != 0
+            && self.projectile != 0
             && self.speed.iter().all(|a| (-1_000..0).contains(a))
             && (-15..=0).contains(&self.landing.floor)
             && !self.message.is_empty()
