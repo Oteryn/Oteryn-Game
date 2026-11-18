@@ -14,7 +14,8 @@ const PREFIX: &str = "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/l
 const QUEST: &str = "oteryn:quest.targuna_quest";
 
 #[test]
-fn m16_sterling_commits_personal_marker_and_delivers_delta_and_reconnect_snapshot() -> TestResult {
+pub(super) fn m16_sterling_commits_personal_marker_and_delivers_delta_and_reconnect_snapshot()
+-> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -116,8 +117,9 @@ pub(super) async fn exercise(
         floor: -7,
         text: "Treasure".into(),
     }];
+    // TibiaWiki Targuna Quest/Spoiler, curid 110238, oldid 1208547.
     let (before, delta) =
-        conversation(owner, admitted, npc, 4, &["hi", "mission", "yes"], true).await?;
+        conversation(owner, admitted, npc, 4, &["hi", "quest", "yes"], true).await?;
     assert!(before.map_marks.is_empty());
     assert_eq!(delta.ok_or("marker delta")?.map_marks, expected);
     assert_eq!(counts(h).await?, (1, 1));

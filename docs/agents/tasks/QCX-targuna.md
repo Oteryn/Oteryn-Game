@@ -1,0 +1,48 @@
+# QCX73 Targuna Quest
+
+Base `871c1dec7d9963420d455210e4cddc0c9df80d26`. Global evidence is the 2026-11-17 capture on the qfacts branch. The quest infobox is [curid 110219, oldid 1172822](https://tibia.fandom.com/?curid=110219&oldid=1172822). Requirements, method and transcripts come from [curid 110238, oldid 1208547](https://tibia.fandom.com/?curid=110238&oldid=1208547). Crystal source paths below refer to `201189f871d23597b82caf88fd611454a2ddefb8`.
+
+| Global fact | Base audit and disposition |
+| --- | --- |
+| Quest log, free account, level 10 at Sterling and level 12 at Emiliana, rope and shovel or equivalents | Definition imports the log and free account correctly. Its unparsed 10 / 12 is two NPC gates, so a blanket quest-wide minimum would change Ancient Enemy. Sterling and Emiliana start gates and the tool path still need runtime bindings. |
+| Lizzie `save`, temple marker, defeat Lizard Commander, north forcefield, report to Lizzie and then Camilla `mission` / `yes` | Definition has donor mission tracks. No admitted Lizzie or Camilla quest callbacks were found. The forcefield appearance 1949 at (31941,31928,9) had neither destination nor callback. The generated stateless STEP binding now returns to (31935,31861,7) from Crystal `movements_temple_teleport.lua:2–21`. |
+| Camilla gives 2 Platinum Coins and 1,500 XP | Crystal `data-global/npc/camilla.lua:59,72–105` grants the XP alone. Both rewards are missing from the native NPC callback catalogue. |
+| Sterling `adventure`, free Matilda travel, 20 pirates and 10 eggs used, Morla gives Old Treasure Map | The imported stages lack executable starts, travel, kill/egg counters and Morla hand-in. Crystal `data-global/npc/morla.lua:99–115` grants one Old Treasure Map (53158). Matilda's placement cells (31924,31904,7) and (33478,32729,7) had no travel attributes. The generated stateless return STEP now takes the player back to (31925,31907,7). The outbound gated STEP remains pending. Source egg positions have appearance 53140, while Crystal `actions_tortoise_eggs.lua:4,58–85` checks 5678. |
+| On returning to Sterling, `quest` then `yes` grants 3,000 XP and marks the treasure | The existing mark and Morla guard match the sequence. Crystal `data-global/npc/sterling.lua:109–155` uses `mission` and omits XP. Added the global keyword alongside the donor keyword. Adding XP to the existing transition changes the pinned definition hash. The current writer would refuse unfinished Characters with the old hash, so the XP change needs an exact predecessor registration. |
+| Shovel opens route at the mark, then claim an Adventurer Backpack | Position (31948,31924,7) contains 53631. The chest at donor (31944,31924,8) contains 53160 with no unique/action attributes. Crystal `actions_treasure_chest.lua:5–37` grants one 53074 with an additional rope 3003. The quest RewardClaim catalogue contains the ancillary mana potions (5 × 268, donor unique 14092) and silver amulet (1 × 3054, one charge, donor unique 14093) only. Their respective (31950,31862,8) and (31909,31908,9) chest tiles carry appearance 28827 without those unique attributes. |
+| Emiliana `mission`, upstairs portal, then `mission` in Crimson Court; descend, cross burning tiles or use plates, enter forcefield and lever arena, defeat Herald, leave via purple portal | No admitted Emiliana quest dialogue or Targuna STEP gates were found. Entry and inner portal placements lack destinations. Herald lever is in the donor candidate catalogue and the map has the lever/tiles. Crystal configures five slots and level 12 in `actions_herald_lever.lua:4–30`. The global spoiler mentions the center slot. The existing Herald death callback selects a single top-damage Character, while Crystal credits the party. The static exit at (32489,32656,15) has destination (32426,32651,14) instead of Crystal’s conditional destinations. |
+| Emiliana grants one Bunch of Turnips and 5,000 XP. Replacement costs 1,000 gold. Give the turnips to the ram for Reliable Ram and A reliable Friend | Donor `data-global/npc/emiliana.lua:61–65,167–196` agrees on values. NPC reward and rebuy are absent. The existing Reliable Ram callback binds 1 × 53073 on native appearance 53439 at (31926,31896,7), awards the named mount and achievement and requires the earned state. The map occurrence matches the callback. |
+| Outfits and access | The infobox lists no outfit. The evidenced access is travel to Aragonia and Crimson Court and passage through the Herald encounter. |
+
+The chosen recipe serializes treasure before Ancient Enemy and Burning Heat, and lists only Reliable Ram and Adventurer Backpack as quest reward intents. It omits the pirate and egg counts, Camilla report and rewards, Sterling XP, and the Emiliana XP, achievement and replacement terms. The donor definition also includes five secondary journal tasks (daily reward, deposit, stash, unstash and withdrawal) whose presence in the global quest is unconfirmed.
+
+All five NPC identities exist in the NPC declarations. Their imported source quest links are marked runtime-ineligible. Sterling’s independently admitted offer and callback account for the working turn-in marker. The two new position-based travel records use the shared access generator. Its other callback records compare equal to origin/main.
+
+## Blockers
+
+- BLOCKER Sterling 3,000 XP shared QuestState registration of the exact persisted predecessor hash `data-global/npc/sterling.lua:142–155`. The amount is from the wiki spoiler.
+- BLOCKER Ancient Enemy Lizard Commander kill donor party credit and native creature binding `data-global/scripts/quests/targuna/creaturescripts_lizard_commander.lua:5–16`.
+- BLOCKER Aragonia pirate kills donor party credit and native multi-creature counter binding `data-global/scripts/quests/targuna/creaturescripts_pirates.lua:5–27`.
+- BLOCKER Burning Heat Emiliana placement-aware dialogue branch selection `data-global/npc/emiliana.lua:72–84,209–225`.
+- BLOCKER Herald escape death-spawned portal publication `data-global/scripts/quests/targuna/creaturescripts_herald_of_fire.lua:37–63`.
+- BLOCKER Herald red plates compound arena reset removing fields and live summons `data-global/scripts/quests/targuna/movements_herald_red_floors.lua:31–87`.
+
+## OPEN-FACTS
+
+Global item IDs (canonical Platinum Coin is 3035), ancillary chests and charges, backpack contents, map consumption, full pirate eligibility, exact egg script/item identity, rope and shovel equivalence allowlists, exact placement selectors, encounter credit recipients, stage-specific floor and portal coordinates, group size and cooldown are unspecified in the wiki capture. Crystal corroborates some values and supplies its own implementation details above. The global capture does not specify a separate level floor for Ancient Enemy.
+
+## PARTIAL
+
+Ancient Enemy still needs Lizzie’s start, marker and report, Commander credit and Camilla’s reward. Long Lost Treasure still needs Sterling’s level-10 admission and 3,000 XP, Matilda outbound travel, objective credit, Morla and the shovel/backpack claim. Burning Heat still needs level-12 admission, Crimson Court mission and portals, the arena path and Emiliana’s first and replacement rewards. The Ram binding is already present and depends on the missing NPC reward.
+
+The PG regression reuses the existing composed M16 scenario and checks the wiki opener and the existing marker receipt and replay. The forcefield and Matilda return cases use the shared production stateless STEP harness.
+
+## Validation
+
+PG via shard (pgsplit build files applied on `1ba81fcf36b79501fa62e9a826915d238a322265`) passed all three cases. Temple return took 55.69 s, Matilda return 41.96 s, and Sterling turn-in and replay 88.35 s. The no-URL run returned `Ok(())` for all three cases in 0.00 s. These timings are the complete fixture and case durations.
+
+The baseline travel cases failed at callback lookup for both missing registrations. The fixed cases drove framed STEP commands and verified the destination without quest track or receipt mutations.
+
+Quest authoring passed 44 checks, including all 269 schema cases. Workspace format checking and dispatch library Clippy with `-D warnings` passed. World pin refresh produced the same digest, and pin-check accepted it with its required output directory argument.
+
+A second Sterling red run used the final test and the base offer. It sent the framed turn-in, received no marker delta, and failed at EOF after 77.31 s. The fixed offer passed the same turn-in and replay assertions.
