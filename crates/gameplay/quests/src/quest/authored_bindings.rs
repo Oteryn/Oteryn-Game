@@ -296,7 +296,15 @@ impl Bindings {
                             callback.as_ref(),
                         ))?;
                         if !callback.participants.is_empty()
-                            || !callback.state_ops.is_empty()
+                            || (!callback.state_ops.is_empty()
+                                && (callback
+                                    .corpse_target
+                                    .as_ref()
+                                    .is_none_or(|body| !body.retain_tool)
+                                    || callback
+                                        .state_ops
+                                        .iter()
+                                        .any(|op| !state_operations::valid(quest, op))))
                             || matches!(&stage.trigger, Trigger::NpcDialogue { .. })
                                 != callback.carried_item.is_none()
                         {

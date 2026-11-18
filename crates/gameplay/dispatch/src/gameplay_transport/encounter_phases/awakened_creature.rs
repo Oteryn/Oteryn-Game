@@ -2,7 +2,7 @@
 //! creaturescripts_bosses_kill.lua:20-34 use the same physical statue for spawn and reset.
 use super::*;
 use crate::content::NativeEntryMovementCells;
-use crate::map::view::EntryFacts;
+use crate::map::view::{EntryFacts, MapFacts};
 use oteryn_gameplay_quests::quest::world_callbacks::EncounterMonster;
 
 #[derive(Debug)]

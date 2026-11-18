@@ -28,6 +28,9 @@ pub(super) async fn record(
     let Some(species) = &callback.creature_target else {
         return Ok(false);
     };
+    let creatures = std::iter::once(species.as_str())
+        .chain(spec.additional_creatures.iter().map(String::as_str))
+        .collect::<Vec<_>>();
     let QuestCause::Command(command) = request.cause else {
         return Ok(false);
     };
@@ -42,9 +45,9 @@ pub(super) async fn record(
     let Some(revision) = native.item_index().and_then(|index| index.revision(&key)) else {
         return Ok(false);
     };
-    let row=sqlx::query("SELECT to_jsonb(i) AS item,to_jsonb(g) AS ground,g.spatial_position FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) JOIN game_corpse_source_races p USING(item_instance_id) JOIN game_item_mint_receipts r ON r.transaction_id=p.mint_transaction_id AND r.item_instance_id=i.item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid AND g.runtime_scope_ownership_generation=$4::text::numeric AND i.lifecycle=1 AND i.quantity=1 AND i.definition_family='Item' AND i.definition_production_key=$5 AND i.definition_revision_ref=$6 AND p.race_key=$7 AND i.minted_transaction_id=p.mint_transaction_id AND floor(extract(epoch FROM transaction_timestamp())*1000)::bigint-r.occurred_at BETWEEN 0 AND $8 FOR SHARE OF i,g")
+    let row=sqlx::query("SELECT to_jsonb(i) AS item,to_jsonb(g) AS ground,g.spatial_position FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) JOIN game_corpse_source_races p USING(item_instance_id) JOIN game_item_mint_receipts r ON r.transaction_id=p.mint_transaction_id AND r.item_instance_id=i.item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid AND g.runtime_scope_ownership_generation=$4::text::numeric AND i.lifecycle=1 AND i.quantity=1 AND i.definition_family='Item' AND i.definition_production_key=$5 AND i.definition_revision_ref=$6 AND p.race_key=ANY($7::text[]) AND i.minted_transaction_id=p.mint_transaction_id AND floor(extract(epoch FROM transaction_timestamp())*1000)::bigint-r.occurred_at BETWEEN 0 AND $8 FOR SHARE OF i,g")
         .bind(corpse.as_slice()).bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice())
-        .bind(fence.scope_ownership_generation.get().to_string()).bind(&key).bind(revision).bind(species)
+        .bind(fence.scope_ownership_generation.get().to_string()).bind(&key).bind(revision).bind(&creatures)
         .bind(i64::from(spec.maximum_age_ms)-1).fetch_optional(&mut **tx).await?;
     let Some(row) = row else { return Ok(false) };
     let cell = crate::durability::spell_items_abi::decode_ground_cell(

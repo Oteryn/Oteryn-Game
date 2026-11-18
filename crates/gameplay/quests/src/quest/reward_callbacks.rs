@@ -399,6 +399,16 @@ impl RewardCallback {
                     && self.creature_target.is_none()
             }
             (None, Some(_)) => false,
+            // Crystal 201189f8 (Wrath M10 sceptre:20-32): sample current remains
+            // with the selected sceptre still in the player's custody.
+            (Some(_), None)
+                if self
+                    .corpse_target
+                    .as_ref()
+                    .is_some_and(|body| body.retain_tool) =>
+            {
+                self.take.is_empty()
+            }
             (Some(source), None) => {
                 matches!(self.take.as_slice(), [input]
                 if input.item == *source && input.count == 1 && input.fluid_subtype.is_none())
@@ -1003,6 +1013,13 @@ fn validate_document_with_capacity(
                 && c.counter.is_none()
                 && !c.value_only_guarded()
                 && !c.is_save_restart_only()
+                && !c.corpse_target.as_ref().is_some_and(|body| {
+                    body.retain_tool
+                        && c.state_ops.iter().any(|operation| {
+                            matches!(operation.from, StateCondition::ElapsedAtLeast { .. })
+                                && matches!(operation.effect, StateMutation::SetNow)
+                        })
+                })
                 && c.storage
                     .iter()
                     .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
@@ -1202,6 +1219,14 @@ fn value_plan(callback: &RewardCallback) -> Result<Vec<u8>, String> {
             placement,
         ))
         .map_err(|error| error.to_string())?
+    } else {
+        current
+    };
+    let current = if let Some(corpse) = callback.corpse_target.as_ref()
+        && (corpse.retain_tool || !corpse.additional_creatures.is_empty())
+    {
+        serde_json::to_vec(&("oteryn:quest-reward-corpse-target-v1", current, corpse))
+            .map_err(|error| error.to_string())?
     } else {
         current
     };
