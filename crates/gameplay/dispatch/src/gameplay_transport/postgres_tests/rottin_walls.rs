@@ -268,6 +268,14 @@ async fn exercise(
         true,
     )
     .await?;
+    let carried_hammer = || {
+        sqlx::query_scalar::<_, serde_json::Value>(
+            "SELECT to_jsonb(i) FROM game_item_instances i WHERE definition_production_key=$1 AND lifecycle=1",
+        )
+        .bind(HAMMER)
+        .fetch_one(&h.pool)
+    };
+    let original_hammer = carried_hammer().await?;
     for count in 1..=7 {
         // The first repair proves that the definition hotkey now resolves to
         // the carried hammer. Subsequent repairs select its exact item handle.
@@ -335,9 +343,15 @@ async fn exercise(
         );
         assert_eq!(map.facts.object_revision(key), u64::try_from(count)? * 2);
     }
-    let hammer: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3460' AND lifecycle=1")
+    let hammer: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1")
+        .bind(HAMMER)
         .fetch_one(&h.pool).await?;
     assert_eq!(hammer, 1);
+    assert_eq!(
+        carried_hammer().await?,
+        original_hammer,
+        "successful and capped repairs must preserve the exact carried tool"
+    );
     let tool_reads: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_quest_world_tool_reads WHERE transition_key = $1",
     )
