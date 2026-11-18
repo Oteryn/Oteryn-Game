@@ -105,16 +105,22 @@ pub(super) fn claim_shard() -> String {
 
 pub(super) fn catalogue(
     digest: [u8; 32],
+    shared_marker: bool,
 ) -> TestResult<std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>> {
     use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
     let digest: String = digest.iter().map(|b| format!("{b:02x}")).collect();
+    let claim_storage = if shared_marker {
+        json!([{"track":CLAIMED,"minimum":0,"maximum":0,"set":1}])
+    } else {
+        json!([])
+    };
     let mut stages: Vec<_> = selectors().zip(REWARDS).map(|((_, uid), reward)| json!({
         "key":format!("claim-{uid}"),"completes":false,"trigger":{
             "kind":"npc_dialogue","callback":{
                 "key":callback_key(uid),"quest":QUEST,"npc":"","keywords":[],"topic":0,"next_topic":0,
                 "world_claim":{"key":CLAIM,"revision":"nrwicked-r1","authority_sha256":digest},
                 "requires":[{"track":ACCESS,"minimum":1,"maximum":1}],
-                "storage":[{"track":CLAIMED,"minimum":0,"maximum":0,"set":1}],
+                "storage":claim_storage,
                 "give":{"item":key(reward),"count":1,"contents":[]},
                 "take":[],"present":[],"outfit":null,"achievement":null,"reply":["You have found a reward."],"sources":["Crystal Forgemaster reward fixture"]
             }

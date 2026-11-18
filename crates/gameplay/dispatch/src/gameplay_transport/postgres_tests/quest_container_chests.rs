@@ -29,7 +29,7 @@ enum Case {
     FullCharge,
     Full,
     Forgemaster,
-    ForgemasterChoices,
+    ForgemasterChoices { shared_marker: bool },
     Weight,
     DemonBoots,
     DemonHelmet,
@@ -71,7 +71,26 @@ fn nrwicked_forgemaster_claims_one_of_eleven_after_verified_access() -> TestResu
         return Ok(());
     };
     drop(admin);
-    execute(Case::ForgemasterChoices, "NRWICKED_FORGEMASTER_CHOICES")
+    execute(
+        Case::ForgemasterChoices {
+            shared_marker: true,
+        },
+        "NRWICKED_FORGEMASTER_CHOICES",
+    )
+}
+
+#[test]
+fn nrwicked_forgemaster_refuses_a_chest_without_the_shared_claim_marker() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    execute(
+        Case::ForgemasterChoices {
+            shared_marker: false,
+        },
+        "NRWICKED_FORGEMASTER_MISSING_MARKER",
+    )
 }
 
 #[test]
@@ -188,7 +207,7 @@ fn scenario_case(
                     .collect(),
             )
         }
-        Case::ForgemasterChoices => (
+        Case::ForgemasterChoices { .. } => (
             forgemaster::CLAIM,
             forgemaster::CHEST,
             57244,
@@ -336,7 +355,7 @@ fn scenario_case(
         let owned_activation;
         let (controller, activated_pin) = if let Some(activation) = activation {
             activation
-        } else if matches!(case, Case::ForgemasterChoices) {
+        } else if matches!(case, Case::ForgemasterChoices { .. }) {
             let mut input =
                 super::death_ml_loss_composed::production_input_with_source("content-1", None)?;
             forgemaster::provision_items(&mut input)?;
@@ -367,7 +386,7 @@ fn scenario_case(
                 2472,
                 matches!(case, Case::ChoiceDoor).then_some(native),
             )?
-        } else if matches!(case, Case::ForgemasterChoices) {
+        } else if matches!(case, Case::ForgemasterChoices { .. }) {
             super::quest_callbacks::source_world_choices(
                 chest,
                 &forgemaster::selectors().collect::<Vec<_>>(),
@@ -388,7 +407,7 @@ fn scenario_case(
             source_world(chest, unique, appearance, 0)?
         };
         let mut authored_shard = None;
-        let report = if matches!(case, Case::ForgemasterChoices) {
+        let report = if matches!(case, Case::ForgemasterChoices { .. }) {
             let shard = forgemaster::claim_shard();
             let report = crate::content::world_reward_claims::bind_reward_claims(
                 world.base().as_ref(),
@@ -580,7 +599,7 @@ fn scenario_case(
             })
         };
         let target = target_at(chest.0)?;
-        if matches!(case, Case::ForgemasterChoices) {
+        if let Case::ForgemasterChoices { shared_marker } = case {
             let digest = report
                 .served
                 .iter()
@@ -597,20 +616,29 @@ fn scenario_case(
                     .is_ok()
             );
             owner.active_generation = Some(generation);
-            owner.quest_catalogue = Some(forgemaster::catalogue(digest)?);
+            owner.quest_catalogue = Some(forgemaster::catalogue(digest, shared_marker)?);
             owner.movement_cells = (&cells).into();
             owner.admit_progression_session(&mut admitted).await;
             owner.admit_quest_session(&admitted).await;
             deps.initialize(&owner).await;
-            let before =
-                forgemaster::use_chest(&mut owner, &admitted, deps.actor, 1, &target).await?;
-            assert_eq!(before, UseDisposition::Rejected);
-            assert_eq!(forgemaster::claim_count(&harness).await?, 0);
+            if shared_marker {
+                let before =
+                    forgemaster::use_chest(&mut owner, &admitted, deps.actor, 1, &target).await?;
+                assert_eq!(before, UseDisposition::Rejected);
+                assert_eq!(forgemaster::claim_count(&harness).await?, 0);
+            }
             forgemaster::allow_access(&owner, &admitted).await?;
-            assert_eq!(
-                forgemaster::use_chest(&mut owner, &admitted, deps.actor, 2, &target).await?,
-                UseDisposition::Committed
-            );
+            let result =
+                forgemaster::use_chest(&mut owner, &admitted, deps.actor, 2, &target).await?;
+            if !shared_marker {
+                assert_eq!(result, UseDisposition::NotPossible);
+                assert_eq!(forgemaster::claim_count(&harness).await?, 0);
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return harness.cleanup().await;
+            }
+            assert_eq!(result, UseDisposition::Committed);
             let alternate = target_at(chest.0 - 2)?;
             assert_eq!(
                 forgemaster::use_chest(&mut owner, &admitted, deps.actor, 3, &alternate).await?,
