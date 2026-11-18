@@ -16,7 +16,7 @@ fn gravedg_zelos_two_players_regeneration_and_timeout_postgres() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    super::engenc2_cults::phase_scenario(false, true)
+    super::engenc2_cults::phase_scenario(super::engenc2_cults::PhaseScenario::Zelos)
 }
 
 pub(super) fn configure(callback: &mut Callback) -> TestResult {
@@ -154,7 +154,7 @@ pub(super) async fn exercise(
     Ok(())
 }
 
-async fn tick_at(owner: &ComposedFreshAdmission<'_, '_, '_>, now: u64) {
+pub(super) async fn tick_at(owner: &ComposedFreshAdmission<'_, '_, '_>, now: u64) {
     use std::sync::atomic::Ordering;
     owner.states.test_owner_time.store(now + 1, Ordering::Relaxed);
     owner.drain_quest_encounter_deadlines().await;

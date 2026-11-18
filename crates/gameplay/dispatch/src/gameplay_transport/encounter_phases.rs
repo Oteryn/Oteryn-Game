@@ -5,6 +5,7 @@ use crate::foundation::{
     MovementPositionSnapshot,
 };
 use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
+use oteryn_gameplay_encounters::bosses::phase_controller::sirs::SirsEncounter;
 use oteryn_gameplay_encounters::bosses::phase_controller::zelos::ZelosEncounter;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
@@ -19,19 +20,18 @@ pub(super) struct ActivePhase {
     credits: Vec<grizzly_kills::EncounterCredit>,
     frozen: Option<(ExactActorRef, Vec<super::quest_kills::Recipient>)>,
     cells: crate::content::NativeEntryMovementCells,
-    zelos_room: Option<ZelosRoom>,
+    timed_room: Option<TimedRoom>,
 }
 
 #[derive(Debug)]
-struct ZelosRoom {
+struct TimedRoom {
     exit: MovementLocalPosition,
-    north_gate: MovementLocalPosition,
-    north_arrival: MovementLocalPosition,
+    north_vortex: Option<(MovementLocalPosition, MovementLocalPosition)>,
     min: MovementLocalPosition,
     max: MovementLocalPosition,
 }
 
-impl ZelosRoom {
+impl TimedRoom {
     fn contains(&self, at: MovementLocalPosition) -> bool {
         self.min.floor == at.floor
             && (self.min.x..=self.max.x).contains(&at.x)
@@ -42,6 +42,7 @@ impl ZelosRoom {
 #[derive(Debug)]
 enum Fight {
     Cults(CultsEncounter),
+    Sirs(SirsEncounter),
     Zelos(ZelosEncounter),
 }
 
@@ -49,6 +50,7 @@ impl Fight {
     fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
         match self {
             Self::Cults(fight) => fight.is_current(runtime),
+            Self::Sirs(fight) => fight.is_current(runtime),
             Self::Zelos(fight) => fight.is_current(runtime),
         }
     }
@@ -56,6 +58,7 @@ impl Fight {
     fn contains(&self, actor: ExactActorRef) -> bool {
         match self {
             Self::Cults(fight) => fight.contains(actor),
+            Self::Sirs(fight) => fight.contains(actor),
             Self::Zelos(fight) => fight.contains(actor),
         }
     }
@@ -63,6 +66,7 @@ impl Fight {
     fn contains_terminal(&self, actor: ExactActorRef) -> bool {
         match self {
             Self::Cults(fight) => fight.contains_terminal(actor),
+            Self::Sirs(_) => false,
             Self::Zelos(fight) => fight.contains_terminal(actor),
         }
     }
@@ -73,6 +77,7 @@ impl Fight {
     ) -> Result<Option<&[(ExactActorRef, GameSessionId)]>, CarrierError> {
         match self {
             Self::Cults(fight) => fight.victors(runtime),
+            Self::Sirs(fight) => fight.victors(runtime),
             Self::Zelos(fight) => fight.victors(runtime),
         }
     }
@@ -84,7 +89,16 @@ impl Fight {
     ) -> Result<bool, CarrierError> {
         match self {
             Self::Cults(fight) => fight.projected_death(runtime, actor),
+            Self::Sirs(fight) => fight.projected_death(runtime, actor),
             Self::Zelos(fight) => fight.projected_death(runtime, actor),
+        }
+    }
+
+    fn timeout_participants(&self, now: u64) -> Option<&[(ExactActorRef, GameSessionId)]> {
+        match self {
+            Self::Cults(_) => None,
+            Self::Sirs(fight) => fight.timeout_participants(now),
+            Self::Zelos(fight) => fight.timeout_participants(now),
         }
     }
 
@@ -92,12 +106,30 @@ impl Fight {
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         now: Option<u64>,
-        at: impl Fn(&ChannelRuntimeV1, MovementLocalPosition) -> bool,
+        cells: &crate::content::NativeEntryMovementCells,
     ) -> Result<bool, CarrierError> {
         match self {
-            Self::Cults(fight) => fight.advance(runtime, at).map(|_| true),
+            Self::Cults(fight) => fight
+                .advance(runtime, |runtime, at| placement(cells, runtime, at))
+                .map(|_| true),
+            Self::Sirs(fight) => match now {
+                Some(now) => fight.advance(runtime, now, |runtime, actor, at| {
+                    let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(
+                        index,
+                    ) = cells.index()
+                    else {
+                        return Err(CarrierError::PlanConflict);
+                    };
+                    let doors = crate::map::floor::BundleDoors(&index.map().facts);
+                    crate::movement::relocate::relocate_creature(runtime, actor, cells, &doors, at)
+                        .map(|_| ())
+                }),
+                None => Ok(true),
+            },
             Self::Zelos(fight) => match now {
-                Some(now) => fight.advance(runtime, now, at),
+                Some(now) => {
+                    fight.advance(runtime, now, |runtime, at| placement(cells, runtime, at))
+                }
                 None => Ok(true),
             },
         }
@@ -116,6 +148,7 @@ impl Registry {
             .ok()?
             .iter()
             .filter_map(|phase| match &phase.fight {
+                Fight::Sirs(fight) => Some(fight.next_due_us()),
                 Fight::Zelos(fight) => Some(fight.next_due_us()),
                 Fight::Cults(_) => None,
             })
@@ -131,13 +164,14 @@ impl Registry {
         now: u64,
     ) -> Option<Option<MovementLocalPosition>> {
         self.active.lock().ok()?.iter().find_map(|phase| {
-            let (Fight::Zelos(zelos), Some(room)) = (&phase.fight, &phase.zelos_room) else {
+            let (Fight::Zelos(zelos), Some(room)) = (&phase.fight, &phase.timed_room) else {
                 return None;
             };
-            (room.north_gate == at && zelos.is_current(runtime)).then(|| {
+            let (north_gate, north_arrival) = room.north_vortex?;
+            (north_gate == at && zelos.is_current(runtime)).then(|| {
                 zelos
                     .north_gate_open(runtime, actor, session, now)
-                    .then_some(room.north_arrival)
+                    .then_some(north_arrival)
             })
         })
     }
@@ -157,9 +191,7 @@ impl Registry {
                     // Credit was captured in the lethal turn. Release the lever
                     // only after exact terminal decorations retire; tick retries failures.
                     let ActivePhase { fight, cells, .. } = phase;
-                    fight
-                        .advance(runtime, None, |runtime, at| placement(cells, runtime, at))
-                        .is_err()
+                    fight.advance(runtime, None, cells).is_err()
                 }
                 Ok(None) => phase
                     .frozen
@@ -187,15 +219,14 @@ impl Registry {
             return;
         };
         for phase in active.iter_mut().filter(|p| p.fight.contains(actor)) {
-            if matches!(&phase.fight, Fight::Zelos(zelos) if zelos.timeout_participants(now).is_some())
-            {
+            if phase.fight.timeout_participants(now).is_some() {
                 continue;
             }
             if phase.fight.projected_death(runtime, actor).is_ok()
                 && matches!(phase.fight, Fight::Cults(_))
             {
                 let ActivePhase { fight, cells, .. } = phase;
-                let _ = fight.advance(runtime, None, |runtime, at| placement(cells, runtime, at));
+                let _ = fight.advance(runtime, None, cells);
             }
         }
         // Keep terminal admission credit until the same lethal turn captures it.
@@ -268,46 +299,68 @@ pub(super) fn bind(
         .encounter
         .as_ref()
         .ok_or(CarrierError::PlanConflict)?;
-    if let Some(EncounterPhase::GraveDangerZelos {
-        exit,
-        north_gate,
-        north_arrival,
-    }) = encounter.phase
-    {
-        let local =
-            |at: oteryn_gameplay_quests::quest::world_callbacks::Position| MovementLocalPosition {
-                x: i32::from(at.x),
-                y: i32::from(at.y),
-                floor: -i16::from(at.floor),
-            };
-        let zelos_room = ZelosRoom {
-            exit: local(exit),
-            north_gate: local(north_gate),
-            north_arrival: local(north_arrival),
-            min: local(encounter.room_min),
-            max: local(encounter.room_max),
+    let local =
+        |at: oteryn_gameplay_quests::quest::world_callbacks::Position| MovementLocalPosition {
+            x: i32::from(at.x),
+            y: i32::from(at.y),
+            floor: -i16::from(at.floor),
         };
-        if zelos_room.contains(zelos_room.exit)
-            || !zelos_room.contains(zelos_room.north_gate)
-            || !zelos_room.contains(zelos_room.north_arrival)
-            || zelos_room.north_gate == zelos_room.north_arrival
-            || ![
-                zelos_room.exit,
-                zelos_room.north_gate,
-                zelos_room.north_arrival,
-            ]
-            .into_iter()
-            .all(|at| placement(&cells, runtime, at))
-        {
-            return Err(CarrierError::PlanConflict);
+    let make_room = |exit, north_vortex| TimedRoom {
+        exit: local(exit),
+        north_vortex,
+        min: local(encounter.room_min),
+        max: local(encounter.room_max),
+    };
+    let timed = match encounter.phase {
+        Some(EncounterPhase::GraveDangerSirs { exit, fight }) => {
+            let room = make_room(exit, None);
+            let fight = fight.map(local);
+            if room.contains(room.exit)
+                || !placement(&cells, runtime, room.exit)
+                || !fight
+                    .into_iter()
+                    .all(|at| room.contains(at) && placement(&cells, runtime, at))
+            {
+                return Err(CarrierError::PlanConflict);
+            }
+            Some((
+                Fight::Sirs(SirsEncounter::bind(runtime, players, actors, fight, now)?),
+                room,
+            ))
         }
+        Some(EncounterPhase::GraveDangerZelos {
+            exit,
+            north_gate,
+            north_arrival,
+        }) => {
+            let gate = local(north_gate);
+            let arrival = local(north_arrival);
+            let room = make_room(exit, Some((gate, arrival)));
+            if room.contains(room.exit)
+                || !room.contains(gate)
+                || !room.contains(arrival)
+                || gate == arrival
+                || ![room.exit, gate, arrival]
+                    .into_iter()
+                    .all(|at| placement(&cells, runtime, at))
+            {
+                return Err(CarrierError::PlanConflict);
+            }
+            Some((
+                Fight::Zelos(ZelosEncounter::bind(runtime, players, actors, now)?),
+                room,
+            ))
+        }
+        _ => None,
+    };
+    if let Some((fight, room)) = timed {
         return Ok(ActivePhase {
             key,
-            fight: Fight::Zelos(ZelosEncounter::bind(runtime, players, actors, now)?),
+            fight,
             credits,
             frozen: None,
             cells,
-            zelos_room: Some(zelos_room),
+            timed_room: Some(room),
         });
     }
     if encounter.phase != Some(EncounterPhase::Cults) || actors.len() != 10 {
@@ -365,7 +418,7 @@ pub(super) fn bind(
         credits,
         frozen: None,
         cells,
-        zelos_room: None,
+        timed_room: None,
     })
 }
 
@@ -435,21 +488,19 @@ fn tick_phase_kind(
             key,
             fight,
             cells,
-            zelos_room,
+            timed_room,
             ..
         } = phase;
-        if timed != matches!(fight, Fight::Zelos(_)) {
+        if timed != timed_room.is_some() {
             return true;
         }
-        if let (Fight::Zelos(fight), Some(timeout)) = (&*fight, zelos_room.as_ref())
+        if let Some(room) = timed_room.as_ref()
             && let Some(participants) = fight.timeout_participants(now)
-            && !evacuate(runtime, cells, timeout, participants, &mut exits)
+            && !evacuate(runtime, cells, room, participants, &mut exits)
         {
             return true;
         }
-        match fight.advance(runtime, Some(now), |runtime, at| {
-            placement(cells, runtime, at)
-        }) {
+        match fight.advance(runtime, Some(now), cells) {
             Ok(false) => return false,
             Ok(true) => {}
             Err(error) => {
@@ -505,7 +556,7 @@ type EvacuatedPlayer = (
 fn evacuate(
     runtime: &mut ChannelRuntimeV1,
     cells: &crate::content::NativeEntryMovementCells,
-    exit: &ZelosRoom,
+    exit: &TimedRoom,
     participants: &[(ExactActorRef, GameSessionId)],
     exits: &mut Vec<EvacuatedPlayer>,
 ) -> bool {

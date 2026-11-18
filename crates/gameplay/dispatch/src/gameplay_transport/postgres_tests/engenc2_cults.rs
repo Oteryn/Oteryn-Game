@@ -68,15 +68,23 @@ fn callback() -> TestResult<Callback> {
 
 #[test]
 fn engenc2_cults_callback_native_phases_and_settlement_postgres() -> TestResult {
-    phase_scenario(false, false)
+    phase_scenario(PhaseScenario::Cults { reenter: false })
 }
 
 #[test]
 fn qmrevfix_cults_second_lever_after_victory_postgres() -> TestResult {
-    phase_scenario(true, false)
+    phase_scenario(PhaseScenario::Cults { reenter: true })
 }
 
-pub(super) fn phase_scenario(reenter: bool, zelos: bool) -> TestResult {
+#[derive(Clone, Copy)]
+pub(super) enum PhaseScenario {
+    Cults { reenter: bool },
+    Sirs,
+    Zelos,
+}
+
+pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
+    let party_test = !matches!(scenario, PhaseScenario::Cults { .. });
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -88,8 +96,10 @@ pub(super) fn phase_scenario(reenter: bool, zelos: bool) -> TestResult {
                 Harness::create_with_admission_seed(admin, "engenc2_cults", true, false).await?;
             prepare_current_session(&h).await?;
             let mut callback = callback()?;
-            if zelos {
-                super::gravedg_zelos::configure(&mut callback)?;
+            match scenario {
+                PhaseScenario::Cults { .. } => {}
+                PhaseScenario::Sirs => super::gravedg_lich_knights::configure(&mut callback)?,
+                PhaseScenario::Zelos => super::gravedg_zelos::configure(&mut callback)?,
             }
             let trigger = Position {
                 x: 100,
@@ -270,7 +280,7 @@ pub(super) fn phase_scenario(reenter: bool, zelos: bool) -> TestResult {
                 for role in
                     oteryn_gameplay_encounters::bosses::phase_controller::cults::plan().roles
                 {
-                    if zelos { break; }
+                    if party_test { break; }
                     runtime.companion_policy(role.creature).map_err(|e| {
                         format!("production phase creature {}: {e:?}", role.creature)
                     })?;
@@ -288,7 +298,7 @@ pub(super) fn phase_scenario(reenter: bool, zelos: bool) -> TestResult {
                     .is_some(),
                 "admitted quest snapshot"
             );
-            let second = if zelos {
+            let second = if party_test {
                 Some(super::gravedg_zelos::admit_partner(&h, &deps, &owner, &admitted).await?)
             } else {
                 None
@@ -316,9 +326,19 @@ pub(super) fn phase_scenario(reenter: bool, zelos: bool) -> TestResult {
                 UseDisposition::Committed,
                 "phase admission"
             );
-            if let Some(second) = second {
-                return super::gravedg_zelos::exercise(&owner, &admitted, second).await;
-            }
+            let reenter = match scenario {
+                PhaseScenario::Cults { reenter } => reenter,
+                PhaseScenario::Sirs => {
+                    return super::gravedg_lich_knights::exercise(
+                        &owner, &admitted, second.ok_or("second admitted player")?,
+                    ).await;
+                }
+                PhaseScenario::Zelos => {
+                    return super::gravedg_zelos::exercise(
+                        &owner, &admitted, second.ok_or("second admitted player")?,
+                    ).await;
+                }
+            };
             assert_eq!(
                 owner
                     .states

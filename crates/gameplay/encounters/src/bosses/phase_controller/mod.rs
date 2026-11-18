@@ -8,6 +8,7 @@ use oteryn_gameplay_foundation::foundation::{RuntimeScopeRefV1, ScopeOwnershipGe
 
 pub mod cults;
 pub mod gates;
+pub mod sirs;
 #[cfg(test)]
 mod tests;
 pub mod zelos;

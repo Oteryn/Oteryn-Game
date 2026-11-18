@@ -317,6 +317,11 @@ pub struct Encounter {
 pub enum EncounterPhase {
     #[serde(rename = "cults_boss_phase_closures")]
     Cults,
+    #[serde(rename = "grave_danger_sirs")]
+    GraveDangerSirs {
+        exit: Position,
+        fight: [Position; 3],
+    },
     #[serde(rename = "grave_danger_zelos")]
     GraveDangerZelos {
         exit: Position,
@@ -848,6 +853,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase.is_some();
         let player_limit = match encounter.phase {
+            Some(EncounterPhase::GraveDangerSirs { .. }) => 5,
             Some(EncounterPhase::GraveDangerZelos { .. }) => 10,
             Some(EncounterPhase::Cults) => 16,
             None => 8,
@@ -875,6 +881,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                 .contains(&encounter.monsters.len())
             || (encounter.phase.is_some() && encounter.timing.is_some())
+            || matches!(encounter.phase, Some(EncounterPhase::GraveDangerSirs { exit, fight })
+                if encounter.monsters.len() != 2 || !pos(exit) || in_room(exit)
+                    || !fight.into_iter().all(|at| pos(at) && in_room(at))
+                    || fight.into_iter().collect::<BTreeSet<_>>().len() != fight.len())
             || matches!(encounter.phase, Some(EncounterPhase::GraveDangerZelos { exit, north_gate, north_arrival })
                 if encounter.monsters.len() < 5 || !pos(exit) || in_room(exit)
                     || !pos(north_gate) || !in_room(north_gate)

@@ -2,6 +2,7 @@
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::view::EntryFacts;
+use oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(
@@ -145,6 +146,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }) {
             return UseDisposition::Occupied;
         }
+        let grave_danger = matches!(
+            encounter.phase,
+            Some(EncounterPhase::GraveDangerSirs { .. } | EncounterPhase::GraveDangerZelos { .. })
+        );
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let mut players = Vec::new();
         let mut proofs = Vec::new();
@@ -155,8 +160,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let occupant = occupants.next();
             let Some(&(who, expected, Some(member_session))) = occupant else {
                 // Crystal boss levers collect whoever stands on the staging tiles.
-                if encounter.phase
-                    == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults)
+                if encounter.phase == Some(EncounterPhase::Cults)
                     || (encounter.phase.is_some() && occupant.is_none())
                 {
                     continue;
@@ -214,9 +218,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 local(member.to),
                 blocked,
                 &closed,
-                matches!(encounter.phase, Some(
-                    oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::GraveDangerZelos { .. }
-                )),
+                grave_danger,
             ) else {
                 return UseDisposition::NotPossible;
             };
@@ -295,7 +297,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None
         };
         let prepared = if let (Some(capture), Some(hash)) = (capture.as_mut(), scoped_hash) {
-            match capture.prepare_encounter(runtime, &callback.key, hash, &party) {
+            match capture.prepare_encounter(runtime, &callback.key, hash, &party, grave_danger) {
                 Ok(prepared) => Some(prepared),
                 Err(_) => return UseDisposition::Rejected,
             }
@@ -326,7 +328,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             |runtime, actors| {
                 let roster = if prepared.is_some() {
                     Some(oteryn_gameplay_entities::carrier::encounter_access::EncounterDefenders::from_admission(
-                        party.iter().map(|(actor, _)| *actor).collect(), actors.to_vec(),
+                        party.iter().map(|(actor, _)| *actor).collect(),
+                        if matches!(encounter.phase, Some(EncounterPhase::GraveDangerZelos { .. })) {
+                            actors.iter().copied().filter(|&actor| runtime.matches_live_creature_identity(
+                                actor, b"oteryn:creature.king_zelos",
+                            )).collect()
+                        } else {
+                            actors.to_vec()
+                        },
                     )?)
                 } else { None };
                 credits

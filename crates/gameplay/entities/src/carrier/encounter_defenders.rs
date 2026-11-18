@@ -12,7 +12,7 @@ impl EncounterDefenders {
         participants: &[ExactActorRef],
         defenders: &[ExactActorRef],
     ) -> Result<Self, CarrierError> {
-        if !(1..=8).contains(&participants.len()) || !(1..=8).contains(&defenders.len()) {
+        if !(1..=10).contains(&participants.len()) || !(1..=8).contains(&defenders.len()) {
             return Err(CarrierError::PlanConflict);
         }
         Self::from_admission(participants.to_vec(), defenders.to_vec())
@@ -23,7 +23,7 @@ impl EncounterDefenders {
         defenders: Vec<ExactActorRef>,
     ) -> Result<Self, CarrierError> {
         if participants.is_empty()
-            || participants.len() > 8
+            || participants.len() > 10
             || defenders.is_empty()
             || defenders.len() > 8
         {
