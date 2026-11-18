@@ -57,6 +57,21 @@ def append(add, callbacks, offers, declarations, inputs, pin):
         'next_topic':12,'storage':[state(child+'questline',17,17,preserve=True)],
         'reply':['Have you found the way which will lead us to the great gate?']})
 
+    # TibiaWiki quest reward and Phantom Army report, with Crystal's item identity.
+    add('l2-zalamon-phantom-army', 'children_of_the_revolution_quest', 'zalamon', ['mission'],
+        [state(child+'questline',20,21),state(child+'mission05',-1,3,maximum=3)], give=(10199,1))
+    callbacks[-1].update(experience=10000, requires_premium=True, reply=[
+        "Too clozze, far too clozze. I felt a huge impact not long after you left. Zze war machinery of zze emperor muzzt finally have been zztarted. ...",
+        "I focuzzed and could only hope zzat I would reach you before everyzzing wazz too late. If I hadn't been able to tranzzport you here, our cauzze would have been lozzt. ...",
+        "I'm afraid we cannot continue zzizz fight here today. Zze rezzizztanzze izz zztill fragile. I'm afraid, zzere izz zztill much left to do. We'll have to prepare for war. ...",
+        "You've helped uzz a great deal during zzezze dark hourzz, I've got zzomezzing for you my friend. Pleazze, take zzizz zzerpent crezzt azz a zzign of my deep rezzpect. ...",
+        "Rezzt for now, you will need it - you have earned it.",
+    ], sources=[
+        'https://tibia.fandom.com/?curid=41842&oldid=683807',
+        'https://tibia.fandom.com/?curid=41844&oldid=1160862',
+        'crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:150-162',
+    ])
+
     bone = 'oteryn:quest-progress/quest/u8_1/tibia_tales/into_the_bone_pit'
     warning = 'Indeed there is something to be done, but I need someone more experienced. Come back later if you want to.'
     muriel = 'data-global/npc/muriel.lua'

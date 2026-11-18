@@ -872,6 +872,52 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l2-zalamon-phantom-army",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 21
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission05",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i10199",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Too clozze, far too clozze. I felt a huge impact not long after you left. Zze war machinery of zze emperor muzzt finally have been zztarted. ...",
+        "I focuzzed and could only hope zzat I would reach you before everyzzing wazz too late. If I hadn't been able to tranzzport you here, our cauzze would have been lozzt. ...",
+        "I'm afraid we cannot continue zzizz fight here today. Zze rezzizztanzze izz zztill fragile. I'm afraid, zzere izz zztill much left to do. We'll have to prepare for war. ...",
+        "You've helped uzz a great deal during zzezze dark hourzz, I've got zzomezzing for you my friend. Pleazze, take zzizz zzerpent crezzt azz a zzign of my deep rezzpect. ...",
+        "Rezzt for now, you will need it - you have earned it."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=41842&oldid=683807",
+        "https://tibia.fandom.com/?curid=41844&oldid=1160862",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:150-162"
+      ],
+      "experience": 10000,
+      "requires_premium": true
+    },
+    {
       "key": "oteryn:quest-reward/l2-zalamon-tome",
       "quest": "oteryn:quest.children_of_the_revolution_quest",
       "npc": "oteryn:npc.zalamon",
