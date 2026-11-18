@@ -208,35 +208,42 @@ fn scenario(admin: String, npc: &'static str) -> TestResult {
             let ordinary = talk(owner, admitted, fence, entity, 1, "hi").await?;
             assert!(ordinary.lines.iter().all(|line| line != SCREAM));
             if npc == KAZZAN_NPC {
-                talk(owner, admitted, fence, entity, 2, "bye").await?;
                 let member = owner
                     .active_generation
                     .and_then(|g| g.native_gameplay())
                     .and_then(|native| native.spell_appearances())
                     .and_then(|book| book.for_look_type(65))
                     .ok_or("mummy appearance")?;
-                {
-                    let runtime = owner.runtime.lock().await;
-                    let mut states = owner.states.spell_states.lock().await;
-                    let state = states
-                        .get_mut(
-                            &runtime,
-                            admitted.runtime_actor.ok_or("actor")?,
-                            admitted.game_session_id,
+                // Crystal 201189f8 action_disguise.lua:1-3 sets a ten-second look.
+                // The owner's frozen clock advances two seconds per command below.
+                for (farewell, greeting, active) in [(2, 8, false), (9, 10, true)] {
+                    talk(owner, admitted, fence, entity, farewell, "bye").await?;
+                    {
+                        let runtime = owner.runtime.lock().await;
+                        let mut states = owner.states.spell_states.lock().await;
+                        let state = states
+                            .get_mut(
+                                &runtime,
+                                admitted.runtime_actor.ok_or("actor")?,
+                                admitted.game_session_id,
+                            )
+                            .ok_or("player state")?;
+                        crate::spell::actor_conditions::apply_appearance(
+                            state,
+                            member.selection(),
+                            member.look_type(),
+                            10_000,
+                            owner.owner_now().get() / 1000,
                         )
-                        .ok_or("player state")?;
-                    crate::spell::actor_conditions::apply_appearance(
-                        state,
-                        member.selection(),
-                        member.look_type(),
-                        10_000,
-                        owner.owner_now().get() / 1000,
-                    )
-                    .map_err(debug)?;
-                    state.advance_batch_revision().map_err(debug)?;
+                        .map_err(debug)?;
+                        state.advance_batch_revision().map_err(debug)?;
+                    }
+                    let greeted = talk(owner, admitted, fence, entity, greeting, "hi").await?;
+                    assert_eq!(greeted.lines.iter().any(|line| line == SCREAM), active);
+                    if active {
+                        assert_eq!(greeted.lines, [SCREAM]);
+                    }
                 }
-                let scared = talk(owner, admitted, fence, entity, 3, "hi").await?;
-                assert_eq!(scared.lines, [SCREAM]);
             } else if npc == WYDA_NPC {
                 let offer = talk(owner, admitted, fence, entity, 2, "cookie").await?;
                 assert_eq!(offer.lines, [COOKIE_PROMPT]);

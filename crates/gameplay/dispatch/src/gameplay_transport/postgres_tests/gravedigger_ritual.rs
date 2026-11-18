@@ -34,7 +34,8 @@ fn scenario(admin: String) -> TestResult {
         floor: -11,
     };
     // Crystal 201189f8 data-global/scripts/quests/the_gravedigger_of_drefia/actions_sacrifice.lua:3-17.
-    // Gravedigger ID 326: data/scripts/lib/register_achievements.lua:327; assignment: Fandom archive quest spoiler.
+    // Gravedigger ID 326: data/scripts/lib/register_achievements.lua:327.
+    // Timing: Tibia Fandom archive, The Gravedigger of Drefia Quest/Spoiler, The Right Rite.
     let callback: Callback = serde_json::from_value(serde_json::json!({
         "key": "oteryn:quest-callback/fixture/right-rite",
         "quest": QUEST, "trigger": "use",
@@ -50,7 +51,10 @@ fn scenario(admin: String) -> TestResult {
         "success_message": "The scroll burns to dust. The magic stutters. Omrabas' soul flees to his old hideaway.",
         "achievements": [ACHIEVEMENT],
         "effects": { "direct_item_use": true, "creature_spawn": { "creature": CHICKEN, "position": altar } },
-        "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_sacrifice.lua:3-17"]
+        "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_sacrifice.lua:3-17",
+            "wiki:https://tibia.fandom.com/wiki/The_Gravedigger_of_Drefia_Quest/Spoiler#Vol.3,_Ch.6:_The_Right_Rite"
+        ]
     }))?;
     let world = quest_world_callbacks::world_with_cells(&callback, altar, &[])?;
     let tracks = [(MISSION_74, 1), (MISSION_75, 0)].map(|(key, initial)| QuestTrack {
