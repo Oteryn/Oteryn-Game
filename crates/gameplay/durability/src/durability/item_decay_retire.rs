@@ -69,6 +69,8 @@ use sqlx::Row;
 
 mod activity_retirement;
 pub use activity_retirement::ActivityGroundRetirement;
+mod arena_reset;
+pub use arena_reset::ArenaGroundObservation;
 mod world_reset_cause;
 use world_reset_cause::RetireCause;
 
@@ -430,6 +432,7 @@ async fn admit(
     step: DecayRetireStep,
 ) -> Pass<Admitted> {
     match step.cause {
+        RetireCause::ArenaReset => return Ok(Err(DecayRetireError::AuthorityRejected)),
         RetireCause::WorldReset(reset) => {
             return world_reset_cause::admit(root, node, tx, fence, step, reset).await;
         }

@@ -11,6 +11,7 @@ pub(super) use ground_admission::{admit, admit_ground};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum RetireCause {
     CorpseDecay,
+    ArenaReset,
     WorldReset(RetiringWorldReset),
     ActivityRetirement(ActivityRetirementBinding),
 }
@@ -31,25 +32,26 @@ impl RetireCause {
     pub(super) fn tag(self) -> &'static str {
         match self {
             Self::CorpseDecay => "CORPSE_DECAY",
+            Self::ArenaReset => "ARENA_RESET",
             Self::WorldReset(_) => "WORLD_RESET",
             Self::ActivityRetirement(_) => "ACTIVITY_RETIREMENT",
         }
     }
     pub(super) fn epoch(self) -> Option<String> {
         match self {
-            Self::CorpseDecay | Self::ActivityRetirement(_) => None,
+            Self::CorpseDecay | Self::ArenaReset | Self::ActivityRetirement(_) => None,
             Self::WorldReset(reset) => Some(reset.epoch.to_string()),
         }
     }
     pub(super) fn binding(self) -> Option<Vec<u8>> {
         match self {
-            Self::CorpseDecay | Self::ActivityRetirement(_) => None,
+            Self::CorpseDecay | Self::ArenaReset | Self::ActivityRetirement(_) => None,
             Self::WorldReset(reset) => Some(reset.binding.to_vec()),
         }
     }
     pub(super) fn target(self) -> Option<Vec<u8>> {
         match self {
-            Self::CorpseDecay | Self::ActivityRetirement(_) => None,
+            Self::CorpseDecay | Self::ArenaReset | Self::ActivityRetirement(_) => None,
             Self::WorldReset(reset) => Some(reset.target.to_vec()),
         }
     }
@@ -60,6 +62,7 @@ pub(super) fn decode_cause(
 ) -> std::result::Result<RetireCause, DurabilityError> {
     match row.try_get::<&str, _>("cause_kind")? {
         "CORPSE_DECAY" => Ok(RetireCause::CorpseDecay),
+        "ARENA_RESET" => Ok(RetireCause::ArenaReset),
         "WORLD_RESET" => Ok(RetireCause::WorldReset(RetiringWorldReset {
             world: WorldId::decode(&uuid_text(row.try_get("world_id")?)?)
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
@@ -103,7 +106,7 @@ pub(super) fn bind_message(message: &mut OneItemDecayRetireV1, cause: RetireCaus
         .as_ref()
         .map_or_else(Vec::new, |state| state.item_instance_id.clone());
     match cause {
-        RetireCause::CorpseDecay => return,
+        RetireCause::CorpseDecay | RetireCause::ArenaReset => return,
         RetireCause::WorldReset(reset) => {
             message.world_reset = Some(audit::OneItemWorldResetV1 {
                 world_id: reset.world.as_bytes().to_vec(),

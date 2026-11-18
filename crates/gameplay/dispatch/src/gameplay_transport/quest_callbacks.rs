@@ -1277,7 +1277,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             entered
         };
         if let Some(landing) = self
-            .step_arena_entrance(actor, session, origin, entered)
+            .step_arena_entrance(permit, actor, session, origin, entered)
             .await
         {
             return landing;

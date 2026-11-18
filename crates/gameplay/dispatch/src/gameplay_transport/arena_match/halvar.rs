@@ -1,6 +1,7 @@
 //! Crystal 201189f8 data-global/npc/halvar.lua:70-115 and
 //! scripts/quests/svargrond_arena/movements_arena_enter.lua:3-40.
 use super::*;
+use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::MovementPositionSnapshot;
 use crate::gameplay_transport::{
     connection::UseCommand,
@@ -189,7 +190,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return reply("Sorry, not possible.");
         };
         let contact = Contact::Halvar(&intent, &context);
-        match self.settle_arena_admission(actor, proof, &contact).await {
+        match self
+            .settle_arena_admission(None, actor, proof, &contact)
+            .await
+        {
             Some(D::Applied) => {
                 let mut outcome = reply(
                     "As you wish! You can pass the door now and enter the teleporter to the pits.",
@@ -204,6 +208,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     pub(in crate::gameplay_transport) async fn step_arena_entrance(
         &self,
+        permit: &SpellLanePermit,
         actor: ExactActorRef,
         session: GameSessionId,
         origin: MovementPositionSnapshot,
@@ -222,7 +227,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.reset_epoch,
         )?;
         if self
-            .settle_arena_admission(actor, proof, &Contact::Entrance(entered, source))
+            .settle_arena_admission(
+                Some(permit),
+                actor,
+                proof,
+                &Contact::Entrance(entered, source),
+            )
             .await
             == Some(D::Applied)
         {
@@ -257,6 +267,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     async fn settle_arena_admission(
         &self,
+        permit: Option<&SpellLanePermit>,
         actor: ExactActorRef,
         proof: durable::NativeArenaAdmission,
         contact: &Contact<'_>,
@@ -293,6 +304,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && before.session == *session.as_bytes()
             && before.scope_generation == fence.scope_ownership_generation.get()
         {
+            pit_reset::reset_ground(self, permit?, actor, fence, &before).await?;
             self.restore_arena_projection(actor, session, &before, read.now_ms)
                 .await?;
             return Some(D::Applied);
@@ -401,6 +413,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok()?;
         let result = wire::decode_match_result(&bytes).ok()?;
         if !paying && result.disposition == D::Applied {
+            pit_reset::reset_ground(self, permit?, actor, fence, &after).await?;
             self.restore_arena_projection(actor, session, &after, read.now_ms)
                 .await?;
         }
