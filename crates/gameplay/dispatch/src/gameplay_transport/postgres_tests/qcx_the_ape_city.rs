@@ -121,6 +121,8 @@ fn scenario(name: &'static str, case: Case) -> TestResult {
             Case::Shaman => shaman_reward(&h, &mut owner, &mut admitted).await?,
             Case::Catacombs => catacombs_mission(&h, &mut owner, &mut admitted).await?,
         }
+        drop(authority);
+        drop(seal);
         h.cleanup().await
     })
 }
@@ -160,11 +162,11 @@ async fn syrup_purchase(
     Ok(())
 }
 
-async fn unlocks(h: &Harness) -> TestResult<i64> {
+async fn unlocks(h: &Harness) -> TestResult<Vec<String>> {
     Ok(sqlx::query_scalar(
-        "SELECT count(*) FROM game_account_appearance_unlock_receipts WHERE unlock_key LIKE 'oteryn:outfit.shaman/quest-grant/%'",
+        "SELECT unlock_key FROM game_account_appearance_unlock_receipts WHERE unlock_key LIKE 'oteryn:outfit.shaman/quest-grant/%'",
     )
-    .fetch_one(&h.pool)
+    .fetch_all(&h.pool)
     .await?)
 }
 
@@ -175,13 +177,14 @@ async fn shaman_reward(
 ) -> TestResult {
     let [npc] = super::classic_quests::install(owner, admitted, ["oteryn:npc.hairycles"]).await?;
     conversation(owner, admitted, npc, 20, "shamanic powers").await?;
-    assert_eq!(unlocks(h).await?, 0, "before quest completion");
+    assert!(unlocks(h).await?.is_empty(), "before quest completion");
 
     // Set only the historical questline prerequisite. NPC_TALK must write the
     // separate outfit flag and the durable outfit receipt in the same request.
     historical_stage(h, owner, admitted, 18).await?;
     conversation(owner, admitted, npc, 30, "shamanic powers").await?;
-    assert_eq!(unlocks(h).await?, 1, "confirmed Shaman base outfit");
+    let expected = ["oteryn:outfit.shaman/quest-grant/0"];
+    assert_eq!(unlocks(h).await?, expected, "confirmed Shaman base outfit");
     let flag: i64 =
         sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
             .bind(SHAMAN)
@@ -190,7 +193,11 @@ async fn shaman_reward(
     assert_eq!(flag, 1);
 
     conversation(owner, admitted, npc, 40, "shamanic powers").await?;
-    assert_eq!(unlocks(h).await?, 1, "repeated request cannot grant twice");
+    assert_eq!(
+        unlocks(h).await?,
+        expected,
+        "repeated request cannot grant twice"
+    );
     Ok(())
 }
 
