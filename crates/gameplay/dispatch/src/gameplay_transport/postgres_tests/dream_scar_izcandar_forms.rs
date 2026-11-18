@@ -160,7 +160,7 @@ pub(super) async fn exercise(
         .try_into()
         .map_err(|_| "base form")?;
     let expiry = due(owner)?;
-    let (health, started) = {
+    let (winter_health, started) = {
         let mut runtime = owner.runtime.lock().await;
         for player in [first, second] {
             assert_eq!(
@@ -171,14 +171,20 @@ pub(super) async fn exercise(
                 local(ENTRY)
             );
         }
-        damage(&mut runtime, initial).map_err(debug)?;
+        damage(&mut runtime, initial, BASE, b"before-winter").map_err(debug)?;
         let health = runtime
             .live_creature_health(initial)
             .ok_or("injured form")?;
+        let winter_maximum = u64::try_from(
+            runtime
+                .companion_policy(WINTER)
+                .map_err(debug)?
+                .maximum_health,
+        )?;
         let states = owner.states.spell_states.lock().await;
         let started = owner.owner_now().get();
         owner.observe_quest_encounter_forms(&mut runtime, &states, started);
-        (health, started)
+        (health.min(winter_maximum), started)
     };
     let winter_due = due(owner)?;
     assert!((10_000_000..=20_000_000).contains(&(winter_due - started)));
@@ -192,19 +198,24 @@ pub(super) async fn exercise(
         .try_into()
         .map_err(|_| "winter form")?;
     assert!(live(owner, BASE).await?.is_empty());
-    {
+    let health = {
         let mut runtime = owner.runtime.lock().await;
         assert!(runtime.companion_snapshot(initial).is_err());
         let before = runtime.read_actor_position(winter).map_err(debug)?;
         assert_eq!(before.position(), local(EAST));
-        assert_eq!(runtime.live_creature_health(winter), Some(health));
+        assert_eq!(runtime.live_creature_health(winter), Some(winter_health));
+        damage(&mut runtime, winter, WINTER, b"before-summer").map_err(debug)?;
+        let health = runtime
+            .live_creature_health(winter)
+            .ok_or("injured winter form")?;
         runtime
             .borrow_movement_position()
             .commit_creature_relocation(winter, before, local(WEST))
             .map_err(debug)?;
         let states = owner.states.spell_states.lock().await;
         owner.observe_quest_encounter_forms(&mut runtime, &states, owner.owner_now().get());
-    }
+        health
+    };
     let [interim] = live(owner, BASE)
         .await?
         .try_into()
@@ -270,13 +281,15 @@ async fn advance(owner: &mut ComposedFreshAdmission<'_, '_, '_>, deadline: u64) 
 fn damage(
     runtime: &mut crate::foundation::ChannelRuntimeV1,
     boss: ExactActorRef,
+    form: &str,
+    occurrence: &[u8],
 ) -> Result<oteryn_gameplay_entities::OwnerDamageResult, crate::foundation::CarrierError> {
     runtime.borrow_exact_actor_commit_at_us(1).commit_damage(
         boss,
         OwnerDamageCommand {
-            target: BASE.as_bytes(),
-            occurrence: b"before-form",
-            binding: b"before-form",
+            target: form.as_bytes(),
+            occurrence,
+            binding: occurrence,
             damage: 101,
         },
     )
