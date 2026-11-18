@@ -629,17 +629,30 @@ async fn socket_window(
         // The scheduler first runs after even the last field's visible lifetime.
         let last_expiry = expiry.last().ok_or("socket deadlines")?.0;
         owner.states.test_owner_time.store(last_expiry + 1, Ordering::Relaxed);
-        assert_eq!(map.facts.expire_movement_items(last_expiry), count * 2);
+        assert!(map.facts.next_movement_decay_time().is_some());
+        assert_eq!(map.facts.object_revision(centre), 0);
+        assert!(map.facts.next_presence_opening().is_none());
+        // Run the same owner cycle as the server without a client or manual deadline drain.
+        let stop = oteryn_foundation::CancellationToken::new();
+        let observe = async {
+            while map.facts.object_revision(centre) != 1 {
+                tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+            }
+            stop.cancel();
+        };
+        tokio::time::timeout(
+            std::time::Duration::from_secs(15),
+            super::fixture::join_two(owner.run_source_owner_cycles(&stop), observe),
+        ).await.map_err(|_| "Channel owner did not open the paid socket room and stop")?;
         assert!(map.facts.next_movement_decay_time().is_none());
+        assert!(map.facts.next_presence_opening().is_none());
         for (_, tile) in expiry.drain(..) {
             assert!(map.facts.movement_items(tile).is_empty());
         }
-        assert_eq!(map.facts.object_revision(centre), 0);
-        assert!(map.facts.next_presence_opening().is_some());
+    } else {
         owner.drain_paid_presence_opening().await;
     }
     assert_eq!(track_value(h, SOCKET_PHASE).await?, 10);
-    owner.drain_paid_presence_opening().await;
     let opened: Vec<(i64, i64)> = sqlx::query_as(
         "SELECT values_before[1],values_after[1] FROM game_character_quest_receipts WHERE transition_key LIKE 'oteryn:quest-timed-presence/%'",
     ).fetch_all(&h.pool).await?;
