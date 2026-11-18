@@ -353,7 +353,9 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if super::super::banshee_seal_ambushes::matches(name) {
+    let mut callback = if name == super::super::rookie_guard_wolf_return::NAME {
+        super::super::rookie_guard_wolf_return::callback()?
+    } else if super::super::banshee_seal_ambushes::matches(name) {
         super::super::banshee_seal_ambushes::callback(name)?
     } else if super::super::banshee_seal_offerings::matches(name) {
         super::super::banshee_seal_offerings::callback(name)?
@@ -653,7 +655,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if name == super::super::banshee_queen_kiss::NAME {
+    let world = if name == super::super::rookie_guard_wolf_return::NAME {
+        world_with_objects(&callback, trigger, &[(super::super::rookie_guard_wolf_return::EXIT, 100)], &[])?
+    } else if name == super::super::banshee_queen_kiss::NAME {
         world_with_cells(&callback, trigger, &[super::super::banshee_queen_kiss::LANDING])?
     } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::world()?
@@ -3121,6 +3125,8 @@ fn scenario_case(
         } else if name == "questpc2-oldrak-npc" {
             super::super::questpc2_oldrak::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
+        } else if name == super::super::rookie_guard_wolf_return::NAME {
+            Box::pin(super::super::rookie_guard_wolf_return::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if super::super::banshee_seal_ambushes::matches(name) {
             Box::pin(super::super::banshee_seal_ambushes::exercise(&mut owner, &mut admitted, &h, name)).await?;
         } else if super::super::banshee_seal_offerings::matches(name) {

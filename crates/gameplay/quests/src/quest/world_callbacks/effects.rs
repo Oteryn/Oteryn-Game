@@ -412,7 +412,11 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
-    if effects.personal_return.as_ref().is_some_and(|timer| !super::personal_return::valid(callback, timer)) {
+    if effects
+        .personal_return
+        .as_ref()
+        .is_some_and(|timer| !super::personal_return::valid(callback, timer))
+    {
         return false;
     }
     let inputs = &effects.carried_inputs;

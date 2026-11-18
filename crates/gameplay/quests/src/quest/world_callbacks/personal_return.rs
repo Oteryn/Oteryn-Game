@@ -62,7 +62,9 @@ pub(super) fn valid(callback: &Callback, timer: &PersonalReturn) -> bool {
     callback.trigger == Trigger::StepIn
         && callback.actor_kind == ActorKind::Player
         && callback.requires_world_admission
-        && callback.personal_return_key().is_some_and(|key| super::super::valid_quest_key(&key))
+        && callback
+            .personal_return_key()
+            .is_some_and(|key| super::super::valid_quest_key(&key))
         && callback.operation_count() == 0
         && callback.teleport.is_none()
         && callback.passages.is_empty()
@@ -71,8 +73,12 @@ pub(super) fn valid(callback: &Callback, timer: &PersonalReturn) -> bool {
         && callback.effects.ambush.is_empty()
         && callback.effects.party_transfer.is_none()
         && callback.effects.scene.is_none()
-        && !storage.preserve && !storage.read_only && !storage.increment && !storage.at_least
-        && storage.set_if.is_none() && storage.add.is_none()
+        && !storage.preserve
+        && !storage.read_only
+        && !storage.increment
+        && !storage.at_least
+        && storage.set_if.is_none()
+        && storage.add.is_none()
         && storage.minimum == storage.maximum
         && storage.minimum == timer.retry_value
         && timer.retry_value != storage.set

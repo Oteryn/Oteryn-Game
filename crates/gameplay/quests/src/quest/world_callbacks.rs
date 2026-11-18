@@ -693,7 +693,8 @@ pub fn fixture_catalogue(
             .with_fixture_transition(primary_transition(callback)?)
             .map_err(|error| format!("{error:?}"))?;
         if let Some(transition) = callback.personal_return_transition()? {
-            catalogue = catalogue.with_fixture_transition(transition)
+            catalogue = catalogue
+                .with_fixture_transition(transition)
                 .map_err(|error| format!("{error:?}"))?;
         }
     }
