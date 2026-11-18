@@ -401,10 +401,10 @@ pub(super) fn gathering_scenario(
             );
         }
         let reference = |key: &str| index.definition_ref("Item", key, "definition-r1");
-        let spent_sewer = in_sewers && tool == 9306
+        let spent_water = tool == 9306
             && oteryn_gameplay_items::fishing::MECHANICAL_FISHING_SPENT_WATER.contains(&target_id);
-        let sewer = spent_sewer || (in_sewers && tool == 9306
-            && oteryn_gameplay_items::fishing::MECHANICAL_FISHING_WATER.contains(&target_id));
+        let sewer = in_sewers && tool == 9306
+            && (spent_water || oteryn_gameplay_items::fishing::MECHANICAL_FISHING_WATER.contains(&target_id));
         let bait_key = if sewer {
             oteryn_gameplay_items::fishing::NAIL
         } else {
@@ -518,7 +518,7 @@ pub(super) fn gathering_scenario(
         owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let skill = shock_skill.unwrap_or(10);
-        if shock_skill.is_some() || spent_sewer {
+        if shock_skill.is_some() || spent_water {
             use crate::durability::character_build::DurableBuildState;
             use oteryn_gameplay_progression::hit_training::SkillFamily;
             let mut skills = [(10, 0); 7];
@@ -690,7 +690,7 @@ pub(super) fn gathering_scenario(
             .ok_or("deterministic handle history exists")?;
         admitted.continuity.item_view.handle_counter = counter;
         let command_id = 1;
-        let before = if shock_skill.is_some() || spent_sewer {
+        let before = if shock_skill.is_some() || spent_water {
             Some(super::mechanical_fishing_shock::health(&owner, &admitted).await?)
         } else {
             None
@@ -714,7 +714,7 @@ pub(super) fn gathering_scenario(
                 UseDisposition::NothingToUse
             }
         );
-        if spent_sewer {
+        if spent_water {
             let (_, replay, _) = exchange(&owner, next, command_id, &actual, None).await?;
             assert_eq!(replay, UseDisposition::NothingToUse);
             assert_eq!(Some(super::mechanical_fishing_shock::health(&owner, &next).await?), before);

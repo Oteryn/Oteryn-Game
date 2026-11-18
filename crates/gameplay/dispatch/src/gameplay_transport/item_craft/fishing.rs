@@ -10,7 +10,7 @@ use oteryn_gameplay_items::fishing::{
 };
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) async fn project_sewer_fishing_failure(
+    pub(super) async fn project_mechanical_fishing_failure(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
