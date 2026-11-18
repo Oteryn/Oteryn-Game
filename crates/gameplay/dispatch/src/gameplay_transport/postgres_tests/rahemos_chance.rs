@@ -120,6 +120,25 @@ pub(super) async fn exercise(
         let remaining = super::underwater_drowning::health(owner, actor, session).await?;
         assert_eq!(before - remaining, 10, "only the losing pull deals 200 physical damage before the fixture resistance");
     }
+    // Crystal actions_oasis_lever_door.lua:22-24. A second USE during the
+    // four-second window is handled without rolling or moving the reset.
+    owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("clock")?;
+    {
+        let map = owner.bundle_map().ok_or("map")?;
+        let mut placement = map.overlay.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        let revision = map.facts.object_revision(key);
+        let result = owner.use_object(actor, UseCommand {
+            game_session_id: session, command_id: win + 1, item_fence: admitted.item_fence,
+        }, WorldObjectTarget {
+            placement, expected_revision: revision,
+        }).await;
+        assert_eq!(result.disposition, UseDisposition::Committed);
+        assert_eq!(map.facts.object_revision(key), revision);
+        assert!(owner.states.chat.drain(session).is_empty());
+        assert_eq!(appearance(owner, TARGET)?, 2773);
+    }
     let carrot = {
         let map = owner.bundle_map().ok_or("map")?;
         map.facts.movement_item_entries().into_iter().find_map(|(at, entry)| {
@@ -139,7 +158,7 @@ pub(super) async fn exercise(
         target: LoopTarget::MainBackpack,
     };
     let moved = crate::gameplay_transport::loop_move::move_loop_item_with_house_capacity(
-        owner, actor, UseCommand { game_session_id:session, command_id:win+1, item_fence:Some(fence.item_fence()) },
+        owner, actor, UseCommand { game_session_id:session, command_id:win+2, item_fence:Some(fence.item_fence()) },
         movement, false,
     ).await;
     assert_eq!(moved, LoopMoveResult::Committed);
@@ -150,7 +169,7 @@ pub(super) async fn exercise(
     assert_eq!(carrots,1);
     let map = owner.bundle_map().ok_or("map")?;
     assert!(map.facts.quest_pickup(carrot, owner.owner_now().get()).is_none());
-    owner.clock_origin=owner.clock_origin.checked_sub(std::time::Duration::from_secs(5)).ok_or("clock")?;
+    owner.clock_origin=owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
     owner.tick_timed_items().await;
     assert_eq!(appearance(owner, TARGET)?,2772);
     assert_eq!(appearance(owner, DOOR)?,1663);
@@ -158,7 +177,7 @@ pub(super) async fn exercise(
     let chance = row.effects.use_chance.as_ref().ok_or("chance")?;
     let next_win = {
         let runtime = owner.runtime.lock().await;
-        (win + 2..win + 256).find(|id| {
+        (win + 3..win + 256).find(|id| {
             CommandId::new(*id).ok().and_then(|id| {
                 crate::gameplay_transport::quest_callbacks::use_chance::wins(
                     &runtime,actor,CommandRef::new(session,id),&row.key,key,chance,

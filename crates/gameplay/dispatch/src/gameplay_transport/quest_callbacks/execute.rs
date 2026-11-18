@@ -209,6 +209,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Rejected;
         }
         if close && callback.lever.is_some() && !callback.reversible {
+            // Crystal actions_oasis_lever_door.lua:22-24 consumes USE on an
+            // active hat without rolling again or refreshing its reset.
+            if callback.effects.use_chance.is_some() {
+                return UseDisposition::Committed;
+            }
             return UseDisposition::NothingToUse;
         }
         if oteryn_gameplay_quests::quest::world_callbacks::personal_trial::admitted(callback)
