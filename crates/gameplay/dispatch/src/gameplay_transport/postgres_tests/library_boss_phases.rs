@@ -4,6 +4,12 @@
 use super::fixture::{Harness, debug, id};
 use super::quest_world_callbacks::{local, wire};
 use super::{Dependencies, TestResult, prepare_current_session};
+use crate::durability::character_build::{
+    BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
+};
+use crate::durability::character_progression::{
+    ExperienceAwardRequest, ExperienceRewardOccurrence,
+};
 use crate::foundation::{
     CharacterId, CharacterLease, CommandId, CommandRef, ExactActorRef, GameSessionId,
     MovementPositionSnapshot, OwnerDamageCommand,
@@ -21,6 +27,7 @@ use oteryn_gameplay_quests::quest::{
     world_callbacks::{Callback, Position},
 };
 use oteryn_protocol_oteryn::{
+    actor_spell,
     chat::{self, ChatDisposition, ChatIntent, ChatSpeechMode},
     world_object::{
         COMMAND_TYPE_USE_INTENT, UseDisposition, WorldObjectTarget, decode_use_result,
@@ -154,6 +161,11 @@ async fn exercise(admin: String, boss: &str, party: bool) -> TestResult {
         "content-1",
     )?;
     let generation = controller.active().ok_or("content generation")?;
+    let caster_case = boss == OBERON && !party;
+    let native = generation.native_gameplay().ok_or("native gameplay")?;
+    if caster_case {
+        deps.spells = native.spell_book().clone();
+    }
     let catalogue = catalogue(boss)?;
     let callback = catalogue
         .authored_bindings()
@@ -175,7 +187,9 @@ async fn exercise(admin: String, boss: &str, party: bool) -> TestResult {
     owner.active_generation = Some(generation);
     owner.movement_cells = (&cells).into();
     owner.quest_catalogue = Some(Arc::new(catalogue));
-    deps.initialize(&owner).await;
+    if !caster_case {
+        deps.initialize(&owner).await;
+    }
     let peer = if party {
         let session = GameSessionId::decode(&id(51)).map_err(debug)?;
         let peer = {
@@ -231,6 +245,76 @@ async fn exercise(admin: String, boss: &str, party: bool) -> TestResult {
         .bind(generation.identity().server_artifact_digest().as_slice())
         .bind(generation.identity().client_artifact_digest().as_slice())
         .bind(world.frame_binding_digest(admitted.world_id).as_slice()).execute(&h.pool).await?;
+    if caster_case {
+        let session = admitted.game_session_id;
+        owner.admit_progression_session(&mut admitted).await;
+        let progression = owner.progression_binding(session).ok_or("progression")?;
+        let formula = native.training_formula().ok_or("training")?;
+        let fresh = || super::death_ml_loss_composed::current_fence(&owner, session);
+        let druid =
+            convert_vocation(formula, &DurableBuildState::default(), "druid").map_err(debug)?;
+        h.root
+            .commit_character_build(
+                &authority,
+                &h.node,
+                fresh().await?,
+                BuildChangeRequest {
+                    occurrence: BuildOccurrence::from_bytes(id(91)).map_err(debug)?,
+                    cause: BuildCause::VocationChoice,
+                    before: DurableBuildState::default(),
+                    after: druid.clone(),
+                    pruned_stance: None,
+                },
+                formula,
+            )
+            .await
+            .map_err(debug)?;
+        h.root
+            .commit_character_experience(
+                &authority,
+                &h.node,
+                fresh().await?,
+                ExperienceAwardRequest {
+                    occurrence: ExperienceRewardOccurrence::from_bytes(id(92)).map_err(debug)?,
+                    amount: oteryn_simulation_determinism::ExactI64::new(98_800),
+                    context: progression.context.clone(),
+                    policy_revision: progression.policy_revision.clone(),
+                    reward_revision: progression.reward_revision.clone(),
+                    policy: progression.policy.clone(),
+                },
+            )
+            .await
+            .map_err(debug)?;
+        sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
+            .bind(id(41).as_slice()).execute(&h.pool).await?;
+        h.root
+            .initialize_familiar_group(&authority, &h.node, fresh().await?)
+            .await
+            .map_err(debug)?;
+        let runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        assert!(
+            states
+                .initialize(
+                    &runtime,
+                    deps.actor,
+                    session,
+                    crate::spell::cast::CharacterCastFacts {
+                        level: 20,
+                        ..crate::gameplay_transport::actor_spell::tests::FACTS
+                    },
+                    (0, 0),
+                    owner.owner_now()
+                )
+                .is_some()
+        );
+        assert!(states.load_owned_build(&runtime, deps.actor, session, &druid));
+        states
+            .get_mut(&runtime, deps.actor, session)
+            .ok_or("caster")?
+            .enable_owned_training(&druid, formula)
+            .map_err(debug)?;
+    }
     owner.admit_quest_session(&admitted).await;
     owner
         .states
@@ -379,6 +463,71 @@ async fn exercise(admin: String, boss: &str, party: bool) -> TestResult {
                         && *effect == 50
                 })
         );
+        let after_periodic_cue = map
+            .facts
+            .movement_effects_since(0)
+            .last()
+            .ok_or("periodic cue")?
+            .0;
+        let spell = (1..=deps.spells.source_len())
+            .filter_map(|index| {
+                u32::try_from(index)
+                    .ok()
+                    .and_then(std::num::NonZeroU32::new)
+            })
+            .find(|index| {
+                deps.spells
+                    .indexed(*index)
+                    .is_some_and(|spell| spell.name == "Energy Strike")
+            })
+            .ok_or("energy strike")?;
+        owner
+            .states
+            .test_owner_time
+            .store(4_000_001, Ordering::Relaxed);
+        let result = wire(
+            &owner,
+            &mut admitted,
+            2,
+            actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
+            actor_spell::encode_spell_cast_intent(&actor_spell::SpellCastIntent {
+                spell,
+                target: actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
+                    x: after_tick.position.x,
+                    y: after_tick.position.y,
+                    floor: after_tick.position.floor,
+                }),
+                aim_at_target: false,
+            }),
+        )
+        .await?;
+        assert_eq!(
+            actor_spell::decode_spell_cast_result(&result).map_err(debug)?,
+            actor_spell::SpellCastDisposition::Cast
+        );
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .companion_snapshot(target)
+                .map_err(debug)?
+                .health,
+            initial
+        );
+        assert_eq!(
+            map.facts
+                .movement_effects_since(after_periodic_cue)
+                .iter()
+                .filter(|(_, tile, effect)| {
+                    i32::from(tile.x) == after_tick.position.x
+                        && i32::from(tile.y) == after_tick.position.y
+                        && -i16::from(tile.floor) == after_tick.position.floor
+                        && *effect == 50
+                })
+                .count(),
+            1
+        );
         strike(&owner, &admitted, target, OBERON, initial, 101, false).await?;
         assert_eq!(
             owner
@@ -402,9 +551,9 @@ async fn exercise(admin: String, boss: &str, party: bool) -> TestResult {
         );
         owner.chat_open(admitted.game_session_id).await;
         for (id, us, text) in [
-            (2, 10_000_000, "wrong"),
+            (3, 10_000_000, "wrong"),
             (
-                3,
+                4,
                 12_000_000,
                 "HOW APPROPRIATE, YOU LOOK LIKE SOMETHING WORMS ALREADY GOT THE BETTER OF!",
             ),
@@ -433,7 +582,7 @@ async fn exercise(admin: String, boss: &str, party: bool) -> TestResult {
             );
             assert_eq!(
                 owner.runtime.lock().await.boss_speech_shield_effect(target),
-                if id == 2 { Some(50) } else { None }
+                if id == 3 { Some(50) } else { None }
             );
         }
         let lines = map.facts.movement_speech_since(0);

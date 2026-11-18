@@ -393,7 +393,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let mut states = self.states.spell_states.lock().await;
                 let now = self.owner_now();
                 states.stage_special_movement_step(
-                    &mut turn.runtime,
+                    &turn.runtime,
                     map,
                     actor,
                     command.game_session_id,
@@ -403,7 +403,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     None,
                 );
                 states.stage_underwater_step(
-                    &mut turn.runtime,
+                    &turn.runtime,
                     actor,
                     command.game_session_id,
                     now.get(),
