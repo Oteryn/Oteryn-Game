@@ -21,6 +21,7 @@ const REFILL_US: u64 = 10_000_000;
 const FETTER: &str = "oteryn:creature.fetter";
 const REWAR_IMMUNE: &str = "oteryn:creature.rewar_the_bloody_inv";
 const REWAR_ENTRY_POLL_US: u64 = 1_000_000;
+const FETTER_DEATH_CHECK_US: u64 = 200_000;
 const FETTER_WAVE_US: u64 = 20_000_000;
 const FETTER_LIMIT: usize = 6;
 const HALF_AFTER_US: u64 = 6 * 60 * 1_000_000;
@@ -86,6 +87,7 @@ pub struct ZelosEncounter {
     rewar_at: MovementLocalPosition,
     fetters: Vec<ExactActorRef>,
     fetter_due_us: u64,
+    fetter_death_check_us: Option<u64>,
     rewar_room_entered: bool,
     rewar_immune: bool,
     king_gate_released: bool,
@@ -149,6 +151,7 @@ impl ZelosEncounter {
             rewar_at: position(REWAR)?,
             fetters: Vec::with_capacity(FETTER_LIMIT),
             fetter_due_us: now.saturating_add(REWAR_ENTRY_POLL_US),
+            fetter_death_check_us: None,
             rewar_room_entered: false,
             rewar_immune: false,
             king_gate_released: false,
@@ -172,7 +175,9 @@ impl ZelosEncounter {
     }
 
     pub fn contains(&self, actor: ExactActorRef) -> bool {
-        self.phase.actors.contains(&Some(actor)) || self.blood.contains(&actor)
+        self.phase.actors.contains(&Some(actor))
+            || self.blood.contains(&actor)
+            || self.fetters.contains(&actor)
     }
 
     pub fn contains_terminal(&self, actor: ExactActorRef) -> bool {
@@ -183,7 +188,15 @@ impl ZelosEncounter {
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
+        now: u64,
     ) -> Result<bool, CarrierError> {
+        if self.fetters.contains(&actor) {
+            self.phase.current(runtime)?;
+            runtime.borrow_combat_death().projected_death(actor)?;
+            self.fetter_death_check_us
+                .get_or_insert_with(|| now.saturating_add(FETTER_DEATH_CHECK_US));
+            return Ok(true);
+        }
         if let Some(index) = self.blood.iter().position(|&blood| blood == actor) {
             self.vampiric_blood_death(runtime, actor)?;
             self.blood.swap_remove(index);
@@ -302,6 +315,9 @@ impl ZelosEncounter {
         }
         if self.phase.progress.dead() & (1 << REWAR) == 0 {
             due = due.min(self.fetter_due_us);
+            if let Some(check) = self.fetter_death_check_us {
+                due = due.min(check);
+            }
         }
         if !self.magnor_bursts.is_empty() || self.phase.pending().next().is_some() {
             due = due.min(self.start_us);
@@ -505,9 +521,12 @@ impl ZelosEncounter {
         };
         self.fetters
             .retain(|actor| runtime.contains_live_creature(*actor));
-        if self.fetters.is_empty() && self.rewar_immune {
-            self.change_rewar_form(runtime, rewar, false, place)?;
-            self.rewar_immune = false;
+        if self.fetter_death_check_us.is_none_or(|due| now >= due) {
+            if self.fetters.is_empty() && self.rewar_immune {
+                self.change_rewar_form(runtime, rewar, false, place)?;
+                self.rewar_immune = false;
+            }
+            self.fetter_death_check_us = None;
         }
 
         if now < self.fetter_due_us {

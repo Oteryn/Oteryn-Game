@@ -146,6 +146,7 @@ impl Fight {
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
         cells: &crate::content::NativeEntryMovementCells,
+        now: u64,
     ) -> Result<bool, CarrierError> {
         match self {
             Self::Cults(fight) => fight.projected_death(runtime, actor),
@@ -156,7 +157,7 @@ impl Fight {
                 encounter_map(cells)?.create_movement_item_id(remains_tile(at)?, 31160, 0, || true)
             }),
             Self::Sirs(fight) => fight.projected_death(runtime, actor),
-            Self::Zelos(fight) => fight.projected_death(runtime, actor),
+            Self::Zelos(fight) => fight.projected_death(runtime, actor, now),
         }
     }
 
@@ -480,7 +481,10 @@ impl Registry {
             if !phase.fight.contains(actor) {
                 continue;
             }
-            let Ok(is_new_death) = phase.fight.projected_death(runtime, actor, &phase.cells) else {
+            let Ok(is_new_death) = phase
+                .fight
+                .projected_death(runtime, actor, &phase.cells, now)
+            else {
                 continue;
             };
             if is_new_death && phase.fight.owns_scoped_credit(actor) {
