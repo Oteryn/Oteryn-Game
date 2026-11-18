@@ -314,7 +314,7 @@ pub(super) async fn exercise(
         CreaturePushDisposition::Moved,
     );
     {
-        let runtime = owner.runtime.lock().await;
+        let mut runtime = owner.runtime.lock().await;
         let landing = runtime
             .read_actor_position(troll)
             .map_err(debug)?
@@ -324,6 +324,7 @@ pub(super) async fn exercise(
             (111, 116, 7),
             "a pushed monster takes the same blocked vortex route"
         );
+        runtime.remove_test_actor(troll).map_err(debug)?;
     }
     {
         let mut runtime = owner.runtime.lock().await;
