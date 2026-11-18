@@ -241,7 +241,7 @@ async fn exercise(admin: String, capacity: Option<u8>) -> TestResult {
             }
             owner.clock_origin = owner
                 .clock_origin
-                .checked_sub(std::time::Duration::from_secs(301))
+                .checked_sub(std::time::Duration::from_secs(if solo { 601 } else { 301 }))
                 .ok_or("owner clock")?;
             owner.drain_quest_encounter_deadlines().await;
             let runtime = deps.runtime.lock().await;
@@ -275,7 +275,7 @@ async fn exercise(admin: String, capacity: Option<u8>) -> TestResult {
             "SELECT count(*) FROM game_character_boss_cooldowns WHERE boss_key=$1",
         )
         .bind(if solo {
-            "oteryn:boss.the_fear_feaster"
+            "oteryn:boss.irgix_the_flimsy"
         } else {
             "oteryn:boss.brain_head"
         })
@@ -309,7 +309,7 @@ fn portal(capacity: Option<u8>) -> TestResult<Callback> {
     if let Some(capacity) = capacity {
         let solo = capacity == 1;
         let defender = if solo {
-            "oteryn:creature.the_fear_feaster"
+            "oteryn:creature.irgix_the_flimsy"
         } else {
             "oteryn:creature.brain_head"
         };
@@ -321,7 +321,7 @@ fn portal(capacity: Option<u8>) -> TestResult<Callback> {
             "room_min":{"x":room_start,"y":0,"floor":-7},
             "room_max":{"x":3,"y":0,"floor":-7},
             "timing":{
-                "spawn_after_ms":if solo { 0 } else { 50 },"reset_after_ms":300_000,
+                "spawn_after_ms":if solo { 0 } else { 50 },"reset_after_ms":if solo { 600_000 } else { 300_000 },
                 "admission":{"capacity":capacity,"join_for_ms":if solo { 0 } else { 30_000 },"cooldown_s":if solo { 72_000 } else { 36_000 },"exit":{"x":7,"y":0,"floor":-7}}
             }
         });
