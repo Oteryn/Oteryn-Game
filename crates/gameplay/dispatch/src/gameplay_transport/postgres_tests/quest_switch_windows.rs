@@ -219,6 +219,123 @@ pub(super) async fn reversible_passage(
 
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
+pub(super) const CATHEDRAL_START: Position = at(32598, 32382, -10);
+
+#[test]
+fn cathedral_selected_note_advances_the_mission_and_expires_from_the_wall() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::annihilator_route::cathedral_note(admin)
+}
+
+pub(super) async fn cathedral(
+    owner: &mut super::ComposedFreshAdmission<'_, '_, '_>,
+    member: &mut super::AdmittedSession,
+    map: &crate::map::boot::BundleMap,
+    pool: &sqlx::PgPool,
+) -> TestResult {
+    use super::{fixture::debug, item_craft, quest_world_callbacks::input_item};
+    use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
+    use crate::foundation::{CommandId, CommandRef};
+    use crate::map::{overlay::TilePos, view::{MapFacts, placement_key}};
+    use oteryn_gameplay_quests::quest::{
+        QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
+        authored_bindings::Bindings, world_callbacks::Offering,
+    };
+    use oteryn_protocol_oteryn::world_object::{
+        MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
+    };
+    use sha2::{Digest, Sha256};
+    use std::{num::NonZeroU64, sync::{Arc, atomic::Ordering}};
+
+    const QUEST: &str = "oteryn:quest.the_thieves_guild_quest";
+    const MISSION: &str = "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission08";
+    const INPUT: &str = "oteryn:item.tibia.i7873";
+    const START_MISSION: &str = "oteryn:quest-transition/quest/u8_2/the_thieves_guild_quest/mission08/npc_1";
+    const WALL: Position = at(32598, 32381, -10);
+    const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_note.lua:1-25";
+    let callback = serde_json::json!({
+        "key": "oteryn:quest-callback/cathedral-message-note",
+        "quest": QUEST,
+        "trigger": "use",
+        "selector": {"position": WALL, "ordinal": 1, "appearance": 1451},
+        "requires_world_admission": true,
+        "lever": null, "reversible": false, "passages": [], "offerings": [],
+        "return_on_failure": false,
+        "item_on_target": {"item": INPUT, "count": 1, "selected_instance": true},
+        "storage": [{"track": MISSION, "minimum": 1, "maximum": 1, "set": 2}],
+        "effects": {"timed_display": {"position": WALL, "appearance": 7872, "after_ms": 300_000}},
+        "sources": [SOURCE],
+    });
+    let recipe = Sha256::digest(serde_json::to_vec(&callback)?);
+    let bindings = Bindings::parse(&serde_json::to_vec(&serde_json::json!({
+        "schema": 1,
+        "quests": [{
+            "quest": QUEST, "recipe_sha256": format!("{recipe:x}"), "sources": [SOURCE],
+            "tracks": [{"key": MISSION, "initial": 0, "minimum": 0, "maximum": 3}],
+            "stages": [{"key": "post-note", "completes": false,
+                        "trigger": {"kind": "map_use", "callback": callback}}],
+        }],
+    }))?)?;
+    let base = QuestStateCatalogue::empty("content-1").ok_or("fixture quest catalogue")?;
+    let catalogue = Arc::new(bindings.attach(&base)?.with_fixture_transition(QuestTransition {
+        key: START_MISSION.into(), quest: QUEST.into(), world_change: None,
+        effects: vec![QuestEffect { track: MISSION.into(), from: QuestComparison::Any,
+                                    effect: QuestEffectKind::Set(1) }],
+        completes: false, experience: None,
+    }).map_err(debug)?);
+    owner.quest_catalogue = Some(Arc::clone(&catalogue));
+    let fence = owner.current_quest_fence(member.game_session_id).await
+        .map_err(|_| "Cathedral quest fence")?.ok_or("Cathedral session")?;
+    {
+        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+        let outcome = slot.commit_quest_transition(
+            owner.root, owner.character, owner.holder, fence,
+            QuestTransitionRequest {
+                transition_key: START_MISSION.into(),
+                cause: QuestCause::Command(CommandRef::new(member.game_session_id, CommandId::new(901).map_err(debug)?)),
+            },
+            catalogue,
+        ).await.map_err(debug)?;
+        assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
+    }
+    owner.refresh_quest_session(member.game_session_id, false).await;
+    let fence = owner.current_quest_fence(member.game_session_id).await
+        .map_err(|_| "Cathedral item fence")?.ok_or("Cathedral session")?;
+    input_item(owner, fence.item_fence(), &Offering { position: CATHEDRAL_START, item: INPUT.into(), count: 1 }, 952, true).await?;
+    let item = owner.active_generation.and_then(|g| g.native_gameplay()).and_then(|n| n.item_index())
+        .and_then(|i| i.definition_ref("Item", INPUT, "definition-r1")).ok_or("selected note reference")?;
+    let wall = TilePos { x: WALL.x, y: WALL.y, floor: WALL.floor };
+    let key = placement_key(wall, 1).ok_or("actual Cathedral wall")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::Item(NonZeroU64::MIN), use_with: None, use_with_position: None,
+        use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget { placement, expected_revision: map.facts.object_revision(key) })),
+    }).map_err(debug)?;
+    owner.states.test_owner_time.store(100_000_001, Ordering::Relaxed);
+    let (updated, result, _) = item_craft::exchange(owner, *member, member.continuity.next_command_id, &payload, Some(item)).await?;
+    *member = updated;
+    assert_eq!(result, UseDisposition::Committed);
+    let state = owner.root.read_character_quest_state(owner.character, fence.character_id).await.map_err(debug)?;
+    assert_eq!(state.tracks().get(MISSION), Some(&2));
+    let retired: Vec<(i64, i16)> = sqlx::query_as(
+        "SELECT quantity, lifecycle FROM game_item_instances WHERE definition_production_key=$1",
+    ).bind(INPUT).fetch_all(pool).await?;
+    assert_eq!(retired, [(0, 2)], "the selected carried note is consumed");
+    let displayed = || map.facts.movement_item_entries().iter()
+        .any(|(at, entry)| *at == wall && entry.facts.appearance_id == 7872);
+    assert!(displayed());
+    let expiry = map.facts.next_movement_decay_time().ok_or("Cathedral display deadline")?;
+    assert_eq!(expiry, 400_000_000);
+    map.facts.expire_movement_items(expiry - 1);
+    assert!(displayed());
+    map.facts.expire_movement_items(expiry);
+    assert!(!displayed());
+    Ok(())
+}
+
 pub(super) const LORD_START: Position = at(33263, 31831, -12);
 const LORD_EXIT: Position = at(33265, 31838, -10);
 

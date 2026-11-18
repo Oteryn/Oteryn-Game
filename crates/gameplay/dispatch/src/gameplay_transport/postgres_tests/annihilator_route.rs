@@ -28,6 +28,7 @@ enum Route {
     TimedGroup,
     TimedPassage,
     Ashmunrah,
+    CathedralNote,
     Lord,
     Combat,
     Complete,
@@ -71,6 +72,10 @@ pub(super) fn timed_passage(admin: String) -> TestResult {
     run_with_admin(Route::TimedPassage, admin)
 }
 
+pub(super) fn cathedral_note(admin: String) -> TestResult {
+    run_with_admin(Route::CathedralNote, admin)
+}
+
 pub(super) fn lord_switches(admin: String) -> TestResult {
     run_with_admin(Route::Lord, admin)
 }
@@ -89,10 +94,17 @@ fn run(route: Route) -> TestResult {
 fn run_with_admin(route: Route, admin: String) -> TestResult {
     let combat = !matches!(
         route,
-        Route::Entry | Route::TimedGroup | Route::TimedPassage | Route::Ashmunrah | Route::Lord
+        Route::Entry
+            | Route::TimedGroup
+            | Route::TimedPassage
+            | Route::Ashmunrah
+            | Route::CathedralNote
+            | Route::Lord
     );
     let start = if route == Route::Lord {
         super::quest_switch_windows::LORD_START
+    } else if route == Route::CathedralNote {
+        super::quest_switch_windows::CATHEDRAL_START
     } else if route == Route::Ashmunrah {
         super::l6_shared_gate_native::start("l6-tomb-gate-native-open-50138")?
     } else if matches!(
@@ -162,7 +174,7 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         let mut currents = Vec::new();
         let mut operations = Vec::new();
         let participants = match route {
-            Route::TimedPassage => 1,
+            Route::CathedralNote | Route::TimedPassage => 1,
             Route::Ashmunrah | Route::Lord => 2,
             _ => 4,
         };
@@ -400,7 +412,7 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
                 _ => return Err("durable cast facts unavailable".into()),
             };
             assert_eq!(facts.level, source_level);
-            if combat {
+            if combat || route == Route::CathedralNote {
                 let native = generation.native_gameplay().ok_or("native")?;
                 owner
                     .root
@@ -490,6 +502,20 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
             return Err("native bundle collision index".into());
         };
         let map = index.map();
+        if route == Route::CathedralNote {
+            let result = super::quest_switch_windows::cathedral(
+                &mut owner,
+                &mut admitted[0],
+                map,
+                &h.pool,
+            )
+            .await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
+        }
         if route == Route::Lord {
             let result = super::quest_switch_windows::lord(&mut owner, &mut admitted, map).await;
             drop(owner);
