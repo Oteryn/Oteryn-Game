@@ -57,7 +57,9 @@ pub fn validate_resolved_world(
         if !world_context
             || operation != *transition
             || transition.effects.iter().any(|e| {
-                published.protected_tracks.contains(&e.track) || authored_tracks.contains(&e.track)
+                changes(e.effect)
+                    && (published.protected_tracks.contains(&e.track)
+                        || authored_tracks.contains(&e.track))
             })
         {
             return Err("resolved World operation or context mismatch".into());

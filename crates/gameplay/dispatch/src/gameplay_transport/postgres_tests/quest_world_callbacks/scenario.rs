@@ -1542,6 +1542,8 @@ fn scenario_case(
                 4_104 // Quest callbacks must tolerate >4096 unrelated live creatures.
             } else if name == "qengine-rewards-qnpcfx-m10-inquisition" {
                 7 // One player and the six source NPCs for the full interview story.
+            } else if wrath_keeper {
+                3 // Two independently admitted players and the Keeper.
             } else if qm50 {
                 8
             } else if name.starts_with("qengine-rewards-l12-") {

@@ -4,6 +4,7 @@ use super::{AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult};
 use crate::gameplay_transport::{
     capabilities::SelectedCapabilities, connection::FreshAdmissionAuthority,
 };
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::{
     world_callbacks::{Callback, Offering, Position},
     wrath_keeper::{CORPSE, CREATURE, POISON_USE, SPAWN, TAIL_HANDOFF},
@@ -73,6 +74,9 @@ pub(super) async fn exercise(
         .active_generation
         .and_then(|generation| generation.native_gameplay())
         .ok_or("native gameplay")?;
+    native
+        .install_companion_policies(&mut *owner.runtime.lock().await)
+        .map_err(debug)?;
     let second_fence = second.item_fence.ok_or("second item fence")?;
     let template = crate::durability::starter_grant::StarterTemplate {
         definition: crate::durability::item_mint::TypedDefinitionRef {
