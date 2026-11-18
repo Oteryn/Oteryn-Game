@@ -51,6 +51,8 @@ pub struct CallbackEffects {
     /// Distinct carried definitions consumed atomically by the Quest receipt owner.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub carried_tool_window: Option<CarriedToolWindow>,
     /// Opt in to source-script displacement onto a present blocked pad.
     #[serde(default, skip_serializing_if = "is_false")]
     pub scripted_teleport: bool,
@@ -340,6 +342,40 @@ pub struct ItemCycle {
     pub create: u16,
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum CarriedToolWindow {
+    Start { duration_ms: u32 },
+    Require,
+}
+
+impl CarriedToolWindow {
+    fn valid(self, callback: &Callback) -> bool {
+        callback.trigger == Trigger::Use
+            && callback.requires_world_admission
+            && !callback.storage.is_empty()
+            && callback.offerings.is_empty()
+            && callback.effects.carried_inputs.is_empty()
+            && callback.item_on_target.as_ref().is_some_and(|tool| {
+                tool.selected_instance
+                    && tool.count == 1
+                    && tool.alternatives.is_empty()
+                    && tool.ingredients.is_empty()
+                    && match self {
+                        Self::Start { duration_ms } => {
+                            (1..=600_000).contains(&duration_ms)
+                                && tool
+                                    .replacement
+                                    .as_ref()
+                                    .is_some_and(|hot| hot != &tool.item)
+                                && !tool.reusable
+                        }
+                        Self::Require => tool.replacement.is_none() && tool.reusable,
+                    }
+            })
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ObjectCycle {
@@ -612,6 +648,12 @@ pub(super) fn has_encounter_custody_effect(callback: &Callback) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects
+        .carried_tool_window
+        .is_some_and(|window| !window.valid(callback))
+    {
+        return false;
+    }
     if effects
         .party_rite
         .as_ref()

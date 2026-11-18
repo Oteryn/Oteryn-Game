@@ -32,7 +32,7 @@ use super::{
     DurabilityError, character_progression::CurrentCharacterGameplayFence,
     spell_owner_commit::SpellLanePermit,
 };
-use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
+use oteryn_gameplay_quests::quest::world_callbacks::{Callback, CarriedToolWindow, Position};
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
 
@@ -735,6 +735,11 @@ async fn consume_inputs(
             return Ok(false);
         }
         lock_location(tx, &input).await?;
+        if callback.effects.carried_tool_window == Some(CarriedToolWindow::Require)
+            && !super::quest_tool_windows::current(tx, &input.item).await?
+        {
+            return Ok(false);
+        }
         if callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE {
             // Crystal actions_sacrifice.lua:15-18: stage one needs a real
             // carried tear but consumes none. All other stages use the same
@@ -942,6 +947,10 @@ async fn consume_inputs(
         .bind(&input.replacement)
         .execute(&mut **tx)
         .await?;
+        if let Some(CarriedToolWindow::Start { duration_ms }) = callback.effects.carried_tool_window
+        {
+            super::quest_tool_windows::start(tx, &transaction, &input.item, duration_ms).await?;
+        }
         apply_input(tx, permit, fence, &input, &transaction).await?;
     }
     Ok(true)

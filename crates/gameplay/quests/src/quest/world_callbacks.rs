@@ -82,9 +82,9 @@ mod treasure_source;
 #[cfg(test)]
 mod treasure_source_tests;
 pub use effects::{
-    CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPhase,
-    EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence,
-    MagicEffect, MountReward, ObjectCycle, ObjectCycleStage, PartyRite, PartyStation,
+    CallbackEffectSet, CallbackEffects, CarriedToolWindow, Encounter, EncounterMonster,
+    EncounterPhase, EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement,
+    ItemPresence, MagicEffect, MountReward, ObjectCycle, ObjectCycleStage, PartyRite, PartyStation,
     PartyTransfer, Portal, PortalPair, QuestCompletion, RewardDoor, TargetTransform,
 };
 pub use ground_stack::{
@@ -1004,7 +1004,8 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     .iter()
                     .any(|r| r.ground.is_some()))
                 && ((!callback.has_state_writes()
-                    && !effects::has_encounter_custody_effect(callback))
+                    && !effects::has_encounter_custody_effect(callback)
+                    && !matches!(callback.effects.carried_tool_window, Some(CarriedToolWindow::Start { .. })))
                     || callback.native_rule.is_some()))
             || (callback.opening_only
                 && (callback.trigger != Trigger::Use

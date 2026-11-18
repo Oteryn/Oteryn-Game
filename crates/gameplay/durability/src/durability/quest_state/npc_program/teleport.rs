@@ -63,7 +63,7 @@ impl DurabilityRoot {
             permit,
             fence,
             request,
-            catalogue,
+            Arc::clone(&catalogue),
             items,
             premium,
             source,

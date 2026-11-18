@@ -158,7 +158,9 @@ impl DurabilityRoot {
                                 500 - restarted - fields.len() - temporal,
                             )
                             .await?;
-                        Ok(restarted + fields.len() + temporal + chained)
+                        let spent = restarted + fields.len() + temporal + chained;
+                        let tools = super::quest_tool_windows::expire_due(&mut tx, &authority, 500 - spent).await?;
+                        Ok(spent + tools)
                     }
                     .await;
                     match outcome {
