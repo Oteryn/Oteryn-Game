@@ -54,13 +54,16 @@ async fn first_definition(
     definition: &str,
 ) -> Result<Option<String>, DurabilityError> {
     // Crystal 201189f8 movements_marziel_blood.lua:22-25 calls getItemById without a
-    // subtype. Game::findItemOfType visits worn slots, then bags breadth-first.
-    // The custody reader owns the tree limits. Reverse ordinals are Bag display order.
+    // subtype. Game::findItemOfType (src/game/game.cpp:2814) visits worn slots, then
+    // bags breadth-first. Translate durable slot codes into Crystal's head, necklace,
+    // backpack, armor, hands, legs, feet, ring, and ammo order. Reverse ordinals are
+    // bag display order. The custody reader owns the tree limits.
     Ok(sqlx::query_scalar(
         "WITH RECURSIVE carried AS MATERIALIZED (
            SELECT * FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid)
          ), display_tree(item, depth, display_path) AS (
-           SELECT item,0,ARRAY[COALESCE((location->>'slot')::numeric,3::numeric)]
+           SELECT item,0,ARRAY[array_position(ARRAY[1,7,9,2,5,6,3,4,8,10],
+                                              COALESCE((location->>'slot')::integer,9))::numeric]
              FROM carried WHERE kind IN ('backpack','equipment')
            UNION ALL
            SELECT c.item,p.depth+1,p.display_path || -((c.location->>'placement_ordinal')::numeric)

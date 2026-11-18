@@ -100,6 +100,14 @@ pub(super) async fn exercise(
             )
             .await?;
         }
+        let newest_vial: String = sqlx::query_scalar(
+            "SELECT n.item_instance_id::text FROM game_item_nested_entries n
+             JOIN game_item_container_entries pouch ON pouch.item_instance_id=n.parent_item_instance_id
+             JOIN game_item_fluid_states f ON f.item_instance_id=n.item_instance_id
+             ORDER BY pouch.placement_ordinal DESC LIMIT 1",
+        )
+        .fetch_one(&h.pool)
+        .await?;
         step(owner, admitted, StepDirection::East).await?;
         let should_spawn = female && index == 2;
         let runtime = owner.runtime.lock().await;
@@ -111,9 +119,9 @@ pub(super) async fn exercise(
             .count();
         assert_eq!(count, if should_spawn { 2 } else { 0 });
         drop(runtime);
-        let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_callback_consumptions WHERE transition_key='oteryn:quest-callback/fixture-marziels-blood'")
-            .fetch_one(&h.pool).await?;
-        assert_eq!(count, i64::from(should_spawn));
+        let consumed: Vec<String> = sqlx::query_scalar("SELECT item_instance_id::text FROM game_quest_callback_consumptions WHERE transition_key='oteryn:quest-callback/fixture-marziels-blood'")
+            .fetch_all(&h.pool).await?;
+        assert_eq!(consumed.as_slice(), if should_spawn { std::slice::from_ref(&newest_vial) } else { &[] });
         if index < 2 {
             step(owner, admitted, StepDirection::West).await?;
         }
