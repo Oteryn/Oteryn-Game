@@ -101,6 +101,7 @@ pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     personal: personal_encounter::Cohorts,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
+    replica_deadlines: std::sync::Mutex<[Option<u64>; 2]>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
     carrot_refusal:
         std::sync::Mutex<Option<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>>,
@@ -151,6 +152,14 @@ impl PendingCallbacks {
             .ok()?
             .iter()
             .map(|pending| pending.next_due_us())
+            .chain(
+                self.replica_deadlines
+                    .lock()
+                    .ok()?
+                    .iter()
+                    .copied()
+                    .flatten(),
+            )
             .min()
     }
 }

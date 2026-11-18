@@ -14,6 +14,13 @@ pub enum ReplicaKind {
 }
 
 impl ReplicaKind {
+    pub const fn index(self) -> usize {
+        match self {
+            Self::Diamond => 0,
+            Self::Golden => 1,
+        }
+    }
+
     fn number(self) -> i16 {
         match self {
             Self::Diamond => 1,
@@ -101,10 +108,10 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         native_digest: [u8; 32],
         kind: ReplicaKind,
-    ) -> Result<bool, DurabilityError> {
+    ) -> Result<Option<[Option<u64>; 2]>, DurabilityError> {
         permit.check_scope(fence.runtime_scope)?;
         let RuntimeScopeRefV1::Channel { world_id, .. } = fence.runtime_scope else {
-            return Ok(false);
+            return Ok(None);
         };
         let record = recovery
             .record_for(self)
@@ -125,8 +132,26 @@ impl DurabilityRoot {
             .bind(world_id.as_bytes().as_slice())
             .bind(kind.number())
             .execute(&mut **tx).await?.rows_affected() == 1;
+            let mut windows = [None; 2];
+            if opened {
+                let rows: Vec<(i16, i64)> = sqlx::query_as(
+                    "SELECT replica_kind,
+                        floor(extract(epoch FROM (expires_at - statement_timestamp()))*1000000)::bigint
+                     FROM game_forgotten_knowledge_replica_windows
+                     WHERE world_id=encode($1,'hex')::uuid AND expires_at > statement_timestamp()",
+                )
+                .bind(world_id.as_bytes().as_slice())
+                .fetch_all(&mut **tx)
+                .await?;
+                for (kind, remaining) in rows {
+                    let index = usize::try_from(kind - 1)
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    *windows.get_mut(index).ok_or(DurabilityError::InvalidStoredState)? =
+                        Some(u64::try_from(remaining).map_err(|_| DurabilityError::InvalidStoredState)?);
+                }
+            }
             tx.commit(deadline).await?;
-            Ok(opened)
+            Ok(opened.then_some(windows))
         })).await
     }
 }

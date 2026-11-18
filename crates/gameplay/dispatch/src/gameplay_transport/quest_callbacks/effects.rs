@@ -147,7 +147,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(pos) = native(entered.position()) else {
             return entered;
         };
-        use super::replica_window::{REPLICA_PORTAL, replica_portal_destination};
+        use super::replica_window::{REPLICA_CHAMBER, REPLICA_PORTAL, replica_portal_destination};
         let replica = if pos == REPLICA_PORTAL {
             let Some(access) = self.replica_portal_access(session).await else {
                 return entered;

@@ -28,7 +28,75 @@ pub(super) fn replica_portal_destination(access: ReplicaPortalAccess) -> Option<
     }
 }
 
+fn clear_replicas(runtime: &mut ChannelRuntimeV1, map: &BundleMap, live: [bool; 2], now: u64) {
+    use sha2::{Digest, Sha256};
+    let Ok(census) = runtime.current_live_creature_census() else {
+        return;
+    };
+    for actor in census {
+        let Some(at) = runtime
+            .read_actor_position(actor)
+            .ok()
+            .and_then(|p| native(p.position()))
+        else {
+            continue;
+        };
+        if at.floor != -13 || at.x.abs_diff(32815) > 63 || at.y.abs_diff(32874) > 63 {
+            continue;
+        }
+        let Ok(identity) = runtime.creature_spell_target_atom(actor) else {
+            continue;
+        };
+        let clear = match identity.as_str() {
+            "oteryn:creature.diamond_servant_replica" => !live[ReplicaKind::Diamond.index()],
+            "oteryn:creature.golden_servant_replica" => !live[ReplicaKind::Golden.index()],
+            "oteryn:creature.iron_servant_replica" => {
+                // Replaying the same owner deadline cannot redraw the 40% cleanup.
+                let draw = Sha256::new()
+                    .chain_update(b"oteryn:replica-cleanup:v1")
+                    .chain_update(runtime.content_pin().server_artifact_digest())
+                    .chain_update(actor.placement_identity())
+                    .chain_update(now.to_be_bytes())
+                    .finalize();
+                u16::from_be_bytes([draw[0], draw[1]]) % 100 < 40
+            }
+            _ => false,
+        };
+        if clear && runtime.remove_encounter_actor(actor).is_ok() {
+            map.facts.emit_movement_effect(at, 3);
+        }
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) fn expire_replica_windows(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        map: &BundleMap,
+        now: u64,
+    ) {
+        let Ok(mut deadlines) = self.states.quest_callbacks.replica_deadlines.lock() else {
+            return;
+        };
+        let mut due = None;
+        for deadline in deadlines.iter_mut() {
+            if let Some(expired) = *deadline
+                && expired <= now
+            {
+                due = Some(due.map_or(expired, |earliest: u64| earliest.min(expired)));
+                *deadline = None;
+            }
+        }
+        if let Some(due) = due {
+            clear_replicas(
+                runtime,
+                map,
+                deadlines.map(|deadline| deadline.is_some()),
+                due,
+            );
+        }
+    }
+
     pub(super) async fn replica_portal_access(
         &self,
         session: GameSessionId,
@@ -203,6 +271,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(states);
         drop(runtime);
         if before.appearance_id == 9125 {
+            let now = self.owner_now().get();
             let Some(content) = self
                 .active_generation
                 .and_then(|active| active.native_gameplay())
@@ -221,8 +290,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
             {
-                Ok(true) => {}
-                Ok(false) => {
+                Ok(Some(windows)) => {
+                    let mut runtime = self.runtime.lock().await;
+                    if runtime.owner_fence().is_err() {
+                        return UseDisposition::Rejected;
+                    }
+                    let Ok(mut deadlines) = self.states.quest_callbacks.replica_deadlines.lock()
+                    else {
+                        return UseDisposition::Rejected;
+                    };
+                    *deadlines = windows.map(|remaining| {
+                        remaining.and_then(|remaining| now.checked_add(remaining))
+                    });
+                    let mut previous = deadlines.map(|deadline| deadline.is_some());
+                    previous[kind.index()] = false;
+                    clear_replicas(&mut runtime, map, previous, now);
+                }
+                Ok(None) => {
                     self.states.chat.push_quest_feedback(
                         command.game_session_id,
                         "The mechanism is still active.",
