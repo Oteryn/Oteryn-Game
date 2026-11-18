@@ -3,7 +3,7 @@
 //! is a fixture. The timed-item owner and attack settlement are production.
 use super::fixture::debug;
 use super::{ComposedFreshAdmission, TestResult, party_xp};
-use crate::domain::condition::ConflictKey;
+use crate::domain::condition::{ConditionValues, ConflictKey};
 use crate::foundation::{ExactActorRef, GameSessionId};
 
 #[test]
@@ -48,21 +48,59 @@ pub(super) async fn activate(
             .map_err(debug)?;
     }
     owner.tick_timed_items().await;
+    let sampled = owner.owner_now().get();
+    let initial = check_regeneration(owner, players, sampled).await?;
+    // Advance the containing item scheduler by one period without sleeping.
+    owner.tick_timed_items_at(owner.owner_now().get() / 1_000 + 1_000).await;
+    assert_eq!(
+        check_regeneration(owner, players, sampled).await?,
+        initial,
+        "an active world reward keeps its condition identity and expiry",
+    );
+    Ok(())
+}
+
+async fn check_regeneration(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    players: &[(ExactActorRef, GameSessionId)],
+    sampled: u64,
+) -> TestResult<Vec<(u32, i32)>> {
     let runtime = owner.runtime.lock().await;
     let states = owner.states.spell_states.lock().await;
-    for &(actor, session) in players {
+    let now = owner.owner_now().get();
+    let mut snapshots = Vec::new();
+    for (&(actor, session), (health_interval_ms, mana_interval_ms)) in
+        players.iter().zip([(8_000, 4_000), (6_000, 6_000)])
+    {
         let condition = states
             .get(&runtime, actor, session)
             .ok_or("player state")?
             .owned_conditions()
-            .active_at(ConflictKey::Recovery, owner.owner_now().get())
+            .active_at(ConflictKey::Recovery, now)
             .ok_or("world regeneration missing after scheduler tick")?;
         assert_eq!(
             condition.definition().key(),
             "source.cake.world-regeneration"
         );
+        let ConditionValues::SpellRegeneration {
+            health_gain,
+            health_interval_ms: health_interval,
+            mana_gain,
+            mana_interval_ms: mana_interval,
+            ..
+        } = condition.definition().values() else {
+            return Err("world reward must project typed regeneration".into());
+        };
+        // The bonus is 25% of the vocation's flat native gain, rounded down
+        // with a minimum of one point for each pool with a positive rate.
+        assert_eq!((health_gain, mana_gain), (1, 1));
+        assert_eq!((health_interval, mana_interval), (health_interval_ms, mana_interval_ms));
+        let remaining_ms = condition.remaining_duration_ms(sampled).ok_or("bonus expiry")?;
+        assert!((1..=604_800_000).contains(&remaining_ms));
+        snapshots.push((condition.sequence(), remaining_ms));
     }
-    Ok(())
+    assert_eq!(snapshots.len(), 2);
+    Ok(snapshots)
 }
 
 pub(super) fn check_awards(premium: i64, free: i64) {
