@@ -1,13 +1,27 @@
 //! Closed carried-tool callbacks routed through the existing World receipt owner.
-use oteryn_gameplay_quests::quest::{targuna_ram, world_callbacks::Callback};
+use oteryn_gameplay_quests::quest::{
+    targuna_ram,
+    world_callbacks::{Callback, Trigger},
+};
 
 pub(crate) fn accepts(callback: &Callback) -> bool {
-    callback.item_on_target.is_some()
-        && (callback.key == targuna_ram::KEY
-            || matches!(
-                callback.native_rule,
-                Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { .. })
-            ))
+    let Some(tool) = &callback.item_on_target else {
+        return false;
+    };
+    callback.key == targuna_ram::KEY
+        || matches!(
+            callback.native_rule,
+            Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { .. })
+        )
+        || (tool.selected_instance
+            && callback.trigger == Trigger::Use
+            && callback.requires_world_admission
+            && callback.selector.native.is_some()
+            && callback
+                .effects
+                .encounter
+                .as_ref()
+                .is_some_and(|encounter| encounter.staging_area.is_some()))
 }
 
 /// Select only the wire subject observed in the fenced inventory snapshot.
