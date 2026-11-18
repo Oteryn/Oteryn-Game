@@ -269,7 +269,10 @@ async fn exercise(
     )
     .await?;
     for count in 1..=7 {
-        let result = use_hammer(owner, admitted, key, true).await?;
+        // The first repair proves that the definition hotkey now resolves to
+        // the carried hammer. Subsequent repairs select its exact item handle.
+        let from_handle = count != 1;
+        let result = use_hammer(owner, admitted, key, from_handle).await?;
         assert_eq!(
             result,
             if count == 7 {
@@ -352,7 +355,7 @@ async fn use_hammer(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     key: u64,
-    carried: bool,
+    from_handle: bool,
 ) -> TestResult<UseDisposition> {
     owner.clock_origin = owner
         .clock_origin
@@ -368,7 +371,7 @@ async fn use_hammer(
         .and_then(|i| i.definition_ref("Item", HAMMER, "definition-r1"))
         .ok_or("hammer reference")?;
     let payload = encode_item_use_intent(&UseIntent {
-        target: if carried {
+        target: if from_handle {
             UseTarget::Item(std::num::NonZeroU64::new(3).ok_or("handle")?)
         } else {
             UseTarget::ItemByDefinition(reference)
@@ -386,7 +389,7 @@ async fn use_hammer(
         *admitted,
         admitted.continuity.next_command_id,
         &payload,
-        carried.then_some(reference),
+        from_handle.then_some(reference),
     )
     .await?;
     *admitted = next;
