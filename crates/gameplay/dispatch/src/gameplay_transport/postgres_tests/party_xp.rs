@@ -762,16 +762,6 @@ async fn scenario(
             .bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
         sqlx::query("INSERT INTO game_cake_phases(world_id,event_year,stage,layer,bonus_activated_at,bonus_until) VALUES(encode($1,'hex')::uuid,2026,3,4,statement_timestamp(),statement_timestamp()+interval '604800 seconds')")
             .bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
-        for (actor, session) in players.iter().copied() {
-            let now = owner.owner_now().get() / 1_000 * 1_000 + 999;
-            let _ = owner
-                .tick_spell_periodic_at(
-                    actor,
-                    session,
-                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now),
-                )
-                .await;
-        }
         let (actor, session) = players[0];
         let runtime = owner.runtime.lock().await;
         let mut states = owner.states.spell_states.lock().await;
@@ -1639,26 +1629,54 @@ async fn scenario(
     }
     if matches!(case, Case::CakeWorldBonus) {
         use oteryn_gameplay_domain::domain::condition::{ConditionValues, ConflictKey};
-        let runtime = owner.runtime.lock().await;
-        let states = owner.states.spell_states.lock().await;
+        use oteryn_simulation_determinism::SemanticTimeMicros;
         for (actor, session) in players.iter().copied() {
-            let state = states
-                .get(&runtime, actor, session)
-                .ok_or("cake player state")?;
-            let effect = state
-                .owned_conditions()
-                .get(ConflictKey::Recovery)
-                .ok_or("world regeneration applies to both premium and free players")?;
-            assert_eq!(effect.started_at() % 1_000, 0);
-            assert!(matches!(
-                effect.definition().values(),
-                ConditionValues::SpellRegeneration {
+            let now = owner.owner_now();
+            owner.tick_spell_periodic_at(actor, session, now).await;
+            let (first_pulse, expected) = {
+                let runtime = owner.runtime.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
+                let state = states
+                    .get_mut(&runtime, actor, session)
+                    .ok_or("cake player state")?;
+                let effect = state
+                    .owned_conditions()
+                    .get(ConflictKey::Recovery)
+                    .ok_or("world regeneration applies to both premium and free players")?;
+                let ConditionValues::SpellRegeneration {
                     sub_id: 0,
                     health_gain: 1,
                     mana_gain: 1,
+                    health_interval_ms,
+                    mana_interval_ms,
                     ..
-                }
-            ));
+                } = effect.definition().values()
+                else {
+                    return Err("expected the Cake combat regeneration condition".into());
+                };
+                assert_eq!(effect.started_at() % 1_000, 0);
+                let interval = health_interval_ms.min(mana_interval_ms);
+                let due = effect.started_at() + u64::from(interval) * 1_000;
+                let expected = (
+                    u32::from(health_interval_ms == interval),
+                    u32::from(mana_interval_ms == interval),
+                );
+                state.restore_saved_vitals(1, 0);
+                (due, expected)
+            };
+            owner
+                .tick_spell_periodic_at(actor, session, SemanticTimeMicros::from_micros(first_pulse - 1))
+                .await;
+            let before = {
+                let runtime = owner.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                states.get(&runtime, actor, session).ok_or("cake player state")?.vitals()
+            };
+            let (_, after) = owner
+                .tick_spell_periodic_at(actor, session, SemanticTimeMicros::from_micros(first_pulse))
+                .await
+                .ok_or("Cake regeneration pulse did not publish vitals")?;
+            assert_eq!((after.health - before.health, after.mana - before.mana), expected);
         }
     }
     let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_party_kill_xp_receipts")
