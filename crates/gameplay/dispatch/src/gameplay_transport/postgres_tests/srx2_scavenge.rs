@@ -1021,6 +1021,22 @@ async fn exercise_rabbit(
     actor: crate::foundation::ExactActorRef,
 ) -> TestResult {
     use oteryn_protocol_oteryn::chat::ChatLine;
+    use crate::content::{ProjectV2DefinitionRef, ProjectV2Family};
+    use oteryn_gameplay_items::item_craft::output_definition;
+
+    for id in [12171, 12172, 12173] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let reference = ProjectV2DefinitionRef {
+            family: ProjectV2Family::Item,
+            key: key.clone(),
+            revision: "definition-r1".into(),
+        };
+        assert!(
+            output_definition(native, &reference).is_some(),
+            "{key} must be eligible for actual Item minting"
+        );
+    }
+
     let session = fence.game_session_id;
     owner.states.chat.admit(session, "Aela", owner.owner_now());
     let obsidian_knife = 71;
