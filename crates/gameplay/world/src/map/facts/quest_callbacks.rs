@@ -57,7 +57,7 @@ pub use arena_pillars::ArenaPillarProjection;
 struct MovementDecay {
     revision: u64,
     restore: EntryFacts,
-    /// Remote resets restore visibility and the previous collision override too.
+    /// Preserve visibility and collision when the temporary projection changes them.
     overlay: Option<(bool, Option<bool>)>,
 }
 
@@ -245,7 +245,10 @@ impl CallbackStates {
                     MovementDecay {
                         revision,
                         restore: *restore,
-                        overlay: None,
+                        overlay: Some((
+                            self.hidden.contains(&owner),
+                            self.passable.get(&owner).copied(),
+                        )),
                     },
                 );
                 self.portals.insert(
