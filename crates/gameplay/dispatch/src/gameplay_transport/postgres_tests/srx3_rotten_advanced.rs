@@ -50,6 +50,20 @@ fn srx3_bakragore_actual_source_native_effects_postgres() -> TestResult {
         false,
     )
 }
+pub(super) fn bakragore_deadline_case() -> TestResult {
+    scenario_with_step(
+        PinnedActivitySourceRoom::Bakragore,
+        MovementLocalPosition {
+            x: 33010,
+            y: 32392,
+            floor: 15,
+        },
+        "oteryn:creature.bakragore",
+        true,
+        false,
+        Extra::FinalDeadline,
+    )
+}
 #[test]
 fn srx3_vemiath_actual_source_teleport_exit_return_postgres() -> TestResult {
     scenario(
@@ -88,6 +102,7 @@ enum Extra {
     FootprintsRestart,
     DueBeforeDeath,
     ControlLost,
+    FinalDeadline,
     CopiedDeath {
         credited: bool,
         prepared_bak: bool,
@@ -442,6 +457,25 @@ fn scenario_with_step(
                 .activity_runtimes
                 .get(instance, fence.scope_ownership_generation.get())
                 .ok_or("actual source owner")?;
+            if matches!(extra, Extra::FinalDeadline) {
+                let RuntimeScopeRefV1::Instance { instance_id, .. } = instance else {
+                    return Err("actual Bakragore Instance".into());
+                };
+                let fight_ms: i64 = sqlx::query_scalar(
+                    "SELECT deadline - opened_at FROM game_boss_room_activities
+                     WHERE instance_id=encode($1,'hex')::uuid AND boss_key=$2",
+                )
+                .bind(instance_id.as_slice())
+                .bind("oteryn:boss.bakragore")
+                .fetch_one(&h.pool)
+                .await?;
+                // Crystal 201189f8 config.lua.dist:659 sets the default fight duration.
+                assert_eq!(fight_ms, 1_200_000);
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
             if return_only {
                 super::srx3_vemiath_return::exercise(&h, &mut owner, &mut admitted).await?;
                 drop(owner);

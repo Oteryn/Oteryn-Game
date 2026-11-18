@@ -251,6 +251,51 @@ def admit_agony_field(root: Path, generated: dict[str, bytes]) -> None:
     generated[path] = spell_import.canonical_bytes(document)
 
 
+def admit_dream_courts_supplies(root: Path, items: dict) -> None:
+    """Admit the two portable rewards bound by the Dream Courts pickup callbacks."""
+    import build_source_item_profiles as source
+    from authored_quest_item_custody import XML_SHA256
+    from quest_reward_item_semantics import CLIENT, CLIENT_SHA
+
+    ids = {29991, 30009}
+    xml = (root / "imports/canary/items-xml/items.xml").read_bytes()
+    client = (root / CLIENT).read_bytes()
+    if hashlib.sha256(xml).hexdigest() != XML_SHA256 or hashlib.sha256(client).hexdigest() != CLIENT_SHA:
+        raise ValueError("DREAM_COURTS_SUPPLY_SOURCE_DRIFT")
+    nodes = source.xml_index(xml)
+    appearances = source.engine_items.load_appearance_objects(client)
+    bindings = source.binding_index((root / "imports/crystalserver/bindings/items.json").read_bytes())
+    physical = {row["server_item_id"]: row for row in source.policies(client, xml, ids)}
+    profiles = []
+    for item in sorted(ids):
+        profile = source.profile(item, nodes[item], appearances[item], physical[item], bindings, None)
+        if profile["admission"] != {
+            "materializable": True,
+            "stack_class": "NonStackable",
+            "legal_destinations": ["CharacterInventory", "Ground"],
+        }:
+            raise ValueError(f"DREAM_COURTS_SUPPLY_CUSTODY:{item}")
+        profiles.append(profile)
+    qualified = source.bind_profiles({"schema": items["schema"], "records": profiles}, bindings, ids)
+    keys = {f"oteryn:item.tibia.i{item}" for item in ids}
+    presentations = {
+        definition["identity"]["key"]: definition["semantics"]["presentation"]
+        for path in (root / "content/items/definitions").glob("items-*.json")
+        for row in json.loads(path.read_bytes())["records"]
+        if (definition := row["definition"])["identity"]["key"] in keys
+    }
+    for profile in qualified["records"]:
+        key = profile["production_definition"]["production_key"]
+        profile["semantics"]["presentation"] = presentations[key]
+        existing = [row for row in items["records"]
+                    if row["production_definition"]["production_key"] == key]
+        if existing and existing != [profile]:
+            raise ValueError(f"DREAM_COURTS_SUPPLY_CONFLICT:{key}")
+        if not existing:
+            items["records"].append(profile)
+    items["records"].sort(key=provider_order)
+
+
 def admit_consumable_profiles(root: Path, generated: dict[str, bytes]) -> None:
     """Carry the pinned consumption fact without inventing or widening item semantics."""
     raw = (root / CONSUMPTION_FACTS).read_bytes()
@@ -615,6 +660,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # Complete only unknown kinds from agreeing admitted taxonomy and pinned XML.
     import hand_weapon_kinds
     hand_weapon_kinds.apply_native(root, generated, spell_import.canonical_bytes)
+    # MP01: weapons without a Crystal level or vocation equip at level 0 for any vocation.
+    import weapon_equip_requirements
+    weapon_equip_requirements.apply_native(root, generated, spell_import.canonical_bytes)
     sys.path.insert(0, str(root / 'tools/content-schema/native-gameplay'))
     import native_goal_corpse_items
     native_goal_corpse_items.admit_native(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
@@ -651,6 +699,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # HEALPAR: Great Mana Potion is for all vocations on Global (TibiaWiki rev 1190635).
     import healing_global_overrides
     healing_global_overrides.apply_native_profiles(items)
+    admit_dream_courts_supplies(root, items)
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.
