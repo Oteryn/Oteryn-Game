@@ -23,6 +23,8 @@ enum Case {
     HatInBag,
     HauntedCellarBucket,
     HauntedCellarDisguise,
+    HauntedTombCurse,
+    HauntedTombKey,
     VoodooSuccess,
     VoodooFailure,
     VoodooWithoutTarget,
@@ -49,6 +51,7 @@ impl Case {
             Self::Rocket | Self::GroundRocket | Self::PendingLifecycle => "oteryn:item.tibia.i6576",
             Self::HauntedCellarBucket => "oteryn:item.tibia.i29310",
             Self::HauntedCellarDisguise => "oteryn:item.tibia.i29309",
+            Self::HauntedTombCurse | Self::HauntedTombKey => "oteryn:item.tibia.i29349",
             Self::Hat | Self::HatInBag => "oteryn:item.tibia.i6578",
             Self::VoodooSuccess
             | Self::VoodooFailure
@@ -58,6 +61,16 @@ impl Case {
             Self::Present | Self::GroundPresent => "oteryn:item.tibia.i906",
             Self::FeroxaTrap | Self::FeroxaTrapOutside => "oteryn:item.tibia.i22074",
         }
+    }
+    fn tomb(self) -> bool {
+        matches!(self, Self::HauntedTombCurse | Self::HauntedTombKey)
+    }
+    fn haunted(self) -> bool {
+        self.tomb()
+            || matches!(
+                self,
+                Self::HauntedCellarBucket | Self::HauntedCellarDisguise
+            )
     }
     fn ground(self) -> bool {
         matches!(
@@ -137,6 +150,24 @@ fn dcourts_haunted_cellar_full_bucket_use_on_self_commits_disguise() -> TestResu
     };
     assert!(!admin.is_empty());
     run_case(Case::HauntedCellarDisguise)
+}
+
+#[test]
+fn dcourts_haunted_tomb_curse_spawns_one_mummy_and_locks_sarcophagus() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty());
+    run_case(Case::HauntedTombCurse)
+}
+
+#[test]
+fn dcourts_haunted_tomb_key_has_thirty_minute_absolute_deadline() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty());
+    run_case(Case::HauntedTombKey)
 }
 
 #[test]

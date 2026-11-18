@@ -3,11 +3,6 @@ use super::*;
 pub(super) fn scenario(case: Case) -> TestResult {
     run(async |admin| {
         let key = case.key();
-        let origin = case.origin();
-        let ground_origin = MovementLocalPosition {
-            x: origin.x - i32::from(case.feroxa()),
-            ..origin
-        };
         let harness =
             Harness::create_with_admission_seed(admin, "novelty_items", true, false).await?;
         super::super::reset();
@@ -27,11 +22,17 @@ pub(super) fn scenario(case: Case) -> TestResult {
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) = if matches!(
-            case,
-            Case::HauntedCellarBucket | Case::HauntedCellarDisguise
-        ) {
-            haunted_cellar_fixture(deps.admitted.world_id)?
+        let origin = if case.tomb() {
+            tomb_origin(deps.admitted.game_session_id, case == Case::HauntedTombKey)?
+        } else {
+            case.origin()
+        };
+        let ground_origin = MovementLocalPosition {
+            x: origin.x - i32::from(case.feroxa()),
+            ..origin
+        };
+        let (controller, pin) = if case.haunted() {
+            haunted_fixture(deps.admitted.world_id)?
         } else {
             crate::content::native_gameplay::test_support::activated_with_loot_tables(
                 deps.admitted.world_id,
@@ -43,6 +44,8 @@ pub(super) fn scenario(case: Case) -> TestResult {
         let index = native.item_index().ok_or("index")?;
         let oven = if case == Case::HauntedCellarBucket {
             "oteryn:item.tibia.i29305"
+        } else if case.tomb() {
+            key
         } else {
             "oteryn:item.tibia.i2535"
         };
@@ -95,6 +98,10 @@ pub(super) fn scenario(case: Case) -> TestResult {
                 .collect();
             bytes =
                 oteryn_world_bundle::writer::write(&data.manifest, &sectors, &Default::default())?;
+            pins.digest = oteryn_world_bundle::bundle::read(&bytes)?.digest;
+        }
+        if case.tomb() {
+            bytes = tomb_bundle(&bytes, origin)?;
             pins.digest = oteryn_world_bundle::bundle::read(&bytes)?.digest;
         }
         let base = crate::map::load(&bytes, &pins).map_err(debug)?;
@@ -195,13 +202,12 @@ pub(super) fn scenario(case: Case) -> TestResult {
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
         if case.nested() {
             super::super::item_look::seed_main_backpack(&harness, &[(key, 1), (bag, 1)]).await?;
+        } else if case.tomb() {
+            super::super::item_look::seed_main_backpack(&harness, &[]).await?;
         } else {
             super::super::item_look::seed_main_backpack(&harness, &[(key, 1)]).await?;
         }
-        if matches!(
-            case,
-            Case::HauntedCellarBucket | Case::HauntedCellarDisguise
-        ) {
+        if case.haunted() {
             let mut seed = harness.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica")
                 .execute(&mut *seed)
@@ -214,6 +220,21 @@ pub(super) fn scenario(case: Case) -> TestResult {
                 .execute(&mut *seed)
                 .await?;
             seed.commit().await?;
+        }
+        if case.tomb() {
+            sarcophagus_use(
+                &owner,
+                &harness,
+                &deps,
+                fence,
+                origin,
+                case == Case::HauntedTombKey,
+            )
+            .await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
         }
         let used = crate::gameplay_transport::item_look::typed_definition(
             index,
@@ -826,7 +847,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
     })
 }
 
-fn haunted_cellar_fixture(
+fn haunted_fixture(
     world: crate::foundation::WorldId,
 ) -> TestResult<(
     crate::content::ContentActivationController,
@@ -851,7 +872,7 @@ fn haunted_cellar_fixture(
         })
         .ok_or("nonstackable inventory fixture template")?
         .clone();
-    for id in [233, 29305, 29307, 29308, 29309, 29310] {
+    for id in [233, 29305, 29307, 29308, 29309, 29310, 29349, 29351] {
         let key = format!("oteryn:item.tibia.i{id}");
         if records
             .iter()
@@ -864,7 +885,12 @@ fn haunted_cellar_fixture(
         record["production_binding"]["external_id"] = id.to_string().into();
         record["production_binding"]["target"]["key"] = key.clone().into();
         record["production_definition"]["production_key"] = key.into();
-        if let Some(duration) = oteryn_gameplay_items::haunted_cellar::bucket_duration_ms(id) {
+        let duration = if id == oteryn_gameplay_items::haunted_tomb::KEY {
+            Some(oteryn_gameplay_items::haunted_tomb::KEY_LIFETIME_MS)
+        } else {
+            oteryn_gameplay_items::haunted_cellar::bucket_duration_ms(id)
+        };
+        if let Some(duration) = duration {
             record["semantics"]["temporal"] = serde_json::json!({
                 "state": "KNOWN",
                 "value": {
@@ -990,5 +1016,173 @@ async fn bucket_on_egg(
             .definition,
         oteryn_protocol_oteryn::world_map::MapDefinition::Item(egg.ok_or("egg ref")?)
     );
+    Ok(())
+}
+
+fn tomb_origin(
+    session: crate::foundation::GameSessionId,
+    reward: bool,
+) -> TestResult<MovementLocalPosition> {
+    use crate::map::{overlay::TilePos, view::placement_key};
+    use oteryn_gameplay_items::{haunted_tomb as rules, reward_bag::reward_bag_bounded_draw};
+    for x in 33051..=33103 {
+        for y in 32297..=32356 {
+            if !rules::is_source(rules::SARCOPHAGUS, Some(rules::ACTION_ID), x, y, -8) {
+                continue;
+            }
+            let key = placement_key(TilePos { x, y, floor: -8 }, 1).ok_or("sarcophagus key")?;
+            let mut seed = [0; 16];
+            seed[..8].copy_from_slice(&key.to_be_bytes());
+            let roll = reward_bag_bounded_draw(*session.as_bytes(), 1, seed, 48, 10)
+                .ok_or("fixture roll")?
+                + 1;
+            if (roll >= 7) == reward {
+                return Ok(MovementLocalPosition {
+                    x: i32::from(x) - 1,
+                    y: i32::from(y),
+                    floor: 8,
+                });
+            }
+        }
+    }
+    Err("no canonical sarcophagus for the requested deterministic test branch".into())
+}
+
+fn tomb_bundle(bytes: &[u8], origin: MovementLocalPosition) -> TestResult<Vec<u8>> {
+    let mut data = oteryn_world_bundle::bundle::read(bytes)?;
+    let dx = u16::try_from(origin.x - 6)?;
+    let dy = u16::try_from(origin.y)?;
+    let mut grouped = std::collections::BTreeMap::new();
+    for sector in data.sectors.drain(..) {
+        for mut tile in sector.tiles {
+            if tile.x == 7 {
+                tile.items
+                    .get_mut(1)
+                    .ok_or("sarcophagus placement")?
+                    .attrs
+                    .action = Some(oteryn_gameplay_items::haunted_tomb::ACTION_ID);
+                let mut right = tile.clone();
+                right.items.truncate(1);
+                right.x += dx + 1;
+                right.y += dy;
+                grouped
+                    .entry((right.y / 32, right.x / 32))
+                    .or_insert_with(Vec::new)
+                    .push(right);
+            }
+            tile.x += dx;
+            tile.y += dy;
+            grouped
+                .entry((tile.y / 32, tile.x / 32))
+                .or_insert_with(Vec::new)
+                .push(tile);
+        }
+    }
+    data.manifest.world.min_x += dx;
+    data.manifest.world.max_x += dx;
+    data.manifest.world.min_y += dy;
+    data.manifest.world.max_y += dy;
+    data.manifest.world.floors = vec![-8];
+    let sectors: Vec<_> = grouped
+        .into_iter()
+        .map(|((sy, sx), mut tiles)| {
+            tiles.sort_by_key(|tile| (tile.y, tile.x));
+            oteryn_world_bundle::bundle::Sector {
+                floor: -8,
+                sx,
+                sy,
+                tiles,
+            }
+        })
+        .collect();
+    Ok(oteryn_world_bundle::writer::write(
+        &data.manifest,
+        &sectors,
+        &Default::default(),
+    )?)
+}
+
+async fn sarcophagus_use(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    deps: &Dependencies,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    origin: MovementLocalPosition,
+    reward: bool,
+) -> TestResult {
+    use crate::map::{overlay::TilePos, view::placement_key};
+    use oteryn_protocol_oteryn::world_object::WorldObjectTarget;
+    let map = owner.bundle_map().ok_or("Haunted Tomb bundle")?;
+    let pos = TilePos {
+        x: u16::try_from(origin.x + 1)?,
+        y: u16::try_from(origin.y)?,
+        floor: -8,
+    };
+    let key = placement_key(pos, 1).ok_or("sarcophagus placement")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let mut admitted = deps.admitted;
+    admitted.runtime_actor = Some(deps.actor);
+    admitted.first_entry = FirstEntryOutcome::Positioned;
+    admitted.item_fence = Some(fence);
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 12, 15, 18, 350])
+            .ok_or("offers")?;
+    let payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::WorldObject(WorldObjectTarget {
+            placement,
+            expected_revision: 0,
+        }),
+        use_with: None,
+        use_with_map_item: None,
+        use_with_position: None,
+    })
+    .map_err(debug)?;
+    let (next, result, _, _) =
+        super::super::rust_lottery::exchange_with_visuals(owner, admitted, 1, &payload, None)
+            .await?;
+    assert_eq!(result, UseDisposition::Committed);
+    let (_, cooldown, _, _) =
+        super::super::rust_lottery::exchange_with_visuals(owner, next, 2, &payload, None).await?;
+    assert_eq!(cooldown, UseDisposition::Committed);
+    let records: Vec<(i16, i64, bool)> = sqlx::query_as(
+        "SELECT roll,expires_at-occurred_at,reward_transaction_id IS NOT NULL FROM game_haunted_tomb_uses",
+    ).fetch_all(&harness.pool).await?;
+    let [(roll, duration, granted)] = records.as_slice() else {
+        return Err(format!("expected one committed sarcophagus roll, found {records:?}").into());
+    };
+    assert_eq!((*roll >= 7, *duration, *granted), (reward, 30_000, reward));
+    let schedules: Vec<(String, i64, i64)> = sqlx::query_as(
+        "SELECT s.definition_production_key,s.duration_millis,s.expires_at_unix_ms-r.occurred_at
+         FROM game_spell_item_temporal_schedules s JOIN game_reward_claim_mint_receipts r
+         ON r.transaction_id=s.source_transaction_id",
+    )
+    .fetch_all(&harness.pool)
+    .await?;
+    let runtime = owner.runtime.lock().await;
+    let creatures = runtime.current_live_creature_census().map_err(debug)?;
+    if reward {
+        assert_eq!(
+            schedules,
+            vec![("oteryn:item.tibia.i29351".into(), 1_800_000, 1_800_000)]
+        );
+        assert!(creatures.is_empty());
+    } else {
+        assert!(schedules.is_empty());
+        let [mummy] = creatures.as_slice() else {
+            return Err(format!("expected one live Mummy, found {creatures:?}").into());
+        };
+        let facts = runtime.creature_combat_facts(*mummy, 0).map_err(debug)?;
+        let policy = runtime
+            .companion_policy(oteryn_gameplay_items::haunted_tomb::MUMMY)
+            .map_err(debug)?;
+        assert_eq!(facts.health, policy.maximum_health);
+        let landing = runtime
+            .read_actor_position(*mummy)
+            .map_err(debug)?
+            .position();
+        assert_eq!((landing.y, landing.floor), (origin.y, origin.floor));
+        assert!((origin.x + 1..=origin.x + 2).contains(&landing.x));
+    }
     Ok(())
 }
