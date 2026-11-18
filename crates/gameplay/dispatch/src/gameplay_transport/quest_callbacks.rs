@@ -1282,6 +1282,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             drop(states);
             drop(runtime);
             drop(slot);
+            if result == UseDisposition::Committed
+                && world_callbacks::earth_tree_scene(callback)
+                && !self.relocate_earth_portal_items(
+                    &permit, actor, command, map, resolved.placement_key,
+                ).await
+            {
+                super::operator_event("earth_portal_ground_relocation_incomplete");
+            }
             if matches!(result, UseDisposition::Committed | UseDisposition::Rejected)
                 && let Some(fence) = fence
                 && let Some(delivery) = self.deliver_monk_reward(actor, command, callback, fence).await

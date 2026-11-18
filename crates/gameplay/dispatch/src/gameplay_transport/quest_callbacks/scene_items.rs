@@ -115,71 +115,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
             )
         };
-        let Some(ground) = loop_move::loop_ground(self, map.overlay.base(), Some(index)).await
+        let moves: Vec<_> = scene
+            .evacuate_close
+            .iter()
+            .map(|movement| (tile(movement.from), tile(movement.players_to)))
+            .collect();
+        let Some(items) = self
+            .scene_ground_items(map, index, native_state, &moves)
+            .await
         else {
             return false;
         };
-        let movable = |facts: &EntryFacts| {
-            let oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference) =
-                facts.definition
-            else {
-                return false;
-            };
-            let Some((key, revision)) = index.definition_at(reference) else {
-                return false;
-            };
-            native_state.item_policy(key,revision).is_some_and(|policy|matches!(&policy.record().semantics.physical,ReferenceItemField::Known(p) if p.movable==ReferenceItemField::Known(true)))
-        };
-        let mut items = Vec::new();
-        for movement in &scene.evacuate_close {
-            let from = tile(movement.from);
-            let to = tile(movement.players_to);
-            let Some(entries) = super::super::paced_movement::special_movement::tile_entries(
-                map,
-                local(movement.from),
-            ) else {
-                return false;
-            };
-            for (key, facts) in entries.entries {
-                if !movable(&facts) {
-                    continue;
-                }
-                let Some((_, ordinal)) = crate::map::view::placement_of(key) else {
-                    return false;
-                };
-                let Some(pending) = self.states.loop_ground.pending_origin(key) else {
-                    return false;
-                };
-                if pending.is_some()
-                    || !ground
-                        .overlay()
-                        .tile(from)
-                        .is_some_and(|tile| tile.is_hidden(ordinal))
-                {
-                    items.push((
-                        ItemKey::MapBase {
-                            bundle_digest: map.overlay.base().digest(),
-                            placement_key: key,
-                            reset_epoch: self.reset_epoch,
-                        },
-                        from,
-                        to,
-                    ));
-                }
-            }
-            if let Some(tile) = ground.overlay().tile(from) {
-                for entry in tile.added() {
-                    if let AddedItem::Ground(item) = entry.item() {
-                        let Some(facts) = ground.facts(&map.facts).added_entry(entry.item()) else {
-                            return false;
-                        };
-                        if movable(&facts) {
-                            items.push((ItemKey::Instance(item.item_instance_id), from, to));
-                        }
-                    }
-                }
-            }
-        }
         if items.len() > 32 {
             return false;
         }
@@ -207,6 +153,132 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             eprintln!("QUEST_SCENE_ITEMS_REFUSED durable_gates");
             return false;
         }
+        self.relocate_scene_items(permit, actor, command, key, items)
+            .await
+    }
+
+    pub(super) async fn relocate_earth_portal_items(
+        &self,
+        permit: &SpellLanePermit,
+        actor: ExactActorRef,
+        command: UseCommand,
+        map: &BundleMap,
+        key: u64,
+    ) -> bool {
+        let Some(native) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+        else {
+            return false;
+        };
+        let index = {
+            let runtime = self.runtime.lock().await;
+            super::super::item_ref_admission::pinned_index(&runtime, self.active_generation)
+        };
+        let Some(index) = index else { return false };
+        let Some(items) = self
+            .scene_ground_items(
+                map,
+                index,
+                native,
+                &[(
+                    tile(world_callbacks::EARTH_TREE_PORTAL),
+                    tile(world_callbacks::EARTH_TREE_RETURN),
+                )],
+            )
+            .await
+        else {
+            return false;
+        };
+        self.relocate_scene_items(permit, actor, command, key, items)
+            .await
+    }
+
+    async fn scene_ground_items(
+        &self,
+        map: &BundleMap,
+        index: &crate::content::item_ref::ItemDefinitionIndex,
+        native_state: &crate::content::native_gameplay::NativeGameplayState,
+        moves: &[(TilePos, TilePos)],
+    ) -> Option<Vec<(ItemKey, TilePos, TilePos)>> {
+        let Some(ground) = loop_move::loop_ground(self, map.overlay.base(), Some(index)).await
+        else {
+            return None;
+        };
+        let movable = |facts: &EntryFacts| {
+            let oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference) =
+                facts.definition
+            else {
+                return None;
+            };
+            let Some((key, revision)) = index.definition_at(reference) else {
+                return None;
+            };
+            native_state.item_policy(key,revision).is_some_and(|policy|matches!(&policy.record().semantics.physical,ReferenceItemField::Known(p) if p.movable==ReferenceItemField::Known(true)))
+        };
+        let mut items = Vec::new();
+        for &(from, to) in moves {
+            let Some(entries) = super::super::paced_movement::special_movement::tile_entries(
+                map,
+                local(Position {
+                    x: from.x,
+                    y: from.y,
+                    floor: from.floor,
+                }),
+            ) else {
+                return None;
+            };
+            for (key, facts) in entries.entries {
+                if !movable(&facts) {
+                    continue;
+                }
+                let Some((_, ordinal)) = crate::map::view::placement_of(key) else {
+                    return None;
+                };
+                let Some(pending) = self.states.loop_ground.pending_origin(key) else {
+                    return None;
+                };
+                if pending.is_some()
+                    || !ground
+                        .overlay()
+                        .tile(from)
+                        .is_some_and(|tile| tile.is_hidden(ordinal))
+                {
+                    items.push((
+                        ItemKey::MapBase {
+                            bundle_digest: map.overlay.base().digest(),
+                            placement_key: key,
+                            reset_epoch: self.reset_epoch,
+                        },
+                        from,
+                        to,
+                    ));
+                }
+            }
+            if let Some(tile) = ground.overlay().tile(from) {
+                for entry in tile.added() {
+                    if let AddedItem::Ground(item) = entry.item() {
+                        let Some(facts) = ground.facts(&map.facts).added_entry(entry.item()) else {
+                            return None;
+                        };
+                        if movable(&facts) {
+                            items.push((ItemKey::Instance(item.item_instance_id), from, to));
+                        }
+                    }
+                }
+            }
+        }
+        Some(items)
+    }
+
+    async fn relocate_scene_items(
+        &self,
+        permit: &SpellLanePermit,
+        actor: ExactActorRef,
+        command: UseCommand,
+        key: u64,
+        items: Vec<(ItemKey, TilePos, TilePos)>,
+    ) -> bool {
         // Native scripts move items sequentially. Each consequence has a stable parent
         // ingress identity and its existing durable receipt; retries cannot duplicate MINT.
         for (item, from, to) in items {
