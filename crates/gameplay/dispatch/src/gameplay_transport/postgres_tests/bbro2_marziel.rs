@@ -14,6 +14,7 @@ use oteryn_gameplay_quests::quest::{
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
 const QUEST: &str = "oteryn:quest.blood_brothers_quest";
+const BRIDE: &str = "oteryn:creature.vampire_bride";
 const TRACK: &str = "oteryn:quest-progress/crystalserver/quest/u8_4/blood_brothers/marziel_blood";
 const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/movements_marziel_blood.lua:10-37";
 const TRIGGER: Position = Position {
@@ -42,7 +43,7 @@ pub(super) const STARTS: [Position; 3] = [
 ];
 
 #[test]
-fn marziel_step_debits_only_female_carried_blood_and_spawns_brides() -> TestResult {
+fn marziel_step_checks_carried_blood_then_distinct_bride_deaths_admit_and_exit() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -50,12 +51,32 @@ fn marziel_step_debits_only_female_carried_blood_and_spawns_brides() -> TestResu
 }
 
 pub(super) fn catalogue(revision: &str) -> TestResult<QuestStateCatalogue> {
+    let followup = serde_json::json!({
+        "creature":BRIDE,
+        "minimum":{"x":32936,"y":31456,"floor":-2},
+        "maximum":{"x":32944,"y":31464,"floor":-2},
+        "count":2,"tile_cooldown_ms":5_000,
+        "next":{
+            "minimum_level":0,"players":[],
+            "staging_area":{
+                "minimum":{"x":32928,"y":31448,"floor":-2},
+                "maximum":{"x":32944,"y":31464,"floor":-2},
+                "destination":{"x":32940,"y":31460,"floor":-1}
+            },
+            "room_min":{"x":32938,"y":31457,"floor":-1},
+            "room_max":{"x":32942,"y":31463,"floor":-1},
+            "monsters":[
+                {"position":{"x":32940,"y":31458,"floor":-1},"creature":"oteryn:creature.marziel"},
+                {"position":{"x":32939,"y":31458,"floor":-1},"creature":"oteryn:creature.vampire"}
+            ]
+        }
+    });
     let effects = serde_json::json!({
         "required_sex":"female",
         "required_fluid_subtype":5,
         "target_transform":{"position":STATUE,"from":8325,"to":8326},
         "encounter":{
-            "minimum_level":0,"players":[],"spawn_in_place":true,
+            "minimum_level":0,"players":[],"spawn_in_place":true,"after_defeats":followup,
             "room_min":{"x":32936,"y":31456,"floor":-2},
             "room_max":{"x":32944,"y":31464,"floor":-2},
             "monsters":[
@@ -92,30 +113,58 @@ pub(super) fn catalogue(revision: &str) -> TestResult<QuestStateCatalogue> {
 }
 
 pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot::BundleWorld> {
-    use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_scene_with_appearances};
+    use super::l6_world_pickups::{
+        ExpectedTeleport, ExpectedTile, NativeCrop, native_scene_with_appearances,
+    };
+    const ROOM: &[u8] =
+        include_bytes!("../../../../../../content/world/placements/region-z01-x128-y122.b3");
     native_scene_with_appearances(
         native,
-        vec![NativeCrop {
-            bytes: include_bytes!(
-                "../../../../../../content/world/placements/region-z02-x128-y122.b3"
-            ),
-            region: (2, 128, 122),
-            bounds: (32938, 31457, 32942, 31459),
-            start: (STARTS[0].x, STARTS[0].y),
-            expected: vec![
-                ExpectedTile {
-                    position: (TRIGGER.x, TRIGGER.y),
-                    ids: vec![8308, 8695],
+        vec![
+            NativeCrop {
+                bytes: include_bytes!(
+                    "../../../../../../content/world/placements/region-z02-x128-y122.b3"
+                ),
+                region: (2, 128, 122),
+                bounds: (32938, 31457, 32942, 31459),
+                start: (STARTS[0].x, STARTS[0].y),
+                expected: vec![
+                    ExpectedTile {
+                        position: (TRIGGER.x, TRIGGER.y),
+                        ids: vec![8308, 8695],
+                        counted_entry: None,
+                    },
+                    ExpectedTile {
+                        position: (STATUE.x, STATUE.y),
+                        ids: vec![8308, 8698, 8325],
+                        counted_entry: None,
+                    },
+                ],
+            },
+            NativeCrop {
+                bytes: ROOM,
+                region: (1, 128, 122),
+                bounds: (32938, 31457, 32942, 31463),
+                start: (32940, 31460),
+                expected: vec![ExpectedTile {
+                    position: (32940, 31463),
+                    ids: vec![8308, 1959],
                     counted_entry: None,
-                },
-                ExpectedTile {
-                    position: (STATUE.x, STATUE.y),
-                    ids: vec![8308, 8698, 8325],
-                    counted_entry: None,
-                },
-            ],
+                }],
+            },
+            NativeCrop {
+                bytes: ROOM,
+                region: (1, 128, 122),
+                bounds: (32966, 31479, 32968, 31481),
+                start: (32967, 31480),
+                expected: Vec::new(),
+            },
+        ],
+        &[ExpectedTeleport {
+            position: (32940, 31463, 1),
+            ordinal: 1,
+            destination: (32967, 31480, 1),
         }],
-        &[],
         &[8326],
     )
 }
@@ -262,22 +311,56 @@ pub(super) async fn exercise(
 
     step(owner, blood, StepDirection::West).await?;
     assert_eq!(map.facts.object_revision(statue), 1);
-    assert_eq!(
-        owner
-            .runtime
-            .lock()
-            .await
-            .visible_entities()
-            .creatures
-            .len(),
-        2
-    );
+    let brides = owner.runtime.lock().await.visible_entities().creatures;
+    let [west, east] = brides.as_slice() else {
+        return Err("two admitted Brides".into());
+    };
     let retained:Vec<(i16,i64)> = sqlx::query_as("SELECT f.fluid_subtype,count(*) FROM game_item_fluid_states f JOIN game_item_instances i USING(item_instance_id) WHERE i.lifecycle=1 AND i.definition_production_key='oteryn:item.tibia.i2874' GROUP BY f.fluid_subtype ORDER BY f.fluid_subtype")
         .fetch_all(pool).await?;
     assert_eq!(retained, vec![(1, 1), (5, 1)]);
     let spent:i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_callback_consumptions WHERE transition_key='oteryn:quest-callback/bbro2-marziel-blood'")
         .fetch_one(pool).await?;
     assert_eq!(spent, 1);
+    super::engenc2_cults::kill(owner, blood, west.actor, BRIDE, 10_001).await?;
+    owner.drain_quest_encounter_deadlines().await;
+    assert_eq!(position(owner, blood).await?, (32940, 31458, 2));
+    super::engenc2_cults::kill(owner, blood, east.actor, BRIDE, 10_002).await?;
+    owner.drain_quest_encounter_deadlines().await;
+    {
+        let runtime = owner.runtime.lock().await;
+        let creatures = runtime.visible_entities().creatures;
+        assert!(creatures.iter().any(|row| {
+            runtime.matches_live_creature_identity(row.actor, b"oteryn:creature.marziel")
+        }));
+    }
+    for (member, clear_landing) in [
+        (male, Some(StepDirection::East)),
+        (wrong_fluid, Some(StepDirection::North)),
+        (blood, None),
+    ] {
+        assert_eq!(position(owner, member).await?, (32940, 31460, 1));
+        for direction in [StepDirection::South; 3] {
+            step(owner, member, direction).await?;
+        }
+        assert_eq!(position(owner, member).await?, (32967, 31480, 1));
+        if let Some(direction) = clear_landing {
+            step(owner, member, direction).await?;
+        }
+    }
     eprintln!("POSTGRES_CASE_COMPLETED bbro2_marziel_step_sex_subtype_custody");
     Ok(())
+}
+
+async fn position(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    member: &AdmittedSession,
+) -> TestResult<(i32, i32, i16)> {
+    let at = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(member.runtime_actor.ok_or("actor")?)
+        .map_err(debug)?
+        .position();
+    Ok((at.x, at.y, at.floor))
 }

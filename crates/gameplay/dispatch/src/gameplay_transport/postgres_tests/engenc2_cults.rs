@@ -520,7 +520,7 @@ async fn value(h: &Harness) -> TestResult<i64> {
     .await?)
 }
 
-async fn kill(
+pub(super) async fn kill(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &crate::gameplay_transport::connection::AdmittedSession,
     target: ExactActorRef,
