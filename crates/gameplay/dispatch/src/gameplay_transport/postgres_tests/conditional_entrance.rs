@@ -8,15 +8,28 @@ use crate::durability::{
     quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest},
 };
 use crate::foundation::{CommandId, CommandRef, ExactActorRef, GameSessionId};
-use crate::map::{overlay::TilePos, view::{MapFacts, placement_key}};
+use crate::map::{
+    overlay::TilePos,
+    view::{MapFacts, placement_key},
+};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Offering, Position};
 use oteryn_protocol_oteryn::{
-    world_object::{COMMAND_TYPE_USE_INTENT, UseDisposition, WorldObjectTarget, decode_use_result, encode_use_intent},
-    world_spatial::{COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result, encode_step_intent},
+    world_object::{
+        COMMAND_TYPE_USE_INTENT, UseDisposition, WorldObjectTarget, decode_use_result,
+        encode_use_intent,
+    },
+    world_spatial::{
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
+        encode_step_intent,
+    },
 };
 use serde_json::json;
 
-const GATE: Position = Position { x: 32791, y: 32331, floor: -10 };
+const GATE: Position = Position {
+    x: 32791,
+    y: 32331,
+    floor: -10,
+};
 const LANDING: Position = Position { x: 32792, ..GATE };
 const HOLY_TIBLE: &str = "oteryn:item.tibia.i2836";
 const VISITOR: &str = "oteryn:quest-progress/quest/u9_4/liquid_black_quest/visitor";
@@ -106,7 +119,10 @@ impl Case {
         Ok(serde_json::from_value::<Callback>(row)?)
     }
 
-    #[allow(clippy::too_many_arguments, reason = "uses the shared PostgreSQL scenario's current Character and Channel owners")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "uses the shared PostgreSQL scenario's current Character and Channel owners"
+    )]
     pub(super) async fn exercise(
         self,
         owner: &mut ComposedFreshAdmission<'_, '_, '_>,
@@ -118,7 +134,10 @@ impl Case {
         callback: &Callback,
     ) -> TestResult {
         let session = admitted.game_session_id;
-        let origin = local(Position { x: GATE.x - 1, ..GATE });
+        let origin = local(Position {
+            x: GATE.x - 1,
+            ..GATE
+        });
         if self == Self::Stair {
             assert!(self.attempt(owner, admitted, callback, 1).await?);
             return Ok(());
@@ -128,7 +147,9 @@ impl Case {
             let visitor = GameSessionId::decode(&id(51)).map_err(debug)?;
             let reservation = runtime.reserve_fresh_session(visitor).map_err(debug)?;
             let visitor_actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
-            runtime.initialize_pinned_test_position(visitor_actor, local(LANDING)).map_err(debug)?;
+            runtime
+                .initialize_pinned_test_position(visitor_actor, local(LANDING))
+                .map_err(debug)?;
             Some((visitor, visitor_actor))
         } else {
             None
@@ -142,7 +163,8 @@ impl Case {
                 .bind(id(41).as_slice()).bind(id(42).as_slice()).execute(&h.pool).await?;
         }
         let before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
-            .fetch_one(&h.pool).await?;
+            .fetch_one(&h.pool)
+            .await?;
         if matches!(self, Self::CalendarStep | Self::CalendarUse) {
             let in_season: bool = sqlx::query_scalar(
                 "SELECT to_char(transaction_timestamp() AT TIME ZONE 'UTC','MMDD') BETWEEN '0401' AND '0501'",
@@ -151,16 +173,38 @@ impl Case {
             let result = self.attempt(owner, admitted, callback, 1).await?;
             assert_eq!(result, allowed);
             let expected = if allowed { local(LANDING) } else { origin };
-            assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), expected);
+            assert_eq!(
+                owner
+                    .runtime
+                    .lock()
+                    .await
+                    .read_actor_position(actor)
+                    .map_err(debug)?
+                    .position(),
+                expected
+            );
             return Ok(());
         }
 
         let attempted = self.attempt(owner, admitted, callback, 1).await?;
         assert!(!attempted);
-        assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), origin);
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            origin
+        );
         let after: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
-            .fetch_one(&h.pool).await?;
-        assert_eq!(before, after, "an entrance refusal creates no Quest receipt");
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(
+            before, after,
+            "an entrance refusal creates no Quest receipt"
+        );
 
         match self {
             Self::Storage | Self::Door => {
@@ -181,7 +225,18 @@ impl Case {
                     .bind(id(41).as_slice()).execute(&h.pool).await?;
             }
             Self::Carried => {
-                input_item(owner, fence.item_fence(), &Offering { position: GATE, item: HOLY_TIBLE.into(), count: 1 }, 1, true).await?;
+                input_item(
+                    owner,
+                    fence.item_fence(),
+                    &Offering {
+                        position: GATE,
+                        item: HOLY_TIBLE.into(),
+                        count: 1,
+                    },
+                    1,
+                    true,
+                )
+                .await?;
             }
             Self::Level => {
                 super::qengine_outfit_stories::earn_level(owner, admitted, authority, 250).await?;
@@ -194,36 +249,75 @@ impl Case {
             }
             Self::Occupied => {
                 let (other_session, other_actor) = occupant.ok_or("grove fixture occupant")?;
-                owner.runtime.lock().await.remove_terminal_session(other_session, other_actor).map_err(debug)?;
+                owner
+                    .runtime
+                    .lock()
+                    .await
+                    .remove_terminal_session(other_session, other_actor)
+                    .map_err(debug)?;
             }
             Self::PvpLock => {
                 // Expire both the durable deadline and the restored semantic deadline.
-                owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(31)).ok_or("PvP deadline")?;
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(std::time::Duration::from_secs(31))
+                    .ok_or("PvP deadline")?;
                 sqlx::query("UPDATE game_character_pvp_state SET pz_block_until=NULL,revision=revision+1 WHERE character_id=encode($1,'hex')::uuid")
                     .bind(id(41).as_slice()).execute(&h.pool).await?;
             }
-            Self::CalendarStep | Self::CalendarUse | Self::Stair => return Err("calendar handled by the complementary window cases".into()),
+            Self::CalendarStep | Self::CalendarUse | Self::Stair => {
+                return Err("calendar handled by the complementary window cases".into());
+            }
         }
 
         assert!(self.attempt(owner, admitted, callback, 2).await?);
         let landing = if self == Self::Door { GATE } else { LANDING };
         if self == Self::Door {
             let map = owner.bundle_map().ok_or("fixture map")?;
-            let key = placement_key(TilePos { x: GATE.x, y: GATE.y, floor: GATE.floor }, 1)
-                .ok_or("door placement")?;
+            let key = placement_key(
+                TilePos {
+                    x: GATE.x,
+                    y: GATE.y,
+                    floor: GATE.floor,
+                },
+                1,
+            )
+            .ok_or("door placement")?;
             assert_eq!(map.facts.object_revision(key), 1);
-            let at = TilePos { x: GATE.x, y: GATE.y, floor: GATE.floor };
-            let base_id = *map.overlay.base().tile(at.x, at.y, at.floor)
-                .and_then(|tile| tile.ids().get(1)).ok_or("door base appearance")?;
-            assert_eq!(map.facts.base_entry(at, 1, base_id).ok_or("door projection")?.appearance_id, 9875);
-
+            let at = TilePos {
+                x: GATE.x,
+                y: GATE.y,
+                floor: GATE.floor,
+            };
+            let base_id = *map
+                .overlay
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .and_then(|tile| tile.ids().get(1))
+                .ok_or("door base appearance")?;
+            assert_eq!(
+                map.facts
+                    .base_entry(at, 1, base_id)
+                    .ok_or("door projection")?
+                    .appearance_id,
+                9875
+            );
         }
         if self == Self::Carried {
             let remaining: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1")
                 .bind(HOLY_TIBLE).fetch_one(&h.pool).await?;
             assert_eq!(remaining, 1);
         }
-        assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), local(LANDING));
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            local(landing)
+        );
         Ok(())
     }
 
@@ -234,84 +328,131 @@ impl Case {
         callback: &Callback,
         command: u64,
     ) -> TestResult<bool> {
-        owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("clock")?;
         if self.is_use() {
             let map = owner.bundle_map().ok_or("fixture map")?;
             let pos = callback.selector.position.ok_or("fixture selector")?;
-            let key = placement_key(TilePos { x: pos.x, y: pos.y, floor: pos.floor }, 1).ok_or("fixture placement")?;
+            let key = placement_key(
+                TilePos {
+                    x: pos.x,
+                    y: pos.y,
+                    floor: pos.floor,
+                },
+                1,
+            )
+            .ok_or("fixture placement")?;
             let mut placement = map.overlay.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
             let payload = encode_use_intent(&WorldObjectTarget {
-                placement, expected_revision: map.facts.object_revision(key),
-            }).map_err(debug)?;
+                placement,
+                expected_revision: map.facts.object_revision(key),
+            })
+            .map_err(debug)?;
             let reply = wire(owner, admitted, command, COMMAND_TYPE_USE_INTENT, payload).await?;
             Ok(decode_use_result(&reply).map_err(debug)? == UseDisposition::Committed)
         } else {
-            let reply = wire(owner, admitted, command, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, encode_step_intent(StepDirection::East)).await?;
-            assert_eq!(decode_step_result(&reply).map_err(debug)?, StepDisposition::Moved);
+            let reply = wire(
+                owner,
+                admitted,
+                command,
+                COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+                encode_step_intent(StepDirection::East),
+            )
+            .await?;
+            assert_eq!(
+                decode_step_result(&reply).map_err(debug)?,
+                StepDisposition::Moved
+            );
             let actor = admitted.runtime_actor.ok_or("fixture actor")?;
-            let position = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position();
+            let position = owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position();
             Ok(position == local(LANDING))
         }
     }
 }
 
 fn scenario(case: Case) -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("conditional-entrance", move || conditional_entrance_scenario(GATE, case))
+    super::kill_reward_e2e::scenario_thread::run("conditional-entrance", move || {
+        conditional_entrance_scenario(GATE, case)
+    })
 }
 
 #[test]
 fn conditional_step_checks_literal_storage_range_alternatives() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     scenario(Case::Storage)
 }
 
 #[test]
 fn conditional_step_reads_native_megalomania_completion() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     scenario(Case::Completion)
 }
 
 #[test]
 fn conditional_step_counts_each_native_miniboss_once() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     scenario(Case::Flags)
 }
 
 #[test]
 fn conditional_step_reads_carried_item_presence_without_consuming_it() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     scenario(Case::Carried)
 }
 
 #[test]
 fn conditional_step_reads_live_level_after_progression_changes() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     scenario(Case::Level)
 }
 
 #[test]
 fn conditional_step_checks_current_premium_on_the_account() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     scenario(Case::Premium)
 }
 
 #[test]
 fn conditional_step_refuses_until_other_player_leaves_the_grove() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     scenario(Case::Occupied)
 }
 
 #[test]
 fn conditional_step_and_use_evaluate_the_annual_calendar() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     scenario(Case::CalendarStep)?;
     scenario(Case::CalendarUse)
@@ -319,22 +460,27 @@ fn conditional_step_and_use_evaluate_the_annual_calendar() -> TestResult {
 
 #[test]
 fn conditional_use_refuses_vine_while_pvp_locked() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     scenario(Case::PvpLock)
 }
 
-
 #[test]
 fn conditional_step_keeps_the_original_down_stair_selector() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     scenario(Case::Stair)
 }
 
 #[test]
 fn conditional_use_moves_through_and_transforms_the_exact_door() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     scenario(Case::Door)
 }
