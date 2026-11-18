@@ -257,7 +257,7 @@ fn scenario() -> TestResult {
                 .map_err(debug)?
                 .ok_or("carried reward should handle the idol")?;
             assert_eq!(outcome.disposition, expected);
-            let effects = map.facts.movement_effects_since(0);
+            let effects = map.facts().movement_effects_since(0);
             assert_eq!(effects.len(), 1, "the first use emits green magic once");
             let (_, position, effect) = effects[0];
             assert_eq!(effect, 15);
