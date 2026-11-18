@@ -465,6 +465,45 @@ async fn exercise_logic(
             );
         }
     }
+    move_fixture(
+        owner,
+        admitted,
+        MovementLocalPosition {
+            x: 32307,
+            y: 31975,
+            floor: 13,
+        },
+    )
+    .await?;
+    let map = owner.bundle_map().ok_or("bundle map")?;
+    let mut lever_facts = map
+        .facts
+        .base_entry(lever_tile, lever_ordinal, lever_palette_id)
+        .ok_or("shared lever")?;
+    lever_facts.appearance_id = 1998;
+    assert!(
+        map.facts
+            .transform_movement_item_facts(lever_key, lever_facts)
+    );
+    let lever_revision = map.facts.object_revision(lever_key);
+    let campfire_revision = map.facts.object_revision(campfire_key);
+    let outcome = owner
+        .use_object(
+            actor,
+            UseCommand {
+                game_session_id: session,
+                command_id: 4,
+                item_fence: Some(fence.item_fence()),
+            },
+            WorldObjectTarget {
+                placement,
+                expected_revision: lever_revision,
+            },
+        )
+        .await;
+    assert_eq!(outcome.disposition, UseDisposition::NothingToUse);
+    assert_eq!(map.facts.object_revision(lever_key), lever_revision);
+    assert_eq!(map.facts.object_revision(campfire_key), campfire_revision);
     Ok(())
 }
 
