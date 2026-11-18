@@ -916,6 +916,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             source,
             recipe_target,
             location: None,
+            tracking_cycle: None,
             tracking_probe: None,
             intent: encoded,
         };

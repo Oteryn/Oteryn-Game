@@ -49,8 +49,8 @@ fn callback() -> TestResult<RewardCallback> {
 fn discovery_edge() -> TestResult<Position> {
     let tracker = callback()?.carried_tracker.ok_or("tracker")?;
     // The fixture terrain has no grey sand. Crystal returns the final draw.
-    let [x, y, z] = tracker.target_at(KEY, &id(42), &id(41), 0, 49);
-    let other = tracker.target_at(KEY, &id(42), &id(43), 0, 49);
+    let [x, y, z] = tracker.target_at(KEY, &id(42), &id(41), 0, None, 49);
+    let other = tracker.target_at(KEY, &id(42), &id(43), 0, None, 49);
     assert_ne!([x, y, z], other, "players have independent targets");
     Ok(Position {
         x: (x - 4).try_into()?,

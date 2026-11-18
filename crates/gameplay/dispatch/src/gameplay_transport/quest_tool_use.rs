@@ -160,7 +160,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(catalogue) = self.quest_catalogue.as_ref() else {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         };
-        let callback = {
+        let (callback, tracking_cycle) = {
             let sessions = self.states.quest_sessions.lock().map_err(|_| ())?;
             let tracks = sessions
                 .get(&command.game_session_id)
@@ -212,7 +212,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if selected.next().is_some() {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             }
-            callback.clone()
+            // Crystal gnomilly.lua:119-121 writes a fresh cooldown on each
+            // completed report without changing it during the next assignment.
+            let tracking_cycle = callback
+                .carried_tracker
+                .as_ref()
+                .and_then(|tracker| tracker.cycle_track.as_deref())
+                .and_then(|key| {
+                    tracks
+                        .get(key)
+                        .copied()
+                        .or_else(|| catalogue.track(key).map(|track| track.initial))
+                });
+            (callback.clone(), tracking_cycle)
         };
         let Some(permit) = self.spell_lane_permit().await else {
             return Ok(Some(outcome(UseDisposition::Rejected)));
@@ -317,6 +329,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             world,
                             fence.character_id.as_bytes(),
                             self.reset_epoch,
+                            tracking_cycle,
                             probe,
                         )
                     };
@@ -368,6 +381,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let use_ = QuestCarriedUse {
             recipe_target: None,
             location,
+            tracking_cycle,
             tracking_probe,
             source,
             intent: encoded,

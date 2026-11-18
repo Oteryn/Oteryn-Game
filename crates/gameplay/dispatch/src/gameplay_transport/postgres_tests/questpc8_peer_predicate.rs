@@ -90,6 +90,7 @@ async fn exercise(h: &Harness) -> TestResult {
         source: id(90),
         recipe_target: None,
         location: None,
+        tracking_cycle: None,
         tracking_probe: None,
         intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(&UseIntent {
             target: UseTarget::ItemByDefinition(

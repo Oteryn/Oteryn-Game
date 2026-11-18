@@ -83,6 +83,9 @@ pub struct QuestCarriedUse {
     /// Current carrier position held by dispatch through the reward transaction.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub location: Option<(u64, [i32; 3])>,
+    /// Source-owned assignment value sampled with the detector position.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tracking_cycle: Option<i64>,
     /// Exact stable search draw chosen against the admitted World terrain.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tracking_probe: Option<u8>,
@@ -150,6 +153,7 @@ pub(crate) async fn apply(
     }
     let location = admission.carried_use.and_then(|use_| use_.location);
     let probe = admission.carried_use.and_then(|use_| use_.tracking_probe);
+    let cycle = admission.carried_use.and_then(|use_| use_.tracking_cycle);
     if (callback.server_save_hotspot.is_some() || callback.carried_tracker.is_some())
         != location.is_some()
     {
@@ -158,6 +162,27 @@ pub(crate) async fn apply(
     let search = callback.carried_tracker.as_ref().and_then(|tracker| tracker.ground_search.as_ref());
     if !search.map_or_else(|| probe.is_none(), |search| probe.is_some_and(|index| index < search.attempts)) {
         return Ok(false);
+    }
+    let cycle_key = callback.carried_tracker.as_ref().and_then(|tracker| tracker.cycle_track.as_deref());
+    if cycle_key.is_some() != cycle.is_some() {
+        return Ok(false);
+    }
+    if let (Some(key), Some(cycle)) = (cycle_key, cycle) {
+        let Some(track) = catalogue.track(key).filter(|track| track.quest == callback.quest) else {
+            return Ok(false);
+        };
+        let stored: Option<i64> = sqlx::query_scalar(
+            "SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid
+             AND quest_key=$2 AND track_key=$3 FOR SHARE",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(&callback.quest)
+        .bind(key)
+        .fetch_optional(&mut **tx)
+        .await?;
+        if stored.unwrap_or(track.initial) != cycle {
+            return Ok(false);
+        }
     }
     if let Some((epoch, position)) = location {
         let world = fence.runtime_scope.world_id();
@@ -172,7 +197,7 @@ pub(crate) async fn apply(
             || callback.server_save_hotspot.as_ref().is_some_and(|hotspot|
                 !hotspot.contains(&callback.key, world.as_bytes(), epoch, position))
             || callback.carried_tracker.as_ref().is_some_and(|tracker| {
-                let target = tracker.target_at(&callback.key, world.as_bytes(), fence.character_id.as_bytes(), epoch, probe.unwrap_or(0));
+                let target = tracker.target_at(&callback.key, world.as_bytes(), fence.character_id.as_bytes(), epoch, cycle, probe.unwrap_or(0));
                 !tracker.reached(position, target)
             })
         {

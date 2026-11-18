@@ -12,6 +12,9 @@ pub struct CarriedTracker {
     pub heading_prefix: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ground_search: Option<GroundSearch>,
+    /// Same-quest track that changes between assignments and stays fixed during one run.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cycle_track: Option<String>,
 }
 
 /// First-target search uses exact admitted ground appearances. Crystal
@@ -56,16 +59,9 @@ impl CarriedTracker {
             && callback.storage.len() == 1
             && callback.storage[0].minimum == callback.storage[0].maximum
             && callback.storage[0].minimum.checked_add(1) == Some(callback.storage[0].set)
-    }
-
-    pub fn target(
-        &self,
-        key: &str,
-        world: &[u8; 16],
-        character: &[u8; 16],
-        epoch: u64,
-    ) -> [i32; 3] {
-        self.target_at(key, world, character, epoch, 0)
+            && self.cycle_track.as_ref().is_none_or(|track| {
+                super::super::valid_quest_key(track) && track != &callback.storage[0].track
+            })
     }
 
     pub fn target_at(
@@ -74,14 +70,18 @@ impl CarriedTracker {
         world: &[u8; 16],
         character: &[u8; 16],
         epoch: u64,
+        cycle: Option<i64>,
         probe: u8,
     ) -> [i32; 3] {
         let mut hash = Sha256::new()
             .chain_update(b"quest-carried-tracker-v1")
             .chain_update(world)
             .chain_update(character)
-            .chain_update(epoch.to_be_bytes())
-            .chain_update(key);
+            .chain_update(epoch.to_be_bytes());
+        if let Some(cycle) = cycle {
+            hash.update(cycle.to_be_bytes());
+        }
+        hash.update(key);
         if self.ground_search.is_some() {
             hash.update([probe]);
         }

@@ -523,6 +523,18 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, 
     {
         return Err("authored/base reward binding collision or bound".into());
     }
+    for callback in &callbacks {
+        if let Some(key) = callback
+            .carried_tracker
+            .as_ref()
+            .and_then(|tracker| tracker.cycle_track.as_deref())
+            && catalogue
+                .track(key)
+                .is_none_or(|track| track.quest != callback.quest)
+        {
+            return Err(format!("foreign or missing tracker cycle track {key}"));
+        }
+    }
     Ok(callbacks)
 }
 
