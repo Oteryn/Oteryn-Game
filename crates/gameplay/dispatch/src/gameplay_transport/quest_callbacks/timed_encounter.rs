@@ -190,7 +190,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) else {
             return UseDisposition::Exhausted;
         };
-        let (existing, joining) = {
+        let (existing, joining, previous) = {
             let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
                 return UseDisposition::Rejected;
             };
@@ -230,20 +230,51 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return UseDisposition::Exhausted;
             }
-            (existing, joining)
+            let previous = if !joining && timing.spawn_after_ms == 0 {
+                existing.map_or_else(Vec::new, |index| pending[index].spawned.clone())
+            } else {
+                Vec::new()
+            };
+            (existing, joining, previous)
         };
         let closed = crate::map::floor::BundleDoors(&map.facts);
         // The source room admits several players onto its common landing cell.
-        let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
-            runtime,
-            self.movement_cells(),
-            actor,
-            session,
-            entered,
-            local(destination),
-            &closed,
-        ) else {
+        let proof = |runtime: &ChannelRuntimeV1| {
+            crate::map::floor::prepare_quest_encounter_ejection(
+                runtime,
+                self.movement_cells(),
+                actor,
+                session,
+                entered,
+                local(destination),
+                &closed,
+            )
+        };
+        let Ok(entry) = proof(runtime) else {
             return UseDisposition::NotPossible;
+        };
+        let immediate = if !joining && timing.spawn_after_ms == 0 {
+            let Some(monsters) =
+                timed_spawn_plan(runtime, self.movement_cells(), map, encounter, |at| {
+                    census.iter().any(|(who, position, _)| {
+                        *who != actor && !previous.contains(who) && position.position() == at
+                    })
+                })
+            else {
+                return UseDisposition::NotPossible;
+            };
+            let Ok(preview) = proof(runtime) else {
+                return UseDisposition::NotPossible;
+            };
+            if runtime
+                .preflight_quest_encounter_entry(vec![preview], &monsters)
+                .is_err()
+            {
+                return UseDisposition::NotPossible;
+            }
+            Some(monsters)
+        } else {
+            None
         };
         let Some(boss) = encounter
             .monsters
@@ -275,8 +306,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
             return UseDisposition::Rejected;
         };
-        let Ok(landing) = runtime.commit_source_step(proof) else {
-            return UseDisposition::Rejected;
+        let (landing, attempted_spawn, spawned) = if let Some(monsters) = immediate {
+            let Ok((positions, spawned)) =
+                runtime.commit_quest_encounter_entry_with_roster(vec![entry], &monsters, || true)
+            else {
+                return UseDisposition::Rejected;
+            };
+            (positions[0], true, spawned)
+        } else {
+            let Ok(landing) = runtime.commit_source_step(entry) else {
+                return UseDisposition::Rejected;
+            };
+            (landing, false, Vec::new())
         };
         if !joining {
             if let Some(index) = existing {
@@ -293,8 +334,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 started_at: now,
                 spawn_at,
                 reset_at,
-                attempted_spawn: false,
-                spawned: Vec::new(),
+                attempted_spawn,
+                spawned,
             });
             states.owner_wake.notify_one();
         }
@@ -467,39 +508,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             // Source Game.createMonster attempts once at its due instant. An occupied/full
             // room does not invent a successful spawn or retry after the source deadline.
-            let mut monsters = Vec::new();
-            let mut admissible = true;
-            for monster in &encounter.monsters {
-                let at = local(monster.position);
-                if self.movement_cells.index().lookup(
-                    self.movement_cells.scope(),
-                    LogicalCell {
-                        x: at.x,
-                        y: at.y,
-                        z: i32::from(at.floor),
-                    },
-                ) != Ok(CollisionClass::Walkable)
-                    || map.facts.quest_callback_blocked(
-                        map.overlay.base(),
-                        tile(monster.position),
-                        false,
-                    )
-                    || runtime.positioned_melee_census().map_or(true, |census| {
+            if let Ok(census) = runtime.positioned_melee_census()
+                && let Some(monsters) =
+                    timed_spawn_plan(&runtime, self.movement_cells(), map, encounter, |at| {
                         census
                             .iter()
                             .any(|(_, position, _)| position.position() == at)
                     })
-                {
-                    admissible = false;
-                    break;
-                }
-                let Ok(policy) = runtime.companion_policy(&monster.creature) else {
-                    admissible = false;
-                    break;
-                };
-                monsters.push((monster.creature.as_str(), policy.maximum_health, at));
-            }
-            if admissible && let Ok(spawned) = runtime.commit_quest_creature_spawn(&monsters) {
+                && let Ok(spawned) = runtime.commit_quest_creature_spawn(&monsters)
+            {
                 memo.spawned = spawned;
             }
             memo.attempted_spawn = true;
@@ -508,6 +525,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Death/despawn and source cleanup release only their source-owned ladder.
         super::monsters::settle_authored_monster_puzzles(&runtime, map);
     }
+}
+
+fn timed_spawn_plan<'a>(
+    runtime: &ChannelRuntimeV1,
+    cells: &crate::content::NativeEntryMovementCells,
+    map: &BundleMap,
+    encounter: &'a world_callbacks::Encounter,
+    occupied: impl Fn(MovementLocalPosition) -> bool,
+) -> Option<Vec<(&'a str, i64, MovementLocalPosition)>> {
+    encounter
+        .monsters
+        .iter()
+        .map(|monster| {
+            let at = local(monster.position);
+            if cells.index().lookup(
+                cells.scope(),
+                LogicalCell {
+                    x: at.x,
+                    y: at.y,
+                    z: i32::from(at.floor),
+                },
+            ) != Ok(CollisionClass::Walkable)
+                || map.facts.quest_callback_blocked(
+                    map.overlay.base(),
+                    tile(monster.position),
+                    false,
+                )
+                || occupied(at)
+            {
+                return None;
+            }
+            let policy = runtime.companion_policy(&monster.creature).ok()?;
+            Some((monster.creature.as_str(), policy.maximum_health, at))
+        })
+        .collect()
 }
 
 fn room_contains(encounter: &world_callbacks::Encounter, position: MovementLocalPosition) -> bool {

@@ -899,6 +899,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || !callback.passages.is_empty()
                 || !callback.world_requirements.is_empty()
                 || !callback.teleport.is_some_and(in_room)
+                || encounter
+                    .monsters
+                    .iter()
+                    .any(|monster| Some(monster.position) == callback.teleport)
                 || callback.selector.position.is_none()
                 || !pos(room.exit)
                 || in_room(room.exit)
