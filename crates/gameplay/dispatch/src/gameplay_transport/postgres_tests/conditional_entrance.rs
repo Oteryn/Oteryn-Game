@@ -45,6 +45,12 @@ const WARZONE_ACCESS: [&str; 3] = [
 ];
 const NEW_FRONTIER_08: &str = "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08";
 const WRATH_11: &str = "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission11";
+const CHYLLFROEST: &str = "oteryn:quest.tinder_box_quest_chyllfroest";
+const CHYLLFROEST_REWARD_CLOCK: &str = "oteryn:quest-progress/chyllfroest/reward-claimed-at";
+// Crystal actions_reward.lua:11-16 rejects while the reward deadline is
+// greater than or equal to os.time(). The first allowed second is +72001.
+const CHYLLFROEST_REWARD_WAIT: u32 = 72_001;
+const CHYLLFROEST_REWARD_SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tinder_box_quest_chyllfroest/actions_reward.lua:4-23";
 const INQUISITION: &str = "oteryn:quest.the_inquisition_quest";
 const FORGE_QUESTLINE: &str = "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline";
 const PITS: &str = "oteryn:quest.the_pits_of_inferno_quest";
@@ -59,6 +65,7 @@ pub(super) enum Case {
     Completion,
     Flags,
     Carried,
+    ChyllfroestReward,
     Door,
     Isle { travel: bool },
     Warzone { access: bool },
@@ -73,7 +80,7 @@ pub(super) enum Case {
 
 impl Case {
     fn is_use(self) -> bool {
-        matches!(self, Self::Calendar { use_action: true, .. } | Self::PvpLock | Self::Door | Self::Bounac)
+        matches!(self, Self::Calendar { use_action: true, .. } | Self::ChyllfroestReward | Self::PvpLock | Self::Door | Self::Bounac)
     }
 
     pub(super) fn callback(self, source: Position) -> TestResult<Callback> {
@@ -128,7 +135,7 @@ impl Case {
             // Demon Oak movements_entrance.lua:21-44, only players count.
             Self::Occupied => json!({"kind":"unoccupied","minimum":LANDING,"maximum":LANDING}),
             // Chyllfroest movements_prohibit_entry.lua:9-15 and actions_reward.lua:4-8.
-            Self::Calendar { .. } => json!({"kind":"calendar","start":[4,1],"end":[5,1]}),
+            Self::Calendar { .. } | Self::ChyllfroestReward => json!({"kind":"calendar","start":[4,1],"end":[5,1]}),
             // Thieves Guild actions_climbing_vine.lua:13-18.
             Self::PvpLock => json!({"kind":"no_pvp_lock"}),
             // Bounac action-bounac_entrance.lua:24-25 intercepts the native
@@ -140,7 +147,7 @@ impl Case {
             Self::Completion => json!({"message":"Only warriors who defeated Goshnar's Megalomania can access this area."}),
             Self::Flags => json!({"message":"You still need to defeat:"}),
             Self::Level => json!({"message":"You need at least level 250 to enter.","effect":11}),
-            Self::Calendar { use_action: true, .. } => json!({"message":"This can only be used between 1st of April and 1st of May.","message_kind":"status"}),
+            Self::Calendar { use_action: true, .. } | Self::ChyllfroestReward => json!({"message":"This can only be used between 1st of April and 1st of May.","message_kind":"status"}),
             Self::Calendar { use_action: false, .. } => json!({"message":"You cannot pass here outside the period from April 1st to May 1st.","effect":11}),
             Self::PvpLock => json!({"message":"You can not enter a protection zone after attacking another player.","message_kind":"status","effect":3}),
             Self::Door => json!({"message":"The door seems to be sealed against unwanted intruders."}),
@@ -159,6 +166,24 @@ impl Case {
             "effects":{"conditional_entrance":{"guards":[{"when":predicate,"refusal":refusal}]}},
             "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_holy_tible_tile.lua:14-20"]
         });
+        if self == Self::ChyllfroestReward {
+            row["key"] = json!("oteryn:quest-callback/qgate-chyllfroest-summit");
+            row["quest"] = json!(CHYLLFROEST);
+            row["selector"]["appearance"] = json!(4285);
+            row["selector"]["unique"] = json!(3263);
+            row["teleport"] = serde_json::Value::Null;
+            row["requires_world_admission"] = json!(true);
+            row["failure_message"] = json!("The pile of bones is empty.");
+            row["success_message"] = json!("You have found a tinder box.");
+            row["state_ops"] = json!([{
+                "track":CHYLLFROEST_REWARD_CLOCK,
+                "from":{"kind":"elapsed_at_least","seconds":CHYLLFROEST_REWARD_WAIT},
+                "effect":{"kind":"set_now"}
+            }]);
+            row["effects"]["item_reward"] = json!({"item":"oteryn:item.tibia.i20357","count":1,"contents":[]});
+            row["effects"]["item_reward_cycle"] = json!(CHYLLFROEST_REWARD_CLOCK);
+            row["sources"] = json!([CHYLLFROEST_REWARD_SOURCE]);
+        }
         if matches!(self, Self::Inquisition { .. }) {
             row["quest"] = json!(INQUISITION);
             row["sources"] = json!(["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_entrance.lua:1-48"]);
@@ -238,6 +263,9 @@ impl Case {
         fence: CurrentCharacterGameplayFence,
         callback: &Callback,
     ) -> TestResult {
+        if self == Self::ChyllfroestReward {
+            return self.exercise_chyllfroest_reward(owner, admitted, h, callback).await;
+        }
         let session = admitted.game_session_id;
         let origin = local(Position {
             x: GATE.x - 1,
@@ -443,7 +471,7 @@ impl Case {
                 sqlx::query("UPDATE game_character_pvp_state SET pz_block_until=NULL,revision=revision+1 WHERE character_id=encode($1,'hex')::uuid")
                     .bind(id(41).as_slice()).execute(&h.pool).await?;
             }
-            Self::Calendar { .. } | Self::Stair => {
+            Self::Calendar { .. } | Self::ChyllfroestReward | Self::Stair => {
                 return Err("calendar and stair cases already exercised their single step".into());
             }
         }
@@ -517,6 +545,70 @@ impl Case {
                 .position(),
             local(landing)
         );
+        Ok(())
+    }
+
+    async fn exercise_chyllfroest_reward(
+        self,
+        owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+        admitted: &mut AdmittedSession,
+        h: &Harness,
+        callback: &Callback,
+    ) -> TestResult {
+        use oteryn_gameplay_quests::quest::authored_bindings::{
+            Bindings, BoundQuest, Stage, Track, Trigger,
+        };
+
+        let base = QuestStateCatalogue::empty(
+            owner.quest_catalogue.as_ref().ok_or("quest catalogue")?.content_revision(),
+        ).ok_or("empty quest catalogue")?;
+        let bindings = Bindings {
+            schema: 1,
+            quests: vec![BoundQuest {
+                quest: CHYLLFROEST.into(),
+                // SHA-256 of the pinned Crystal actions_reward.lua evidence.
+                recipe_sha256: "983f0b77a19e1e63c16dc6848cbbbd3ab6d8cae07418910e383944e7b060db37".into(),
+                occurrence: None,
+                admission: None,
+                tracks: vec![Track {
+                    key: CHYLLFROEST_REWARD_CLOCK.into(),
+                    initial: -1,
+                    minimum: -1,
+                    maximum: i64::MAX,
+                }],
+                stages: vec![Stage {
+                    key: "summit-reward".into(),
+                    completes: false,
+                    trigger: Trigger::MapUse { callback: Box::new(callback.clone()) },
+                }],
+                sources: vec![CHYLLFROEST_REWARD_SOURCE.into()],
+            }],
+        };
+        owner.quest_catalogue = Some(std::sync::Arc::new(bindings.attach(&base)?));
+
+        const APRIL_START: i64 = 1_775_001_600;
+        const MAY_CLOSED: i64 = 1_777_680_000;
+        let second_claim = APRIL_START + i64::from(CHYLLFROEST_REWARD_WAIT);
+        h.root.set_test_quest_clock(APRIL_START - 1)?;
+        for (command, now, allowed, expected) in [
+            (1, APRIL_START - 1, false, (-1, 0, 0)),
+            (2, APRIL_START, true, (APRIL_START, 1, 1)),
+            (3, second_claim - 1, false, (APRIL_START, 1, 1)),
+            (4, second_claim, true, (second_claim, 2, 2)),
+            (5, MAY_CLOSED, false, (second_claim, 2, 2)),
+        ] {
+            let current = h.root.advance_test_quest_clock(0)?;
+            h.root.advance_test_quest_clock(now - current)?;
+            assert_eq!(self.attempt(owner, admitted, callback, command).await?, allowed);
+            let observed: (i64, i64, i64) = sqlx::query_as(
+                "SELECT coalesce((SELECT value FROM game_character_quest_tracks WHERE track_key=$1),-1),
+                        (SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$2),
+                        (SELECT coalesce(sum(m.quantity),0)::bigint FROM game_reward_claim_mint_receipts m
+                         JOIN game_item_instances i USING(item_instance_id)
+                         WHERE i.definition_production_key='oteryn:item.tibia.i20357')",
+            ).bind(CHYLLFROEST_REWARD_CLOCK).bind(&callback.key).fetch_one(&h.pool).await?;
+            assert_eq!(observed, expected, "summit use at Unix second {now}");
+        }
         Ok(())
     }
 
@@ -707,6 +799,15 @@ fn conditional_step_and_use_evaluate_the_annual_calendar() -> TestResult {
         scenario(Case::Calendar { use_action, utc_seconds, allowed })?;
     }
     Ok(())
+}
+
+#[test]
+fn chyllfroest_summit_use_mints_only_in_season_after_the_cooldown() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    scenario(Case::ChyllfroestReward)
 }
 
 #[test]

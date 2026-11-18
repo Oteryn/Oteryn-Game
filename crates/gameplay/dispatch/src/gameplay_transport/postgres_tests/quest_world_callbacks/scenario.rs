@@ -1767,7 +1767,9 @@ fn scenario_case(
         }
         if name.starts_with("qengine-rewards-questpc4-admission-")
             || name.starts_with("qengine-rewards-questpc4-puzzle-predicate")
-            || conditional_entrance.is_some()
+            || conditional_entrance.is_some_and(|case| {
+                case != super::super::conditional_entrance::Case::ChyllfroestReward
+            })
             || lever_fixture
             || target_swap
             || failure_landing
