@@ -366,7 +366,12 @@ fn scenario_case(
     } else if areadmg_pits {
         let mut fixture = callback("qm03/pits")?;
         fixture.selector.unique = None;
-        fixture.selector.action = Some(if name.ends_with("matching") { 2069 } else { 2045 });
+        fixture.selector.appearance = Some(353);
+        fixture.selector.action = Some(if name.ends_with("matching") {
+            2069
+        } else {
+            2045
+        });
         fixture
     } else if m03_pits {
         callback("qm03/pits")?
@@ -1850,18 +1855,24 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         if areadmg_oak || areadmg_pits {
             let runtime = owner.runtime.lock().await;
-            owner.states.spell_states.lock().await.initialize(
-                &runtime,
-                deps.actor,
-                admitted.game_session_id,
-                crate::spell::cast::CharacterCastFacts {
-                    vocation: crate::spell::Vocation::Monk,
-                    max_health: 10_000,
-                    ..crate::gameplay_transport::actor_spell::tests::FACTS
-                },
-                (0, 0),
-                owner.owner_now(),
-            ).ok_or("Five Ways vitals")?;
+            owner
+                .states
+                .spell_states
+                .lock()
+                .await
+                .initialize(
+                    &runtime,
+                    deps.actor,
+                    admitted.game_session_id,
+                    crate::spell::cast::CharacterCastFacts {
+                        vocation: crate::spell::Vocation::Monk,
+                        max_health: 10_000,
+                        ..crate::gameplay_transport::actor_spell::tests::FACTS
+                    },
+                    (0, 0),
+                    owner.owner_now(),
+                )
+                .ok_or("Five Ways vitals")?;
         } else {
             deps.initialize(&owner).await;
         }
@@ -1925,8 +1936,12 @@ fn scenario_case(
             .await?;
         } else if areadmg_oak {
             Box::pin(super::super::areadmg_demon_oak::exercise(
-                &mut owner, &mut admitted, &h, name,
-            )).await?;
+                &mut owner,
+                &mut admitted,
+                &h,
+                name,
+            ))
+            .await?;
         } else if areadmg_pits {
             Box::pin(super::super::areadmg_pits::exercise(
                 &mut owner,

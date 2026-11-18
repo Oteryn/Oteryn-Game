@@ -63,7 +63,7 @@ pub(super) async fn exercise(
         );
         assert_eq!(
             state.character_facts().vocation,
-            crate::spell::Vocation::Monk
+            crate::spell::Vocation::ExaltedMonk
         );
         state.vitals().health
     };

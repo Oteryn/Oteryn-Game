@@ -275,6 +275,7 @@ async fn area(
     let mut struck = false;
     for command in 1..=256 {
         let before = health(owner, admitted).await?;
+        let expected = next_area_damage(owner, admitted).await?;
         owner.clock_origin = owner
             .clock_origin
             .checked_sub(std::time::Duration::from_secs(1))
@@ -296,14 +297,45 @@ async fn area(
             decode_step_result(&reply).map_err(debug)?,
             StepDisposition::Moved
         );
-        match before - health(owner, admitted).await? {
-            0 => unchanged = true,
-            270..=310 => struck = true,
-            loss => return Err(format!("unexpected Earth damage {loss}").into()),
-        }
+        assert_eq!(before - health(owner, admitted).await?, expected);
+        unchanged |= expected == 0;
+        struck |= expected > 0;
         if unchanged && struck {
             return Ok(());
         }
     }
     Err("the fixed scenario never observed both StepIn outcomes".into())
+}
+
+async fn next_area_damage(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+) -> TestResult<u32> {
+    use oteryn_simulation_determinism::{
+        DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+    };
+    use sha2::{Digest, Sha256};
+
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let runtime = owner.runtime.lock().await;
+    let revision = runtime
+        .read_actor_position(actor)
+        .map_err(debug)?
+        .revision()
+        + 1;
+    let occurrence = Sha256::new()
+        .chain_update(actor.placement_identity())
+        .chain_update(admitted.game_session_id.as_bytes())
+        .chain_update(revision.to_be_bytes())
+        .finalize();
+    let occurrence = DecisionOccurrenceId::from_bytes(occurrence[..16].try_into()?);
+    let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+    let draw = |index| {
+        deterministic_decision_u64(&root, occurrence, "demon_oak.area", index).map_err(debug)
+    };
+    if draw(0)? % 24 != 0 {
+        return Ok(0);
+    }
+    oteryn_gameplay_domain::domain::source_normal_draw::source_normal_draw(draw(1)?, 270, 310)
+        .ok_or_else(|| "source Earth damage".into())
 }
