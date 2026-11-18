@@ -330,6 +330,7 @@ fn scenario_case(
                 | "catalogue-npc-legacy"
                 | "catalogue-npc-scoped"
                 | "questpc2-rotten-source-items"
+                | super::super::banshee_queen_kiss::NAME
                 | "classic-quests-npc"
                 | "questpc2-hero-pipes"
                 | "questpc2-oldrak-npc"
@@ -652,7 +653,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if name == "authored-wrath-crystals" {
+    let world = if name == super::super::banshee_queen_kiss::NAME {
+        world_with_cells(&callback, trigger, &[super::super::banshee_queen_kiss::LANDING])?
+    } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::world()?
     } else if name == "nx6-wayfarer" {
         super::super::questpc8_wrath_source_dragon::world()?
@@ -2529,6 +2532,8 @@ fn scenario_case(
                 &mut admitted,
             ))
             .await?;
+        } else if name == super::super::banshee_queen_kiss::NAME {
+            Box::pin(super::super::banshee_queen_kiss::exercise(&mut owner, &admitted, &h)).await?;
         } else if name == super::super::rookie_guard_level::NAME {
             Box::pin(super::super::rookie_guard_level::exercise(&mut owner, &admitted, &h)).await?;
         } else if name == super::super::thieves_guild_uniform::NAME {
