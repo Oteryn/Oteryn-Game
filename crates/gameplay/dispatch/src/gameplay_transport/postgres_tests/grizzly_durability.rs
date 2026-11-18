@@ -796,7 +796,7 @@ fn boss_scenario() -> TestResult {
                 .await
                 .map_err(debug)?
         );
-        seed(&h, Some(80), &[]).await?;
+        seed(&h, Some(100), &[]).await?;
         committed(
             apply(
                 &h,
@@ -1097,8 +1097,7 @@ fn boss_scenario() -> TestResult {
         }
         assert_eq!(value(&h, &authority, boss.kill_storage).await?, 2);
         // TibiaWiki Spoiler (curid 36696, oldid 1206121), Special Tasks.
-        for (id, base, level) in [(29, 20, 90), (30, 30, 100)] {
-            seed(&h, Some(level), &[]).await?;
+        for (id, base) in [(29, 20), (30, 30)] {
             let before_special = boss_death(&h, &authority, id).await?;
             let opened = committed(
                 apply(
