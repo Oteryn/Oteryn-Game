@@ -1,5 +1,5 @@
 //! Ordered source NPC storage branches on the established talk and receipt owners.
-use super::super::quest_callbacks::spawn_creatures::{self, PreparedSpawn};
+use super::super::quest_callbacks::spawn_creatures;
 use super::super::{ComposedFreshAdmission, connection::UseCommand};
 use super::*;
 use crate::domain::CharacterId;
@@ -710,6 +710,8 @@ pub(super) async fn apply(
         return rejected();
     }
     drop(states);
+    // The Channel turn retains the placement and slot preflight through the
+    // bounded write, as for native target-use callbacks.
     let mut spawn_turn = spawn.is_some().then_some(runtime);
     let spawn_plan = if let (Some(runtime), Some(creatures)) = (&mut spawn_turn, spawn) {
         let Some(map) = admission.bundle_map() else {
@@ -828,7 +830,9 @@ pub(super) async fn apply(
             commit.transition,
             QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)
         )
-        && !publish_spawn(admission, runtime, request.command, &prepared)
+        && !publish_spawn(admission, runtime, request.command, |runtime| {
+            prepared.publish(runtime)
+        })
     {
         return unknown();
     }
@@ -921,7 +925,7 @@ fn publish_spawn(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     runtime: &mut ChannelRuntimeV1,
     command: CommandRef,
-    prepared: &PreparedSpawn,
+    publish: impl FnOnce(&mut ChannelRuntimeV1) -> bool,
 ) -> bool {
     let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() else {
         return false;
@@ -936,7 +940,7 @@ fn publish_spawn(
         return false;
     }
     if spawn.is_some() {
-        if !prepared.publish(runtime) {
+        if !publish(runtime) {
             return false;
         }
         *spawn = None;
@@ -1018,20 +1022,21 @@ pub(in crate::gameplay_transport) async fn resume(
             Ok(Some(commit)) => {
                 if let Some(spawn) = spawn {
                     let mut runtime = admission.runtime.lock().await;
-                    let recovered = admission
-                        .bundle_map()
-                        .and_then(|map| {
-                            spawn_creatures::prepare(
-                                admission,
-                                &mut runtime,
-                                map,
-                                spawn.position,
-                                &spawn.creatures,
-                            )
-                            .ok()
-                        })
-                        .is_some_and(|prepared| {
-                            publish_spawn(admission, &mut runtime, request.command, &prepared)
+                    let recovered =
+                        publish_spawn(admission, &mut runtime, request.command, |runtime| {
+                            admission
+                                .bundle_map()
+                                .and_then(|map| {
+                                    spawn_creatures::prepare(
+                                        admission,
+                                        runtime,
+                                        map,
+                                        spawn.position,
+                                        &spawn.creatures,
+                                    )
+                                    .ok()
+                                })
+                                .is_some_and(|prepared| prepared.publish(runtime))
                         });
                     if !recovered {
                         return Some(NpcTalkOutcome {

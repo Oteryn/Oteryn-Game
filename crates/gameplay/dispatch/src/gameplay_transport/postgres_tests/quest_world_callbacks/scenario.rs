@@ -1023,11 +1023,11 @@ fn scenario_case(
             .await
             .map_err(|e| format!("callback authority: {e:?}"))?;
         let mut deps = Dependencies::new()?;
-        let (controller, activated) =
-            super::super::death_ml_loss_composed::production_generation_with_pin(
-                deps.admitted.world_id,
-                "content-1",
-            )?;
+        let (controller, activated) = if matches!(name, super::super::frontier_tree_bait::NAME | super::super::secret_service_avin_ambush::NAME) {
+            super::super::frontier_tree_bait::fixture_generation(deps.admitted.world_id, name)?
+        } else {
+            super::super::death_ml_loss_composed::production_generation_with_pin(deps.admitted.world_id, "content-1")?
+        };
         let generation = controller.active().ok_or("generation")?;
         let world = if m03_use {
             super::super::qengine_m03_use::world(

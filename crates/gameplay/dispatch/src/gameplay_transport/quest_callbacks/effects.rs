@@ -26,18 +26,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if let Some(presence) = &callback.effects.item_presence {
             let pos = tile(presence.position);
-            let facts = map
-                .facts
-                .movement_item_facts(presence.appearance)
-                .ok_or(UseDisposition::Rejected)?;
-            // Initially admit known walkable ladders; projections cannot mint portable value
-            // or introduce collision without an owning collision catalogue.
+            let facts = if presence.lifetime_ms.is_some() {
+                map.facts.timed_quest_presence_facts(presence.appearance)
+            } else {
+                map.facts
+                    .movement_item_facts(presence.appearance)
+                    .filter(|facts| {
+                        !facts.pickupable
+                            && crate::map::floor::is_ladder_appearance(facts.appearance_id)
+                    })
+            }
+            .ok_or(UseDisposition::Rejected)?;
             if map.facts.house_tile(pos)
-                || facts.pickupable
-                || (presence.lifetime_ms.is_none()
-                    && !crate::map::floor::is_ladder_appearance(facts.appearance_id))
-                || (presence.lifetime_ms.is_some()
-                    && (facts.blocks_projectile || facts.terrain_kind.is_some()))
                 || map.overlay.base().tile(pos.x, pos.y, pos.floor).is_none()
             {
                 return Err(UseDisposition::Rejected);

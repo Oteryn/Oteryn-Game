@@ -116,3 +116,82 @@ pub(super) async fn exercise(
     assert_eq!(marked, 1);
     Ok(())
 }
+
+/// Materialize the actual donor items in the isolated generation for the two
+/// cases that need them. The main Item policy has their identities only.
+pub(super) fn fixture_generation(
+    world: crate::foundation::WorldId,
+    scenario: &str,
+) -> TestResult<(
+    crate::content::ContentActivationController,
+    crate::content::NativeEntryContentPin,
+)> {
+    use sha2::{Digest, Sha256};
+    let mut input = super::death_ml_loss_composed::production_input_with_source("content-1", None)?;
+    let pin = input.item_profiles.as_mut().ok_or("item profile input")?;
+    let mut document: serde_json::Value = serde_json::from_slice(&pin.bytes)?;
+    let records = document["records"]
+        .as_array_mut()
+        .ok_or("item profile records")?;
+    let bindings: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../imports/crystalserver/bindings/items.json"
+    )))?;
+    let bindings = bindings["bindings"]
+        .as_array()
+        .ok_or("source item identities")?;
+    let mut add_profile =
+        |source: u16, prototype: u16, weight: u32, capacity: Option<u8>| -> TestResult {
+            let key = format!("oteryn:item.tibia.i{source}");
+            if records
+                .iter()
+                .any(|record| record["production_definition"]["production_key"] == key.as_str())
+            {
+                return Ok(());
+            }
+            let prototype = format!("oteryn:item.tibia.i{prototype}");
+            let mut record = records
+                .iter()
+                .find(|record| {
+                    record["production_definition"]["production_key"] == prototype.as_str()
+                })
+                .ok_or("item profile prototype")?
+                .clone();
+            let external = source.to_string();
+            record["production_binding"] = bindings
+                .iter()
+                .find(|binding| binding["external_id"] == external.as_str())
+                .ok_or("item source identity")?
+                .clone();
+            record["production_binding_qualification"] = serde_json::Value::Null;
+            record["production_definition"]["production_key"] = json!(key);
+            record["authoring"]["item"]["key"] = json!(format!("candidate:item/{source}"));
+            record["authoring"]
+                .as_object_mut()
+                .ok_or("item authoring")?
+                .remove("taxonomy");
+            record["semantics"]["physical"]["value"]["weight"]["value"] = json!(weight);
+            if let Some(capacity) = capacity {
+                record["semantics"]["container"]["value"]["capacity"]["value"] = json!(capacity);
+                // The fixture inspects the original corpse immediately after settling death.
+                record["semantics"]["temporal"] = json!({"state":"NOT_APPLICABLE"});
+            }
+            records.push(record);
+            Ok(())
+        };
+    if scenario == NAME {
+        // Crystal data/items/items.xml:475-479, 2925-2928, 26267-26270.
+        add_profile(276, 111, 0, Some(15))?;
+        add_profile(836, 841, 10, None)?;
+        add_profile(9843, 5467, 180, None)?;
+    } else {
+        // Crystal data/items/items.xml:810-813.
+        add_profile(402, 5467, 50, None)?;
+    }
+    pin.bytes = serde_json::to_vec(&document)?;
+    pin.sha256 = Sha256::digest(&pin.bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    crate::content::native_gameplay::test_support::try_activate_input(world, &input).map_err(debug)
+}

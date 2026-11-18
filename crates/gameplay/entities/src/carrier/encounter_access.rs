@@ -375,10 +375,8 @@ impl ChannelRuntimeV1 {
         &mut self,
         monsters: &[(&str, i64, MovementLocalPosition)],
     ) -> Result<(), CarrierError> {
-        let before = self.carrier.clone();
-        let result = self.commit_quest_creature_spawn(monsters).map(|_| ());
-        self.carrier = before;
-        result
+        self.quest_creature_spawn(monsters, || true, false)
+            .map(|_| ())
     }
 
     /// Publish a bounded spawn and its already observed world readset together.
@@ -387,6 +385,15 @@ impl ChannelRuntimeV1 {
         &mut self,
         monsters: &[(&str, i64, MovementLocalPosition)],
         project: impl FnOnce() -> bool,
+    ) -> Result<Vec<ExactActorRef>, CarrierError> {
+        self.quest_creature_spawn(monsters, project, true)
+    }
+
+    fn quest_creature_spawn(
+        &mut self,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        project: impl FnOnce() -> bool,
+        publish: bool,
     ) -> Result<Vec<ExactActorRef>, CarrierError> {
         if monsters.is_empty() || monsters.len() > 8 {
             return Err(CarrierError::PlanConflict);
@@ -407,7 +414,7 @@ impl ChannelRuntimeV1 {
             }
             Ok(actors)
         })();
-        if result.is_err() {
+        if result.is_err() || !publish {
             self.carrier = before;
         }
         result

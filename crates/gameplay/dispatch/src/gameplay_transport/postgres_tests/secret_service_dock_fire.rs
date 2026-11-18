@@ -4,9 +4,11 @@ use super::{
     AdmittedSession, ComposedFreshAdmission, TestResult,
     fixture::{Harness, debug},
 };
+use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
+use crate::foundation::{CommandId, CommandRef};
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::{
-    QuestStateCatalogue,
+    QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
     authored_bindings::Bindings,
     world_callbacks::{Offering, Position},
 };
@@ -25,6 +27,7 @@ const AT: Position = Position {
 };
 const QUEST: &str = "oteryn:quest.authored.draccoon_herald_outfits_quest";
 const TRACK: &str = "oteryn:quest-progress/dock-fire-fixture/mission";
+const REARM: &str = "oteryn:quest-transition/dock-fire-fixture/rearm";
 const LIFETIME_MS: u32 = 420_000;
 
 #[test]
@@ -60,7 +63,24 @@ pub(super) async fn exercise(
         "stages":[{"key":"ignite","completes":false,"trigger":{"kind":"map_use","callback":callback}}]}]});
     let bindings = Bindings::parse(&serde_json::to_vec(&document)?)?;
     let base = QuestStateCatalogue::empty("content-1").ok_or("revision")?;
-    owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
+    let catalogue = Arc::new(
+        bindings
+            .attach(&base)?
+            .with_fixture_transition(QuestTransition {
+                key: REARM.into(),
+                quest: QUEST.into(),
+                effects: vec![QuestEffect {
+                    track: TRACK.into(),
+                    from: QuestComparison::Eq(2),
+                    effect: QuestEffectKind::Set(1),
+                }],
+                completes: false,
+                experience: None,
+                world_change: None,
+            })
+            .map_err(debug)?,
+    );
+    owner.quest_catalogue = Some(catalogue.clone());
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
@@ -107,6 +127,36 @@ pub(super) async fn exercise(
         assert_eq!(map.facts.expire_movement_items(due - 1), 0);
         due
     };
+    // Restore eligibility through the ordinary fenced writer while the same shared fire burns.
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
+    {
+        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+        let result = slot
+            .commit_quest_transition(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                QuestTransitionRequest {
+                    transition_key: REARM.into(),
+                    cause: QuestCause::Command(CommandRef::new(
+                        admitted.game_session_id,
+                        CommandId::new(4690).map_err(debug)?,
+                    )),
+                },
+                catalogue,
+            )
+            .await
+            .map_err(debug)?;
+        assert!(matches!(result, QuestTransitionOutcome::Committed(_)));
+    }
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
     assert_eq!(
         use_target(owner, admitted, AT).await?,
         UseDisposition::Occupied
@@ -116,18 +166,23 @@ pub(super) async fn exercise(
             .bind(TRACK)
             .fetch_one(&h.pool)
             .await?;
-    assert_eq!(stored, 2);
+    assert_eq!(stored, 1);
     let map = owner.bundle_map().ok_or("map")?;
     assert_eq!(map.facts.expire_movement_items(due), 1);
     assert!(map.facts.movement_items(pos).is_empty());
     assert!(map.facts.quest_callback_presence_available(pos));
     assert_eq!(map.facts.expire_movement_items(due), 0);
+    assert_eq!(
+        use_target(owner, admitted, AT).await?,
+        UseDisposition::Committed
+    );
     Ok(())
 }
 
 pub(super) async fn use_target(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
+    at: Position,
 ) -> TestResult<UseDisposition> {
     owner.clock_origin = owner
         .clock_origin

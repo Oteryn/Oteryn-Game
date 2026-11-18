@@ -924,6 +924,15 @@ impl BundleFacts {
         }
         changed
     }
+    pub fn timed_quest_presence_facts(&self, appearance: u16) -> Option<EntryFacts> {
+        let facts = self.movement_item_facts(appearance)?;
+        (matches!(facts.definition, MapDefinition::Item(_))
+            && !facts.pickupable
+            && !facts.blocks_projectile
+            && self.override_blocks(facts) == Some(false))
+        .then_some(facts)
+    }
+
     pub fn quest_callback_presence_available(&self, position: TilePos) -> bool {
         self.callbacks.lock().is_ok_and(|states| {
             !states.position_reserved(position)

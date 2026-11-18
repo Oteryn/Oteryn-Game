@@ -269,6 +269,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
                 key, ..
             }) => Some(*key),
+            // All clicked objects on a timed presence tile share the same
+            // reservation while their durable outcome is being reconciled.
+            Some(crate::map::facts::QuestCallbackProjection::ItemPresence {
+                position,
+                expires: Some(_),
+                ..
+            }) => placement_key(*position, 0),
             _ => None,
         };
         if let Some(target) =
