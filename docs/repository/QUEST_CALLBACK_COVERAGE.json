@@ -6724,8 +6724,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk3_steel_helmet_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.steelhelmet3",
@@ -6752,8 +6752,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk3_steel_helmet_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.steelhelmet4",
@@ -6781,8 +6781,8 @@
             }
           ],
           "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk3_steel_helmet_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/steel_helmet_quest"
@@ -7126,8 +7126,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.books.hengis",
@@ -7155,8 +7155,8 @@
             }
           ],
           "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.gold_coin",
@@ -7183,8 +7183,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.hammer",
@@ -7212,8 +7212,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.talon",
@@ -7240,8 +7240,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag1",
@@ -7268,8 +7268,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag2",
@@ -7296,8 +7296,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/the_explorer_society_quest"
@@ -8027,8 +8027,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.chest_tible",
@@ -8056,8 +8056,8 @@
             }
           ],
           "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.corpse_book",
@@ -8085,8 +8085,8 @@
             }
           ],
           "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.corpse_pirate_bp",
@@ -8113,8 +8113,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_bp",
@@ -8141,8 +8141,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_frozen_starlight",
@@ -8169,8 +8169,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_platinum_coins",
@@ -8197,8 +8197,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_soft_boots",
@@ -8225,8 +8225,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_staff_avenger_arbalest",
@@ -8295,8 +8295,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_stuffed",
@@ -8323,8 +8323,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/the_pits_of_inferno_quest"

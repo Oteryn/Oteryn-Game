@@ -348,6 +348,46 @@ QUALIFIED.update({
         'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
     'oteryn:reward-claim.quest.u8_1.secret_service.suspicious_documents':
         'quest_catalogue_chests_qchk2_secret_service_use_replay_and_refusal',
+    "oteryn:reward-claim.kv.steelhelmet2":
+        "quest_catalogue_chests_qchk3_steel_helmet_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.steelhelmet3":
+        "quest_catalogue_chests_qchk3_steel_helmet_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.steelhelmet4":
+        "quest_catalogue_chests_qchk3_steel_helmet_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.key.id3700":
+        "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_6.explorer_society.books.cyclops":
+        "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_6.explorer_society.books.hengis":
+        "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.gold_coin":
+        "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.hammer":
+        "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.talon":
+        "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag1":
+        "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag2":
+        "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.chest_tible":
+        "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.corpse_book":
+        "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.corpse_pirate_bp":
+        "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_bp":
+        "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_frozen_starlight":
+        "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_platinum_coins":
+        "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_soft_boots":
+        "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_staff_avenger_arbalest":
+        "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_stuffed":
+        "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
 })
 
 
