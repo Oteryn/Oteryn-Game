@@ -522,11 +522,20 @@ fn exercise_use(
             receipts,
             receipts_before + i64::from(selected.is_some() && allowed)
         );
-        eprintln!(
-            "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED {} stage={stage:?} allowed={allowed} tracks_unchanged receipts_unchanged revision_unchanged duration={:?}",
-            callback.key,
-            started.elapsed()
-        );
+        if let Some((tool, _)) = selected {
+            eprintln!(
+                "QUEST_CALLBACK_SELECTED_TOOL_POSTGRES_CASE_COMPLETED {} tool={tool} stage={stage:?} allowed={allowed} receipts_added={} duration={:?}",
+                callback.key,
+                receipts - receipts_before,
+                started.elapsed()
+            );
+        } else {
+            eprintln!(
+                "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED {} stage={stage:?} allowed={allowed} tracks_unchanged receipts_unchanged revision_unchanged duration={:?}",
+                callback.key,
+                started.elapsed()
+            );
+        }
         drop(owner);
         drop(authority);
         drop(seal);

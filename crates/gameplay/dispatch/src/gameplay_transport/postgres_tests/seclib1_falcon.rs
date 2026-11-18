@@ -7,7 +7,7 @@ use crate::foundation::{
     ChannelRuntimeV1, CharacterId, CharacterLease, CommandId, CommandRef, MovementLocalPosition,
     NodeId, OwnerDamageCommand,
 };
-use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
+use crate::gameplay_transport::connection::FirstEntryOutcome;
 use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink, record_creature_kill};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::loader::load_embedded_quest_state;
