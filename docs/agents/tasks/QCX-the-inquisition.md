@@ -50,6 +50,12 @@ The run with the Rust eligibility change alone returned RC 101. Grimoire passed 
 
 The quest authoring runner completed 44 check commands successfully. Pin refresh retained the original world digest `0676b1568f55a55fbe994f344a8e0c60debf766751d12849f56c19f60c93aae5`.
 
+PG via shard (pgsplit build files applied on `dcb8cf6c25e82218c9d1dcd58d6d39e8c5dceaf3`) returned RC 0 with 2 passed and 0 failed. Grimoire used the existing once-per-character claim and minted one item 7874 in 27.21 s. Henricus accepted the final-report state and committed the purchase in 23.94 s.
+
+The existing Henricus purchase refusals and replay case passed with RC 0 in 23.74 s. The partial-ownership refusal case passed with RC 0 in 21.70 s. The route-less QCX38 run returned RC 0 with 2 passes in 0.00 s and exercised no PostgreSQL path.
+
+Dispatch Clippy with all features, library only, and `-D warnings` returned RC 0. The temporary PostgreSQL shard build files were removed before committing.
+
 ### Cases for the Server session
 
 - Demon Forge entrance at level 100 after the Ungreez report, with any one Pits throne.
