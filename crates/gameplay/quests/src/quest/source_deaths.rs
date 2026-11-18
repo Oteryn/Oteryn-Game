@@ -308,3 +308,33 @@ pub fn overlord(creature: &str) -> Option<&'static Rule> {
     }
     rules().ok()?.iter().find(|rule| rule.creature == creature)
 }
+
+/// Exact predecessor of the additive Elemental Spheres death callback. Existing
+/// tracks and transitions are unchanged; only the four callbacks and flag are new.
+pub fn overlord_predecessor(
+    catalogue: &QuestStateCatalogue,
+) -> Result<QuestStateCatalogue, String> {
+    let quest = "oteryn:quest.elemental_spheres_quest";
+    let flag = "oteryn:quest-progress/quest/u8_2/elemental_spheres/boss_storage";
+    QuestStateCatalogue::new(
+        catalogue.content_revision.clone(),
+        catalogue
+            .tracks
+            .values()
+            .filter(|track| track.quest == quest && track.key != flag)
+            .cloned()
+            .collect(),
+        catalogue
+            .transitions
+            .values()
+            .filter(|transition| {
+                transition.quest == quest
+                    && !transition
+                        .key
+                        .starts_with("oteryn:quest-transition/elemental-spheres/")
+            })
+            .cloned()
+            .collect(),
+    )
+    .map_err(|error| format!("{error:?}"))
+}

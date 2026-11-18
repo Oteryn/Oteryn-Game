@@ -435,6 +435,22 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             overlord_peers.push((peer_actor, peer_session, *fence.character_id.as_bytes()));
         }
     }
+    if mode == "overlordcr_old_pin" {
+        let previous = source_deaths::overlord_predecessor(&catalogue)?;
+        let hash = previous
+            .definition_hash(&rule.quest)
+            .ok_or("existing Elemental Spheres pin")?;
+        assert_ne!(Some(hash), catalogue.definition_hash(&rule.quest));
+        // Persist the real predecessor's definition, not a random hash or an
+        // invented quest. This models a character saved before the additive callback.
+        sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid ON CONFLICT(character_id,quest_key) DO UPDATE SET definition_hash=EXCLUDED.definition_hash")
+            .bind(id(41).as_slice()).bind(&rule.quest).bind(previous.content_revision()).bind(hash.as_slice()).execute(&h.pool).await?;
+    }
+    let drain_session = if mode == "overlordcr_fallback" {
+        overlord_peers[0].1
+    } else {
+        session
+    };
     let actor = deps.actor;
     let queue = owner.states.attack.lock().await.kills().clone();
     // This second current native actor really deals damage. It remains an invalid
@@ -503,7 +519,12 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 .bound_attacker_lease(actor, session)
                 .map_err(debug)?;
             let mut health = runtime.companion_snapshot(target).map_err(debug)?.health;
-            if mode == "overlordcr_seventeen" {
+            if matches!(mode, "overlordcr_seventeen" | "overlordcr_fallback") {
+                let prime = if mode == "overlordcr_fallback" {
+                    health - 2
+                } else {
+                    1
+                };
                 runtime
                     .borrow_exact_actor_commit_at(now)
                     .commit_damage_for_bound_attacker(
@@ -515,11 +536,11 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                             target: rule.creature.as_bytes(),
                             occurrence: session.as_bytes(),
                             binding: b"overlordcr-primary-first-damage",
-                            damage: 1,
+                            damage: prime,
                         },
                     )
                     .map_err(debug)?;
-                health -= 1;
+                health -= prime;
             }
             let damaging_peers = if mode == "overlordcr_seventeen" {
                 16
@@ -544,6 +565,18 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                     .map_err(debug)?;
                 health -= 1;
             }
+            let (actor, session, lease) = if mode == "overlordcr_fallback" {
+                runtime
+                    .remove_terminal_session(session, actor)
+                    .map_err(debug)?;
+                let (peer_actor, peer_session, _) = overlord_peers[0];
+                let peer_lease = runtime
+                    .bound_attacker_lease(peer_actor, peer_session)
+                    .map_err(debug)?;
+                (peer_actor, peer_session, peer_lease)
+            } else {
+                (actor, session, lease)
+            };
             let damage = if let Some((other_actor, other_session, _, _)) = lesser_contributor {
                 assert!(
                     health > 2,
@@ -669,6 +702,48 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 drop(taken); // Leave the real original queue entry for durable settlement below.
             }
         }
+        let crash_replay = if mode == "overlordcr_crash_replay" {
+            let crate::gameplay_transport::kill_reward::TakeOutcome::Taken(taken) =
+                queue.take(session, 1)
+            else {
+                return Err("retained death before commit".into());
+            };
+            let entry = taken.entry().ok_or("retained death")?.clone();
+            drop(taken);
+            Some(entry)
+        } else {
+            None
+        };
+        if mode == "overlordcr_atomic_chests" {
+            for statement in [
+                "CREATE SEQUENCE overlordcr_chest_fault",
+                "CREATE FUNCTION overlordcr_chest_fault() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NOT EXISTS (SELECT 1 FROM game_character_boss_reward_chests) THEN RAISE EXCEPTION 'chests must precede XP in the same transaction'; END IF; PERFORM nextval('overlordcr_chest_fault'); RAISE EXCEPTION 'fault after chests before XP' USING ERRCODE='23514'; END $$",
+                "CREATE TRIGGER overlordcr_chest_fault BEFORE INSERT ON game_party_kill_xp_receipts FOR EACH ROW EXECUTE FUNCTION overlordcr_chest_fault()",
+            ] {
+                sqlx::query(statement).execute(&h.pool).await?;
+            }
+            assert_eq!(
+                owner.drain_kill_rewards(drain_session).await,
+                DrainOutcome::Deferred
+            );
+            let reached: bool = sqlx::query_scalar("SELECT is_called FROM overlordcr_chest_fault")
+                .fetch_one(&h.pool)
+                .await?;
+            assert!(reached, "fault reached after real chests and before XP");
+            let counts: (i64,i64,i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_party_kill_xp_receipts), (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u8_2/elemental_spheres/boss_storage')").fetch_one(&h.pool).await?;
+            assert_eq!(
+                counts,
+                (0, 0, 0, 0, 0),
+                "chests, XP and storage roll back with the death"
+            );
+            for statement in [
+                "DROP TRIGGER overlordcr_chest_fault ON game_party_kill_xp_receipts",
+                "DROP FUNCTION overlordcr_chest_fault()",
+                "DROP SEQUENCE overlordcr_chest_fault",
+            ] {
+                sqlx::query(statement).execute(&h.pool).await?;
+            }
+        }
         if mode == "overlordcr_atomic" {
             for statement in [
                 "CREATE SEQUENCE overlordcr_second_receipt",
@@ -678,7 +753,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 sqlx::query(statement).execute(&h.pool).await?;
             }
             assert_eq!(
-                owner.drain_kill_rewards(session).await,
+                owner.drain_kill_rewards(drain_session).await,
                 DrainOutcome::Deferred
             );
             let attempted: i64 =
@@ -705,7 +780,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 sqlx::query(statement).execute(&h.pool).await?;
             }
         }
-        let drained = owner.drain_kill_rewards(session).await;
+        let drained = owner.drain_kill_rewards(drain_session).await;
         if drained != DrainOutcome::Drained {
             let roots: Vec<(String, String)> = sqlx::query_as(
                 "SELECT character_id::text,character_revision::text FROM game_character_roots ORDER BY character_id",
@@ -722,9 +797,34 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             );
         }
         assert_eq!(drained, DrainOutcome::Drained);
+        if let Some(entry) = crash_replay {
+            let before: (i64,i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_character_quest_receipts)").fetch_one(&h.pool).await?;
+            let permit = owner
+                .spell_lane_permit()
+                .await
+                .ok_or("recovered death lane")?;
+            let replay = owner
+                .settle_party_experience(&permit, &entry)
+                .await
+                .map_err(debug)?;
+            assert!(
+                !matches!(
+                    replay.xp,
+                    Err(crate::combat::CombatDeathRewardXpError::Progression(_))
+                ),
+                "the committed death replays without a new grant"
+            );
+            drop(replay);
+            drop(permit);
+            let after: (i64,i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_character_quest_receipts)").fetch_one(&h.pool).await?;
+            assert_eq!(
+                before, after,
+                "durable death replay cannot mint or credit twice"
+            );
+        }
     }
     assert_eq!(
-        owner.drain_kill_rewards(session).await,
+        owner.drain_kill_rewards(drain_session).await,
         DrainOutcome::Drained
     );
     for effect in &rule.effects {
@@ -739,7 +839,11 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             .unwrap_or(before + effect.add.unwrap_or(0) * i64::try_from(kills)?);
         assert_eq!(
             value,
-            Some(expected),
+            if mode == "overlordcr_fallback" {
+                None
+            } else {
+                Some(expected)
+            },
             "native {} must commit {}",
             rule.creature,
             effect.track
@@ -777,15 +881,28 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
     .await?;
     assert_eq!(
         receipts,
-        i64::try_from(kills)?
-            + if overlord_peers.is_empty() {
-                0
-            } else if mode == "overlordcr_seventeen" {
-                16
-            } else {
-                1
-            },
+        if mode == "overlordcr_fallback" {
+            1
+        } else {
+            i64::try_from(kills)?
+                + if overlord_peers.is_empty() {
+                    0
+                } else if mode == "overlordcr_seventeen" {
+                    16
+                } else {
+                    1
+                }
+        },
         "duplicate corpse projection must retain the first captured receipt"
     );
+    if mode == "overlordcr_fallback" {
+        let xp: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_xp_receipts")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(
+            xp, 0,
+            "the existing top-damager departure XP refusal is preserved"
+        );
+    }
     Ok(())
 }

@@ -82,3 +82,48 @@ fn overlordcr_missing_quest_copy_retains_damager_postgres() -> TestResult {
     drop(admin);
     super::srvenc_source_deaths::scenario("overlordcr_missing_cache", "earth_overlord")
 }
+
+#[test]
+fn overlordcr_atomic_chests_before_xp_fault_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::srvenc_source_deaths::scenario("overlordcr_atomic_chests", "earth_overlord")
+}
+
+#[test]
+fn overlordcr_crash_after_commit_replay_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::srvenc_source_deaths::scenario("overlordcr_crash_replay", "earth_overlord")
+}
+
+#[test]
+fn overlordcr_compatible_existing_pin_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::srvenc_source_deaths::scenario("overlordcr_old_pin", "earth_overlord")
+}
+
+#[test]
+fn overlordcr_proficiency_fallback_storage_without_xp_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::srvenc_source_deaths::scenario("overlordcr_fallback", "earth_overlord")
+}
+
+#[test]
+fn overlordcr_ordinary_boss_damager_chest_excludes_healer_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::boss_rewards::run_case(super::boss_rewards::Case::OrdinaryDamagerAndHealer)
+}

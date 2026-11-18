@@ -46,6 +46,7 @@ pub(super) enum Case {
     Expiry,
     NativeDeath,
     NonOverlordHealing,
+    OrdinaryDamagerAndHealer,
     ProductionNativeDeath,
     OfflineReward,
     LivePrivacy,
@@ -309,6 +310,7 @@ fn scenario(case: Case) -> TestResult {
             | Case::ProductionNativeDeath
             | Case::OfflineReward
             | Case::LivePrivacy
+            | Case::OrdinaryDamagerAndHealer
             | Case::NonOverlordHealing
             | Case::ConcurrentCollection => now,
             Case::Expiry => now - 604_800_000 + 1_000,
@@ -332,7 +334,7 @@ fn scenario(case: Case) -> TestResult {
         } else {
             4
         };
-        let plan = BossRewardDeath {
+        let mut plan = BossRewardDeath {
             death,
             boss_key: "oteryn:boss.reward_fixture".into(),
             minted_at_unix_ms: u64::try_from(minted)?,
@@ -356,6 +358,56 @@ fn scenario(case: Case) -> TestResult {
                 ],
             }],
         };
+        if matches!(case, Case::OrdinaryDamagerAndHealer) {
+            let source = super::house_transfer::RecoverySource::start(&h).await?;
+            let session = privacy::admit_gameplay_peer(&h, &source.evidence, 1).await?;
+            let current =
+                crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
+                    .current_session_at(session)
+                    .await?
+                    .0;
+            let healer = item_fence_of(current).ok_or("healer fence")?;
+            plan.contributors.push(BossRewardContributor {
+                character_id: healer.character_id,
+                session_id: session,
+                lease_generation: healer.character_lease_generation,
+                contribution: RewardParticipation {
+                    damage_dealt: 0,
+                    damage_received: 0,
+                    healing_others: 100,
+                },
+            });
+            assert!(
+                h.root
+                    .settle_boss_reward_chests(
+                        &authority,
+                        &h.node,
+                        fence.runtime_scope,
+                        fence.scope_ownership_generation,
+                        plan.clone()
+                    )
+                    .await?,
+                "valid damager-plus-healer census settles without a healer chest"
+            );
+            assert!(
+                h.root
+                    .settle_boss_reward_chests(
+                        &authority,
+                        &h.node,
+                        fence.runtime_scope,
+                        fence.scope_ownership_generation,
+                        plan
+                    )
+                    .await?,
+                "durable replay settles once"
+            );
+            let counts: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_character_boss_reward_chests WHERE character_id=encode($1,'hex')::uuid)").bind(healer.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(counts, (1, 1, 0));
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         if matches!(case, Case::NonOverlordHealing) {
             let result = h
                 .root
@@ -497,6 +549,7 @@ fn scenario(case: Case) -> TestResult {
             Case::NativeDeath
             | Case::ProductionNativeDeath
             | Case::LargePrivateCorpse
+            | Case::OrdinaryDamagerAndHealer
             | Case::NonOverlordHealing => {
                 return Err("native scenario already returned".into());
             }
