@@ -1,7 +1,7 @@
 //! A live Gamel greeting either publishes both Bandits and the durable stage, or neither.
 use super::full_world_support::*;
 use oteryn_gameplay_quests::quest::loader::{GAMEL_AMBUSH_TRACK, load_embedded_quest_state};
-use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
+use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
 #[test]
 fn secserv_gamel_greeting_atomically_spawns_bandits_postgres() -> TestResult {
@@ -78,22 +78,22 @@ fn scenario() -> TestResult {
             assert_eq!(bandits(&owner).await, 0);
             super::qengine_rewards::talk(&mut owner, &mut admitted, gamel, 201, "bye").await?;
 
-            super::quest_world_callbacks::input_item(
-                &owner,
-                fence,
-                &Offering {
-                    item: "oteryn:item.tibia.i402".into(),
-                    count: 1,
-                    position: Position {
-                        x: 10,
-                        y: 0,
-                        floor: -7,
-                    },
-                },
-                12,
-                true,
+            // Main retains the exact Item identity but holds new materialization.
+            // Seed legacy carried custody through the fixture's existing purse row.
+            let mut historical = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *historical)
+                .await?;
+            let letter = sqlx::query(
+                "UPDATE game_item_instances SET definition_production_key=$1, quantity=1
+                 WHERE definition_production_key=$2 AND lifecycle=1",
             )
+            .bind("oteryn:item.tibia.i402")
+            .bind(GOLD)
+            .execute(&mut *historical)
             .await?;
+            assert_eq!(letter.rows_affected(), 1);
+            historical.commit().await?;
             let obstruction = {
                 let mut runtime = owner.runtime.lock().await;
                 runtime
