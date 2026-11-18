@@ -222,7 +222,6 @@ fn gravedg_lich_knights_two_players_osam_channel_and_timeout_postgres() -> TestR
 }
 
 const EARL: &str = "oteryn:creature.earl_osam";
-const CHANNELLING: &str = "oteryn:creature.channeling_earl_osam";
 const SPHERE: &str = "oteryn:creature.magical_sphere";
 
 pub(super) fn configure_osam(callback: &mut Callback) -> TestResult {
@@ -263,7 +262,17 @@ pub(super) async fn exercise_osam(
     assert_position(owner, earl, 116, 116).await?;
     {
         let runtime = owner.runtime.lock().await;
-        assert!(runtime.matches_live_creature_identity(earl, CHANNELLING.as_bytes()));
+        assert!(runtime.matches_live_creature_identity(earl, EARL.as_bytes()));
+        assert_eq!(
+            runtime
+                .companion_snapshot(earl)
+                .map_err(debug)?
+                .state
+                .current_speed(now + 100_000)
+                .map_err(debug)?,
+            0,
+            "Earl channels in place without losing his physical incarnation",
+        );
         assert!(
             runtime
                 .encounter_hooks()

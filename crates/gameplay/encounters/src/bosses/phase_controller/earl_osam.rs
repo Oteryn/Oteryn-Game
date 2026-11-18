@@ -5,7 +5,6 @@ use oteryn_gameplay_entities::{
 };
 
 const EARL: &str = "oteryn:creature.earl_osam";
-const CHANNELING: &str = "oteryn:creature.channeling_earl_osam";
 const SPHERE: &str = "oteryn:creature.magical_sphere";
 const ROLES: [Role; 1] = [Role {
     creature: EARL,
@@ -32,6 +31,7 @@ pub struct EarlOsamEncounter {
     spheres: Vec<ExactActorRef>,
     stage: Stage,
     expires: u64,
+    normal_speed_delta: i32,
 }
 
 impl EarlOsamEncounter {
@@ -57,9 +57,9 @@ impl EarlOsamEncounter {
             players,
         )?;
         owner.attach(runtime, 0, *earl)?;
-        runtime.companion_policy(CHANNELING)?;
         runtime.companion_policy(SPHERE)?;
-        let previous_health = runtime.companion_snapshot(*earl)?.health;
+        let snapshot = runtime.companion_snapshot(*earl)?;
+        let previous_health = snapshot.health;
         Ok(Self {
             owner,
             earl: *earl,
@@ -70,6 +70,7 @@ impl EarlOsamEncounter {
                 lost: 0,
             },
             expires: now.saturating_add(LIMIT_US),
+            normal_speed_delta: snapshot.state.creation_speed_delta,
         })
     }
 
@@ -174,18 +175,11 @@ impl EarlOsamEncounter {
                         relocate(runtime, self.earl, self.centre)?;
                     }
                     let snapshot = runtime.companion_snapshot(self.earl)?;
-                    let next =
-                        runtime.prepare_creature_profile_transformation(&snapshot, CHANNELING)?;
-                    runtime.commit_creature_profile_transformation(next)?;
-                    gates::protect(runtime, &[self.earl])?;
-                    let health = runtime.companion_policy(SPHERE)?.maximum_health;
-                    let spawns = sphere_positions(self.centre).map(|at| (SPHERE, health, at));
-                    if spawns.iter().any(|&(_, _, at)| {
-                        !place(runtime, at) || !runtime.native_summon_cell_free(at)
-                    }) {
-                        return Err(CarrierError::PlanConflict);
-                    }
-                    runtime.commit_quest_creature_spawn(&spawns)
+                    let mut normal = snapshot.state.clone();
+                    normal.creation_speed_delta = self.normal_speed_delta;
+                    runtime.compare_companion_state(&snapshot, normal)?;
+                    gates::unprotect(runtime, self.earl)?;
+                    Ok(snapshot.health)
                 })();
                 match result {
                     Ok(spheres) => self.spheres = spheres,
@@ -274,7 +268,7 @@ impl EarlOsamEncounter {
                         runtime.content_pin().server_artifact_digest(),
                         &[(
                             self.earl,
-                            CHANNELING.to_owned(),
+                            EARL.to_owned(),
                             u64::try_from(earl.maximum_health)
                                 .map_err(|_| CarrierError::PlanConflict)?,
                             80_000,
