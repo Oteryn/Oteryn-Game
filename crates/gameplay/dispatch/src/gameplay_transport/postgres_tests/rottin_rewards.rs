@@ -3,8 +3,10 @@ use super::classic_quests::{install, talk};
 use super::creature_push::scenario;
 use super::fixture::{Harness, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use oteryn_gameplay_quests::quest::QuestStateCatalogue;
 use oteryn_gameplay_quests::quest::authored_bindings::Bindings;
+use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 
@@ -151,8 +153,33 @@ pub(super) async fn refuse_short_hand_in(
     let [npc] = install(owner, admitted, [ROTTIN]).await?;
     talk(owner, admitted, npc, 1701, "hi").await?;
     let before_xp = experience(h).await?;
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("dialogue clock")?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "quest fence")?
+        .ok_or("quest fence")?;
+    let refusal = owner
+        .npc_talk(
+            admitted.runtime_actor.ok_or("quest actor")?,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id: 1702,
+                item_fence: Some(fence.item_fence()),
+            },
+            NpcTalkIntent {
+                npc_actor: npc,
+                text: "yes".into(),
+            },
+        )
+        .await;
+    assert_eq!(refusal.disposition, NpcIntentDisposition::Rejected);
+    assert!(!refusal.unknown);
     assert_eq!(
-        talk(owner, admitted, npc, 1702, "yes").await?,
+        refusal.conversation.ok_or("refusal reply")?.lines,
         ["Bring seven lucky charms."]
     );
     assert_eq!(experience(h).await?, before_xp);
