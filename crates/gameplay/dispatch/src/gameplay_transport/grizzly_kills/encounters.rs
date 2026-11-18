@@ -117,6 +117,16 @@ impl GrizzlyCaptureCache {
 }
 
 impl GrizzlyCaptureCache {
+    pub(in crate::gameplay_transport) fn encounter_credit_pending(
+        &self,
+        source: &str,
+        queue: &crate::gameplay_transport::kill_reward::KillSettlementQueue,
+    ) -> bool {
+        self.encounters.iter().any(|run| {
+            run.source == source && queue.has_pending_encounter_targets(run.roster.defenders())
+        })
+    }
+
     /// A retained unfinished admission vetoes its door even if an earlier run left durable credit.
     /// An absent admission lets the durable goal owner handle reconnect recovery.
     pub(in crate::gameplay_transport) fn encounter_door_allowed(

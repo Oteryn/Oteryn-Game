@@ -731,7 +731,7 @@ fn dream_scar_catalogue(
         schema: 1,
         quests: vec![BoundQuest {
             quest: callback.quest.clone(),
-            recipe_sha256: format!("{hash:x}"),
+            recipe_sha256: hash.iter().map(|byte| format!("{byte:02x}")).collect(),
             occurrence: None,
             admission: None,
             tracks: vec![

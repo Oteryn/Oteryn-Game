@@ -325,6 +325,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        if encounter.weekday_monsters.is_some()
+            && let (Some(attack), Some(capture)) = (&attack, &capture)
+            && capture.encounter_credit_pending(&callback.key, attack.kills())
+        {
+            return UseDisposition::Rejected;
+        }
         let prepared = if let (Some(capture), Some(hash)) =
             (capture.as_mut(), scoped.as_ref().map(|(hash, _)| *hash))
         {

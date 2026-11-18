@@ -940,6 +940,23 @@ impl KillSettlementQueue {
         Some(principals.into_iter().collect())
     }
 
+    pub(super) fn has_pending_encounter_targets(&self, targets: &[ExactActorRef]) -> bool {
+        let state = self.state();
+        state
+            .queued
+            .iter()
+            .any(|entry| targets.contains(&entry.target))
+            || state
+                .in_flight
+                .iter()
+                .any(|(_, _, target, _)| targets.contains(target))
+            || state.releasing.iter().any(|mark| {
+                mark.parked
+                    .iter()
+                    .any(|(entry, _)| targets.contains(&entry.target))
+            })
+    }
+
     fn has_pending(&self) -> bool {
         self.state().entries() != 0
     }
