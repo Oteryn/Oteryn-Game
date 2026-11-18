@@ -138,7 +138,9 @@ pub(super) async fn prepare(
     }
     let Some((target, yield_rule)) = source_id(&tool.production_key)
         .zip(source_id(&corpse_key))
-        .and_then(|(tool, corpse)| oteryn_gameplay_items::fishing::gathering_rule(tool, corpse))
+        .and_then(|(tool, corpse)| {
+            oteryn_gameplay_items::fishing::corpse_skinning_rule(tool, corpse)
+        })
     else {
         return Ok(None);
     };
@@ -180,8 +182,24 @@ pub(super) async fn prepare(
         revision_ref: spent_revision.to_owned(),
     };
     let race: String = row.try_get("race_key")?;
-    let stage:Option<i16>=sqlx::query_scalar("SELECT u.unlocked_stage FROM game_character_charm_assignments a JOIN game_character_charm_unlocks u USING(character_id,charm_key) WHERE a.character_id=encode($1,'hex')::uuid AND a.race_key=$2 AND a.charm_key='oteryn:charm.scavenge'")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(&race).fetch_optional(&mut ***tx).await?;
+    let rabbit = corpse_key == "oteryn:item.tibia.i4301";
+    if rabbit && (!matches!(race.as_str(), "oteryn:creature.rabbit" | "oteryn:creature.killer_rabbit")
+        || !sqlx::query_scalar::<_, bool>(
+            "SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key IN ($2,$3) AND value=1)",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind("oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission01")
+        .bind("oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/task01")
+        .fetch_one(&mut ***tx).await?)
+    {
+        return Ok(None);
+    }
+    let stage: Option<i16> = if rabbit {
+        None
+    } else {
+        sqlx::query_scalar("SELECT u.unlocked_stage FROM game_character_charm_assignments a JOIN game_character_charm_unlocks u USING(character_id,charm_key) WHERE a.character_id=encode($1,'hex')::uuid AND a.race_key=$2 AND a.charm_key='oteryn:charm.scavenge'")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(&race).fetch_optional(&mut ***tx).await?
+    };
     let bonus = stage
         .and_then(|s| u8::try_from(s).ok())
         .and_then(|s| {
@@ -207,8 +225,16 @@ pub(super) async fn prepare(
     .map_err(|_| DurabilityError::InvalidStoredState)?;
     let success = u128::from(draw) * 1_000_000_000
         < (u128::from(chance_numerator(yield_rule.threshold, bonus)) << 64);
+    // Crystal draws once: 25% for one foot, 10% for two, otherwise none.
+    let count = if success {
+        1
+    } else if rabbit && u128::from(draw) * 100 < (35_u128 << 64) {
+        2
+    } else {
+        0
+    };
     let mut outputs = Vec::new();
-    if success {
+    if count != 0 {
         let key = format!("oteryn:item.tibia.i{}", yield_rule.item);
         let Some(revision) = native.item_index().and_then(|index| index.revision(&key)) else {
             return Ok(None);
@@ -223,7 +249,7 @@ pub(super) async fn prepare(
         ) else {
             return Ok(None);
         };
-        outputs.push((output, 1));
+        outputs.push((output, count));
     }
     Ok(Some(Prepared {
         corpse: request.corpse,

@@ -80,6 +80,20 @@ pub struct GatheringYield {
     pub threshold: u32,
 }
 
+/// Only provenance-bound corpses may use the quest rabbit recipe.
+pub fn corpse_skinning_rule(tool: u16, corpse: u16) -> Option<(GatheringTarget, GatheringYield)> {
+    if (tool, corpse) == (5908, 4301) {
+        return Some((
+            GatheringTarget::Corpse { spent_item: 4302 },
+            GatheringYield {
+                item: 12172,
+                threshold: 25_000,
+            },
+        ));
+    }
+    gathering_rule(tool, corpse)
+}
+
 /// Global/Crystal-compatible, bounded gathering rows used by the item-use dispatcher.
 /// Thresholds are out of 100,000, as used by the donor skinning script.
 pub fn gathering_rule(tool: u16, target: u16) -> Option<(GatheringTarget, GatheringYield)> {
@@ -132,7 +146,6 @@ pub fn gathering_rule(tool: u16, target: u16) -> Option<(GatheringTarget, Gather
         (5908, 6030) => (4213, 5925, 6000),
         (5908, 22743) => (22744, 24842, 50000),
         (5908, 22742) => (22744, 24842, 50000),
-        (5908, 12172) => (4302, 6017, 6000),
         (5942, 4097) => (4098, 5906, 3000),
         (5942, 5995) => (4098, 5906, 3000),
         (5942, 4137) => (4138, 5905, 6000),
@@ -503,7 +516,6 @@ mod tests {
             (5908, 6030, 4213, 5925, 6000),
             (5908, 22743, 22744, 24842, 50000),
             (5908, 22742, 22744, 24842, 50000),
-            (5908, 12172, 4302, 6017, 6000),
             (5942, 4097, 4098, 5906, 3000),
             (5942, 5995, 4098, 5906, 3000),
             (5942, 4137, 4138, 5905, 6000),
@@ -603,6 +615,24 @@ mod tests {
         assert!(is_water("oteryn:item.tibia.i4597"));
         assert!(is_water("oteryn:item.tibia.i13989"));
         assert!(!is_water("oteryn:item.tibia.i4596"));
+    }
+
+    #[test]
+    fn rabbit_skinning_requires_the_durable_corpse_route() {
+        assert_eq!(gathering_rule(5908, 12172), None);
+        assert_eq!(gathering_rule(5908, 4301), None);
+        assert_eq!(corpse_skinning_rule(5908, 6017), None);
+        assert_eq!(corpse_skinning_rule(5942, 4301), None);
+        assert_eq!(
+            corpse_skinning_rule(5908, 4301),
+            Some((
+                GatheringTarget::Corpse { spent_item: 4302 },
+                GatheringYield {
+                    item: 12172,
+                    threshold: 25_000,
+                }
+            )),
+        );
     }
 
     #[test]

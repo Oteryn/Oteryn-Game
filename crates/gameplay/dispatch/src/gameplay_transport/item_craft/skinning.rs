@@ -120,7 +120,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let tool_id = entry.and_then(|entry| source_id(&entry.item.definition.production_key));
         if !tool_id
             .zip(source_id(&ground.definition().production_key))
-            .and_then(|(tool, target)| oteryn_gameplay_items::fishing::gathering_rule(tool, target))
+            .and_then(|(tool, target)| {
+                oteryn_gameplay_items::fishing::corpse_skinning_rule(tool, target)
+            })
             .is_some_and(|(target, _)| {
                 matches!(
                     target,

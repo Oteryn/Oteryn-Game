@@ -18,7 +18,7 @@ fn srx2_scavenge_production_use_minted_corpse_atomic_replay_postgres() -> TestRe
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "scavenge PG panic")??;
     eprintln!(
@@ -27,8 +27,16 @@ fn srx2_scavenge_production_use_minted_corpse_atomic_replay_postgres() -> TestRe
     );
     Ok(())
 }
-fn scenario() -> TestResult {
-    run(async |admin| {
+#[test]
+fn rottin_rabbit_skinning_uses_mature_corpse_and_keeps_decay_postgres() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("rottin-rabbit-skinning", || scenario(true))
+}
+
+fn scenario(rabbit: bool) -> TestResult {
+    run(async move |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "srx2_scavenge", true, false).await?;
         super::reset();
@@ -155,6 +163,10 @@ fn scenario() -> TestResult {
             &[(tool, 1), ("oteryn:item.tibia.i5942", 1)],
         )
         .await?;
+
+        if rabbit {
+            return exercise_rabbit(&owner, &harness, native, fence, deps.actor).await;
+        }
 
         let race = native
             .reward_table()
@@ -808,7 +820,8 @@ async fn entity_target(
         floor: 7,
     };
     assert_eq!(
-        owner.movement_cells()
+        owner
+            .movement_cells()
             .index()
             .lookup(
                 owner.movement_cells().scope(),
@@ -848,7 +861,10 @@ async fn entity_target(
         .row("oteryn:creature.minotaur")
         .map_err(debug)?;
     let race = row.race.clone().ok_or("canonical minotaur race")?;
-    let corpse = row.corpse_item.as_ref().ok_or("canonical minotaur corpse")?;
+    let corpse = row
+        .corpse_item
+        .as_ref()
+        .ok_or("canonical minotaur corpse")?;
     seed_scavenge(h, 3, race.key()).await?;
     let definition = TypedDefinitionRef {
         family: corpse.family.clone(),
@@ -989,3 +1005,97 @@ async fn provenance_refuses_late_binding(h: &Harness, unregistered: [u8; 16]) ->
 
 #[path = "srx2_scavenge/m41.rs"]
 mod m41;
+
+async fn exercise_rabbit(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    actor: crate::foundation::ExactActorRef,
+) -> TestResult {
+    let race = native
+        .reward_table()
+        .row("oteryn:creature.rabbit")
+        .map_err(debug)?
+        .race
+        .clone()
+        .ok_or("rabbit race")?;
+    let corpse = mint_corpse(owner, h, native, 6017, Some(race), 900).await?;
+    let command_id = draw_command(
+        native,
+        fence.game_session_id,
+        corpse,
+        250_000_000,
+        350_000_000,
+        100,
+    )?;
+    let command = UseCommand {
+        game_session_id: fence.game_session_id,
+        command_id,
+        item_fence: Some(fence),
+    };
+    let intent = skinning_intent()?;
+    let attempt = || {
+        owner.use_cooking_conversion(
+            actor,
+            command,
+            intent.clone(),
+            Some(ItemKey::Instance(id(71))),
+            Some(ItemKey::Instance(corpse)),
+        )
+    };
+    let body = || async {
+        sqlx::query_scalar::<_, String>("SELECT definition_production_key FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(corpse.as_slice()).fetch_one(&h.pool).await
+    };
+    assert!(
+        !attempt()
+            .await
+            .is_some_and(|reply| reply.disposition == UseDisposition::Committed)
+    );
+    assert_eq!(body().await?, "oteryn:item.tibia.i6017");
+
+    // Age only the fixture clock. The real deadline worker must produce the stage-one receipt.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("UPDATE game_item_mint_receipts SET materialized_at=materialized_at-11000 WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(corpse.as_slice()).execute(&mut *tx).await?;
+    sqlx::query("UPDATE game_spell_field_temporal_schedules SET expires_at_unix_ms=expires_at_unix_ms-11000 WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(corpse.as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    owner.drain_source_item_deadlines().await;
+    assert_eq!(body().await?, "oteryn:item.tibia.i4301");
+    assert!(
+        !attempt()
+            .await
+            .is_some_and(|reply| reply.disposition == UseDisposition::Committed)
+    );
+
+    // Seed the Mission01 prerequisite, separate from the production skinning transaction.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("INSERT INTO game_character_quest_tracks VALUES(encode($1,'hex')::uuid,$2,$3,1,2)")
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind("oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission01")
+        .bind("oteryn:quest.rottin_wood_and_the_married_men_quest")
+        .execute(&mut *tx).await?;
+    tx.commit().await?;
+    for _ in 0..2 {
+        assert_eq!(
+            attempt().await.ok_or("rabbit USE")?.disposition,
+            UseDisposition::Committed
+        );
+    }
+    assert_eq!(body().await?, "oteryn:item.tibia.i4302");
+    let feet: i64 = sqlx::query_scalar("SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i12172' AND lifecycle=1")
+        .fetch_one(&h.pool).await?;
+    assert_eq!(feet, 2);
+    let schedules: Vec<i64> = sqlx::query_scalar("SELECT p.expires_at_unix_ms-m.materialized_at FROM game_spell_field_temporal_schedules p JOIN game_item_mint_receipts m USING(item_instance_id) WHERE p.item_instance_id=encode($1,'hex')::uuid ORDER BY source_stage")
+        .bind(corpse.as_slice()).fetch_all(&h.pool).await?;
+    assert_eq!(schedules, [10_000, 310_000, 610_000]);
+    Ok(())
+}
