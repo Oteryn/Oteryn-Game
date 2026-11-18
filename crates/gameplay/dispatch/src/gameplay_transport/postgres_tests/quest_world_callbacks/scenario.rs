@@ -54,7 +54,10 @@ fn scenario_case(
     let qd_world = name.starts_with(super::super::qd_world::PREFIX);
     let machine_deposit = name.starts_with(super::super::qespike_machine_deposit::PREFIX);
     let mound = name == super::super::qespike_mound::NAME;
-    let sphere_machine = name == super::super::qespike_sphere_machine::NAME;
+    let sphere_machine = matches!(
+        name,
+        super::super::qespike_sphere_machine::NAME | super::super::qespike_sphere_machine::BELOW_THRESHOLD
+    );
     let elemental_pin = name.starts_with("qn1-elemental-");
     let qm50 = name == "goblin-merchant-elevator-upper";
     let m03_pits = name == super::super::qengine_m03_pits::NAME;
@@ -2496,7 +2499,14 @@ fn scenario_case(
         } else if machine_deposit {
             Box::pin(super::super::qespike_machine_deposit::exercise(&mut owner, &admitted, &h, &callback, name)).await?;
         } else if sphere_machine {
-            Box::pin(super::super::qespike_sphere_machine::exercise(&mut owner, &mut admitted, &h, &callback)).await?;
+            Box::pin(super::super::qespike_sphere_machine::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &callback,
+                name == super::super::qespike_sphere_machine::NAME,
+            ))
+            .await?;
         } else if name == super::super::qespike_arkulius::NAME {
             Box::pin(super::super::qespike_arkulius::exercise(&mut owner, &mut admitted, &h, &authority)).await?;
         } else if name == super::super::qespike_arkulius::PAYOUT {

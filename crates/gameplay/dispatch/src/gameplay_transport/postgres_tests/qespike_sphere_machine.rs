@@ -3,14 +3,17 @@ use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::{
-    QuestStateCatalogue, QuestTrack,
+    QuestStateCatalogue,
+    authored_bindings::Bindings,
     world_callbacks::{Callback, Position},
 };
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use serde_json::json;
+use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
 pub(super) const NAME: &str = "qespike-sphere-machine";
+pub(super) const BELOW_THRESHOLD: &str = "qespike-sphere-machine-below-threshold";
 const QUEST: &str = "oteryn:quest.elemental_spheres_quest";
 const COUNTER: &str = "oteryn:quest-progress/elemental_spheres/machine_gem_count";
 const LEFT: Position = Position {
@@ -34,6 +37,17 @@ fn sphere_machine_dispatch_debits_twenty_and_toggles_both_halves_on_vocation_tra
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(NAME, || {
         super::quest_world_callbacks::scenario(NAME, LEFT, false)
+    })
+}
+
+#[test]
+fn sphere_machine_below_twenty_toggles_on_and_off_without_debit_or_travel() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(BELOW_THRESHOLD, || {
+        super::quest_world_callbacks::scenario(BELOW_THRESHOLD, LEFT, false)
     })
 }
 
@@ -74,38 +88,59 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
     )
 }
 
+fn catalogue(revision: &str, funded: &Callback, initial: i64) -> TestResult<QuestStateCatalogue> {
+    let mut below_threshold = funded.clone();
+    below_threshold.key =
+        "oteryn:quest-callback/qespike/sphere-machine-left-below-threshold".into();
+    let guard = &mut below_threshold.storage[0];
+    guard.minimum = -1;
+    guard.maximum = 19;
+    guard.set = 0;
+    guard.increment = false;
+    guard.preserve = true;
+    below_threshold.effects.vocation_teleports.clear();
+    below_threshold.effects.teleport_effect = None;
+    below_threshold.effects.teleport_effect_repetitions = None;
+
+    let mut close = below_threshold.clone();
+    close.key = "oteryn:quest-callback/qespike/sphere-machine-left-off".into();
+    close.selector.appearance = Some(846);
+    close.storage[0].maximum = 100;
+    close.effects.transform = Some(842);
+    close.passages[0].appearance = 847;
+    close.passages[0].replacement = Some(843);
+
+    let stages = [funded, &below_threshold, &close].map(|callback| {
+        json!({"key":callback.key,"completes":false,"trigger":{
+            "kind":"map_use","callback":callback
+        }})
+    });
+    let recipe = format!("{:x}", Sha256::digest(serde_json::to_vec(&stages)?));
+    let authored = Bindings::parse(
+        serde_json::to_string(&json!({"schema":1,"quests":[{
+            "quest":QUEST,"recipe_sha256":recipe,"sources":funded.sources,
+            "tracks":[{"key":COUNTER,"initial":initial,"minimum":-1,"maximum":100}],"stages":stages
+        }]}))?
+        .as_bytes(),
+    )?;
+    let base = QuestStateCatalogue::empty(revision).ok_or("sphere catalogue")?;
+    Ok(authored.attach(&base)?)
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
     callback: &Callback,
+    funded: bool,
 ) -> TestResult {
     let revision = owner
         .quest_catalogue
         .as_ref()
         .ok_or("quest catalogue")?
         .content_revision();
-    owner.quest_catalogue = Some(Arc::new(
-        QuestStateCatalogue::new(
-            revision,
-            vec![QuestTrack {
-                key: COUNTER.into(),
-                quest: QUEST.into(),
-                initial: 24,
-                min: -1,
-                max: 100,
-            }],
-            Vec::new(),
-        )
-        .map_err(debug)?
-        .with_world_callback_fixture(callback.clone())?,
-    ));
-    owner
-        .states
-        .quest_callbacks
-        .fixture
-        .set(vec![callback.clone()])
-        .map_err(|_| "sphere fixture")?;
+    let initial = if funded { 24 } else { 19 };
+    owner.quest_catalogue = Some(Arc::new(catalogue(revision, callback, initial)?));
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
@@ -159,6 +194,13 @@ pub(super) async fn exercise(
         placement,
         expected_revision: 0,
     };
+    let origin = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?
+        .position();
     let command = admitted.continuity.next_command_id;
     let result =
         super::quest_callbacks::wire_use_targets_retained(owner, admitted, &[(command, &target)])
@@ -166,6 +208,32 @@ pub(super) async fn exercise(
     assert_eq!(result[0].1, UseDisposition::Committed);
     assert_eq!(object(LEFT, 846)?, left);
     assert_eq!(object(RIGHT, 847)?, right);
+    if !funded {
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            origin
+        );
+        let target = WorldObjectTarget {
+            expected_revision: map.facts.object_revision(left),
+            ..target
+        };
+        let command = admitted.continuity.next_command_id;
+        let result = super::quest_callbacks::wire_use_targets_retained(
+            owner,
+            admitted,
+            &[(command, &target)],
+        )
+        .await?;
+        assert_eq!(result[0].1, UseDisposition::Committed);
+        assert_eq!(object(LEFT, 842)?, left);
+        assert_eq!(object(RIGHT, 843)?, right);
+    }
     assert_eq!(
         map.facts
             .movement_effects_since(0)
@@ -174,7 +242,7 @@ pub(super) async fn exercise(
                 (p.x, p.y, p.floor, *effect) == (KNIGHT.x, KNIGHT.y, KNIGHT.floor, 11)
             })
             .count(),
-        2
+        if funded { 2 } else { 0 }
     );
     assert_eq!(
         owner
@@ -184,13 +252,21 @@ pub(super) async fn exercise(
             .read_actor_position(actor)
             .map_err(debug)?
             .position(),
-        super::quest_world_callbacks::local(KNIGHT)
+        if funded {
+            super::quest_world_callbacks::local(KNIGHT)
+        } else {
+            origin
+        }
     );
-    let debit: i64 =
+    let balance: Option<i64> =
         sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
             .bind(COUNTER)
-            .fetch_one(&h.pool)
+            .fetch_optional(&h.pool)
             .await?;
-    assert_eq!(debit, 4);
+    if funded {
+        assert_eq!(balance, Some(4));
+    } else {
+        assert_eq!(balance.unwrap_or(initial), 19);
+    }
     Ok(())
 }
