@@ -39,12 +39,7 @@ pub(super) async fn read_with_budget<T>(
         .map_err(|_| ())
 }
 
-#[track_caller]
 fn owner_read<T>(read: Result<T, DurabilityError>) -> Result<Option<T>, ()> {
-    #[cfg(test)]
-    if let Err(error) = &read {
-        eprintln!("MAINFIX_SOULPIT owner read at {}: {error:?}", std::panic::Location::caller());
-    }
     match read {
         Ok(value) => Ok(Some(value)),
         // These two callers only read current Soulpit bindings/members. A bounded
@@ -88,6 +83,17 @@ impl NativeSoulpitHandoff {
             || admission.owner_now().get(),
         )
         .await;
+        // The cadence has consumed this due tick before discovery can refuse
+        // its holder. A deadline-only retry must still deliver that same tick.
+        let global_tick = {
+            let mut pending = admission
+                .activity_runtimes
+                .soulpit_pending_global_discovery
+                .lock()
+                .map_err(|_| ())?;
+            *pending |= global_tick;
+            *pending
+        };
         let world = admission
             .runtime
             .lock()
@@ -116,6 +122,12 @@ impl NativeSoulpitHandoff {
                     else {
                         return Ok(None);
                     };
+                    // Only a successful binding read consumes discovery's tick.
+                    *admission
+                        .activity_runtimes
+                        .soulpit_pending_global_discovery
+                        .lock()
+                        .map_err(|_| ())? = false;
                     *admission
                         .activity_runtimes
                         .soulpit_after

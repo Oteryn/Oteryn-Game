@@ -38,8 +38,17 @@ fn srx3_soulpit_native_early_exit_retires_private_encounter_postgres() -> TestRe
 }
 
 #[test]
+fn srx3_soulpit_native_due_global_survives_busy_discovery_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    native_soulpit_scenario_with_entry_cue(false, false, false, false, true)
+}
+
+#[test]
 fn srx3_soulpit_native_entry_delivers_source_teleport_effect_postgres() -> TestResult {
-    native_soulpit_scenario_with_entry_cue(false, false, false, true)
+    native_soulpit_scenario_with_entry_cue(false, false, false, true, false)
 }
 
 fn native_soulpit_scenario(
@@ -47,7 +56,7 @@ fn native_soulpit_scenario(
     retained_grace: bool,
     early_exit: bool,
 ) -> TestResult {
-    native_soulpit_scenario_with_entry_cue(fault_after_commit, retained_grace, early_exit, false)
+    native_soulpit_scenario_with_entry_cue(fault_after_commit, retained_grace, early_exit, false, false)
 }
 
 fn native_soulpit_scenario_with_entry_cue(
@@ -55,6 +64,7 @@ fn native_soulpit_scenario_with_entry_cue(
     retained_grace: bool,
     early_exit: bool,
     entry_cue_only: bool,
+    busy_discovery: bool,
 ) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -803,11 +813,28 @@ fn native_soulpit_scenario_with_entry_cue(
                             // retry deadlines and keeps global clearance on its one-second
                             // clock. This standalone fixture has no Node maintenance task.
                             tokio::time::timeout(std::time::Duration::from_secs(10), async {
+                                if busy_discovery {
+                                    // Refuse the real discovery read once. All later turns
+                                    // are deadline-only, so the owner must retain its due tick.
+                                    let held = loop {
+                                        match h.root.try_issue_semantic_pass() {
+                                            Ok(held) => break held,
+                                            Err(crate::durability::DurabilityError::RootUnavailable) => {
+                                                tokio::task::yield_now().await;
+                                            }
+                                            Err(error) => return Err(format!("{error:?}")),
+                                        }
+                                    };
+                                    let retry = owner.drive_shared_soulpits(owner.owner_now().get(), true)
+                                        .await.map_err(|_| "busy global discovery")?;
+                                    assert!(retry.is_some(), "busy discovery keeps a retry deadline");
+                                    drop(held);
+                                }
                                 let mut global_due = owner.owner_now().get();
                                 loop {
                                     let now = owner.owner_now().get();
-                                    let global = now >= global_due;
-                                    if global { global_due = now.saturating_add(1_000_000); }
+                                    let global = !busy_discovery && now >= global_due;
+                                    if global || busy_discovery { global_due = now.saturating_add(1_000_000); }
                                     let deadline = owner.drive_shared_soulpits(now,global).await
                                         .map_err(|_| "actual Source completion return")?;
                                     if owner.activity_runtimes.current_connection(returning_player).game_session_id

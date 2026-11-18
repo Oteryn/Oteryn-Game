@@ -145,6 +145,7 @@ pub struct ActivityRuntimeRegistry<'a> {
         Mutex<Option<crate::durability::activity_handoff::DepartedActivityCursor>>,
     pub(super) departed_retirement_after: Mutex<Option<[u8; 16]>>,
     pub(super) soulpit_after: std::sync::Mutex<Option<[u8; 16]>>,
+    pub(super) soulpit_pending_global_discovery: std::sync::Mutex<bool>,
     pub(super) soulpit_transitions: tokio::sync::Mutex<()>,
     soulpit_template:
         Mutex<Option<&'a crate::content::soulpit_activity::QualifiedSoulpitActivityTemplate>>,
