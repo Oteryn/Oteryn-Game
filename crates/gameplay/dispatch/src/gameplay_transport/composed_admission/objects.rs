@@ -4,6 +4,7 @@ use crate::gameplay_transport::item_view::ItemKey;
 use crate::map::overlay::TilePos;
 
 mod dropdown;
+mod zalamon;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn use_bundle_key(
@@ -413,6 +414,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .use_dawnport_departure(actor, command, map, &target)
                 .await
             {
+                return outcome;
+            }
+            if let Some(outcome) = self.use_zalamon_door(actor, command, map, &target).await {
                 return outcome;
             }
             if let Some(outcome) = self.use_quest_callback(actor, command, map, &target).await {

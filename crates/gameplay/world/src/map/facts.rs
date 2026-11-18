@@ -544,6 +544,13 @@ impl BundleFacts {
                 let quest_action = required_storage.is_some()
                     && item.attrs.unique.is_none()
                     && item.attrs.door.is_none();
+                let zalamon = tile.house == 0
+                    && self
+                        .palette
+                        .get(item.palette as usize)
+                        .is_some_and(|entry| {
+                            zalamon_door_at(pos, &item.attrs, entry.facts.appearance_id)
+                        });
                 let missing_predicate =
                     self.palette
                         .get(item.palette as usize)
@@ -555,8 +562,12 @@ impl BundleFacts {
                                     && required_storage.is_none())
                         });
                 let door = if dropped
-                    || missing_predicate
-                    || (bound(&item.attrs) && !key_action && !level_action && !quest_action)
+                    || (!zalamon && missing_predicate)
+                    || (bound(&item.attrs)
+                        && !key_action
+                        && !level_action
+                        && !quest_action
+                        && !zalamon)
                 {
                     PaletteDoor::No
                 } else if tile.house != 0 && matches!(door, PaletteDoor::Pair { .. }) {
@@ -716,6 +727,25 @@ impl BundleFacts {
             return None;
         }
         Some(u32::from(number))
+    }
+
+    /// Match the source door by its retained UID or its bare bundle counterpart.
+    pub fn zalamon_door_source(&self, key: u64, id: u32) -> bool {
+        let Some((pos, ordinal)) = view::placement_of(key) else {
+            return false;
+        };
+        if self.house_tile(pos) {
+            return false;
+        }
+        let attrs = self
+            .placements
+            .binary_search_by_key(&key, |(key, _)| *key)
+            .ok()
+            .map(|index| &self.placements[index].1.attrs);
+        self.quest_callback_base_appearance(pos, ordinal, id)
+            .is_some_and(|appearance| {
+                zalamon_door_at(pos, attrs.unwrap_or(&Attrs::default()), appearance)
+            })
     }
 
     /// The doors of the bundle and their current state.
@@ -1041,6 +1071,19 @@ impl BundleFacts {
 }
 
 /// A placement attribute that binds the entry or that a pickup cannot represent.
+// Crystal 201189f8 startup/tables/item.lua:4372-4375 and actions_zalamon_door.lua:5-17.
+fn zalamon_door_at(pos: TilePos, attrs: &Attrs, appearance: u16) -> bool {
+    appearance == 9874
+        && (attrs.unique == Some(3170)
+            || (pos
+                == (TilePos {
+                    x: 33348,
+                    y: 31412,
+                    floor: -8,
+                })
+                && !bound(attrs)))
+}
+
 fn bound(attrs: &Attrs) -> bool {
     attrs.action.is_some() || bound_without_action(attrs)
 }
