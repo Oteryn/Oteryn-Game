@@ -124,16 +124,8 @@ impl AstralEncounter {
                     .map_err(|_| CarrierError::InvalidCreatureHealth)?;
                 if u128::from(health) * 1000 < u128::from(maximum) * 55 {
                     let at = runtime.read_actor_position(source)?.position();
-                    let health = runtime
-                        .live_creature_health(self.distorted)
-                        .ok_or(CarrierError::PlanConflict)?;
-                    let actors = runtime.replace_quest_creature_set(
-                        &[source, self.distorted],
-                        &[(DISTORTED, health as i64, at)],
-                    )?;
-                    self.distorted = actors[0];
+                    self.swap_glyphs(runtime, true, Some((source, at)))?;
                     self.source = None;
-                    self.swap_glyphs(runtime, true)?;
                 }
             } else {
                 Self::heal_source(runtime, source, SOURCE)?;
@@ -145,12 +137,12 @@ impl AstralEncounter {
             if health <= 40_000 {
                 Self::heal_source(runtime, self.distorted, DISTORTED)?;
             } else if (health >= 55_000 || !powered) && self.exposed {
-                self.swap_glyphs(runtime, false)?;
+                self.swap_glyphs(runtime, false, None)?;
                 self.next_think = now.saturating_add(1_000_000);
                 return Ok(());
             }
             if powered && !self.exposed {
-                self.swap_glyphs(runtime, true)?;
+                self.swap_glyphs(runtime, true, None)?;
             }
         }
         self.next_think = now.saturating_add(1_000_000);
@@ -175,23 +167,23 @@ impl AstralEncounter {
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         expose: bool,
+        source: Option<(ExactActorRef, MovementLocalPosition)>,
     ) -> Result<(), CarrierError> {
         let shield_position = runtime.read_actor_position(self.shielded)?.position();
         let clear_position = runtime.read_actor_position(self.glyph)?.position();
-        let health = runtime
-            .live_creature_health(if expose { self.shielded } else { self.glyph })
-            .ok_or(CarrierError::PlanConflict)? as i64;
-        let shield_health = health.min(runtime.companion_policy(SHIELDED)?.maximum_health);
-        let clear_health = health.min(runtime.companion_policy(GLYPH)?.maximum_health);
-        let actors = runtime.replace_quest_creature_set(
-            &[self.shielded, self.glyph],
-            &[
-                (SHIELDED, shield_health, clear_position),
-                (GLYPH, clear_health, shield_position),
-            ],
-        )?;
-        self.shielded = actors[0];
-        self.glyph = actors[1];
+        let mut moves = vec![
+            (self.shielded, clear_position),
+            (self.glyph, shield_position),
+        ];
+        if let Some((_, at)) = source {
+            moves.push((self.distorted, at));
+        }
+        let health = if expose {
+            (self.shielded, self.glyph)
+        } else {
+            (self.glyph, self.shielded)
+        };
+        runtime.relocate_quest_creatures(&moves, source.map(|(actor, _)| actor), Some(health))?;
         self.exposed = expose;
         Ok(())
     }

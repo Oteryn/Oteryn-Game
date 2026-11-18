@@ -402,27 +402,53 @@ impl ChannelRuntimeV1 {
         result
     }
 
-    /// Replace exact live encounter actors and publish the new native profiles as one owner turn.
-    pub fn replace_quest_creature_set(
+    /// Relocate an encounter's live actors without discarding their combat identity.
+    /// The optional health copy and retirement participate in the same owner turn.
+    pub fn relocate_quest_creatures(
         &mut self,
-        removed: &[ExactActorRef],
-        replacements: &[(&str, i64, MovementLocalPosition)],
-    ) -> Result<Vec<ExactActorRef>, CarrierError> {
+        moves: &[(ExactActorRef, MovementLocalPosition)],
+        retire: Option<ExactActorRef>,
+        copy_health: Option<(ExactActorRef, ExactActorRef)>,
+    ) -> Result<(), CarrierError> {
         self.owner_fence()?;
-        if removed.is_empty()
-            || removed.len() > 8
-            || removed
-                .iter()
-                .any(|actor| self.live_creature_health(*actor).is_none())
-        {
+        if moves.is_empty() || moves.len() > 3 {
             return Err(CarrierError::PlanConflict);
         }
         let before = self.carrier.clone();
         let result = (|| {
-            for actor in removed {
-                self.remove_encounter_actor(*actor)?;
+            for &(actor, at) in moves {
+                let expected = self.read_actor_position(actor)?;
+                self.carrier
+                    .current_owner_movement_position(&self.continuity)
+                    .commit_creature_relocation(actor, expected, at)?;
             }
-            self.commit_quest_creature_spawn(replacements)
+            if let Some((source, target)) = copy_health {
+                let copied = self
+                    .live_creature_health(source)
+                    .and_then(|health| i64::try_from(health).ok())
+                    .ok_or(CarrierError::InvalidCreatureHealth)?;
+                let index = self.carrier.validate_ref(&self.continuity, target.0)?;
+                self.carrier.assert_slot_spell_unreserved(index)?;
+                let Slot::CreatureOccupied {
+                    health,
+                    spell_combat,
+                    ..
+                } = &mut self.carrier.slots[index]
+                else {
+                    return Err(CarrierError::NotCreature);
+                };
+                if *health <= 0 || spell_combat.maximum_health <= 0 {
+                    return Err(CarrierError::InvalidCreatureHealth);
+                }
+                *health = copied.min(spell_combat.maximum_health);
+            }
+            if let Some(actor) = retire {
+                if self.live_creature_health(actor).is_none() {
+                    return Err(CarrierError::NotCreature);
+                }
+                self.remove_encounter_actor(actor)?;
+            }
+            Ok(())
         })();
         if result.is_err() {
             self.carrier = before;
