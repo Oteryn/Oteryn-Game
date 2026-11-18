@@ -66,6 +66,10 @@ pub struct Rule {
     #[serde(skip)]
     pub quest: String,
 }
+pub fn room_participant([x1, y1, x2, y2, z]: [i32; 5], [x, y, floor]: [i32; 3]) -> bool {
+    floor == z && (x1..=x2).contains(&x) && (y1..=y2).contains(&y)
+}
+
 impl Rule {
     pub fn active(&self, tracks: &BTreeMap<String, i64>) -> bool {
         self.effects.iter().all(|e| {
@@ -76,11 +80,7 @@ impl Rule {
     /// Source room bounds concern recipients, not damage ownership or social party.
     pub fn recipient(&self, position: [i32; 3], dealt_damage: bool) -> bool {
         match self.room {
-            Some([x1, y1, x2, y2, z]) => {
-                position[2] == z
-                    && (x1..=x2).contains(&position[0])
-                    && (y1..=y2).contains(&position[1])
-            }
+            Some(room) => room_participant(room, position),
             None => dealt_damage,
         }
     }
@@ -265,6 +265,10 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
             ));
         }
     }
+    let track = super::zamulosh::track();
+    let transition = super::zamulosh::transition();
+    tracks.insert(track.key.clone(), track);
+    transitions.insert(transition.key.clone(), transition);
     QuestStateCatalogue::new(
         catalogue.content_revision,
         tracks.into_values().collect(),

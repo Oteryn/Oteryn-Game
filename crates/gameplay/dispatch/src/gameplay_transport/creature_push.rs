@@ -188,6 +188,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 self.owner_now().get(),
                             );
                         }
+                        drop(states);
+                        drop(runtime);
+                        drop(_permit);
+                        self.settle_zamulosh_steps().await;
                         Moved
                     }
                     Err(_) => NotEnoughRoom,

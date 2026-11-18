@@ -51,6 +51,7 @@ fn scenario_case(
         name == "uneasy-alliance-crystal" || m44_children || m44_lions || m44_amphora || m44_flower;
     let qm48 = name == "qm48/mammoth";
     let m03_use = name == super::super::qengine_m03_use::NAME;
+    let bosscred_zamulosh = name == super::super::bosscred_zamulosh::NAME;
     let bosscred_ferumbras = name == super::super::bosscred_ferumbras::NAME;
     let bosscred_forge = name == super::super::bosscred_inquisition::NAME;
     let qd_world = name.starts_with(super::super::qd_world::PREFIX);
@@ -127,6 +128,8 @@ fn scenario_case(
             y: 32167,
             floor: -8,
         }
+    } else if bosscred_zamulosh {
+        super::super::bosscred_zamulosh::START
     } else if qd_world {
         super::super::qd_world::start(name)?
     } else if engenc_asura {
@@ -355,9 +358,13 @@ fn scenario_case(
     let mut callback = if m03_use {
         super::super::qengine_m03_use::callback()?
     } else if bosscred_ferumbras {
-        super::super::bosscred_ferumbras::fixture_callback(callback("questpc7-ferumbras-passage-0")?)
+        super::super::bosscred_ferumbras::fixture_callback(callback(
+            "questpc7-ferumbras-passage-0",
+        )?)
     } else if bosscred_forge {
         super::super::bosscred_inquisition::fixture_callback(callback("inquisition-portal-2167")?)
+    } else if bosscred_zamulosh {
+        super::super::bosscred_zamulosh::fixture_callback(callback("inquisition-portal-2152")?)
     } else if qd_world {
         super::super::qd_world::callback(name)?
     } else if engenc_asura {
@@ -799,6 +806,8 @@ fn scenario_case(
         super::super::bosscred_ferumbras::world(&callback)?
     } else if bosscred_forge {
         super::super::bosscred_inquisition::world(&callback)?
+    } else if bosscred_zamulosh {
+        super::super::bosscred_zamulosh::world(&callback)?
     } else if name == "questpc7-ferumbras" {
         world_with_objects(
             &callback,
@@ -1885,10 +1894,27 @@ fn scenario_case(
             ))
             .await?;
         } else if bosscred_ferumbras {
-            Box::pin(super::super::bosscred_ferumbras::exercise(&mut owner, &mut admitted, &deps, &h)).await?;
+            Box::pin(super::super::bosscred_ferumbras::exercise(
+                &mut owner,
+                &mut admitted,
+                &deps,
+                &h,
+            ))
+            .await?;
         } else if bosscred_forge {
             Box::pin(super::super::bosscred_inquisition::exercise(
-                &mut owner, &mut admitted, &deps, &h,
+                &mut owner,
+                &mut admitted,
+                &deps,
+                &h,
+            ))
+            .await?;
+        } else if bosscred_zamulosh {
+            Box::pin(super::super::bosscred_zamulosh::exercise(
+                &mut owner,
+                &mut admitted,
+                &deps,
+                &h,
             ))
             .await?;
         } else if qd_world {

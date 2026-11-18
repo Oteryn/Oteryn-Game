@@ -94,6 +94,7 @@ pub mod world_callbacks;
 pub mod world_change_journals;
 mod world_requirement_key;
 pub mod wrath_sleeping_dragon;
+pub mod zamulosh;
 
 use std::collections::{BTreeMap, BTreeSet};
 

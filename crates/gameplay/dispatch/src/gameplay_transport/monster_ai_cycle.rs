@@ -1106,6 +1106,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(permit);
         #[cfg(test)]
         trace.set("ai_save");
+        self.settle_zamulosh_steps().await;
         self.save_trained_levels(trained).await;
         #[cfg(test)]
         trace.set("ai_complete");

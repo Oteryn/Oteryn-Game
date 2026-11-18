@@ -35,6 +35,7 @@ mod soul_war_reward;
 mod source_transforms;
 mod timed_encounter;
 mod timed_passages;
+pub(super) mod zamulosh;
 
 use super::paced_movement::underwater_drown::underwater;
 use crate::durability::{

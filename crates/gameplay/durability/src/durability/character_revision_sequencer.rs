@@ -34,18 +34,19 @@ mod cyclopedia;
 mod death_promotion;
 mod grizzly;
 mod native_doors;
-mod native_kills;
 mod native_hits;
+mod native_kills;
 mod npc_marriage;
 mod npc_program;
 mod npc_purchase;
 mod npc_travel;
 mod proficiency_catalyst;
-mod world_access;
 mod rotten_area;
 mod rotten_flame;
+mod world_access;
 #[cfg(test)]
 mod writer_registration_tests;
+mod zamulosh;
 
 use super::DurabilityError;
 use super::DurabilityRoot;
@@ -823,12 +824,27 @@ impl RevisionSlot {
         admission: Option<super::reward_claim_mint::QuestRewardAdmission<'_>>,
         gate: &G,
     ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
-        self.commit_world_callback_with_items_selected(root,authority,node,fence,request,catalogue,permit,context.into(),native,admission,gate).await
+        self.commit_world_callback_with_items_selected(
+            root,
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            permit,
+            context.into(),
+            native,
+            admission,
+            gate,
+        )
+        .await
     }
 
     /// Preserve an exact selected source through cursor retries.
     #[allow(clippy::too_many_arguments)]
-    pub async fn commit_world_callback_with_items_selected<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
+    pub async fn commit_world_callback_with_items_selected<
+        G: super::quest_state::grizzly::GrizzlyPremiumGate,
+    >(
         &mut self,
         root: &DurabilityRoot,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -866,7 +882,9 @@ impl RevisionSlot {
 
     /// World callback storage and altar inputs share one revision slot and transaction.
     #[allow(clippy::too_many_arguments)]
-    pub async fn commit_world_callback_with_requirements<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
+    pub async fn commit_world_callback_with_requirements<
+        G: super::quest_state::grizzly::GrizzlyPremiumGate,
+    >(
         &mut self,
         root: &DurabilityRoot,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -881,14 +899,17 @@ impl RevisionSlot {
         premium: &G,
     ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
         self.commit_world_callback_with_items_and_premium(
-            root, authority, node, fence, request, catalogue, permit, context, native,
-            admission, premium,
-        ).await
+            root, authority, node, fence, request, catalogue, permit, context, native, admission,
+            premium,
+        )
+        .await
     }
 
     /// Keep the native Premium owner on both sequenced attempts, including a cursor retry.
     #[allow(clippy::too_many_arguments)]
-    pub async fn commit_world_callback_with_items_and_premium<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
+    pub async fn commit_world_callback_with_items_and_premium<
+        G: super::quest_state::grizzly::GrizzlyPremiumGate,
+    >(
         &mut self,
         root: &DurabilityRoot,
         authority: &ReconciledCharacterAuthority<'_, '_>,

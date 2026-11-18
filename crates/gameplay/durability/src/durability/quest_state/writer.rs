@@ -924,8 +924,12 @@ impl DurabilityRoot {
             &source_action,
             Some(super::QuestSourceAction::RottenArea(_))
         );
+        let lovely_step = matches!(&source_action, Some(super::QuestSourceAction::Zamulosh(_)));
+        let lovely_key =
+            request.transition_key == oteryn_gameplay_quests::quest::zamulosh::TRANSITION;
         if source_key != soul_input
             || area_key != area_input
+            || lovely_key != lovely_step
             || source_action
                 .as_ref()
                 .is_some_and(|input| input.request(&fence).ok().as_ref() != Some(&request))
@@ -934,7 +938,7 @@ impl DurabilityRoot {
                 Some(super::QuestSourceAction::SoulWar(input))
                     if matches!(input.as_ref(), super::soul_war_source::SoulWarSourceAction::Step(_))
             ) && !soul_step
-            || matches!(request.cause, QuestCause::SourceStep(_)) != soul_step
+            || matches!(request.cause, QuestCause::SourceStep(_)) != (soul_step || lovely_step)
             || matches!(request.cause, QuestCause::SourceThink(_)) && !area_input
             || source_action.is_some()
                 && ((context.is_some() && !soul_step)

@@ -25,6 +25,10 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
         runtime, map,
     );
     for step in map.facts.take_monster_steps() {
+        if crate::gameplay_transport::quest_callbacks::zamulosh::capture(runtime, states, map, step)
+        {
+            continue;
+        }
         if let Some(TileEntries {
             protection_zone,
             entries,

@@ -192,6 +192,9 @@ pub struct ChannelSpellStates {
     pub(super) native_profile_pass: super::monster_profile_cycle::retained::ProfilePassOwner,
     pub(super) source_death_action: Option<super::source_death::PreparedSourceDeathAction>,
     pub(super) source_death_action_ready: bool,
+    pub(super) zamulosh_steps: std::sync::Mutex<std::collections::VecDeque<
+        crate::durability::quest_state::zamulosh::QualifiedLovelyStep,
+    >>,
     pub(super) source_death_corpse: Option<std::sync::Arc<tokio::sync::Mutex<super::source_death::PendingSourceCorpse>>>,
     pub(super) source_death_action_reservation: Option<oteryn_gameplay_entities::carrier::runtime_actor_source_reservation::SourceDeathActionReservation>,
     pub(in crate::gameplay_transport) rotten_waves:
@@ -373,6 +376,7 @@ impl Default for ChannelSpellStates {
             native_profile_pass: Default::default(),
             source_death_action: None,
             source_death_action_ready: false,
+            zamulosh_steps: Default::default(),
             source_death_corpse: None,
             source_death_action_reservation: None,
             rotten_waves: Default::default(),
