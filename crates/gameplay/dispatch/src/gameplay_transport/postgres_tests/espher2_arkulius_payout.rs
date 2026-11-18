@@ -225,17 +225,23 @@ async fn exercise(h: &Harness, vocation: crate::spell::Vocation, reward: u16) ->
     owner
         .refresh_quest_session(admitted.game_session_id, true)
         .await;
-    super::item_look::seed_main_backpack(h, &[(NEUTRAL_MATTER, 2)]).await?;
-
     let greeting =
         super::npc_dialogue_fixture::talk(&mut owner, &admitted, arkulius, 700, "hi").await?;
-    let payout =
+    let missing =
         super::npc_dialogue_fixture::talk(&mut owner, &admitted, arkulius, 701, "mission").await?;
+    assert!(
+        missing.iter().all(|line| !line.contains("revived soon")),
+        "Arkulius must withhold payment without Neutral Matter: {missing:?}"
+    );
+
+    super::item_look::seed_main_backpack(h, &[(NEUTRAL_MATTER, 2)]).await?;
+    let payout =
+        super::npc_dialogue_fixture::talk(&mut owner, &admitted, arkulius, 702, "mission").await?;
     assert!(
         payout.iter().any(|line| line.contains("Alverus")),
         "Arkulius must acknowledge the hand-in after {greeting:?}: {payout:?}"
     );
-    super::npc_dialogue_fixture::talk(&mut owner, &admitted, arkulius, 702, "mission").await?;
+    super::npc_dialogue_fixture::talk(&mut owner, &admitted, arkulius, 703, "mission").await?;
     let carried: Vec<(String, i64)> = sqlx::query_as(
         "SELECT i.definition_production_key,i.quantity FROM game_item_instances i
          JOIN game_item_container_entries e USING(item_instance_id)
