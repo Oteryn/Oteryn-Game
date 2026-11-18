@@ -259,6 +259,10 @@ fn house_acl_reply_restores_requested_house_after_map() -> TestResult {
     house_window_action_with_map("Load guests", 4, "", true)
 }
 #[test]
+fn house_acl_refused_door_read_restores_requested_house_after_map() -> TestResult {
+    house_window_action_with_map("Load door", 5, "101 110 -7", true)
+}
+#[test]
 fn house_acl_reply_preserves_unrelated_draft_and_pending_paste() -> TestResult {
     house_window_action("Load subowners", 4, "")
 }
@@ -597,11 +601,9 @@ fn house_window_action_with_map(
     let PlayCommand::Feature(command) = receiver.try_recv()? else {
         return Err("house intent".into());
     };
-    if matches!(caption, "Load guests" | "Load subowners") {
-        use oteryn_client_runtime::{
-            house,
-            raw_feature::{CommandStatus, GatedCommandResult},
-        };
+    if matches!(caption, "Load guests" | "Load subowners" | "Load door") {
+        use oteryn_client_runtime::raw_feature::{CommandStatus, GatedCommandResult};
+        use oteryn_session::property_services::house;
         use std::sync::{Arc, Mutex};
         let clipboard = Arc::new(Mutex::new(None));
         app.update();
@@ -637,25 +639,39 @@ fn house_window_action_with_map(
                     .any(|text| text.0 == "◆ 2: Harbour Home\n120,130,7")
             );
         }
-        app.world()
-            .non_send::<HostOwner>()
-            .play
-            .as_ref()
-            .ok_or("play")?
-            .link
-            .bevy_house_ownership_result(
-                &command,
-                &GatedCommandResult {
-                    command_id: 1,
-                    server_sequence: 1,
-                    status: CommandStatus::Accepted,
-                    payload: house::encode_house_acl_snapshot(&house::HouseAclSnapshot {
-                        revision: 8,
-                        members: vec![],
-                    })
-                    .map_err(|e| format!("{e:?}"))?,
-                },
+        let door_refused = caption == "Load door";
+        let payload = if door_refused {
+            let query =
+                house::decode_house_query(&command.payload).map_err(|e| format!("{e:?}"))?;
+            assert_eq!(
+                query.acl,
+                Some(house::HouseAclRead {
+                    house: "oteryn:house.test".into(),
+                    selector: house::HouseAclSelector::Door {
+                        x: 101,
+                        y: 110,
+                        floor: -7,
+                    },
+                })
             );
+            // The house query returns this disposition when the tile has no door.
+            house::encode_house_result(house::HouseDisposition::Rejected, 0)
+        } else {
+            house::encode_house_acl_snapshot(&house::HouseAclSnapshot {
+                revision: 8,
+                members: vec![],
+            })
+            .map_err(|e| format!("{e:?}"))?
+        };
+        outbox.bevy_properties_result(
+            &command,
+            &GatedCommandResult {
+                command_id: 1,
+                server_sequence: 1,
+                status: CommandStatus::Accepted,
+                payload,
+            },
+        );
         app.update();
         assert!(
             app.world_mut()
@@ -682,12 +698,14 @@ fn house_window_action_with_map(
             ));
         }
         if map_during_read {
-            assert!(
-                app.world_mut()
-                    .query::<&Text>()
-                    .iter(app.world())
-                    .any(|text| text.0 == "Edit House List — Home")
-            );
+            let title = app
+                .world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .find(|text| text.0.starts_with("Edit House List — "))
+                .ok_or("house title")?
+                .0
+                .clone();
             let close = button(&mut app, "Close map")?;
             app.world_mut().trigger(Activate { entity: close });
             app.update();
@@ -709,13 +727,19 @@ fn house_window_action_with_map(
             let intent = oteryn_protocol_oteryn::house::decode_house_intent(&save.payload)
                 .map_err(|error| format!("{error:?}"))?;
             assert_eq!(intent.house, "oteryn:house.test");
+            assert_eq!(
+                title, "Edit House List — Home",
+                "title for {}",
+                intent.house
+            );
+            let expected_revision = if door_refused { 7 } else { 8 };
             assert!(matches!(
                 intent.action,
                 oteryn_protocol_oteryn::house::HouseAction::Acl {
                     subowners: false,
-                    revision: 8,
+                    revision,
                     ..
-                }
+                } if revision == expected_revision
             ));
         }
         return Ok(());
