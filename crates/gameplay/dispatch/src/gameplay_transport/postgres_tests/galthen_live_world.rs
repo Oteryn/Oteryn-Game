@@ -12,6 +12,7 @@ use oteryn_protocol_oteryn::world_spatial::{
 
 pub(super) const SATCHEL: &str = "galthen-satchel";
 pub(super) const COOLDOWN: &str = "galthen-yselda-shortcut-1-cooldown";
+pub(super) const COOLDOWN_EXPIRES_NOW: &str = "galthen-yselda-shortcut-1-cooldown-expires-now";
 pub(super) const LOW_LEVEL: &str = "-low-level";
 const SATCHEL_RECLAIM_SECONDS: i64 = 30 * 24 * 60 * 60;
 
@@ -70,6 +71,7 @@ fn galthen_forest_entry_and_shortcut_cooldown_postgres() -> TestResult {
         (ROUTES[5].0, ROUTES[5].1),
         (ROUTES[6].0, ROUTES[6].1),
         (COOLDOWN, ROUTES[5].1),
+        (COOLDOWN_EXPIRES_NOW, ROUTES[5].1),
         ("galthen-forest-1-low-level", ROUTES[0].1),
     ] {
         travel(name, source)?;
@@ -130,15 +132,18 @@ pub(super) async fn exercise(
 ) -> TestResult {
     let source = callback.selector.position.ok_or("source tile")?;
     let refused = name.ends_with(LOW_LEVEL) || name == COOLDOWN;
-    if name == COOLDOWN {
+    if matches!(name, COOLDOWN | COOLDOWN_EXPIRES_NOW) {
+        const EPOCH: i64 = 1_700_000_000;
+        h.root.set_test_quest_clock(EPOCH)?;
+        let ready_at = EPOCH * 1000 + if name == COOLDOWN { 1000 } else { 0 };
         sqlx::query(
             "INSERT INTO game_character_boss_cooldowns
                (character_id,boss_key,available_at,admission,reset_epoch)
-             VALUES(encode($1,'hex')::uuid,'oteryn:boss.megasylvan_yselda',
-               floor(extract(epoch FROM clock_timestamp())*1000)::bigint+600000,
-               encode($2,'hex')::uuid,0)",
+             VALUES(encode($1,'hex')::uuid,'oteryn:boss.megasylvan_yselda',$2,
+               encode($3,'hex')::uuid,0)",
         )
         .bind(super::fixture::id(41).as_slice())
+        .bind(ready_at)
         .bind(super::fixture::id(81).as_slice())
         .execute(&h.pool)
         .await?;
@@ -148,6 +153,8 @@ pub(super) async fn exercise(
         start
     } else if name == SATCHEL {
         at(32396, 32520, -7)
+    } else if name == COOLDOWN_EXPIRES_NOW {
+        ROUTES[5].2
     } else {
         ROUTES
             .iter()

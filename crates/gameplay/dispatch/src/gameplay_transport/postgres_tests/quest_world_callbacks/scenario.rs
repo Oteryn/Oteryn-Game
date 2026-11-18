@@ -355,6 +355,7 @@ fn scenario_case(
     let mut callback = if galthen_live {
         callback(
             name.strip_suffix(super::super::galthen_live_world::LOW_LEVEL)
+                .or_else(|| name.strip_suffix("-cooldown-expires-now"))
                 .unwrap_or(name.trim_end_matches("-cooldown")),
         )?
     } else if exhausted_exit {
@@ -1393,8 +1394,10 @@ fn scenario_case(
             "questpc7-ferumbras" | "qengine-rewards-heart-story" => Some(150),
             "galthen-forest-1" | "galthen-forest-2" | "questpc7-grave" => Some(250),
             "galthen-iksupan-entrance" => Some(150),
-            "galthen-yselda-shortcut-1" | "galthen-yselda-shortcut-2"
-            | super::super::galthen_live_world::COOLDOWN => Some(250),
+            "galthen-yselda-shortcut-1"
+            | "galthen-yselda-shortcut-2"
+            | super::super::galthen_live_world::COOLDOWN
+            | super::super::galthen_live_world::COOLDOWN_EXPIRES_NOW => Some(250),
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
             _ => None,
