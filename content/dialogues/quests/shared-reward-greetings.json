@@ -860,6 +860,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.tarun",
+      "greet": "Greetings!",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tarun.lua:116:sha256:8e032f7015dd3ee2135ba9552a588a3f26083327e23fb7a1619423486c482fde",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tarun.lua:117:sha256:8e032f7015dd3ee2135ba9552a588a3f26083327e23fb7a1619423486c482fde",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tarun.lua:121:sha256:8e032f7015dd3ee2135ba9552a588a3f26083327e23fb7a1619423486c482fde"
+      ]
+    },
+    {
       "npc": "oteryn:npc.the_bone_master",
       "greet": "Welcome to my little realm.",
       "farewell": "We will meet again.",
