@@ -57,6 +57,11 @@ const RAMP_FOOT: TilePos = TilePos {
     y: 32773,
     floor: -7,
 };
+const RAMP_LANDING: TilePos = TilePos {
+    x: 32694,
+    y: 32771,
+    floor: -6,
+};
 
 const NPC: &str = "oteryn:npc.grizzly_adams";
 const REFUSALS: [&str; 2] = [
@@ -167,7 +172,9 @@ fn to_ramp(world: &BundleWorld) -> TestResult<[Vec<StepDirection>; 2]> {
         .ok_or("step=reach observed=no-walk-route-from-walkway-to-ladder-approach")?;
     let landing = destination(world, LADDER_APPROACH, StepDirection::West);
     if landing != Some(LADDER_LANDING) {
-        return Err(format!("step=reach observed=invalid-port-hope-ladder-landing:{landing:?}").into());
+        return Err(
+            format!("step=reach observed=invalid-port-hope-ladder-landing:{landing:?}").into(),
+        );
     }
     descent.push(StepDirection::West);
     let ground = route(world, LADDER_LANDING, |at| at == RAMP_FOOT)
@@ -179,8 +186,18 @@ fn from_ramp(
     world: &BundleWorld,
     npc: &oteryn_world_bundle::npc::Npc,
 ) -> TestResult<Vec<StepDirection>> {
-    route(world, RAMP_FOOT, |at| near(at, npc))
-        .ok_or_else(|| "step=reach observed=no-walk-route-from-ramp-to-grizzly-adams".into())
+    let landing = destination(world, RAMP_FOOT, StepDirection::North);
+    if landing != Some(RAMP_LANDING) {
+        return Err(
+            format!("step=reach observed=invalid-port-hope-ramp-landing:{landing:?}").into(),
+        );
+    }
+    let approach = route(world, RAMP_LANDING, |at| near(at, npc))
+        .ok_or("step=reach observed=no-walk-route-from-ramp-to-grizzly-adams")?;
+    let mut path = Vec::with_capacity(1 + approach.len());
+    path.push(StepDirection::North);
+    path.extend(approach);
+    Ok(path)
 }
 
 fn near(at: TilePos, npc: &oteryn_world_bundle::npc::Npc) -> bool {
@@ -636,11 +653,7 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
     }
     assert_eq!(
         destination(&world, RAMP_FOOT, StepDirection::North),
-        Some(TilePos {
-            x: 32694,
-            y: 32771,
-            floor: -6,
-        }),
+        Some(RAMP_LANDING),
         "the ramp must land on Grizzly Adams' walkway"
     );
     let check_leg = |name, from: TilePos, path: Vec<StepDirection>| -> TestResult<TilePos> {
