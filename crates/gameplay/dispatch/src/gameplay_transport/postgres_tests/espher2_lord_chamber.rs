@@ -95,12 +95,25 @@ fn chamber(case: ChamberCase) -> TestResult {
                 )?;
             let generation = controller.active().ok_or("active generation")?;
             let native = generation.native_gameplay().ok_or("native profiles")?;
-            for item in [946, 947, 948] {
-                let key = format!("oteryn:item.tibia.i{item}");
-                assert!(
-                    native.item_policy(&key, "definition-r1").is_some(),
-                    "chamber admission needs native custody for {key}"
-                );
+            if matches!(case, ChamberCase::Entry) {
+                for item in [942, 946, 947, 948] {
+                    let definition = crate::durability::item_mint::TypedDefinitionRef {
+                        family: "Item".into(),
+                        production_key: format!("oteryn:item.tibia.i{item}"),
+                        revision_ref: "definition-r1".into(),
+                    };
+                    let facts =
+                        crate::gameplay_transport::item_ref_admission::generation_item_facts(
+                            native,
+                            &definition,
+                        )
+                        .map_err(debug)?;
+                    assert_ne!(
+                        facts.stack,
+                        crate::durability::item_transfer::ItemStackClass::Unknown,
+                        "chamber admission needs carried custody for {item}"
+                    );
+                }
             }
             // The compiler loads all floors of the region. The actual USE and
             // relocation assertions below qualify the other physical cells.
