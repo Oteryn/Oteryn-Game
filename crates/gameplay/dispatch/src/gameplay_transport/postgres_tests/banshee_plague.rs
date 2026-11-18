@@ -26,6 +26,18 @@ const DESTINATION: TilePos = TilePos {
     y: TRIGGER.y - 6,
     ..TRIGGER
 };
+const EAST_TRIGGER: TilePos = TilePos {
+    x: TRIGGER.x + 1,
+    ..TRIGGER
+};
+const EAST_START: TilePos = TilePos {
+    y: START.y,
+    ..EAST_TRIGGER
+};
+const EAST_DESTINATION: TilePos = TilePos {
+    y: DESTINATION.y,
+    ..EAST_TRIGGER
+};
 const PEARL_POSITIONS: [TilePos; 2] = [
     TilePos {
         x: 32173,
@@ -103,10 +115,16 @@ fn scenario() -> TestResult {
                 (START, None),
                 (TRIGGER, Some((1, None))),
                 (DESTINATION, None),
+                (EAST_START, None),
+                (EAST_TRIGGER, Some((1, None))),
+                (EAST_DESTINATION, None),
                 (PEARL_POSITIONS[0], None),
                 (PEARL_POSITIONS[1], None),
             ],
-            Some((TRIGGER, DESTINATION, 35002)),
+            &[
+                (TRIGGER, DESTINATION, 35002),
+                (EAST_TRIGGER, EAST_DESTINATION, 35002),
+            ],
         )?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
@@ -209,17 +227,34 @@ fn scenario() -> TestResult {
                 .collect::<String>()
         );
         let pearl = seed_pearl(&h, 0, 3, &frame, map, &content).await?;
-        for with_both in [false, true] {
-            let second = if with_both {
-                Some(seed_pearl(&h, 1, 2, &frame, map, &content).await?)
-            } else {
-                None
-            };
+        let mut second = None;
+        for (start, trigger, destination, remaining) in [
+            (START, TRIGGER, START, 3),
+            (START, TRIGGER, DESTINATION, 2),
+            (EAST_START, EAST_TRIGGER, EAST_DESTINATION, 1),
+        ] {
+            if remaining == 2 {
+                second = Some(seed_pearl(&h, 1, 3, &frame, map, &content).await?);
+            }
             let permit = owner.spell_lane_permit().await.ok_or("spell lane")?;
             let (origin, entered) = {
                 let mut runtime = owner.runtime.lock().await;
-                let origin = runtime.read_actor_position(actor).map_err(debug)?;
+                let mut origin = runtime.read_actor_position(actor).map_err(debug)?;
                 let closed = crate::map::floor::BundleDoors(&map.facts);
+                if origin.position() != local(start) {
+                    let approach = crate::map::floor::prepare_quest_callback_teleport(
+                        &runtime,
+                        owner.movement_cells(),
+                        actor,
+                        session,
+                        origin,
+                        local(start),
+                        false,
+                        &closed,
+                    )
+                    .map_err(debug)?;
+                    origin = runtime.commit_source_step(approach).map_err(debug)?;
+                }
                 let raw_portal = crate::map::floor::prepare_bundle_step(
                     &runtime,
                     owner.movement_cells(),
@@ -231,7 +266,13 @@ fn scenario() -> TestResult {
                     &closed,
                 )
                 .map_err(debug)?;
-                assert_eq!(raw_portal.destination(), local(DESTINATION));
+                assert_eq!(
+                    raw_portal.destination(),
+                    local(TilePos {
+                        y: DESTINATION.y,
+                        ..trigger
+                    })
+                );
                 let proof = crate::map::floor::prepare_bundle_step(
                     &runtime,
                     owner.movement_cells(),
@@ -243,18 +284,17 @@ fn scenario() -> TestResult {
                     &portals,
                 )
                 .map_err(debug)?;
-                assert_eq!(proof.destination(), local(TRIGGER));
+                assert_eq!(proof.destination(), local(trigger));
                 let entered = runtime.commit_source_step(proof).map_err(debug)?;
                 (origin, entered)
             };
             let after = owner
                 .step_quest_callback(&permit, actor, session, origin, entered)
                 .await;
-            let expected = if with_both { DESTINATION } else { START };
-            assert_eq!(after.position(), local(expected));
-            assert_eq!(quantity(&h, &pearl).await?, if with_both { 2 } else { 3 });
-            if let Some(second) = second {
-                assert_eq!(quantity(&h, &second).await?, 1);
+            assert_eq!(after.position(), local(destination));
+            assert_eq!(quantity(&h, &pearl).await?, remaining);
+            if let Some(second) = &second {
+                assert_eq!(quantity(&h, second).await?, remaining);
             }
         }
         let (track_count, state_count): (i64, i64) = sqlx::query_as(
@@ -275,10 +315,10 @@ fn scenario() -> TestResult {
         .bind(QUEST)
         .fetch_all(&h.pool)
         .await?;
-        assert_eq!(receipt_guards, [true]);
+        assert_eq!(receipt_guards, [true, true]);
         let consumption_counts: Vec<i32> = sqlx::query_scalar("SELECT quantity FROM game_quest_callback_consumptions WHERE transition_key='oteryn:quest-callback/banshee/plague-entrance' ORDER BY item_instance_id")
             .fetch_all(&h.pool).await?;
-        assert_eq!(consumption_counts, [1, 1]);
+        assert_eq!(consumption_counts, [1, 1, 1, 1]);
         drop(owner);
         drop(authority);
         drop(seal);

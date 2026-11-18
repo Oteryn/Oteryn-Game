@@ -269,7 +269,7 @@ fn scenario() -> TestResult {
                 (2113, false),
             ],
             &tiles,
-            None,
+            &[],
         )?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
