@@ -23,15 +23,7 @@
         "y": 32497,
         "floor": -10
       },
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/galthen/entry-level-guard",
-          "minimum": -1,
-          "maximum": -1,
-          "set": -1,
-          "preserve": true
-        }
-      ],
+      "storage": [],
       "offerings": [],
       "item_on_target": null,
       "return_on_failure": true,
@@ -66,15 +58,7 @@
         "y": 32498,
         "floor": -10
       },
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/galthen/entry-level-guard",
-          "minimum": -1,
-          "maximum": -1,
-          "set": -1,
-          "preserve": true
-        }
-      ],
+      "storage": [],
       "offerings": [],
       "item_on_target": null,
       "return_on_failure": true,
@@ -109,15 +93,7 @@
         "y": 31890,
         "floor": -8
       },
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/galthen/entry-level-guard",
-          "minimum": -1,
-          "maximum": -1,
-          "set": -1,
-          "preserve": true
-        }
-      ],
+      "storage": [],
       "offerings": [],
       "item_on_target": null,
       "return_on_failure": false,
@@ -256,6 +232,74 @@
       "failure_message": null,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/adventures_of_galthen/actions_iksupan_teleports.lua:3"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/galthen-yselda-shortcut-1",
+      "quest": "oteryn:quest.adventures_of_galthen_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32419,
+          "y": 32458,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32528,
+        "y": 32489,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "This root seems to thicken and wreathe the moment you try to grab it.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/adventures_of_galthen/actions_yselda_shortcut.lua:2"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/galthen-yselda-shortcut-2",
+      "quest": "oteryn:quest.adventures_of_galthen_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32528,
+          "y": 32488,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32418,
+        "y": 32458,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "This root seems to thicken and wreathe the moment you try to grab it.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/adventures_of_galthen/actions_yselda_shortcut.lua:3"
       ],
       "effects": {
         "teleport_effect": 11
