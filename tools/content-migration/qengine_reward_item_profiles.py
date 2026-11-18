@@ -2,7 +2,7 @@
 
 Uses the existing native source importer and exact canonical identity bindings.
 Known canonical facts win. No use effect, subtype or custom script is
-inferred; the selected corpse chain retains its exact source timers, and the canonical Item admission records remain unchanged.
+inferred; timed items retain their exact source timers, and the canonical Item admission records remain unchanged.
 """
 import copy
 import hashlib
@@ -70,6 +70,16 @@ IDS |= {2973}
 IDS |= {22082}
 # M44: source flower harvest and the two remaining native pagoda offerings.
 IDS |= {21389, 21466}
+# Dream Courts: Crystal 201189f8 data/items/items.xml:55403-55408,
+# 55483-55505,55554-55559 agrees with the pinned XML below.
+DREAM_COURTS_TIMERS = {
+    29276: {'duration': '60', 'decayto': '0'},
+    29307: {'duration': '180'},
+    29308: {'duration': '120'},
+    29309: {'duration': '60'},
+    29351: {'duration': '1800'},
+}
+IDS |= {29310} | DREAM_COURTS_TIMERS.keys()
 IDS |= questl2_ready.ITEMS
 # Already present in main f5b584ef1's native provider; the existing cohort
 # cardinality includes these six shells, even when a source fact is refined.
@@ -79,7 +89,8 @@ PREVIOUSLY_COUNTED_IDS = {3029, 3035, 3205, 3212, 3234, 3607}
 SIDE_IDS = {133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
        12599, 12601, 12803, 19083, 19151, 21897, 22074, 22082, 22516, 22721, 23986, 27565, 28792, 28793, 3560, 5941, 5886} | set(range(11545, 11553)) | {768, 769, 770, 16128, 16129, 133, 4867, 12803, 37002, 37003, 3723, 139, 5903, 5921, 5924, 16165, 16167, 3244, 5937, 5938, 20275, 20276, 11700, 11701, 5939, 5940, 5945, 12599, 5947, 12601, 22721, 9041, 15698, 6099, 6100, 6101, 10198, 10199, 30168, 30169, 6102, 6107, 28793, 12517, 16103, 875, 6126, 16242, 22516, 28792, 7289, 12413, 5886}
 SIDE_IDS |= {17668, 17669, 17670, 17671, 17672, 17673, 17674, 17675, 17676, 3120}  # Rafzan's five source-priced portable tools.
-STATIC_IDS = {8995, 8996, 9527, 17677, 17679, 17681, 21573, 23163, 32173, 32537}
+# The Dream Courts mutated egg (29305) has unmove and unpass client flags.
+STATIC_IDS = {8995, 8996, 9527, 17677, 17679, 17681, 21573, 23163, 29305, 32173, 32537}
 SIDE_IDS |= STATIC_IDS | {3114, 3456, 3661, 32197, 32225, 32226, 32227, 32228, 32582, 32583, 32584, 32585, 32602, 32757}
 SIDE_IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
 
@@ -186,8 +197,14 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
     records=[]
     for item_id in sorted(selected):
         node=xml[item_id]
-        flower = lion_flower.admitted(item_id, source.attrs(node))
-        if not flower and item_id not in CORPSE_IDS and {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
+        attributes = source.attrs(node)
+        flower = lion_flower.admitted(item_id, attributes)
+        timers = {'charges', 'duration', 'decayto', 'stopduration'} & attributes.keys()
+        expected_timers = DREAM_COURTS_TIMERS.get(item_id)
+        if expected_timers is not None:
+            if {key: attributes[key] for key in timers} != expected_timers:
+                raise ValueError(f'QENGINE_DREAM_COURTS_TIMER_DRIFT:{item_id}')
+        elif not flower and item_id not in CORPSE_IDS and timers:
             raise ValueError('QENGINE_REWARD_ITEM_INSTANCE_OWNER_REQUIRED')
         flags=objects[item_id]['flags']
         if flags.get('flags.liquidcontainer') or flags.get('flags.liquidpool'):

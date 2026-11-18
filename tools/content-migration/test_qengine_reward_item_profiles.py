@@ -10,6 +10,33 @@ import qengine_reward_item_profiles as profiles
 
 
 class SharedPhysicalAdmission(unittest.TestCase):
+    def test_dream_courts_items_are_materializable_with_donor_durations(self):
+        native = json.loads((profiles.ROOT / profiles.PROFILE).read_bytes())
+        rows = {row['production_definition']['production_key']: row for row in native['records']}
+        for item, duration in ((29276, 60_000), (29305, None), (29307, 180_000),
+                               (29308, 120_000), (29309, 60_000), (29310, None),
+                               (29351, 1_800_000)):
+            with self.subTest(item=item):
+                key = f'oteryn:item.tibia.i{item}'
+                row = rows.get(key)
+                self.assertIsNotNone(row, f'absent native profile: {item}')
+                self.assertTrue(row['admission']['materializable'])
+                destinations = ['Ground'] if item == 29305 else ['CharacterInventory', 'Ground']
+                self.assertEqual(row['admission']['legal_destinations'], destinations)
+                temporal = row['semantics']['temporal']
+                if item == 29276:
+                    self.assertEqual(row['semantics']['presentation']['value']['name']['value'],
+                                     'dream catcher')
+                    physical = row['semantics']['physical']['value']
+                    self.assertEqual(physical['weight'], {'state': 'KNOWN', 'value': 750})
+                    self.assertEqual(physical['pickupable'], {'state': 'KNOWN', 'value': True})
+                    self.assertEqual(physical['movable'], {'state': 'KNOWN', 'value': True})
+                if duration is None:
+                    self.assertEqual(temporal, {'state': 'NOT_APPLICABLE'})
+                else:
+                    self.assertEqual(temporal['value']['duration'], {'state': 'KNOWN', 'value': duration})
+                    self.assertEqual(temporal['value']['decay_target'], {'state': 'NOT_APPLICABLE'})
+
     def test_capture_keeps_the_mining_owned_pick_speed_unknown(self):
         native=json.loads((profiles.ROOT/profiles.PROFILE).read_bytes())
         key='oteryn:item.tibia.i3456'
@@ -37,7 +64,8 @@ class SharedPhysicalAdmission(unittest.TestCase):
     def run_admission(self, record, existing, schema='OTERYN_NATIVE_GAMEPLAY_MANIFEST/v5'):
         generated = {'profiles': json.dumps({'records': [existing]}).encode(),
                      'manifest': json.dumps({'schema': schema, 'item_profiles': {}}).encode()}
-        with tempfile.TemporaryDirectory() as directory, patch.object(profiles, 'capture', return_value={'records': [record]}):
+        packet = {'records': [record], 'custody_promotions': []}
+        with tempfile.TemporaryDirectory() as directory, patch.object(profiles, 'capture', return_value=packet):
             profiles.admit(Path(directory), generated, 'profiles', 'manifest',
                            lambda row: row['production_definition']['production_key'],
                            lambda value: json.dumps(value).encode())
