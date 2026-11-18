@@ -156,5 +156,15 @@ pub(super) async fn exercise(
     }
     talk(owner, admitted, npc, 32010, "yes").await?;
     assert_eq!(xp(h).await? - before, 75_000);
+    let achievements: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_achievements a
+         JOIN game_character_roots c USING (account_id)
+         WHERE c.character_id=encode($1,'hex')::uuid
+           AND a.achievement_key='oteryn:achievement/corruption_contained'",
+    )
+    .bind(id(41).as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(achievements, 1);
     Ok(())
 }

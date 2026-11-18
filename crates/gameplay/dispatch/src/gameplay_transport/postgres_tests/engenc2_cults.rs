@@ -343,10 +343,11 @@ fn cults_scenario(reenter: bool, cooldown: bool) -> TestResult {
                 ).bind(ESSENCE).fetch_one(&h.pool).await?, 0);
                 let mut runtime = owner.runtime.lock().await;
                 let expected = runtime.read_actor_position(peer).map_err(debug)?;
+                let doors = crate::map::floor::BundleDoors(world.facts());
                 let proof = crate::map::floor::prepare_quest_callback_teleport(
                     &runtime, &cells, peer, session, expected,
                     MovementLocalPosition { x: 100, y: 101, floor: 7 },
-                    false, &crate::map::floor::BundleDoors(world.facts()),
+                    false, &doors,
                 ).map_err(debug)?;
                 runtime.commit_source_steps_and_project(vec![proof], || true).map_err(debug)?;
                 drop(runtime);
