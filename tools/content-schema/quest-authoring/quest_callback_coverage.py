@@ -388,6 +388,40 @@ QUALIFIED.update({
         "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
     "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_stuffed":
         "quest_catalogue_chests_qchk3_pits_of_inferno_use_replay_and_refusal",
+    claim: test
+    for test, claims in (
+        ("quest_catalogue_chests_qchk5_newhaven_legion_helmet_use_replay_and_refusal", (
+            "oteryn:reward-claim.kv.legiondawnport",
+        )),
+        ("quest_catalogue_chests_qchk5_the_queen_of_the_banshees_use_replay_and_refusal", (
+            "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.boots_of_haste",
+            "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.giant_sword",
+            "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.platinum_coin",
+            "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.stealth_ring",
+            "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.tower_shield",
+        )),
+        ("quest_catalogue_chests_qchk5_the_thieves_guild_use_replay_and_refusal", (
+            "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.compromising_letter",
+            "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.golden_goblet",
+            "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_book",
+            "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_end",
+            "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_oasis",
+        )),
+        ("quest_catalogue_chests_qchk5_to_blind_the_enemy_use_replay_and_refusal", (
+            "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp1",
+            "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp2",
+            "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.dwarven_shield",
+            "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.morning_star",
+        )),
+        ("quest_catalogue_chests_qchk5_tomes_of_knowledge_use_replay_and_refusal", (
+            "oteryn:reward-claim.quest.u8_54.tomes_of_knowledge.chest_tome_of_knowledge1",
+            "oteryn:reward-claim.quest.u8_54.tomes_of_knowledge.chest_tome_of_knowledge2",
+            "oteryn:reward-claim.quest.u8_54.tomes_of_knowledge.chest_tome_of_knowledge3",
+            "oteryn:reward-claim.quest.u8_54.tomes_of_knowledge.chest_tome_of_knowledge4",
+            "oteryn:reward-claim.quest.u8_54.tomes_of_knowledge.top_tower",
+        )),
+    )
+    for claim in claims
 })
 
 
