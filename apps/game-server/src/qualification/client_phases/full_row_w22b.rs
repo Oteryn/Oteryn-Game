@@ -20,7 +20,7 @@
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind};
 use oteryn_protocol_oteryn::attack as attacks;
-use oteryn_protocol_oteryn::{charm_progression as charm, daily_boost, prey};
+use oteryn_protocol_oteryn::{self as native, charm_progression as charm, daily_boost, prey};
 use std::collections::{BTreeMap, BTreeSet};
 
 const STEPS: &[u8] = &[1, 2, 3, 4, 5, 6, 7];
@@ -314,10 +314,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let step5 = async {
         if wealth_seconds(&mut client).await? == 0 {
             let reference = provisioning::item_reference(&provisioning::item_index()?, 36727)?;
-            if !client.inventory().is_some_and(|view| view.entries.iter().any(|item| item.item_definition_ref == reference)) {
-                full_e2ef5::apply_fixture(&mut client, "w22b-wealth").await?;
-                release(&mut client).await?;
-                client = connect_character(clients, 0xd4, 1).await?;
+            if !client.inventory().is_some_and(|view| {
+                view.entries
+                    .iter()
+                    .any(|item| item.item_definition_ref == reference)
+            }) {
+                fixture_reentry(&mut client, clients, "w22b-wealth", [0xd4, 0xd5]).await?;
             }
             let handle = client
                 .inventory()
@@ -327,9 +329,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                         .find(|item| item.item_definition_ref == reference)
                 })
                 .map(|item| item.handle)
-                .ok_or(
-                    "Wealth Duplex setup did not produce concoction custody",
-                )?;
+                .ok_or("Wealth Duplex setup did not produce concoction custody")?;
             let used = client.use_item(handle).await?;
             if used.status != CommandStatus::Accepted
                 || used.disposition
@@ -358,20 +358,19 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.observed(5, step5);
     let step6 = async {
         if oteryn_gameplay_characters::stamina::hunting_loot_allowed(stamina(&mut client).await?) {
-            full_e2ef5::apply_fixture(&mut client, "w22b-stamina").await?;
-            release(&mut client).await?;
-            client = connect_character(clients, 0xd5, 1).await?;
+            fixture_reentry(&mut client, clients, "w22b-stamina", [0xd6, 0xd7]).await?;
         }
         prove_modifier(
-        &mut client,
-        world,
-        &metadata.spawns,
-        clients,
-        "oteryn:creature.rat",
-        Modifier::Stamina,
-    )
-    .await
-    }.await;
+            &mut client,
+            world,
+            &metadata.spawns,
+            clients,
+            "oteryn:creature.rat",
+            Modifier::Stamina,
+        )
+        .await
+    }
+    .await;
     row.observed(6, step6);
 
     let step7 = async { let prey_before = prey_request(&mut client, &prey::Request::Query).await?; let charm_before = charm_request(&mut client, charm::CharmProgressionAction::Query).await?; let stamina_before = stamina(&mut client).await?; release(&mut client).await?; client = connect_character(clients, 0xd3, 1).await?; let prey_after = prey_request(&mut client, &prey::Request::Query).await?; let charm_after = charm_request(&mut client, charm::CharmProgressionAction::Query).await?; let stamina_after = stamina(&mut client).await?; if prey_before != prey_after || charm_before != charm_after || stamina_before != stamina_after { return Err(format!("fresh admission durable delta mismatch: prey={} charm={} stamina={stamina_before}->{stamina_after}", prey_before != prey_after, charm_before != charm_after).into()); } Ok(()) }.await;
@@ -968,22 +967,216 @@ async fn prove_modifier(
     }
 }
 
-async fn release(client: &mut DevClientSession) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
-    loop {
-        let reply = client.session_mut().logout().await?;
-        if reply.status == CommandStatus::Accepted {
-            return Ok(());
-        } else if tokio::time::Instant::now() >= deadline {
-            return Err(format!("logout refusal:{reply:?}").into());
+async fn release_with<T, L, P>(state: &mut T, mut logout: L, mut poll: P) -> TestResult
+where
+    L: AsyncFnMut(&mut T) -> TestResult<bool>,
+    P: AsyncFnMut(&mut T) -> TestResult,
+{
+    let deadline = tokio::time::Instant::now()
+        + Duration::from_millis(u64::from(
+            oteryn_protocol_oteryn::logout::MAX_LOGOUT_RETRY_AFTER_MS,
+        ))
+        + Duration::from_secs(30);
+    let harness = verdict::Harness::global();
+    harness.bounded_wait(deadline, "w22b-terminal-release");
+    let result: Result<TestResult, _> = tokio::time::timeout_at(deadline, async {
+        loop {
+            if logout(state).await? {
+                return Ok(());
+            }
+            poll(state).await?;
         }
-        client.service_liveness(Duration::from_millis(250)).await?;
-    }
+    })
+    .await;
+    harness.bounded_wait(
+        tokio::time::Instant::now(),
+        "w22b-terminal-release-complete",
+    );
+    result.map_err(|_| {
+        verdict::HarnessError::boxed(
+            verdict::Cause::Deadline {
+                phase: "w22b-terminal-release",
+            },
+            "native combat/release deadline",
+        )
+    })?
+}
+
+async fn settled_fixture<T, S, A>(state: &mut T, mut settle: S, mut apply: A) -> TestResult
+where
+    S: AsyncFnMut(&mut T) -> TestResult,
+    A: AsyncFnMut(&mut T) -> TestResult,
+{
+    // Terminal settlement must drain the old controller's pending stamina before
+    // an independently fenced fixture changes its durable before-state.
+    settle(state).await?;
+    apply(state).await?;
+    settle(state).await
+}
+
+async fn fixture_reentry(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    profile: &'static str,
+    tags: [u8; 2],
+) -> TestResult {
+    let mut tags = tags.into_iter();
+    settled_fixture(
+        client,
+        async |client: &mut DevClientSession| {
+            release(client).await?;
+            let tag = tags.next().ok_or("fixture exceeded its two readmissions")?;
+            *client = connect_character(clients, tag, 1).await?;
+            Ok(())
+        },
+        async |client: &mut DevClientSession| {
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(65);
+            verdict::Harness::global().bounded_wait(deadline, "w22b-fixture");
+            let result = verdict::indexed_timeout(
+                Duration::from_secs(65),
+                full_e2ef5::apply_fixture(client, profile),
+            )
+            .await
+            .map_err(|_| "W22 fixture deadline")?;
+            verdict::Harness::global()
+                .bounded_wait(tokio::time::Instant::now(), "w22b-fixture-complete");
+            result
+        },
+    )
+    .await
+}
+
+async fn release(client: &mut DevClientSession) -> TestResult {
+    release_with(
+        client,
+        async |client: &mut DevClientSession| {
+            let reply = client.session_mut().logout().await?;
+            match reply.result {
+                Some(native::logout::LogoutResult::Accepted)
+                    if reply.status == CommandStatus::Accepted =>
+                {
+                    Ok(true)
+                }
+                Some(
+                    native::logout::LogoutResult::InFight { .. }
+                    | native::logout::LogoutResult::Busy,
+                ) if reply.status == CommandStatus::Rejected => Ok(false),
+                _ => Err(format!("logout refusal:{reply:?}").into()),
+            }
+        },
+        async |client: &mut DevClientSession| {
+            // A registered TURN keeps ordinary gameplay activity alive without
+            // refreshing the fight lock. Only accepted LOGOUT completes release.
+            let mut payload = Vec::new();
+            bytes_field(&mut payload, 3, &encode_step_intent(StepDirection::North));
+            let reply = client
+                .session_mut()
+                .gated_command(
+                    native::target_move::CAPABILITY_TARGET_MOVE_V1,
+                    native::target_move::COMMAND_TYPE_TARGET_MOVE_INTENT,
+                    &payload,
+                )
+                .await?;
+            if !matches!(
+                (reply.status, reply.payload.as_slice()),
+                (CommandStatus::Accepted, [8, 1]) | (CommandStatus::Rejected, [8, 3])
+            ) {
+                return Err(format!("release activity refused:{reply:?}").into());
+            }
+            client.service_liveness(Duration::from_millis(250)).await?;
+            client.take_events();
+            Ok(())
+        },
+    )
+    .await
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn r4_release_allows_the_native_pve_combat_lock_to_expire() -> TestResult {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()?
+            .block_on(async {
+                tokio::time::pause();
+                let started = tokio::time::Instant::now();
+                let mut until = started
+                    + Duration::from_millis(u64::from(
+                        oteryn_protocol_oteryn::logout::MAX_LOGOUT_RETRY_AFTER_MS,
+                    ));
+                let result = release_with(
+                    &mut until,
+                    async |until: &mut tokio::time::Instant| {
+                        Ok(tokio::time::Instant::now() >= *until)
+                    },
+                    async |_: &mut tokio::time::Instant| {
+                        tokio::time::sleep(Duration::from_millis(250)).await;
+                        Ok(())
+                    },
+                )
+                .await;
+                assert!(
+                    result.is_ok(),
+                    "release abandoned a legitimate native combat lock: {result:?}"
+                );
+            });
+        Ok(())
+    }
+
+    #[test]
+    fn r4_fixture_runs_only_after_terminal_stamina_settlement() -> TestResult {
+        struct State {
+            durable: u16,
+            pending_before: Option<u16>,
+            trace: Vec<&'static str>,
+        }
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()?
+            .block_on(async {
+                let mut state = State {
+                    durable: 2520,
+                    pending_before: Some(2520),
+                    trace: Vec::new(),
+                };
+                let result = settled_fixture(
+                    &mut state,
+                    async |state: &mut State| {
+                        if let Some(before) = state.pending_before.take() {
+                            if before != state.durable {
+                                return Err("BuildStateMismatch".into());
+                            }
+                            state.durable -= 1;
+                        }
+                        state.trace.push("settled-and-readmitted");
+                        Ok(())
+                    },
+                    async |state: &mut State| {
+                        state.durable = 840;
+                        state.trace.push("fixture");
+                        Ok(())
+                    },
+                )
+                .await;
+                assert!(
+                    result.is_ok(),
+                    "fixture overtook an unflushed native debit: {result:?}"
+                );
+                assert_eq!(state.durable, 840);
+                assert_eq!(
+                    state.trace,
+                    [
+                        "settled-and-readmitted",
+                        "fixture",
+                        "settled-and-readmitted"
+                    ]
+                );
+            });
+        Ok(())
+    }
+
     #[test]
     fn review_stamina_uses_general_stats_little_endian_field() -> TestResult {
         use oteryn_protocol_oteryn::cyclopedia_character::{GeneralStats, TabView};

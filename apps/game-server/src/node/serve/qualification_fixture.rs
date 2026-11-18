@@ -959,6 +959,17 @@ async fn prepare_items(
                 .ok_or("qualification Item absent")?
                 .into(),
         };
+        // The W22 setup goal is current custody, not another reward execution.
+        // Inventory was read under the current item fence above. A committed
+        // acknowledgement replay must never enter the budgeted mint owner again.
+        if id == 36727
+            && bag
+                .entries
+                .iter()
+                .any(|entry| entry.item.definition == definition && entry.item.quantity >= 1)
+        {
+            continue;
+        }
         let item = generation_item_facts(native, &definition)
             .map_err(|error| format!("qualification Item {key}: {error:?}"))?;
         let request = RewardClaimMintRequest {
@@ -1313,7 +1324,16 @@ mod tests {
                     config.scope.world_id = good_world;
                     assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes()).await, "qualified", "native W22 fixture refused");
                     let revision = h.root_revision().await?;
-                    assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes()).await, "qualified");
+                    let work_before: i16 = if setup == "w22b-wealth" {
+                        sqlx::query_scalar("SELECT work_units_used FROM game_reward_claim_mint_reservations WHERE character_id=encode($1,'hex')::uuid").bind(fixture::id(fixture::CHARACTER).as_slice()).fetch_one(&h.pool).await?
+                    } else { 0 };
+                    for _ in 0..8 {
+                        assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes()).await, "qualified");
+                        if setup == "w22b-wealth" {
+                            let after: i16 = sqlx::query_scalar("SELECT work_units_used FROM game_reward_claim_mint_reservations WHERE character_id=encode($1,'hex')::uuid").bind(fixture::id(fixture::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+                            assert_eq!(after, work_before, "committed setup replay charged another durable work unit");
+                        }
+                    }
                     assert_eq!(revision, h.root_revision().await?, "fixture replay performed another write");
                     if setup == "w22b-stamina" {
                         assert_eq!(h.root.read_hunting_stamina(&authority, character).await.map_err(debug)?, 840);

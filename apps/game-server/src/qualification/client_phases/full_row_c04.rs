@@ -434,15 +434,23 @@ async fn journey(
 }
 
 async fn c04_phases<T, S, J, F>(setup: S, journey: F) -> TestResult
-where S: std::future::Future<Output = TestResult<T>>,
-J: std::future::Future<Output = TestResult>, F: FnOnce(T) -> J {
+where
+    S: std::future::Future<Output = TestResult<T>>,
+    J: std::future::Future<Output = TestResult>,
+    F: FnOnce(T) -> J,
+{
     let harness = verdict::Harness::global();
-    harness.bounded_wait(tokio::time::Instant::now() + full_e2ef5::C17_SETUP_LIMIT, "c04-setup");
+    harness.bounded_wait(
+        tokio::time::Instant::now() + full_e2ef5::C17_SETUP_LIMIT,
+        "c04-setup",
+    );
     let ready = verdict::indexed_timeout(full_e2ef5::C17_SETUP_LIMIT, setup)
-        .await.map_err(|_| "C04 setup deadline")??;
+        .await
+        .map_err(|_| "C04 setup deadline")??;
     harness.bounded_wait(tokio::time::Instant::now(), "c04-journey");
     verdict::indexed_timeout(Duration::from_secs(120), journey(ready))
-        .await.map_err(|_| "C04 journey deadline")?
+        .await
+        .map_err(|_| "C04 journey deadline")?
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -459,8 +467,18 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         )?;
         c04_phases(
             full_e2ef5::spell_fixture(clients, "c04", 0xc4),
-            |(characters, client)| journey(&mut row, clients, world, &metadata.spawns, characters, client),
-        ).await
+            |(characters, client)| {
+                journey(
+                    &mut row,
+                    clients,
+                    world,
+                    &metadata.spawns,
+                    characters,
+                    client,
+                )
+            },
+        )
+        .await
     })
     .await;
     row.finish(result);
@@ -471,16 +489,48 @@ mod tests {
     use super::*;
     #[test]
     fn r3_c04_setup_and_journey_have_independent_deadlines() -> TestResult {
-        tokio::runtime::Builder::new_current_thread().enable_time().build()?.block_on(async {
-            tokio::time::pause();
-            let result = c04_phases(async { tokio::time::sleep(Duration::from_secs(10)).await; Ok(()) }, |()| async {
-                tokio::time::sleep(Duration::from_secs(121)).await; Ok(())
-            }).await;
-            assert!(result.is_err(), "journey borrowed unused setup allowance");
-            let result = c04_phases(async { tokio::time::sleep(full_e2ef5::C17_SETUP_LIMIT + Duration::from_secs(1)).await; Ok(()) }, |()| async { Ok(()) }).await;
-            assert!(result.is_err(), "setup borrowed journey allowance");
-            assert!(c04_phases(async { tokio::time::sleep(Duration::from_secs(180)).await; Ok(()) }, |()| async { tokio::time::sleep(Duration::from_secs(119)).await; Ok(()) }).await.is_ok());
-        });
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()?
+            .block_on(async {
+                tokio::time::pause();
+                let result = c04_phases(
+                    async {
+                        tokio::time::sleep(Duration::from_secs(10)).await;
+                        Ok(())
+                    },
+                    |()| async {
+                        tokio::time::sleep(Duration::from_secs(121)).await;
+                        Ok(())
+                    },
+                )
+                .await;
+                assert!(result.is_err(), "journey borrowed unused setup allowance");
+                let result = c04_phases(
+                    async {
+                        tokio::time::sleep(full_e2ef5::C17_SETUP_LIMIT + Duration::from_secs(1))
+                            .await;
+                        Ok(())
+                    },
+                    |()| async { Ok(()) },
+                )
+                .await;
+                assert!(result.is_err(), "setup borrowed journey allowance");
+                assert!(
+                    c04_phases(
+                        async {
+                            tokio::time::sleep(Duration::from_secs(180)).await;
+                            Ok(())
+                        },
+                        |()| async {
+                            tokio::time::sleep(Duration::from_secs(119)).await;
+                            Ok(())
+                        }
+                    )
+                    .await
+                    .is_ok()
+                );
+            });
         Ok(())
     }
 

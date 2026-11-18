@@ -92,27 +92,34 @@ pub(super) async fn spell_characters(clients: &SeamClients<'_>) -> TestResult<[[
 struct ProvisionChild(Option<std::process::Child>, bool);
 impl ProvisionChild {
     fn child(&mut self) -> std::io::Result<&mut std::process::Child> {
-        self.0.as_mut().ok_or_else(|| std::io::Error::other("provisioning child already transferred to its reaper"))
+        self.0.as_mut().ok_or_else(|| {
+            std::io::Error::other("provisioning child already transferred to its reaper")
+        })
     }
 }
 impl Drop for ProvisionChild {
     fn drop(&mut self) {
-        let Some(mut child) = self.0.take() else { return; };
+        let Some(mut child) = self.0.take() else {
+            return;
+        };
         drop(child.stdin.take());
         let cooperative = self.1;
         // The owned reaper is independent of Tokio: cancellation never blocks
         // a runtime worker or makes runtime teardown wait for remote shutdown.
         std::thread::spawn(move || {
             let deadline = std::time::Instant::now() + Duration::from_secs(40);
-            while cooperative && child.try_wait().ok().flatten().is_none()
-                && std::time::Instant::now() < deadline {
+            while cooperative
+                && child.try_wait().ok().flatten().is_none()
+                && std::time::Instant::now() < deadline
+            {
                 std::thread::sleep(Duration::from_millis(10));
             }
             if child.try_wait().ok().flatten().is_none() {
                 let _ = std::process::Command::new("kill")
                     .args(["-KILL", "--", &format!("-{}", child.id())])
                     .stdout(std::process::Stdio::null())
-                    .stderr(std::process::Stdio::null()).status();
+                    .stderr(std::process::Stdio::null())
+                    .status();
                 let _ = child.kill();
                 let _ = child.wait();
             }
@@ -149,10 +156,18 @@ async fn c17_output(mut command: std::process::Command) -> TestResult<std::proce
         })
     };
     let stdout = read(Box::new(
-        child.child()?.stdout.take().ok_or("provision stdout missing")?,
+        child
+            .child()?
+            .stdout
+            .take()
+            .ok_or("provision stdout missing")?,
     ));
     let stderr = read(Box::new(
-        child.child()?.stderr.take().ok_or("provision stderr missing")?,
+        child
+            .child()?
+            .stderr
+            .take()
+            .ok_or("provision stderr missing")?,
     ));
     let status = loop {
         if let Some(status) = child.child()?.try_wait()? {
@@ -221,7 +236,10 @@ fn c17_subprocess_failure(stage: &str, output: &std::process::Output) -> String 
     )
 }
 
-pub(super) async fn apply_fixture(client: &mut DevClientSession, profile: &'static str) -> TestResult {
+pub(super) async fn apply_fixture(
+    client: &mut DevClientSession,
+    profile: &'static str,
+) -> TestResult {
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
     let node_log = std::env::var("NODE_BOOT_NODE_LOG").ok();
@@ -1134,14 +1152,28 @@ mod tests {
     use super::*;
     #[test]
     fn r3_cooperative_child_cancellation_does_not_block_the_async_thread() -> TestResult {
-        tokio::runtime::Builder::new_current_thread().enable_time().build()?.block_on(async {
-            let mut command = std::process::Command::new("python3");
-            command.args(["-c", "import sys,time; sys.stdin.buffer.read(); time.sleep(0.25)", "--watch-parent-stdin"]);
-            let started = std::time::Instant::now();
-            assert!(tokio::time::timeout(Duration::from_millis(60), c17_output(command)).await.is_err());
-            assert!(started.elapsed() < Duration::from_millis(150), "helper shutdown blocked the async deadline");
-            tokio::time::sleep(Duration::from_millis(350)).await;
-        });
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()?
+            .block_on(async {
+                let mut command = std::process::Command::new("python3");
+                command.args([
+                    "-c",
+                    "import sys,time; sys.stdin.buffer.read(); time.sleep(0.25)",
+                    "--watch-parent-stdin",
+                ]);
+                let started = std::time::Instant::now();
+                assert!(
+                    tokio::time::timeout(Duration::from_millis(60), c17_output(command))
+                        .await
+                        .is_err()
+                );
+                assert!(
+                    started.elapsed() < Duration::from_millis(150),
+                    "helper shutdown blocked the async deadline"
+                );
+                tokio::time::sleep(Duration::from_millis(350)).await;
+            });
         Ok(())
     }
 
