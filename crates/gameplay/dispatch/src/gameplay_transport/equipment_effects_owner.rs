@@ -676,18 +676,19 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let Some(native) = self.active_generation.and_then(|a| a.native_gameplay()) else {
             return Ok(None);
         };
-        let equipment = super::read_current_house_equipment(self, actor, session, fence)
-            .await
-            .ok_or(())?;
-        let fence = self
+        let current = self
             .current_quest_fence(session)
             .await
             .map_err(|_| ())?
+            .filter(|current| current.item_fence() == fence)
+            .ok_or(())?;
+        let equipment = super::read_fenced_house_equipment(self, actor, session, fence)
+            .await
             .ok_or(())?;
         self.equipment_effects_from_snapshot(
             session,
             equipment,
-            fence,
+            current,
             native,
             Some(*self.channel_id.as_bytes()),
         )

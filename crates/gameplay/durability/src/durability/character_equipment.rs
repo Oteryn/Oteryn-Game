@@ -399,13 +399,23 @@ pub async fn read_equipment_in_transaction(
     authority: &EquipmentAuthority,
 ) -> Result<EquipmentSnapshot> {
     same_transaction(tx, authority).await?;
-    let row=sqlx::query("SELECT revision::text,combat_mode FROM game_character_equipment_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
-        .bind(authority.fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.ok_or(rejected("equipment owner not initialized"))?;
-    // The validated equipment authority already holds the Character root lock.
-    // Slot locations are immutable (INSERT/DELETE only); lock their actual item
-    // rows, as the custody exclusivity trigger does, without requiring slot UPDATE.
-    let rows=sqlx::query("SELECT s.slot,COALESCE((SELECT t.tier FROM game_item_tiers t WHERE t.item_instance_id=i.item_instance_id),0)::smallint AS tier,i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text,i.lifecycle,i.world_id::text AS item_world,s.world_id::text AS slot_world FROM game_character_equipment_slots s JOIN game_item_instances i USING(item_instance_id) WHERE s.character_id=encode($1,'hex')::uuid ORDER BY s.slot FOR UPDATE OF i")
-        .bind(authority.fence.character_id.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
+    equipment_snapshot(tx, &authority.fence, authority.content_digest, authority.character_revision, true).await
+}
+
+async fn equipment_snapshot(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: &CurrentCharacterItemFence,
+    content_digest: [u8; 32],
+    character_revision: u64,
+    lock: bool,
+) -> Result<EquipmentSnapshot> {
+    let world = *fence.runtime_scope.world_id().as_bytes();
+    let state_sql = "SELECT revision::text,combat_mode FROM game_character_equipment_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE";
+    let row = sqlx::query(if lock { state_sql } else { state_sql.trim_end_matches(" FOR UPDATE") })
+        .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.ok_or(rejected("equipment owner not initialized"))?;
+    let slots_sql = "SELECT s.slot,COALESCE((SELECT t.tier FROM game_item_tiers t WHERE t.item_instance_id=i.item_instance_id),0)::smallint AS tier,i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text,i.lifecycle,i.world_id::text AS item_world,s.world_id::text AS slot_world FROM game_character_equipment_slots s JOIN game_item_instances i USING(item_instance_id) WHERE s.character_id=encode($1,'hex')::uuid ORDER BY s.slot FOR UPDATE OF i";
+    let rows = sqlx::query(if lock { slots_sql } else { slots_sql.trim_end_matches(" FOR UPDATE OF i") })
+        .bind(fence.character_id.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
     if rows.len() > 9 {
         return Err(rejected("equipment slot bound"));
     }
@@ -413,8 +423,8 @@ pub async fn read_equipment_in_transaction(
     for row in rows {
         if row.try_get::<i16, _>("lifecycle")? != 1
             || row.try_get::<String, _>("definition_family")? != "Item"
-            || uuid(row.try_get("item_world")?)? != authority.world
-            || uuid(row.try_get("slot_world")?)? != authority.world
+            || uuid(row.try_get("item_world")?)? != world
+            || uuid(row.try_get("slot_world")?)? != world
         {
             return Err(rejected("equipment corrupt actual custody"));
         }
@@ -437,9 +447,9 @@ pub async fn read_equipment_in_transaction(
         });
     }
     Ok(EquipmentSnapshot {
-        character: *authority.fence.character_id.as_bytes(),
-        content_digest: authority.content_digest,
-        character_revision: authority.character_revision,
+        character: *fence.character_id.as_bytes(),
+        content_digest,
+        character_revision,
         revision: number(row.try_get("revision")?)?,
         combat_mode: row
             .try_get::<Option<i16>, _>("combat_mode")?
@@ -1179,6 +1189,64 @@ impl MovementEquipmentSnapshot {
     }
 }
 impl DurabilityRoot {
+    /// Advisory equipment for a movement forecast. All proofs and item rows
+    /// are read from one snapshot without queuing behind gameplay writers.
+    pub async fn observe_movement_equipment(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        session: crate::foundation::GameSessionId,
+        content_digest: [u8; 32],
+    ) -> Result<MovementEquipmentSnapshot> {
+        use super::character_progression::observe_fenced_root;
+        let record = recovery.record_for(self).map_err(|_| rejected("equipment recovery root"))?;
+        let node = node.clone();
+        let store = super::fresh_admission::FreshAdmissionStore::from_root(self.clone());
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = super::db::begin_observation_transaction(holder, deadline).await?;
+            super::character_authority::observe_recovery_fence(&mut tx, &record).await?;
+            let current = store.current_session_in_transaction(&mut tx, session).await?;
+            if current.session_state() != crate::foundation::GameSessionState::Active {
+                return Ok(Err(rejected("equipment active session")));
+            }
+            let fence = CurrentCharacterItemFence {
+                character_id: crate::domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+                game_session_id: session,
+                connection_generation: current.current_connection_generation(),
+                character_lease_generation: current.current_character_lease().generation(),
+                runtime_scope: current.current_runtime_scope(),
+                scope_ownership_generation: current.current_scope_generation(),
+            };
+            let Ok(root) = observe_fenced_root(&mut tx, &fence, None, &node).await? else {
+                return Ok(Err(rejected("equipment observation fence")));
+            };
+            let world = fence.runtime_scope.world_id();
+            let digest: Option<Vec<u8>> = match fence.runtime_scope {
+                crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } => {
+                    sqlx::query_scalar("SELECT server_artifact_digest FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid ORDER BY activation_sequence DESC LIMIT 1")
+                        .bind(world.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice())
+                        .fetch_optional(&mut *tx).await?
+                }
+                crate::foundation::RuntimeScopeRefV1::Instance { instance_id, .. } => {
+                    sqlx::query_scalar("SELECT e.destination_server_artifact_digest FROM game_activity_handoff_groups g JOIN game_activity_handoff_participants p USING(handoff_id,world_id) JOIN game_activity_runtime_entries e USING(handoff_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.instance_id=encode($2,'hex')::uuid AND g.state=2 AND p.character_id=encode($3,'hex')::uuid AND p.destination_game_session_id=encode($4,'hex')::uuid")
+                        .bind(world.as_bytes().as_slice()).bind(instance_id.as_slice())
+                        .bind(fence.character_id.as_bytes().as_slice()).bind(session.as_bytes().as_slice())
+                        .fetch_optional(&mut *tx).await?
+                }
+            };
+            if digest.as_deref() != Some(content_digest.as_slice()) {
+                return Ok(Err(rejected("equipment observation content")));
+            }
+            let result = async {
+                let equipment = equipment_snapshot(&mut tx, &fence, content_digest, root.revision, false).await?;
+                Ok(MovementEquipmentSnapshot { fence, equipment })
+            }.await;
+            tx.rollback().await?;
+            Ok(result)
+        })).await?
+    }
+
     pub async fn read_movement_equipment(
         &self,
         recovery: &ReconciledCharacterAuthority<'_, '_>,
@@ -1577,7 +1645,7 @@ impl DurabilityRoot {
             recovery,
             node,
             fence,
-            command,
+            (command, None),
             content,
             EquipmentIntent::Move {
                 item: request.item,
@@ -1586,6 +1654,36 @@ impl DurabilityRoot {
             },
         )
         .await
+    }
+
+    /// Command 9 under a named House fence. The origin only qualifies the
+    /// equipment content pin and receipt's Channel field.
+    #[allow(clippy::too_many_arguments, reason = "the fenced equipment inputs plus the House origin")]
+    pub async fn commit_house_equipment_move<C: EquipmentMoveContent>(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &CurrentCharacterItemFence,
+        command: CommandRef,
+        content: &C,
+        request: EquipmentMove,
+        origin_channel: [u8; 16],
+    ) -> std::result::Result<
+        std::result::Result<EquipmentReceipt, EquipmentMoveRefusal>,
+        DurabilityError,
+    > {
+        self.commit_equipment_intent(
+            recovery,
+            node,
+            fence,
+            (command, Some(origin_channel)),
+            content,
+            EquipmentIntent::Move {
+                item: request.item,
+                from_slot: request.from_slot,
+                to_slot: request.to_slot,
+            },
+        ).await
     }
 
     /// Capability 180: selection and custody commit share the equipment owner transaction.
@@ -1630,7 +1728,7 @@ impl DurabilityRoot {
             recovery,
             node,
             fence,
-            command,
+            (command, None),
             content,
             EquipmentIntent::Hotkey {
                 definition: selection.0,
@@ -1658,7 +1756,7 @@ impl DurabilityRoot {
             recovery,
             node,
             fence,
-            command,
+            (command, None),
             content,
             EquipmentIntent::HotkeyMove {
                 item: request.item,
@@ -1674,7 +1772,7 @@ impl DurabilityRoot {
         recovery: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: &CurrentCharacterItemFence,
-        command: CommandRef,
+        (command, house_origin): (CommandRef, Option<[u8; 16]>),
         content: &C,
         intent: EquipmentIntent,
     ) -> std::result::Result<
@@ -1709,10 +1807,17 @@ impl DurabilityRoot {
                         {
                             return Ok(replay);
                         }
-                        let authority = assert_equipment_fence_in_transaction(
-                            &mut tx, &record, &node, &fence, command, digest,
-                        )
-                        .await?;
+                        let authority = if let Some(origin) = house_origin {
+                            assert_recovery_fence(&mut tx, &record).await?;
+                            super::db::lock_admission_relations(&mut tx).await?;
+                            house_read::assert_house_equipment_authority(
+                                &mut tx, &node, &fence, origin, digest, Some(command),
+                            ).await?
+                        } else {
+                            assert_equipment_fence_in_transaction(
+                                &mut tx, &record, &node, &fence, command, digest,
+                            ).await?
+                        };
                         let snapshot = read_equipment_in_transaction(&mut tx, &authority).await?;
                         let resolved = match &intent {
                             EquipmentIntent::Hotkey {

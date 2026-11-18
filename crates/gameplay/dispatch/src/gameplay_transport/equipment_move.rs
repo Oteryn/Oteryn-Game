@@ -277,6 +277,16 @@ pub(super) async fn read_current_house_equipment(
     {
         return None;
     }
+    read_fenced_house_equipment(admission, actor, session, fence).await
+}
+
+/// The item owner independently proves active or reconnectable item custody.
+pub(super) async fn read_fenced_house_equipment(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+) -> Option<character_equipment::EquipmentSnapshot> {
     let digest = house_equipment_digest(admission, actor, session, fence).await?;
     let read = admission
         .root
@@ -471,6 +481,19 @@ async fn move_equipment_inner(
     hotkey: bool,
 ) -> EquipmentMoveResult {
     let refused = EquipmentMoveResult::Refused(EquipmentMoveRefusal::Rejected);
+    let session = command.game_session_id;
+    let Some(fence) = command.item_fence else {
+        return refused;
+    };
+    let house = admission
+        .runtime
+        .lock()
+        .await
+        .house_actor_state(actor, session)
+        .is_ok();
+    if house && hotkey {
+        return refused;
+    }
     // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard; the move is a key-33
     // writer. `None` is retryable with no side effect while the lane is fenced.
     // EXTRA can qualify a death's talisman reward. Settle earlier deaths before
@@ -511,7 +534,7 @@ async fn move_equipment_inner(
         return refused;
     }
     if !admission
-        .checkpoint_timed_equipment(actor, command.game_session_id, true)
+        .checkpoint_timed_equipment(actor, session, true)
         .await
     {
         return EquipmentMoveResult::Unknown;
@@ -536,9 +559,12 @@ async fn move_equipment_inner(
     let Some(native) = native else {
         return refused;
     };
-    let Some(fence) = command.item_fence else {
+    if house
+        && house_equipment_digest(admission, actor, session, fence).await
+            != Some(native.source_digest())
+    {
         return refused;
-    };
+    }
     let Ok(command_id) = CommandId::new(command.command_id) else {
         return refused;
     };
@@ -565,7 +591,20 @@ async fn move_equipment_inner(
             let Some(durable) = durable_move(request) else {
                 return refused;
             };
-            if hotkey {
+            if house {
+                admission
+                    .root
+                    .commit_house_equipment_move(
+                        admission.character,
+                        admission.holder,
+                        &fence,
+                        CommandRef::new(session, command_id),
+                        &NativeItemWeights(native),
+                        durable,
+                        *admission.channel_id.as_bytes(),
+                    )
+                    .await
+            } else if hotkey {
                 admission
                     .root
                     .commit_hotkey_equipment_move(
@@ -602,24 +641,17 @@ async fn move_equipment_inner(
         .forget_weapon(actor, command.game_session_id);
     match committed {
         Ok(Ok(_receipt)) => {
+            // Keep the lane permit across the checkpoint, fresh read and publication.
             if !admission
-                .checkpoint_timed_equipment(actor, command.game_session_id, true)
+                .checkpoint_timed_equipment(actor, session, true)
                 .await
+                || admission
+                    .refresh_clock_equipment_effects(actor, session, fence, house)
+                    .await
+                    .is_err()
             {
                 return EquipmentMoveResult::Unknown;
             }
-            // EQUIP-0 §4: only a committed owner move changes suppressions. Keep the lane
-            // permit across the fresh read, then obey runtime -> spell_states lock order.
-            let Ok(effects) = admission
-                .read_admission_effects(command.game_session_id)
-                .await
-            else {
-                return EquipmentMoveResult::Unknown;
-            };
-            let runtime = admission.runtime.lock().await;
-            let _ = admission
-                .install_admission_suppressions(&runtime, actor, command.game_session_id, effects)
-                .await;
             EquipmentMoveResult::Committed
         }
         Ok(Err(refusal)) => EquipmentMoveResult::Refused(refusal),

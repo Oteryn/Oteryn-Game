@@ -24,7 +24,11 @@ fn srx3_primal_real_source_entry_wave_pods_and_terminal_postgres() -> TestResult
                     floor: 14,
                 },
             )?;
-            let deps: Dependencies = scene.dependencies()?;
+            let native = scene.controller.active().and_then(|active| active.native_gameplay())
+                .ok_or("Source rune Content")?;
+            let deps = Dependencies::with_content(
+                scene.pin.clone(), scene.room.clone(), native.spell_book().clone(),
+            )?;
             let h =
                 Harness::create_with_admission_seed(admin, "srx3_primal_production", false, false)
                     .await?;
@@ -97,6 +101,7 @@ fn srx3_primal_real_source_entry_wave_pods_and_terminal_postgres() -> TestResult
                 )
                 .await
                 .ok_or("actual source equipment snapshot before handoff")?;
+            super::item_look::seed_main_backpack(&h, &[("oteryn:item.tibia.i3192", 1)]).await?;
             let source_admitted = admitted;
             let before_quest = h
                 .root
@@ -232,6 +237,33 @@ fn srx3_primal_real_source_entry_wave_pods_and_terminal_postgres() -> TestResult
                         .maximum_health,
                     400_000
                 );
+            }
+            // Reach the runtime cast gates through real USE ingress. The knight
+            // lacks the rune's magic requirement, but the same-floor target is legal.
+            {
+                use oteryn_protocol_oteryn::actor_spell::SpellTargetPosition;
+                use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget};
+                let actor = admitted.runtime_actor.ok_or("Source rune actor")?;
+                let at = view.observe_actor_position(actor).await.ok_or("Source wire position")?.actor_position;
+                assert_eq!(at.floor, -15);
+                let outcome = view.use_legacy_rune(
+                    actor,
+                    crate::gameplay_transport::connection::UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: u64::from(u32::MAX),
+                        item_fence: admitted.item_fence,
+                    },
+                    UseIntent {
+                        target: UseTarget::Item(std::num::NonZeroU64::new(1).ok_or("rune handle")?),
+                        use_with: None,
+                        use_with_position: Some(SpellTargetPosition { x: at.x, y: at.y, floor: at.floor }),
+                        use_with_map_item: None,
+                    },
+                    Some(crate::gameplay_transport::item_view::ItemKey::Instance(super::fixture::id(71))),
+                    true,
+                    true,
+                ).await.ok_or("Source rune result")?;
+                assert_eq!(outcome.disposition, UseDisposition::RequirementNotMet);
             }
             // Following stages use the same production native owner and Item writer;
             // no test boss policy, manually minted Pod, or synthetic death is seeded.

@@ -52,6 +52,7 @@ pub(super) async fn refresh<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
         session.admitted.continuity.player_trade_revision = revision;
     }
     if inventory {
+        session.inventory_capacity_refresh_at = None;
         let view = session.item_view.as_mut().ok_or(ServeEnd::Disconnected)?;
         let Some(deltas) = authority
             .player_trade_inventory(session.admitted, view, session.container_views.as_mut())

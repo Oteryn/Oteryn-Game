@@ -1,5 +1,4 @@
-//! Read-only equipment projection after explicit named House admission proof.
-//! The sealed authority stays inside this transaction and cannot authorize a move.
+//! Equipment authority under the actual named House admission fence.
 use super::*;
 
 /// Existing native equipment facts under the current House fence. This helper
@@ -12,6 +11,23 @@ pub(crate) async fn read_house_equipment_in_transaction(
     origin_channel: [u8; 16],
     content_digest: [u8; 32],
 ) -> Result<EquipmentSnapshot> {
+    let authority = assert_house_equipment_authority(
+        tx, node, fence, origin_channel, content_digest, None,
+    ).await?;
+    read_equipment_in_transaction(tx, &authority).await
+}
+
+pub(super) async fn assert_house_equipment_authority(
+    tx: &mut Transaction<'_, Postgres>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    origin_channel: [u8; 16],
+    content_digest: [u8; 32],
+    command: Option<CommandRef>,
+) -> Result<EquipmentAuthority> {
+    if command.is_some_and(|command| command.game_session_id() != fence.game_session_id) {
+        return Err(rejected("equipment command session"));
+    }
     if content_digest == [0; 32] {
         return Err(rejected("equipment Content pin"));
     }
@@ -35,19 +51,18 @@ pub(crate) async fn read_house_equipment_in_transaction(
     }
     let character = sqlx::query("SELECT character_revision::text,account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
-    let authority = EquipmentAuthority {
+    Ok(EquipmentAuthority {
         physical_transaction: sqlx::query_scalar("SELECT pg_current_xact_id()::text")
             .fetch_one(&mut **tx)
             .await?,
         fence: *fence,
-        command: None,
+        command,
         world,
         channel: origin_channel,
         content_digest,
         character_revision: number(character.try_get("character_revision")?)?,
         account: uuid(character.try_get("account_id")?)?,
-    };
-    read_equipment_in_transaction(tx, &authority).await
+    })
 }
 
 impl DurabilityRoot {

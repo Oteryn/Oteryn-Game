@@ -130,11 +130,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return Some(false);
         }
-        Some(
-            runtime
-                .set_riding(actor, command.game_session_id, mount, bonus)
-                .is_ok(),
-        )
+        let result = match fence.runtime_scope {
+            crate::foundation::RuntimeScopeRefV1::Instance { .. } =>
+                runtime.set_house_riding(actor, command.game_session_id, mount, bonus),
+            crate::foundation::RuntimeScopeRefV1::Channel { .. } =>
+                runtime.set_riding(actor, command.game_session_id, mount, bonus),
+        };
+        Some(result.is_ok())
     }
 
     pub(super) async fn refresh_riding(

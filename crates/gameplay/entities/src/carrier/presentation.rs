@@ -5,6 +5,7 @@ use super::*;
 pub(super) struct ActorPresentation {
     actor: ExactActorRef,
     walk: Option<(u64, u32)>,
+    house_walk: Option<(GameSessionId, u64, u32)>,
     mount: u32,
     speed_bonus: u16,
 }
@@ -40,6 +41,7 @@ impl ChannelRuntimeV1 {
             .or_insert(ActorPresentation {
                 actor,
                 walk: None,
+                house_walk: None,
                 mount: 0,
                 speed_bonus: 0,
             });
@@ -47,6 +49,7 @@ impl ChannelRuntimeV1 {
             *entry = ActorPresentation {
                 actor,
                 walk: None,
+                house_walk: None,
                 mount: 0,
                 speed_bonus: 0,
             };
@@ -71,10 +74,70 @@ impl ChannelRuntimeV1 {
         {
             return Err(CarrierError::PositionSnapshotMismatch);
         }
+        self.record_riding(actor, mount, speed_bonus);
+        Ok(())
+    }
+
+    pub fn set_house_riding(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        mount: u32,
+        speed_bonus: u16,
+    ) -> Result<(), CarrierError> {
+        if self
+            .house_player_control_facts(actor, session)?
+            .control_loss
+            .is_some()
+            || self.house_player_writes_fenced(actor, session)?
+        {
+            return Err(CarrierError::PositionSnapshotMismatch);
+        }
+        self.record_riding(actor, mount, speed_bonus);
+        Ok(())
+    }
+
+    pub fn house_actor_motion(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(u64, u32, u32, u16)> {
+        let movement = self.read_house_movement(actor, session).ok()?;
+        let entry = self
+            .presentations
+            .get(&actor.actor_local_id())
+            .filter(|p| p.actor == actor);
+        Some((
+            movement.revision(),
+            entry
+                .and_then(|p| p.house_walk)
+                .filter(|(owner, at, _)| *owner == session && *at == movement.revision())
+                .map_or(0, |(_, _, ms)| ms),
+            entry.map_or(0, |p| p.mount),
+            entry.map_or(0, |p| p.speed_bonus),
+        ))
+    }
+
+    /// Record the timed step under the same House owner turn that moved the actor.
+    pub fn record_house_walk(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        snapshot: &super::house_custody::HouseMovementSnapshot,
+        duration: std::time::Duration,
+    ) {
+        if self.read_house_movement(actor, session).as_ref().ok() != Some(snapshot) {
+            return;
+        }
+        if let Ok(ms) = u32::try_from(duration.as_millis()) {
+            self.presentation_entry(actor).house_walk = Some((session, snapshot.revision(), ms));
+        }
+    }
+
+    fn record_riding(&mut self, actor: ExactActorRef, mount: u32, speed_bonus: u16) {
         let entry = self.presentation_entry(actor);
         entry.mount = mount;
         entry.speed_bonus = if mount == 0 { 0 } else { speed_bonus };
-        Ok(())
     }
 
     pub fn actor_motion(&self, actor: ExactActorRef) -> Option<(u64, u32, u32, u16)> {

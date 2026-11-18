@@ -1530,6 +1530,14 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    fn observe_house_vitals(
+        &self,
+        actor: ExactActorRef,
+        admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<(u64, ActorVitals)>> {
+        self.observe_vitals(actor, admitted.game_session_id)
+    }
+
     /// Coordinate DATA only: the current room may use a different wire floor
     /// convention. Existing authorities preserve their original coordinates.
     fn physical_native_cast_position(

@@ -77,12 +77,20 @@ const MAP_OFFERS: &[OfferedCapability] = &[
         id: 446,
         requires: &[14, 49],
     },
+    OfferedCapability {
+        id: 510,
+        requires: &[14],
+    },
 ];
 
 // Like the existing House-wrap fixture, boot only the bounded command set
 // under test. The map case must declare the mandatory offered map floor;
 // inventory-only cases keep the map offer closed and prove USE without domain17.
 const INVENTORY_OFFERS: &[OfferedCapability] = &[
+    OfferedCapability {
+        id: 3,
+        requires: &[],
+    },
     OfferedCapability {
         id: 4,
         requires: &[6],
@@ -96,6 +104,10 @@ const INVENTORY_OFFERS: &[OfferedCapability] = &[
         requires: &[4],
     },
     OfferedCapability {
+        id: 13,
+        requires: &[],
+    },
+    OfferedCapability {
         id: 14,
         requires: &[4, 12],
     },
@@ -104,7 +116,15 @@ const INVENTORY_OFFERS: &[OfferedCapability] = &[
         requires: &[4],
     },
     OfferedCapability {
+        id: 25,
+        requires: &[6],
+    },
+    OfferedCapability {
         id: 49,
+        requires: &[],
+    },
+    OfferedCapability {
+        id: 51,
         requires: &[],
     },
     OfferedCapability {
@@ -114,6 +134,18 @@ const INVENTORY_OFFERS: &[OfferedCapability] = &[
     OfferedCapability {
         id: 115,
         requires: &[4],
+    },
+    OfferedCapability {
+        id: 165,
+        requires: &[3, 51],
+    },
+    OfferedCapability {
+        id: 500,
+        requires: &[],
+    },
+    OfferedCapability {
+        id: 502,
+        requires: &[6, 13, 25],
     },
     OfferedCapability {
         id: 508,
@@ -134,7 +166,14 @@ pub(super) enum Case {
     Placed,
     Carried,
     ResidentTick,
+    ResidentExpiryTick,
     ResidentLetter,
+    ResidentMail,
+    ResidentEquip,
+    ResidentTimedEquip,
+    ResidentAppearanceRevoked,
+    ResidentMount,
+    ResidentQuest,
     Nested,
     Foreign,
     Decoration(u32, u32),
@@ -146,6 +185,7 @@ pub(super) enum Case {
     BedKit(u32),
     NativeNoop(u32),
     Container,
+    ContainerMove,
     ContainerCapacity,
     CarpetTile { other: u32, removed: bool },
 }
@@ -174,6 +214,11 @@ fn w18_house_static_windows_preserve_current_house_fence() -> TestResult {
 #[test]
 fn w18_house_container_opens_nested_moves_replay_and_fences_actual_owner() -> TestResult {
     run_case(Case::Container)
+}
+
+#[test]
+fn house_container_slotted_move_over_connection_postgres() -> TestResult {
+    run_case(Case::ContainerMove)
 }
 
 #[test]
@@ -253,8 +298,14 @@ pub(super) fn run_case(case: Case) -> TestResult {
         .spawn(move || {
             run(async |admin| {
                 let started = std::time::Instant::now();
-                let h = Harness::create_with_admission_seed(admin, "house_balloon", true, false)
-                    .await?;
+                let h = if matches!(
+                    case,
+                    Case::ResidentMount | Case::ResidentTick | Case::ResidentAppearanceRevoked
+                ) {
+                    Harness::create_appearance(admin, "house_balloon").await?
+                } else {
+                    Harness::create_with_admission_seed(admin, "house_balloon", true, false).await?
+                };
                 let result = scenario(&h, case).await;
                 h.cleanup().await?;
                 eprintln!("W18_PG_CASE {case:?} elapsed={:?}", started.elapsed());

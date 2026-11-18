@@ -315,6 +315,24 @@ pub(super) async fn item_move_with_house_capacity<A: FreshAdmissionAuthority>(
     }
 }
 
+pub(super) fn decode_move(
+    payload: &[u8],
+    selection: ItemMoveSelection,
+    stack_count: bool,
+) -> Result<
+    (
+        oteryn_protocol_oteryn::item_view::ItemMoveIntent,
+        Option<u32>,
+    ),
+    oteryn_protocol_oteryn::item_view::ItemViewWireError,
+> {
+    if stack_count {
+        decode_item_move_intent_with_count_for(payload, selection)
+    } else {
+        decode_item_move_intent_for(payload, selection).map(|intent| (intent, None))
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn item_move_inner<A: FreshAdmissionAuthority>(
     authority: &A,
@@ -326,11 +344,7 @@ async fn item_move_inner<A: FreshAdmissionAuthority>(
     house_capacity_v2: bool,
     view: &mut SessionItemView,
 ) -> ItemMoveStep {
-    let decoded = if stack_count {
-        decode_item_move_intent_with_count_for(payload, selection)
-    } else {
-        decode_item_move_intent_for(payload, selection).map(|intent| (intent, None))
-    };
+    let decoded = decode_move(payload, selection, stack_count);
     let Ok((intent, count)) = decoded else {
         return ItemMoveStep::Result(ItemMoveOutcome::Rejected, Vec::new());
     };

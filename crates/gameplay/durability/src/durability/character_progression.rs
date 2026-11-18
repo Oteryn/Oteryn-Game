@@ -658,6 +658,19 @@ pub(super) async fn assert_market_item_fence(
     check_fenced_root(tx, fence, None, node, CharacterRootLock::NoKeyUpdate).await
 }
 
+/// Read the same current root and interpretation without taking writer locks.
+pub(super) async fn observe_fenced_root(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: &CurrentCharacterItemFence,
+    expected_revision: Option<u64>,
+    node: &NodeIncarnationProof,
+) -> std::result::Result<
+    std::result::Result<FencedCharacterRoot, CharacterProgressionError>,
+    DurabilityError,
+> {
+    check_fenced_root(tx, fence, expected_revision, node, CharacterRootLock::Observe).await
+}
+
 /// Reuse the item fence predicates as of a read-only database snapshot.
 pub(super) async fn observe_item_only_fence(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,

@@ -68,6 +68,9 @@ fn scenario(position_before_change: bool) -> TestResult {
             .bind(id(40).as_slice()).bind(id(199).as_slice()).execute(&harness.pool).await?;
         let (controller, pin) =
             activated_with_optional_cosmetics(world, None, Some(&serde_json::to_vec(&packet)?));
+        super::tutorial_vitals_fixture::publish_native_activation(&harness, &pin).await?;
+        sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
+            .bind(id(41).as_slice()).execute(&harness.pool).await?;
         let room = pin.qualified_room().clone();
         let (channel_pin, _, _, _) = pin.into_channel_parts();
         let dependencies = Dependencies::with_content(
@@ -101,6 +104,70 @@ fn scenario(position_before_change: bool) -> TestResult {
                 .map_err(debug)?;
         }
         dependencies.initialize(&owner).await;
+        if position_before_change {
+            let mut admitted = dependencies.admitted;
+            let fence = crate::gameplay_transport::character_gameplay_fence::current(
+                &owner, admitted.game_session_id, false,
+            ).await.ok_or("observation test fence")?;
+            admitted.item_fence = Some(fence.item_fence());
+            let offers = [crate::gameplay_transport::capabilities::OfferedCapability { id: 509, requires: &[] }];
+            admitted.continuity.selected_capabilities =
+                crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+                    &offers,
+                    &[509],
+                )
+                .ok_or("emblem selection")?;
+            let own_motion = |view: world_spatial::ChannelEntities| {
+                view.entities
+                    .into_iter()
+                    .find(|entry| entry.identity == dependencies.actor.placement_identity())
+                    .and_then(|entry| entry.motion)
+            };
+            let unmodified = owner
+                .observe_channel_entities_projected(dependencies.actor, true)
+                .await
+                .and_then(own_motion)
+                .ok_or("unmodified motion")?
+                .prewalk_ms[1];
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i3053','definition-r1',1,1,encode($1,'hex')::uuid)")
+                .bind(id(112).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,8,encode($3,'hex')::uuid,encode($3,'hex')::uuid)")
+                .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(112).as_slice()).execute(&mut *tx).await?;
+            tx.commit().await?;
+            let mut writer = harness.pool.begin().await?;
+            sqlx::query("SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid FOR UPDATE")
+                .bind(admitted.game_session_id.as_bytes().as_slice()).execute(&mut *writer).await?;
+            let emblems = tokio::time::timeout(
+                std::time::Duration::from_secs(1), owner.observe_guild_emblems(admitted),
+            ).await?;
+            assert!(emblems.is_some(), "Channel emblem read can see a busy reconnect row");
+            sqlx::query("LOCK TABLE game_durability_reconnect_sessions IN EXCLUSIVE MODE").execute(&mut *writer).await?;
+            let forecast = tokio::time::timeout(
+                std::time::Duration::from_secs(1),
+                owner.observe_channel_entities_projected(dependencies.actor, true),
+            )
+            .await?;
+            let own = forecast
+                .and_then(own_motion)
+                .ok_or("own published motion under admission writer")?;
+            assert!(
+                (1..unmodified).contains(&own.prewalk_ms[1]),
+                "equipment must shorten the east forecast"
+            );
+            assert!(
+                owner
+                    .observe_movement_equipment(dependencies.actor, admitted.game_session_id)
+                    .await
+                    .is_some(),
+                "forecast equipment must be available under the same lock"
+            );
+            writer.rollback().await?;
+            assert_mismatched_interpretation(&harness, &owner, &dependencies).await?;
+        }
         let entity = appearance::EntityRef {
             identity: dependencies.actor.placement_identity(),
             generation: dependencies.actor.actor_local_generation(),
@@ -298,7 +365,7 @@ fn scenario(position_before_change: bool) -> TestResult {
             .await,
             Some(false)
         );
-        real_connection(&owner, &dependencies, entity).await?;
+        real_connection(&harness, &owner, &dependencies, entity).await?;
         drop(owner);
         drop(authority);
         drop(seal);
@@ -308,10 +375,53 @@ fn scenario(position_before_change: bool) -> TestResult {
     })
 }
 
+async fn assert_mismatched_interpretation(
+    harness: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    dependencies: &Dependencies,
+) -> TestResult {
+    let session = dependencies.admitted.game_session_id;
+    let actor = dependencies.actor;
+    assert!(
+        owner
+            .read_movement_equipment(actor, session)
+            .await
+            .is_some()
+    );
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("UPDATE game_character_roots SET ruleset_revision='stale-ruleset' WHERE character_id=encode($1,'hex')::uuid")
+        .bind(id(41).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    assert!(
+        owner
+            .read_movement_equipment(actor, session)
+            .await
+            .is_none()
+    );
+    assert!(
+        owner
+            .observe_movement_equipment(actor, session)
+            .await
+            .is_none()
+    );
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("UPDATE game_character_roots SET ruleset_revision='ruleset-1' WHERE character_id=encode($1,'hex')::uuid")
+        .bind(id(41).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
+}
+
 // The admission/lease are the real fixture's committed facts. Only the already
 // completed bootstrap response is written here; every game command, snapshot,
 // delta, client reducer and UI projection below is the production implementation.
 async fn real_connection(
+    harness: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     dependencies: &Dependencies,
     entity: wire::EntityRef,
@@ -350,6 +460,10 @@ async fn real_connection(
                 requires: &[6],
             },
             OfferedCapability {
+                id: 64,
+                requires: &[6, 13],
+            },
+            OfferedCapability {
                 id: 286,
                 requires: &[6],
             },
@@ -358,7 +472,7 @@ async fn real_connection(
                 requires: &[6, 13, 25],
             },
         ],
-        &[6, 13, 25, 286, 502],
+        &[6, 13, 25, 64, 286, 502],
     )
     .ok_or("motion capability selection")?;
     let (mut server, stream) = tokio::io::duplex(256 * 1024);
@@ -408,6 +522,55 @@ async fn real_connection(
                 .mount_look_type,
             0
         );
+        // Exercise the first visibility tick. Later, the independent Serene
+        // cadence runs durable gameplay work that needs its writer fence.
+        let mut writer = harness.pool.begin().await?;
+        sqlx::query("LOCK TABLE game_durability_reconnect_sessions IN EXCLUSIVE MODE")
+            .execute(&mut *writer)
+            .await?;
+        owner
+            .runtime
+            .lock()
+            .await
+            .set_riding(dependencies.actor, admitted.game_session_id, 140, 10)
+            .map_err(debug)?;
+        tokio::time::timeout(Duration::from_secs(1), async {
+            loop {
+                session.service_liveness(Duration::from_millis(20)).await?;
+                if session
+                    .world_entities()
+                    .and_then(|entries| entries.get(&entity))
+                    .and_then(|own| own.motion)
+                    .is_some_and(|motion| motion.mount_look_type == 140)
+                {
+                    return Ok::<_, Box<dyn std::error::Error>>(());
+                }
+            }
+        })
+        .await??;
+        use oteryn_protocol_oteryn::{target_move, world_spatial::StepDirection};
+        let turn = target_move::encode_target_move_intent(target_move::TargetMoveIntent::Turn(
+            StepDirection::West,
+        ))
+        .map_err(debug)?;
+        let ingress = tokio::time::timeout(
+            Duration::from_secs(1),
+            session.gated_command(
+                target_move::CAPABILITY_TARGET_MOVE_V1,
+                target_move::COMMAND_TYPE_TARGET_MOVE_INTENT,
+                &turn,
+            ),
+        )
+        .await??;
+        assert_eq!(ingress.status, CommandStatus::Accepted);
+        assert_eq!(ingress.payload, [8, 1]);
+        writer.rollback().await?;
+        owner
+            .runtime
+            .lock()
+            .await
+            .set_riding(dependencies.actor, admitted.game_session_id, 0, 0)
+            .map_err(debug)?;
         let command = ui::mount_command(session.is_selected(502), true).ok_or("UI mount")?;
         let result = session
             .gated_command(command.capability, command.kind, &command.payload)
