@@ -4,7 +4,8 @@ use super::{
     AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session,
 };
 use crate::durability::fresh_admission::FreshAdmissionStore;
-use crate::foundation::MovementLocalPosition;
+use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
+use crate::foundation::{CommandId, CommandRef, MovementLocalPosition};
 use crate::gameplay_transport::connection::{
     FirstEntryOutcome, FreshAdmissionAuthority, UseCommand,
 };
@@ -146,26 +147,71 @@ fn scenario(admin: String) -> TestResult {
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
 
+        const SEED: &str = "oteryn:quest-transition/cotrev-fixture/zalamon-ready";
+        let seed = loaded
+            .catalogue()
+            .with_fixture_transition(QuestTransition {
+                key: SEED.into(),
+                quest: QUEST.into(),
+                effects: [(QUESTLINE, 17), (MISSION, 5)]
+                    .into_iter()
+                    .map(|(track, value)| QuestEffect {
+                        track: track.into(),
+                        from: QuestComparison::Any,
+                        effect: QuestEffectKind::Set(value),
+                    })
+                    .collect(),
+                completes: false,
+                experience: None,
+                world_change: None,
+            })
+            .map_err(debug)?;
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|()| "quest fence")?
+            .ok_or("missing session fence")?;
+        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+        let seeded = slot
+            .commit_quest_transition(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                QuestTransitionRequest {
+                    transition_key: SEED.into(),
+                    cause: QuestCause::Command(CommandRef::new(
+                        admitted.game_session_id,
+                        CommandId::new(900).map_err(debug)?,
+                    )),
+                },
+                Arc::new(seed),
+            )
+            .await
+            .map_err(debug)?;
+        assert!(
+            matches!(seeded, QuestTransitionOutcome::Committed(_)),
+            "{seeded:?}"
+        );
+        drop(slot);
+
+        // Represent a previous deployment's pin on an otherwise real receipt chain.
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx)
             .await?;
         for sql in [
-            "UPDATE game_character_roots SET character_revision=greatest(character_revision,2) WHERE character_id=encode($1,'hex')::uuid",
-            "UPDATE game_character_progression_state SET character_revision=greatest(character_revision,2) WHERE character_id=encode($1,'hex')::uuid",
+            "UPDATE game_character_quest_states SET definition_hash=$3 WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2",
+            "UPDATE game_character_quest_receipts SET definition_hash=$3 WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2",
         ] {
-            sqlx::query(sql)
+            let updated = sqlx::query(sql)
                 .bind(id(41).as_slice())
+                .bind(QUEST)
+                .bind(before.as_slice())
                 .execute(&mut *tx)
                 .await?;
+            assert_eq!(updated.rows_affected(), 1);
         }
-        for (track, value) in [(QUESTLINE, 17_i64), (MISSION, 5_i64)] {
-            sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,2)")
-                .bind(id(41).as_slice()).bind(track).bind(QUEST).bind(value)
-                .execute(&mut *tx).await?;
-        }
-        sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,'content-1',$3,2,2)")
-            .bind(id(41).as_slice()).bind(QUEST).bind(before.as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
         owner.admit_quest_session(&admitted).await;
         let [zalamon] = super::questl2_fixture::install_at(

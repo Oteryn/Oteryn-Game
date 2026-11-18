@@ -1,9 +1,14 @@
 //! The four plates, shared source schedule, and durable survivor credit through STEP.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
+use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
+use crate::foundation::{CommandId, CommandRef};
 use crate::foundation::{ExactActorRef, GameSessionId};
 use crate::map::{overlay::TilePos, view::MapFacts};
+use oteryn_gameplay_quests::quest::{
+    QuestComparison, QuestEffect, QuestEffectKind, QuestTransition, loader,
+};
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 use oteryn_world_bundle::sector::{Attrs, Item, Tile};
 use oteryn_world_bundle::writer::Sector;
@@ -228,30 +233,55 @@ fn scenario(admin: String) -> TestResult {
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = super::FirstEntryOutcome::Positioned;
-        owner.quest_catalogue = Some(std::sync::Arc::new(
-            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
-                .map_err(debug)?
+        const SEED: &str = "oteryn:quest-transition/cotrev-fixture/army-started";
+        let loaded = loader::load_embedded_quest_state("content-1").map_err(debug)?;
+        let catalogue = std::sync::Arc::new(
+            loaded
                 .catalogue()
-                .clone(),
-        ));
-        let mut seed = harness.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role=replica")
-            .execute(&mut *seed)
-            .await?;
-        for character in [id(41), *guest_character.as_bytes()] {
-            for sql in [
-                "UPDATE game_character_roots SET character_revision=greatest(character_revision,2) WHERE character_id=encode($1,'hex')::uuid",
-                "UPDATE game_character_progression_state SET character_revision=greatest(character_revision,2) WHERE character_id=encode($1,'hex')::uuid",
-            ] {
-                sqlx::query(sql)
-                    .bind(character.as_slice())
-                    .execute(&mut *seed)
-                    .await?;
-            }
-            sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,'oteryn:quest.children_of_the_revolution_quest',19,2)")
-                .bind(character.as_slice()).bind(QUESTLINE).execute(&mut *seed).await?;
+                .with_fixture_transition(QuestTransition {
+                    key: SEED.into(),
+                    quest: "oteryn:quest.children_of_the_revolution_quest".into(),
+                    effects: vec![QuestEffect {
+                        track: QUESTLINE.into(),
+                        from: QuestComparison::Any,
+                        effect: QuestEffectKind::Set(19),
+                    }],
+                    completes: false,
+                    experience: None,
+                    world_change: None,
+                })
+                .map_err(debug)?,
+        );
+        owner.quest_catalogue = Some(catalogue.clone());
+        for session in [admitted.game_session_id, guest_session] {
+            let fence = owner
+                .current_quest_fence(session)
+                .await
+                .map_err(|()| "quest fence")?
+                .ok_or("missing session fence")?;
+            let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+            let result = slot
+                .commit_quest_transition(
+                    owner.root,
+                    owner.character,
+                    owner.holder,
+                    fence,
+                    QuestTransitionRequest {
+                        transition_key: SEED.into(),
+                        cause: QuestCause::Command(CommandRef::new(
+                            session,
+                            CommandId::new(900).map_err(debug)?,
+                        )),
+                    },
+                    catalogue.clone(),
+                )
+                .await
+                .map_err(debug)?;
+            assert!(
+                matches!(result, QuestTransitionOutcome::Committed(_)),
+                "{result:?}"
+            );
         }
-        seed.commit().await?;
         owner.admit_quest_session(&admitted).await;
         let players = {
             let mut runtime = owner.runtime.lock().await;
