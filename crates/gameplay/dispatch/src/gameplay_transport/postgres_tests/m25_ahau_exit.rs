@@ -1,5 +1,6 @@
 //! Exact donor Ahau entry and committed native STEP return, using the shared owner.
 use super::fixture::{Harness, debug, run};
+use super::galthen_vanguard_exit::Case as VanguardCase;
 use super::{Dependencies, TestResult, reset};
 use crate::content::bosses::activity_template::captured_boss_levers;
 use crate::foundation::{MovementLocalPosition, RuntimeScopeRefV1};
@@ -15,17 +16,17 @@ fn m25_ahau_player_push_exit_returns_only_pushed_participant_postgres() -> TestR
     scenario(true)
 }
 fn scenario(push: bool) -> TestResult {
-    scenario_case(push, false, false)
+    scenario_case(push, false, None)
 }
 /// The pushed grace participant's own source-ground equipment read.
 pub(super) fn push_equipment_scenario() -> TestResult {
-    scenario_case(true, true, false)
+    scenario_case(true, true, None)
 }
-pub(super) fn vanguard_scenario() -> TestResult {
-    scenario_case(true, false, true)
+pub(super) fn vanguard_scenario(case: VanguardCase) -> TestResult {
+    scenario_case(case == VanguardCase::PartyExit, false, Some(case))
 }
 
-fn scenario_case(push: bool, equipment_read: bool, vanguard: bool) -> TestResult {
+fn scenario_case(push: bool, equipment_read: bool, vanguard: Option<VanguardCase>) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
@@ -33,7 +34,7 @@ fn scenario_case(push: bool, equipment_read: bool, vanguard: bool) -> TestResult
     super::kill_reward_e2e::scenario_thread::run("m25-ahau-native-exit", move || {
         run(async |admin| {
             reset();
-            let origin = if vanguard {
+            let origin = if vanguard.is_some() {
                 MovementLocalPosition { x: 34049, y: 31431, floor: 11 }
             } else {
                 MovementLocalPosition { x: 34037, y: 31714, floor: 10 }
@@ -110,7 +111,7 @@ fn scenario_case(push: bool, equipment_read: bool, vanguard: bool) -> TestResult
                 ),
                 (34036, 31717, 10)
             );
-            let template = if vanguard { mitmah_template } else { ahau_template };
+            let template = if vanguard.is_some() { mitmah_template } else { ahau_template };
             let deps: Dependencies = scene.dependencies()?;
             let h =
                 Harness::create_with_admission_seed(admin, "m25_ahau_native", false, false).await?;
@@ -188,14 +189,18 @@ fn scenario_case(push: bool, equipment_read: bool, vanguard: bool) -> TestResult
                 .ok_or("actual Ahau Instance")?;
             let mut view = owner.runtime_view(&registered);
             let actor = admitted.runtime_actor.ok_or("current Instance actor")?;
-            if let Some(peer) = peer {
-                if vanguard {
-                    super::galthen_vanguard_exit::exercise(&h, &owner, &mut view, admitted, peer).await?;
-                } else if equipment_read {
-                    super::m25_forced_equipment_read::exercise(&owner, &mut view, admitted, peer)
-                        .await?;
-                } else {
-                    super::m25_ahau_push::exercise(&h, &owner, &mut view, admitted, peer).await?;
+            if vanguard.is_some() || peer.is_some() {
+                if vanguard == Some(VanguardCase::Reward) {
+                    super::galthen_vanguard_reward::verify(&h, &view, admitted).await?;
+                } else if vanguard.is_some() {
+                    super::galthen_vanguard_exit::exercise(&h, &mut owner, &mut view, admitted, peer).await?;
+                } else if let Some(peer) = peer {
+                    if equipment_read {
+                        super::m25_forced_equipment_read::exercise(&owner, &mut view, admitted, peer)
+                            .await?;
+                    } else {
+                        super::m25_ahau_push::exercise(&h, &owner, &mut view, admitted, peer).await?;
+                    }
                 }
                 drop(view);
                 drop(registered);
