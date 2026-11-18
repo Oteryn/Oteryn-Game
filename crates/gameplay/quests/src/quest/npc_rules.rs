@@ -12,6 +12,7 @@ mod evaluate;
 mod hidden_threats;
 mod item_exchange;
 mod keyword;
+mod late_additions;
 mod marlin_trophy;
 mod player_name;
 mod questpc2_albinius_source;
@@ -524,7 +525,7 @@ impl NpcRuleCatalog {
                 catalogue.programs.retain(|p| {
                     p.document.program_key.as_deref() == Some(hidden_threats::PROGRAM)
                         || p.document.program_key.as_deref()
-                            == Some("oteryn:quest-npc-program.ancient-tombs-cobra-greeting")
+                            == Some(late_additions::COBRA_PROGRAM)
                         || p.document.program_key.as_deref() == Some(questpc2_oldrak_source::PROGRAM)
                         || p.document.program_key.as_deref() == Some(questpc2_albinius_source::PROGRAM)
                         || p.document.program_key.as_deref() == Some(questpc2_gerimor_source::PROGRAM)
@@ -602,13 +603,13 @@ impl NpcRuleCatalog {
         let mut active = if self
             .programs
             .iter()
-            .all(|p| questpc2_gerimor_source::reports(&p.document))
+            .all(|p| late_additions::contains(&p.document))
         {
             catalogue.clone()
         } else {
             extend_with_source(catalogue.clone(), &BTreeMap::new(), &self)?
         };
-        questpc2_gerimor_source::extend(&mut active, &self)?;
+        late_additions::extend(&mut active, &self)?;
         let mut source = self;
         source.programs.extend(
             Self::runtime()
@@ -811,7 +812,7 @@ fn extend_with_source(
     for program in source
         .programs()
         .iter()
-        .filter(|p| !questpc2_gerimor_source::reports(&p.document))
+        .filter(|p| !late_additions::contains(&p.document))
     {
         let quest = &program.document.quest;
         if program.document.schema == 1
@@ -846,7 +847,7 @@ fn extend_with_source(
     for program in source
         .programs()
         .iter()
-        .filter(|p| !questpc2_gerimor_source::reports(&p.document))
+        .filter(|p| !late_additions::contains(&p.document))
     {
         let writes = bounds::literal_write_bounds(program);
         for track in &program.document.tracks {
@@ -922,10 +923,10 @@ fn extend_with_source(
     Ok(active)
 }
 
-pub(super) fn attach_gerimor_reports(
+pub(super) fn attach_late_additions(
     catalogue: &mut super::QuestStateCatalogue,
 ) -> Result<(), String> {
-    questpc2_gerimor_source::extend(
+    late_additions::extend(
         catalogue,
         NpcRuleCatalog::runtime().map_err(|e| e.to_string())?,
     )

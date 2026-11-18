@@ -63,13 +63,16 @@ pub(super) async fn exercise(
         .collect();
     let source = serde_json::json!({
         "schema":1, "quest":QUEST, "program_key":"oteryn:quest-npc-program.ancient-tombs-cobra-greeting",
+        "source_files":[{"path":"data-global/npc/cobra.lua","revision":"201189f871d23597b82caf88fd611454a2ddefb8","sha256":"8cd8398dd6676af4aaf652156a97cba0ae39cd198c738eb5ae8f390e18b9cad2"}],
         "tracks":[{"key":TRACK,"quest":QUEST,"initial":track.initial,"min":track.min,"max":track.max,"sources":[SOURCE]}],
         "rules":rules
     })
     .to_string();
-    owner.quest_catalogue = Some(Arc::new(
-        NpcRuleCatalog::from_json_documents(&[&source])?.attach_fixture(catalogue)?,
-    ));
+    let prior = catalogue.definition_hash(QUEST).ok_or("prior quest definition")?;
+    let catalogue = NpcRuleCatalog::from_json_documents(&[&source])?.attach_fixture(catalogue)?;
+    assert_ne!(catalogue.definition_hash(QUEST), Some(prior));
+    assert!(oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(&catalogue, QUEST, &prior).is_some());
+    owner.quest_catalogue = Some(Arc::new(catalogue));
     let [cobra] = super::classic_quests::install(owner, admitted, ["oteryn:npc.cobra"]).await?;
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let session = admitted.game_session_id;

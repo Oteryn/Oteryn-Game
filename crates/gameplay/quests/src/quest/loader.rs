@@ -247,7 +247,7 @@ fn admit_native_bindings(
         super::completion_sets::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
-    super::npc_rules::attach_gerimor_reports(&mut lowered.catalogue)
+    super::npc_rules::attach_late_additions(&mut lowered.catalogue)
         .map_err(QuestLoadError::Json)?;
     Ok(lowered)
 }
