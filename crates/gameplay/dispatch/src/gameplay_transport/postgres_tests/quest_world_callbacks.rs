@@ -1245,7 +1245,7 @@ mod scenario;
 mod stateless;
 #[path = "quest_world_callbacks/unnatural_selection.rs"]
 mod unnatural_selection;
-pub(super) use scenario::scenario;
+pub(super) use scenario::{conditional_entrance_scenario, scenario};
 #[allow(
     unused_imports,
     reason = "per-quest stateless PG cases are independently picked after the common harness"

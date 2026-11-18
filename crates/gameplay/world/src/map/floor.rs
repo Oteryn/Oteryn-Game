@@ -226,7 +226,7 @@ impl FloorTable {
                     &|pos| self.teleport(pos),
                     cell,
                     &|cell| self.mask(cell),
-                    &|_| false,
+                    &|_| StepResolution::Native,
                 ) == Err(Refusal::Chain)
             {
                 return Err(tile);
@@ -247,6 +247,10 @@ pub trait CellBlocker: Sync {
     /// An exact, unambiguous conditional callback owns this native portal's landing.
     /// Default movement retains the bundle teleport. Rechecked with the sealed proof.
     fn suppresses_native_teleport(&self, _cell: LogicalCell) -> bool {
+        false
+    }
+    /// A qualified StepIn callback handles the original stair or portal tile.
+    fn stops_at_step_callback(&self, _cell: LogicalCell) -> bool {
         false
     }
 }
@@ -346,8 +350,21 @@ fn resolve_landing_with_exhaust(
         direction,
         mask,
         |at| table.teleport(at),
-        suppress_teleport,
+        &|cell| {
+            if suppress_teleport(cell) {
+                StepResolution::SuppressTeleport
+            } else {
+                StepResolution::Native
+            }
+        },
     )
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum StepResolution {
+    Native,
+    SuppressTeleport,
+    Callback,
 }
 
 fn resolve_landing_with_teleports(
@@ -357,14 +374,14 @@ fn resolve_landing_with_teleports(
     direction: CardinalStep,
     mask: &impl Fn(Cell) -> u8,
     teleport: impl Fn(TilePos) -> Option<TilePos>,
-    suppress_teleport: &impl Fn(Cell) -> bool,
+    step_resolution: &impl Fn(Cell) -> StepResolution,
 ) -> Result<(Cell, bool), Refusal> {
     let (dx, dy) = direction.delta();
     let next = (origin.0 + dx, origin.1 + dy, origin.2);
     match ground(next) {
         Ground::Absent => Err(Refusal::Absent),
         Ground::Blocked => Err(Refusal::Blocked),
-        Ground::Walkable => follow(&ground, &landable, &teleport, next, mask, suppress_teleport),
+        Ground::Walkable => follow(&ground, &landable, &teleport, next, mask, step_resolution),
     }
 }
 
@@ -375,12 +392,12 @@ fn follow(
     teleport: &impl Fn(TilePos) -> Option<TilePos>,
     mut next: Cell,
     floor_mask: &impl Fn(Cell) -> u8,
-    suppress_teleport: &impl Fn(Cell) -> bool,
+    step_resolution: &impl Fn(Cell) -> StepResolution,
 ) -> Result<(Cell, bool), Refusal> {
     let mut changed_floor = false;
     let land = |cell: Cell, changed_floor: bool| match ground(cell) {
         Ground::Walkable => {
-            let target = if suppress_teleport(cell) {
+            let target = if step_resolution(cell) != StepResolution::Native {
                 cell
             } else {
                 teleported(ground, landable, teleport, cell)
@@ -392,6 +409,12 @@ fn follow(
     for _ in 0..MAX_DESTINATIONS {
         if ground(next) == Ground::Blocked {
             return Err(Refusal::Blocked);
+        }
+        // Crystal Bounac action-bounac_entrance.lua:24-25 binds two
+        // different source floors. Resolve that exact selector before a
+        // native down step can silently replace the entered position.
+        if step_resolution(next) == StepResolution::Callback {
+            return land(next, changed_floor);
         }
         let mask = floor_mask(next);
         if mask == 0 {
@@ -756,7 +779,16 @@ fn destination(
             table.mask(cell)
         },
         |at| current_teleport(cells, at),
-        &|(x, y, z)| closed.suppresses_native_teleport(LogicalCell { x, y, z }),
+        &|(x, y, z)| {
+            let cell = LogicalCell { x, y, z };
+            if closed.stops_at_step_callback(cell) {
+                StepResolution::Callback
+            } else if closed.suppresses_native_teleport(cell) {
+                StepResolution::SuppressTeleport
+            } else {
+                StepResolution::Native
+            }
+        },
     )
     .map_err(movement_error)?;
     Ok((

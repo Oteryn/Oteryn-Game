@@ -166,6 +166,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 optional_pvp,
             );
         }
+        let teleport_to_source = callback
+            .effects
+            .conditional_entrance
+            .as_ref()
+            .is_some_and(|gate| gate.teleport_to_source);
+        if teleport_to_source && callback.selector.appearance != Some(after.appearance_id) {
+            return UseDisposition::NothingToUse;
+        }
         if !oteryn_gameplay_quests::quest::source_world_objects::source_is_ready(
             callback,
             after.appearance_id,
@@ -490,7 +498,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
-        let mut destination = callback.teleport;
+        // Crystal actions_zalamon_door.lua:6-9 lands on the exact closed
+        // door that is transformed in this callback's source CAS.
+        let mut destination = if teleport_to_source {
+            Some(Position {
+                x: pos.x,
+                y: pos.y,
+                floor: pos.floor,
+            })
+        } else {
+            callback.teleport
+        };
         if let Some(remote) = &callback.remote_teleport {
             let p = tile(remote.position);
             let Some(base) = map.overlay.base().tile(p.x, p.y, p.floor) else {
@@ -677,7 +695,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     blocked,
                     &closed,
                     facing.or(callback.effects.facing.map(super::effects::facing)),
-                    callback.effects.scripted_teleport,
+                    callback.effects.scripted_teleport || teleport_to_source,
                 ) {
                     Ok(proof) => Some(proof),
                     Err(_) => return UseDisposition::NotPossible,

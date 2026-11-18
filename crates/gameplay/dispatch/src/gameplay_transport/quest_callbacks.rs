@@ -1123,7 +1123,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let fence = if character_fence_required(callback) {
                 self.current_quest_fence(command.game_session_id).await.ok().flatten()
             } else { None };
-            if fence.is_some_and(|f| command.item_fence != Some(f.item_fence())) {
+            if callback.effects.conditional_entrance.is_some() && fence.is_none()
+                || fence.is_some_and(|f| command.item_fence != Some(f.item_fence())) {
                 return UseDisposition::Rejected;
             }
             let mut slot = match fence {
@@ -1184,7 +1185,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None
             };
             let entrance = self.observe_conditional_entrance(
-                &permit, actor, command.game_session_id, map, callback, None,
+                &permit, actor, command.game_session_id, map, callback, fence, None,
             ).await;
             if !self.prepare_scene_items(&permit, actor, command, map, callback, resolved.placement_key, target.expected_revision, fence).await {
                 return UseDisposition::Rejected;
@@ -1515,7 +1516,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await;
             let entrance = self
-                .observe_conditional_entrance(permit, actor, session, map, callback, Some(entered))
+                .observe_conditional_entrance(
+                    permit,
+                    actor,
+                    session,
+                    map,
+                    callback,
+                    fence,
+                    Some(entered),
+                )
                 .await;
             let optional_pvp = self.special_movement_policy(permit, actor, session).await;
             let mut runtime = self.runtime.lock().await;
@@ -1601,7 +1610,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(snapshot) => snapshot,
             Err(_)
                 if callback.effects.conditional_entrance.is_some()
-                    && !callback.requires_durable_commit() =>
+                    && !self.has_pending_quest_callback(session) =>
             {
                 let policy = self.special_movement_policy(permit, actor, session).await;
                 let mut runtime = self.runtime.lock().await;
@@ -1753,74 +1762,85 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
     fn blocks(&self, cell: crate::content::LogicalCell) -> bool {
         self.inner.blocks(cell)
     }
+
     fn suppresses_native_teleport(&self, cell: crate::content::LogicalCell) -> bool {
-        let Some(map) = self.map else {
-            return false;
-        };
-        let Some(at) = native(MovementLocalPosition {
-            x: cell.x,
-            y: cell.y,
-            floor: match i16::try_from(cell.z) {
-                Ok(z) => z,
-                Err(_) => return false,
-            },
-        }) else {
-            return false;
-        };
-        if !self.callbacks.iter().any(|c| {
-            oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key)
-                .is_some_and(|b| tile(b.position) == at)
-                || c.effects
-                    .conditional_entrance
-                    .as_ref()
-                    .is_some_and(|gate| gate.intercept_teleport)
-                    && c.selector.matches_position(Position {
-                        x: at.x,
-                        y: at.y,
-                        floor: at.floor,
-                    })
-        }) {
-            return false;
-        }
-        let Some(base) = map.overlay.base().tile(at.x, at.y, at.floor) else {
-            return false;
-        };
-        let mut selected = None;
-        for ordinal in 0..base.depths().iter().filter(|d| **d == 0).count() {
-            let Some(key) = u8::try_from(ordinal)
-                .ok()
-                .and_then(|o| placement_key(at, o))
-            else {
-                return false;
-            };
-            if map.facts.base_hidden(key) {
-                continue;
-            }
-            for callback in self
-                .callbacks
-                .iter()
-                .filter(|c| c.trigger == Trigger::StepIn && matches(map, c, key))
-            {
-                if selected.replace((callback, key)).is_some() {
-                    return false;
-                }
-            }
-        }
-        selected.is_some_and(|(c, key)| {
-            c.effects
+        self.entry(cell, |callback, at| {
+            oteryn_gameplay_quests::quest::carried_step::native_binding(&callback.key)
+                .is_some_and(|binding| tile(binding.position) == at)
+        })
+        .is_some_and(|(map, callback, key)| {
+            oteryn_gameplay_quests::quest::carried_step::native_binding(&callback.key).is_some_and(
+                |binding| {
+                    map.facts.quest_callback_native_teleport(
+                        key,
+                        binding.appearance,
+                        tile(binding.raw_destination),
+                    )
+                },
+            )
+        })
+    }
+
+    fn stops_at_step_callback(&self, cell: crate::content::LogicalCell) -> bool {
+        self.entry(cell, |callback, at| {
+            callback
+                .effects
                 .conditional_entrance
                 .as_ref()
                 .is_some_and(|gate| gate.intercept_teleport)
-                || oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key).is_some_and(
-                    |b| {
-                        map.facts.quest_callback_native_teleport(
-                            key,
-                            b.appearance,
-                            tile(b.raw_destination),
-                        )
-                    },
-                )
+                && callback.selector.matches_position(Position {
+                    x: at.x,
+                    y: at.y,
+                    floor: at.floor,
+                })
         })
+        .is_some_and(|(_, callback, _)| {
+            callback
+                .effects
+                .conditional_entrance
+                .as_ref()
+                .is_some_and(|gate| gate.intercept_teleport)
+        })
+    }
+}
+
+impl CallbackPortals<'_> {
+    fn entry(
+        &self,
+        cell: crate::content::LogicalCell,
+        could_match: impl Fn(&Callback, TilePos) -> bool,
+    ) -> Option<(&BundleMap, &Callback, u64)> {
+        let map = self.map?;
+        let at = native(MovementLocalPosition {
+            x: cell.x,
+            y: cell.y,
+            floor: i16::try_from(cell.z).ok()?,
+        })?;
+        if !self
+            .callbacks
+            .iter()
+            .any(|callback| could_match(callback, at))
+        {
+            return None;
+        }
+        let base = map.overlay.base().tile(at.x, at.y, at.floor)?;
+        let mut selected = None;
+        for ordinal in 0..base.depths().iter().filter(|d| **d == 0).count() {
+            let key = placement_key(at, u8::try_from(ordinal).ok()?)?;
+            if map.facts.base_hidden(key) {
+                continue;
+            }
+            for callback in self.callbacks.iter().filter(|c| {
+                c.actor_kind == world_callbacks::ActorKind::Player
+                    && c.trigger == Trigger::StepIn
+                    && matches(map, c, key)
+            }) {
+                if selected.replace((map, callback, key)).is_some() {
+                    return None;
+                }
+            }
+        }
+        selected
     }
 }
 

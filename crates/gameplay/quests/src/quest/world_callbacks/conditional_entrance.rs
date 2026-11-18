@@ -7,9 +7,12 @@ use std::collections::BTreeSet;
 #[serde(deny_unknown_fields)]
 pub struct Entrance {
     pub guards: Vec<Guard>,
-    /// Intercept a native teleport at this selector before it can skip StepIn.
+    /// Keep the exact stair or portal tile for StepIn before native routing.
     #[serde(default, skip_serializing_if = "super::is_false")]
     pub intercept_teleport: bool,
+    /// The closed door's exact USE target is the scripted landing.
+    #[serde(default, skip_serializing_if = "super::is_false")]
+    pub teleport_to_source: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -132,12 +135,45 @@ impl MonthDay {
 pub struct Refusal {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
+    #[serde(default, skip_serializing_if = "MessageKind::is_default")]
+    pub message_kind: MessageKind,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub push_back: Option<PushBack>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub effect: Option<u8>,
-    #[serde(default, skip_serializing_if = "super::is_false")]
-    pub effect_at_source: bool,
+    #[serde(default, skip_serializing_if = "EffectAt::is_default")]
+    pub effect_at: EffectAt,
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum MessageKind {
+    #[default]
+    Advance,
+    Status,
+    MonsterSay,
+    MonsterYell,
+}
+
+impl MessageKind {
+    fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum EffectAt {
+    #[default]
+    Actor,
+    Source,
+    Both,
+}
+
+impl EffectAt {
+    fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -217,10 +253,16 @@ pub(super) fn valid(callback: &Callback) -> bool {
     callback.actor_kind == ActorKind::Player
         && (is_step || callback.trigger == Trigger::Use)
         && (!gate.intercept_teleport || is_step && callback.selector.position.is_some())
+        && (!gate.teleport_to_source
+            || callback.trigger == Trigger::Use
+                && callback.teleport.is_none()
+                && callback.selector.appearance.is_some()
+                && (callback.selector.unique.is_some() || callback.selector.native.is_some())
+                && callback.effects.transform.is_some())
         && callback.native_rule.is_none()
         && callback.lever.is_none()
         && !callback.return_on_failure
-        && !gate.guards.is_empty()
+        && (!gate.guards.is_empty() || gate.intercept_teleport && callback.teleport.is_some())
         && gate.guards.iter().all(|guard| {
             guard.when.valid(&mut remaining, 0)
                 && guard.refusal.as_ref().is_none_or(|failure| {
@@ -229,7 +271,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         .as_deref()
                         .is_none_or(|message| valid_text(message, 255))
                         && failure.effect != Some(0)
-                        && (!failure.effect_at_source || failure.effect.is_some())
+                        && (failure.effect_at.is_default() || failure.effect.is_some())
+                        && (!failure.message.is_none() || failure.message_kind.is_default())
                         && match failure.push_back {
                             Some(PushBack::From { dx, dy }) => {
                                 is_step && dx.abs_diff(0) <= 1 && dy.abs_diff(0) <= 1

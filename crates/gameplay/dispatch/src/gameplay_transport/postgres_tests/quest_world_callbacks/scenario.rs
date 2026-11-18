@@ -2,7 +2,7 @@
 use super::*;
 
 pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {
-    scenario_case(name, trigger, lever_fixture, None)
+    scenario_case(name, trigger, lever_fixture, None, None)
 }
 
 #[allow(
@@ -14,7 +14,14 @@ pub(crate) fn stateless_scenario(
     trigger: Position,
     expected_destination: Position,
 ) -> TestResult {
-    scenario_case(name, trigger, false, Some(expected_destination))
+    scenario_case(name, trigger, false, Some(expected_destination), None)
+}
+
+pub(in super::super) fn conditional_entrance_scenario(
+    trigger: Position,
+    case: super::super::conditional_entrance::Case,
+) -> TestResult {
+    scenario_case("conditional-entrance", trigger, false, None, Some(case))
 }
 
 fn scenario_case(
@@ -22,6 +29,7 @@ fn scenario_case(
     trigger: Position,
     lever_fixture: bool,
     stateless_destination: Option<Position>,
+    conditional_entrance: Option<super::super::conditional_entrance::Case>,
 ) -> TestResult {
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
@@ -350,7 +358,9 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if m03_use {
+    let mut callback = if let Some(case) = conditional_entrance {
+        case.callback(trigger)?
+    } else if m03_use {
         super::super::qengine_m03_use::callback()?
     } else if qd_world {
         super::super::qd_world::callback(name)?
@@ -1559,7 +1569,8 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let premium = if name.starts_with("authored-")
+        let premium = if conditional_entrance == Some(super::super::conditional_entrance::Case::Premium)
+            || name.starts_with("authored-")
             || name == "nx6-wayfarer"
             || name == "m07-carrot-premium"
             || m03_use
@@ -1751,6 +1762,7 @@ fn scenario_case(
         }
         if name.starts_with("qengine-rewards-questpc4-admission-")
             || name.starts_with("qengine-rewards-questpc4-puzzle-predicate")
+            || conditional_entrance.is_some()
             || lever_fixture
             || target_swap
             || failure_landing
@@ -1866,7 +1878,9 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if m03_use {
+        if let Some(case) = conditional_entrance {
+            Box::pin(case.exercise(&mut owner, &mut admitted, &h, &authority, deps.actor, fence, &callback)).await?;
+        } else if m03_use {
             Box::pin(super::super::qengine_m03_use::exercise(
                 &mut owner,
                 &mut admitted,

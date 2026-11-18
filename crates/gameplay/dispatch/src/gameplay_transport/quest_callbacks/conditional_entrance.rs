@@ -3,7 +3,7 @@
 use super::*;
 use crate::durability::quest_world_callback::conditional_entrance::{Facts, ReadSet};
 use oteryn_gameplay_quests::quest::world_callbacks::conditional_entrance::{
-    Entrance, Predicate, PushBack, Refusal, StorageRange,
+    EffectAt, Entrance, MessageKind, Predicate, PushBack, Refusal, StorageRange,
 };
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
@@ -144,6 +144,10 @@ impl<'a> Observation<'a> {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "observe the live Character fence and exact native entrance"
+    )]
     pub(super) async fn observe_conditional_entrance<'a>(
         &self,
         permit: &SpellLanePermit,
@@ -151,10 +155,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         map: &BundleMap,
         callback: &'a Callback,
+        fence: Option<CurrentCharacterGameplayFence>,
         step: Option<MovementPositionSnapshot>,
     ) -> Observation<'a> {
         let Some(gate) = callback.effects.conditional_entrance.as_ref() else {
             return Observation::None;
+        };
+        let Some(fence) = fence else {
+            return Observation::Unavailable;
         };
         let Some((expected, context)) = self.conditional_entrance_context(actor, map, step).await
         else {
@@ -177,9 +185,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let facts = if reads.is_empty() {
             Facts::default()
         } else {
-            let Ok(Some(fence)) = self.current_quest_fence(session).await else {
-                return Observation::Unavailable;
-            };
             let Ok(facts) = self
                 .root
                 .read_conditional_entrance(
@@ -301,12 +306,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, at),
             );
         }
-        if let Some(effect) = refusal.and_then(|r| r.effect) {
-            if refusal.is_some_and(|r| r.effect_at_source) {
+        let actor_tile = native(at);
+        if let Some(refusal) = refusal
+            && let Some(effect) = refusal.effect
+        {
+            if matches!(refusal.effect_at, EffectAt::Source | EffectAt::Both) {
                 let _ = map.facts.emit_movement_effect(source, u16::from(effect));
             }
-            if let Some(at) = native(at)
-                && (at != source || !refusal.is_some_and(|r| r.effect_at_source))
+            if let Some(at) = actor_tile
+                && (refusal.effect_at == EffectAt::Actor
+                    || refusal.effect_at == EffectAt::Both && at != source)
             {
                 let _ = map.facts.emit_movement_effect(at, u16::from(effect));
             }
@@ -315,12 +324,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(|r| r.message.as_deref())
             .or(failure.unavailable.then_some("Sorry, not possible."))
         {
+            use oteryn_protocol_oteryn::zones_nologout::ServerMessage;
             let mut message = text.to_owned();
             for label in failure.missing {
                 message.push('\n');
                 message.push_str(label);
             }
-            self.states.chat.push_quest_feedback(session, &message);
+            match refusal.map_or(MessageKind::Status, |r| r.message_kind) {
+                MessageKind::Advance | MessageKind::Status => {
+                    let notice = if refusal.is_some_and(|r| r.message_kind == MessageKind::Advance)
+                    {
+                        ServerMessage::Advance(message.clone())
+                    } else {
+                        ServerMessage::StatusText(message.clone())
+                    };
+                    if !self.states.server_messages.send_current(session, notice) {
+                        self.states.chat.push_quest_feedback(session, &message);
+                    }
+                }
+                kind @ (MessageKind::MonsterSay | MessageKind::MonsterYell) => {
+                    let _ = map
+                        .facts
+                        .emit_movement_speech(crate::map::facts::MovementSpeech {
+                            speaker: actor,
+                            position: actor_tile.unwrap_or(source),
+                            talk_type: if kind == MessageKind::MonsterSay {
+                                36
+                            } else {
+                                37
+                            },
+                            text: message,
+                            captured_name: None,
+                        });
+                }
+            }
         }
     }
 }
