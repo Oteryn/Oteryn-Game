@@ -38,7 +38,9 @@ impl NativeQuestDeath {
             && self.observed_revision > 0
             && matches!(request.cause, QuestCause::CreatureDeath(_))
             && match &self.source {
-                NativeDeathSource::InstanceBoss { .. } | NativeDeathSource::Party(_) | NativeDeathSource::PositionedParty { .. } => {
+                NativeDeathSource::InstanceBoss { .. }
+                | NativeDeathSource::Party(_)
+                | NativeDeathSource::PositionedParty { .. } => {
                     let position = match &self.source {
                         NativeDeathSource::PositionedParty { position, .. } => Some(*position),
                         _ => None,
@@ -87,11 +89,24 @@ impl NativeQuestDeath {
             }
     }
 
+    fn instance_boss(&self) -> Option<&'static str> {
+        use oteryn_gameplay_quests::quest::threatened_dreams;
+        match (self.transition.as_str(), self.creature.as_str()) {
+            (
+                "oteryn:quest-transition/native-kills/first-dragon-selected",
+                "oteryn:creature.the_first_dragon",
+            ) => Some("oteryn:boss.the_first_dragon"),
+            (threatened_dreams::KROAZUR_DEATH, threatened_dreams::KROAZUR_CREATURE) => {
+                Some(threatened_dreams::KROAZUR_BOSS)
+            }
+            _ => None,
+        }
+    }
+
     pub(super) fn permits_scope(&self, fence: &CurrentCharacterGameplayFence) -> bool {
         match &self.source {
             NativeDeathSource::InstanceBoss { death, .. } => {
-                self.transition == "oteryn:quest-transition/native-kills/first-dragon-selected"
-                    && self.creature == "oteryn:creature.the_first_dragon"
+                self.instance_boss().is_some()
                     && matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. })
                     && death.runtime_scope() == fence.runtime_scope
                     && death.scope_ownership_generation() == fence.scope_ownership_generation
@@ -102,7 +117,8 @@ impl NativeQuestDeath {
 
     pub(super) fn party(&self) -> Option<&crate::foundation::PartySnapshot> {
         match &self.source {
-            NativeDeathSource::PositionedParty { source, .. } | NativeDeathSource::Party(source)
+            NativeDeathSource::PositionedParty { source, .. }
+            | NativeDeathSource::Party(source)
             | NativeDeathSource::InstanceBoss { party: source, .. } => Some(source.as_ref()),
             NativeDeathSource::Source(_) | NativeDeathSource::Encounter(_) => None,
         }
@@ -171,9 +187,9 @@ impl NativeQuestDeath {
             ..
         } = &self.source
         {
-            if !self.permits_scope(&fence) {
+            let Some(boss) = self.instance_boss().filter(|_| self.permits_scope(&fence)) else {
                 return Ok(false);
-            }
+            };
             let RuntimeScopeRefV1::Instance {
                 world_id,
                 instance_id,
@@ -188,11 +204,11 @@ impl NativeQuestDeath {
             // death in this player's admitted selected encounter may finish it.
             // The opaque carrier key binds the actual lethal scope/generation;
             // ordinary party/NPC callers never acquire this Instance exception.
-            let permitted: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_boss_room_activities a JOIN game_activity_handoff_groups g ON g.handoff_id=a.admission JOIN game_activity_handoff_participants p ON p.handoff_id=a.admission JOIN game_durability_reconnect_sessions s ON s.game_session_id=encode($4,'hex')::uuid WHERE a.world_id=encode($1,'hex')::uuid AND a.instance_id=encode($2,'hex')::uuid AND g.ownership_generation=$3::text::numeric AND g.state=2 AND a.state IN(1,2) AND a.boss_key='oteryn:boss.the_first_dragon' AND a.boss_creature_key=$5 AND p.character_id=encode($6,'hex')::uuid AND s.character_id=p.character_id AND s.activity_handoff_id=a.admission AND s.session_state=2 AND a.opened_at <= $7 AND $7 <= a.deadline AND $7 <= floor(extract(epoch FROM clock_timestamp())*1000)::bigint AND NOT EXISTS(SELECT 1 FROM game_activity_runtime_returns r WHERE r.handoff_id=a.admission AND r.character_id=p.character_id))")
+            let permitted: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_boss_room_activities a JOIN game_activity_handoff_groups g ON g.handoff_id=a.admission JOIN game_activity_handoff_participants p ON p.handoff_id=a.admission JOIN game_durability_reconnect_sessions s ON s.game_session_id=encode($4,'hex')::uuid WHERE a.world_id=encode($1,'hex')::uuid AND a.instance_id=encode($2,'hex')::uuid AND g.ownership_generation=$3::text::numeric AND g.state=2 AND a.state IN(1,2) AND a.boss_key=$8 AND a.boss_creature_key=$5 AND p.character_id=encode($6,'hex')::uuid AND s.character_id=p.character_id AND s.activity_handoff_id=a.admission AND s.session_state=2 AND a.opened_at <= $7 AND $7 <= a.deadline AND $7 <= floor(extract(epoch FROM clock_timestamp())*1000)::bigint AND NOT EXISTS(SELECT 1 FROM game_activity_runtime_returns r WHERE r.handoff_id=a.admission AND r.character_id=p.character_id))")
                 .bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice())
                 .bind(fence.scope_ownership_generation.get().to_string())
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(&self.creature)
-                .bind(fence.character_id.as_bytes().as_slice()).bind(died)
+                .bind(fence.character_id.as_bytes().as_slice()).bind(died).bind(boss)
                 .fetch_one(&mut **tx).await?;
             if !permitted {
                 return Ok(false);
@@ -213,7 +229,11 @@ impl NativeQuestDeath {
             .initial;
         // Character root and the track rows are already locked. A queued death
         // cannot enter a mission started or reset after its captured snapshot.
-        let (minimum, maximum) = oteryn_gameplay_quests::quest::native_kills::counter(counter.transition).map_or((counter.gate_value, counter.gate_value), |counter| counter.gate_bounds());
+        let (minimum, maximum) =
+            oteryn_gameplay_quests::quest::native_kills::counter(counter.transition)
+                .map_or((counter.gate_value, counter.gate_value), |counter| {
+                    counter.gate_bounds()
+                });
         Ok(sqlx::query_scalar("SELECT COALESCE((SELECT value BETWEEN $4::bigint AND $5::bigint AND committed_character_revision <= $3::text::numeric FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2), $6::bigint BETWEEN $4::bigint AND $5::bigint)")
             .bind(character.as_bytes().as_slice()).bind(counter.gate)
             .bind(self.observed_revision.to_string()).bind(minimum).bind(maximum).bind(initial_gate).fetch_one(&mut **tx).await?)
@@ -250,7 +270,10 @@ impl DurabilityRoot {
             None,
             Some(death.into()),
             None,
-        None, None, None,)
+            None,
+            None,
+            None,
+        )
         .await
     }
     #[allow(

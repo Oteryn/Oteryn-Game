@@ -9,6 +9,8 @@ use oteryn_gameplay_encounter_rules::boss_room::{
     AdmissionRefusal, BossRoomPolicy, ParticipantFact, plan_fresh_room,
 };
 
+use oteryn_gameplay_quests::quest::threatened_dreams::{KROAZUR_BOSS, KROAZUR_CREATURE};
+
 mod quest_entry;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -485,6 +487,21 @@ pub(super) async fn prepare_in_transaction<
     {
         return Ok(Err(ActivityRefusal::ContentChanged));
     }
+    if definition.boss_creature_key == KROAZUR_CREATURE {
+        let source_cell = |cell: LastPositionCell| (cell.x, cell.y, cell.floor);
+        if definition.boss_key != KROAZUR_BOSS
+            || definition.policy.minimum_players != 1
+            || definition.policy.maximum_players != 1
+            || definition.policy.cooldown_ms != 7_200_000
+            || definition.policy.time_limit_ms != 600_000
+            || definition.entry_positions.first().copied().map(source_cell)
+                != Some((33591, 32315, 10))
+            || source_cell(definition.boss_position) != (33591, 32305, 10)
+            || source_cell(definition.exit_position) != (33619, 32306, 9)
+        {
+            return Ok(Err(ActivityRefusal::ContentChanged));
+        }
+    }
     let mut facts = Vec::with_capacity(r.participants.len());
     for p in &r.participants {
         if !super::quest_encounter::permits_entry(
@@ -564,6 +581,38 @@ pub(super) async fn prepare_in_transaction<
         let source_room = published_source_room(tx, r).await?;
         if !super::rotten_blood::validate_entry(tx, r, now, source_room).await? {
             return Ok(Err(ActivityRefusal::AuthorityRejected));
+        }
+    }
+    if definition.boss_key == KROAZUR_BOSS {
+        let RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } = initiator.source.runtime_scope
+        else {
+            return Ok(Err(ActivityRefusal::AuthorityRejected));
+        };
+        // Unlike reusable party rooms, the source has one solo room per
+        // Channel. Serialize selection even when two Instances are ready.
+        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+            .bind(format!(
+                "{KROAZUR_BOSS}:{:02x?}:{:02x?}",
+                world_id.as_bytes(),
+                channel_id.as_bytes()
+            ))
+            .execute(&mut **tx)
+            .await?;
+        let occupied: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_boss_room_activities
+              WHERE world_id=encode($1,'hex')::uuid AND origin_channel_id=encode($2,'hex')::uuid
+              AND boss_key=$3 AND state IN (1,2))",
+        )
+        .bind(world_id.as_bytes().as_slice())
+        .bind(channel_id.as_bytes().as_slice())
+        .bind(KROAZUR_BOSS)
+        .fetch_one(&mut **tx)
+        .await?;
+        if occupied {
+            return Ok(Err(ActivityRefusal::NoCapacity));
         }
     }
     let reset: Option<String> = sqlx::query_scalar(
@@ -673,7 +722,7 @@ pub(crate) async fn classify_and_record_defeat_in_transaction(
     if death == [0; 16] || minted < 0 {
         return Ok(BossRoomDefeatDecision::Conflict);
     }
-    let row=sqlx::query("SELECT a.admission,a.state,a.opened_at,a.deadline,a.after_kill_ms,uuid_send(a.defeat_id) AS defeat_id,a.terminal_at FROM game_boss_room_activities a \
+    let row=sqlx::query("SELECT a.admission,a.state,a.opened_at,a.deadline,a.boss_key,a.after_kill_ms,uuid_send(a.defeat_id) AS defeat_id,a.terminal_at FROM game_boss_room_activities a \
         JOIN game_activity_handoff_groups g ON g.handoff_id=a.admission WHERE a.world_id=encode($1,'hex')::uuid AND a.instance_id=encode($2,'hex')::uuid \
           AND g.ownership_generation=$3::text::numeric AND g.state=2 AND (a.boss_creature_key=$4 OR a.boss_key=$4) FOR UPDATE OF a")
         .bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice()).bind(generation.get().to_string()).bind(boss_key).fetch_optional(&mut **tx).await?;
@@ -703,7 +752,10 @@ pub(crate) async fn classify_and_record_defeat_in_transaction(
     // Crystal boss_lever_death.lua:26 cancels the fight timeout but creates
     // no after-kill timer when the authored value is zero.
     let after_kill_ms: i64 = row.try_get("after_kill_ms")?;
-    let exit = if after_kill_ms == 0 {
+    let exit = if row.try_get::<&str, _>("boss_key")? == KROAZUR_BOSS {
+        // Crystal's StepIn timer is unconditional, even after the boss dies.
+        Some(row.try_get::<i64, _>("deadline")?)
+    } else if after_kill_ms == 0 {
         None
     } else {
         Some(

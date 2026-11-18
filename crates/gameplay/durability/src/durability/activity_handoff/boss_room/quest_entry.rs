@@ -12,6 +12,19 @@ pub(super) async fn validate(
     participants: usize,
     now_ms: i64,
 ) -> Result<Option<ActivityRefusal>> {
+    if creature == KROAZUR_CREATURE {
+        use oteryn_gameplay_quests::quest::threatened_dreams;
+        let access: Option<i64> = sqlx::query_scalar(
+            "SELECT value FROM game_character_quest_tracks
+              WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 AND track_key=$3",
+        )
+        .bind(character.as_bytes().as_slice())
+        .bind(threatened_dreams::QUEST)
+        .bind(threatened_dreams::ACCESS)
+        .fetch_optional(&mut **tx)
+        .await?;
+        return Ok((access.unwrap_or(0) < 1).then_some(ActivityRefusal::AuthorityRejected));
+    }
     let soul_final = creature == "oteryn:creature.goshnar_s_megalomania_purple"
         || soul::SoulWarBoss::from_creature(creature) == Some(soul::SoulWarBoss::Megalomania);
     let soul_boss = soul_final || soul::SoulWarBoss::from_creature(creature).is_some();

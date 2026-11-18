@@ -383,7 +383,10 @@ pub(super) fn capture(
             );
             if matches!(entry.facts.death.runtime_scope(), crate::foundation::RuntimeScopeRefV1::Instance { .. }) {
                 for recipient in &mut frozen.native {
-                    if recipient.death.transition != "oteryn:quest-transition/native-kills/first-dragon-selected" { continue; }
+                    if !matches!(recipient.death.transition.as_str(),
+                        "oteryn:quest-transition/native-kills/first-dragon-selected"
+                        | oteryn_gameplay_quests::quest::threatened_dreams::KROAZUR_DEATH
+                    ) { continue; }
                     let crate::durability::quest_state::native_kills::NativeDeathSource::Party(party) = &recipient.death.source else { continue; };
                     recipient.death.source = crate::durability::quest_state::native_kills::NativeDeathSource::InstanceBoss {
                         party: Arc::clone(party), death: entry.facts.death,

@@ -26,6 +26,8 @@ const COUPLE: &str = "oteryn:quest-progress/quest/u11_40/threatened_dreams/missi
 const COUPLE_PROGRESS: &str =
     "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission03/unlikely_couple";
 pub const QUEST: &str = "oteryn:quest.threatened_dreams_quest";
+pub const KROAZUR_BOSS: &str = "oteryn:boss.kroazur";
+pub const KROAZUR_CREATURE: &str = "oteryn:creature.kroazur";
 pub const ACCESS: &str =
     "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/kroazur_access";
 pub const REPORT: &str = "oteryn:quest-transition/threatened-dreams/maelyrra-report";
@@ -33,6 +35,7 @@ const START: &str = "oteryn:quest-transition/threatened-dreams/maelyrra-start";
 const ENFEEBLED: &str =
     "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/enfeebled_count";
 const FRAZZLEMAWS: &str = "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/frazzlemaws_count";
+pub const KROAZUR_DEATH: &str = "oteryn:quest-transition/native-kills/threatened-dreams/kroazur";
 const KROAZUR: &str =
     "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/kroazur_kill";
 
@@ -45,12 +48,7 @@ const NIGHTMARE_COUNTERS: [(&str, &str, &str, i64); 3] = [
         ENFEEBLED,
         i32::MAX as i64,
     ),
-    (
-        "oteryn:quest-transition/native-kills/threatened-dreams/kroazur",
-        "oteryn:creature.kroazur",
-        KROAZUR,
-        1,
-    ),
+    (KROAZUR_DEATH, KROAZUR_CREATURE, KROAZUR, 1),
     (
         "oteryn:quest-transition/native-kills/threatened-dreams/weakened-frazzlemaw",
         "oteryn:creature.weakened_frazzlemaw",

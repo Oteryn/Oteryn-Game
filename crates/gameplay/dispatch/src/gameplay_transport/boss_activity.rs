@@ -9,6 +9,8 @@ use crate::durability::activity_handoff::{
 };
 use crate::durability::character_progression::CharacterProgressionError;
 use crate::foundation::{CharacterId, CommandStatus, MovementLocalPosition, RuntimeScopeRefV1};
+use oteryn_gameplay_entities::carrier::native_translation_events::CommittedMovementOccurrence;
+use oteryn_gameplay_quests::quest::threatened_dreams::{KROAZUR_BOSS, KROAZUR_CREATURE};
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
 pub(super) type BossActivityResult = Option<(CommandStatus, Vec<u8>)>;
@@ -21,7 +23,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         kind: u32,
         payload: &[u8],
     ) -> BossActivityResult {
-        self.boss_activity_action(admitted, id, kind, payload, false)
+        self.boss_activity_action(admitted, id, kind, payload, false, None)
             .await
     }
 
@@ -31,8 +33,34 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         id: u64,
         payload: &[u8],
     ) -> BossActivityResult {
-        self.boss_activity_action(admitted, id, wire::COMMAND_TYPE_BOSS_LEVER, payload, true)
-            .await
+        self.boss_activity_action(
+            admitted,
+            id,
+            wire::COMMAND_TYPE_BOSS_LEVER,
+            payload,
+            true,
+            None,
+        )
+        .await
+    }
+
+    pub(super) async fn boss_activity_step(
+        &self,
+        admitted: AdmittedSession,
+        payload: &[u8],
+        movement: CommittedMovementOccurrence,
+    ) -> BossActivityResult {
+        // Native input has a movement occurrence even on an autowalk/chase step.
+        let id = movement.after().revision() | (1 << 63);
+        self.boss_activity_action(
+            admitted,
+            id,
+            wire::COMMAND_TYPE_BOSS_LEVER,
+            payload,
+            false,
+            Some(movement),
+        )
+        .await
     }
 
     async fn boss_activity_action(
@@ -42,6 +70,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         kind: u32,
         payload: &[u8],
         difficulty_start: bool,
+        native_step: Option<CommittedMovementOccurrence>,
     ) -> BossActivityResult {
         let malformed = || Some((CommandStatus::Rejected, Vec::new()));
         if id == 0
@@ -95,7 +124,9 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         ) else {
             return malformed();
         };
-        if fence.game_session_id != admitted.game_session_id
+        if (intent.boss_key == KROAZUR_BOSS && kind == wire::COMMAND_TYPE_BOSS_LEVER)
+            != native_step.is_some()
+            || fence.game_session_id != admitted.game_session_id
             || fence.connection_generation.get() != admitted.continuity.connection_generation
             || actor.runtime_scope() != fence.runtime_scope
         {
@@ -198,6 +229,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         else {
             return refusal(ActivityRefusal::ContentUnavailable);
         };
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && (definition.boss_creature_key == KROAZUR_CREATURE) != native_step.is_some()
+        {
+            return refusal(ActivityRefusal::Position);
+        }
         if kind == wire::COMMAND_TYPE_BOSS_LEVER
             && !difficulty_start
             && (oteryn_protocol_oteryn::boss_difficulty::boss_maximum(&definition.boss_key)
@@ -330,6 +366,13 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         let mut participants = Vec::new();
         {
             let runtime = self.runtime.lock().await;
+            if let Some(step) = native_step
+                && (step.mover() != actor
+                    || runtime.committed_movement_occurrence(actor) != Ok(Some(step))
+                    || runtime.read_actor_position(actor) != Ok(step.after()))
+            {
+                return refusal(ActivityRefusal::Position);
+            }
             let census = runtime.positioned_actor_census().ok()?;
             let partition = if definition.boss_key == "oteryn:boss.bakragore" {
                 let cell = runtime.read_actor_position(actor).ok()?.position();
@@ -455,7 +498,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             participants,
         };
         use sha2::Digest;
-        let wire_binding = sha2::Sha256::digest(payload).into();
+        let wire_binding = native_step.map_or_else(
+            || sha2::Sha256::digest(payload).into(),
+            CommittedMovementOccurrence::binding,
+        );
         self.boss_activity_result(
             self.enter_native_boss_activity(request, wire_binding)
                 .await
