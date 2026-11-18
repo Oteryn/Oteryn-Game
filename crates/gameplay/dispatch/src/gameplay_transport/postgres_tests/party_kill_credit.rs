@@ -32,6 +32,7 @@ enum Case {
     WindowReset,
     WindowResetDeparted,
     Area,
+    PartyArea,
     DefeatTime,
     Summon,
     Ordered,
@@ -91,6 +92,14 @@ fn kill_in_overlapping_areas_counts_once_and_outside_kill_does_not_count() -> Te
         return Ok(());
     };
     run(admin, Case::Area)
+}
+
+#[test]
+fn scoped_death_credits_the_top_damagers_party_without_crediting_an_outsider() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::PartyArea)
 }
 
 #[test]
@@ -315,7 +324,10 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
             counter["damage_credit"]["recent_damage_ms"] = json!(60_000);
             "Crystal201189f creature.lua:219-240, config.lua.dist:40"
         }
-        Case::Area => {
+        Case::Area | Case::PartyArea => {
+            if case == Case::PartyArea {
+                counter.as_object_mut().ok_or("kill counter")?.remove("damage_credit");
+            }
             counter["death_areas"] = json!([
                 {"minimum":[at.x, at.y, at.floor], "maximum":[at.x+1, at.y, at.floor]},
                 {"minimum":[at.x+1, at.y, at.floor], "maximum":[at.x+2, at.y, at.floor]}
@@ -596,6 +608,14 @@ fn run(admin: String, case: Case) -> TestResult {
             return h.cleanup().await;
         }
 
+        if case == Case::PartyArea {
+            exercise_positioned_party(&owner, &players, at, &h.pool).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
+
         if case == Case::Area {
             death(
                 &owner,
@@ -676,7 +696,7 @@ fn run(admin: String, case: Case) -> TestResult {
         )
         .await?;
         let expected = match case {
-            Case::All | Case::Area => [1, 1, 0],
+            Case::All | Case::Area | Case::PartyArea => [1, 1, 0],
             Case::Top => [1, 1, 0],
             Case::Time | Case::Summon => [1, 2, 0],
             Case::Ordered => [3, 3, 0],
@@ -701,6 +721,59 @@ fn run(admin: String, case: Case) -> TestResult {
         drop(seal);
         h.cleanup().await
     })
+}
+
+/// Crystal 201189f8 creaturescripts_the_great_dragon_hunt.lua:12-25,
+/// functions.lua:1064-1072 and data/libs/functions/party.lua Participants.
+async fn exercise_positioned_party(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    players: &[Player],
+    at: MovementLocalPosition,
+    pool: &sqlx::PgPool,
+) -> TestResult {
+    use crate::foundation::{PartyMemberSnapshot, PartyPresence, PartySnapshot};
+    let world = owner.world_id.as_bytes();
+    let channel = owner.channel_id.as_bytes();
+    let party = id(92);
+    let mut tx = pool.begin().await?;
+    sqlx::query("INSERT INTO game_parties(party_id,world_id,leader_character_id,revision,next_seq,shared_xp_enabled)
+                 VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,3,true)")
+        .bind(party.as_slice()).bind(world.as_slice()).bind(id(60).as_slice()).execute(&mut *tx).await?;
+    let mut members = Vec::new();
+    for (character, order) in [(id(60), 1), (id(61), 2)] {
+        sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_revision,presence_state,presence_channel_id)
+                     VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,1,1,encode($4,'hex')::uuid)")
+            .bind(character.as_slice()).bind(party.as_slice()).bind(i64::from(order)).bind(channel.as_slice()).execute(&mut *tx).await?;
+        members.push(PartyMemberSnapshot {
+            character,
+            invitation_order: u64::try_from(order)?,
+            presence_revision: 1,
+            presence: PartyPresence::Channel,
+            channel: Some(*channel),
+        });
+    }
+    let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()) * 1000000)::bigint")
+        .fetch_one(&mut *tx).await?;
+    tx.commit().await?;
+    owner.runtime.lock().await.project_world_party(players[0].actor, players[0].session, PartySnapshot {
+        world: *world,
+        character: id(60),
+        party_id: Some(party),
+        revision: Some(1),
+        leader: Some(id(60)),
+        shared_xp_enabled: true,
+        members,
+        observed_database_micros: now,
+    }).map_err(debug)?;
+    let attackers = [players[0], players[2]];
+    for (offset, ordinal, expected) in [
+        (3, 150, [0, 0, 0]), (1, 151, [1, 1, 0]),
+    ] {
+        death(owner, &attackers, RAT, MovementLocalPosition { x: at.x + offset, ..at }, Case::PartyArea, ordinal).await?;
+        assert_eq!(owner.drain_kill_rewards(players[1].session).await, DrainOutcome::Drained);
+        assert_tracks(pool, expected).await?;
+    }
+    Ok(())
 }
 
 async fn exercise_window(

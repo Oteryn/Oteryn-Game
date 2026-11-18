@@ -118,6 +118,7 @@ impl Fight {
                     };
                     let fire = local(at);
                     if fire != position
+                        && map.floors.teleport(at).is_none()
                         && placeable(fire, runtime)
                         && let Some(key) = map.facts.create_owned_movement_item(
                             at,
