@@ -240,13 +240,18 @@ pub(super) async fn apply(
         };
         if states.is_dead(actor)
             || !states.spell_idle(&runtime, actor, command.game_session_id)
-            || admission.states.npc_conversations.current_npc(
-                &admission.states.chat,
-                &runtime,
-                actor,
-                command.game_session_id,
-                &intent,
-            ) != Some(context)
+            || admission
+                .states
+                .npc_conversations
+                .current_npc(
+                    &admission.states.chat,
+                    &runtime,
+                    actor,
+                    command.game_session_id,
+                    &intent,
+                )
+                .as_ref()
+                != Some(&context)
             || !runtime
                 .bound_attacker_lease(actor, command.game_session_id)
                 .is_ok_and(|lease| {
