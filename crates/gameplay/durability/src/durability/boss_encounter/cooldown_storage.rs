@@ -214,3 +214,74 @@ pub(crate) async fn set_boss_cooldowns_data(
     }
     Ok(BossCooldownChange::Applied)
 }
+
+impl super::super::DurabilityRoot {
+    /// Commit one cooldown decision for an admitted Grave Danger staging party.
+    pub async fn commit_grave_danger_cooldown(
+        &self,
+        authority: &super::super::character_authority::ReconciledCharacterAuthority<'_, '_>,
+        node: &super::NodeIncarnationProof,
+        mut party: Vec<super::super::item_transfer::CurrentCharacterItemFence>,
+        boss: &'static str,
+        admission: [u8; 16],
+    ) -> Result<bool, DurabilityError> {
+        use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
+        // Crystal 201189f8 config.lua.dist:658, inherited by the six BossLevers.
+        const COOLDOWN_SECONDS: u64 = 20 * 60 * 60;
+        let Some(first) = party.first().copied() else {
+            return Ok(false);
+        };
+        if party.len() > 10 || party.iter().any(|f| f.runtime_scope != first.runtime_scope) {
+            return Ok(false);
+        }
+        party.sort_unstable_by_key(|f| f.character_id);
+        if party
+            .windows(2)
+            .any(|pair| pair[0].character_id == pair[1].character_id)
+        {
+            return Ok(false);
+        }
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::CommitRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            super::assert_recovery_fence(&mut tx, &recovery).await?;
+            super::lock_admission_relations(&mut tx).await?;
+            let mut keys = Vec::with_capacity(party.len());
+            for fence in party {
+                if super::super::character_progression::assert_item_only_fence(&mut tx, &fence, &node).await?.is_err() {
+                    return Ok(false);
+                }
+                keys.push(BossRewardKey::new(fence.character_id, boss).map_err(|_| DurabilityError::CommitRejected)?);
+            }
+            let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
+                .fetch_one(&mut *tx).await?;
+            let epoch: Option<String> = sqlx::query_scalar(
+                "SELECT reset_epoch::text FROM game_world_reset_read_locked(encode($1,'hex')::uuid)"
+            ).bind(first.runtime_scope.world_id().as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+            let reset_epoch = epoch.map(|value| value.parse()).transpose()
+                .map_err(|_| DurabilityError::InvalidStoredState)?.unwrap_or(0);
+            let mut replayed = 0;
+            for key in &keys {
+                if read_boss_cooldown_data(&mut tx, key).await.map_err(|_| DurabilityError::Unavailable)?
+                    .is_some_and(|data| data.admission == admission && data.available_at > now)
+                {
+                    replayed += 1;
+                }
+            }
+            if replayed != 0 {
+                return Ok(replayed == keys.len());
+            }
+            let decision = set_boss_cooldowns_data(&mut tx, &keys, &BossCooldownAdmissionData {
+                admission, now, reset_epoch, cooldown_s: COOLDOWN_SECONDS, boosted: false,
+            }).await.map_err(|_| DurabilityError::Unavailable)?;
+            if decision != BossCooldownChange::Applied {
+                return Ok(false);
+            }
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(true)
+        })).await
+    }
+}

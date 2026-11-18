@@ -949,20 +949,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None
         };
         if durable && callback.effects.encounter.is_some() {
-            let preflight = self.execute_quest_encounter(
-                runtime,
-                states,
-                actor,
-                session,
-                map,
-                callback,
-                key,
-                expected_revision,
-                after,
-                true,
-                cause,
-                None,
-            );
+            let preflight = self
+                .execute_quest_encounter(
+                    runtime,
+                    states,
+                    actor,
+                    session,
+                    map,
+                    callback,
+                    key,
+                    expected_revision,
+                    after,
+                    true,
+                    cause,
+                    None,
+                )
+                .await;
             if preflight != UseDisposition::Committed {
                 return preflight;
             }
@@ -999,18 +1001,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None
             };
         if callback.effects.encounter.is_some() && callback.has_personal_state() {
-            let ready = self.preflight_personal_quest_encounter(
-                runtime,
-                states,
-                actor,
-                session,
-                map,
-                callback,
-                key,
-                expected_revision,
-                after,
-                cause,
-            );
+            let ready = self
+                .preflight_personal_quest_encounter(
+                    runtime,
+                    states,
+                    actor,
+                    session,
+                    map,
+                    callback,
+                    key,
+                    expected_revision,
+                    after,
+                    cause,
+                )
+                .await;
             if ready != UseDisposition::Committed {
                 return ready;
             }
@@ -1312,20 +1316,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
         }
         if callback.effects.encounter.is_some() && !close {
-            let disposition = self.execute_quest_encounter(
-                runtime,
-                states,
-                actor,
-                session,
-                map,
-                callback,
-                key,
-                expected_revision,
-                after,
-                false,
-                cause,
-                personal_reservation.as_mut(),
-            );
+            let disposition = self
+                .execute_quest_encounter(
+                    runtime,
+                    states,
+                    actor,
+                    session,
+                    map,
+                    callback,
+                    key,
+                    expected_revision,
+                    after,
+                    false,
+                    cause,
+                    personal_reservation.as_mut(),
+                )
+                .await;
             if disposition == UseDisposition::Committed {
                 if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                     pending.remove(&session);

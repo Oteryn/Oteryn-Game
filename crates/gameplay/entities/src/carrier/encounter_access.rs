@@ -190,6 +190,23 @@ impl ChannelRuntimeV1 {
             .map(|_| ())
     }
 
+    /// Qualify phase spawning and binding without publishing or consuming actor slots.
+    pub fn preflight_quest_encounter_phase<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        bind: impl FnOnce(&mut Self, &[ExactActorRef]) -> Result<(), CarrierError>,
+    ) -> Result<(), CarrierError> {
+        self.quest_encounter_with_phase(
+            players,
+            monsters,
+            |runtime, actors, _| bind(runtime, actors),
+            || true,
+            false,
+        )
+        .map(|_| ())
+    }
+
     pub fn commit_quest_encounter_entry_with_roster<P: SourceStepCommitProof>(
         &mut self,
         players: Vec<P>,

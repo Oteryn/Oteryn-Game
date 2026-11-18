@@ -1,6 +1,7 @@
 //! Callback relocation uses the same sealed movement commit as stairs and rope.
 use super::*;
 
+#[derive(Clone)]
 struct CallbackTeleport<'a> {
     cells: &'a NativeEntryMovementCells,
     actor: ExactActorRef,
@@ -84,7 +85,7 @@ pub fn prepare_quest_encounter_admission<'a>(
     pz_blocked: bool,
     closed: &'a dyn CellBlocker,
     player_stack: bool,
-) -> Result<impl crate::foundation::SourceStepCommitProof + 'a, MovementError> {
+) -> Result<impl crate::foundation::SourceStepCommitProof + Clone + 'a, MovementError> {
     let proof = CallbackTeleport {
         cells,
         actor,

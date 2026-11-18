@@ -9,7 +9,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         clippy::too_many_arguments,
         reason = "one owner turn binds party, native carrier, map and exact lever revision"
     )]
-    pub(super) fn execute_quest_encounter(
+    pub(super) async fn execute_quest_encounter(
         &self,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
@@ -38,10 +38,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             cause,
             reservation,
         )
+        .await
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub(super) fn preflight_personal_quest_encounter(
+    pub(super) async fn preflight_personal_quest_encounter(
         &self,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
@@ -68,10 +69,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             cause,
             None,
         )
+        .await
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn quest_encounter(
+    async fn quest_encounter(
         &self,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
@@ -277,6 +279,99 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .map(|(actor, session, _)| (*actor, *session))
             .collect();
+        let credits = if encounter.phase.is_some() {
+            let Ok(credits) =
+                super::super::grizzly_kills::capture_encounter_admission(self, runtime, &party)
+            else {
+                return UseDisposition::Rejected;
+            };
+            Some(credits)
+        } else {
+            None
+        };
+        if grave_danger {
+            let Some(phase_credits) = credits.clone() else {
+                return UseDisposition::Rejected;
+            };
+            if states.encounter_phases.reserve(runtime, key).is_err()
+                || map.facts.object_revision(key) != expected_revision
+                || runtime
+                    .preflight_quest_encounter_phase(
+                        proofs.clone(),
+                        &monsters,
+                        |runtime, actors| {
+                            super::super::encounter_phases::bind(
+                                runtime,
+                                callback,
+                                key,
+                                actors,
+                                &party,
+                                phase_credits,
+                                self.movement_cells().clone(),
+                                self.owner_now().get(),
+                            )
+                            .map(|_| ())
+                        },
+                    )
+                    .is_err()
+            {
+                return UseDisposition::Occupied;
+            }
+            use sha2::{Digest, Sha256};
+            let boss = match encounter.phase {
+                Some(EncounterPhase::GraveDangerCountVlarkorth { .. }) => {
+                    "oteryn:creature.count_vlarkorth"
+                }
+                Some(EncounterPhase::GraveDangerDukeKrule { .. }) => "oteryn:creature.duke_krule",
+                Some(EncounterPhase::GraveDangerEarlOsam { .. }) => "oteryn:creature.earl_osam",
+                Some(EncounterPhase::GraveDangerLordAzaram { .. }) => "oteryn:creature.lord_azaram",
+                Some(EncounterPhase::GraveDangerSirs { .. }) => "oteryn:creature.sir_baeloc",
+                Some(EncounterPhase::GraveDangerZelos { .. }) => "oteryn:creature.king_zelos",
+                _ => return UseDisposition::Rejected,
+            };
+            let QuestCause::Use(command) = cause else {
+                return UseDisposition::Rejected;
+            };
+            let mut fences = Vec::with_capacity(party.len());
+            for &(who, member_session) in &party {
+                let Ok(Some(fence)) = self.current_quest_fence(member_session).await else {
+                    return UseDisposition::Rejected;
+                };
+                if !runtime
+                    .bound_attacker_lease(who, member_session)
+                    .is_ok_and(|lease| {
+                        lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                            && lease.generation() == fence.character_lease_generation
+                    })
+                {
+                    return UseDisposition::Rejected;
+                }
+                fences.push(fence.item_fence());
+            }
+            let mut hash = Sha256::new()
+                .chain_update(b"grave-danger-lever:v1")
+                .chain_update(command.game_session_id().as_bytes())
+                .chain_update(command.command_id().get().to_be_bytes())
+                .chain_update(boss)
+                .chain_update(key.to_be_bytes())
+                .chain_update(expected_revision.to_be_bytes());
+            for fence in &fences {
+                hash.update(fence.character_id.as_bytes());
+            }
+            let mut admission = [0; 16];
+            admission.copy_from_slice(&hash.finalize()[..16]);
+            admission[6] = (admission[6] & 0x0f) | 0x70;
+            admission[8] = (admission[8] & 0x3f) | 0x80;
+            match self
+                .root
+                .commit_grave_danger_cooldown(self.character, self.holder, fences, boss, admission)
+                .await
+            {
+                Ok(true) => {}
+                Ok(false) => return UseDisposition::RequirementNotMet,
+                Err(_) => return UseDisposition::Rejected,
+            }
+        }
         let scoped_hash = self.quest_catalogue.as_deref().and_then(|catalogue| {
             let bindings = catalogue.authored_bindings()?;
             bindings.quests.iter().find(|quest| quest.stages.iter().any(|stage|
@@ -308,16 +403,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(prepared) => Some(prepared),
                 Err(_) => return UseDisposition::Rejected,
             }
-        } else {
-            None
-        };
-        let credits = if encounter.phase.is_some() {
-            let Ok(credits) =
-                super::super::grizzly_kills::capture_encounter_admission(self, runtime, &party)
-            else {
-                return UseDisposition::Rejected;
-            };
-            Some(credits)
         } else {
             None
         };
