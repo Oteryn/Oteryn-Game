@@ -32,7 +32,17 @@
       "failure_message": null,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/movements_movement-cults-of-carlin-teleport.lua:3-14"
-      ]
+      ],
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 32403,
+            "y": 31813,
+            "floor": -8
+          },
+          "effect": 11
+        }
+      }
     },
     {
       "key": "oteryn:quest-callback/cults_of_tibia/orc_entry",
@@ -63,7 +73,17 @@
       "failure_message": null,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/movements_orc_teleport.lua:9-21"
-      ]
+      ],
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33182,
+            "y": 31837,
+            "floor": -15
+          },
+          "effect": 11
+        }
+      }
     },
     {
       "key": "oteryn:quest-callback/cults_of_tibia/orc_exit",
@@ -94,7 +114,17 @@
       "failure_message": null,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/movements_orc_teleport.lua:9-21"
-      ]
+      ],
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33168,
+            "y": 31930,
+            "floor": -12
+          },
+          "effect": 11
+        }
+      }
     },
     {
       "key": "oteryn:quest-callback/cults_of_tibia/essence_exit",
@@ -125,7 +155,17 @@
       "failure_message": null,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/movements_teleport_from_essence_of_malice.lua:3-14"
-      ]
+      ],
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 32349,
+            "y": 31668,
+            "floor": -10
+          },
+          "effect": 11
+        }
+      }
     },
     {
       "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_0",
