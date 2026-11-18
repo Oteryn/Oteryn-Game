@@ -129,7 +129,7 @@ pub fn mutation(
             revision,
             ..
         } => {
-            require((-15..=0).contains(floor), "Invalid floor")?;
+            require((0..=15).contains(floor), "Invalid floor")?;
             let floor = i64::from(*floor);
             let position = [
                 number(1, (*x).into()),

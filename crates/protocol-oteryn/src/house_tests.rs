@@ -68,7 +68,7 @@ fn house_intent_strict_bounds_oneof_and_list() {
 }
 #[test]
 fn house_door_native_coordinates_and_empty_clear() {
-    for floor in [0, 29] {
+    for floor in [0, 30] {
         let mut p = Vec::new();
         scalar(&mut p, 1, 65535);
         scalar(&mut p, 2, 0);
@@ -78,7 +78,7 @@ fn house_door_native_coordinates_and_empty_clear() {
         scalar(&mut d, 2, 0);
         assert!(decode_house_intent(&intent(5, &d)).is_ok());
     }
-    for (x, floor) in [(65536, 0), (0, 2), (0, 30), (0, 31)] {
+    for (x, floor) in [(65536, 0), (0, 1), (0, 32), (0, 31)] {
         let mut p = Vec::new();
         scalar(&mut p, 1, x);
         scalar(&mut p, 2, 0);
@@ -179,7 +179,7 @@ fn house_acl_read_round_trips_the_exact_list_and_bounded_snapshot()
         selector: HouseAclSelector::Door {
             x: 6,
             y: 0,
-            floor: -7,
+            floor: 7,
         },
     };
     let encoded = encode_house_acl_read_query(id(1), "oteryn:content.area.city.thais", &read)

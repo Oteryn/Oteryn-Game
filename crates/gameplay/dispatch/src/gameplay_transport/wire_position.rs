@@ -130,10 +130,11 @@ pub(in crate::gameplay_transport) mod test_scene {
             y: at.y,
             floor: at.floor,
         };
+        let captured = source.entry_start();
         let wire = ActorPosition {
-            x: at.x,
-            y: at.y,
-            floor: at.floor,
+            x: captured.x,
+            y: captured.y,
+            floor: captured.floor,
         };
         let pin = ChannelContentPin::from_activation(
             world,
@@ -294,6 +295,15 @@ mod tests {
     }
     #[test]
     fn source_and_ordinary_bundle_snapshots_share_the_physical_floor() -> Result<(), String> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(check_source_and_ordinary_bundle_snapshots)
+            .map_err(|error| error.to_string())?
+            .join()
+            .map_err(|_| "snapshot scenario panicked".to_owned())?
+    }
+
+    fn check_source_and_ordinary_bundle_snapshots() -> Result<(), String> {
         use crate::gameplay_transport::world_spatial::{
             ChannelEntities, ChannelEntity, EntityLights, SessionVisibility, VisibleKind,
         };

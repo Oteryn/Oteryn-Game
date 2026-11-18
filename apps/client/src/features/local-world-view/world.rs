@@ -278,7 +278,7 @@ mod tests {
         let position = ActorPosition {
             x: 100,
             y: 200,
-            floor: -7,
+            floor: 7,
         };
         let mut map = WorldMapViewSnapshot {
             header: MapViewHeader {
@@ -319,7 +319,7 @@ mod tests {
         upper.position = ActorPosition {
             x: 101,
             y: 201,
-            floor: -6,
+            floor: 6,
         };
         map.tiles.push(upper);
         let layered = World::resolve_live_map(&root, &map)?;

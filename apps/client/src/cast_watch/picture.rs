@@ -52,7 +52,12 @@ impl Assets {
                 let shift = i32::from(camera - floor);
                 TileCoord::new(x - shift, y - shift)
             };
-            for (&(floor, y, x), appearances) in picture.tiles.iter().rev() {
+            let tiles = (0..=15).rev().flat_map(|floor| {
+                picture
+                    .tiles
+                    .range((floor, 0, 0)..=(floor, u16::MAX, u16::MAX))
+            });
+            for (&(floor, y, x), appearances) in tiles {
                 let at = projected(i32::from(x), i32::from(y), floor);
                 let mut cells = Vec::new();
                 if let Some((index, sheets)) = &self.source {
@@ -181,7 +186,7 @@ mod tests {
         let mut picture = Picture::default();
         picture.floor = Some(7);
         for (x, y) in [(8, 10), (25, 10), (8, 23), (25, 23)] {
-            picture.tiles.insert((-7, y, x), vec![100]);
+            picture.tiles.insert((7, y, x), vec![100]);
         }
         picture.actors.push((1, 25, 23 + 8 * 32, 1, 100));
         picture.effects.push((

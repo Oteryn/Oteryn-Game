@@ -402,7 +402,7 @@ fn floor_fade_reaches_bevy_sprite_alpha() -> TestResult {
     let origin = ActorPosition {
         x: 100,
         y: 200,
-        floor: -7,
+        floor: 7,
     };
     let tile = |position| MapTile {
         position,
@@ -429,7 +429,7 @@ fn floor_fade_reaches_bevy_sprite_alpha() -> TestResult {
             tile(ActorPosition {
                 x: 101,
                 y: 201,
-                floor: -6,
+                floor: 6,
             }),
         ],
     };
@@ -454,7 +454,7 @@ fn floor_fade_reaches_bevy_sprite_alpha() -> TestResult {
         app.world().resource::<SceneCache>().floor_alpha.get(&-6),
         Some(&1.0)
     );
-    map.header.first_visible_floor = -7;
+    map.header.first_visible_floor = 7;
     app.world_mut()
         .non_send_mut::<HostOwner>()
         .play

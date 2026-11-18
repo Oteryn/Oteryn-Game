@@ -135,18 +135,18 @@ uses the existing consent, delay, sequence and revocation barrier.
 PublicMedia has required field 1 discriminant:
 
 - 1 Map: fields 2 reset bool, 3 last bool, repeated 4 DisplayTile (max 32).
-  Each tile has 1 x, 2 y (u16, relative to caster +16), 3 floor+15 (0–15),
+  Each tile has 1 x, 2 y (u16, relative to caster +16), 3 15 - z (0–15),
   repeated 4 appearance IDs (u16, max 10, ordered ground-first). Map chunks
   replace the previous map from reset through last, covering all visible
   floors. They contain no item targets, handles or object revisions.
 - 2 Effects: field 2 strict presentation batch, restricted to MagicEffect and
-  Missile. Coordinates are relative to caster +16; floors use the existing presentation wire’s positive 0–15 convention (the inverse of map floors). No value text, spell words, entity references or sounds are accepted.
-- 3 Speech: fields 2 x, 3 y (u16, relative to caster +16), 4 floor+15, 5 local speech
+  Missile. Coordinates are relative to caster +16; floors use the existing presentation wire’s positive 0–15 convention. No value text, spell words, entity references or sounds are accepted.
+- 3 Speech: fields 2 x, 3 y (u16, relative to caster +16), 4 15 - z, 5 local speech
   mode (1–4), 6 text (1–256 bytes). No speaker identity/name or private/room
   routing can be represented. Only local speech actually delivered to the
   caster from a currently visible speaker is eligible.
 
-Actor scene x is relative+16; y is relative+16 plus `(floor+15)*32` so floors
+Actor scene x is relative+16; y is relative+16 plus `(15 - z)*32` so floors
 remain distinct. The normal native appearance and health representation is
 preserved, including its existing placeholder appearance limitation. Map
 appearances come from the real caster map planner and include creatures/NPCs
@@ -171,8 +171,7 @@ The preference adapter and Platform handoff are documented in
 remains independently gated as in S17-A; this server package does not activate
 an unsupported native client.
 
-The caster camera normalizes runtime `z` to native negative map floors before
-joining entity and map captures. Actor floor planes and public speech use that
+The caster camera, map and entity captures share the same Global z. Actor floor planes and public speech use that
 native convention; presentation effects retain their existing positive wire
 floor convention. The map's `first_visible_floor` and window filter apply to
 all projected tiles, actors, local speech and effects. Roof-hidden floors are
@@ -186,7 +185,7 @@ map chunks never expose the caster's absolute world coordinates.
 ### CLCAST public camera
 
 Within PublicMedia (Message kind 21), nested kind 34 is Camera: required
-varint field 2 is `floor + 15`, bounded 0..15. The map producer sends it before
+varint field 2 is `15 - z`, bounded 0..15. The map producer sends it before
 the reset map chunk. It shares that capture's consent binding and chosen delay.
 It contains no absolute position, actor identity or actionable handle. The
 native viewer stages the camera and scene until the final map chunk, and drops

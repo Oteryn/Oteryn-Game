@@ -174,7 +174,7 @@ mod tests {
             wire.0
                 .iter()
                 .all(|mark| (mark.x, mark.y, mark.floor, mark.text.as_str())
-                    == (31948, 31924, -7, "Treasure"))
+                    == (31948, 31924, 7, "Treasure"))
         );
         assert!(
             encode_snapshot(QuestMapMarksSnapshot {

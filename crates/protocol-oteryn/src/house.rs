@@ -203,7 +203,7 @@ fn list(body: &[u8], door: bool) -> Result<HouseAction> {
                     }
                 }
                 let floor = floor.ok_or(Error::Malformed)?;
-                if !(-15..=0).contains(&floor) {
+                if !(0..=15).contains(&floor) {
                     return Err(Error::Malformed);
                 }
                 set_once(

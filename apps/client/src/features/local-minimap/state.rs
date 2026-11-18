@@ -68,11 +68,11 @@ impl Default for Minimap {
             quest_markers: Vec::new(),
             x: 0,
             y: 0,
-            floor: -7,
+            floor: 7,
             zoom: 1,
             tracking: true,
             editor_open: false,
-            own: (0, 0, -7),
+            own: (0, 0, 7),
             feedback: String::new(),
             root: std::env::var_os("LOCALAPPDATA").map(|p| PathBuf::from(p).join("Oteryn/minimap")),
             world: None,
@@ -399,7 +399,8 @@ impl Minimap {
         if bytes.len() as u64 > MAX_BYTES {
             return Err(io::Error::other(tr!("Minimap file is too large")));
         }
-        let saved: Saved = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+        let mut saved: Saved = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+        saved.normalize_floor_sign();
         saved.validate()?;
         // Older caches recorded gray item-only cells. They are not persistent terrain.
         self.dirty |= saved.cells.iter().any(|cell| cell[3] == 86);
@@ -442,7 +443,7 @@ mod quest_mark_tests {
             key: "sterling".into(),
             x: 31948,
             y: 31924,
-            floor: -7,
+            floor: 7,
             text: "Treasure".into(),
         }])
     }
@@ -462,7 +463,7 @@ mod quest_mark_tests {
             map.replace_quest_markers(&[oteryn_session::quest_log::QuestMapMark {
                 x: 31948,
                 y: 31924,
-                floor: -7,
+                floor: 7,
                 text: "Treasure".into(),
             }])
         );

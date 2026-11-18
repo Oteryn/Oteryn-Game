@@ -770,6 +770,7 @@ pub fn qualify(
     if ids.len() != policies.len() {
         return Err(invalid());
     }
+    let project_floor = |z| if activity.is_some() { z } else { -z };
     let mut cells = BTreeMap::new();
     let mut immutable_tiles = BTreeMap::new();
     let mut pending_placements = Vec::new();
@@ -778,7 +779,7 @@ pub fn qualify(
         let native = [
             x - doc.native_frame.origin_x,
             y - doc.native_frame.origin_y,
-            -z,
+            project_floor(z),
         ];
         let [x0, y0, x1, y1, z0, z1] = doc.source_bounds;
         if !(x0..=x1).contains(&x)
@@ -788,12 +789,7 @@ pub fn qualify(
                 && !doc.source_regions.iter().any(|&[a, b, c, d, e, f]| {
                     (a..=c).contains(&x) && (b..=d).contains(&y) && (e..=f).contains(&z)
                 }))
-            || row.native_position
-                != if activity.is_some() {
-                    row.source_position
-                } else {
-                    native
-                }
+            || row.native_position != native
             || row.house_id.is_some()
         {
             return Err(invalid());
@@ -968,7 +964,7 @@ pub fn qualify(
     let temple = LogicalCell {
         x: entry[0] - doc.native_frame.origin_x,
         y: entry[1] - doc.native_frame.origin_y,
-        z: -entry[2],
+        z: project_floor(entry[2]),
     };
     let start = cells
         .get(&temple)
@@ -988,8 +984,8 @@ pub fn qualify(
             doc.source_bounds[1] - doc.native_frame.origin_y,
             doc.source_bounds[2] - doc.native_frame.origin_x,
             doc.source_bounds[3] - doc.native_frame.origin_y,
-            -doc.source_bounds[5],
-            -doc.source_bounds[4],
+            project_floor(doc.source_bounds[4]).min(project_floor(doc.source_bounds[5])),
+            project_floor(doc.source_bounds[4]).max(project_floor(doc.source_bounds[5])),
         ],
         bindings: doc.source_identity_bindings,
         immutable_tiles,
@@ -1728,7 +1724,7 @@ pub(in crate::content) fn qualifies_activity_bundle_cells(
     }
     doc.tiles.iter().all(|tile| {
         let [x, y, z] = tile.source_position;
-        let source_cell = LogicalCell { x, y, z: -z };
+        let source_cell = LogicalCell { x, y, z };
         let target = LogicalCell { x, y, z };
         let expected = room
             .movement_cells()

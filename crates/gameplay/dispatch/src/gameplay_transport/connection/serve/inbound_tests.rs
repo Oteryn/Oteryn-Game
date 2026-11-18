@@ -26,7 +26,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
 const FIELD: WorldTilePosition = WorldTilePosition {
     x: 300,
     y: 300,
-    floor: -7,
+    floor: 7,
 };
 
 fn observation() -> WorldSpatialObservation {
@@ -80,7 +80,7 @@ impl FreshAdmissionAuthority for SlowOwner {
                 crate::map::overlay::TilePos {
                     x: 300,
                     y: 300,
-                    floor: -7,
+                    floor: 7,
                 },
                 11,
             )]
@@ -251,7 +251,7 @@ impl FreshAdmissionAuthority for SlowOwner {
                     y: FIELD.y,
                     floor: FIELD.floor,
                 },
-                first_visible_floor: -7,
+                first_visible_floor: 7,
             },
             tiles: Vec::new(),
         })

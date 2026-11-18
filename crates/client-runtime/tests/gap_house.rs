@@ -21,7 +21,7 @@ fn gap_house_exact_mutations_and_query() -> Result<(), &'static str> {
             Action::Door {
                 x: 1,
                 y: 2,
-                floor: -7,
+                floor: 7,
                 revision: 8,
                 members: vec![],
             },
@@ -108,7 +108,7 @@ fn gap_house_members_and_largest_door_request_stay_bounded() -> Result<(), &'sta
         &Action::Door {
             x: u16::MAX,
             y: u16::MAX,
-            floor: -15,
+            floor: 15,
             revision: u64::MAX,
             members,
         },

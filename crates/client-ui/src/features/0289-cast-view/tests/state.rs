@@ -18,7 +18,7 @@ fn s17b_public_picture_commits_atomically_and_slate_clears_private_free_view()
         Message::Media {
             epoch: 1,
             sequence: 2,
-            media: PublicMedia::Camera { floor: -7 },
+            media: PublicMedia::Camera { floor: 7 },
         },
         Message::Media {
             epoch: 1,
@@ -29,7 +29,7 @@ fn s17b_public_picture_commits_atomically_and_slate_clears_private_free_view()
                 tiles: vec![DisplayTile {
                     x: 16,
                     y: 16,
-                    floor: -7,
+                    floor: 7,
                     appearances: vec![100],
                 }],
             },
@@ -63,7 +63,7 @@ fn s17b_public_picture_commits_atomically_and_slate_clears_private_free_view()
                 position: oteryn_client_runtime::cast_view::Position {
                     x: 16,
                     y: 16,
-                    floor: -7,
+                    floor: 7,
                 },
                 mode: oteryn_client_runtime::cast_view::SpeechMode::Say,
                 text: "Hello spectators".into(),

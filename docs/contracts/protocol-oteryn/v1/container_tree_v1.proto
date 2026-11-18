@@ -51,7 +51,7 @@ message BrowseFieldPageV1 {
   // x and y are in the bundle's uint16 coordinate range.
   sint32 x = 1;
   sint32 y = 2;
-  // Native floor -15 through 0, in the same frame as WorldTilePositionV1.
+  // Global z from 0 through 15, in the same frame as WorldTilePositionV1.
   sint32 floor = 3;
   // First item index, at most 65535, divisible by 30 and below total (or both zero).
   uint32 index = 4;

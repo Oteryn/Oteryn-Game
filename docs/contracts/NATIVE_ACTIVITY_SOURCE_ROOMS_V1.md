@@ -67,8 +67,8 @@ Instance allocation, readiness, participant, session or teleport authority.
 
 Source positions and the capture's native positions both retain donor `x,y,z`.
 The wire and activity physics use Global z from 0 through 15, with ground at 7.
-The read-only map qualification and the bundle tile index still use the signed
-World Bundle storage format and convert at the qualification and wire boundaries.
+Source-room qualification uses the same floor as the capture. The bundle tile index
+uses the signed World Bundle storage format and translates at its lookup boundary.
 The ordinary map snapshot (domain 17), item handles and activity scope barrier
 (domain 99) remain the native client path. No capability, command or protocol
 message number is allocated.

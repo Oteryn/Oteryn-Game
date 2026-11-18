@@ -92,7 +92,7 @@ fn door_editor_uses_catalogue_revision_without_manual_revision()
         ..Row::default()
     });
     panel.fields[2] = "1".into();
-    panel.fields[5] = "100 200 -7".into();
+    panel.fields[5] = "100 200 7".into();
     panel.fields[6] = "CONFIRM".into();
     let command = prepare(&mut panel, 5)?;
     assert_eq!(
@@ -104,7 +104,7 @@ fn door_editor_uses_catalogue_revision_without_manual_revision()
             &Action::Door {
                 x: 100,
                 y: 200,
-                floor: -7,
+                floor: 7,
                 revision: 37,
                 members: vec![]
             }
@@ -131,7 +131,7 @@ fn house_acl_editor_loads_each_server_list_and_saves_its_revision()
         p.fields[0] = world_text.into();
         p.fields[1] = "oteryn:content.area.city.thais".into();
         p.fields[2] = "1".into();
-        p.fields[5] = "6 0 -7".into();
+        p.fields[5] = "6 0 7".into();
         p.model.world = world;
         p.model.town = p.fields[1].clone();
         p.model.page.rows.push(Row {
@@ -149,7 +149,7 @@ fn house_acl_editor_loads_each_server_list_and_saves_its_revision()
             wire::HouseAclSelector::Door {
                 x: 6,
                 y: 0,
-                floor: -7,
+                floor: 7,
             },
         ),
     ] {

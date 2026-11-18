@@ -144,9 +144,9 @@ mod tests {
             origin: ActorPosition {
                 x: 20,
                 y: 20,
-                floor: -7,
+                floor: 7,
             },
-            first_visible_floor: -7,
+            first_visible_floor: 7,
         }
     }
 
@@ -272,10 +272,10 @@ mod tests {
                 Some(&sent),
                 MapViewHeader {
                     origin: ActorPosition {
-                        floor: -6,
+                        floor: 6,
                         ..sent.header.origin
                     },
-                    first_visible_floor: -6,
+                    first_visible_floor: 6,
                     ..sent.header
                 },
                 vec![],

@@ -38,7 +38,7 @@ impl PublicMedia {
                 }
                 // CLCAST lane: next free nested kind 4 + 30 = 34.
                 push_varint_field(&mut b, 1, 34);
-                push_varint_field(&mut b, 2, (*floor + 15) as u64);
+                push_varint_field(&mut b, 2, (15 - *floor) as u64);
             }
             Self::Map { reset, last, tiles } => {
                 if tiles.len() > 32 {
@@ -55,7 +55,7 @@ impl PublicMedia {
                     for (f, n) in [
                         (1, u64::from(t.x)),
                         (2, u64::from(t.y)),
-                        (3, (t.floor + 15) as u64),
+                        (3, (15 - t.floor) as u64),
                     ] {
                         push_varint_field(&mut v, f, n);
                     }
@@ -96,7 +96,7 @@ impl PublicMedia {
                 for (f, n) in [
                     (2, u64::from(x)),
                     (3, u64::from(y)),
-                    (4, (position.floor + 15) as u64),
+                    (4, (15 - position.floor) as u64),
                     (5, *mode as u64),
                 ] {
                     push_varint_field(&mut b, f, n);
@@ -113,7 +113,7 @@ impl PublicMedia {
         let mut r = Reader { bytes, cursor: 0 };
         let value = match r.var(1)? {
             34 => Self::Camera {
-                floor: i16::try_from(r.var(2)?).map_err(|_| WireError::Malformed)? - 15,
+                floor: 15 - i16::try_from(r.var(2)?).map_err(|_| WireError::Malformed)?,
             },
             1 => {
                 let reset = r.boolean(2)?;
@@ -130,7 +130,7 @@ impl PublicMedia {
                     };
                     let x = t.narrow(1)?;
                     let y = t.narrow(2)?;
-                    let floor = i16::try_from(t.var(3)?).map_err(|_| WireError::Malformed)? - 15;
+                    let floor = 15 - i16::try_from(t.var(3)?).map_err(|_| WireError::Malformed)?;
                     let mut appearances = Vec::new();
                     while t.cursor < data.len() {
                         if appearances.len() >= 10 {
@@ -154,7 +154,7 @@ impl PublicMedia {
             3 => {
                 let x = i32::from(r.narrow::<u16>(2)?);
                 let y = i32::from(r.narrow::<u16>(3)?);
-                let floor = i16::try_from(r.var(4)?).map_err(|_| WireError::Malformed)? - 15;
+                let floor = 15 - i16::try_from(r.var(4)?).map_err(|_| WireError::Malformed)?;
                 let mode = match r.var(5)? {
                     1 => ChatSpeechMode::Say,
                     2 => ChatSpeechMode::Whisper,

@@ -73,7 +73,7 @@ pub const MAX_USE_WITH_PLACEMENT_BYTES: usize = 496;
 /// The encoded `EntityRefV1` of field 4: identity (1 + 1 + 16) and generation (1 + 10).
 const MAX_USE_WITH_BYTES: usize = 29;
 /// The `position` arm (`SpellTargetPositionV1`, SPELL-D7): x and y (1 tag + 5-byte sint32 = 6 each)
-/// and the int16 floor (1 + 3 = 4).
+/// and Global floor (1 + 1 = 2).
 pub const MAX_USE_WITH_POSITION_BYTES: usize = 16;
 /// A single small enum field (1 tag + 1 value byte = 2), with the same slack as
 /// `MAX_STEP_RESULT_BYTES` in `world_spatial.rs` to keep the repeated-field and
@@ -344,6 +344,9 @@ pub fn encode_item_use_intent(intent: &UseIntent) -> Result<Vec<u8>, WorldObject
         }
     };
     if let Some(position) = intent.use_with_position {
+        if !(0..=15).contains(&position.floor) {
+            return Err(WorldObjectError::Malformed);
+        }
         let mut inner = Vec::with_capacity(2 + MAX_USE_WITH_POSITION_BYTES);
         push_bytes_field(&mut inner, 5, &encode_position(position));
         push_bytes_field(&mut output, 4, &inner);
@@ -423,7 +426,7 @@ type UseWith = (
 /// Field 4: an `EntityRefV1` (exactly 16 identity bytes and a non-zero generation) or, under
 /// capability 11, the `map_item` arm (field 3, an item handle) or the `map_object` arm (field 4, a
 /// `WorldObjectTargetV1` with a non-empty placement), or, under capability 22, the `position` arm
-/// (field 5, a `SpellTargetPositionV1` with an int16 floor). Exactly one arm.
+/// (field 5, a `SpellTargetPositionV1` with a Global floor). Exactly one arm.
 fn decode_use_with(
     input: &[u8],
     map_item_use: bool,
@@ -1441,12 +1444,12 @@ mod tests {
             SpellTargetPosition {
                 x: i32::MIN,
                 y: i32::MAX,
-                floor: i16::MIN,
+                floor: 0,
             },
             SpellTargetPosition {
                 x: i32::MAX,
                 y: i32::MIN,
-                floor: i16::MAX,
+                floor: 15,
             },
             SpellTargetPosition {
                 x: 100,
@@ -1499,17 +1502,17 @@ mod tests {
                 }
             }
         }
-        // RUNEUSE0-RL-04: the largest intent with the position arm is 33 bytes.
+        // RUNEUSE0-RL-04: the largest valid intent with the position arm is 31 bytes.
         let worst = encode_item_use_intent(&at(
             SpellTargetPosition {
                 x: i32::MIN,
                 y: i32::MIN,
-                floor: i16::MIN,
+                floor: 15,
             },
             UseTarget::Item(handle),
         ))
         .expect("encode");
-        assert_eq!(worst.len(), 33);
+        assert_eq!(worst.len(), 31);
         // Capability 22 leaves the other arms as they were.
         let potion = UseIntent {
             target: UseTarget::Item(handle),
