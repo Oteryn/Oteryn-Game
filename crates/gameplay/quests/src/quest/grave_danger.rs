@@ -150,15 +150,7 @@ pub fn choose(message: &str, topic: Option<Topic>, questline: i64, _outfit: i64)
     } else if contains(&message, "threat") && topic == Some(Topic::Threat) {
         choice(Reply::Threat, (questline == 2).then_some(ACCESS), None)
     } else if contains(&message, "late") && questline < 1 {
-        // The13-effect start is source-only under the coordinator's point5:
-        // https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017.
-        // No success reply and no partial reset may escape this closed policy.
-        Some(Choice {
-            reply: None,
-            transition: None,
-            topic,
-            deferred: true,
-        })
+        choice(Reply::Start, Some(START), topic)
     } else {
         None
     }
@@ -372,15 +364,16 @@ mod tests {
     }
 
     #[test]
-    fn unadmitted_start_and_final_defer_the_whole_source_change() {
+    fn start_is_available_before_completion_and_final_remains_held() {
+        // TibiaWiki spoiler oldid 1176165, The Lich Knights transcript.
         for questline in [-1, 0] {
             assert_eq!(
                 choose("late", None, questline, -1),
                 Some(Choice {
-                    reply: None,
-                    transition: None,
+                    reply: Some(Reply::Start),
+                    transition: Some(START),
                     topic: None,
-                    deferred: true
+                    deferred: false
                 })
             );
         }
@@ -450,8 +443,7 @@ mod tests {
     }
 
     #[test]
-    fn real_catalogue_opens_zelos_door_atomically_and_holds_unadmitted_start_and_final()
-    -> Result<(), String> {
+    fn real_catalogue_opens_zelos_door_atomically_and_holds_final() -> Result<(), String> {
         let lowered = super::super::loader::load_embedded_quest_state("grave-danger")
             .map_err(|error| format!("{error:?}"))?;
         let catalogue = lowered.catalogue();
@@ -471,10 +463,8 @@ mod tests {
             catalogue.evaluate(transition, &tracks, 0),
             Err(super::super::QuestRefusal::StageMismatch)
         );
-        assert!(
-            catalogue.transition(START).is_none(),
-            "Q18's13-effect start must not be partially admitted"
-        );
+        // TibiaWiki spoiler oldid 1176165 starts the twelve-grave quest on "late".
+        assert!(catalogue.transition(START).is_some());
         assert!(catalogue.transition(FINISH).is_none());
         assert!(catalogue.transition(FINISH_HELD).is_none());
         Ok(())
