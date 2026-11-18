@@ -881,6 +881,7 @@ impl DurabilityRoot {
         if (request.transition_key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE
             || request.transition_key == oteryn_gameplay_quests::quest::dreamer_carrot::KEY
             || request.transition_key.starts_with(world_callbacks::GROUND_CLEANUP_PREFIX)
+            || request.transition_key.starts_with(world_callbacks::OFFERING_PORTAL_PREFIX)
             || request.transition_key.starts_with(world_callbacks::RANKED_TOLL_PREFIX)
             || request.transition_key.starts_with(world_callbacks::SOLO_ROOM_PREFIX))
             != shared_entrance

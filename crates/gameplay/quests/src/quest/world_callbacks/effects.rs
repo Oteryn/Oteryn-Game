@@ -47,6 +47,8 @@ pub struct ItemDisguiseRequirement {
 pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub board_portal: Option<BoardPortal>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub offering_portal: Option<OfferingPortal>,
     /// Qualification for a consumed toll, evaluated under the same Character root.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ranked_toll: Option<RankedToll>,
@@ -508,6 +510,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
     let effects = &callback.effects;
+    if effects.offering_portal.as_ref().is_some_and(|portal| !portal.valid(callback)) {
+        return false;
+    }
     if effects
         .ranked_toll
         .as_ref()

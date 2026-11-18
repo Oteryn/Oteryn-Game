@@ -223,16 +223,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .first()?;
         if runtime.contains_live_creature(original)
             && states
-            .encounter_phases
-            .link(
-                runtime,
-                delayed,
-                original,
-                link.radius,
-                link.death_effect,
-                self.movement_cells().clone(),
-            )
-            .is_err()
+                .encounter_phases
+                .link(
+                    runtime,
+                    delayed,
+                    original,
+                    link.radius,
+                    link.death_effect,
+                    self.movement_cells().clone(),
+                )
+                .is_err()
         {
             let _ = runtime.remove_encounter_actor(delayed);
             return None;
@@ -657,7 +657,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(phases);
         if let Some(link) = &encounter.linked_arrival {
             for monster in &encounter.monsters {
-                map.facts.emit_movement_effect(tile(monster.position), link.arrival_effect);
+                map.facts
+                    .emit_movement_effect(tile(monster.position), link.arrival_effect);
             }
         }
         if let Some(visits) = &mut visits {

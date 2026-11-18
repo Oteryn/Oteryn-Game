@@ -888,9 +888,18 @@ async fn consume_inputs(
         inputs.extend(resolved);
     }
     // Stable tile order and then instance order. One item cannot satisfy two altars.
+    let ordered_portal = callback.effects.offering_portal.is_some();
     let mut offerings = callback.offerings.iter().collect::<Vec<_>>();
-    offerings.sort_by_key(|o| o.position);
+    if !ordered_portal {
+        offerings.sort_by_key(|o| o.position);
+    }
     for offering in offerings {
+        if ordered_portal && offering.item == oteryn_gameplay_quests::quest::world_callbacks::FLUID_POOL {
+            if !consume_sacrifice_splash(tx, fence, request, context, offering.position).await? {
+                break;
+            }
+            continue;
+        }
         let Position { x, y, floor } = offering.position;
         let mut spatial = i32::from(x).to_be_bytes().to_vec();
         spatial.extend_from_slice(&i32::from(y).to_be_bytes());
@@ -904,7 +913,8 @@ async fn consume_inputs(
              AND g.native_room_placement_context=$6 \
              AND g.runtime_scope_ownership_generation=$7::text::numeric \
              AND i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$8 \
-             AND i.quantity >= $9 AND game_item_loop_drop_ref(g.corpse_ref) \
+             AND i.quantity >= $9 AND (game_item_loop_drop_ref(g.corpse_ref) \
+                  OR ($10 AND game_dreamer_stone_field_current(i,g))) \
              ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i,g",
         )
         .bind(world_id.as_bytes().as_slice())
@@ -916,6 +926,7 @@ async fn consume_inputs(
         .bind(fence.scope_ownership_generation.get().to_string())
         .bind(&offering.item)
         .bind(i64::from(offering.count))
+        .bind(ordered_portal && offering.item == oteryn_gameplay_quests::quest::world_callbacks::SACRIFICE_FIRE)
         .fetch_optional(&mut **tx)
         .await?;
         let Some(row) = row else {
@@ -923,6 +934,9 @@ async fn consume_inputs(
             // present, including every token in a matching stack.
             if callback.effects.cleanup_offerings {
                 continue;
+            }
+            if ordered_portal {
+                break;
             }
             return Ok(false);
         };
@@ -938,6 +952,7 @@ async fn consume_inputs(
             quantity: row.try_get("quantity")?,
             count: if callback.effects.party_transfer.is_some()
                 || callback.effects.cleanup_offerings
+                || ordered_portal
             {
                 let quantity: i64 = row.try_get("quantity")?;
                 let Ok(count) = u16::try_from(quantity) else {
@@ -992,6 +1007,49 @@ async fn consume_inputs(
         apply_input(tx, permit, fence, &input, &transaction).await?;
     }
     Ok(true)
+}
+
+async fn consume_sacrifice_splash(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: CurrentCharacterGameplayFence,
+    request: &super::quest_state::QuestTransitionRequest,
+    context: &QuestWorldContext,
+    position: Position,
+) -> Result<bool, DurabilityError> {
+    let (super::quest_state::QuestCause::Use(command),
+        crate::foundation::RuntimeScopeRefV1::Channel {world_id, channel_id}) =
+        (request.cause, fence.runtime_scope)
+    else {
+        return Ok(false);
+    };
+    let Some(bundle_hex) = context.map_revision.strip_prefix("sha256:") else {
+        return Ok(false);
+    };
+    let base_key = u64::from(position.x) << 32 | u64::from(position.y) << 16
+        | u64::from(position.floor.unsigned_abs()) << 8;
+    let consumed = sqlx::query(
+        "WITH selected AS (
+            SELECT transaction_id FROM game_item_fluid_splashes
+            WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid
+              AND expires_at>clock_timestamp() AND octet_length(placement)=40
+              AND substring(placement for 39)=decode($3,'hex')||substring(int8send($4) for 7)
+            ORDER BY created_at DESC,transaction_id LIMIT 1 FOR UPDATE
+         ), receipt AS (
+            INSERT INTO game_quest_stone_splash_consumptions
+                (character_id,cause_id,cause_ordinal,transition_key,splash_transaction_id)
+            SELECT encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7::text::numeric,$8,transaction_id
+            FROM selected RETURNING splash_transaction_id
+         )
+         DELETE FROM game_item_fluid_splashes
+         WHERE transaction_id=(SELECT splash_transaction_id FROM receipt)",
+    )
+        .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice())
+        .bind(bundle_hex).bind(i64::try_from(base_key).map_err(|_| DurabilityError::InvalidStoredState)?)
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(command.game_session_id().as_bytes().as_slice())
+        .bind(command.command_id().get().to_string()).bind(&request.transition_key)
+        .execute(&mut **tx).await?.rows_affected();
+    Ok(consumed == 1)
 }
 
 /// Closed native NPC handover reuses the existing carried Quest consumption owner.
