@@ -25,6 +25,14 @@ impl MountReward {
     }
 }
 
+/// Direct, nonlethal health loss on an admitted relocation.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct StepHealthLoss {
+    pub percent: u8,
+    pub health_floor: u32,
+}
+
 /// A source-authored, nonportable object distinct from the interaction target.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -95,6 +103,8 @@ pub struct CallbackEffects {
     pub passages_reset_after_ms: Option<u32>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub step_health_loss: Option<StepHealthLoss>,
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teleport_effect: Option<u16>,
@@ -393,6 +403,16 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects.step_health_loss.is_some_and(|loss| {
+        !(1..100).contains(&loss.percent)
+            || loss.health_floor == 0
+            || callback.trigger != Trigger::StepIn
+            || callback.actor_kind != ActorKind::Player
+            || callback.teleport.is_none()
+            || !callback.is_read_only()
+    }) {
+        return false;
+    }
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
     if inputs.len() > 8

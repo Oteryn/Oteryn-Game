@@ -38,13 +38,15 @@ pub(super) async fn exercise(
     fence: CurrentCharacterGameplayFence,
     control: &Callback,
 ) -> TestResult {
-    let begin = load()?
+    let mut begin = load()?
         .into_iter()
         .find(|callback| {
             callback.selector.position == Some(BEGIN) && callback.quest == control.quest
         })
         .ok_or("Realm start control")?;
+    begin.key = "oteryn:quest-callback/fixture/five-floor-begin".into();
     let mut control = control.clone();
+    control.key = "oteryn:quest-callback/fixture/five-floor-control".into();
     let area = control.effects.clear_area.as_mut().ok_or("Realm area")?;
     area.additional_floors.push(-7);
     let bindings = Bindings::parse(&serde_json::to_vec(&serde_json::json!({
@@ -62,6 +64,12 @@ pub(super) async fn exercise(
     }))?)?;
     let base = QuestStateCatalogue::empty("content-1").ok_or("test catalogue")?;
     owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
+    owner
+        .states
+        .quest_callbacks
+        .fixture
+        .set(bindings.world_callbacks().cloned().collect())
+        .map_err(|_| "clearance fixture already set")?;
 
     quest_world_callbacks::input_item(
         owner,

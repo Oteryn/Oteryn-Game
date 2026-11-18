@@ -1567,6 +1567,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(snapshot) = runtime.commit_source_step(proof) else {
                 return UseDisposition::Rejected;
             };
+            if let Some(loss) = callback.effects.step_health_loss {
+                states.apply_step_health_loss(
+                    runtime,
+                    actor,
+                    session,
+                    loss.percent,
+                    loss.health_floor,
+                    crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
+                        self.owner_now().get(),
+                    ),
+                );
+            }
             // Crystal 201189f data-global/scripts/actions/other/dryad_garden.lua:18-19:
             // publish at the committed destination, never at the source or on refusal.
             if matches!(

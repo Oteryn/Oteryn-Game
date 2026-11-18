@@ -95,7 +95,7 @@ impl super::DurabilityRoot {
         use super::db::{
             begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
         };
-        let callback = oteryn_gameplay_quests::quest::world_callbacks::load()
+        let callback = oteryn_gameplay_quests::quest::world_callbacks::load_for(&catalogue)
             .map_err(|_| CharacterProgressionError::InvalidInput)?
             .into_iter()
             .find(|callback| {

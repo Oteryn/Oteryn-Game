@@ -350,7 +350,9 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if m03_use {
+    let mut callback = if name == super::super::step_health_loss::NAME {
+        super::super::step_health_loss::callback()?
+    } else if m03_use {
         super::super::qengine_m03_use::callback()?
     } else if qd_world {
         super::super::qd_world::callback(name)?
@@ -2050,6 +2052,8 @@ fn scenario_case(
                 name,
             )
             .await?;
+        } else if name == super::super::step_health_loss::NAME {
+            Box::pin(super::super::step_health_loss::exercise(&mut owner, &mut admitted, deps.actor)).await?;
         } else if failure_landing {
             super::super::conditional_callback_failure::exercise(
                 &owner,

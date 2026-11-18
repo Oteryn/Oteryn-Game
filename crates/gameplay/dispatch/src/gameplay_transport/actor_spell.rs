@@ -1403,6 +1403,38 @@ impl ChannelSpellStates {
         )
     }
 
+    /// Crystal 201189f8, movements_blood_entrance.lua:7-11,26-30.
+    pub(super) fn apply_step_health_loss(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        percent: u8,
+        health_floor: u32,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) {
+        let Some(health) = self
+            .get(runtime, target, session)
+            .map(|state| state.vitals().health)
+        else {
+            return;
+        };
+        let amount = ((u64::from(health) * u64::from(percent)) / 100).max(1) as u32;
+        if health.saturating_sub(amount) > health_floor {
+            let _ = self.apply_creature_damage_kind_inner(
+                runtime,
+                target,
+                session,
+                amount,
+                crate::player_lethal::PlayerHitKind::Physical,
+                now,
+                oteryn_protocol_oteryn::analyser::AnalyserDamageSource::None,
+                true,
+                None,
+            );
+        }
+    }
+
     /// Exact native Soul War Lua health callbacks use the existing HP/shield/death
     /// owner, with source qualification before selecting origin-less processing.
     #[allow(clippy::too_many_arguments)]
