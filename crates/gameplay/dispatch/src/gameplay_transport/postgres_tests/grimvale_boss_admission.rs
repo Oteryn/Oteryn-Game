@@ -2,34 +2,45 @@
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::content::channel_content_pin::ChannelContentPin;
-use crate::foundation::{ChannelRuntimeV1, CharacterLease, MovementLocalPosition};
-use crate::gameplay_transport::connection::FirstEntryOutcome;
-use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
-use oteryn_protocol_oteryn::world_spatial::{
-    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, encode_step_intent,
+use crate::durability::character_authority::ReconciledCharacterAuthority;
+use crate::foundation::{ChannelRuntimeV1, CharacterLease, GameSessionId, MovementLocalPosition};
+use crate::gameplay_transport::{
+    ComposedFreshAdmission,
+    connection::{AdmittedSession, FirstEntryOutcome},
 };
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+
+#[allow(
+    dead_code,
+    reason = "reuse native multi-region cropping without mounting unrelated pickup cases"
+)]
+#[path = "l6_world_pickups/world.rs"]
+mod native_crop;
 
 #[test]
 fn curse_spreads_step_admits_bloodback_and_spends_cooldown_postgres() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("curse-spreads-step", || scenario(false))
+    super::kill_reward_e2e::scenario_thread::run("curse-spreads-step", move || {
+        scenario(admin, false)
+    })
 }
 
 #[test]
 fn ancient_feud_step_enforces_level_and_spends_cooldown_postgres() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("ancient-feud-step", || scenario(true))
+    super::kill_reward_e2e::scenario_thread::run("ancient-feud-step", move || scenario(admin, true))
 }
 
 fn source_world(
     native: &crate::content::native_gameplay::NativeGameplayState,
     trial: bool,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    use super::l6_world_pickups::{ExpectedTeleport, ExpectedTile, NativeCrop, native_scene};
+    use native_crop::{ExpectedTeleport, ExpectedTile, NativeCrop, native_scene};
     let crops = if trial {
         vec![NativeCrop {
             bytes: include_bytes!(concat!(
@@ -81,14 +92,14 @@ fn source_world(
     native_scene(native, crops, if trial { &[] } else { &bloodback_exit })
 }
 
-fn scenario(trial: bool) -> TestResult {
+fn scenario(admin: String, trial: bool) -> TestResult {
     let (x, y, floor, boss, landing) = if trial {
         (33123, 32240, 12, "yirkas_blue_scales", (33154, 32246))
     } else {
         (33167, 31978, 8, "bloodback", (33182, 32012))
     };
     let origin = MovementLocalPosition { x, y, floor };
-    run(async |admin| {
+    run(async |_| {
         reset();
         let h =
             Harness::create_with_admission_seed(admin, "grimvale_boss_step", false, false).await?;
@@ -160,6 +171,7 @@ fn scenario(trial: bool) -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
+        owner.reset_epoch = 1;
         owner.movement_cells = (&cells).into();
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -183,13 +195,31 @@ fn scenario(trial: bool) -> TestResult {
                 .map_err(debug)?,
             )
             .map_err(debug)?;
-        super::grizzly_boss::world::activate(
-            &h,
-            generation.identity().server_artifact_digest(),
-            generation.identity().client_artifact_digest(),
-            activated.frame_binding().digest(),
+        sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
+        .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
+        .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice()).bind(generation.identity().client_artifact_digest().as_slice())
+        .bind(activated.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+        // Use the fixture's active World pin with the real current reset relation.
+        sqlx::query(
+            "INSERT INTO game_world_reset_epochs
+             (world_id, reset_epoch, target_digest, map_revision, server_digest, client_digest,
+              frame_digest, calendar, calendar_revision, activated_at, reset_month)
+             VALUES (encode($1,'hex')::uuid, 1, $2, $3, $4, $5, $6,
+                     'TIBIA_SERVER_SAVE_BERLIN_06', 1, '2031-06-13 12:00:00+00', '2031-06')",
         )
+        .bind(admitted.world_id.as_bytes().as_slice())
+        .bind(world.map_revision_digest().as_slice())
+        .bind(world.map_revision())
+        .bind(generation.identity().server_artifact_digest().as_slice())
+        .bind(generation.identity().client_artifact_digest().as_slice())
+        .bind(activated.frame_binding().digest().as_slice())
+        .execute(&h.pool)
         .await?;
+        sqlx::query("INSERT INTO game_world_reset_active VALUES (encode($1,'hex')::uuid, 1)")
+            .bind(admitted.world_id.as_bytes().as_slice())
+            .execute(&h.pool)
+            .await?;
         let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
         h.root
             .initialize_admission_equipment(
@@ -210,35 +240,54 @@ fn scenario(trial: bool) -> TestResult {
             fence,
         ));
 
-        let north = encode_step_intent(StepDirection::North);
-        if trial {
-            super::quest_world_callbacks::wire(
-                &owner,
-                &mut admitted,
-                1,
-                COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-                north.clone(),
-            )
-            .await?;
-            assert_eq!(
-                deps.runtime
-                    .lock()
-                    .await
-                    .read_actor_position(deps.actor)
-                    .map_err(debug)?
-                    .position(),
-                origin
-            );
-            super::qengine_outfit_stories::earn_level(&owner, &admitted, &authority, 250).await?;
+        let spawn = if trial {
+            (33154, 32252)
+        } else {
+            (33184, 32016)
+        };
+        let spawn = MovementLocalPosition {
+            x: spawn.0,
+            y: spawn.1,
+            floor,
+        };
+        let occupant = if trial {
+            None
+        } else {
+            let mut runtime = deps.runtime.lock().await;
+            let session = GameSessionId::decode(&id(51)).map_err(debug)?;
+            let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+            let player = runtime.commit_fresh_session(reservation).map_err(debug)?;
+            runtime
+                .initialize_pinned_test_position(player, spawn)
+                .map_err(debug)?;
+            Some(player)
+        };
+        step(&mut owner, &admitted).await?;
+        assert_eq!(
+            deps.runtime
+                .lock()
+                .await
+                .read_actor_position(deps.actor)
+                .map_err(debug)?
+                .position(),
+            origin,
+            "an occupied Curse Spreads room or under-level Ancient Feud trial must turn the player back"
+        );
+        let cooldowns: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_character_boss_cooldowns")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(cooldowns, 0);
+        if let Some(occupant) = occupant {
+            deps.runtime
+                .lock()
+                .await
+                .remove_test_actor(occupant)
+                .map_err(debug)?;
+        } else {
+            earn_level(&owner, &admitted, &authority, 250).await?;
         }
-        super::quest_world_callbacks::wire(
-            &owner,
-            &mut admitted,
-            2,
-            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-            north.clone(),
-        )
-        .await?;
+        step(&mut owner, &admitted).await?;
         let runtime = deps.runtime.lock().await;
         let arrived = runtime
             .read_actor_position(deps.actor)
@@ -252,25 +301,17 @@ fn scenario(trial: bool) -> TestResult {
                 floor
             }
         );
-        assert!(
-            runtime
-                .positioned_melee_census()
-                .map_err(debug)?
-                .iter()
-                .any(|(_, at, session)| {
-                    let spawn = if trial {
-                        (33154, 32252)
-                    } else {
-                        (33184, 32016)
-                    };
-                    session.is_none()
-                        && at.position()
-                            == MovementLocalPosition {
-                                x: spawn.0,
-                                y: spawn.1,
-                                floor,
-                            }
-                })
+        let spawned = runtime
+            .positioned_melee_census()
+            .map_err(debug)?
+            .into_iter()
+            .find(|(_, at, session)| session.is_none() && at.position() == spawn)
+            .ok_or("no boss spawned at the Crystal cell")?
+            .0;
+        let creature = runtime.companion_snapshot(spawned).map_err(debug)?;
+        assert_eq!(
+            creature.state.policy.definition_key,
+            format!("oteryn:creature.{boss}")
         );
         drop(runtime);
         let cooldown: i64 = sqlx::query_scalar(
@@ -301,14 +342,7 @@ fn scenario(trial: bool) -> TestResult {
                 .position(),
             origin
         );
-        super::quest_world_callbacks::wire(
-            &owner,
-            &mut admitted,
-            3,
-            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-            north,
-        )
-        .await?;
+        step(&mut owner, &admitted).await?;
         assert_eq!(
             deps.runtime
                 .lock()
@@ -330,4 +364,87 @@ fn scenario(trial: bool) -> TestResult {
         drop(seal);
         h.cleanup().await
     })
+}
+
+async fn earn_level(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    carrying_level: u32,
+) -> TestResult {
+    use crate::durability::character_progression::{
+        ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
+    };
+    let binding = owner
+        .progression_binding(admitted.game_session_id)
+        .ok_or("progression")?;
+    let target = binding
+        .policy
+        .thresholds
+        .iter()
+        .find(|t| t.level == carrying_level)
+        .ok_or("carrying-level threshold")?
+        .minimum_experience
+        .get();
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|_| "fence")?
+        .ok_or("fence")?;
+    let current = owner
+        .root
+        .read_character_progression(authority, fence.character_id)
+        .await
+        .map_err(debug)?
+        .ok_or("progression state")?;
+    let outcome = owner
+        .revision_sequencer
+        .acquire(fence.character_id)
+        .await
+        .commit_experience(
+            owner.root,
+            authority,
+            owner.holder,
+            fence,
+            ExperienceAwardRequest {
+                occurrence: ExperienceRewardOccurrence::from_bytes(super::fixture::id(105))
+                    .map_err(debug)?,
+                amount: oteryn_simulation_determinism::ExactI64::new(
+                    target
+                        .checked_sub(current.total_experience.get())
+                        .ok_or("XP delta")?,
+                ),
+                context: binding.context.clone(),
+                policy_revision: binding.policy_revision.clone(),
+                reward_revision: binding.reward_revision.clone(),
+                policy: binding.policy.clone(),
+            },
+            None,
+        )
+        .await
+        .map_err(debug)?;
+    assert!(matches!(outcome, ExperienceCommitOutcome::Committed(_)));
+    Ok(())
+}
+
+async fn step(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+) -> TestResult {
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("paced step clock")?;
+    super::maintain_ready(owner.root).await?;
+    let (result, _) = owner
+        .ordinary_paced_step(
+            admitted.runtime_actor.ok_or("admitted runtime actor")?,
+            admitted.game_session_id,
+            StepDirection::North,
+            None,
+            None,
+        )
+        .await;
+    assert_eq!(result.disposition, StepDisposition::Moved);
+    Ok(())
 }
