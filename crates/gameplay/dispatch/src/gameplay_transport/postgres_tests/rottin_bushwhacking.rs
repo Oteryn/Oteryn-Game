@@ -13,7 +13,7 @@ use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bind
 use oteryn_protocol_oteryn::creature_push::{CreaturePushDisposition, CreaturePushIntent};
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_object::{
-    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
+    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
 };
 use oteryn_protocol_oteryn::world_spatial::ActorPosition;
 use serde_json::json;
@@ -278,7 +278,18 @@ pub(super) async fn exercise(
             item_fence: Some(fence.item_fence()),
         };
         let outcome = owner
-            .use_shared_callback_handle(actor, command, Some(ItemKey::MapAdded(id.get())), None)
+            .use_craft(
+                actor,
+                command,
+                UseIntent {
+                    target: UseTarget::Item(std::num::NonZeroU64::MIN),
+                    use_with: None,
+                    use_with_map_item: None,
+                    use_with_position: None,
+                },
+                Some(ItemKey::MapAdded(id.get())),
+                None,
+            )
             .await
             .ok_or("captured merchant USE binding")?;
         assert_eq!(outcome.disposition, UseDisposition::Committed);
@@ -380,33 +391,33 @@ async fn use_net(
         placement,
         expected_revision: map.facts.object_revision(key),
     };
-    let payload = encode_item_use_intent(&UseIntent {
+    let intent = UseIntent {
         target: UseTarget::Item(std::num::NonZeroU64::MIN),
         use_with: None,
-        use_with_map_item: Some(MapUseTarget::Object(target.clone())),
+        use_with_map_item: Some(MapUseTarget::Object(target)),
         use_with_position: None,
-    })
-    .map_err(super::fixture::debug)?;
+    };
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
         .map_err(|_| "fence")?
         .ok_or("fence")?;
     let outcome = owner
-        .use_quest_callback_with_tool(
+        .tame_mount(
             actor,
             UseCommand {
                 game_session_id: admitted.game_session_id,
                 command_id,
                 item_fence: Some(fence.item_fence()),
             },
-            map,
-            &target,
-            Some((id(source), payload)),
+            intent,
+            Some(ItemKey::Instance(id(source))),
+            None,
+            false,
         )
         .await
-        .ok_or("net callback")?;
-    Ok(outcome.disposition)
+        .map_err(|()| "net USE route")?;
+    Ok(outcome.map_or(UseDisposition::NothingToUse, |result| result.disposition))
 }
 
 pub(super) async fn exercise_wave(
