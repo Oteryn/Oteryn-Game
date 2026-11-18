@@ -585,7 +585,8 @@ fn run(admin: String, case: Case) -> TestResult {
                 .fetch_one(&h.pool)
                 .await?;
         let mut players = Vec::new();
-        for index in 0..if case.is_window() { 2 } else { 3 } {
+        let two_station_party = case.is_window() || case.has_shields();
+        for index in 0..if two_station_party { 2 } else { 3 } {
             let (current, _) =
                 crate::world_party_runtime_postgres_cases::committed_fresh_player_with_operation(
                     &crate::world_party_runtime_postgres_cases::FreshPlayerOwners {
@@ -605,7 +606,7 @@ fn run(admin: String, case: Case) -> TestResult {
             runtime
                 .bind_attacker_lease(actor, session, current.current_character_lease())
                 .map_err(debug)?;
-            let initial = if case.is_window() && index == 1 {
+            let initial = if two_station_party && index == 1 {
                 MovementLocalPosition {
                     x: at.x + 1,
                     y: at.y - 1,
