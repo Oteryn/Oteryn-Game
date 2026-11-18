@@ -242,7 +242,12 @@ impl Replacements {
                     }
                     runtime
                         .borrow_movement_position()
-                        .commit_creature_relocation(actor, expected, to)?;
+                        .commit_creature_relocation_facing(
+                            actor,
+                            expected,
+                            to,
+                            crate::movement::monster_map::source_teleport_facing(from, to),
+                        )?;
                     if let Some(effect) = relocate.arrival_effect
                         && let Some(at) = super::super::quest_callbacks::native(to)
                         && let NativeMovementCollisionIndex::Bundle(map) = cells.index()

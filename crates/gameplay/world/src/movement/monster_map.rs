@@ -1074,7 +1074,7 @@ impl oteryn_gameplay_entities::SpellRelocationProof for SourcePlayerRelocation {
 
 // Crystal creature_functions.cpp:897-909: default teleport uses x priority,
 // then y, and otherwise north. These are actual committed pose facts.
-fn source_teleport_facing(
+pub fn source_teleport_facing(
     from: MovementLocalPosition,
     to: MovementLocalPosition,
 ) -> crate::foundation::MovementFacing {

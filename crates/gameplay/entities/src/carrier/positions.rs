@@ -952,6 +952,7 @@ impl ChannelActorCarrier {
             next_position,
             allow_self_removal,
             false,
+            None,
         )
     }
     pub(super) fn compare_commit_registered_source_position(
@@ -974,8 +975,27 @@ impl ChannelActorCarrier {
             next_position,
             false,
             true,
+            None,
         )
     }
+    pub(super) fn compare_commit_position_with_facing(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        expected: PositionSnapshot,
+        next_position: LocalPosition,
+        facing: MovementFacing,
+    ) -> Result<PositionSnapshot, CarrierError> {
+        self.compare_commit_position_bounded(
+            continuity,
+            expected,
+            expected.version.context,
+            next_position,
+            false,
+            false,
+            Some(facing),
+        )
+    }
+
     #[allow(
         clippy::too_many_arguments,
         reason = "same canonical compare commit has separate closed retained-source and existing summon-lifecycle callers"
@@ -988,6 +1008,7 @@ impl ChannelActorCarrier {
         next_position: LocalPosition,
         allow_self_removal: bool,
         registered_source: bool,
+        facing: Option<MovementFacing>,
     ) -> Result<PositionSnapshot, CarrierError> {
         let index = self.validate_ref(continuity, expected.actor_ref)?;
         self.assert_slot_spell_unreserved(index)?;
@@ -1081,17 +1102,19 @@ impl ChannelActorCarrier {
             } else {
                 current.last_translation_revision
             },
-            facing: match (
-                next_position.floor == current.position.floor,
-                next_position.x.checked_sub(current.position.x),
-                next_position.y.checked_sub(current.position.y),
-            ) {
-                (true, Some(1), Some(0)) => Some(MovementFacing::East),
-                (true, Some(-1), Some(0)) => Some(MovementFacing::West),
-                (true, Some(0), Some(1)) => Some(MovementFacing::South),
-                (true, Some(0), Some(-1)) => Some(MovementFacing::North),
-                _ => current.facing,
-            },
+            facing: facing.or_else(|| {
+                match (
+                    next_position.floor == current.position.floor,
+                    next_position.x.checked_sub(current.position.x),
+                    next_position.y.checked_sub(current.position.y),
+                ) {
+                    (true, Some(1), Some(0)) => Some(MovementFacing::East),
+                    (true, Some(-1), Some(0)) => Some(MovementFacing::West),
+                    (true, Some(0), Some(1)) => Some(MovementFacing::South),
+                    (true, Some(0), Some(-1)) => Some(MovementFacing::North),
+                    _ => current.facing,
+                }
+            }),
         };
         let movement = (next_position != current.position).then(|| {
             native_translation_events::CommittedMovementOccurrence::from_commit(

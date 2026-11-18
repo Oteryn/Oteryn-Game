@@ -8,24 +8,54 @@ impl CurrentOwnerMovementPosition<'_> {
         expected: MovementPositionSnapshot,
         next: MovementLocalPosition,
     ) -> Result<MovementPositionSnapshot, CarrierError> {
+        self.relocate_creature(actor, expected, next, None)
+    }
+
+    /// Publish a source teleport's position and pose in the same movement occurrence.
+    pub fn commit_creature_relocation_facing(
+        &mut self,
+        actor: ExactActorRef,
+        expected: MovementPositionSnapshot,
+        next: MovementLocalPosition,
+        facing: MovementFacing,
+    ) -> Result<MovementPositionSnapshot, CarrierError> {
+        self.relocate_creature(actor, expected, next, Some(facing))
+    }
+
+    fn relocate_creature(
+        &mut self,
+        actor: ExactActorRef,
+        expected: MovementPositionSnapshot,
+        next: MovementLocalPosition,
+        facing: Option<MovementFacing>,
+    ) -> Result<MovementPositionSnapshot, CarrierError> {
         if !self.carrier.creature_alive(self.continuity, actor) {
             return Err(CarrierError::NotCreature);
         }
         if actor.0 != expected.0.actor_ref {
             return Err(CarrierError::PositionSnapshotMismatch);
         }
-        self.carrier
-            .compare_commit_position(
+        let next = LocalPosition {
+            x: next.x,
+            y: next.y,
+            floor: next.floor,
+        };
+        let result = if let Some(facing) = facing {
+            self.carrier.compare_commit_position_with_facing(
+                self.continuity,
+                expected.0,
+                next,
+                facing,
+            )
+        } else {
+            self.carrier.compare_commit_position(
                 self.continuity,
                 expected.0,
                 expected.0.version.context,
-                LocalPosition {
-                    x: next.x,
-                    y: next.y,
-                    floor: next.floor,
-                },
+                next,
             )
-            .map(MovementPositionSnapshot)
+        };
+        result.map(MovementPositionSnapshot)
     }
 }
 

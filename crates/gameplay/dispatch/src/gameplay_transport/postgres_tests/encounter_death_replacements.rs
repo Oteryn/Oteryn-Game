@@ -761,12 +761,14 @@ pub(super) async fn exercise(
         super::engenc2_cults::kill(owner, admitted, prism, PRISM_A, 102).await?;
         assert_eq!(return_effects(), 1);
         let runtime = owner.runtime.lock().await;
+        let returned = runtime.read_actor_position(lloyd).map_err(debug)?;
         assert_eq!(
-            runtime
-                .read_actor_position(lloyd)
-                .map_err(debug)?
-                .position(),
+            returned.position(),
             super::quest_world_callbacks::local(LLOYD_RETURN)
+        );
+        assert_eq!(
+            returned.facing(),
+            Some(crate::foundation::MovementFacing::South)
         );
     } else if name == LORE {
         let runtime = owner.runtime.lock().await;
