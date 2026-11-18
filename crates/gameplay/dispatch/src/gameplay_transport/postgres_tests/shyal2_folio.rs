@@ -4,10 +4,7 @@ use super::{
     fixture::{Harness, debug},
 };
 use crate::map::view::MapFacts;
-use oteryn_gameplay_quests::quest::{
-    shadows_folio as folio,
-    world_callbacks::{Callback, Position},
-};
+use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, WorldObjectTarget, decode_use_result, encode_use_intent,
 };
@@ -18,6 +15,18 @@ const TRIGGER: Position = Position {
     y: 32173,
     floor: -6,
 };
+
+const RELOCATION: Position = Position {
+    x: 33324,
+    y: 32173,
+    floor: -6,
+};
+const MISSION: &str = "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission09";
+const STREAK: &str =
+    "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission09_books_success";
+const HEADACHE: &str =
+    "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission09_headache_until";
+const OUTCOME: &str = "oteryn:quest-progress/shadows-of-yalahar/folio-outcome";
 
 #[test]
 fn shyal2_live_folio_use_projects_the_committed_ritual_outcome() -> TestResult {
@@ -39,7 +48,7 @@ fn shyal2_live_folio_use_projects_the_committed_ritual_outcome() -> TestResult {
 pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
     let mut placement = callback.clone();
     placement.selector.appearance = Some(9193);
-    super::quest_world_callbacks::world_with_cells(&placement, TRIGGER, &[folio::RELOCATION])
+    super::quest_world_callbacks::world_with_cells(&placement, TRIGGER, &[RELOCATION])
 }
 
 pub(super) async fn exercise(
@@ -53,7 +62,7 @@ pub(super) async fn exercise(
         h,
         owner,
         admitted,
-        &[(folio::MISSION.into(), 1), (folio::STREAK.into(), 7)],
+        &[(MISSION.into(), 1), (STREAK.into(), 7)],
         125,
     )
     .await?;
@@ -61,13 +70,16 @@ pub(super) async fn exercise(
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
     let actor = admitted.runtime_actor.ok_or("folio reader")?;
-    let before = owner
-        .runtime
-        .lock()
-        .await
-        .read_actor_position(actor)
-        .map_err(debug)?
-        .position();
+    let (before, before_creatures) = {
+        let runtime = owner.runtime.lock().await;
+        (
+            runtime
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            runtime.visible_entities().creatures.len(),
+        )
+    };
     let key = oteryn_world_bundle::bundle::placement_key(TRIGGER.floor, TRIGGER.x, TRIGGER.y, 1)
         .ok_or("folio placement key")?;
     let map = owner.bundle_map().ok_or("folio source map")?;
@@ -95,7 +107,7 @@ pub(super) async fn exercise(
         .map_err(debug)?;
     let outcome = state
         .tracks()
-        .get(folio::OUTCOME)
+        .get(OUTCOME)
         .copied()
         .ok_or("committed roll")?;
     let (streak, deadline) = match outcome {
@@ -104,32 +116,42 @@ pub(super) async fn exercise(
         6 => (8, 0),
         _ => return Err(format!("invalid folio outcome: {outcome}").into()),
     };
-    assert_eq!(state.tracks().get(folio::STREAK), Some(&streak));
-    assert_eq!(state.tracks().get(folio::HEADACHE), Some(&deadline));
+    assert_eq!(state.tracks().get(STREAK), Some(&streak));
+    assert_eq!(state.tracks().get(HEADACHE), Some(&deadline));
     let (after, creatures) = {
         let runtime = owner.runtime.lock().await;
+        let creatures = runtime.visible_entities().creatures;
+        let hostile = match outcome {
+            3 => Some("oteryn:creature.war_golem"),
+            4 => Some("oteryn:creature.fire_devil"),
+            5 => Some("oteryn:creature.enraged_bookworm"),
+            _ => None,
+        };
+        assert_eq!(
+            creatures.len(),
+            before_creatures + usize::from(hostile.is_some())
+        );
+        if let Some(hostile) = hostile {
+            assert!(creatures.iter().any(|creature| {
+                runtime.matches_live_creature_identity(creature.actor, hostile.as_bytes())
+            }));
+        }
         (
             runtime
                 .read_actor_position(actor)
                 .map_err(debug)?
                 .position(),
-            runtime.visible_entities().creatures.len(),
+            creatures.len(),
         )
     };
     assert_eq!(
         after,
         if outcome == 1 {
-            super::quest_world_callbacks::local(folio::RELOCATION)
+            super::quest_world_callbacks::local(RELOCATION)
         } else {
             before
         }
     );
-    if (3..=5).contains(&outcome) {
-        assert_eq!(
-            creatures, 1,
-            "the committed creature outcome spawns a hostile"
-        );
-    }
     assert_eq!(
         super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload).await?,
         result
