@@ -27,7 +27,10 @@ pub(super) fn scenario(case: Case) -> TestResult {
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) = if case == Case::HauntedCellarDisguise {
+        let (controller, pin) = if matches!(
+            case,
+            Case::HauntedCellarBucket | Case::HauntedCellarDisguise
+        ) {
             haunted_cellar_fixture(deps.admitted.world_id)?
         } else {
             crate::content::native_gameplay::test_support::activated_with_loot_tables(
@@ -38,12 +41,26 @@ pub(super) fn scenario(case: Case) -> TestResult {
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("index")?;
-        let oven = "oteryn:item.tibia.i2535";
+        let oven = if case == Case::HauntedCellarBucket {
+            "oteryn:item.tibia.i29305"
+        } else {
+            "oteryn:item.tibia.i2535"
+        };
         let bag = "oteryn:item.tibia.i2854";
+        let normal_egg = "oteryn:item.tibia.i233";
         let reference = |key: &str| index.definition_ref("Item", key, "definition-r1");
-        let (mut bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
+        let states = if case == Case::HauntedCellarBucket {
+            vec![(
+                normal_egg,
+                reference(normal_egg).ok_or("normal egg")?.get() - 1,
+            )]
+        } else {
+            Vec::new()
+        };
+        let (mut bytes, mut pins) = crate::map::boot::tests::bundle_with_item_states(
             (bag, reference(bag).ok_or("bag")?.get() - 1),
             (oven, reference(oven).ok_or("oven")?.get() - 1),
+            &states,
         );
         if case.feroxa() {
             let mut data = oteryn_world_bundle::bundle::read(&bytes)?;
@@ -181,7 +198,10 @@ pub(super) fn scenario(case: Case) -> TestResult {
         } else {
             super::super::item_look::seed_main_backpack(&harness, &[(key, 1)]).await?;
         }
-        if case == Case::HauntedCellarDisguise {
+        if matches!(
+            case,
+            Case::HauntedCellarBucket | Case::HauntedCellarDisguise
+        ) {
             let mut seed = harness.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica")
                 .execute(&mut *seed)
@@ -200,6 +220,22 @@ pub(super) fn scenario(case: Case) -> TestResult {
             reference(key).ok_or("source ref")?,
         )
         .ok_or("source definition")?;
+        if case == Case::HauntedCellarBucket {
+            bucket_on_egg(
+                &owner,
+                &harness,
+                &deps,
+                fence,
+                &map,
+                reference(key),
+                reference(oven),
+            )
+            .await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         let seeded = id(71);
         let command_id = if case.nested() { 2 } else { 1 };
         let wanted_voodoo = match case {
@@ -815,7 +851,7 @@ fn haunted_cellar_fixture(
         })
         .ok_or("nonstackable inventory fixture template")?
         .clone();
-    for id in [29309, 29310] {
+    for id in [233, 29305, 29307, 29308, 29309, 29310] {
         let key = format!("oteryn:item.tibia.i{id}");
         if records
             .iter()
@@ -828,6 +864,17 @@ fn haunted_cellar_fixture(
         record["production_binding"]["external_id"] = id.to_string().into();
         record["production_binding"]["target"]["key"] = key.clone().into();
         record["production_definition"]["production_key"] = key.into();
+        if let Some(duration) = oteryn_gameplay_items::haunted_cellar::bucket_duration_ms(id) {
+            record["semantics"]["temporal"] = serde_json::json!({
+                "state": "KNOWN",
+                "value": {
+                    "consumption_mode": {"state": "KNOWN", "value": "DURABLE_ABSOLUTE_DEADLINE"},
+                    "decay_target": {"state": "NOT_APPLICABLE"},
+                    "duration": {"state": "KNOWN", "value": duration},
+                    "stop_duration": {"state": "KNOWN", "value": false}
+                }
+            });
+        }
         records.push(record);
     }
     records.sort_by(|a, b| {
@@ -838,4 +885,107 @@ fn haunted_cellar_fixture(
     profiles.bytes = serde_json::to_vec(&document)?;
     profiles.sha256 = format!("{:x}", Sha256::digest(&profiles.bytes));
     try_activate_input(world, &input).map_err(Into::into)
+}
+
+async fn bucket_on_egg(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    deps: &Dependencies,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    map: &crate::map::boot::BundleMap,
+    bucket: Option<std::num::NonZeroU32>,
+    egg: Option<std::num::NonZeroU32>,
+) -> TestResult {
+    use crate::map::{
+        overlay::TilePos,
+        view::{MapFacts, placement_key},
+    };
+    use oteryn_protocol_oteryn::world_object::{MapUseTarget, WorldObjectTarget};
+    let at = TilePos {
+        x: 7,
+        y: 0,
+        floor: -7,
+    };
+    let key = placement_key(at, 1).ok_or("egg placement")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let mut admitted = deps.admitted;
+    admitted.runtime_actor = Some(deps.actor);
+    admitted.first_entry = FirstEntryOutcome::Positioned;
+    admitted.item_fence = Some(fence);
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 12, 15, 18, 350])
+            .ok_or("offers")?;
+    let source = (10_000_u32..20_000)
+        .map(|nonce| {
+            let mut source = id(71);
+            source[12..].copy_from_slice(&nonce.to_be_bytes());
+            source
+        })
+        .find(|source| {
+            oteryn_gameplay_items::reward_bag::reward_bag_bounded_draw(
+                *fence.game_session_id.as_bytes(),
+                1,
+                *source,
+                47,
+                11,
+            )
+            .is_some_and(|roll| roll >= 5)
+        })
+        .ok_or("successful deterministic fill fixture")?;
+    let mut seed = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *seed)
+        .await?;
+    sqlx::query("UPDATE game_item_instances SET item_instance_id=encode($1,'hex')::uuid WHERE item_instance_id=encode($2,'hex')::uuid")
+        .bind(source.as_slice()).bind(id(71).as_slice()).execute(&mut *seed).await?;
+    sqlx::query("UPDATE game_item_container_entries SET item_instance_id=encode($1,'hex')::uuid WHERE item_instance_id=encode($2,'hex')::uuid")
+        .bind(source.as_slice()).bind(id(71).as_slice()).execute(&mut *seed).await?;
+    seed.commit().await?;
+    let intent = UseIntent {
+        target: UseTarget::Item(std::num::NonZeroU64::new(1).ok_or("bucket handle")?),
+        use_with: None,
+        use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
+            placement,
+            expected_revision: 0,
+        })),
+        use_with_position: None,
+    };
+    let payload = encode_item_use_intent(&intent).map_err(debug)?;
+    let (_, result, _, _) =
+        super::super::rust_lottery::exchange_with_visuals(owner, admitted, 1, &payload, bucket)
+            .await?;
+    assert_eq!(result, UseDisposition::Committed);
+    assert_eq!(map.facts.object_revision(key), 1);
+    let base = map
+        .overlay
+        .base()
+        .tile(at.x, at.y, at.floor)
+        .ok_or("egg tile")?;
+    let compact = *base.ids().get(1).ok_or("egg stack")?;
+    assert_ne!(
+        map.facts
+            .base_entry(at, 1, compact)
+            .ok_or("normal egg")?
+            .definition,
+        oteryn_protocol_oteryn::world_map::MapDefinition::Item(egg.ok_or("egg ref")?)
+    );
+    let (duration, delta, output): (i64, i64, String) = sqlx::query_as(
+        "SELECT p.duration_millis,p.expires_at_unix_ms-r.occurred_at,i.definition_production_key
+         FROM game_spell_item_temporal_schedules p JOIN game_item_consume_transform_records r
+         ON r.transaction_id=p.source_transaction_id JOIN game_item_instances i USING(item_instance_id)",
+    ).fetch_one(&harness.pool).await?;
+    assert_eq!(
+        (duration, delta, output.as_str()),
+        (180_000, 180_000, "oteryn:item.tibia.i29307")
+    );
+    assert_eq!(map.facts.expire_movement_items(u64::MAX), 1);
+    assert_eq!(
+        map.facts
+            .base_entry(at, 1, compact)
+            .ok_or("restored egg")?
+            .definition,
+        oteryn_protocol_oteryn::world_map::MapDefinition::Item(egg.ok_or("egg ref")?)
+    );
+    Ok(())
 }

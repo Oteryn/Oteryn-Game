@@ -21,6 +21,7 @@ enum Case {
     Rocket,
     Hat,
     HatInBag,
+    HauntedCellarBucket,
     HauntedCellarDisguise,
     VoodooSuccess,
     VoodooFailure,
@@ -46,6 +47,7 @@ impl Case {
             Self::Dice | Self::DiceStreak | Self::GroundDice => "oteryn:item.tibia.i5792",
             Self::Trumpet | Self::GroundTrumpet | Self::NestedTrumpet => "oteryn:item.tibia.i6572",
             Self::Rocket | Self::GroundRocket | Self::PendingLifecycle => "oteryn:item.tibia.i6576",
+            Self::HauntedCellarBucket => "oteryn:item.tibia.i29310",
             Self::HauntedCellarDisguise => "oteryn:item.tibia.i29309",
             Self::Hat | Self::HatInBag => "oteryn:item.tibia.i6578",
             Self::VoodooSuccess
@@ -119,6 +121,15 @@ fn qn5_feroxa_trap_ground_use_is_fenced_and_replay_safe() -> TestResult {
 fn qn5_feroxa_trap_ground_use_checks_actor_room_boundary() -> TestResult {
     run_case(Case::FeroxaTrapOutside)
 }
+#[test]
+fn dcourts_haunted_cellar_egg_use_starts_bucket_decay() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty());
+    run_case(Case::HauntedCellarBucket)
+}
+
 #[test]
 fn dcourts_haunted_cellar_full_bucket_use_on_self_commits_disguise() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
