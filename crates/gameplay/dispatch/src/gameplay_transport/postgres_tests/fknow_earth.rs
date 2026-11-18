@@ -246,6 +246,15 @@ pub(super) async fn exercise_tree(
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
+    // The two prerequisite tracks represent historical progress before the phial use.
+    for table in ["game_character_roots", "game_character_progression_state"] {
+        sqlx::query(&format!(
+            "UPDATE {table} SET character_revision=2 WHERE character_id=encode($1,'hex')::uuid AND character_revision=1"
+        ))
+        .bind(fence.character_id.as_bytes().as_slice())
+        .execute(&mut *tx)
+        .await?;
+    }
     for (track, value) in EARTH_TREE_REQUIREMENTS {
         sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision)
             SELECT character_id,$2,'oteryn:quest.forgotten_knowledge_quest',$3,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")

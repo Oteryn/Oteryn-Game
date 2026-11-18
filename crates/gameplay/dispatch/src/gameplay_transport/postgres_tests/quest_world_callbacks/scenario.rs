@@ -659,7 +659,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if name == "authored-wrath-crystals" {
+    let world = if energy_replicas {
+        super::super::fknow_energy::world(&callback)?
+    } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::world()?
     } else if name == "nx6-wayfarer" {
         super::super::questpc8_wrath_source_dragon::world()?
@@ -942,8 +944,6 @@ fn scenario_case(
         super::super::fknow_earth::world(&callback)?
     } else if earth_tree {
         super::super::fknow_earth::tree_world(&callback)?
-    } else if energy_replicas {
-        super::super::fknow_energy::world(&callback)?
     } else {
         world(&callback, trigger)?
     };
