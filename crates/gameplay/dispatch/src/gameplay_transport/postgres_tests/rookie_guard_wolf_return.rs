@@ -2,6 +2,8 @@
 use super::fixture::{Harness, debug};
 use super::quest_world_callbacks::{local, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use crate::foundation::{ExactActorRef, GameSessionId};
+use crate::gameplay_transport::paced_movement::underwater_drown::is_environment_drown;
 use oteryn_gameplay_quests::quest::world_callbacks::{self, Callback, Position};
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack};
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, encode_step_intent};
@@ -30,7 +32,8 @@ const TIMEOUT_MESSAGE: &str =
     "Oh no... you were too slow and the wolves caught up with you. You may try again.";
 
 #[test]
-fn wolf_escape_timer_returns_only_unfinished_attempts_and_allows_retry() -> TestResult {
+fn wolf_escape_timer_projects_return_movement_and_allows_only_unfinished_attempts_to_retry()
+-> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -114,9 +117,14 @@ pub(super) async fn exercise(
     }
     owner.drain_quest_timers(actor, session).await;
     assert_eq!(stage(h).await?, 5, "a fresh deadline cannot trigger");
+    assert!(drowning(owner, actor, session).await?);
     expire(h).await?;
     owner.drain_quest_timers(actor, session).await;
     assert_eq!(stage(h).await?, 4);
+    assert!(
+        !drowning(owner, actor, session).await?,
+        "the scheduler return runs the underwater tile's StepOut"
+    );
     assert_eq!(
         owner
             .runtime
@@ -207,6 +215,21 @@ async fn stage(h: &Harness) -> TestResult<i64> {
             .fetch_one(&h.pool)
             .await?,
     )
+}
+
+async fn drowning(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    session: GameSessionId,
+) -> TestResult<bool> {
+    let runtime = owner.runtime.lock().await;
+    let states = owner.states.spell_states.lock().await;
+    let player = states.get(&runtime, actor, session).ok_or("player")?;
+    Ok(player
+        .owned_conditions()
+        .instances()
+        .iter()
+        .any(|condition| is_environment_drown(condition.provenance())))
 }
 
 async fn expire(h: &Harness) -> TestResult {

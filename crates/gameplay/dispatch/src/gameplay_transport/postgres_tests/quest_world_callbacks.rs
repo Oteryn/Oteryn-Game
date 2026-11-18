@@ -1090,12 +1090,28 @@ pub(super) fn world_cells(
         max_y: cells.keys().map(|(_, _, y)| *y).max().ok_or("max")? + 1,
         floors: floors.into_iter().collect(),
     };
+    // Exercise the environmental StepOut of a personal return with a synthetic
+    // underwater trigger tile. The authored wolf den itself is dry.
+    let return_test_ground = if callback.effects.personal_return.is_some() {
+        let mut ground = data.manifest.palette[0].clone();
+        ground.key = "oteryn:terrain.tibia.i5404".into();
+        ground.id = u32::try_from(data.manifest.palette.len())?;
+        let id = ground.id;
+        data.manifest.palette.push(ground);
+        id
+    } else {
+        0
+    };
     let mut sectors: BTreeMap<(i8, u16, u16), Vec<sector::Tile>> = BTreeMap::new();
     for ((floor, x, y), mut items) in cells {
         items.insert(
             0,
             sector::Item {
-                palette: 0,
+                palette: if (floor, x, y) == (trigger.floor, trigger.x, trigger.y) {
+                    return_test_ground
+                } else {
+                    0
+                },
                 depth: 0,
                 attrs: Default::default(),
             },

@@ -1,5 +1,6 @@
 //! Bounded original-actor quest consequences in the existing Channel clock owner.
 use super::ComposedFreshAdmission;
+use super::paced_movement::underwater_drown::underwater;
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::foundation::{ExactActorRef, GameSessionId};
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -188,11 +189,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 _ => return true,
             }
         };
-        if committed
-            && let Some(proof) = proof
-            && runtime.commit_source_step(proof).is_err()
-        {
-            return true;
+        if committed && let Some(proof) = proof {
+            let Ok(mut states) = self.states.spell_states.try_lock() else {
+                // Keep the settled occurrence for the next owner turn.
+                return true;
+            };
+            let Ok(landed) = runtime.commit_source_step(proof) else {
+                return true;
+            };
+            // Crystal mission06_run_like_wolf.lua:137-143 calls teleportTo, which
+            // runs the movement consequences at both ends of the return.
+            let now = self.owner_now().get();
+            states.stage_special_movement_step(
+                runtime,
+                map,
+                actor,
+                session,
+                now,
+                Some(current.position()),
+                landed.position(),
+                None,
+            );
+            states.stage_underwater_step(
+                runtime,
+                actor,
+                session,
+                now,
+                underwater(map, current.position()),
+                underwater(map, landed.position()),
+            );
         }
         // Crystal mission06_run_like_wolf.lua:137-143 sends the timeout message
         // even when the player is already standing on the return tile.
