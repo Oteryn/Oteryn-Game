@@ -269,24 +269,29 @@ async fn eligible_gold(database: &mut sqlx::PgConnection, clients: &SeamClients<
     Ok(u64::try_from(total)?)
 }
 
-async fn wheel_build(database: &mut sqlx::PgConnection, clients: &SeamClients<'_>) -> TestResult<(String, bool)> {
+async fn wheel_build(database: &mut sqlx::PgConnection, character: &[u8; 16]) -> TestResult<Option<(String, bool)>> {
     Ok(sqlx::query_as(
         "SELECT b.vocation, EXISTS(SELECT 1 FROM game_character_promotions p WHERE p.character_id=b.character_id)
            FROM game_character_build_state b WHERE b.character_id=encode($1,'hex')::uuid",
-    ).bind(clients.characters[1].as_slice()).fetch_one(database).await?)
+    ).bind(character.as_slice()).fetch_optional(database).await?)
 }
 
 async fn wheel_setup(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
     use sqlx::Connection;
     use super::full_row_p20 as promotion;
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
-    let (vocation, promoted) = wheel_build(&mut database, clients).await?;
-    if wheel_profile_required(&vocation) {
-        let level = super::full_row_q01::provision(clients, client, 0xa9, 1, "atelier", "P07").await?;
-        if !(100..=1000).contains(&level) || wheel_build(&mut database, clients).await?.0 != "knight" {
-            return Err(format!("step=wheel-setup observed=level:{level};needed=Atelier-profile").into());
+    let character = &clients.characters[1];
+    let promoted = match wheel_build(&mut database, character).await? {
+        Some((vocation, promoted)) if !wheel_profile_required(&vocation) => promoted,
+        _ => {
+            let level = super::full_row_q01::provision(clients, client, 0xa9, 1, "atelier", "P07").await?;
+            let build = wheel_build(&mut database, character).await?;
+            match build {
+                Some((ref vocation, promoted)) if (100..=1000).contains(&level) && vocation == "knight" => promoted,
+                _ => return Err(format!("step=wheel-setup observed=level:{level} build:{build:?};needed=Atelier-profile").into()),
+            }
         }
-    }
+    };
     if promoted {
         return Ok(());
     }
@@ -314,7 +319,7 @@ async fn wheel_setup(client: &mut DevClientSession, clients: &SeamClients<'_>) -
     }
     super::full_row_p01::logout_for_fixture(client).await?;
     *client = connect_world(clients, 0xaa).await?;
-    if !wheel_build(&mut database, clients).await?.1 {
+    if !wheel_build(&mut database, character).await?.is_some_and(|(_, promoted)| promoted) {
         return Err("step=wheel-setup observed=promotion-lost-on-fresh-admission".into());
     }
     Ok(())
@@ -644,7 +649,9 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
     let expected = vessel_rules::place(&stored, destination, Some(gem)).ok_or("step=socket observed=invalid-destination")?;
     let expected_cells = vessel_rules::legacy_cells(&expected);
     let rules = WheelGemData::embedded()?.wheel_ruleset()?;
-    let (vocation, _) = wheel_build(&mut database, clients).await?;
+    let (vocation, _) = wheel_build(&mut database, &clients.characters[1])
+        .await?
+        .ok_or("step=socket observed=missing-character-build")?;
     let nodes = vessel_rules::node_slots(&rules, &vocation);
     let view = with_socket_baseline(wheel_state.revision, before_socket.wheel_revision, &before_socket.vessel_nodes, &nodes,
         async || presentation(&mut client, wheel_state.revision, wheel_state.points, before_socket.revision, before_cells).await,
@@ -892,6 +899,26 @@ mod eligibility_review {
 #[cfg(test)]
 mod final_review {
     use super::*;
+    #[tokio::test]
+    async fn qualification_wheel_build_allows_fresh_character_without_build() -> TestResult {
+        use sqlx::Connection;
+        let Ok(url) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+            return Ok(());
+        };
+        let mut database = sqlx::PgConnection::connect(&url).await?;
+        sqlx::raw_sql("
+            CREATE TEMP TABLE game_character_build_state (character_id uuid, vocation text);
+            CREATE TEMP TABLE game_character_promotions (character_id uuid);
+            INSERT INTO game_character_build_state VALUES ('01010101-0101-0101-0101-010101010101', 'elite_knight');
+            INSERT INTO game_character_promotions VALUES ('01010101-0101-0101-0101-010101010101');
+        ").execute(&mut database).await?;
+        let absent = wheel_build(&mut database, &[0; 16]).await;
+        assert!(absent.is_ok(), "fresh character lookup failed: {absent:?}");
+        assert_eq!(absent?, None);
+        assert_eq!(wheel_build(&mut database, &[1; 16]).await?, Some(("elite_knight".into(), true)));
+        Ok(())
+    }
+
     #[test]
     fn established_wheel_character_keeps_its_existing_build() -> TestResult {
         assert!(!wheel_profile_required("knight"));
