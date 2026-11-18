@@ -179,7 +179,8 @@ Move the 2,238 cases from the generated mount into a single
 `dispatch-pg` integration target. Keep the remaining 2,101 cases in the
 dispatch lib target. Extract the shared fixtures imported across that
 boundary, keeping the same cases, assertions and production dispatch
-calls. The offline-death retry belongs to the generated mount. Retain
+calls. Expose the required test hooks through the existing
+`test-support` feature and require the feature for the new target. The offline-death retry belongs to the generated mount. Retain
 the current test namespace so the exact-name filter keeps selecting it.
 
 The isolated PG control provides a planning peak of about 14 GiB for
@@ -215,7 +216,7 @@ and proposed workflow diff.
 +          pg_targets=()
 +          for package in "${packages[@]}"; do
 +            if [[ "$package" == oteryn-gameplay-dispatch ]]; then
-+              pg_targets=(--test dispatch-pg)
++              pg_targets=(--features oteryn-gameplay-dispatch/test-support --test dispatch-pg)
 +            fi
 +          done
 +          CARGO_BUILD_JOBS=1 cargo +1.100.0 nextest archive --locked "${args[@]}" --lib "${pg_targets[@]}" \
@@ -229,7 +230,7 @@ and proposed workflow diff.
 -          cargo +1.100.0 nextest run --locked "${package_args[@]}" --lib --bins \
 +          pg_targets=()
 +          if grep -Fxq -e '--workspace' -e 'oteryn-gameplay-dispatch' "$RUNNER_TEMP/rust-fast-package-args.txt"; then
-+            pg_targets=(--test dispatch-pg)
++            pg_targets=(--features oteryn-gameplay-dispatch/test-support --test dispatch-pg)
 +          fi
 +          cargo +1.100.0 nextest run --locked "${package_args[@]}" --lib --bins "${pg_targets[@]}" \
              --config-file "$RUNNER_TEMP/nextest.toml" --profile rust-fast -E "$expression" \
@@ -240,7 +241,7 @@ and proposed workflow diff.
          run: |
            set -euo pipefail
 -          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
-+          CARGO_BUILD_JOBS=1 cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --test dispatch-pg --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
++          CARGO_BUILD_JOBS=1 cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --features oteryn-gameplay-dispatch/test-support --test dispatch-pg --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
 
        - name: Record archive digests and candidate
 --- a/.github/workflows/integration-regressions.yml
@@ -249,7 +250,7 @@ and proposed workflow diff.
            set -euo pipefail
            test -n "$OTERYN_TEST_POSTGRES_ADMIN_URL"
 -          cargo +1.100.0 test --locked -p oteryn-gameplay-dispatch --lib \
-+          CARGO_BUILD_JOBS=1 cargo +1.100.0 test --locked -p oteryn-gameplay-dispatch --test dispatch-pg \
++          CARGO_BUILD_JOBS=1 cargo +1.100.0 test --locked -p oteryn-gameplay-dispatch --features test-support --test dispatch-pg \
              'gameplay_transport::monk_save::postgres_tests::boss_activity::boss_activity_postgres_offline_native_death_deadline_retry_keeps_retained_trigger' \
              -- --exact --nocapture 2>&1 | tee "$RUNNER_TEMP/offline-death-retry-postgres.log"
 --- a/.github/workflows/merge-authority-audit.yml
@@ -258,14 +259,14 @@ and proposed workflow diff.
        EXPECTED_MERGE_GROUP_GATE_BLOB: "67e38c236b1964e03f47f5180540168e39456c71"
        EXPECTED_AGENT_GOVERNANCE_BLOB: "42d84c9089cdef928c6cb17268269156c87c0abb"
 -      EXPECTED_MERGE_GATE_BLOB: "0f72c838a4a374f2b18da314c0b72ac74038a0f0"
-+      EXPECTED_MERGE_GATE_BLOB: "e6b733cc088e4242d527872eaacd67769cf8de31"
++      EXPECTED_MERGE_GATE_BLOB: "15e5f7d4c48775da0ccedb63737409c083788e12"
      steps:
        - name: Validate control-plane candidate as inert data
 @@ -296,5 +296,5 @@
                '              archived_targets+=(--test "$name")\n',
                '          cargo +1.100.0 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"\n',
 -              '          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"\n',
-+              '          CARGO_BUILD_JOBS=1 cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --test dispatch-pg --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"\n',
++              '          CARGO_BUILD_JOBS=1 cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --features oteryn-gameplay-dispatch/test-support --test dispatch-pg --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"\n',
                '          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" \\\n'
                '            --workspace-remap "$GITHUB_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \\\n'
 ```
