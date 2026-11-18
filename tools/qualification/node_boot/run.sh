@@ -49,6 +49,8 @@ for node_boot_port in NODE_BOOT_PG_PORT NODE_BOOT_PLATFORM_PORT NODE_BOOT_GAME_P
   [[ -z "${!node_boot_port+x}" || ( "${!node_boot_port}" =~ ^[1-9][0-9]{3,4}$ && "${!node_boot_port}" -le 65535 ) ]] \
     || { echo "NODE_BOOT_RESULT=BLOCKED reason=invalid_port_${node_boot_port,,}"; exit 2; }
 done
+# The native Platform lifecycle reads the game port from the environment (prepare.py route).
+export NODE_BOOT_GAME_PORT="${NODE_BOOT_GAME_PORT:-17181}"
 readonly SERVICE_USER BASE
 # NODE_BOOT_KEEP_STACK=1 leaves the stack up after the seam stage; NODE_BOOT_REUSE_STACK=1
 # reruns only the seam stage against it, =teardown removes it. Local development only.
