@@ -64,7 +64,7 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
             "trigger": {"kind": "map_use", "callback": {
                 "key": format!("oteryn:quest-callback/fixture-yalahar/folio-{suffix}"),
                 "quest": QUEST, "trigger": "use", "reversible": false,
-                "selector": {"position": FOLIO, "ordinal": 1},
+                "selector": {"position": FOLIO, "ordinal": 1, "appearance": 9193},
                 "effects": {"random_use": {
                     "group": GROUP,
                     "weight": 1, "spawn_at_user": (!relocation).then_some(BOOKWORM),
@@ -110,13 +110,14 @@ async fn exercise(admin: String, expect_headache: bool) -> TestResult {
         "content-1",
     )?;
     let generation = controller.active().ok_or("content generation")?;
-    let world = super::quest_callbacks::source_world_spatial(
-        (FOLIO.x, FOLIO.y, FOLIO.floor),
-        &[
-            (FOLIO.x, FOLIO.y, FOLIO.floor, 0, 9193),
-            (LANDING.x, LANDING.y, LANDING.floor, 0, 1948),
-        ],
-    )?;
+    let catalogue = catalogue()?;
+    let relocation = catalogue
+        .authored_bindings()
+        .ok_or("folio bindings")?
+        .world_callbacks()
+        .find(|callback| callback.teleport == Some(LANDING))
+        .ok_or("folio relocation branch")?;
+    let world = super::quest_world_callbacks::world(relocation, FOLIO)?;
     super::arena_match::fixture::runtime_at(&mut deps, generation, &pin, &world, local(START))?;
     let cells = world
         .movement_cells(deps.room.movement_cells())
@@ -124,7 +125,7 @@ async fn exercise(admin: String, expect_headache: bool) -> TestResult {
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = Some(generation);
     owner.movement_cells = (&cells).into();
-    owner.quest_catalogue = Some(Arc::new(catalogue()?));
+    owner.quest_catalogue = Some(Arc::new(catalogue));
     deps.initialize(&owner).await;
     let mut admitted = deps.admitted;
     admitted.first_entry = FirstEntryOutcome::Positioned;
