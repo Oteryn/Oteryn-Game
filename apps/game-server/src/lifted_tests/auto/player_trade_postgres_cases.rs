@@ -470,21 +470,36 @@ fn player_trade_postgres_atomic_replay_refusals_and_restart() -> TestResult {
 
 #[test]
 fn player_trade_offer_and_receipt_preserve_nested_item_state() -> TestResult {
-    nested_trade_case(false)
+    stateful_trade_case(false, false, false)
 }
 
 #[test]
 fn player_trade_offer_refuses_a_bound_nested_reward() -> TestResult {
-    nested_trade_case(true)
+    stateful_trade_case(true, false, false)
 }
 
-fn nested_trade_case(bound: bool) -> TestResult {
+#[test]
+fn player_trade_offer_and_receipt_preserve_direct_item_state() -> TestResult {
+    stateful_trade_case(false, true, false)
+}
+
+#[test]
+fn player_trade_wire_preserves_nested_fluid_subtype_for_both_sides() -> TestResult {
+    stateful_trade_case(false, false, true)
+}
+
+fn stateful_trade_case(bound: bool, direct: bool, wire: bool) -> TestResult {
     let Some(admin) = configured_admin() else {
         return Ok(());
     };
     std::thread::Builder::new().stack_size(64 << 20).spawn(move || -> Result<(), String> {
         runtime().map_err(debug)?.block_on(async {
-            let h = Harness::create(admin, if bound { "trade_bound" } else { "trade_attributes" }).await?;
+            let h = Harness::create(admin, match (bound, direct, wire) {
+                (true, _, _) => "trade_bound",
+                (_, true, _) => "trade_root_attributes",
+                (_, _, true) => "trade_wire_attributes",
+                _ => "trade_attributes",
+            }).await?;
             let result: TestResult = async {
                 seed_second_character(&h.pool).await?;
                 activate(&h).await?;
@@ -512,8 +527,14 @@ fn nested_trade_case(bound: bool) -> TestResult {
                     for (item, ordinal) in [(vial, 2i64), (sword, 3)] {
                         sqlx::query("DELETE FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid")
                             .bind(item.as_slice()).execute(&mut *seed).await?;
-                        sqlx::query("INSERT INTO game_item_nested_entries SELECT item_instance_id,world_id,encode($2,'hex')::uuid,$3,minted_transaction_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
-                            .bind(item.as_slice()).bind(bag.as_slice()).bind(ordinal).execute(&mut *seed).await?;
+                        if direct {
+                            let original = if item == vial { bag } else { items[1] };
+                            sqlx::query("INSERT INTO game_item_container_entries SELECT encode($1,'hex')::uuid,world_id,character_id,parent_item_instance_id,$3,uuidv7() FROM game_item_container_entries WHERE item_instance_id=encode($2,'hex')::uuid")
+                                .bind(item.as_slice()).bind(original.as_slice()).bind(ordinal).execute(&mut *seed).await?;
+                        } else {
+                            sqlx::query("INSERT INTO game_item_nested_entries SELECT item_instance_id,world_id,encode($2,'hex')::uuid,$3,minted_transaction_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                                .bind(item.as_slice()).bind(bag.as_slice()).bind(ordinal).execute(&mut *seed).await?;
+                        }
                     }
                     // Fixture state represents the durable results of the item attribute owners.
                     sqlx::query("INSERT INTO game_item_fluid_states SELECT item_instance_id,world_id,7,minted_transaction_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
@@ -525,11 +546,67 @@ fn nested_trade_case(bound: bool) -> TestResult {
                 }
                 seed.commit().await?;
 
+                if direct {
+                    let [vial, sword] = stateful_items.ok_or("missing stateful items")?;
+                    let observed = [
+                        h.root.observe_player_trade_offer(&authority, &h.node, fences()?[0], command_of(SESSION, u64::MAX)?, vial, DIGEST).await?.map_err(debug)?,
+                        h.root.observe_player_trade_offer(&authority, &h.node, fences()?[1], command_of(SECOND_SESSION, u64::MAX - 1)?, sword, DIGEST).await?.map_err(debug)?,
+                    ];
+                    let attrs = [
+                        serde_json::to_value(&observed[0])?["attributes"].clone(),
+                        serde_json::to_value(&observed[1])?["attributes"].clone(),
+                    ];
+                    assert_eq!(attrs[0]["fluid"]["fluid_subtype"], 7);
+                    assert_eq!(attrs[1]["tier"]["tier"], 2);
+                    assert_eq!(attrs[1]["imbuements"][0]["slot"], 0);
+                    assert_eq!(attrs[1]["imbuements"][1]["slot"], 1);
+                    let req = request(&h, &authority, [vial, sword], 182).await?;
+                    let permit = SpellLanePermit::of_fresh_scope(fence()?.runtime_scope).await?;
+                    assert_eq!(h.root.exchange_player_trade(&permit, &authority, &h.node, fences()?, &CONTENT, req.clone()).await?, Ok(TradeReceipt::Committed));
+                    let receipts: Vec<serde_json::Value> = sqlx::query_scalar("SELECT coalesce(to_jsonb(r)->'before_attributes','null'::jsonb) FROM game_player_trade_receipts r ORDER BY side").fetch_all(&h.pool).await?;
+                    assert_eq!(receipts, attrs);
+                    let mut changed = req;
+                    let mut leaf = serde_json::to_value(&changed.participants[0].leaf)?;
+                    leaf["attributes"]["fluid"]["fluid_subtype"] = serde_json::json!(8);
+                    changed.participants[0].leaf = serde_json::from_value(leaf)?;
+                    assert_eq!(h.root.reconcile_player_trade(&authority, changed).await?, Err(Refusal::Rejected));
+                    return Ok(());
+                }
+
                 let offer = h.root.observe_player_trade_offer(&authority, &h.node, fences()?[0], command_of(SESSION, u64::MAX)?, bag, DIGEST).await?;
                 if bound {
                     assert_eq!(offer, Err(Refusal::NotTradeable));
                 } else {
-                    let offer = serde_json::to_value(offer.map_err(debug)?)?;
+                    let leaf = offer.map_err(debug)?;
+                    if wire {
+                        use oteryn_protocol_oteryn::player_trade::{ContentsItem, State, decode_state_for, encode_state_for};
+                        let root = leaf.project_offer(1)?;
+                        let vial = leaf.contents()[1].project_offer(2)?;
+                        let tree = vec![
+                            ContentsItem { item: root, parent: None, name: "Bag".into() },
+                            ContentsItem { item: vial, parent: leaf.parent_index(1)?, name: "Vial".into() },
+                        ];
+                        for side in 0..2 {
+                            let mut contents = [tree[..1].to_vec(), tree[..1].to_vec()];
+                            contents[side] = tree.clone();
+                            let state = State {
+                                contents,
+                                trade_id: Some(id(182)),
+                                partner: Some(oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+                                    identity: id(if side == 0 { SECOND_CHARACTER } else { CHARACTER }),
+                                    generation: 1,
+                                }),
+                                own: Some(root),
+                                counter: Some(root),
+                                phase: 2,
+                                reason: 0,
+                                ..State::default()
+                            };
+                            let received = decode_state_for(&encode_state_for(&state, true).map_err(debug)?, true).map_err(debug)?;
+                            assert_eq!(received.contents[side][1].item.sub_type, 7);
+                        }
+                    }
+                    let offer = serde_json::to_value(leaf)?;
                     let attrs = &offer["contents"][0]["attributes"];
                     assert_eq!(offer["contents"][1]["attributes"]["fluid"]["fluid_subtype"], 7);
                     assert_eq!(attrs["tier"]["tier"], 2);

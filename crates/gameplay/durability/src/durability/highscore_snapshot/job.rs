@@ -8,10 +8,7 @@ use std::time::Duration;
 use tokio::sync::mpsc;
 use tokio::time::{Instant, timeout_at};
 
-/// The delay before a pass that found the shared Root's single holder busy
-/// (`RootUnavailable`, e.g. the audit expiry or gameplay holding it) runs again. Contention is
-/// transient, so it never waits a full interval: a fresh World is not left without snapshots,
-/// and its highscore queries rejected, for 30 minutes.
+/// Retry promptly after holder contention or a failed database check of the durable schedule.
 const CONTENDED_RETRY: Duration = Duration::from_secs(5);
 
 pub struct HighscoreWorldJob {
@@ -44,11 +41,11 @@ impl HighscoreWorldJob {
     }
 
     /// First check is immediate. Every successful check schedules from durable database time,
-    /// including a recent snapshot skipped after restart. A failed periodic pass backs off one
-    /// interval; a failed reset preserves the pending periodic deadline. A pass that found the
-    /// holder busy retries after [`CONTENDED_RETRY`] instead, a reset still as a reset. A message on
-    /// `planned_resets` is the composition root's actual planned World reset notification and
-    /// forces one complete cut; closing the channel stops the job.
+    /// including a recent snapshot skipped after restart. A scheduled pass can discover a newly
+    /// activated reset, so a database error on that pass retries promptly. Other periodic failures
+    /// back off one interval. A failed forced reset preserves the pending periodic deadline, and
+    /// a contended forced reset retries as a reset. A message on `planned_resets` forces one
+    /// complete cut. Closing the channel stops the job.
     pub async fn run(&self, mut planned_resets: mpsc::Receiver<()>) {
         let interval = Duration::from_secs(30 * 60);
         let mut due = Instant::now();
@@ -77,7 +74,13 @@ impl HighscoreWorldJob {
                 Err(error) => {
                     let contended = contended(&error);
                     retry_reset = reset && contended;
-                    due = next_due_after_failure(contended, reset, Instant::now(), due, interval);
+                    let retry_soon = contended
+                        || (!reset
+                            && matches!(
+                                &error,
+                                SnapshotError::Unavailable(DurabilityError::Database(_))
+                            ));
+                    due = next_due_after_failure(retry_soon, reset, Instant::now(), due, interval);
                     let reason = match &error {
                         SnapshotError::Unavailable(source) => format!("unavailable {source:?}"),
                         other => format!("{other:?}"),
@@ -105,9 +108,9 @@ fn contended(error: &SnapshotError) -> bool {
 
 /// The next pass after one failed at `now`. Any failure of a periodic pass, or of a reset whose
 /// periodic deadline has already passed, backs off one `interval`; a failed reset keeps the
-/// pending periodic `due`. A contended pass runs again after at most [`CONTENDED_RETRY`].
+/// pending periodic `due`. A prompt retry runs again after at most [`CONTENDED_RETRY`].
 fn next_due_after_failure(
-    contended: bool,
+    retry_soon: bool,
     reset: bool,
     now: Instant,
     due: Instant,
@@ -118,7 +121,7 @@ fn next_due_after_failure(
     } else {
         now + interval
     };
-    if contended {
+    if retry_soon {
         pending.min(now + CONTENDED_RETRY)
     } else {
         pending

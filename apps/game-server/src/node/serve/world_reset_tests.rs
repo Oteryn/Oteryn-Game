@@ -127,14 +127,30 @@ fn planned_reset_drains_before_a_single_post_activation_highscore_cut()
                 assert!(matches!(award, ExperienceCommitOutcome::Committed(_)));
                 // Simulate the durable reset activation transaction after all channels drain.
                 h.pool.execute("UPDATE game_world_reset_jobs SET phase='ACTIVATED' WHERE reset_epoch=0; INSERT INTO game_world_reset_epochs SELECT world_id,1,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,clock_timestamp(),reset_month FROM game_world_reset_epochs WHERE reset_epoch=0; INSERT INTO game_world_reset_active SELECT world_id,1 FROM game_world_reset_epochs WHERE reset_epoch=1 ON CONFLICT(world_id) DO UPDATE SET reset_epoch=EXCLUDED.reset_epoch").await?;
-                let catalogues = SnapshotCatalogues::activated(std::sync::Arc::new(achievements)).map_err(debug)?;
+                let catalogues = SnapshotCatalogues::activated(std::sync::Arc::new(achievements.clone())).map_err(debug)?;
                 h.root.await_ready().await?;
-                assert!(h.root.refresh_highscore_schedule(world, catalogues.clone(), false).await.is_err(),
-                    "the first post-activation cut must be attempted despite the recent head");
-                h.root.await_ready().await?;
-                let after = h.root.refresh_highscore_schedule(world, catalogues.clone(), false).await.map_err(debug)?;
-                assert_eq!(after.snapshots.len(), first.snapshots.len());
-                h.root.await_ready().await?;
+                let stop = CancellationToken::new();
+                let observe = async {
+                    let published = async {
+                        loop {
+                            let current: i64 = sqlx::query_scalar(
+                                "SELECT count(*) FROM game_world_highscore_heads WHERE published_reset_epoch=1",
+                            ).fetch_one(&h.pool).await?;
+                            if usize::try_from(current)? == first.snapshots.len() {
+                                break;
+                            }
+                            tokio::time::sleep(Duration::from_millis(20)).await;
+                        }
+                        Ok::<_, Box<dyn std::error::Error>>(())
+                    };
+                    let result = tokio::time::timeout(Duration::from_secs(15), published).await;
+                    stop.cancel();
+                    result
+                };
+                let ((), result) = tokio::join!(highscores_loop(&h.root, world, &achievements, &stop), observe);
+                let attempted: bool = sqlx::query_scalar("SELECT is_called FROM reset_cut_failure").fetch_one(&h.pool).await?;
+                assert!(attempted, "the job must attempt the first post-activation cut");
+                result.map_err(|_| "the job waited too long to retry the failed reset cut")??;
                 let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
                 other.await_ready().await?;
                 let repeated = other.refresh_highscore_schedule(world, catalogues, false).await.map_err(debug)?;
@@ -157,4 +173,52 @@ fn planned_reset_drains_before_a_single_post_activation_highscore_cut()
             result
         }).map_err(debug)
     })?.join().map_err(|_| "reset snapshot thread failed")?.map_err(Into::into)
+}
+
+#[test]
+fn highscore_epoch_upgrade_keeps_recent_and_previous_snapshots()
+-> crate::bestiary_postgres_harness::TestResult {
+    use crate::bestiary_postgres_harness::{
+        CHARACTER, Harness, TestResult, configured_admin, debug, id, runtime, scope,
+    };
+    use crate::durability::highscore_snapshot::SnapshotCatalogues;
+    use crate::foundation::CharacterId;
+    use sqlx::Executor;
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new().stack_size(64 << 20).spawn(move || -> Result<(), String> {
+        runtime().map_err(debug)?.block_on(async {
+            let h = Harness::create(admin, "highscore_epoch_upgrade", true).await?;
+            let result: TestResult = async {
+                let world = scope()?.world_id();
+                h.pool.execute("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) SELECT world_id,1,sha256('epoch'::bytea),'map-1',sha256('server'::bytea),sha256('client'::bytea),sha256('frame'::bytea),'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp()-interval '1 minute','2026-11' FROM game_character_roots; INSERT INTO game_world_reset_active SELECT world_id,reset_epoch FROM game_world_reset_epochs").await?;
+                let achievements = crate::achievement_catalogue::AchievementCatalogue::embedded().map_err(debug)?;
+                let catalogues = SnapshotCatalogues::activated(std::sync::Arc::new(achievements)).map_err(debug)?;
+                let character = CharacterId::decode(&id(CHARACTER)).map_err(debug)?;
+                h.root.await_ready().await?;
+                let first = h.root.refresh_highscore_schedule(world, catalogues.clone(), true).await.map_err(debug)?;
+                let previous = first.snapshots.iter().find(|s| s.category == 1).ok_or("missing experience snapshot")?.snapshot_id;
+                h.root.await_ready().await?;
+                h.root.refresh_highscore_schedule(world, catalogues.clone(), true).await.map_err(debug)?;
+
+                // Retain both snapshots but recreate the pre-2858 head shape before applying
+                // the actual upgrade SQL in its own transaction, as the migrator does.
+                h.pool.execute("ALTER TABLE game_world_highscore_heads DROP COLUMN published_reset_epoch").await?;
+                let mut migration = h.pool.begin().await?;
+                sqlx::raw_sql(include_str!("../../../migrations/2858_highscore_reset_epoch.sql")).execute(&mut *migration).await?;
+                migration.commit().await?;
+
+                h.root.await_ready().await?;
+                let refresh = h.root.refresh_highscore_schedule(world, catalogues, false).await.map_err(debug)?;
+                assert!(refresh.snapshots.is_empty(), "the first scheduled pass must keep the recent cut");
+                h.root.await_ready().await?;
+                let page = h.root.read_highscore_page(world, 1, None, 1, previous, character).await.map_err(debug)?;
+                assert_eq!(page.snapshot.snapshot_id, previous);
+                Ok(())
+            }.await;
+            h.cleanup().await?;
+            result
+        }).map_err(debug)
+    })?.join().map_err(|_| "upgrade snapshot thread failed")?.map_err(Into::into)
 }

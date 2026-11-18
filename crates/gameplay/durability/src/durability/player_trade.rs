@@ -50,6 +50,25 @@ impl TradeLeaf {
         &self.contents
     }
 
+    /// Project the frozen item onto the trade wire using its pinned definition reference.
+    pub fn project_offer(
+        &self,
+        definition: u32,
+    ) -> Result<oteryn_protocol_oteryn::player_trade::Offer, DurabilityError> {
+        let fluid = self.attributes.as_ref().and_then(|attrs| attrs.get("fluid"));
+        let sub_type = if let Some(fluid) = fluid {
+            u32::try_from(snapshot::number(fluid, "fluid_subtype")?)
+                .map_err(|_| DurabilityError::InvalidStoredState)?
+        } else {
+            0
+        };
+        Ok(oteryn_protocol_oteryn::player_trade::Offer {
+            definition,
+            count: self.definition_and_quantity()?.1,
+            sub_type,
+        })
+    }
+
     /// Resolve only an identity when a writer checks whether this offer reserves it.
     pub fn instance_at(&self, index: u8) -> Result<Option<[u8; 16]>, DurabilityError> {
         let node = if index == 0 {

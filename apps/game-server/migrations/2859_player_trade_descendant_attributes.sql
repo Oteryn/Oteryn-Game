@@ -1,4 +1,20 @@
--- Freeze qualified descendant state in the existing admission and conservation guards.
+-- Freeze qualified item attributes in the existing admission and conservation guards.
+ALTER TABLE game_player_trade_receipts ADD COLUMN before_attributes JSONB;
+
+CREATE FUNCTION game_player_trade_attributes(p_item UUID) RETURNS JSONB
+LANGUAGE sql STABLE AS $$
+ SELECT NULLIF(jsonb_strip_nulls(jsonb_build_object(
+    'fluid',(SELECT to_jsonb(f) FROM game_item_fluid_states f WHERE f.item_instance_id=p_item),
+    'tier',(SELECT to_jsonb(f) FROM game_item_tiers f WHERE f.item_instance_id=p_item),
+    'imbuements',(SELECT jsonb_agg(to_jsonb(b) ORDER BY b.slot) FROM game_item_imbuements b WHERE b.item_instance_id=p_item)
+   )), '{}'::jsonb)
+$$;
+DO $$ BEGIN
+ EXECUTE format('ALTER FUNCTION game_player_trade_attributes(UUID) SET search_path = pg_catalog, %I, pg_temp',current_schema());
+END $$;
+REVOKE ALL ON FUNCTION game_player_trade_attributes(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_player_trade_attributes(UUID) TO oteryn_game_runtime;
+
 CREATE OR REPLACE FUNCTION game_player_trade_contents(p_root UUID) RETURNS JSONB
 LANGUAGE plpgsql STABLE SECURITY DEFINER AS $$
 DECLARE result JSONB; invalid BOOLEAN; size BIGINT; root_world UUID;
@@ -13,11 +29,7 @@ BEGIN
    (SELECT to_jsonb(t) FROM game_item_timed_states t WHERE t.item_instance_id=e.item_instance_id) AS timed,
    (SELECT jsonb_build_object('sha256',encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')) FROM game_item_texts t WHERE t.item_instance_id=e.item_instance_id) AS text,
    (SELECT to_jsonb(t) FROM game_item_text_revisions t WHERE t.item_instance_id=e.item_instance_id) AS text_revision,
-   NULLIF(jsonb_strip_nulls(jsonb_build_object(
-    'fluid',(SELECT to_jsonb(f) FROM game_item_fluid_states f WHERE f.item_instance_id=e.item_instance_id),
-    'tier',(SELECT to_jsonb(f) FROM game_item_tiers f WHERE f.item_instance_id=e.item_instance_id),
-    'imbuements',(SELECT jsonb_agg(to_jsonb(b) ORDER BY b.slot) FROM game_item_imbuements b WHERE b.item_instance_id=e.item_instance_id)
-   )), '{}'::jsonb) AS attributes
+   game_player_trade_attributes(e.item_instance_id) AS attributes
   FROM edges e LEFT JOIN game_item_instances i USING(item_instance_id)
   LEFT JOIN game_item_nested_entries n USING(item_instance_id)
  )
@@ -37,3 +49,17 @@ DO $$ BEGIN
  EXECUTE format('ALTER FUNCTION game_player_trade_contents(UUID) SET search_path = pg_catalog, %I, pg_temp',current_schema());
 END $$;
 REVOKE ALL ON FUNCTION game_player_trade_contents(UUID) FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
+
+DO $migration$
+DECLARE body TEXT; needle TEXT;
+BEGIN
+ body:=pg_get_functiondef('game_player_trade_line_admit()'::regprocedure);
+ needle:='    OR game_player_trade_contents(i.item_instance_id) IS DISTINCT FROM NEW.before_contents';
+ IF position(needle IN body)=0 THEN RAISE EXCEPTION 'missing player trade contents guard'; END IF;
+ EXECUTE replace(body,needle,needle||E'\n    OR game_player_trade_attributes(i.item_instance_id) IS DISTINCT FROM NEW.before_attributes');
+
+ body:=pg_get_functiondef('game_player_trade_complete(UUID)'::regprocedure);
+ needle:='     OR game_player_trade_contents(l.item_instance_id) IS DISTINCT FROM l.before_contents';
+ IF position(needle IN body)=0 THEN RAISE EXCEPTION 'missing player trade contents conservation guard'; END IF;
+ EXECUTE replace(body,needle,needle||E'\n     OR game_player_trade_attributes(l.item_instance_id) IS DISTINCT FROM l.before_attributes');
+END $migration$;

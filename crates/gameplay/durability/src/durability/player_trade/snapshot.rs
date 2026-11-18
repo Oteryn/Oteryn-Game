@@ -168,7 +168,8 @@ pub(super) async fn read_leaves<const N: usize>(
                 (SELECT to_jsonb(k) FROM game_item_keys k WHERE k.item_instance_id=i.item_instance_id) AS key, \
                 (SELECT to_jsonb(t) FROM game_item_timed_states t WHERE t.item_instance_id=i.item_instance_id) AS timed, \
                 (SELECT jsonb_build_object('sha256',encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')) FROM game_item_texts t WHERE t.item_instance_id=i.item_instance_id) AS text, \
-                (SELECT to_jsonb(t) FROM game_item_text_revisions t WHERE t.item_instance_id=i.item_instance_id) AS text_revision \
+                (SELECT to_jsonb(t) FROM game_item_text_revisions t WHERE t.item_instance_id=i.item_instance_id) AS text_revision, \
+                game_player_trade_attributes(i.item_instance_id) AS attributes \
              FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id,world_id) \
              JOIN game_item_container_slots s ON s.character_id=e.character_id AND s.item_instance_id=e.parent_item_instance_id \
              WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.lifecycle=1 \
@@ -188,7 +189,7 @@ pub(super) async fn read_leaves<const N: usize>(
             timed: row.try_get("timed")?,
             text: row.try_get("text")?,
             text_revision: row.try_get("text_revision")?,
-            attributes: None,
+            attributes: row.try_get("attributes")?,
         });
     }
     let leaves = leaves
@@ -212,11 +213,7 @@ async fn read_contents(
          (SELECT to_jsonb(t) FROM game_item_timed_states t WHERE t.item_instance_id=i.item_instance_id) AS timed, \
          (SELECT jsonb_build_object('sha256',encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')) FROM game_item_texts t WHERE t.item_instance_id=i.item_instance_id) AS text, \
          (SELECT to_jsonb(t) FROM game_item_text_revisions t WHERE t.item_instance_id=i.item_instance_id) AS text_revision, \
-         NULLIF(jsonb_strip_nulls(jsonb_build_object( \
-           'fluid', (SELECT to_jsonb(f) FROM game_item_fluid_states f WHERE f.item_instance_id=i.item_instance_id), \
-           'tier', (SELECT to_jsonb(f) FROM game_item_tiers f WHERE f.item_instance_id=i.item_instance_id), \
-           'imbuements', (SELECT jsonb_agg(to_jsonb(b) ORDER BY b.slot) FROM game_item_imbuements b WHERE b.item_instance_id=i.item_instance_id) \
-         )), '{}'::jsonb) AS attributes \
+         game_player_trade_attributes(i.item_instance_id) AS attributes \
          FROM game_item_loop_subtree_edges(encode($1,'hex')::uuid) t \
          JOIN game_item_instances i USING(item_instance_id) \
          JOIN game_item_instances r ON r.item_instance_id=encode($1,'hex')::uuid \

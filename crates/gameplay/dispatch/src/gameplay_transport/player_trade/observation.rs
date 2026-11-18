@@ -356,12 +356,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         .check()
         .map_err(CheckError::from)?;
-        Ok(wire::Offer {
-            definition: definition_ref(index, &definition)
-                .ok_or(ResultCode::NotTradeable)?
-                .get(),
-            count,
-            sub_type: 0,
-        })
+        let definition = definition_ref(index, &definition).ok_or(ResultCode::NotTradeable)?;
+        leaf.project_offer(definition.get())
+            .map_err(|_| ResultCode::Rejected.into())
     }
 }
