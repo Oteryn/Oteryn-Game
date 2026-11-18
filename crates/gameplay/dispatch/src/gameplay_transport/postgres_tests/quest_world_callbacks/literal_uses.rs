@@ -102,7 +102,13 @@ fn quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes() -> Test
         }
         // The production map contains the pre-startup wall too; position-based
         // server dispatch must not depend on the donor's visual transform.
-        exercise(callback("order-of-the-stag-crypt-exit")?, 1507, 1, None, false)?;
+        exercise(
+            callback("order-of-the-stag-crypt-exit")?,
+            1507,
+            1,
+            None,
+            false,
+        )?;
         Ok(())
     })
 }
@@ -248,6 +254,7 @@ pub(in super::super) fn exercise(
             .states
             .chat
             .admit(admitted.game_session_id, "Traveller", owner.owner_now());
+        let mut historical_hash = None;
         if let Some(stage) = stage {
             use oteryn_gameplay_quests::quest::{
                 QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
@@ -309,7 +316,12 @@ pub(in super::super) fn exercise(
                 let main = owner.quest_catalogue.as_deref().ok_or("main catalogue")?;
                 let hash = main.definition_hash(&callback.quest).ok_or("main hash")?;
                 let active = main
-                    .with_fixture_transition(catalogue.transition(seed).ok_or("fixture transition")?.clone())
+                    .with_fixture_transition(
+                        catalogue
+                            .transition(seed)
+                            .ok_or("fixture transition")?
+                            .clone(),
+                    )
                     .map_err(debug)?
                     .with_fixture_predecessor(main, &callback.quest)
                     .map_err(debug)?;
@@ -324,6 +336,7 @@ pub(in super::super) fn exercise(
                 sqlx::query("UPDATE game_character_quest_receipts SET pinned_content_revision='content-main-era', definition_hash=$1 WHERE quest_key=$2")
                     .bind(hash.as_slice()).bind(&callback.quest).execute(&mut *save).await?;
                 save.commit().await?;
+                historical_hash = Some(hash);
                 owner.quest_catalogue = Some(std::sync::Arc::new(active));
             } else {
                 owner.quest_catalogue = Some(catalogue);
@@ -354,9 +367,17 @@ pub(in super::super) fn exercise(
             .await
             .map_err(debug)?;
         if main_era_save {
-            let stored = before.states().get(&callback.quest).ok_or("main-era state")?;
+            let stored = before
+                .states()
+                .get(&callback.quest)
+                .ok_or("main-era state")?;
             assert!(!stored.completed);
             assert_eq!(stored.pinned_content_revision, "content-main-era");
+            assert_eq!(Some(stored.definition_hash), historical_hash);
+            assert_eq!(
+                before.tracks().get(&callback.storage[0].track).copied(),
+                stage
+            );
         }
         let receipts_before: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
