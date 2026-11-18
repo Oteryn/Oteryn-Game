@@ -912,6 +912,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     || callback.trigger != Trigger::StepIn
                     || callback.actor_kind != ActorKind::Player
                     || callback.teleport.is_none()
+                    || !callback.return_on_failure
                     || callback.reversible
             })
             || (callback.key == super::dreamer_fire_bug::IGNITE
