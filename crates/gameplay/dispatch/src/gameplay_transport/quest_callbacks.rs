@@ -934,7 +934,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         map: &BundleMap,
         target: &WorldObjectTarget,
-        selected_tool: Option<([u8; 16], Vec<u8>)>,
+        selected_tool: Option<([u8; 16], Vec<u8>, &str)>,
     ) -> Option<UseOutcome> {
         if let Some(outcome) = self.use_rafzane_elevator(actor, command, map, target).await {
             return Some(outcome);
@@ -982,6 +982,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && c.trigger == Trigger::Use
                     && !oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&c.key)
                     && matches(map, c, resolved.placement_key)
+                    && selected_tool.as_ref().is_none_or(|(_, _, definition)| {
+                        c.item_on_target.as_ref().is_some_and(|input| {
+                            input.selected_instance
+                                && super::mount_taming::quest_objects::accepts_source(
+                                    input, definition,
+                                )
+                        })
+                    })
                     && c.activation.as_ref().is_none_or(|activation| {
                         self.states
                             .quest_sessions
@@ -1004,6 +1012,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && conditional_cells::matches(map, c)
             })
             .collect::<Vec<_>>();
+        let selected_tool = selected_tool.map(|(instance, intent, _)| (instance, intent));
         let source_trial = selected
             .iter()
             .any(|c| c.effects.target_transform.is_some());

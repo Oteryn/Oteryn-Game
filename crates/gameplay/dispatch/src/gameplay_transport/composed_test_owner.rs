@@ -187,11 +187,15 @@ pub fn world_tool_callbacks(
     };
     let resolved = super::world_map::resolve_map_target(&view, target, |_| None::<()>)
         .map_err(|e| format!("{e:?}"))?;
+    let bindings = owner
+        .quest_catalogue
+        .as_deref()
+        .and_then(|c| c.authored_bindings());
     Ok(owner
         .callback_content()
         .iter()
         .filter(|c| {
-            super::mount_taming::quest_objects::accepts(c)
+            super::mount_taming::quest_objects::accepts(c, bindings)
                 && super::quest_callbacks::matches(map, c, resolved.placement_key)
         })
         .map(|c| c.key.clone())

@@ -122,16 +122,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
-        let callbacks = self.callback_content();
-        let Some(callback) = callbacks.iter().find(|callback| {
-            quest_objects::accepts(callback)
-                && super::quest_callbacks::matches(map, callback, resolved.placement_key)
-        }) else {
+        let bindings = self
+            .quest_catalogue
+            .as_deref()
+            .and_then(|c| c.authored_bindings());
+        let inputs: Vec<_> = self
+            .callback_content()
+            .iter()
+            .filter_map(|callback| {
+                (quest_objects::accepts(callback, bindings)
+                    && super::quest_callbacks::matches(map, callback, resolved.placement_key))
+                .then_some(callback.item_on_target.as_ref())
+                .flatten()
+            })
+            .collect();
+        if inputs.is_empty() {
             return Ok(None);
-        };
-        let Some(required) = &callback.item_on_target else {
-            return Err(());
-        };
+        }
         let Some(fence) = command.item_fence else {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         };
@@ -146,38 +153,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .flat_map(|bag| &bag.entries)
             .chain(inventory.nested.iter().map(|(_, entry)| entry))
             .find(|entry| {
-                entry.item.definition.production_key == required.item
-                    && quest_objects::matches_source(
-                        &intent.target,
-                        source,
-                        entry.item.item_instance_id,
-                        self.active_generation
-                            .and_then(crate::content::ActiveGeneration::native_gameplay)
-                            .and_then(|native| native.item_index())
-                            .and_then(|index| {
-                                index.definition_ref(
-                                    &entry.item.definition.family,
-                                    &entry.item.definition.production_key,
-                                    &entry.item.definition.revision_ref,
-                                )
-                            }),
-                    )
+                inputs.iter().any(|input| {
+                    quest_objects::accepts_source(input, &entry.item.definition.production_key)
+                }) && quest_objects::matches_source(
+                    &intent.target,
+                    source,
+                    entry.item.item_instance_id,
+                    self.active_generation
+                        .and_then(crate::content::ActiveGeneration::native_gameplay)
+                        .and_then(|native| native.item_index())
+                        .and_then(|index| {
+                            index.definition_ref(
+                                &entry.item.definition.family,
+                                &entry.item.definition.production_key,
+                                &entry.item.definition.revision_ref,
+                            )
+                        }),
+                )
             });
         let Some(selected) = selected else {
             return Ok(Some(outcome(UseDisposition::NothingToUse)));
         };
-        let intent =
-            oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent).map_err(|_| ())?;
+        let definition = &selected.item.definition.production_key;
+        let selected_tool = if inputs.iter().any(|input| {
+            input.selected_instance && quest_objects::accepts_source(input, definition)
+        }) {
+            let intent = encode_item_use_intent(intent).map_err(|_| ())?;
+            Some((selected.item.item_instance_id, intent, definition.as_str()))
+        } else {
+            None
+        };
         Ok(self
-            .use_quest_callback_with_tool(
-                actor,
-                command,
-                map,
-                target,
-                required
-                    .selected_instance
-                    .then_some((selected.item.item_instance_id, intent)),
-            )
+            .use_quest_callback_with_tool(actor, command, map, target, selected_tool)
             .await)
     }
 
