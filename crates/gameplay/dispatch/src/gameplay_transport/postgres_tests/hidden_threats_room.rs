@@ -1,8 +1,7 @@
 //! The native STEP path admits one player, then the Channel timer expels that player.
 use super::fixture::{Harness, debug, id, run};
-use super::quest_world_callbacks::{local, world_with_cells};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
-use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
+use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use oteryn_gameplay_quests::quest::world_callbacks::{EncounterPlayer, EncounterTiming, Position};
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
@@ -84,18 +83,18 @@ fn hidden_threats_room_step_admits_one_player_and_expires_postgres() -> TestResu
                 spawn_after_ms: 0,
                 reset_after_ms: 300_000,
             });
-            let world = world_with_cells(&callback, ENTRY, &[EXIT])?;
-            let mut deps = Dependencies::new()?;
+            let world = world()?;
+            let world_id = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
             let (controller, activated) =
                 super::death_ml_loss_composed::production_generation_with_pin(
-                    deps.admitted.world_id,
+                    world_id,
                     "content-1",
                 )?;
             let generation = controller.active().ok_or("active generation")?;
             let cells = world
                 .movement_cells(activated.qualified_room().movement_cells())
                 .map_err(debug)?;
-            let frame = world.frame_binding_digest(deps.admitted.world_id);
+            let frame = world.frame_binding_digest(world_id);
             let room = activated
                 .qualified_room()
                 .bundle_view(
@@ -110,7 +109,7 @@ fn hidden_threats_room_step_admits_one_player_and_expires_postgres() -> TestResu
                 )
                 .ok_or("bundle room")?;
             let pin = crate::content::channel_content_pin::ChannelContentPin::from_activation(
-                deps.admitted.world_id,
+                world_id,
                 1,
                 generation.identity().server_artifact_digest(),
                 generation.identity().client_artifact_digest(),
@@ -118,33 +117,17 @@ fn hidden_threats_room_step_admits_one_player_and_expires_postgres() -> TestResu
                 world.map_revision_digest(),
                 (99, 100, 7),
             );
-            let mut runtime = ChannelRuntimeV1::from_committed_assignment(
-                deps.admitted.world_id,
-                deps.admitted.channel_id,
-                crate::foundation::NodeId::decode(&id(1)).map_err(debug)?,
-                1,
-                1,
-                1,
-                "runtime-scope-assignment:1",
-                64,
+            let deps = Dependencies::with_content_and_capacity(
                 pin,
-            )
-            .map_err(debug)?;
-            let reservation = runtime
-                .reserve_fresh_session(deps.admitted.game_session_id)
+                room.clone(),
+                crate::spell::cast::v1_spell_book().map_err(debug)?,
+                16,
+            )?;
+            deps.runtime
+                .lock()
+                .await
+                .initialize_pinned_test_position(deps.actor, local(Position { x: 99, ..ENTRY }))
                 .map_err(debug)?;
-            deps.actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
-            runtime
-                .initialize_pinned_test_position(
-                    deps.actor,
-                    MovementLocalPosition {
-                        x: 99,
-                        y: 100,
-                        floor: 7,
-                    },
-                )
-                .map_err(debug)?;
-            deps.runtime = tokio::sync::Mutex::new(runtime);
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -297,4 +280,89 @@ async fn position(
         .read_actor_position(actor)
         .map_err(debug)?
         .position())
+}
+
+fn local(p: Position) -> MovementLocalPosition {
+    MovementLocalPosition {
+        x: i32::from(p.x),
+        y: i32::from(p.y),
+        floor: -i16::from(p.floor),
+    }
+}
+
+fn world() -> TestResult<crate::map::boot::BundleWorld> {
+    use crate::map::overlay::TilePos;
+    use oteryn_world_bundle::{bundle, sector};
+    let (bytes, mut pins) = crate::map::boot::tests::bundle();
+    let mut data = bundle::read(&bytes)?;
+    data.manifest.palette.truncate(1);
+    data.manifest.palette.push(bundle::PaletteEntry {
+        id: 1,
+        key: "oteryn:terrain.tibia.i100".into(),
+        family: bundle::Family::Terrain,
+        terrain: Some(bundle::Terrain {
+            kind: bundle::TerrainKind::Common,
+            walkable: None,
+            ground_speed: None,
+            blocks_projectile: None,
+        }),
+    });
+    data.manifest.world = bundle::Extent {
+        min_x: 98,
+        min_y: 99,
+        max_x: 121,
+        max_y: 121,
+        floors: vec![-7],
+    };
+    let item = |palette| sector::Item {
+        palette,
+        depth: 0,
+        attrs: Default::default(),
+    };
+    let mut tiles = Vec::new();
+    for y in 99..=120 {
+        for x in 98..=120 {
+            let mut items = vec![item(0)];
+            if (x, y) == (ENTRY.x, ENTRY.y) {
+                items.push(item(1));
+            }
+            tiles.push(sector::Tile {
+                x,
+                y,
+                flags: 0,
+                house: 0,
+                zones: vec![],
+                items,
+            });
+        }
+    }
+    let bytes = oteryn_world_bundle::writer::write(
+        &data.manifest,
+        &[bundle::Sector {
+            floor: -7,
+            sx: 3,
+            sy: 3,
+            tiles,
+        }],
+        &Default::default(),
+    )?;
+    pins.digest = bundle::read(&bytes)?.digest;
+    let base = crate::map::load(&bytes, &pins).map_err(debug)?;
+    crate::map::boot::boot(
+        &bytes,
+        &crate::map::boot::BootPins {
+            map_revision: crate::map::overlay::map_revision(&base),
+            bundle: pins,
+            start: TilePos {
+                x: 99,
+                y: 100,
+                floor: -7,
+            },
+        },
+        crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
+        crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
+        |_| None,
+    )
+    .map_err(debug)
+    .map_err(Into::into)
 }
