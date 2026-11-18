@@ -37,7 +37,13 @@ const WALKWAY: TilePos = TilePos {
     y: 32770,
     floor: -6,
 };
-// Crystal 201189f8, data-global/world/world.otbm: the i482 opening drops onto i1968 here.
+// Crystal 201189f8, data-global/world/world.otbm: stepping west from this cell onto
+// the i482 opening at (32674, 32784, 6) drops onto i1968 one floor below.
+const LADDER_APPROACH: TilePos = TilePos {
+    x: 32675,
+    y: 32784,
+    floor: -6,
+};
 const LADDER_LANDING: TilePos = TilePos {
     x: 32674,
     y: 32784,
@@ -155,8 +161,13 @@ fn to_walkway(world: &BundleWorld, from: TilePos) -> Option<Vec<StepDirection>> 
 }
 
 fn to_ramp(world: &BundleWorld) -> TestResult<[Vec<StepDirection>; 2]> {
-    let descent = route(world, WALKWAY, |at| at == LADDER_LANDING)
-        .ok_or("step=reach observed=no-walk-route-from-walkway-to-ladder-landing")?;
+    let mut descent = route(world, WALKWAY, |at| at == LADDER_APPROACH)
+        .ok_or("step=reach observed=no-walk-route-from-walkway-to-ladder-approach")?;
+    let landing = destination(world, LADDER_APPROACH, StepDirection::West);
+    if landing != Some(LADDER_LANDING) {
+        return Err(format!("step=reach observed=invalid-port-hope-ladder-landing:{landing:?}").into());
+    }
+    descent.push(StepDirection::West);
     let ground = route(world, LADDER_LANDING, |at| at == RAMP_FOOT)
         .ok_or("step=reach observed=no-walk-route-from-ladder-landing-to-ramp")?;
     Ok([descent, ground])
@@ -558,6 +569,15 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
         },
         &registry,
     )?;
+    for held in &compiled.npcs.held {
+        if held.npc == CAPTAIN || held.npc == NPC {
+            return Err(format!(
+                "step=compile observed=held-approach-npc:{}:{:?}:{:?}",
+                held.npc, held.cell, held.reason
+            )
+            .into());
+        }
+    }
     assert!(
         project.families.routes.iter().any(|route| {
             route.service == "oteryn:service.travel.captain_bluebear"
