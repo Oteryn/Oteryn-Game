@@ -1,5 +1,5 @@
 //! Keep an exact pre-Ice quest definition readable by the fenced NPC writer.
-use super::{NpcRuleCatalog, admission, questpc2_albinius_source};
+use super::{NpcRuleCatalog, NpcRuleProgram, admission, questpc2_albinius_source};
 use crate::quest::{NpcDefinitionPredecessor, QuestStateCatalogue, definition_hash};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
@@ -21,19 +21,14 @@ fn ice_source(source: &str) -> bool {
         })
 }
 
-pub(in crate::quest) fn register(active: &mut QuestStateCatalogue) -> Result<(), String> {
-    let quest = questpc2_albinius_source::QUEST;
-    let source = NpcRuleCatalog::runtime().map_err(|error| error.to_string())?;
-    let Some(program) = source.program(quest) else {
-        return Ok(());
-    };
+fn before_ice(program: &NpcRuleProgram) -> Result<Option<NpcRuleProgram>, String> {
     let mut previous = program.clone();
     previous
         .document
         .rules
         .retain(|rule| !rule.sources.iter().all(|s| ice_source(s)));
     if previous.document.rules.len() == program.document.rules.len() {
-        return Ok(());
+        return Ok(None);
     }
     previous.document.tracks.retain(|track| track.key != ICE);
     for rule in &mut previous.document.rules {
@@ -51,6 +46,18 @@ pub(in crate::quest) fn register(active: &mut QuestStateCatalogue) -> Result<(),
     previous.digest =
         Sha256::digest(serde_json::to_vec(&previous.document).map_err(|error| error.to_string())?)
             .into();
+    Ok(Some(previous))
+}
+
+pub(in crate::quest) fn register(active: &mut QuestStateCatalogue) -> Result<(), String> {
+    let quest = questpc2_albinius_source::QUEST;
+    let source = NpcRuleCatalog::runtime().map_err(|error| error.to_string())?;
+    let Some(program) = source.program(quest) else {
+        return Ok(());
+    };
+    let Some(previous) = before_ice(program)? else {
+        return Ok(());
+    };
     if admission::binding_key(&previous) != PREVIOUS_BINDING {
         return Ok(());
     }
@@ -94,4 +101,23 @@ pub(in crate::quest) fn register(active: &mut QuestStateCatalogue) -> Result<(),
             defaults: BTreeMap::new(),
         });
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fknow_albinius_predecessor_matches_the_exact_published_programme() -> Result<(), String> {
+        let source = NpcRuleCatalog::runtime().map_err(|error| error.to_string())?;
+        let active = source
+            .program(questpc2_albinius_source::QUEST)
+            .ok_or("Albinius programme")?;
+        let previous = before_ice(active)?;
+        assert_eq!(
+            admission::binding_key(previous.as_ref().unwrap_or(active)),
+            PREVIOUS_BINDING,
+        );
+        Ok(())
+    }
 }
