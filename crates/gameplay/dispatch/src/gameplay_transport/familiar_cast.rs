@@ -5,6 +5,7 @@
     reason = "spell import candidate; awaits its production owner caller"
 )]
 use super::super::ComposedFreshAdmission;
+use super::super::spell_premium_coordinator::RegisteredSpellAccessOwner;
 use super::{ChannelSpellStates, SpellCastIntent, SpellCastOutcome};
 use crate::durability::character_familiar::{FamiliarCleanEndResolution, FamiliarStateRequest};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
@@ -13,7 +14,7 @@ use crate::spell::cast::PlayerSpellState;
 use crate::spell::combat_batch::SpellAnchor;
 use crate::spell::companion_lifecycle::PreparedFamiliar;
 use crate::spell::owned_cast_facts::{
-    AccessProjections, CastFactsBinding, CurrentProjection, OwnedCastFacts,
+    AccessProjections, CastFactsBinding, CurrentProjection, OwnedCastFacts, OwnedFactsError,
 };
 use std::num::NonZeroU32;
 #[path = "familiar_cast_dispatch.rs"]
@@ -450,7 +451,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         admission: &crate::foundation::fresh_admission_durability::FreshAdmissionCommitRequestV1,
         content: &NativeGameplayState,
-        access: &impl super::super::spell_access_facts::CurrentSpellAccessOwner,
+        access: &RegisteredSpellAccessOwner,
         config: &crate::content::spell_familiar_config::CompiledFamiliarConfig,
     ) -> Result<Option<crate::spell::companion_lifecycle::LifecycleFamiliarApplyReceipt>, ()> {
         if config.source_digest() != content.source_digest() {
@@ -473,7 +474,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && stored.state().lifecycle.as_ref().is_none_or(|lifecycle| {
                     !lifecycle.open && lifecycle.familiar_remaining_ms == 0
                 });
-        if nothing_to_restore {
+        let look_only = if nothing_to_restore {
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
             if !current_owner(&runtime, &login_fence, actor, session)
@@ -481,20 +482,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Err(());
             }
-            states.get(&runtime, actor, session).ok_or(())?;
+            let state = states.get(&runtime, actor, session).ok_or(())?;
             let live_familiar = runtime
                 .owned_companions(actor, session)
                 .map_err(|_| ())?
                 .iter()
                 .any(|companion| companion.state.policy.is_familiar);
-            // Crystal Login with no summoned familiar has no restoration to perform.
-            // A logout may have persisted an empty closed checkpoint. It grants no
-            // Premium benefit and needs no cast projection. #2199's stored or pending
-            // lifecycle/cooldown work still follows the complete fail-closed path.
-            if !live_familiar && !states.has_pending_familiar(actor, session) {
+            // The installed first-entry facts already carry the character's level.
+            if !live_familiar
+                && !states.has_pending_familiar(actor, session)
+                && stored.state().granted_looks.is_empty()
+                && (state.character_facts().level < 200 || !access.premium_gate().premium_current())
+            {
                 return Ok(None);
             }
-        }
+            !live_familiar
+        } else {
+            false
+        };
         let owned = self
             .read_familiar_lifecycle_inputs(actor, session, content, access)
             .await?;
@@ -524,6 +529,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             config,
             premium: access,
             administrative: &administrative,
+            allow_missing_premium: look_only,
         };
         let receipt = self
             .apply_familiar_owner_event(
@@ -1732,6 +1738,7 @@ pub struct FamiliarSourceAdapter<'a, P, A> {
     pub config: &'a crate::content::spell_familiar_config::CompiledFamiliarConfig,
     pub premium: &'a P,
     pub administrative: &'a A,
+    allow_missing_premium: bool,
 }
 impl<P, A> source_registration::Registered for FamiliarSourceAdapter<'_, P, A> {}
 impl<
@@ -1747,22 +1754,28 @@ impl<
         if self.config.source_digest() != binding.content_digest {
             return None;
         }
-        let premium = self.premium.read_current(binding, now).ok()?.premium?;
+        let premium = self.premium.read_current(binding, now).ok()?.premium;
         let group = self.administrative.read_current_group(binding, now)?;
-        if !premium.current(binding, now) || !group.current(binding, now) {
+        if premium.as_ref().is_some_and(|p| !p.current(binding, now))
+            || (premium.is_none() && !self.allow_missing_premium)
+            || !group.current(binding, now)
+        {
             return None;
         }
+        let premium_current = premium.as_ref().is_some_and(|p| p.value);
         Some(CurrentProjection {
             binding: binding.clone(),
             authority_revision: group.authority_revision,
-            valid_until_micros: premium.valid_until_micros.min(group.valid_until_micros),
+            valid_until_micros: premium.as_ref().map_or(group.valid_until_micros, |p| {
+                p.valid_until_micros.min(group.valid_until_micros)
+            }),
             value: FamiliarSourceSettings {
                 benefit_use: FamiliarBenefitUse::CurrentEligibility,
                 account_at_least_god: group.value,
-                premium: premium.value,
-                premium_revision: premium.authority_revision,
+                premium: premium_current,
+                premium_revision: premium.as_ref().map_or(0, |p| p.authority_revision),
                 familiar_minutes: self.config.familiar_minutes(),
-                vip: self.config.vip_enabled() && premium.value,
+                vip: self.config.vip_enabled() && premium_current,
                 vip_reduction_minutes: self.config.vip_reduction_minutes(),
                 cooldown_rate: self.config.cooldown_rate(),
             },
@@ -2046,20 +2059,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | FamiliarOwnerEvent::Expiry { .. }
                     | FamiliarOwnerEvent::OwnerDeath { .. }
             );
+            let login = matches!(event, FamiliarOwnerEvent::Login(_));
             let caster = if is_end {
                 None
             } else {
+                let harmony = crate::spell::harmony::HarmonyMultiplier::ONE;
                 Some(
                     owned
-                        .caster(
-                            state,
-                            spell,
-                            content,
-                            crate::spell::harmony::HarmonyMultiplier::ONE,
-                            now.get(),
-                        )
+                        .caster(state, spell, content, harmony, now.get())
+                        .or_else(|error| {
+                            if login && error == OwnedFactsError::UnavailablePremium {
+                                // Look-only Login can revoke without Premium. The
+                                // settings check below still fences restoration.
+                                owned.numerical_caster(state, spell, content, harmony, now.get())
+                            } else {
+                                Err(error)
+                            }
+                        })
                         .map_err(|error| {
-                            if matches!(event, FamiliarOwnerEvent::Login(_)) {
+                            if login {
                                 crate::gameplay_transport::operator_event(&format!(
                                     "event=familiar_login_refused step=caster_projection reason={error:?}"
                                 ));

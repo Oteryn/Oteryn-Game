@@ -545,6 +545,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             config,
             premium: access,
             administrative: &administrative,
+            allow_missing_premium: false,
         };
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
@@ -717,6 +718,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             config,
             premium: access,
             administrative: &administrative,
+            allow_missing_premium: false,
         };
         self.cast_durable_familiar(
             permit, actor, session, command_id, intent, content, &owned, &source,
@@ -796,6 +798,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             config,
             premium: access,
             administrative: &administrative,
+            allow_missing_premium: false,
         };
         self.apply_familiar_owner_event(actor, session, index, event, content, &owned, &source)
             .await

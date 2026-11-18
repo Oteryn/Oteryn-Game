@@ -9,7 +9,7 @@ use oteryn_protocol_oteryn::logout::LogoutResult;
     reason = "this mount uses the served-policy provisioning entry point"
 )]
 #[path = "../../../../../../apps/game-server/src/qualification_spell_character.rs"]
-mod provision;
+pub(super) mod provision;
 
 #[test]
 fn qualification_fixture_accepts_native_admission_logout_and_relog() -> TestResult {
