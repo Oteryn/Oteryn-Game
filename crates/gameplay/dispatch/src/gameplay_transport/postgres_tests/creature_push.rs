@@ -113,7 +113,7 @@ pub(super) fn bundle(trap: Option<u16>) -> TestResult<(Vec<u8>, crate::map::Bund
         npcs: Default::default(),
     };
     if trap == Some(12187) {
-        for (id, appearance) in [(7, 12187), (8, 12189)] {
+        for (id, appearance) in [(7, 12187), (8, 12189), (9, 3682)] {
             manifest.palette.push(PaletteEntry {
                 key: format!("oteryn:item.tibia.i{appearance}"),
                 family: Family::Item,
@@ -122,10 +122,24 @@ pub(super) fn bundle(trap: Option<u16>) -> TestResult<(Vec<u8>, crate::map::Bund
             });
         }
     }
+    if trap == Some(12187) {
+        manifest.palette.push(terrain(
+            "oteryn:terrain.tibia.i10480",
+            10,
+            TerrainKind::Ground,
+            Some(true),
+        ));
+    }
     let mut tiles = Vec::new();
     for y in 0..=8 {
         for x in 0..=12 {
-            let mut palettes = vec![if (x, y) == (3, 5) { 2 } else { 0 }];
+            let mut palettes = vec![if trap == Some(12187) && (x, y) == (3, 2) {
+                10
+            } else if (x, y) == (3, 5) {
+                2
+            } else {
+                0
+            }];
             if let Some(trap) = trap.filter(|id| *id != 12187)
                 && (x, y) == (4, 2)
             {
@@ -197,12 +211,15 @@ pub(super) fn scenario(
 ) -> Result<(), String> {
     run(async |admin| {
         let merchant_loot = seed == "rottin_merchant_loot";
-        let h = if merchant_loot {
+        let merchant_wave = seed == "rottin_merchant_wave";
+        let h = if merchant_loot || merchant_wave {
             Harness::create_quest_reward(admin, seed, false).await?
         } else {
             Harness::create_with_admission_seed(admin, seed, true, false).await?
         };
-        if merchant_loot {
+        if merchant_wave {
+            super::item_look::seed_main_backpack(&h, &[("oteryn:item.tibia.i12186", 1)]).await?;
+        } else if merchant_loot {
             super::item_look::seed_main_backpack(&h, &[]).await?;
         }
         prepare_current_session(&h).await?;
@@ -246,6 +263,7 @@ pub(super) fn scenario(
                         "oteryn:item.tibia.i12369" => 7,
                         "oteryn:item.tibia.i12187" => 8,
                         "oteryn:item.tibia.i12189" => 9,
+                        "oteryn:item.tibia.i3682" => 10,
                         _ => return None,
                     })?,
                     solid: Some(false),
@@ -290,7 +308,7 @@ pub(super) fn scenario(
             1,
             "runtime-scope-assignment:1",
             // The pusher, one creature and one pushed player.
-            3,
+            if merchant_wave { 10 } else { 3 },
             channel_pin,
         )
         .map_err(debug)?;
@@ -316,9 +334,9 @@ pub(super) fn scenario(
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        if merchant_loot {
+        if merchant_loot || merchant_wave {
             owner.quest_catalogue = Some(std::sync::Arc::new(
-                super::rottin_bushwhacking::loot_catalogue()?,
+                super::rottin_bushwhacking::catalogue(merchant_wave)?,
             ));
         }
         owner.movement_cells = (&cells).into();
@@ -335,7 +353,9 @@ pub(super) fn scenario(
         );
         let (mut server, mut client) = tokio::io::duplex(1 << 20);
         let client_flow = async {
-            let result = if trap == Some(12187) {
+            let result = if merchant_wave {
+                super::rottin_bushwhacking::exercise_wave(&mut client, &owner, admitted, &h).await
+            } else if trap == Some(12187) {
                 super::rottin_bushwhacking::exercise(
                     &mut client,
                     &owner,
