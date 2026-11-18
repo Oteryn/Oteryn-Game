@@ -404,6 +404,12 @@ pub(super) async fn exercise_wave(
         y: 2,
         floor: -7,
     };
+    let entrance = TilePos {
+        x: 4,
+        y: 2,
+        floor: -7,
+    };
+    assert!(!map.facts.quest_callback_blocked(map.overlay.base(), entrance, false));
     assert_eq!(
         use_net(owner, admitted, early, 1, 71).await?,
         UseDisposition::Committed
@@ -429,15 +435,7 @@ pub(super) async fn exercise_wave(
             .iter()
             .any(|entry| entry.facts.appearance_id == 12187)
     );
-    assert!(map.facts.quest_callback_blocked(
-        map.overlay.base(),
-        TilePos {
-            x: 4,
-            y: 2,
-            floor: -7
-        },
-        false
-    ));
+    assert!(map.facts.quest_callback_blocked(map.overlay.base(), entrance, false));
     assert!(
         owner
             .states
@@ -492,15 +490,8 @@ pub(super) async fn exercise_wave(
     }));
     drop(runtime);
     let map = owner.bundle_map().ok_or("map")?;
-    assert!(
-        map.facts
-            .movement_items(TilePos {
-                x: 4,
-                y: 2,
-                floor: -7
-            })
-            .is_empty()
-    );
+    assert!(map.facts.movement_items(entrance).is_empty());
+    assert!(!map.facts.quest_callback_blocked(map.overlay.base(), entrance, false));
     assert!(
         map.facts
             .movement_items(pos)
