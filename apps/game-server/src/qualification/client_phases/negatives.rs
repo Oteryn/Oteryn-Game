@@ -123,16 +123,12 @@ pub(super) async fn transport<'a>(
 }
 
 pub(super) async fn admission_negatives(
-    clients: &SeamClients<'_>,
+    address: SocketAddr,
+    characters: &[[u8; 16]],
+    url: &str,
     exact: &TlsConnector,
     grant: &OwnedGrant<'_>,
 ) -> TestResult<()> {
-    let &SeamClients {
-        address,
-        characters,
-        url,
-        ..
-    } = clients;
     evidence("stage=foundation_negatives");
     // Foundation negatives through the real listener, before FND-04.
     let token = sign_grant(&grant.borrowed(), now_seconds()?);
@@ -281,4 +277,73 @@ pub(super) async fn admission_negatives(
     );
 
     Ok(())
+}
+
+#[test]
+fn qualification_foundation_negative_runs_on_node_boot_scenario_stack() -> TestResult {
+    run_node_boot_seam(|runtime| {
+        assert_eq!(
+            std::thread::current().name(),
+            Some("node-boot-seam-scenario")
+        );
+        runtime.block_on(Box::pin(async {
+            let generated = rcgen::generate_simple_self_signed(vec!["localhost".into()])?;
+            let certificate = generated.cert.der().clone();
+            let key = PrivatePkcs8KeyDer::from(generated.signing_key.serialize_der());
+            let mut config = rustls::ServerConfig::builder_with_provider(Arc::new(
+                rustls::crypto::aws_lc_rs::default_provider(),
+            ))
+            .with_protocol_versions(&[&rustls::version::TLS13])?
+            .with_no_client_auth()
+            .with_single_cert(vec![certificate.clone()], key.into())?;
+            config.alpn_protocols = vec![b"oteryn-game/1".to_vec()];
+            let acceptor = tokio_rustls::TlsAcceptor::from(Arc::new(config));
+            let listener = TcpListener::bind("127.0.0.1:0").await?;
+            let address = listener.local_addr()?;
+            let exact = connector(&certificate, &EXACT)?;
+            let character = v7(1, 0x01);
+            let signing = SigningKey::from_bytes(&[0x42; 32]);
+            let grant = Grant {
+                signing: &signing,
+                key_id: "stack-probe",
+                account_id: "",
+                character_id: character,
+                world_id: v7(1, 0x02),
+                channel_id: v7(1, 0x03),
+                security_generation: 1,
+                scope_generation: 1,
+                nonce: [0x42; 32],
+                attempt: v7(1, 0x04),
+            }
+            .with_account(&uuid_text(&v7(1, 0x05)));
+            let characters = [character];
+            let peer = async {
+                let (tcp, _) = listener.accept().await?;
+                let mut tls = acceptor.accept(tcp).await?;
+                let length = tls.read_u32().await?;
+                assert!((1..=4096).contains(&length));
+                let mut frame = vec![0; length as usize];
+                tls.read_exact(&mut frame).await?;
+                // A clean close without a ProtocolError must fail the actual stage before any DB read.
+                tls.shutdown().await?;
+                Ok::<_, Box<dyn std::error::Error>>(())
+            };
+            let (result, peer_result) = tokio::time::timeout(Duration::from_secs(5), async {
+                tokio::join!(
+                    admission_negatives(address, &characters, "", &exact, &grant),
+                    peer
+                )
+            })
+            .await?;
+            peer_result?;
+            assert_eq!(
+                result
+                    .err()
+                    .ok_or("Foundation stage accepted the missing reply")?
+                    .to_string(),
+                "malformed ClientResume admitted or misreported: Closed"
+            );
+            Ok(())
+        }))
+    })
 }
