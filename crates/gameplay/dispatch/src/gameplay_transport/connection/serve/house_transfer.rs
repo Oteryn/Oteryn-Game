@@ -369,6 +369,10 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 let (status, payload) = house_hireling::result(selected, &dispatch)?;
                 effects = Some(dispatch);
                 (None, payload, status)
+            } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
+                let (status, payload) =
+                    house_hireling::result(selected, &Dispatch::Step(StepOutcome::rejected(), 0))?;
+                (None, payload, status)
             } else {
                 (None, Vec::new(), CommandStatus::Rejected)
             };
