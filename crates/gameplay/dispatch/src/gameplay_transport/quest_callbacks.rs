@@ -518,12 +518,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return false;
             };
+            let callback = self
+                .callback_content()
+                .iter()
+                .find(|callback| callback.key == pending.callback);
             // Replay the exact durable binding, including a bound carried tool.
             let context = match pending.selected_tool {
-                Some((source, intent)) => match context.with_selected_tool(source, intent) {
-                    Some(context) => context,
-                    None => return false,
-                },
+                Some((source, intent)) => {
+                    // The Right Rite starts from plain USE on the scroll (Crystal
+                    // 201189f8, the_gravedigger_of_drefia/actions_sacrifice.lua:3-17).
+                    let direct = callback.is_some_and(|callback| callback.effects.direct_item_use);
+                    let Some(context) = context.with_selected_tool_for_use(source, intent, direct)
+                    else {
+                        return false;
+                    };
+                    context
+                }
                 None => context.into(),
             };
             let Ok(Some(fence)) = self.current_quest_fence(pending.session).await else {
@@ -535,10 +545,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 crate::gameplay_transport::item_ref_admission::NativeItemWeights(n)
                     .with_wheel(self.premium_coordinator)
             });
-            let admission = self
-                .callback_content()
-                .iter()
-                .find(|c| c.key == pending.callback)
+            let admission = callback
                 .filter(|c| c.item_reward().is_some())
                 .and_then(|_| native.zip(weights.as_ref()))
                 .map(|(native, weights)| {

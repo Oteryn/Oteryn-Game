@@ -47,11 +47,22 @@ fn plain_incantation_scroll_cannot_summon_ritual_chicken_onto_stairs() -> TestRe
     })
 }
 
+#[test]
+fn interrupted_plain_scroll_use_reconciles_custody_and_summons_one_ritual_chicken() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("gravedigger-ritual-lost-ack", move || {
+        scenario(admin, Altar::Interrupted)
+    })
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Altar {
     Free,
     Occupied,
     StairRing,
+    Interrupted,
 }
 
 fn scenario(admin: String, layout: Altar) -> TestResult {
@@ -186,7 +197,7 @@ fn scenario(admin: String, layout: Altar) -> TestResult {
                     );
                 }
             }
-            if layout != Altar::Free {
+            if matches!(layout, Altar::Occupied | Altar::StairRing) {
                 let actor = admitted.runtime_actor.ok_or("ritual caster")?;
                 let mut runtime = owner.runtime.lock().await;
                 let before = runtime.read_actor_position(actor).map_err(debug)?;
@@ -195,15 +206,39 @@ fn scenario(admin: String, layout: Altar) -> TestResult {
                     .commit_cardinal(before, center)
                     .map_err(debug)?;
             }
-            let (_, accepted, _) = super::item_craft::exchange(
+            if layout == Altar::Interrupted {
+                owner.states.quest_callbacks.interrupt_after_commit.store(
+                    true,
+                    std::sync::atomic::Ordering::Release,
+                );
+            }
+            let result = super::item_craft::exchange(
                 owner,
                 admitted,
                 admitted.continuity.next_command_id,
                 &payload,
                 Some(item),
             )
-            .await?;
-            assert_eq!(accepted, UseDisposition::Committed);
+            .await;
+            if layout == Altar::Interrupted {
+                assert!(result.is_err(), "the committed USE acknowledgement is lost");
+                assert!(owner.has_pending_quest_callback(admitted.game_session_id));
+                let summoned = owner.runtime.lock().await.current_live_creature_census();
+                assert!(summoned.map_err(debug)?.is_empty());
+                let receipts: i64 = sqlx::query_scalar(
+                    "SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1",
+                )
+                .bind(QUEST)
+                .fetch_one(&h.pool)
+                .await?;
+                assert_eq!(receipts, 1, "the receipt is durable before recovery");
+                assert!(owner.reconcile_quest_callbacks(admitted.game_session_id).await);
+                assert!(!owner.has_pending_quest_callback(admitted.game_session_id));
+                assert!(owner.reconcile_quest_callbacks(admitted.game_session_id).await);
+            } else {
+                let (_, accepted, _) = result?;
+                assert_eq!(accepted, UseDisposition::Committed);
+            }
             let snapshot = owner
                 .root
                 .read_character_quest_state(owner.character, fence.character_id)
@@ -237,7 +272,7 @@ fn scenario(admin: String, layout: Altar) -> TestResult {
             let position = runtime.read_actor_position(*chicken).map_err(debug)?.position();
             // Crystal 201189f8 src/map/map.cpp:234-313 places the creature
             // at the center when free, or within its one-tile ring when blocked.
-            assert_eq!(position == center, layout == Altar::Free);
+            assert_eq!(position == center, matches!(layout, Altar::Free | Altar::Interrupted));
             assert_eq!(position.floor, center.floor);
             assert!(position.x.abs_diff(center.x) <= 1);
             assert!(position.y.abs_diff(center.y) <= 1);
