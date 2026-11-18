@@ -2487,8 +2487,8 @@ fn scenario_case(
             Box::pin(super::super::qespike_ashes::exercise(&mut owner, &admitted, &h)).await?;
         } else if mound {
             Box::pin(super::super::qespike_mound::exercise(&mut owner, &admitted, &h)).await?;
-        } else if name == super::super::qespike_tracker::NAME {
-            Box::pin(super::super::qespike_tracker::exercise(&mut owner, &mut admitted, &h)).await?;
+        } else if matches!(name, super::super::qespike_tracker::NAME | super::super::qespike_tracker::REPEAT_NAME) {
+            Box::pin(super::super::qespike_tracker::exercise(&mut owner, &mut admitted, &h, name == super::super::qespike_tracker::REPEAT_NAME)).await?;
         } else if name == super::super::qespike_hotspot::NAME {
             Box::pin(super::super::qespike_hotspot::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == super::super::qespike_geomantic_step::NAME {
