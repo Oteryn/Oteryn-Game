@@ -65,183 +65,308 @@ fn chamber(case: ChamberCase) -> TestResult {
             reset();
             let h = Harness::create_with_admission_seed(admin, "espher2_lord_switch", true, false)
                 .await?;
-            prepare_current_session(&h).await?;
-            let callback = world_callbacks::load()?
-                .into_iter()
-                .find(|row| row.key == "oteryn:quest-callback/elemental-spheres/lord-switch-1")
-                .ok_or("Lord chamber switch must be registered")?;
-            let encounter = callback.effects.encounter.as_ref().ok_or("encounter")?;
-            let group = encounter.switches.as_ref().ok_or("four switches")?;
-            let station = &group.stations[0];
-            let world_tile = |p: world_callbacks::Position| TilePos {
-                x: p.x,
-                y: p.y,
-                floor: p.floor,
+            let result = exercise_chamber(&h, case).await;
+            h.cleanup().await?;
+            result
+        })
+    })
+}
+
+async fn exercise_chamber(h: &Harness, case: ChamberCase) -> TestResult {
+    prepare_current_session(h).await?;
+    let callback = world_callbacks::load()?
+        .into_iter()
+        .find(|row| row.key == "oteryn:quest-callback/elemental-spheres/lord-switch-1")
+        .ok_or("Lord chamber switch must be registered")?;
+    let encounter = callback.effects.encounter.as_ref().ok_or("encounter")?;
+    let group = encounter.switches.as_ref().ok_or("four switches")?;
+    let station = &group.stations[0];
+    let world_tile = |p: world_callbacks::Position| TilePos {
+        x: p.x,
+        y: p.y,
+        floor: p.floor,
+    };
+    let entry = matches!(case, ChamberCase::Entry)
+        .then(entry::callback)
+        .transpose()?;
+    let start = world_tile(
+        entry
+            .as_ref()
+            .and_then(|callback| callback.effects.party_transfer.as_ref())
+            .and_then(|party| party.initiator_at)
+            .unwrap_or(station.stand),
+    );
+    let mut deps = Dependencies::new()?;
+    let (controller, activated) = super::death_ml_loss_composed::production_generation_with_pin(
+        deps.admitted.world_id,
+        "content-1",
+    )?;
+    let generation = controller.active().ok_or("active generation")?;
+    let native = generation.native_gameplay().ok_or("native profiles")?;
+    if matches!(case, ChamberCase::Entry) {
+        for item in [942, 946, 947, 948] {
+            let definition = crate::durability::item_mint::TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: format!("oteryn:item.tibia.i{item}"),
+                revision_ref: "definition-r1".into(),
             };
-            let entry = matches!(case, ChamberCase::Entry)
-                .then(entry::callback)
-                .transpose()?;
-            let start = world_tile(
-                entry
-                    .as_ref()
-                    .and_then(|callback| callback.effects.party_transfer.as_ref())
-                    .and_then(|party| party.initiator_at)
-                    .unwrap_or(station.stand),
-            );
-            let mut deps = Dependencies::new()?;
-            let (controller, activated) =
-                super::death_ml_loss_composed::production_generation_with_pin(
-                    deps.admitted.world_id,
-                    "content-1",
-                )?;
-            let generation = controller.active().ok_or("active generation")?;
-            let native = generation.native_gameplay().ok_or("native profiles")?;
-            if matches!(case, ChamberCase::Entry) {
-                for item in [942, 946, 947, 948] {
-                    let definition = crate::durability::item_mint::TypedDefinitionRef {
-                        family: "Item".into(),
-                        production_key: format!("oteryn:item.tibia.i{item}"),
-                        revision_ref: "definition-r1".into(),
-                    };
-                    let facts =
-                        crate::gameplay_transport::item_ref_admission::generation_item_facts(
-                            native,
-                            &definition,
-                        )
-                        .map_err(debug)?;
-                    assert_ne!(
-                        facts.stack,
-                        crate::durability::item_transfer::ItemStackClass::Unknown,
-                        "chamber admission needs carried custody for {item}"
-                    );
-                }
-            }
-            // The compiler loads all floors of the region. The actual USE and
-            // relocation assertions below qualify the other physical cells.
-            let world = super::source_world_crop::compiled_region(start, start, start, native)?;
-            let cells = world
-                .movement_cells(activated.qualified_room().movement_cells())
-                .map_err(debug)?;
-            let frame = world.frame_binding_digest(deps.admitted.world_id);
-            record_item_content(&h, generation.identity(), frame).await?;
-            let room = activated
-                .qualified_room()
-                .bundle_view(
-                    cells.clone(),
-                    frame,
-                    world.map_revision_digest(),
-                    crate::content::NativeEntryStart {
-                        x: i32::from(start.x),
-                        y: i32::from(start.y),
-                        floor: -i16::from(start.floor),
-                    },
-                )
-                .ok_or("chamber room")?;
-            let pin = crate::content::channel_content_pin::ChannelContentPin::from_activation(
-                deps.admitted.world_id,
-                1,
-                generation.identity().server_artifact_digest(),
-                generation.identity().client_artifact_digest(),
-                frame,
-                world.map_revision_digest(),
-                (
-                    i32::from(start.x),
-                    i32::from(start.y),
-                    -i16::from(start.floor),
-                ),
-            );
-            let mut runtime = ChannelRuntimeV1::from_committed_assignment(
-                deps.admitted.world_id,
-                deps.admitted.channel_id,
-                crate::foundation::NodeId::decode(&id(1)).map_err(debug)?,
-                1,
-                1,
-                1,
-                "runtime-scope-assignment:1",
-                64,
-                pin,
+            let facts = crate::gameplay_transport::item_ref_admission::generation_item_facts(
+                native,
+                &definition,
             )
             .map_err(debug)?;
-            let session = deps.admitted.game_session_id;
-            let reserved = runtime.reserve_fresh_session(session).map_err(debug)?;
-            deps.actor = runtime.commit_fresh_session(reserved).map_err(debug)?;
+            assert_ne!(
+                facts.stack,
+                crate::durability::item_transfer::ItemStackClass::Unknown,
+                "chamber admission needs carried custody for {item}"
+            );
+        }
+    }
+    // The compiler loads all floors of the region. The actual USE and
+    // relocation assertions below qualify the other physical cells.
+    let world = super::source_world_crop::compiled_region(start, start, start, native)?;
+    let cells = world
+        .movement_cells(activated.qualified_room().movement_cells())
+        .map_err(debug)?;
+    let frame = world.frame_binding_digest(deps.admitted.world_id);
+    record_item_content(h, generation.identity(), frame).await?;
+    let room = activated
+        .qualified_room()
+        .bundle_view(
+            cells.clone(),
+            frame,
+            world.map_revision_digest(),
+            crate::content::NativeEntryStart {
+                x: i32::from(start.x),
+                y: i32::from(start.y),
+                floor: -i16::from(start.floor),
+            },
+        )
+        .ok_or("chamber room")?;
+    let pin = crate::content::channel_content_pin::ChannelContentPin::from_activation(
+        deps.admitted.world_id,
+        1,
+        generation.identity().server_artifact_digest(),
+        generation.identity().client_artifact_digest(),
+        frame,
+        world.map_revision_digest(),
+        (
+            i32::from(start.x),
+            i32::from(start.y),
+            -i16::from(start.floor),
+        ),
+    );
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        deps.admitted.world_id,
+        deps.admitted.channel_id,
+        crate::foundation::NodeId::decode(&id(1)).map_err(debug)?,
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        64,
+        pin,
+    )
+    .map_err(debug)?;
+    let session = deps.admitted.game_session_id;
+    let reserved = runtime.reserve_fresh_session(session).map_err(debug)?;
+    deps.actor = runtime.commit_fresh_session(reserved).map_err(debug)?;
+    runtime
+        .initialize_first_entry_position(deps.actor)
+        .map_err(debug)?;
+    deps.runtime = tokio::sync::Mutex::new(runtime);
+    let evidence = if !matches!(case, ChamberCase::OneSwitch) {
+        Some(super::house_transfer::RecoverySource::start(h).await?)
+    } else {
+        None
+    };
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let mut owner = deps.owner(h, &authority);
+    owner.active_generation = Some(generation);
+    if let Some(source) = &evidence {
+        owner.evidence = &source.evidence;
+    }
+    owner.movement_cells = (&cells).into();
+    owner.rooms = crate::gameplay_transport::SeamRooms::new(Some(&room), Some(&room));
+    let mut admitted = deps.admitted;
+    admitted.runtime_actor = Some(deps.actor);
+    admitted.first_entry = FirstEntryOutcome::Positioned;
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
+    admitted.item_fence = Some(fence.item_fence());
+    owner.admit_progression_session(&mut admitted).await;
+    if let Some(callback) = entry {
+        return entry::exercise(h, &mut owner, admitted, &callback).await;
+    }
+    deps.initialize(&owner).await;
+    let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
+        return Err("chamber collision index".into());
+    };
+    let map = index.map();
+    let at = world_tile(station.lever);
+    let key = source_lever(map, at)?;
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let walls_before: Vec<_> = group
+        .stations
+        .iter()
+        .flat_map(|station| {
+            station.walls.map(world_tile).map(|wall| {
+                (
+                    wall,
+                    map.facts
+                        .quest_callback_blocked(map.overlay.base(), wall, false),
+                )
+            })
+        })
+        .collect();
+    let walls: Vec<_> = station
+        .walls
+        .map(world_tile)
+        .into_iter()
+        .filter(|wall| {
+            !map.facts
+                .quest_callback_blocked(map.overlay.base(), *wall, false)
+        })
+        .collect();
+    assert!(
+        !walls.is_empty(),
+        "at least one door tile is initially open"
+    );
+    let outcome = owner
+        .use_object(
+            deps.actor,
+            UseCommand {
+                game_session_id: session,
+                command_id: 1,
+                item_fence: admitted.item_fence,
+            },
+            WorldObjectTarget {
+                placement,
+                expected_revision: 0,
+            },
+        )
+        .await;
+    assert_eq!(outcome.disposition, UseDisposition::Committed);
+    assert_eq!(map.facts.object_revision(key), 1);
+    assert!(
+        walls
+            .into_iter()
+            .all(|wall| map
+                .facts
+                .quest_callback_blocked(map.overlay.base(), wall, false))
+    );
+    owner.drain_quest_encounter_deadlines().await;
+    assert!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .current_live_creature_census()
+            .map_err(debug)?
+            .is_empty()
+    );
+    if let Some(source) = &evidence {
+        let character =
+            super::party_peer_bootstrap::create_peer(h, &authority, &source.evidence, 0).await?;
+        let peer = super::activity_deadline_paging::admit_created_member(
+            h,
+            &source.evidence,
+            0,
+            character,
+        )
+        .await?;
+        let peer_actor = {
+            let mut runtime = owner.runtime.lock().await;
+            let reservation = runtime.reserve_fresh_session(peer).map_err(debug)?;
+            let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
             runtime
-                .initialize_first_entry_position(deps.actor)
+                .initialize_pinned_test_position(actor, local(group.stations[1].stand))
                 .map_err(debug)?;
-            deps.runtime = tokio::sync::Mutex::new(runtime);
-            let evidence = if !matches!(case, ChamberCase::OneSwitch) {
-                Some(super::house_transfer::RecoverySource::start(&h).await?)
-            } else {
-                None
-            };
-            let seal = h.recovery.seal_current().map_err(debug)?;
-            let authority = h
-                .root
-                .open_character_authority(&seal)
-                .await
+            actor
+        };
+        let mut peer_admission = admitted;
+        peer_admission.game_session_id = peer;
+        peer_admission.runtime_actor = Some(peer_actor);
+        owner.admit_progression_session(&mut peer_admission).await;
+        deps.initialize_player(&owner, peer_actor, peer).await;
+        let peer_fence = owner
+            .current_quest_fence(peer)
+            .await
+            .map_err(|()| "peer fence")?
+            .ok_or("peer fence")?;
+        for member in [session, peer] {
+            owner
+                .states
+                .chat
+                .admit(member, "Chamber witness", owner.owner_now());
+        }
+        for (index, (actor, session, fence, station, command_id)) in [
+            (
+                peer_actor,
+                peer,
+                peer_fence.item_fence(),
+                &group.stations[1],
+                1,
+            ),
+            (
+                deps.actor,
+                session,
+                fence.item_fence(),
+                &group.stations[2],
+                2,
+            ),
+            (
+                peer_actor,
+                peer,
+                peer_fence.item_fence(),
+                &group.stations[3],
+                2,
+            ),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let closed = crate::map::floor::BundleDoors(&map.facts);
+            let mut runtime = owner.runtime.lock().await;
+            let before = runtime.read_actor_position(actor).map_err(debug)?;
+            if before.position() != local(station.stand) {
+                let proof = crate::map::floor::prepare_quest_encounter_ejection(
+                    &runtime,
+                    &owner.movement_cells,
+                    actor,
+                    session,
+                    before,
+                    local(station.stand),
+                    &closed,
+                )
                 .map_err(debug)?;
-            let mut owner = deps.owner(&h, &authority);
-            owner.active_generation = Some(generation);
-            if let Some(source) = &evidence {
-                owner.evidence = &source.evidence;
+                runtime.commit_source_step(proof).map_err(debug)?;
             }
-            owner.movement_cells = (&cells).into();
-            owner.rooms = crate::gameplay_transport::SeamRooms::new(Some(&room), Some(&room));
-            let mut admitted = deps.admitted;
-            admitted.runtime_actor = Some(deps.actor);
-            admitted.first_entry = FirstEntryOutcome::Positioned;
-            let fence = owner
-                .current_quest_fence(session)
-                .await
-                .map_err(|()| "fence")?
-                .ok_or("fence")?;
-            admitted.item_fence = Some(fence.item_fence());
-            owner.admit_progression_session(&mut admitted).await;
-            if let Some(callback) = entry {
-                return entry::exercise(&h, &mut owner, admitted, &callback).await;
-            }
-            deps.initialize(&owner).await;
-            let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
-                return Err("chamber collision index".into());
-            };
-            let map = index.map();
-            let at = world_tile(station.lever);
-            let key = source_lever(map, at)?;
+            drop(runtime);
+            let key = source_lever(map, world_tile(station.lever))?;
             let mut placement = world.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
-            let walls_before: Vec<_> = group
-                .stations
-                .iter()
-                .flat_map(|station| {
-                    station.walls.map(world_tile).map(|wall| {
-                        (
-                            wall,
-                            map.facts
-                                .quest_callback_blocked(map.overlay.base(), wall, false),
-                        )
-                    })
-                })
-                .collect();
-            let walls: Vec<_> = station
-                .walls
-                .map(world_tile)
-                .into_iter()
-                .filter(|wall| {
-                    !map.facts
-                        .quest_callback_blocked(map.overlay.base(), *wall, false)
-                })
-                .collect();
-            assert!(
-                !walls.is_empty(),
-                "at least one door tile is initially open"
-            );
+            // Advance the production USE gate's clock without a wall-clock sleep.
+            owner.clock_origin = owner
+                .clock_origin
+                .checked_sub(std::time::Duration::from_secs(1))
+                .ok_or("USE gate clock")?;
             let outcome = owner
                 .use_object(
-                    deps.actor,
+                    actor,
                     UseCommand {
                         game_session_id: session,
-                        command_id: 1,
-                        item_fence: admitted.item_fence,
+                        command_id,
+                        item_fence: Some(fence),
                     },
                     WorldObjectTarget {
                         placement,
@@ -249,244 +374,122 @@ fn chamber(case: ChamberCase) -> TestResult {
                     },
                 )
                 .await;
-            assert_eq!(outcome.disposition, UseDisposition::Committed);
-            assert_eq!(map.facts.object_revision(key), 1);
-            assert!(
-                walls
-                    .into_iter()
-                    .all(|wall| map
-                        .facts
-                        .quest_callback_blocked(map.overlay.base(), wall, false))
+            assert_eq!(
+                outcome.disposition,
+                UseDisposition::Committed,
+                "switch {:?}",
+                station.lever
             );
-            owner.drain_quest_encounter_deadlines().await;
-            assert!(
-                owner
-                    .runtime
-                    .lock()
-                    .await
-                    .current_live_creature_census()
-                    .map_err(debug)?
-                    .is_empty()
-            );
-            if let Some(source) = &evidence {
-                let character =
-                    super::party_peer_bootstrap::create_peer(&h, &authority, &source.evidence, 0)
-                        .await?;
-                let peer = super::activity_deadline_paging::admit_created_member(
-                    &h,
-                    &source.evidence,
-                    0,
-                    character,
-                )
-                .await?;
-                let peer_actor = {
-                    let mut runtime = owner.runtime.lock().await;
-                    let reservation = runtime.reserve_fresh_session(peer).map_err(debug)?;
-                    let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
-                    runtime
-                        .initialize_pinned_test_position(actor, local(group.stations[1].stand))
-                        .map_err(debug)?;
-                    actor
-                };
-                let mut peer_admission = admitted;
-                peer_admission.game_session_id = peer;
-                peer_admission.runtime_actor = Some(peer_actor);
-                owner.admit_progression_session(&mut peer_admission).await;
-                deps.initialize_player(&owner, peer_actor, peer).await;
-                let peer_fence = owner
-                    .current_quest_fence(peer)
-                    .await
-                    .map_err(|()| "peer fence")?
-                    .ok_or("peer fence")?;
-                for member in [session, peer] {
-                    owner
-                        .states
-                        .chat
-                        .admit(member, "Chamber witness", owner.owner_now());
-                }
-                for (index, (actor, session, fence, station, command_id)) in [
-                    (
-                        peer_actor,
-                        peer,
-                        peer_fence.item_fence(),
-                        &group.stations[1],
-                        1,
-                    ),
-                    (
-                        deps.actor,
-                        session,
-                        fence.item_fence(),
-                        &group.stations[2],
-                        2,
-                    ),
-                    (
-                        peer_actor,
-                        peer,
-                        peer_fence.item_fence(),
-                        &group.stations[3],
-                        2,
-                    ),
-                ]
-                .into_iter()
-                .enumerate()
-                {
-                    let closed = crate::map::floor::BundleDoors(&map.facts);
-                    let mut runtime = owner.runtime.lock().await;
-                    let before = runtime.read_actor_position(actor).map_err(debug)?;
-                    if before.position() != local(station.stand) {
-                        let proof = crate::map::floor::prepare_quest_encounter_ejection(
-                            &runtime,
-                            &owner.movement_cells,
-                            actor,
-                            session,
-                            before,
-                            local(station.stand),
-                            &closed,
-                        )
-                        .map_err(debug)?;
-                        runtime.commit_source_step(proof).map_err(debug)?;
-                    }
-                    drop(runtime);
-                    let key = source_lever(map, world_tile(station.lever))?;
-                    let mut placement = world.base().digest().to_vec();
-                    placement.extend_from_slice(&key.to_be_bytes());
-                    // Advance the production USE gate's clock without a wall-clock sleep.
-                    owner.clock_origin = owner
-                        .clock_origin
-                        .checked_sub(std::time::Duration::from_secs(1))
-                        .ok_or("USE gate clock")?;
-                    let outcome = owner
-                        .use_object(
-                            actor,
-                            UseCommand {
-                                game_session_id: session,
-                                command_id,
-                                item_fence: Some(fence),
-                            },
-                            WorldObjectTarget {
-                                placement,
-                                expected_revision: 0,
-                            },
-                        )
-                        .await;
-                    assert_eq!(
-                        outcome.disposition,
-                        UseDisposition::Committed,
-                        "switch {:?}",
-                        station.lever
-                    );
-                    if index < 2 {
-                        assert_eq!(
-                            owner.states.quest_callbacks.next_encounter_due_us(),
-                            None,
-                            "a partial switch group must leave the encounter unscheduled"
-                        );
-                    }
-                }
-                assert_chamber_warning(&owner, [session, peer], "10 minutes");
-                assert!(
-                    owner
-                        .states
-                        .quest_callbacks
-                        .next_encounter_due_us()
-                        .is_some()
-                );
-                owner.states.test_owner_time.store(
-                    owner.owner_now().get() + 1_000_000,
-                    std::sync::atomic::Ordering::Relaxed,
-                );
-                owner.drain_quest_encounter_deadlines().await;
+            if index < 2 {
                 assert_eq!(
-                    owner
-                        .runtime
-                        .lock()
-                        .await
-                        .current_live_creature_census()
-                        .map_err(debug)?
-                        .len(),
-                    1,
-                    "all four switches must summon the Lord before ejection"
+                    owner.states.quest_callbacks.next_encounter_due_us(),
+                    None,
+                    "a partial switch group must leave the encounter unscheduled"
                 );
-                if matches!(case, ChamberCase::Ashes) {
-                    return ashes::exercise(
-                        &owner,
-                        &h,
-                        [
-                            (deps.actor, fence.item_fence()),
-                            (peer_actor, peer_fence.item_fence()),
-                        ],
-                    )
-                    .await;
-                }
-                owner.states.test_owner_time.store(
-                    owner.owner_now().get() + 300_000_000,
-                    std::sync::atomic::Ordering::Relaxed,
-                );
-                owner.drain_quest_encounter_deadlines().await;
-                assert_chamber_warning(&owner, [session, peer], "5 minutes");
-                assert!(
-                    owner
-                        .states
-                        .quest_callbacks
-                        .next_encounter_due_us()
-                        .is_some()
-                );
-                assert_eq!(
-                    owner
-                        .runtime
-                        .lock()
-                        .await
-                        .current_live_creature_census()
-                        .map_err(debug)?
-                        .len(),
-                    1,
-                    "the halfway warning must leave the fight active"
-                );
-                owner.states.test_owner_time.store(
-                    owner.owner_now().get() + 301_000_001,
-                    std::sync::atomic::Ordering::Relaxed,
-                );
-                owner.drain_quest_encounter_deadlines().await;
-                let runtime = owner.runtime.lock().await;
-                assert!(
-                    runtime
-                        .current_live_creature_census()
-                        .map_err(debug)?
-                        .is_empty(),
-                    "timeout must remove the Lord it summoned"
-                );
-                for actor in [deps.actor, peer_actor] {
-                    assert_eq!(
-                        runtime
-                            .read_actor_position(actor)
-                            .map_err(debug)?
-                            .position(),
-                        local(group.exit)
-                    );
-                }
-                assert!(
-                    owner
-                        .states
-                        .quest_callbacks
-                        .next_encounter_due_us()
-                        .is_none()
-                );
-                for (wall, original) in walls_before {
-                    assert_eq!(
-                        map.facts
-                            .quest_callback_blocked(map.overlay.base(), wall, false),
-                        original,
-                        "the timeout restores wall tile {wall:?}",
-                    );
-                }
-                for station in &group.stations {
-                    let key = source_lever(map, world_tile(station.lever))?;
-                    assert_eq!(map.facts.object_revision(key), 2, "switch reset");
-                }
             }
-            Ok(())
-        })
-    })
+        }
+        assert_chamber_warning(&owner, [session, peer], "10 minutes");
+        assert!(
+            owner
+                .states
+                .quest_callbacks
+                .next_encounter_due_us()
+                .is_some()
+        );
+        owner.states.test_owner_time.store(
+            owner.owner_now().get() + 1_000_000,
+            std::sync::atomic::Ordering::Relaxed,
+        );
+        owner.drain_quest_encounter_deadlines().await;
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .current_live_creature_census()
+                .map_err(debug)?
+                .len(),
+            1,
+            "all four switches must summon the Lord before ejection"
+        );
+        if matches!(case, ChamberCase::Ashes) {
+            return ashes::exercise(
+                &owner,
+                h,
+                [
+                    (deps.actor, fence.item_fence()),
+                    (peer_actor, peer_fence.item_fence()),
+                ],
+            )
+            .await;
+        }
+        owner.states.test_owner_time.store(
+            owner.owner_now().get() + 300_000_000,
+            std::sync::atomic::Ordering::Relaxed,
+        );
+        owner.drain_quest_encounter_deadlines().await;
+        assert_chamber_warning(&owner, [session, peer], "5 minutes");
+        assert!(
+            owner
+                .states
+                .quest_callbacks
+                .next_encounter_due_us()
+                .is_some()
+        );
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .current_live_creature_census()
+                .map_err(debug)?
+                .len(),
+            1,
+            "the halfway warning must leave the fight active"
+        );
+        owner.states.test_owner_time.store(
+            owner.owner_now().get() + 301_000_001,
+            std::sync::atomic::Ordering::Relaxed,
+        );
+        owner.drain_quest_encounter_deadlines().await;
+        let runtime = owner.runtime.lock().await;
+        assert!(
+            runtime
+                .current_live_creature_census()
+                .map_err(debug)?
+                .is_empty(),
+            "timeout must remove the Lord it summoned"
+        );
+        for actor in [deps.actor, peer_actor] {
+            assert_eq!(
+                runtime
+                    .read_actor_position(actor)
+                    .map_err(debug)?
+                    .position(),
+                local(group.exit)
+            );
+        }
+        assert!(
+            owner
+                .states
+                .quest_callbacks
+                .next_encounter_due_us()
+                .is_none()
+        );
+        for (wall, original) in walls_before {
+            assert_eq!(
+                map.facts
+                    .quest_callback_blocked(map.overlay.base(), wall, false),
+                original,
+                "the timeout restores wall tile {wall:?}",
+            );
+        }
+        for station in &group.stations {
+            let key = source_lever(map, world_tile(station.lever))?;
+            assert_eq!(map.facts.object_revision(key), 2, "switch reset");
+        }
+    }
+    Ok(())
 }
 
 fn assert_chamber_warning(
