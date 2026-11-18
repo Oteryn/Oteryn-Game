@@ -29,6 +29,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return false;
         }
+        if callback.starts_merchant_wave() {
+            // Each merchant placement is attempted separately at the spawn deadline.
+            return encounter
+                .monsters
+                .iter()
+                .all(|monster| runtime.companion_policy(&monster.creature).is_ok());
+        }
         let Some(map) = self.bundle_map() else {
             return false;
         };
@@ -43,10 +50,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     tile(monster.position),
                     false,
                 )
-                && (callback.starts_merchant_wave()
-                    || !census
-                        .iter()
-                        .any(|(_, position, _)| position.position() == at))
+                && !census
+                    .iter()
+                    .any(|(_, position, _)| position.position() == at)
                 && self.movement_cells.index().lookup(
                     self.movement_cells.scope(),
                     LogicalCell {

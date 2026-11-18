@@ -213,7 +213,8 @@ pub(super) fn scenario(
 ) -> Result<(), String> {
     run(async |admin| {
         let merchant_loot = seed == "rottin_merchant_loot";
-        let merchant_wave = seed == "rottin_merchant_wave";
+        let blocked_merchant_spawn = seed == "rottin_merchant_wave_blocked";
+        let merchant_wave = seed == "rottin_merchant_wave" || blocked_merchant_spawn;
         let repeat_reward = seed == "rottin_weighted_repeat";
         let weighted_reward = seed == "rottin_weighted_reward" || repeat_reward;
         let h = if merchant_loot || merchant_wave || weighted_reward {
@@ -359,7 +360,7 @@ pub(super) fn scenario(
         owner.active_generation = Some(active);
         if merchant_loot || merchant_wave {
             owner.quest_catalogue = Some(std::sync::Arc::new(
-                super::rottin_bushwhacking::catalogue(merchant_wave)?,
+                super::rottin_bushwhacking::catalogue(merchant_wave, blocked_merchant_spawn)?,
             ));
         }
         owner.movement_cells = (&cells).into();
@@ -383,7 +384,10 @@ pub(super) fn scenario(
             deps.initialize(&owner).await;
             owner.admit_quest_session(&admitted).await;
             if merchant_wave {
-                super::rottin_bushwhacking::exercise_wave(&mut owner, admitted, &h).await?;
+                let expected_merchants = if blocked_merchant_spawn { 6 } else { 7 };
+                super::rottin_bushwhacking::exercise_wave(
+                    &mut owner, admitted, &h, expected_merchants,
+                ).await?;
             } else if merchant_loot {
                 super::rottin_bushwhacking::exercise_mission(&mut owner, admitted, &h).await?;
             } else {

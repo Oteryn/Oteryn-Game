@@ -76,7 +76,24 @@ fn rottin_merchant_step_final_net_starts_scene_postgres() -> TestResult {
         .map_err(Into::into)
 }
 
-pub(super) fn catalogue(wave: bool) -> TestResult<QuestStateCatalogue> {
+#[test]
+fn rottin_merchant_wave_skips_a_blocked_spawn_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| scenario("rottin_merchant_wave_blocked", false, Some(12187)))?
+        .join()
+        .map_err(|_| "Bushwhacking scene PostgreSQL thread panicked")?
+        .map_err(Into::into)
+}
+
+pub(super) fn catalogue(
+    wave: bool,
+    blocked_merchant_spawn: bool,
+) -> TestResult<QuestStateCatalogue> {
     let quest = "oteryn:quest.rottin_wood_and_the_married_men_quest";
     let source = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rottin_wood_and_married_men/actions_corpse.lua:3-36";
     let mut authored = json!({
@@ -141,7 +158,12 @@ pub(super) fn catalogue(wave: bool) -> TestResult<QuestStateCatalogue> {
             .ok_or("fixture tracks")?
             .push(track);
         let at = |x, y| json!({"x":x,"y":y,"floor":-7});
-        let monsters: Vec<_> = [(2, 4), (3, 4), (4, 4), (5, 4), (3, 5), (4, 5), (5, 5)]
+        let first_spawn = if blocked_merchant_spawn {
+            (5, 2)
+        } else {
+            (2, 4)
+        };
+        let monsters: Vec<_> = [first_spawn, (3, 4), (4, 4), (5, 4), (3, 5), (4, 5), (5, 5)]
             .into_iter().map(|(x,y)| json!({"position":at(x,y),"creature":"oteryn:creature.travelling_merchant"})).collect();
         let stages = authored["quests"][0]["stages"]
             .as_array_mut()
@@ -391,6 +413,7 @@ pub(super) async fn exercise_wave(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     h: &Harness,
+    expected_merchants: usize,
 ) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("net player")?;
     let map = owner.bundle_map().ok_or("map")?;
@@ -409,7 +432,10 @@ pub(super) async fn exercise_wave(
         y: 2,
         floor: -7,
     };
-    assert!(!map.facts.quest_callback_blocked(map.overlay.base(), entrance, false));
+    assert!(
+        !map.facts
+            .quest_callback_blocked(map.overlay.base(), entrance, false)
+    );
     assert_eq!(
         use_net(owner, admitted, early, 1, 71).await?,
         UseDisposition::Committed
@@ -435,7 +461,10 @@ pub(super) async fn exercise_wave(
             .iter()
             .any(|entry| entry.facts.appearance_id == 12187)
     );
-    assert!(map.facts.quest_callback_blocked(map.overlay.base(), entrance, false));
+    assert!(
+        map.facts
+            .quest_callback_blocked(map.overlay.base(), entrance, false)
+    );
     assert!(
         owner
             .states
@@ -480,7 +509,7 @@ pub(super) async fn exercise_wave(
             .filter(|actor| runtime
                 .matches_live_creature_identity(**actor, b"oteryn:creature.travelling_merchant"))
             .count(),
-        7
+        expected_merchants
     );
     drop(runtime);
     drain_next(owner).await?;
@@ -491,7 +520,10 @@ pub(super) async fn exercise_wave(
     drop(runtime);
     let map = owner.bundle_map().ok_or("map")?;
     assert!(map.facts.movement_items(entrance).is_empty());
-    assert!(!map.facts.quest_callback_blocked(map.overlay.base(), entrance, false));
+    assert!(
+        !map.facts
+            .quest_callback_blocked(map.overlay.base(), entrance, false)
+    );
     assert!(
         map.facts
             .movement_items(pos)
