@@ -662,10 +662,31 @@ async fn periodic_scenario(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestRe
         creatures(owner).await?.is_empty(),
         "the next interval is inside cooldown"
     );
-    advance(owner, 2_000).await;
-    let respawn = creatures(owner).await?;
+    // Crystal globalevents_pits_of_inferno_bosses.lua:12-23 is autonomous.
+    // Let the same loop as serve_gameplay observe cooldown expiry without a
+    // player packet or a test-driven call to the quest deadline drain.
+    let stop = oteryn_foundation::CancellationToken::new();
+    let observe = async {
+        tokio::time::advance(Duration::from_secs(2)).await;
+        // Keep the scheduler's unrelated durable passes on real time.
+        tokio::time::resume();
+        loop {
+            let observed = creatures(owner).await?;
+            if !observed.is_empty() {
+                stop.cancel();
+                return Ok::<_, Box<dyn std::error::Error>>(observed);
+            }
+            tokio::time::sleep(Duration::from_millis(25)).await;
+        }
+    };
+    let respawn = tokio::time::timeout(Duration::from_secs(10), async {
+        let (_, observed) = super::fixture::join_two(owner.run_source_owner_cycles(&stop), observe).await;
+        observed
+    })
+    .await??;
     assert_eq!(respawn.len(), 1);
     assert_ne!(respawn[0].0, *actor);
+    tokio::time::pause();
     advance(owner, 5_000).await;
     assert_eq!(
         creatures(owner).await?,
