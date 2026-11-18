@@ -9,6 +9,13 @@ const KESAR: &str = "oteryn:creature.kesar";
 const ALL_LIONS: u64 = 0b000_0111;
 const ALL_USURPERS: u64 = 0b011_1000;
 const DRUME: usize = 6;
+
+#[derive(Clone, Copy)]
+enum Ejection {
+    Defeat,
+    Timeout,
+}
+
 const ROLES: &[Role] = &[
     Role {
         creature: LION,
@@ -101,7 +108,7 @@ impl Skirmish {
         cells: &crate::content::NativeEntryMovementCells,
     ) -> Result<(), CarrierError> {
         if self.phase.dead_roles() & ALL_LIONS == ALL_LIONS {
-            self.eject(runtime, room, cells)?;
+            self.eject(runtime, room, cells, Ejection::Defeat)?;
             self.ejected = true;
             return Ok(());
         }
@@ -136,18 +143,19 @@ impl Skirmish {
         // Crystal action_drume.lua:16-17,21-32,115-120 schedules physical teardown
         // even when the boss has fallen and normal terminal credit already settled.
         if now_us >= self.deadline {
-            self.eject(runtime, room, cells)?;
+            self.eject(runtime, room, cells, Ejection::Timeout)?;
             self.ejected = true;
             return Ok(());
         }
         self.advance(runtime, room, cells)
     }
 
-    pub(super) fn eject(
+    fn eject(
         &self,
         runtime: &mut ChannelRuntimeV1,
         room: &Encounter,
         cells: &crate::content::NativeEntryMovementCells,
+        reason: Ejection,
     ) -> Result<(), CarrierError> {
         use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
         let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
@@ -173,18 +181,24 @@ impl Skirmish {
         if !proofs.is_empty() {
             runtime.commit_quest_relocation(proofs, || true)?;
         }
+        // Crystal commander_kills.lua:14-19 preserves monsters with a master.
+        // The timeout in action_drume.lua:23-32 removes every monster in the room.
         for actor in runtime.current_live_creature_census()? {
-            if !runtime
-                .encounter_parts()
-                .0
-                .encounter_is_native_summon(actor)
-                && super::super::quest_callbacks::room_contains(
+            // An earlier removal can also retire the removed master's children.
+            if !runtime.contains_live_creature(actor)
+                || !super::super::quest_callbacks::room_contains(
                     room,
                     runtime.read_actor_position(actor)?.position(),
                 )
+                || (matches!(reason, Ejection::Defeat)
+                    && (runtime.native_summon_master(actor).is_some()
+                        || runtime
+                            .companion_snapshot(actor)
+                            .is_ok_and(|snapshot| snapshot.state.master.is_some())))
             {
-                runtime.remove_encounter_actor(actor)?;
+                continue;
             }
+            runtime.remove_encounter_actor(actor)?;
         }
         Ok(())
     }

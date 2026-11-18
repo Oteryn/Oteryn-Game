@@ -4,6 +4,7 @@ use super::engenc2_cults::{encounter_scenario, kill};
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::{ExactActorRef, GameSessionId, MovementLocalPosition};
+use oteryn_gameplay_entities::carrier::NativeSummonAdmissionSpec;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 
 const EXIT: Position = Position {
@@ -123,6 +124,24 @@ pub(super) async fn exercise(
     let first = leader.runtime_actor.ok_or("first actor")?;
     let actors = [first, second];
     assert_positions(owner, actors, LANDING).await?;
+    // Keep the summon master outside the skirmish so master teardown cannot
+    // accidentally satisfy the timeout assertion.
+    let (master, summoned) = {
+        let mut runtime = owner.runtime.lock().await;
+        let rat = "oteryn:creature.rat";
+        let master = runtime.admit_encounter_actor(
+            rat, 20, MovementLocalPosition { x: 102, y: 102, floor: 7 }
+        ).map_err(debug)?;
+        let stamp = runtime.issue_owner_work().map_err(debug)?;
+        let spec = NativeSummonAdmissionSpec::qualified(
+            rat, rat, 20, 0, 1, 1, runtime.content_pin().server_artifact_digest()
+        ).map_err(debug)?;
+        let summoned = runtime.admit_current_native_summon(
+            stamp, master, &spec, MovementLocalPosition { x: 117, ..LANDING }
+        ).map_err(debug)?;
+        assert_eq!(runtime.native_summon_master(summoned), Some(master));
+        (master, summoned)
+    };
     let species = if spawn_boss { USURPER } else { LION };
     for command in 100..103 {
         let target = list(owner, species)
@@ -160,11 +179,14 @@ pub(super) async fn exercise(
         assert!(list(owner, LION).await?.is_empty());
         assert!(list(owner, KESAR).await?.is_empty());
         assert_positions(owner, actors, super::quest_world_callbacks::local(EXIT)).await?;
+        assert!(!owner.runtime.lock().await.contains_live_creature(summoned));
     } else {
         assert!(list(owner, USURPER).await?.is_empty());
         assert!(list(owner, DRUME).await?.is_empty());
         assert_positions(owner, actors, super::quest_world_callbacks::local(EXIT)).await?;
+        assert!(owner.runtime.lock().await.contains_live_creature(summoned));
     }
+    assert!(owner.runtime.lock().await.contains_live_creature(master));
     Ok(())
 }
 
