@@ -103,7 +103,12 @@ impl Registry {
             portals.iter().any(|(actor, position, expires)| {
                 *position == at
                     && *expires > now_ms
-                    && runtime.bound_corpse(actor.corpse_identity()).is_some()
+                    && runtime
+                        .bound_corpse(actor.corpse_identity())
+                        .is_some_and(|corpse| {
+                            corpse.position == at
+                                && corpse.item.production_key == "oteryn:item.tibia.i775"
+                        })
             })
         })
     }

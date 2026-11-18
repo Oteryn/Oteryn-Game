@@ -10,9 +10,9 @@ pub(super) async fn step_in(
     session: GameSessionId,
     committed: MovementPositionSnapshot,
     now_ms: u64,
-) {
+) -> MovementPositionSnapshot {
     let Some(map) = owner.bundle_map() else {
-        return;
+        return committed;
     };
     let mut runtime = owner.runtime.lock().await;
     let states = owner.states.spell_states.lock().await;
@@ -20,7 +20,7 @@ pub(super) async fn step_in(
         .encounter_phases
         .first_dragon_portal_at(&runtime, committed.position(), now_ms)
     {
-        return;
+        return committed;
     }
     let destination = MovementLocalPosition {
         x: 33621,
@@ -41,9 +41,9 @@ pub(super) async fn step_in(
         committed.facing(),
         true,
     ) else {
-        return;
+        return committed;
     };
-    let _ = runtime.commit_source_step(proof);
+    runtime.commit_source_step(proof).unwrap_or(committed)
 }
 
 use crate::content::{CollisionClass, LogicalCell, NativeEntryMovementCells};
