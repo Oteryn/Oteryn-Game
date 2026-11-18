@@ -956,6 +956,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 true,
                 cause,
                 None,
+                None,
             );
             if preflight != UseDisposition::Committed {
                 return preflight;
@@ -1306,6 +1307,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
         }
         if callback.effects.encounter.is_some() && !close {
+            if callback
+                .effects
+                .encounter
+                .as_ref()
+                .and_then(|encounter| encounter.phase)
+                == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Ghulosh)
+            {
+                let mut roster = Vec::new();
+                let preview = self.execute_quest_encounter(
+                    runtime,
+                    states,
+                    actor,
+                    session,
+                    map,
+                    callback,
+                    key,
+                    expected_revision,
+                    after,
+                    true,
+                    cause,
+                    None,
+                    Some(&mut roster),
+                );
+                if preview != UseDisposition::Committed {
+                    return preview;
+                }
+                if let Err(refusal) = self
+                    .admit_quest_boss_cooldown(runtime, roster, "oteryn:creature.ghulosh", 72_000)
+                    .await
+                {
+                    return refusal;
+                }
+            }
             let disposition = self.execute_quest_encounter(
                 runtime,
                 states,
@@ -1319,6 +1353,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 false,
                 cause,
                 personal_reservation.as_mut(),
+                None,
             );
             if disposition == UseDisposition::Committed {
                 if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {

@@ -24,7 +24,7 @@ fn seclib2_ghulosh_party_use_transforms_respawns_book_and_exits_postgres() -> Te
 }
 
 #[test]
-fn seclib2_ghulosh_party_timeout_ejects_roster_and_retires_phase_postgres() -> TestResult {
+fn seclib2_ghulosh_party_timeout_and_cooldown_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -101,6 +101,15 @@ fn run_ghulosh(admin: &str, expire: bool) -> TestResult {
                 generation.identity().client_artifact_digest(), frame,
                 world.map_revision_digest(), (START.x, START.y, START.floor),
             );
+            let world_id = deps.admitted.world_id;
+            sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,1,$2,'map-1',$3,$4,$5,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),to_char((clock_timestamp() AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM')) ON CONFLICT DO NOTHING")
+                .bind(world_id.as_bytes().as_slice())
+                .bind(world.map_revision_digest().as_slice())
+                .bind(generation.identity().server_artifact_digest().as_slice())
+                .bind(generation.identity().client_artifact_digest().as_slice())
+                .bind(frame.as_slice()).execute(&h.pool).await?;
+            sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
+                .bind(world_id.as_bytes().as_slice()).execute(&h.pool).await?;
             let mut runtime = ChannelRuntimeV1::from_committed_assignment(
                 deps.admitted.world_id, deps.admitted.channel_id,
                 crate::foundation::NodeId::decode(&id(1)).map_err(debug)?,
@@ -187,6 +196,9 @@ fn run_ghulosh(admin: &str, expire: bool) -> TestResult {
             let placement = crate::map::view::placement_key(
                 crate::map::overlay::TilePos { x: 32746, y: 32773, floor: -10 }, 2,
             ).ok_or("bookstand placement")?;
+            let admitted_after: i64 = sqlx::query_scalar(
+                "SELECT floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint",
+            ).fetch_one(&h.pool).await?;
             let outcome = owner.use_object(
                 deps.actor,
                 UseCommand { game_session_id: session, command_id: 1, item_fence: admitted.item_fence },
@@ -196,6 +208,14 @@ fn run_ghulosh(admin: &str, expire: bool) -> TestResult {
                 },
             ).await;
             assert_eq!(outcome.disposition, UseDisposition::Committed);
+            let cooldowns: Vec<(String, i64)> = sqlx::query_as(
+                "SELECT admission::text, available_at FROM game_character_boss_cooldowns
+                 WHERE boss_key=$1 AND character_id IN (encode($2,'hex')::uuid,encode($3,'hex')::uuid)",
+            ).bind(BOSS).bind(fence.character_id.as_bytes().as_slice())
+                .bind(peer_fence.character_id.as_bytes().as_slice()).fetch_all(&h.pool).await?;
+            assert_eq!(cooldowns.len(), 2);
+            assert_eq!(cooldowns[0], cooldowns[1]);
+            assert!(cooldowns[0].1 >= admitted_after + 72_000_000);
             for actor in [deps.actor, peer] {
                 assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), ENTRY);
             }
@@ -234,7 +254,9 @@ fn run_ghulosh(admin: &str, expire: bool) -> TestResult {
                 }
                 owner.clock_origin -= std::time::Duration::from_secs(11);
                 owner.drain_quest_encounter_deadlines().await;
-                let runtime = owner.runtime.lock().await;
+                let map = owner.bundle_map().ok_or("map")?;
+                {
+                let mut runtime = owner.runtime.lock().await;
                 for actor in [deps.actor, peer] {
                     assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(),
                         MovementLocalPosition { x: 32660, y: 32713, floor: 13 });
@@ -242,6 +264,43 @@ fn run_ghulosh(admin: &str, expire: bool) -> TestResult {
                 for creature in [BOSS, DEATHGAZE, BOOK, DEATH, "oteryn:creature.bone_jaw"] {
                     assert!(exact(&runtime, creature).is_err(), "{creature} survived the room deadline");
                 }
+                    let closed = crate::map::floor::BundleDoors(&map.facts);
+                    for (actor, session, x) in [(deps.actor, session, START.x), (peer, peer_session, START.x + 1)] {
+                        let at = runtime.read_actor_position(actor).map_err(debug)?;
+                        let proof = crate::map::floor::prepare_quest_callback_teleport(
+                            &runtime, &owner.movement_cells, actor, session, at,
+                            MovementLocalPosition { x, ..START }, false, &closed,
+                        ).map_err(debug)?;
+                        runtime.commit_source_step(proof).map_err(debug)?;
+                    }
+                }
+                // Only the peer is still cooling down, so the eligible initiator
+                // must remain outside and must not receive a new cooldown.
+                let changed = sqlx::query(
+                    "UPDATE game_character_boss_cooldowns SET available_at=0
+                     WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2",
+                ).bind(fence.character_id.as_bytes().as_slice()).bind(BOSS)
+                    .execute(&h.pool).await?;
+                assert_eq!(changed.rows_affected(), 1);
+                let outcome = owner.use_object(
+                    deps.actor,
+                    UseCommand { game_session_id: session, command_id: 2, item_fence: admitted.item_fence },
+                    WorldObjectTarget {
+                        placement: world.base().digest().into_iter().chain(placement.to_be_bytes()).collect(),
+                        expected_revision: map.facts.object_revision(placement),
+                    },
+                ).await;
+                assert_eq!(outcome.disposition, UseDisposition::RequirementNotMet);
+                let runtime = owner.runtime.lock().await;
+                for (actor, x) in [(deps.actor, START.x), (peer, START.x + 1)] {
+                    assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(),
+                        MovementLocalPosition { x, ..START });
+                }
+                assert!(exact(&runtime, BOSS).is_err());
+                let remaining: Vec<i64> = sqlx::query_scalar(
+                    "SELECT available_at FROM game_character_boss_cooldowns WHERE boss_key=$1 ORDER BY available_at",
+                ).bind(BOSS).fetch_all(&h.pool).await?;
+                assert_eq!(remaining, [0, cooldowns[0].1]);
             } else {
             for (actor, session) in [(deps.actor, session), (peer, peer_session)] {
                 {

@@ -22,6 +22,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         preflight: bool,
         cause: QuestCause,
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
+        preview_party: Option<&mut Vec<(ExactActorRef, GameSessionId)>>,
     ) -> UseDisposition {
         self.quest_encounter(
             runtime,
@@ -36,7 +37,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             preflight,
             cause,
             reservation,
+            preview_party,
         )
+    }
+
+    pub(super) async fn admit_quest_boss_cooldown(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        party: Vec<(ExactActorRef, GameSessionId)>,
+        boss: &'static str,
+        cooldown_s: u64,
+    ) -> Result<(), UseDisposition> {
+        use crate::durability::activity_handoff::{ActivityHandoffOwner, ActivityRefusal};
+
+        let mut roster = Vec::with_capacity(party.len());
+        for (actor, session) in party {
+            let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+                return Err(UseDisposition::Rejected);
+            };
+            let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {
+                return Err(UseDisposition::Rejected);
+            };
+            if lease.character_id().as_bytes() != fence.character_id.as_bytes()
+                || lease.generation() != fence.character_lease_generation
+                || (fence.runtime_scope, fence.scope_ownership_generation)
+                    != runtime.encounter_owner_scope()
+            {
+                return Err(UseDisposition::Rejected);
+            }
+            roster.push(fence.item_fence());
+        }
+        match ActivityHandoffOwner::new(self.root.clone())
+            .admit_channel_boss_cooldown(self.character, self.holder, roster, boss, cooldown_s)
+            .await
+        {
+            Ok(Ok(())) => Ok(()),
+            Ok(Err(ActivityRefusal::Cooldown)) => Err(UseDisposition::RequirementNotMet),
+            _ => Err(UseDisposition::Rejected),
+        }
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -66,6 +104,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             true,
             cause,
             None,
+            None,
         )
     }
 
@@ -84,6 +123,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         preflight: bool,
         cause: QuestCause,
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
+        preview_party: Option<&mut Vec<(ExactActorRef, GameSessionId)>>,
     ) -> UseDisposition {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
@@ -297,6 +337,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .preflight_quest_encounter_entry(proofs, &monsters)
                 .is_ok()
             {
+                if let Some(preview) = preview_party {
+                    preview.extend(players.iter().map(|&(actor, session, _)| (actor, session)));
+                }
                 UseDisposition::Committed
             } else {
                 UseDisposition::Occupied

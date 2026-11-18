@@ -67,6 +67,67 @@ pub(super) struct BossAdmissionPlan {
 }
 
 impl ActivityHandoffOwner {
+    /// Set the shared Character cooldown for an already preflighted Channel boss roster.
+    pub async fn admit_channel_boss_cooldown(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        mut roster: Vec<CurrentCharacterItemFence>,
+        boss: &'static str,
+        cooldown_s: u64,
+    ) -> Result<std::result::Result<(), ActivityRefusal>> {
+        let Some(first) = roster.first().copied() else {
+            return Ok(Err(ActivityRefusal::PartyCount));
+        };
+        if !matches!(first.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+            || roster.len() > ACTIVITY_PARTICIPANTS_MAX
+            || roster.iter().any(|fence| fence.runtime_scope != first.runtime_scope
+                || fence.scope_ownership_generation != first.scope_ownership_generation)
+        {
+            return Ok(Err(ActivityRefusal::AuthorityRejected));
+        }
+        roster.sort_unstable_by_key(|fence| fence.character_id);
+        let keys = roster.iter().map(|fence| BossRewardKey::new(fence.character_id, boss))
+            .collect::<std::result::Result<Vec<_>, _>>()
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let recovery = authority.record_for(&self.root).map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        self.root.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            for fence in &roster {
+                if assert_item_only_fence(&mut tx, fence, &node).await?.is_err() {
+                    return Ok(Err(ActivityRefusal::AuthorityRejected));
+                }
+            }
+            let reset: Option<String> = sqlx::query_scalar(
+                "SELECT reset_epoch::text FROM game_world_reset_read_locked(encode($1,'hex')::uuid)",
+            )
+            .bind(first.runtime_scope.world_id().as_bytes().as_slice())
+            .fetch_optional(&mut *tx)
+            .await?;
+            let Some(reset) = reset else {
+                return Ok(Err(ActivityRefusal::AuthorityRejected));
+            };
+            let admission: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(uuidv7())")
+                .fetch_one(&mut *tx).await?;
+            let now = now_ms(&mut tx).await?;
+            let change = set_boss_cooldowns_data(&mut tx, &keys, &BossCooldownAdmissionData {
+                admission: admission.try_into().map_err(|_| DurabilityError::InvalidStoredState)?,
+                now,
+                reset_epoch: parse_u64(reset)?,
+                cooldown_s,
+                boosted: false,
+            }).await.map_err(|_| DurabilityError::Unavailable)?;
+            if change == BossCooldownChange::OnCooldown {
+                return Ok(Err(ActivityRefusal::Cooldown));
+            }
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(()))
+        })).await
+    }
+
     pub async fn read_boss_room(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
