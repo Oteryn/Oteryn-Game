@@ -302,7 +302,14 @@ async fn warlock(
         &mut passages,
     )
     .await?;
-    let target = approach_spawn_target(client, planner.world, "Court Warlock", tokio::time::Instant::now() + Duration::from_secs(75)).await?;
+    let target = approach_spawn_target(
+        client,
+        planner.world,
+        "Court Warlock",
+        tokio::time::Instant::now() + Duration::from_secs(75),
+        None,
+    )
+    .await?;
     client_hunt::hunt_target(client, Some(target)).await?;
     Ok(format!("killed at {}", show(point)))
 }

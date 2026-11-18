@@ -222,13 +222,13 @@ async fn earn(
             })
         })
         .collect();
-    // Reserve one authored respawn window as well as the fare-earning work budget.
-    let fare_work_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
+    // Observation pauses the work clock. The absolute deadline still reserves time
+    // for the rest of S10, even if successive respawns take longer than expected.
+    let mut fare_work_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let deadline = fare_work_deadline
         + spawn_observation_budget(rats.iter().map(|&(_, _, _, respawn_ms)| respawn_ms));
-    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     while carried_gold(client)? < needed {
-        if tokio::time::Instant::now() >= fare_work_deadline {
+        if tokio::time::Instant::now() >= fare_work_deadline.min(deadline) {
             return Err(format!("step earn-fare: combat/loot budget expired; observed carried_gold={}, required={needed}; need sufficient authored player-obtainable loot", carried_gold(client)?).into());
         }
         let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
@@ -237,11 +237,26 @@ async fn earn(
             })
         })
         .ok_or("step earn-fare: no legitimate route to an authored rat spawn")?;
-        approach_action(fare_work_deadline, walk(client, world, &path)).await?;
-        let target = approach_spawn_target(client, world, "Rat", deadline).await?;
-        client_hunt::hunt_target(client, Some(target))
-            .await
-            .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step earn-fare: real combat/loot failed: {error}"), error) })?;
+        approach_action(
+            client,
+            fare_work_deadline.min(deadline),
+            "earn-fare-walk",
+            async |client| walk(client, world, &path).await,
+        )
+        .await?;
+        let target = approach_spawn_target(client, world, "Rat", deadline, Some(&mut fare_work_deadline))
+            .await?;
+        approach_action(
+            client,
+            fare_work_deadline.min(deadline),
+            "earn-fare-combat-and-loot",
+            async |client| client_hunt::hunt_target(client, Some(target)).await,
+        )
+        .await
+        .map_err(|error| {
+            verdict::record_error(verdict::IndexedError::as_error(&error));
+            verdict::context(format!("step earn-fare: real combat/loot failed: {error}"), error)
+        })?;
     }
     Ok(())
 }

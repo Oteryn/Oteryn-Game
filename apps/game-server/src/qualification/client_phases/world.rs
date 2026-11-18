@@ -5710,6 +5710,7 @@ async fn travel_to_spawn_target(
         world,
         name,
         tokio::time::Instant::now() + spawn_observation_budget(nearby_respawns),
+        None,
     )
     .await
 }
@@ -5720,14 +5721,63 @@ fn spawn_observation_budget(respawn_ms: impl Iterator<Item = u32>) -> Duration {
     Duration::from_secs(75).max(authored + Duration::from_secs(5))
 }
 
-async fn approach_action(
-    deadline: tokio::time::Instant,
-    operation: impl std::future::Future<Output = TestResult>,
-) -> TestResult {
-    if tokio::time::Instant::now() >= deadline {
-        return Err("spawn approach deadline expired before starting an action".into());
+struct PendingExchange<'a, T, F: FnOnce(&mut T)> {
+    client: &'a mut T,
+    invalidate: Option<F>,
+}
+
+impl<T, F: FnOnce(&mut T)> Drop for PendingExchange<'_, T, F> {
+    fn drop(&mut self) {
+        if let Some(invalidate) = self.invalidate.take() {
+            invalidate(self.client);
+        }
     }
-    tokio::time::timeout_at(deadline, operation).await?
+}
+
+async fn timed_exchange<T, R>(
+    client: &mut T,
+    deadline: tokio::time::Instant,
+    invalidate: impl FnOnce(&mut T),
+    operation: impl AsyncFnOnce(&mut T) -> R,
+) -> Result<R, tokio::time::error::Elapsed> {
+    let mut pending = PendingExchange {
+        client,
+        invalidate: Some(invalidate),
+    };
+    let result = tokio::time::timeout_at(deadline, operation(&mut *pending.client)).await;
+    if result.is_ok() {
+        pending.invalidate = None;
+    }
+    result
+}
+
+async fn approach_action<R>(
+    client: &mut oteryn_dev_client::DevClientSession,
+    deadline: tokio::time::Instant,
+    phase: &'static str,
+    operation: impl AsyncFnOnce(&mut oteryn_dev_client::DevClientSession) -> TestResult<R>,
+) -> TestResult<R> {
+    let expired = || {
+        verdict::HarnessError::boxed(
+            verdict::Cause::Deadline { phase },
+            format!("{phase} deadline expired"),
+        )
+    };
+    if tokio::time::Instant::now() >= deadline {
+        return Err(expired());
+    }
+    timed_exchange(
+        client,
+        deadline,
+        |client| client.session_mut().invalidate_interrupted_exchange(),
+        operation,
+    )
+    .await
+    .map_err(|_| expired())?
+}
+
+fn account_for_spawn_wait(work_deadline: &mut tokio::time::Instant, started: tokio::time::Instant) {
+    *work_deadline += started.elapsed();
 }
 
 async fn wait_for_spawn_observation(
@@ -5736,7 +5786,7 @@ async fn wait_for_spawn_observation(
     operation: impl std::future::Future<Output = TestResult>,
 ) -> TestResult {
     harness.bounded_wait(deadline, "spawn observation");
-    approach_action(deadline, operation).await
+    operation.await
 }
 
 async fn approach_spawn_target(
@@ -5744,6 +5794,7 @@ async fn approach_spawn_target(
     world: &BundleWorld,
     name: &str,
     deadline: tokio::time::Instant,
+    mut work_deadline: Option<&mut tokio::time::Instant>,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
     let mut steps = 0;
     while tokio::time::Instant::now() < deadline {
@@ -5755,11 +5806,19 @@ async fn approach_spawn_target(
             if steps == 32 {
                 break;
             }
-            wait_for_spawn_observation(verdict::Harness::global(), deadline, async {
-                client.service_liveness(Duration::from_millis(100)).await?;
-                Ok(())
-            })
+            let started = tokio::time::Instant::now();
+            wait_for_spawn_observation(
+                verdict::Harness::global(),
+                deadline,
+                approach_action(client, deadline, "spawn-observation", async |client| {
+                    client.service_liveness(Duration::from_millis(100)).await?;
+                    Ok(())
+                }),
+            )
             .await?;
+            if let Some(work_deadline) = work_deadline.as_deref_mut() {
+                account_for_spawn_wait(work_deadline, started);
+            }
             client.take_events();
             continue;
         };
@@ -5770,12 +5829,22 @@ async fn approach_spawn_target(
         })
         .ok_or("visible creature unreachable")?;
         let Some(direction) = path.first() else {
+            verdict::Harness::global().progress("spawn target ready");
             return Ok(entity);
         };
         if steps == 32 {
             break;
         }
-        approach_action(deadline, walk(client, world, &[*direction])).await?;
+        let step_deadline = work_deadline
+            .as_deref()
+            .map_or(deadline, |work| deadline.min(*work));
+        approach_action(
+            client,
+            step_deadline,
+            "spawn-approach-step",
+            async |client| walk(client, world, &[*direction]).await,
+        )
+        .await?;
         steps += 1;
     }
     Err("could not approach a live creature within the route budget".into())
@@ -6803,7 +6872,7 @@ fn qualification_routed_hunts_service_empty_spawns_and_approach_live_targets() {
 }
 
 #[test]
-fn qualification_approach_action_honors_deadline_during_pending_command() -> TestResult {
+fn qualification_timeout_invalidates_interrupted_exchange() -> TestResult {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .start_paused(true)
@@ -6811,13 +6880,63 @@ fn qualification_approach_action_honors_deadline_during_pending_command() -> Tes
         .block_on(async {
             let start = tokio::time::Instant::now();
             let budget = Duration::from_secs(1);
-            let result = approach_action(start + budget, async {
-                tokio::time::sleep(Duration::from_secs(10)).await;
-                Ok(())
-            })
+            let mut usable = true;
+            let result = timed_exchange(
+                &mut usable,
+                start + budget,
+                |usable| *usable = false,
+                async |_| {
+                    tokio::time::sleep(Duration::from_secs(10)).await;
+                },
+            )
             .await;
             assert!(result.is_err());
+            assert!(!usable);
             assert_eq!(start.elapsed(), budget);
+            usable = true;
+            let outer = tokio::time::timeout(
+                budget,
+                timed_exchange(
+                    &mut usable,
+                    start + Duration::from_secs(30),
+                    |usable| *usable = false,
+                    async |_| std::future::pending::<()>().await,
+                ),
+            )
+            .await;
+            assert!(outer.is_err());
+            assert!(!usable);
+            Ok(())
+        })
+}
+
+#[test]
+fn qualification_two_respawns_preserve_fare_work_budget() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()?
+        .block_on(async {
+            let start = tokio::time::Instant::now();
+            let work = Duration::from_secs(180);
+            let mut work_deadline = start + work;
+            let hard_deadline = work_deadline + spawn_observation_budget([90_000].into_iter());
+            for _ in 0..2 {
+                let waiting = tokio::time::Instant::now();
+                tokio::time::sleep(Duration::from_secs(90)).await;
+                account_for_spawn_wait(&mut work_deadline, waiting);
+            }
+            assert_eq!(work_deadline - tokio::time::Instant::now(), work);
+            let mut usable = true;
+            let combat = timed_exchange(
+                &mut usable,
+                work_deadline.min(hard_deadline),
+                |usable| *usable = false,
+                async |_| tokio::time::sleep(Duration::from_secs(120)).await,
+            )
+            .await;
+            assert!(combat.is_err());
+            assert_eq!(tokio::time::Instant::now(), hard_deadline);
             Ok(())
         })
 }
