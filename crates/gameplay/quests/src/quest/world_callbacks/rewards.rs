@@ -11,7 +11,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
         .iter()
         .any(|s| !s.preserve && !s.read_only && !(s.minimum..=s.maximum).contains(&s.set));
     if callback.trigger != Trigger::Use
-        || !once
+        || !(once
+            || callback.effects.restore_vitals && super::state_operations::sets_once(callback))
         || callback.reversible
         || callback.native_rule.is_some()
         || callback.monk_reward.is_some()

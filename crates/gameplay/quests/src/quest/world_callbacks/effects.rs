@@ -462,17 +462,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && !callback.reversible
             && callback.storage.is_empty()
             && callback.state_ops.is_empty()
-            && matches!(
-                callback.state_operations.as_slice(),
-                [super::super::reward_callbacks::StateOperation {
-                    from: super::super::reward_callbacks::StateCondition::Between {
-                        minimum: -1,
-                        maximum: -1,
-                    },
-                    effect: super::super::reward_callbacks::StateMutation::SetNow,
-                    ..
-                }]
-            ))
+            && super::state_operations::sets_once(callback))
     {
         return false;
     }

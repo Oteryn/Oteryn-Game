@@ -11,6 +11,20 @@ pub(super) fn refreshes_clock(callback: &Callback) -> bool {
             && matches!(operation.effect, StateMutation::SetNow)
     })
 }
+pub(super) fn sets_once(callback: &Callback) -> bool {
+    matches!(
+        callback.state_operations.as_slice(),
+        [StateOperation {
+            from: StateCondition::Between {
+                minimum: -1,
+                maximum: -1
+            },
+            effect: StateMutation::SetNow,
+            ..
+        }]
+    )
+}
+
 pub(super) fn valid(callback: &Callback) -> bool {
     callback.operations().all(StateOperation::valid)
         // The main spelling keeps its original Add/SetNow binding vocabulary.
