@@ -10,6 +10,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 #[derive(Clone, Copy)]
 enum WalkCase {
+    InvalidActor,
     FloorChange,
     Recovered,
     Refused,
@@ -52,6 +53,9 @@ impl FreshAdmissionAuthority for WalkOwner {
     ) -> Result<Option<AutoWalkRoute>, ()> {
         let previous = self.routes.get();
         self.routes.set(previous + 1);
+        if matches!(self.case, WalkCase::InvalidActor) {
+            return Ok(None);
+        }
         if matches!(self.case, WalkCase::Unreachable)
             || (previous > 0 && matches!(self.case, WalkCase::RetryUnreachable))
         {
@@ -192,11 +196,20 @@ async fn scenario(case: WalkCase) -> TestResult {
     )
     .await
     .map_err(|_| "route")?;
-    assert!(matches!(dispatch, Dispatch::Reply(_, _)));
+    if matches!(case, WalkCase::InvalidActor) {
+        assert!(
+            matches!(dispatch, Dispatch::Reply(CommandStatus::Rejected, bytes) if bytes == [8, 3])
+        );
+    } else {
+        assert!(matches!(dispatch, Dispatch::Reply(_, _)));
+    }
     tick(&mut server, &owner, &mut session)
         .await
         .map_err(|_| "first tick")?;
-    if !matches!(case, WalkCase::Unreachable | WalkCase::FloorChange) {
+    if !matches!(
+        case,
+        WalkCase::Unreachable | WalkCase::FloorChange | WalkCase::InvalidActor
+    ) {
         assert_eq!(
             owner.routes.get(),
             2,
@@ -218,7 +231,10 @@ async fn scenario(case: WalkCase) -> TestResult {
     assert!(session.target_walk.is_none());
     assert_eq!(
         owner.routes.get(),
-        if matches!(case, WalkCase::Unreachable | WalkCase::FloorChange) {
+        if matches!(
+            case,
+            WalkCase::Unreachable | WalkCase::FloorChange | WalkCase::InvalidActor
+        ) {
             1
         } else {
             2
@@ -226,7 +242,7 @@ async fn scenario(case: WalkCase) -> TestResult {
     );
     assert_eq!(
         owner.steps.get(),
-        if matches!(case, WalkCase::Unreachable) {
+        if matches!(case, WalkCase::Unreachable | WalkCase::InvalidActor) {
             0
         } else if matches!(case, WalkCase::RetryUnreachable | WalkCase::FloorChange) {
             1
@@ -252,7 +268,10 @@ async fn scenario(case: WalkCase) -> TestResult {
     }
     assert_eq!(
         notices,
-        if matches!(case, WalkCase::Recovered | WalkCase::FloorChange) {
+        if matches!(
+            case,
+            WalkCase::Recovered | WalkCase::FloorChange | WalkCase::InvalidActor
+        ) {
             vec![]
         } else {
             vec![TutorialNotice::StatusText("There is no way.".into())]
@@ -298,4 +317,9 @@ fn autowalk_unreachable_target_emits_no_way_without_steps() -> TestResult {
 #[test]
 fn autowalk_floor_change_ends_without_retry_or_notice() -> TestResult {
     run(WalkCase::FloorChange)
+}
+
+#[test]
+fn autowalk_invalid_actor_refusal_emits_no_pathfinding_notice() -> TestResult {
+    run(WalkCase::InvalidActor)
 }

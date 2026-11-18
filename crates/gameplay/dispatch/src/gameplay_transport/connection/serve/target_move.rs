@@ -86,7 +86,9 @@ pub(super) async fn route<A: FreshAdmissionAuthority>(
                         .attack_target(actor, id, command.command_id, None)
                         .await;
                 }
-                if route.is_some() || matches!(target, AutoWalkTarget::Cell(_)) {
+                if route.is_some()
+                    || (disposition == 2 && matches!(target, AutoWalkTarget::Cell(_)))
+                {
                     session.target_walk = Some(PendingWalk {
                         target,
                         route,
@@ -135,8 +137,8 @@ pub(super) async fn tick<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
                 .await
             {
                 Ok(Some(current)) => *route = current,
-                _ => {
-                    stopped = matches!(walk.target, AutoWalkTarget::Cell(_));
+                result => {
+                    stopped = result.is_err() && matches!(walk.target, AutoWalkTarget::Cell(_));
                     return None;
                 }
             }
@@ -202,7 +204,7 @@ pub(super) async fn tick<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
                         walk.schedule(session.pacer.wait_until(now).unwrap_or(now));
                         session.target_walk = Some(walk);
                     }
-                    _ => stopped = true,
+                    result => stopped = result.is_err(),
                 }
             }
         }
