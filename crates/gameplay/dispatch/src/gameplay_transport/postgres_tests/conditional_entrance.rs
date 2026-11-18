@@ -33,6 +33,7 @@ const GATE: Position = Position {
     floor: -10,
 };
 const LANDING: Position = Position { x: 32792, ..GATE };
+const GROVE_OCCUPANT: Position = Position { y: GATE.y + 1, ..LANDING };
 const SEASONAL_RETURN: Position = Position { y: 32332, ..GATE };
 const HOLY_TIBLE: &str = "oteryn:item.tibia.i2836";
 const ISLE_REFUSAL: &str = "You better talk to Rapanaio before leave the safety of the ship!";
@@ -134,7 +135,7 @@ impl Case {
             // Spike movements_spike_teleport.lua:35-46.
             Self::Premium => json!({"kind":"premium"}),
             // Demon Oak movements_entrance.lua:21-44, only players count.
-            Self::Occupied => json!({"kind":"unoccupied","minimum":LANDING,"maximum":LANDING}),
+            Self::Occupied => json!({"kind":"unoccupied","minimum":LANDING,"maximum":GROVE_OCCUPANT}),
             // Chyllfroest movements_prohibit_entry.lua:9-15 and actions_reward.lua:4-8.
             Self::Calendar { .. } | Self::ChyllfroestReward => json!({"kind":"calendar","start":[4,1],"end":[5,1]}),
             // Thieves Guild actions_climbing_vine.lua:13-18.
@@ -155,7 +156,7 @@ impl Case {
             Self::Occupied => json!({"effect":11}),
             _ => json!({}),
         };
-        if !self.is_use() {
+        if !self.is_use() && self != Self::Carried {
             refusal["push_back"] = if matches!(self, Self::Calendar { .. }) {
                 // Crystal movements_prohibit_entry.lua:11-15 uses a fixed
                 // return tile independently of the direction of approach.
@@ -350,20 +351,20 @@ impl Case {
             set_fixture_track(owner, h, fence, SCOUT_POINTS, if access { 9 } else { 14 }).await?;
         }
         let occupant = if self == Self::Occupied {
+            // The grove is occupied while the actual landing remains free.
             let mut runtime = owner.runtime.lock().await;
             let visitor = GameSessionId::decode(&id(51)).map_err(debug)?;
             let reservation = runtime.reserve_fresh_session(visitor).map_err(debug)?;
             let visitor_actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
             runtime
-                .initialize_pinned_test_position(visitor_actor, local(LANDING))
+                .initialize_pinned_test_position(visitor_actor, local(GROVE_OCCUPANT))
                 .map_err(debug)?;
             Some((visitor, visitor_actor))
         } else {
             None
         };
         if self == Self::Flags {
-            sqlx::query("INSERT INTO game_character_soul_war(character_id,teleport_access,defeated_bosses,first_taint_at) VALUES(encode($1,'hex')::uuid,true,15,1)")
-                .bind(fence.character_id.as_bytes().as_slice()).execute(&h.pool).await?;
+            seed_soul_war(h, fence, 15, false).await?;
             super::qengine_outfit_stories::earn_level(owner, admitted, authority, 250).await?;
             owner.states.level_refresh.mark([fence.character_id]);
             owner.refresh_level_up_vitals(actor, session).await;
@@ -456,12 +457,10 @@ impl Case {
                 set_fixture_track(owner, h, fence, SCOUT_POINTS, if access { 10 } else { 15 }).await?;
             }
             Self::Completion => {
-                sqlx::query("INSERT INTO game_character_soul_war(character_id,megalomania_completed) VALUES(encode($1,'hex')::uuid,true)")
-                    .bind(id(41).as_slice()).execute(&h.pool).await?;
+                seed_soul_war(h, fence, 0, true).await?;
             }
             Self::Flags => {
-                sqlx::query("UPDATE game_character_soul_war SET defeated_bosses=31 WHERE character_id=encode($1,'hex')::uuid")
-                    .bind(id(41).as_slice()).execute(&h.pool).await?;
+                seed_soul_war(h, fence, 31, false).await?;
             }
             Self::Carried => {
                 input_item(
@@ -501,8 +500,14 @@ impl Case {
                     .clock_origin
                     .checked_sub(std::time::Duration::from_secs(31))
                     .ok_or("PvP deadline")?;
-                sqlx::query("UPDATE game_character_pvp_state SET pz_block_until=NULL,revision=revision+1 WHERE character_id=encode($1,'hex')::uuid")
-                    .bind(id(41).as_slice()).execute(&h.pool).await?;
+                let mut tx = fixture_state_transaction(h).await?;
+                let expired = sqlx::query(
+                    "UPDATE game_character_pvp_state
+                     SET pz_block_until=transaction_timestamp()-interval '1 second',revision=revision+1
+                     WHERE character_id=encode($1,'hex')::uuid",
+                ).bind(fence.character_id.as_bytes().as_slice()).execute(&mut *tx).await?;
+                assert_eq!(expired.rows_affected(), 1);
+                tx.commit().await?;
             }
             Self::Calendar { .. } | Self::ChyllfroestReward | Self::Stair => {
                 return Err("calendar and stair cases already exercised their single step".into());
@@ -722,7 +727,9 @@ async fn set_fixture_track(
     let track = owner.quest_catalogue.as_deref()
         .and_then(|catalogue| catalogue.track(track))
         .ok_or_else(|| format!("native gate fixture track {track}"))?;
-    sqlx::query(
+    assert!((track.min..=track.max).contains(&value));
+    let mut tx = fixture_state_transaction(h).await?;
+    let seeded = sqlx::query(
         "INSERT INTO game_character_quest_tracks
             (character_id,track_key,quest_key,value,committed_character_revision)
          SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots
@@ -734,9 +741,48 @@ async fn set_fixture_track(
     .bind(&track.key)
     .bind(&track.quest)
     .bind(value)
-    .execute(&h.pool)
+    .execute(&mut *tx)
     .await?;
+    assert_eq!(seeded.rows_affected(), 1);
+    tx.commit().await?;
     Ok(())
+}
+
+async fn seed_soul_war(
+    h: &Harness,
+    fence: CurrentCharacterGameplayFence,
+    defeated_bosses: i16,
+    completed: bool,
+) -> TestResult {
+    let mut tx = fixture_state_transaction(h).await?;
+    let seeded = sqlx::query(
+        "INSERT INTO game_character_soul_war
+            (character_id,teleport_access,defeated_bosses,first_taint_at,megalomania_completed)
+         VALUES(encode($1,'hex')::uuid,true,$2,
+                CASE WHEN $2=0 THEN NULL ELSE extract(epoch FROM transaction_timestamp())::bigint END,$3)
+         ON CONFLICT(character_id) DO UPDATE
+         SET defeated_bosses=EXCLUDED.defeated_bosses,first_taint_at=EXCLUDED.first_taint_at,
+             megalomania_completed=EXCLUDED.megalomania_completed",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(defeated_bosses)
+    .bind(completed)
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(seeded.rows_affected(), 1);
+    tx.commit().await?;
+    Ok(())
+}
+
+// Materialize a pre-existing quest/PvP state in this test's isolated database.
+// As in soul_war::expire_clock, limit the fixture override to this transaction.
+// The dispatch command and its writes run with the normal database guards.
+async fn fixture_state_transaction(h: &Harness) -> TestResult<sqlx::Transaction<'static, sqlx::Postgres>> {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    Ok(tx)
 }
 
 fn isle_exit_track(travel: bool) -> String {

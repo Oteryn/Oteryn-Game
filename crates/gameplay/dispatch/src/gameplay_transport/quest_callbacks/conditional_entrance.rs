@@ -372,8 +372,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ..at
                 }
             }),
-            None if failure.unavailable => origin.map(|origin| origin.position()),
-            None => None,
+            // A quiet StepIn refusal still returns the player to the approach
+            // tile (Crystal movements_holy_tible_tile.lua:14-16).
+            None => origin.map(|origin| origin.position()),
         };
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
         let mut at = expected.position();
