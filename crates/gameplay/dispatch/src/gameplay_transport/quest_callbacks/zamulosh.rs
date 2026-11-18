@@ -1,5 +1,6 @@
 use super::*;
 use crate::durability::quest_state::{QuestTransitionOutcome, zamulosh::QualifiedLovelyStep};
+use oteryn_gameplay_quests::quest::zamulosh::{PAIRS, plate_action};
 
 pub(in crate::gameplay_transport) fn capture(
     runtime: &mut ChannelRuntimeV1,
@@ -17,23 +18,27 @@ pub(in crate::gameplay_transport) fn capture(
         return false;
     };
     let mut matches = base
-        .depths()
+        .ids()
         .iter()
-        .filter(|depth| **depth == 0)
+        .zip(base.depths())
+        .filter(|(_, depth)| **depth == 0)
         .enumerate()
-        .filter_map(|(ordinal, _)| {
-            let key = placement_key(at, u8::try_from(ordinal).ok()?)?;
+        .filter_map(|(ordinal, (&id, _))| {
+            let ordinal = u8::try_from(ordinal).ok()?;
+            let key = placement_key(at, ordinal)?;
             if map.facts.base_hidden(key) {
                 return None;
             }
-            oteryn_gameplay_quests::quest::zamulosh::PAIRS
-                .iter()
-                .find_map(|(aid, _, _)| {
-                    map.facts
-                        .quest_callback_matches(key, None, Some(*aid), None)
-                        .then(|| QualifiedLovelyStep::capture(runtime, step.actor, step.to, *aid))
-                        .flatten()
-                })
+            let native_plate = plate_action(at.x.into(), at.y.into(), at.floor.into())
+                .filter(|_| map.facts.quest_callback_base_appearance(at, ordinal, id) == Some(417));
+            PAIRS.iter().find_map(|(aid, _, _)| {
+                (native_plate == Some(*aid)
+                    || map
+                        .facts
+                        .quest_callback_matches(key, None, Some(*aid), None))
+                .then(|| QualifiedLovelyStep::capture(runtime, step.actor, step.to, *aid))
+                .flatten()
+            })
         });
     let Some((kind, credit)) = matches.next() else {
         return false;

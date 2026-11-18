@@ -8,13 +8,13 @@ use oteryn_gameplay_quests::quest::{
 
 pub(super) const NAME: &str = "bosscred-zamulosh-lovely-step";
 pub(super) const PLATE: Position = Position {
-    x: 33618,
+    x: 33626,
     y: 32666,
     floor: -12,
 };
-pub(super) const START: Position = Position { x: 33616, ..PLATE };
-const CREATURE_START: Position = Position { x: 33617, ..PLATE };
-const WITNESS: Position = Position { y: 32667, ..PLATE };
+pub(super) const START: Position = Position { x: 33624, ..PLATE };
+const CREATURE_START: Position = Position { x: 33625, ..PLATE };
+const WITNESS: Position = Position { x: 33625, y: 32667, ..PLATE };
 const CREATURE: &str = "oteryn:creature.lovely_frazzlemaw";
 
 #[test]
@@ -30,7 +30,7 @@ fn bosscred_zamulosh_matching_creature_step_credits_two_spectators() -> TestResu
 pub(super) fn fixture_callback(mut callback: Callback) -> Callback {
     callback.selector.position = Some(PLATE);
     callback.selector.unique = None;
-    callback.selector.action = Some(34315);
+    callback.selector.action = None;
     callback.selector.appearance = Some(417);
     callback.teleport = None;
     callback

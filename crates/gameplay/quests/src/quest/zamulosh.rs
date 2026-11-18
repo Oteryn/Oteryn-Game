@@ -4,6 +4,25 @@ use super::{QuestComparison, QuestEffect, QuestEffectKind, QuestTrack, QuestTran
 pub const QUEST: &str = "oteryn:quest.ferumbras_ascension_quest";
 pub const TRACK: &str = "oteryn:quest-progress/ferumbras-ascension/zamulosh-teleports";
 pub const TRANSITION: &str = "oteryn:quest-transition/ferumbras-ascension/lovely-creature";
+// Crystal startup/tables/tile.lua, where each plate occupies two adjacent tiles.
+pub fn plate_action(x: i32, y: i32, floor: i32) -> Option<u16> {
+    if floor != -12 {
+        return None;
+    }
+    [
+        (34315, 33626, 32665),
+        (34316, 33633, 32665),
+        (34317, 33626, 32683),
+        (34318, 33633, 32683),
+        (34319, 33626, 32701),
+        (34320, 33633, 32701),
+        (34321, 33626, 32719),
+        (34322, 33633, 32719),
+    ]
+    .into_iter()
+    .find_map(|(action, px, py)| (x == px && (py..=py + 1).contains(&y)).then_some(action))
+}
+
 pub const PAIRS: [(u16, &str, [i32; 5]); 8] = [
     (
         34315,
