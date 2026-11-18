@@ -57,6 +57,7 @@ pub struct BossDefeatOccurrence<'a> {
     pub boss_key: &'a str,
     pub death: [u8; 16],
     pub minted_unix_ms: i64,
+    pub damage_contributors: &'a [[u8; 16]],
 }
 
 pub(super) struct BossAdmissionPlan {
@@ -259,12 +260,14 @@ impl ActivityHandoffOwner {
             boss_key,
             death,
             minted_unix_ms: minted,
+            damage_contributors,
         } = defeat;
         let recovery = authority
             .record_for(&self.root)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
         let boss_key = boss_key.to_owned();
+        let damage_contributors = damage_contributors.to_vec();
         self.root
             .try_issue_semantic_pass()?
             .run(move |holder, deadline| {
@@ -275,14 +278,25 @@ impl ActivityHandoffOwner {
                     if !assert_runtime_scope_fence(&mut tx, scope, generation, &node).await? {
                         return Ok(false);
                     }
-                    let result = record_defeat_in_transaction(
+                    let decision = classify_and_record_defeat_in_transaction(
                         &mut tx, scope, generation, &boss_key, death, minted,
                     )
                     .await?;
-                    if result {
-                        commit_semantic_transaction(tx, deadline).await?;
+                    if decision == BossRoomDefeatDecision::Conflict {
+                        return Ok(false);
                     }
-                    Ok(result)
+                    if decision == BossRoomDefeatDecision::Recorded {
+                        apply_lore_keeper_victory_cooldown(
+                            &mut tx,
+                            scope,
+                            &boss_key,
+                            death,
+                            &damage_contributors,
+                        )
+                        .await?;
+                    }
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(true)
                 })
             })
             .await
@@ -723,6 +737,49 @@ pub(crate) async fn classify_and_record_defeat_in_transaction(
     sqlx::query("INSERT INTO game_character_boss_difficulty_records(character_id,boss_key,highest_defeated) SELECT p.character_id,a.boss_key,a.difficulty FROM game_boss_room_activities a JOIN game_boss_room_participants p ON p.admission=a.admission WHERE a.world_id=encode($1,'hex')::uuid AND a.instance_id=encode($2,'hex')::uuid AND a.difficulty IS NOT NULL ORDER BY p.character_id ON CONFLICT(character_id,boss_key) DO UPDATE SET highest_defeated=greatest(game_character_boss_difficulty_records.highest_defeated,excluded.highest_defeated)")
         .bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice()).execute(&mut **tx).await?;
     Ok(BossRoomDefeatDecision::Recorded)
+}
+
+/// Crystal creaturescripts_bosses_kill.lua:24-28 credits damaging participants
+/// regardless of the availability of a corpse or reward chest.
+pub(crate) async fn apply_lore_keeper_victory_cooldown(
+    tx: &mut Transaction<'_, Postgres>,
+    scope: RuntimeScopeRefV1,
+    boss: &str,
+    death: [u8; 16],
+    damage_contributors: &[[u8; 16]],
+) -> Result<()> {
+    let RuntimeScopeRefV1::Instance {
+        world_id,
+        instance_id,
+    } = scope
+    else {
+        return Ok(());
+    };
+    if !matches!(
+        boss,
+        "oteryn:creature.the_last_lore_keeper" | "oteryn:boss.the_last_lore_keeper"
+    ) || damage_contributors.is_empty()
+    {
+        return Ok(());
+    }
+    let contributors: Vec<Vec<u8>> = damage_contributors.iter().map(|id| id.to_vec()).collect();
+    sqlx::query(
+        "UPDATE game_character_boss_cooldowns c
+         SET available_at=(a.terminal_at / 1000) * 1000 + 1195200000
+         FROM game_boss_room_activities a
+         WHERE a.world_id=encode($1,'hex')::uuid AND a.instance_id=encode($2,'hex')::uuid
+           AND a.defeat_id=encode($3,'hex')::uuid
+           AND a.boss_creature_key='oteryn:creature.the_last_lore_keeper'
+           AND c.boss_key=a.boss_key AND c.admission=a.admission
+           AND c.character_id IN (SELECT encode(id,'hex')::uuid FROM unnest($4::bytea[]) AS id)",
+    )
+    .bind(world_id.as_bytes().as_slice())
+    .bind(instance_id.as_slice())
+    .bind(death.as_slice())
+    .bind(contributors)
+    .execute(&mut **tx)
+    .await?;
+    Ok(())
 }
 
 /// Record the exact W02 victory before consuming its Quest/Hazard entitlement.

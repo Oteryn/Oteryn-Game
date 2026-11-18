@@ -289,12 +289,12 @@ fn scenario(victory: bool) -> TestResult {
             let cooldowns: Vec<(bool, i64)> = sqlx::query_as(
                 "SELECT c.character_id=encode($2,'hex')::uuid,
                         CASE WHEN c.character_id=encode($2,'hex')::uuid
-                             THEN c.available_at-(d.minted_at/1000)*1000
+                             THEN c.available_at-(a.terminal_at/1000)*1000
                              ELSE c.available_at-a.opened_at END
                  FROM game_boss_room_activities a
-                 JOIN game_boss_reward_deaths d ON d.death_id=a.defeat_id
                  JOIN game_character_boss_cooldowns c ON c.admission=a.admission
-                 WHERE a.admission=encode($1,'hex')::uuid ORDER BY 1",
+                 WHERE a.admission=encode($1,'hex')::uuid AND a.defeat_id IS NOT NULL
+                   AND a.exit_deadline=a.deadline ORDER BY 1",
             )
             .bind(handoff.as_slice())
             .bind(leader_fence.character_id.as_bytes().as_slice())

@@ -1,6 +1,7 @@
 use super::*;
 use crate::durability::activity_handoff::boss_room::{
-    BossRoomDefeatDecision, classify_and_record_defeat_in_transaction,
+    BossRoomDefeatDecision, apply_lore_keeper_victory_cooldown,
+    classify_and_record_defeat_in_transaction,
 };
 use crate::durability::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use crate::durability::character_progression::assert_runtime_scope_fence;
@@ -110,22 +111,13 @@ impl DurabilityRoot {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(true);
             }
-            // Crystal creaturescripts_bosses_kill.lua:24-28 gives actual Lore Keeper
-            // damage contributors a fresh 13-day, 20-hour cooldown on victory.
-            if let Some(instance) = instance
-                && matches!(death.boss_key.as_str(), "oteryn:creature.the_last_lore_keeper" | "oteryn:boss.the_last_lore_keeper")
-            {
-                sqlx::query("UPDATE game_character_boss_cooldowns c
-                    SET available_at=($4::bigint / 1000) * 1000 + 1195200000
-                    FROM game_boss_room_activities a
-                    JOIN game_boss_reward_contributors d ON d.world_id=a.world_id AND d.death_id=a.defeat_id
-                    WHERE a.world_id=encode($1,'hex')::uuid AND a.instance_id=encode($2,'hex')::uuid
-                      AND a.defeat_id=encode($3,'hex')::uuid AND a.boss_creature_key='oteryn:creature.the_last_lore_keeper'
-                      AND d.damage_dealt>0 AND c.character_id=d.character_id
-                      AND c.boss_key=a.boss_key AND c.admission=a.admission")
-                    .bind(world.as_bytes().as_slice()).bind(instance.as_slice())
-                    .bind(death.death.as_slice()).bind(minted).execute(&mut *tx).await?;
-            }
+            let damage_contributors: Vec<_> = death.contributors.iter()
+                .filter(|participant| participant.contribution.damage_dealt > 0)
+                .map(|participant| *participant.character_id.as_bytes())
+                .collect();
+            apply_lore_keeper_victory_cooldown(
+                &mut tx, scope, &death.boss_key, death.death, &damage_contributors,
+            ).await?;
             // Capability 492: each recipient's victory moves its Moonsilver pity in this same
             // transaction. An expired chest delivers nothing, so it is a victory without a drop.
             let pity_key = oteryn_gameplay_encounter_rules::boss::pity::pity_boss_key(&death.boss_key);

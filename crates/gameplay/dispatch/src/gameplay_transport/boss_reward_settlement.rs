@@ -385,6 +385,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let owner =
             crate::durability::activity_handoff::ActivityHandoffOwner::new(admission.root.clone());
+        let damage_contributors: Vec<_> = entry
+            .damage_shares
+            .iter()
+            .filter(|share| share.total > 0)
+            .map(|share| *share.character.as_bytes())
+            .collect();
         match owner
             .record_boss_defeat(
                 admission.character,
@@ -395,6 +401,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     boss_key: &captured.creature,
                     death: personal_death_id(entry.facts.death),
                     minted_unix_ms: captured.died_at_unix_ms,
+                    damage_contributors: &damage_contributors,
                 },
             )
             .await
