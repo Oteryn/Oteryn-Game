@@ -10,7 +10,6 @@ use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
-use crate::map::overlay::TilePos;
 fn definition(key: &str) -> TypedDefinitionRef {
     TypedDefinitionRef {
         family: "Item".into(),
@@ -19,39 +18,106 @@ fn definition(key: &str) -> TypedDefinitionRef {
     }
 }
 
-
 // Wiki base (curid 25436, oldid 1090720) and /Spoiler (curid 25437, oldid 1086330).
 // Crystal 201189f8, data-global/startup/tables/chest.lua:2630-2670.
-#[test]
-fn source_chest_selectors_reach_durable_reward_dispatch() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
-        return Ok(());
-    }
-    let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("qcx-thieves-guild", || {
-        for (x, y, floor, reward) in [
-            (32309, 32209, -8, "oteryn:item.tibia.i8021"),
-            (32309, 32211, -8, "oteryn:item.tibia.i7404"),
-            (32309, 32213, -8, "oteryn:item.tibia.i8073"),
-            (32367, 31781, -8, "oteryn:item.tibia.i8117"),
-            (32551, 32652, -10, "oteryn:item.tibia.i7870"),
-            (32902, 32143, -4, "oteryn:item.tibia.i7935"),
-        ] {
+macro_rules! source_claim {
+    ($name:ident, $position:expr, $appearance:literal, $uid:literal, $item:literal) => {
+        #[test]
+        fn $name() -> TestResult {
+            if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+                return Ok(());
+            }
             let started = std::time::Instant::now();
-            let result = claim(x, y, floor, reward);
-            eprintln!("POSTGRES_CASE_COMPLETED qcx_thieves_guild {reward} duration={:?} success={}", started.elapsed(), result.is_ok());
-            result?;
+            let result = super::kill_reward_e2e::scenario_thread::run(stringify!($name), || {
+                claim(
+                    $position,
+                    $appearance,
+                    $uid,
+                    concat!("oteryn:item.tibia.i", $item),
+                )
+            });
+            eprintln!(
+                "POSTGRES_CASE_COMPLETED {} duration={:?} success={}",
+                stringify!($name),
+                started.elapsed(),
+                result.is_ok()
+            );
+            result
         }
-        Ok(())
-    });
-    eprintln!("POSTGRES_CASE_COMPLETED qcx_thieves_guild duration={:?} success={}", started.elapsed(), result.is_ok());
-    result
+    };
 }
 
-fn claim(x: u16, y: u16, floor: i8, reward: &str) -> TestResult {
+source_claim!(modified_crossbow, (32309, 32209, -8), 2434, 6275, "8021");
+source_claim!(assassin_dagger, (32309, 32211, -8), 2434, 6276, "7404");
+source_claim!(spellbook_of_warding, (32309, 32213, -8), 2434, 6277, "8073");
+source_claim!(theatre_script, (32367, 31781, -8), 2473, 6272, "8117");
+source_claim!(
+    stolen_golden_goblet,
+    (32551, 32652, -10),
+    2469,
+    6273,
+    "7870"
+);
+source_claim!(compromising_letter, (32902, 32143, -4), 2433, 6274, "7935");
+
+fn source_unique((x, y, floor): (u16, u16, i8), appearance: u16) -> TestResult<Option<u16>> {
+    use oteryn_world_bundle::bundle;
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let path = format!(
+        "content/world/placements/region-z{:02}-x{:03}-y{:03}.b3",
+        -floor,
+        x / 256,
+        y / 256
+    );
+    let index: serde_json::Value = serde_json::from_slice(&std::fs::read(
+        root.join("content/world/placements/index.json"),
+    )?)?;
+    let mut budget = bundle::BUNDLE_BUDGET;
+    let region = oteryn_world_bundle_compiler::b3::decode_region(
+        &std::fs::read(root.join(path))?,
+        bundle::TILE_LIMITS,
+        &mut budget,
+    )?;
+    let mut matches = region
+        .sectors
+        .iter()
+        .flat_map(|(_, _, tiles)| tiles)
+        .filter(|tile| (tile.x, tile.y) == (x, y))
+        .flat_map(|tile| &tile.items)
+        .filter(|item| {
+            item.depth == 0
+                && index["palette"][item.palette as usize]["source_item_id"] == appearance
+        });
+    let item = matches.next().ok_or("missing source chest")?;
+    assert!(matches.next().is_none(), "ambiguous source chest");
+    Ok(item.attrs.unique)
+}
+
+fn claim(position: (u16, u16, i8), appearance: u16, expected_uid: u16, reward: &str) -> TestResult {
+    let (x, y, floor) = position;
+    let uid = source_unique(position, appearance)?;
+    let single = (x, y);
+    // The final claim binds only when all three of its placements are present.
+    let positions = if appearance == 2434 {
+        [(32309, 32209), (32309, 32211), (32309, 32213)].as_slice()
+    } else {
+        std::slice::from_ref(&single)
+    };
+    let choices: Vec<_> = positions
+        .iter()
+        .map(|&(x, y)| {
+            Ok((
+                x,
+                y,
+                source_unique((x, y, floor), appearance)?.unwrap_or_default(),
+            ))
+        })
+        .collect::<TestResult<_>>()?;
+    // Keep actual source placement/appearance/UID. Reduce the surrounding
+    // geometry so this tests a claim from inside its room.
     run(async |admin| {
-        let h = Harness::create_with_admission_seed(admin, "qcx_thieves_guild", false, false)
-            .await?;
+        let h =
+            Harness::create_with_admission_seed(admin, "qcx_thieves_guild", false, false).await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -67,8 +133,7 @@ fn claim(x: u16, y: u16, floor: i8, reward: &str) -> TestResult {
             )?;
         let generation = controller.active().ok_or("generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
-        let start = TilePos { x: x - 1, y, floor };
-        let world = super::source_world_crop::world(start, TilePos { x, y, floor }, start, native)?;
+        let world = super::quest_callbacks::source_world_positions(position, &choices, appearance)?;
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
@@ -161,11 +226,14 @@ fn claim(x: u16, y: u16, floor: i8, reward: &str) -> TestResult {
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
-        let key = oteryn_world_bundle::bundle::placement_key(floor, x, y, 1)
-            .ok_or("reward placement")?;
+        let key =
+            oteryn_world_bundle::bundle::placement_key(floor, x, y, 1).ok_or("reward placement")?;
         let mut placement = world.base().digest().to_vec();
         placement.extend_from_slice(&key.to_be_bytes());
-        let target = WorldObjectTarget { placement, expected_revision: 0 };
+        let target = WorldObjectTarget {
+            placement,
+            expected_revision: 0,
+        };
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
@@ -176,6 +244,7 @@ fn claim(x: u16, y: u16, floor: i8, reward: &str) -> TestResult {
             [(CommandStatus::Accepted, UseDisposition::Committed)],
             "source USE at ({x}, {y}, {floor})"
         );
+        assert_eq!(uid, Some(expected_uid));
         let granted: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity), 0)::bigint FROM game_item_instances WHERE lifecycle = 1 AND definition_production_key = $1")
             .bind(reward)
             .fetch_one(&h.pool)
