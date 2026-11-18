@@ -383,7 +383,7 @@ pub(super) async fn use_quest_tool(
     command_id: u64,
     source: u8,
 ) -> TestResult<UseDisposition> {
-    let actor = admitted.runtime_actor.ok_or("net player")?;
+    let actor = admitted.runtime_actor.ok_or("tool user")?;
     let map = owner.bundle_map().ok_or("map")?;
     let key = crate::map::view::placement_key(pos, ordinal).ok_or("tool target site")?;
     let mut placement = map.overlay.base().digest().to_vec();
@@ -417,7 +417,7 @@ pub(super) async fn use_quest_tool(
             false,
         )
         .await
-        .map_err(|()| "net USE route")?;
+        .map_err(|()| "quest tool USE route")?;
     Ok(outcome.map_or(UseDisposition::NothingToUse, |result| result.disposition))
 }
 
@@ -427,7 +427,7 @@ pub(super) async fn exercise_wave(
     h: &Harness,
     expected_merchants: usize,
 ) -> TestResult {
-    let actor = admitted.runtime_actor.ok_or("net player")?;
+    let actor = admitted.runtime_actor.ok_or("tool user")?;
     let map = owner.bundle_map().ok_or("map")?;
     let early = TilePos {
         x: 3,

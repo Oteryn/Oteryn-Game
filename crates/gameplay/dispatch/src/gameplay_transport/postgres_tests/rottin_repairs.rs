@@ -5,7 +5,7 @@ use super::fixture::Harness;
 use super::rottin_bushwhacking::use_quest_tool;
 use super::rottin_rewards::experience;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
-use crate::map::overlay::TilePos;
+use crate::map::{overlay::TilePos, view::MapFacts};
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use serde_json::json;
@@ -104,6 +104,14 @@ pub(super) async fn exercise(
     );
     let map = owner.bundle_map().ok_or("repair map")?;
     let due = map.facts.next_movement_decay_time().ok_or("wall reset")?;
+    assert_eq!(
+        map.facts
+            .base_entry(wall, 1, 7)
+            .ok_or("repaired wall")?
+            .appearance_id,
+        6474
+    );
+    assert_eq!(map.facts.expire_movement_items(due - 1), 0);
     let (fixed, retained): (i64, i64) = sqlx::query_as(
         "SELECT (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),
                 (SELECT count(*) FROM game_quest_world_tool_reads WHERE transition_key=$2)",
@@ -125,13 +133,14 @@ pub(super) async fn exercise(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(paid, 1);
+    let map = owner.bundle_map().ok_or("repair map")?;
+    assert_eq!(map.facts.expire_movement_items(due), 1);
     assert_eq!(
-        owner
-            .bundle_map()
-            .ok_or("repair map")?
-            .facts
-            .next_movement_decay_time(),
-        Some(due)
+        map.facts
+            .base_entry(wall, 1, 7)
+            .ok_or("restored wall")?
+            .appearance_id,
+        12183
     );
     Ok(())
 }
