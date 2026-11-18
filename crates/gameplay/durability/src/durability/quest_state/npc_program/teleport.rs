@@ -98,6 +98,63 @@ pub fn preview_teleport(
     )
 }
 
+pub(super) fn armenius_plan(
+    request: &NpcProgramRequest,
+    tracks: &BTreeMap<String, i64>,
+    catalogue: &QuestStateCatalogue,
+) -> Option<NpcTeleportPlan> {
+    use oteryn_gameplay_quests::quest::{
+        armenius::{self, Outcome},
+        npc_rules::{NpcRuleEffect, NpcTrackChange},
+    };
+
+    let mission = *tracks.get(armenius::MISSION)?;
+    if request.npc != armenius::NPC
+        || request.trigger != NpcRuleTrigger::Say
+        || request.topic != i32::from(armenius::FINAL_TOPIC)
+        || matches!(request.message.as_str(), "cookie" | "yes")
+        || !(mission == armenius::RESOLVED_MISSION
+            || mission == 1 && request.message.eq_ignore_ascii_case("alori mort"))
+    {
+        return None;
+    }
+    let (destination, reply, achievement) = match armenius::teleport_route(&request.transition_key)?
+    {
+        Outcome::Rats { destination } => (destination, "Go keep the rats company.", None),
+        Outcome::Confrontation { destination, .. } => (
+            destination,
+            "I've changed my mind. Face me.",
+            Some(armenius::ACHIEVEMENT),
+        ),
+        Outcome::Dismissed => return None,
+    };
+    let transition = catalogue.transition(armenius::RESOLVE)?;
+    let mut effects = vec![NpcRuleEffect::EndConversation { delay_ms: 0 }];
+    effects.extend(achievement.map(|name| NpcRuleEffect::Achievement { name: name.into() }));
+    Some(NpcTeleportPlan {
+        destination,
+        magic: vec!["CONST_ME_TELEPORT".into()],
+        source: NpcRulePlan {
+            quest: transition.quest.clone(),
+            completes: false,
+            program_digest: catalogue.definition_hash(&transition.quest)?,
+            selected_rule_keys: vec![request.transition_key.clone()],
+            reply: vec![reply.into()],
+            next_topic: request.topic,
+            observed_tracks: BTreeMap::from([(armenius::MISSION.into(), mission)]),
+            track_changes: vec![NpcTrackChange {
+                key: armenius::MISSION.into(),
+                before: mission,
+                after: armenius::RESOLVED_MISSION,
+            }],
+            effects,
+            inventory_before: NpcInventorySnapshot::default(),
+            inventory_after: NpcInventorySnapshot::default(),
+            inventory_failure_reply: Vec::new(),
+        },
+    })
+}
+
 pub(super) fn evaluate(
     source: &NpcRuleCatalog,
     request: &NpcProgramRequest,

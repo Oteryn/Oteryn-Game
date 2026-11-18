@@ -202,7 +202,10 @@ pub fn preview_with_appearance(
 
 /// Classify against a real fenced snapshot. Unlike an optimistic route preview,
 /// this never substitutes synthetic counts when the actual branch is absent.
-#[allow(clippy::too_many_arguments, reason = "the actual snapshot shares the existing source preview facts")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the actual snapshot shares the existing source preview facts"
+)]
 pub fn preview_with_inventory(
     request: &NpcProgramRequest,
     tracks: &BTreeMap<String, i64>,
@@ -212,12 +215,24 @@ pub fn preview_with_inventory(
     player_name: Option<&str>,
     appearance: (&BTreeMap<u16, u8>, u8),
     inventory: &NpcInventorySnapshot,
-) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError> {
+) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError>
+{
     let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
         return Ok(None);
     };
-    evaluate_source(&source, request, tracks, catalogue, now,
-        NpcEvaluationFacts { eligibility, player_name, appearance }, Some(inventory))
+    evaluate_source(
+        &source,
+        request,
+        tracks,
+        catalogue,
+        now,
+        NpcEvaluationFacts {
+            eligibility,
+            player_name,
+            appearance,
+        },
+        Some(inventory),
+    )
 }
 
 #[derive(Clone, Copy)]
@@ -399,10 +414,18 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
-        let source = source
-            .admitted_for_npc(&request.npc, &catalogue)
-            .map_err(|_| CharacterProgressionError::InvalidInput)?
-            .ok_or(CharacterProgressionError::InvalidInput)?;
+        let armenius = teleport.is_some()
+            && request.npc == oteryn_gameplay_quests::quest::armenius::NPC
+            && oteryn_gameplay_quests::quest::armenius::teleport_route(&request.transition_key)
+                .is_some();
+        let source = if armenius {
+            NpcRuleCatalog::default()
+        } else {
+            source
+                .admitted_for_npc(&request.npc, &catalogue)
+                .map_err(|_| CharacterProgressionError::InvalidInput)?
+                .ok_or(CharacterProgressionError::InvalidInput)?
+        };
         let mut participants = (items, premium);
         self.try_issue_semantic_pass()?.run_with_context(&mut participants, move |holder,deadline,participants| Box::pin(async move {
             let (content, premium) = participants;
@@ -517,7 +540,12 @@ impl DurabilityRoot {
                     &mut tx, character.as_bytes()).await?)
             } else { None };
             let facts = NpcEvaluationFacts { eligibility: &eligibility, player_name: player_name.as_deref(), appearance: (&outfits,sex) };
-            let teleport_plan = if teleport.is_some() {
+            let teleport_plan = if armenius {
+                match teleport::armenius_plan(&request, &effective_tracks, &catalogue) {
+                    Some(plan) => Some(plan),
+                    None => return Ok(Ok(refused(QuestRefusal::StageMismatch))),
+                }
+            } else if teleport.is_some() {
                 match teleport::evaluate(&source, &request, &effective_tracks, now, facts) {
                     Ok(Some(plan)) => Some(plan),
                     _ => return Ok(Ok(refused(QuestRefusal::StageMismatch))),

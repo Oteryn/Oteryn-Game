@@ -8,6 +8,9 @@ use super::{
 
 pub const MISSION: &str = "oteryn:quest-progress/quest/u8_4/blood_brothers/mission03";
 pub const RESOLVE: &str = "oteryn:quest-transition/blood-brothers/resolve-armenius";
+pub const RATS_ROUTE: &str = "oteryn:quest-transition/blood-brothers/armenius-rats";
+pub const CONFRONTATION_ROUTE: &str =
+    "oteryn:quest-transition/blood-brothers/armenius-confrontation";
 pub const NPC: &str = "oteryn:npc.armenius";
 pub const FINAL_TOPIC: u16 = 5;
 pub const RESOLVED_MISSION: i64 = 2;
@@ -50,6 +53,15 @@ pub fn outcome(draw: u64) -> Outcome {
             },
         },
         _ => Outcome::Dismissed,
+    }
+}
+
+/// The selected branch is bound to the command's durable receipt by its route.
+pub fn teleport_route(key: &str) -> Option<Outcome> {
+    match key {
+        RATS_ROUTE => Some(outcome(0)),
+        CONFRONTATION_ROUTE => Some(outcome(1)),
+        _ => None,
     }
 }
 
