@@ -126,23 +126,16 @@ pub(super) async fn client_blessing_death(
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult {
     let mut row = Row::new("C20c.client", BLESSING_DEATH);
-    let mut capture_result: TestResult = Err("capture point was not reached".into());
+    let mut twist_death = None;
     verdict::indexed_timeout(
         Duration::from_secs(1500),
-        blessing_death(
-            &mut row,
-            clients,
-            world,
-            spawns,
-            npcs,
-            Some(&mut capture_result),
-        ),
+        blessing_death(&mut row, clients, world, spawns, npcs, &mut twist_death),
     )
     .await??;
     if !row.0.complete() {
         return Err("C20c client blessing actions incomplete".into());
     }
-    capture_result
+    capture_twist(clients, twist_death).await
 }
 
 fn client_capture_result(journey: TestResult, complete: bool, capture: TestResult) -> TestResult {
@@ -237,7 +230,7 @@ pub(super) async fn run(
     finish_blessing_row(services, &result);
 
     let mut consumption = Row::new("C20c", BLESSING_DEATH).needs(&[Fixture(0), Fixture(1)]);
-    let mut capture_result: TestResult = Err("capture point was not reached".into());
+    let mut twist_death = None;
     let watch = consumption.0.watch();
     let result = watch
         .bound(
@@ -249,13 +242,20 @@ pub(super) async fn run(
                 world,
                 spawns,
                 npcs,
-                export_twist.then_some(&mut capture_result),
+                &mut twist_death,
             ),
         )
         .await;
     let complete = consumption.0.complete();
     finish_blessing_row(consumption, &result);
-    let twist = export_twist.then(|| client_capture_result(result, complete, capture_result));
+    let twist = if export_twist {
+        Some(match client_capture_result(result, complete, Ok(())) {
+            Ok(()) => capture_twist(clients, twist_death).await,
+            Err(error) => Err(error),
+        })
+    } else {
+        None
+    };
 
     let mut resting = Row::new("P10", RESTING_BONUSES)
         .needs(&[Fixture(1)])
@@ -2724,22 +2724,41 @@ async fn adventurer_journey(
     result.and(cleanup)
 }
 
-async fn durable_death_occurrence(clients: &SeamClients<'_>) -> TestResult<Option<[u8; 16]>> {
-    let mut db = sqlx::PgConnection::connect(clients.url).await?;
-    let id: Option<Vec<u8>> = sqlx::query_scalar(
-        "SELECT uuid_send(death_occurrence_id) FROM game_character_death_receipts
-         WHERE character_id=encode($1,'hex')::uuid AND death_world_id=encode($2,'hex')::uuid
-         ORDER BY committed_character_revision DESC LIMIT 1",
-    )
-    .bind(clients.characters[1].as_slice())
-    .bind(clients.world.as_slice())
-    .fetch_optional(&mut db)
-    .await?;
-    id.map(|id| {
-        id.try_into()
-            .map_err(|_| "invalid durable death occurrence width".into())
+type TwistDeath = ((u64, u32), (u64, u32));
+
+async fn capture_twist(clients: &SeamClients<'_>, death: Option<TwistDeath>) -> TestResult {
+    let (before, after) = death.ok_or("C20c Twist death proof did not reach fresh admission")?;
+    let budget = Duration::from_secs(200);
+    verdict::Harness::global()
+        .bounded_wait(tokio::time::Instant::now() + budget, "C20c receipt capture");
+    verdict::indexed_timeout(budget, async {
+        let mut db = sqlx::PgConnection::connect(clients.url).await?;
+        let id: Vec<u8> = sqlx::query_scalar(
+            "SELECT uuid_send(death_occurrence_id) FROM (
+                 SELECT * FROM game_character_death_receipts
+                 WHERE character_id=encode($1,'hex')::uuid AND death_world_id=encode($2,'hex')::uuid
+                 ORDER BY committed_character_revision DESC LIMIT 1
+             ) latest WHERE experience_before=$3 AND experience_after=$4
+                 AND level_before=$5 AND level_after=$6
+                 AND blessings_before @> ARRAY[$7]::text[] AND NOT ($7 = ANY(blessings_after))",
+        )
+        .bind(clients.characters[1].as_slice())
+        .bind(clients.world.as_slice())
+        .bind(i64::try_from(before.0)?)
+        .bind(i64::try_from(after.0)?)
+        .bind(i64::from(before.1))
+        .bind(i64::from(after.1))
+        .bind(TWIST.2)
+        .fetch_one(&mut db)
+        .await?;
+        let expected_occurrence = id
+            .try_into()
+            .map_err(|_| "invalid durable death occurrence width")?;
+        let mut capture = connect_world(clients, 0xa8).await?;
+        client_row_c20c::capture_receipt(&mut capture, expected_occurrence).await?;
+        logout(&mut capture).await
     })
-    .transpose()
+    .await?
 }
 
 async fn blessing_death(
@@ -2748,7 +2767,7 @@ async fn blessing_death(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
     npcs: &oteryn_world_bundle::npc::Table,
-    capture_result: Option<&mut TestResult>,
+    twist_death: &mut Option<TwistDeath>,
 ) -> TestResult {
     adventurer_journey(row, clients, world, spawns, npcs, 0xa0).await?;
     let mut client = connect_world(clients, 0xa3).await?;
@@ -2779,33 +2798,14 @@ async fn blessing_death(
         let mut attacker = connect_character(clients, 0xa5, 0).await?;
         let fight: TestResult = async {
             earn_death_prerequisites(&mut attacker, world, spawns, 8, 0).await?;
-            let previous_occurrence = if capture_result.is_some() {
-                Some(durable_death_occurrence(clients).await)
-            } else {
-                None
-            };
             let (before, after) = observed_pvp_death(&mut client, &mut attacker, world, spawns).await?;
             let regular = vec![WISDOM.2.to_owned()];
             if after.0 >= before.0 || blessings(&mut client).await? != regular {
                 return Err(format!("Twist PvP must lose XP, consume only Twist and retain Wisdom: before={before:?} after={after:?}").into());
             }
             row.pass("twist-pvp-consumes-only-twist", (&regular, before, after));
-            let expected_occurrence: Option<TestResult<[u8; 16]>> = if let Some(previous) = previous_occurrence {
-                Some(async {
-                    let previous = previous?;
-                    durable_death_occurrence(clients).await?
-                        .filter(|occurrence| Some(*occurrence) != previous)
-                        .ok_or_else(|| "C20c Twist death did not commit a new durable receipt".into())
-                }.await)
-            } else {
-                None
-            };
             saved_blessings(&mut client, clients, 1, 0xa6, &regular, after).await?;
-            if let (Some(capture_result), Some(expected_occurrence)) = (capture_result, expected_occurrence) {
-                *capture_result = async {
-                    client_row_c20c::capture_receipt(&mut client, expected_occurrence?).await
-                }.await;
-            }
+            *twist_death = Some((before, after));
             row.pass("twist-relog", (&regular, after));
             Ok(())
         }.await;

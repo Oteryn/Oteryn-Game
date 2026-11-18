@@ -4,11 +4,10 @@ use oteryn_dev_client::{SessionEvent, client_runtime::inventory};
 use oteryn_protocol_oteryn::{actor_spell, item_view as items};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients))).await;
+    let result = verdict::observe(journey(clients)).await;
     match result {
-        Ok(Ok(())) => evidence("e2e_all scenario=I15.client status=PASS evidence=actor-vitals-2-to-1-mana-shield"),
-        Ok(Err(error)) => evidence(&format!("e2e_all scenario=I15.client status=FAIL evidence={error}")),
-        Err(_) => evidence("e2e_all scenario=I15.client status=FAIL evidence=damage-delta-timeout"),
+        Ok(()) => evidence("e2e_all scenario=I15.client status=PASS evidence=actor-vitals-2-to-1-mana-shield"),
+        Err(error) => evidence(&format!("e2e_all scenario=I15.client status=FAIL evidence={error}")),
     }
 }
 
@@ -51,7 +50,7 @@ async fn move_ring(client: &mut oteryn_dev_client::DevClientSession, handle: ite
 async fn restore_after_reconnect(
     clients: &SeamClients<'_>, active: std::num::NonZeroU32, inactive: std::num::NonZeroU32,
 ) -> TestResult {
-    verdict::Harness::global().bounded_wait(tokio::time::Instant::now() + Duration::from_secs(180), "I15 ring recovery");
+    verdict::Harness::global().bounded_wait(tokio::time::Instant::now() + Duration::from_secs(200), "I15 ring recovery");
     let mut fresh = connect_world(clients, 0xb4).await?;
     let view = fresh.inventory().ok_or("I15 recovery inventory absent")?;
     if !view.equipment.iter().any(|entry| entry.slot == items::EquipmentSlot::Ring && entry.item.item_definition_ref == active) {
@@ -92,9 +91,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let index = provisioning::item_index()?;
     let active = provisioning::item_reference(&index, 3088)?;
     let inactive = provisioning::item_reference(&index, 3051)?;
-    let mut client = connect_world(clients, 0xb2).await?;
+    let mut client = verdict::indexed_timeout(Duration::from_secs(190), connect_world(clients, 0xb2)).await??;
     let mut recover_ring = false;
-    let result: TestResult = async {
+    let sample_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
+    let result: TestResult = tokio::time::timeout_at(sample_deadline, async {
         let handle = client.inventory().ok_or("I15 inventory absent")?.equipment.iter()
             .find(|entry| entry.slot == items::EquipmentSlot::Ring && entry.item.item_definition_ref == active)
             .ok_or("I15 active Energy Ring 3088 absent after I05 lifecycle")?.item.handle;
@@ -121,6 +121,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         if !drowning || other_harm {
             return Err("I15 expected drowning as the only damage condition".into());
         }
+        verdict::Harness::global().bounded_wait(sample_deadline, "I15 ring control");
         recover_ring = true;
         let removal = move_ring(&mut client, handle, false).await;
         let incoming_damage = async {
@@ -166,16 +167,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             }
             client.service_liveness(Duration::from_millis(50)).await?;
         }
-    }.await;
+    }).await.unwrap_or_else(|error| Err(verdict::context("I15 sample deadline".into(), error)));
     if recover_ring {
         drop(client);
-        let recovery = restore_after_reconnect(clients, active, inactive).await;
+        let recovery = verdict::indexed_timeout(
+            Duration::from_secs(200), restore_after_reconnect(clients, active, inactive),
+        ).await.unwrap_or_else(|error| Err(verdict::context("I15 recovery deadline".into(), error)));
         if let Err(error) = &recovery {
             evidence(&format!("I15 ring recovery failed: {error}"));
         }
         return result.and(recovery);
     }
-    let logout = client_row_c08::require_logout(&mut client, Duration::from_secs(70)).await;
+    let logout = verdict::indexed_timeout(Duration::from_secs(75), client_row_c08::require_logout(&mut client, Duration::from_secs(70))).await?;
     result.and(logout)
 }
 

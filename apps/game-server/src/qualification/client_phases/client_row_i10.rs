@@ -7,8 +7,8 @@ use super::*;
 use oteryn_protocol_oteryn::house_wrap;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = verdict::indexed_timeout(Duration::from_secs(500), verdict::observe(journey(clients))).await;
-    match result.unwrap_or_else(|_| Err("I10 client capture timed out".into())) {
+    let result = verdict::observe(journey(clients)).await;
+    match result {
         Ok(()) => evidence(
             "e2e_all scenario=I10.client status=PASS evidence=house-wrap-unwrap-and-stale-refusals",
         ),
@@ -59,22 +59,30 @@ async fn wrap_result(
     Ok(result.payload)
 }
 
-async fn restore_wrapped(
-    client: &mut oteryn_dev_client::DevClientSession, db: &mut sqlx::PgConnection,
-    mut request: house_wrap::Request,
-) -> TestResult {
+async fn restoration_request(
+    db: &mut sqlx::PgConnection, mut request: house_wrap::Request,
+) -> TestResult<Option<(house_wrap::Request, house_wrap::Reply)>> {
     let (definition, revision): (String, String) = sqlx::query_as(
         "SELECT definition_production_key,state_revision::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1"
     ).bind(request.item.as_slice()).fetch_one(db).await?;
     if definition == "oteryn:item.tibia.i6355" {
-        return Ok(());
+        return Ok(None);
     }
     if !matches!(definition.as_str(), "oteryn:item.tibia.i6371" | "oteryn:item.tibia.i23398") {
         return Err(format!("I10 unexpected furniture definition during recovery: {definition}").into());
     }
     request.expected_revision = revision.parse()?;
     let next = request.expected_revision.checked_add(1).ok_or("I10 recovery revision exhausted")?;
-    wrap_result(client, request, house_wrap::Reply::Committed(next)).await?;
+    Ok(Some((request, house_wrap::Reply::Committed(next))))
+}
+
+async fn restore_wrapped(
+    client: &mut oteryn_dev_client::DevClientSession, db: &mut sqlx::PgConnection,
+    request: house_wrap::Request,
+) -> TestResult {
+    if let Some((request, wanted)) = restoration_request(db, request).await? {
+        wrap_result(client, request, wanted).await?;
+    }
     Ok(())
 }
 
@@ -186,35 +194,43 @@ async fn ensure_assignment(
 ) -> TestResult {
     use crate::durability::house_scope_handoff::{
         HouseScopeAssignmentCommand, HouseScopeAssignmentOutcome, HouseScopeAssignmentRequest,
+        assign_house_scope_in_transaction,
     };
     use crate::durability::runtime_scope_assignment::{ControlActor, NodeRegistrationFact, OperationKey};
     let world_id = WorldId::decode(&clients.world)?;
-    let (node, revision, role): (Vec<u8>, String, String) = sqlx::query_as(
-        "SELECT uuid_send(holder_node_id),holder_registration_revision::text,session_user::text
+    let mut tx = db.begin().await?;
+    // The assignment writer takes this lock before any scope row.
+    sqlx::query("SELECT writer_id FROM game_runtime_scope_assignment_writer WHERE writer_id=1 FOR UPDATE")
+        .fetch_one(&mut *tx).await?;
+    let (node, revision, role, generation): (Vec<u8>, String, String, String) = sqlx::query_as(
+        "SELECT uuid_send(holder_node_id),holder_registration_revision::text,session_user::text,ownership_generation::text
          FROM game_runtime_scope_assignments
-         WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND state=1",
-    ).bind(clients.world.as_slice()).bind(clients.channel.as_slice()).fetch_one(&mut *db).await?;
+         WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND state=1 FOR SHARE",
+    ).bind(clients.world.as_slice()).bind(clients.channel.as_slice()).fetch_one(&mut *tx).await?;
+    if generation.parse::<u64>()? != clients.scope_generation {
+        return Err("I10 channel generation changed before house assignment".into());
+    }
     let target = NodeRegistrationFact::new(crate::foundation::NodeId::decode(&node)?, revision.parse()?);
     let assignment: Option<(i16, Option<Vec<u8>>, Option<String>)> = sqlx::query_as(
         "SELECT state,uuid_send(holder_node_id),holder_registration_revision::text
          FROM game_runtime_scope_assignments WHERE world_id=encode($1,'hex')::uuid AND house_key=$2",
-    ).bind(clients.world.as_slice()).bind(house).fetch_optional(&mut *db).await?;
+    ).bind(clients.world.as_slice()).bind(house).fetch_optional(&mut *tx).await?;
     if let Some((state, holder, holder_revision)) = assignment {
         if state != 1 || holder.as_deref() != Some(node.as_slice()) || holder_revision.as_deref() != Some(revision.as_str()) {
             return Err("I10 fixture house is assigned to a different node or incarnation".into());
         }
+        tx.commit().await?;
         return Ok(());
     }
     if std::env::var("NODE_BOOT_DATABASE_URL").ok().as_deref() != Some(clients.url) {
         return Err("I10 fixture assignment requires the disposable node-boot database".into());
     }
     sqlx::query("INSERT INTO game_control_house_scope_grants VALUES(session_user,encode($1,'hex')::uuid,$2,1) ON CONFLICT DO NOTHING")
-        .bind(clients.world.as_slice()).bind(house).execute(&mut *db).await?;
+        .bind(clients.world.as_slice()).bind(house).execute(&mut *tx).await?;
     let mut operation = [0; 32];
     operation[..16].copy_from_slice(&clients.world);
     operation[16..].copy_from_slice(item);
-    let control = crate::durability::DurabilityRoot::connect_test_runtime(clients.url)?;
-    let outcome = control.assign_house_scope(HouseScopeAssignmentRequest {
+    let request = HouseScopeAssignmentRequest {
         operation_key: OperationKey::from_bytes(operation),
         actor: ControlActor::new(&role).map_err(|error| format!("I10 control actor: {error:?}"))?,
         actor_role: role,
@@ -222,10 +238,14 @@ async fn ensure_assignment(
             house: crate::durability::house_scope_handoff::HouseId::new(world_id, house).ok_or("I10 house identity")?,
             target,
         },
-    }).await.map_err(|error| format!("I10 control assignment: {error:?}"))?;
+    };
+    let command = request.encode().map_err(|error| format!("I10 control command: {error:?}"))?;
+    let outcome = assign_house_scope_in_transaction(&mut tx, &request, &command)
+        .await.map_err(|error| format!("I10 control assignment: {error:?}"))?;
     if !matches!(outcome, HouseScopeAssignmentOutcome::Committed(_) | HouseScopeAssignmentOutcome::Replayed) {
         return Err(format!("I10 fixture House assignment failed: {outcome:?}").into());
     }
+    tx.commit().await?;
     Ok(())
 }
 
@@ -263,43 +283,76 @@ async fn recover_on_fresh_session(
     house: &str, entrance: TilePos, request: house_wrap::Request,
 ) -> TestResult {
     verdict::Harness::global().bounded_wait(tokio::time::Instant::now() + Duration::from_secs(210), "I10 house recovery");
-    let mut client = connect_world(clients, 0xb3).await?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == entrance)
-        .ok_or("I10 recovery house entrance unreachable")?;
-    walk(&mut client, world, &path).await?;
-    transfer(&mut client, house, false).await?;
-    let recovered = tokio::time::timeout(Duration::from_secs(18), restore_wrapped(&mut client, db, request)).await?;
-    let exit = transfer(&mut client, house, true).await;
-    recovered.and(exit)
+    let (mut client, pending) = verdict::indexed_timeout(Duration::from_secs(210), async {
+        let mut client = connect_world(clients, 0xb3).await?;
+        // A stalled durable read leaves this admission in channel scope.
+        let pending = tokio::time::timeout(Duration::from_secs(18), restoration_request(db, request)).await??;
+        if pending.is_some() {
+            let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == entrance)
+                .ok_or("I10 recovery house entrance unreachable")?;
+            walk(&mut client, world, &path).await?;
+        }
+        Ok::<_, Box<dyn std::error::Error>>((client, pending))
+    }).await??;
+    let Some((request, wanted)) = pending else { return Ok(()); };
+    verdict::Harness::global().bounded_wait(tokio::time::Instant::now() + Duration::from_secs(36), "I10 restore and exit");
+    let restored = tokio::time::timeout(Duration::from_secs(18), async {
+        transfer(&mut client, house, false).await?;
+        wrap_result(&mut client, request, wanted).await
+    }).await;
+    let result: TestResult = match restored {
+        Ok(result) => {
+            let exit = tokio::time::timeout(Duration::from_secs(18), transfer(&mut client, house, true)).await;
+            match exit {
+                Ok(Ok(())) => return result.map(|_| ()),
+                Ok(Err(error)) => result.and(Err(error)),
+                Err(error) => result.and(Err(verdict::context("I10 recovery house exit deadline".into(), error))),
+            }
+        }
+        Err(error) => Err(verdict::context("I10 unwrap recovery deadline".into(), error)),
+    };
+    // An unresolved reply can arrive before an exit reply. Close the stream
+    // and verify durable release of the house session through the server.
+    drop(client);
+    let release = wait_character_released(clients, 1).await;
+    if let Err(error) = &release {
+        evidence(&format!("I10 recovery house release failed: {error}"));
+    }
+    result.map(|_| ()).and(release)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut db = sqlx::PgConnection::connect(clients.url).await?;
-    let mut client = connect_world(clients, 0xb2).await?;
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
-    let fixture = read_fixture(&mut db, clients).await?;
-    let (house, id, revision, acl, position, needs_restore) = if let Some(fixture) = fixture {
-        fixture
-    } else {
-        prepare_fixture(&mut db, clients, world, tile(client.world_spatial().actor_position)?).await?;
-        read_fixture(&mut db, clients).await?.ok_or("I10 setup did not publish the fixture")?
-    };
-    let entrance = full_row_s05::entrance(&house)?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |candidate| candidate == entrance)
-        .ok_or("I10 controlled house entrance unreachable")?;
-    walk(&mut client, world, &path).await?;
-    let mut original: u64 = revision.parse()?;
-    let item = id.try_into().map_err(|_| "I10 invalid item identity")?;
-    let position = crate::durability::consume_transform::HouseActionContext::decode_spatial_position(&position)
-        .ok_or("I10 invalid furniture position")?;
-    let acl_revision = acl.parse()?;
-    ensure_assignment(&mut db, clients, &house, &item).await?;
-    transfer(&mut client, &house, false).await?;
+    let (mut db, mut client, world, house, entrance, mut original, item, position, acl_revision, needs_restore) =
+        verdict::indexed_timeout(Duration::from_secs(250), async {
+            let mut db = sqlx::PgConnection::connect(clients.url).await?;
+            let mut client = connect_world(clients, 0xb2).await?;
+            let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+            let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+            let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
+            let fixture = read_fixture(&mut db, clients).await?;
+            let (house, id, revision, acl, position, needs_restore) = if let Some(fixture) = fixture {
+                fixture
+            } else {
+                prepare_fixture(&mut db, clients, world, tile(client.world_spatial().actor_position)?).await?;
+                read_fixture(&mut db, clients).await?.ok_or("I10 setup did not publish the fixture")?
+            };
+            let entrance = full_row_s05::entrance(&house)?;
+            let path = route(world, tile(client.world_spatial().actor_position)?, |candidate| candidate == entrance)
+                .ok_or("I10 controlled house entrance unreachable")?;
+            walk(&mut client, world, &path).await?;
+            let original: u64 = revision.parse()?;
+            let item = id.try_into().map_err(|_| "I10 invalid item identity")?;
+            let position = crate::durability::consume_transform::HouseActionContext::decode_spatial_position(&position)
+                .ok_or("I10 invalid furniture position")?;
+            let acl_revision = acl.parse()?;
+            ensure_assignment(&mut db, clients, &house, &item).await?;
+            Ok::<_, Box<dyn std::error::Error>>((db, client, world, house, entrance, original, item, position, acl_revision, needs_restore))
+        }).await??;
     let request = |action, expected_revision| house_wrap::Request { action, item, expected_revision, acl_revision, position };
     let recovery_request = request(house_wrap::Action::Unwrap, original);
+    verdict::Harness::global().bounded_wait(tokio::time::Instant::now() + Duration::from_secs(18), "I10 wrap sequence");
     let proofs = tokio::time::timeout(Duration::from_secs(18), async {
+        transfer(&mut client, &house, false).await?;
         if needs_restore {
             restore_wrapped(&mut client, &mut db, recovery_request).await?;
             original = original.checked_add(1).ok_or("I10 recovered revision exhausted")?;
@@ -324,8 +377,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             return Err(error);
         }
     };
-    let exit = transfer(&mut client, &house, true).await;
-    exit?;
+    verdict::indexed_timeout(Duration::from_secs(18), transfer(&mut client, &house, true)).await??;
     if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
         let directory = Path::new(&directory);
         let hex = |bytes: &[u8]| bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();

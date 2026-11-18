@@ -82,11 +82,12 @@ class ClientShardProvenance(unittest.TestCase):
                     self.assertIn("prerequisite", source)
                 self.assertNotIn("completed_prerequisite", source)
 
-    def test_twist_capture_is_inside_its_own_death_journey(self):
+    def test_twist_capture_uses_the_death_just_proved(self):
         full = (PHASES / "full_e2ef6.rs").read_text()
         death = full[full.index("async fn blessing_death("):full.index("async fn blessing_services(")]
-        self.assertIn("client_row_c20c::capture_receipt", death)
-        self.assertIn("expected_occurrence", death)
+        self.assertIn("*twist_death = Some((before, after))", death)
+        self.assertIn("capture_twist(clients, twist_death).await", full)
+        self.assertIn("client_row_c20c::capture_receipt(&mut capture, expected_occurrence)", full)
 
     def test_exiva_cleanup_has_its_own_release_budget(self):
         source = (PHASES / "client_row_c05.rs").read_text()
@@ -97,7 +98,7 @@ class ClientShardProvenance(unittest.TestCase):
     def test_wrap_reconciliation_precedes_house_exit(self):
         source = (PHASES / "client_row_i10.rs").read_text()
         recovery = source.split("async fn recover_on_fresh_session(")[1].split("async fn journey(")[0]
-        self.assertLess(recovery.index("restore_wrapped("), recovery.index("let exit = transfer"))
+        self.assertLess(recovery.index("wrap_result("), recovery.index("transfer(&mut client, house, true)"))
         self.assertIn("recover_on_fresh_session(clients", source.split("let proofs =")[1])
 
     def test_shield_denominator_comes_from_control_hit(self):
@@ -165,6 +166,45 @@ class QualificationReReview(unittest.TestCase):
         self.assertNotIn("capture_inventory(&mut client)?", source)
         self.assertNotIn("capture_receipt(&mut client, expected_occurrence).await?", source)
         self.assertIn("capture_result", source)
+
+
+    def test_twist_capture_uses_post_cleanup_session_and_budget(self):
+        source = self.source("full_e2ef6")
+        death = source.split("async fn blessing_death(")[1].split("async fn blessing_services(")[0]
+        self.assertNotIn("capture_receipt(", death)
+        self.assertNotIn("durable_death_occurrence(", death)
+        capture = source.split("async fn capture_twist(")[1].split("async fn blessing_death(")[0]
+        self.assertIn("indexed_timeout(", capture)
+        self.assertIn("connect_world(", capture)
+
+    def test_progression_requires_an_observed_unlock(self):
+        journey = self.source("full_e2ef18").split("async fn journey(")[1]
+        self.assertNotIn("no-unlock-at-level", journey)
+        self.assertIn("if eligible.is_empty()", journey)
+        self.assertIn("after.stats.level >= unlock_level", journey)
+
+    def test_ring_recovery_outlives_the_sample_deadline(self):
+        source = self.source("client_row_i15")
+        packet = source.split("async fn run_packet(")[1].split("fn capture(")[0]
+        self.assertNotIn("indexed_timeout(", packet)
+        sample, recovery = source.split("if recover_ring {", 1)
+        self.assertIn("timeout_at(sample_deadline, async {", sample)
+        self.assertIn("restore_after_reconnect(", recovery)
+
+    def test_house_restore_timeout_waits_for_durable_release(self):
+        source = self.source("client_row_i10")
+        recovery = source.split("async fn recover_on_fresh_session(")[1].split("async fn journey(")[0]
+        self.assertIn("drop(client);", recovery)
+        self.assertIn("wait_character_released(clients, 1).await", recovery)
+        self.assertNotIn("restore_wrapped(&mut client, db, request)).await?", recovery)
+
+    def test_house_assignment_writes_share_the_channel_generation_lock(self):
+        source = self.source("client_row_i10")
+        assignment = source.split("async fn ensure_assignment(")[1].split("type PlacedOven")[0]
+        self.assertIn("FOR SHARE", assignment)
+        self.assertIn("clients.scope_generation", assignment)
+        self.assertIn("assign_house_scope_in_transaction(&mut tx", assignment)
+        self.assertIn("tx.commit().await?", assignment)
 
 
 if __name__ == "__main__":

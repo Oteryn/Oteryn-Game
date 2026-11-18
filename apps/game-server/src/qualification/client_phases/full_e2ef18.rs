@@ -320,6 +320,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let old_session = client.join_snapshot().game_session_id;
     let baseline = progress(&mut client).await?;
     let spells_before = learned(&mut client)?;
+    let unlock_level = spells_before.iter()
+        .filter(|spell| !spell.learned && spell.level > baseline.stats.level)
+        .map(|spell| spell.level)
+        .min().ok_or("step=automatic-spell-learning observed=no-upcoming-unlock need=catalog-delta")?;
 
     let own = client
         .world_entities()
@@ -358,7 +362,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         if melee_progress(&baseline.skills, &after.skills) {
             row.pass("melee-skill-progress", format!("before={:?} after={:?}", baseline.skills.skills, after.skills.skills));
         }
-        if after.stats.level > baseline.stats.level {
+        if after.stats.level != previous.stats.level
+            && (previous.stats.level.checked_add(1) != Some(after.stats.level)
+                || after.vitals.max_health <= previous.vitals.max_health
+                || after.vitals.max_mana < previous.vitals.max_mana)
+        {
+            return Err(format!("step=level-and-maxima observed=before-{previous:?}/after-{after:?} need=level+1-and-vital-maxima").into());
+        }
+        if after.stats.level >= unlock_level {
             levelled = Some(after);
         }
         previous = after;
@@ -367,7 +378,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         }
     }
     let reached = levelled.ok_or("step=level-and-maxima observed=no-level")?;
-    if reached.stats.level != baseline.stats.level + 1
+    if reached.stats.level != unlock_level
         || reached.vitals.max_health <= baseline.vitals.max_health
         || reached.vitals.max_mana < baseline.vitals.max_mana
     {
@@ -387,15 +398,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         })
         .map(|spell| spell.name.as_str())
         .collect();
-    let next = spells_after.iter().filter(|spell| !spell.learned && spell.level > reached.stats.level).map(|spell| spell.level).min();
-    if spells_after
-        .iter()
-        .any(|spell| spell.level == reached.stats.level && !spell.learned)
-        && eligible.is_empty()
-    {
+    if eligible.is_empty() {
         return Err(format!("step=automatic-spell-learning observed=no-learned-level-{}-spell need=catalog-delta", reached.stats.level).into());
     }
-    row.pass("automatic-spell-learning", if eligible.is_empty() { format!("no-unlock-at-level-{} next-required-level={next:?}", reached.stats.level) } else { format!("new-level-spells={eligible:?}") });
+    row.pass("automatic-spell-learning", format!("new-level-spells={eligible:?}"));
 
     ordinary_logout(&mut client).await?;
     drop(client);
