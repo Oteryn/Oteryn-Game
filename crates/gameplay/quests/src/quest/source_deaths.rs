@@ -157,11 +157,58 @@ fn documents() -> Result<Vec<Document>, String> {
         })
         .collect()
 }
+// Crystal 201189f8 arbaziloth_death.lua:27-39. The first kill raises the
+// door stage only when it is still below one, including for imported saves.
+fn arbaziloth_first_clear_rules() -> [Rule; 3] {
+    const TRACK: &str = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked";
+    let effect = |track, kind: &str, value, set| Effect {
+        track: format!("{TRACK}/{track}"),
+        default: 0,
+        from: Comparison {
+            kind: kind.into(),
+            value,
+        },
+        set: Some(set),
+        add: None,
+    };
+    let rule = |name, effects| Rule {
+        creature: "oteryn:creature.arbaziloth".into(),
+        transition: format!("oteryn:quest-transition/native/no_rest_for_the_wicked/{name}"),
+        effects,
+        room: None,
+        top_damage_only: false,
+        define_transition: true,
+        epoch_tracks: None,
+        quest: "oteryn:quest.no_rest_for_the_wicked_quest".into(),
+    };
+    [
+        rule(
+            "first_clear",
+            vec![
+                effect("kill_arbaziloth/questline", "lt", 2, 2),
+                effect("forgemaster_door/questline", "lt", 1, 1),
+            ],
+        ),
+        rule(
+            "first_clear_with_door_progress",
+            vec![
+                effect("kill_arbaziloth/questline", "lt", 2, 2),
+                Effect {
+                    set: None,
+                    add: Some(0),
+                    ..effect("forgemaster_door/questline", "ge", 1, 0)
+                },
+            ],
+        ),
+        rule("start_questlog", vec![effect("questlog", "lt", 1, 1)]),
+    ]
+}
+
 pub fn rules() -> Result<&'static [Rule], &'static str> {
     static RULES: OnceLock<Result<Vec<Rule>, String>> = OnceLock::new();
     RULES
         .get_or_init(|| {
-            let mut rules = Vec::new();
+            let mut rules = Vec::from(arbaziloth_first_clear_rules());
             for doc in documents()? {
                 for mut rule in doc.rules {
                     // Already owned atomically by character_hazard/primal.rs; never issue it twice.
