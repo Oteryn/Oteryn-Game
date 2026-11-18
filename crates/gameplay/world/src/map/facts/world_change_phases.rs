@@ -2,8 +2,8 @@
 use super::*;
 
 /// Apply only after the existing World owner has resolved the current admitted
-/// Mage stage in its fenced physical turn. `closed` is stage4, five minutes after
-/// the credited Raging Mage death. Reset boots a fresh base map.
+/// Mage stage and post-save delay in its fenced physical turn. The entrance
+/// also closes at stage 4, five minutes after the credited Raging Mage death.
 impl BundleFacts {
     pub fn project_mage_tower_entry(&self, base: &super::super::WorldBase, closed: bool) -> bool {
         let at = TilePos {
