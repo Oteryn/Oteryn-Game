@@ -477,9 +477,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Err(());
         };
         let minimum_level = familiar_login_minimum_level(profile).map_err(|_| ())?;
+        // First entry runs before the session initializes policy-bound progression.
         // Below the login level gate, a Character with no persisted familiar projection
-        // has nothing to restore. This includes a newly bootstrapped Character whose
-        // policy-bound progression and Premium access are still unavailable.
+        // has nothing to restore, and Login cannot grant a vocation look or summon.
         let nothing_to_restore = owned.level() < minimum_level
             && self
                 .root
