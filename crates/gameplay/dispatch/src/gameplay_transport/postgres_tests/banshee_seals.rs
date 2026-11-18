@@ -566,15 +566,23 @@ async fn exercise_sacrifice(
         "SELECT count(*) FROM game_character_quest_tracks WHERE quest_key=$1 AND track_key IN ($2,$3) AND value=1",
     ).bind(QUEST).bind(TRACK).bind(DOOR).fetch_one(&h.pool).await?;
     assert_eq!(committed, 2);
-    let remaining = sqlx::query_scalar::<_, i16>(
-        "SELECT fluid_subtype FROM game_item_fluid_splashes ORDER BY fluid_subtype LIMIT 3",
+    let remaining: Vec<(i16, Vec<u8>)> = sqlx::query_as(
+        "SELECT fluid_subtype, placement FROM game_item_fluid_splashes ORDER BY fluid_subtype LIMIT 3",
     )
     .fetch_all(&h.pool)
     .await?;
+    let bundle = owner.bundle_map().ok_or("map")?.overlay.base().digest();
+    let splash = |subtype, x| -> TestResult<(i16, Vec<u8>)> {
+        let key = oteryn_world_bundle::bundle::placement_key(-14, x, 31892, 1)
+            .ok_or("offering placement")?;
+        let mut placement = bundle.to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        Ok((subtype, placement))
+    };
     assert_eq!(
         remaining,
-        [1, 5],
-        "the StepIn leaves water on the altar and blood on the neighboring tile"
+        [splash(1, 32243)?, splash(5, 32245)?],
+        "only the altar's blood is consumed"
     );
     Ok(())
 }
