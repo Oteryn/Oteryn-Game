@@ -244,6 +244,10 @@ pub type Cell = (i32, i32, i32);
 /// per step.
 pub trait CellBlocker: Sync {
     fn blocks(&self, cell: LogicalCell) -> bool;
+    /// An exact callback owns entry onto this otherwise blocked source tile.
+    fn permits_blocked_step_cell(&self, _cell: LogicalCell) -> bool {
+        false
+    }
     /// An exact, unambiguous conditional callback owns this native portal's landing.
     /// Default movement retains the bundle teleport. Rechecked with the sealed proof.
     fn suppresses_native_teleport(&self, _cell: LogicalCell) -> bool {
@@ -726,16 +730,23 @@ fn destination(
     // A closed door blocks the entered tile and every tile a floor change resolves onto
     // before any teleport on it applies (WORLD-INTERACTION-0 §6.6); `landable` guards the
     // teleport destination.
+    let (dx, dy) = direction.delta();
+    let entry = (origin.x + dx, origin.y + dy, floor);
     let ground = ground_of(cells);
     let ground = |cell: Cell| {
-        if closed.blocks(LogicalCell {
+        let at = LogicalCell {
             x: cell.0,
             y: cell.1,
             z: cell.2,
-        }) {
-            Ground::Blocked
-        } else {
-            ground(cell)
+        };
+        if closed.blocks(at) {
+            return Ground::Blocked;
+        }
+        match ground(cell) {
+            Ground::Blocked if cell == entry && closed.permits_blocked_step_cell(at) => {
+                Ground::Walkable
+            }
+            current => current,
         }
     };
     let ((x, y, z), starts_stairhop) = resolve_landing_with_teleports(

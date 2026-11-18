@@ -1693,6 +1693,10 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
     fn blocks(&self, cell: crate::content::LogicalCell) -> bool {
         self.inner.blocks(cell)
     }
+    fn permits_blocked_step_cell(&self, cell: crate::content::LogicalCell) -> bool {
+        self.map
+            .is_some_and(|map| faction_entry::owns_step_cell(map, cell))
+    }
     fn suppresses_native_teleport(&self, cell: crate::content::LogicalCell) -> bool {
         let Some(map) = self.map else {
             return false;

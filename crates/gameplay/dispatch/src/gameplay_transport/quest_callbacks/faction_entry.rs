@@ -18,21 +18,41 @@ fn entrance(map: &BundleMap, at: MovementLocalPosition) -> Option<Entrance> {
     };
     let pos = native(at)?;
     let tile = map.overlay.base().tile(pos.x, pos.y, pos.floor)?;
-    let energy = (0..tile.depths().iter().filter(|depth| **depth == 0).count()).any(|ordinal| {
-        u8::try_from(ordinal)
-            .ok()
-            .and_then(|ordinal| placement_key(pos, ordinal))
-            .is_some_and(|key| {
-                !map.facts.base_hidden(key)
-                    && map
-                        .facts
-                        .quest_callback_matches(key, None, None, Some(22675))
-            })
-    });
+    // The imported entrance is blocked ground. Only the captured lava and
+    // energy tile may take the callback path, so a newly placed obstacle is
+    // still authoritative.
+    if tile.depths() != [0, 0] {
+        return None;
+    }
+    let mut keys = [placement_key(pos, 0)?, placement_key(pos, 1)?];
+    let matches = |key, appearance| {
+        !map.facts.base_hidden(key)
+            && map
+                .facts
+                .quest_callback_matches(key, None, None, Some(appearance))
+    };
+    if matches(keys[1], 22675) {
+        keys.swap(0, 1);
+    }
+    let energy = matches(keys[0], 22675) && matches(keys[1], 5068);
     energy.then_some(Entrance {
         faction,
         destination,
         refusal_offset,
+    })
+}
+
+pub(super) fn owns_step_cell(map: &BundleMap, cell: crate::content::LogicalCell) -> bool {
+    i16::try_from(cell.z).ok().is_some_and(|floor| {
+        entrance(
+            map,
+            MovementLocalPosition {
+                x: cell.x,
+                y: cell.y,
+                floor,
+            },
+        )
+        .is_some()
     })
 }
 
