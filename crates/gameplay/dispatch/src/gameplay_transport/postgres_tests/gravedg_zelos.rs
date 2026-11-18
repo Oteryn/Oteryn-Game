@@ -643,6 +643,112 @@ pub(super) async fn exercise(
             );
         }
     }
+    let fetters = {
+        let runtime = owner.runtime.lock().await;
+        runtime
+            .current_live_creature_census()
+            .map_err(debug)?
+            .into_iter()
+            .filter(|&actor| runtime.matches_live_creature_identity(actor, fetter.as_bytes()))
+            .collect::<Vec<_>>()
+    };
+    for (command, actor) in (300..).zip(fetters) {
+        super::engenc2_cults::kill(owner, admitted, actor, fetter, command).await?;
+    }
+    tick_at(owner, owner.owner_now().get() + 200_000).await;
+    let live = async |key: &str| -> TestResult<_> {
+        let runtime = owner.runtime.lock().await;
+        find(&runtime, key)
+    };
+    let rewar = live(KNIGHTS[2]).await?.ok_or("vulnerable Rewar")?;
+    super::engenc2_cults::kill(owner, admitted, rewar, KNIGHTS[2], 310).await?;
+    let blood = "oteryn:creature.vampiric_blood";
+    for command in 320..340 {
+        if live(KNIGHTS[3]).await?.is_none() {
+            break;
+        }
+        tick_at(owner, owner.owner_now().get() + 10_000_000).await;
+        let add = live(blood).await?.ok_or("replenished Vampiric Blood")?;
+        super::engenc2_cults::kill(owner, admitted, add, blood, command).await?;
+    }
+    assert!(
+        live(KNIGHTS[3]).await?.is_none(),
+        "drowning defeats the Red Knight"
+    );
+    tick_at(owner, now + 6 * 60 * 1_000_000).await;
+    let nargol = live(KNIGHTS[1]).await?.ok_or("restored Nargol")?;
+    super::engenc2_cults::kill(owner, admitted, nargol, KNIGHTS[1], 340).await?;
+    tick_at(owner, owner.owner_now().get()).await;
+    let mass_actor = live(mass).await?.ok_or("regenerating mass")?;
+    let ritual_due = owner.owner_now().get() + 300_000;
+    super::engenc2_cults::kill(owner, admitted, mass_actor, mass, 341).await?;
+    assert_eq!(
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .encounter_phases
+            .next_due_us(),
+        Some(ritual_due),
+        "the last knight death schedules the gate without an extra owner tick"
+    );
+
+    tick_at(owner, ritual_due - 1).await;
+    let (closed, _) = owner
+        .ordinary_paced_step(
+            player,
+            admitted.game_session_id,
+            StepDirection::North,
+            None,
+            None,
+        )
+        .await;
+    assert_eq!(closed.disposition, StepDisposition::Moved);
+    {
+        let runtime = owner.runtime.lock().await;
+        let at = runtime
+            .read_actor_position(player)
+            .map_err(debug)?
+            .position();
+        assert_eq!(
+            (at.x, at.y, at.floor),
+            (116, 117, 7),
+            "gate holds for 300 ms"
+        );
+    }
+    tick_at(owner, ritual_due).await;
+    tick_at(owner, ritual_due + 2_000_000).await;
+    let (opened, _) = owner
+        .ordinary_paced_step(
+            player,
+            admitted.game_session_id,
+            StepDirection::North,
+            None,
+            None,
+        )
+        .await;
+    assert_eq!(opened.disposition, StepDisposition::Moved);
+    let king_key = "oteryn:creature.king_zelos";
+    let king = live(king_key).await?.ok_or("King Zelos")?;
+    {
+        let runtime = owner.runtime.lock().await;
+        let at = runtime
+            .read_actor_position(player)
+            .map_err(debug)?
+            .position();
+        assert_eq!(
+            (at.x, at.y, at.floor),
+            (115, 114, 7),
+            "ritual unlocks the north gate"
+        );
+    }
+    super::engenc2_cults::kill(owner, admitted, king, king_key, 342).await?;
+    {
+        let runtime = owner.runtime.lock().await;
+        let health = runtime.companion_snapshot(king).map_err(debug)?;
+        assert_eq!(health.health, health.maximum_health.div_ceil(2));
+    }
     tick_at(owner, now + 24 * 60 * 1_000_000).await;
     let runtime = owner.runtime.lock().await;
     for knight in KNIGHTS.into_iter().chain([

@@ -346,10 +346,8 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
             };
             for index in 2..party_size {
                 additional.push(
-                    super::gravedg_zelos::admit_party_member(
-                        &h, &deps, &owner, &admitted, index,
-                    )
-                    .await?,
+                    super::gravedg_zelos::admit_party_member(&h, &deps, &owner, &admitted, index)
+                        .await?,
                 );
             }
             let unstaged = if matches!(scenario, PhaseScenario::Zelos { full_party: true }) {
@@ -418,8 +416,7 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                 PhaseScenario::FivePlayerCredit { azaram } => {
                     let mut party = vec![admitted, second.ok_or("second admitted player")?];
                     party.extend(additional);
-                    super::gravedg_lich_knights::exercise_five(&h, &owner, &party, azaram)
-                        .await?;
+                    super::gravedg_lich_knights::exercise_five(&h, &owner, &party, azaram).await?;
                     false
                 }
                 PhaseScenario::LordAzaram => {
