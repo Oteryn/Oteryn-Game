@@ -300,6 +300,18 @@ pub(super) async fn exercise_wave(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(receipts, 1);
+    let placed: i64 =
+        sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+            .bind(NETS)
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(placed, 5);
+    let nets_left: i64 = sqlx::query_scalar(
+        "SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i12186' AND lifecycle=1",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(nets_left, 0);
     drain_next(owner).await?;
     let runtime = owner.runtime.lock().await;
     let live = runtime
@@ -314,6 +326,11 @@ pub(super) async fn exercise_wave(
     );
     drop(runtime);
     drain_next(owner).await?;
+    let runtime = owner.runtime.lock().await;
+    assert!(!live.iter().any(|actor| {
+        runtime.matches_live_creature_identity(*actor, b"oteryn:creature.travelling_merchant")
+    }));
+    drop(runtime);
     let map = owner.bundle_map().ok_or("map")?;
     assert!(
         map.facts
