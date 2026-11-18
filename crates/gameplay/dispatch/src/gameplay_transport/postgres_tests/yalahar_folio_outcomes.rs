@@ -54,7 +54,7 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
                 "effects": {"random_use": {
                     "group": "oteryn:quest-random-use/fixture-yalahar/folio",
                     "weight": 1, "spawn_at_user": (!relocation).then_some("oteryn:creature.enraged_bookworm"),
-                    "user_effect": if relocation { 11 } else { 34 }
+                    "user_effect": if relocation { 11 } else { 32 }
                 }},
                 "teleport": relocation.then_some(LANDING),
                 "storage": [{"track": COUNT, "minimum": 0, "maximum": 7, "set": 0}],

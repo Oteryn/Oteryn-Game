@@ -194,6 +194,16 @@ impl SelfTarget {
     }
 }
 
+/// An ordinary carried USE relocates the actor to the destination indexed by
+/// its transaction's draw. The equipped ring is verified before consumption.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct CarriedRelocation {
+    pub ring: String,
+    pub destinations: Vec<super::world_callbacks::Position>,
+    pub effect: u16,
+}
+
 /// One paid source occurrence advances the existing Character achievement owner.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -260,6 +270,8 @@ pub struct RewardCallback {
     /// Exact current self entity, inside the source-authored native area.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub self_target: Option<SelfTarget>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub carried_relocation: Option<CarriedRelocation>,
     /// Read-only source corpse sampling retains its native decay and contents.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub corpse_target: Option<CorpseTarget>,
@@ -792,7 +804,27 @@ fn validate_document_with_capacity(
             || op_keys.len() != c.state_ops.len()
             || !op_keys.is_disjoint(&tracks)
             || c.state_ops.iter().any(|s| !s.valid())
-            || (draw_count > 0 && (c.carried_item.is_some() || c.world_claim.is_some()))
+            || (draw_count > 0
+                && ((c.carried_item.is_some() && c.carried_relocation.is_none())
+                    || c.world_claim.is_some()))
+            || c.carried_relocation.as_ref().is_some_and(|route| {
+                c.carried_item.is_none()
+                    || c.self_target.is_none()
+                    || c.carried_target.is_some()
+                    || c.creature_target.is_some()
+                    || c.peer_requires.is_some()
+                    || c.world_claim.is_some()
+                    || !c.participants.is_empty()
+                    || c.give.is_some()
+                    || c.carried_exchange
+                    || c.state_ops.len() != 1
+                    || draw_sides.map(usize::from) != Some(route.destinations.len())
+                    || !(2..=8).contains(&route.destinations.len())
+                    || route.destinations.iter().collect::<BTreeSet<_>>().len() != route.destinations.len()
+                    || route.destinations.iter().any(|p| !(-15..=0).contains(&p.floor))
+                    || !slug(&route.ring, "oteryn:item.", b"._/:-", 256)
+                    || !(1..=255).contains(&route.effect)
+            })
             || (!c.draw_replies.is_empty()
                 && (draw_count != 1
                     || draw_sides.map(usize::from) != Some(c.draw_replies.len())

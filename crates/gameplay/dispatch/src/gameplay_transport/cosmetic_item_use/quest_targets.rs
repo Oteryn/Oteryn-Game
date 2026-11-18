@@ -4,7 +4,7 @@ use oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback;
 use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseIntent};
 
 pub(super) fn accepts(callback: &RewardCallback, intent: &UseIntent) -> bool {
-    if intent.use_with_position.is_some() {
+    if callback.carried_relocation.is_some() || intent.use_with_position.is_some() {
         return false;
     }
     if callback.carried_target.is_some() {

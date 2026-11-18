@@ -11,6 +11,7 @@ use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::quest_state::QuestTransitionRequest;
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback;
+use oteryn_protocol_oteryn::item_view::{EquipmentSlot, durable_slot};
 
 mod claim;
 pub(crate) use claim::QuestMintClaim;
@@ -141,6 +142,29 @@ pub(crate) async fn apply(
         })
     {
         return Ok(false);
+    }
+    if let Some(route) = &callback.carried_relocation {
+        // Crystal 6-mind-travel.lua:21-30. An inventory copy of the ring does
+        // not authorize the potion. The held Character root serializes equipment.
+        let slot = durable_slot(EquipmentSlot::Ring).ok_or(DurabilityError::InvalidStoredState)?;
+        let equipped: bool = sqlx::query_scalar(
+            "SELECT EXISTS (
+                 SELECT 1 FROM game_character_equipment_slots e
+                 JOIN game_item_instances i USING (item_instance_id)
+                 WHERE e.character_id=encode($1,'hex')::uuid AND e.world_id=encode($2,'hex')::uuid
+                   AND e.slot=$4 AND i.world_id=e.world_id AND i.lifecycle=1
+                   AND i.definition_family='Item' AND i.definition_production_key=$3
+             )",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+        .bind(&route.ring)
+        .bind(i16::from(slot))
+        .fetch_one(&mut **tx)
+        .await?;
+        if !equipped {
+            return Ok(false);
+        }
     }
     match (
         callback.creature_target.is_some() || callback.self_target.is_some(),

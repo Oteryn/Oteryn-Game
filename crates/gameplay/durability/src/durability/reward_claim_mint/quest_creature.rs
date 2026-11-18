@@ -77,7 +77,6 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             return None;
         }
         let key = callback.creature_target.as_ref();
-        let target = intent.use_with?;
         let lease = runtime
             .bound_attacker_lease(actor, fence.game_session_id)
             .ok()?;
@@ -92,6 +91,17 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
         if let Some(area) = &callback.self_target {
             let visible = runtime.visible_entities();
             let player = visible.players.iter().find(|p| p.actor == actor)?;
+            let target = if callback.carried_relocation.is_some() {
+                if intent.use_with.is_some()
+                    || intent.use_with_map_item.is_some()
+                    || intent.use_with_position.is_some()
+                {
+                    return None;
+                }
+                EntityRef { identity: actor.placement_identity(), generation: player.generation }
+            } else {
+                intent.use_with?
+            };
             if player.actor.placement_identity() != target.identity
                 || player.generation != target.generation
                 || !area.contains(own.x, own.y, own.floor)
@@ -107,6 +117,7 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             });
         }
         let key = key?;
+        let target = intent.use_with?;
         let creature = runtime
             .visible_entities()
             .creatures
@@ -226,7 +237,12 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
                     && match self.target {
                         Target::FreshCorpse => false,
                         Target::Live { entity, .. } => {
-                            intent.use_with == Some(entity) && intent.use_with_map_item.is_none()
+                            intent.use_with_map_item.is_none()
+                                && if callback.carried_relocation.is_some() {
+                                    intent.use_with.is_none()
+                                } else {
+                                    intent.use_with == Some(entity)
+                                }
                         }
                         Target::Corpse { .. } => {
                             intent.use_with.is_none()

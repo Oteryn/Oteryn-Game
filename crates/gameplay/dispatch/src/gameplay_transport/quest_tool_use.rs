@@ -5,7 +5,9 @@ use super::{
     item_ref_admission::NativeItemWeights,
     item_view::ItemKey,
 };
-use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef};
+use crate::foundation::{
+    ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef, MovementLocalPosition,
+};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent};
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -75,8 +77,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 UseDisposition::Rejected
             })));
         }
-        let Some(ItemKey::Instance(source)) = source else {
-            return Ok(None);
+        let source = match (&intent.target, source) {
+            (
+                oteryn_protocol_oteryn::world_object::UseTarget::Item(_),
+                Some(ItemKey::Instance(source)),
+            ) => Some(source),
+            (oteryn_protocol_oteryn::world_object::UseTarget::ItemByDefinition(_), None) => None,
+            _ => return Ok(None),
         };
         let Ok(inventory) = self
             .root
@@ -90,7 +97,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .flat_map(|bag| bag.entries.iter().map(|entry| &entry.item))
             .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
-            .find(|item| item.item_instance_id == source)
+            .find(|item| {
+                super::mount_taming::quest_objects::matches_source(
+                    &intent.target,
+                    source,
+                    item.item_instance_id,
+                    self.active_generation
+                        .and_then(|g| g.native_gameplay())
+                        .and_then(|native| native.item_index())
+                        .and_then(|index| {
+                            index.definition_ref(
+                                &item.definition.family,
+                                &item.definition.production_key,
+                                &item.definition.revision_ref,
+                            )
+                        }),
+                )
+            })
         else {
             return Ok(None);
         };
@@ -101,6 +124,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let bound = callbacks
             .iter()
             .filter(|c| c.carried_item.as_deref() == Some(&item.definition.production_key))
+            .filter(|c| source.is_some() || c.carried_relocation.is_some())
             // Selected two-input recipes retain their own M20 admission owner.
             .filter(|c| c.carried_target.is_none() && !c.fresh_corpse)
             .filter(|c| c.corpse_target.is_some() == corpse.is_some())
@@ -108,6 +132,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if bound.is_empty() {
             return Ok(None);
         }
+        let source = item.item_instance_id;
         if (corpse.is_none() && intent.use_with_map_item.is_some())
             || (corpse.is_some()
                 && (!matches!(
@@ -156,7 +181,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 } else {
                     (c.peer_requires.is_some()
                         || c.creature_target.is_some()
-                        || c.self_target.is_some())
+                        || (c.self_target.is_some() && c.carried_relocation.is_none()))
                         == intent.use_with.is_some()
                 }) && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
@@ -259,6 +284,51 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(|g| g.native_gameplay())
             .ok_or(())?;
         let weights = NativeItemWeights(native).with_wheel(self.premium_coordinator);
+        let route = callback.carried_relocation.as_ref();
+        let route_map = if route.is_some() {
+            Some(self.bundle_map().ok_or(())?)
+        } else {
+            None
+        };
+        let doors = route_map.map(|map| crate::map::floor::BundleDoors(&map.facts));
+        let arrival = if let (Some(route), Some(doors)) = (route, doors.as_ref()) {
+            let runtime = &*creature_runtime.as_ref().ok_or(())?.runtime;
+            let before = runtime.read_actor_position(actor).map_err(|_| ())?;
+            let states = self.states.spell_states.lock().await;
+            let blocked = super::pvp_live::pz_blocked(
+                &states,
+                actor,
+                command.game_session_id,
+                self.owner_now(),
+            );
+            let proofs = route
+                .destinations
+                .iter()
+                .map(|destination| {
+                    crate::map::floor::prepare_quest_callback_teleport_facing(
+                        runtime,
+                        self.movement_cells(),
+                        actor,
+                        command.game_session_id,
+                        before,
+                        MovementLocalPosition {
+                            x: i32::from(destination.x),
+                            y: i32::from(destination.y),
+                            floor: -i16::from(destination.floor),
+                        },
+                        blocked,
+                        doors,
+                        None,
+                    )
+                })
+                .collect::<Result<Vec<_>, _>>();
+            let Ok(proofs) = proofs else {
+                return Ok(Some(outcome(UseDisposition::NotPossible)));
+            };
+            Some((before, proofs))
+        } else {
+            None
+        };
         let use_ = QuestCarriedUse {
             recipe_target: None,
             source,
@@ -269,7 +339,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|_| callback.capture_creature)
             .and_then(|proof| proof.target_actor());
         let capture_key = callback.creature_target.clone();
-        if callback.capture_creature
+        if (callback.capture_creature || route.is_some())
             && let Some(turn) = &creature_runtime
         {
             turn.uncertain.store(true, Ordering::Relaxed);
@@ -299,6 +369,62 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?;
         if let Some(turn) = &mut creature_runtime {
+            if let (
+                Some(route),
+                Some(map),
+                Some((before, proofs)),
+                QuestTransitionOutcome::Committed(receipt),
+            ) = (route, route_map, arrival, &result)
+            {
+                let track = &callback.state_ops.first().ok_or(())?.track;
+                let draw = receipt
+                    .changes
+                    .iter()
+                    .find(|change| &change.track == track)
+                    .ok_or(())?
+                    .after;
+                let index = usize::try_from(draw.checked_sub(1).ok_or(())?).map_err(|_| ())?;
+                let proof = proofs.into_iter().nth(index).ok_or(())?;
+                let position = turn
+                    .runtime
+                    .commit_source_step(proof)
+                    .map_err(|_| ())?
+                    .position();
+                let mut states = self.states.spell_states.lock().await;
+                let now = self.owner_now();
+                states.stage_special_movement_step(
+                    &mut turn.runtime,
+                    map,
+                    actor,
+                    command.game_session_id,
+                    now.get(),
+                    Some(before.position()),
+                    position,
+                    None,
+                );
+                states.stage_underwater_step(
+                    &mut turn.runtime,
+                    actor,
+                    command.game_session_id,
+                    now.get(),
+                    super::paced_movement::underwater_drown::underwater(map, before.position()),
+                    super::paced_movement::underwater_drown::underwater(map, position),
+                );
+                let to = route.destinations.get(index).ok_or(())?;
+                map.facts.emit_movement_effect(
+                    crate::map::overlay::TilePos {
+                        x: to.x,
+                        y: to.y,
+                        floor: to.floor,
+                    },
+                    route.effect,
+                );
+                if let Some(message) = callback.reply.first() {
+                    self.states
+                        .chat
+                        .push_quest_feedback(command.game_session_id, message);
+                }
+            }
             if matches!(result, QuestTransitionOutcome::Committed(_))
                 && let Some(target) = capture_target
             {
