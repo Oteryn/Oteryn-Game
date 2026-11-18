@@ -211,16 +211,14 @@ async fn exercise(admin: String, branch: &str, interrupt_projection: bool) -> Te
         floor: FOLIO.floor,
     };
     let key = crate::map::view::placement_key(tile, 1).ok_or("folio")?;
-    let request = || {
-        let mut placement = world.base().digest().to_vec();
-        placement.extend_from_slice(&key.to_be_bytes());
-        encode_use_intent(&WorldObjectTarget {
-            placement,
-            expected_revision: map.facts.object_revision(key),
-        })
-        .map_err(debug)
-    };
-    let req = request()?;
+    let source_revision = map.facts.object_revision(key);
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let req = encode_use_intent(&WorldObjectTarget {
+        placement,
+        expected_revision: source_revision,
+    })
+    .map_err(debug)?;
     // Pick an occurrence in the authored interval. Production dispatch still
     // selects, validates, commits and projects that interval itself.
     let session = admitted.game_session_id;
@@ -314,7 +312,14 @@ async fn exercise(admin: String, branch: &str, interrupt_projection: bool) -> Te
         assert_eq!(snapshot.tracks().get(CLOCK).copied().unwrap_or(-1), -1);
     }
     assert_eq!(
-        wire(&owner, &mut admitted, command, COMMAND_TYPE_USE_INTENT, req).await?,
+        wire(
+            &owner,
+            &mut admitted,
+            command,
+            COMMAND_TYPE_USE_INTENT,
+            req.clone()
+        )
+        .await?,
         first
     );
     {
@@ -360,7 +365,7 @@ async fn exercise(admin: String, branch: &str, interrupt_projection: bool) -> Te
                 &mut admitted,
                 retry,
                 COMMAND_TYPE_USE_INTENT,
-                request()?,
+                req.clone(),
             )
             .await?;
             assert_eq!(decode_use_result(&reply).map_err(debug)?, disposition);
@@ -373,6 +378,11 @@ async fn exercise(admin: String, branch: &str, interrupt_projection: bool) -> Te
             assert_eq!(snapshot.tracks().get(CLOCK), Some(&quest_now));
         }
     }
+    assert_eq!(
+        map.facts.object_revision(key),
+        source_revision,
+        "personal Folio outcomes leave the shared tile handle current"
+    );
     let receipts: i64 =
         sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1")
             .bind(QUEST)
