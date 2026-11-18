@@ -44,11 +44,15 @@ use crate::durability::item_use::fluid::{
 use crate::durability::item_use::{
     ItemUseError, ItemUseFlaskPlan, ItemUseInventory, ItemUseKind, ItemUseOutcome, ItemUseRequest,
 };
-use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeScopeRefV1};
+use crate::foundation::{
+    ApplicationFacts, ChannelRuntimeV1, ConditionDefinition, ConditionSourceKind, ConditionValues,
+    ExactActorRef, GameSessionId, RuntimeScopeRefV1,
+};
 use crate::interaction_chest_use::entry_chest;
 use crate::spell::Vocation;
 use crate::spell::actor_conditions::eat_food;
 use crate::spell::cast::CharacterCastFacts;
+use oteryn_gameplay_domain::domain::condition::StatusKind;
 use oteryn_protocol_oteryn::world_map::MapDefinition;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
@@ -797,7 +801,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             other: None,
         };
-        self.commit_fluid(actor, command, fence, request, drink_restore(fluid))
+        let effect = match fluid {
+            2 | 3 | 13 | 16 => Some(FluidDrinkEffect::Drunk),
+            _ => drink_restore(fluid).map(FluidDrinkEffect::Restore),
+        };
+        self.commit_fluid(actor, command, fence, request, effect)
             .await
     }
 
@@ -1056,16 +1064,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         )
     }
 
-    /// PREPARE, commit and settle of one fluid command; only a known commit applies `restore`.
+    /// PREPARE, commit and settle of one fluid command; only a known commit applies its effect.
     async fn commit_fluid(
         &self,
         actor: ExactActorRef,
         command: &UseCommand,
         fence: CurrentCharacterItemFence,
         request: ItemFluidRequest,
-        restore: Option<ReferencePotionRestore>,
+        effect: Option<FluidDrinkEffect>,
     ) -> Result<UseDisposition, UseDisposition> {
-        self.commit_fluid_at(actor, command, fence, request, None, restore)
+        self.commit_fluid_at(actor, command, fence, request, None, effect)
             .await
     }
 
@@ -1076,7 +1084,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         fence: CurrentCharacterItemFence,
         request: ItemFluidRequest,
         splash: Option<ItemFluidSplash>,
-        restore: Option<ReferencePotionRestore>,
+        effect: Option<FluidDrinkEffect>,
     ) -> Result<UseDisposition, UseDisposition> {
         let session = command.game_session_id;
         let reserved: Vec<[u8; 16]> = std::iter::once(request.change.item_instance_id)
@@ -1092,7 +1100,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             gate.start_drink(self.owner_ms())?;
         }
-        let analyser_supply = restore.as_ref().map(|_| request.change.definition.clone());
+        let analyser_supply = matches!(&effect, Some(FluidDrinkEffect::Restore(_)))
+            .then(|| request.change.definition.clone());
+        let occurrence = DecisionOccurrenceId::from_bytes(request.transaction_id);
         let commit =
             self.root
                 .commit_item_fluid_at(self.character, self.holder, fence, request, splash);
@@ -1109,19 +1119,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
-        if known_commit && let Some(restore) = restore {
-            if let Some(definition) = &analyser_supply {
-                states.analyser.supply(actor, session, definition, 1);
+        if known_commit && let Some(effect) = effect {
+            let now = self.owner_now();
+            match effect {
+                FluidDrinkEffect::Restore(restore) => {
+                    if let Some(definition) = &analyser_supply {
+                        states.analyser.supply(actor, session, definition, 1);
+                    }
+                    apply_effect(
+                        &runtime,
+                        &mut states,
+                        actor,
+                        session,
+                        command.command_id,
+                        &Effect::Potion(vec![restore]),
+                        now.get() / 1_000,
+                    );
+                }
+                FluidDrinkEffect::Drunk => {
+                    if let Some(state) = states.get_mut(&runtime, actor, session) {
+                        apply_alcohol(
+                            &mut state.conditions,
+                            &ApplicationFacts {
+                                now: now.get(),
+                                base_speed: 0,
+                                mana_shield_capacity: 0,
+                                target_reentry_protected: false,
+                                source_reentry_protected: false,
+                                target_is_player: true,
+                                decision_root: &GameplayDecisionRoot::from_bytes(
+                                    runtime.content_pin().server_artifact_digest(),
+                                ),
+                                occurrence,
+                            },
+                        );
+                    }
+                }
             }
-            apply_effect(
-                &runtime,
-                &mut states,
-                actor,
-                session,
-                command.command_id,
-                &Effect::Potion(vec![restore]),
-                self.owner_ms(),
-            );
         }
         if let Some(gate) = states.item_uses.gate(&runtime, actor, session) {
             gate.settle(
@@ -1212,10 +1246,33 @@ fn fluid_source_subtype(id: u32) -> Option<u8> {
     }
 }
 
+enum FluidDrinkEffect {
+    Restore(ReferencePotionRestore),
+    Drunk,
+}
+
+/// Crystal 201189f8 data-global/scripts/actions/other/fluids.lua:1-2,120-122:
+/// wine, beer, rum and mead apply sixty seconds of drunkenness on drinking.
+fn apply_alcohol(
+    conditions: &mut crate::foundation::ConditionStore<String>,
+    facts: &ApplicationFacts<'_>,
+) {
+    let Some(definition) = ConditionDefinition::new(
+        "oteryn.fluid.drunk",
+        1,
+        ConditionValues::TimedStatus {
+            kind: StatusKind::Drunk,
+            duration_ms: 60_000,
+        },
+    ) else {
+        return;
+    };
+    // The Player condition owner handles replacement and equipment suppression.
+    let _ = conditions.apply(&definition, None, ConditionSourceKind::SelfUse, &[], facts);
+}
+
 /// Crystal `data-global/scripts/actions/other/fluids.lua:130-135`: mana fluid (10)
 /// restores `math.random(50, 150)` mana and life fluid (11) `addHealth(60)`.
-/// The drunk (2, 3, 13, 16) and poison (6) conditions are not modelled
-/// (`PARITY_PENDING`); every other fluid is only drunk.
 fn drink_restore(fluid: u8) -> Option<ReferencePotionRestore> {
     let (resource, min, max) = match fluid {
         10 => (ReferenceRestoreResource::Mana, 50, 150),
