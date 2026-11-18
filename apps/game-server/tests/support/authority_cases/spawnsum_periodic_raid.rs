@@ -58,32 +58,30 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
     assert_eq!(selected.definition.waves[0].entries.len(), 1);
     assert_eq!(selected.definition.waves[0].entries[0].count, 1);
 
-    let tick = |now_ms: i64| async {
-        h.root
-            .check_raid_schedules(
-                &authority,
-                &h.node,
-                RaidSchedulerCheck {
-                    world,
-                    channel,
-                    generation: ScopeOwnershipGeneration::new(1).map_err(fixture::debug)?,
-                    reset_epoch: 1,
-                    now_ms,
-                    bundle_digest: digest,
-                    candidates: vec![RaidScheduleCandidate {
-                        key: key.clone(),
-                        definition: selected.definition.clone(),
-                        eligible: true,
-                        calendar: None,
-                        firing_id,
-                        global_margin_ms: 0,
-                        lua: None,
-                        calendar_window: None,
-                    }],
-                },
-            )
-            .await
-            .map_err(fixture::debug)
+    let generation = ScopeOwnershipGeneration::new(1).map_err(fixture::debug)?;
+    let tick = |now_ms: i64| {
+        h.root.check_raid_schedules(
+            &authority,
+            &h.node,
+            RaidSchedulerCheck {
+                world,
+                channel,
+                generation,
+                reset_epoch: 1,
+                now_ms,
+                bundle_digest: digest,
+                candidates: vec![RaidScheduleCandidate {
+                    key: key.clone(),
+                    definition: selected.definition.clone(),
+                    eligible: true,
+                    calendar: None,
+                    firing_id,
+                    global_margin_ms: 0,
+                    lua: None,
+                    calendar_window: None,
+                }],
+            },
+        )
     };
     assert!(tick(0).await?.firings.is_empty());
     let early = advance_clock(Duration::from_millis(46_799_999)).await?;
