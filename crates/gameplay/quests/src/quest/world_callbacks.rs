@@ -1082,7 +1082,11 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || callback
                 .passages
                 .iter()
-                .any(|p| p.if_present && callback.effects.passages_reset_after_ms.is_none())
+                .any(|p| {
+                    p.if_present
+                        && callback.effects.passages_reset_after_ms.is_none()
+                        && !(callback.effects.reset_after_ms.is_some() && p.replacement.is_some())
+                })
             || unique_storage.len() != callback.storage.len()
             || callback.storage.iter().filter(|s| s.add.is_some()).count() > 1
             || callback.storage.iter().any(|s| {

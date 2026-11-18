@@ -33,6 +33,7 @@ fn scenario_case(
     let worm_punisher = name == super::super::worm_punisher_progress::NAME;
     let source_tile_magic = name == super::super::quest_source_tile_magic::NAME;
     let boreth_cleanup = name == super::super::boreth_death_cleanup::NAME;
+    let lersatio_mirrors = name == super::super::lersatio_mirrors::NAME;
     let marziel_blood = name.starts_with(super::super::marziel_blood_step::NAME);
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
@@ -374,6 +375,8 @@ fn scenario_case(
         super::super::quest_skull_custody::bone_pile()?
     } else if boreth_cleanup {
         callback("unnatural-selection-ray-of-light")?
+    } else if lersatio_mirrors {
+        super::super::lersatio_mirrors::callback()?
     } else if marziel_blood {
         super::super::marziel_blood_step::callback()?
     } else if worm_punisher {
@@ -947,6 +950,8 @@ fn scenario_case(
                 require_state: false,
             });
         world(&physical, trigger)?
+    } else if lersatio_mirrors {
+        super::super::lersatio_mirrors::world(&callback)?
     } else if marziel_blood {
         super::super::marziel_blood_step::world(&callback)?
     } else if worm_punisher {
@@ -1576,6 +1581,8 @@ fn scenario_case(
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
                 13
+            } else if lersatio_mirrors {
+                6
             } else if classic_npc || qd_world || boreth_cleanup || marziel_blood {
                 5
             } else if monk {
@@ -1598,7 +1605,7 @@ fn scenario_case(
         runtime
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
-        if boreth_cleanup || marziel_blood {
+        if boreth_cleanup || lersatio_mirrors || marziel_blood {
             generation
                 .native_gameplay()
                 .ok_or("native encounter policies")?
@@ -3322,6 +3329,8 @@ fn scenario_case(
                 origin,
             ))
             .await?;
+        } else if lersatio_mirrors {
+            Box::pin(super::super::lersatio_mirrors::exercise(&mut owner, &admitted, &h)).await?;
         } else if marziel_blood {
             Box::pin(super::super::marziel_blood_step::exercise(
                 &mut owner, &mut admitted, &h, &authority, name.ends_with("-female"),

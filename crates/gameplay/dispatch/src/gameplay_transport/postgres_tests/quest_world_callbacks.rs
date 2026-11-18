@@ -450,6 +450,10 @@ fn world_cells(
         }
         effect_positions.extend(encounter.monsters.iter().map(|m| m.position));
     }
+    if let Some(group) = &callback.effects.encounter_group {
+        effect_positions.push(group.destination);
+    }
+    effect_positions.extend(callback.effects.stationary_encounter.iter().map(|m| m.position));
     for p in effect_positions {
         for x in p.x - 1..=p.x + 1 {
             for y in p.y - 1..=p.y + 1 {
