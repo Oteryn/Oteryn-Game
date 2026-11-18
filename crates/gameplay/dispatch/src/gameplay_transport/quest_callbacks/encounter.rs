@@ -275,6 +275,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         });
     }
 
+    /// Crystal actions_portal_minis_feaster.lua:74-95 clears the previous
+    /// encounter after checking for players. Retire only this owner's old visit.
+    fn clear_vacant_solo_visit(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        map: &BundleMap,
+        room: &world_callbacks::Encounter,
+    ) -> Result<(), UseDisposition> {
+        let scope = runtime.encounter_owner_scope();
+        let digest = map.overlay.base().digest();
+        let mut visits = self
+            .states
+            .quest_callbacks
+            .encounters
+            .lock()
+            .map_err(|_| UseDisposition::Rejected)?;
+        let mut index = 0;
+        while index < visits.len() {
+            let visit = &visits[index];
+            if visit.owner_scope != scope
+                || &visit.room != room
+                || visit
+                    .expires
+                    .as_ref()
+                    .is_none_or(|expiry| expiry.bundle_digest != digest)
+            {
+                index += 1;
+                continue;
+            }
+            for actor in visit.creatures.iter().copied() {
+                if runtime.contains_live_creature(actor) {
+                    runtime
+                        .remove_encounter_actor(actor)
+                        .map_err(|_| UseDisposition::Occupied)?;
+                }
+            }
+            visits.swap_remove(index);
+        }
+        Ok(())
+    }
+
     fn spawn_linked_arrival(
         &self,
         runtime: &mut ChannelRuntimeV1,
@@ -475,6 +516,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }) {
             return UseDisposition::Occupied;
         }
+        let census = if preflight && encounter.solo_expiry.is_some() {
+            if let Err(disposition) = self.clear_vacant_solo_visit(runtime, map, encounter) {
+                return disposition;
+            }
+            let Ok(current) = runtime.positioned_melee_census() else {
+                return UseDisposition::Rejected;
+            };
+            current
+        } else {
+            census
+        };
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let mut players = Vec::new();
         let mut proofs = Vec::new();
