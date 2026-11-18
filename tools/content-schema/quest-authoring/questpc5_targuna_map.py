@@ -6,6 +6,7 @@ ROOT=Path(__file__).resolve().parents[3]
 REVISION="9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
 SOURCE_PATH="data-global/npc/sterling.lua"
 SOURCE_SHA256="3069d6f8265d9b414aedc6c50460268d5c3e98c0a65257cc48c54750e44516a9"
+# TibiaWiki curid 110238, oldid 1208547 uses the quest keyword for the turn-in.
 DOCUMENTS={'content/quests/npc-callbacks/m16-targuna-marker.json': {'schema': 1,
                                                             'callbacks': [{'key': 'oteryn:quest-reward/targuna/sterling-mark-treasure',
                                                                            'quest': 'oteryn:quest.targuna_quest',
@@ -47,7 +48,7 @@ DOCUMENTS={'content/quests/npc-callbacks/m16-targuna-marker.json': {'schema': 1,
                                                                                         'text': 'Treasure'}}]},
  'content/quests/npc-offers/m16-targuna-marker.json': {'schema': 1,
                                                          'offers': [{'npc': 'oteryn:npc.sterling',
-                                                                     'keywords': ['mission'],
+                                                                     'keywords': ['mission', 'quest'],
                                                                      'topic': 0,
                                                                      'any_topic': True,
                                                                      'next_topic': 2,

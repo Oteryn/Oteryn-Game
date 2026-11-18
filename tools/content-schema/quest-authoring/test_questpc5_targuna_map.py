@@ -17,7 +17,8 @@ class SterlingMapBinding(unittest.TestCase):
         self.assertEqual(row["requires"][0]["maximum"],1)
     def test_mission_offer_opens_topic_two_and_no_morla_refusal_resets_it(self):
         rows=source.DOCUMENTS["content/quests/npc-offers/m16-targuna-marker.json"]["offers"]
-        self.assertEqual((rows[0]["keywords"],rows[0]["next_topic"]),(["mission"],2))
+        # TibiaWiki curid 110238, oldid 1208547 uses "quest" for this offer.
+        self.assertEqual((rows[0]["keywords"], rows[0]["next_topic"]), (["mission", "quest"], 2))
         self.assertTrue(rows[0]["storage"][0]["preserve"])
         self.assertEqual((rows[1]["topic"],rows[1]["next_topic"]),(2,0))
         self.assertEqual(rows[1]["storage"][0]["maximum"],0)

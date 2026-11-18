@@ -4,7 +4,8 @@
     {
       "npc": "oteryn:npc.sterling",
       "keywords": [
-        "mission"
+        "mission",
+        "quest"
       ],
       "topic": 0,
       "any_topic": true,
