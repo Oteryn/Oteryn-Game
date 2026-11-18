@@ -150,24 +150,27 @@ pub(super) fn capture(
         encounter_deaths::EncounterDeathContext,
         native_kills::{NativeDeathSource, NativeQuestDeath},
     };
-    if !principal_present {
-        return Vec::new();
-    }
     let principal = entry.facts.principal;
     let (scope, generation) = runtime.encounter_owner_scope();
     let mut recipients = Vec::new();
     for run in runs {
-        if !run.roster.defenders().contains(&entry.target)
-            || !run.participants.iter().any(|participant| {
+        if !run.roster.defenders().contains(&entry.target) {
+            continue;
+        }
+        let admitted_principal = principal_present
+            && run.participants.iter().any(|participant| {
                 participant.actor == principal.actor
                     && participant.session == principal.session
                     && participant.character == *principal.character.as_bytes()
                     && participant.lease_generation == principal.lease_generation
-            })
-        {
-            continue;
-        }
+            });
         for participant in &run.participants {
+            let damaged = entry.damage_shares.iter().any(|share| {
+                share.total > 0
+                    && share.character.as_bytes() == &participant.character
+                    && share.session == Some(participant.session)
+                    && share.lease_generation == Some(participant.lease_generation)
+            });
             let Some(snapshot) = snapshots.iter().find(|snapshot| {
                 snapshot.actor == participant.actor
                     && snapshot.session == participant.session
@@ -181,6 +184,8 @@ pub(super) fn capture(
                 if counter.creature != entry.creature
                     || counter.encounter_source.as_deref() != Some(run.source.as_str())
                     || counter.definition_hash != Some(run.definition_hash)
+                    || (counter.require_damage && !damaged)
+                    || (!counter.require_damage && !admitted_principal)
                 {
                     continue;
                 }

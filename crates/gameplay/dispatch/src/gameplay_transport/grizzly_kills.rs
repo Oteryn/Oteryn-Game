@@ -41,6 +41,7 @@ struct NativeCounterCapture {
     definition_hash: Option<[u8; 32]>,
     death_area: Option<oteryn_gameplay_quests::quest::authored_bindings::kills::DeathArea>,
     encounter_source: Option<String>,
+    require_damage: bool,
 }
 
 fn capture_native(
@@ -63,6 +64,7 @@ fn capture_native(
                 definition_hash,
                 death_area: counter.death_area,
                 encounter_source: counter.encounter_source.map(str::to_owned),
+                require_damage: counter.require_damage,
             })
         })
         .collect()
