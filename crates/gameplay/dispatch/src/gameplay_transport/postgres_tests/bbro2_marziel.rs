@@ -283,7 +283,7 @@ async fn step(
         .checked_sub(std::time::Duration::from_secs(2))
         .ok_or("clock")?;
     let origin = position(owner, member).await?;
-    let outcome = crate::gameplay_transport::connection::serve::regression_routed_step(
+    let outcome = crate::gameplay_transport::connection::regression_routed_step(
         owner,
         *member,
         member.runtime_actor.ok_or("actor")?,
