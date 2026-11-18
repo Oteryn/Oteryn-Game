@@ -882,7 +882,15 @@ fn definition_hash(
     }
     let owned: Vec<&QuestTransition> = transitions
         .values()
-        .filter(|transition| transition.quest == quest)
+        // Rahemos only preserves a track. Its separate bound World USE owner
+        // still admits the item mint, without repinning existing quest progress.
+        .filter(|transition| {
+            transition.quest == quest
+                && !(transition.key == world_callbacks::RAHEMOS_CARROT
+                    && !transition.completes
+                    && transition.experience.is_none()
+                    && transition.effects.iter().all(|effect| effect.effect == QuestEffectKind::Add(0)))
+        })
         .collect();
     out.extend_from_slice(&u32::try_from(owned.len()).unwrap_or(u32::MAX).to_be_bytes());
     for transition in owned {
@@ -923,6 +931,22 @@ mod tests {
     const QUEST: &str = "oteryn:quest/test.rats";
     const STAGE: &str = "oteryn:quest-progress/test.rats.stage";
     const TIMER: &str = "oteryn:quest-progress/test.rats.timer";
+
+    #[test]
+    fn rahemos_renewable_carrot_preserves_existing_tomb_definition_hash() -> Result<(), String> {
+        let source =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = source.catalogue();
+        let mut before = catalogue.transitions.clone();
+        let carrot = before
+            .remove(world_callbacks::RAHEMOS_CARROT)
+            .ok_or("Rahemos USE")?;
+        assert_eq!(
+            catalogue.definition_hash(&carrot.quest),
+            Some(definition_hash(&carrot.quest, &catalogue.tracks, &before)),
+        );
+        Ok(())
+    }
 
     fn track(key: &str, initial: i64, min: i64, max: i64) -> QuestTrack {
         QuestTrack {

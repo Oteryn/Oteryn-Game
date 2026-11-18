@@ -14,6 +14,10 @@ pub(super) fn keys() -> Result<BTreeSet<String>, String> {
 }
 
 pub(super) fn needs_marker(callback: &Callback, published: &BTreeSet<String>) -> bool {
+    // The renewable Rahemos item uses a fenced USE receipt and preserves quest progress.
+    if super::per_use_reward::rahemos(callback) {
+        return false;
+    }
     let new_value_terms = callback.use_range != 1
         || callback.disguise.is_some()
         || callback.selector.ordinal.is_some()

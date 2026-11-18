@@ -2,7 +2,7 @@
 use super::{ActorKind, Callback, Trigger};
 
 pub(super) fn rahemos(callback: &Callback) -> bool {
-    callback.key == "oteryn:quest-callback/ancient-tombs-rahemos-carrot"
+    callback.key == super::RAHEMOS_CARROT
         && callback.selector.action == Some(12107)
         && callback.selector.appearance == Some(2772)
         && callback.effects.item_reward_per_use

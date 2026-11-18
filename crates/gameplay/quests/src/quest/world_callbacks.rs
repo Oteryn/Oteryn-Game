@@ -67,6 +67,7 @@ mod native_trials;
 #[cfg(test)]
 mod paid_step_tests;
 mod per_use_reward;
+pub(super) const RAHEMOS_CARROT: &str = "oteryn:quest-callback/ancient-tombs-rahemos-carrot";
 pub mod personal_trial;
 pub mod phase;
 mod questpc7_compat;

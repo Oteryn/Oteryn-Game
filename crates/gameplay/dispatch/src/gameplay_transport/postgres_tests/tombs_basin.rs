@@ -58,17 +58,19 @@ pub(super) async fn exercise(
     ).await?;
     *admitted = next;
     if rollback {
-        assert_ne!(outcome, Some(ItemMoveOutcome::Moved));
+        assert_eq!(outcome, Some(ItemMoveOutcome::Rejected));
     } else {
         assert_eq!(outcome, Some(ItemMoveOutcome::Moved));
     }
-    let result: (i64, i64, i64, i64) = sqlx::query_as(
+    let result: (i64, i64, i64, i64, i64) = sqlx::query_as(
         "SELECT (SELECT count(*) FROM game_tomb_basin_offerings),
             (SELECT count(*) FROM game_character_pending_arrivals),
             (SELECT count(*) FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1),
-            (SELECT count(*) FROM game_item_loop_move_receipts WHERE command_id=1)"
+            (SELECT count(*) FROM game_item_loop_move_receipts WHERE command_id=1),
+            (SELECT count(*) FROM game_character_quest_tracks
+              WHERE track_key='oteryn:quest-progress/quest/u7_4/the_ancient_tombs/default_start' AND value=1)"
     ).bind(TOMB_BASIN_COIN).fetch_one(&h.pool).await?;
-    assert_eq!(result, if rollback { (0, 0, 1, 0) } else { (1, 0, 0, 1) });
+    assert_eq!(result, if rollback { (0, 0, 1, 0, 0) } else { (1, 0, 0, 1, 1) });
     let actor = admitted.runtime_actor.ok_or("flame occupant")?;
     let position = owner.runtime.lock().await.read_actor_position(actor).map_err(super::fixture::debug)?.position();
     let x = if rollback { BASIN.x - 1 } else { ARRIVAL.x };

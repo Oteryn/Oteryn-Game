@@ -67,8 +67,7 @@ fn occupant(
         .map_err(|_| LoopMoveRefusal::Stale)?;
     Ok(actors
         .into_iter()
-        .filter(|(_, position, _)| position.position() == flame)
-        .last())
+        .rfind(|(_, position, _)| position.position() == flame))
 }
 
 impl Target {
@@ -96,6 +95,15 @@ impl Target {
                 .and_then(|fence| fence.map(Some).ok_or(LoopMoveRefusal::Stale)),
             Ok(_) => Ok(None),
             Err(refusal) => Err(refusal),
+        };
+        let mut revision_slot = match occupant_fence {
+            Ok(Some(fence)) => Some(
+                admission
+                    .revision_sequencer
+                    .acquire(fence.character_id)
+                    .await,
+            ),
+            _ => None,
         };
         let mut runtime = admission.runtime.lock().await;
         let states = admission.states.spell_states.lock().await;
@@ -156,6 +164,9 @@ impl Target {
                 catalogue,
             )
             .await;
+        if let Some(slot) = revision_slot.as_mut() {
+            slot.observe_endgame_progression();
+        }
         let committed = match outcome {
             Ok(Some(Ok(committed))) => committed,
             Ok(None) => return None,
