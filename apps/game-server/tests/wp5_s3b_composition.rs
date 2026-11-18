@@ -763,7 +763,11 @@ fn composition_flow(
             };
             let registration = DescriptorRegistration {
                 revision: 1,
-                facts: format!("platform@{PLATFORM_SOURCE};source.test;tls1.3-mtls").into_bytes(),
+                facts: format!(
+                    "platform@{PLATFORM_SOURCE};{};tls1.3-mtls",
+                    env::var("WP5_S3A_SERVER_NAME").unwrap_or_else(|_| "source.test".into()),
+                )
+                .into_bytes(),
                 installed_at: now,
             };
             // Control-plane issuance first (OPS-NODE-BOOT-01 D2).

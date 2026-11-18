@@ -516,7 +516,7 @@ async fn publish_readiness(
         state: AdmissionAuthorityGuardStateV1::Runtime {
             ownership_generation: generation,
             ready: true,
-            route_revision: "route-s3b-1".into(),
+            route_revision: route_revision(),
             runtime_observation_revision: RUNTIME_OBSERVATION.into(),
             protocol_major: 1,
             transport_profile: 1,
@@ -1647,7 +1647,11 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     };
     let descriptor_registration = DescriptorRegistration {
         revision: 1,
-        facts: format!("platform@{PLATFORM_SOURCE};source.test;tls1.3-mtls").into_bytes(),
+        facts: format!(
+            "platform@{PLATFORM_SOURCE};{};tls1.3-mtls",
+            env::var("WP5_S3A_SERVER_NAME").unwrap_or_else(|_| "source.test".into()),
+        )
+        .into_bytes(),
         installed_at: now,
     };
     if !control
