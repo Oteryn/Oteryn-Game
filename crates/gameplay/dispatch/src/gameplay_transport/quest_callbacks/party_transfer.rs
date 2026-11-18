@@ -32,7 +32,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| UseDisposition::Rejected)?
             .iter()
             .any(|(_, at, session)| {
-                session.is_some() && native(at.position()).is_some_and(|p| room.contains(p))
+                session.is_some()
+                    && native(at.position()).is_some_and(|p| {
+                        room.contains(Position {
+                            x: p.x,
+                            y: p.y,
+                            floor: p.floor,
+                        })
+                    })
             });
         let pending = self
             .states

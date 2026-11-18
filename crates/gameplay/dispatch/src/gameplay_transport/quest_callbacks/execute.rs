@@ -925,7 +925,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if let Some(room) = &party.room_entry {
                 // Crystal 201189f8 elemental_spheres/actions_lever.lua:29-68.
                 // A refused chamber entry leaves its lever ready for the next use.
-                if native(expected.position()) != Some(room.initiator) {
+                if native(expected.position()) != Some(tile(room.initiator)) {
                     return UseDisposition::Rejected;
                 }
                 if let Err(disposition) = self.party_room_available(runtime, map, callback, room) {
