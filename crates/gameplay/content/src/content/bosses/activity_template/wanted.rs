@@ -67,6 +67,12 @@ pub fn boss_at(position: [i32; 3]) -> Option<&'static str> {
         .map(|room| room.boss)
 }
 
+pub fn is_portal_at(position: [i32; 3]) -> bool {
+    ROOMS
+        .iter()
+        .any(|room| room.portal == position || room.exit_portal == position)
+}
+
 pub fn boss_keys() -> [&'static str; 3] {
     ROOMS.each_ref().map(|room| room.boss)
 }

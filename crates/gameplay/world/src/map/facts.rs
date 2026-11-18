@@ -565,7 +565,18 @@ impl BundleFacts {
                 } else {
                     door
                 };
-                let closed_solid = self.blocks(item.palette);
+                // The Wanted script uses these exact map teleporter markers as
+                // StepIn pads. Preserve ground and the collision of all other items.
+                let wanted_portal =
+                    self.palette
+                        .get(item.palette as usize)
+                        .is_some_and(|entry| {
+                            entry.facts.appearance_id == 25053
+                                && crate::content::bosses::activity_template::wanted::is_portal_at(
+                                    [i32::from(pos.x), i32::from(pos.y), -i32::from(pos.floor)],
+                                )
+                        });
+                let closed_solid = self.blocks(item.palette) && !wanted_portal;
                 blocks |= closed_solid && door == PaletteDoor::No;
                 let Some(key) = key else {
                     // A door beyond the ordinal reach cannot be named, so it blocks as a wall.
