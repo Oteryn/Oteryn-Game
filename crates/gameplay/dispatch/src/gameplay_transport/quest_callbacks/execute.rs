@@ -23,6 +23,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         read_only_gate: Option<&ReadOnlyGate>,
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
     ) -> UseDisposition {
+        let (open_spawn, room_encounter) = match &callback.effects.encounter {
+            Some(encounter) if encounter.is_open_spawn() => (Some(encounter), false),
+            Some(_) => (None, true),
+            None => (None, false),
+        };
         if callback.effects.encounter.is_none()
             && let Some(catalogue) = self.quest_catalogue.as_deref()
             && let Some(bindings) = catalogue.authored_bindings()
@@ -936,13 +941,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let durable = callback.requires_durable_commit()
             && !callback.is_read_only()
             && !(close && callback.opening_only);
+        let open_spawns = if let Some(encounter) = open_spawn {
+            let QuestCause::Use(command) = cause else {
+                return UseDisposition::Rejected;
+            };
+            if !durable
+                || states
+                    .get(runtime, actor, session)
+                    .is_none_or(|state| state.character_facts().level < encounter.minimum_level)
+            {
+                return UseDisposition::Rejected;
+            }
+            let Some(monsters) = self.prepare_open_quest_spawns(runtime, encounter, command) else {
+                return UseDisposition::Rejected;
+            };
+            monsters
+        } else {
+            Vec::new()
+        };
         let mut fresh_effects = !durable;
         let mut success_message = if !durable {
             callback.success_message.clone()
         } else {
             None
         };
-        if durable && callback.effects.encounter.is_some() {
+        if durable && room_encounter {
             let preflight = self.execute_quest_encounter(
                 runtime,
                 states,
@@ -962,37 +985,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         let mut success_preface = None;
-        if callback.effects.encounter.is_some() && callback.has_personal_state() && !durable {
+        if room_encounter && callback.has_personal_state() && !durable {
             return UseDisposition::Rejected;
         }
-        let mut personal_reservation =
-            if callback.effects.encounter.is_some() && callback.has_personal_state() {
-                let (Some(fence), Some(definition)) = (
-                    fence,
-                    self.quest_catalogue
-                        .as_ref()
-                        .and_then(|catalogue| catalogue.definition_hash(&callback.quest)),
-                ) else {
-                    return UseDisposition::Rejected;
-                };
-                match self.states.quest_callbacks.personal.reserve(
-                    runtime,
-                    &callback.key,
-                    personal_encounter::Origin::new(
-                        *fence.character_id.as_bytes(),
-                        cause,
-                        definition,
-                        &callback.quest,
-                        fence.expected_character_revision.get(),
-                    ),
-                ) {
-                    Ok(reservation) => Some(reservation),
-                    Err(disposition) => return disposition,
-                }
-            } else {
-                None
+        let mut personal_reservation = if room_encounter && callback.has_personal_state() {
+            let (Some(fence), Some(definition)) = (
+                fence,
+                self.quest_catalogue
+                    .as_ref()
+                    .and_then(|catalogue| catalogue.definition_hash(&callback.quest)),
+            ) else {
+                return UseDisposition::Rejected;
             };
-        if callback.effects.encounter.is_some() && callback.has_personal_state() {
+            match self.states.quest_callbacks.personal.reserve(
+                runtime,
+                &callback.key,
+                personal_encounter::Origin::new(
+                    *fence.character_id.as_bytes(),
+                    cause,
+                    definition,
+                    &callback.quest,
+                    fence.expected_character_revision.get(),
+                ),
+            ) {
+                Ok(reservation) => Some(reservation),
+                Err(disposition) => return disposition,
+            }
+        } else {
+            None
+        };
+        if room_encounter && callback.has_personal_state() {
             let ready = self.preflight_personal_quest_encounter(
                 runtime,
                 states,
@@ -1240,13 +1262,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         self.project_mead_blackout(runtime,states,actor,command,&committed.changes,map);
                     }
                     self.apply_committed_quest_copy(session, fresh, committed);
-                    if callback.effects.encounter.is_some()
+                    if room_encounter
                         && !self.refresh_grizzly_kill_snapshot_in_turn(runtime, session)
                     {
                         self.schedule_quest_refresh(session);
                         return UseDisposition::Rejected;
                     }
-                    if callback.effects.encounter.is_none() {
+                    if !room_encounter {
                         self.refresh_grizzly_kill_snapshot_in_runtime(runtime, session).await;
                     }
                     self.refresh_native_objective_snapshot_in_runtime(runtime, session).await;
@@ -1305,7 +1327,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 optional_pvp,
             );
         }
-        if callback.effects.encounter.is_some() && !close {
+        if room_encounter && !close {
             let disposition = self.execute_quest_encounter(
                 runtime,
                 states,
@@ -1604,6 +1626,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(magic) = &callback.effects.magic {
             map.facts
                 .emit_movement_effect(tile(magic.position), magic.effect);
+        }
+        if !open_spawns.is_empty() {
+            self.publish_open_quest_spawns(runtime, map, &open_spawns);
         }
         if let Some(effect) = callback.effects.teleport_effect
             && let Some(destination) = callback.teleport

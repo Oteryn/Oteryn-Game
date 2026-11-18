@@ -2,8 +2,99 @@
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::view::EntryFacts;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+use oteryn_simulation_determinism::{
+    DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+};
+
+pub(super) type QuestSpawn<'a> = (&'a str, i64, Position);
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    fn quest_spawn_position_open(&self, map: &BundleMap, position: Position) -> bool {
+        let at = local(position);
+        self.movement_cells.index().lookup(
+            self.movement_cells.scope(),
+            LogicalCell {
+                x: at.x,
+                y: at.y,
+                z: i32::from(at.floor),
+            },
+        ) == Ok(CollisionClass::Walkable)
+            && !map
+                .facts
+                .quest_callback_blocked(map.overlay.base(), tile(position), false)
+    }
+
+    pub(super) fn prepare_open_quest_spawns<'a>(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        encounter: &'a world_callbacks::Encounter,
+        command: CommandRef,
+    ) -> Option<Vec<QuestSpawn<'a>>> {
+        let native = self.active_generation?.native_gameplay()?;
+        native.install_companion_policies(runtime).ok()?;
+        runtime.owner_fence().ok()?;
+        let digest = Sha256::new()
+            .chain_update(b"oteryn:quest-open-spawn:v1")
+            .chain_update(command.game_session_id().as_bytes())
+            .chain_update(command.command_id().get().to_be_bytes())
+            .finalize();
+        let mut occurrence = [0; 16];
+        occurrence.copy_from_slice(&digest[..16]);
+        let root = GameplayDecisionRoot::from_bytes(native.source_digest());
+
+        encounter
+            .monsters
+            .iter()
+            .enumerate()
+            .map(|(index, monster)| {
+                let draw = deterministic_decision_u64(
+                    &root,
+                    DecisionOccurrenceId::from_bytes(occurrence),
+                    "quest.open_spawn.creature",
+                    u64::try_from(index).ok()?,
+                )
+                .ok()?;
+                let last_choice = i64::try_from(monster.alternatives.len()).ok()?;
+                let choice =
+                    usize::try_from(crate::spell::uniform_draw(draw, 0, last_choice)).ok()?;
+                let creature = if choice == 0 {
+                    &monster.creature
+                } else {
+                    monster.alternatives.get(choice - 1)?
+                };
+                let policy = runtime.companion_policy(creature).ok()?;
+                Some((creature.as_str(), policy.maximum_health, monster.position))
+            })
+            .collect()
+    }
+
+    pub(super) fn publish_open_quest_spawns(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        map: &BundleMap,
+        monsters: &[QuestSpawn<'_>],
+    ) {
+        let Ok(census) = runtime.positioned_melee_census() else {
+            return;
+        };
+        for &(creature, health, position) in monsters {
+            let at = local(position);
+            // Each authored position gets one creation attempt. Occupancy or a full
+            // carrier can suppress that creature without undoing the use or other spawns.
+            if self.quest_spawn_position_open(map, position)
+                && !census
+                    .iter()
+                    .any(|(_, current, _)| current.position() == at)
+                && runtime
+                    .commit_quest_creature_spawn(&[(creature, health, at)])
+                    .is_ok()
+            {
+                map.facts.emit_movement_effect(tile(position), 11);
+            }
+        }
+    }
+
     #[allow(
         clippy::too_many_arguments,
         reason = "one owner turn binds party, native carrier, map and exact lever revision"
@@ -227,19 +318,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut monsters = Vec::new();
         for monster in &encounter.monsters {
             let at = local(monster.position);
-            if self.movement_cells.index().lookup(
-                self.movement_cells.scope(),
-                LogicalCell {
-                    x: at.x,
-                    y: at.y,
-                    z: i32::from(at.floor),
-                },
-            ) != Ok(CollisionClass::Walkable)
-                || map.facts.quest_callback_blocked(
-                    map.overlay.base(),
-                    tile(monster.position),
-                    false,
-                )
+            if !self.quest_spawn_position_open(map, monster.position)
                 || census.iter().any(|(_, pos, _)| pos.position() == at)
             {
                 return UseDisposition::Occupied;
