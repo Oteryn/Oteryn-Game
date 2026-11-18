@@ -220,6 +220,8 @@ impl DurabilityRoot {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             if periodic {
                 super::db::try_lock_admission_relations(&mut tx).await?;
+                // The registration proof and native expiry also take row and advisory locks.
+                super::db::bound_periodic_lock_wait(&mut tx).await?;
             } else {
                 lock_admission_relations(&mut tx).await?;
             }

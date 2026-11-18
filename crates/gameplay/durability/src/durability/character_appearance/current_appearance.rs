@@ -89,7 +89,10 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = super::super::db::begin_observation_transaction(holder, deadline).await?;
+                    let mut tx = match scope {
+                        ReadScope::Channel => super::super::db::begin_observation_transaction(holder, deadline).await?,
+                        ReadScope::House { .. } => super::super::db::begin_locking_observation_transaction(holder, deadline).await?,
+                    };
                     super::super::character_authority::observe_recovery_fence(&mut tx, &recovery).await?;
                     let root = match scope {
                         ReadScope::Channel => super::super::character_progression::observe_fenced_root(

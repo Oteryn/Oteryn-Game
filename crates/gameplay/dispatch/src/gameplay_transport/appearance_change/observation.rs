@@ -14,7 +14,7 @@ pub struct Observation {
     pub skipped: Vec<wire::EntityRef>,
 }
 
-/// Only a proven exhausted holder retry may defer an established observer's refresh.
+/// A busy observation can defer an established observer's refresh.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ObservationError {
     HolderBusy,
@@ -27,6 +27,7 @@ pub enum ObservationError {
 /// Why one attempt's durable read produced no value.
 pub(super) enum ReadFailure {
     Durable(crate::durability::DurabilityError),
+    HouseAccessBusy,
     RespawnPending,
 }
 
@@ -89,6 +90,7 @@ pub(in crate::gameplay_transport) async fn observe_result(
             // acquire with try_issue_root/try_issue_semantic_pass, never a wait.
             match failure {
                 Some(ReadFailure::Durable(error)) => Err(error),
+                Some(ReadFailure::HouseAccessBusy) => Ok(Err(ObservationError::HolderBusy)),
                 Some(ReadFailure::RespawnPending) => Ok(Err(ObservationError::RespawnPending)),
                 None => Ok(observation.ok_or(ObservationError::Unavailable)),
             }

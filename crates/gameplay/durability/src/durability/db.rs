@@ -2052,7 +2052,7 @@ pub async fn begin_semantic_transaction<'a>(
     holder: &'a mut PoolConnection<Postgres>,
     deadline: Instant,
 ) -> Result<Transaction<'a, Postgres>, DurabilityError> {
-    begin_transaction(holder, deadline, false).await
+    begin_transaction(holder, deadline, None).await
 }
 
 /// Advisory observations use one consistent snapshot and cannot acquire mutation locks.
@@ -2060,13 +2060,44 @@ pub(super) async fn begin_observation_transaction<'a>(
     holder: &'a mut PoolConnection<Postgres>,
     deadline: Instant,
 ) -> Result<Transaction<'a, Postgres>, DurabilityError> {
-    begin_transaction(holder, deadline, true).await
+    begin_transaction(
+        holder,
+        deadline,
+        Some("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY"),
+    )
+    .await
+}
+
+/// Repeatable observation that can call a native access function taking row locks.
+pub(super) async fn begin_locking_observation_transaction<'a>(
+    holder: &'a mut PoolConnection<Postgres>,
+    deadline: Instant,
+) -> Result<Transaction<'a, Postgres>, DurabilityError> {
+    let mut tx = begin_transaction(
+        holder,
+        deadline,
+        Some("BEGIN ISOLATION LEVEL REPEATABLE READ"),
+    )
+    .await?;
+    bound_periodic_lock_wait(&mut tx).await?;
+    Ok(tx)
+}
+
+/// PostgreSQL's smallest nonzero lock timeout also covers locks acquired inside
+/// security-definer functions and triggers, where callers cannot append NOWAIT.
+pub(super) async fn bound_periodic_lock_wait(
+    tx: &mut Transaction<'_, Postgres>,
+) -> Result<(), DurabilityError> {
+    sqlx::query("SET LOCAL lock_timeout = '1ms'")
+        .execute(&mut **tx)
+        .await?;
+    Ok(())
 }
 
 async fn begin_transaction<'a>(
     holder: &'a mut PoolConnection<Postgres>,
     deadline: Instant,
-    observation: bool,
+    begin_sql: Option<&'static str>,
 ) -> Result<Transaction<'a, Postgres>, DurabilityError> {
     let mut span = oteryn_error_codes::Span::start(
         oteryn_error_codes::Level::Debug,
@@ -2085,11 +2116,8 @@ async fn begin_transaction<'a>(
         }
 
         let mut transaction = tokio::time::timeout(remaining, async {
-            if observation {
-                sqlx::Connection::begin_with(
-                    &mut **holder,
-                    "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY",
-                ).await
+            if let Some(sql) = begin_sql {
+                sqlx::Connection::begin_with(&mut **holder, sql).await
             } else {
                 holder.begin().await
             }
