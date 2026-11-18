@@ -196,10 +196,19 @@ async fn exercise(admin: String, seal_case: Seal) -> TestResult {
         runtime_actor: Some(actor),
         ..deps.admitted
     };
+    if !matches!(seal_case, Seal::Queen) {
+        sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
+            .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
+            .bind(id(42).as_slice()).bind(id(43).as_slice())
+            .bind(generation.identity().server_artifact_digest().as_slice())
+            .bind(generation.identity().client_artifact_digest().as_slice())
+            .bind(frame.as_slice()).execute(&h.pool).await?;
+    }
     match seal_case {
-        Seal::Logic => exercise_logic(&mut owner, &admitted, fence, lever, campfire).await?,
+        Seal::Logic => exercise_logic(&mut owner, &h, &admitted, fence, lever, campfire).await?,
         Seal::Queen => exercise_queen(&mut owner, &h, &admitted, fence).await?,
-        Seal::Sacrifice => exercise_sacrifice(&mut owner, &h, admitted, frame, start).await?,
+        Seal::Sacrifice => exercise_sacrifice(&mut owner, &h, admitted, start).await?,
     }
     drop(owner);
     drop(authority);
@@ -207,8 +216,40 @@ async fn exercise(admin: String, seal_case: Seal) -> TestResult {
     h.cleanup().await
 }
 
+fn seal_bindings(
+    callback: serde_json::Value,
+    stage: &str,
+    tracks: [&str; 2],
+    source: &str,
+) -> TestResult<QuestStateCatalogue> {
+    let recipe_sha256 = <sha2::Sha256 as sha2::Digest>::digest(source)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    let tracks = tracks.map(|key| {
+        serde_json::json!({ "key": key, "initial": -1, "minimum": -1, "maximum": 1 })
+    });
+    let bindings: Bindings = serde_json::from_value(serde_json::json!({
+        "schema": 1,
+        "quests": [{
+            "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+            "recipe_sha256": recipe_sha256,
+            "sources": [source],
+            "tracks": tracks,
+            "stages": [{
+                "key": stage,
+                "completes": false,
+                "trigger": { "kind": "step_in", "callback": callback }
+            }]
+        }]
+    }))?;
+    let base = QuestStateCatalogue::empty("content-1").ok_or("quest catalogue")?;
+    Ok(bindings.attach(&base)?)
+}
+
 async fn exercise_logic(
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
     admitted: &super::AdmittedSession,
     fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
     lever: Position,
@@ -245,20 +286,35 @@ async fn exercise_logic(
             })
         })
         .collect::<Vec<_>>();
-    let flame: Callback = serde_json::from_value(serde_json::json!({
+    const SEAL: &str = "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/sixth_seal";
+    const DOOR: &str = "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/sixth_seal_door";
+    const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-6-sixth_seal_flame.lua:3";
+    let storage = [SEAL, DOOR].map(|track| {
+        serde_json::json!({ "track": track, "minimum": -1, "maximum": 0, "set": 1 })
+    });
+    let flame = serde_json::json!({
         "key": "oteryn:quest-callback/banshees-logic-flame",
         "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
         "trigger": "step_in",
-        "selector": { "unique": 35018 },
+        "selector": { "position": { "x": 32311, "y": 31978, "floor": -13 }, "unique": 35018 },
         "teleport": { "x": 32261, "y": 31856, "floor": -15 },
         "reversible": false,
-        "storage": [],
+        "storage": storage,
         "offerings": [],
         "passages": [],
         "return_on_failure": true,
+        "requires_world_admission": true,
         "world_requirements": layout,
-        "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-6-sixth_seal_flame.lua:3"]
-    }))?;
+        "sources": [SOURCE]
+    });
+    let catalogue = seal_bindings(flame, "logic-flame", [SEAL, DOOR], SOURCE)?;
+    let flame = catalogue
+        .authored_world_callbacks()
+        .and_then(|callbacks| callbacks.first())
+        .ok_or("authored Logic callback")?
+        .clone();
+    owner.quest_catalogue = Some(std::sync::Arc::new(catalogue));
+    owner.admit_quest_session(admitted).await;
     assert!(
         owner
             .states
@@ -318,7 +374,15 @@ async fn exercise_logic(
             .await
             .read_actor_position(actor)
             .map_err(debug)?;
+        let writes: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_character_quest_tracks WHERE track_key IN ($1,$2) AND value=1",
+        )
+        .bind(SEAL)
+        .bind(DOOR)
+        .fetch_one(&h.pool)
+        .await?;
         if command_id == 2 {
+            assert_eq!(writes, 0);
             assert_eq!(
                 after.position(),
                 flame_origin,
@@ -335,6 +399,7 @@ async fn exercise_logic(
             )
             .await?;
         } else {
+            assert_eq!(writes, 2);
             assert_eq!(
                 after.position(),
                 MovementLocalPosition {
@@ -352,7 +417,6 @@ async fn exercise_sacrifice(
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
     admitted: super::AdmittedSession,
-    frame: [u8; 32],
     start: NativeEntryStart,
 ) -> TestResult {
     const QUEST: &str = "oteryn:quest.the_queen_of_the_banshees_quest";
@@ -361,60 +425,29 @@ async fn exercise_sacrifice(
         "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/fourth_seal_door";
     const KEY: &str = "oteryn:quest-callback/banshees-fourth-seal";
     const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-4-fourth_seal_flame.lua:3";
-    let generation = owner.active_generation.ok_or("active generation")?;
-    let tracks = [TRACK, DOOR].map(|key| {
-        serde_json::json!({
-            "key": key, "initial": -1, "minimum": -1, "maximum": 1
-        })
-    });
     let storage = [TRACK, DOOR].map(|track| {
-        serde_json::json!({
-            "track": track, "minimum": -1, "maximum": 0, "set": 1
-        })
+        serde_json::json!({ "track": track, "minimum": -1, "maximum": 0, "set": 1 })
     });
-    let recipe_sha256 = <sha2::Sha256 as sha2::Digest>::digest(SOURCE)
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect::<String>();
-    let bindings: Bindings = serde_json::from_value(serde_json::json!({
-        "schema": 1,
-        "quests": [{
-            "quest": QUEST,
-            "recipe_sha256": recipe_sha256,
-            "sources": [SOURCE],
-            "tracks": tracks,
-            "stages": [{
-                "key": "sacrifice-flame",
-                "completes": false,
-                "trigger": { "kind": "step_in", "callback": {
-                    "key": KEY,
-                    "quest": QUEST,
-                    "trigger": "step_in",
-                    "selector": { "position": {"x": 32250, "y": 31892, "floor": -14}, "unique": 35016 },
-                    "teleport": {"x": 32261, "y": 31849, "floor": -15},
-                    "reversible": false,
-                    "return_on_failure": true,
-                    "requires_world_admission": true,
-                    "offerings": [],
-                    "passages": [],
-                    "storage": storage,
-                    "effects": {
-                        "splash_offering": { "position": {"x": 32243, "y": 31892, "floor": -14}, "subtype": 5 }
-                    },
-                    "sources": [SOURCE]
-                }}
-            }]
-        }]
-    }))?;
-    let base = QuestStateCatalogue::empty("content-1").ok_or("quest catalogue")?;
-    owner.quest_catalogue = Some(std::sync::Arc::new(bindings.attach(&base)?));
-    sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
-        .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
-    sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
-        .bind(id(42).as_slice()).bind(id(43).as_slice())
-        .bind(generation.identity().server_artifact_digest().as_slice())
-        .bind(generation.identity().client_artifact_digest().as_slice())
-        .bind(frame.as_slice()).execute(&h.pool).await?;
+    let callback = serde_json::json!({
+        "key": KEY,
+        "quest": QUEST,
+        "trigger": "step_in",
+        "selector": { "position": { "x": 32250, "y": 31892, "floor": -14 }, "unique": 35016 },
+        "teleport": { "x": 32261, "y": 31849, "floor": -15 },
+        "reversible": false,
+        "return_on_failure": true,
+        "requires_world_admission": true,
+        "offerings": [],
+        "passages": [],
+        "storage": storage,
+        "effects": {
+            "splash_offering": { "position": { "x": 32243, "y": 31892, "floor": -14 }, "subtype": 5 }
+        },
+        "sources": [SOURCE]
+    });
+    owner.quest_catalogue = Some(std::sync::Arc::new(seal_bindings(
+        callback, "sacrifice-flame", [TRACK, DOOR], SOURCE,
+    )?));
     owner.admit_quest_session(&admitted).await;
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let (outcome, _) = owner
@@ -656,6 +689,7 @@ async fn exercise_queen(
     const PREFIX: &str = "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/";
     const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_queen_of_the_banshees.lua:137-149";
     const KISS: &str = "oteryn:quest-npc/test/banshee-kiss";
+    const KISS_LEVEL: u32 = 60;
     use oteryn_gameplay_quests::quest::npc_rules::{NpcRuleCatalog, NpcRuleError};
 
     let loaded = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
@@ -691,7 +725,7 @@ async fn exercise_queen(
             "key": KISS, "quest": QUEST, "npc": QUEEN, "trigger": "say",
             "keywords": ["yes"], "topics": [8], "sources": [SOURCE],
             "guards": [
-                { "kind": "level", "op": "ge", "value": 50 },
+                { "kind": "level", "op": "ge", "value": KISS_LEVEL },
                 { "kind": "storage", "track": seal_tracks[0], "op": "lt", "value": 1 }
             ],
             "effects": effects,
@@ -786,7 +820,7 @@ async fn exercise_queen(
         let character = spells
             .get(&runtime, actor, session)
             .ok_or("live character")?;
-        assert!(character.character_facts().level < 50);
+        assert!(character.character_facts().level < KISS_LEVEL);
     }
     owner.clock_origin = owner
         .clock_origin
@@ -811,15 +845,20 @@ async fn exercise_queen(
         low_level.conversation.ok_or("level refusal")?.lines,
         ["Sorry, not possible."],
     );
-    // The historical test character lacks a vocation build for vitals refresh.
-    // Supply its persisted level to the live fact used by the dialogue preview.
+    // Raise the persisted fixture to the authored threshold. This fixture has no vocation
+    // build, so project the persisted level into the live fact used by dialogue preview.
+    sqlx::query("UPDATE game_character_progression_state SET level=$1 WHERE character_id=encode($2,'hex')::uuid")
+        .bind(i64::from(KISS_LEVEL))
+        .bind(fence.character_id.as_bytes().as_slice())
+        .execute(&h.pool)
+        .await?;
     let progression = h
         .root
         .read_character_progression(owner.character, fence.character_id)
         .await
         .map_err(debug)?
         .ok_or("persisted Queen level")?;
-    assert_eq!(progression.level, 50);
+    assert_eq!(progression.level, KISS_LEVEL);
     {
         let runtime = owner.runtime.lock().await;
         let mut spells = owner.states.spell_states.lock().await;

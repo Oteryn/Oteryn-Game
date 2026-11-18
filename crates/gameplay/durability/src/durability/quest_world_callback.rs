@@ -615,6 +615,7 @@ pub(super) async fn consume(
             .ok_or(DurabilityError::InvalidStoredState)?;
         // A splash is bound to the bundle and tile. The low placement byte
         // identifies the clicked object, so any object on that tile qualifies.
+        // DELETE claims the offering with the fluid table's existing runtime grants.
         let deleted = sqlx::query(
             "DELETE FROM game_item_fluid_splashes WHERE transaction_id = (
                  SELECT transaction_id FROM game_item_fluid_splashes
@@ -622,7 +623,7 @@ pub(super) async fn consume(
                    AND octet_length(placement)=40
                    AND substring(placement FROM 1 FOR 39) = (decode($3,'hex') || $4)
                    AND fluid_subtype=$5 AND splash_item_id=2886 AND expires_at>clock_timestamp()
-                 ORDER BY created_at,transaction_id LIMIT 1 FOR UPDATE
+                 ORDER BY created_at,transaction_id LIMIT 1
              )",
         )
         .bind(world_id.as_bytes().as_slice())

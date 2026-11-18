@@ -525,13 +525,11 @@ impl DurabilityRoot {
             } else { None };
             if let (Some(admission), Some(plan)) = (teleport, &teleport_plan) {
                 if request.npc == oteryn_gameplay_quests::quest::classic_talk::QUEEN {
-                    let blocked: bool = sqlx::query_scalar(
-                        "SELECT EXISTS(SELECT 1 FROM game_character_pvp_state
-                         WHERE character_id=encode($1,'hex')::uuid AND pz_block_until>clock_timestamp())",
-                    )
-                    .bind(id)
-                    .fetch_one(&mut **tx)
-                    .await?;
+                    // The PvP owner takes this lock before writing a deadline, including
+                    // for Characters without a row. Keep it through the arrival commit.
+                    super::super::party_pz_fact::lock_in_transaction(&mut tx, character.as_bytes()).await?;
+                    let blocked = super::super::pvp_state::load_pvp_state(&mut tx, character)
+                        .await?.is_some_and(|state| state.pz_block_remaining_ms.is_some());
                     if blocked {
                         return Ok(Ok(refused(QuestRefusal::StageMismatch)));
                     }
