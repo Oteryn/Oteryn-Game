@@ -3,11 +3,13 @@
 //! the_pits_of_inferno_quest/actions_fountain.lua:3-15;
 //! lions_rock/actions_lions_rock.lua:115-139;
 //! the_first_dragon/actions_rewards.lua:43-72;
-//! the_great_dragon_hunt_quest/actions_treasure.lua:19-40.
+//! the_great_dragon_hunt_quest/actions_treasure.lua:19-40 and
+//! the_great_dragon_hunt_quest/creaturescripts_the_great_dragon_hunt.lua:12-25.
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::gameplay_transport::connection::UseCommand;
 use crate::map::view::MapFacts;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue, authored_bindings::Bindings,
     world_callbacks::Position,
@@ -28,6 +30,9 @@ const QUEST: &str = "oteryn:quest.authored.draccoon_herald_outfits_quest";
 const CLAIM: &str = "oteryn:quest-callback/qonce-dispatch-claim";
 const LEDGER: &str = "oteryn:quest-progress/qonce-dispatch/ledger";
 const CHOICE: &str = "oteryn:quest-progress/qonce-dispatch/choice";
+const HUNT_GATE: &str = "oteryn:quest-progress/qonce-dispatch/hunt-gate";
+const HUNT_KILL: &str = "oteryn:quest-transition/native-kills/qonce-hoard-dragon";
+const DRAGON: &str = "oteryn:creature.dragon";
 const COUNT: &str = "oteryn:quest-progress/qonce-dispatch/count";
 const WELL_ACHIEVEMENT: &str = "oteryn:achievement/fountain_of_life";
 const HOARD_ACHIEVEMENT: &str = "oteryn:achievement/hoard_of_the_dragon";
@@ -84,6 +89,11 @@ fn storage(track: &str, minimum: i64, maximum: i64, set: i64) -> Value {
 
 fn track(key: &str, initial: i64, minimum: i64, maximum: i64) -> Value {
     json!({"key": key, "initial": initial, "minimum": minimum, "maximum": maximum})
+}
+
+async fn track_value(h: &Harness, key: &str) -> TestResult<i64> {
+    Ok(sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+        .bind(key).fetch_one(&h.pool).await?)
 }
 
 async fn achievements(h: &Harness, key: &str) -> TestResult<i64> {
@@ -169,7 +179,10 @@ pub(super) async fn exercise(
         effects = json!({"reset":{"kind":"elapsed","track":LEDGER,"seconds":seconds},
             "selection_track":CHOICE,"rewards":[{"give":give}]});
     } else if name == HOARD {
-        tracks.extend([track(LEDGER, 50, 0, 50), track(COUNT, 9, 0, 100), track(CHOICE, 0, 0, 2)]);
+        tracks.extend([
+            track(LEDGER, 49, 0, 50), track(COUNT, 9, 0, 100),
+            track(CHOICE, 0, 0, 2), track(HUNT_GATE, 0, 0, 0),
+        ]);
         let mut count = storage(COUNT, 0, 99, 1);
         count["increment"] = json!(true);
         callback["storage"] = json!([storage(LEDGER, 50, 50, 0), count, storage(CHOICE, 0, 2, 0)]);
@@ -199,12 +212,25 @@ pub(super) async fn exercise(
     callback["effects"]["claim"] = effects;
     let recipe_sha256 = format!("{:x}", Sha256::digest(serde_json::to_vec(&callback)?));
     let trigger = if name == STEP { "step_in" } else { "map_use" };
+    let mut stages = vec![json!({
+        "key":"claim","completes":false,"trigger":{"kind":trigger,"callback":callback}
+    })];
+    if name == HOARD {
+        stages.push(json!({
+            "key":"kill-dragon","completes":false,"trigger":{"kind":"kill","counter":{
+                "key":HUNT_KILL,"creature":DRAGON,"track":LEDGER,
+                "gate":HUNT_GATE,"gate_value":0,"maximum":50,
+                "death_area":{"minimum":[AT.x-2, AT.y-2, -AT.floor],
+                              "maximum":[AT.x+2, AT.y+2, -AT.floor]}
+            }}
+        }));
+    }
     let bindings = Bindings::parse(&serde_json::to_vec(&json!({"schema":1,"quests":[{
         "quest":QUEST,
         "recipe_sha256":recipe_sha256,
         "sources":["synthetic dispatch tests exercising the Crystal claim shapes"],
         "tracks":tracks,
-        "stages":[{"key":"claim","completes":false,"trigger":{"kind":trigger,"callback":callback}}]
+        "stages":stages
     }]}))?)?;
     let revision = owner.quest_catalogue.as_deref().ok_or("catalogue")?.content_revision();
     let base = QuestStateCatalogue::empty(revision).ok_or("revision")?;
@@ -283,6 +309,13 @@ pub(super) async fn exercise(
     }
 
     h.root.set_test_quest_clock(100_000_000).map_err(debug)?;
+    if name == HOARD {
+        owner.active_generation.and_then(|generation| generation.native_gameplay())
+            .ok_or("native creature policies")?
+            .install_companion_policies(&mut *owner.runtime.lock().await).map_err(debug)?;
+        super::qengine_kill_stories::death(owner, admitted, DRAGON, 88_001).await?;
+        assert_eq!(track_value(h, LEDGER).await?, 50, "the death opens the hoard");
+    }
     let before = super::qengine_voucher_stories::quantity(h, 3031).await?;
     let before_red_gems = super::qengine_voucher_stories::quantity(h, 3039).await?;
     let (first, second) = tokio::join!(use_claim(owner, *admitted, 1), use_claim(owner, *admitted, 2));
@@ -317,6 +350,12 @@ pub(super) async fn exercise(
         ).bind(LEDGER).bind(COUNT).fetch_one(&h.pool).await?;
         assert_eq!((ledger, count), (0, 10));
         assert!((1..=2).contains(&(super::qengine_voucher_stories::quantity(h, 3039).await? - before_red_gems)));
+        super::qengine_kill_stories::death(owner, admitted, DRAGON, 88_002).await?;
+        assert_eq!(track_value(h, LEDGER).await?, 1, "the next hunt can earn credit again");
+        let deaths: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+        ).bind(HUNT_KILL).fetch_one(&h.pool).await?;
+        assert_eq!(deaths, 2, "duplicate death delivery earns one credit per death");
     }
     let atomic: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_reward_claim_mint_receipts m \
