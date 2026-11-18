@@ -24,6 +24,7 @@ const WELL: &str = "qengine-rewards-qonce-well";
 const WELL_LOST_ACK: &str = "qengine-rewards-qonce-well-lost-ack";
 const WELL_ROLLBACK: &str = "qengine-rewards-qonce-well-rollback";
 const DAILY: &str = "qengine-rewards-qonce-daily";
+const DAILY_HEART: &str = "qengine-rewards-qonce-daily-heart";
 const FOUNTAIN_TRANSFORM: &str = "qengine-rewards-qonce-fountain-transform";
 const ANNUAL: &str = "qengine-rewards-qonce-annual";
 const FULL_BACKPACK: &str = "qengine-rewards-qonce-full-backpack";
@@ -43,6 +44,7 @@ const DRAGON: &str = "oteryn:creature.dragon";
 const LION: &str = "oteryn:creature.noble_lion";
 const LION_MOUNT: &str = "oteryn:content.mount.noble_lion";
 const LIONS_HEART: u16 = 21439;
+const LIONS_DEN_ACHIEVEMENT: &str = "oteryn:achievement/lion_s_den_explorer";
 const HOLY_AREA_EFFECT: u16 = 50;
 const LIONS_FOUNTAIN: u16 = 6389;
 const LIONS_SANCTUARY_ROCK: u16 = 1852;
@@ -92,6 +94,13 @@ fn daily_claim_serializes_double_use_and_refuses_until_period_expires_postgres()
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     drop(admin);
     super::qengine_rewards::scenario(DAILY)
+}
+
+#[test]
+fn fountain_heart_is_eligible_until_the_noble_lion_is_tamed_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::qengine_rewards::scenario(DAILY_HEART)
 }
 
 #[test]
@@ -694,8 +703,6 @@ async fn tame_noble_lion(
     use oteryn_protocol_oteryn::world_object::{UseIntent, UseTarget};
     use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
-    let mut ordinal = 88_100;
-    super::qengine_voucher_stories::mint(owner, admitted, LIONS_HEART, 1, &mut ordinal).await?;
     let source = owner.active_generation.and_then(|generation| generation.native_gameplay())
         .and_then(|native| native.item_index())
         .and_then(|index| index.definition_ref("Item", "oteryn:item.tibia.i21439", "definition-r1"))
@@ -735,7 +742,42 @@ async fn tame_noble_lion(
     let entitlement: bool = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM game_account_appearance_unlocks WHERE unlock_key='oteryn:taming.noble_lion')",
     ).fetch_one(&h.pool).await?;
-    assert!(entitlement, "the normal taming owner grants the Noble Lion before the fountain");
+    assert!(entitlement, "the normal taming owner grants the Noble Lion");
+    Ok(())
+}
+
+async fn claim_then_tame_lion(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::{decode_use_result, encode_use_intent};
+
+    let before = super::qengine_voucher_stories::quantity(h, LIONS_HEART).await?;
+    assert_eq!(before, 0);
+    let payload = encode_use_intent(&claim_target(owner)?).map_err(debug)?;
+    let reply = super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload).await?;
+    assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Committed);
+    assert_eq!(super::qengine_voucher_stories::quantity(h, LIONS_HEART).await?, 1);
+    let first_claim = track_value(h, LEDGER).await?;
+    assert_eq!(track_value(h, CHOICE).await?, 1);
+    assert_eq!(receipts(h).await?, 1);
+    assert_eq!(achievements(h, LIONS_DEN_ACHIEVEMENT).await?, 1);
+
+    tame_noble_lion(owner, admitted, h).await?;
+    assert_eq!(super::qengine_voucher_stories::quantity(h, LIONS_HEART).await?, 0);
+    h.root.advance_test_quest_clock(DAILY_PERIOD).map_err(debug)?;
+    advance_interaction(owner)?;
+    // Isolate this candidate to test exclusion independently of the random draw.
+    // Crystal actions_lions_rock.lua:121-127 excludes the Heart after taming.
+    let payload = encode_use_intent(&claim_target(owner)?).map_err(debug)?;
+    let reply = super::quest_world_callbacks::wire(owner, admitted, 2, 2, payload).await?;
+    assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Rejected);
+    assert_eq!(track_value(h, LEDGER).await?, first_claim);
+    assert_eq!(track_value(h, CHOICE).await?, 1);
+    assert_eq!(receipts(h).await?, 1);
+    assert_eq!(achievements(h, LIONS_DEN_ACHIEVEMENT).await?, 1);
+    assert_eq!(super::qengine_voucher_stories::quantity(h, LIONS_HEART).await?, 0);
     Ok(())
 }
 
@@ -927,7 +969,7 @@ pub(super) async fn exercise(
     let mut tracks = vec![];
     let mut effects;
     let period = match name {
-        DAILY | FOUNTAIN_TRANSFORM => Some((DAILY_PERIOD, DAILY_REFUSAL)),
+        DAILY | DAILY_HEART | FOUNTAIN_TRANSFORM => Some((DAILY_PERIOD, DAILY_REFUSAL)),
         ANNUAL | FULL_BACKPACK => Some((31_536_001_i64, ANNUAL_REFUSAL)),
         _ => None,
     };
@@ -951,20 +993,23 @@ pub(super) async fn exercise(
             ]}),
             _ => json!({"item":"oteryn:item.tibia.i3031","count":2}),
         };
-        let mut rewards = vec![json!({"give":give})];
-        if name == DAILY {
-            rewards.insert(0, json!({
+        let heart = || json!({
                 "give":{"item":"oteryn:item.tibia.i21439","count":1},
                 "exclude_owned_mount":LION_MOUNT
-            }));
-        }
+            });
+        let mut rewards = match name {
+            DAILY => vec![heart(), json!({"give":give})],
+            DAILY_HEART => vec![heart()],
+            _ => vec![json!({"give":give})],
+        };
         if name == FOUNTAIN_TRANSFORM {
             rewards[0]["message"] = json!(FOUNTAIN_RED_GEM);
         }
         effects = json!({"reset":{"kind":"elapsed","track":LEDGER,"seconds":seconds},
             "selection_track":CHOICE,"rewards":rewards});
-        if matches!(name, DAILY | FOUNTAIN_TRANSFORM) {
+        if matches!(name, DAILY | DAILY_HEART | FOUNTAIN_TRANSFORM) {
             effects["actor_magic_effect"] = json!(HOLY_AREA_EFFECT);
+            callback["achievements"] = json!([LIONS_DEN_ACHIEVEMENT]);
         }
         if name == ANNUAL {
             tracks.push(track(FEATHERS, 1, 1, 2));
@@ -1157,7 +1202,12 @@ pub(super) async fn exercise(
     if name == FULL_BACKPACK {
         return Box::pin(full_backpack_retry(owner, admitted, h)).await;
     }
+    if name == DAILY_HEART {
+        return Box::pin(claim_then_tame_lion(owner, admitted, h)).await;
+    }
     if name == DAILY {
+        let mut ordinal = 88_100;
+        super::qengine_voucher_stories::mint(owner, admitted, LIONS_HEART, 1, &mut ordinal).await?;
         tame_noble_lion(owner, admitted, h).await?;
     }
     if name == HOARD {
@@ -1252,6 +1302,7 @@ pub(super) async fn exercise(
     if name == DAILY {
         assert_eq!(track_value(h, CHOICE).await?, 2);
         assert_eq!(super::qengine_voucher_stories::quantity(h, LIONS_HEART).await?, before_hearts);
+        assert_eq!(achievements(h, LIONS_DEN_ACHIEVEMENT).await?, 1);
         let actor = admitted.runtime_actor.ok_or("fountain claimant")?;
         let cell = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position();
         let claimant_cell = crate::map::overlay::TilePos {
