@@ -43,9 +43,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     tile(monster.position),
                     false,
                 )
-                && !census
-                    .iter()
-                    .any(|(_, position, _)| position.position() == at)
+                && (callback.starts_merchant_wave()
+                    || !census
+                        .iter()
+                        .any(|(_, position, _)| position.position() == at))
                 && self.movement_cells.index().lookup(
                     self.movement_cells.scope(),
                     LogicalCell {

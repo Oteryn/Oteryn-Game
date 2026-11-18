@@ -322,6 +322,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             // Source Game.createMonster attempts once at its due instant. An occupied/full
             // room does not invent a successful spawn or retry after the source deadline.
+            let merchant_wave = memo.callback.starts_merchant_wave();
             let mut monsters = Vec::new();
             let mut admissible = true;
             for monster in &encounter.monsters {
@@ -345,6 +346,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .any(|(_, position, _)| position.position() == at)
                     })
                 {
+                    if merchant_wave {
+                        continue;
+                    }
                     admissible = false;
                     break;
                 }
@@ -354,7 +358,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 monsters.push((monster.creature.as_str(), policy.maximum_health, at));
             }
-            if admissible && let Ok(spawned) = runtime.commit_quest_creature_spawn(&monsters) {
+            if merchant_wave {
+                // Crystal attempts each of the seven placements independently.
+                for monster in monsters {
+                    if let Ok(spawned) = runtime.commit_quest_creature_spawn(&[monster]) {
+                        memo.spawned.extend(spawned);
+                    }
+                }
+            } else if admissible && let Ok(spawned) = runtime.commit_quest_creature_spawn(&monsters)
+            {
                 memo.spawned = spawned;
             }
             memo.attempted_spawn = true;
