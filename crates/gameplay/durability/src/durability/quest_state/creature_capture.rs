@@ -50,7 +50,7 @@ impl QualifiedCreatureCapture {
             .chain_update(now.to_be_bytes())
             .finalize();
         let mut bytes: [u8; 16] = hash[..16].try_into().ok()?;
-        bytes[6] = (bytes[6] & 0x0f) | 0x80;
+        bytes[6] = (bytes[6] & 0x0f) | 0x70;
         bytes[8] = (bytes[8] & 0x3f) | 0x80;
         Some(Self {
             transition,
@@ -58,6 +58,10 @@ impl QualifiedCreatureCapture {
             occurrence: SourceThinkOccurrence::from_bytes(bytes)?,
             target, session, lease,
         })
+    }
+
+    pub fn occurrence(&self) -> [u8; 16] {
+        *self.occurrence.as_bytes()
     }
 
     pub(super) fn current_for(&self, catalogue: &QuestStateCatalogue) -> bool {

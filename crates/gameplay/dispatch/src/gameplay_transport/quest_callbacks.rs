@@ -10,6 +10,7 @@ use admission::{character_fence_required, stateless_observation_required};
 mod clear_area;
 mod committed_copy;
 #[path = "daily_world_gates.rs"]
+mod creature_capture;
 mod daily_world_gates;
 mod distraction;
 mod dreamer_carrot;
@@ -100,6 +101,7 @@ struct ObservedWorldCallback {
 #[derive(Default)]
 pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
+    captures: std::sync::Mutex<creature_capture::Captures>,
     distractions: std::sync::Mutex<Vec<distraction::DistractionVisit>>,
     personal: personal_encounter::Cohorts,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
@@ -170,7 +172,13 @@ impl PendingCallbacks {
             .iter()
             .map(|visit| visit.due)
             .min();
-        pending.into_iter().chain(visits).chain(distractions).min()
+        let captures = self.captures.lock().ok()?.next_due();
+        pending
+            .into_iter()
+            .chain(visits)
+            .chain(distractions)
+            .chain(captures)
+            .min()
     }
 }
 

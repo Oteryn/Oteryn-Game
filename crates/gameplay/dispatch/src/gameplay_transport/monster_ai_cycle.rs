@@ -723,6 +723,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 continue;
             };
+            self.queue_creature_capture(&runtime, &states, *actor, target, *session, now.get());
             let _ = states.apply_drome_murmillion_paralyze(
                 &mut runtime,
                 target,

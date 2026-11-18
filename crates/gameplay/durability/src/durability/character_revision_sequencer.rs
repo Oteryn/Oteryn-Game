@@ -30,6 +30,7 @@ use std::future::Future;
 use std::sync::Arc;
 
 use tokio::sync::{Mutex as SlotQueue, OwnedMutexGuard};
+mod creature_capture;
 mod cyclopedia;
 mod death_promotion;
 mod grizzly;
