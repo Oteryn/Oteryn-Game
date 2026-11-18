@@ -16,7 +16,10 @@ const DUKE: &str = "oteryn:creature.the_duke_of_the_depths";
 const HEART_TIMEOUT_US: u64 = 20_000_000;
 
 #[derive(Debug, Default)]
-pub(super) struct HeartTimers(Vec<(ExactActorRef, u64)>);
+pub(super) struct HeartTimers {
+    transforms: Vec<(ExactActorRef, u64)>,
+    waves: Vec<(ExactActorRef, u64)>,
+}
 
 pub(super) fn tick(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -28,6 +31,7 @@ pub(super) fn tick(
         return;
     };
     tick_hearts(runtime, timers, &census, now_us);
+    tick_heart_wave(owner, runtime, timers, &census, now_us);
     let Some(count) = census.iter().find_map(|actor| {
         if !matches!(actor.runtime_scope(), RuntimeScopeRefV1::Instance { .. }) {
             return None;
@@ -96,14 +100,18 @@ fn tick_hearts(
         })
         .collect();
     timers
-        .0
+        .transforms
         .retain(|(actor, _)| hearts.iter().any(|heart| heart.actor == *actor));
     for heart in hearts {
-        let deadline = match timers.0.iter().find(|(actor, _)| *actor == heart.actor) {
+        let deadline = match timers
+            .transforms
+            .iter()
+            .find(|(actor, _)| *actor == heart.actor)
+        {
             Some((_, deadline)) => *deadline,
             None => {
                 timers
-                    .0
+                    .transforms
                     .push((heart.actor, now_us.saturating_add(HEART_TIMEOUT_US)));
                 continue;
             }
@@ -138,6 +146,81 @@ fn tick_hearts(
         {
             let _ = runtime.commit_creature_profile_transformation(change);
         }
+    }
+}
+
+// Crystal actions_using_crystals.lua: fieryHearts, startWarzoneVI and sumonarFieryHearts.
+const INITIAL_WAVE_US: u64 = 30_000_000;
+const REPEAT_WAVE_US: u64 = 40_000_000;
+const HEART_CELLS: [(i32, i32); 5] = [
+    (33712, 32299),
+    (33715, 32301),
+    (33714, 32305),
+    (33710, 32305),
+    (33709, 32301),
+];
+
+fn tick_heart_wave(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &mut ChannelRuntimeV1,
+    timers: &mut HeartTimers,
+    census: &[ExactActorRef],
+    now_us: u64,
+) {
+    timers.waves.retain(|(actor, _)| census.contains(actor));
+    let Some(duke) = census.iter().copied().find_map(|actor| {
+        if !matches!(actor.runtime_scope(), RuntimeScopeRefV1::Instance { .. }) {
+            return None;
+        }
+        let snapshot = runtime.companion_snapshot(actor).ok()?;
+        (matches!(
+            snapshot.state.policy.definition_key.as_str(),
+            DUKE | EMPOWERED_DUKE
+        ) && snapshot.position.floor == 15
+            && snapshot.position.x.abs_diff(33712) <= SPECTATOR_RANGE
+            && snapshot.position.y.abs_diff(32303) <= SPECTATOR_RANGE)
+            .then_some(snapshot)
+    }) else {
+        return;
+    };
+    let Some((_, deadline)) = timers
+        .waves
+        .iter_mut()
+        .find(|(actor, _)| *actor == duke.actor)
+    else {
+        timers
+            .waves
+            .push((duke.actor, now_us.saturating_add(INITIAL_WAVE_US)));
+        return;
+    };
+    if now_us < *deadline || duke.state.policy.definition_key != DUKE {
+        return;
+    }
+    *deadline = now_us.saturating_add(REPEAT_WAVE_US);
+    if census.iter().any(|actor| {
+        runtime.companion_snapshot(*actor).is_ok_and(|heart| {
+            heart.state.policy.definition_key == HEART
+                && heart.position.floor == 15
+                && heart.position.x.abs_diff(33712) <= SPECTATOR_RANGE
+                && heart.position.y.abs_diff(32303) <= SPECTATOR_RANGE
+        })
+    }) {
+        return;
+    }
+    for (x, y) in HEART_CELLS {
+        if let Some(heart) = super::primal_menace::spawn_creature(
+            owner,
+            runtime,
+            HEART,
+            MovementLocalPosition { x, y, floor: 15 },
+        ) {
+            timers
+                .transforms
+                .push((heart, now_us.saturating_add(HEART_TIMEOUT_US)));
+        }
+    }
+    if let Ok(change) = runtime.prepare_creature_profile_transformation(&duke, EMPOWERED_DUKE) {
+        let _ = runtime.commit_creature_profile_transformation(change);
     }
 }
 
