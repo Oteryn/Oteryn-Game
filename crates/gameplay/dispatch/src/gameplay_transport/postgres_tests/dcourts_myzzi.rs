@@ -28,7 +28,7 @@ fn dcourts_myzzi_dialogue_commits_court_access_only_after_confirmation() -> Test
             let runtime = tokio::runtime::Builder::new_current_thread()
                 .enable_all()
                 .build()
-                .map_err(debug)?;
+                .map_err(|error| error.to_string())?;
             runtime
                 .block_on(Box::pin(async move {
                     let h =
@@ -38,7 +38,7 @@ fn dcourts_myzzi_dialogue_commits_court_access_only_after_confirmation() -> Test
                     h.cleanup().await?;
                     result
                 }))
-                .map_err(debug)
+                .map_err(|error| error.to_string())
         })?
         .join()
         .map_err(|_| "Myzzi PostgreSQL thread panicked")?

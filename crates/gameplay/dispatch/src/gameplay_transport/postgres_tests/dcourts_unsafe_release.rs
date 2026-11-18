@@ -195,9 +195,17 @@ async fn exercise(h: &Harness) -> TestResult {
         StepDisposition::Moved
     );
 
+    // Seed Andrew's predecessor fact through the same isolated fixture privileges
+    // as other route tests. Every movement uses the regular fenced owner.
+    let mut seed = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *seed)
+        .await?;
     sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision)
-        SELECT character_id,$2,$3,1,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
-        .bind(id(41).as_slice()).bind(BAIT).bind(QUEST).execute(&h.pool).await?;
+        SELECT character_id,$2,$3,1,greatest(character_revision,2)
+        FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+        .bind(id(41).as_slice()).bind(BAIT).bind(QUEST).execute(&mut *seed).await?;
+    seed.commit().await?;
     assert_eq!(
         step(StepDirection::East).await.0.disposition,
         StepDisposition::Moved
