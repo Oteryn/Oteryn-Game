@@ -1036,20 +1036,14 @@ impl crate::spell::delayed_execution::DueCombatCommit for DueCharmCommit<'_> {
         batch: &OwnerCombatBatch,
     ) -> Result<CombatBatchReceipt, crate::spell::delayed_execution::Error> {
         use crate::spell::delayed_execution::{Error, TimerPayload};
-        let inputs = match payload {
+        let (inputs, magnitude) = match payload {
             TimerPayload::Strike(saved) => {
-                &saved
-                    .resolved
-                    .as_ref()
-                    .ok_or(Error::InvalidPayload)?
-                    .augments
+                let resolved = saved.resolved.as_ref().ok_or(Error::InvalidPayload)?;
+                (&resolved.augments, &resolved.magnitude)
             }
             TimerPayload::OrdinaryCombat(saved) => {
-                &saved
-                    .resolved
-                    .as_ref()
-                    .ok_or(Error::InvalidPayload)?
-                    .augments
+                let resolved = saved.resolved.as_ref().ok_or(Error::InvalidPayload)?;
+                (&resolved.augments, &resolved.magnitude)
             }
             _ => return commit_due_batch(runtime, self.states, payload, batch, None),
         };
@@ -1081,19 +1075,10 @@ impl crate::spell::delayed_execution::DueCombatCommit for DueCharmCommit<'_> {
         if receipt.applied
             && let Some(map) = self.map
         {
-            let magnitude = match payload {
-                TimerPayload::Strike(saved) => saved.resolved.as_ref().map(|r| &r.magnitude),
-                TimerPayload::OrdinaryCombat(saved) => {
-                    saved.resolved.as_ref().map(|r| &r.magnitude)
-                }
-                _ => None,
-            };
-            if let Some(magnitude) = magnitude {
-                for target in magnitude.direct_damage_targets() {
-                    crate::gameplay_transport::encounter_phases::bosses::publish_shield_hits(
-                        map, runtime, target, 1,
-                    );
-                }
+            for target in magnitude.direct_damage_targets() {
+                crate::gameplay_transport::encounter_phases::bosses::publish_shield_hits(
+                    map, runtime, target, 1,
+                );
             }
         }
         Ok(receipt)

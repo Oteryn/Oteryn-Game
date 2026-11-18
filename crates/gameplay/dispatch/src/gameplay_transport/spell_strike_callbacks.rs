@@ -194,7 +194,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .retain_strike(runtime, saved, resolved, crate::foundation::owner_timer::SemanticTimeMicros::from_micros(self.owner_now().get()))
                     .map_err(|_|DurabilityError::Unavailable)?;
             }
-            **accepted = Some(apply_due_under_current_owners(runtime, states, self.spells, casters, self.owner_now(), content, self.imported_charms).map_err(|_|DurabilityError::Unavailable)?);
+            **accepted = Some(apply_due_under_current_owners(runtime, states, self.spells, casters, self.owner_now(), content, self.imported_charms, self.bundle_map()).map_err(|_|DurabilityError::Unavailable)?);
             tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;
             Ok(())
         })).await.map_err(|_|Error::StaleOwner)?;
