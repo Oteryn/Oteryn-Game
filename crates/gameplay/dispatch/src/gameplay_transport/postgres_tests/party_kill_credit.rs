@@ -28,6 +28,7 @@ enum Case {
     Time,
     Window,
     WindowConsumed,
+    WindowStateless,
     Area,
     DefeatTime,
     Summon,
@@ -106,9 +107,20 @@ fn advancing_a_ward_exit_consumes_it_for_the_other_player() -> TestResult {
     run(admin, Case::WindowConsumed)
 }
 
+#[test]
+fn stateless_seal_exit_moves_both_players_without_a_quest_write() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::WindowStateless)
+}
+
 impl Case {
     fn is_window(self) -> bool {
-        matches!(self, Self::Window | Self::WindowConsumed)
+        matches!(
+            self,
+            Self::Window | Self::WindowConsumed | Self::WindowStateless
+        )
     }
 }
 
@@ -116,7 +128,7 @@ fn window_callback(at: MovementLocalPosition, case: Case) -> TestResult<Callback
     let x = u16::try_from(at.x)?;
     let y = u16::try_from(at.y)?;
     let floor = i8::try_from(-at.floor)?;
-    Ok(serde_json::from_value(json!({
+    let mut callback = json!({
         "key":"oteryn:quest-callback/qcredit-fixture/timed-exit",
         "quest":QUEST,
         "trigger":"step_in",
@@ -135,7 +147,15 @@ fn window_callback(at: MovementLocalPosition, case: Case) -> TestResult<Callback
         "offerings":[],
         "return_on_failure":true,
         "sources":["Crystal201189f creaturescripts_inquisition_boss.lua:19-29"]
-    }))?)
+    });
+    if case == Case::WindowStateless {
+        callback["storage"] = json!([]);
+        callback["sources"] =
+            json!(["Crystal201189f ferumbras_ascension/creaturescripts_bosses_kill.lua:126-134"]);
+        callback["effects"]["death_window"]["duration_ms"] = json!(60_000);
+        callback["effects"]["death_window"]["required_deaths"] = json!(1);
+    }
+    Ok(serde_json::from_value(callback)?)
 }
 
 fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCatalogue> {
@@ -152,6 +172,9 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
         "summon_owner": case == Case::Summon
     });
     let source = match case {
+        Case::WindowStateless => {
+            "Crystal201189f ferumbras_ascension/creaturescripts_bosses_kill.lua:126-134"
+        }
         Case::DefeatTime => {
             counter["record_defeat_time"] = json!(true);
             counter["maximum"] = json!(i64::MAX);
@@ -447,7 +470,7 @@ fn run(admin: String, case: Case) -> TestResult {
                 assert!((before..=after).contains(&actual));
                 [actual, actual, 0]
             }
-            Case::Window | Case::WindowConsumed => {
+            Case::Window | Case::WindowConsumed | Case::WindowStateless => {
                 return Err("timed exit requires bundle cells".into());
             }
         };
@@ -489,9 +512,11 @@ async fn exercise_window(
     death(owner, players, RAT, landing, case, 99).await?;
     set_clock(200_000);
     death(owner, players, RAT, ward, Case::Window, 100).await?;
-    assert_eq!(enter_exit(owner, players[0], portal).await?, original[0]);
-    set_clock(201_000);
-    death(owner, players, CAVE_RAT, ward, Case::Window, 101).await?;
+    if case != Case::WindowStateless {
+        assert_eq!(enter_exit(owner, players[0], portal).await?, original[0]);
+        set_clock(201_000);
+        death(owner, players, CAVE_RAT, ward, case, 101).await?;
+    }
     set_clock(202_000);
     death(owner, players, RAT, ward, case, 102).await?;
     assert_eq!(enter_exit(owner, players[0], portal).await?, landing);
@@ -514,8 +539,12 @@ async fn exercise_window(
     .bind(EXIT)
     .fetch_one(pool)
     .await?;
-    assert_eq!(passed, 2);
-    set_clock(801_000);
+    assert_eq!(passed, if case == Case::WindowStateless { 0 } else { 2 });
+    set_clock(if case == Case::WindowStateless {
+        260_000
+    } else {
+        801_000
+    });
     for (player, origin) in players.iter().zip(original) {
         assert_eq!(enter_exit(owner, *player, portal).await?, origin);
     }
