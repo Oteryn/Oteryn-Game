@@ -447,7 +447,7 @@ fn run_encounter(case: EncounterCase) -> TestResult {
                 assert_eq!(values.len(), 2);
                 assert_eq!(values[1], (SCAR_COUNT.into(), 0));
                 assert_eq!(values[0].0, SCAR_TIMER);
-                let now = super::super::unix_seconds().ok_or("host clock")?;
+                let now = crate::gameplay_transport::unix_seconds().ok_or("host clock")?;
                 assert!((now - 60..=now).contains(&values[0].1));
                 {
                     let mut runtime = owner.runtime.lock().await;
