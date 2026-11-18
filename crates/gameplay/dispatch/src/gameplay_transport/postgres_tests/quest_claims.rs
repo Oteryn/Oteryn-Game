@@ -311,6 +311,9 @@ async fn socket_window(
         assert_eq!(map.facts.expire_movement_items(starts), 1);
         assert!(present());
         assert_eq!(map.facts.object_revision(centre), 0, "wait for durable room progress");
+        if repeat && index + 1 == count {
+            commit_opening_without_publication(owner, admitted, h, centre).await?;
+        }
         owner.drain_paid_presence_opening().await;
         assert_eq!(map.facts.object_revision(centre), if index + 1 == count { 1 } else { 0 });
         expiry.push((at + 60_000_000, tile));
@@ -335,6 +338,48 @@ async fn socket_window(
         assert!(map.facts.movement_items(tile).is_empty());
     }
     assert_eq!(map.facts.object_revision(centre), 1, "fields expire while the fountain stays open for its claim");
+    Ok(())
+}
+
+async fn commit_opening_without_publication(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+    centre: u64,
+) -> TestResult {
+    use crate::durability::quest_state::QuestTransitionOutcome;
+    use crate::foundation::{CommandId, CommandRef};
+    use oteryn_gameplay_quests::quest::QuestRefusal;
+
+    let map = owner.bundle_map().ok_or("socket map")?;
+    let opening = map.facts.next_presence_opening().ok_or("room threshold")?;
+    let catalogue = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
+    let session = admitted.game_session_id;
+    let fence = owner.current_quest_fence(session).await
+        .map_err(|()| "opening fence unavailable")?.ok_or("opening fence")?;
+    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+    let unpaid = CommandRef::new(session, CommandId::new(90).map_err(debug)?);
+    let refused = slot.commit_paid_presence_progress(
+        owner.root, owner.character, owner.holder, fence, Arc::clone(catalogue),
+        &opening.source.callback, unpaid,
+    ).await?;
+    assert_eq!(refused, QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch));
+    assert_eq!(track_value(h, SOCKET_PHASE).await?, 9);
+
+    // Stop after the real writer has committed but before the map publication.
+    // The normal scheduler below must resume the same retained opening.
+    let committed = slot.commit_paid_presence_progress(
+        owner.root, owner.character, owner.holder, fence, Arc::clone(catalogue),
+        &opening.source.callback, opening.source.command,
+    ).await?;
+    assert!(matches!(committed, QuestTransitionOutcome::Committed(_)));
+    assert_eq!(track_value(h, SOCKET_PHASE).await?, 10);
+    assert_eq!(map.facts.object_revision(centre), 0);
+    assert!(map.facts.next_presence_opening().is_some());
+    let messages = owner.states.chat.drain(session);
+    assert!(!messages.iter().any(|line| matches!(
+        line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == ROOM_OPENS
+    )));
     Ok(())
 }
 
