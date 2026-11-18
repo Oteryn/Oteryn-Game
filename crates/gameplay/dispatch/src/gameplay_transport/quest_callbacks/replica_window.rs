@@ -31,23 +31,50 @@ pub(super) fn replica_portal_destination(access: ReplicaPortalAccess) -> Option<
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn replica_portal_access(
         &self,
-        permit: &SpellLanePermit,
         session: GameSessionId,
     ) -> Option<ReplicaPortalAccess> {
+        let now = self.owner_now().get();
         let fence = self.current_quest_fence(session).await.ok()??;
         let native = self
             .active_generation
             .and_then(|active| active.native_gameplay())?;
-        self.root
-            .read_replica_portal(
-                permit,
-                self.character,
-                self.holder,
-                fence,
-                native.source_digest(),
-            )
+        let (access, remaining) = self
+            .root
+            .read_replica_portal(self.character, self.holder, fence, native.source_digest())
             .await
-            .ok()
+            .ok()?;
+        if remaining > 0 {
+            let map = self.bundle_map()?;
+            let due = now.checked_add(remaining)?;
+            let has_source_cells = [REPLICA_PORTAL, REPLICA_CHAMBER]
+                .into_iter()
+                .all(|pos| map.overlay.base().tile(pos.x, pos.y, pos.floor).is_some());
+            if !has_source_cells
+                || !map.facts.project_timed_quest_portal(
+                    REPLICA_PORTAL,
+                    REPLICA_CHAMBER,
+                    10840,
+                    self.owner_now().get(),
+                    due,
+                )
+            {
+                return None;
+            }
+        }
+        Some(access)
+    }
+
+    pub(in crate::gameplay_transport) async fn project_replica_portal_after_death(
+        &self,
+        creature: &str,
+        session: GameSessionId,
+    ) {
+        if matches!(
+            creature,
+            "oteryn:creature.diamond_servant_replica" | "oteryn:creature.golden_servant_replica"
+        ) {
+            self.replica_portal_access(session).await;
+        }
     }
 
     pub(super) fn announce_replica_portal(

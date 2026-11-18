@@ -149,7 +149,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         use super::replica_window::{REPLICA_PORTAL, replica_portal_destination};
         let replica = if pos == REPLICA_PORTAL {
-            let Some(access) = self.replica_portal_access(permit, session).await else {
+            let Some(access) = self.replica_portal_access(session).await else {
                 return entered;
             };
             Some(access)
@@ -169,7 +169,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let optional_pvp = self.special_movement_policy(permit, actor, session).await;
         if let Some(access) = replica
-            && self.replica_portal_access(permit, session).await != Some(access)
+            && self.replica_portal_access(session).await != Some(access)
         {
             return entered;
         }

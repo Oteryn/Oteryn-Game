@@ -42,7 +42,7 @@ pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleW
         9125,
         1,
         &[],
-        &[9126],
+        &[9126, 10840],
         None,
         &[DESTINATION, REFUSAL],
     )
@@ -188,12 +188,39 @@ pub(super) async fn exercise(
     step(admitted, StepDirection::West, AT).await?;
 
     sqlx::query(
-        "UPDATE game_forgotten_knowledge_replica_windows SET expires_at = statement_timestamp() + interval '10 minutes', kills=5
+        "UPDATE game_forgotten_knowledge_replica_windows SET expires_at = statement_timestamp() + interval '10 minutes', kills=4
          WHERE world_id=encode($1,'hex')::uuid AND replica_kind=2",
     )
     .bind(admitted.world_id.as_bytes().as_slice())
     .execute(&harness.pool)
     .await?;
+    super::qengine_kill_stories::death(
+        owner,
+        admitted,
+        "oteryn:creature.golden_servant_replica",
+        220,
+    )
+    .await?;
+    assert_eq!(
+        map.facts.quest_portal_destination(
+            crate::map::overlay::TilePos {
+                x: PORTAL.x,
+                y: PORTAL.y,
+                floor: PORTAL.floor
+            },
+            owner.owner_now().get()
+        ),
+        Some(crate::map::overlay::TilePos {
+            x: DESTINATION.x,
+            y: DESTINATION.y,
+            floor: DESTINATION.floor
+        }),
+    );
     step(admitted, StepDirection::East, DESTINATION).await?;
+    let expires = map
+        .facts
+        .next_movement_decay_time()
+        .ok_or("portal expiry")?;
+    assert_eq!(map.facts.expire_movement_items(expires), 1);
     Ok(())
 }

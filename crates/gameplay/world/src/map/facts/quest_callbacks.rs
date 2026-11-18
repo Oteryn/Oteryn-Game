@@ -1423,6 +1423,71 @@ impl BundleFacts {
             .unwrap_or_default()
     }
 
+    /// Publish one expiring portal discovered by native encounter code.
+    pub fn project_timed_quest_portal(
+        &self,
+        position: TilePos,
+        destination: TilePos,
+        appearance: u16,
+        now: u64,
+        due: u64,
+    ) -> bool {
+        if due <= now || self.house_tile(position) || self.house_tile(destination) {
+            return false;
+        }
+        let Some(facts) = self
+            .movement_item_facts(appearance)
+            .filter(|facts| !facts.pickupable)
+        else {
+            return false;
+        };
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        if states.position_reserved(position) {
+            return false;
+        }
+        if let Some(portal) = states.portals.get(&position) {
+            if portal.expires.is_none_or(|expires| expires > now) {
+                return portal.entry.is_some()
+                    && portal.destination == destination
+                    && portal.expires.is_some();
+            }
+            let owner = portal.owner;
+            Arc::make_mut(&mut states).remove_portals(owner);
+        }
+        if !states.has_capacity(2) {
+            return false;
+        }
+        let Some(sequence) = states.movement_sequence.checked_add(1) else {
+            return false;
+        };
+        let Some(entry) = EntryId::callback(sequence) else {
+            return false;
+        };
+        let states = Arc::make_mut(&mut states);
+        states.movement_sequence = sequence;
+        states
+            .movement_items
+            .entry(position)
+            .or_default()
+            .push(view::ComposedEntry {
+                source: view::EntrySource::Added(entry),
+                facts,
+            });
+        states.portals.insert(
+            position,
+            DynamicPortal {
+                owner: entry.get(),
+                destination,
+                entry: Some(entry),
+                owner_revision: None,
+                expires: Some(due),
+            },
+        );
+        true
+    }
+
     /// Only live, current portals resolve; the timer and explicit removal retire both ends.
     pub fn quest_portal_destination(&self, pos: TilePos, now: u64) -> Option<TilePos> {
         let states = self.callbacks.lock().ok()?;

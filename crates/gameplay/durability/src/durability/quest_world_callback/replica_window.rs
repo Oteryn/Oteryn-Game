@@ -45,15 +45,13 @@ pub enum ReplicaPortalAccess {
 impl DurabilityRoot {
     pub async fn read_replica_portal(
         &self,
-        permit: &SpellLanePermit,
         recovery: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
         native_digest: [u8; 32],
-    ) -> Result<ReplicaPortalAccess, DurabilityError> {
-        permit.check_scope(fence.runtime_scope)?;
+    ) -> Result<(ReplicaPortalAccess, u64), DurabilityError> {
         let RuntimeScopeRefV1::Channel { world_id, .. } = fence.runtime_scope else {
-            return Ok(ReplicaPortalAccess::Dormant);
+            return Ok((ReplicaPortalAccess::Dormant, 0));
         };
         let record = recovery
             .record_for(self)
@@ -64,9 +62,11 @@ impl DurabilityRoot {
             assert_current_equipment_in_transaction(
                 &mut tx, &record, &node, &fence.item_fence(), None, native_digest
             ).await.map_err(|_| DurabilityError::Unavailable)?;
-            let (active, cooldown, charged): (bool, bool, bool) = sqlx::query_as(
+            let (remaining, cooldown, charged): (i64, bool, bool) = sqlx::query_as(
                 "SELECT
-                   (SELECT count(*) = 2 FROM game_forgotten_knowledge_replica_windows
+                   (SELECT CASE WHEN count(*) = 2 THEN
+                        floor(extract(epoch FROM (min(expires_at) - statement_timestamp()))*1000000)::bigint
+                      ELSE 0 END FROM game_forgotten_knowledge_replica_windows
                     WHERE world_id=encode($1,'hex')::uuid AND kills=5
                       AND expires_at > statement_timestamp()),
                    EXISTS (SELECT 1 FROM game_character_boss_cooldowns
@@ -82,12 +82,14 @@ impl DurabilityRoot {
             .bind("oteryn:quest-progress/quest/u11_02/forgotten_knowledge/golden_servant_counter")
             .fetch_one(&mut **tx).await?;
             tx.commit(deadline).await?;
-            Ok(match (active, cooldown, charged) {
+            let remaining = u64::try_from(remaining).map_err(|_| DurabilityError::InvalidStoredState)?;
+            let access = match (remaining > 0, cooldown, charged) {
                 (false, _, _) => ReplicaPortalAccess::Dormant,
                 (true, true, _) => ReplicaPortalAccess::LloydCooldown,
                 (true, false, false) => ReplicaPortalAccess::InsufficientEnergy,
                 (true, false, true) => ReplicaPortalAccess::Ready,
-            })
+            };
+            Ok((access, remaining))
         })).await
     }
 

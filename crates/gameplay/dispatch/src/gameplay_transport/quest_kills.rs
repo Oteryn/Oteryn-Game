@@ -111,6 +111,9 @@ pub(super) async fn settle(
                     }
                 }
                 owner.refresh_quest_session(recipient.session, false).await;
+                owner
+                    .project_replica_portal_after_death(&entry.creature, recipient.session)
+                    .await;
             }
             Ok(QuestTransitionOutcome::Refused(_) | QuestTransitionOutcome::ObligationClosed) => {}
             Err(
