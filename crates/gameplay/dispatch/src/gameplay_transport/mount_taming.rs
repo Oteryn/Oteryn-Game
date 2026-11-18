@@ -122,6 +122,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
+        if let Some(result) = self
+            .use_demon_oak_axe(actor, command, map, &resolved, intent, source)
+            .await
+        {
+            return Ok(Some(result));
+        }
         let callbacks = self.callback_content();
         let Some(callback) = callbacks.iter().find(|callback| {
             quest_objects::accepts(callback)

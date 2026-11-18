@@ -5,12 +5,14 @@ use super::{
     connection::{UseCommand, UseOutcome},
 };
 mod admission;
+mod area_damage;
 mod conditional_cells;
 use admission::{character_fence_required, stateless_observation_required};
 mod clear_area;
 mod committed_copy;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
+mod demon_oak;
 mod dreamer_carrot;
 mod effects;
 mod encounter;
@@ -1300,6 +1302,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(map) = self.bundle_map() else {
             return entered;
         };
+        if trigger == Trigger::StepIn && origin.position() != entered.position() {
+            self.step_five_ways(actor, session, map, entered).await;
+            self.step_demon_oak_area(actor, session, map, entered).await;
+        }
         let selected_position = if trigger == Trigger::StepOut {
             origin.position()
         } else {

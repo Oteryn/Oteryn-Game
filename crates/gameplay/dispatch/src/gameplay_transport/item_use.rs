@@ -1298,7 +1298,7 @@ fn requirements_met(
     })
 }
 
-const fn base_vocation(vocation: Vocation) -> ReferenceBaseVocation {
+pub(super) const fn base_vocation(vocation: Vocation) -> ReferenceBaseVocation {
     match vocation {
         Vocation::None => ReferenceBaseVocation::None,
         Vocation::Druid | Vocation::ElderDruid => ReferenceBaseVocation::Druid,
