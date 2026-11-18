@@ -7,7 +7,7 @@ use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityPublicationV1,
 };
 use crate::foundation::{AuthenticatedTransportRefV1, GameSessionId};
-use crate::gameplay_transport::connection::FirstEntryOutcome;
+use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 fn uuid(id: &[u8; 16]) -> String {
     crate::gameplay_transport::canonical_uuid(id)
 }
@@ -73,6 +73,10 @@ fn bootstrap_v4_every_vocation_first_entry_without_progression_postgres() -> Tes
                 assert_eq!(outcome, FirstEntryOutcome::Positioned, "{vocation}");
                 assert!(item_fence.is_some(), "{vocation}: missing item authority");
                 assert!(placement.is_some(), "{vocation}: missing entry placement");
+                assert!(
+                    owner.observe(deps.actor).await.is_some(),
+                    "{vocation}: connection cannot build the initial spatial snapshot"
+                );
                 let familiar = h.root.read_character_familiar_state(&authority, character).await?;
                 assert!(familiar.committed_character_revision().is_none());
                 let loaded = crate::gameplay_transport::load_character_cast_facts(&h.root, &authority, character).await;
