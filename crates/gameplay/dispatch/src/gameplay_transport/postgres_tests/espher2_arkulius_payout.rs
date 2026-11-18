@@ -1,7 +1,6 @@
 //! The four Crystal rewards use the existing Arkulius dialogue transaction.
 use super::fixture::{Harness, debug, run};
 use super::{Dependencies, TestResult, prepare_current_session};
-use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestTransition, elemental_spheres,
 };
