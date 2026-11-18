@@ -555,13 +555,9 @@ import_legacy_postgres_project() {
     evidence "postgres_recovery=deadline operation=legacy_scan project=$project"
     return 1
   fi
-  while IFS= read -r -d '' record; do
+  while IFS= read -r -d '' record && (( SECONDS < POSTGRES_RECOVERY_DEADLINE )); do
     marker=${record##*/}
     [[ "${marker##*.}" =~ ^[a-f0-9]{32}$ ]] || continue
-    if (( SECONDS >= POSTGRES_RECOVERY_DEADLINE )); then
-      evidence "postgres_recovery=deadline operation=legacy_import project=$project"
-      return 1
-    fi
     # Publish in the new journal before removing the old marker.
     mkdir -p -- "$POSTGRES_JOURNALS/$project" &&
       : > "$POSTGRES_JOURNALS/$project/$marker" &&
@@ -571,6 +567,10 @@ import_legacy_postgres_project() {
       }
   done < "$records"
   rm -f -- "$records"
+  if (( SECONDS >= POSTGRES_RECOVERY_DEADLINE )); then
+    evidence "postgres_recovery=deadline operation=legacy_import project=$project"
+    return 1
+  fi
   rmdir -- "$journal" 2>/dev/null || true
 }
 recover_legacy_postgres() {
@@ -611,16 +611,21 @@ recover_legacy_postgres() {
   done
 }
 recover_owned_postgres() {
-  local journal project name inventory limit POSTGRES_CLEANUP_FAILED=0
+  local journal project name inventory limit probe POSTGRES_CLEANUP_FAILED=0
   local POSTGRES_RECOVERY_DEADLINE=$((SECONDS + 60))
   recover_legacy_postgres || return 1
+  # Reconcile the requested names before attempting optional foreign discovery.
+  journal="$POSTGRES_JOURNALS/$WP5_PROJECT"
+  if [[ -d "$journal" ]]; then
+    recover_project_postgres "$WP5_PROJECT" "$journal" || return 1
+  fi
   local -A candidates=()
   for journal in "$POSTGRES_JOURNALS/"*; do
     [[ -d "$journal" && "${journal##*/}" != "$WP5_PROJECT" ]] || continue
     limit=$((POSTGRES_RECOVERY_DEADLINE - SECONDS))
     if (( limit <= 0 )); then
-      evidence "postgres_recovery=deadline operation=inventory"
-      return 1
+      evidence "postgres_recovery=deferred operation=foreign_discovery reason=deadline"
+      return 0
     fi
     (( limit <= 5 )) || limit=5
     # Discover foreign candidates in one call. Their actual ownership is
@@ -628,8 +633,8 @@ recover_owned_postgres() {
     inventory=$(timeout --foreground --signal=KILL "${limit}s" docker container ls --all \
       --filter label=org.oteryn.node-boot.owner \
       --format '{{.Names}}') || {
-        evidence "postgres_recovery=inventory_failed scope=foreign_projects"
-        return 1
+        evidence "postgres_recovery=deferred operation=foreign_discovery reason=inventory_failed"
+        return 0
       }
     while IFS= read -r name; do
       [[ "$name" =~ ^[a-z0-9][a-z0-9_-]*-postgres$ ]] || continue
@@ -637,22 +642,23 @@ recover_owned_postgres() {
     done <<< "$inventory"
     break
   done
-  journal="$POSTGRES_JOURNALS/$WP5_PROJECT"
-  # The requested project always gets a fresh lookup before the foreign sweep.
-  if [[ -d "$journal" ]]; then
-    recover_project_postgres "$WP5_PROJECT" "$journal" || return 1
-  fi
   for journal in "$POSTGRES_JOURNALS/"*; do
     [[ -d "$journal" ]] || continue
     project=${journal##*/}
     [[ "$project" =~ ^[a-z0-9][a-z0-9_-]*$ && "$project" != "$WP5_PROJECT" ]] || continue
-    [[ -n "${candidates["$project-postgres"]:-}" || -n "${candidates["$project-portal-postgres"]:-}" ]] || continue
     if (( POSTGRES_RECOVERY_DEADLINE - SECONDS < 5 )); then
       evidence "postgres_recovery=deferred operation=foreign_project_scan project=$project"
       break
     fi
     (
       if flock -n 8; then
+        if [[ -z "${candidates["$project-postgres"]:-}" && -z "${candidates["$project-portal-postgres"]:-}" ]]; then
+          # A late registration can miss the broad snapshot. An exact name
+          # probe under the lock avoids a scoped list for still-empty projects.
+          probe=$(timeout --foreground --signal=KILL 2s docker container inspect --format '{{.Name}}' \
+            "$project-postgres" "$project-portal-postgres" 2>/dev/null) || true
+          [[ -n "$probe" ]] || exit 0
+        fi
         recover_project_postgres "$project" "$journal"
       fi
     ) 8>>"$lock_directory/$project" || return 1

@@ -448,8 +448,10 @@ class RoundTwoCallerTests(unittest.TestCase):
         )
         for service in ('postgres', 'portal-postgres'):
             for scenario in ('legacy', 'legacy_custom', 'legacy_default', 'legacy_pending', 'legacy_locked',
-                             'legacy_scan_failed', 'legacy_scan_timeout', 'vanished_first',
-                             'late_registration', 'inventory_failed', 'budget_starvation', 'foreign_lock'):
+                             'legacy_scan_failed', 'legacy_scan_timeout', 'legacy_foreign_timeout',
+                             'legacy_replay_deadline', 'vanished_first',
+                             'late_registration', 'inventory_failed', 'foreign_discovery_timeout',
+                             'budget_starvation', 'foreign_lock', 'foreign_late_registration'):
                 with self.subTest(service=service, scenario=scenario), tempfile.TemporaryDirectory() as temp:
                     root = Path(temp)
                     current = root / 'tmp'
@@ -469,10 +471,11 @@ class RoundTwoCallerTests(unittest.TestCase):
                     else:
                         journal = journals / 'fixture'
                     journal.mkdir(parents=True)
-                    record = journal / f'{name}.{owner}'
+                    marker_owner = 'invalid-owner' if scenario == 'legacy_replay_deadline' else owner
+                    record = journal / f'{name}.{marker_owner}'
                     record.touch()
                     first = journals / 'aardvark' / f'aardvark-postgres.{owner}'
-                    if scenario in ('vanished_first', 'late_registration'):
+                    if scenario in ('vanished_first', 'late_registration', 'foreign_discovery_timeout'):
                         first.parent.mkdir()
                         first.touch()
                     if scenario == 'budget_starvation':
@@ -481,47 +484,77 @@ class RoundTwoCallerTests(unittest.TestCase):
                             pending = journals / project
                             pending.mkdir()
                             (pending / f'{project}-postgres.{owner}').touch()
-                    if scenario not in ('late_registration', 'legacy_pending'):
+                    if scenario not in ('late_registration', 'legacy_pending', 'foreign_late_registration'):
                         (root / 'registered').touch()
                     setup = r"""
                         set -Eeuo pipefail
                         WP5_PROJECT=fixture lock_directory=$FIXTURE/locks POSTGRES_JOURNALS=$FIXTURE/journal
                         WORK=$FIXTURE/work
-                        if [[ "$SCENARIO" == foreign_lock ]]; then WP5_PROJECT=other; fi
+                        if [[ "$SCENARIO" == foreign_lock || "$SCENARIO" == legacy_foreign_timeout ||
+                              "$SCENARIO" == foreign_late_registration ]]; then
+                            WP5_PROJECT=other
+                        fi
                         exec 9>>"$lock_directory/$WP5_PROJECT"
                         flock -n 9
                         evidence() { echo "$*"; }
+                        unset SECONDS
+                        SECONDS=0
+                        flock() {
+                            command flock "$@" || return
+                            # Advance the virtual clock after acquiring the legacy lock.
+                            if [[ "$*" == '-n 7' ]]; then SECONDS=23; fi
+                        }
                         timeout() {
                             while [[ $1 == --* ]]; do shift; done
+                            local duration=$1
                             shift
-                            if [[ "$1" == find && "$SCENARIO" == legacy_scan_timeout ]]; then
-                                [[ ! -e /proc/$BASHPID/fd/7 && ! -e /proc/$BASHPID/fd/9 ]] || return 99
+                            if [[ "$1" == find && "$SCENARIO" == legacy*timeout ]]; then
+                                [[ "$duration" == 37s ]] || return 98
+                                [[ ! -e /proc/$BASHPID/fd/7 && ! -e /proc/$BASHPID/fd/8 &&
+                                   ! -e /proc/$BASHPID/fd/9 ]] || return 99
                                 return 124
                             fi
                             "$@"
                         }
                         find() {
-                            [[ "$SCENARIO" != legacy_scan_failed ]] || return 1
+                            if [[ "$SCENARIO" == legacy_scan_failed ]]; then
+                                printf '%s\0' "$LEGACY_RECORD"
+                                return 1
+                            fi
                             command find "$@"
                         }
                         docker() {
                             case "$1" in
                               container)
+                                if [[ "$2" == inspect ]]; then
+                                    [[ " $* " == *" $CONTAINER_NAME "* && -f "$FIXTURE/registered" ]] || return 1
+                                    flock -n "$lock_directory/fixture" true && return 98
+                                    printf '/%s\n' "$CONTAINER_NAME"
+                                    # Docker may return a row alongside an error for the other name.
+                                    return 1
+                                fi
                                 if [[ " $* " == *" --format "* ]]; then
+                                    if [[ "$SCENARIO" == foreign_late_registration && "${*: -1}" == '{{.Names}}' ]]; then
+                                        touch "$FIXTURE/registered"
+                                        return 0
+                                    fi
                                     if [[ " $* " == *--filter*fixture-postgres* ]] &&
                                         flock -n "$lock_directory/fixture" true; then
                                         echo 'scoped inventory ran without the fixture project lock' >&2
                                         return 98
                                     fi
                                     if [[ "$SCENARIO" == inventory_failed ]]; then return 124; fi
+                                    if [[ "$SCENARIO" == foreign_discovery_timeout && "${*: -1}" == '{{.Names}}' ]]; then
+                                        if [[ -f "$FIXTURE/removed" ]]; then touch "$FIXTURE/requested-first"; fi
+                                        return 124
+                                    fi
                                     if [[ "$SCENARIO" == budget_starvation && " $* " == *earlier* ]]; then
                                         echo "$((SECONDS + 5))" > "$FIXTURE/clock"
                                         return 0
                                     fi
                                     if [[ "$SCENARIO" == vanished_first ]]; then rm -f -- "$FIRST"; fi
-                                    if [[ "$SCENARIO" == late_registration && " $* " != *--filter*fixture-postgres* ]]; then
+                                    if [[ "$SCENARIO" == late_registration && " $* " == *--filter*fixture-postgres* ]]; then
                                         touch "$FIXTURE/registered"
-                                        return 0
                                     fi
                                     if [[ -f "$FIXTURE/registered" ]]; then
                                         if [[ "${*: -1}" == '{{.Names}}' ]]; then
@@ -556,6 +589,11 @@ class RoundTwoCallerTests(unittest.TestCase):
                             echo 0 > "$FIXTURE/clock"
                             trap 'read -r SECONDS < "$FIXTURE/clock"' DEBUG
                         """
+                    if scenario == 'legacy_replay_deadline':
+                        setup += r"""
+                            set -T
+                            trap 'if [[ $BASH_COMMAND == marker=* ]]; then SECONDS=60; fi' DEBUG
+                        """
                     if scenario == 'legacy_locked':
                         setup += 'exec 6>>"$LEGACY_LOCK"; flock -n 6\n'
                     script = setup + '\n'.join(function(n) for n in (
@@ -564,21 +602,30 @@ class RoundTwoCallerTests(unittest.TestCase):
                     )) + '\n' + legacy_discovery + '\nrecover_owned_postgres\n'
                     env = dict(FIXTURE=temp, TMPDIR=str(current), SCENARIO=scenario,
                                FIRST=str(first), CONTAINER_NAME=name, OWNER=owner,
-                               LEGACY_LOCK=str(journal.parent.parent / 'fixture'),
+                               LEGACY_LOCK=str(journal.parent.parent / 'fixture'), LEGACY_RECORD=str(record),
                                NODE_BOOT_LEGACY_TMPDIR=str(original) if scenario == 'legacy_custom' else '')
                     result = bash(script, env)
-                    if scenario in ('legacy_locked', 'inventory_failed', 'legacy_scan_failed', 'legacy_scan_timeout'):
+                    if scenario == 'legacy_replay_deadline':
+                        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+                        self.assertIn('postgres_recovery=deadline operation=legacy_import', result.stdout)
+                        self.assertTrue(record.exists())
+                        continue
+                    if scenario in ('legacy_locked', 'inventory_failed', 'legacy_scan_failed',
+                                    'legacy_scan_timeout', 'legacy_foreign_timeout'):
                         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
                         reason = {
                             'legacy_locked': 'legacy_project_in_use',
                             'inventory_failed': 'inventory_failed',
                             'legacy_scan_failed': 'legacy_scan_failed',
                             'legacy_scan_timeout': 'legacy_scan_failed',
+                            'legacy_foreign_timeout': 'legacy_scan_failed',
                         }[scenario]
                         self.assertIn(f'postgres_recovery={reason} project=fixture', result.stdout)
-                        if scenario == 'legacy_scan_timeout':
+                        if scenario in ('legacy_scan_timeout', 'legacy_foreign_timeout'):
                             self.assertIn('exit=124', result.stdout)
                         self.assertTrue(record.exists())
+                        if scenario.startswith('legacy'):
+                            self.assertFalse((journals / 'fixture' / record.name).exists())
                         self.assertFalse((root / 'removed').exists())
                         continue
                     self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -590,6 +637,11 @@ class RoundTwoCallerTests(unittest.TestCase):
                         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                     self.assertTrue((root / 'removed').exists(), result.stdout + result.stderr)
                     self.assertFalse(record.exists())
+                    if scenario == 'foreign_discovery_timeout':
+                        self.assertTrue((root / 'requested-first').exists())
+                        self.assertIn('postgres_recovery=deferred operation=foreign_discovery reason=inventory_failed',
+                                      result.stdout)
+                        self.assertTrue(first.exists())
                     if scenario == 'budget_starvation':
                         self.assertEqual((root / 'clock').read_text().strip(), '0')
 
