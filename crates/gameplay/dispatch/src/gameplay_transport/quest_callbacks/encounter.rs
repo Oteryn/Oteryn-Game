@@ -419,6 +419,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return disposition;
         }
         for ((who, member_session, expected), snapshot) in players.into_iter().zip(snapshots) {
+            if mortal && let Some(pos) = native(expected.position()) {
+                map.facts.emit_movement_effect(pos, 11);
+            }
             states.stage_special_movement_step(
                 runtime,
                 map,

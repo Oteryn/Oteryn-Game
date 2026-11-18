@@ -13,6 +13,7 @@ pub(in crate::gameplay_transport) struct Run {
     ),
     started: u64,
     next_wave: usize,
+    timed_out: bool,
     tirecz: Option<ExactActorRef>,
     victors: Option<Vec<(ExactActorRef, GameSessionId)>>,
 }
@@ -23,6 +24,7 @@ impl Run {
             scope: runtime.encounter_owner_scope(),
             started: now,
             next_wave: 0,
+            timed_out: false,
             tirecz: None,
             victors: None,
         }
@@ -33,6 +35,9 @@ impl Run {
     }
 
     pub(super) fn due(&self) -> u64 {
+        if self.timed_out {
+            return u64::MAX;
+        }
         if self.victors.is_some() {
             return 0;
         }
@@ -46,6 +51,7 @@ impl Run {
 
     pub(super) fn death(&mut self, runtime: &ChannelRuntimeV1, actor: ExactActorRef) {
         if self.tirecz == Some(actor)
+            && !self.timed_out
             && self.victors.is_none()
             && self.is_current(runtime)
             && let Ok(census) = runtime.positioned_melee_census()
@@ -210,10 +216,18 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 11,
             );
             if won {
-                self.states.chat.push_quest_feedback(session, "You have won! As new champion take the ancient armor as reward before you leave.");
+                self.states.chat.publish_quest_speech(
+                    &runtime, actor, session,
+                    "You have won! As new champion take the ancient armor as reward before you leave.",
+                );
             }
         }
-        if retry && let Ok(mut slot) = states.encounter_phases.mortal.lock() {
+        // Crystal's 30-minute clear leaves the busy flag set. Tirecz's death
+        // is the only source event that opens the lever to another pair.
+        if (retry || run.victors.is_none())
+            && let Ok(mut slot) = states.encounter_phases.mortal.lock()
+        {
+            run.timed_out = !retry;
             *slot = Some(run);
         }
     }

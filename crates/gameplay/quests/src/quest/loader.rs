@@ -331,6 +331,7 @@ pub(super) fn lower_embedded_quest_state(
                 .or_insert_with(|| callback.sources.join(";"));
         }
     }
+    let frontier_before_npc = super::the_new_frontier::prior_definition(&lowered.catalogue);
     let before_npc_rewards = lowered.catalogue.clone();
     lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
         .map_err(QuestLoadError::Json)?;
@@ -344,6 +345,17 @@ pub(super) fn lower_embedded_quest_state(
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::death_objectives::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    let frontier_before_arenas = super::the_new_frontier::prior_definition(&lowered.catalogue);
+    let frontier_predecessors = lowered
+        .catalogue
+        .predecessors
+        .entry(super::the_new_frontier::QUEST.into())
+        .or_default();
+    for prior in [frontier_before_npc, frontier_before_arenas] {
+        if !frontier_predecessors.contains(&prior) {
+            frontier_predecessors.push(prior);
+        }
+    }
     super::native_kill_goals::validate_closed(&lowered.catalogue).map_err(QuestLoadError::Json)?;
     // Crystal 201189f, data-global/scripts/lib/register_actions.lua:921-926.
     // This tool-owned auxiliary flag is outside the captured NPC track inventory.

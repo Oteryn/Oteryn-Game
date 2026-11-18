@@ -93,6 +93,29 @@ pub(super) fn mortal_combat_callback() -> Result<Callback, String> {
         .ok_or_else(|| "missing Mortal Combat callback".into())
 }
 
+/// Both arena transitions add to tracks already owned by the imported quest.
+pub(super) fn prior_definition(
+    catalogue: &super::QuestStateCatalogue,
+) -> super::NpcDefinitionPredecessor {
+    let transitions = catalogue
+        .transitions
+        .iter()
+        .filter(|(key, transition)| {
+            transition.quest == QUEST && !matches!(key.as_str(), CUROS | TIRECZ_VICTORY)
+        })
+        .map(|(key, transition)| (key.clone(), transition.clone()))
+        .collect();
+    super::NpcDefinitionPredecessor {
+        hash: super::definition_hash(QUEST, &catalogue.tracks, &transitions),
+        defaults: catalogue
+            .tracks
+            .values()
+            .filter(|track| track.quest == QUEST)
+            .map(|track| (track.key.clone(), track.initial))
+            .collect(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -112,6 +135,12 @@ mod tests {
         for key in [CUROS, TIRECZ_VICTORY] {
             assert!(catalogue.transition(key).is_some(), "{key}");
         }
+        let prior = prior_definition(catalogue);
+        assert_ne!(catalogue.definition_hash(QUEST), Some(prior.hash));
+        assert_eq!(
+            super::super::npc_rules::legacy_defaults(catalogue, QUEST, &prior.hash),
+            Some(&prior.defaults),
+        );
         Ok(())
     }
 }

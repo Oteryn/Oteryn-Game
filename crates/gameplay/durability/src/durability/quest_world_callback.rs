@@ -147,7 +147,12 @@ impl super::DurabilityRoot {
                             .map_err(|_| DurabilityError::InvalidStoredState)?,
                         completed: pin.try_get("completed")?,
                     };
-                    if !read_only_pin_allows(&pin, &catalogue, &callback.quest)? {
+                    if !read_only_pin_allows(&pin, &catalogue, &callback.quest)?
+                        && !(callback.key == oteryn_gameplay_quests::quest::the_new_frontier::CUROS
+                            && oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
+                                &catalogue, &callback.quest, &pin.definition_hash,
+                            ).is_some())
+                    {
                         return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
                     }
                 }
