@@ -50,12 +50,14 @@ pub(super) fn valid(rule: &NpcRule, owns_track: impl Fn(&str) -> bool) -> bool {
         })
 }
 
-pub(super) fn render(
+pub(super) fn append(
     rule: &NpcRule,
     mut track: impl FnMut(&str) -> Result<i64, NpcRuleError>,
-) -> Result<Vec<String>, NpcRuleError> {
+    reply: &mut Vec<String>,
+) -> Result<(), NpcRuleError> {
     if rule.reply_numbers.is_empty() {
-        return Ok(rule.reply.clone());
+        reply.extend_from_slice(&rule.reply);
+        return Ok(());
     }
     let mut values = BTreeMap::new();
     for (name, value) in &rule.reply_numbers {

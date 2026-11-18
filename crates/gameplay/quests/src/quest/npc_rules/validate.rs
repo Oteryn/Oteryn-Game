@@ -246,11 +246,11 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                         || !rule.keywords.is_empty()
                         || rule.any_message))
                 || rule.reply.len() > 32
-                || !super::reply_numbers::valid(rule, |track| tracks.contains_key(track))
                 || rule
                     .reply
                     .iter()
                     .any(|line| line.is_empty() || line.len() > 2048 || line.contains('\0'))
+                || !super::reply_numbers::valid(rule, |track| tracks.contains_key(track))
                 || rule
                     .inventory_failure_reply
                     .iter()
