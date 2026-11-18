@@ -179,8 +179,30 @@ pub(super) async fn exercise(
         "SELECT i.item_instance_id FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id)
          WHERE i.definition_production_key=$1 AND i.lifecycle=1 AND octet_length(g.corpse_ref)>0"
     ).bind(CORPSE).fetch_one(&h.pool).await?;
+    let identity = owner
+        .runtime
+        .lock()
+        .await
+        .visible_corpses()
+        .into_iter()
+        .find(|body| body.item.production_key == CORPSE)
+        .map(|body| body.identity)
+        .ok_or("native Keeper corpse projection")?;
+    let bound = owner
+        .runtime
+        .lock()
+        .await
+        .bound_corpse(identity)
+        .ok_or("native corpse binding")?;
+    assert_eq!(bound.item.item_instance_id, *corpse.as_bytes());
     for player in [&mut *admitted, &mut second] {
-        claim_tail(owner, player, h, *corpse.as_bytes()).await?;
+        claim_tail(
+            owner,
+            player,
+            h,
+            crate::gameplay_transport::item_view::ItemKey::Entity(identity),
+        )
+        .await?;
     }
     let grants: i64 = sqlx::query_scalar(
         "SELECT count(DISTINCT character_id) FROM game_character_quest_receipts WHERE transition_key=$1"
@@ -203,10 +225,9 @@ async fn claim_tail(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     player: &mut AdmittedSession,
     h: &Harness,
-    corpse: [u8; 16],
+    corpse: crate::gameplay_transport::item_view::ItemKey,
 ) -> TestResult {
     use crate::gameplay_transport::connection::UseCommand;
-    use crate::gameplay_transport::item_view::ItemKey;
     use oteryn_protocol_oteryn::item_view::ItemHandle;
     let fence = owner
         .current_quest_fence(player.game_session_id)
@@ -242,7 +263,7 @@ async fn claim_tail(
                 use_with_map_item: None,
                 use_with_position: None,
             },
-            Some(ItemKey::Instance(corpse)),
+            Some(corpse),
             None,
         )
         .await

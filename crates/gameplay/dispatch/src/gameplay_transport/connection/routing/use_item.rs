@@ -521,7 +521,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                             || (carried_entry && !view.is_main_backpack(&key)
                                 && view.equipped_slot(&key).is_none()));
                 if !consumable
-                    && matches!(key, Some(ItemKey::Instance(_)))
+                    && matches!(key, Some(ItemKey::Entity(_) | ItemKey::Instance(_)))
                     && let Some(outcome) = tokio::time::timeout(
                         std::time::Duration::from_secs(10),
                         authority.use_quest_tool(

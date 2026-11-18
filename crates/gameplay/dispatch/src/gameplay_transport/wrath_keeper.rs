@@ -21,13 +21,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         intent: &UseIntent,
         source: Option<ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
-        let (Some(ItemKey::Instance(item)), Some(item_fence), Some(catalogue), Some(native)) = (
-            source,
+        let (Some(item_fence), Some(catalogue), Some(native)) = (
             command.item_fence,
             self.quest_catalogue.as_ref(),
             self.active_generation.and_then(|g| g.native_gameplay()),
         ) else {
             return Ok(None);
+        };
+        let item = match source {
+            Some(ItemKey::Instance(item)) => item,
+            Some(ItemKey::Entity(identity)) => {
+                let runtime = self.runtime.lock().await;
+                let Some(corpse) = runtime.bound_corpse(identity) else {
+                    return Ok(None);
+                };
+                corpse.item.item_instance_id
+            }
+            _ => return Ok(None),
         };
         let Some(ground) = self
             .root
