@@ -685,6 +685,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &states,
                 map,
                 now.get(),
+                self.callback_content(),
             );
         }
         if periodic_pass {

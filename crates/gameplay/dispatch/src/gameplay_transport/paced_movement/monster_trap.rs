@@ -20,6 +20,7 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
     states: &ChannelSpellStates,
     map: &BundleMap,
     now: u64,
+    quest_callbacks: &[oteryn_gameplay_quests::quest::world_callbacks::Callback],
 ) {
     crate::gameplay_transport::quest_callbacks::monsters::settle_authored_monster_puzzles(
         runtime, map,
@@ -44,6 +45,15 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
         let Some(destination) = tile_entries(map, step.to) else {
             continue;
         };
+        if crate::gameplay_transport::quest_callbacks::monsters::settle_monster_step(
+            runtime,
+            map,
+            step,
+            &destination.entries,
+            quest_callbacks,
+        ) {
+            continue;
+        }
         // The Grimvale callback is independent of generic spike-trap PZ/jaw gates.
         for (key, entry) in &destination.entries {
             if entry.appearance_id == 22059 {
@@ -460,7 +470,7 @@ mod tests {
                 .commit_quest_platform_displacement(at, away, |_, _, _| true, || true)
                 .map_err(|error| format!("{error:?}"))?;
         }
-        apply_monster_trap_steps(&mut runtime, &states, map, 1_000_000);
+        apply_monster_trap_steps(&mut runtime, &states, map, 1_000_000, &[]);
         let after_step_in = appearance()?;
         let health_after =
             i64::try_from(runtime.live_creature_health(rat).ok_or("rat after hit")?)?;
@@ -470,7 +480,7 @@ mod tests {
                 from: away,
                 to: at
             }));
-            apply_monster_trap_steps(&mut runtime, &states, map, 1_000_001);
+            apply_monster_trap_steps(&mut runtime, &states, map, 1_000_001, &[]);
             assert_eq!(
                 i64::try_from(runtime.live_creature_health(rat).ok_or("replayed trap")?)?,
                 health_after,
@@ -482,7 +492,7 @@ mod tests {
             from: at,
             to: away,
         }));
-        apply_monster_trap_steps(&mut runtime, &states, map, 1_000_001);
+        apply_monster_trap_steps(&mut runtime, &states, map, 1_000_001, &[]);
         let after_step_out = appearance()?;
         if volatile {
             let current = map.facts.movement_items(pos);

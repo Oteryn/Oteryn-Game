@@ -2,7 +2,7 @@
 use super::{CarrierError, ChannelRuntimeV1, ChannelSpellStates, ExactActorRef, GameSessionId};
 use crate::content::NativeEntryMovementCells;
 use crate::foundation::MovementLocalPosition;
-use crate::map::{boot::BundleMap, floor::BundleDoors, view::MapFacts};
+use crate::map::{boot::BundleMap, floor::BundleDoors};
 use oteryn_gameplay_quests::quest::world_callbacks::{Position, TerminalTransfer};
 
 use super::super::paced_movement::underwater_drown::underwater;

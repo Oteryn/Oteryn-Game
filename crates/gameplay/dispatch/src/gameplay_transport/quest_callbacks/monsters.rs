@@ -3,6 +3,53 @@ use super::*;
 use crate::map::facts::QuestCallbackProjection;
 use crate::map::view::MapFacts;
 
+/// Crystal 201189f8, ferumbras_ascension/movements_lovely_monsters.lua:14-28
+/// and the_first_dragon/movements_flower_bowl.lua:3-13.
+pub(in crate::gameplay_transport) fn settle_monster_step(
+    runtime: &mut ChannelRuntimeV1,
+    map: &BundleMap,
+    step: crate::map::facts::MonsterStep,
+    entries: &[(u64, crate::map::view::EntryFacts)],
+    registry: &[Callback],
+) -> bool {
+    let Some(position) = native(step.to) else {
+        return false;
+    };
+    if map.overlay.runtime_scope() != runtime.binding().runtime_scope()
+        || map.facts.house_tile(position)
+        || !runtime
+            .read_actor_position(step.actor)
+            .is_ok_and(|at| at.position() == step.to)
+    {
+        return false;
+    }
+    let Some(effect) = registry.iter().find_map(|callback| {
+        let effect = callback.effects.monster_step.as_ref()?;
+        (callback.selector.position.map(tile) == Some(position)
+            && runtime.matches_live_creature_identity(step.actor, effect.creature.as_bytes())
+            && entries
+                .iter()
+                .any(|(key, _)| !map.facts.base_hidden(*key) && matches(map, callback, *key))
+            && world_requirements_match(map, callback))
+        .then_some(effect)
+    }) else {
+        return false;
+    };
+    let Some(next) = effect.replace_with.as_deref() else {
+        return runtime.remove_encounter_actor(step.actor).is_ok();
+    };
+    let Ok(policy) = runtime.companion_policy(next) else {
+        return false;
+    };
+    runtime
+        .commit_quest_creature_replacement(
+            &[step.actor],
+            &[(next, policy.maximum_health, step.to)],
+            || true,
+        )
+        .is_ok()
+}
+
 pub(in crate::gameplay_transport) fn settle_monster_puzzles(
     runtime: &ChannelRuntimeV1,
     map: &BundleMap,

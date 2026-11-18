@@ -48,6 +48,9 @@ pub struct CallbackEffects {
     /// Individual admission to an encounter already opened by its source owner.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub boss_admission_cooldown: Option<BossAdmissionCooldown>,
+    /// Match the exact creature entering this source tile and remove it from the room.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub monster_step: Option<MonsterStepEffect>,
     /// Distinct carried definitions consumed atomically by the Quest receipt owner.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
@@ -305,6 +308,35 @@ pub struct EncounterMonster {
 pub struct BossAdmissionCooldown {
     pub creature: String,
     pub seconds: u32,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct MonsterStepEffect {
+    pub creature: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub replace_with: Option<String>,
+}
+
+impl MonsterStepEffect {
+    fn valid(&self, callback: &Callback) -> bool {
+        let creature =
+            |key: &str| key.starts_with("oteryn:creature.") && super::super::valid_quest_key(key);
+        callback.actor_kind == ActorKind::Monster
+            && callback.trigger == Trigger::StepIn
+            && !callback.reversible
+            && (callback.selector.action.is_some() || callback.selector.unique.is_some())
+            && creature(&self.creature)
+            && self
+                .replace_with
+                .as_ref()
+                .is_none_or(|key| key != &self.creature && creature(key))
+            && *callback.effects
+                == CallbackEffects {
+                    monster_step: Some(self.clone()),
+                    ..CallbackEffects::default()
+                }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -701,6 +733,13 @@ pub(super) fn valid(callback: &Callback) -> bool {
     }
     let pos = |p: Position| (-15..=0).contains(&p.floor);
     let lever = callback.trigger == Trigger::Use && callback.lever.is_some();
+    if effects
+        .monster_step
+        .as_ref()
+        .is_some_and(|step| !step.valid(callback))
+    {
+        return false;
+    }
     if callback.item_reward().as_ref().is_some_and(|reward| {
         let item = |key: &str, count: u16| {
             key.len() <= 256

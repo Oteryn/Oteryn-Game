@@ -186,6 +186,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 &states,
                                 map,
                                 self.owner_now().get(),
+                                self.callback_content(),
                             );
                         }
                         Moved
