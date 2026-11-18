@@ -141,6 +141,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let due = now.checked_add(WINDOW_US)?;
         let starts_window = newly_accepted && now >= puzzle.shared_until;
         let projection = if starts_window {
+            // Settle the old gate revisions before reading a replacement window.
+            map.facts.expire_movement_items(now);
             let mut entries = Vec::new();
             for (position, from, to) in GATES {
                 let tile = compose_tile(&map.overlay, &map.facts, position).ok()??;
