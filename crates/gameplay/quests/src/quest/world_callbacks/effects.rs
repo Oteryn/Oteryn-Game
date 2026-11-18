@@ -541,6 +541,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         != 1
             })
             || callback.trigger != Trigger::Use
+            || callback.actor_kind != super::ActorKind::Player
             || callback.requires_durable_commit()
     }) || effects
         .require_encounter_outcome
@@ -548,6 +549,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         .is_some_and(|required| {
             !required.valid()
                 || callback.trigger != Trigger::StepIn
+                || callback.actor_kind != super::ActorKind::Player
                 || callback.selector.position.is_none()
                 || callback.teleport.is_none()
                 || !callback.return_on_failure

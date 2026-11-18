@@ -1338,6 +1338,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .flatten()
             .collect::<Vec<_>>();
+        if selected.len() > 1
+            && selected
+                .iter()
+                .any(|(callback, _)| callback.effects.require_encounter_outcome.is_some())
+        {
+            return entered;
+        }
         let mut selected = if selected.len() > 1
             && selected.iter().enumerate().all(|(i, (left, _))| {
                 selected[..i]
