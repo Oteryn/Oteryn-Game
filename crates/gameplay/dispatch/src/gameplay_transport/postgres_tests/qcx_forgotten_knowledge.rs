@@ -64,7 +64,7 @@ fn retained_world_claims_grant_each_quest_item_once() -> TestResult {
                     32382,
                     32368,
                     9,
-                    (32382, 32367),
+                    (32382, 32369),
                     2,
                     23986,
                 ),
