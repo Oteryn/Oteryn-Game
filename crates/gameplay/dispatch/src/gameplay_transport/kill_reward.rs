@@ -1969,6 +1969,13 @@ pub fn record_creature_kill(
         super::warzone_callbacks::slime_death(runtime, target, position, sink.prey);
     }
     if let Some(states) = sink.prey {
+        if wild
+            && let Ok(creature) = creature.as_deref()
+            && let Some(exit) = super::warzone_callbacks::WarzoneExit::for_creature(creature)
+        {
+            let at_us = observed_at.map_or(now_ms.saturating_mul(1_000), |at| at.get());
+            states.warzone_exits.enqueue(target, exit, at_us);
+        }
         states
             .encounter_phases
             .note_projected_death(runtime, target);

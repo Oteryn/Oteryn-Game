@@ -1,8 +1,10 @@
 //! Crystal 201189f8, dangerous_depth/creaturescripts_{fiery_heart,snail_slime_kill}.lua.
+mod exits;
 use super::ComposedFreshAdmission;
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, RuntimeScopeRefV1,
 };
+pub(super) use exits::{WarzoneExit, WarzoneExits};
 
 const COUNT: &str = "oteryn:creature.the_count_of_the_core";
 const SLIME: &str = "oteryn:creature.snail_slime";
