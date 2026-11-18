@@ -229,12 +229,17 @@ async fn exercise_logic(
         "return_on_failure": false,
         "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/action-6-sixth_seal_lever.lua:3"]
     }))?;
-    let layout = [32309, 32311, 32313].into_iter()
-            .flat_map(|x| [31975, 31976].map(move |y| serde_json::json!({
-                "position": { "x": x, "y": y, "floor": -13 },
-                "appearance": if x == 32313 { 1998 } else { 1996 },
-            })))
-            .collect::<Vec<_>>();
+    let layout = [32309, 32311, 32313]
+        .into_iter()
+        .flat_map(|x| {
+            [31975, 31976].map(move |y| {
+                serde_json::json!({
+                    "position": { "x": x, "y": y, "floor": -13 },
+                    "appearance": if x == 32313 { 1998 } else { 1996 },
+                })
+            })
+        })
+        .collect::<Vec<_>>();
     let flame: Callback = serde_json::from_value(serde_json::json!({
         "key": "oteryn:quest-callback/banshees-logic-flame",
         "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
@@ -352,17 +357,25 @@ async fn exercise_sacrifice(
     const KEY: &str = "oteryn:quest-callback/banshees-fourth-seal";
     const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-4-fourth_seal_flame.lua:3";
     let generation = owner.active_generation.ok_or("active generation")?;
-    let tracks = [TRACK, DOOR].map(|key| serde_json::json!({
-                "key": key, "initial": -1, "minimum": -1, "maximum": 1
-            }));
-    let storage = [TRACK, DOOR].map(|track| serde_json::json!({
-                        "track": track, "minimum": -1, "maximum": 0, "set": 1
-                    }));
+    let tracks = [TRACK, DOOR].map(|key| {
+        serde_json::json!({
+            "key": key, "initial": -1, "minimum": -1, "maximum": 1
+        })
+    });
+    let storage = [TRACK, DOOR].map(|track| {
+        serde_json::json!({
+            "track": track, "minimum": -1, "maximum": 0, "set": 1
+        })
+    });
+    let recipe_sha256 = <sha2::Sha256 as sha2::Digest>::digest(SOURCE)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
     let bindings: Bindings = serde_json::from_value(serde_json::json!({
         "schema": 1,
         "quests": [{
             "quest": QUEST,
-            "recipe_sha256": format!("{:x}", <sha2::Sha256 as sha2::Digest>::digest(SOURCE)),
+            "recipe_sha256": recipe_sha256,
             "sources": [SOURCE],
             "tracks": tracks,
             "stages": [{
