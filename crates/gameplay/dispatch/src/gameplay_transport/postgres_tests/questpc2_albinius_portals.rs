@@ -244,16 +244,27 @@ async fn exercise_ice(
 ) -> TestResult {
     const FISH: &str = "oteryn:item.tibia.i3578";
     const ACCESS: &str = "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/access_ice";
-    const CONTACTMAN: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/formorgar_mines_door";
+    const CONTACTMAN: &str =
+        "oteryn:quest-progress/quest/u8_0/the_ice_islands/formorgar_mines_door";
 
     talk(owner, admitted, npc, 35300, "bye").await?;
     talk(owner, admitted, npc, 35301, "hi").await?;
     give(owner, admitted, FISH, 49, 9400).await?;
-    talk(owner, admitted, npc, 35302, "ice portal").await?;
+    let denied = talk(owner, admitted, npc, 35302, "ice portal").await?;
+    assert!(
+        denied.iter().all(|line| !line.contains("50 fish")),
+        "{denied:?}"
+    );
     talk(owner, admitted, npc, 35303, "yes").await?;
     assert_eq!(carried(h, FISH).await?, 49);
     assert_eq!(progress(owner, admitted, authority, ACCESS).await?, 0);
 
+    // Seed the separate Ice Islands prerequisite directly. The dispatch under
+    // test starts at the Albinius offering, with a production quest-state read.
+    let mut prerequisite = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *prerequisite)
+        .await?;
     sqlx::query(
         "INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision)
          SELECT character_id,$2,'oteryn:quest.the_ice_islands_quest',1,character_revision
@@ -262,13 +273,19 @@ async fn exercise_ice(
     )
     .bind(id(41).as_slice())
     .bind(CONTACTMAN)
-    .execute(&h.pool)
+    .execute(&mut *prerequisite)
     .await?;
+    prerequisite.commit().await?;
 
-    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
 
     let offer = talk(owner, admitted, npc, 35304, "ice portal").await?;
-    assert!(offer.iter().any(|line| line.contains("50 fish")), "{offer:?}");
+    assert!(
+        offer.iter().any(|line| line.contains("50 fish")),
+        "{offer:?}"
+    );
     talk(owner, admitted, npc, 35305, "yes").await?;
     assert_eq!(carried(h, FISH).await?, 49);
     assert_eq!(progress(owner, admitted, authority, ACCESS).await?, 0);
