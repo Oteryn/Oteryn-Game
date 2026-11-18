@@ -146,7 +146,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let context = {
             let runtime = self.runtime.lock().await;
-            if runtime.read_actor_position(actor) != Ok(entered) {
+            if runtime.read_actor_position(actor) != Ok(entered)
+                || !current_lease(&runtime, actor, session, fence)
+            {
                 return false;
             }
             let pin = runtime.content_pin();
@@ -228,7 +230,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let optional_pvp = self.special_movement_policy(permit, actor, session).await;
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
-        if states.is_dead(actor) || runtime.bound_attacker_lease(actor, session).is_err() {
+        if states.is_dead(actor) || !current_lease(&runtime, actor, session, fence) {
             return;
         }
         if !states.spell_idle(&runtime, actor, session) || self.has_pending_quest_callback(session)
@@ -269,4 +271,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             trials.push(trial);
         }
     }
+}
+
+fn current_lease(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    fence: CurrentCharacterGameplayFence,
+) -> bool {
+    runtime
+        .bound_attacker_lease(actor, session)
+        .is_ok_and(|lease| {
+            lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                && lease.generation() == fence.character_lease_generation
+        })
 }
