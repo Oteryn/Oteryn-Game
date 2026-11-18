@@ -443,6 +443,7 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                 ProfileRegression::Logout => {
                     use crate::gameplay_transport::connection::LogoutReply;
                     use oteryn_protocol_oteryn::logout::LogoutResult;
+                    assert!(owner.root.is_ready(), "the durability holder starts ready");
                     let background = async {
                         // Own the guards here so the foreground can lock the runtime as
                         // soon as this physical pass returns.
@@ -547,6 +548,18 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                                 )
                                 .await
                                 .map_err(debug)?;
+                            if turns == 1 {
+                                let table = &states.monster_melee.creature_ai;
+                                let committed = actors
+                                    .iter()
+                                    .filter(|&&actor| table.last_report_for_test(actor).is_some())
+                                    .count();
+                                assert!(
+                                    (1..crate::ai_think::CREATUREAI0_THINKS_PER_WINDOW)
+                                        .contains(&committed),
+                                    "the first checkout committed {committed} thinks",
+                                );
+                            }
                             for actor in thought {
                                 assert!(seen.insert(actor.placement_identity()), "duplicate think");
                             }
@@ -572,6 +585,15 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                             .iter()
                             .map(|actor| actor.placement_identity())
                             .collect()
+                    );
+                    let table = &states.monster_melee.creature_ai;
+                    assert!(
+                        actors.iter().all(|&actor| {
+                            table
+                                .last_report_for_test(actor)
+                                .is_some_and(|report| report.sequence == 1)
+                        }),
+                        "each actor must commit exactly one think in the due cohort"
                     );
                     eprintln!(
                         "awake cohort turns={turns} elapsed_ms={}",
