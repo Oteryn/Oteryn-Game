@@ -260,7 +260,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             true
                         }
                         Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected) => false,
-                        _ => continue,
+                        outcome => {
+                            #[cfg(test)]
+                            eprintln!("habitat source reset outcome: {outcome:?}");
+                            #[cfg(not(test))]
+                            let _ = outcome;
+                            continue;
+                        }
                     }
                 }
                 Ok(None) => false,

@@ -942,7 +942,7 @@ impl DurabilityRoot {
                 Some(super::QuestSourceAction::SoulWar(input))
                     if matches!(input.as_ref(), super::soul_war_source::SoulWarSourceAction::Step(_))
             ) && !soul_step
-            || matches!(request.cause, QuestCause::SourceStep(_)) != (soul_step || lovely_step || habitat_reset)
+            || matches!(request.cause, QuestCause::SourceStep(_)) != (soul_step || lovely_step)
             || matches!(request.cause, QuestCause::SourceThink(_)) && !area_input
             || source_action.is_some()
                 && ((context.is_some() && !soul_step)
