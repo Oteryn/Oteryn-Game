@@ -95,12 +95,18 @@ CLIENT = f'content/assets/files/appearances-{CLIENT_SHA}.dat'
 def reconcile_canonical_physical(item_id, definition, record):
     # Purified Soul: retain the canonical0.20oz value; raw Canary XML says2.50oz.
     # Admit only this exact reviewed pair, never a general weight override.
-    if item_id != 32228:return
+    # QCX86 Nautical Map: retain the current canonical 8.20 oz. Both XML
+    # donors record 8.19 oz and the pinned quest spoiler does not give a weight.
+    weights = {32228: (20, 250), 9308: (820, 819)}
+    if item_id not in weights:
+        return
+    canonical_weight, donor_weight = weights[item_id]
     known=lambda value:{'state':'KNOWN','value':value}
     canonical=definition['semantics']['physical']['value']['weight']
     donor=record['semantics']['physical']['value']['weight']
-    if canonical!=known(20) or donor!=known(250):
-        raise ValueError('QENGINE_PURIFIED_SOUL_WEIGHT_DECISION_DRIFT')
+    if canonical != known(canonical_weight) or donor != known(donor_weight):
+        decision = ('PURIFIED_SOUL' if item_id == 32228 else 'NAUTICAL_MAP')
+        raise ValueError(f'QENGINE_{decision}_WEIGHT_DECISION_DRIFT')
     record['semantics']['physical']['value']['weight']=canonical.copy()
 
 
@@ -277,6 +283,13 @@ def admit(root,generated,profile_path,manifest_path,order,canonical):
     packet=capture(root)
     generated[PROOF]=(json.dumps(packet,ensure_ascii=False,indent=2)+'\n').encode()
     admit_records(root,generated,profile_path,manifest_path,order,canonical,packet['records'] + packet['custody_promotions'])
+
+
+def admit_isle_of_evil(root, generated, profile_path, manifest_path, order, canonical):
+    # These five quest items are used by the Isle NPC callback receipts. The rod
+    # and mechanical fish already have native profiles through Gathering.
+    packet = capture(root, item_ids={9234, 9308, 9389, 9390, 9391})
+    admit_records(root, generated, profile_path, manifest_path, order, canonical, packet['records'])
 
 
 def admit_records(root,generated,profile_path,manifest_path,order,canonical,records):

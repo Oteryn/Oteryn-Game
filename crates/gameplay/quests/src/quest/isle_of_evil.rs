@@ -258,6 +258,28 @@ pub(super) fn extend(
         .map_err(|error| format!("{error:?}"))
 }
 
+/// Preserve the definition pinned by characters who accepted the quest before its
+/// NPC rewards became executable. The new callbacks write existing tracks only.
+pub(super) fn retain_reward_predecessor(
+    catalogue: &mut super::QuestStateCatalogue,
+    previous: Option<[u8; 32]>,
+) {
+    if let Some(hash) = previous
+        && catalogue
+            .definition_hash(QUEST)
+            .is_some_and(|current| current != hash)
+    {
+        catalogue
+            .predecessors
+            .entry(QUEST.into())
+            .or_default()
+            .push(super::NpcDefinitionPredecessor {
+                hash,
+                defaults: BTreeMap::new(),
+            });
+    }
+}
+
 #[cfg(test)]
 #[path = "isle_of_evil/tests.rs"]
 mod tests;

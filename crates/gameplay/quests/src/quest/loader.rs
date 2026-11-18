@@ -340,8 +340,12 @@ pub(super) fn lower_embedded_quest_state(
     )
     .map_err(QuestLoadError::Json)?;
     // Complete NPC reward activations and counters before validating native goals.
+    let isle_predecessor = lowered
+        .catalogue
+        .definition_hash(super::isle_of_evil::QUEST);
     lowered.catalogue =
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    super::isle_of_evil::retain_reward_predecessor(&mut lowered.catalogue, isle_predecessor);
     lowered.catalogue =
         super::death_objectives::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     super::native_kill_goals::validate_closed(&lowered.catalogue).map_err(QuestLoadError::Json)?;

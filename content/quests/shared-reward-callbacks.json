@@ -373,6 +373,291 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/isle-of-evil/fishing-rod",
+      "quest": "oteryn:quest.the_isle_of_evil_quest",
+      "npc": "oteryn:npc.rapanaio",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission01",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i9306",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Great. Here is your fishing rod. Happy fishing. Don't return without the mechanical fish. Make sure you are not followed!"
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=36717&oldid=855959",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:189-194"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/isle-of-evil/king-tibianus",
+      "quest": "oteryn:quest.the_isle_of_evil_quest",
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "fan club membership card"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/questline",
+          "minimum": 15,
+          "maximum": 15,
+          "set": 16
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission07",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i9389",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/king_tibianus_fan",
+      "reply": [
+        "Ah, A fan club premium membership card! You must be that intelligent fellow who wrote me all those flattering letters! Nice to finally meet my greatest admirer in person. Here, take this little token of appreciation. ...",
+        "And now if you will excuse me, I have to attend urgent affairs of state."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=36717&oldid=855959",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/king_tibianus.lua:220-231"
+      ],
+      "completes": true,
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i9391",
+          "count": 1
+        }
+      ],
+      "experience": 6666
+    },
+    {
+      "key": "oteryn:quest-reward/isle-of-evil/machine-crate",
+      "quest": "oteryn:quest.the_isle_of_evil_quest",
+      "npc": "oteryn:npc.scutty",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission04",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i9390",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Finally! I could have shaved off and grown a new beard in the time it has taken you to complate that task. However, here is your machine. Now leave me alone, I have experiments to carry out."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=36717&oldid=855959",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/scutty.lua:89-93"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/isle-of-evil/machine-handoff",
+      "quest": "oteryn:quest.the_isle_of_evil_quest",
+      "npc": "oteryn:npc.rapanaio",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 12,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/questline",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission04",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i9390",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah, marvellous. That's the little beauty I was looking for. It will fit perfectly into my invention. Not much longer and we can start on our journey. However, I have another mission for you."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=36717&oldid=855959",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:236-245"
+      ],
+      "failure_reply": [
+        "You dont have what I ask for."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/isle-of-evil/mechanical-fish",
+      "quest": "oteryn:quest.the_isle_of_evil_quest",
+      "npc": "oteryn:npc.rapanaio",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 9,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/questline",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission01",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i9307",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Interesting, a most interesting construction. A marvel of science. While I try to figure out how it works you might as well continue with your next mission."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=36717&oldid=855959",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:195-205"
+      ],
+      "failure_reply": [
+        "Come back after finishing your mission."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/isle-of-evil/nautical-map",
+      "quest": "oteryn:quest.the_isle_of_evil_quest",
+      "npc": "oteryn:npc.rapanaio",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 13,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/questline",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission05",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i9308",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Hmm, what fine maps those explorers draw. Wouldn't it be a cunning idea to tattoo it on your back where evil would least expect to find it! I guess with a nail from my workshop and a bucket of old ship paint I could improvise that. ...",
+        "On the other hand the forces of evil probably know all too well that I am cunning, so I have to surprise them with the unexpected! I'll just hide it in my beard! There we go. Now lets talk about our final mission."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=36717&oldid=855959",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:246-259"
+      ],
+      "failure_reply": [
+        "You dont have what I ask for."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/isle-of-evil/worm-punisher",
+      "quest": "oteryn:quest.the_isle_of_evil_quest",
+      "npc": "oteryn:npc.scutty",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/mission04",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/the_isle_of_evil/door_04",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i9234",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Good. Here is the 'Worm punisher'. Remember DO NOT hurt the drilling worms! If you do it will cost you 500 gold!"
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=36717&oldid=855959",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/scutty.lua:108-113"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/knight-sword",
       "quest": "oteryn:quest.outfit_and_addon_quests",
       "npc": "oteryn:npc.morgan",
