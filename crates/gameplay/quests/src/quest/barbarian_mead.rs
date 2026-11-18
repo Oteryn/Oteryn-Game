@@ -79,7 +79,10 @@ pub fn apply(mut state: [i64; 4], roll: u8) -> Result<[i64; 4], QuestRefusal> {
     }
     if needs_draw(state[0], state[3]) {
         state[2] = if roll > 1 {
-            state[2].max(0).checked_add(1).ok_or(QuestRefusal::OutOfRange)?
+            state[2]
+                .max(0)
+                .checked_add(1)
+                .ok_or(QuestRefusal::OutOfRange)?
         } else {
             0
         };
