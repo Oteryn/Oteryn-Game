@@ -80,12 +80,65 @@ pub(super) async fn run_starter(clients: &SeamClients<'_>) {
     starter.finish(result);
 }
 
+pub(super) async fn client_starter(clients: &SeamClients<'_>) -> TestResult {
+    let mut row = Row::new("C19a.client", STARTER);
+    verdict::indexed_timeout(
+        Duration::from_secs(100),
+        starter_backpack(&mut row, clients),
+    )
+    .await??;
+    if !row.0.complete() {
+        return Err("C19a client starter actions incomplete".into());
+    }
+    Ok(())
+}
+
+pub(super) async fn client_item_loss(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    npcs: &oteryn_world_bundle::npc::Table,
+) -> TestResult {
+    let mut row = Row::new("C20b.client", ITEM_LOSS);
+    verdict::indexed_timeout(
+        Duration::from_secs(850),
+        item_loss(&mut row, clients, world, spawns, npcs, true),
+    )
+    .await??;
+    if !row.0.complete() {
+        return Err("C20b client loss actions incomplete".into());
+    }
+    Ok(())
+}
+
+pub(super) async fn client_blessing_death(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    npcs: &oteryn_world_bundle::npc::Table,
+) -> TestResult {
+    let mut row = Row::new("C20c.client", BLESSING_DEATH);
+    verdict::indexed_timeout(
+        Duration::from_secs(1500),
+        blessing_death(&mut row, clients, world, spawns, npcs, true),
+    )
+    .await??;
+    if !row.0.complete() {
+        return Err("C20c client blessing actions incomplete".into());
+    }
+    Ok(())
+}
+
+type ClientEvidence = Option<Result<(), String>>;
+
 pub(super) async fn run(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
     npcs: &oteryn_world_bundle::npc::Table,
-) {
+    export_loss: bool,
+    export_twist: bool,
+) -> (ClientEvidence, ClientEvidence) {
     use verdict::Need::{Fixture, Row as After};
     // Own a connection per row: an error/timeout cannot prevent the next row's verdict.
     let mut temple = Row::new("C20d", TEMPLE).needs(&[Fixture(1)]);
@@ -131,9 +184,14 @@ pub(super) async fn run(
         .bound(
             Duration::from_secs(850),
             "item-loss journey deadline; remaining actions unproven",
-            item_loss(&mut custody, clients, world, spawns, npcs),
+            item_loss(&mut custody, clients, world, spawns, npcs, export_loss),
         )
         .await;
+    let saved_loss = export_loss.then(|| match &result {
+        Ok(()) if custody.0.complete() => Ok(()),
+        Ok(()) => Err("C20b full item-loss actions incomplete".to_owned()),
+        Err(error) => Err(error.to_string()),
+    });
     custody.finish(result);
 
     // Purchase qualification precedes consumption: Character 0 must retain its
@@ -155,9 +213,14 @@ pub(super) async fn run(
         .bound(
             Duration::from_secs(1500),
             "blessing consumption journey deadline; remaining actions unproven",
-            blessing_death(&mut consumption, clients, world, spawns, npcs),
+            blessing_death(&mut consumption, clients, world, spawns, npcs, export_twist),
         )
         .await;
+    let twist = export_twist.then(|| match &result {
+        Ok(()) if consumption.0.complete() => Ok(()),
+        Ok(()) => Err("C20c full Twist actions incomplete".to_owned()),
+        Err(error) => Err(error.to_string()),
+    });
     finish_blessing_row(consumption, result);
 
     let mut resting = Row::new("P10", RESTING_BONUSES)
@@ -172,6 +235,7 @@ pub(super) async fn run(
         )
         .await;
     finish_resting_row(resting, result);
+    (saved_loss, twist)
 }
 
 // P10 owns its connection and never borrows the fixture-provisioned character.
@@ -1996,6 +2060,7 @@ async fn item_loss(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
     npcs: &oteryn_world_bundle::npc::Table,
+    export_custody: bool,
 ) -> TestResult {
     let mut client = connect_world(clients, 0xc4).await?;
     let result: TestResult = async {
@@ -2052,6 +2117,9 @@ async fn item_loss(
         let saved = custody(&after);
         relog(&mut client, clients, 0xc5).await?;
         if custody(client.inventory().ok_or("unprotected relog inventory absent")?) != saved { return Err("unprotected death custody differs after fresh admission".into()); }
+        if export_custody {
+            client_row_c20b::capture_inventory(&mut client)?;
+        }
         row.pass("unprotected-relog-custody", &saved);
         let destination = tile(encounter)?;
         let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == destination)
@@ -2628,6 +2696,7 @@ async fn blessing_death(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
     npcs: &oteryn_world_bundle::npc::Table,
+    export_receipt: bool,
 ) -> TestResult {
     adventurer_journey(row, clients, world, spawns, npcs, 0xa0).await?;
     let mut client = connect_world(clients, 0xa3).await?;
@@ -2658,13 +2727,20 @@ async fn blessing_death(
         let mut attacker = connect_character(clients, 0xa5, 0).await?;
         let fight: TestResult = async {
             earn_death_prerequisites(&mut attacker, world, spawns, 8, 0).await?;
+            let previous_occurrence = client_row_c20d::death_occurrence(&mut client).await?;
             let (before, after) = observed_pvp_death(&mut client, &mut attacker, world, spawns).await?;
             let regular = vec![WISDOM.2.to_owned()];
             if after.0 >= before.0 || blessings(&mut client).await? != regular {
                 return Err(format!("Twist PvP must lose XP, consume only Twist and retain Wisdom: before={before:?} after={after:?}").into());
             }
             row.pass("twist-pvp-consumes-only-twist", (&regular, before, after));
+            let expected_occurrence = client_row_c20d::death_occurrence(&mut client).await?
+                .filter(|occurrence| Some(*occurrence) != previous_occurrence)
+                .ok_or("C20c Twist death did not issue a new receipt")?;
             saved_blessings(&mut client, clients, 1, 0xa6, &regular, after).await?;
+            if export_receipt {
+                client_row_c20c::capture_receipt(&mut client, expected_occurrence).await?;
+            }
             row.pass("twist-relog", (&regular, after));
             Ok(())
         }.await;

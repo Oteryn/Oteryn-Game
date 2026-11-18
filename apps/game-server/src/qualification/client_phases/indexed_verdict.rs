@@ -135,26 +135,35 @@ pub(crate) fn indexed(
 
 /// Called after legacy line normalization, before output. Buffer only this
 /// indexed row's verdict so late cleanup failures retain their typed origin.
-pub(crate) fn indexed_evidence(mut line: String) -> Option<String> {
+pub(crate) fn indexed_evidence(line: String) -> Option<String> {
+    indexed_evidence_for(Harness::global(), line)
+}
+
+fn indexed_evidence_for(harness: &Harness, mut line: String) -> Option<String> {
+    if let Some((tag, _)) = line.split_once(' ')
+        && let Some(row) = tag.strip_suffix("_CLIENT_CAPTURE_WRITE_ERROR")
+        && let Some(watch) = harness.active().clone()
+        && let Some(scenario) = watch.scenario.filter(|scenario| terminal_capture(scenario))
+        && scenario
+            .strip_suffix(".client")
+            .is_some_and(|id| id.eq_ignore_ascii_case(row))
+    {
+        watch
+            .state()
+            .pending
+            .push(crate::qualification::e2e_result_line(&format!(
+                "e2e_all scenario={scenario} status=CAPTURE-WRITE-ERROR evidence={line}"
+            )));
+        return None;
+    }
     if !(line.starts_with("e2e_all ")
         || line.starts_with("e2e_capture ")
         || line.contains("_CHECK ") && line.contains(" PASS "))
     {
         return Some(line);
     }
-    let harness = Harness::global();
     let watch = harness.active().clone();
     let Some(watch) = watch.filter(|watch| watch.scenario.is_some()) else {
-        for scenario in ["C14.full", "C19a.full", "C20b.full", "C20c.full"] {
-            if line.starts_with(&format!("e2e_all scenario={scenario} status=PASS ")) {
-                harness
-                    .completed_prerequisites
-                    .lock()
-                    .unwrap_or_else(PoisonError::into_inner)
-                    .insert(scenario);
-                break;
-            }
-        }
         return Some(line);
     };
     if let Some(scenario) = watch.scenario.filter(|scenario| terminal_capture(scenario))
@@ -337,12 +346,16 @@ mod capture_tests {
 
     #[test]
     fn indexed_capture_completion_is_a_terminal_pass() {
-        let mut watch = Watch::new("C02.client", Harness::global());
+        let harness = Box::leak(Box::new(Harness::new(true, None)));
+        let mut watch = Watch::new("C02.client", harness);
         watch.scenario = Some("C02.client");
         let active = watch.enter();
 
         assert_eq!(
-            indexed_evidence("e2e_capture scenario=C02.client status=CAPTURED attack=1".to_owned()),
+            indexed_evidence_for(
+                harness,
+                "e2e_capture scenario=C02.client status=CAPTURED attack=1".to_owned()
+            ),
             None
         );
         drop(active);
@@ -353,8 +366,35 @@ mod capture_tests {
     }
 
     #[test]
+    fn capture_diagnostic_prevents_terminal_pass() {
+        let harness = Box::leak(Box::new(Harness::new(true, None)));
+        let mut watch = Watch::new("E01.client", harness);
+        watch.scenario = Some("E01.client");
+        let active = watch.enter();
+        assert!(
+            indexed_evidence_for(
+                harness,
+                "E01_CLIENT_CAPTURE_WRITE_ERROR file=look error=denied".into()
+            )
+            .is_none()
+        );
+        assert!(
+            indexed_evidence_for(
+                harness,
+                "e2e_capture scenario=E01.client status=CAPTURED".into()
+            )
+            .is_none()
+        );
+        drop(active);
+        let verdicts = watch.take_verdicts();
+        assert_eq!(verdicts.len(), 1);
+        assert!(verdicts[0].contains("status=FAIL"));
+    }
+
+    #[test]
     fn capture_write_failure_has_one_terminal_verdict() {
-        let mut watch = Watch::new("I03.client", Harness::global());
+        let harness = Box::leak(Box::new(Harness::new(true, None)));
+        let mut watch = Watch::new("I03.client", harness);
         watch.scenario = Some("I03.client");
         watch.state().pending.extend([
             "e2e_all scenario=I03.client status=FAIL seconds=0.000 evidence=CAPTURE-WRITE-ERROR;disk".to_owned(),

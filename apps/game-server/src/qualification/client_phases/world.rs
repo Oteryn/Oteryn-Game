@@ -317,6 +317,8 @@ include!("full_row_w19e_mount.rs");
 include!("full_row_w21_mount.rs");
 include!("full_e2ef19_mount.rs");
 include!("full_e2ef18_mount.rs");
+#[path = "full_e2ef6.rs"]
+mod full_e2ef6;
 include!("full_e2ef20_mount.rs");
 include!("full_e2ef5_mount.rs");
 #[path = "map_journey.rs"]
@@ -2540,7 +2542,6 @@ pub(super) async fn journeys(
     packet_clients: &SeamClients<'_>,
     path: &Path,
 ) -> TestResult {
-    verdict::Harness::global().begin_world_journeys();
     let started = std::time::Instant::now();
     let bytes = std::fs::read(path)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -2577,7 +2578,15 @@ pub(super) async fn journeys(
         let clients = packet_clients;
         // Default runs retain the ordinary packets alongside the indexed rows.
         // Explicit groups can isolate those packets from the row batch.
-        include!("full_e2ef6_mount.rs");
+        if groups.runs("rows") && e2e_row_selected(146) {
+            verdict::indexed("C19a.client", async {
+                client_row_c19a::run_packet(clients, Box::pin(full_e2ef6::client_starter(clients)))
+                    .await;
+                release_row_characters(clients).await
+            })
+            .await;
+        }
+        let (full_loss, full_twist) = include!("full_e2ef6_mount.rs");
         if groups.runs("rows") {
             release_row_characters(clients).await?;
             if e2e_row_selected(1) {
@@ -3347,14 +3356,42 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(110) {
                 verdict::indexed("C20b.client", async {
-                    client_row_c20b::run_packet(clients).await;
+                    client_row_c20b::run_packet(async {
+                        match full_loss {
+                            Some(result) => result.map_err(Into::into),
+                            None => {
+                                Box::pin(full_e2ef6::client_item_loss(
+                                    clients,
+                                    world,
+                                    &metadata.spawns,
+                                    &metadata.npcs,
+                                ))
+                                .await
+                            }
+                        }
+                    })
+                    .await;
                     release_row_characters(clients).await
                 })
                 .await;
             }
             if e2e_row_selected(111) {
                 verdict::indexed("C20c.client", async {
-                    client_row_c20c::run_packet(clients).await;
+                    client_row_c20c::run_packet(async {
+                        match full_twist {
+                            Some(result) => result.map_err(Into::into),
+                            None => {
+                                Box::pin(full_e2ef6::client_blessing_death(
+                                    clients,
+                                    world,
+                                    &metadata.spawns,
+                                    &metadata.npcs,
+                                ))
+                                .await
+                            }
+                        }
+                    })
+                    .await;
                     release_row_characters(clients).await
                 })
                 .await;
@@ -3600,13 +3637,6 @@ pub(super) async fn journeys(
             if e2e_row_selected(145) {
                 verdict::indexed("C17c.client", async {
                     client_row_c17c::run_packet(clients).await;
-                    release_row_characters(clients).await
-                })
-                .await;
-            }
-            if e2e_row_selected(146) {
-                verdict::indexed("C19a.client", async {
-                    client_row_c19a::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
                 .await;

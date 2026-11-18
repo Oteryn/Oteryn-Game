@@ -39,7 +39,7 @@ fn key_doors(bytes: &[u8], world: &BundleWorld) -> TestResult<Vec<Door>> {
     Ok(found)
 }
 
-async fn matching_key(clients: &SeamClients<'_>, client: &oteryn_dev_client::DevClientSession, number: u16) -> TestResult<oteryn_dev_client::ItemEntry> {
+async fn matching_key(clients: &SeamClients<'_>, client: &oteryn_dev_client::DevClientSession) -> TestResult<std::collections::BTreeMap<u16, oteryn_dev_client::ItemEntry>> {
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
     let matches: Vec<(String, i32)> = sqlx::query_as(
         "SELECT i.definition_production_key,k.key_number
@@ -50,17 +50,19 @@ async fn matching_key(clients: &SeamClients<'_>, client: &oteryn_dev_client::Dev
     ).bind(clients.characters[1].as_slice()).bind(clients.world.as_slice()).fetch_all(&mut db).await?;
     let index = provisioning::item_index()?;
     let inventory = client.inventory().ok_or("M06 inventory absent")?;
+    let mut carried = std::collections::BTreeMap::new();
     for (key, actual) in matches {
+        let Ok(number) = u16::try_from(actual) else { continue; };
         let Some(id) = key.strip_prefix("oteryn:item.tibia.i").and_then(|id| id.parse().ok()) else { continue; };
         let definition = provisioning::item_reference(&index, id)?;
         let mut candidates = inventory.entries.iter().filter(|entry| entry.item_definition_ref == definition);
         if let Some(item) = candidates.next().copied()
             && is_door_key(definition.get(), u16::try_from(actual).ok(), number, candidates.count() + 1)
         {
-            return Ok(item);
+            carried.insert(number, item);
         }
     }
-    Err(format!("M06 no unambiguous carried key for door action {number}").into())
+    Ok(carried)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -74,22 +76,27 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut client = connect_world(clients, 0xc6).await?;
     let from = tile(client.world_spatial().actor_position)?;
-    let (door, path) = key_doors(&bytes, world)?
+    let keys = matching_key(clients, &client).await?;
+    let candidates = key_doors(&bytes, world)?
         .into_iter()
         .find_map(|door| {
             route(world, from, |at| {
                 at.floor == door.at.floor
                     && at.x.abs_diff(door.at.x).max(at.y.abs_diff(door.at.y)) == 1
             })
-            .map(|path| (door, path))
-        })
-        .ok_or("M06 client has no reachable authored key door")?;
+            .map(|path| {
+                let key = crate::map::view::placement_key(door.at, door.ordinal)
+                    .and_then(|key| world.facts().action_at(key))
+                    .and_then(|number| keys.get(&number).copied());
+                ((door, path), key)
+            })
+        });
+    let ((door, path), carried) = select_key_door(candidates)
+        .ok_or("M06 no reachable authored locked door with a matching carried key")?;
     let mut map = client_row_m05::DoorMap::read(&mut client)?;
     walk_observing(&mut client, world, &path, |event| map.observe(&event)).await?;
     let key = crate::map::view::placement_key(door.at, door.ordinal)
         .ok_or("M06 placement key absent")?;
-    let number = world.facts().action_at(key).ok_or("M06 door has no authored key number")?;
-    let carried = matching_key(clients, &client, number).await?;
     for event in client.take_events() { map.observe(&event); }
     let (revision, appearance) = map.state(door.at, door.ordinal)
         .ok_or("M06 locked door absent from current map")?;
@@ -137,6 +144,10 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     ));
 }
 
+fn select_key_door<T, K>(candidates: impl IntoIterator<Item = (T, Option<K>)>) -> Option<(T, K)> {
+    candidates.into_iter().find_map(|(door, key)| key.map(|key| (door, key)))
+}
+
 fn is_door_key(definition: u32, actual: Option<u16>, expected: u16, matching_instances: usize) -> bool {
     definition > 0 && actual == Some(expected) && matching_instances == 1
 }
@@ -147,6 +158,7 @@ mod tests {
 
     #[test]
     fn key_action_must_match_door_and_resolve_one_carried_handle() {
+        assert_eq!(select_key_door([(100, None), (101, Some(101))]), Some((101, 101)));
         assert!(!is_door_key(0, Some(100), 100, 1));
         assert!(!is_door_key(121, Some(101), 100, 1));
         assert!(!is_door_key(121, None, 100, 1));

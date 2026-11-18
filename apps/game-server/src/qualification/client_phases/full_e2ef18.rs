@@ -75,6 +75,15 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     row.finish(&result);
 }
 
+pub(super) async fn client_progression(clients: &SeamClients<'_>) -> TestResult {
+    let mut row = Row::new();
+    verdict::indexed_timeout(Duration::from_secs(600), journey(&mut row, clients)).await??;
+    if row.passed.len() != ACTIONS.len() {
+        return Err("C14 client progression actions incomplete".into());
+    }
+    Ok(())
+}
+
 async fn stats(client: &mut DevClientSession) -> TestResult<GeneralStats> {
     let reply = client
         .session_mut()

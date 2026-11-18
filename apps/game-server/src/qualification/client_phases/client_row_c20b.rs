@@ -10,22 +10,7 @@
 
 use super::*;
 
-pub(super) fn require_current_run(completed: bool, scenario: &str) -> TestResult {
-    if completed {
-        Ok(())
-    } else {
-        Err(format!("missing current-run PASS for {scenario}").into())
-    }
-}
-
-mod journey {
-    use super::*;
-
-    pub(super) async fn run_and_capture(clients: &SeamClients<'_>) -> TestResult {
-        super::require_current_run(
-            verdict::Harness::global().completed_prerequisite("C20b.full"), "C20b.full",
-        )?;
-        let mut client = super::super::connect_character(clients, 0xcb, 1).await?;
+pub(super) fn capture_inventory(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
         let snapshot = client
             .session_mut()
             .gated_snapshot(oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY)
@@ -37,17 +22,16 @@ mod journey {
         if inventory.main_backpack.is_some() || !inventory.entries.is_empty() {
             return Err("C20b final server-observed inventory retained backpack custody".into());
         }
-        capture(snapshot.revision, &snapshot.payload, inventory);
-        Ok(())
-    }
+        capture(snapshot.revision, &snapshot.payload, inventory)
+}
 
     fn capture(
         revision: u64,
         payload: &[u8],
         inventory: &oteryn_dev_client::CharacterInventory,
-    ) {
+    ) -> TestResult {
         let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-            return;
+            return Ok(());
         };
         let directory = std::path::Path::new(&directory);
         let expected = format!(
@@ -60,20 +44,16 @@ mod journey {
             ("c20b-inventory.bin", payload),
             ("c20b-expected.txt", expected.as_bytes()),
         ] {
-            if let Err(error) = std::fs::write(directory.join(name), bytes) {
-                evidence(&format!(
-                    "SEAM_EVIDENCE e2e_all scenario=C20b.client status=CAPTURE-WRITE-ERROR evidence=file={name};error={error}"
-                ));
-            }
+            std::fs::write(directory.join(name), bytes)?;
         }
+        Ok(())
     }
-}
 
-pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+pub(super) async fn run_packet(prerequisite: impl Future<Output = TestResult>) {
     let started = std::time::Instant::now();
     let result = verdict::indexed_timeout(
-        Duration::from_secs(480),
-        verdict::observe(journey::run_and_capture(clients)),
+        Duration::from_secs(1050),
+        verdict::observe(prerequisite),
     )
     .await
     .map_err(|_| "C20b client capture timed out".into())
@@ -86,17 +66,4 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         "e2e_all scenario=C20b.client status={status} seconds={:.3} evidence={detail}",
         started.elapsed().as_secs_f64()
     ));
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn stored_character_state_needs_current_run_action_evidence() {
-        for scenario in ["C20b.full", "C20c.full", "C14.full", "C19a.full"] {
-            assert!(require_current_run(false, scenario).is_err());
-            assert!(require_current_run(true, scenario).is_ok());
-        }
-    }
 }

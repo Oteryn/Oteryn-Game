@@ -32,6 +32,10 @@ fn line(vitals: &ActorVitals) -> String {
     )
 }
 
+fn poison_could_not_expire(remaining_ms: i64, elapsed_ms: u128) -> bool {
+    remaining_ms == -1 || u128::try_from(remaining_ms).is_ok_and(|remaining| remaining > elapsed_ms)
+}
+
 fn poison_was_dispelled(poisoned: bool, after: bool, paid: bool) -> bool {
     poisoned && !after && paid
 }
@@ -131,10 +135,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .into_iter()
         .find(|entry| entry.words == "exana pox" && entry.available)
         .ok_or("C08 exana pox not served as available")?;
-    let poison_before = poisoned(&mut client).await?;
-    if !poison_before {
-        return Err("C08 poison was absent before the dispel cast".into());
-    }
+    let sampled = tokio::time::Instant::now();
+    let (conditions, _) = client_row_c17a::query(&mut client).await?;
+    let remaining = conditions.conditions.iter().find(|condition| condition.icon == 1)
+        .ok_or("C08 poison was absent before the dispel cast")?.remaining_ms;
     let mana_before = client.actor_vitals().ok_or("C08 pre-cast vitals absent")?.mana;
     let cast = client
         .cast_spell(
@@ -147,7 +151,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("C08 exana pox refused: {cast:?}").into());
     }
     let dispelled = cast.actor_vitals_delta.ok_or("C08 cast omitted its vitals delta")?.value;
-    if !poison_was_dispelled(poison_before, poisoned(&mut client).await?, dispelled.mana.checked_add(entry.mana) == Some(mana_before)) {
+    let poison_after = poisoned(&mut client).await?;
+    let survives_without_cast = poison_could_not_expire(remaining, sampled.elapsed().as_millis());
+    if !poison_was_dispelled(survives_without_cast, poison_after, dispelled.mana.checked_add(entry.mana) == Some(mana_before)) {
         return Err(format!(
             "C08 exana pox did not clear poison and debit exact mana: {mana_before}->{} cost {}",
             dispelled.mana, entry.mana
@@ -197,6 +203,8 @@ mod tests {
 
     #[test]
     fn paid_cast_is_insufficient_without_poison_removal() {
+        assert!(!poison_could_not_expire(200, 250));
+        assert!(poison_could_not_expire(3000, 250));
         assert!(!poison_was_dispelled(false, false, true));
         assert!(!poison_was_dispelled(true, true, true));
         assert!(poison_was_dispelled(true, false, true));

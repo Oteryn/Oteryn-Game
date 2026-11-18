@@ -402,7 +402,6 @@ pub(super) struct Harness {
     failfast: bool,
     no_progress: Option<Duration>,
     health: Mutex<BTreeMap<Need, String>>,
-    completed_prerequisites: Mutex<BTreeSet<&'static str>>,
     active: Mutex<Option<Watch>>,
 }
 
@@ -412,23 +411,8 @@ impl Harness {
             failfast,
             no_progress,
             health: Mutex::new(BTreeMap::new()),
-            completed_prerequisites: Mutex::new(BTreeSet::new()),
             active: Mutex::new(None),
         }
-    }
-
-    pub(super) fn begin_world_journeys(&self) {
-        self.completed_prerequisites
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .clear();
-    }
-
-    pub(super) fn completed_prerequisite(&self, scenario: &str) -> bool {
-        self.completed_prerequisites
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .contains(scenario)
     }
 
     fn from_env(no_failfast: Option<&str>, no_progress: Option<&str>) -> Result<Self, String> {

@@ -16,9 +16,7 @@ fn failure_evidence(error: &str) -> String {
 }
 
 async fn capture(clients: &SeamClients<'_>) -> TestResult {
-    client_row_c20b::require_current_run(
-        verdict::Harness::global().completed_prerequisite("C14.full"), "C14.full",
-    )?;
+    full_e2ef18::client_progression(clients).await?;
     let mut client = connect_character(clients, 0xc1, 0).await?;
     let reply = client
         .session_mut()

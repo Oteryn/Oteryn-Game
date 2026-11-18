@@ -22,6 +22,51 @@ fn shield_ratio(health_unchanged: bool, mana_debit: u32, incoming_damage: u32) -
     health_unchanged && incoming_damage > 0 && incoming_damage.checked_mul(2) == Some(mana_debit)
 }
 
+async fn move_ring(client: &mut oteryn_dev_client::DevClientSession, handle: items::ItemHandle, worn: bool) -> TestResult {
+    let destination = if worn { items::ItemMoveDestination::Equipment(items::EquipmentSlot::Ring) } else { items::ItemMoveDestination::MainBackpack };
+    let reply = client.move_item(&items::ItemMoveIntent { source: handle, destination }).await?;
+    if reply.outcome != items::ItemMoveOutcome::Moved {
+        return Err(format!("I15 ring move failed: {reply:?}").into());
+    }
+    let until = tokio::time::Instant::now() + Duration::from_secs(3);
+    loop {
+        if client.take_events().into_iter().any(|event| matches!(event, SessionEvent::Inventory(delta)
+            if delta.server_sequence > reply.result_server_sequence
+                && if worn {
+                    delta.value.equipment.iter().any(|entry| entry.slot == items::EquipmentSlot::Ring && entry.item.handle == handle)
+                } else {
+                    delta.value.entries.iter().any(|entry| entry.handle == handle)
+                    && !delta.value.equipment.iter().any(|entry| entry.slot == items::EquipmentSlot::Ring)
+                })) {
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= until { return Err("I15 ring move inventory frame absent".into()); }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
+}
+
+async fn observe_drowning(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<u32> {
+    let mut previous = *client.actor_vitals().ok_or("I15 unshielded vitals absent")?;
+    let until = tokio::time::Instant::now() + Duration::from_secs(7);
+    loop {
+        if client.world_entities().is_none_or(|entities| entities.others().any(|entity|
+            matches!(entity.kind, oteryn_dev_client::EntityKind::Creature | oteryn_dev_client::EntityKind::Player)
+        )) {
+            return Err("I15 unshielded sample may include another attacker".into());
+        }
+        for event in client.take_events() {
+            if let SessionEvent::ActorVitals(delta) = event {
+                let current = delta.value;
+                let loss = previous.health.saturating_sub(current.health);
+                if loss > 0 && current.mana == previous.mana { return Ok(loss); }
+                previous = current;
+            }
+        }
+        if tokio::time::Instant::now() >= until { return Err("I15 unshielded drowning hit absent".into()); }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -29,12 +74,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let active = provisioning::item_reference(&provisioning::item_index()?, 3088)?;
     let mut client = connect_world(clients, 0xb2).await?;
     let result: TestResult = async {
-        let equipped = client.inventory().ok_or("I15 inventory absent")?.equipment.iter().any(|entry| {
-            entry.slot == items::EquipmentSlot::Ring && entry.item.item_definition_ref == active
-        });
-        if !equipped { return Err("I15 active Energy Ring 3088 absent after I05 lifecycle".into()); }
-
-        const DROWNING_TICK: u32 = 20;
+        let handle = client.inventory().ok_or("I15 inventory absent")?.equipment.iter()
+            .find(|entry| entry.slot == items::EquipmentSlot::Ring && entry.item.item_definition_ref == active)
+            .ok_or("I15 active Energy Ring 3088 absent after I05 lifecycle")?.item.handle;
         let from = tile(client.world_spatial().actor_position)?;
         let mut path = route(world, from, |at| client_row_m10::is_underwater(world, at))
             .ok_or("I15 no reachable underwater tile for a known incoming hit")?;
@@ -43,10 +85,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         let baseline = client_row_c17a::query(&mut client).await?.0;
         if baseline.conditions.iter().any(|condition| (1..=8).contains(&condition.icon)) {
             return Err("I15 unexpected pre-existing damage condition".into());
-        }
-        let mut previous = *client.actor_vitals().ok_or("I15 pre-entry vitals absent")?;
-        if previous.mana < 2 * DROWNING_TICK {
-            return Err("I15 insufficient mana for a full shielded drowning hit".into());
         }
         client.take_events();
         let moved = client.step_retrying(enter).await?;
@@ -58,6 +96,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         let other_harm = observed.conditions.iter().any(|condition| condition.icon != 5 && (1..=8).contains(&condition.icon));
         if !drowning || other_harm {
             return Err("I15 expected drowning as the only damage condition".into());
+        }
+        move_ring(&mut client, handle, false).await?;
+        let incoming_damage = observe_drowning(&mut client).await;
+        let restored = move_ring(&mut client, handle, true).await;
+        let incoming_damage = incoming_damage?;
+        restored?;
+        let mut previous = *client.actor_vitals().ok_or("I15 shielded vitals absent")?;
+        let needed = incoming_damage.checked_mul(2).ok_or("I15 incoming hit overflow")?;
+        if previous.mana < needed {
+            return Err("I15 insufficient mana for the observed hit".into());
         }
         let deadline = tokio::time::Instant::now() + Duration::from_secs(7);
         loop {
@@ -72,7 +120,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                     let current = delta.value;
                     if current.health < previous.health || previous.mana > current.mana {
                         let paid = previous.mana.saturating_sub(current.mana);
-                        if !shield_ratio(current.health == previous.health, paid, DROWNING_TICK) { return Err(format!("I15 mana debit is not an accepted 2:1 cost: {paid}").into()); }
+                        if !shield_ratio(current.health == previous.health, paid, incoming_damage) { return Err(format!("I15 mana debit is not an accepted 2:1 cost: {paid}").into()); }
                         let before = actor_spell::encode_actor_vitals(&previous).map_err(|error| format!("I15 before encode: {error:?}"))?;
                         let after = actor_spell::encode_actor_vitals(&current).map_err(|error| format!("I15 after encode: {error:?}"))?;
                         capture("i15-before.bin", &before)?;

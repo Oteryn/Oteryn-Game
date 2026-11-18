@@ -37,7 +37,7 @@ fn capture(name: &str, payload: &[u8]) {
     }
 }
 
-fn own_direction(client: &oteryn_dev_client::DevClientSession) -> Option<StepDirection> {
+pub(super) fn own_direction(client: &oteryn_dev_client::DevClientSession) -> Option<StepDirection> {
     use oteryn_dev_client::EntityDetail;
     let entities = client.world_entities()?;
     let actor = entities.iter().find(|entity| &entity.entity.identity == entities.own_identity())?;

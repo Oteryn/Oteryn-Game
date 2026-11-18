@@ -13,10 +13,8 @@ fn capture(name: &str, bytes: &[u8]) {
     }
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    client_row_c20b::require_current_run(
-        verdict::Harness::global().completed_prerequisite("C19a.full"), "C19a.full",
-    )?;
+async fn journey(clients: &SeamClients<'_>, prerequisite: impl Future<Output = TestResult>) -> TestResult<String> {
+    prerequisite.await?;
     let definitions = provisioning::item_index()?;
     let backpack_ref = provisioning::item_reference(&definitions, 2854)?;
     let mut client = connect_world(clients, 0x32).await?;
@@ -57,8 +55,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     ))
 }
 
-pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await {
+pub(super) async fn run_packet(clients: &SeamClients<'_>, prerequisite: impl Future<Output = TestResult>) {
+    match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients, prerequisite))).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=C19a.client status=CAPTURED evidence={observed}"
         )),

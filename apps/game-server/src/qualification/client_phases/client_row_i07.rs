@@ -30,6 +30,10 @@ fn request(action: QuickLootAction) -> QuickLootRequest {
     }
 }
 
+fn skip_preserved(before: i64, after: i64) -> bool {
+    before > 0 && before == after
+}
+
 fn quick_loot_matches(confirmed_filters: usize, real_pouch: bool, corpse: bool, looted: usize) -> bool {
     confirmed_filters == 2 && real_pouch && corpse && looted > 0
 }
@@ -43,7 +47,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0x07).await?;
     let definitions = provisioning::item_index()?;
     let coin = provisioning::item_reference(&definitions, 3031)?;
-    let skipped = provisioning::item_reference(&definitions, 3350)?;
+    let skipped = provisioning::item_reference(&definitions, 3607)?;
     let pouch_definition = provisioning::item_reference(&definitions, 23721)?;
 
     if !client.inventory().is_some_and(|inventory| inventory.entries.iter().any(|entry| entry.item_definition_ref == pouch_definition)) {
@@ -91,9 +95,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         payloads.push(reply.payload);
     }
     let filters: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_character_quick_loot_filters WHERE character_id=encode($1,'hex')::uuid AND ((accepted AND item_production_key='oteryn:item.tibia.i3031') OR (NOT accepted AND item_production_key='oteryn:item.tibia.i3350'))",
+        "SELECT count(*) FROM game_character_quick_loot_filters WHERE character_id=encode($1,'hex')::uuid AND ((accepted AND item_production_key='oteryn:item.tibia.i3031') OR (NOT accepted AND item_production_key='oteryn:item.tibia.i3607'))",
     ).bind(character.as_slice()).fetch_one(&mut database).await?;
 
+    let (handle, coins, skip_before) = 'hunt: {
+    for _ in 0..12 {
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let (corpse, _) = client_row_i06::kill_for_corpse(&mut client).await?;
     let handle = match corpse.detail {
@@ -106,10 +112,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("I07 corpse open refused: {opened:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    let coins = loop {
+    let (coins, skipped_units) = loop {
         if let Some(container) = client.open_container().filter(|container| container.container_handle == Some(handle)) {
-            break container.entries.iter().filter(|entry| entry.item_definition_ref == coin)
+            let count = |definition| container.entries.iter().filter(|entry| entry.item_definition_ref == definition)
                 .map(|entry| i64::from(entry.count.get())).sum::<i64>();
+            break (count(coin), count(skipped));
         }
         if tokio::time::Instant::now() >= deadline {
             return Err("I07 selected corpse did not publish its inventory".into());
@@ -117,17 +124,35 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         client.service_liveness(Duration::from_millis(25)).await?;
         client.take_events();
     };
-    if coins == 0 {
-        return Err("I07 selected corpse carried no gold to route to the pouch".into());
+    if coins > 0 && skipped_units > 0 {
+        break 'hunt (handle, coins, skipped_units);
     }
+    }
+    return Err("I07 could not find a rat corpse containing both cheese and gold".into());
+    };
     let before = pouch_gold(&mut database, pouch).await?;
     let payload = encode_quick_loot_request(&request(QuickLootAction::LootAll))
         .map_err(|error| format!("I07 loot all encode: {error:?}"))?;
     let reply = client.session_mut().gated_command(CAPABILITY_QUICK_LOOT_V1, COMMAND_TYPE_QUICK_LOOT, &payload).await?;
     let result = decode_quick_loot_result(&reply.payload).map_err(|error| format!("I07 loot all decode: {error:?}"))?;
     let accepted = result.items.iter().filter(|item| item.accepted).count();
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let skip_after = loop {
+        if let Some(container) = client.open_container().filter(|container| container.container_handle == Some(handle))
+            && !container.entries.iter().any(|entry| entry.item_definition_ref == coin)
+        {
+            break container.entries.iter().filter(|entry| entry.item_definition_ref == skipped)
+                .map(|entry| i64::from(entry.count.get())).sum::<i64>();
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("I07 no fresh selected corpse view after LootAll".into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+        client.take_events();
+    };
     let after = pouch_gold(&mut database, pouch).await?;
     if reply.status != CommandStatus::Accepted
+        || !skip_preserved(skip_before, skip_after)
         || !quick_loot_matches(usize::try_from(filters)?, before.checked_add(coins) == Some(after), true, accepted)
     {
         return Err(format!("I07 quick-loot evidence mismatch: filters={filters}, accepted={accepted}, pouch={before}->{after}, corpse={coins}").into());
@@ -156,6 +181,9 @@ mod tests {
 
     #[test]
     fn quick_loot_requires_real_corpse_pouch_filters_and_custody() {
+        assert!(!skip_preserved(0, 0));
+        assert!(!skip_preserved(1, 0));
+        assert!(skip_preserved(1, 1));
         assert!(!quick_loot_matches(2, true, true, 0));
         assert!(!quick_loot_matches(2, false, true, 1));
         assert!(!quick_loot_matches(2, true, false, 1));

@@ -12,6 +12,10 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
 }
 
+fn horizontal_landing_matches(from: ActorPosition, observed: ActorPosition, offset: (i32, i32)) -> bool {
+    from.x.checked_add(offset.0) == Some(observed.x) && from.y.checked_add(offset.1) == Some(observed.y)
+}
+
 fn levitate_matches(
     accepted: bool, before_floor: i16, after_floor: Option<i16>,
     up: bool, mana_before: u32, mana_after: Option<u32>,
@@ -27,6 +31,13 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let mut expected = String::new();
     for (name, words) in [("up", "exani hur up"), ("down", "exani hur down")] {
         let from = client.world_spatial().actor_position;
+        let offset = match client_row_m01::own_direction(&client) {
+            Some(StepDirection::North) => (0, -1),
+            Some(StepDirection::South) => (0, 1),
+            Some(StepDirection::East) => (1, 0),
+            Some(StepDirection::West) => (-1, 0),
+            _ => return Err("M11a no cardinal facing before Levitate".into()),
+        };
         let mana = client.actor_vitals().ok_or("M11a pre-cast vitals missing")?.mana;
         client.take_events();
         let reply = client.chat(&ChatIntent::Say {
@@ -58,7 +69,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
                 }
                 if let (Some(spatial), Some(vitals)) = (spatial, vitals)
                     && levitate_matches(true, from.floor, Some(spatial.actor_position.floor), name == "up", mana, Some(vitals.mana))
-                    && u64::from(spatial.actor_position.x.abs_diff(from.x)) + u64::from(spatial.actor_position.y.abs_diff(from.y)) == 1
+                    && horizontal_landing_matches(from, spatial.actor_position, offset)
                 {
                     break 'observation (spatial, vitals);
                 }
@@ -98,6 +109,9 @@ mod tests {
 
     #[test]
     fn levitate_requires_accepted_cast_floor_transition_and_cost() {
+        let from = ActorPosition {x: 20, y: 30, floor: 7};
+        assert!(!horizontal_landing_matches(from, ActorPosition {y: 31, floor: 6, ..from}, (1, 0)));
+        assert!(horizontal_landing_matches(from, ActorPosition {x: 21, floor: 6, ..from}, (1, 0)));
         assert!(!levitate_matches(false, 7, Some(6), true, 70, Some(20)));
         assert!(!levitate_matches(true, 7, None, true, 70, Some(20)));
         assert!(!levitate_matches(true, 7, Some(8), true, 70, Some(20)));

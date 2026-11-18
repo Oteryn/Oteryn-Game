@@ -27,6 +27,10 @@ const OVENS: [&str; 4] = [
     "oteryn:item.tibia.i2541",
 ];
 
+fn baked_refusal_preserved<T: PartialEq>(before: &T, observed: &T, reload: &T) -> bool {
+    before == observed && before == reload
+}
+
 fn refusal_preserved<T: PartialEq>(before: &T, at_reply: &T, after_wait: &T, reload: &T) -> bool {
     before == at_reply && before == after_wait && before == reload
 }
@@ -225,6 +229,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .session_mut()
         .world_context_use(&refusal_payload)
         .await?;
+    let at_reply = client.inventory().cloned();
     let refusal_disposition = decode_use_result(&refusal.payload)
         .map_err(|error| format!("step-3_observed=reply-decode-{error:?}"))?;
     if refusal.status != CommandStatus::Accepted
@@ -237,11 +242,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     client.service_liveness(Duration::from_millis(100)).await?;
-    if client.inventory() != after_bake.as_ref() {
+    if at_reply != after_bake || client.inventory() != after_bake.as_ref() {
         return Err("step-3_observed=unsupported-use-mutated-inventory".into());
     }
     logout(&mut client).await?;
     let reloaded = connect_character(clients, 0xb9, 0).await?;
+    let baseline = after_bake.map(inventory_without_handles).ok_or("I11 baked inventory absent")?;
+    let durable = reloaded.inventory().cloned().map(inventory_without_handles).ok_or("I11 reload inventory absent")?;
+    let at_reply = at_reply.map(inventory_without_handles).ok_or("I11 reply inventory absent")?;
+    if !baked_refusal_preserved(&baseline, &at_reply, &durable) {
+        return Err("step-4_observed=unsupported-use-changed-durable-inventory".into());
+    }
     if quantity(&reloaded, dough)? != before_dough - 1
         || quantity(&reloaded, bread)? != before_bread + 1
     {
@@ -396,6 +407,7 @@ mod tests {
 
     #[test]
     fn refusal_checks_inventory_before_command_and_after_reload() {
+        assert!(!baked_refusal_preserved(&[1,2,3], &[1,2,3], &[1,2,4]));
         assert!(!refusal_preserved(&[1, 2], &[1, 3], &[1, 3], &[1, 3]));
         assert!(!refusal_preserved(&[1, 2], &[1, 2], &[1, 2], &[1, 3]));
         assert!(refusal_preserved(&[1, 2], &[1, 2], &[1, 2], &[1, 2]));

@@ -354,7 +354,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
                     _ => None,
                 }))
                 .ok_or("C16a barrier definition missing from matched placement")?;
-            let expired = barrier_frame(&mut client, target, &[actual], false, placed.server_sequence, Duration::from_secs(70)).await?;
+            let expired = barrier_frame(&mut client, target, &possible, false, placed.server_sequence, Duration::from_secs(70)).await?;
             for (phase, delta) in [("placed", placed), ("expired", expired)] {
                 let payload = encode_world_map_delta(&delta.value.header, &delta.value)
                     .map_err(|error| format!("C16a {phase} map encoding: {error:?}"))?;
@@ -395,6 +395,9 @@ mod tests {
         tile.items[0].definition = MapDefinition::Item(barrier);
         assert!(barrier_transition(target, &[barrier], true, std::slice::from_ref(&tile)));
         assert!(!barrier_transition(target, &[barrier], false, std::slice::from_ref(&tile)));
+        let substitute = std::num::NonZeroU32::new(124).ok_or("definition")?;
+        tile.items[0].definition = MapDefinition::Item(substitute);
+        assert!(!barrier_transition(target, &[barrier, substitute], false, std::slice::from_ref(&tile)));
         tile.items.clear();
         tile.position.x += 1;
         assert!(!barrier_transition(target, &[barrier], false, std::slice::from_ref(&tile)));

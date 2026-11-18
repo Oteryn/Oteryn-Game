@@ -64,6 +64,52 @@ class RowCommandRoutes(unittest.TestCase):
         self.assertIn('value(e, "malformed_query")', replay)
         self.assertIn('value(e, "malformed_wire_submission")', replay)
 
+class ClientShardProvenance(unittest.TestCase):
+    def test_client_shards_own_their_prerequisite_journeys(self):
+        for name, owner in (
+            ("c14", "full_e2ef18::client_progression"),
+            ("c19a", "full_e2ef6::client_starter"),
+            ("c20b", "full_e2ef6::client_item_loss"),
+            ("c20c", "full_e2ef6::client_blessing_death"),
+        ):
+            with self.subTest(row=name):
+                source = (PHASES / f"client_row_{name}.rs").read_text()
+                dispatch = (PHASES / "world.rs").read_text()
+                if name == "c14":
+                    self.assertIn(owner, source)
+                else:
+                    self.assertRegex(dispatch, rf"client_row_{name}::run_packet\([^;]+{owner}")
+                    self.assertIn("prerequisite", source)
+                self.assertNotIn("completed_prerequisite", source)
+
+    def test_twist_capture_is_inside_its_own_death_journey(self):
+        full = (PHASES / "full_e2ef6.rs").read_text()
+        death = full[full.index("async fn blessing_death("):full.index("async fn blessing_services(")]
+        self.assertIn("client_row_c20c::capture_receipt", death)
+        self.assertIn("expected_occurrence", death)
+
+    def test_exiva_cleanup_has_its_own_release_budget(self):
+        source = (PHASES / "client_row_c05.rs").read_text()
+        self.assertNotIn("indexed_timeout(Duration::from_secs(100)", source)
+        self.assertIn('"exiva-restoration"', source)
+        self.assertIn("restore_after(changed", source)
+
+    def test_wrap_reconciliation_precedes_house_exit(self):
+        source = (PHASES / "client_row_i10.rs").read_text()
+        self.assertLess(source.index("restore_wrapped(&mut client"), source.index("let exit = transfer"))
+
+    def test_shield_denominator_comes_from_control_hit(self):
+        source = (PHASES / "client_row_i15.rs").read_text()
+        self.assertIn("let incoming_damage = observe_drowning", source)
+        self.assertIn("paid, incoming_damage", source)
+        self.assertNotIn("const DROWNING_TICK", source)
+
+    def test_wrap_prepares_fixture_before_requiring_the_oven(self):
+        source = (PHASES / "client_row_i10.rs").read_text()
+        self.assertIn("prepare_fixture(&mut db, clients, world", source)
+        self.assertIn("assign_house_scope", source)
+        self.assertIn("owned_house_fixture.sql", source)
+
 
 if __name__ == "__main__":
     unittest.main()

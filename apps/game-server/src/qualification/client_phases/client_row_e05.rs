@@ -51,6 +51,10 @@ fn request(action: u8, definition: u32, offer: [u8; 16]) -> MarketRequest {
     }
 }
 
+fn unacknowledged_offers(before: &[[u8; 16]], after: &[[u8; 16]]) -> Vec<[u8; 16]> {
+    after.iter().copied().filter(|offer| !before.contains(offer)).collect()
+}
+
 pub(super) fn cancelled_offer(
     own: &MarketReply, history: &MarketReply, offer: [u8; 16], durable_state: i16,
 ) -> bool {
@@ -63,11 +67,51 @@ pub(super) fn cancelled_offer(
 pub(super) async fn durable_offer_end(clients: &SeamClients<'_>, offer: [u8; 16]) -> TestResult<i16> {
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
     // The legacy market reply projects every ended reason as state 2.
-    Ok(sqlx::query_scalar("SELECT ended_as FROM game_market_offers WHERE offer_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND character_id=encode($3,'hex')::uuid")
+    Ok(sqlx::query_scalar("SELECT COALESCE(ended_as,state) FROM game_market_offers WHERE offer_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND character_id=encode($3,'hex')::uuid")
         .bind(offer.as_slice())
         .bind(clients.world.as_slice())
         .bind(clients.characters[1].as_slice())
         .fetch_one(&mut database).await?)
+}
+
+async fn active_buy_offers(clients: &SeamClients<'_>) -> TestResult<Vec<[u8; 16]>> {
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let ids: Vec<Vec<u8>> = sqlx::query_scalar(
+        "SELECT uuid_send(offer_id) FROM game_market_offers
+         WHERE world_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid
+           AND state=1 AND side=1 AND amount=1 AND piece_price=1 AND NOT anonymous"
+    ).bind(clients.world.as_slice()).bind(clients.characters[1].as_slice()).fetch_all(&mut database).await?;
+    ids.into_iter().map(|id| id.try_into().map_err(|_| "Market offer UUID width".into())).collect()
+}
+
+pub(super) async fn create_with_reconciliation(
+    clients: &SeamClients<'_>, world: &BundleWorld, mut client: DevClientSession, definition: u32,
+) -> TestResult<(DevClientSession, MarketReply, Vec<u8>)> {
+    let before = active_buy_offers(clients).await?;
+    let created = bounded_observation("Market Create", command(&mut client, request(5, definition, [0; 16]))).await;
+    let error = match created {
+        Ok((reply, bytes)) if reply.action == 5 && reply.code == 1 && reply.offer != [0; 16] => return Ok((client, reply, bytes)),
+        Ok((reply, _)) => format!("Market Create did not acknowledge its offer: {reply:?}").into(),
+        Err(error) => error,
+    };
+    verdict::Harness::global().bounded_wait(
+        tokio::time::Instant::now() + Duration::from_secs(330), "market-create-reconciliation",
+    );
+    drop(client);
+    // A fresh admission crosses the old session's release fence before reading escrow.
+    let mut fresh = connect_character(clients, 0x3a, 1).await?;
+    let after = active_buy_offers(clients).await?;
+    let new = unacknowledged_offers(&before, &after);
+    if let [offer] = new.as_slice() {
+        let path = route(world, tile(fresh.world_spatial().actor_position)?, |at| near_locker(world, at))
+            .ok_or("Market Create recovery cannot reach a locker")?;
+        walk(&mut fresh, world, &path).await?;
+        let (mut fresh, _) = cancel_offer(clients, world, fresh, *offer).await?;
+        client_row_c08::require_logout(&mut fresh, Duration::from_secs(15)).await?;
+    } else if !new.is_empty() {
+        return Err(format!("Market Create recovery is ambiguous: {new:?}; original error: {error}").into());
+    }
+    Err(error)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -91,15 +135,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if wares.code != 1 || wares.action != 1 || ware.definition == 0 {
         return Err(format!("wares reply {wares:?}").into());
     }
-    let (created, created_bytes) =
-        command(&mut client, request(5, ware.definition, [0; 16])).await?;
-    if created.code != 1 || created.offer == [0; 16] {
-        return Err(format!(
-            "create refused code={}; needs premium-current and bank gold",
-            created.code
-        )
-        .into());
-    }
+    let (mut client, created, created_bytes) = create_with_reconciliation(clients, world, client, ware.definition).await?;
     let offer = created.offer;
     let observed = bounded_observation("E05 My Offers", command(&mut client, request(3, 0, [0; 16]))).await;
     let cancellation = cancel_offer(clients, world, client, offer).await;
@@ -148,7 +184,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(650), verdict::observe(journey(clients))).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=E05.client status=CAPTURED evidence={observed}"
         )),
@@ -208,6 +244,7 @@ mod tests {
 
     #[test]
     fn market_cancellation_requires_successful_queries_and_cancelled_status() {
+        assert_eq!(unacknowledged_offers(&[[1; 16]], &[[1; 16], [2; 16]]), vec![[2; 16]]);
         let offer = [1; 16];
         let mut own = MarketReply { action: 3, code: 9, offer: [0; 16], rows: Vec::new() };
         let mut history = MarketReply { action: 4, code: 1, offer: [0; 16], rows: vec![wire::MarketRow {

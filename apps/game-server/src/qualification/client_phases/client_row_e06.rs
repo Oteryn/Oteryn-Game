@@ -92,14 +92,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let before = oteryn_dev_client::client_runtime::npc_shop::balances(client.session_mut())
         .await?.ok_or("E06 bank balance absent before offer")?;
-    let (created, _) = command(&mut client, request(5, ware.definition, [0; 16])).await?;
-    if created.code != 1 || created.offer == [0; 16] {
-        return Err(format!(
-            "create refused code={}; needs premium-current and bank gold",
-            created.code
-        )
-        .into());
-    }
+    let (mut client, created, _) = client_row_e05::create_with_reconciliation(clients, world, client, ware.definition).await?;
     let offer = created.offer;
     let held = client_row_e05::bounded_observation("E06 escrow bank balance", async {
         oteryn_dev_client::client_runtime::npc_shop::balances(client.session_mut()).await?
@@ -157,7 +150,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(650), verdict::observe(journey(clients))).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=E06.client status=CAPTURED evidence={observed}"
         )),

@@ -99,7 +99,7 @@ async fn client_journey(clients: &SeamClients<'_>) -> TestResult {
     let placed = field_frame(&mut client, target, field, true, cast_sequence, Duration::from_secs(5), Some((reference, remaining))).await?;
     check("attack-rune", placed);
 
-    if burning(&mut client).await? || other_attackers(&client) {
+    if contact_conditions(&mut client).await? != (false, false) || other_attackers(&client) {
         return Err("C07 contact baseline requires a quiet tile and no active burn".into());
     }
     let contact_health = client.actor_vitals().ok_or("C07 pre-contact vitals absent")?.health;
@@ -251,6 +251,10 @@ async fn inventory_count(client: &mut DevClientSession, reference: std::num::Non
     }
 }
 async fn later_frame(client: &mut DevClientSession) -> TestResult { client.service_liveness(Duration::from_millis(100)).await.map_err(Into::into) }
+fn competing_damage(active_icons: &[u8]) -> bool {
+    active_icons.iter().any(|icon| (1..=8).contains(icon) && *icon != 2)
+}
+
 fn contact_damage(before: u32, after: u32, new_burn: bool, other_attackers: bool) -> bool {
     new_burn && !other_attackers && after < before
 }
@@ -267,6 +271,12 @@ async fn burning(client: &mut DevClientSession) -> TestResult<bool> {
     Ok(status.conditions.iter().any(|condition| condition.icon == 2))
 }
 
+async fn contact_conditions(client: &mut DevClientSession) -> TestResult<(bool, bool)> {
+    let (status, _) = client_row_c17a::query(client).await?;
+    let icons = status.conditions.iter().map(|entry| entry.icon).collect::<Vec<_>>();
+    Ok((icons.contains(&2), competing_damage(&icons)))
+}
+
 async fn wait_health_below(client: &mut DevClientSession, before: u32, step_sequence: u64) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let mut damage = None;
@@ -281,8 +291,8 @@ async fn wait_health_below(client: &mut DevClientSession, before: u32, step_sequ
             damage = Some(delta);
         }
         if let Some(delta) = &damage {
-            let new_burn = burning(client).await?;
-            if contact_damage(before, delta.value.health, new_burn, other_attackers(client)) {
+            let (new_burn, competing_dot) = contact_conditions(client).await?;
+            if contact_damage(before, delta.value.health, new_burn, competing_dot || other_attackers(client)) {
                 return Ok(delta.server_sequence);
             }
         }
@@ -379,6 +389,8 @@ mod tests {
     use super::*;
     #[test]
     fn field_contact_requires_burning_without_another_damage_source() {
+        assert!(!contact_damage(150, 130, true, competing_damage(&[1, 2])));
+        assert!(contact_damage(150, 130, true, competing_damage(&[2])));
         assert!(!contact_damage(150, 130, false, false));
         assert!(!contact_damage(150, 130, true, true));
         assert!(!contact_damage(150, 150, true, false));
