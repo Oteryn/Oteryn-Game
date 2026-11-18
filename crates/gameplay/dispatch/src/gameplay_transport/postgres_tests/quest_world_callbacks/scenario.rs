@@ -1880,7 +1880,7 @@ fn scenario_case(
         }
         if name == super::super::stag_engine::COURT {
             return Box::pin(super::super::stag_engine::exercise_court(
-                &mut owner, &mut admitted, &h, fence, deps.actor,
+                &mut owner, &mut admitted, &h, fence, &deps,
             )).await;
         }
         if m03_use {
