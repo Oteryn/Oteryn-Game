@@ -147,7 +147,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };
-        let personal_entry = callback.personal_room_entry().map(local);
+        let timed_room_entry = room_exit
+            .and_then(|_| crate::map::view::placement_of(key))
+            .map(|(position, _)| {
+                local(Position {
+                    x: position.x,
+                    y: position.y,
+                    floor: position.floor,
+                })
+            });
+        let personal_entry = timed_room_entry.or_else(|| callback.personal_room_entry().map(local));
         if census.iter().any(|(who, pos, occupant_session)| {
             occupant_session.is_some()
                 && native(pos.position()).is_some_and(|position| {
@@ -163,9 +172,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut players = Vec::new();
         let mut proofs = Vec::new();
         for member in &encounter.players {
-            let mut occupants = census
-                .iter()
-                .filter(|(_, pos, _)| pos.position() == local(member.from));
+            let from = timed_room_entry.unwrap_or_else(|| local(member.from));
+            let mut occupants = census.iter().filter(|(_, pos, _)| pos.position() == from);
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
                 // Cults collects whoever stands on the five source staging tiles.
                 if encounter.phase

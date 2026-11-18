@@ -85,7 +85,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .timed
             .lock()
             .map_err(|_| UseDisposition::Rejected)?;
-        if pending.iter().any(|memo| memo.key == key) {
+        if pending.iter().any(|memo| {
+            memo.key == key || (memo.occupant.is_some() && memo.callback.key == callback.key)
+        }) {
             return Err(UseDisposition::Occupied);
         }
         if pending.len() >= MAX_TIMED_ENCOUNTERS || pending.try_reserve(1).is_err() {

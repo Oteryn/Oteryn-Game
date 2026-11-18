@@ -661,7 +661,6 @@ impl Callback {
             && self.lever.is_none()
             && self.return_on_failure
             && self.selector.position == Some(member.from)
-            && self.selector.position_aliases.is_empty()
             && encounter
                 .timing
                 .is_some_and(|timing| timing.spawn_after_ms == 0)

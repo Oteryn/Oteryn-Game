@@ -12,6 +12,11 @@ const ENTRY: Position = Position {
     y: 100,
     floor: -7,
 };
+const ALIAS: Position = Position {
+    x: 100,
+    y: 102,
+    floor: -7,
+};
 const INSIDE: Position = Position {
     x: 116,
     y: 117,
@@ -47,6 +52,7 @@ fn hidden_threats_room_step_admits_one_player_and_expires_postgres() -> TestResu
                 .ok_or("authored trial")?
                 .clone();
             callback.selector.position = Some(ENTRY);
+            callback.selector.position_aliases = vec![ALIAS];
             callback.selector.appearance = Some(100);
             callback.return_on_failure = true;
             callback.failure_teleport = Some(EXIT);
@@ -204,9 +210,8 @@ fn hidden_threats_room_step_admits_one_player_and_expires_postgres() -> TestResu
                 &deps,
                 &h,
                 local(Position {
-                    x: 100,
-                    y: 99,
-                    ..ENTRY
+                    y: ALIAS.y - 1,
+                    ..ALIAS
                 }),
             )
             .await?;
@@ -331,7 +336,7 @@ fn world() -> TestResult<crate::map::boot::BundleWorld> {
     for y in 99..=120 {
         for x in 98..=120 {
             let mut items = vec![item(0)];
-            if (x, y) == (ENTRY.x, ENTRY.y) {
+            if [(ENTRY.x, ENTRY.y), (ALIAS.x, ALIAS.y)].contains(&(x, y)) {
                 items.push(item(1));
             }
             tiles.push(sector::Tile {
