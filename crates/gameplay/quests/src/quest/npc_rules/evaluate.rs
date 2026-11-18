@@ -1,3 +1,4 @@
+use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::{
@@ -144,7 +145,9 @@ impl<'a> Staged<'a> {
     /// `false` means an optional source removeItem failed and made no change.
     fn effect(&mut self, effect: &NpcRuleEffect, now: i64) -> Result<bool, NpcRuleError> {
         match effect {
-            NpcRuleEffect::BigfootMatchmakerTarget | NpcRuleEffect::BigfootSoulMelody => {
+            NpcRuleEffect::BigfootMatchmakerTarget
+            | NpcRuleEffect::BigfootSoulMelody
+            | NpcRuleEffect::Draw { .. } => {
                 return Err(NpcRuleError::MissingNativeResolution(
                     "unresolved native effect".into(),
                 ));
@@ -308,14 +311,30 @@ pub(super) fn plan(
     resolutions: &BTreeMap<String, Vec<NpcRuleEffect>>,
     storage_only: bool,
 ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
-    plan_with_teleport(catalogue, input, resolutions, storage_only, false)
+    plan_with_teleport(catalogue, input, resolutions, storage_only, false, None)
+}
+
+pub(super) fn plan_draws(
+    catalogue: &NpcRuleCatalog,
+    input: &NpcRuleInput<'_>,
+    storage_only: bool,
+    seed: [u8; 16],
+) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+    plan_with_teleport(
+        catalogue,
+        input,
+        &BTreeMap::new(),
+        storage_only,
+        false,
+        Some(seed),
+    )
 }
 
 pub(super) fn plan_teleport(
     catalogue: &NpcRuleCatalog,
     input: &NpcRuleInput<'_>,
 ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
-    plan_with_teleport(catalogue, input, &BTreeMap::new(), true, true)
+    plan_with_teleport(catalogue, input, &BTreeMap::new(), true, true, None)
 }
 
 fn plan_with_teleport(
@@ -324,10 +343,12 @@ fn plan_with_teleport(
     resolutions: &BTreeMap<String, Vec<NpcRuleEffect>>,
     storage_only: bool,
     allow_teleport: bool,
+    seed: Option<[u8; 16]>,
 ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
     if input.topic < 0 || input.message.len() > 4096 || input.inventory.items.len() > 4096 {
         return Err(NpcRuleError::Invalid("invalid NPC input".into()));
     }
+    let mut draw_number = 0_u64;
     for program in &catalogue.programs {
         if !program
             .document
@@ -398,6 +419,7 @@ fn plan_with_teleport(
                             | NpcRuleEffect::Set { .. }
                             | NpcRuleEffect::Add { .. }
                             | NpcRuleEffect::SetNowPlus { .. }
+                            | NpcRuleEffect::Draw { .. }
                             | NpcRuleEffect::SetTopic { .. }
                             | NpcRuleEffect::EndConversation { .. }
                             | NpcRuleEffect::Experience { .. }
@@ -406,7 +428,25 @@ fn plan_with_teleport(
                 {
                     return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));
                 }
+                let drawn;
                 let concrete = match effect {
+                    NpcRuleEffect::Draw { tracks, candidates } => {
+                        let seed = seed.ok_or_else(|| {
+                            NpcRuleError::MissingNativeResolution(rule.key.clone())
+                        })?;
+                        let mut pool = candidates.clone();
+                        drawn = tracks
+                            .iter()
+                            .map(|track| {
+                                let index = draw_index(seed, &mut draw_number, pool.len());
+                                NpcRuleEffect::Set {
+                                    track: track.clone(),
+                                    value: pool.swap_remove(index),
+                                }
+                            })
+                            .collect::<Vec<_>>();
+                        drawn.as_slice()
+                    }
                     NpcRuleEffect::BigfootMatchmakerTarget | NpcRuleEffect::BigfootSoulMelody => {
                         resolve_native(effect, &rule.key, resolutions)?
                     }
@@ -471,6 +511,25 @@ fn plan_with_teleport(
         }));
     }
     Ok(None)
+}
+
+// Rejection sampling avoids modulo bias for pools whose length is not a power of two.
+fn draw_index(seed: [u8; 16], draw_number: &mut u64, length: usize) -> usize {
+    let length = length as u64;
+    let threshold = length.wrapping_neg() % length;
+    loop {
+        let digest = Sha256::new()
+            .chain_update(seed)
+            .chain_update(draw_number.to_be_bytes())
+            .finalize();
+        *draw_number += 1;
+        let mut bytes = [0; 8];
+        bytes.copy_from_slice(&digest[..8]);
+        let value = u64::from_be_bytes(bytes);
+        if value >= threshold {
+            return (value % length) as usize;
+        }
+    }
 }
 
 fn resolve_native<'a>(

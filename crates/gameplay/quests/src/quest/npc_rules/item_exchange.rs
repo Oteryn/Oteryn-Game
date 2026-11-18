@@ -4,8 +4,14 @@ use std::collections::BTreeSet;
 
 impl NpcRuleCatalog {
     /// A source NPC may require eight plain item types and grant twenty types.
+    /// The Golem Servant's repair programme has twelve possible requests.
     /// Outfit effects use the shared appearance participant; money and optional removals stay closed.
     pub fn item_exchange_keys(&self, npc: &str) -> Option<Vec<String>> {
+        let max_inputs = if npc == "oteryn:npc.golem_servant" {
+            12
+        } else {
+            8
+        };
         let mut keys = BTreeSet::new();
         let mut items = false;
         for rule in self
@@ -40,6 +46,7 @@ impl NpcRuleCatalog {
             for effect in &rule.effects {
                 match effect {
                     NpcRuleEffect::Set { .. }
+                    | NpcRuleEffect::Draw { .. }
                     | NpcRuleEffect::SetNowPlus { .. }
                     | NpcRuleEffect::Add { .. }
                     | NpcRuleEffect::SetTopic { .. }
@@ -69,7 +76,7 @@ impl NpcRuleCatalog {
                     _ => return None,
                 }
             }
-            if grants > 20 || keys.len() > 8 {
+            if grants > 20 || keys.len() > max_inputs {
                 return None;
             }
         }
@@ -101,13 +108,21 @@ impl NpcRuleCatalog {
         &self,
         input: &NpcRuleInput<'_>,
     ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+        self.plan_item_exchange_with_draw_seed(input, [0; 16])
+    }
+
+    pub fn plan_item_exchange_with_draw_seed(
+        &self,
+        input: &NpcRuleInput<'_>,
+        seed: [u8; 16],
+    ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
         self.item_exchange_keys(input.npc)
             .ok_or_else(|| NpcRuleError::MissingNativeResolution("plain item exchange".into()))?;
         // Keep storage-only branches on their existing owner. Only inventory-owned
         // guards and effects select the plain item planner with the same atomic cap.
-        match self.plan_storage(input) {
+        match self.plan_storage_with_draw_seed(input, seed) {
             Err(NpcRuleError::MissingNativeResolution(_)) => {
-                evaluate::plan(self, input, &BTreeMap::new(), false)
+                evaluate::plan_draws(self, input, false, seed)
             }
             result => result,
         }

@@ -539,6 +539,74 @@ fn program_digest_changes_with_the_actual_reply_and_not_whitespace() -> Result<(
 }
 
 #[test]
+fn npc_draw_assigns_three_distinct_ingredient_indices() -> Result<(), NpcRuleError> {
+    let tracks = [
+        "oteryn:quest-progress/test/order1",
+        "oteryn:quest-progress/test/order2",
+        "oteryn:quest-progress/test/order3",
+    ];
+    let mut document = fixture_document(vec![fixture_rule(
+        "ingredient-order",
+        serde_json::json!([{
+            "kind": "draw",
+            "tracks": tracks,
+            "candidates": [1, 2, 3, 4, 5, 6]
+        }]),
+    )]);
+    let template = document["tracks"][0].clone();
+    document["tracks"] = serde_json::Value::Array(
+        tracks
+            .into_iter()
+            .map(|key| {
+                let mut definition = template.clone();
+                definition["key"] = key.into();
+                definition["max"] = 6.into();
+                definition
+            })
+            .collect(),
+    );
+    let catalog = fixture_catalog(&document)?;
+    let facts = Facts::empty();
+    let plan = catalog
+        .plan_storage(&facts.input("oteryn:npc.test", "mission", 0))?
+        .ok_or_else(|| NpcRuleError::Invalid("missing ingredient assignment".into()))?;
+    let drawn: std::collections::BTreeSet<_> = plan
+        .track_changes
+        .iter()
+        .map(|change| change.after)
+        .collect();
+    assert_eq!(drawn.len(), 3);
+    assert!(drawn.iter().all(|index| (1..=6).contains(index)));
+    Ok(())
+}
+
+#[test]
+fn npc_draw_can_request_the_same_repair_part_again() -> Result<(), NpcRuleError> {
+    let track = "oteryn:quest-progress/test/value";
+    let document = fixture_document(vec![fixture_rule(
+        "repair-request",
+        serde_json::json!([{
+            "kind": "draw",
+            "tracks": [track],
+            "candidates": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        }]),
+    )]);
+    let catalog = fixture_catalog(&document)?;
+    let mut facts = Facts::empty();
+    for seed in [[7; 16], [8; 16]] {
+        let plan = catalog
+            .plan_storage_with_draw_seed(&facts.input("oteryn:npc.test", "mission", 0), seed)?
+            .ok_or_else(|| NpcRuleError::Invalid("missing repair request".into()))?;
+        let [change] = plan.track_changes.as_slice() else {
+            return Err(NpcRuleError::Invalid("expected one repair request".into()));
+        };
+        assert_eq!(change.after, 4);
+        facts.tracks.insert(track.into(), change.after);
+    }
+    Ok(())
+}
+
+#[test]
 fn native_bigfoot_resolution_is_required_and_bounded_before_plan() -> Result<(), NpcRuleError> {
     let rule = fixture_rule(
         "native",

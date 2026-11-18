@@ -93,7 +93,7 @@ pub fn preview_teleport(
         NpcEvaluationFacts {
             eligibility,
             player_name: None,
-            appearance: (&BTreeMap::new(), 0),
+            appearance: (&BTreeMap::new(), 0), draw_seed: [0; 16],
         },
     )
 }

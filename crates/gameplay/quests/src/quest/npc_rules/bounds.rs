@@ -7,11 +7,22 @@ use super::{NpcRuleEffect, NpcRuleProgram};
 // Arithmetic and clock-derived writes remain checked against that range at plan time.
 pub(super) fn literal_write_bounds(program: &NpcRuleProgram) -> BTreeMap<String, (i64, i64)> {
     let mut bounds = BTreeMap::new();
+    let mut include = |track: &String, min, max| {
+        let range = bounds.entry(track.clone()).or_insert((min, max));
+        range.0 = range.0.min(min);
+        range.1 = range.1.max(max);
+    };
     for effect in program.document.rules.iter().flat_map(|rule| &rule.effects) {
-        if let NpcRuleEffect::Set { track, value } = effect {
-            let range = bounds.entry(track.clone()).or_insert((*value, *value));
-            range.0 = range.0.min(*value);
-            range.1 = range.1.max(*value);
+        match effect {
+            NpcRuleEffect::Set { track, value } => include(track, *value, *value),
+            NpcRuleEffect::Draw { tracks, candidates } => {
+                if let (Some(min), Some(max)) = (candidates.iter().min(), candidates.iter().max()) {
+                    for track in tracks {
+                        include(track, *min, *max);
+                    }
+                }
+            }
+            _ => {}
         }
     }
     bounds

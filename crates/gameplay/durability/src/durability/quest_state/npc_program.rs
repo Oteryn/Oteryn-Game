@@ -129,6 +129,7 @@ pub fn preview_with_appearance(
         eligibility,
         player_name,
         appearance,
+        draw_seed: [0; 16],
     };
     let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
         return Ok(None);
@@ -217,7 +218,7 @@ pub fn preview_with_inventory(
         return Ok(None);
     };
     evaluate_source(&source, request, tracks, catalogue, now,
-        NpcEvaluationFacts { eligibility, player_name, appearance }, Some(inventory))
+        NpcEvaluationFacts { eligibility, player_name, appearance, draw_seed: [0; 16] }, Some(inventory))
 }
 
 #[derive(Clone, Copy)]
@@ -225,6 +226,7 @@ struct NpcEvaluationFacts<'a> {
     eligibility: &'a NpcEligibility,
     player_name: Option<&'a str>,
     appearance: (&'a BTreeMap<u16, u8>, u8),
+    draw_seed: [u8; 16],
 }
 
 fn evaluate_source(
@@ -297,9 +299,9 @@ fn evaluate_source(
     } else if inventory.is_some() && source.equipped_storage_requirements(&request.npc).is_some() {
         source.plan_equipped_storage(&input)
     } else if inventory.is_some() {
-        source.plan_item_exchange(&input)
+        source.plan_item_exchange_with_draw_seed(&input, facts.draw_seed)
     } else {
-        source.plan_storage(&input)
+        source.plan_storage_with_draw_seed(&input, facts.draw_seed)
     }
 }
 
@@ -516,7 +518,13 @@ impl DurabilityRoot {
                 Some(super::super::character_chat_name::read_character_name_for_share_in_transaction(
                     &mut tx, character.as_bytes()).await?)
             } else { None };
-            let facts = NpcEvaluationFacts { eligibility: &eligibility, player_name: player_name.as_deref(), appearance: (&outfits,sex) };
+            // Replay was resolved above. Only a fresh fenced dialogue can draw.
+            let draw_seed = if source.needs_draw_seed(&request.npc) {
+                let bytes: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(gen_random_uuid())")
+                    .fetch_one(&mut **tx).await?;
+                bytes.try_into().map_err(|_| DurabilityError::InvalidStoredState)?
+            } else { [0; 16] };
+            let facts = NpcEvaluationFacts { eligibility: &eligibility, player_name: player_name.as_deref(), appearance: (&outfits,sex), draw_seed };
             let teleport_plan = if teleport.is_some() {
                 match teleport::evaluate(&source, &request, &effective_tracks, now, facts) {
                     Ok(Some(plan)) => Some(plan),

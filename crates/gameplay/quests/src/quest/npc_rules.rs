@@ -195,6 +195,11 @@ pub enum NpcRuleEffect {
     },
     BigfootMatchmakerTarget,
     BigfootSoulMelody,
+    /// One ordered sample without replacement. A later request starts with the full pool.
+    Draw {
+        tracks: Vec<String>,
+        candidates: Vec<i64>,
+    },
     Set {
         track: String,
         value: i64,
@@ -549,6 +554,7 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.in_service_of_yalahar_quest"
                                 | "oteryn:quest.the_paradox_tower_quest"
                                 | "oteryn:quest.marlin_trophy_quest"
+                                | "oteryn:quest.shadows_of_yalahar_quest"
                                 | "oteryn:quest.the_djinn_war_efreet_faction"
                                 | "oteryn:quest.the_djinn_war_marid_faction"
                                 | "oteryn:quest.the_white_raven_monastery_quest"
@@ -607,7 +613,29 @@ impl NpcRuleCatalog {
         &self,
         input: &NpcRuleInput<'_>,
     ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
-        evaluate::plan(self, input, &BTreeMap::new(), true)
+        self.plan_storage_with_draw_seed(input, [0; 16])
+    }
+
+    /// Advisory callers use a fixed seed. The durable owner supplies fresh entropy.
+    pub fn plan_storage_with_draw_seed(
+        &self,
+        input: &NpcRuleInput<'_>,
+        seed: [u8; 16],
+    ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+        evaluate::plan_draws(self, input, true, seed)
+    }
+
+    pub fn needs_draw_seed(&self, npc: &str) -> bool {
+        self.programs
+            .iter()
+            .flat_map(|program| &program.document.rules)
+            .any(|rule| {
+                rule.npc == npc
+                    && rule
+                        .effects
+                        .iter()
+                        .any(|effect| matches!(effect, NpcRuleEffect::Draw { .. }))
+            })
     }
 
     /// Inventory recipes own exact carried items and UTC calendar facts. Other

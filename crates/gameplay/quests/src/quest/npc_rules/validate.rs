@@ -310,6 +310,16 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                         document.quest == "oteryn:quest.bigfoot_s_burden_quest"
                             && (1..=7).all(|tone| tracks.contains_key(&format!("oteryn:quest-progress/quest/u9_60/bigfoots_burden/melody_tone{tone}")))
                     }
+                    NpcRuleEffect::Draw { tracks: targets, candidates } => {
+                        !targets.is_empty()
+                            && targets.len() <= candidates.len()
+                            && candidates.len() <= 64
+                            && targets.iter().collect::<BTreeSet<_>>().len() == targets.len()
+                            && candidates.iter().collect::<BTreeSet<_>>().len() == candidates.len()
+                            && targets.iter().all(|track| tracks.get(track).is_some_and(|definition| {
+                                candidates.iter().all(|value| (definition.min..=definition.max).contains(value))
+                            }))
+                    }
                     NpcRuleEffect::CompleteSource { track } => {
                         let prefix = format!("oteryn:quest-progress/source-completion/{}/",
                             document.quest.strip_prefix("oteryn:quest.").unwrap_or(""));
