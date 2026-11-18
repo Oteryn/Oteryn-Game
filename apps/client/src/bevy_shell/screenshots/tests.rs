@@ -356,7 +356,15 @@ fn inherited_f12_marker_preserves_existing_captures() -> TestResult {
 #[cfg(unix)]
 #[test]
 fn inherited_capture_destination_marker_runs_the_matrix() -> TestResult {
-    let root = std::env::temp_dir().join(format!("oteryn-matrix-marker-{}", std::process::id()));
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?
+        .as_nanos();
+    let root = std::env::temp_dir().join(format!(
+        "oteryn-matrix-marker-{}-{stamp}",
+        std::process::id()
+    ));
+    use std::os::unix::fs::DirBuilderExt;
+    std::fs::DirBuilder::new().mode(0o700).create(&root)?;
     let config = if cfg!(target_os = "macos") {
         root.join("Library/Application Support")
     } else {
@@ -655,4 +663,88 @@ fn audit_f12_accepts_maximum_audit_staging_basename() -> TestResult {
 #[test]
 fn audit_f12_writes_private_png_in_shared_sticky_directory() -> TestResult {
     audit_capture_after_json("shared", "audit", 0o1777, 0o1777)
+}
+
+#[cfg(unix)]
+#[test]
+fn inherited_matrix_fixture_preserves_a_previous_process_directory() -> TestResult {
+    let root = std::env::temp_dir().join(format!("oteryn-matrix-collision-{}", std::process::id()));
+    std::fs::create_dir(&root)?;
+    let config = if cfg!(target_os = "macos") {
+        "Library/Application Support"
+    } else {
+        ".config"
+    };
+    let output = std::process::Command::new("sh")
+        .args([
+            "-c",
+            r#"
+            occupied="$TMPDIR/oteryn-matrix-marker-$$"
+            mkdir -p "$occupied/$CONFIG/Oteryn/screenshots" || exit 1
+            printf unrelated > "$occupied/$CONFIG/Oteryn/screenshots/existing.bmp" || exit 1
+            exec "$@"
+        "#,
+            "sh",
+        ])
+        .arg(std::env::current_exe()?)
+        .args([
+            "--exact",
+            "bevy_shell::screenshots::tests::inherited_capture_destination_marker_runs_the_matrix",
+        ])
+        .env("TMPDIR", &root)
+        .env("CONFIG", config)
+        .output()?;
+    let entries = std::fs::read_dir(&root)?.collect::<Result<Vec<_>, _>>()?;
+    let preserved = entries
+        .first()
+        .map(|entry| {
+            std::fs::read(
+                entry
+                    .path()
+                    .join(config)
+                    .join("Oteryn/screenshots/existing.bmp"),
+            )
+        })
+        .transpose();
+    std::fs::remove_dir_all(root)?;
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+    assert!(String::from_utf8_lossy(&output.stdout).contains("running 1 test"));
+    assert_eq!(entries.len(), 1);
+    assert_eq!(preserved?.as_deref(), Some(b"unrelated".as_slice()));
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn fallback_captures_from_two_processes_use_distinct_directories() -> TestResult {
+    use std::os::unix::fs::PermissionsExt;
+    let root = std::env::temp_dir().join(format!("oteryn-shared-tmp-{}", std::process::id()));
+    std::fs::create_dir(&root)?;
+    for _ in 0..2 {
+        let output = std::process::Command::new(std::env::current_exe()?)
+            .args(["--exact", CAPTURE_DESTINATION_TEST])
+            .env(CAPTURE_DESTINATION_CASE, "default")
+            .env("TMPDIR", &root)
+            .env_remove("HOME")
+            .env_remove("XDG_CONFIG_HOME")
+            .env_remove("LOCALAPPDATA")
+            .output()?;
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stdout)
+        );
+    }
+    let folders = std::fs::read_dir(&root)?.collect::<Result<Vec<_>, _>>()?;
+    assert_eq!(folders.len(), 2);
+    for folder in folders {
+        assert_eq!(folder.metadata()?.permissions().mode() & 0o777, 0o700);
+        assert_eq!(std::fs::read_dir(folder.path())?.count(), 3);
+    }
+    std::fs::remove_dir_all(root)?;
+    Ok(())
 }
