@@ -347,21 +347,39 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
         .filter(|(_, transition)| transition.quest == quest)
         .map(|(key, transition)| (key.clone(), transition.clone()))
         .collect();
+    let is_portal_clock = |key: &str| {
+        key.starts_with(super::first_dragon_portals::TRACK_PREFIX) && key.ends_with("_last_entry")
+    };
+    prior_dragon_transitions.retain(|key, transition| {
+        !key.starts_with("oteryn:quest-callback/first-dragon-entry-")
+            && !transition
+                .effects
+                .iter()
+                .any(|effect| is_portal_clock(&effect.track))
+    });
+    let mut prior_tracks = extended.tracks.clone();
+    prior_tracks.retain(|key, _| !is_portal_clock(key));
+    let prior_entitlement_hash =
+        super::definition_hash(quest, &prior_tracks, &prior_dragon_transitions);
     let prior_victory = prior_dragon_transitions
         .get_mut(FIRST_DRAGON_VICTORY)
         .ok_or("missing selected First Dragon victory")?;
     prior_victory
         .effects
         .retain(|effect| effect.track != FIRST_DRAGON_FEATHERS);
-    let prior_hash = super::definition_hash(quest, &extended.tracks, &prior_dragon_transitions);
+    let prior_hash = super::definition_hash(quest, &prior_tracks, &prior_dragon_transitions);
     extended
         .predecessors
         .entry(quest.into())
         .or_default()
-        .push(super::NpcDefinitionPredecessor {
-            hash: prior_hash,
-            defaults: BTreeMap::new(),
-        });
+        .extend(
+            [prior_hash, prior_entitlement_hash]
+                .into_iter()
+                .map(|hash| super::NpcDefinitionPredecessor {
+                    hash,
+                    defaults: BTreeMap::new(),
+                }),
+        );
     extended.authored_bindings = catalogue.authored_bindings;
     extended.native_recipe_evidence = catalogue.native_recipe_evidence;
     extended.completion_sets = catalogue.completion_sets;

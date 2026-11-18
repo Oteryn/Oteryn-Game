@@ -2,7 +2,7 @@
 use super::world_callbacks::{Callback, Position};
 
 const QUEST: &str = "oteryn:quest.the_first_dragon_quest";
-const TRACK_PREFIX: &str = "oteryn:quest-progress/quest/u11_02/the_first_dragon/";
+pub(super) const TRACK_PREFIX: &str = "oteryn:quest-progress/quest/u11_02/the_first_dragon/";
 
 pub(super) fn callbacks() -> Result<Vec<Callback>, String> {
     let position = |(x, y)| Position { x, y, floor: -8 };
@@ -28,7 +28,7 @@ pub(super) fn callbacks() -> Result<Vec<Callback>, String> {
                 {"track": format!("{TRACK_PREFIX}questline"), "minimum": 1, "maximum": i32::MAX, "set": 1, "preserve": true},
                 {"track": format!("{TRACK_PREFIX}{track}"), "minimum": value, "maximum": i32::MAX, "set": value, "preserve": true}
             ],
-            "state_ops": [{
+            "state_operations": [{
                 "track": format!("{TRACK_PREFIX}{creature}_last_entry"),
                 "from": {"kind": "elapsed_at_least", "seconds": 7200},
                 "effect": {"kind": "set_now"}

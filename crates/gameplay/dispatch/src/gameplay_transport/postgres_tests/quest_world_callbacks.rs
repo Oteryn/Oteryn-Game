@@ -445,6 +445,7 @@ fn world_cells(
         effect_positions.push(cycle.position);
     }
     if let Some(encounter) = &callback.effects.encounter {
+        effect_positions.extend(encounter.step_destination);
         for player in &encounter.players {
             effect_positions.extend([player.from, player.to]);
         }

@@ -125,6 +125,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 after,
             );
         }
+        if encounter.step_destination.is_some() {
+            use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+            let Some(native) = self
+                .active_generation
+                .and_then(|active| active.native_gameplay())
+            else {
+                return UseDisposition::Rejected;
+            };
+            if native.install_companion_policies(runtime).is_err() {
+                return UseDisposition::Rejected;
+            }
+        }
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };

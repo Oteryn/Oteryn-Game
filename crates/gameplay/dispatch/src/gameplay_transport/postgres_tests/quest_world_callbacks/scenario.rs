@@ -1866,7 +1866,11 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if m03_use {
+        if name == super::super::first_dragon_portal::NAME {
+            Box::pin(super::super::first_dragon_portal::exercise(
+                &owner, &mut admitted, &h, &callback, origin,
+            )).await?;
+        } else if m03_use {
             Box::pin(super::super::qengine_m03_use::exercise(
                 &mut owner,
                 &mut admitted,
