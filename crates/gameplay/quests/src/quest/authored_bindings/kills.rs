@@ -47,6 +47,9 @@ pub struct KillCounter {
     /// Exact native encounter callback; absent for ordinary party hunts.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub encounter_source: Option<String>,
+    /// Credit only admitted players whose exact lease contributed to the defender death.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub require_damage: bool,
 }
 
 impl KillCounter {
@@ -58,6 +61,7 @@ impl KillCounter {
             || !self.key.starts_with(super::super::native_kills::PREFIX)
             || !super::super::valid_quest_key(&self.creature)
             || !self.creature.starts_with("oteryn:creature.")
+            || (self.require_damage && self.encounter_source.is_none())
             || self.track == self.gate
             || self.minimum >= self.maximum
             || self.death_area.is_some_and(|area| !area.valid())
@@ -149,6 +153,7 @@ impl KillCounter {
             maximum: self.maximum,
             death_area: self.death_area,
             encounter_source: self.encounter_source.as_deref(),
+            require_damage: self.require_damage,
         }
     }
 }
