@@ -56,6 +56,7 @@ impl CallbackStates {
                 MovementDecay {
                     revision,
                     restore,
+                    repeat_us: None,
                     overlay: None,
                 },
             );
@@ -67,6 +68,7 @@ impl CallbackStates {
                 MovementDecay {
                     revision,
                     restore: entry.before,
+                    repeat_us: None,
                     overlay: Some((false, self.passable.get(&entry.key).copied())),
                 },
             );

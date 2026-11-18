@@ -53,10 +53,14 @@ pub use rafzane_elevator::RafzaneElevator;
 mod arena_pillars;
 pub use arena_pillars::ArenaPillarProjection;
 
+#[path = "yalahar_columns.rs"]
+mod yalahar_columns;
+
 #[derive(Clone, Debug)]
 struct MovementDecay {
     revision: u64,
     restore: EntryFacts,
+    repeat_us: Option<u64>,
     /// Remote resets restore visibility and the previous collision override too.
     overlay: Option<(bool, Option<bool>)>,
 }
@@ -157,6 +161,7 @@ pub(super) struct CallbackStates {
     pub(super) creature_visuals: std::collections::VecDeque<(u64, CreatureVisualKind)>,
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
+    initialized_yalahar_columns: bool,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
     batch_blockers: BTreeSet<TilePos>,
@@ -245,6 +250,7 @@ impl CallbackStates {
                     MovementDecay {
                         revision,
                         restore: *restore,
+                        repeat_us: None,
                         overlay: None,
                     },
                 );
@@ -280,6 +286,7 @@ impl CallbackStates {
                     MovementDecay {
                         revision,
                         restore: *restore,
+                        repeat_us: None,
                         overlay: None,
                     },
                 );
@@ -306,6 +313,7 @@ impl CallbackStates {
                     MovementDecay {
                         revision,
                         restore: *restore,
+                        repeat_us: None,
                         overlay: None,
                     },
                 );
@@ -340,6 +348,7 @@ impl CallbackStates {
                         MovementDecay {
                             revision,
                             restore: *restore,
+                            repeat_us: None,
                             overlay: None,
                         },
                     );
@@ -364,6 +373,7 @@ impl CallbackStates {
                     MovementDecay {
                         revision,
                         restore: *restore,
+                        repeat_us: None,
                         overlay: None,
                     },
                 );
@@ -821,6 +831,7 @@ impl BundleFacts {
             MovementDecay {
                 revision,
                 restore,
+                repeat_us: None,
                 overlay: None,
             },
         );
@@ -846,6 +857,7 @@ impl BundleFacts {
             return 0;
         };
         let states = Arc::make_mut(&mut states);
+        self.arm_yalahar_columns(states, now);
         let mut changed = 0;
         let expired: BTreeSet<_> = states
             .portals
@@ -868,13 +880,23 @@ impl BundleFacts {
                 continue;
             };
             let key = at.1;
-            if states
-                .changed
-                .get(&key)
-                .is_some_and(|(revision, _)| *revision == decay.revision)
+            if let Some(&(current_revision, current)) = states.changed.get(&key)
+                && current_revision == decay.revision
                 && let Some(revision) = decay.revision.checked_add(1)
             {
                 states.changed.insert(key, (revision, decay.restore));
+                if let Some(period) = decay.repeat_us
+                    && let Some(due) = now.checked_add(period)
+                {
+                    states.movement_decays.insert(
+                        (due, key),
+                        MovementDecay {
+                            revision,
+                            restore: current,
+                            ..decay
+                        },
+                    );
+                }
                 if let Some((hidden, passable)) = decay.overlay {
                     if hidden {
                         states.hidden.insert(key);

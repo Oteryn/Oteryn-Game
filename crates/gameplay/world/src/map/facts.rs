@@ -383,6 +383,7 @@ impl BundleFacts {
         ]
         .into_iter()
         .chain(6594..=6608)
+        .chain(9133..=9140)
         .filter_map(|id| {
             let definition = item(&format!("oteryn:item.tibia.i{id}"))?;
             movement_solidities.insert(id, definition.solid.unwrap_or(true));
