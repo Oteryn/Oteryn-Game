@@ -360,6 +360,12 @@ mod tests {
         let catalogue = bindings.attach(&base)?;
         let placement = claim.placements.first().ok_or("placement")?;
         assert!(callback(None, &claim, placement).is_none());
+        let transition = catalogue
+            .transition(&authored.key)
+            .ok_or("claim transition")?;
+        let validate = oteryn_gameplay_quests::quest::admission_binding::validate_for_catalogue;
+        validate(&catalogue, transition, true)?;
+        assert!(validate(&catalogue, transition, false).is_err());
         assert_eq!(
             callback(Some(&catalogue), &claim, placement),
             Some(authored)
