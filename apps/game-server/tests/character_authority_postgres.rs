@@ -364,7 +364,7 @@ impl Wire {
 
     fn json(&self) -> String {
         format!(
-            r#"{{"contract_version":3,"variant":"{}","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":"3f0c5b7e-1d2a-4c3b-9a8f-{:012x}","source_revision":"{}","operation_id":"{}","operation":"INITIAL_CHARACTER_BOOTSTRAP","account_id":"{}","target_world_id":"{}","requested_sex":"Male","requested_name":"{}","interpretation_context":{{"profile_revision":"profile-1","ruleset_revision":"ruleset-1","content_revision":"{}","starter_template_revision":"starter-1"}},"issued_at_source":"{}","expires_at_source":"{}","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}}"#,
+            r#"{{"contract_version":4,"variant":"{}","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":"3f0c5b7e-1d2a-4c3b-9a8f-{:012x}","source_revision":"{}","operation_id":"{}","operation":"INITIAL_CHARACTER_BOOTSTRAP","account_id":"{}","target_world_id":"{}","requested_name":"{}","requested_sex":"Male","requested_vocation":"Knight","interpretation_context":{{"profile_revision":"profile-1","ruleset_revision":"ruleset-1","content_revision":"{}","starter_template_revision":"starter-1"}},"issued_at_source":"{}","expires_at_source":"{}","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}}"#,
             self.variant,
             self.decision,
             self.revision,
@@ -3152,7 +3152,7 @@ fn create_intent(
     (issued, expires): (i64, i64),
 ) -> String {
     format!(
-        r#"{{"contract_version":1,"command":"CreateCharacter","variant":"PLATFORM_USER_CREATE","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":"0192a000-0000-7000-8000-{revision:012x}","source_revision":"{revision}","operation_id":"{}","account_id":"{}","target_world_id":"{}","requested_name":"{name}","issued_at_source":"{issued}","expires_at_source":"{expires}","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}}"#,
+        r#"{{"contract_version":2,"command":"CreateCharacter","variant":"PLATFORM_USER_CREATE","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":"0192a000-0000-7000-8000-{revision:012x}","source_revision":"{revision}","operation_id":"{}","account_id":"{}","target_world_id":"{}","requested_name":"{name}","requested_sex":"Male","requested_vocation":"Knight","issued_at_source":"{issued}","expires_at_source":"{expires}","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}}"#,
         uuid(id(operation)),
         uuid(id(account)),
         uuid(id(world)),

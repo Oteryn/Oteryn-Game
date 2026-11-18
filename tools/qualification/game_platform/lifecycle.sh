@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Sourced only by node_boot's fixed-path lifecycle hook. No Platform boot copy.
 set +x
-readonly GAME_PLATFORM_SHA=a85b5da4de23f3e8633cfb25a2db1ad7f6133acd
+readonly GAME_PLATFORM_SHA=6d04b52a16145723eedb0c56640ad052dbd26e94
 GP_HARNESS_PID=''
 GP_PG_CONTAINER=''
 game_platform_retain_test_logs() {
@@ -15,7 +15,7 @@ game_platform_retain_test_logs() {
     value="$(sha256sum "$NODE_BOOT_SPELL_MANIFEST")"
     evidence_args+=(--evidence "${value%% *}")
   fi
-  for log in identity-build.log identity.log native_ticket_and_gateway_fail_closed.log native_device_rotation_replay.log native_ticket_gateway_admits.log; do
+  for log in portal-harness.log identity-build.log identity.log native_ticket_and_gateway_fail_closed.log native_device_rotation_replay.log native_ticket_gateway_admits.log; do
     [[ -f "$WORK/$log" ]] || continue
     python3 "$GAME_SOURCE/tools/qualification/game_platform/redact.py" \
       "$WORK/$log" "$NODE_BOOT_FAILURE_LOG_DIR/$log" "${evidence_args[@]}" || return 1
@@ -23,6 +23,11 @@ game_platform_retain_test_logs() {
 }
 game_platform_fail() {
   game_platform_retain_test_logs || set -- "$1" diagnostic_redaction_failed
+  # The node-boot shard captures stdout in qualification-client.log.
+  if [[ "$2" == harness_not_ready && "${NODE_BOOT_LIFECYCLE:-}" == native_reference \
+    && -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" && -f "$NODE_BOOT_FAILURE_LOG_DIR/portal-harness.log" ]]; then
+    cat "$NODE_BOOT_FAILURE_LOG_DIR/portal-harness.log"
+  fi
   if [[ -n "${GAME_PLATFORM_RESULT_FILE:-}" ]]; then
     printf 'GAME_PLATFORM_RESULT=FAIL flow=%s reason=%s\n' "$1" "$2" > "$GAME_PLATFORM_RESULT_FILE"
   else
@@ -50,7 +55,6 @@ game_platform_cleanup() {
   # Preserve private logs before node_boot removes its work directory.
   if [[ -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" ]]; then
     [[ ! -f "$node_log" ]] || cp "$node_log" "$NODE_BOOT_FAILURE_LOG_DIR/node.log"
-    [[ ! -f "$WORK/portal-harness.log" ]] || cp "$WORK/portal-harness.log" "$NODE_BOOT_FAILURE_LOG_DIR/portal-harness.log"
   fi
   [[ -z "$GP_PG_CONTAINER" ]] || docker rm --force --volumes "$GP_PG_CONTAINER" >/dev/null 2>&1 || true
 }
@@ -80,8 +84,12 @@ game_platform_start() {
     || game_platform_fail platform binary_build_failed
   cargo metadata --manifest-path "$PLATFORM_SOURCE/portal-rs/Cargo.toml" --no-deps --format-version 1 > "$WORK/portal-meta.json"
   local prepare_code=0
+  local -a reference_accounts=()
+  if [[ "${NODE_BOOT_LIFECYCLE:-}" == native_reference && "$NODE_BOOT_WORLD" == 1 ]]; then
+    reference_accounts=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID")
+  fi
   python3 "$GAME_SOURCE/tools/qualification/game_platform/prepare.py" "$WORK" "$ACCOUNT_ID" "$SECOND_ACCOUNT_ID" \
-    "$WORLD_ID" "$CHANNEL_ID" "$FRESH_PUBLIC_HEX" "$RECOVERY_PUBLIC_HEX" "$FRESH_KEY_ID" "$RECOVERY_KEY_ID" \
+    "$WORLD_ID" "$CHANNEL_ID" "$FRESH_PUBLIC_HEX" "$RECOVERY_PUBLIC_HEX" "$FRESH_KEY_ID" "$RECOVERY_KEY_ID" "${reference_accounts[@]}" \
     || prepare_code=$?
   [[ "$prepare_code" != 3 ]] || game_platform_fail platform real_portal_binary_missing
   [[ "$prepare_code" == 0 ]] || game_platform_fail platform configuration_failed
@@ -92,7 +100,10 @@ game_platform_start() {
   export PORTAL_E2E_GATEWAY_PORT="${GAME_PLATFORM_GATEWAY_PORT:-18090}"
   export OTERYN_PUBLIC_ORIGIN="http://127.0.0.1:$PORTAL_E2E_HTTP_PORT"
   export PORTAL_E2E_NATIVE_SCOPES="[\"$WORLD_ID/$CHANNEL_ID\"]"
-  setsid bash "$PLATFORM_SOURCE/portal-rs/e2e/start.sh" --seed-plan "$WORK/seed-plan.json" \
+  # The pinned portal refuses Store delivery and restore notices together.
+  # Keep Store delivery available for node-boot journeys.
+  PORTAL_GAME_RESTORE_NOTICE_ENABLED=false \
+    setsid bash "$PLATFORM_SOURCE/portal-rs/e2e/start.sh" --seed-plan "$WORK/seed-plan.json" \
     > "$WORK/portal-report.json" 2> "$WORK/portal-harness.log" &
   GP_HARNESS_PID=$!
   deadline=$((SECONDS + 180))
@@ -113,6 +124,9 @@ game_platform_start() {
   cp "$PORTAL_E2E_OUT/certs/clients/native-evidence.pem" "$WP5_PKI/client.crt"
   cp "$PORTAL_E2E_OUT/certs/clients/native-evidence.key" "$WP5_PKI/client.key"
   WP5_PORT="$PORTAL_E2E_INTERNAL_PORT"
+  WP5_SERVER_NAME=localhost
+  WP5_SOURCE_AUTHORITY=oteryn-platform-e2e
+  WP5_ROUTE_REVISION="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["seed"]["route"]["routeRevision"])' "$WORK/portal-report.json")"
   evidence "platform_roles=migrate,serve,worker,gateway platform_pg=18.6 game_pg=18.6 separate_database_roles=1 clients=16"
 }
 game_platform_config() {

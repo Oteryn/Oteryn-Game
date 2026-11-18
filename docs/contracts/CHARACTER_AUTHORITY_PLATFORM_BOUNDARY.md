@@ -169,7 +169,7 @@ Owner decisions D180–D184, given directly on 2026-09-30 as the answers to CHAR
 - **Comparison key (D181, 2c):** the name in ASCII lower case with every space removed, so `Aldric`, `aldric` and `Al Dric` collide. PostgreSQL computes it as `lower(replace(name, ' ', '') COLLATE "C")`, so the database default collation cannot make it diverge from the Game `comparison_key`.
 - **Namespace (D182, 3a):** one global namespace across all Worlds.
 - **Reservation (D183, 4b):** a reservation is held while its Character holds the name. After a rename or a terminal deletion, the released key stays blocked for everyone, including the former owner, for 30 days, and is then free. Revision 1 ships without rename or deletion, so no reservation is released yet. The hold ships with those operations.
-- **Boundary (D184, 5a):** the name crosses the boundary as the required `requested_name` of the bootstrap intent, contract version 2 (binding tag 2). The Platform issuer and the Game decoder change in lockstep, and Game refuses version 1 intents.
+- **Boundary (D184, 5a):** the name crosses the boundary as the required `requested_name` of the bootstrap intent, now contract version 4 (binding tag 4). D184 originally introduced the name in version 2/tag 2; the creation-choice amendment below supersedes that wire. Platform and Game change in lockstep, and new reads refuse retired versions 1–3.
 - **Enforcement:** migration 0022 adds `game_character_roots.name` with its generated `name_key`, and `game_character_name_reservations` keyed by `name_key`. A root insert reserves its key in the same statement, so a taken key fails for every writer. Bootstrap returns `NameUnavailable` with no authoritative write. Concurrent same-key bootstraps produce exactly one winner (§16 scenario 3).
 - **Preproduction-only assumption:** no deployed Game PostgreSQL store holds Characters (the Synology staging runs Platform and Canary only). `name` is NOT NULL without a default, so migration 0022 refuses to apply to a store that already holds a Character root instead of inventing names or losing data; an automated test covers that refusal. A store with Characters needs its own accepted naming migration first.
 
@@ -360,16 +360,26 @@ Later implementation must prove at least:
 
 `NATIVE PLATFORM DIRECT CHARACTER-DB WRITES: FORBIDDEN AS STEADY-STATE DESIGN`
 
-### APP-3 creation sex input — 2026-10-22
+### Creation sex and vocation — bootstrap v4, 2026-11-17
 
-The owner-authorised APP-3 prerequisite adds required `requested_sex` to the
-authenticated operator bootstrap response, contract version 3 and binding tag 3.
-Values are exactly `Female` and `Male`; the binding appends byte 1 or 2 after
-the requested name. New bootstrap reads request version 3 and refuse versions
-1 and 2. Platform producer rollout must use this version before new bootstrap
-requests succeed; this change does not mutate the Platform repository.
-Migration 0134 persists immutable creation sex on the Character root. Existing
-roots keep unknown sex (NULL); no backfill is guessed, and appearance fails
-closed for them. Recovery still verifies historical tag-2 receipts for these
-roots. Character Commands V1 remains unchanged and provides no appearance
-authority until a sex-bearing creation contract is admitted.
+Platform PR #1938 (`5b67d4aed872106010dbef8ac0d27692f3958920`) adds required
+`requested_vocation` immediately after `requested_sex` in authenticated operator
+bootstrap contract version 4. Sex is exactly `Female` or `Male`; vocation is exactly
+`Knight`, `Paladin`, `Sorcerer`, `Druid`, or `Monk`. These are case-sensitive JSON
+strings with no default, numeric form or normalization. New reads request version
+4 and refuse retired versions 1–3. The existing interpretation-context member
+`starter_template_revision` names `newhaven-starter-r1`; there is no new starter
+member. Game admits the requested context against its current interpretation.
+
+Binding tag 4 preserves tag 3's field order, including sex byte 1 (`Female`) or
+2 (`Male`) after the requested name, then appends a one-byte vocation length and
+the canonical vocation's UTF-8 bytes. Migration 0134 retains immutable creation sex; migration
+2890 retains immutable creation vocation as a Game key and creates the initial
+build seed atomically with the root. Historical roots keep NULL choices without
+a guessed backfill. Recovery verifies historical tags 2/3 as well as tag 4;
+reissuing a committed v3 operation as v4 conflicts with its retained binding.
+
+Platform PR #1940 (`6d04b52a16145723eedb0c56640ad052dbd26e94`) makes sex and
+vocation required in create-command v2 too. The create receipt remains v1. See
+`OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md` §4.2, including its Deploy order
+note, and the byte-exact bootstrap v4 and create v2 fixture directories.

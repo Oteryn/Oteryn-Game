@@ -3,7 +3,7 @@ use super::*;
 const OP: &str = "0192a000-0000-7000-8000-000000000001";
 const AUTHORITY: &str = "oteryn:character-authority:primary";
 /// §4.2 `CreateCharacter` fixture.
-const INTENT: &str = r#"{"contract_version":1,"command":"CreateCharacter","variant":"PLATFORM_USER_CREATE","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":"0192a000-0000-7000-8000-0000000000a1","source_revision":"17","operation_id":"0192a000-0000-7000-8000-000000000001","account_id":"0190f2a1-3b4c-7d5e-8f60-718293a4b5c6","target_world_id":"01934f10-7c02-7001-805b-3b1122334401","requested_name":"Aldric","issued_at_source":"1790000000","expires_at_source":"1790000300","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}"#;
+const INTENT: &str = r#"{"contract_version":2,"command":"CreateCharacter","variant":"PLATFORM_USER_CREATE","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":"0192a000-0000-7000-8000-0000000000a1","source_revision":"17","operation_id":"0192a000-0000-7000-8000-000000000001","account_id":"0190f2a1-3b4c-7d5e-8f60-718293a4b5c6","target_world_id":"01934f10-7c02-7001-805b-3b1122334401","requested_name":"Aldric","requested_sex":"Male","requested_vocation":"Knight","issued_at_source":"1790000000","expires_at_source":"1790000300","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}"#;
 
 fn bytes(value: &str) -> [u8; 16] {
     uuid_bytes(value).unwrap()
@@ -22,6 +22,8 @@ fn the_contract_create_intent_decodes() {
             account_id: bytes("0190f2a1-3b4c-7d5e-8f60-718293a4b5c6"),
             target_world_id: bytes("01934f10-7c02-7001-805b-3b1122334401"),
             requested_name: "Aldric".into(),
+            requested_sex: "Male".into(),
+            requested_vocation: "Knight".into(),
             issued_at_source: 1_790_000_000,
             expires_at_source: 1_790_000_300,
         })
@@ -43,8 +45,8 @@ fn intents_are_classified_conflict_unsupported_then_invalid() {
         classify_intent(INTENT.as_bytes(), "RenameCharacter", OP),
         Rejected(OPERATION_CONFLICT)
     );
-    let v2 = INTENT.replace(r#""contract_version":1"#, r#""contract_version":2"#);
-    assert_eq!(classify(&v2), Rejected(UNSUPPORTED));
+    let retired = INTENT.replace(r#""contract_version":2"#, r#""contract_version":1"#);
+    assert_eq!(classify(&retired), Rejected(UNSUPPORTED));
     let variant = INTENT.replace("PLATFORM_USER_CREATE", "PLATFORM_ADMIN_CREATE");
     assert_eq!(classify(&variant), Rejected(UNSUPPORTED));
     for invalid in [
@@ -172,4 +174,72 @@ fn bindings_separate_what_was_decided() {
         unsupported_binding(CREATE_COMMAND)
     );
     assert_eq!(unsupported_binding("X"), [0x05, b'X']);
+}
+
+#[test]
+fn platform_v2_create_goldens() -> Result<(), Box<dyn std::error::Error>> {
+    let directory = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .map(|root| root.join("docs/contracts/fixtures/character-create-v2"))
+        .find(|path| path.is_dir())
+        .ok_or("missing create fixture directory")?;
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(directory.join("manifest.json"))?)?;
+    for file in manifest["files"].as_array().ok_or("missing files")? {
+        use sha2::{Digest, Sha256};
+        let raw = std::fs::read(directory.join(file["file"].as_str().ok_or("missing filename")?))?;
+        assert_eq!(
+            raw.len() as u64,
+            file["bytes"].as_u64().ok_or("missing byte count")?
+        );
+        assert_eq!(
+            Sha256::digest(&raw)
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>(),
+            file["sha256"]
+        );
+    }
+    for case in manifest["cases"].as_array().ok_or("missing cases")? {
+        let raw = std::fs::read(directory.join(case["file"].as_str().ok_or("missing file")?))?;
+        let value: serde_json::Value = serde_json::from_slice(&raw)?;
+        let decoded = classify_intent(
+            &raw,
+            CREATE_COMMAND,
+            value["operation_id"].as_str().ok_or("missing operation")?,
+        );
+        if case["outcome"] == "reject" {
+            assert_eq!(decoded, Classified::Rejected(INTENT_INVALID), "{case}");
+            continue;
+        }
+        let Classified::Create(intent) = decoded else {
+            return Err(format!("refused {case}").into());
+        };
+        assert_eq!(
+            intent.requested_sex,
+            case["requested_sex"].as_str().ok_or("missing sex")?
+        );
+        assert_eq!(
+            intent.requested_vocation,
+            case["requested_vocation"]
+                .as_str()
+                .ok_or("missing vocation")?
+        );
+        assert_eq!(intent.requested_name, value["requested_name"]);
+        assert_eq!(intent.source_revision.to_string(), value["source_revision"]);
+        assert_eq!(uuid_string(&intent.account_id), value["account_id"]);
+        assert_eq!(
+            uuid_string(&intent.target_world_id),
+            value["target_world_id"]
+        );
+        assert_eq!(
+            intent.issued_at_source.to_string(),
+            value["issued_at_source"]
+        );
+        assert_eq!(
+            intent.expires_at_source.to_string(),
+            value["expires_at_source"]
+        );
+    }
+    Ok(())
 }

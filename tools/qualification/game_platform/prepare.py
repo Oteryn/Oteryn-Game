@@ -10,7 +10,7 @@ from pathlib import Path
 
 def main():
     work = Path(sys.argv[1])
-    account_a, account_b, world, channel, fresh, recovery, fresh_id, recovery_id = sys.argv[2:]
+    account_a, account_b, world, channel, fresh, recovery, fresh_id, recovery_id = sys.argv[2:10]
     binary = Path(json.loads((work / "portal-meta.json").read_text())["target_directory"]) / "debug/oteryn-portal"
     if not binary.is_file() or not os.access(binary, os.X_OK):
         raise ValueError("real_portal_binary_missing")
@@ -27,7 +27,12 @@ def main():
         {"accountId": account_a, "email": f"gpe2e-a-{suffix}@example.invalid", "password": secrets.token_urlsafe(48)},
         {"accountId": account_b, "email": f"gpe2e-b-{suffix}@example.invalid", "password": secrets.token_urlsafe(48)},
     ]
-    steps = [{"name": name, "entity": "account", "args": args} for name, args in zip(["accountA", "accountB"], accounts)]
+    extra_accounts = sys.argv[10:]
+    if len(extra_accounts) not in (0, 2):
+        raise ValueError("reference_accounts_missing")
+    for label, account in zip(("c", "d"), extra_accounts):
+        accounts.append({"accountId": account, "email": f"gpe2e-{label}-{suffix}@example.invalid", "password": secrets.token_urlsafe(48)})
+    steps = [{"name": name, "entity": "account", "args": args} for name, args in zip(["accountA", "accountB", "accountC", "accountD"], accounts)]
     steps += [
         {"name": "world", "entity": "world", "args": {"worldId": world, "name": "Entry", "region": "local"}},
         {"name": "nativeClient", "entity": "oauth-native-client", "args": {"clientId": client}},
@@ -46,7 +51,7 @@ def main():
     custody_args = shlex.quote(json.dumps({"directory": str(custody), "purpose": "fresh_admission"}))
     launcher = work / "portal-exec"
     launcher.write_text("#!/usr/bin/env bash\nset -euo pipefail\nset +x\n"
-                        "export OTERYN_ACCOUNT_LOGIN=true OTERYN_ACCOUNT_MFA=true APP_ENV=testing\n"
+                        "export OTERYN_ACCOUNT_MFA=true APP_ENV=testing\n"
                         "export OTERYN_NATIVE_REMEMBERED_DEVICES_ENABLED=true\n"
                         "export OTERYN_NATIVE_DEVICE_PROJECTION_AUTHORITY=oteryn-game-e2e\n"
                         f"export OTERYN_NATIVE_TLS_BIND=127.0.0.1:{native_port}\n"
@@ -54,6 +59,7 @@ def main():
                         'export OTERYN_NATIVE_TLS_KEY_FILE="$OTERYN_INTERNAL_TLS_KEY_FILE"\n'
                         f"export PORTAL_OAUTH_CONFIG=\"$(cat {shlex.quote(str(work / 'oauth.json'))})\"\n"
                         'if [[ "${1:-}" == serve ]]; then\n'
+                        '  export OTERYN_ACCOUNT_LOGIN=true\n'
                         f"  {shlex.quote(str(binary))} seed signing-custody {custody_args} > {shlex.quote(str(work / 'custody-result.json'))}\n"
                         f"  export PORTAL_NATIVE_ADMISSION_KEY_CUSTODY_FILE={shlex.quote(str(custody / 'admission-custody.bin'))}\n"
                         f"  export PORTAL_NATIVE_ADMISSION_KEY_WRAPPING_KEY_FILE={shlex.quote(str(custody / 'admission-wrapping.key'))}\n"

@@ -14,7 +14,9 @@ use crate::durability::character_authority::{
     CharacterAuthorityRecord, ReconciledCharacterAuthority,
 };
 use crate::durability::character_build::{DurableBuildState, NO_VOCATION};
-use crate::durability::character_progression::CharacterProgressionState;
+use crate::durability::character_progression::{
+    CharacterProgressionState, INITIAL_CHARACTER_LEVEL,
+};
 use crate::spell::Vocation;
 use crate::spell::cast::CharacterCastFacts;
 
@@ -29,7 +31,7 @@ pub enum CastFactsLoad {
         facts: CharacterCastFacts,
         character_revision: CharacterRevision,
     },
-    /// Classed Character missing progression, corrupt content, failed reads, or a changing root.
+    /// Trained Character missing progression, corrupt content, failed reads, or a changing root.
     Unavailable,
 }
 
@@ -85,19 +87,30 @@ fn facts_from_owned_state(
     if build.vocation() == NO_VOCATION {
         return vocationless_vitals::load(build, progression, after.revision);
     }
-    let Some(progression) = progression else {
-        return CastFactsLoad::Unavailable;
+    // D88 permits a bootstrap-only Character before policy-bound progression initialization.
+    // Crystal 201189f871d23597b82caf88fd611454a2ddefb8 schema.sql:76,80 defaults
+    // new players to level 1 and zero experience, independently of their vocation.
+    // Only the verified pristine build seed can use that initial state; a trained build
+    // still requires its owned progression. Keep all bracketing and owner verification above.
+    let level = match progression {
+        Some(progression) => progression.level,
+        None if DurableBuildState::new(build.vocation(), (0, 0), [(10, 0); 7])
+            .is_ok_and(|seed| &seed == build) =>
+        {
+            INITIAL_CHARACTER_LEVEL
+        }
+        None => return CastFactsLoad::Unavailable,
     };
     let Some(vocation) = Vocation::from_key(build.vocation()) else {
         return CastFactsLoad::Unavailable;
     };
-    let Some((max_health, max_mana, max_soul)) = maxima(build.vocation(), progression.level) else {
+    let Some((max_health, max_mana, max_soul)) = maxima(build.vocation(), level) else {
         return CastFactsLoad::Unavailable;
     };
     CastFactsLoad::Ready {
         facts: CharacterCastFacts {
             vocation,
-            level: progression.level,
+            level,
             magic_level: u32::from(build.magic().0),
             max_health,
             max_mana,

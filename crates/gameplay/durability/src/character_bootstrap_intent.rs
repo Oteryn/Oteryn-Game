@@ -1,7 +1,8 @@
-//! `CHARACTER_AUTHENTICATED_BOOTSTRAP_INTENT_V1` consumer data, contract version 3.
+//! `CHARACTER_AUTHENTICATED_BOOTSTRAP_INTENT_V1` consumer data, contract version 4.
 //!
-//! Version 3 (APP-3) adds required creation sex, bound in tag 3. Version 2 added the required `requested_name`, a display name under naming
-//! policy revision 1 ([`CharacterName`]). Version 1 and 2 bodies are refused.
+//! Version 4 adds required creation vocation, bound together with sex in tag 4.
+//! The requested name follows naming policy revision 1 ([`CharacterName`]).
+//! Versions 1 through 3 are retired and refused.
 //!
 //! The Platform Account authority owns and authenticates the intent; Game only
 //! decodes the exact bounded producer wire and binds it to the Character
@@ -19,7 +20,7 @@ use crate::native_admission_source::{
 };
 use serde::Deserialize;
 
-pub const CONTRACT_VERSION: u8 = 3;
+pub const CONTRACT_VERSION: u8 = 4;
 pub const VARIANT: &str = "OPERATOR_CONTROL_PLANE_BOOTSTRAP";
 pub const ISSUER_AUTHORITY: &str = "OTERYN_PLATFORM_CHARACTER_AUTHORITY";
 pub const OPERATION: &str = "INITIAL_CHARACTER_BOOTSTRAP";
@@ -28,10 +29,10 @@ pub const MAX_RESPONSE_BYTES: usize = 4096;
 /// Technical transport/reconciliation bound of the producer contract.
 pub const MAX_TTL_SECONDS: i64 = 300;
 const MAX_REVISION_BYTES: usize = 128;
-/// Binding format tag: contract version 3 operator variant of the Platform
+/// Binding format tag: contract version 4 operator variant of the Platform
 /// Character authority for the Game Character audience. The constant fields are
-/// implied by the tag. Tag 2 was the historical binding without creation sex.
-const BINDING_TAG_V3_OPERATOR: u8 = 3;
+/// implied by the tag. Tags 2 and 3 are historical bindings without vocation.
+const BINDING_TAG_V4_OPERATOR: u8 = 4;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InvalidIntent;
@@ -46,6 +47,7 @@ pub struct CharacterBootstrapIntentV1 {
     target_world_id: WorldId,
     requested_name: CharacterName,
     requested_sex: Sex,
+    requested_vocation: String,
     profile_revision: String,
     ruleset_revision: String,
     content_revision: String,
@@ -77,6 +79,7 @@ struct Wire {
     target_world_id: String,
     requested_name: String,
     requested_sex: String,
+    requested_vocation: String,
     interpretation_context: WireContext,
     issued_at_source: String,
     expires_at_source: String,
@@ -122,6 +125,10 @@ impl CharacterBootstrapIntentV1 {
         self.requested_sex
     }
     #[must_use]
+    pub fn requested_vocation(&self) -> &str {
+        &self.requested_vocation
+    }
+    #[must_use]
     pub fn interpretation(&self) -> [&str; 4] {
         [
             &self.profile_revision,
@@ -144,7 +151,7 @@ impl CharacterBootstrapIntentV1 {
     #[must_use]
     pub fn binding(&self) -> Vec<u8> {
         let mut value = Vec::with_capacity(1 + 16 * 4 + 8 * 3 + 5 * (2 + MAX_REVISION_BYTES));
-        value.push(BINDING_TAG_V3_OPERATOR);
+        value.push(BINDING_TAG_V4_OPERATOR);
         value.extend_from_slice(&self.issuer_decision_id);
         value.extend_from_slice(&self.source_revision.to_be_bytes());
         value.extend_from_slice(&self.operation_id);
@@ -165,6 +172,8 @@ impl CharacterBootstrapIntentV1 {
             Sex::Female => 1,
             Sex::Male => 2,
         });
+        value.push(self.requested_vocation.len() as u8);
+        value.extend_from_slice(self.requested_vocation.as_bytes());
         value
     }
 }
@@ -277,6 +286,10 @@ pub fn decode_producer_response(
             "Male" => Sex::Male,
             _ => return Err(InvalidIntent),
         },
+        requested_vocation: match wire.requested_vocation.as_str() {
+            "Knight" | "Paladin" | "Sorcerer" | "Druid" | "Monk" => wire.requested_vocation,
+            _ => return Err(InvalidIntent),
+        },
         profile_revision: revision(wire.interpretation_context.profile_revision)?,
         ruleset_revision: revision(wire.interpretation_context.ruleset_revision)?,
         content_revision: revision(wire.interpretation_context.content_revision)?,
@@ -291,7 +304,7 @@ pub fn decode_producer_response(
 pub enum IntentReadError {
     /// Transport, peer authentication or producer outcome (bounded unavailable).
     Source(SourceError),
-    /// The authenticated producer body is not an exact version 3 decision.
+    /// The authenticated producer body is not an exact version 4 decision.
     Invalid(InvalidIntent),
 }
 
@@ -360,7 +373,7 @@ impl CharacterInterpretationV1 {
 pub fn encode_read_request(operation_id: [u8; 16]) -> String {
     let hex: String = operation_id.iter().map(|b| format!("{b:02x}")).collect();
     format!(
-        "{{\"contract_version\":3,\"operation_id\":\"{}-{}-{}-{}-{}\"}}",
+        "{{\"contract_version\":4,\"operation_id\":\"{}-{}-{}-{}-{}\"}}",
         &hex[0..8],
         &hex[8..12],
         &hex[12..16],

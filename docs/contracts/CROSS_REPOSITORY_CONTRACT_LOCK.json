@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-10-11T19:00:00Z",
+  "updated_at": "2026-11-17T18:38:49Z",
   "policy": {
     "canonical_revisions_must_be_merged": true,
     "mutable_pr_heads_are_canonical": false,
@@ -321,7 +321,11 @@
         "enable together in one testing stack with shared fixtures, then preproduction; production needs separate authority"
       ],
       "production_enabled": false,
-      "notes": "Packet P4 of the #1622 plan (rows C7, C8). Platform keeps creation and transfer disabled until this contract is accepted and the Game implementation exists (D963 Q2=A). Creation happens only on the Platform account page; the client opens it through the Create character deep link (D965 Q5=A). Accepted by the owner (D1004, D1007) at the pinned revision; the later contract edit that records the acceptance (status line, section 14 step 1, section 15) is editorial and changes no member, path, bound, code or response. Implementation and the Platform consumer stay disabled by default until section 14 step 4 (U-CC7, U-CC9). Acceptance locks the Game-side wire only; Platform implementation needs its own task allocation and owner decisions in the #1622 STATE (for the Bazaar: D1004, D1005, D1007)."
+      "notes": "Packet P4 of the #1622 plan (rows C7, C8). Platform keeps creation and transfer disabled until this contract is accepted and the Game implementation exists (D963 Q2=A). Creation happens only on the Platform account page; the client opens it through the Create character deep link (D965 Q5=A). Accepted by the owner (D1004, D1007) at the pinned revision; the later contract edit that records the acceptance (status line, section 14 step 1, section 15) is editorial and changes no member, path, bound, code or response. Implementation and the Platform consumer stay disabled by default until section 14 step 4 (U-CC7, U-CC9). Acceptance locks the Game-side wire only; Platform implementation needs its own task allocation and owner decisions in the #1622 STATE (for the Bazaar: D1004, D1005, D1007). Creation wire is now v2 and operator bootstrap is v4 under the separately locked merged Platform amendments; this original Game revision remains the immutable v1 envelope/receipt baseline. See the current Game contract section 4.2 Deploy order for retired pending v1 creates and tag-3 bootstrap conflicts.",
+      "platform_amendment_locks": [
+        "PLATFORM-CHARACTER-CREATE-INTENT-V2",
+        "PLATFORM-CHARACTER-BOOTSTRAP-INTENT-V4"
+      ]
     },
     {
       "coordination_id": "PLAT3-CONTRACTS-BAZAAR-AUTHORITY",
@@ -412,6 +416,68 @@
         "shared exact-head interrupted-flow qualification then separate environment enablement"
       ],
       "notes": "Candidate opened for independent review. Platform evidence: efdd058839cca2b922391e9a8323236e94e78834."
+    },
+    {
+      "coordination_id": "PLATFORM-CHARACTER-CREATE-INTENT-V2",
+      "contract_name": "character-create-intent-v2",
+      "status": "LOCKED",
+      "canonical_repository": "Oteryn/Oteryn-Platform",
+      "canonical_commit": "6d04b52a16145723eedb0c56640ad052dbd26e94",
+      "canonical_contract_path": "docs/contracts/OTERYN_V2_CHARACTER_AUTHORITY_COMMAND_CONTRACT.md",
+      "schema_revision": 2,
+      "schema_sha256": "1cae3592f4df021019091f6767232c2a1a3cafc39ea473a583ced14ebb1e04c0",
+      "source_pull_request": 1940,
+      "source_pull_request_repository": "Oteryn/Oteryn-Platform",
+      "accepted_for_fnd02": false,
+      "production_enabled": false,
+      "producers": [
+        {
+          "repository": "Oteryn/Oteryn-Platform",
+          "status": "MERGED_PRODUCER_CONTRACT"
+        }
+      ],
+      "consumers": [
+        {
+          "repository": "Oteryn/Oteryn-Game",
+          "status": "CONSUMER_IMPLEMENTED_PENDING_COORDINATED_ROLLOUT"
+        }
+      ],
+      "rollout_order": [
+        "Platform serves create v2 and bootstrap v4; retired producer versions fail closed",
+        "deploy Game v2/v4 consumers and reconcile retained historical receipts",
+        "qualify the coordinated testing stack before separate environment enablement"
+      ]
+    },
+    {
+      "coordination_id": "PLATFORM-CHARACTER-BOOTSTRAP-INTENT-V4",
+      "contract_name": "character-bootstrap-intent-v4",
+      "status": "LOCKED",
+      "canonical_repository": "Oteryn/Oteryn-Platform",
+      "canonical_commit": "5b67d4aed872106010dbef8ac0d27692f3958920",
+      "canonical_contract_path": "docs/contracts/OTERYN_V2_CHARACTER_BOOTSTRAP_INTENT_PRODUCER_CONTRACT.md",
+      "schema_revision": 4,
+      "schema_sha256": "773fad487ce9ff43aa0b2bd006b83a766fc7579f69bdee5d2f3141ebd47fdff6",
+      "source_pull_request": 1938,
+      "source_pull_request_repository": "Oteryn/Oteryn-Platform",
+      "accepted_for_fnd02": false,
+      "production_enabled": false,
+      "producers": [
+        {
+          "repository": "Oteryn/Oteryn-Platform",
+          "status": "MERGED_PRODUCER_CONTRACT"
+        }
+      ],
+      "consumers": [
+        {
+          "repository": "Oteryn/Oteryn-Game",
+          "status": "CONSUMER_IMPLEMENTED_PENDING_COORDINATED_ROLLOUT"
+        }
+      ],
+      "rollout_order": [
+        "Platform serves create v2 and bootstrap v4; retired producer versions fail closed",
+        "deploy Game v2/v4 consumers and reconcile retained historical receipts",
+        "qualify the coordinated testing stack before separate environment enablement"
+      ]
     }
   ]
 }

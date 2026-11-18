@@ -1084,8 +1084,24 @@ async fn read_lifecycle_facts_in_transaction(
             .map_err(|_| EquipmentError::Rejected("Character seven skills"))?,
     )
     .map_err(|_| EquipmentError::Rejected("invalid Character build"))?;
-    let level:i64=sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid FOR SHARE")
-        .bind(authority.fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.ok_or(EquipmentError::Rejected("current Character level"))?;
+    let level: Option<i64> = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid FOR SHARE")
+        .bind(authority.fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    // D88 bootstrap-only state (Crystal 201189f8 schema.sql:76,80): familiar Login
+    // runs before policy-bound progression initialization. Match the verified creation
+    // seed only; a trained build without its progression remains an integrity refusal.
+    let level = match level {
+        Some(level) => level,
+        None if super::character_build::DurableBuildState::new(
+            build.vocation(),
+            (0, 0),
+            [(10, 0); 7],
+        )
+        .is_ok_and(|seed| seed == build) =>
+        {
+            i64::from(super::character_progression::INITIAL_CHARACTER_LEVEL)
+        }
+        None => return Err(EquipmentError::Rejected("current Character level")),
+    };
     let level =
         u32::try_from(level).map_err(|_| EquipmentError::Rejected("Character level bound"))?;
     Ok(RawLifecycleDurableFacts {
@@ -1601,8 +1617,10 @@ impl DurabilityRoot {
         std::result::Result<EquipmentReceipt, EquipmentMoveRefusal>,
         DurabilityError,
     > {
-        self.commit_hotkey_equipment_tiered(recovery, node, fence, command, content, selection, None)
-            .await
+        self.commit_hotkey_equipment_tiered(
+            recovery, node, fence, command, content, selection, None,
+        )
+        .await
     }
 
     /// Capability 485: the carried selection matches definition and exact upgrade tier.

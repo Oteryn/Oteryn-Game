@@ -9,7 +9,8 @@ use crate::domain::progression::{FiniteProgressionPolicy, ProgressionRevisionCon
 use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::character_build::{
-    BuildCause, BuildChangeRequest, BuildOccurrence, NO_VOCATION, convert_vocation,
+    BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, NO_VOCATION,
+    convert_vocation,
 };
 use crate::durability::character_progression::{
     CurrentCharacterGameplayFence, ExperienceAwardRequest, ExperienceRewardOccurrence,
@@ -153,7 +154,10 @@ pub(super) async fn prepare_character_with_policy<const N: usize>(
         .read_character_build_state(authority, character)
         .await
         .map_err(debug)?;
-    if before.vocation() != NO_VOCATION
+    let birth_seed =
+        DurableBuildState::new(before.vocation(), (0, 0), [(10, 0); 7]).map_err(debug)?;
+    if before != birth_seed
+        || (before.vocation() != NO_VOCATION && !PLAYABLE_VOCATIONS.contains(&before.vocation()))
         || root
             .read_character_progression(authority, character)
             .await
@@ -227,23 +231,29 @@ pub(super) async fn prepare_character_with_policy<const N: usize>(
     )
     .map_err(debug)?;
     let after = convert_vocation(&formula, &before, vocation).map_err(debug)?;
-    slot.commit_build(
-        root,
-        authority,
-        node,
-        fence,
-        BuildChangeRequest {
-            occurrence: build_occurrence,
-            cause: BuildCause::VocationChoice,
-            before,
-            after,
-            pruned_stance: None,
-        },
-        &formula,
-        None,
-    )
-    .await
-    .map_err(debug)?;
+    if before != after {
+        slot.commit_build(
+            root,
+            authority,
+            node,
+            fence,
+            BuildChangeRequest {
+                occurrence: build_occurrence,
+                cause: if before.vocation() == NO_VOCATION {
+                    BuildCause::VocationChoice
+                } else {
+                    BuildCause::VocationTrial
+                },
+                before,
+                after,
+                pruned_stance: None,
+            },
+            &formula,
+            None,
+        )
+        .await
+        .map_err(debug)?;
+    }
     let facts =
         crate::gameplay_transport::load_character_cast_facts(root, authority, character).await;
     if !matches!(facts, crate::gameplay_transport::CastFactsLoad::Ready { facts, .. } if facts.level == level && Some(facts.vocation) == crate::spell::Vocation::from_key(vocation))

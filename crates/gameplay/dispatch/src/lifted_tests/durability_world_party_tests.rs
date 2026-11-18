@@ -953,7 +953,7 @@ async fn bootstrap_owned_character_from_source(
         .await
         .map_err(debug)?;
     let wire = serde_json::json!({
-        "contract_version": 3, "variant": "OPERATOR_CONTROL_PLANE_BOOTSTRAP",
+        "contract_version": 4, "variant": "OPERATOR_CONTROL_PLANE_BOOTSTRAP",
         "issuer_authority": "OTERYN_PLATFORM_CHARACTER_AUTHORITY",
         "issuer_decision_id": fresh_source::uuid_text(&id(character + 20)),
         // Character bootstrap has a global issuer floor, separate from the
@@ -962,7 +962,7 @@ async fn bootstrap_owned_character_from_source(
         "operation_id": fresh_source::uuid_text(&id(character)),
         "operation": "INITIAL_CHARACTER_BOOTSTRAP", "account_id": account_text,
         "target_world_id": fresh_source::uuid_text(&id(WORLD)),
-        "requested_sex":"Male","requested_name": format!("Party Player {}{}", char::from(b'A' + character / 26), char::from(b'a' + character % 26)),
+        "requested_sex":"Male","requested_vocation":"Sorcerer","requested_name": format!("Party Player {}{}", char::from(b'A' + character / 26), char::from(b'a' + character % 26)),
         "interpretation_context": {"profile_revision":"profile-1", "ruleset_revision":"ruleset-1",
             "content_revision":"content-1", "starter_template_revision":"starter-1"},
         "issued_at_source": (now - 1).to_string(), "expires_at_source": (now + 120).to_string(),
@@ -1139,7 +1139,7 @@ pub(crate) async fn committed_fresh_player_from_source_owned(
     Ok((current, request.operation().clone()))
 }
 
-/// D88 initialization and A13 vocation choice use the actual Character writers. The
+/// D88 initialization and a vocation trial use the actual Character writers. The
 /// bounded two-level policy is the existing D88 test policy, used only to bind initial
 /// level 1 / zero XP; it grants no XP and makes no claim about the full source XP curve.
 async fn initialize_official_party_build(
@@ -1175,10 +1175,19 @@ async fn initialize_official_party_build(
         .open_character_authority(&seal)
         .await
         .map_err(debug)?;
-    assert!(
-        matches!(load_character_cast_facts(&h.root, &authority, character).await,
-        CastFactsLoad::NoVocation { character_revision, .. } if character_revision.get() == 1)
+    assert_eq!(
+        h.root
+            .read_current_character(&authority, character)
+            .await
+            .map_err(debug)?
+            .revision
+            .get(),
+        1
     );
+    assert!(matches!(
+        load_character_cast_facts(&h.root, &authority, character).await,
+        CastFactsLoad::Unavailable
+    ));
     let fence = CurrentCharacterGameplayFence {
         character_id: character,
         game_session_id: current.current_game_session_id(),
@@ -1237,7 +1246,12 @@ async fn initialize_official_party_build(
         .map_err(debug)?;
     assert_eq!(
         before,
-        crate::durability::character_build::DurableBuildState::default()
+        crate::durability::character_build::DurableBuildState::new(
+            "sorcerer",
+            (0, 0),
+            [(10, 0); 7]
+        )
+        .map_err(debug)?
     );
     let formula = crate::spell::mana_training::CompiledTrainingFormula::from_profile(
         include_bytes!("../../../../../tools/content-schema/native-gameplay/build-training.json"),
@@ -1252,7 +1266,7 @@ async fn initialize_official_party_build(
             fence,
             BuildChangeRequest {
                 occurrence: BuildOccurrence::from_bytes(id(occurrence_seed)).map_err(debug)?,
-                cause: BuildCause::VocationChoice,
+                cause: BuildCause::VocationTrial,
                 before,
                 after: after.clone(),
                 pruned_stance: None,

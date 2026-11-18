@@ -9,7 +9,7 @@ mod character_sex_tests;
 
 fn wire(edit: impl FnOnce(&mut serde_json::Value)) -> Vec<u8> {
     let mut value = serde_json::json!({
-        "contract_version": 3,
+        "contract_version": 4,
         "variant": VARIANT,
         "issuer_authority": ISSUER_AUTHORITY,
         "issuer_decision_id": "3f0c5b7e-1d2a-4c3b-9a8f-0123456789ab",
@@ -20,6 +20,7 @@ fn wire(edit: impl FnOnce(&mut serde_json::Value)) -> Vec<u8> {
         "target_world_id": "01934f10-7c00-7000-8000-0000000000aa",
         "requested_name": "Sir Aldric",
         "requested_sex": "Male",
+        "requested_vocation": "Knight",
         "interpretation_context": {
             "profile_revision": "profile-1",
             "ruleset_revision": "ruleset-1",
@@ -43,8 +44,13 @@ fn exact_producer_wire_decodes_and_binds_every_field() -> Result<(), InvalidInte
     assert_eq!(intent.requested_name().as_str(), "Sir Aldric");
     assert_eq!(
         intent.binding().len(),
-        1 + 16 * 4 + 8 * 3 + 4 * 11 + 2 + 10 + 1
+        1 + 16 * 4 + 8 * 3 + 4 * 11 + 2 + 10 + 1 + 1 + 6
     );
+    let changed_vocation = decode_producer_response(
+        &wire(|v| v["requested_vocation"] = "Monk".into()),
+        OPERATION_ID,
+    )?;
+    assert_ne!(changed_vocation.binding(), intent.binding());
     let renamed = decode_producer_response(
         &wire(|v| v["requested_name"] = "Aldric".into()),
         OPERATION_ID,
@@ -65,7 +71,9 @@ fn every_non_contract_wire_is_rejected() {
     let rejected: Vec<Vec<u8>> = vec![
         wire(|v| v["variant"] = "PLATFORM_USER_CREATE".into()),
         wire(|v| v["contract_version"] = 1.into()),
-        wire(|v| v["contract_version"] = 4.into()),
+        wire(|v| v["contract_version"] = 2.into()),
+        wire(|v| v["contract_version"] = 5.into()),
+        wire(|v| v["contract_version"] = 3.into()),
         wire(|v| v["requested_name"] = "A".into()),
         wire(|v| v["requested_name"] = "Aldric2".into()),
         wire(|v| v["requested_name"] = " Aldric".into()),
@@ -123,7 +131,108 @@ fn read_request_is_the_exact_bounded_producer_request() {
     let request = encode_read_request(OPERATION_ID);
     assert_eq!(
         request,
-        r#"{"contract_version":3,"operation_id":"01890f4e-7c00-7000-8000-000000000001"}"#
+        r#"{"contract_version":4,"operation_id":"01890f4e-7c00-7000-8000-000000000001"}"#
     );
     assert!(request.len() <= 256);
+}
+
+#[test]
+fn platform_v4_bootstrap_goldens() -> Result<(), Box<dyn std::error::Error>> {
+    let directory = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .map(|root| root.join("docs/contracts/fixtures/character-bootstrap-intent-v4"))
+        .find(|path| path.is_dir())
+        .ok_or("missing bootstrap fixture directory")?;
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(directory.join("manifest.json"))?)?;
+    for file in manifest["files"].as_array().ok_or("missing files")? {
+        use sha2::{Digest, Sha256};
+        let raw = std::fs::read(directory.join(file["file"].as_str().ok_or("missing filename")?))?;
+        assert_eq!(
+            raw.len() as u64,
+            file["bytes"].as_u64().ok_or("missing byte count")?
+        );
+        assert_eq!(
+            Sha256::digest(&raw)
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>(),
+            file["sha256"]
+        );
+    }
+    for case in manifest["cases"].as_array().ok_or("missing cases")? {
+        let raw = std::fs::read(directory.join(case["file"].as_str().ok_or("missing file")?))?;
+        let value: serde_json::Value = serde_json::from_slice(&raw)?;
+        let operation = uuid(value["operation_id"].as_str().ok_or("missing operation")?)
+            .map_err(|_| "invalid operation")?;
+        let decoded = decode_producer_response(&raw, operation);
+        if case["outcome"] == "reject" {
+            assert_eq!(decoded, Err(InvalidIntent), "{case}");
+            continue;
+        }
+        let intent = decoded.map_err(|_| format!("refused {case}"))?;
+        assert_eq!(
+            intent.requested_vocation(),
+            case["requested_vocation"]
+                .as_str()
+                .ok_or("missing vocation")?
+        );
+        assert_eq!(
+            intent.requested_sex(),
+            if case["requested_sex"] == "Female" {
+                Sex::Female
+            } else {
+                Sex::Male
+            }
+        );
+        assert_eq!(intent.operation_id(), operation);
+        assert_eq!(
+            intent.issuer_decision_id(),
+            uuid(
+                case["issuer_decision_id"]
+                    .as_str()
+                    .ok_or("missing decision")?
+            )
+            .map_err(|_| "invalid decision")?
+        );
+        assert_eq!(
+            intent.source_revision().to_string(),
+            case["source_revision"]
+        );
+        assert_eq!(
+            intent.requested_name().as_str(),
+            manifest["fixed"]["requested_name"]
+        );
+        assert_eq!(
+            intent.account_id().as_bytes(),
+            &uuid(
+                manifest["fixed"]["account_id"]
+                    .as_str()
+                    .ok_or("missing account")?
+            )
+            .map_err(|_| "invalid account")?
+        );
+        assert_eq!(
+            intent.target_world_id().as_bytes(),
+            &uuid(
+                manifest["fixed"]["target_world_id"]
+                    .as_str()
+                    .ok_or("missing world")?
+            )
+            .map_err(|_| "invalid world")?
+        );
+        assert_eq!(
+            intent.issued_at_source().to_string(),
+            manifest["fixed"]["issued_at_source"]
+        );
+        assert_eq!(
+            intent.expires_at_source().to_string(),
+            manifest["fixed"]["expires_at_source"]
+        );
+        assert_eq!(
+            intent.interpretation(),
+            ["profile:1", "ruleset:1", "content:1", "newhaven-starter-r1"]
+        );
+    }
+    Ok(())
 }
