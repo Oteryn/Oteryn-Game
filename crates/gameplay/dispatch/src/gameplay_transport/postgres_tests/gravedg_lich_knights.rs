@@ -672,7 +672,7 @@ async fn exercise_condensed_sins(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
 ) -> TestResult {
-    use crate::gameplay_transport::actor_spell_commit::{
+    use crate::gameplay_transport::actor_spell::{
         commit_owner_batch, stage_player_batch_with_magnitude,
     };
     use crate::spell::combat_batch::{
@@ -774,7 +774,17 @@ async fn exercise_condensed_sins(
             attacker: lease.character_id(),
             command: CommandRef::new(session, CommandId::new(command).map_err(debug)?),
             current_lease_generation: lease.generation(),
-            occurrence: format!("gravedg:condensed-sins:{command}").into(),
+            occurrence: crate::spell::combat_batch::SpellOccurrenceBinding {
+                id: format!("gravedg:condensed-sins:{command}"),
+                revisions: [
+                    "ruleset-1",
+                    "content-1",
+                    "world-1",
+                    "formula-1",
+                    "simulation-1",
+                ]
+                .map(str::to_owned),
+            },
             binding: b"gravedg-condensed-sins".to_vec(),
             anchor: None,
             now_us: None,
