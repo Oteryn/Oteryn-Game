@@ -109,38 +109,22 @@ pub(in crate::quest) fn counter_effect(
     }
 }
 
-/// The same character quest may already be pinned to the pre-reservoir definition.
-/// Keep that exact predecessor eligible without altering stored pins or receipts.
-pub(in crate::quest) fn retain_predecessor(
-    catalogue: &mut crate::quest::QuestStateCatalogue,
-) -> Result<(), String> {
-    let tracks = catalogue
-        .tracks
-        .iter()
-        .filter(|(key, track)| track.quest == QUEST && !key.starts_with(CLOCK_PREFIX))
-        .map(|(key, track)| (key.clone(), track.clone()))
-        .collect();
-    let mut transitions: std::collections::BTreeMap<_, _> = catalogue
-        .transitions
-        .iter()
-        .filter(|(key, transition)| transition.quest == QUEST && !key.starts_with(PREFIX))
-        .map(|(key, transition)| (key.clone(), transition.clone()))
-        .collect();
-    let gate = transitions
-        .get_mut(GATE)
-        .ok_or("missing Putrefactory gate transition")?;
-    let [counter] = gate.effects.as_mut_slice() else {
-        return Err("invalid Putrefactory gate transition".into());
-    };
-    counter.effect = QuestEffectKind::Add(0);
-    let hash = crate::quest::definition_hash(QUEST, &tracks, &transitions);
-    catalogue
-        .predecessors
-        .entry(QUEST.into())
-        .or_default()
-        .push(crate::quest::NpcDefinitionPredecessor {
-            hash,
-            defaults: Default::default(),
-        });
-    Ok(())
+/// A character may already be pinned to the published, non-spending gate.
+/// Preserve the definition from 871c1dec7 without changing stored pins or receipts.
+pub(in crate::quest) fn retain_predecessor(catalogue: &mut crate::quest::QuestStateCatalogue) {
+    const PUBLISHED_HASH: [u8; 32] = [
+        0xd3, 0xb1, 0x44, 0xae, 0x3f, 0x2a, 0x23, 0x84, 0x38, 0x35, 0x84, 0x43, 0x29, 0xa6, 0x8e,
+        0x21, 0xce, 0xc9, 0x0e, 0xbc, 0xee, 0x96, 0x5c, 0xb1, 0x31, 0x18, 0x5c, 0x26, 0x5d, 0x5c,
+        0x79, 0x3d,
+    ];
+    if catalogue.definition_hash(QUEST).is_some() {
+        catalogue
+            .predecessors
+            .entry(QUEST.into())
+            .or_default()
+            .push(crate::quest::NpcDefinitionPredecessor {
+                hash: PUBLISHED_HASH,
+                defaults: Default::default(),
+            });
+    }
 }
