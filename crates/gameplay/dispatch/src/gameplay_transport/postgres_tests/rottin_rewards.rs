@@ -11,6 +11,8 @@ use sha2::{Digest, Sha256};
 const QUEST: &str = "oteryn:quest.rottin_wood_and_the_married_men_quest";
 const TRACK: &str =
     "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/task01";
+const COOLDOWN: &str = "oteryn:quest-progress/crystalserver/kv/lucky-loop-task";
+const ACHIEVEMENT: &str = "oteryn:achievement/bunny_slipped";
 const PAYOUT: &str = "oteryn:quest-reward/rottin-wood/lucky-loop";
 const ROTTIN: &str = "oteryn:npc.rottin_wood";
 const PLATINUM: &str = "oteryn:item.tibia.i3035";
@@ -45,7 +47,10 @@ pub(super) fn catalogue() -> TestResult<QuestStateCatalogue> {
             "quest": QUEST,
             "recipe_sha256": digest,
             "sources": [DONOR],
-            "tracks": [{"key": TRACK, "initial": 1, "minimum": 1, "maximum": 2}],
+            "tracks": [
+                {"key": TRACK, "initial": 1, "minimum": 1, "maximum": 2},
+                {"key": COOLDOWN, "initial": 0, "minimum": 0, "maximum": 9223372036854775807_i64}
+            ],
             "stages": [{
                 "key": "lucky-loop",
                 "completes": false,
@@ -55,13 +60,18 @@ pub(super) fn catalogue() -> TestResult<QuestStateCatalogue> {
                         "key": PAYOUT, "quest": QUEST, "npc": ROTTIN,
                         "keywords": ["yes"], "topic": 0, "next_topic": 0,
                         "storage": [{"track": TRACK, "minimum": 1, "maximum": 1, "set": 2}],
+                        "state_ops": [{
+                            "track": COOLDOWN,
+                            "from": {"kind": "any"},
+                            "effect": {"kind": "set_now"}
+                        }],
                         "take": [{"item": CHARM, "count": 7}],
                         "give": {"item": PLATINUM, "count": 5},
                         "weighted_rewards": [{"chance": 9, "reward": {
                             "item": PLATINUM, "count": 3,
                             "additional": [{"item": RING, "count": 1}]
                         }}],
-                        "outfit": null, "achievement": null, "experience": 100,
+                        "outfit": null, "achievement": ACHIEVEMENT, "experience": 100,
                         "reply": ["Good hunt."], "sources": [DONOR]
                     }
                 }
@@ -104,5 +114,15 @@ pub(super) async fn exercise(
             .fetch_one(&h.pool)
             .await?;
     assert_eq!(stage, 2);
+    let (stamped, awarded): (bool, bool) = sqlx::query_as(
+        "SELECT
+         EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE track_key=$1 AND value > 0),
+         EXISTS(SELECT 1 FROM game_account_achievements WHERE achievement_key=$2)",
+    )
+    .bind(COOLDOWN)
+    .bind(ACHIEVEMENT)
+    .fetch_one(&h.pool)
+    .await?;
+    assert!(stamped && awarded);
     Ok(())
 }
