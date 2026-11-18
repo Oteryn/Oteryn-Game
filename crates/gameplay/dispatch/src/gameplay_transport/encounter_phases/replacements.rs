@@ -24,6 +24,7 @@ pub(super) struct Replacements {
     participants: Vec<(ExactActorRef, GameSessionId)>,
     members: Vec<Member>,
     completed_sweeps: BTreeSet<String>,
+    crystal_charges: super::crystal_circuit::Charges,
     scope: (RuntimeScopeRefV1, ScopeOwnershipGeneration),
     activation: u64,
     finished: bool,
@@ -53,6 +54,10 @@ impl Replacements {
         for actor in plan.replacements.iter().flat_map(|rule| &rule.spawn) {
             runtime.companion_policy(&actor.creature)?;
         }
+        if let Some(circuit) = &plan.crystal_circuit {
+            runtime.companion_policy(&circuit.defeated)?;
+            runtime.companion_policy(&circuit.spawn)?;
+        }
         Ok(Self {
             plan: plan.clone(),
             participants: players.to_vec(),
@@ -66,6 +71,7 @@ impl Replacements {
                 })
                 .collect(),
             completed_sweeps: BTreeSet::new(),
+            crystal_charges: super::crystal_circuit::Charges::default(),
             scope: runtime.encounter_owner_scope(),
             activation: runtime.content_pin().activation_sequence(),
             finished: false,
@@ -93,13 +99,18 @@ impl Replacements {
         !self.finished
             && self.is_current(runtime)
             && !self.completed_sweeps.contains(creature)
-            && self.plan.replacements.iter().any(|rule| {
-                rule.defeated == creature
-                    && rule
-                        .retire_siblings_in
-                        .or(rule.observe_deaths_in)
-                        .is_some_and(|area| in_death_area(area, at))
-            })
+            && (self
+                .plan
+                .crystal_circuit
+                .as_ref()
+                .is_some_and(|plan| self.crystal_charges.crystal(plan, creature, at).is_some())
+                || self.plan.replacements.iter().any(|rule| {
+                    rule.defeated == creature
+                        && rule
+                            .retire_siblings_in
+                            .or(rule.observe_deaths_in)
+                            .is_some_and(|area| in_death_area(area, at))
+                }))
     }
 
     pub(super) fn record_regional_member(
@@ -248,6 +259,23 @@ impl Replacements {
                 break;
             };
             let defeated = &self.members[index].creature;
+            if let Some(plan) = &self.plan.crystal_circuit
+                && let Some(crystal) = self.crystal_charges.crystal(plan, defeated, at)
+            {
+                self.members
+                    .try_reserve(plan.crystals.len())
+                    .map_err(|_| CarrierError::AllocationFailed)?;
+                let actors = self
+                    .crystal_charges
+                    .count_death(plan, crystal, runtime, cells)?;
+                self.members.swap_remove(index);
+                self.members.extend(actors.into_iter().map(|actor| Member {
+                    actor,
+                    creature: plan.spawn.clone(),
+                    death_at: None,
+                }));
+                continue;
+            }
             let Some(rule) = self
                 .plan
                 .replacements

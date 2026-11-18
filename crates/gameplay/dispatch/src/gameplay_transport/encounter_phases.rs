@@ -8,6 +8,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
 
+mod crystal_circuit;
 mod replacements;
 mod terminal_portal;
 mod terminal_transfer;

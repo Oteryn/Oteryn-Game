@@ -435,6 +435,8 @@ pub struct DeathPhases {
     pub terminal: String,
     pub replacements: Vec<DeathReplacement>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub crystal_circuit: Option<DeathCrystalCircuit>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub corpse_monster_step: Option<CorpseMonsterStep>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub corpse_portal: Option<CorpsePortal>,
@@ -443,6 +445,66 @@ pub struct DeathPhases {
     /// Room movement on the sealed terminal death. Quest credit uses its own writer.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub terminal_transfer: Option<TerminalTransfer>,
+}
+
+/// Defeating a creature in a crystal's region contributes to one live encounter.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DeathCrystalCircuit {
+    pub defeated: String,
+    pub charges_per_crystal: u16,
+    pub dormant_appearance: u16,
+    pub charged_appearance: u16,
+    pub crystals: Vec<DeathCrystal>,
+    pub retire: String,
+    pub spawn: String,
+    pub boss_position: Position,
+    pub charged_effect: Option<u16>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DeathCrystal {
+    pub position: Position,
+    pub area: DeathArea,
+}
+
+impl DeathCrystalCircuit {
+    fn valid(&self, encounter: &Encounter, in_room: &impl Fn(Position) -> bool) -> bool {
+        let creature = |key: &str| key.starts_with("oteryn:creature.") && valid_quest_key(key);
+        if !(1..=8).contains(&self.crystals.len())
+            || !(1..=1000).contains(&self.charges_per_crystal)
+            || self.dormant_appearance == 0
+            || self.charged_appearance == 0
+            || self.dormant_appearance == self.charged_appearance
+            || self.charged_effect == Some(0)
+            || !creature(&self.defeated)
+            || !creature(&self.spawn)
+            || self.spawn == self.retire
+            || self.spawn == self.defeated
+            || self.retire == self.defeated
+            || !in_room(self.boss_position)
+            || encounter
+                .monsters
+                .iter()
+                .filter(|actor| {
+                    actor.creature == self.retire && actor.position == self.boss_position
+                })
+                .count()
+                != 1
+        {
+            return false;
+        }
+        self.crystals.iter().enumerate().all(|(index, crystal)| {
+            crystal.area.valid()
+                && in_room(crystal.area.minimum)
+                && in_room(crystal.area.maximum)
+                && crystal.area.contains(crystal.position)
+                && self.crystals[..index]
+                    .iter()
+                    .all(|previous| !crystal.area.overlaps(previous.area))
+        })
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -579,6 +641,14 @@ impl DeathArea {
             && (self.minimum.y..=self.maximum.y).contains(&position.y)
     }
 
+    fn overlaps(self, other: Self) -> bool {
+        self.minimum.floor == other.minimum.floor
+            && self.minimum.x <= other.maximum.x
+            && other.minimum.x <= self.maximum.x
+            && self.minimum.y <= other.maximum.y
+            && other.minimum.y <= self.maximum.y
+    }
+
     fn valid(self) -> bool {
         (-15..=0).contains(&self.minimum.floor)
             && self.minimum.floor == self.maximum.floor
@@ -639,6 +709,7 @@ fn valid_death_phases(
         || !valid_quest_key(&plan.terminal)
         || plan.replacements.len() > 8
         || (plan.replacements.is_empty()
+            && plan.crystal_circuit.is_none()
             && plan.corpse_monster_step.is_none()
             && plan.corpse_portal.is_none()
             && plan.terminal_portal.is_none()
@@ -660,9 +731,19 @@ fn valid_death_phases(
     if let Some(step) = &plan.corpse_monster_step {
         known.insert(step.replace_with.as_str());
     }
+    if let Some(circuit) = &plan.crystal_circuit {
+        if !circuit.valid(encounter, &in_room) || circuit.defeated == plan.terminal {
+            return false;
+        }
+        known.insert(circuit.spawn.as_str());
+    }
     let mut defeated = BTreeSet::new();
     for rule in &plan.replacements {
         if rule.defeated == plan.terminal
+            || plan
+                .crystal_circuit
+                .as_ref()
+                .is_some_and(|circuit| circuit.defeated == rule.defeated)
             || (!known.contains(rule.defeated.as_str())
                 && (rule.retire_siblings_in.or(rule.observe_deaths_in).is_none()
                     || !creature(&rule.defeated)))
