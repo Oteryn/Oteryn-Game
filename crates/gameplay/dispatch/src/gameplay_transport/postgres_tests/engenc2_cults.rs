@@ -76,7 +76,12 @@ fn qmrevfix_cults_second_lever_after_victory_postgres() -> TestResult {
     encounter_scenario(true, None)
 }
 
-pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResult {
+pub(super) fn encounter_scenario(
+    reenter: bool,
+    drume: Option<super::drume_battlefield::ExitCase>,
+) -> TestResult {
+    use super::drume_battlefield::ExitCase;
+
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -85,9 +90,10 @@ pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResu
         run(async |admin| {
             reset();
             let tag = match drume {
-                Some(true) if reenter => "drume_vacated",
-                Some(true) => "drume_usurpers",
-                Some(false) => "drume_lions",
+                Some(_) if reenter => "drume_vacated",
+                Some(ExitCase::Timeout) => "drume_usurpers",
+                Some(ExitCase::Defeat) => "drume_lions",
+                Some(ExitCase::ObstructedDefeat) => "drume_blocked_defeat",
                 None => "engenc2_cults",
             };
             let h = Harness::create_with_admission_seed(admin, tag, true, false).await?;
@@ -414,7 +420,7 @@ pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResu
             if let Some(ambient) = ambient {
                 assert!(!owner.runtime.lock().await.contains_live_creature(ambient));
             }
-            if let Some(spawn_boss) = drume {
+            if let Some(exit_case) = drume {
                 let (second_actor, second_session) = second.ok_or("second player")?;
                 super::drume_battlefield::assert_admission_effects(
                     &owner, trigger, before_admission_effects,
@@ -500,7 +506,7 @@ pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResu
                         assert!(!runtime.contains_live_creature(actor));
                     }
                 } else {
-                    super::drume_battlefield::exercise(&owner, &h, &admitted, (second_actor, second_session), spawn_boss)
+                    super::drume_battlefield::exercise(&owner, &h, &admitted, (second_actor, second_session), exit_case)
                         .await?;
                 }
                 drop(owner);

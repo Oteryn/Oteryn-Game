@@ -30,6 +30,13 @@ const USURPER: &str = "oteryn:creature.usurper_commander";
 const DRUME: &str = "oteryn:creature.drume";
 const KESAR: &str = "oteryn:creature.kesar";
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum ExitCase {
+    Timeout,
+    Defeat,
+    ObstructedDefeat,
+}
+
 #[test]
 fn drume_final_usurper_death_spawns_boss_and_kesar_once() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
@@ -38,7 +45,7 @@ fn drume_final_usurper_death_spawns_boss_and_kesar_once() -> TestResult {
     if admin.is_empty() {
         return Err("empty PostgreSQL admin URL".into());
     }
-    encounter_scenario(false, Some(true))
+    encounter_scenario(false, Some(ExitCase::Timeout))
 }
 
 #[test]
@@ -49,7 +56,18 @@ fn drume_final_lion_death_clears_squads_and_ejects_both_players() -> TestResult 
     if admin.is_empty() {
         return Err("empty PostgreSQL admin URL".into());
     }
-    encounter_scenario(false, Some(false))
+    encounter_scenario(false, Some(ExitCase::Defeat))
+}
+
+#[test]
+fn drume_defeat_ejects_both_players_after_blocked_exit_outlasts_deadline() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("empty PostgreSQL admin URL".into());
+    }
+    encounter_scenario(false, Some(ExitCase::ObstructedDefeat))
 }
 
 #[test]
@@ -60,7 +78,7 @@ fn drume_lever_replaces_vacated_battlefield_before_timeout() -> TestResult {
     if admin.is_empty() {
         return Err("empty PostgreSQL admin URL".into());
     }
-    encounter_scenario(true, Some(true))
+    encounter_scenario(true, Some(ExitCase::Timeout))
 }
 
 pub(super) fn bind(callback: &mut Callback) -> TestResult {
@@ -145,7 +163,7 @@ pub(super) async fn exercise(
     harness: &Harness,
     leader: &AdmittedSession,
     (second, second_session): (ExactActorRef, GameSessionId),
-    spawn_boss: bool,
+    exit_case: ExitCase,
 ) -> TestResult {
     let first = leader.runtime_actor.ok_or("first actor")?;
     let actors = [first, second];
@@ -156,9 +174,18 @@ pub(super) async fn exercise(
         owner, MovementLocalPosition { x: 102, y: 102, floor: 7 },
         MovementLocalPosition { x: 117, ..LANDING },
     ).await?;
+    let spawn_boss = exit_case == ExitCase::Timeout;
     if spawn_boss {
         set_captain_tile_passable(owner, 0, false)?;
     }
+    let obstruction = if exit_case == ExitCase::ObstructedDefeat {
+        let exit = super::quest_world_callbacks::local(EXIT);
+        Some(owner.runtime.lock().await
+            .admit_encounter_actor("oteryn:creature.rat", 20, exit)
+            .map_err(debug)?)
+    } else {
+        None
+    };
     let species = if spawn_boss { USURPER } else { LION };
     for command in 100..103 {
         let target = list(owner, species)
@@ -174,6 +201,22 @@ pub(super) async fn exercise(
         }
     }
     assert!(list(owner, species).await?.is_empty());
+    if let Some(obstruction) = obstruction {
+        // Crystal commander_kills.lua:8-25 and action_drume.lua:23-32
+        // dispatch different messages and apply different summon rules.
+        assert_positions(owner, actors, LANDING).await?;
+        assert_eq!(list(owner, USURPER).await?.len(), 3);
+        for session in [leader.game_session_id, second_session] {
+            assert!(owner.states.chat.drain(session).is_empty());
+        }
+        let mut runtime = owner.runtime.lock().await;
+        assert!(runtime.contains_live_creature(summoned));
+        runtime.remove_encounter_actor(obstruction).map_err(debug)?;
+        let states = owner.states.spell_states.lock().await;
+        let after_deadline = owner.owner_now().get() + 1_200_000_001;
+        crate::gameplay_transport::encounter_phases::tick(&mut runtime, &states, after_deadline);
+        crate::gameplay_transport::encounter_phases::tick(&mut runtime, &states, after_deadline + 1);
+    }
     if spawn_boss {
         assert!(list(owner, DRUME).await?.is_empty());
         assert!(list(owner, KESAR).await?.is_empty());
