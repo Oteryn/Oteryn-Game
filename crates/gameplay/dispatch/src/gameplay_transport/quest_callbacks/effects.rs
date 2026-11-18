@@ -18,6 +18,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         map: &BundleMap,
         callback: &Callback,
+        session: GameSessionId,
         close: bool,
         after: &mut EntryFacts,
     ) -> Result<Option<QuestCallbackProjection>, UseDisposition> {
@@ -45,6 +46,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 entry,
                 starts: 0,
                 expires: 0,
+                window: presence
+                    .window
+                    .as_ref()
+                    .map(|window| super::source_transforms::prepare_window(map, window, session))
+                    .transpose()?,
             }));
         }
         if let Some(target) = &callback.effects.target_transform {

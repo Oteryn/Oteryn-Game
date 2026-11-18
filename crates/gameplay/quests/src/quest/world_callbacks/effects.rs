@@ -287,6 +287,28 @@ pub struct TimedPresence {
     pub appearance: u16,
     pub spawn_after_ms: u32,
     pub expires_after_ms: u32,
+    /// Convert a shared object when this Character's live fields reach the threshold.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub window: Option<PresenceWindow>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct PresenceWindow {
+    pub position: Position,
+    pub from: u16,
+    pub to: u16,
+    pub effect: u16,
+    pub count: u8,
+    /// A previously set claim clock can change the number of required fields.
+    pub repeat: Option<PresenceWindowRepeat>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct PresenceWindowRepeat {
+    pub claim_track: String,
+    pub count: u8,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -773,6 +795,23 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || effects.target_transform.is_some()
             || effects.transform.is_some()
             || effects.reset_after_ms.is_some()
+            || presence.window.as_ref().is_some_and(|window| {
+                !pos(window.position)
+                    || window.position == presence.position
+                    || window.position.floor != presence.position.floor
+                    || window.from == 0
+                    || window.to == 0
+                    || window.from == window.to
+                    || window.effect == 0
+                    || !(1..=8).contains(&window.count)
+                    || window.repeat.as_ref().is_some_and(|repeat| {
+                        !(1..=8).contains(&repeat.count)
+                            || !callback
+                                .storage
+                                .iter()
+                                .any(|guard| guard.track == repeat.claim_track && guard.preserve)
+                    })
+            })
     }) {
         return false;
     }

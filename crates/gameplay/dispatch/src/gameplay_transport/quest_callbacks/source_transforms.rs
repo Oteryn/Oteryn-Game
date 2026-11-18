@@ -1,6 +1,7 @@
 //! Resolve the authored remote object under the same Channel owner as the offering.
 use super::*;
-use crate::map::facts::QuestCallbackProjection;
+use crate::map::facts::{PresenceWindow, QuestCallbackProjection};
+use crate::map::view::EntryFacts;
 use oteryn_gameplay_quests::quest::world_callbacks::TargetTransform;
 
 impl PendingCallbacks {
@@ -93,7 +94,45 @@ pub(super) fn prepare(
     map: &BundleMap,
     target: &TargetTransform,
 ) -> Result<QuestCallbackProjection, UseDisposition> {
-    let at = tile(target.position);
+    let (key, restore) = find_target(map, target.position, |id| id == target.from)?;
+    let expected = map.facts.object_revision(key);
+    if !map.facts.quest_callback_capacity(key, expected, 0) {
+        return Err(UseDisposition::Exhausted);
+    }
+    let after = replacement(map, key, target.to)?;
+    Ok(QuestCallbackProjection::TimedTargetTransform {
+        key,
+        expected,
+        after,
+        restore,
+        due: 0,
+    })
+}
+
+pub(super) fn prepare_window(
+    map: &BundleMap,
+    window: &world_callbacks::PresenceWindow,
+    player: GameSessionId,
+) -> Result<PresenceWindow, UseDisposition> {
+    let (target, _) = find_target(map, window.position, |id| {
+        id == window.from || id == window.to
+    })?;
+    Ok(PresenceWindow {
+        target,
+        before: replacement(map, target, window.from)?,
+        after: replacement(map, target, window.to)?,
+        player,
+        count: window.count,
+        effect: window.effect,
+    })
+}
+
+fn find_target(
+    map: &BundleMap,
+    position: Position,
+    accepts: impl Fn(u16) -> bool,
+) -> Result<(u64, EntryFacts), UseDisposition> {
+    let at = tile(position);
     if map.facts.house_tile(at) {
         return Err(UseDisposition::Rejected);
     }
@@ -112,29 +151,19 @@ pub(super) fn prepare(
             let ordinal = u8::try_from(ordinal).ok()?;
             let key = placement_key(at, ordinal)?;
             let before = map.facts.base_entry(at, ordinal, *id)?;
-            (!map.facts.base_hidden(key)
-                && before.appearance_id == target.from
-                && !before.pickupable)
+            (!map.facts.base_hidden(key) && accepts(before.appearance_id) && !before.pickupable)
                 .then_some((key, before))
         });
     let (key, restore) = candidates.next().ok_or(UseDisposition::NothingToUse)?;
     if candidates.next().is_some() {
         return Err(UseDisposition::Rejected);
     }
-    let expected = map.facts.object_revision(key);
-    if !map.facts.quest_callback_capacity(key, expected, 0) {
-        return Err(UseDisposition::Exhausted);
-    }
-    let after = map
-        .facts
-        .quest_callback_replacement(key, target.to)
+    Ok((key, restore))
+}
+
+fn replacement(map: &BundleMap, key: u64, appearance: u16) -> Result<EntryFacts, UseDisposition> {
+    map.facts
+        .quest_callback_replacement(key, appearance)
         .filter(|facts| !facts.pickupable)
-        .ok_or(UseDisposition::Rejected)?;
-    Ok(QuestCallbackProjection::TimedTargetTransform {
-        key,
-        expected,
-        after,
-        restore,
-        due: 0,
-    })
+        .ok_or(UseDisposition::Rejected)
 }

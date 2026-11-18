@@ -234,16 +234,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             after = replacement;
         }
-        let mut projection = match self.prepare_quest_projection(map, callback, close, &mut after) {
-            Ok(projection) => projection,
-            Err(result) => {
-                #[cfg(test)]
-                if callback.effects.scene.is_some() {
-                    eprintln!("QUEST_SCENE_REFUSED projection close={close} result={result:?}");
+        let mut projection =
+            match self.prepare_quest_projection(map, callback, session, close, &mut after) {
+                Ok(projection) => projection,
+                Err(result) => {
+                    #[cfg(test)]
+                    if callback.effects.scene.is_some() {
+                        eprintln!("QUEST_SCENE_REFUSED projection close={close} result={result:?}");
+                    }
+                    return result;
                 }
-                return result;
-            }
-        };
+            };
         // Both lifecycle deadlines belong to this operation, even when preparing
         // its remote object read set takes time.
         let lifecycle_now = self.owner_now().get();
@@ -483,6 +484,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 entries.first().map(|entry| entry.key)
             }
+            Some(crate::map::facts::QuestCallbackProjection::TimedPresence {
+                window: Some(window),
+                ..
+            }) => Some(window.target),
             _ => None,
         };
         if let Some(target) = projection_target
@@ -1280,6 +1285,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | QuestTransitionOutcome::AlreadyCommitted(ref committed),
                 ) => {
                     fresh_effects = fresh;
+                    // Crystal gems.lua:81-85 resets the signed field counter to zero;
+                    // its initial unset value is -1. The same comparison opens at three.
+                    if let Some(crate::map::facts::QuestCallbackProjection::TimedPresence { window: Some(window), .. }) = &mut projection
+                        && let Some(repeat) = callback.effects.timed_presence.as_ref()
+                            .and_then(|presence| presence.window.as_ref())
+                            .and_then(|window| window.repeat.as_ref())
+                        && committed.changes.iter().any(|change| change.track == repeat.claim_track && change.before >= 0)
+                    {
+                        window.count = repeat.count;
+                    }
                     // An interrupted original USE may still owe the presentation
                     // selected by its receipt. A later duplicate has no pending projection.
                     claim_presentation = callback.effects.claim.is_some() && (fresh || retained_claim);

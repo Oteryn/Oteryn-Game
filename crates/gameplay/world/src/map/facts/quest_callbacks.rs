@@ -77,6 +77,17 @@ struct TimedPresence {
     starts: u64,
     expires: u64,
     published: Option<EntryId>,
+    window: Option<PresenceWindow>,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct PresenceWindow {
+    pub target: u64,
+    pub before: EntryFacts,
+    pub after: EntryFacts,
+    pub player: crate::foundation::GameSessionId,
+    pub count: u8,
+    pub effect: u16,
 }
 
 /// Already qualified facts for one atomic, Channel-local callback projection.
@@ -130,6 +141,7 @@ pub enum QuestCallbackProjection {
         entry: EntryFacts,
         starts: u64,
         expires: u64,
+        window: Option<PresenceWindow>,
     },
     Scene {
         mutations: Vec<QuestSceneMutation>,
@@ -181,6 +193,61 @@ pub(super) struct CallbackStates {
 }
 
 impl CallbackStates {
+    fn record_effect(&mut self, scope: Option<EffectScope>, pos: TilePos, effect: u16) -> bool {
+        let Some(sequence) = self.movement_sequence.checked_add(1) else {
+            return false;
+        };
+        if !self.has_capacity(usize::from(self.movement_effects.len() < 512)) {
+            return false;
+        }
+        self.movement_sequence = sequence;
+        if self.movement_effects.len() == 512 {
+            self.movement_effects.pop_front();
+        }
+        self.movement_effects
+            .push_back((sequence, scope, pos, effect));
+        true
+    }
+
+    fn open_presence_window(&mut self, window: PresenceWindow, now: u64) {
+        let count = self
+            .timed_presences
+            .values()
+            .filter(|field| {
+                field.published.is_some()
+                    && field.expires > now
+                    && field.window.is_some_and(|other| {
+                        other.target == window.target && other.player == window.player
+                    })
+            })
+            .count();
+        if count != usize::from(window.count) || self.hidden.contains(&window.target) {
+            return;
+        }
+        let (revision, current) = self
+            .changed
+            .get(&window.target)
+            .copied()
+            .unwrap_or((0, window.before));
+        if current.appearance_id != window.before.appearance_id {
+            return;
+        }
+        if let Some(revision) = revision.checked_add(1)
+            && let Some((position, _)) = view::placement_of(window.target)
+        {
+            self.changed.insert(window.target, (revision, window.after));
+            self.record_effect(None, position, window.effect);
+        }
+    }
+
+    fn timed_presence_blocked(&self, presence: &TimedPresence) -> bool {
+        self.position_reserved(presence.position)
+            || (presence.published.is_none()
+                && presence
+                    .window
+                    .is_some_and(|window| self.key_reserved(window.target)))
+    }
+
     fn timed_presence_available(&self, position: TilePos, appearance: u16) -> bool {
         !self.position_reserved(position)
             && self.has_capacity(2)
@@ -487,6 +554,7 @@ impl CallbackStates {
                 entry,
                 starts,
                 expires,
+                window,
             } => {
                 if close
                     || *starts >= *expires
@@ -504,6 +572,7 @@ impl CallbackStates {
                         starts: *starts,
                         expires: *expires,
                         published: None,
+                        window: *window,
                     },
                 );
             }
@@ -902,7 +971,7 @@ impl BundleFacts {
             .into_iter()
             .chain(states.portals.values().filter_map(|p| p.expires))
             .chain(states.timed_presences.values().filter_map(|p| {
-                (!states.position_reserved(p.position)).then_some(if p.published.is_some() {
+                (!states.timed_presence_blocked(p)).then_some(if p.published.is_some() {
                     p.expires
                 } else {
                     p.starts
@@ -929,16 +998,26 @@ impl BundleFacts {
             states.remove_portals(owner);
             changed += 1;
         }
-        let ready: Vec<_> = states
+        let mut ready: Vec<_> = states
             .timed_presences
             .iter()
             .filter(|(_, p)| {
-                !states.position_reserved(p.position)
+                !states.timed_presence_blocked(p)
                     && (p.expires <= now || (p.published.is_none() && p.starts <= now))
             })
-            .map(|(key, _)| *key)
+            .map(|(key, presence)| {
+                (
+                    if presence.published.is_some() {
+                        presence.expires
+                    } else {
+                        presence.starts
+                    },
+                    *key,
+                )
+            })
             .collect();
-        for key in ready {
+        ready.sort_unstable();
+        for (_, key) in ready {
             let Some(mut presence) = states.timed_presences.remove(&key) else {
                 continue;
             };
@@ -965,7 +1044,11 @@ impl BundleFacts {
                         facts: presence.entry,
                     });
                 presence.published = Some(entry);
+                let window = presence.window;
                 states.timed_presences.insert(key, presence);
+                if let Some(window) = window {
+                    states.open_presence_window(window, now);
+                }
                 changed += 1;
             }
         }
@@ -1235,21 +1318,7 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
-        let Some(sequence) = states.movement_sequence.checked_add(1) else {
-            return false;
-        };
-        if !states.has_capacity(usize::from(states.movement_effects.len() < 512)) {
-            return false;
-        }
-        let states = Arc::make_mut(&mut states);
-        states.movement_sequence = sequence;
-        if states.movement_effects.len() == 512 {
-            states.movement_effects.pop_front();
-        }
-        states
-            .movement_effects
-            .push_back((sequence, scope, pos, effect));
-        true
+        Arc::make_mut(&mut states).record_effect(scope, pos, effect)
     }
     /// Crystal trap.lua:39-42. Reserve the map projection before consuming the wolf.
     /// The caller holds the exclusive runtime owner through the physical removal.
