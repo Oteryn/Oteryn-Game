@@ -14,6 +14,10 @@ mod ground;
 #[path = "novelty_item_pending.rs"]
 mod pending;
 
+// Crystal's Nightmare Beast attack list has no cast of the curse. The mask
+// transfer at actions_dreamcatcher_curse.lua:47–59 requires an existing curse.
+const NIGHTMARE_CURSE_MASK: &str = "oteryn:item.tibia.i29276";
+
 #[derive(Debug)]
 pub(super) struct PendingItemEffect {
     pub actor: ExactActorRef,
@@ -153,6 +157,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(item) = carried else {
             return Ok(None);
         };
+        if intent.use_with.is_some() && item.definition.production_key == NIGHTMARE_CURSE_MASK {
+            return Ok(Some(outcome(UseDisposition::NotPossible)));
+        }
         // Crystal 201189f8 data/scripts/actions/tools/watch.lua:3-8 and
         // data/libs/functions/functions.lua:42-50. Watches read the same World
         // clock as the connection's CLOCK-1 projection; they never consume an item.

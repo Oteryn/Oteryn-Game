@@ -30,6 +30,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
+        if intent.use_with.is_some() && source.definition().production_key == NIGHTMARE_CURSE_MASK {
+            return Ok(Some(outcome(UseDisposition::NotPossible)));
+        }
         if !novelty_items::is_ground_action(&source.definition().production_key) {
             return Ok(None);
         }
