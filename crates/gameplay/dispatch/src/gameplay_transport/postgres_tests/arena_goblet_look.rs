@@ -16,9 +16,10 @@ use oteryn_protocol_oteryn::{
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
 
-const GOBLETS: [(&str, i64); 4] = [
+const GOBLETS: [(&str, i64); 5] = [
     ("oteryn:item.tibia.i5807", 1),
     ("oteryn:item.tibia.i5806", 1),
+    ("oteryn:item.tibia.i5805", 1),
     ("oteryn:item.tibia.i5805", 1),
     ("oteryn:item.tibia.i5805", 1),
 ];
@@ -38,13 +39,22 @@ fn fenced_look_dispatch_shows_crystal_arena_goblet_inscriptions() -> TestResult 
 pub(super) async fn seed_goblets(harness: &Harness) -> TestResult {
     item_look::seed_main_backpack(harness, &GOBLETS).await?;
     // Match the text rows written by the qpkgw5 arena reward claim.
-    for seed in 71..=73 {
+    for seed in 71..=74 {
+        // A player's text with the same prefix must never become an arena award.
+        let writer = (seed == 74).then(|| id(41).to_vec());
+        let inscription = if writer.is_some() {
+            "Awarded to Impostor."
+        } else {
+            "Awarded to Arena Victor."
+        };
         sqlx::query("INSERT INTO game_item_text_revisions VALUES(encode($1,'hex')::uuid,1)")
             .bind(id(seed).as_slice())
             .execute(&harness.pool)
             .await?;
-        sqlx::query("INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at,text_revision) VALUES(encode($1,'hex')::uuid,'Awarded to Arena Victor.',NULL,statement_timestamp(),1)")
+        sqlx::query("INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at,text_revision) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,statement_timestamp(),1)")
             .bind(id(seed).as_slice())
+            .bind(inscription)
+            .bind(writer)
             .execute(&harness.pool)
             .await?;
     }
@@ -73,7 +83,7 @@ pub(super) async fn client_looks(
             break;
         }
     }
-    // The two golden goblets share a definition. Match the replies independent of display order.
+    // The golden goblets share a definition. Match the replies independent of display order.
     let mut expected = Vec::new();
     let inscriptions = [
         Some(concat!(
@@ -88,6 +98,7 @@ pub(super) async fn client_looks(
             "It is given to the courageous victor of the barbarian arena in ",
             "warlord difficulty. Awarded to Arena Victor."
         )),
+        None,
         None,
     ];
     for ((key, _), inscription) in GOBLETS.into_iter().zip(inscriptions) {
