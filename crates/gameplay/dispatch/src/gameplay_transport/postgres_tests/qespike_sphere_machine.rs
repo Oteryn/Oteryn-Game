@@ -47,7 +47,7 @@ pub(super) fn callback() -> TestResult<Callback> {
         "requires_world_admission":true,
         "storage":[{"track":COUNTER,"minimum":20,"maximum":100,"set":-20,"increment":true}],
         "effects":{
-            "transform":846, "transform_requires_current":true,"teleport_effect":11,
+            "transform":846, "transform_requires_current":true,"teleport_effect":11,"teleport_effect_repetitions":2,
             "vocation_teleports":{
                 "sorcerer":{"x":33183,"y":32197,"floor":-13},
                 "druid":{"x":33331,"y":32076,"floor":-13},
@@ -166,6 +166,16 @@ pub(super) async fn exercise(
     assert_eq!(result[0].1, UseDisposition::Committed);
     assert_eq!(object(LEFT, 846)?, left);
     assert_eq!(object(RIGHT, 847)?, right);
+    assert_eq!(
+        map.facts
+            .movement_effects_since(0)
+            .iter()
+            .filter(|(_, p, effect)| {
+                (p.x, p.y, p.floor, *effect) == (KNIGHT.x, KNIGHT.y, KNIGHT.floor, 11)
+            })
+            .count(),
+        2
+    );
     assert_eq!(
         owner
             .runtime

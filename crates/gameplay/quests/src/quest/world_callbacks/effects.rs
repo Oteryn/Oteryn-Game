@@ -170,6 +170,9 @@ pub struct CallbackEffects {
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teleport_effect: Option<u16>,
+    /// A source can repeat the same cue on a vocation landing.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub teleport_effect_repetitions: Option<u8>,
     /// An exact source object may send each base vocation to a different cell.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub vocation_teleports: BTreeMap<String, Position>,
@@ -624,6 +627,16 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         "sorcerer" | "druid" | "paladin" | "knight" | "monk"
                     ) || !(-15..=0).contains(&position.floor)
                 }))
+    {
+        return false;
+    }
+    if effects
+        .teleport_effect_repetitions
+        .is_some_and(|repetitions| {
+            !(2..=4).contains(&repetitions)
+                || effects.vocation_teleports.is_empty()
+                || effects.teleport_effect.is_none_or(|effect| effect == 0)
+        })
     {
         return false;
     }

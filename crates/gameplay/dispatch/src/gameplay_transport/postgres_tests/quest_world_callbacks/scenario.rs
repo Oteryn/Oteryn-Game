@@ -317,6 +317,7 @@ fn scenario_case(
                 | "catalogue-npc-xp"
                 | "nx6-wayfarer"
                 | super::super::qespike_arkulius::NAME
+                | super::super::qespike_arkulius::PAYOUT
                 | "npc-item-exchanges"
                 | "m42-hot-typed"
                 | "m42-hot-final"
@@ -948,6 +949,7 @@ fn scenario_case(
                 "catalogue-npc" | "catalogue-npc-inventory" | "catalogue-npc-scoped"
             )
             || name == "srv7-reliable-ram"
+            || name == super::super::qespike_arkulius::PAYOUT
             || name.starts_with("m09-treasure-")
             || name.starts_with("engoutfit-")
             || name == "engitem-targuna-selected-tool"
@@ -2491,6 +2493,8 @@ fn scenario_case(
             Box::pin(super::super::qespike_sphere_machine::exercise(&mut owner, &mut admitted, &h, &callback)).await?;
         } else if name == super::super::qespike_arkulius::NAME {
             Box::pin(super::super::qespike_arkulius::exercise(&mut owner, &mut admitted, &h, &authority)).await?;
+        } else if name == super::super::qespike_arkulius::PAYOUT {
+            Box::pin(super::super::qespike_arkulius::payout(&mut owner, &mut admitted, &h)).await?;
         } else if name == "m16-marker" {
             Box::pin(super::super::m16_personal_map_marker::exercise(
                 &mut owner,
