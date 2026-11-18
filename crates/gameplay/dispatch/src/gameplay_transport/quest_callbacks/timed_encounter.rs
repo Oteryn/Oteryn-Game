@@ -159,6 +159,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let now = self.owner_now().get();
         if runtime.owner_fence().is_err()
+            || !runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
             || states.is_dead(actor)
             || !states.spell_idle(runtime, actor, session)
             || !self.states.player_trades.physical(session, None)

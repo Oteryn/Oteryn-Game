@@ -809,7 +809,6 @@ pub(super) fn valid(callback: &Callback) -> bool {
     let timed_room = effects.encounter.as_ref().and_then(|e| e.timing?.admission);
     if operations > 1
         || (operations > 0
-            && timed_room.is_none()
             && ((!personal_encounter
                 && !super::personal_trial::admitted(callback)
                 && (!lever
@@ -817,7 +816,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         && effects.party_transfer.is_none()
                         && callback.has_state())))
                 || !callback.passages.is_empty()
-                || (callback.teleport.is_some() && timed_room.is_none()))
+                || callback.teleport.is_some())
             && !(effects.encounter.is_some() && super::asura_authored::admitted(callback)))
     {
         return false;
@@ -863,11 +862,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
     if let Some(encounter) = &effects.encounter {
-        let in_room = |p: Position| {
-            p.floor == encounter.room_min.floor
-                && (encounter.room_min.x..=encounter.room_max.x).contains(&p.x)
-                && (encounter.room_min.y..=encounter.room_max.y).contains(&p.y)
-        };
+        let in_room = |position| encounter.contains(position);
         let unique_from: BTreeSet<_> = encounter.players.iter().map(|p| p.from).collect();
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
@@ -1161,5 +1156,30 @@ mod phase_tests {
         let encoded = serde_json::to_value(encounter)?;
         assert_eq!(encoded["phase"], "cults_boss_phase_closures");
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod timed_room_tests {
+    use super::*;
+
+    #[test]
+    fn timed_room_admission_enforces_capacity_and_join_deadline() {
+        let mut room = TimedRoomAdmission {
+            capacity: 5,
+            join_for_ms: 30_000,
+            exit: Position {
+                x: 31971,
+                y: 32325,
+                floor: -10,
+            },
+        };
+        assert!(room.allows_join(4, 29_999));
+        assert!(!room.allows_join(5, 29_999));
+        assert!(!room.allows_join(0, 30_000));
+        room.capacity = 1;
+        room.join_for_ms = 0;
+        assert!(!room.allows_join(1, 0));
+        assert!(room.allows_join(0, 300_000));
     }
 }
