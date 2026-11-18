@@ -21,7 +21,7 @@ authorised; this file only says how the flow behaves.
   when it carries the `heavy-tests` label and touches a game-server path. Add
   the label to a **finished** mechanic PR or to one batch PR that merges
   several finished ones, never to a work-in-progress head: each labelled push
-  re-runs about an hour of runner time.
+  re-runs about an hour of runner time (*Before every push*).
 - The PR node boot shards (`PR heavy / Node boot ...`) run only on a PR
   labelled `node-boot` (owner 2026-11-18). Node boot is informational, so
   `heavy-gate` does not wait for it. Add the label to a PR that changes node
@@ -101,8 +101,9 @@ Any output is a P0 for the PR that merged second.
    `FAIL` / `panicked at` / `TIMEOUT`; the log tail is usually only cluster
    shutdown, so search the whole log, not the last lines.
 3. Ask whether `main` has the same failure (latest post-merge run on `main`).
-   If yes, it is not this PR's. Land the main fix first and then merge
-   `origin/main` into the waiting PRs; say so once on each PR. Port the fix
+   If yes, it is not this PR's. Land the main fix first and say so once on
+   each waiting PR; do not merge `origin/main` into them for it (merge only on
+   a conflict, *Before every push*). Port the fix
    into a branch only when that branch must merge before the fix can, and then
    as an exact cherry-pick of the fix commit; a hand-made copy costs a CI cycle
    and a later conflict in every PR it lands in. Before writing a new main
@@ -111,10 +112,10 @@ Any output is a P0 for the PR that merged second.
    coordinator's STATE so nobody writes a second copy.
 4. Otherwise it is this PR's failure. Common causes, in the order they show
    up in this repo's history:
-   - `main` moved under the PR (by far the most common): CI tests the PR
-     merged with `main`, so something `main` added breaks it. Merge
-     `origin/main`, rebuild and reproduce before reading anything else; this
-     is one of the merges *Before every push* allows.
+   - `main` moved under the PR: CI tests the PR head SHA, not the PR merged
+     with `main`, so a test that also fails on `main` is main-red (step 3),
+     not a reason to merge `origin/main`. Merge it only on a conflict
+     (*Before every push*).
    - Migration, capability or command number taken on `main` in the meantime:
      renumber yours (`mechanic.md`, *Before writing code*).
    - Stale content pins or digests (`pin-check`), see `content-world.md`.
@@ -161,11 +162,15 @@ A red or cancelled run costs a full gate cycle (about 12 minutes) and, with
   lists; it maps the diff to failures that already reached a gate twice.
 - Push once, when all of them pass. Collect follow-up fixes into the next push
   instead of pushing each one; a new push cancels the run in progress.
-- Merge `origin/main` into the branch only when it conflicts, when the PR is
-  red because `main` moved (*Reading a red check*), or once right before it is
-  labelled `heavy-tests` or goes into a batch; not after every merge to
-  `main`. Check for conflicts without merging:
-  `git merge-tree --write-tree origin/main HEAD` (non-zero exit = conflict).
+- Merge `origin/main` into the branch only when it conflicts (owner
+  2026-11-18): `git merge-tree --write-tree origin/main HEAD` exits non-zero.
+  Not after every merge to `main`, not to "stay current", not before
+  labelling. A package or batch branch is created from a fresh `main`; that
+  is not a merge.
+- A `heavy-tests` PR re-runs about an hour of PostgreSQL work on every push.
+  Push repairs to it once, with all fixes in; if more than one repair push is
+  likely (an open red check, a review round), remove the label first and add
+  it back on the final head (adding it starts the run).
 - Compile and test locally; CI confirms, it does not explore.
 
 ## Many PRs at once
