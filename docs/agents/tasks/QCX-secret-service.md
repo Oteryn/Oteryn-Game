@@ -15,15 +15,18 @@ The quest definition already records level 50 and Premium. Its dormant
 chosen recipe only models TBI and names Black Knight as the final target.
 Global offers TBI, AVIN or CGB and locks the choice on recruitment. All
 three culminate in Mad Technomancer, with the beard as the hand-in.
-The definition has no native storyline bindings. The imported mission and
-door records are source projections. The active and held world callback
+The definition has no native storyline bindings. Crystal's join confirmation writes a common questline value and
+the first mission writes the faction-specific track. That leaves a
+window between those two commands where the donor has no persistent
+record of which recruiter accepted the player. The imported mission
+and door records are source projections. The active and held world callback
 directories, and the quest NPC callbacks and offers on the base, have no
 Secret Service binding.
 
 | Route | Global sequence | Difference on base |
 | --- | --- | --- |
 | TBI 1–3 | Light the Venore shipyard with a Fire Bug, wait for any prior seven-minute fire to end. Retrieve the Black Knight parchment via key 5010. Face two Pirate Buccaneers in Port Hope and take the chest scroll. | No dock fire or ambush binding. Crystal's fire callback has a seven-minute event that removes the tool instead of the fire and lacks Global's explicit shared lockout (`data-global/scripts/quests/others/actions_fire_bug.lua:144-155`). Parchment and scroll claims have no map selectors on the sampled raw cells. |
-| TBI 4–6 | Retrieve Intelligence Reports from the sealed Hellgate corpse route via key 3012. Plant Chester's Suspicious Signet Ring in the Ice Witch Tower. Use the Amazon disguise in the Svargrond tavern cellar, crowbar the cask within roughly 20 seconds and face two Barbarian Skullhunters. Chester replaces the kit for 1,000 gp. | No Secret Service progress gates, ring placement, disguise, crowbar ambush or replacement offer. The corpse claim lacks its selector. Buddel travel via Barbarian Test Quest is optional. |
+| TBI 4–6 | Retrieve Intelligence Reports from the sealed Hellgate corpse route via key 3012. Plant Chester's Suspicious Signet Ring in the Ice Witch Tower. Use the Amazon disguise in the Svargrond tavern cellar, crowbar the cask within roughly 20 seconds and face two Barbarian Skullhunters. Chester replaces the kit for 1,000 gp. | No Secret Service progress gates, ring placement, disguise, crowbar ambush or replacement offer. The corpse claim lacks its selector. Crystal checks AID 12566 and Amazon look type 137 before spawning the two Skullhunters (`data-global/scripts/lib/register_actions.lua:955–965`). The existing crowbar handler for AID 40041 serves The Ape City. Buddel travel via Barbarian Test Quest is optional. |
 | AVIN 1–3 | Deliver Uncle's Secret Letter after Gamel's two Bandits. Take File AH-X17L89 in Thais castle. Deliver the 85 oz beer barrel to Karl after two Amazons in the Carlin sewers. | No letter, greeting ambush, quest drawer selector, beer hand-in or sewer ambush binding. |
 | AVIN 4–6 | Earn personal most-damage credit on Black Knight, take the signet ring in the Isle of the Kings crypts and deliver Uncle's weapons to Freezhild. | Crystal credits damaging players broadly (`data-global/scripts/quests/secret_service/creaturescripts_black_knight_kill.lua:3-9`). No exact AVIN kill-credit binding, crypt claim selector or Freezhild hand-in. White Raven Monastery mission 1 and first-visit Costello dialogue concern route access. |
 | CGB 1–3 | Take the Nature Magic Spellbook in the Edron academy, take the Rotten Heart of a Tree at the Black Knight Villa, and use Emma's Rust Bugs on the Ironhouse keyhole to leave a trail. | No native claim selectors for the spellbook or tree. Missing slot-specific rust bugs use and trail. Crystal's rust-bug callback identifies unique 22005 and creates four trail items (`data-global/scripts/quests/secret_service/actions_rust_bugs.lua:2-15`). |
@@ -98,6 +101,12 @@ placements.
 - BLOCKER TBI dock fire atomic shared seven-minute created-fire lockout and retirement through carried Fire Bug use data-global/scripts/quests/others/actions_fire_bug.lua:144–155
 - BLOCKER All mission 7 lever contribution to guaranteed per-player loot and continued access after completion data-global/scripts/quests/secret_service/actions_lever.lua:25–36
 
+The sampled B3 source regions also lack the donor AIDs for the signet
+ring (12563), Port Hope ambush (12571), Svargrond cask (12566), and
+Technomancer lever (12574), and the Ironhouse unique 22005. The donor
+registrations live in `data-global/scripts/quests/secret_service`,
+with the cask registration in `data-global/scripts/lib/register_actions.lua:955`.
+
 ## OPEN-FACTS
 
 Exact Global item and placement IDs, exact door thresholds and action
@@ -115,3 +124,13 @@ package admission/opening, mission 7 hand-ins and faction achievements
 remain pending. The dormant TBI approximation, its erroneous final
 target, and the CGB male recruitment opener are also pending. No plain
 claim was activated independently of its mission gate.
+
+## Validation
+
+Validation target `8156fc87b5c4779ee06dbfa05cfa2a65e3b0fa39`.
+Formatting, dispatch library Clippy with `-D warnings`, and all 44
+quest-authoring check commands exited zero. NPC placement conversion
+matched the tracked shards. The World compiler pin check passed and the
+bundle's NPC frame contained the three exact source placements. The
+native QuestState catalogue loaded all three confirmations with the
+level, Premium and faction guards.

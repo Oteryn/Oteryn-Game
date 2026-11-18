@@ -3,7 +3,7 @@ use super::fixture::{Harness, debug, id, run};
 use super::{
     AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session,
 };
-use crate::foundation::MovementLocalPosition;
+use crate::foundation::{ChannelContentPin, MovementLocalPosition};
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::gameplay_transport::spell_premium_coordinator::{
     SpellPremiumCoordinator, purchase_fixture,
@@ -26,15 +26,18 @@ fn recruitment_requires_level_and_premium_and_locks_the_faction() -> TestResult 
         return Ok(());
     }
     super::kill_reward_e2e::scenario_thread::run("secret-service-recruitment", || {
+        let world = super::fence(1)?.runtime_scope.world_id();
+        let (controller, _) =
+            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
         for (level, premium, faction) in [
-            (49, true, 0),
-            (50, false, 0),
             (50, true, 1),
             (50, true, 2),
             (50, true, 3),
+            (49, true, 0),
+            (50, false, 0),
         ] {
             let started = std::time::Instant::now();
-            let result = recruitment(level, premium, faction);
+            let result = recruitment(&controller, level, premium, faction);
             eprintln!(
                 "Secret Service recruitment level={level} premium={premium} faction={faction} duration={:?}",
                 started.elapsed()
@@ -45,7 +48,12 @@ fn recruitment_requires_level_and_premium_and_locks_the_faction() -> TestResult 
     })
 }
 
-fn recruitment(level: u32, premium: bool, faction: usize) -> TestResult {
+fn recruitment(
+    controller: &crate::content::ContentActivationController,
+    level: u32,
+    premium: bool,
+    faction: usize,
+) -> TestResult {
     run(async |admin| {
         let h =
             Harness::create_with_admission_seed(admin, "qcx_secret_service", true, false).await?;
@@ -71,7 +79,13 @@ fn recruitment(level: u32, premium: bool, faction: usize) -> TestResult {
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        let deps = Dependencies::new()?;
+        let world = super::fence(1)?.runtime_scope.world_id();
+        let deps = Dependencies::with_content_and_capacity(
+            ChannelContentPin::test(world),
+            crate::content::qualify_native_entry_room(world).map_err(debug)?,
+            crate::spell::cast::v1_spell_book().map_err(debug)?,
+            RECRUITERS.len() + 1,
+        )?;
         deps.runtime
             .lock()
             .await
@@ -91,10 +105,6 @@ fn recruitment(level: u32, premium: bool, faction: usize) -> TestResult {
             Some(activation),
             Some(h.root.clone()),
         );
-        let (controller, _) = super::death_ml_loss_composed::production_generation_with_pin(
-            deps.admitted.world_id,
-            "content-1",
-        )?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = controller.active();
         owner.quest_catalogue = Some(std::sync::Arc::new(
@@ -108,6 +118,11 @@ fn recruitment(level: u32, premium: bool, faction: usize) -> TestResult {
             owner.premium_coordinator = Some(&entitlement);
             owner.admit_premium(id(40), session);
         }
+        // Settle the same delivery latch the locked reward writer reads.
+        assert_eq!(
+            owner.session_premium_gate(session).await.premium_current(),
+            premium,
+        );
         let mut admitted = deps.admitted;
         admitted.first_entry = super::FirstEntryOutcome::Positioned;
         let npcs = super::questl2_fixture::install_at(
@@ -117,22 +132,7 @@ fn recruitment(level: u32, premium: bool, faction: usize) -> TestResult {
             [5, 6, 7].map(|x| Position { x, y: 2, floor: -7 }),
         )
         .await?;
-        {
-            let runtime = deps.runtime.lock().await;
-            let mut states = owner.states.spell_states.lock().await;
-            let initialized = states.initialize(
-                &runtime,
-                deps.actor,
-                session,
-                crate::spell::cast::CharacterCastFacts {
-                    level,
-                    ..crate::gameplay_transport::actor_spell::tests::FACTS
-                },
-                (3, 7_000_000),
-                owner.owner_now(),
-            );
-            assert!(initialized.is_some());
-        }
+        deps.initialize(&owner).await;
         owner.refresh_quest_session(session, true).await;
         let order = match faction {
             2 => [1, 2, 0],
@@ -142,8 +142,21 @@ fn recruitment(level: u32, premium: bool, faction: usize) -> TestResult {
         for (turn, index) in order.into_iter().enumerate() {
             let npc = npcs[index];
             let command = 100 + 4 * u64::try_from(turn)?;
-            talk(&mut owner, &admitted, npc, command, "hi").await?;
-            talk(&mut owner, &admitted, npc, command + 1, "join").await?;
+            assert_eq!(
+                talk(&mut owner, &admitted, npc, command, "hi").await?,
+                NpcIntentDisposition::Ok,
+            );
+            let offer = talk(&mut owner, &admitted, npc, command + 1, "join").await?;
+            if faction > 0 && turn == 0 {
+                assert_eq!(offer, NpcIntentDisposition::Ok);
+                assert_eq!(
+                    owner
+                        .states
+                        .npc_conversations
+                        .fixture_quest_topic(session)?,
+                    if index == 0 { 5 } else { 1 },
+                );
+            }
             let confirmation = talk(&mut owner, &admitted, npc, command + 2, "yes").await?;
             if faction > 0 && turn == 0 {
                 assert_eq!(confirmation, NpcIntentDisposition::Ok);
