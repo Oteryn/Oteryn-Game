@@ -2218,6 +2218,36 @@ fn retry_fits_probe(
     deadline.is_none_or(|limit| now + delay < limit)
 }
 
+async fn probe_liveness(
+    client: &mut oteryn_dev_client::DevClientSession,
+    duration: Duration,
+    deadline: Option<tokio::time::Instant>,
+) -> TestResult {
+    if let Some(limit) = deadline {
+        let remaining = limit.saturating_duration_since(tokio::time::Instant::now());
+        if remaining <= Duration::from_millis(1) {
+            return Err(SpawnProbeExpired.into());
+        }
+        match tokio::time::timeout_at(limit, client.service_liveness(duration.min(remaining / 2)))
+            .await
+        {
+            Ok(result) => result?,
+            Err(_) => {
+                client.session_mut().invalidate_after_cancellation();
+                return Err(verdict::HarnessError::boxed(
+                    verdict::Cause::Deadline {
+                        phase: "spawn-frame",
+                    },
+                    "spawn probe frame exceeded its deadline",
+                ));
+            }
+        }
+    } else {
+        client.service_liveness(duration).await?;
+    }
+    Ok(())
+}
+
 async fn reach_route_until(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
@@ -2230,7 +2260,7 @@ async fn reach_route_until(
         if probe_expired(deadline) {
             return Err(SpawnProbeExpired.into());
         }
-        client.service_liveness(Duration::from_millis(1)).await?;
+        probe_liveness(client, Duration::from_millis(1), deadline).await?;
         client.take_events(); // Canonical session stores retain the applied observations.
         let observed = actor_tile(client)?;
         if observed != origin {
@@ -2241,12 +2271,12 @@ async fn reach_route_until(
                 return Err(SpawnProbeExpired.into());
             }
             verdict::Harness::global().progress("route-search");
-            client.service_liveness(Duration::from_millis(1)).await?;
+            probe_liveness(client, Duration::from_millis(1), deadline).await?;
             client.take_events();
             Ok(())
         })
         .await?;
-        client.service_liveness(Duration::from_millis(1)).await?;
+        probe_liveness(client, Duration::from_millis(1), deadline).await?;
         client.take_events();
         let observed = actor_tile(client)?;
         if observed == origin {
@@ -2453,6 +2483,28 @@ async fn walk(
     Ok(())
 }
 
+async fn probe_step(
+    client: &mut oteryn_dev_client::DevClientSession,
+    direction: StepDirection,
+    deadline: Option<tokio::time::Instant>,
+) -> TestResult<oteryn_dev_client::StepOutcome> {
+    let Some(deadline) = deadline else {
+        return Ok(client.step(direction).await?);
+    };
+    match tokio::time::timeout_at(deadline, client.step(direction)).await {
+        Ok(result) => Ok(result?),
+        Err(_) => {
+            client.session_mut().invalidate_after_cancellation();
+            Err(verdict::HarnessError::boxed(
+                verdict::Cause::Deadline {
+                    phase: "spawn-step",
+                },
+                "spawn STEP exceeded its deadline",
+            ))
+        }
+    }
+}
+
 async fn walk_until(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
@@ -2467,7 +2519,7 @@ async fn walk_until(
         let before = client.world_spatial().actor_position;
         let basis = spatial_basis::current(client)?;
         let mut outcome = if deadline.is_some() {
-            client.step(direction).await?
+            probe_step(client, direction, deadline).await?
         } else {
             client.step_retrying(direction).await?
         };
@@ -2504,7 +2556,7 @@ async fn walk_until(
                 return Ok(false);
             }
             outcome = if deadline.is_some() {
-                client.step(direction).await?
+                probe_step(client, direction, deadline).await?
             } else {
                 client.step_retrying(direction).await?
             };
@@ -5319,6 +5371,9 @@ async fn approach_spawn_target(
                 result => result?,
             };
             if let Ok(path) = path {
+                let destination_tile = path
+                    .iter()
+                    .try_fold(from, |at, direction| destination(world, at, *direction));
                 if !walk_until(
                     client,
                     world,
@@ -5328,7 +5383,14 @@ async fn approach_spawn_target(
                 )
                 .await?
                 {
-                    return Ok(None);
+                    if probe_expired(probe_deadline) {
+                        return Ok(None);
+                    }
+                    if let Some(at) = destination_tile {
+                        remaining_lanes.retain(|lane, _| !near(at, *lane));
+                        continue;
+                    }
+                    return Err("spawn route endpoint is invalid".into());
                 }
                 let here = actor_tile(client)?;
                 let visited: Vec<_> = remaining_lanes
@@ -5417,7 +5479,10 @@ async fn approach_spawn_target(
             }
             continue;
         }
-        client.service_liveness(Duration::from_millis(100)).await?;
+        match probe_liveness(client, Duration::from_millis(100), probe_deadline).await {
+            Err(error) if error.is::<SpawnProbeExpired>() => return Ok(None),
+            result => result?,
+        }
         client.take_events();
     }
 }

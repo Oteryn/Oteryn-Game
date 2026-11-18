@@ -116,9 +116,28 @@ class QualificationWiringTests(unittest.TestCase):
         push = source.split("async fn push", 1)[1].split("async fn m04", 1)[0]
         self.assertTrue("expect_push(result.status, &result.payload, expected)" in push)
 
+    def test_blocked_spawn_route_replans_other_lanes(self):
+        source = (PHASES / "world.rs").read_text().split("async fn approach_spawn_target", 1)[1]
+        self.assertTrue("remaining_lanes.retain" in source)
+
+    def test_partial_gold_approach_retains_species_priority(self):
+        source = (PHASES / "full_gold.rs").read_text()
+        self.assertTrue("partial_species = Some" in source)
+
+    def test_spawn_exchange_has_a_hard_cutoff(self):
+        source = (PHASES / "world.rs").read_text()
+        self.assertTrue("timeout_at(deadline, client.step(direction))" in source)
+        walk = source.split("async fn walk_until", 1)[1].split("pub(super) async fn logout", 1)[0]
+        self.assertEqual(walk.count("probe_step(client, direction, deadline)"), 2)
+
+    def test_species_liveness_has_a_hard_cutoff(self):
+        source = (PHASES / "world.rs").read_text()
+        self.assertTrue("async fn probe_liveness" in source)
+        self.assertTrue("probe_liveness(client, Duration::from_millis(100), probe_deadline)" in source)
+
     def test_gold_cancellation_invalidates_the_session(self):
         source = (PHASES / "full_gold.rs").read_text()
-        self.assertEqual(source.count("invalidate_after_cancellation()"), 4)
+        self.assertEqual(source.count("invalidate_after_cancellation()"), 5)
 
     def test_action_failure_is_preserved_before_cleanup(self):
         source = (PHASES / "full_e2ef1.rs").read_text()

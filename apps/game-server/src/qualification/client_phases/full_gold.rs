@@ -419,6 +419,7 @@ pub(super) async fn earn(
     let mut selected = None;
     let mut kills = 0u64;
     let mut next_species = 0;
+    let mut partial_species = None;
     loop {
         let observed = coin_value(client)?;
         evidence(&format!(
@@ -436,15 +437,25 @@ pub(super) async fn earn(
         // Give each species a share of this scan. Subsequent scans can find respawns
         // across the entire ranking, including before the first kill.
         let round_deadline = deadline.min(tokio::time::Instant::now() + Duration::from_secs(30));
+        let continuing = partial_species.take();
+        if let Some(index) = continuing {
+            next_species = index;
+        }
         for index in 0..ranked.len() {
             let now = tokio::time::Instant::now();
             if now >= round_deadline {
                 break;
             }
-            let candidate = &ranked[next_species];
+            let candidate_index = next_species;
+            let candidate = &ranked[candidate_index];
             next_species = (next_species + 1) % ranked.len();
             let species_left = u32::try_from(ranked.len() - index)?;
-            let probe_deadline = species_probe_deadline(now, round_deadline, species_left);
+            let probe_deadline = if continuing == Some(candidate_index) {
+                deadline
+            } else {
+                species_probe_deadline(now, round_deadline, species_left)
+            };
+            let before = actor_tile(client)?;
             let travel = tokio::time::timeout_at(
                 deadline,
                 approach_spawn_target(client, world, spawns, &candidate.key, SpawnRespawn::Skip, Some(probe_deadline)),
@@ -459,11 +470,24 @@ pub(super) async fn earn(
                 picked = Some((candidate, target));
                 break;
             }
+            if tokio::time::Instant::now() >= probe_deadline && actor_tile(client)? != before {
+                partial_species = Some(candidate_index);
+                break;
+            }
         }
         if picked.is_none() {
             verdict::Harness::global().progress("gold-respawn");
             if tokio::time::Instant::now() < deadline {
-                client.service_liveness(Duration::from_millis(100)).await?;
+                let wait = deadline.saturating_duration_since(tokio::time::Instant::now())
+                    .min(Duration::from_millis(100));
+                match tokio::time::timeout_at(deadline, client.service_liveness(wait)).await {
+                    Ok(result) if tokio::time::Instant::now() < deadline => result?,
+                    Ok(_) => return Err(format!("{row}: gold-earning-budget during respawn wait").into()),
+                    Err(_) => {
+                        client.session_mut().invalidate_after_cancellation();
+                        return Err(format!("{row}: gold-earning-budget during respawn wait").into());
+                    }
+                }
                 client.take_events();
             }
             continue;
