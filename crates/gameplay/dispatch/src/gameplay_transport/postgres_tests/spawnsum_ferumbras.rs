@@ -172,6 +172,14 @@ async fn exercise(h: &Harness) -> TestResult {
     let crystal_key = placement_key(crystal, 1).ok_or("crystal placement")?;
     assert!(map.facts.transform_movement_item(crystal_key, 14961));
     let lever = placement_key(LEVER, 2).ok_or("lever")?;
+    let callback = owner
+        .callback_content()
+        .iter()
+        .find(|callback| oteryn_gameplay_quests::quest::ferumbras_entry::admitted(callback))
+        .ok_or("registered final-fight callback")?;
+    assert!(crate::gameplay_transport::quest_callbacks::matches(
+        map, callback, lever
+    ));
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&lever.to_be_bytes());
     let use_lever = |actor, session, command_id| {
