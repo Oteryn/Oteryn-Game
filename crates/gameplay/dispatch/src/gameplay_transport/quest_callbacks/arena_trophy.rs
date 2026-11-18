@@ -71,8 +71,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             production_key: definition.production_key.clone(),
             revision_ref: definition.revision_ref.clone(),
         };
-        if oteryn_gameplay_items::item_ref_admission::generation_ground_item_facts(native, &item)
-            .is_err()
+        if !oteryn_gameplay_items::item_ref_admission::generation_ground_item_facts(native, &item)
+            .is_ok_and(|facts| {
+                facts.stack
+                    == oteryn_gameplay_domain::domain::item_definition::ItemStackClass::NonStackable
+                    && facts.container_capacity.is_none()
+            })
         {
             return Ok(());
         }
