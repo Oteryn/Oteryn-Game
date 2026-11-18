@@ -68,7 +68,7 @@ class IndexedVerdictTests(unittest.TestCase):
                 with self.subTest(path=path.name):
                     self.assertNotIn('tokio::time::timeout(', body)
         shared = (PHASES / 'client_row_s13c.rs').read_text()
-        self.assertIn('indexed_timeout(Duration::from_secs(420), flow(clients))', shared)
+        self.assertIn('indexed_timeout(Duration::from_secs(420), flow(clients, checks))', shared)
         self.assertIn('shared_failure("S13-party-observation")', shared)
 
     def test_offline_recovery_uses_its_780_second_bound_in_both_rows(self):

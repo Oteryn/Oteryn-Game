@@ -212,6 +212,27 @@ fn fresh_bidder_needs_both_maximum_and_first_rent() {
     assert_eq!(bid_funding_target(u64::MAX, 1), None);
 }
 
+fn manifest_bidder_purse() -> TestResult<u64> {
+    let requirements = crate::qualification_requirements::RowRequirements::load("N01")
+        .ok_or("N01 manifest requirements absent")?;
+    let crystals = requirements.items.get(&3043).copied().ok_or("N01 crystal purse absent")?;
+    Ok(u64::from(crystals) * crate::domain::currency::Coin::Crystal.worth())
+}
+
+#[test]
+fn n01_manifest_purse_covers_bid_and_rent_for_multiple_authored_houses() -> TestResult {
+    let purse = manifest_bidder_purse()?;
+    let eligible = houses()?.into_iter().filter(|record| {
+        record["town"]["key"] == TOWN_KEY
+            && record["kind"] == "private_house"
+            && record["rent_gold"].as_u64().is_some_and(|rent| {
+                bid_funding_target(rent.max(1), rent).is_some_and(|target| target <= purse)
+            })
+    }).count();
+    assert!(eligible >= 2);
+    Ok(())
+}
+
 async fn seed_house_anchors(clients: &SeamClients<'_>, candidates: &[(&str, i64)]) -> TestResult {
     use sqlx::Connection as _;
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
@@ -234,117 +255,16 @@ async fn seed_house_anchors(clients: &SeamClients<'_>, candidates: &[(&str, i64)
     Ok(())
 }
 
-async fn fund_bidder(
-    connection: &mut sqlx::PgConnection,
-    character: &[u8; 16],
-    channel: &[u8; 16],
-    scope_generation: u64,
-    target: i64,
-) -> TestResult {
-    use sqlx::Connection as _;
-    let mut tx = connection.begin().await?;
-    sqlx::query(
-        "INSERT INTO game_account_bank_balances(account_id,world_id,balance)
-        SELECT account_id,world_id,0 FROM game_character_roots
-        WHERE character_id=encode($1,'hex')::uuid ON CONFLICT DO NOTHING",
-    )
-    .bind(character.as_slice())
-    .execute(&mut *tx)
-    .await?;
-    let balance: i64 = sqlx::query_scalar(
-        "SELECT b.balance FROM game_account_bank_balances b
-        JOIN game_character_roots c USING(account_id,world_id)
-        WHERE c.character_id=encode($1,'hex')::uuid FOR UPDATE OF b",
-    )
-    .bind(character.as_slice())
-    .fetch_one(&mut *tx)
-    .await?;
-    if balance < target {
-        // Disposable test data, using the same scoped trigger bypass as the bank
-        // fixtures. Keep the ledger chain intact for the real escrow transaction.
-        sqlx::query("SET LOCAL session_replication_role=replica")
-            .execute(&mut *tx)
-            .await?;
-        let written = sqlx::query("WITH credit AS (
-            INSERT INTO game_account_bank_operations(operation_occurrence_id,transaction_id,event_id,
-                kind,request_binding,acting_character_id,account_id,world_id,channel_id,
-                runtime_scope_ownership_generation,amount,outcome,occurred_at,envelope_sha256,
-                committed_at,planned_platinum_item_instance_id,planned_gold_item_instance_id,
-                backpack_item_instance_id)
-            SELECT game_character_uuid_v7(),game_character_uuid_v7(),game_character_uuid_v7(),
-                1,sha256('qualification-n01'),character_id,account_id,world_id,encode($2,'hex')::uuid,
-                $3::text::numeric,$4::bigint-$5::bigint,0,1,sha256('qualification-n01'),0,
-                game_character_uuid_v7(),game_character_uuid_v7(),game_character_uuid_v7()
-            FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid
-            RETURNING *
-        ), entry AS (
-            INSERT INTO game_account_bank_entries(entry_id,transaction_id,account_id,world_id,
-                kind,amount,balance_before,balance_after,previous_entry_id,acting_character_id)
-            SELECT game_character_uuid_v7(),c.transaction_id,c.account_id,c.world_id,
-                1,c.amount,b.balance,$4,b.last_entry_id,c.acting_character_id
-            FROM credit c JOIN game_account_bank_balances b USING(account_id,world_id)
-            RETURNING *
-        )
-        UPDATE game_account_bank_balances b SET balance=e.balance_after,last_entry_id=e.entry_id
-        FROM entry e WHERE b.account_id=e.account_id AND b.world_id=e.world_id")
-            .bind(character.as_slice()).bind(channel.as_slice()).bind(scope_generation.to_string())
-            .bind(target).bind(balance).execute(&mut *tx).await?;
-        if written.rows_affected() != 1 {
-            return Err("step=bid-fixture bank credit did not update the bidder balance".into());
-        }
-    }
-    tx.commit().await?;
-    Ok(())
-}
-
-#[test]
-fn fresh_bidder_fixture_funds_full_escrow_in_postgres() -> TestResult {
-    use crate::bestiary_postgres_harness::{Harness, configured_admin, id, runtime};
-    use sqlx::Connection as _;
-    let Some(admin) = configured_admin() else {
-        return Ok(());
-    };
-    std::thread::Builder::new()
-        .stack_size(64 << 20)
-        .spawn(move || {
-            runtime()
-                .map_err(|error| error.to_string())?
-                .block_on(async {
-                    let fixture = Harness::create(admin, "n01_bank", true).await?;
-                    let checked = async {
-                        let mut connection =
-                            sqlx::PgConnection::connect(&fixture.database.url).await?;
-                        let target =
-                            i64::try_from(bid_funding_target(750, 500).ok_or("escrow overflow")?)?;
-                        fund_bidder(&mut connection, &id(41), &id(43), 1, target).await?;
-                        fund_bidder(&mut connection, &id(41), &id(43), 1, target).await?;
-                        let (balance, credited, entries): (i64, i64, i64) = sqlx::query_as(
-                        "SELECT b.balance,e.amount,(SELECT count(*) FROM game_account_bank_entries)
-                         FROM game_account_bank_balances b
-                         JOIN game_account_bank_entries e ON e.entry_id=b.last_entry_id
-                         WHERE b.account_id=encode($1,'hex')::uuid",
-                    )
-                    .bind(id(40).as_slice())
-                    .fetch_one(&mut connection)
-                    .await?;
-                        assert_eq!((balance, credited, entries), (1250, 1250, 1));
-                        Ok::<_, Box<dyn std::error::Error>>(())
-                    }
-                    .await;
-                    fixture.cleanup().await?;
-                    checked
-                })
-                .map_err(|error| error.to_string())
-        })?
-        .join()
-        .map_err(|_| "N01 PostgreSQL fixture test panicked")??;
-    Ok(())
-}
-
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world_id = WorldId::decode(&clients.world)?;
+    let mode = E2eMode::from_env()?;
+    let npcs = if mode == E2eMode::Isolated {
+        Some(oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?.npcs)
+    } else {
+        None
+    };
     let world = load_world(bytes, &pin, world_id, ChannelId::decode(&clients.channel)?)?;
     let world_bytes = *world_id.as_bytes();
     // Separate Accounts bid and own so the ACL probe never depends on settlement.
@@ -357,7 +277,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_premium_activation_latch)")
             .fetch_one(&mut connection)
             .await?;
-    let mode = E2eMode::from_env()?;
     if premium_delivered && mode == E2eMode::Journey {
         return Err(Box::new(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!()))));
     }
@@ -367,6 +286,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(Box::new(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!()))));
     }
 
+    let isolated_funds = if let Some(npcs) = npcs {
+        let amount = manifest_bidder_purse()?;
+        Some(full_e2ef4::deposit_manifest_coins(&mut client, world, &npcs, amount).await?)
+    } else {
+        None
+    };
     let (mut initial, _) = first_page(&mut client, world_bytes).await?;
     let from = tile(client.world_spatial().actor_position)?;
     let authored = houses()?;
@@ -381,6 +306,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             .iter()
             .filter(|record| record["town"]["key"] == TOWN_KEY && record["kind"] == "private_house")
         {
+            let rent = record["rent_gold"].as_u64().ok_or("House rent absent")?;
+            if isolated_funds.is_some_and(|funds| rent.saturating_mul(2) > funds) {
+                continue;
+            }
             let at = entrance(record)?;
             if route(world, from, |candidate| candidate == at).is_some() {
                 candidates.push((
@@ -412,6 +341,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
                 .iter()
                 .find(|record| record["identity"]["key"] == row.house)
                 .ok_or("House missing from authored catalogue")?;
+            let rent = row.rent;
+            let prior = row.maximum.map_or(0, |value| value.saturating_add(1));
+            if isolated_funds.is_some_and(|funds| {
+                bid_funding_target(prior.max(row.price).max(rent).max(1), rent)
+                    .is_none_or(|target| target > funds)
+            }) {
+                continue;
+            }
             let at = entrance(record)?;
             if let Some(path) = route(world, from, |candidate| candidate == at) {
                 chosen = Some((row.clone(), path));
@@ -456,7 +393,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .bind(clients.world.as_slice()).bind(&private.house).fetch_one(&mut connection).await?;
     let funding = bid_funding_target(maximum, u64::try_from(first_rent)?)
         .ok_or("step=bid-fixture maximum plus first rent overflowed")?;
-    let funding = i64::try_from(funding)?;
     if mode == E2eMode::Journey {
         let balance: Option<i64> = sqlx::query_scalar(
             "SELECT b.balance FROM game_account_bank_balances b
@@ -466,19 +402,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .bind(clients.characters[0].as_slice())
         .fetch_optional(&mut connection)
         .await?;
-        if balance.unwrap_or_default() < funding {
+        if u64::try_from(balance.unwrap_or_default())? < funding {
             evidence("N01_CHECK game-gap cause=insufficient-player-earned-bank-funds");
             return Err(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!())).into());
         }
-    } else {
-        fund_bidder(
-            &mut connection,
-            &clients.characters[0],
-            &clients.channel,
-            clients.scope_generation,
-            funding,
-        )
-        .await?;
+    } else if isolated_funds.is_none_or(|funds| funds < funding) {
+        return Err("N01 auction escrow exceeds the manifest purse".into());
     }
     let bid = house::mutation(
         world_bytes,

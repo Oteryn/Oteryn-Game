@@ -350,7 +350,7 @@ def test_e2e_requirements_cover_registered_rows():
     identifiers.update(scenario.split(".")[0] for rows in matrix.GROUP_SCENARIOS.values()
                        for scenario in rows)
     assert list(requirements) == sorted(identifiers)
-    nonempty = {"C03", "C04", "C13", "C14", "C16a", "C16b", "C16c", "C16d", "C17a", "C17c", "C17d", "C18a", "C20b", "C20c", "E03", "P10", "P16", "S08", "W22b"}
+    nonempty = {"C03", "C04", "C13", "C14", "C16a", "C16b", "C16c", "C16d", "C17a", "C17c", "C17d", "C18a", "C20b", "C20c", "E03", "P10", "P16", "S08", "S13a", "S13b", "S13c", "W22b"}
     nonempty.update(['I19', 'N01', 'P07', 'Q01a', 'Q01b', 'Q01c', 'Q01d', 'Q01e', 'Q02', 'Q03a', 'Q03b', 'Q03c', 'Q03d', 'Q03e', 'Q03f', 'Q03g', 'Q03h', 'Q03i', 'Q03j', 'Q03k', 'W15d'])
     assert {row for row, fields in requirements.items() if fields} == nonempty
     for row in nonempty:
@@ -369,3 +369,27 @@ def test_failed_boot_without_mode_evidence_reports_unknown(tmp_path):
     log.write_text("")
     result = matrix.extract(log, name="reference", entry="node_boot", exit_code=1, seconds=1)
     assert result["mode"] == "UNKNOWN"
+
+
+def test_n01_escrow_uses_manifest_coins_and_native_bank():
+    phases = ROOT / matrix.CLIENT_PHASES
+    rows = json.loads((phases.parent / "row_requirements.json").read_text())
+    assert rows["N01"]["items"]["3043"] > 0
+    source = (phases / "client_row_n01.rs").read_text()
+    assert "deposit_manifest_coins(" in source
+    assert "INSERT INTO game_account_bank_" not in source
+    assert "UPDATE game_account_bank_balances" not in source
+
+
+def test_s13_isolated_rows_dispatch_only_their_own_checks():
+    phases = ROOT / matrix.CLIENT_PHASES
+    rows = json.loads((phases.parent / "row_requirements.json").read_text())
+    for row in ("S13a", "S13b"):
+        assert rows[row]["spells"] == ["utori mas sio"]
+    full = (phases / "full_e2ef7.rs").read_text()
+    assert 'PartySpellChecks::Gate' in full
+    assert 'PartySpellChecks::Cost' in full
+    assert 'party_spell_pair(clients, Some(scenario))' not in full
+    for row, check in (("s13a", "Gate"), ("s13b", "Cost")):
+        source = (phases / f"client_row_{row}.rs").read_text()
+        assert f"CaptureChecks::{check}" in source

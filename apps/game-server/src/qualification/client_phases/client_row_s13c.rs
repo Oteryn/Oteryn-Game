@@ -1,29 +1,30 @@
-//! S13c client replay capture, and the shared party-spell observation S13a and S13b reuse. Two
-//! admitted characters (caster Character one, member Character zero) form a party; the caster
-//! first casts its vocation's party spell while still solo (the party gate refusal), then casts it
-//! inside the party (a mana delta and a condition on both members), queries PARTY EFFECTS on both
-//! sockets, and casts again during the cooldown (a refusal). The raw PARTY EFFECTS payloads are
-//! written byte for byte (`s13c-caster-effects.bin`, `s13c-member-effects.bin`); the observed cast
-//! outcomes and vitals go to `s13c-expected.txt`. The journey runs once per process; S13a and S13b
-//! read its observation instead of repeating the party formation.
+//! Party-spell capture over two real admissions. JOURNEY shares an observation
+//! across replay rows. ISOLATED captures only the selected mechanic.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::{actor_spell as casts, party as parties, party_effects};
 use tokio::sync::OnceCell;
 
+#[derive(Clone)]
 pub(super) struct Observed {
     pub(super) words: &'static str,
     pub(super) slot: usize,
-    pub(super) solo_disposition: casts::SpellCastDisposition,
-    pub(super) solo_status: CommandStatus,
+    pub(super) solo: Option<(CommandStatus, casts::SpellCastDisposition)>,
     pub(super) mana_before: u32,
     pub(super) mana_after: u32,
     pub(super) vitals_before: String,
     pub(super) vitals_after: String,
     pub(super) caster_effects: Vec<u8>,
     pub(super) member_effects: Vec<u8>,
-    pub(super) refusal_disposition: casts::SpellCastDisposition,
-    pub(super) refusal_status: CommandStatus,
+    pub(super) refusal: Option<(CommandStatus, casts::SpellCastDisposition)>,
+}
+
+#[derive(Clone, Copy)]
+pub(super) enum CaptureChecks {
+    Gate,
+    Cost,
+    Effects,
+    Journey,
 }
 
 static OBSERVED: OnceCell<Result<Observed, String>> = OnceCell::const_new();
@@ -219,7 +220,7 @@ async fn cast_through_cooldown(
     .map_err(|_| "step=cast still cooling down after 150s")?
 }
 
-async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
+async fn flow(clients: &SeamClients<'_>, checks: CaptureChecks) -> TestResult<Observed> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -291,18 +292,19 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
     {
         return Err("step=solo-gate the prior party still exists".into());
     }
-    // The party gate: the same spell cast while solo must not be cast.
-    let (vitals, solo) = cast_through_cooldown(&mut caster, &mut peer, index).await?;
-    if !solo_gate_proven(
-        solo.disposition,
-        solo.status,
-        caster.actor_vitals().copied() == Some(vitals),
-    ) {
-        return Err(format!(
-            "step=solo-gate observed {solo:?}, expected a refusal without a vitals change"
-        )
-        .into());
-    }
+    let solo = if matches!(checks, CaptureChecks::Gate | CaptureChecks::Journey) {
+        let (vitals, solo) = cast_through_cooldown(&mut caster, &mut peer, index).await?;
+        if !solo_gate_proven(
+            solo.disposition,
+            solo.status,
+            caster.actor_vitals().copied() == Some(vitals),
+        ) {
+            return Err(format!("step=solo-gate observed {solo:?}").into());
+        }
+        Some((solo.status, solo.disposition))
+    } else {
+        None
+    };
 
     party(
         &mut caster,
@@ -330,40 +332,49 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
     {
         return Err("step=party expected both views of the two-member roster".into());
     }
-    let (_, caster_before) = effects(&mut caster).await?;
-    let (_, member_before) = effects(&mut peer).await?;
+    let prior_effects = if matches!(checks, CaptureChecks::Effects | CaptureChecks::Journey) {
+        Some([effects(&mut caster).await?.1, effects(&mut peer).await?.1])
+    } else {
+        None
+    };
     let (before, cast) = cast_through_cooldown(&mut caster, &mut peer, index).await?;
     let after = caster.actor_vitals().copied().ok_or("caster vitals lost")?;
     if cast.status != CommandStatus::Accepted
         || cast.disposition != casts::SpellCastDisposition::Cast
-        || cast.actor_vitals_delta.as_ref().map(|delta| delta.value) != Some(after)
-        || !party_mana_paid(before.mana, after.mana, mana_cost)
+        || (matches!(checks, CaptureChecks::Cost | CaptureChecks::Journey)
+            && (cast.actor_vitals_delta.as_ref().map(|delta| delta.value) != Some(after)
+                || !party_mana_paid(before.mana, after.mana, mana_cost)))
     {
         return Err(
             format!("step=cast observed {cast:?} before={before:?} after={after:?}").into(),
         );
     }
-    let (caster_effects, caster_after) = effects(&mut caster).await?;
-    let (member_effects, member_after) = effects(&mut peer).await?;
-    for (before, after) in [(caster_before, caster_after), (member_before, member_after)] {
-        if !party_effect_present(after.in_party, &after.party_spell_remaining_ms, slot)
-            || after.party_spell_remaining_ms[slot] <= before.party_spell_remaining_ms[slot]
-        {
-            return Err(format!(
-                "step=effects slot {slot} did not refresh: {before:?} -> {after:?}"
-            )
-            .into());
+    let (caster_effects, member_effects) = if let Some([caster_before, member_before]) = prior_effects {
+        let (caster_effects, caster_after) = effects(&mut caster).await?;
+        let (member_effects, member_after) = effects(&mut peer).await?;
+        for (before, after) in [(caster_before, caster_after), (member_before, member_after)] {
+            if !party_effect_present(after.in_party, &after.party_spell_remaining_ms, slot)
+                || after.party_spell_remaining_ms[slot] <= before.party_spell_remaining_ms[slot]
+            {
+                return Err(format!("step=effects slot {slot} did not refresh: {before:?} -> {after:?}").into());
+            }
         }
-    }
-    let refused_vitals = caster.actor_vitals().copied();
-    let refused = caster
-        .cast_spell(index, casts::SpellTarget::None, false)
-        .await?;
-    if refused.disposition != casts::SpellCastDisposition::CoolingDown
-        || caster.actor_vitals().copied() != refused_vitals
-    {
-        return Err(format!("step=cooldown observed {refused:?}").into());
-    }
+        (caster_effects, member_effects)
+    } else {
+        (Vec::new(), Vec::new())
+    };
+    let refusal = if matches!(checks, CaptureChecks::Gate | CaptureChecks::Journey) {
+        let refused_vitals = caster.actor_vitals().copied();
+        let refused = caster.cast_spell(index, casts::SpellTarget::None, false).await?;
+        if refused.disposition != casts::SpellCastDisposition::CoolingDown
+            || caster.actor_vitals().copied() != refused_vitals
+        {
+            return Err(format!("step=cooldown observed {refused:?}").into());
+        }
+        Some((refused.status, refused.disposition))
+    } else {
+        None
+    };
     for client in [&mut peer, &mut caster] {
         party(client, Some(parties::PartyIntent::Leave)).await?;
         let _ = client.session_mut().logout().await;
@@ -371,34 +382,34 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
     Ok(Observed {
         words,
         slot,
-        solo_disposition: solo.disposition,
-        solo_status: solo.status,
+        solo,
         mana_before: before.mana,
         mana_after: after.mana,
         vitals_before: vitals_line(&before),
         vitals_after: vitals_line(&after),
         caster_effects,
         member_effects,
-        refusal_disposition: refused.disposition,
-        refusal_status: refused.status,
+        refusal,
     })
 }
 
-/// The shared observation, computed at most once per process.
-pub(super) async fn observed(clients: &SeamClients<'_>) -> &'static Result<Observed, String> {
-    let result = OBSERVED
-        .get_or_init(|| async {
-            match verdict::indexed_timeout(Duration::from_secs(420), flow(clients)).await {
-                Ok(Ok(value)) => Ok(value),
-                Ok(Err(error)) => Err(error.to_string().replace(' ', "_")),
-                Err(_) => Err("timeout".to_owned()),
-            }
-        })
-        .await;
+async fn capture_observation(clients: &SeamClients<'_>, checks: CaptureChecks) -> Result<Observed, String> {
+    match verdict::indexed_timeout(Duration::from_secs(420), flow(clients, checks)).await {
+        Ok(Ok(value)) => Ok(value),
+        Ok(Err(error)) => Err(error.to_string().replace(' ', "_")),
+        Err(_) => Err("timeout".to_owned()),
+    }
+}
+
+pub(super) async fn observed(clients: &SeamClients<'_>, checks: CaptureChecks) -> Result<Observed, String> {
+    if matches!(E2eMode::from_env(), Ok(E2eMode::Isolated)) {
+        return capture_observation(clients, checks).await;
+    }
+    let result = OBSERVED.get_or_init(|| capture_observation(clients, CaptureChecks::Journey)).await;
     if result.is_err() {
         verdict::Harness::global().shared_failure("S13-party-observation");
     }
-    result
+    result.clone()
 }
 
 pub(super) fn report(
@@ -421,8 +432,8 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    let observed = observed(clients).await;
-    if let Ok(value) = observed {
+    let observed = observed(clients, CaptureChecks::Effects).await;
+    if let Ok(value) = &observed {
         capture("s13c-caster-effects.bin", &value.caster_effects);
         capture("s13c-member-effects.bin", &value.member_effects);
         capture(
@@ -430,7 +441,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             format!("slot={}\nwords={}\n", value.slot, value.words).as_bytes(),
         );
     }
-    report("S13c", observed, |value| {
+    report("S13c", &observed, |value| {
         format!("slot={} words={}", value.slot, value.words)
     });
 }

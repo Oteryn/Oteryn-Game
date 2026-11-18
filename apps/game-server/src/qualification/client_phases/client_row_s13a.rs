@@ -9,21 +9,23 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    let observed = super::client_row_s13c::observed(clients).await;
-    if let Ok(value) = observed {
+    let observed = super::client_row_s13c::observed(clients, super::client_row_s13c::CaptureChecks::Gate).await;
+    let observed = observed.and_then(|value| {
+        if value.solo.is_some() && value.refusal.is_some() {
+            Ok(value)
+        } else {
+            Err("party gate observations missing".into())
+        }
+    });
+    if let Ok(value) = &observed
+        && let (Some((solo_status, solo)), Some((refusal_status, refusal))) = (value.solo, value.refusal)
+    {
         super::client_row_s13c::capture(
             "s13a-expected.txt",
-            format!(
-                "solo\tstatus={:?}\tdisposition={:?}\nrefusal\tstatus={:?}\tdisposition={:?}\n",
-                value.solo_status,
-                value.solo_disposition,
-                value.refusal_status,
-                value.refusal_disposition
-            )
-            .as_bytes(),
+            format!("solo\tstatus={solo_status:?}\tdisposition={solo:?}\nrefusal\tstatus={refusal_status:?}\tdisposition={refusal:?}\n").as_bytes(),
         );
     }
-    super::client_row_s13c::report("S13a", observed, |value| {
-        format!("solo={:?} refusal={:?}", value.solo_disposition, value.refusal_disposition)
+    super::client_row_s13c::report("S13a", &observed, |value| {
+        format!("solo={:?} refusal={:?}", value.solo, value.refusal)
     });
 }

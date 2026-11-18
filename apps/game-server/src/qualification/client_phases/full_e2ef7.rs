@@ -1655,26 +1655,48 @@ pub(super) async fn run_light(clients: &SeamClients<'_>) {
     row.finish(&result);
 }
 
-async fn additional_rows(clients: &SeamClients<'_>) {
-    if matches!(E2eMode::from_env(), Ok(E2eMode::Isolated)) {
-        for scenario in ["S13a.full", "S13b.full"] {
-            party_spell_pair(clients, Some(scenario)).await;
-        }
-    } else {
-        party_spell_pair(clients, None).await;
+#[derive(Clone, Copy)]
+enum PartySpellChecks {
+    Gate,
+    Cost,
+    Journey,
+}
+
+impl PartySpellChecks {
+    fn gate(self) -> bool {
+        matches!(self, Self::Gate | Self::Journey)
+    }
+
+    fn cost(self) -> bool {
+        matches!(self, Self::Cost | Self::Journey)
     }
 }
 
-async fn party_spell_pair(clients: &SeamClients<'_>, isolated_scenario: Option<&str>) {
-    let mut gate = JourneyRow::new("S13a", PARTY_GATE_ACTIONS);
-    let mut cost = JourneyRow {
-        actions: verdict::Row::new("E2EF7", "S13b", PARTY_COST_ACTIONS)
-            .gap_lines()
-            .sharing(&gate.actions),
-    };
+async fn additional_rows(clients: &SeamClients<'_>) {
+    if matches!(E2eMode::from_env(), Ok(E2eMode::Isolated)) {
+        party_spell_row(clients, "S13a.full", PartySpellChecks::Gate).await;
+        party_spell_row(clients, "S13b.full", PartySpellChecks::Cost).await;
+    } else {
+        party_spell_row(clients, "S13a.full", PartySpellChecks::Journey).await;
+    }
+}
+
+async fn party_spell_row(clients: &SeamClients<'_>, scenario: &str, checks: PartySpellChecks) {
+    let mut gate = checks.gate().then(|| JourneyRow::new("S13a", PARTY_GATE_ACTIONS));
+    let mut cost = checks.cost().then(|| {
+        let actions = verdict::Row::new("E2EF7", "S13b", PARTY_COST_ACTIONS).gap_lines();
+        JourneyRow {
+            actions: if let Some(gate) = &gate {
+                actions.sharing(&gate.actions)
+            } else {
+                actions
+            },
+        }
+    });
+    let watch = gate.as_ref().or(cost.as_ref()).map(|row| row.actions.watch());
+    let Some(watch) = watch else { return };
     let mut pair = [None, None];
     let world = qualification_world(clients);
-    let watch = gate.actions.watch();
     let mut result = match &world {
         Ok(world) => {
             let mut completed = false;
@@ -1683,9 +1705,9 @@ async fn party_spell_pair(clients: &SeamClients<'_>, isolated_scenario: Option<&
                     Duration::from_secs(240),
                     "party-spell journey deadline; remaining actions unproven",
                     async {
-                        row_clients!(E2eMode::from_env()?, clients, isolated_scenario.unwrap_or("S13a.full"));
+                        row_clients!(E2eMode::from_env()?, clients, scenario);
                         let result =
-                            party_spell_journey(&mut gate, &mut cost, &mut pair, clients, world)
+                            party_spell_journey(checks, &mut gate, &mut cost, &mut pair, clients, world)
                                 .await;
                         completed = true;
                         result
@@ -1731,15 +1753,11 @@ async fn party_spell_pair(clients: &SeamClients<'_>, isolated_scenario: Option<&
             }
         }
     }
-    if cleaned == 2 {
-        gate.pass("final-logout");
-        cost.pass("final-logout");
-    }
-    if isolated_scenario != Some("S13b.full") {
-        gate.finish(&result);
-    }
-    if isolated_scenario != Some("S13a.full") {
-        cost.finish(&result);
+    for mut row in [gate, cost].into_iter().flatten() {
+        if cleaned == 2 {
+            row.pass("final-logout");
+        }
+        row.finish(&result);
     }
 }
 
@@ -2687,19 +2705,33 @@ fn verify_party_refusal(
     after: casts::ActorVitals,
     expected: casts::SpellCastDisposition,
 ) -> TestResult {
-    if outcome.status != CommandStatus::Accepted
-        || outcome.disposition != expected
-        || outcome.actor_vitals_delta.is_some()
+    verify_party_disposition(outcome, expected)?;
+    if outcome.actor_vitals_delta.is_some()
         || before != after
     {
         return Err(format!("party refusal mismatch: expected={expected:?} observed={outcome:?} before={before:?} after={after:?}").into());
     }
     Ok(())
 }
+fn verify_party_disposition(
+    outcome: &oteryn_dev_client::CastOutcome,
+    expected: casts::SpellCastDisposition,
+) -> TestResult {
+    let status = if expected == casts::SpellCastDisposition::Rejected {
+        CommandStatus::Rejected
+    } else {
+        CommandStatus::Accepted
+    };
+    if outcome.status != status || outcome.disposition != expected {
+        return Err(format!("party disposition mismatch: expected={expected:?} observed={outcome:?}").into());
+    }
+    Ok(())
+}
+
 async fn party_paid_cast(
     caster: &mut DevClientSession,
     index: std::num::NonZeroU32,
-    charge: u32,
+    charge: Option<u32>,
 ) -> TestResult {
     let before = caster
         .actor_vitals()
@@ -2708,6 +2740,7 @@ async fn party_paid_cast(
     let outcome = caster
         .cast_spell(index, casts::SpellTarget::None, false)
         .await?;
+    let Some(charge) = charge else { return verify_party_disposition(&outcome, casts::SpellCastDisposition::Cast) };
     let after = caster
         .actor_vitals()
         .copied()
@@ -2734,6 +2767,7 @@ fn verify_party_payment(
 async fn party_free_refusal(
     caster: &mut DevClientSession,
     index: std::num::NonZeroU32,
+    check_cost: bool,
     expected: casts::SpellCastDisposition,
 ) -> TestResult {
     let before = caster
@@ -2743,6 +2777,9 @@ async fn party_free_refusal(
     let outcome = caster
         .cast_spell(index, casts::SpellTarget::None, false)
         .await?;
+    if !check_cost {
+        return verify_party_disposition(&outcome, expected);
+    }
     // Drain the refused cast's preceding server work before asserting that
     // no late vitals charge arrived. This is a real query, never a sleep.
     party_request(caster, None).await?;
@@ -2756,9 +2793,16 @@ async fn party_free_refusal(
         expected,
     )
 }
+fn party_pass(row: &mut Option<JourneyRow>, action: &'static str) {
+    if let Some(row) = row {
+        row.pass(action);
+    }
+}
+
 async fn party_spell_journey(
-    gate: &mut JourneyRow,
-    cost: &mut JourneyRow,
+    checks: PartySpellChecks,
+    gate: &mut Option<JourneyRow>,
+    cost: &mut Option<JourneyRow>,
     pair: &mut [Option<DevClientSession>; 2],
     clients: &SeamClients<'_>,
     world: &BundleWorld,
@@ -2780,8 +2824,8 @@ async fn party_spell_journey(
             return Err("party preexisting membership prevents isolated gate test".into());
         }
     }
-    gate.pass("two-admissions");
-    cost.pass("two-admissions");
+    party_pass(gate, "two-admissions");
+    party_pass(cost, "two-admissions");
     // The retained server-owned ranking row carries the durable vocation.
     // Read it rather than guessing class from a generic refusal or profile env.
     let observed = query(caster, request(1, 0, 1, 0)).await?;
@@ -2804,18 +2848,21 @@ async fn party_spell_journey(
         .ok_or("party initial vitals absent")?;
     let solo = caster.cast_spell(index, casts::SpellTarget::None, false).await
         .map_err(|e| format!("party solo cast: {e};served-vocation={};served-level={};required-level={},premium={}", own.vocation, own.level, spell.level, spell.premium))?;
-    verify_party_refusal(&solo, before, caster.actor_vitals().copied().ok_or("party solo lost vitals")?, casts::SpellCastDisposition::Rejected)
-        .map_err(|e| format!("party prerequisite-or-gate-blocked: {e};served-vocation={};served-level={};required-level={},premium={}", own.vocation, own.level, spell.level, spell.premium))?;
+    verify_party_disposition(&solo, casts::SpellCastDisposition::Rejected)?;
+    if checks.cost() {
+        verify_party_refusal(&solo, before, caster.actor_vitals().copied().ok_or("party solo lost vitals")?, casts::SpellCastDisposition::Rejected)?;
+    }
     let crate::spell::Execution::PartyBuff(buff) = &spell.execution else {
         return Err("party spell lacks party execution".into());
     };
-    let (charge, scaled) = match buff.mana {
-        crate::spell::party::PartyMana::Scaled {
+    let (charge, scaled) = match (checks.cost(), buff.mana) {
+        (false, _) => (None, false),
+        (true, crate::spell::party::PartyMana::Scaled {
             base,
             numerator: 9,
             denominator: 10,
-        } => (two_member_charge(base)?, true),
-        crate::spell::party::PartyMana::Fixed(value) => (value, false),
+        }) => (Some(two_member_charge(base)?), true),
+        (true, crate::spell::party::PartyMana::Fixed(value)) => (Some(value), false),
         _ => return Err("party mana profile differs from independent oracle".into()),
     };
     let caster_start = tile(caster.world_spatial().actor_position)?;
@@ -2856,19 +2903,19 @@ async fn party_spell_journey(
     if !same_two_member_roster(&roster, &joined) {
         return Err("party accepted roster does not contain the same two members".into());
     }
-    gate.pass("invite-accept");
+    party_pass(gate, "invite-accept");
     // Qualify the earlier no-party refusal only after the same spell and
     // credentials succeed with the observed party, paying exactly its fee.
     party_paid_cast(caster, index, charge).await?;
-    gate.pass("solo-refusal");
-    cost.pass("solo-zero-charge");
-    gate.pass("near-cast");
+    party_pass(gate, "solo-refusal");
+    party_pass(cost, "solo-zero-charge");
+    party_pass(gate, "near-cast");
     if scaled {
-        cost.pass("two-member-scaled-charge");
+        party_pass(cost, "two-member-scaled-charge");
     }
-    party_free_refusal(caster, index, casts::SpellCastDisposition::CoolingDown).await?;
-    gate.pass("cooldown-refusal");
-    cost.pass("cooldown-zero-charge");
+    party_free_refusal(caster, index, checks.cost(), casts::SpellCastDisposition::CoolingDown).await?;
+    party_pass(gate, "cooldown-refusal");
+    party_pass(cost, "cooldown-zero-charge");
     party_cooldown(caster, peer, spell).await?;
     let origin = tile(peer.world_spatial().actor_position)?;
     // Range admission is 3D Chebyshev <=36, independent of the rendered area.
@@ -2898,10 +2945,10 @@ async fn party_spell_journey(
         if distance == 36 {
             party_paid_cast(caster, index, charge).await?;
         } else {
-            party_free_refusal(caster, index, casts::SpellCastDisposition::Rejected).await?;
+            party_free_refusal(caster, index, checks.cost(), casts::SpellCastDisposition::Rejected).await?;
         }
-        gate.pass(action);
-        cost.pass(fee_action);
+        party_pass(gate, action);
+        party_pass(cost, fee_action);
         party_cooldown(caster, peer, spell).await?;
     }
     let path = route(world, tile(caster.world_spatial().actor_position)?, |at| {
@@ -2912,16 +2959,16 @@ async fn party_spell_journey(
     .ok_or("party return to member unavailable")?;
     party_walk(caster, peer, world, &path).await?;
     party_paid_cast(caster, index, charge).await?;
-    gate.pass("return-cast");
-    cost.pass("return-same-charge");
+    party_pass(gate, "return-cast");
+    party_pass(cost, "return-same-charge");
     party_cooldown(caster, peer, spell).await?;
     party_request(peer, Some(parties::PartyIntent::Leave)).await?;
     if party_request(caster, None).await?.members.len() > 1 {
         return Err("party leave retained a second member".into());
     }
-    party_free_refusal(caster, index, casts::SpellCastDisposition::Rejected).await?;
-    gate.pass("leave-refusal");
-    cost.pass("leave-zero-charge");
+    party_free_refusal(caster, index, checks.cost(), casts::SpellCastDisposition::Rejected).await?;
+    party_pass(gate, "leave-refusal");
+    party_pass(cost, "leave-zero-charge");
     // Release the peer first: fresh admissions can share their start tile,
     // but movement back into a still occupied start must not be assumed legal.
     let peer_saved = peer
@@ -2971,9 +3018,9 @@ async fn party_spell_journey(
             );
         }
     }
-    gate.pass("fresh-admission-mana");
-    cost.pass("fresh-admission-mana");
-    if !scaled {
+    party_pass(gate, "fresh-admission-mana");
+    party_pass(cost, "fresh-admission-mana");
+    if checks.cost() && !scaled {
         evidence(
             "E2EF7_GAP S13b observed-fixed-cost-Enlighten-Party;scaled-class-prerequisite-unmet",
         );
@@ -2984,6 +3031,15 @@ async fn party_spell_journey(
 #[cfg(test)]
 mod continuation_tests {
     use super::*;
+    #[test]
+    fn isolated_party_spell_checks_are_disjoint() {
+        assert!(PartySpellChecks::Gate.gate());
+        assert!(!PartySpellChecks::Gate.cost());
+        assert!(PartySpellChecks::Cost.cost());
+        assert!(!PartySpellChecks::Cost.gate());
+        assert!(PartySpellChecks::Journey.gate() && PartySpellChecks::Journey.cost());
+    }
+
     #[test]
     fn continuation_actions_fail_closed() {
         for required in [LIGHT_ACTIONS, PARTY_GATE_ACTIONS, PARTY_COST_ACTIONS] {
@@ -3169,7 +3225,7 @@ mod continuation_tests {
         };
         let mut outcome = oteryn_dev_client::CastOutcome {
             command_id: 1,
-            status: CommandStatus::Accepted,
+            status: CommandStatus::Rejected,
             disposition: casts::SpellCastDisposition::Rejected,
             result_server_sequence: 1,
             actor_vitals_delta: None,

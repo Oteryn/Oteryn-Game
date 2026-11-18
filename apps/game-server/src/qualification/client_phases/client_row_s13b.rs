@@ -8,8 +8,8 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    let observed = super::client_row_s13c::observed(clients).await;
-    if let Ok(value) = observed {
+    let observed = super::client_row_s13c::observed(clients, super::client_row_s13c::CaptureChecks::Cost).await;
+    if let Ok(value) = &observed {
         super::client_row_s13c::capture(
             "s13b-expected.txt",
             format!(
@@ -19,7 +19,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             .as_bytes(),
         );
     }
-    super::client_row_s13c::report("S13b", observed, |value| {
+    super::client_row_s13c::report("S13b", &observed, |value| {
         format!("mana={}->{} spent={}", value.mana_before, value.mana_after, value.mana_before - value.mana_after)
     });
 }

@@ -483,9 +483,18 @@ async fn find_banker<'a>(
     world: &BundleWorld,
     npcs: &'a oteryn_world_bundle::npc::Table,
 ) -> TestResult<(&'a oteryn_world_bundle::npc::Npc, EntityRef, u64)> {
+    find_reachable_banker(client, world, npcs, || beat(row)).await
+}
+
+async fn find_reachable_banker<'a>(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    npcs: &'a oteryn_world_bundle::npc::Table,
+    mut heartbeat: impl FnMut(),
+) -> TestResult<(&'a oteryn_world_bundle::npc::Npc, EntityRef, u64)> {
     let mut attempts = Vec::new();
     for npc in &npcs.npcs {
-        beat(row);
+        heartbeat();
         if route(world, tile(client.world_spatial().actor_position)?, |at| {
             npc.placements
                 .iter()
@@ -555,6 +564,40 @@ async fn bank_balance(client: &mut DevClientSession, actor: EntityRef) -> TestRe
         )
         .into()
     })
+}
+
+pub(super) async fn deposit_manifest_coins(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+    amount: u64,
+) -> TestResult<u64> {
+    if amount == 0 || full_gold::coin_value(client)? != amount {
+        return Err("isolated bidder did not receive the exact manifest coin purse".into());
+    }
+    let origin = tile(client.world_spatial().actor_position)?;
+    let (_, banker, before) = find_reachable_banker(client, world, npcs, progress).await?;
+    if before != 0 {
+        return Err("isolated bidder has a preexisting bank balance".into());
+    }
+    bank_exchange(
+        client,
+        banker,
+        "deposit all",
+        &format!("Do you want to deposit {amount} gold?"),
+        &format!("You have deposited {amount} gold."),
+    )
+    .await?;
+    let deposited = bank_balance(client, banker).await?;
+    if deposited != amount {
+        return Err("isolated bidder bank balance differs from the manifest purse".into());
+    }
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at == origin
+    })
+    .ok_or("banker return route unavailable")?;
+    walk(client, world, &path).await?;
+    Ok(deposited)
 }
 
 async fn shop(
