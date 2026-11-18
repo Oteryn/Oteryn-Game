@@ -40,6 +40,7 @@ enum Case {
     Outcome,
     ShieldEasy,
     ShieldHard,
+    ShieldPulse,
     ShieldReinforcements,
 }
 
@@ -182,13 +183,13 @@ impl Case {
     }
 
     fn has_shields(self) -> bool {
-        matches!(self, Self::ShieldEasy | Self::ShieldHard | Self::ShieldReinforcements)
+        matches!(self, Self::ShieldEasy | Self::ShieldHard | Self::ShieldPulse | Self::ShieldReinforcements)
     }
 
     fn is_window(self) -> bool {
         matches!(
             self,
-            Self::Outcome | Self::ShieldEasy | Self::ShieldHard | Self::ShieldReinforcements
+            Self::Outcome | Self::ShieldEasy | Self::ShieldHard | Self::ShieldPulse | Self::ShieldReinforcements
                 | Self::Window
                 | Self::WindowStateless
                 | Self::WindowVisual
@@ -355,7 +356,7 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
             "Crystal201189f the_secret_library_quest/creaturescripts_kill.lua:10-39"
         }
         Case::Outcome => "Crystal 201189f8 arbaziloth_death.lua:18-55 and forge_teleport.lua:17-34",
-        Case::ShieldEasy | Case::ShieldHard | Case::ShieldReinforcements => "Crystal 201189f8 arbaziloth_fight.lua:125-274 and arbaziloth_death.lua:18-55",
+        Case::ShieldEasy | Case::ShieldHard | Case::ShieldPulse | Case::ShieldReinforcements => "Crystal 201189f8 arbaziloth_fight.lua:125-274 and arbaziloth_death.lua:18-55",
     };
     let stage = |name: &str, counter: &Value| json!({"key":name, "completes":false, "trigger":{"kind":"kill","counter":counter}});
     let mut stages = vec![stage("rat", &counter)];
@@ -367,7 +368,7 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
     }
     if case.has_outcome() {
         if case.has_shields() {
-            stages.push(json!({"key":"shield-entrance","completes":false,"trigger":{"kind":"map_use","callback":shield_handoff::lever(at, case == Case::ShieldReinforcements)?}}));
+            stages.push(json!({"key":"shield-entrance","completes":false,"trigger":{"kind":"map_use","callback":shield_handoff::lever(at, case)?}}));
             counter["creature"] = json!(CAVE_RAT);
         } else {
             for (mode, hard) in [("easy", false), ("hard", true)] {
@@ -456,7 +457,7 @@ fn run(admin: String, case: Case) -> TestResult {
             floor: start.floor,
         };
         let world = if case.has_shields() {
-            let lever = shield_handoff::lever(at, case == Case::ShieldReinforcements)?;
+            let lever = shield_handoff::lever(at, case)?;
             let exit = mode_exit(at)?;
             Some(super::quest_world_callbacks::world_with_objects(
                 &lever, lever.selector.position.ok_or("shield lever")?,
@@ -602,9 +603,18 @@ fn run(admin: String, case: Case) -> TestResult {
             owner.movement_cells = cells.into();
         }
         for player in &players {
-            if case.has_outcome() {
-                deps.initialize_player(&owner, player.actor, player.session)
-                    .await;
+            if case == Case::ShieldPulse {
+                let runtime = owner.runtime.lock().await;
+                owner.states.spell_states.lock().await.initialize(
+                    &runtime, player.actor, player.session,
+                    crate::spell::cast::CharacterCastFacts {
+                        max_health: 4_000,
+                        ..crate::gameplay_transport::actor_spell::tests::FACTS
+                    },
+                    (0, 0), owner.owner_now(),
+                ).ok_or("pulse player state")?;
+            } else if case.has_outcome() {
+                deps.initialize_player(&owner, player.actor, player.session).await;
             }
             owner.refresh_quest_session(player.session, true).await;
         }
@@ -727,7 +737,7 @@ fn run(admin: String, case: Case) -> TestResult {
             | Case::WindowReset
             | Case::WindowResetAmbiguous
             | Case::WindowResetDeparted
-            | Case::Outcome | Case::ShieldEasy | Case::ShieldHard | Case::ShieldReinforcements => {
+            | Case::Outcome | Case::ShieldEasy | Case::ShieldHard | Case::ShieldPulse | Case::ShieldReinforcements => {
                 return Err("timed exit requires bundle cells".into());
             }
         };

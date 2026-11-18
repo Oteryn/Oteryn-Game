@@ -36,7 +36,16 @@ fn overcharged_demon_refills_once_and_stays_owned_across_the_hard_handoff() -> T
     run(admin, Case::ShieldReinforcements)
 }
 
-pub(super) fn lever(at: MovementLocalPosition, reinforcements: bool) -> TestResult<Callback> {
+#[test]
+fn overcharged_demon_pulses_once_below_5000_and_respects_its_radius() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::ShieldPulse)
+}
+
+pub(super) fn lever(at: MovementLocalPosition, case: Case) -> TestResult<Callback> {
+    let reinforcements = matches!(case, Case::ShieldPulse | Case::ShieldReinforcements);
     let mut lever = serde_json::to_value(mode_lever(at, false)?)?;
     let tile = |x, y| json!({"x":at.x+x, "y":at.y+y, "floor":-at.floor});
     let room = &mut lever["effects"]["encounter"];
@@ -65,6 +74,12 @@ pub(super) fn lever(at: MovementLocalPosition, reinforcements: bool) -> TestResu
         lever["effects"]["encounter_outcome"]["shield_handoff"]["reinforcements"] =
             json!({"creature":DEMON,"check_interval_ms":2000,"respawn_delay_ms":5000});
     }
+    if case == Case::ShieldPulse {
+        // Crystal 201189f8 overcharged_demon.lua:113-169.
+        lever["effects"]["encounter_outcome"]["shield_handoff"]["reinforcements"]["low_health_pulse"] =
+            json!({"below_health":5000,"boss_heal":15000,"player_damage":1500,"radius":7,
+                "effect":170,"boss_min":tile(3,-1),"boss_max":tile(7,1)});
+    }
     lever["sources"] = json!(["Crystal 201189f8 arbaziloth_fight.lua:125-274 and boss_lever.lua:59-74,171-187"]);
     Ok(serde_json::from_value(lever)?)
 }
@@ -87,7 +102,7 @@ pub(super) async fn exercise(
     let rod = native.item_index().and_then(|index| index.definition_ref("Item", ROD, "definition-r1")).ok_or("fishing rod")?;
     seed_rod(pool).await?;
     let map = owner.bundle_map().ok_or("shield map")?;
-    let lever = lever(at, reinforcements)?.selector.position.ok_or("lever tile")?;
+    let lever = lever(at, case)?.selector.position.ok_or("lever tile")?;
     let key = crate::map::view::placement_key(TilePos { x:lever.x, y:lever.y, floor:lever.floor }, 1).ok_or("lever key")?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
@@ -115,6 +130,10 @@ pub(super) async fn exercise(
     let intent = UseIntent { target:UseTarget::ItemByDefinition(rod), use_with:Some(target), use_with_map_item:None, use_with_position:None };
     for member in players {
         assert_eq!(enter_exit(owner, *member, portal).await?, room);
+    }
+
+    if case == Case::ShieldPulse {
+        exercise_pulse(owner, players, boss, at, room, spawn_at, max_hp).await?;
     }
 
     let adds = if reinforcements {
@@ -224,6 +243,62 @@ pub(super) async fn exercise(
         assert_eq!(runtime.positioned_melee_census().map_err(debug)?.iter()
             .filter(|(actor, _, _)| runtime.matches_live_creature_identity(*actor, DEMON.as_bytes())).count(), 2);
     }
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments, reason = "measure two exact participants at the real scheduled pulse")]
+async fn exercise_pulse(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    players: &[Player],
+    boss: ExactActorRef,
+    base: MovementLocalPosition,
+    landing: MovementLocalPosition,
+    spawn_at: MovementLocalPosition,
+    max_hp: i64,
+) -> TestResult {
+    let center = MovementLocalPosition { x: base.x + 7, ..base };
+    move_to(owner, players[1], MovementLocalPosition { x: base.x - 1, ..base }).await?;
+    let map = owner.bundle_map().ok_or("pulse bundle")?;
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let before = runtime.read_actor_position(boss).map_err(debug)?;
+        runtime.borrow_movement_position().commit_creature_relocation(boss, before, center).map_err(debug)?;
+        runtime.set_test_creature_health(boss, max_hp - 1).map_err(debug)?;
+        let demons: Vec<_> = runtime.positioned_melee_census().map_err(debug)?.iter()
+            .filter(|(actor, _, _)| runtime.matches_live_creature_identity(*actor, DEMON.as_bytes()))
+            .map(|(actor, _, _)| *actor).collect();
+        let [first, second] = demons.as_slice() else { return Err("two exact Demons".into()); };
+        runtime.set_test_creature_health(*first, 5_000).map_err(debug)?;
+        let mut states = owner.states.spell_states.lock().await;
+        let health = |states: &crate::gameplay_transport::actor_spell::ChannelSpellStates,
+                      runtime: &ChannelRuntimeV1, player: Player| -> TestResult<u32> {
+            Ok(states.get(runtime, player.actor, player.session).ok_or("pulse recipient")?.vitals().health)
+        };
+        assert_eq!(health(&states, &runtime, players[0])?, 4_000);
+        assert_eq!(health(&states, &runtime, players[1])?, 4_000);
+
+        owner.tick_encounter_outcomes(&mut runtime, &mut states, 1_999);
+        assert_eq!(runtime.live_creature_health(*first), Some(5_000));
+        assert_eq!(runtime.live_creature_health(boss), Some(u64::try_from(max_hp - 1)?));
+        runtime.set_test_creature_health(*first, 4_999).map_err(debug)?;
+
+        for now in [2_000, 2_001] {
+            owner.tick_encounter_outcomes(&mut runtime, &mut states, now);
+            assert!(!runtime.contains_live_creature(*first));
+            assert!(runtime.contains_live_creature(*second));
+            assert!(!runtime.retains_corpse_projection(*first));
+            assert_eq!(runtime.live_creature_health(boss), Some(u64::try_from(max_hp)?));
+            assert_eq!(health(&states, &runtime, players[0])?, 2_500);
+            assert_eq!(health(&states, &runtime, players[1])?, 4_000);
+        }
+
+        let effects = map.facts.movement_effects_since(0);
+        let center = TilePos { x: u16::try_from(center.x)?, y: u16::try_from(center.y)?, floor: i8::try_from(-center.floor)? };
+        assert_eq!(effects.iter().filter(|(_, at, effect)| *at == center && *effect == 170).count(), 1);
+        let before = runtime.read_actor_position(boss).map_err(debug)?;
+        runtime.borrow_movement_position().commit_creature_relocation(boss, before, spawn_at).map_err(debug)?;
+    }
+    move_to(owner, players[1], landing).await?;
     Ok(())
 }
 
