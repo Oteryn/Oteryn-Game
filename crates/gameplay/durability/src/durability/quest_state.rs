@@ -67,6 +67,7 @@ mod counter_alias;
 mod map_marks;
 pub use map_marks::{PersonalQuestMapMark, QuestMapMarksSnapshot};
 pub mod npc_program;
+pub mod putrefactory;
 
 type Result<T> = std::result::Result<T, CharacterProgressionError>;
 type StoredResult<T> = std::result::Result<T, DurabilityError>;
@@ -776,18 +777,21 @@ pub mod server_timer;
 #[derive(Debug, Clone)]
 pub(super) enum QuestSourceAction {
     SoulWar(Box<soul_war_source::SoulWarSourceAction>),
+    Putrefactory(putrefactory::QualifiedPutrefactoryTick),
     RottenArea(rotten_area::QualifiedRottenAreaThink),
 }
 impl QuestSourceAction {
     fn request(&self, fence: &CurrentCharacterGameplayFence) -> Result<QuestTransitionRequest> {
         match self {
             Self::SoulWar(x) => x.request(fence),
+            Self::Putrefactory(x) => x.request(fence),
             Self::RottenArea(x) => x.request(fence),
         }
     }
     fn binding(&self, character: CharacterId, request: &QuestTransitionRequest) -> [u8; 33] {
         match self {
             Self::SoulWar(x) => x.binding(character, request),
+            Self::Putrefactory(x) => x.binding(character, request),
             Self::RottenArea(x) => x.binding(character, request),
         }
     }

@@ -95,9 +95,17 @@ fn registry() -> Result<&'static Registry, String> {
             // Fugue's native kill. Only its complete gated operation may finish it.
             add(super::hero_of_bounac::transition(), false, true)?;
             add(super::arena_completion::transition()?, false, true)?;
+            add(
+                super::rotten_blood::putrefactory::passive_transition(),
+                false,
+                false,
+            )?;
             for recipe in super::timers::RECIPES {
                 add(recipe.transition(), false, true)?;
             }
+            registry
+                .protected_tracks
+                .insert(super::rotten_blood::putrefactory::PASSIVE_CLOCK.into());
             registry.protected_tracks.extend(
                 super::native_kills::registered_counters()?.map(|counter| counter.track.into()),
             );

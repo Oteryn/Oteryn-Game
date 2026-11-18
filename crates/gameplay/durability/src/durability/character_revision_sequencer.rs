@@ -42,6 +42,7 @@ mod npc_purchase;
 mod npc_travel;
 mod proficiency_catalyst;
 mod world_access;
+mod putrefactory;
 mod rotten_area;
 mod rotten_flame;
 #[cfg(test)]

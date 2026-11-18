@@ -2,7 +2,82 @@
 use super::ComposedFreshAdmission;
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::foundation::{ExactActorRef, GameSessionId};
+use oteryn_gameplay_quests::quest::rotten_blood::putrefactory;
+
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn apply_putrefactory_tick(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        period: u64,
+    ) {
+        self.root
+            .with_background_operation(self.apply_putrefactory_tick_inner(actor, session, period))
+            .await;
+    }
+
+    async fn apply_putrefactory_tick_inner(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        period: u64,
+    ) {
+        let Some(catalogue) = self
+            .quest_catalogue
+            .as_ref()
+            .filter(|catalogue| catalogue.transition(putrefactory::PASSIVE_TICK).is_some())
+        else {
+            return;
+        };
+        if self.bundle_map().is_none() {
+            return;
+        }
+        let in_zone = {
+            let runtime = self.runtime.lock().await;
+            runtime
+                .read_actor_position(actor)
+                .ok()
+                .is_some_and(|snapshot| {
+                    let at = snapshot.position();
+                    putrefactory::accrues_charge_at(at.x, at.y, at.floor)
+                })
+        };
+        if !in_zone {
+            return;
+        }
+        let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+            return;
+        };
+        let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+        let runtime = self.runtime.lock().await;
+        let Some(input) = crate::durability::quest_state::putrefactory::QualifiedPutrefactoryTick::from_current_actor(
+            &runtime, actor, fence, period,
+        ) else {
+            return;
+        };
+        match slot
+            .commit_putrefactory_tick(
+                self.root,
+                self.character,
+                self.holder,
+                fence,
+                input,
+                std::sync::Arc::clone(catalogue),
+            )
+            .await
+        {
+            Ok(QuestTransitionOutcome::Committed(committed)) => {
+                self.apply_committed_quest_copy(session, true, &committed);
+                self.schedule_quest_refresh(session);
+            }
+            Ok(QuestTransitionOutcome::AlreadyCommitted(committed)) => {
+                self.apply_committed_quest_copy(session, false, &committed);
+                self.schedule_quest_refresh(session);
+            }
+            _ => {}
+        }
+    }
+
     pub(super) async fn drain_quest_timers(&self, actor: ExactActorRef, session: GameSessionId) {
         self.root
             .with_background_operation(self.drain_quest_timers_inner(actor, session))

@@ -1,16 +1,67 @@
 //! Crystal 201189f8, creaturescripts_putrefactory-x.lua:1-38,55-68,216.
 
+use crate::quest::{
+    QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
+};
+
 pub const CHARGE_TRACK: &str =
     "oteryn:quest-progress/crystalserver/quest/u13_20/rotten_blood/putrefactory_task";
+pub const PASSIVE_CLOCK: &str = "oteryn:quest-progress/rotten-blood/putrefactory/last-passive-tick";
+pub const PASSIVE_TICK: &str = "oteryn:quest-transition/rotten-blood/putrefactory/passive-tick";
+pub const PASSIVE_PERIOD_SECONDS: u64 = 20;
+
+/// Crystal creaturescripts_putrefactory-x.lua:41-51,140-153.
+#[must_use]
+pub fn accrues_charge_at(x: i32, y: i32, z: i16) -> bool {
+    (34002..=34115).contains(&x) && (31658..=31770).contains(&y) && (14..=15).contains(&z)
+}
 
 /// Source icon is present in the Putrefactory, its lever room and vestibule.
 /// The charge track can outlive the icon when the player leaves these rooms.
 #[must_use]
 pub fn shows_charge_icon(x: i32, y: i32, z: i16) -> bool {
-    let putrefactory =
-        (34002..=34115).contains(&x) && (31658..=31770).contains(&y) && (14..=15).contains(&z);
+    let putrefactory = accrues_charge_at(x, y, z);
     let lever_room = (32969..=32983).contains(&x) && (32328..=32338).contains(&y) && z == 15;
     let vestibule =
         (34095..=34105).contains(&x) && (31675..=31684).contains(&y) && (13..=14).contains(&z);
     putrefactory || lever_room || vestibule
+}
+
+pub(crate) fn passive_transition() -> QuestTransition {
+    QuestTransition {
+        world_change: None,
+        key: PASSIVE_TICK.into(),
+        quest: super::QUEST.into(),
+        effects: vec![
+            QuestEffect {
+                track: CHARGE_TRACK.into(),
+                // An absent -1 becomes zero in Lua. setWhiteCrossIcon then
+                // returns without writing, so passive charge cannot seed it.
+                from: QuestComparison::Between(0, 99),
+                effect: QuestEffectKind::Add(1),
+            },
+            QuestEffect {
+                track: PASSIVE_CLOCK.into(),
+                from: QuestComparison::ElapsedAtLeast(PASSIVE_PERIOD_SECONDS as i64),
+                effect: QuestEffectKind::SetNow,
+            },
+        ],
+        completes: false,
+        experience: None,
+    }
+}
+
+pub(crate) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
+    let mut tracks: Vec<_> = catalogue.tracks.into_values().collect();
+    let mut transitions: Vec<_> = catalogue.transitions.into_values().collect();
+    tracks.push(QuestTrack {
+        key: PASSIVE_CLOCK.into(),
+        quest: super::QUEST.into(),
+        initial: 0,
+        min: 0,
+        max: i64::MAX,
+    });
+    transitions.push(passive_transition());
+    QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
+        .map_err(|error| format!("{error:?}"))
 }

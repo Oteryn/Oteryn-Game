@@ -924,8 +924,15 @@ impl DurabilityRoot {
             &source_action,
             Some(super::QuestSourceAction::RottenArea(_))
         );
+        let putrefactory_key =
+            request.transition_key == oteryn_gameplay_quests::quest::rotten_blood::putrefactory::PASSIVE_TICK;
+        let putrefactory_input = matches!(
+            &source_action,
+            Some(super::QuestSourceAction::Putrefactory(_))
+        );
         if source_key != soul_input
             || area_key != area_input
+            || putrefactory_key != putrefactory_input
             || source_action
                 .as_ref()
                 .is_some_and(|input| input.request(&fence).ok().as_ref() != Some(&request))
@@ -935,7 +942,7 @@ impl DurabilityRoot {
                     if matches!(input.as_ref(), super::soul_war_source::SoulWarSourceAction::Step(_))
             ) && !soul_step
             || matches!(request.cause, QuestCause::SourceStep(_)) != soul_step
-            || matches!(request.cause, QuestCause::SourceThink(_)) && !area_input
+            || matches!(request.cause, QuestCause::SourceThink(_)) && !(area_input || putrefactory_input)
             || source_action.is_some()
                 && ((context.is_some() && !soul_step)
                     || payment.is_some()

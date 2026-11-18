@@ -53,6 +53,14 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         }
         next.store(now.saturating_add(1_000), Ordering::Relaxed);
 
+        let putrefactory_period = now / (1_000
+            * oteryn_gameplay_quests::quest::rotten_blood::putrefactory::PASSIVE_PERIOD_SECONDS);
+        let putrefactory_due = self
+            .states
+            .timed_items
+            .putrefactory_period
+            .fetch_max(putrefactory_period, Ordering::Relaxed)
+            < putrefactory_period;
         let mut sessions = {
             let runtime = self.runtime.lock().await;
             let Ok(census) = runtime.positioned_melee_census() else {
@@ -107,6 +115,10 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                         if (index - 2) % 2 == 0 {
                             self.checkpoint_timed_equipment(actor, session, false).await;
                         } else {
+                            if putrefactory_due {
+                                self.apply_putrefactory_tick(actor, session, putrefactory_period)
+                                    .await;
+                            }
                             self.drain_quest_timers(actor, session).await;
                         }
                     }

@@ -293,6 +293,8 @@ pub(super) fn lower_embedded_quest_state(
         super::rotten_blood::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::rotten_blood::area_icons::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue = super::rotten_blood::putrefactory::extend(lowered.catalogue)
+        .map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::soul_war::source_items::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =

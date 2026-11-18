@@ -20,6 +20,7 @@ pub(super) struct TimedRuntime {
     pub(super) magic_converters: tokio::sync::Mutex<HashMap<GameSessionId, MagicConverterClock>>,
     pub(super) sessions: tokio::sync::Mutex<HashMap<GameSessionId, SessionClock>>,
     pub(super) next_tick_ms: std::sync::atomic::AtomicU64,
+    pub(super) putrefactory_period: std::sync::atomic::AtomicU64,
 }
 /// A session whose player switched a magic gold converter on (Canary keeps a per-player loop).
 pub(super) struct MagicConverterClock {
