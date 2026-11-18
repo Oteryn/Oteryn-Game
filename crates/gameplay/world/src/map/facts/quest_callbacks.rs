@@ -2416,6 +2416,32 @@ mod readset_tests {
             "the stale reset cannot overwrite a newer source"
         );
         assert_eq!(facts.object_revision(owner), 4);
+        let retreat = TilePos {
+            x: 33319,
+            y: 32318,
+            floor: -13,
+        };
+        let seal = QuestCallbackProjection::TimedEntrance {
+            due: 50,
+            restore: changed,
+            position: source,
+            destination,
+            retreat: Some(retreat),
+        };
+        assert!(facts.apply_quest_callback(owner, 4, portal, &[], &[], false, Some(&seal)));
+        assert!(facts.projected_native_quest_portal(source));
+        assert_eq!(
+            facts.quest_portal_destination(source, 49),
+            Some(destination)
+        );
+        assert_eq!(facts.quest_portal_destination(source, 50), Some(retreat));
+        assert_eq!(facts.expire_movement_items(50), 1);
+        assert_eq!(facts.object_revision(owner), 6);
+        assert!(facts.projected_native_quest_portal(source));
+        assert_eq!(facts.quest_portal_destination(source, 51), Some(retreat));
+        assert!(facts.apply_quest_callback(owner, 6, ashes, &[], &[], false, None));
+        assert!(!facts.projected_native_quest_portal(source));
+        assert_eq!(facts.quest_portal_destination(source, 51), None);
         Ok(())
     }
 
