@@ -141,8 +141,8 @@ pub(super) async fn exercise(
                 ).map_err(debug)?;
                 assert_eq!(runtime.live_creature_health(boss), Some(expected));
             }
-            owner.tick_encounter_shields(&mut runtime, due);
-            owner.tick_encounter_shields(&mut runtime, due + 1499);
+            tick(owner, &mut runtime, due).await;
+            tick(owner, &mut runtime, due + 1499).await;
             assert!(fire_tile(owner, at)?.is_none());
         }
         // A rod while shielded, but before the boss has touched the fire, is harmless.
@@ -153,11 +153,11 @@ pub(super) async fn exercise(
         }
         {
             let mut runtime = owner.runtime.lock().await;
-            owner.tick_encounter_shields(&mut runtime, due + 1500);
+            tick(owner, &mut runtime, due + 1500).await;
             let fire = fire_tile(owner, at)?.ok_or("projected fire")?;
             let before = runtime.read_actor_position(boss).map_err(debug)?;
             runtime.borrow_movement_position().commit_creature_relocation(boss, before, fire).map_err(debug)?;
-            owner.tick_encounter_shields(&mut runtime, due + 1501);
+            tick(owner, &mut runtime, due + 1501).await;
             assert!(fire_tile(owner, at)?.is_none());
         }
         set_clock(due + 1501);
@@ -175,7 +175,7 @@ pub(super) async fn exercise(
     let terminal = {
         let mut runtime = owner.runtime.lock().await;
         assert!(runtime.contains_live_creature(boss));
-        owner.tick_encounter_shields(&mut runtime, after_rod + 3000);
+        tick(owner, &mut runtime, after_rod + 3000).await;
         if let Some(adds) = adds {
             assert!(adds.into_iter().all(|add| runtime.contains_live_creature(add)));
         }
@@ -202,7 +202,7 @@ pub(super) async fn exercise(
         if hard { Case::ShieldHard } else { Case::ShieldEasy }, 541).await?;
     if let Some(adds) = adds {
         let mut runtime = owner.runtime.lock().await;
-        owner.tick_encounter_shields(&mut runtime, after_rod + 12_000);
+        tick(owner, &mut runtime, after_rod + 12_000).await;
         assert!(adds.into_iter().all(|add| runtime.contains_live_creature(add)));
     }
     for (member, character) in players.iter().zip([60,61]) {
@@ -248,7 +248,7 @@ async fn exercise_refill(
     let landing = {
         let mut runtime = owner.runtime.lock().await;
         for now in [2_999, 3_000, 7_999] {
-            owner.tick_encounter_shields(&mut runtime, now);
+            tick(owner, &mut runtime, now).await;
             assert_eq!(at(&runtime, first), None, "refill before the complete delay");
             assert_eq!(at(&runtime, second), Some(survivor));
         }
@@ -257,22 +257,27 @@ async fn exercise_refill(
     move_to(owner, players[0], first).await?;
     {
         let mut runtime = owner.runtime.lock().await;
-        owner.tick_encounter_shields(&mut runtime, 8_000);
+        tick(owner, &mut runtime, 8_000).await;
         assert_eq!(at(&runtime, first), None, "occupied refill tile");
         assert_eq!(at(&runtime, second), Some(survivor));
     }
     move_to(owner, players[0], landing).await?;
     let mut runtime = owner.runtime.lock().await;
-    owner.tick_encounter_shields(&mut runtime, 8_001);
+    tick(owner, &mut runtime, 8_001).await;
     let replacement = at(&runtime, first).ok_or("delayed reinforcement")?;
     assert_ne!(replacement, fallen);
     assert!(runtime.retains_corpse_projection(fallen));
     for now in [8_001, 9_999] {
-        owner.tick_encounter_shields(&mut runtime, now);
+        tick(owner, &mut runtime, now).await;
         assert_eq!(at(&runtime, first), Some(replacement));
         assert_eq!(at(&runtime, second), Some(survivor));
     }
     Ok([replacement, survivor])
+}
+
+async fn tick(owner: &ComposedFreshAdmission<'_, '_, '_>, runtime: &mut ChannelRuntimeV1, now: u64) {
+    let mut states = owner.states.spell_states.lock().await;
+    owner.tick_encounter_outcomes(runtime, &mut states, now);
 }
 
 fn fire_tile(owner: &ComposedFreshAdmission<'_, '_, '_>, at: MovementLocalPosition) -> TestResult<Option<MovementLocalPosition>> {

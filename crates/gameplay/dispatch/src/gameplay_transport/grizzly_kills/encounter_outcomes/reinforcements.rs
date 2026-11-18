@@ -1,5 +1,7 @@
 //! Crystal 201189f8 arbaziloth_fight.lua:298-373. The encounter owns the
 //! exact reinforcement actors and one delayed refill at a time.
+mod pulse;
+
 use super::{CarrierError, ChannelRuntimeV1, Encounter, ExactActorRef, MovementLocalPosition};
 use oteryn_gameplay_quests::quest::world_callbacks::EncounterReinforcements;
 
@@ -9,6 +11,7 @@ pub(super) struct Roster {
     slots: Vec<Slot>,
     check_at: u64,
     refill: Option<(u64, Vec<usize>)>,
+    pulse: Option<pulse::Pending>,
 }
 
 #[derive(Clone, Debug)]
@@ -56,6 +59,7 @@ impl Roster {
             slots,
             check_at: now.saturating_add(u64::from(rule.check_interval_ms)),
             refill: None,
+            pulse: None,
         })
     }
 
@@ -65,6 +69,35 @@ impl Roster {
             .map(|slot| slot.actor)
             .filter(|actor| runtime.contains_live_creature(*actor))
             .collect()
+    }
+
+    pub(super) fn pulse_pending(&self) -> bool {
+        self.pulse.is_some()
+    }
+
+    pub(super) fn tick_pulse(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut crate::gameplay_transport::actor_spell::ChannelSpellStates,
+        map: &crate::map::boot::BundleMap,
+        boss: ExactActorRef,
+        now: u64,
+    ) {
+        if self.pulse.is_none()
+            && let Some(rule) = &self.rule.low_health_pulse
+            && let Some(demon) = self.slots.iter().map(|slot| slot.actor).find(|actor| {
+                runtime
+                    .live_creature_health(*actor)
+                    .is_some_and(|health| health < u64::from(rule.below_health))
+            })
+        {
+            self.pulse = pulse::Pending::begin(runtime, boss, demon, rule, map);
+        }
+        if let Some(pulse) = &mut self.pulse
+            && pulse.finish(runtime, states, now)
+        {
+            self.pulse = None;
+        }
     }
 
     pub(super) fn advance(

@@ -502,6 +502,21 @@ pub struct EncounterReinforcements {
     pub creature: String,
     pub check_interval_ms: u32,
     pub respawn_delay_ms: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub low_health_pulse: Option<EncounterReinforcementPulse>,
+}
+
+/// Crystal 201189f8 overcharged_demon.lua:113-169.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct EncounterReinforcementPulse {
+    pub below_health: u32,
+    pub boss_heal: u32,
+    pub player_damage: u32,
+    pub radius: u8,
+    pub effect: u16,
+    pub boss_min: Position,
+    pub boss_max: Position,
 }
 
 impl ShieldHandoff {
@@ -557,6 +572,17 @@ impl ShieldHandoff {
                     && adds.creature != self.support
                     && (1..=60_000).contains(&adds.check_interval_ms)
                     && (1..=60_000).contains(&adds.respawn_delay_ms)
+                    && adds.low_health_pulse.as_ref().is_none_or(|pulse| {
+                        pulse.below_health != 0
+                            && pulse.boss_heal != 0
+                            && pulse.player_damage != 0
+                            && (1..=7).contains(&pulse.radius)
+                            && pulse.effect != 0
+                            && in_room(pulse.boss_min)
+                            && in_room(pulse.boss_max)
+                            && pulse.boss_min.x <= pulse.boss_max.x
+                            && pulse.boss_min.y <= pulse.boss_max.y
+                    })
                     && room
                         .monsters
                         .iter()

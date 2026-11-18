@@ -1373,6 +1373,28 @@ impl ChannelSpellStates {
             .is_ok_and(|p| self.cloak_blood_cells.contains(&(p.x, p.y, p.floor)))
     }
 
+    /// A qualified encounter's Lua addHealth has no combat attacker.
+    pub(super) fn apply_encounter_pulse_health_loss(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<CreatureHit> {
+        self.apply_creature_damage_kind_inner(
+            runtime,
+            target,
+            session,
+            magnitude,
+            crate::player_lethal::PlayerHitKind::Mitigated,
+            now,
+            oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(None),
+            true,
+            None,
+        )
+    }
+
     /// Crystal's blood MoveEvent uses addHealth with ENERGY and a null attacker.
     #[allow(
         clippy::too_many_arguments,

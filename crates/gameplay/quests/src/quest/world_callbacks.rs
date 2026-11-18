@@ -84,9 +84,10 @@ mod treasure_source_tests;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, DeathMapReset, DeathTrackReset, DeathWindow, Encounter,
     EncounterMode, EncounterMonster, EncounterOutcome, EncounterPhase, EncounterPlayer,
-    EncounterReinforcements, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement,
-    ItemPresence, MagicEffect, MountReward, OutcomeRequirement, PartyStation, PartyTransfer,
-    Portal, PortalPair, QuestCompletion, RewardDoor, ShieldHandoff, TargetTransform,
+    EncounterReinforcementPulse, EncounterReinforcements, EncounterTiming, Facing, ItemCycle,
+    ItemDisguiseRequirement, ItemPresence, MagicEffect, MountReward, OutcomeRequirement,
+    PartyStation, PartyTransfer, Portal, PortalPair, QuestCompletion, RewardDoor, ShieldHandoff,
+    TargetTransform,
 };
 pub use ground_stack::{
     GroundStackEntry, GroundStackFact, ground_stack_matches, ground_stack_matches_at,

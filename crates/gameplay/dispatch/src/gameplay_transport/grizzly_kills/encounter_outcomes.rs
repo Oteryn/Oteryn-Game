@@ -7,6 +7,7 @@ use crate::foundation::{
     CarrierError, ChannelRuntimeV1, CreatureDeathOccurrenceKey, ExactActorRef, GameSessionId,
     MovementLocalPosition,
 };
+use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use crate::map::boot::BundleMap;
 use oteryn_gameplay_quests::quest::world_callbacks::{
     Encounter, EncounterMode, EncounterOutcome, OutcomeRequirement,
@@ -57,6 +58,10 @@ impl Outcomes {
             .get(&outcome.outcome.group)
             .map_or(self.0.len() < MAX_GROUPS, |run| {
                 !runtime.contains_live_creature(run.target)
+                    && run
+                        .reinforcements
+                        .as_ref()
+                        .is_none_or(|roster| !roster.pulse_pending())
             })
     }
 
@@ -146,9 +151,10 @@ impl Outcomes {
         })
     }
 
-    pub(in crate::gameplay_transport) fn tick_shields(
+    pub(in crate::gameplay_transport) fn tick(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
         map: &BundleMap,
         now: u64,
         cells: &crate::content::NativeEntryMovementCells,
@@ -171,6 +177,7 @@ impl Outcomes {
                 run.shield = None;
             }
             if let Some(roster) = &mut run.reinforcements {
+                roster.tick_pulse(runtime, states, map, run.target, now);
                 roster.advance(runtime, run.target, now, placeable);
             }
         }
@@ -225,9 +232,10 @@ impl Outcomes {
 }
 
 impl super::super::ComposedFreshAdmission<'_, '_, '_> {
-    pub(in crate::gameplay_transport) fn tick_encounter_shields(
+    pub(in crate::gameplay_transport) fn tick_encounter_outcomes(
         &self,
         runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
         now_ms: u64,
     ) {
         if let Some(map) = self.bundle_map()
@@ -236,7 +244,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         {
             capture
                 .outcomes
-                .tick_shields(runtime, map, now_ms, self.movement_cells());
+                .tick(runtime, states, map, now_ms, self.movement_cells());
         }
     }
 }
