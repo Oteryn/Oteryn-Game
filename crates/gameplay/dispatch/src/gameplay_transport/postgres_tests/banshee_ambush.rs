@@ -109,11 +109,14 @@ fn bindings() -> TestResult<Bindings> {
 }
 
 fn scenario() -> TestResult {
+    use super::appearance_change_postgres::observer_visibility_tests as observer;
     use super::banshee_circuit::{local, scene_world};
     run(async |admin| {
-        let h = Harness::create_with_admission_seed(admin, "banshee_hidden_flame", false, false)
+        let h = Harness::create_with_admission_seed(admin, "banshee_hidden_flame", true, false)
             .await?;
         prepare_current_session(&h).await?;
+        h.seed_pvp_target().await?;
+        observer::admit(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -177,7 +180,7 @@ fn scenario() -> TestResult {
         runtime
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
-        let peer_session = GameSessionId::decode(&id(51)).map_err(debug)?;
+        let peer_session = GameSessionId::decode(&id(110)).map_err(debug)?;
         let reservation = runtime.reserve_fresh_session(peer_session).map_err(debug)?;
         let peer = runtime.commit_fresh_session(reservation).map_err(debug)?;
         runtime
@@ -200,34 +203,43 @@ fn scenario() -> TestResult {
             .bind(client.as_slice()).bind(frame.as_slice()).execute(&h.pool).await?;
         deps.initialize(&owner).await;
         let actor = deps.actor;
-        let fence = owner
-            .current_quest_fence(session)
-            .await
-            .map_err(debug)?
-            .ok_or("fence")?;
-        owner
-            .runtime
-            .lock()
-            .await
-            .bind_attacker_lease(
-                actor,
-                session,
-                CharacterLease::new(
-                    CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
-                    fence.character_lease_generation,
+        deps.initialize_player(&owner, peer, peer_session).await;
+        for (actor, session) in [(actor, session), (peer, peer_session)] {
+            let fence = owner
+                .current_quest_fence(session)
+                .await
+                .map_err(debug)?
+                .ok_or("fence")?;
+            owner
+                .runtime
+                .lock()
+                .await
+                .bind_attacker_lease(
+                    actor,
+                    session,
+                    CharacterLease::new(
+                        CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+                        fence.character_lease_generation,
+                    )
+                    .map_err(debug)?,
                 )
-                .map_err(debug)?,
-            )
-            .map_err(debug)?;
-        let mut admitted = deps.admitted;
-        admitted.runtime_actor = Some(actor);
-        admitted.item_fence = Some(fence.item_fence());
-        owner.admit_progression_session(&mut admitted).await;
-        owner.admit_quest_session(&admitted).await;
+                .map_err(debug)?;
+            let mut admitted = deps.admitted;
+            admitted.game_session_id = session;
+            admitted.runtime_actor = Some(actor);
+            admitted.item_fence = Some(fence.item_fence());
+            owner.admit_progression_session(&mut admitted).await;
+            owner.admit_quest_session(&admitted).await;
+        }
 
         let permit = owner.spell_lane_permit().await.ok_or("spell lane")?;
         let map = owner.bundle_map().ok_or("bundle map")?;
-        for expected in [DESTINATION, START] {
+        for (actor, session, start, expected, cohorts) in [
+            (actor, session, START, DESTINATION, 1),
+            (actor, session, START, START, 1),
+            (peer, peer_session, WITNESS, DESTINATION, 2),
+            (peer, peer_session, WITNESS, WITNESS, 2),
+        ] {
             let (origin, entered) = {
                 let mut runtime = owner.runtime.lock().await;
                 let mut origin = runtime.read_actor_position(actor).map_err(debug)?;
@@ -239,7 +251,7 @@ fn scenario() -> TestResult {
                         actor,
                         session,
                         origin,
-                        local(START),
+                        local(start),
                         false,
                         &closed,
                     )
@@ -277,19 +289,22 @@ fn scenario() -> TestResult {
                 })
                 .collect::<Result<Vec<_>, _>>()?;
             positions.sort_by_key(|at| (at.x, at.y, at.floor));
-            assert_eq!(
-                positions,
-                [local(GHOST_WEST), local(GHOST_EAST), local(SKELETON)]
-            );
-            assert_eq!(
-                runtime.read_actor_position(peer).map_err(debug)?.position(),
-                local(WITNESS)
-            );
+            let expected_spawns: Vec<_> = [GHOST_WEST, GHOST_EAST, SKELETON]
+                .into_iter()
+                .flat_map(|at| std::iter::repeat_n(local(at), cohorts))
+                .collect();
+            assert_eq!(positions, expected_spawns);
+            if actor != peer {
+                assert_eq!(
+                    runtime.read_actor_position(peer).map_err(debug)?.position(),
+                    local(WITNESS)
+                );
+            }
         }
-        let progress: Vec<(String,i64)> = sqlx::query_as(
-            "SELECT track_key, value FROM game_character_quest_tracks WHERE quest_key=$1 ORDER BY track_key"
+        let progress: Vec<(String,i64,i64)> = sqlx::query_as(
+            "SELECT track_key, value, count(*) FROM game_character_quest_tracks WHERE quest_key=$1 GROUP BY track_key,value ORDER BY track_key"
         ).bind(QUEST).fetch_all(&h.pool).await?;
-        assert_eq!(progress, [(FIRST.to_owned(), 1), (DOOR.to_owned(), 1)]);
+        assert_eq!(progress, [(FIRST.to_owned(), 1, 2), (DOOR.to_owned(), 1, 2)]);
         Ok(())
     })
 }
