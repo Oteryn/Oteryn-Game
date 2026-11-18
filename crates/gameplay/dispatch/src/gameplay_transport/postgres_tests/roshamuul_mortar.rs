@@ -175,20 +175,6 @@ async fn exercise(h: &Harness) -> TestResult {
         .map_err(|()| "fence")?
         .ok_or("fence")?;
     admitted.item_fence = Some(fence.item_fence());
-    deps.runtime
-        .lock()
-        .await
-        .bind_attacker_lease(
-            deps.actor,
-            admitted.game_session_id,
-            crate::foundation::CharacterLease::new(
-                crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
-                    .map_err(debug)?,
-                fence.character_lease_generation,
-            )
-            .map_err(debug)?,
-        )
-        .map_err(debug)?;
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
         .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
