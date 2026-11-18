@@ -3,6 +3,7 @@
 //! Court Warlock: court_warlock_fight.lua:323-329 (room players);
 //! MagmaBubbleDeath: creaturescripts_magma_bubble_death.lua:12-23 (damage map);
 //! GoblinLeaderDeath: creaturescripts_goblin_leader_kill.lua:3-8 (damaging players).
+//! ShardOfCorruptionDeath: Crystal 201189f creaturescripts_shard_of_corruption_kill.lua:3-14.
 //! Herald: Crystal 9f5a72c creaturescripts_herald_of_fire.lua:43-45, local top-damage recipient.
 use super::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
@@ -161,7 +162,22 @@ pub fn rules() -> Result<&'static [Rule], &'static str> {
     static RULES: OnceLock<Result<Vec<Rule>, String>> = OnceLock::new();
     RULES
         .get_or_init(|| {
-            let mut rules = Vec::new();
+            let mut rules = vec![Rule {
+                creature: "oteryn:creature.shard_of_corruption".into(),
+                transition: "oteryn:quest-transition/quest/u8_54/the_new_frontier/questline/creature_event_1".into(),
+                effects: vec![Effect {
+                    track: "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline".into(),
+                    default: 0,
+                    from: Comparison { kind: "eq".into(), value: 11 },
+                    set: Some(12),
+                    add: None,
+                }],
+                room: None,
+                top_damage_only: false,
+                define_transition: false,
+                epoch_tracks: None,
+                quest: "oteryn:quest.the_new_frontier_quest".into(),
+            }];
             for doc in documents()? {
                 for mut rule in doc.rules {
                     // Already owned atomically by character_hazard/primal.rs; never issue it twice.
