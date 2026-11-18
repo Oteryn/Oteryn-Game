@@ -21,7 +21,7 @@ pub(super) fn selectors() -> impl Iterator<Item = (u16, u16)> {
         let x = match index {
             0 => CHEST.0,
             1 => CHEST.0 - 2,
-            _ => CHEST.0 + uid - 57238,
+            _ => CHEST.0 + (uid - 57238),
         };
         (x, uid)
     })
