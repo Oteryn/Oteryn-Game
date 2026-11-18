@@ -418,6 +418,9 @@ pub struct Encounter {
     /// Cooldown of the sole boss admitted by a fenced personal StepIn.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub personal_cooldown_seconds: Option<u32>,
+    /// For UID-bound personal StepIn, stage the caller at the resolved portal tile.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub personal_entry_landing: Option<Position>,
     /// Expire the visit and return the admitted participant to the original step tile.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub personal_timeout_ms: Option<u32>,
@@ -1428,6 +1431,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let source_party =
             encounter.phase == Some(EncounterPhase::Cults) || encounter.shared_staging;
         let personal_cooldown = encounter.personal_cooldown_seconds.is_some();
+        let uid_landing = callback.personal_uid_landing();
         if (encounter.minimum_level == 0 && !source_party && !personal_cooldown)
             || encounter.death_phases.as_ref().is_some_and(|plan| {
                 callback.trigger != Trigger::Use
@@ -1440,7 +1444,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     || callback.has_personal_state()))
             || encounter.personal_cooldown_seconds.is_some_and(|seconds| {
                 !(1..=30 * 24 * 60 * 60).contains(&seconds)
-                    || callback.personal_room_entry().is_none()
+                    || (callback.personal_room_entry().is_none() && uid_landing.is_none())
                     || !callback.return_on_failure
                     || encounter.phase.is_some()
                     || encounter.monsters.len() != 1
@@ -1449,6 +1453,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 !(1..=3_600_000).contains(&milliseconds) || !personal_cooldown
             })
             || (encounter.personal_timeout_room_sweep && encounter.personal_timeout_ms.is_none())
+            || (encounter.personal_entry_landing.is_some()
+                && (!personal_cooldown || uid_landing.is_none_or(|landing| {
+                    !pos(landing) || !in_room(landing) || unique_monsters.contains(&landing)
+                })))
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()
@@ -1466,7 +1474,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         * (u64::from(encounter.room_max.y.saturating_sub(encounter.room_min.y)) + 1)
                         > 4096
             } else {
-                !(1..=if encounter.phase.is_some() || encounter.shared_staging {
+                uid_landing.is_none() && !(1..=if encounter.phase.is_some() || encounter.shared_staging {
                     16
                 } else {
                     8

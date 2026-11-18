@@ -634,17 +634,32 @@ impl Callback {
     /// Runtime admission still rejects every other player in that room.
     #[must_use]
     pub fn personal_room_entry(&self) -> Option<Position> {
-        let encounter = self.effects.encounter.as_ref()?;
+        let encounter = self.personal_step_encounter()?;
         let [member] = encounter.players.as_slice() else {
             return None;
         };
+        (self.selector.position == Some(member.from)).then_some(member.from)
+    }
+
+    /// Crystal 201189f8, the_first_dragon/movements_entrance_teleport.lua:1-38,47-50,93-95.
+    /// The unique portal's actual map placement supplies the staging tile.
+    pub fn personal_uid_landing(&self) -> Option<Position> {
+        let encounter = self.personal_step_encounter()?;
+        self.selector.unique?;
+        encounter
+            .players
+            .is_empty()
+            .then_some(encounter.personal_entry_landing?)
+    }
+
+    fn personal_step_encounter(&self) -> Option<&Encounter> {
+        let encounter = self.effects.encounter.as_ref()?;
         (self.requires_world_admission
             && self.has_personal_state()
             && self.actor_kind == ActorKind::Player
             && self.trigger == Trigger::StepIn
-            && encounter.timing.is_none()
-            && self.selector.position == Some(member.from))
-        .then_some(member.from)
+            && encounter.timing.is_none())
+        .then_some(encounter)
     }
 
     /// Canary action_horn.lua:38-50: mammoth progress requires a currently active

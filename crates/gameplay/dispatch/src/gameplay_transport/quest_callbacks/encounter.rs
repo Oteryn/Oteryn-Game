@@ -325,7 +325,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };
-        let personal_entry = callback.personal_room_entry().map(local);
+        let uid_entry = if let Some(to) = callback.personal_uid_landing() {
+            let Some((pos, _)) = crate::map::view::placement_of(key) else {
+                return UseDisposition::Rejected;
+            };
+            Some(world_callbacks::EncounterPlayer {
+                from: Position {
+                    x: pos.x,
+                    y: pos.y,
+                    floor: pos.floor,
+                },
+                to,
+            })
+        } else {
+            None
+        };
+        let personal_entry = uid_entry
+            .as_ref()
+            .map(|member| member.from)
+            .or_else(|| callback.personal_room_entry())
+            .map(local);
         if census.iter().any(|(who, pos, occupant_session)| {
             (occupant_session.is_some() || encounter.personal_cooldown_seconds.is_some())
                 && room_contains(encounter, pos.position())
@@ -338,7 +357,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let mut players = Vec::new();
         let mut proofs = Vec::new();
-        for member in &encounter.players {
+        let staging = uid_entry
+            .as_ref()
+            .map_or(encounter.players.as_slice(), std::slice::from_ref);
+        for member in staging {
             let mut occupants = census
                 .iter()
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
