@@ -1,6 +1,7 @@
 //! Durable callback commit followed by its prepared map effects.
 use super::*;
 use crate::durability::character_revision_sequencer::RevisionSlot;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
@@ -217,6 +218,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Occupied;
         }
         let before = after;
+        // Crystal 201189f8 actions_mission03_the_keeper.lua:10–16: the
+        // terminal offering summons at a fixed cell and leaves the plant intact.
+        let offering_spawn = if let Some(spawn) = &callback.effects.offering_spawn {
+            let Some(native) = self.active_generation.and_then(|g| g.native_gameplay()) else {
+                return UseDisposition::Rejected;
+            };
+            if native.install_companion_policies(runtime).is_err() {
+                return UseDisposition::Rejected;
+            }
+            let at = local(spawn.position);
+            if !super::super::encounter_phases::placement(self.movement_cells(), runtime, at)
+                || !runtime.native_summon_cell_free(at)
+            {
+                return UseDisposition::Occupied;
+            }
+            let Ok(policy) = runtime.companion_policy(&spawn.creature) else {
+                return UseDisposition::Rejected;
+            };
+            Some((spawn, policy.maximum_health, at))
+        } else {
+            None
+        };
         if let Some(pair) = callback.lever {
             after.appearance_id = pair[usize::from(!close)];
         }
@@ -1518,6 +1541,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             underwater(map, after.position()),
                         );
                     }
+                }
+            } else if let Some((spawn, health, at)) = offering_spawn {
+                if runtime
+                    .commit_quest_creature_spawn_with_projection(
+                        &[(spawn.creature.as_str(), health, at)],
+                        apply_scene,
+                    )
+                    .is_err()
+                {
+                    return UseDisposition::Rejected;
+                }
+                if let Some(effect) = spawn.magic {
+                    map.facts.emit_movement_effect(tile(spawn.position), effect);
                 }
             } else if let Some(spawn) = &callback.effects.awakened_creature {
                 if states

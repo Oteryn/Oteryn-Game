@@ -916,6 +916,8 @@ fn scenario_case(
         super::super::qewrath_herald_escape::world(&callback)?
     } else if name == super::super::qewrath_wall_recreation::NAME {
         world(&super::super::qewrath_wall_recreation::fixture()?, trigger)?
+    } else if name == super::super::qewrath_keeper_summon::NAME {
+        super::super::qewrath_keeper_summon::world()?
     } else if name == "questpc7-outfits-formal" {
         // The fixture includes the same admitted entry appearance as the real palace.
         let mut physical = callback.clone();
@@ -948,6 +950,7 @@ fn scenario_case(
             )
             || name == super::super::qewrath_incarnation::NAME
             || name == super::super::qewrath_incarnation_remains::NAME
+            || name == super::super::qewrath_keeper_summon::NAME
             || name == super::super::qewrath_keeper_tail::NAME
             || name == "qewrath-npc-handoff-dragon"
             || name.starts_with(super::super::qewrath_prison_release::PREFIX)
@@ -2483,6 +2486,8 @@ fn scenario_case(
             Box::pin(super::super::qewrath_payback_forms::exercise(&mut owner, &mut admitted, name.ends_with("-timeout"))).await?;
         } else if name.starts_with(super::super::qewrath_prison_release::PREFIX) {
             Box::pin(super::super::qewrath_prison_release::exercise(&mut owner, &mut admitted, &h, name.ends_with("-with-crate"))).await?;
+        } else if name == super::super::qewrath_keeper_summon::NAME {
+            Box::pin(super::super::qewrath_keeper_summon::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == super::super::qewrath_keeper_tail::NAME {
             Box::pin(super::super::qewrath_keeper_tail::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == super::super::qewrath_incarnation_remains::NAME {

@@ -112,6 +112,9 @@ pub struct CallbackEffects {
     /// A retained tool awakens one transformed map object until its exact actor dies.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub awakened_creature: Option<EncounterMonster>,
+    /// An immediate source summon made after the selected offering commits.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub offering_spawn: Option<OfferingSpawn>,
 }
 
 /// The original wire shapes retain distinct owners: a child quest or the current quest.
@@ -308,6 +311,15 @@ pub struct EncounterMonster {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
+pub struct OfferingSpawn {
+    pub creature: String,
+    pub position: Position,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub magic: Option<u16>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct Encounter {
     pub minimum_level: u32,
     pub players: Vec<EncounterPlayer>,
@@ -438,6 +450,41 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if let Some(spawn) = &effects.offering_spawn
+        && (callback.trigger != Trigger::Use
+            || callback.actor_kind != ActorKind::Player
+            || !callback.requires_world_admission
+            || !callback.has_personal_state()
+            || callback.is_read_only()
+            || callback.selector.action.is_none()
+            || callback.reversible
+            || callback.lever.is_some()
+            || callback.teleport.is_some()
+            || callback.remote_teleport.is_some()
+            || !callback.passages.is_empty()
+            || !callback.offerings.is_empty()
+            || !callback.item_on_target.as_ref().is_some_and(|tool| {
+                tool.selected_instance
+                    && tool.count == 1
+                    && !tool.reusable
+                    && !tool.target_remove
+                    && tool.replacement.is_none()
+                    && tool.target_replacement.is_none()
+                    && tool.ingredients.is_empty()
+            })
+            || !(-15..=0).contains(&spawn.position.floor)
+            || !spawn.creature.starts_with("oteryn:creature.")
+            || !super::super::valid_quest_key(&spawn.creature)
+            || spawn.magic == Some(0)
+            || *effects
+                != CallbackEffectSet::from_shared(CallbackEffects {
+                    offering_spawn: Some(spawn.clone()),
+                    magic: effects.magic.clone(),
+                    ..Default::default()
+                }))
+    {
+        return false;
+    }
     if effects.awakened_creature.as_ref().is_some_and(|spawn| {
         callback.trigger != Trigger::Use
             || !callback.requires_world_admission
