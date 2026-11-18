@@ -69,8 +69,10 @@ impl DurabilityRoot {
             runtime_scope: fence.runtime_scope,
             scope_ownership_generation: fence.scope_ownership_generation,
         };
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| {
+        let mut context = permit;
+        self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, permit| {
             Box::pin(async move {
+                let permit: &SpellLanePermit = permit;
                 let mut tx = begin_type2_transaction(holder, deadline).await?;
                 assert_recovery_fence(&mut tx, &recovery).await?;
                 lock_admission_relations(&mut tx).await?;
@@ -113,7 +115,7 @@ impl DurabilityRoot {
                             g.spatial_position,g.stack_ordinal
                          FROM game_item_ground_locations g WHERE g.item_instance_id=encode($1,'hex')::uuid
                             AND g.spatial_position=$2 AND g.stack_ordinal=$3
-                         ON CONFLICT (world_id,channel_id,run_id,pit,spatial_position) DO NOTHING
+                         ON CONFLICT DO NOTHING
                          RETURNING game_character_uuid_v7()::text,game_character_uuid_v7()::text",
                     )
                     .bind(item.as_slice())

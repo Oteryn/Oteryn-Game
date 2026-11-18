@@ -45,6 +45,7 @@ pub(super) async fn exercise(
     admitted: &mut AdmittedSession,
     h: &Harness,
     actor: ExactActorRef,
+    pit_ground_reset: bool,
 ) -> TestResult {
     owner
         .states
@@ -80,6 +81,11 @@ pub(super) async fn exercise(
         ArenaDisposition::WrongState
     );
     assert_eq!(fees(h).await?, 0);
+    let observed = if pit_ground_reset {
+        Some(super::qcx61_pit_ground_reset::seed(owner, admitted, h).await?)
+    } else {
+        None
+    };
 
     classic_quests::talk(owner, admitted, halvar, 20300, "hi").await?;
     let quote = classic_quests::talk(owner, admitted, halvar, 20301, "fight").await?;
@@ -123,6 +129,9 @@ pub(super) async fn exercise(
             .fetch_one(&h.pool)
             .await?;
     assert_eq!(leases, 1);
+    if let Some(observed) = observed {
+        super::qcx61_pit_ground_reset::assert_retirement(h, observed).await?;
+    }
     Ok(())
 }
 

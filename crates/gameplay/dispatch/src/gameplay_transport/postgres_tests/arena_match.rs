@@ -128,6 +128,7 @@ enum NativeScenario {
     RecreatedPillars,
     Departure,
     Halvar,
+    PitGroundReset,
     Timeout,
     ResetMonsters,
     SharedRewards,
@@ -196,6 +197,10 @@ pub(super) fn halvar_paid_entrance() -> TestResult {
     scenario_route(true, Some(NativeScenario::Halvar))
 }
 
+pub(super) fn native_pit_ground_reset() -> TestResult {
+    scenario_route(true, Some(NativeScenario::PitGroundReset))
+}
+
 pub(super) fn spectator_transfer() -> TestResult {
     scenario_route(true, Some(NativeScenario::SpectatorTransfer))
 }
@@ -204,7 +209,8 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
     let native_portals = route.is_some();
     let shared_rewards = matches!(route, Some(NativeScenario::SharedRewards));
     let concede = matches!(route, Some(NativeScenario::Concession));
-    let halvar = matches!(route, Some(NativeScenario::Halvar));
+    let pit_ground_reset = matches!(route, Some(NativeScenario::PitGroundReset));
+    let halvar = pit_ground_reset || matches!(route, Some(NativeScenario::Halvar));
     let leave_early = concede || matches!(route, Some(NativeScenario::Departure));
     let timeout_early = matches!(route, Some(NativeScenario::Timeout));
     let reset_monsters = matches!(route, Some(NativeScenario::ResetMonsters));
@@ -377,7 +383,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
             ));
         }
         if halvar {
-            return super::qcx61_halvar::exercise(&mut owner, &mut admitted, &harness, deps.actor).await;
+            return super::qcx61_halvar::exercise(&mut owner, &mut admitted, &harness, deps.actor, pit_ground_reset).await;
         }
         if matches!(route, Some(NativeScenario::SpectatorTransfer)) {
             return super::qcx61_pit_spectator::exercise(&owner, admitted, &harness, deps.actor).await;

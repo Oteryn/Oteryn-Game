@@ -14,14 +14,28 @@ CREATE TABLE game_svargrond_ground_retirements (
     expires_at_ms BIGINT NOT NULL CHECK (expires_at_ms > 0),
     spatial_position BYTEA NOT NULL CHECK (octet_length(spatial_position) = 10),
     source_stack_ordinal BIGINT NOT NULL CHECK (source_stack_ordinal > 0),
-    created_xact_id XID8 NOT NULL DEFAULT pg_current_xact_id(),
-    UNIQUE (world_id, channel_id, run_id, pit, spatial_position)
+    created_xact_id XID8 NOT NULL DEFAULT pg_current_xact_id()
 );
+
+-- Both durable coordinate forms for the same pit floor share one observation.
+CREATE UNIQUE INDEX game_svargrond_ground_retirement_cell
+    ON game_svargrond_ground_retirements
+    (world_id, channel_id, run_id, pit, substring(spatial_position FROM 1 FOR 8));
 
 CREATE FUNCTION game_svargrond_ground_retirement_before() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+    x0 INTEGER := 32205 + (ARRAY[0,-14,-28,-42,-35,-21,-7,-14,-28,-21])[NEW.pit];
+    y0 INTEGER := 31094 + (ARRAY[0,0,0,0,-14,-14,-14,-28,-28,-42])[NEW.pit];
 BEGIN
     IF NEW.created_xact_id <> pg_current_xact_id()
+       OR octet_length(NEW.spatial_position) <> 10
+       OR x0 IS NULL OR y0 IS NULL
+       OR substring(NEW.spatial_position FROM 1 FOR 2) <> '\x0000'::bytea
+       OR substring(NEW.spatial_position FROM 5 FOR 2) <> '\x0000'::bytea
+       OR get_byte(NEW.spatial_position,2)*256+get_byte(NEW.spatial_position,3) NOT BETWEEN x0 AND x0+9
+       OR get_byte(NEW.spatial_position,6)*256+get_byte(NEW.spatial_position,7) NOT BETWEEN y0 AND y0+9
+       OR substring(NEW.spatial_position FROM 9 FOR 2) NOT IN ('\x0007'::bytea,'\xfff9'::bytea)
        OR NOT EXISTS (
            SELECT 1
            FROM game_svargrond_pit_leases l
