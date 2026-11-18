@@ -24,11 +24,9 @@ const LEVER: MovementLocalPosition = MovementLocalPosition {
     y: 30993,
     floor: 14,
 };
-const ENTRY: MovementLocalPosition = MovementLocalPosition {
-    x: 33621,
-    y: 31023,
-    floor: 14,
-};
+const ENTRY: MovementLocalPosition = MovementLocalPosition { x: 33592, y: 31017, floor: 14 };
+const PEER_ENTRY: MovementLocalPosition = MovementLocalPosition { x: 33574, ..ENTRY };
+const FINALE: MovementLocalPosition = MovementLocalPosition { x: 33621, y: 31023, floor: 14 };
 const EXIT: MovementLocalPosition = MovementLocalPosition {
     x: 33597,
     y: 30994,
@@ -447,16 +445,15 @@ fn scenario(victory: bool, two_players: bool) -> TestResult {
                 ENTRY
             );
             let creatures = runtime.visible_entities().creatures;
-            assert_eq!(creatures.len(), 1);
-            assert_eq!(
-                runtime
-                    .companion_snapshot(creatures[0].actor)
-                    .map_err(debug)?
-                    .state
-                    .policy
-                    .definition_key,
-                CREATURE
-            );
+            let mut roster = std::collections::BTreeMap::new();
+            for creature in creatures {
+                let key = runtime.companion_snapshot(creature.actor).map_err(debug)?.state.policy.definition_key.clone();
+                *roster.entry(key).or_insert(0) += 1;
+            }
+            assert_eq!(roster.get("oteryn:creature.fallen_challenger"), Some(&5));
+            assert_eq!(roster.get("oteryn:creature.spirit_of_fertility"), Some(&1));
+            assert_eq!(roster.get("oteryn:creature.unbeatable_dragon"), Some(&5));
+            assert!(!roster.contains_key(CREATURE));
         }
         let entered_peer = if let Some(peer) = peer {
             let next = owner.activity_runtimes.current_connection(peer);
@@ -464,7 +461,7 @@ fn scenario(victory: bool, two_players: bool) -> TestResult {
             assert_eq!(next.item_fence.ok_or("entered peer fence")?.runtime_scope, instance);
             assert_eq!(
                 destination.runtime.lock().await.read_actor_position(next.runtime_actor.ok_or("entered peer actor")?).map_err(debug)?.position(),
-                ENTRY,
+                PEER_ENTRY,
             );
             Some(next)
         } else { None };
@@ -472,6 +469,7 @@ fn scenario(victory: bool, two_players: bool) -> TestResult {
             .bind(handoff.as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(timers, (1_200_000, 72_000_000));
         if victory {
+            exercise_finale_phases(&destination, &mut admitted).await?;
             settle_selected_boss(&destination, &admitted).await?;
             let completed: (Option<i64>,Option<i64>,Option<bool>,Option<i64>) = sqlx::query_as("SELECT (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),(SELECT value FROM game_character_quest_tracks WHERE track_key=$2),(SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE quest_key=$3),(SELECT value FROM game_character_quest_tracks WHERE quest_key=$3 AND track_key=$4)")
                 .bind("oteryn:quest-progress/chosen-source/the_first_dragon_quest/s5")
@@ -531,14 +529,14 @@ fn scenario(victory: bool, two_players: bool) -> TestResult {
             .await
             .map_err(|_| "retire selected activity")?;
         if victory {
-            // The durable owner retires one Ground root per bounded pass
-            // (item_decay_retire/activity_retirement.rs). The real native
-            // death leaves one empty corpse; the next cadence proves Ground
-            // is empty before unregistering the private runtime.
-            owner
-                .activity_lifecycle_pass()
-                .await
-                .map_err(|_| "finish selected corpse retirement")?;
+            // Each native death may leave a Ground root. Retire every root before
+            // checking that the private runtime itself was removed.
+            for _ in 0..15 {
+                if owner.activity_runtimes.get(instance, assignment.ownership_generation).is_none() {
+                    break;
+                }
+                owner.activity_lifecycle_pass().await.map_err(|_| "finish finale corpse retirement")?;
+            }
         }
         assert!(
             owner
@@ -647,6 +645,93 @@ async fn prepare_peer(
     Ok(peer)
 }
 
+async fn exercise_finale_phases(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut super::AdmittedSession,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_spatial::{StepDirection, encode_step_intent};
+    let actor = admitted.runtime_actor.ok_or("finale player")?;
+    let fallen = "oteryn:creature.fallen_challenger";
+    let challenger = {
+        let mut runtime = owner.runtime.lock().await;
+        let challenger = creatures(&runtime, fallen)[0];
+        let from = runtime.read_actor_position(challenger).map_err(debug)?;
+        let adjacent = MovementLocalPosition { y: ENTRY.y - 1, ..ENTRY };
+        runtime.borrow_movement_position().commit_creature_relocation(challenger, from, adjacent).map_err(debug)?;
+        challenger
+    };
+    kill_phase_creature(owner, admitted, challenger, fallen, 510).await?;
+    super::quest_world_callbacks::wire(owner, admitted, 2, 1, encode_step_intent(StepDirection::North)).await?;
+    assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), FINALE);
+    let somewhat = "oteryn:creature.somewhat_beatable";
+    for index in 0..5 {
+        let target = {
+            let mut runtime = owner.runtime.lock().await;
+            let initial = creatures(&runtime, "oteryn:creature.unbeatable_dragon")[0];
+            let at = runtime.read_actor_position(initial).map_err(debug)?.position();
+            // Fixture supplies the completed tile transformation. The mounted
+            // monster StepIn case exercises the real blossom and corpse rules.
+            runtime.replace_quest_creature_at(initial, "oteryn:creature.unbeatable_dragon", somewhat, at, || true).map_err(debug)?
+        };
+        kill_phase_creature(owner, admitted, target, somewhat, 520 + index).await?;
+        assert_eq!(creatures(&*owner.runtime.lock().await, "oteryn:creature.dragon_essence").len(), if index == 4 { 6 } else { 0 });
+    }
+    let essence = "oteryn:creature.dragon_essence";
+    let target = creatures(&*owner.runtime.lock().await, essence)[0];
+    kill_phase_creature(owner, admitted, target, essence, 530).await?;
+    let runtime = owner.runtime.lock().await;
+    assert!(creatures(&runtime, essence).is_empty());
+    assert_eq!(creatures(&runtime, CREATURE).len(), 1);
+    Ok(())
+}
+
+fn creatures(runtime: &crate::foundation::ChannelRuntimeV1, name: &str) -> Vec<crate::foundation::ExactActorRef> {
+    runtime.visible_entities().creatures.into_iter().filter_map(|view| {
+        runtime.companion_snapshot(view.actor).ok().filter(|state| state.state.policy.definition_key == name).map(|_| view.actor)
+    }).collect()
+}
+
+async fn kill_phase_creature(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &super::AdmittedSession,
+    target: crate::foundation::ExactActorRef,
+    creature: &str,
+    command: u64,
+) -> TestResult {
+    use crate::foundation::{CommandId, CommandRef};
+    use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink};
+    let session = admitted.game_session_id;
+    let actor = admitted.runtime_actor.ok_or("phase killer")?;
+    let observed = owner.owner_now();
+    let now = observed.get() / 1000;
+    let queue = owner.states.attack.lock().await.kills().clone();
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let lease = runtime.bound_attacker_lease(actor, session).map_err(debug)?;
+        let health = runtime.companion_snapshot(target).map_err(debug)?.health;
+        runtime.borrow_exact_actor_commit_at(now).commit_damage_for_bound_attacker(
+            target, actor, CommandRef::new(session, CommandId::new(command).map_err(debug)?), 0,
+            crate::foundation::OwnerDamageCommand {
+                target: creature.as_bytes(), occurrence: session.as_bytes(),
+                binding: b"first-dragon-phase-death", damage: health,
+            },
+        ).map_err(debug)?;
+        crate::gameplay_transport::kill_reward::record_creature_kill(
+            &mut runtime, KillSink {
+                prey: Some(&states), activity: &[], queue: &queue, rewards: owner.reward_table(),
+                charms: None,
+            }, target,
+            crate::combat::CapturedRewardPrincipal {
+                character: lease.character_id(), lease_generation: lease.generation(), session, actor,
+            },
+            now, Some(observed),
+        );
+    }
+    assert_eq!(owner.drain_kill_rewards(session).await, DrainOutcome::Drained);
+    Ok(())
+}
+
 async fn settle_selected_boss(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &crate::gameplay_transport::connection::AdmittedSession,
@@ -718,12 +803,7 @@ async fn settle_selected_boss(
     {
         let mut runtime = owner.runtime.lock().await;
         let creature = CREATURE;
-        let target = runtime
-            .visible_entities()
-            .creatures
-            .first()
-            .ok_or("native First Dragon")?
-            .actor;
+        let target = *creatures(&runtime, CREATURE).first().ok_or("native First Dragon")?;
         let lease = runtime
             .bound_attacker_lease(actor, session)
             .map_err(debug)?;
