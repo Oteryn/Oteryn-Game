@@ -14,6 +14,9 @@ use oteryn_gameplay_quests::quest::{
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
+#[path = "shyal2_npc_draws/live.rs"]
+mod live;
+
 const QUEST: &str = "oteryn:quest.shadows_of_yalahar_quest";
 const ORDER: [&str; 3] = [
     "oteryn:quest-progress/shyal2/mission10-order1",
@@ -91,12 +94,15 @@ fn run(
         .map_err(Into::into)
 }
 
-async fn exercise(
-    h: &fixture::Harness,
-    tracks: &[&str],
-    pool: i64,
-    requests: u64,
-) -> fixture::TestResult {
+struct DrawProgram {
+    source: NpcRuleCatalog,
+    catalogue: QuestStateCatalogue,
+    npc: &'static str,
+    keyword: &'static str,
+    rule: &'static str,
+}
+
+fn draw_program(tracks: &[&str], pool: i64) -> fixture::TestResult<DrawProgram> {
     let (npc, keyword, reference) = if tracks.len() == 3 {
         (
             "oteryn:npc.telas",
@@ -130,10 +136,15 @@ async fn exercise(
             })
         })
         .collect();
+    let guards = if tracks.len() == 3 {
+        serde_json::json!([{"kind": "storage", "track": ORDER[0], "op": "eq", "value": 0}])
+    } else {
+        serde_json::json!([])
+    };
     let source = NpcRuleCatalog::from_json_documents(&[&serde_json::json!({
         "schema": 1, "quest": QUEST, "tracks": doc_tracks,
         "rules": [{"key": rule, "quest": QUEST, "npc": npc, "trigger": "say",
-            "keywords": [keyword], "guards": [],
+            "keywords": [keyword], "guards": guards,
             "effects": [{"kind": "draw", "tracks": tracks,
                 "candidates": (1..=pool).collect::<Vec<_>>()}],
             "sources": [reference]}],
@@ -145,25 +156,46 @@ async fn exercise(
         .iter()
         .map(|b| format!("{b:02x}"))
         .collect::<String>();
-    let catalogue = Arc::new(
-        QuestStateCatalogue::new(
-            "content-1",
-            definitions,
-            vec![QuestTransition {
-                key: format!("oteryn:quest-npc-pin/{digest}"),
-                quest: QUEST.into(),
-                effects: vec![QuestEffect {
-                    track: tracks[0].into(),
-                    from: QuestComparison::Any,
-                    effect: QuestEffectKind::Computed,
-                }],
-                completes: false,
-                experience: None,
-                world_change: None,
+    let catalogue = QuestStateCatalogue::new(
+        "content-1",
+        definitions,
+        vec![QuestTransition {
+            key: format!("oteryn:quest-npc-pin/{digest}"),
+            quest: QUEST.into(),
+            effects: vec![QuestEffect {
+                track: tracks[0].into(),
+                from: QuestComparison::Any,
+                effect: QuestEffectKind::Computed,
             }],
-        )
-        .map_err(fixture::debug)?,
-    );
+            completes: false,
+            experience: None,
+            world_change: None,
+        }],
+    )
+    .map_err(fixture::debug)?;
+    Ok(DrawProgram {
+        source,
+        catalogue,
+        npc,
+        keyword,
+        rule,
+    })
+}
+
+async fn exercise(
+    h: &fixture::Harness,
+    tracks: &[&str],
+    pool: i64,
+    requests: u64,
+) -> fixture::TestResult {
+    let DrawProgram {
+        source,
+        catalogue,
+        npc,
+        keyword,
+        rule,
+    } = draw_program(tracks, pool)?;
+    let catalogue = Arc::new(catalogue);
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
         .bind(fixture::id(fixture::WORLD).as_slice())
         .bind(fixture::id(fixture::CHANNEL).as_slice())
