@@ -755,7 +755,7 @@ impl DurabilityRoot {
                                 AND e.world_id = i.world_id \
                                JOIN game_item_instances ci \
                                  ON ci.item_instance_id = e.parent_item_instance_id \
-                                AND ci.lifecycle = 1 \
+                                AND ci.lifecycle = 1 AND game_lord_ashes_loot_open(ci.item_instance_id) \
                               WHERE i.item_instance_id = encode($1,'hex')::uuid \
                                 AND i.lifecycle = 1",
                         )
@@ -804,7 +804,7 @@ impl DurabilityRoot {
                                ON i.item_instance_id = r.item_instance_id \
                             WHERE r.item_instance_id = encode($1,'hex')::uuid \
                               AND r.loot_purpose_key = $2 \
-                              AND i.lifecycle = 1)",
+                              AND i.lifecycle = 1 AND game_lord_ashes_loot_open(i.item_instance_id))",
                     )
                     .bind(corpse_item_instance_id.as_slice())
                     .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
@@ -1551,6 +1551,7 @@ async fn load_corpse_entry_source(
              ON g.item_instance_id = e.parent_item_instance_id AND g.world_id = e.world_id \
            JOIN game_item_instances ci \
              ON ci.item_instance_id = e.parent_item_instance_id AND ci.lifecycle = 1 \
+             AND game_lord_ashes_loot_open(ci.item_instance_id) \
            LEFT JOIN game_item_keys k ON k.item_instance_id = i.item_instance_id \
           WHERE i.item_instance_id = encode($1,'hex')::uuid AND i.lifecycle = 1",
     )

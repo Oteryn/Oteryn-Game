@@ -81,6 +81,7 @@ fn chamber(case: ChamberCase) -> TestResult {
                 .movement_cells(activated.qualified_room().movement_cells())
                 .map_err(debug)?;
             let frame = world.frame_binding_digest(deps.admitted.world_id);
+            record_item_content(&h, generation.identity(), frame).await?;
             let room = activated
                 .qualified_room()
                 .bundle_view(
@@ -413,6 +414,20 @@ fn chamber(case: ChamberCase) -> TestResult {
             Ok(())
         })
     })
+}
+
+pub(super) async fn record_item_content(
+    h: &Harness,
+    identity: &crate::content::GenerationIdentity,
+    frame: [u8; 32],
+) -> TestResult {
+    sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4) ON CONFLICT DO NOTHING")
+        .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
+    sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
+        .bind(id(42).as_slice()).bind(id(43).as_slice())
+        .bind(identity.server_artifact_digest().as_slice()).bind(identity.client_artifact_digest().as_slice())
+        .bind(frame.as_slice()).execute(&h.pool).await?;
+    Ok(())
 }
 
 fn local(position: world_callbacks::Position) -> crate::foundation::MovementLocalPosition {

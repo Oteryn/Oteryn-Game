@@ -47,6 +47,12 @@ async fn exercise(h: &Harness, vocation: crate::spell::Vocation, reward: u16) ->
     let world = crate::foundation::WorldId::decode(&super::fixture::id(42)).map_err(debug)?;
     let (controller, pin) =
         super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+    super::espher2_lord_chamber::record_item_content(
+        h,
+        pin.identity(),
+        pin.frame_binding().digest(),
+    )
+    .await?;
     let deps = Dependencies::with_content(
         crate::content::channel_content_pin::ChannelContentPin::from_activation(
             world,

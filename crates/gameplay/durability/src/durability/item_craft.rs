@@ -601,12 +601,18 @@ async fn write_with_skinning<C: ItemLoopContent>(
     };
     let tuple = tx.tuple();
     let envelope = if let Some(prepared) = &skinning {
+        let spent = match &prepared.effect {
+            skinning::Effect::Transform(spent) => {
+                json!({"key": spent.production_key, "revision": spent.revision_ref})
+            }
+            skinning::Effect::LordAshes(_) => Value::Null,
+        };
         audit::encode_map_harvest(
             fence,
             request.command,
             json!({
                 "recipe": conversion.recipe, "intent": request.intent, "character": fence.character_id.as_bytes(), "before": before, "station": null, "gathering": null,
-                "corpse": prepared.before, "skinning": prepared.proof, "spent": {"key": prepared.spent.production_key, "revision": prepared.spent.revision_ref},
+                "corpse": prepared.before, "skinning": prepared.proof, "spent": spent,
                 "outputs": outputs, "content_digest": native.source_digest(),
                 "lease_generation": fence.character_lease_generation,
                 "scope_generation": fence.scope_ownership_generation.get(),

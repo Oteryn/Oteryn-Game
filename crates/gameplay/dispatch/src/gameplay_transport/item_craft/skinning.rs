@@ -47,6 +47,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map_err(|_| ())?,
             },
             corpse: [0; 16],
+            lord_ashes: false,
             actor_position: [0; 3],
         };
         let weights = NativeItemWeights(native).with_wheel(self.premium_coordinator);
@@ -118,15 +119,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .and_then(|id| id.parse::<u16>().ok())
         };
         let tool_id = entry.and_then(|entry| source_id(&entry.item.definition.production_key));
-        if !tool_id
-            .zip(source_id(&ground.definition().production_key))
-            .and_then(|(tool, target)| oteryn_gameplay_items::fishing::gathering_rule(tool, target))
-            .is_some_and(|(target, _)| {
-                matches!(
-                    target,
-                    oteryn_gameplay_items::fishing::GatheringTarget::Corpse { spent_item: 1.. }
-                )
-            })
+        let corpse_id = source_id(&ground.definition().production_key);
+        request.lord_ashes = tool_id == Some(5908) && matches!(corpse_id, Some(8181 | 8182));
+        if !request.lord_ashes
+            && !tool_id
+                .zip(corpse_id)
+                .and_then(|(tool, target)| {
+                    oteryn_gameplay_items::fishing::gathering_rule(tool, target)
+                })
+                .is_some_and(|(target, _)| {
+                    matches!(
+                        target,
+                        oteryn_gameplay_items::fishing::GatheringTarget::Corpse { spent_item: 1.. }
+                    )
+                })
         {
             return Ok(None);
         }

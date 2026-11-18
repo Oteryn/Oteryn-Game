@@ -125,8 +125,15 @@ pub(super) async fn exercise(
         schedules,
         vec![(10_000, 10_000), (300_000, 310_000), (300_000, 610_000)]
     );
-    sqlx::query("UPDATE game_spell_field_temporal_schedules SET expires_at_unix_ms=floor(extract(epoch FROM clock_timestamp())*1000)::bigint + 300000*(source_stage-1)-1 WHERE item_instance_id=encode($1,'hex')::uuid")
-        .bind(corpse.as_slice()).execute(&mut *tx).await?;
+    let aged: i64 = sqlx::query_scalar(
+        "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint - 11000",
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    sqlx::query("UPDATE game_item_mint_receipts SET materialized_at=$2 WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(corpse.as_slice()).bind(aged).execute(&mut *tx).await?;
+    sqlx::query("UPDATE game_spell_field_temporal_schedules SET expires_at_unix_ms=$2+10000+300000*(source_stage-1) WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(corpse.as_slice()).bind(aged).execute(&mut *tx).await?;
     tx.commit().await?;
     assert!(
         owner
@@ -137,7 +144,7 @@ pub(super) async fn exercise(
             .is_none(),
         "the ten-second deadline closes loot before the timer catches up"
     );
-    owner.tick_timed_items().await;
+    owner.drain_source_item_deadlines().await;
     let body: String = sqlx::query_scalar("SELECT definition_production_key FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(corpse.as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(body, "oteryn:item.tibia.i8182");

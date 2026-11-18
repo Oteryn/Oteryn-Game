@@ -9,6 +9,7 @@ use sha2::{Digest, Sha256};
 #[derive(Clone, Debug)]
 pub struct SkinningRequest {
     pub craft: ItemCraftRequest,
+    pub lord_ashes: bool,
     pub corpse: [u8; 16],
     /// Runtime actor coordinates captured under the lane, never wire coordinates.
     pub actor_position: [i32; 3],
@@ -18,8 +19,13 @@ pub(super) struct Prepared {
     pub corpse: [u8; 16],
     pub before: Value,
     pub proof: Value,
-    pub spent: TypedDefinitionRef,
+    pub effect: Effect,
     pub conversion: oteryn_gameplay_items::item_craft::CookingConversion,
+}
+
+pub(super) enum Effect {
+    Transform(TypedDefinitionRef),
+    LordAshes(i16),
 }
 
 /// Positive relative chance, capped at certainty. The donor's declining-roll bug is rejected.
@@ -105,18 +111,16 @@ pub(super) async fn prepare(
     .bind(channel.as_bytes().as_slice())
     .execute(&mut ***tx)
     .await?;
+    if request.lord_ashes {
+        return prepare_lord_ashes(tx, fence, request, tool, native).await;
+    }
     let row=sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_production_key,g.spatial_position,p.race_key,p.race_definition_revision FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) JOIN game_corpse_source_races p USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid AND g.runtime_scope_ownership_generation=$4::text::numeric AND i.lifecycle=1 AND i.quantity=1 AND p.mint_transaction_id=i.minted_transaction_id AND NOT EXISTS(SELECT 1 FROM game_corpse_skinning_records s WHERE s.corpse_item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_timed_states t WHERE t.item_instance_id=i.item_instance_id) FOR UPDATE OF i,g")
         .bind(request.corpse.as_slice()).bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(fence.scope_ownership_generation.get().to_string()).fetch_optional(&mut ***tx).await?;
     let Some(row) = row else {
         return Ok(None);
     };
     let position: Vec<u8> = row.try_get("spatial_position")?;
-    let cell = super::super::spell_items_abi::decode_ground_cell(&position)
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
-    if request.actor_position[0].abs_diff(cell.x) > 1
-        || request.actor_position[1].abs_diff(cell.y) > 1
-        || request.actor_position[2] != -cell.z
-    {
+    if !in_reach(request, &position)? {
         return Ok(None);
     }
     let source_id = |key: &str| {
@@ -230,14 +234,79 @@ pub(super) async fn prepare(
         before,
         proof: json!({"source_race":race,"source_race_revision":row.try_get::<String,_>("race_definition_revision")?,
             "stage":stage,"bonus_hundredths":bonus,"base_threshold":yield_rule.threshold,"draw":draw}),
-        spent: TypedDefinitionRef {
-            family: spent.family,
-            production_key: spent.production_key,
-            revision_ref: spent.revision_ref,
-        },
+        effect: Effect::Transform(spent),
         conversion: oteryn_gameplay_items::item_craft::CookingConversion {
             recipe: "oteryn:skinning.crystal".into(),
             outputs,
+        },
+    }))
+}
+
+fn in_reach(request: &SkinningRequest, position: &[u8]) -> Result<bool, DurabilityError> {
+    let cell = super::super::spell_items_abi::decode_ground_cell(position)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    Ok(request.actor_position[0].abs_diff(cell.x) <= 1
+        && request.actor_position[1].abs_diff(cell.y) <= 1
+        && request.actor_position[2] == -cell.z)
+}
+
+// Crystal skinning.lua:259–268 advances the Character's claim stage but
+// leaves the ashes available to any other Character who reaches them.
+async fn prepare_lord_ashes(
+    tx: &mut super::super::item_mint_audit::Type2Transaction<'_>,
+    fence: CurrentCharacterItemFence,
+    request: &SkinningRequest,
+    tool: &TypedDefinitionRef,
+    native: &NativeGameplayState,
+) -> Result<Option<Prepared>, DurabilityError> {
+    if tool.production_key != "oteryn:item.tibia.i5908"
+        || native
+            .item_policy(&tool.production_key, &tool.revision_ref)
+            .is_none()
+    {
+        return Ok(None);
+    }
+    let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let row: Option<(Value, Vec<u8>, i16)> = sqlx::query_as(
+        "SELECT to_jsonb(i),g.spatial_position,a.phase
+         FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id)
+         CROSS JOIN LATERAL (SELECT game_lord_ashes_phase(i.item_instance_id) AS phase) a
+         WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid
+           AND g.channel_id=encode($3,'hex')::uuid AND g.scope_kind=1
+           AND g.runtime_scope_ownership_generation=$4::text::numeric AND a.phase IS NOT NULL
+           AND NOT EXISTS(SELECT 1 FROM game_lord_ashes_claims c
+                          WHERE c.character_id=encode($5,'hex')::uuid AND c.phase=2)
+         FOR UPDATE OF i,g",
+    )
+    .bind(request.corpse.as_slice())
+    .bind(world.as_bytes().as_slice())
+    .bind(channel.as_bytes().as_slice())
+    .bind(fence.scope_ownership_generation.get().to_string())
+    .bind(fence.character_id.as_bytes().as_slice())
+    .fetch_optional(&mut ***tx)
+    .await?;
+    let Some((before, position, phase)) = row else {
+        return Ok(None);
+    };
+    if !in_reach(request, &position)? {
+        return Ok(None);
+    }
+    let output = oteryn_gameplay_items::item_craft::output_definition(
+        native,
+        &oteryn_gameplay_content::content::ProjectV2DefinitionRef {
+            family: oteryn_gameplay_content::content::ProjectV2Family::Item,
+            key: "oteryn:item.tibia.i954".into(),
+            revision: "definition-r1".into(),
+        },
+    );
+    Ok(output.map(|output| Prepared {
+        corpse: request.corpse,
+        before,
+        proof: json!({"phase":phase}),
+        effect: Effect::LordAshes(phase),
+        conversion: oteryn_gameplay_items::item_craft::CookingConversion {
+            recipe: "oteryn:skinning.lord-ashes".into(),
+            outputs: vec![(output, 1)],
         },
     }))
 }
@@ -248,9 +317,25 @@ pub(super) async fn record(
     prepared: &Prepared,
     transaction: &str,
 ) -> Result<(), DurabilityError> {
+    let spent = match &prepared.effect {
+        Effect::Transform(spent) => spent,
+        Effect::LordAshes(phase) => {
+            sqlx::query(
+                "INSERT INTO game_lord_ashes_claims(transaction_id,character_id,corpse_item_instance_id,phase)
+                 VALUES($1::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4)",
+            )
+            .bind(transaction)
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(prepared.corpse.as_slice())
+            .bind(phase)
+            .execute(&mut ***tx)
+            .await?;
+            return Ok(());
+        }
+    };
     let (_, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
     sqlx::query("INSERT INTO game_corpse_skinning_records(transaction_id,corpse_item_instance_id,before_item,spent_key,spent_revision,channel_id,scope_ownership_generation) VALUES($1::uuid,encode($2,'hex')::uuid,$3,$4,$5,encode($6,'hex')::uuid,$7::text::numeric)")
-        .bind(transaction).bind(prepared.corpse.as_slice()).bind(&prepared.before).bind(&prepared.spent.production_key).bind(&prepared.spent.revision_ref).bind(channel.as_bytes().as_slice()).bind(fence.scope_ownership_generation.get().to_string()).execute(&mut ***tx).await?;
+        .bind(transaction).bind(prepared.corpse.as_slice()).bind(&prepared.before).bind(&spent.production_key).bind(&spent.revision_ref).bind(channel.as_bytes().as_slice()).bind(fence.scope_ownership_generation.get().to_string()).execute(&mut ***tx).await?;
     Ok(())
 }
 
@@ -259,8 +344,11 @@ pub(super) async fn transform(
     prepared: &Prepared,
     transaction: &str,
 ) -> Result<(), DurabilityError> {
+    let Effect::Transform(spent) = &prepared.effect else {
+        return Ok(());
+    };
     sqlx::query("UPDATE game_item_instances SET definition_production_key=$2,definition_revision_ref=$3,state_revision=state_revision+1,last_transaction_id=$4::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
-        .bind(prepared.corpse.as_slice()).bind(&prepared.spent.production_key).bind(&prepared.spent.revision_ref).bind(transaction).execute(&mut ***tx).await?;
+        .bind(prepared.corpse.as_slice()).bind(&spent.production_key).bind(&spent.revision_ref).bind(transaction).execute(&mut ***tx).await?;
     Ok(())
 }
 
