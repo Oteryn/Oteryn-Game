@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/targuna-temple-return",
+      "quest": "oteryn:quest.targuna_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31941,
+          "y": 31928,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31935,
+        "y": 31861,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/targuna/movements_temple_teleport.lua:2-21",
+        "https://tibia.fandom.com/?curid=110238&oldid=1208547"
+      ]
+    }
+  ]
+}

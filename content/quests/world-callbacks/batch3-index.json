@@ -62,6 +62,12 @@
       ]
     },
     {
+      "path": "tools/content-schema/quest-authoring/batch3_c/world/targuna.json",
+      "keys": [
+        "oteryn:quest-callback/targuna-temple-return"
+      ]
+    },
+    {
       "path": "tools/content-schema/quest-authoring/batch3_c/world/the_primal_ordeal.json",
       "keys": [
         "oteryn:quest-callback/primal-ordeal-travel-33558-32754-14"

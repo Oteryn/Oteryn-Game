@@ -110,14 +110,16 @@ pub(super) async fn exercise(
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
+    let xp_before = super::qcx_targuna::experience(h).await?;
     let expected = vec![QuestMapMark {
         x: 31948,
         y: 31924,
         floor: -7,
         text: "Treasure".into(),
     }];
+    let wiki_opened = super::qcx_targuna::open_wiki_turn_in(owner, admitted, npc).await?;
     let (before, delta) =
-        conversation(owner, admitted, npc, 4, &["hi", "mission", "yes"], true).await?;
+        conversation(owner, admitted, npc, 6, &["hi", "mission", "yes"], true).await?;
     assert!(before.map_marks.is_empty());
     assert_eq!(delta.ok_or("marker delta")?.map_marks, expected);
     assert_eq!(counts(h).await?, (1, 1));
@@ -135,13 +137,13 @@ pub(super) async fn exercise(
     );
     // A new connection restores the marker without a query; replaying the exact
     // confirmation and then repeating it with a fresh command creates no second fact.
-    let (restored, _) = conversation(owner, admitted, npc, 6, &["yes"], false).await?;
+    let (restored, _) = conversation(owner, admitted, npc, 8, &["yes"], false).await?;
     assert_eq!(restored.map_marks, expected);
     // The canonical capability 451 query uses the same committed personal fact.
     let payload = super::quest_world_callbacks::wire(
         owner,
         admitted,
-        7,
+        9,
         COMMAND_TYPE_PERSONAL_MAP_MARKS_QUERY,
         Vec::new(),
     )
@@ -165,9 +167,14 @@ pub(super) async fn exercise(
         )
     );
     let (repeated, _) =
-        conversation(owner, admitted, npc, 8, &["hi", "mission", "yes"], false).await?;
+        conversation(owner, admitted, npc, 10, &["hi", "mission", "yes"], false).await?;
     assert_eq!(repeated.map_marks, expected);
     assert_eq!(counts(h).await?, (1, 1));
+    assert_eq!(
+        (wiki_opened, super::qcx_targuna::experience(h).await? - xp_before),
+        (true, 3000),
+        "TibiaWiki Sterling turn-in opens on quest and awards 3000 XP once"
+    );
     eprintln!("M16_STERLING_DISPATCH_PG_EXECUTED marker_delta_reconnect_replay");
     Ok(())
 }
@@ -251,7 +258,7 @@ async fn conversation(
                         result.status,
                         if command_id < before.continuity.next_command_id {
                             CommandStatus::DuplicateReplay
-                        } else if matches!(command_id, 3 | 10) {
+                        } else if matches!(command_id, 3 | 12) {
                             // Missing or already advanced storage cannot confirm this transition.
                             CommandStatus::Rejected
                         } else {
