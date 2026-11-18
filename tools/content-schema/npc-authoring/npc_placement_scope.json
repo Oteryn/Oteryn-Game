@@ -151,6 +151,8 @@
     ]
   },
   "block_solid_contacts": [
+    "oteryn:npc.emma",
+    "oteryn:npc.uncle",
     "oteryn:npc.zarifan"
   ],
   "native_contacts": [

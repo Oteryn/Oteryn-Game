@@ -87,7 +87,10 @@ The placement generator scoped the three recruiters at the retained
 candidate coordinates, which agree with Crystal
 `data-global/world/world-npc.xml:210–211,609–610,846–847`.
 Chester is at 32349,32183,6, Uncle at 32952,32039,4, and Emma at
-32384,31781,6. World pins were regenerated against the resulting source.
+32384,31781,6. Emma and Uncle occupy source-backed solid-object
+contacts. The compiler applies its existing contact policy at those two
+cells. Decoding the pin-checked bundle confirmed exactly these three
+placements.
 
 ## Blockers
 
