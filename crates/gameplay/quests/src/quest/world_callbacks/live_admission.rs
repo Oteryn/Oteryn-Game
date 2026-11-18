@@ -1,7 +1,16 @@
-//! One transaction-bound Premium owner admits both historical and structured guards.
+//! Use the live Premium owner for durable callbacks and stateless travel.
 use super::Callback;
 
 impl Callback {
+    pub fn stateless_premium_step(&self) -> bool {
+        self.requires_live_premium()
+            && !self.requires_durable_commit()
+            && self.actor_kind == super::ActorKind::Player
+            && self.trigger == super::Trigger::StepIn
+            && self.teleport.is_some()
+            && self.return_on_failure
+    }
+
     pub fn requires_live_premium(&self) -> bool {
         self.requires_premium
             || self.premium_required

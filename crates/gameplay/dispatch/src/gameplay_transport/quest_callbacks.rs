@@ -1418,7 +1418,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             *pair
         };
         let (callback, key) = &selected_pair;
-        if callback.requires_live_premium() {
+        let stateless_premium_step = callback.stateless_premium_step();
+        if callback.requires_live_premium() && !stateless_premium_step {
             let _ = self.session_premium_gate(session).await;
         }
         let operation = async {
@@ -1497,6 +1498,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Some(entered),
                 )
                 .await;
+            let premium_admitted = !stateless_premium_step
+                || self.session_premium_gate(session).await.premium_current();
             let optional_pvp = self.special_movement_policy(permit, actor, session).await;
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
@@ -1504,7 +1507,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return entered;
             }
             let result = match observation {
-                Ok(observation) => {
+                Ok(observation) if premium_admitted => {
                     Box::pin(self.execute_quest_callback(
                         permit,
                         &mut runtime,
@@ -1525,6 +1528,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ))
                     .await
                 }
+                Ok(_) => UseDisposition::Rejected,
                 Err(disposition) => disposition,
             };
             let unresolved =
@@ -1557,7 +1561,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         match tokio::time::timeout(std::time::Duration::from_secs(10), operation).await {
             Ok(snapshot) => snapshot,
-            Err(_) if callback.is_read_only() => {
+            Err(_) if callback.is_read_only() || stateless_premium_step => {
                 // This path cannot have a durable commit to reconcile. A cancelled
                 // read returns to the step origin rather than reserving a write.
                 let optional_pvp = self.special_movement_policy(permit, actor, session).await;

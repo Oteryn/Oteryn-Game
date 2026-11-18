@@ -349,6 +349,8 @@ fn scenario_case(
     let target_swap = name == "fish-napping-key-target-swap";
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
+    let stateless_premium = name.starts_with("conditional-failure-premium-");
+    let premium_current = name == "conditional-failure-premium-current";
     let draconia_escape = name.starts_with("draconia-escape-");
     let mut callback = if m03_use {
         super::super::qengine_m03_use::callback()?
@@ -470,6 +472,10 @@ fn scenario_case(
             y: 31599,
             floor: if name.ends_with("blocked") { -10 } else { -9 },
         });
+    }
+    if stateless_premium {
+        callback.storage.clear();
+        callback.requires_premium = true;
     }
     if sewer {
         callback.key = format!("fixture:{name}");
@@ -1560,6 +1566,7 @@ fn scenario_case(
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let premium = if name.starts_with("authored-")
+            || premium_current
             || name == "nx6-wayfarer"
             || name == "m07-carrot-premium"
             || m03_use
@@ -1851,6 +1858,7 @@ fn scenario_case(
             );
         }
         if name == "nx6-wayfarer"
+            || premium_current
             || qm03
             || m07_too_hot
             || mead
@@ -2050,7 +2058,9 @@ fn scenario_case(
                 &h,
                 deps.actor,
                 fence,
-                if name.ends_with("blocked") {
+                if premium_current {
+                    callback.teleport.ok_or("Premium destination")?
+                } else if name.ends_with("blocked") {
                     trigger
                 } else {
                     callback.failure_teleport.ok_or("failure landing")?

@@ -1014,7 +1014,9 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     || callback.effects.mount_reward.is_some()
                     || callback.teleport.is_some()
                     || callback.effects.encounter.is_some()))
-            || (callback.requires_premium && !callback.requires_durable_commit())
+            || (callback.requires_premium
+                && !callback.requires_durable_commit()
+                && !callback.stateless_premium_step())
             || (callback.has_ground_stack_requirements()
                 && callback.has_personal_state()
                 && !callback.supports_ground_stack_guard())
@@ -1911,6 +1913,24 @@ mod tests {
             invalid[field] = value;
             assert!(parse(&encoded(invalid)).is_err());
         }
+        Ok(())
+    }
+
+    #[test]
+    fn stateless_premium_travel_admits_a_returning_step() -> Result<(), String> {
+        let mut callback = load()?
+            .into_iter()
+            .find(|c| c.key.ends_with("liquid-black-shortcut"))
+            .ok_or("returning step")?;
+        callback.storage.clear();
+        callback.requires_premium = true;
+        assert!(!callback.requires_durable_commit());
+        validate_callbacks(std::slice::from_ref(&callback))?;
+        callback.return_on_failure = false;
+        assert!(validate_callbacks(std::slice::from_ref(&callback)).is_err());
+        callback.return_on_failure = true;
+        callback.trigger = Trigger::StepOut;
+        assert!(validate_callbacks(&[callback]).is_err());
         Ok(())
     }
 

@@ -20,7 +20,7 @@ fn conditional_quest_failure_refuses_missing_landing_without_quest_writes() -> T
     scenario("conditional-failure-blocked")
 }
 
-fn scenario(name: &'static str) -> TestResult {
+pub(super) fn scenario(name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
