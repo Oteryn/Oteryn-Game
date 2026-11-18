@@ -140,6 +140,7 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
     )
     .expect("facts");
     PendingKillSettlement {
+        lore_power_landing: None,
         world_change: None,
         forge: None,
         // W06 callbacks are absent for this ordinary-kill fixture.

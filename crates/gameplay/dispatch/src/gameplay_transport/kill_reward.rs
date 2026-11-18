@@ -100,6 +100,7 @@ struct PreparedKillExperience {
 /// One captured kill awaiting its settle.
 #[derive(Debug, Clone)]
 pub struct PendingKillSettlement {
+    pub(super) lore_power_landing: Option<MovementLocalPosition>,
     pub(super) world_change: Option<(
         u64,
         crate::durability::world_event::changes::counters::CreditEvent,
@@ -242,6 +243,7 @@ impl PendingKillSettlement {
         observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
     ) -> Self {
         Self {
+            lore_power_landing: None,
             facts,
             creature,
             row: None,
@@ -2028,6 +2030,9 @@ pub fn record_creature_kill(
         refuse("damage_shares_unavailable", &creature);
         return;
     };
+    let astral = super::lore_keeper::is_astral_death(runtime, &creature);
+    let lore_power_landing =
+        super::lore_keeper::capture_power_landing(runtime, &creature, &facts, &damage_shares);
     if !top.is_gone()
         && let Some(states) = sink.prey
     {
@@ -2164,12 +2169,13 @@ pub fn record_creature_kill(
                 // donor. Missing a native corpse row must not lose these points.
                 // A missing native corpse cannot erase the independently frozen
                 // Prey kill counter. Its actual settled loot value remains zero.
-                if echo.is_some() || prey_checkpoint.is_some() || world_change.is_some() {
+                if echo.is_some() || prey_checkpoint.is_some() || world_change.is_some() || astral {
                     accept_encounter_kill(
                         runtime,
                         sink.queue,
                         sink.prey,
                         PendingKillSettlement {
+                            lore_power_landing,
                             facts,
                             creature,
                             row: None,
@@ -2225,6 +2231,7 @@ pub fn record_creature_kill(
                 )
             };
             let mut entry = entry;
+            entry.lore_power_landing = lore_power_landing;
             // Keep source-qualified quest XP independent of ordinary corpse/loot
             // admission. The same native death, bounded frozen census and atomic
             // party XP writer own its eventual progression; no synthetic reward row.
@@ -2571,6 +2578,7 @@ pub fn record_creature_kill(
         None
     };
     let entry = PendingKillSettlement {
+        lore_power_landing,
         world_change,
         boss_reward,
         activity_death,

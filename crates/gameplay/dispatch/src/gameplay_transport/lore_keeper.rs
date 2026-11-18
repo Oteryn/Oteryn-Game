@@ -209,30 +209,7 @@ impl AstralEncounter {
             runtime.commit_quest_creature_spawn(&[(LORE_KEEPER, health, death.facts.corpse)])?;
             self.boss_spawned = true;
         } else if self.power == Some(death.target) && death.creature == POWER {
-            let winner = death
-                .damage_shares
-                .iter()
-                .find(|share| share.character == death.facts.top_damage_character)
-                .and_then(|share| share.session)
-                .or_else(|| {
-                    (death.facts.principal.character == death.facts.top_damage_character)
-                        .then_some(death.facts.principal.session)
-                });
-            let position =
-                runtime
-                    .positioned_actor_census()?
-                    .into_iter()
-                    .find_map(|(_, pos, session)| {
-                        (session.is_some() && session == winner).then_some(pos.position())
-                    });
-            let next = position.and_then(|pos| {
-                POWER_CELLS.iter().position(|anchor| {
-                    pos.floor == anchor.floor
-                        && pos.x.abs_diff(anchor.x).max(pos.y.abs_diff(anchor.y)) < 7
-                })
-            });
-            self.power = if let Some(index) = next {
-                let at = POWER_CELLS[(index + 1) % POWER_CELLS.len()];
+            self.power = if let Some(at) = death.lore_power_landing {
                 let health = runtime.companion_policy(POWER)?.maximum_health;
                 let actors = runtime.commit_quest_creature_spawn(&[(POWER, health, at)])?;
                 self.power_until = death
@@ -247,6 +224,41 @@ impl AstralEncounter {
         }
         Ok(())
     }
+}
+
+pub(super) fn is_astral_death(runtime: &ChannelRuntimeV1, creature: &str) -> bool {
+    matches!(
+        runtime.encounter_owner_scope().0,
+        crate::foundation::RuntimeScopeRefV1::Instance { .. }
+    ) && matches!(creature, GLYPH | POWER)
+}
+
+pub(super) fn capture_power_landing(
+    runtime: &ChannelRuntimeV1,
+    creature: &str,
+    death: &crate::combat::ProjectedCreatureDeathFacts,
+    shares: &[crate::foundation::RewardDamageShare],
+) -> Option<MovementLocalPosition> {
+    if creature != POWER || !is_astral_death(runtime, creature) {
+        return None;
+    }
+    let winner = shares
+        .iter()
+        .find(|share| share.character == death.top_damage_character)
+        .and_then(|share| share.session)
+        .or_else(|| {
+            (death.principal.character == death.top_damage_character)
+                .then_some(death.principal.session)
+        })?;
+    let pos = runtime
+        .positioned_actor_census()
+        .ok()?
+        .into_iter()
+        .find_map(|(_, pos, session)| (session == Some(winner)).then_some(pos.position()))?;
+    let index = POWER_CELLS.iter().position(|anchor| {
+        pos.floor == anchor.floor && pos.x.abs_diff(anchor.x).max(pos.y.abs_diff(anchor.y)) < 7
+    })?;
+    Some(POWER_CELLS[(index + 1) % POWER_CELLS.len()])
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
