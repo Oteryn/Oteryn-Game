@@ -581,13 +581,39 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
     )?;
     let grizzly = placement(&metadata.npcs, NPC)?;
     let captain = placement(&metadata.npcs, CAPTAIN)?;
-    // Crystal 201189f8, data-global/world/world-npc.xml:886-887.
-    assert!(
-        captain
-            .placements
-            .iter()
-            .any(|p| (p.x, p.y, p.floor) == (32310, 32209, -6)),
-        "Captain Bluebear must be on the Thais upper deck"
+    // Crystal 201189f8, data-global/world/world-npc.xml:886-887,1018-1019.
+    for (npc, cell) in [(captain, (32310, 32209, -6)), (grizzly, (32693, 32767, -6))] {
+        assert!(
+            npc.placements.iter().any(|p| (p.x, p.y, p.floor) == cell),
+            "{} must be placed at {cell:?}",
+            npc.key
+        );
+    }
+    // Crystal's world.otbm has ladder i1968 at (32674, 32784, 7) and ramp
+    // i1975 at (32694, 32772, 7), facing north per data/items/items.xml:4000-4002.
+    let ladder_landing = TilePos {
+        x: 32674,
+        y: 32784,
+        floor: -7,
+    };
+    for at in [WALKWAY, ladder_landing, RAMP_FOOT] {
+        assert!(
+            world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| tile.walkable())
+                && world.enterable(at),
+            "Port Hope approach tile is absent or blocked at {at:?}"
+        );
+    }
+    assert_eq!(
+        destination(&world, RAMP_FOOT, StepDirection::North),
+        Some(TilePos {
+            x: 32694,
+            y: 32771,
+            floor: -6,
+        }),
+        "the ramp must land on Grizzly Adams' walkway"
     );
     let check_leg = |name, from: TilePos, path: Vec<StepDirection>| -> TestResult<TilePos> {
         assert!(!path.is_empty(), "{name} must walk");
