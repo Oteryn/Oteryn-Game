@@ -1994,8 +1994,16 @@ pub fn record_creature_kill(
         };
         let overlord_death_at = overlord.then_some(frozen.died_at_unix_ms);
         // The XP receipt binds the original activity time to this exact death.
-        let observed_at = if overlord { frozen.observed_at } else { observed_at };
-        (in_instance.then_some(frozen), overlord_death_at, observed_at)
+        let observed_at = if overlord {
+            frozen.observed_at
+        } else {
+            observed_at
+        };
+        (
+            in_instance.then_some(frozen),
+            overlord_death_at,
+            observed_at,
+        )
     } else {
         (None, None, observed_at)
     };
