@@ -357,10 +357,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         clock: impl FnOnce() -> oteryn_simulation_determinism::SemanticTimeMicros,
     ) -> Option<(u64, ActorVitals)> {
-        // Sample the condition clock after the world lookup so its latency
-        // does not subtract time from the newly applied condition.
-        let cake_remaining = self.cake_regeneration_remaining_ms().await;
-        let now = clock();
+        let cake_deadline = self.cake_regeneration_deadline().await;
         // Lock order (§1.2): the lane before any Channel guard.
         let mut permit = self.spell_lane_permit().await?;
         let mut runtime = self.runtime.lock().await;
@@ -368,11 +365,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if states.has_pending_spell_commit(actor, session) {
             return None;
         }
+        // Keep the condition timestamp and remaining world window on the same turn.
+        let now = clock();
         states
             .get_mut(&runtime, actor, session)?
             .expire_owner_premium(now.get())
             .ok()?;
-        if let Some(remaining) = cake_remaining
+        if let Some(deadline) = cake_deadline
             && runtime.owner_fence().is_ok()
             && runtime
                 .player_control_facts(actor, session)
@@ -381,7 +380,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let state = states.get_mut(&runtime, actor, session)?;
             let _ = crate::gameplay_transport::cake_event::apply_world_cake_regeneration(
                 state,
-                remaining,
+                deadline,
                 now.get(),
                 runtime.content_pin().server_artifact_digest(),
                 session,

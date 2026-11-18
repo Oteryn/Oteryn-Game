@@ -44,7 +44,7 @@ struct BonusSample {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) async fn cake_regeneration_remaining_ms(&self) -> Option<u32> {
+    pub(super) async fn cake_regeneration_deadline(&self) -> Option<std::time::Instant> {
         use std::time::{Duration, Instant};
         const REFRESH_INTERVAL: Duration = Duration::from_secs(5);
         // A concurrent refresh must not hold up other players' condition ticks.
@@ -68,19 +68,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 expires_at,
             });
         }
-        let remaining = cache
-            .as_ref()?
-            .expires_at?
-            .saturating_duration_since(Instant::now());
-        u32::try_from(remaining.as_millis())
-            .ok()
-            .filter(|remaining| *remaining > 0)
+        cache.as_ref()?.expires_at
     }
 }
 
 pub(super) fn apply_world_cake_regeneration(
     state: &mut crate::spell::cast::PlayerSpellState,
-    remaining_ms: u32,
+    deadline: std::time::Instant,
     now_us: u64,
     content_digest: [u8; 32],
     session: crate::foundation::GameSessionId,
@@ -102,6 +96,13 @@ pub(super) fn apply_world_cake_regeneration(
     {
         return Some(());
     }
+    let remaining_ms = u32::try_from(
+        deadline
+            .saturating_duration_since(std::time::Instant::now())
+            .as_millis(),
+    )
+    .ok()
+    .filter(|remaining| *remaining > 0)?;
     // Crystal world_bonus.lua:26-48 adds a separate COMBAT/sub0 regeneration
     // condition. Nonzero vocation gains yield at least one additional point.
     let vocation = state.source_party_vocation();
