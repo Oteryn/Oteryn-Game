@@ -6,8 +6,11 @@ use super::{
 };
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::foundation::{ChannelRuntimeV1, CharacterId, CharacterLease};
-use crate::gameplay_transport::connection::UseCommand;
+use crate::gameplay_transport::{
+    ComposedFreshAdmission, StepDirection, StepDisposition, connection::UseCommand,
+};
 use crate::map::{
+    boot::BundleCollisionIndexExt,
     overlay::TilePos,
     view::{MapFacts, placement_key},
 };
@@ -400,7 +403,12 @@ fn scenario() -> TestResult {
         owner.admit_progression_session(&mut admitted).await;
         owner.admit_quest_session(&admitted).await;
 
-        let map = owner.bundle_map().ok_or("bundle map")?;
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            cells.index()
+        else {
+            return Err("bundle collision index".into());
+        };
+        let map = index.map();
         let item = |at: TilePos| -> TestResult<(u64, u16)> {
             let key = placement_key(at, 1).ok_or("object placement")?;
             let tile = map
@@ -412,44 +420,46 @@ fn scenario() -> TestResult {
             let entry = map.facts.base_entry(at, 1, id).ok_or("object facts")?;
             Ok((key, entry.appearance_id))
         };
-        let move_actor = async |at: TilePos| -> TestResult<_> {
-            let mut runtime = owner.runtime.lock().await;
-            let origin = runtime.read_actor_position(actor).map_err(debug)?;
-            let closed = crate::map::floor::BundleDoors(&map.facts);
-            let proof = crate::map::floor::prepare_quest_callback_teleport(
-                &runtime,
-                owner.movement_cells(),
-                actor,
-                session,
-                origin,
-                local(at),
-                false,
-                &closed,
-            )
-            .map_err(debug)?;
-            let entered = runtime.commit_source_step(proof).map_err(debug)?;
-            Ok((origin, entered))
-        };
-        let step_onto = async |at| -> TestResult<_> {
-            move_actor(approach(at)).await?;
-            let mut runtime = owner.runtime.lock().await;
-            let origin = runtime.read_actor_position(actor).map_err(debug)?;
-            let closed = crate::map::floor::BundleDoors(&map.facts);
-            let proof = crate::map::floor::prepare_bundle_step(
-                &runtime,
-                owner.movement_cells(),
-                actor,
-                session,
-                origin,
-                crate::movement::CardinalStep::East,
-                false,
-                &closed,
-            )
-            .map_err(debug)?;
-            assert_eq!(proof.destination(), local(at));
-            let entered = runtime.commit_source_step(proof).map_err(debug)?;
-            Ok((origin, entered))
-        };
+        let move_actor =
+            async |owner: &ComposedFreshAdmission<'_, '_, '_>, at: TilePos| -> TestResult<_> {
+                let mut runtime = owner.runtime.lock().await;
+                let origin = runtime.read_actor_position(actor).map_err(debug)?;
+                let closed = crate::map::floor::BundleDoors(&map.facts);
+                let proof = crate::map::floor::prepare_quest_callback_teleport(
+                    &runtime,
+                    owner.movement_cells(),
+                    actor,
+                    session,
+                    origin,
+                    local(at),
+                    false,
+                    &closed,
+                )
+                .map_err(debug)?;
+                runtime
+                    .commit_source_step(proof)
+                    .map_err(debug)
+                    .map_err(Into::into)
+            };
+        let step_onto =
+            async |owner: &mut ComposedFreshAdmission<'_, '_, '_>, at| -> TestResult<_> {
+                let origin = move_actor(owner, approach(at)).await?;
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(std::time::Duration::from_secs(1))
+                    .ok_or("advance step clock")?;
+                let (outcome, _) = owner
+                    .ordinary_paced_step(actor, session, StepDirection::East, Some(origin), None)
+                    .await;
+                assert_eq!(outcome.disposition, StepDisposition::Moved);
+                let position = owner
+                    .runtime
+                    .lock()
+                    .await
+                    .read_actor_position(actor)
+                    .map_err(debug)?;
+                Ok(position.position())
+            };
         for attempt in 0..=6 {
             let index = match attempt {
                 0 => 0,
@@ -457,7 +467,7 @@ fn scenario() -> TestResult {
                 _ => attempt - 2,
             };
             let at = SWITCHES[index];
-            move_actor(TilePos { x: START.x, ..at }).await?;
+            move_actor(&owner, TilePos { x: START.x, ..at }).await?;
             let (key, _) = item(at)?;
             let effect_cursor = map
                 .facts
@@ -526,15 +536,7 @@ fn scenario() -> TestResult {
         .fetch_one(&h.pool)
         .await?;
         assert_eq!(before, 0, "shared switches only read personal eligibility");
-        let permit = owner.spell_lane_permit().await.ok_or("spell lane")?;
-        let (origin, entered) = step_onto(FLAME).await?;
-        assert_eq!(
-            owner
-                .step_quest_callback(&permit, actor, session, origin, entered)
-                .await
-                .position(),
-            local(DESTINATION)
-        );
+        assert_eq!(step_onto(&mut owner, FLAME).await?, local(DESTINATION));
         for at in SWITCHES {
             assert_eq!(item(at)?.1, 2773);
         }
@@ -548,14 +550,7 @@ fn scenario() -> TestResult {
             .last()
             .map_or(0, |cue| cue.0);
         for plate in [EAST_PLATE, PLATE] {
-            let (origin, entered) = step_onto(plate).await?;
-            assert_eq!(
-                owner
-                    .step_quest_callback(&permit, actor, session, origin, entered)
-                    .await
-                    .position(),
-                local(plate)
-            );
+            assert_eq!(step_onto(&mut owner, plate).await?, local(plate));
             let runtime = owner.runtime.lock().await;
             let mut positions = runtime
                 .current_live_creature_census()
