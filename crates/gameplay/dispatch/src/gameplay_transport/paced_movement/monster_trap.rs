@@ -46,6 +46,7 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
         };
         // The Grimvale callback is independent of generic spike-trap PZ/jaw gates.
         for (key, entry) in &destination.entries {
+            first_dragon_tile_replacement(runtime, map, step.actor, step.to, *key, *entry);
             if entry.appearance_id == 22059 {
                 silvered_trap_hit(runtime, map, step.actor, *key, step.to);
             }
@@ -70,6 +71,45 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
             }
         }
     }
+}
+
+/// Crystal 201189f8: movements_flower_bowl.lua:3-19 and
+/// movements_heaven_blossom.lua:3-20. The UID belongs to the native placement.
+fn first_dragon_tile_replacement(
+    runtime: &mut ChannelRuntimeV1,
+    map: &BundleMap,
+    actor: crate::foundation::ExactActorRef,
+    at: crate::foundation::MovementLocalPosition,
+    key: u64,
+    entry: crate::map::view::EntryFacts,
+) {
+    let (source, target, consume) = match entry.appearance_id {
+        2983 => (
+            "oteryn:creature.unbeatable_dragon",
+            "oteryn:creature.somewhat_beatable",
+            false,
+        ),
+        3657 => (
+            "oteryn:creature.spirit_of_fertility",
+            "oteryn:creature.angry_plant",
+            true,
+        ),
+        _ => return,
+    };
+    if map.overlay.runtime_scope() != runtime.binding().runtime_scope()
+        || !map
+            .facts
+            .quest_callback_matches(key, Some(1066), None, Some(entry.appearance_id))
+    {
+        return;
+    }
+    let revision = map.facts.object_revision(key);
+    let _ = runtime.replace_quest_creature_at(actor, source, target, at, || {
+        !consume
+            || map
+                .facts
+                .apply_quest_callback(key, revision, entry, &[key], &[], false, None)
+    });
 }
 
 /// Crystal 9f5a72c data-global/scripts/quests/grimvale/movements_silvered_trap.lua:3-22.

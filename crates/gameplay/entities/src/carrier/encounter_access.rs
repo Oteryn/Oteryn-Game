@@ -402,6 +402,41 @@ impl ChannelRuntimeV1 {
         result
     }
 
+    /// Replace one exact wild encounter creature at its current tile. Refusing
+    /// a tile projection leaves the old actor, including its health, intact.
+    pub fn replace_quest_creature_at(
+        &mut self,
+        actor: ExactActorRef,
+        source: &str,
+        target: &str,
+        at: MovementLocalPosition,
+        project: impl FnOnce() -> bool,
+    ) -> Result<ExactActorRef, CarrierError> {
+        self.owner_fence()?;
+        let snapshot = self.companion_snapshot(actor)?;
+        if snapshot.state.policy.definition_key != source
+            || snapshot.state.master.is_some()
+            || self.read_actor_position(actor)?.position() != at
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        let health = self.companion_policy(target)?.maximum_health;
+        let before = self.carrier.clone();
+        let result = (|| {
+            self.remove_encounter_actor(actor)?;
+            let spawned = self.admit_encounter_actor(target, health, at)?;
+            self.install_creature_policy(spawned, target)?;
+            if !project() {
+                return Err(CarrierError::PlanConflict);
+            }
+            Ok(spawned)
+        })();
+        if result.is_err() {
+            self.carrier = before;
+        }
+        result
+    }
+
     pub fn encounter_owner_scope(&self) -> (RuntimeScopeRefV1, ScopeOwnershipGeneration) {
         (
             self.binding.runtime_scope,
