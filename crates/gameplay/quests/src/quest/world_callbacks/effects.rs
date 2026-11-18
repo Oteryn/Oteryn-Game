@@ -85,6 +85,9 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub player_speech: Option<String>,
     pub transform: Option<u16>,
+    /// Resolve a transform by its live appearance after an earlier callback.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub transform_requires_current: bool,
     /// Restore the exact pre-transform source revision after this delay.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reset_after_ms: Option<u32>,
@@ -98,6 +101,9 @@ pub struct CallbackEffects {
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teleport_effect: Option<u16>,
+    /// An exact source object may send each base vocation to a different cell.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub vocation_teleports: BTreeMap<String, Position>,
     pub portals: Option<PortalPair>,
     pub item_cycle: Option<ItemCycle>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -454,6 +460,40 @@ pub(super) fn valid(callback: &Callback) -> bool {
         && (callback.teleport.is_none()
             || callback.selector.native.is_none()
             || callback.actor_kind != ActorKind::Player)
+    {
+        return false;
+    }
+    if effects.transform_requires_current
+        && (callback.trigger != Trigger::Use
+            || callback.selector.position.is_none()
+            || callback.selector.appearance.is_none()
+            || callback.selector.native.is_some()
+            || effects.transform.is_none())
+    {
+        return false;
+    }
+    if !effects.vocation_teleports.is_empty()
+        && (callback.trigger != Trigger::Use
+            || callback.actor_kind != ActorKind::Player
+            || !callback.requires_world_admission
+            || callback.selector.position.is_none()
+            || callback.selector.appearance.is_none()
+            || callback.teleport.is_some()
+            || callback.remote_teleport.is_some()
+            || !effects.transform_requires_current
+            || !callback
+                .storage
+                .iter()
+                .any(|guard| guard.increment && guard.set < 0)
+            || effects
+                .vocation_teleports
+                .iter()
+                .any(|(vocation, position)| {
+                    !matches!(
+                        vocation.as_str(),
+                        "sorcerer" | "druid" | "paladin" | "knight" | "monk"
+                    ) || !(-15..=0).contains(&position.floor)
+                }))
     {
         return false;
     }

@@ -52,6 +52,7 @@ fn scenario_case(
     let qm48 = name == "qm48/mammoth";
     let m03_use = name == super::super::qengine_m03_use::NAME;
     let qd_world = name.starts_with(super::super::qd_world::PREFIX);
+    let sphere_machine = name == super::super::qespike_sphere_machine::NAME;
     let elemental_pin = name.starts_with("qn1-elemental-");
     let qm50 = name == "goblin-merchant-elevator-upper";
     let m03_pits = name == super::super::qengine_m03_pits::NAME;
@@ -87,6 +88,7 @@ fn scenario_case(
         || m44
         || m07_too_hot
         || last_creep
+        || sphere_machine
         || elemental_pin
         || m07_machinery
         || m07_realm
@@ -113,7 +115,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "qengine-rewards-smith-story" {
+    let start = if sphere_machine {
+        Position { y: trigger.y + 1, ..trigger }
+    } else if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
             y: 32254,
@@ -353,6 +357,8 @@ fn scenario_case(
     let draconia_escape = name.starts_with("draconia-escape-");
     let mut callback = if m03_use {
         super::super::qengine_m03_use::callback()?
+    } else if sphere_machine {
+        super::super::qespike_sphere_machine::callback()?
     } else if qd_world {
         super::super::qd_world::callback(name)?
     } else if engenc_asura {
@@ -1032,6 +1038,8 @@ fn scenario_case(
                     .native_gameplay()
                     .ok_or("machine native policies")?,
             )?
+        } else if sphere_machine {
+            super::super::qespike_sphere_machine::world(generation.native_gameplay().ok_or("sphere native policies")?)?
         } else if qd_world {
             super::super::qd_world::world(
                 name,
@@ -2463,6 +2471,8 @@ fn scenario_case(
                 name.ends_with("-fault"),
             ))
             .await?;
+        } else if sphere_machine {
+            Box::pin(super::super::qespike_sphere_machine::exercise(&mut owner, &mut admitted, &h, &callback)).await?;
         } else if name == super::super::qespike_arkulius::NAME {
             Box::pin(super::super::qespike_arkulius::exercise(&mut owner, &mut admitted, &h, &authority)).await?;
         } else if name == "m16-marker" {

@@ -179,7 +179,7 @@ pub struct Storage {
     /// Preserve the track value within a receipt-bearing quest transition.
     #[serde(default, skip_serializing_if = "is_false")]
     pub preserve: bool,
-    /// Add `set` to the locked value instead of replacing it.
+    /// Add `set` to the locked value. A vocation teleport may debit its fare.
     #[serde(default, skip_serializing_if = "is_false")]
     pub increment: bool,
     /// Preserve higher progress while raising lower values to `set`.
@@ -660,6 +660,10 @@ pub fn stateless_ground_requirements(key: &str) -> Option<Vec<WorldRequirement>>
 /// Read the same closed content shape at boot and at the durable mutation boundary.
 /// Read the same catalogue-scoped bindings at dispatch and under the durable writer.
 pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String> {
+    #[cfg(any(test, feature = "test-support"))]
+    if let Some(callback) = &catalogue.world_callback_fixture {
+        return Ok(vec![callback.clone()]);
+    }
     match catalogue.authored_world_callbacks() {
         Some(callbacks) => Ok(callbacks.to_vec()),
         None => load(),
@@ -977,7 +981,8 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || callback
                 .effects
                 .teleport_effect
-                .is_some_and(|effect| effect == 0 || effect > 255 || callback.teleport.is_none())
+                .is_some_and(|effect| effect == 0 || effect > 255
+                    || (callback.teleport.is_none() && callback.effects.vocation_teleports.is_empty()))
             || (callback.actor_kind == ActorKind::Monster
                 && (callback.selector.position.is_none()
                     || callback.trigger == Trigger::Use
@@ -1082,7 +1087,10 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || callback
                 .passages
                 .iter()
-                .any(|p| p.if_present && callback.effects.passages_reset_after_ms.is_none())
+                .any(|p| {
+                    p.if_present && callback.effects.passages_reset_after_ms.is_none()
+                        && !(callback.effects.transform_requires_current && p.replacement.is_some())
+                })
             || unique_storage.len() != callback.storage.len()
             || callback.storage.iter().filter(|s| s.add.is_some()).count() > 1
             || callback.storage.iter().any(|s| {
@@ -1409,7 +1417,10 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     || (s.increment
                         && (s.preserve
                             || callback.native_rule.is_some()
-                            || s.set <= 0
+                            || (s.set <= 0
+                                && (s.set == 0
+                                    || callback.effects.vocation_teleports.is_empty()
+                                    || s.minimum.checked_add(s.set).is_none_or(|left| left < 0)))
                             || s.maximum.checked_add(s.set).is_none()))
             })
         {
@@ -1436,10 +1447,12 @@ fn extend_callbacks(
     for callback in callbacks.iter().filter(|c| c.requires_durable_commit()) {
         for storage in &callback.storage {
             let maximum = if storage.increment {
-                storage
-                    .maximum
-                    .checked_add(storage.set)
-                    .ok_or("callback increment overflow")?
+                storage.maximum.max(
+                    storage
+                        .maximum
+                        .checked_add(storage.set)
+                        .ok_or("callback increment overflow")?,
+                )
             } else {
                 storage.set.max(storage.maximum)
             };

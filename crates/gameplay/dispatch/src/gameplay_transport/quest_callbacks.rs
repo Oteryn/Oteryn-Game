@@ -252,6 +252,36 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
         return false;
     };
+    if callback.effects.transform_requires_current {
+        let selector = &callback.selector;
+        return !map.facts.base_hidden(key)
+            && selector
+                .position
+                .is_some_and(|position| tile(position) == pos)
+            && selector
+                .ordinal
+                .is_none_or(|expected| expected == u16::from(ordinal))
+            && map
+                .facts
+                .quest_callback_matches(key, selector.unique, selector.action, None)
+            && map
+                .overlay
+                .base()
+                .tile(pos.x, pos.y, pos.floor)
+                .and_then(|base| {
+                    let id = base
+                        .ids()
+                        .iter()
+                        .zip(base.depths())
+                        .filter(|(_, depth)| **depth == 0)
+                        .nth(usize::from(ordinal))
+                        .map(|(id, _)| *id)?;
+                    map.facts.base_entry(pos, ordinal, id)
+                })
+                .is_some_and(|entry| {
+                    !entry.pickupable && Some(entry.appearance_id) == selector.appearance
+                });
+    }
     // These source-bound World ingresses retain no startup UID/AID in B3.
     // An appearance elsewhere in the stack cannot impersonate their source.
     let source_ordinal = match callback.key.as_str() {

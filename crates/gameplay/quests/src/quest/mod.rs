@@ -433,6 +433,8 @@ pub struct QuestStateCatalogue {
     native_recipe_evidence: Option<std::sync::Arc<authored_bindings::embedded::RecipeEvidence>>,
     #[cfg(any(test, feature = "test-support"))]
     npc_program_fixture: Option<npc_rules::NpcRuleCatalog>,
+    #[cfg(any(test, feature = "test-support"))]
+    world_callback_fixture: Option<world_callbacks::Callback>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -447,6 +449,21 @@ impl QuestStateCatalogue {
     pub fn with_npc_program_fixture(mut self, source: npc_rules::NpcRuleCatalog) -> Self {
         self.npc_program_fixture = Some(source);
         self
+    }
+
+    /// Keep a test callback and its bound transition together in one catalogue.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn with_world_callback_fixture(
+        self,
+        callback: world_callbacks::Callback,
+    ) -> Result<Self, String> {
+        world_callbacks::validate_callbacks(std::slice::from_ref(&callback))?;
+        let transition = world_callbacks::primary_transition(&callback)?;
+        let mut catalogue = self
+            .with_fixture_transition(transition)
+            .map_err(|error| format!("{error:?}"))?;
+        catalogue.world_callback_fixture = Some(callback);
+        Ok(catalogue)
     }
 
     /// Check every key, bound and effect, and compute each quest's definition hash.
@@ -632,6 +649,8 @@ impl QuestStateCatalogue {
             native_recipe_evidence: None,
             #[cfg(any(test, feature = "test-support"))]
             npc_program_fixture: None,
+            #[cfg(any(test, feature = "test-support"))]
+            world_callback_fixture: None,
         })
     }
 

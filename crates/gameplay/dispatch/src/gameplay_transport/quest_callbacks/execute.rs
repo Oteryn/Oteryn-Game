@@ -358,6 +358,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Occupied;
             }
             let Some(t) = map.overlay.base().tile(p.x, p.y, p.floor) else {
+                if passage.if_present {
+                    continue;
+                }
                 return UseDisposition::Rejected;
             };
             let candidates = t
@@ -371,8 +374,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let k = placement_key(p, ordinal)?;
                     let f = map.facts.base_entry(p, ordinal, *id)?;
                     ((f.appearance_id == passage.appearance
-                        || passage.replacement == Some(f.appearance_id)
-                        || passage.create_on_close == Some(f.appearance_id))
+                        || (!callback.effects.transform_requires_current
+                            && (passage.replacement == Some(f.appearance_id)
+                                || passage.create_on_close == Some(f.appearance_id))))
                         && !map.facts.house_tile(p)
                         && (!passage.if_present || !map.facts.base_hidden(k)))
                     .then_some(k)
@@ -491,6 +495,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
         let mut destination = callback.teleport;
+        // Crystal 201189f8 elemental_spheres/actions_machine1.lua:2-27:
+        // prepare the base-vocation destination before the fenced counter debit.
+        if !callback.effects.vocation_teleports.is_empty() {
+            use crate::content::spell_data::Vocation;
+            let Some(state) = states.get(runtime, actor, session) else {
+                return UseDisposition::Rejected;
+            };
+            let vocation = match state.source_party_vocation() {
+                Vocation::Sorcerer | Vocation::MasterSorcerer => "sorcerer",
+                Vocation::Druid | Vocation::ElderDruid => "druid",
+                Vocation::Paladin | Vocation::RoyalPaladin => "paladin",
+                Vocation::Knight | Vocation::EliteKnight => "knight",
+                Vocation::Monk | Vocation::ExaltedMonk => "monk",
+                Vocation::None => return UseDisposition::NotPossible,
+            };
+            let Some(cell) = callback.effects.vocation_teleports.get(vocation) else {
+                return UseDisposition::NotPossible;
+            };
+            destination = Some(*cell);
+        }
         if let Some(remote) = &callback.remote_teleport {
             let p = tile(remote.position);
             let Some(base) = map.overlay.base().tile(p.x, p.y, p.floor) else {
@@ -1606,7 +1630,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .emit_movement_effect(tile(magic.position), magic.effect);
         }
         if let Some(effect) = callback.effects.teleport_effect
-            && let Some(destination) = callback.teleport
+            && let Some(destination) = destination
         {
             map.facts.emit_movement_effect(tile(destination), effect);
         }
