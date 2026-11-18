@@ -17,6 +17,16 @@ pub(super) async fn lock_in_transaction(
         .await?;
     Ok(())
 }
+/// A reader that already holds a Character row lock must avoid waiting on a
+/// PvP writer that may still need to take a foreign-key lock on that row.
+pub(super) async fn try_lock_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    character: &[u8; 16],
+) -> Result<bool, DurabilityError> {
+    Ok(sqlx::query_scalar("SELECT pg_try_advisory_xact_lock(hashtextextended('oteryn:party-xp-pz:' || encode($1,'hex'),0))")
+        .bind(character.as_slice()).fetch_one(&mut **tx).await?)
+}
+
 pub async fn leader_pz_blocked_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     scope: &SpellItemScopeAuthority,
@@ -25,9 +35,7 @@ pub async fn leader_pz_blocked_in_transaction(
     check_scope_transaction(tx, scope).await?;
     // A kill can read leaders from several contributing parties. Refuse contention
     // rather than waiting in party order against the PvP writer's CharacterId order.
-    let acquired: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock(hashtextextended('oteryn:party-xp-pz:' || encode($1,'hex'),0))")
-        .bind(leader.as_slice()).fetch_one(&mut **tx).await?;
-    if !acquired {
+    if !try_lock_in_transaction(tx, leader).await? {
         return Err(SpellItemError::Rejected("XP PZ predecessor busy"));
     }
     Ok(sqlx::query_scalar("SELECT pz_block_until>clock_timestamp() FROM game_character_pvp_state WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid FOR SHARE")

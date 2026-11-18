@@ -527,7 +527,9 @@ impl DurabilityRoot {
                 if request.npc == oteryn_gameplay_quests::quest::classic_talk::QUEEN {
                     // The PvP owner takes this lock before writing a deadline, including
                     // for Characters without a row. Keep it through the arrival commit.
-                    super::super::party_pz_fact::lock_in_transaction(&mut tx, character.as_bytes()).await?;
+                    if !super::super::party_pz_fact::try_lock_in_transaction(&mut tx, character.as_bytes()).await? {
+                        return Ok(Ok(refused(QuestRefusal::StageMismatch)));
+                    }
                     let blocked = super::super::pvp_state::load_pvp_state(&mut tx, character)
                         .await?.is_some_and(|state| state.pz_block_remaining_ms.is_some());
                     if blocked {
