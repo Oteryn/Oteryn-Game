@@ -55,7 +55,7 @@ fn solo_quest_room_ejects_the_admitted_player_after_the_last_monster_dies() -> T
 }
 
 #[test]
-fn cave_spider_timeout_clears_monsters_inside_the_room_without_clearing_neighbours() -> TestResult {
+fn cave_spider_refuses_occupied_entry_then_ejects_only_the_admitted_player() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -407,7 +407,8 @@ async fn exercise_world(
     }
     let previous_cooldown = cooldown().await?;
     let mut eventual_bystander = None;
-    if boss.is_some_and(|room| room.with_occupant) {
+    let test_occupied_entry = keep_cave_monsters || boss.is_some_and(|room| room.with_occupant);
+    if test_occupied_entry {
         let second_session = crate::foundation::GameSessionId::decode(&id(97)).map_err(debug)?;
         let other = {
             let mut runtime = deps.runtime.lock().await;
@@ -438,13 +439,21 @@ async fn exercise_world(
         );
         assert_eq!(cooldown().await?, previous_cooldown);
         assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), None);
+        if keep_cave_monsters {
+            let awarded = sqlx::query_scalar::<_, bool>(
+                "SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND value=10)",
+            )
+            .bind(id(41).as_slice())
+            .bind(TRACK)
+            .fetch_one(&h.pool)
+            .await?;
+            assert!(!awarded, "an occupied Cave Spider room grants no progress");
+        }
         let mut runtime = deps.runtime.lock().await;
+        let position = runtime.read_actor_position(deps.actor).map_err(debug)?;
         assert_eq!(
-            runtime
-                .read_actor_position(deps.actor)
-                .map_err(debug)?
-                .position(),
-            start
+            position.position(),
+            if keep_cave_monsters { local(EXIT) } else { start }
         );
         assert_eq!(
             runtime
@@ -460,17 +469,28 @@ async fn exercise_world(
                 .is_empty()
         );
         runtime.remove_test_actor(other).map_err(debug)?;
-        let reserve = runtime
-            .reserve_fresh_session(second_session)
+        if keep_cave_monsters {
+            let map = owner.bundle_map().ok_or("room map")?;
+            let doors = crate::map::floor::BundleDoors(map.facts.doors());
+            let proof = crate::map::floor::prepare_quest_callback_teleport(
+                &runtime, owner.movement_cells(), deps.actor, admitted.game_session_id,
+                position, start, false, &doors,
+            )
             .map_err(debug)?;
-        let other = runtime.commit_fresh_session(reserve).map_err(debug)?;
-        let bystander = local(BYSTANDER);
-        runtime
-            .initialize_pinned_test_position(other, bystander)
-            .map_err(debug)?;
-        eventual_bystander = Some((other, bystander));
+            runtime.commit_source_step(proof).map_err(debug)?;
+        } else {
+            let reserve = runtime
+                .reserve_fresh_session(second_session)
+                .map_err(debug)?;
+            let other = runtime.commit_fresh_session(reserve).map_err(debug)?;
+            let bystander = local(BYSTANDER);
+            runtime
+                .initialize_pinned_test_position(other, bystander)
+                .map_err(debug)?;
+            eventual_bystander = Some((other, bystander));
+        }
     }
-    let (command, enter_at) = if eventual_bystander.is_some() {
+    let (command, enter_at) = if test_occupied_entry {
         (2, 5_000_000)
     } else {
         (1, 1_000_000)
@@ -557,14 +577,19 @@ async fn exercise_world(
         } else {
             None
         };
-        let visitor = if eventual_bystander.is_some() {
+        let visitor_position = if keep_cave_monsters {
+            Some(Position { y: ROOM.y + 1, ..ROOM })
+        } else {
+            eventual_bystander.map(|_| ROOM_VISITOR)
+        };
+        let visitor = if let Some(at) = visitor_position {
             let session = crate::foundation::GameSessionId::decode(&id(98)).map_err(debug)?;
             let reserve = runtime.reserve_fresh_session(session).map_err(debug)?;
             let visitor = runtime.commit_fresh_session(reserve).map_err(debug)?;
             runtime
-                .initialize_pinned_test_position(visitor, local(ROOM_VISITOR))
+                .initialize_pinned_test_position(visitor, local(at))
                 .map_err(debug)?;
-            Some(visitor)
+            Some((visitor, if keep_cave_monsters { local(at) } else { local(EXIT) }))
         } else {
             None
         };
@@ -680,11 +705,11 @@ async fn exercise_world(
             bystander
         );
     }
-    if let Some(visitor) = room_visitor {
+    if let Some((visitor, expected)) = room_visitor {
         let runtime = deps.runtime.lock().await;
         assert_eq!(
             runtime.read_actor_position(visitor).map_err(debug)?.position(),
-            local(EXIT)
+            expected
         );
     }
     if boss.is_some() {
