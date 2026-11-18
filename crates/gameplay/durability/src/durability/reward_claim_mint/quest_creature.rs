@@ -128,15 +128,21 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
 
     pub(crate) fn bind_direct_corpse(
         &self,
-        binding: &mut Vec<u8>,
+        binding: &mut [u8; 33],
         fence: CurrentCharacterGameplayFence,
         request: &QuestTransitionRequest,
         callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
     ) -> Option<()> {
+        use sha2::{Digest, Sha256};
         let (item, _) = self.permits_direct_corpse(fence, request, callback)?;
         let ingress = oteryn_protocol_oteryn::world_object::encode_item_use_intent(&self.intent).ok()?;
-        binding.extend_from_slice(&item);
-        binding.extend_from_slice(&ingress);
+        let digest = Sha256::new()
+            .chain_update(b"oteryn:quest:direct-corpse-use/v1")
+            .chain_update(binding.as_slice())
+            .chain_update(item)
+            .chain_update(ingress)
+            .finalize();
+        binding[1..].copy_from_slice(&digest);
         Some(())
     }
 
