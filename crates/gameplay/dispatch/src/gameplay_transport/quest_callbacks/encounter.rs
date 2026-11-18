@@ -98,47 +98,74 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let [(actor, session)] = visit.participants.as_slice() else {
                 return false;
             };
-            // Crystal data/libs/functions/functions.lua:226-238 also clears
-            // monsters left in the room. Retire only this visit's exact actors
-            // so a stale timer cannot remove another admission's creatures.
-            visit.creatures.retain(|creature| {
+            let boss_room = visit.room.boss_cooldown_seconds.is_some();
+            let targets = if boss_room {
+                // Crystal grimvale/actions_portal_minis_grimvale.lua:127-132
+                // and actions_portal_minis_ancient_feud.lua:119-124 rescan
+                // the arena and remove its players. The boss stays until
+                // the next successful admission clears the room.
+                let Ok(census) = runtime.positioned_melee_census() else {
+                    return true;
+                };
+                census
+                    .into_iter()
+                    .filter_map(|(actor, position, session)| {
+                        session
+                            .filter(|_| room_contains(&visit.room, position.position()))
+                            .map(|session| (actor, session, position))
+                    })
+                    .collect::<Vec<_>>()
+            } else {
+                // Crystal data/libs/functions/functions.lua:226-238 clears
+                // monsters when the Cave Spider timer expires. Retire only
+                // this visit's exact actors.
+                visit.creatures.retain(|creature| {
+                    runtime
+                        .read_actor_position(*creature)
+                        .is_ok_and(|position| room_contains(&visit.room, position.position()))
+                        && runtime.remove_encounter_actor(*creature).is_err()
+                });
                 runtime
-                    .read_actor_position(*creature)
-                    .is_ok_and(|position| room_contains(&visit.room, position.position()))
-                    && runtime.remove_encounter_actor(*creature).is_err()
-            });
-            let pending_cleanup = !visit.creatures.is_empty();
-            if runtime.player_control_facts(*actor, *session).is_err() {
+                    .player_control_facts(*actor, *session)
+                    .and_then(|_| runtime.read_actor_position(*actor))
+                    .ok()
+                    .filter(|position| room_contains(&visit.room, position.position()))
+                    .map(|position| (*actor, *session, position))
+                    .into_iter()
+                    .collect()
+            };
+            let pending_cleanup = !boss_room && !visit.creatures.is_empty();
+            if targets.is_empty() {
                 return pending_cleanup;
             }
-            let Ok(expected) = runtime.read_actor_position(*actor) else {
-                return pending_cleanup;
-            };
-            let from = expected.position();
-            if !room_contains(&visit.room, from) {
-                return pending_cleanup;
-            }
-            let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
-                runtime,
-                self.movement_cells(),
-                *actor,
-                *session,
-                expected,
-                ejection.destination,
-                &doors,
-            ) else {
+            let proofs = targets
+                .iter()
+                .map(|&(actor, session, position)| {
+                    crate::map::floor::prepare_quest_encounter_ejection(
+                        runtime,
+                        self.movement_cells(),
+                        actor,
+                        session,
+                        position,
+                        ejection.destination,
+                        &doors,
+                    )
+                })
+                .collect::<Result<Vec<_>, _>>();
+            let Ok(proofs) = proofs else {
                 return true;
             };
-            let Ok(snapshots) = runtime.commit_quest_relocation(vec![proof], || true) else {
+            let Ok(snapshots) = runtime.commit_quest_relocation(proofs, || true) else {
                 return true;
             };
-            for snapshot in snapshots {
+            for ((actor, session, expected), snapshot) in targets.into_iter().zip(snapshots) {
+                let from = expected.position();
                 let to = snapshot.position();
                 states.stage_special_movement_step(
                     runtime,
                     map,
-                    *actor,
-                    *session,
+                    actor,
+                    session,
                     now,
                     Some(from),
                     to,
@@ -146,8 +173,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
                 states.stage_underwater_step(
                     runtime,
-                    *actor,
-                    *session,
+                    actor,
+                    session,
                     now,
                     underwater(map, from),
                     underwater(map, to),
@@ -563,8 +590,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         drop(phases);
         if let Some(visits) = &mut visits {
-            // Crystal hidden_threats/movement-cave_spider_room.lua:54-58 starts
-            // the player-specific timer only after successful room admission.
+            // The room timer begins after successful admission. An earlier
+            // boss visit cannot eject players from this new visit.
             let ejection = encounter.ejection.map(|rule| ScheduledEjection {
                 due_us: self
                     .owner_now()
@@ -576,6 +603,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             });
             if ejection.is_some() {
                 states.owner_wake.notify_one();
+                if encounter.boss_cooldown_seconds.is_some() {
+                    visits.retain(|visit| {
+                        visit.room.boss_cooldown_seconds.is_none()
+                            || visit.room.room_min != encounter.room_min
+                            || visit.room.room_max != encounter.room_max
+                    });
+                }
             }
             visits.push(EncounterVisit {
                 room: encounter.clone(),

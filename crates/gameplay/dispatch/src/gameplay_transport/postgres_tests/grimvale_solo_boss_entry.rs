@@ -82,7 +82,7 @@ fn ancient_feud_step_refuses_the_level_gate_without_writing_a_cooldown() -> Test
 }
 
 #[test]
-fn occupied_boss_room_refuses_entry_and_ejects_only_the_later_admitted_player() -> TestResult {
+fn occupied_boss_room_refuses_entry_then_ejects_current_players_without_removing_boss() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };

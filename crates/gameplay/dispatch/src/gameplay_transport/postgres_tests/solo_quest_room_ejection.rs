@@ -40,6 +40,10 @@ const BYSTANDER: Position = Position {
     y: 32103,
     floor: -12,
 };
+const ROOM_VISITOR: Position = Position {
+    x: 33024,
+    ..ROOM
+};
 const AFTER_MS: u32 = 5 * 60 * 1_000;
 
 #[test]
@@ -140,7 +144,7 @@ async fn exercise_world(h: &Harness, boss: Option<BossRoom>, buff: Option<StepBu
     }))?;
     let catalogue =
         bindings.attach(&QuestStateCatalogue::new("content-1", vec![], vec![]).map_err(debug)?)?;
-    let world = world_with_cells(&callback, ENTRY, &[EXIT, BYSTANDER])?;
+    let world = world_with_cells(&callback, ENTRY, &[EXIT, BYSTANDER, ROOM_VISITOR])?;
     prepare_current_session(h).await?;
     if let Some(level) = boss.and_then(|room| room.player_level) {
         // Arrange the progression snapshot before admitting the real STEP command.
@@ -505,7 +509,7 @@ async fn exercise_world(h: &Harness, boss: Option<BossRoom>, buff: Option<StepBu
     if boss.is_none() {
         assert_eq!(read_progress().await?, 10);
     }
-    {
+    let room_visitor = {
         let mut runtime = deps.runtime.lock().await;
         assert_eq!(
             runtime
@@ -516,10 +520,23 @@ async fn exercise_world(h: &Harness, boss: Option<BossRoom>, buff: Option<StepBu
         );
         let creatures = runtime.current_live_creature_census().map_err(debug)?;
         assert_eq!(creatures.len(), 1);
-        for creature in creatures {
-            runtime.remove_encounter_actor(creature).map_err(debug)?;
+        if boss.is_none() {
+            for creature in creatures {
+                runtime.remove_encounter_actor(creature).map_err(debug)?;
+            }
         }
-    }
+        if eventual_bystander.is_some() {
+            let session = crate::foundation::GameSessionId::decode(&id(98)).map_err(debug)?;
+            let reserve = runtime.reserve_fresh_session(session).map_err(debug)?;
+            let visitor = runtime.commit_fresh_session(reserve).map_err(debug)?;
+            runtime
+                .initialize_pinned_test_position(visitor, local(ROOM_VISITOR))
+                .map_err(debug)?;
+            Some(visitor)
+        } else {
+            None
+        }
+    };
     let due = enter_at + u64::from(after_ms) * 1_000;
     assert_eq!(
         owner.states.quest_callbacks.next_encounter_due_us(),
@@ -559,6 +576,21 @@ async fn exercise_world(h: &Harness, boss: Option<BossRoom>, buff: Option<StepBu
                 .map_err(debug)?
                 .position(),
             bystander
+        );
+    }
+    if let Some(visitor) = room_visitor {
+        let runtime = deps.runtime.lock().await;
+        assert_eq!(
+            runtime.read_actor_position(visitor).map_err(debug)?.position(),
+            local(EXIT)
+        );
+    }
+    if boss.is_some() {
+        let runtime = deps.runtime.lock().await;
+        assert_eq!(
+            runtime.current_live_creature_census().map_err(debug)?.len(),
+            1,
+            "Crystal boss-room timeout clears the players and leaves the live boss"
         );
     }
     if boss.is_none() {
