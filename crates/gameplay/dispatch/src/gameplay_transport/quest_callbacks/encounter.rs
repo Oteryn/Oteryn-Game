@@ -3,6 +3,7 @@ use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::view::EntryFacts;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+use sha2::{Digest, Sha256};
 
 pub(in crate::gameplay_transport) fn room_contains(
     encounter: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
@@ -324,28 +325,59 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         original: ExactActorRef,
         link: &world_callbacks::LinkedArrival,
     ) -> Option<ExactActorRef> {
-        let at = local(link.monster.position);
-        if self.movement_cells.index().lookup(
-            self.movement_cells.scope(),
-            LogicalCell {
-                x: at.x,
-                y: at.y,
-                z: i32::from(at.floor),
-            },
-        ) != Ok(CollisionClass::Walkable)
-            || map.facts.quest_callback_blocked(
-                map.overlay.base(),
-                tile(link.monster.position),
-                false,
-            )
-            || runtime
-                .positioned_melee_census()
-                .ok()?
-                .iter()
-                .any(|(_, position, _)| position.position() == at)
-        {
-            return None;
-        }
+        let center = local(link.monster.position);
+        let census = runtime.positioned_melee_census().ok()?;
+        let doors = crate::map::floor::BundleDoors(&map.facts);
+        let can_spawn = |at: MovementLocalPosition| {
+            native(at).is_some_and(|tile| {
+                !map.facts
+                    .quest_callback_blocked(map.overlay.base(), tile, false)
+                    && crate::movement::relocate::creature_cell_admissible(
+                        self.movement_cells(),
+                        &doors,
+                        at,
+                    )
+                    && !census
+                        .iter()
+                        .any(|(_, position, _)| position.position() == at)
+            })
+        };
+        let at = if can_spawn(center) {
+            center
+        } else {
+            // Crystal actions_the_unwelcome_lever.lua:17-23 uses ordinary
+            // Game.createMonster. Map::placeCreature (src/map/map.cpp:254-305)
+            // considers the eight adjacent cells when its centre is unavailable.
+            let adjacent = [
+                (-1, -1),
+                (0, -1),
+                (1, -1),
+                (-1, 0),
+                (1, 0),
+                (-1, 1),
+                (0, 1),
+                (1, 1),
+            ];
+            let candidates: Vec<_> = adjacent
+                .into_iter()
+                .map(|(dx, dy)| MovementLocalPosition {
+                    x: center.x + dx,
+                    y: center.y + dy,
+                    ..center
+                })
+                .filter(|&at| can_spawn(at))
+                .collect();
+            if candidates.is_empty() {
+                return None;
+            }
+            let digest = Sha256::new()
+                .chain_update(b"oteryn:linked-arrival-placement:v1")
+                .chain_update(original.placement_identity())
+                .finalize();
+            let mut sample = [0; 8];
+            sample.copy_from_slice(&digest[..8]);
+            candidates[(u64::from_be_bytes(sample) % candidates.len() as u64) as usize]
+        };
         let health = runtime
             .companion_policy(&link.monster.creature)
             .ok()?
