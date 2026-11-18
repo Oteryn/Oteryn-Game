@@ -3,12 +3,12 @@ use super::fixture::{Harness, debug};
 use super::quest_world_callbacks::{input_item, local, scenario, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::ExactActorRef;
-use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
-use crate::gameplay_transport::item_view::ItemKey;
+use crate::gameplay_transport::capabilities::SelectedCapabilities;
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Offering, Position, Trigger};
 use oteryn_protocol_oteryn::world_object::{
-    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
+    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
 };
 use oteryn_protocol_oteryn::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, decode_step_result, encode_step_intent,
@@ -17,6 +17,7 @@ use oteryn_protocol_oteryn::world_spatial::{
 pub(super) const SATCHEL: &str = "galthen-satchel";
 pub(super) const COOLDOWN: &str = "galthen-yselda-shortcut-1-cooldown";
 pub(super) const COOLDOWN_EXPIRES_NOW: &str = "galthen-yselda-shortcut-1-cooldown-expires-now";
+pub(super) const TARGETED_USE: &str = "-targeted-use";
 pub(super) const LOW_LEVEL: &str = "-low-level";
 const SATCHEL_RECLAIM_SECONDS: i64 = 30 * 24 * 60 * 60;
 
@@ -92,6 +93,7 @@ fn galthen_iksupan_direct_use_level_gate_postgres() -> TestResult {
     for (name, source) in [
         (ROUTES[2].0, ROUTES[2].1),
         ("galthen-iksupan-entrance-low-level", ROUTES[2].1),
+        ("galthen-iksupan-entrance-targeted-use", ROUTES[2].1),
     ] {
         travel(name, source)?;
     }
@@ -157,6 +159,8 @@ pub(super) async fn exercise(
         start
     } else if name == SATCHEL {
         at(32396, 32520, -7)
+    } else if name.ends_with(TARGETED_USE) {
+        start
     } else if name == COOLDOWN_EXPIRES_NOW {
         ROUTES[5].2
     } else {
@@ -203,73 +207,8 @@ pub(super) async fn exercise(
         if name == SATCHEL {
             return exercise_satchel(owner, admitted, h, actor, start, expected, target, key).await;
         }
-        if name == "galthen-iksupan-entrance" {
-            let fence = admitted.item_fence.ok_or("Iksupan item fence")?;
-            let rope = Offering {
-                position: start,
-                item: "oteryn:item.tibia.i3003".into(),
-                count: 1,
-            };
-            input_item(owner, fence, &rope, 1, true).await?;
-            let rope_instance: Vec<u8> = sqlx::query_scalar(
-                "SELECT uuid_send(entry.item_instance_id) FROM game_item_container_entries entry
-                   JOIN game_item_instances item USING (item_instance_id)
-                  WHERE entry.character_id=encode($1,'hex')::uuid
-                    AND item.definition_production_key=$2 AND item.lifecycle=1",
-            )
-            .bind(fence.character_id.as_bytes().as_slice())
-            .bind(&rope.item)
-            .fetch_one(&h.pool)
-            .await?;
-            let rope_instance: [u8; 16] = rope_instance
-                .try_into()
-                .map_err(|_| "Iksupan rope identity")?;
-            let result = owner
-                .tame_mount(
-                    actor,
-                    UseCommand {
-                        game_session_id: admitted.game_session_id,
-                        command_id: admitted.continuity.next_command_id,
-                        item_fence: Some(fence),
-                    },
-                    UseIntent {
-                        target: UseTarget::Item(std::num::NonZeroU64::MIN),
-                        use_with: None,
-                        use_with_map_item: Some(MapUseTarget::Object(target.clone())),
-                        use_with_position: None,
-                    },
-                    Some(ItemKey::Instance(rope_instance)),
-                    None,
-                    false,
-                )
-                .await
-                .map_err(debug)?;
-            assert_eq!(
-                result.map(|outcome| outcome.disposition),
-                Some(UseDisposition::NotPossible),
-                "Crystal registers only direct USE for the Iksupan entrance"
-            );
-            assert_eq!(
-                owner
-                    .runtime
-                    .lock()
-                    .await
-                    .read_actor_position(actor)?
-                    .position(),
-                local(start)
-            );
-            assert!(map.facts.movement_effects_since(effect_before).is_empty());
-            let quantity: i64 = sqlx::query_scalar(
-                "SELECT item.quantity FROM game_item_container_entries entry
-                   JOIN game_item_instances item USING (item_instance_id)
-                  WHERE entry.character_id=encode($1,'hex')::uuid
-                    AND entry.item_instance_id=encode($2,'hex')::uuid AND item.lifecycle=1",
-            )
-            .bind(fence.character_id.as_bytes().as_slice())
-            .bind(rope_instance.as_slice())
-            .fetch_one(&h.pool)
-            .await?;
-            assert_eq!(quantity, 1, "refused Iksupan USE retains the carried item");
+        if name.ends_with(TARGETED_USE) {
+            return exercise_targeted_use(owner, admitted, h, actor, start, target).await;
         }
         let outcomes =
             super::quest_callbacks::wire_use_targets_retained(owner, admitted, &[(1, &target)])
@@ -300,6 +239,73 @@ pub(super) async fn exercise(
             .position(),
         local(expected)
     );
+    Ok(())
+}
+
+async fn exercise_targeted_use(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    actor: ExactActorRef,
+    start: Position,
+    target: WorldObjectTarget,
+) -> TestResult {
+    let fence = admitted.item_fence.ok_or("Iksupan item fence")?;
+    let rope = Offering {
+        position: start,
+        item: "oteryn:item.tibia.i3003".into(),
+        count: 1,
+    };
+    input_item(owner, fence, &rope, 1, true).await?;
+    let reference = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .and_then(|native| native.item_index())
+        .and_then(|index| index.definition_ref("Item", &rope.item, "definition-r1"))
+        .ok_or("Iksupan rope definition")?;
+
+    let map = owner.bundle_map().ok_or("Iksupan map")?;
+    let effect_before = map.facts.movement_effects_since(0).last().map_or(0, |row| row.0);
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
+            .ok_or("Iksupan targeted USE capabilities")?;
+    let payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::ItemByDefinition(reference),
+        use_with: None,
+        use_with_map_item: Some(MapUseTarget::Object(target)),
+        use_with_position: None,
+    })
+    .map_err(debug)?;
+    let (next, outcome, _) = super::item_craft::exchange(
+        owner,
+        *admitted,
+        admitted.continuity.next_command_id,
+        &payload,
+        Some(reference),
+    )
+    .await?;
+    *admitted = next;
+    assert_eq!(
+        outcome,
+        UseDisposition::NotPossible,
+        "Crystal registers only direct USE for the Iksupan entrance"
+    );
+    assert_eq!(
+        owner.runtime.lock().await.read_actor_position(actor)?.position(),
+        local(start)
+    );
+    assert!(map.facts.movement_effects_since(effect_before).is_empty());
+    let quantity: i64 = sqlx::query_scalar(
+        "SELECT item.quantity FROM game_item_container_entries entry
+           JOIN game_item_instances item USING (item_instance_id)
+          WHERE entry.character_id=encode($1,'hex')::uuid
+            AND item.definition_production_key=$2 AND item.lifecycle=1",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(&rope.item)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(quantity, 1, "refused Iksupan USE retains the carried item");
     Ok(())
 }
 
