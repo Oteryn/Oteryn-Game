@@ -15,6 +15,7 @@ use oteryn_protocol_oteryn::activity_scope::ActivityScope;
 use oteryn_protocol_oteryn::boss_encounter::{self as wire, BossActivityReply};
 const BOSS: &str = "oteryn:boss.the_first_dragon";
 const CREATURE: &str = "oteryn:creature.the_first_dragon";
+const FEATHERS: &str = "oteryn:quest-progress/quest/u11_02/the_first_dragon/feathers";
 const QUEST: &str = "oteryn:quest.the_first_dragon_quest";
 const TRIALS: &str = "oteryn:quest-progress/chosen-source/the_first_dragon_quest/s4";
 type PublishedRoom = (Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, String, String, i64);
@@ -442,10 +443,10 @@ fn scenario(victory: bool) -> TestResult {
         assert_eq!(timers, (1_200_000, 72_000_000));
         if victory {
             settle_selected_boss(&destination, &admitted).await?;
-            let completed: (Option<i64>,Option<i64>,Option<bool>) = sqlx::query_as("SELECT (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),(SELECT value FROM game_character_quest_tracks WHERE track_key=$2),(SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE quest_key=$3)")
+            let completed: (Option<i64>,Option<i64>,Option<bool>,Option<i64>) = sqlx::query_as("SELECT (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),(SELECT value FROM game_character_quest_tracks WHERE track_key=$2),(SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE quest_key=$3),(SELECT value FROM game_character_quest_tracks WHERE quest_key=$3 AND track_key=$4)")
                 .bind("oteryn:quest-progress/chosen-source/the_first_dragon_quest/s5")
-                .bind("oteryn:quest-progress/chosen-source/the_first_dragon_quest/s6").bind(QUEST).fetch_one(&h.pool).await?;
-            assert_eq!(completed, (Some(1), Some(1), Some(true)));
+                .bind("oteryn:quest-progress/chosen-source/the_first_dragon_quest/s6").bind(QUEST).bind(FEATHERS).fetch_one(&h.pool).await?;
+            assert_eq!(completed, (Some(1), Some(1), Some(true), Some(1)));
             let exit_after: i64 = sqlx::query_scalar("SELECT exit_deadline / 1000 + 1 FROM game_boss_room_activities WHERE admission=encode($1,'hex')::uuid")
                 .bind(handoff.as_slice()).fetch_one(&h.pool).await?;
             h.root
@@ -533,9 +534,9 @@ fn scenario(victory: bool) -> TestResult {
 
 #[test]
 fn m18_selected_first_dragon_native_victory_completes_once_postgres() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| scenario(true).map_err(|e| e.to_string()))?
