@@ -7,7 +7,7 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::sync::Arc;
 
-const START: MovementLocalPosition = MovementLocalPosition { x: 32747, y: 32773, floor: 10 };
+const START: MovementLocalPosition = MovementLocalPosition { x: 32748, y: 32773, floor: 10 };
 const ENTRY: MovementLocalPosition = MovementLocalPosition { x: 32757, y: 32727, floor: 10 };
 const BOSS: &str = "oteryn:creature.ghulosh";
 const DEATHGAZE: &str = "oteryn:creature.ghulosh_deathgaze";
@@ -43,7 +43,7 @@ fn seclib2_ghulosh_party_use_transforms_respawns_book_and_exits_postgres() -> Te
                     )),
                     region: (10, 127, 128),
                     bounds: (32746, 32772, 32752, 32774),
-                    start: (32747, 32773),
+                    start: (32748, 32773),
                     expected: vec![ExpectedTile {
                         position: (32746, 32773),
                         ids: vec![28285, 28889, 28888],

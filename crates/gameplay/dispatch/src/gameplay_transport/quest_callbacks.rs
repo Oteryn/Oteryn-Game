@@ -174,6 +174,25 @@ fn unique_eligible<'a>(
     eligible.next().is_none().then_some(selected)
 }
 
+fn quest_use_reaches(callback: &Callback, actor: TilePos, target: TilePos) -> bool {
+    let position = |at: TilePos| Position {
+        x: at.x,
+        y: at.y,
+        floor: at.floor,
+    };
+    let actor = position(actor);
+    let target = position(target);
+    if let Some(encounter) = &callback.effects.encounter
+        && encounter.phase == Some(world_callbacks::EncounterPhase::Ghulosh)
+    {
+        // The source action admits its exact staging pads. The shipped map's
+        // adjacent pad has a solid bookstand, so allow another authored pad
+        // to start the same room while preserving the initiator roster check.
+        return callback.selector.position == Some(target)
+            && encounter.players.iter().any(|member| member.from == actor);
+    }
+    callback.reaches(actor, target)
+}
 fn tile(p: Position) -> TilePos {
     TilePos {
         x: p.x,
@@ -1145,7 +1164,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let Some(at) = native(expected.position()) else {
                         return UseDisposition::Rejected;
                     };
-                    if !callback.reaches(Position { x: at.x, y: at.y, floor: at.floor }, Position { x: resolved.pos.x, y: resolved.pos.y, floor: resolved.pos.floor }) {
+                    if !quest_use_reaches(callback, at, resolved.pos) {
                         return UseDisposition::TooFar;
                     }
                     if !self.states.world_gate.lock()
@@ -1191,7 +1210,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(at) = native(expected.position()) else {
                 return UseDisposition::Rejected;
             };
-            if !callback.reaches(Position { x: at.x, y: at.y, floor: at.floor }, Position { x: resolved.pos.x, y: resolved.pos.y, floor: resolved.pos.floor }) {
+            if !quest_use_reaches(callback, at, resolved.pos) {
                 return UseDisposition::TooFar;
             }
             if !callback.is_read_only() && !self
