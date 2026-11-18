@@ -1,5 +1,27 @@
 use super::*;
 
+// Crystal 201189f8 actions_dwarf_disguise_kit.lua:1-13.
+const BRIDGE_ROBBERY_SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_dwarf_disguise_kit.lua:1-13";
+
+fn disguise_input() -> TestResult<crate::content::native_gameplay::NativeGameplayInput> {
+    use sha2::{Digest, Sha256};
+    let mut input = super::super::death_ml_loss_composed::production_input_with_source(
+        "content-1", None,
+    )?;
+    let appearances = input.spell_appearances.as_mut().ok_or("native spell appearances")?;
+    let mut packet: serde_json::Value = serde_json::from_slice(&appearances.bytes)?;
+    packet["item_costumes"] = serde_json::json!([{
+        "item_id":7865,
+        "creature":{"family":"Creature","key":"oteryn:creature.dwarf_geomancer","revision":"definition-r1"},
+        "look_type":66,
+        "duration_ms":300000,
+        "source":BRIDGE_ROBBERY_SOURCE
+    }]);
+    appearances.bytes = serde_json::to_vec(&packet)?;
+    appearances.sha256 = format!("{:x}", Sha256::digest(&appearances.bytes));
+    Ok(input)
+}
+
 pub(super) fn scenario(case: Case) -> TestResult {
     run(async |admin| {
         let key = case.key();
@@ -22,11 +44,16 @@ pub(super) fn scenario(case: Case) -> TestResult {
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) =
+        let (controller, pin) = if case == Case::BridgeRobberyDisguise {
+            crate::content::native_gameplay::test_support::try_activate_input(
+                deps.admitted.world_id, &disguise_input()?,
+            ).map_err(debug)?
+        } else {
             crate::content::native_gameplay::test_support::activated_with_loot_tables(
                 deps.admitted.world_id,
                 None,
-            );
+            )
+        };
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("index")?;
@@ -255,7 +282,19 @@ pub(super) fn scenario(case: Case) -> TestResult {
             }
             tx.commit().await?;
         }
-        let expected = if case.feroxa() {
+        let expected = if case == Case::BridgeRobberyDisguise {
+            novelty_items::NoveltyPlan {
+                recipe: "oteryn:novelty-item.i7865.v1".into(),
+                outputs: vec![],
+                consume_source: true,
+                effects: serde_json::json!({
+                    "kind":"costume","source_item_id":7865,"donor":BRIDGE_ROBBERY_SOURCE,
+                    "cues":[],"private_speech":false,"require_head":false,
+                    "require_player_target":false,"achievement_progress":[],
+                    "costume":{"monster":"oteryn:creature.dwarf_geomancer","look_type":66,"duration_ms":300000}
+                }),
+            }
+        } else if case.feroxa() {
             let output = &native.item_policy_for_source_id(22059).ok_or("open trap policy")?.record().production_definition;
             novelty_items::NoveltyPlan {
                 recipe: "oteryn:feroxa-silvered-trap.v1".into(),
@@ -618,6 +657,24 @@ pub(super) fn scenario(case: Case) -> TestResult {
                             .is_empty(),
                         "historical item replay never publishes deferred presentation"
                     );
+                }
+                if case == Case::BridgeRobberyDisguise {
+                    use crate::domain::condition::ConflictKey;
+                    use crate::foundation::condition::TemporaryDisplayedAppearance;
+                    let conditions = states
+                        .get(&runtime, deps.actor, fence.game_session_id)
+                        .ok_or("disguised player")?
+                        .owned_conditions();
+                    let outfit = conditions.get(ConflictKey::Outfit).ok_or("outfit")?;
+                    let expiry = outfit.started_at() + 300_000_000;
+                    assert_eq!(outfit.remaining_duration_ms(outfit.started_at()), Some(300_000));
+                    assert_eq!(conditions.outfit_at(expiry - 1), Some(66));
+                    assert!(matches!(
+                        conditions.displayed_temporary_appearance_at(expiry - 1),
+                        Some(TemporaryDisplayedAppearance::Outfit(selection))
+                            if selection.outfit_key == "oteryn:outfit.source.canary.look66"
+                    ));
+                    assert!(conditions.displayed_temporary_appearance_at(expiry).is_none());
                 }
             }
             assert_eq!(

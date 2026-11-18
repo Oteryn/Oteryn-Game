@@ -111,12 +111,31 @@ impl ChannelSpellStates {
             .ok_or(UseDisposition::StaleState)?;
         let before_revision = current.revision();
         let after = if let Some(costume) = &effects.costume {
+            let appearance = if oteryn_gameplay_items::novelty_items::has_item_costume(
+                native,
+                &format!("oteryn:item.tibia.i{}", effects.source_item_id),
+            ) {
+                let registry = native
+                    .spell_appearances()
+                    .ok_or(UseDisposition::NotPossible)?;
+                let binding = registry
+                    .item_costume(effects.source_item_id)
+                    .ok_or(UseDisposition::NotPossible)?;
+                let member = registry
+                    .for_creature(&binding.creature.key, &binding.creature.revision)
+                    .filter(|member| member.look_type() == costume.look_type)
+                    .ok_or(UseDisposition::NotPossible)?;
+                Some(member.selection())
+            } else {
+                None
+            };
             Some(
                 crate::spell::actor_conditions::stage_item_costume(
                     current,
                     costume.look_type,
                     costume.duration_ms,
                     now_us / 1000,
+                    appearance,
                 )
                 .map_err(|_| UseDisposition::NotPossible)?,
             )

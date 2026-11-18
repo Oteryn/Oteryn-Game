@@ -195,7 +195,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(Some(outcome(UseDisposition::Committed)));
         }
         // Reward containers retain the existing craft receipt owner and its route.
-        if !novelty_items::is_novelty(&item.definition.production_key) {
+        if !novelty_items::is_novelty(&item.definition.production_key)
+            && !novelty_items::has_item_costume(native, &item.definition.production_key)
+        {
             return Ok(None);
         }
         let plan = novelty_items::plan(
@@ -209,6 +211,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(Some(outcome(UseDisposition::NotPossible)));
         };
         let effects: NoveltyEffects = serde_json::from_value(plan.effects).map_err(|_| ())?;
+        if novelty_items::has_item_costume(native, &item.definition.production_key)
+            && (intent.use_with.is_some()
+                || intent.use_with_map_item.is_some()
+                || intent.use_with_position.is_some())
+        {
+            return Ok(Some(outcome(UseDisposition::NothingToUse)));
+        }
         if !self
             .states
             .player_trades

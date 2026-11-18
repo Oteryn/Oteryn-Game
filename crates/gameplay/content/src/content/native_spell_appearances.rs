@@ -61,6 +61,16 @@ pub struct SpellItemAppearanceRecord {
     pub appearance_object_sha256: String,
     pub qualification_sha256: String,
 }
+/// A material item consumed to apply an already qualified creature appearance.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ItemCostumeBinding {
+    pub item_id: u32,
+    pub creature: ProjectV2DefinitionRef,
+    pub look_type: u32,
+    pub duration_ms: u32,
+    pub source: String,
+}
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SpellAppearancesDocument {
@@ -71,12 +81,15 @@ pub struct SpellAppearancesDocument {
     pub records: Vec<SpellAppearanceRecord>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub item_appearances: Vec<SpellItemAppearanceRecord>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub item_costumes: Vec<ItemCostumeBinding>,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompiledSpellAppearances {
     digest: [u8; 32],
     records: Vec<SpellAppearanceRecord>,
     item_appearances: Vec<SpellItemAppearanceRecord>,
+    item_costumes: BTreeMap<u32, ItemCostumeBinding>,
 }
 #[derive(Debug, Clone, Copy)]
 pub struct QualifiedSpellAppearance<'a> {
@@ -160,6 +173,9 @@ impl CompiledSpellAppearances {
             .iter()
             .find(|r| r.item.key == key && r.item.revision == revision)
             .map(|r| &r.item)
+    }
+    pub fn item_costume(&self, item_id: u32) -> Option<&ItemCostumeBinding> {
+        self.item_costumes.get(&item_id)
     }
     pub fn creature_links(&self) -> impl Iterator<Item = (&ProjectV2DefinitionRef, u32)> {
         self.records
@@ -554,10 +570,31 @@ pub fn compile(
             return Err(invalid());
         }
     }
+    if document.item_costumes.len() > 32 {
+        return Err(invalid());
+    }
+    let mut item_costumes = BTreeMap::new();
+    for binding in document.item_costumes {
+        if binding.item_id == 0
+            || !(1..=3_600_000).contains(&binding.duration_ms)
+            || binding.source.len() > 512
+            || !binding
+                .source
+                .starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/")
+            || !document.records.iter().any(|record| {
+                record.creature.as_ref() == Some(&binding.creature)
+                    && record.look_type == binding.look_type
+            })
+            || item_costumes.insert(binding.item_id, binding).is_some()
+        {
+            return Err(invalid());
+        }
+    }
     Ok(CompiledSpellAppearances {
         digest: outer_content_digest,
         records: document.records,
         item_appearances: document.item_appearances,
+        item_costumes,
     })
 }
 #[cfg(test)]

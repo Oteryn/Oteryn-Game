@@ -14,6 +14,7 @@ use oteryn_protocol_oteryn::world_object::{
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Case {
+    BridgeRobberyDisguise,
     Costume,
     Dice,
     DiceStreak,
@@ -41,6 +42,7 @@ enum Case {
 impl Case {
     fn key(self) -> &'static str {
         match self {
+            Self::BridgeRobberyDisguise => "oteryn:item.tibia.i7865",
             Self::Costume | Self::NestedCostume | Self::GroundCostume => "oteryn:item.tibia.i653",
             Self::Dice | Self::DiceStreak | Self::GroundDice => "oteryn:item.tibia.i5792",
             Self::Trumpet | Self::GroundTrumpet | Self::NestedTrumpet => "oteryn:item.tibia.i6572",
@@ -91,6 +93,14 @@ impl Case {
             Self::HatInBag | Self::VoodooWithoutTarget | Self::VoodooFarTarget | Self::FeroxaTrapOutside
         )
     }
+}
+#[test]
+fn bridge_robbery_disguise_kit_consumes_once_and_expires_after_five_minutes() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    run_case(Case::BridgeRobberyDisguise)
 }
 #[test]
 fn qn5_feroxa_trap_ground_use_is_fenced_and_replay_safe() -> TestResult { run_case(Case::FeroxaTrap) }

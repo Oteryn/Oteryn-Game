@@ -40,23 +40,27 @@ pub fn stage_item_costume(
     look_type: u32,
     duration_ms: u32,
     now_ms: u64,
+    appearance: Option<crate::domain::appearance::AppearanceSelection<String>>,
 ) -> Result<PlayerSpellState, SpellCastDisposition> {
     if state.health == 0 || look_type == 0 || duration_ms == 0 {
         return rejected();
     }
     let mut next = state.clone();
-    apply_definition(
-        &mut next,
-        definition(
-            "item.temporary.costume",
-            ConditionValues::Outfit {
-                look_type,
-                duration_ms,
-            },
-        )?,
-        now_ms,
-        0,
+    let definition = definition(
+        "item.temporary.costume",
+        ConditionValues::Outfit {
+            look_type,
+            duration_ms,
+        },
     )?;
+    let definition = if let Some(appearance) = appearance {
+        definition
+            .with_appearance(appearance)
+            .ok_or(SpellCastDisposition::Rejected)?
+    } else {
+        definition
+    };
+    apply_definition(&mut next, definition, now_ms, 0)?;
     next.advance_batch_revision()?;
     Ok(next)
 }

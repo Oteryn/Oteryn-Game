@@ -225,6 +225,47 @@ pub fn is_novelty(key: &str) -> bool {
     rule_for_key(key).is_some()
 }
 
+pub fn has_item_costume(native: &NativeGameplayState, key: &str) -> bool {
+    !is_novelty(key)
+        && key
+            .strip_prefix("oteryn:item.tibia.i")
+            .and_then(|id| id.parse().ok())
+            .and_then(|id| native.spell_appearances()?.item_costume(id))
+            .is_some()
+}
+
+// Crystal 201189f8 actions_dwarf_disguise_kit.lua:1-13 is a fixed look with no cues.
+fn item_costume_plan(native: &NativeGameplayState, id: u32, recipe: String) -> Option<NoveltyPlan> {
+    let binding = native.spell_appearances()?.item_costume(id)?;
+    let effects = NoveltyEffects {
+        kind: NoveltyKind::Costume,
+        source_item_id: id,
+        donor: binding.source.clone(),
+        ground: None,
+        cues: vec![],
+        speech: None,
+        private_speech: false,
+        require_head: false,
+        require_player_target: false,
+        dice_value: None,
+        costume: Some(CostumeEffect {
+            monster: binding.creature.key.clone(),
+            look_type: binding.look_type,
+            duration_ms: binding.duration_ms,
+        }),
+        damage: None,
+        achievement: None,
+        achievement_progress: vec![],
+        timed_output: None,
+    };
+    Some(NoveltyPlan {
+        recipe,
+        outputs: vec![],
+        consume_source: true,
+        effects: serde_json::to_value(effects).ok()?,
+    })
+}
+
 /// The draw callback is bounded and independently domain-separated from reward tables.
 pub fn select(
     rule: &NoveltyRule,
@@ -343,7 +384,10 @@ pub fn plan(
         .strip_prefix("oteryn:item.tibia.i")?
         .parse::<u32>()
         .ok()?;
-    let rule = rule_for_key(&used.production_key)?;
+    let recipe = format!("oteryn:novelty-item.i{id}.v1");
+    let Some(rule) = rule_for_key(&used.production_key) else {
+        return item_costume_plan(native, id, recipe);
+    };
     let mut selected = select(rule, id, |domain, upper| {
         reward_bag_bounded_draw(session, command, source, domain, upper)
     })?;
@@ -370,7 +414,7 @@ pub fn plan(
         })
         .collect::<Option<Vec<_>>>()?;
     Some(NoveltyPlan {
-        recipe: format!("oteryn:novelty-item.i{id}.v1"),
+        recipe,
         outputs,
         consume_source: selected.consume_source,
         effects: serde_json::to_value(selected.effects).ok()?,
@@ -551,16 +595,15 @@ pub fn plan_ground(
             },
             format!("oteryn:house-item.i{id}.v1"),
         )
-    } else {
+    } else if let Some(rule) = rule_for_key(&used.production_key) {
         (
-            select_ground(
-                rule_for_key(&used.production_key)?,
-                id,
-                ground,
-                |domain, upper| reward_bag_bounded_draw(session, command, source, domain, upper),
-            )?,
+            select_ground(rule, id, ground, |domain, upper| {
+                reward_bag_bounded_draw(session, command, source, domain, upper)
+            })?,
             format!("oteryn:novelty-ground.i{id}.v1"),
         )
+    } else {
+        return item_costume_plan(native, id, format!("oteryn:novelty-ground.i{id}.v1"));
     };
     let outputs = selected
         .output

@@ -30,7 +30,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
-        if !novelty_items::is_ground_action(&source.definition().production_key) {
+        if !novelty_items::is_ground_action(&source.definition().production_key)
+            && !novelty_items::has_item_costume(native, &source.definition().production_key)
+        {
             return Ok(None);
         }
         if !self
