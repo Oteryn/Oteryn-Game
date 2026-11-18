@@ -248,6 +248,18 @@ pub(super) async fn exercise(
         3
     );
 
+    // The activating USE owns the same 30-second repair as the first break.
+    assert_eq!(placement(map, MIRROR)?.1, 8721);
+    let second_due = map
+        .facts
+        .next_movement_decay_time()
+        .ok_or("group mirror repair")?;
+    assert!(second_due > due);
+    assert_eq!(map.facts.expire_movement_items(second_due - 1), 0);
+    assert_eq!(map.facts.expire_movement_items(second_due), 1);
+    assert_eq!(placement(map, MIRROR)?.1, 8667);
+    assert_eq!(placement(map, STATUE)?.1, 8326);
+
     for direction in [StepDirection::South; 4] {
         step(owner, first, direction).await?;
     }
