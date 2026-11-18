@@ -679,11 +679,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         },
                     )
                     .await;
+                    // An invalid Map read leaves this slice eligible to retry.
+                    // The reservation's sequence fence skips already committed thinks.
+                    if !reader.map.validate_transaction(runtime).await {
+                        return Err(crate::durability::DurabilityError::Unavailable);
+                    }
                     pending.advance_thinks(think_end);
                     if think_end < batch.occurrences().len() {
-                        if !reader.map.validate_transaction(runtime).await {
-                            return Err(crate::durability::DurabilityError::Unavailable);
-                        }
                         drop(reader);
                         tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                         **continue_batch = true;
