@@ -21,6 +21,9 @@ impl Panel {
         let acl_read = self.model.pending_acl_read && self.model.pending.as_ref() == Some(command);
         self.model.apply(command, result);
         if acl_read && let Some(snapshot) = &self.model.acl_snapshot {
+            // The map can select a different entrance while the list is loading.
+            self.model.index = self.model.pending_index;
+            self.fields[2] = (self.model.index + 1).to_string();
             self.fields[4] = snapshot
                 .members
                 .iter()

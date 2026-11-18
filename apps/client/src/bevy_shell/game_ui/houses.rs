@@ -132,11 +132,28 @@ fn project(
             && !panel.model.pending_acl_read
             && panel.model.acl_snapshot.is_some()
     });
+    // Only a door list binds the shared door/date editor to the reply.
+    let door_loaded = acl_loaded
+        && state
+            .model
+            .as_ref()
+            .and_then(|model| model.pending.as_ref())
+            .and_then(|command| {
+                oteryn_session::property_services::house::decode_house_query(&command.payload).ok()
+            })
+            .and_then(|query| query.acl)
+            .is_some_and(|read| {
+                matches!(
+                    read.selector,
+                    oteryn_client_runtime::house::HouseAclSelector::Door { .. }
+                )
+            });
     let retain = |index: usize| {
         projected.as_ref().is_some_and(|panel| {
             state.activity_revision == panel.activity_revision
                 && (same_house || !matches!(index, 2 | 4 | 6))
-                && !(acl_loaded && matches!(index, 2 | 4 | 5 | 6))
+                && !(acl_loaded && matches!(index, 2 | 4 | 6))
+                && !(door_loaded && index == 5)
                 && panel.fields[index] == state.fields[index]
         })
     };
@@ -269,12 +286,10 @@ fn finish(
         values[field.0] = text.value().to_string();
     }
     if selection == 10 {
-        if play.link.house_panel().model.pending.is_none() {
-            for (index, value) in values.iter().enumerate() {
-                play.link.house_edit(index, value.clone());
-            }
-        }
-        state.map = !play.link.house_map(&values[2]).is_empty();
+        state.map = !play
+            .link
+            .house_map(state.activity_revision, model, values)
+            .is_empty();
         state.review = None;
         state.redraw = true;
         return;

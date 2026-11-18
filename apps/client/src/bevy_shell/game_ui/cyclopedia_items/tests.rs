@@ -251,6 +251,27 @@ fn reply_to_prices(
         return Err("market offers".into());
     };
     assert_eq!((command.0.action, command.0.definition), (2, 42));
+    use oteryn_client_runtime::market::{MarketResponse, market};
+    let mut offer = [7; 16];
+    offer[6] = 0x70;
+    offer[8] = 0x80;
+    outbox.bevy_market_response(&MarketResponse {
+        status: oteryn_session::CommandStatus::Accepted,
+        reply: Some(market::MarketReply {
+            action: command.0.action,
+            code: 1,
+            offer: [0; 16],
+            rows: vec![market::MarketRow {
+                offer,
+                definition: 42,
+                side: 2,
+                amount: 5,
+                price: 100,
+                state: 1,
+                anonymous: false,
+            }],
+        }),
+    });
     let PlayCommand::Feature(statistics) = receiver
         .try_recv()
         .map_err(|error| format!("statistics: {error}"))?
@@ -295,6 +316,9 @@ fn reply_to_prices(
     );
     Ok(())
 }
+
+const RELATED_OFFER: &str =
+    "Loaded page sell: 1 offers, 5 units, price 100–100, weighted average 100";
 
 fn drop_sources_pages(inspect_between_pages: bool) -> TestResult {
     let (mut app, link, mut receiver, outbox) = catalogue_window()?;
@@ -360,6 +384,10 @@ fn drop_sources_pages(inspect_between_pages: bool) -> TestResult {
             reply_to_prices(&mut receiver, &outbox)?;
             app.update();
             assert!(visible(&mut app).contains("average 19"));
+            assert!(
+                visible(&mut app).contains(RELATED_OFFER),
+                "initial market offer"
+            );
             super::super::item_details::install(&mut app);
             crate::bevy_shell::ui::window_layout::install(&mut app);
             link.inspection_set_open(true);
@@ -394,6 +422,10 @@ fn drop_sources_pages(inspect_between_pages: bool) -> TestResult {
                 },
             );
             app.update();
+            assert!(
+                visible(&mut app).contains(RELATED_OFFER),
+                "offer after inventory inspection"
+            );
             let close = app
                 .world_mut()
                 .query::<(&Text, &ChildOf)>()
@@ -409,6 +441,10 @@ fn drop_sources_pages(inspect_between_pages: bool) -> TestResult {
         app.update();
     }
     if inspect_between_pages {
+        assert!(
+            visible(&mut app).contains(RELATED_OFFER),
+            "offer after paging drop sources"
+        );
         assert!(visible(&mut app).contains("Related market offers:"));
         assert!(visible(&mut app).contains("average 19"));
         assert_eq!(link.inspection_panel().catalogue_market, Some(42));
