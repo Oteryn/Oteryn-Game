@@ -422,6 +422,44 @@ QUALIFIED.update({
         )),
     )
     for claim in claims
+    "oteryn:reward-claim.kv.bananafree":
+        "quest_catalogue_chests_qchk6_studded_shield_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.bananapremium":
+        "quest_catalogue_chests_qchk6_studded_shield_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.lighthouse1":
+        "quest_catalogue_chests_qchk6_thais_lighthouse_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.lighthouse2":
+        "quest_catalogue_chests_qchk6_thais_lighthouse_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_6.old_parchment":
+        "quest_catalogue_chests_qchk6_the_ape_city_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_6.whisper_moss":
+        "quest_catalogue_chests_qchk6_the_ape_city_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest":
+        "quest_catalogue_chests_qchk6_the_ice_islands_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_skeleton":
+        "quest_catalogue_chests_qchk6_the_ice_islands_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_2.the_inquisition_quest.reward_room_text":
+        "quest_catalogue_chests_qchk6_the_inquisition_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_2.the_inquisition_quest.witches_grimoire":
+        "quest_catalogue_chests_qchk6_the_inquisition_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u11_40.threatened_dreams.mission01.poacher_chest":
+        "quest_catalogue_chests_qchk6_threatened_dreams_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u11_40.threatened_dreams.mission02.dark_moon_mirror":
+        "quest_catalogue_chests_qchk6_threatened_dreams_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.timering1":
+        "quest_catalogue_chests_qchk6_time_ring_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.timering2":
+        "quest_catalogue_chests_qchk6_time_ring_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.vampireshield1":
+        "quest_catalogue_chests_qchk6_vampire_shield_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.vampireshield2":
+        "quest_catalogue_chests_qchk6_vampire_shield_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.vampireshield3":
+        "quest_catalogue_chests_qchk6_vampire_shield_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_6.wrath_of_the_emperor.chest100_platinum_coins":
+        "quest_catalogue_chests_qchk6_wrath_of_the_emperor_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_6.wrath_of_the_emperor.chest_bag":
+        "quest_catalogue_chests_qchk6_wrath_of_the_emperor_use_replay_and_refusal",
 })
 
 
