@@ -75,7 +75,7 @@ fn retained_world_claims_grant_each_quest_item_once() -> TestResult {
                     32119,
                     7,
                     (32287, 32120),
-                    1,
+                    2,
                     23986,
                 ),
                 (
