@@ -1,3 +1,6 @@
+//! QCHK-5 reward delivery at authored chest placements.
+//! The standalone cases also check that the chest cohort covers the full source claim inventory.
+
 use super::TestResult;
 use super::quest_catalogue_chests::{phase_a_cohort, standalone_claim_cohort};
 
