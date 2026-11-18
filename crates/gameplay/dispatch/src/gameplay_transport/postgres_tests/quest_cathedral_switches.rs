@@ -86,7 +86,7 @@ pub(super) async fn exercise(
     let mut source = source_bindings()?;
     // Another legal StepIn on the same tile cannot expose the raw teleport.
     // This fixture-only cue selects the retained ground beneath the portal.
-    source.push(serde_json::from_value(json!({
+    let ground_cue = serde_json::from_value::<Callback>(json!({
         "key": "oteryn:quest-callback/cathedral-test-ground-cue",
         "quest": QUEST,
         "trigger": "step_in",
@@ -95,7 +95,22 @@ pub(super) async fn exercise(
         "passages": [], "storage": [], "offerings": [],
         "effects": {"magic":{"position":PORTAL,"effect":11}},
         "sources": [SOURCE]
-    }))?);
+    }))?;
+    let ground_key = crate::map::view::placement_key(
+        crate::map::overlay::TilePos {
+            x: PORTAL.x,
+            y: PORTAL.y,
+            floor: PORTAL.floor,
+        },
+        0,
+    )
+    .ok_or("retained Cathedral portal ground")?;
+    assert!(crate::gameplay_transport::quest_callbacks::matches(
+        map,
+        &ground_cue,
+        ground_key,
+    ));
+    source.push(ground_cue);
     let bindings = world_callbacks::load_with_source_fixture(&source)?;
     assert!(owner.states.quest_callbacks.fixture.set(bindings).is_ok());
     let actor = member.runtime_actor.ok_or("Cathedral switch operator")?;
