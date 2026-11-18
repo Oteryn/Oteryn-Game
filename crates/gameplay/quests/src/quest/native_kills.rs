@@ -10,6 +10,8 @@ mod fugue;
 mod phase_settlements;
 
 pub const PREFIX: &str = "oteryn:quest-transition/native-kills/";
+const FIRST_DRAGON_FEATHERS: &str = "oteryn:quest-progress/quest/u11_02/the_first_dragon/feathers";
+const FIRST_DRAGON_VICTORY: &str = "oteryn:quest-transition/native-kills/first-dragon-selected";
 
 #[derive(Debug, Clone, Copy, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -39,7 +41,7 @@ impl Counter {
     /// The selected First Dragon recipe requires both s4 exploration occurrences.
     #[must_use]
     pub fn gate_value(&self) -> i64 {
-        if self.transition == "oteryn:quest-transition/native-kills/first-dragon-selected" {
+        if self.transition == FIRST_DRAGON_VICTORY {
             2
         } else {
             1
@@ -49,7 +51,7 @@ impl Counter {
     /// Its selected access reward is the canonical quest completion, not an Item MINT.
     #[must_use]
     pub fn completion_track(&self) -> Option<&'static str> {
-        (self.transition == "oteryn:quest-transition/native-kills/first-dragon-selected")
+        (self.transition == FIRST_DRAGON_VICTORY)
             .then_some("oteryn:quest-progress/chosen-source/the_first_dragon_quest/s6")
     }
 
@@ -94,6 +96,13 @@ impl Counter {
                 track: track.into(),
                 from: QuestComparison::Eq(0),
                 effect: QuestEffectKind::Set(1),
+            });
+            // Crystal 201189f8, creaturescripts_death_first_dragon.lua:28-30.
+            // A victory opens the dialogue claim and preserves a prior claim.
+            effects.push(QuestEffect {
+                track: FIRST_DRAGON_FEATHERS.into(),
+                from: QuestComparison::Any,
+                effect: QuestEffectKind::RaiseTo(1),
             });
         }
         QuestTransition {
@@ -181,7 +190,7 @@ pub const COUNTERS: &[Counter] = &[
     // establishes the authoritative death; selected access completion joins that receipt.
     Counter {
         authored_stage: false,
-        transition: "oteryn:quest-transition/native-kills/first-dragon-selected",
+        transition: FIRST_DRAGON_VICTORY,
         creature: "oteryn:creature.the_first_dragon",
         quest: "oteryn:quest.the_first_dragon_quest",
         track: "oteryn:quest-progress/chosen-source/the_first_dragon_quest/s5",
@@ -330,6 +339,27 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
     }
     extended.npc_legacy = catalogue.npc_legacy;
     extended.predecessors = catalogue.predecessors;
+    let mut prior_dragon_transitions: BTreeMap<_, _> = extended
+        .transitions
+        .iter()
+        .filter(|(_, transition)| transition.quest == quest)
+        .map(|(key, transition)| (key.clone(), transition.clone()))
+        .collect();
+    let prior_victory = prior_dragon_transitions
+        .get_mut(FIRST_DRAGON_VICTORY)
+        .ok_or("missing selected First Dragon victory")?;
+    prior_victory
+        .effects
+        .retain(|effect| effect.track != FIRST_DRAGON_FEATHERS);
+    let prior_hash = super::definition_hash(quest, &extended.tracks, &prior_dragon_transitions);
+    extended
+        .predecessors
+        .entry(quest.into())
+        .or_default()
+        .push(super::NpcDefinitionPredecessor {
+            hash: prior_hash,
+            defaults: BTreeMap::new(),
+        });
     extended.authored_bindings = catalogue.authored_bindings;
     extended.native_recipe_evidence = catalogue.native_recipe_evidence;
     extended.completion_sets = catalogue.completion_sets;
@@ -380,6 +410,18 @@ mod tests {
         }
         stored.insert(counter.gate.into(), 2);
         assert!(active(&stored).contains(&counter.transition));
+        for (previous, expected) in [(0, 1), (1, 1), (2, 2)] {
+            stored.insert(FIRST_DRAGON_FEATHERS.into(), previous);
+            let changes = catalogue
+                .evaluate(transition, &stored, 0)
+                .map_err(|error| format!("{error:?}"))?;
+            assert_eq!(
+                changes.iter().find(|change| change.track == FIRST_DRAGON_FEATHERS)
+                    .map(|change| change.after),
+                Some(expected)
+            );
+        }
+        stored.remove(FIRST_DRAGON_FEATHERS);
         for change in catalogue
             .evaluate(transition, &stored, 0)
             .map_err(|error| format!("{error:?}"))?
