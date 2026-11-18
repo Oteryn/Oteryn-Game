@@ -4,12 +4,7 @@ use super::full_world_support::world_scenario;
 use crate::foundation::{ExactActorRef, GameSessionId, MovementLocalPosition};
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink, record_creature_kill};
-use oteryn_gameplay_quests::quest::{
-    QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
-    QuestTransition, authored_bindings::Bindings,
-};
-use serde_json::{Value, json};
-use sha2::{Digest, Sha256};
+use oteryn_gameplay_quests::quest::{authored_bindings::Bindings, loader};
 
 const QUEST: &str = "oteryn:quest.spike_task";
 const PHASE: &str = "oteryn:quest-progress/spike-task/lower-hunt-assignment";
@@ -21,40 +16,6 @@ const INSIDE: MovementLocalPosition = MovementLocalPosition {
     y: 32470,
     floor: 13,
 };
-
-fn bindings() -> TestResult<Bindings> {
-    let shard: Value = serde_json::from_str(include_str!(
-        "../../../../../../content/quests/definitions/quests-00200-00299.json"
-    ))?;
-    let recipe = shard["records"]
-        .as_array()
-        .ok_or("Quest records")?
-        .iter()
-        .map(|record| &record["definition"])
-        .find(|definition| definition["identity"]["key"] == QUEST)
-        .ok_or("canonical Spike definition")?;
-    let digest = Sha256::digest(serde_json::to_vec(
-        &recipe["oteryn_recipe"]["payload"]["recipe"],
-    )?)
-    .iter()
-    .map(|byte| format!("{byte:02x}"))
-    .collect::<String>();
-    let document = json!({"schema":1,"quests":[{
-        "quest":QUEST,"recipe_sha256":digest,
-        "admission":{"minimum_level":80,"premium":false,"personal_assignment":"spike_tasks"},
-        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spike_tasks/creaturescripts_lower_spike_kill.lua:8"],
-        "tracks":[
-            {"key":PHASE,"initial":0,"minimum":0,"maximum":1},
-            {"key":COUNT,"initial":0,"minimum":0,"maximum":7}
-        ],
-        "stages":[{"key":"lower-drillworm","completes":false,"trigger":{"kind":"kill","counter":{
-            "key":CREDIT,"creature":DRILLWORM,"track":COUNT,"gate":PHASE,
-            "gate_value":1,"maximum":7,
-            "death_area":{"minimum":[32120,32470,13],"maximum":[32345,32710,15]}
-        }}}]
-    }]});
-    Ok(Bindings::parse(&serde_json::to_vec(&document)?)?)
-}
 
 async fn reach_lower_spike_level(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -222,17 +183,23 @@ fn scenario() -> TestResult {
          owner,
          fence,
          admitted| {
-            let bindings = bindings()?;
-            bindings.verify_embedded_recipe_evidence()?;
-            let mut missing = bindings.clone();
+            let lowered = loader::load_embedded_quest_state("content-1")?;
+            let catalogue = lowered.catalogue();
+            let spike = catalogue
+                .authored_bindings()
+                .and_then(|bindings| bindings.quests.iter().find(|quest| quest.quest == QUEST))
+                .ok_or("Spike kill binding is missing from the admitted catalogue")?;
+            let mut missing = Bindings {
+                schema: 1,
+                quests: vec![spike.clone()],
+            };
             missing.quests[0]
                 .admission
                 .as_mut()
                 .ok_or("actor admission")?
                 .personal_assignment = None;
             assert!(missing.verify_embedded_recipe_evidence().is_err());
-            let base = QuestStateCatalogue::empty("content-1").ok_or("catalogue")?;
-            owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
+            owner.quest_catalogue = Some(Arc::new(catalogue.clone()));
             reach_lower_spike_level(&owner, session).await?;
             owner.refresh_quest_session(session, true).await;
             let count = async || -> TestResult<i64> {
