@@ -1,0 +1,360 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_boveas",
+      "quest": "oteryn:quest.shadows_of_yalahar_quest",
+      "min": 0,
+      "max": 1,
+      "initial": 0,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/boveas.lua:52-58"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_cerdras",
+      "quest": "oteryn:quest.shadows_of_yalahar_quest",
+      "min": 0,
+      "max": 1,
+      "initial": 0,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cerdras.lua:93-102"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_dreadeye",
+      "quest": "oteryn:quest.shadows_of_yalahar_quest",
+      "min": 0,
+      "max": 1,
+      "initial": 0,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dreadeye.lua:56-66"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_milos",
+      "quest": "oteryn:quest.shadows_of_yalahar_quest",
+      "min": 0,
+      "max": 1,
+      "initial": 0,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/milos.lua:67-73"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_scutty",
+      "quest": "oteryn:quest.shadows_of_yalahar_quest",
+      "min": 0,
+      "max": 1,
+      "initial": 0,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/scutty.lua:60-69"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/shadows-of-yalahar/errand-report",
+      "quest": "oteryn:quest.shadows_of_yalahar_quest",
+      "npc": "oteryn:npc.telas",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission01",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah, yes. I have received all the reports I need and have already been able to glance through them. ...",
+        "It will take some time to evaluate all those different approaches to the topic. Meanwhile, we can get on with the other tasks to advance our project. ...",
+        "when you are ready, just ask me for your next mission."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=37118&oldid=1106237",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:145-155"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_boveas",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_cerdras",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_dreadeye",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_milos",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_scutty",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/shadows-of-yalahar/errand-start",
+      "quest": "oteryn:quest.shadows_of_yalahar_quest",
+      "npc": "oteryn:npc.telas",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission01",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "My research on the creation of golems has progressed well so far. However, it is good to acknowledge the accomplishments of others in this science. ...",
+        "I am in contact with certain gifted individuals who have themselves gained significant insights into this subject. ...",
+        "I want you to contact them and ask them for their research notes. They should have the means to send them to me so you don't have to worry about picking up the papers and possibly losing them. ...",
+        "From our previous correspondence I'd say all of them are supportive but reaching some of them might prove troublesome. ...",
+        "I need the research notes from the technomancer Scutty of Kazordoon, the theoretical mago-scientist Milos of the Edron Academy. ...",
+        "The field scientist Boveas, who can be found in Mintwalin, the druid Cerdras of Carlin and Dreadeye, a beholder of the Braindeath Streak, who lives somewhere in the necropolis deep below Ab'Dendriel."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=37118&oldid=1106237",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:129-144",
+        "https://tibia.fandom.com/?curid=37117&oldid=843939"
+      ],
+      "minimum_level": 75,
+      "requires_premium": true,
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/mission03",
+          "minimum": 1,
+          "maximum": 6
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/shadows-of-yalahar/notes-boveas",
+      "quest": "oteryn:quest.shadows_of_yalahar_quest",
+      "npc": "oteryn:npc.boveas",
+      "keywords": [
+        "research notes"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_boveas",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Oh, of course I can send him my research notes. I'll drop them into the next mailbox as soon as possible. May the Gods bless the royal Tibian mail system and its fearless and sometimes maimed postmen."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=37118&oldid=1106237",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/boveas.lua:52-58"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission01",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/shadows-of-yalahar/notes-cerdras",
+      "quest": "oteryn:quest.shadows_of_yalahar_quest",
+      "npc": "oteryn:npc.cerdras",
+      "keywords": [
+        "research notes"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_cerdras",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I see no harm in sending him my notes. I hope it will help him in his efforts. ...",
+        "Maybe you could persuade him to use the time my research saves him in touch with nature. I am sure this will help him focus his mind on his studies."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=37118&oldid=1106237",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cerdras.lua:93-102"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission01",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/shadows-of-yalahar/notes-dreadeye",
+      "quest": "oteryn:quest.shadows_of_yalahar_quest",
+      "npc": "oteryn:npc.dreadeye",
+      "keywords": [
+        "research notes"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_dreadeye",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Of course! He will receive the knowledge that I choose to share with him - although with his limited intelligence I doubt he will grasp the concepts I send him. ...",
+        "Warn him that the consequences, for you both, will be dire if you fail to succeed in your undertaking. Your limited intellect cannot comprehend the importance of this. ...",
+        "Even I do not know what this portends. But.. yet .. sometimes .. there is a glimpse. An insight that unsettles me. An emotion long forgotten."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=37118&oldid=1106237",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dreadeye.lua:56-66"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission01",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/shadows-of-yalahar/notes-milos",
+      "quest": "oteryn:quest.shadows_of_yalahar_quest",
+      "npc": "oteryn:npc.milos",
+      "keywords": [
+        "research notes"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_milos",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Oh, of course I'll send him my notes immediately. Perhaps he'll come back and visit us here sometime. Do pass on my regards to him, won't you?"
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=37118&oldid=1106237",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/milos.lua:67-73"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission01",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/shadows-of-yalahar/notes-scutty",
+      "quest": "oteryn:quest.shadows_of_yalahar_quest",
+      "npc": "oteryn:npc.scutty",
+      "keywords": [
+        "research notes"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_scutty",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ok, ok. Considering how much knowledge Telas was willing to share and keeping in mind that he promised to send me the results of his research I'll make an exception. I will send him the information he wants .. even a bit more. ...",
+        "He'd better live up to his promises, a dwarf does not forget or forgive easily."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=37118&oldid=1106237",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/scutty.lua:60-69"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission01",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    }
+  ]
+}
