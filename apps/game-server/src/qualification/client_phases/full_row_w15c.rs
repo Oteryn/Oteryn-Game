@@ -10,13 +10,21 @@
 //! 4. PASS only when a task was started and survived the fresh admission; a refusal reports FAIL
 //!    naming the precondition. Never writes state outside the real conversation.
 use super::*;
+use crate::map::view::MapFacts;
 use oteryn_dev_client::client_runtime::npc_shop as runtime;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::npc_service as wire;
+use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
 const CAPTAIN: &str = "oteryn:npc.captain_bluebear";
 const FARE: u64 = 160;
+const BOARDING_LADDER: TilePos = TilePos {
+    x: 32321,
+    y: 32211,
+    floor: -7,
+};
+const LADDER_APPEARANCE: u16 = 1948;
 const PORT_HOPE: TilePos = TilePos {
     x: 32527,
     y: 32784,
@@ -195,6 +203,78 @@ fn carried_gold(
         .sum())
 }
 
+fn near_boarding_ladder(at: TilePos) -> bool {
+    at.floor == BOARDING_LADDER.floor
+        && at
+            .x
+            .abs_diff(BOARDING_LADDER.x)
+            .max(at.y.abs_diff(BOARDING_LADDER.y))
+            <= 1
+}
+
+fn boarding_ladder_target(world: &BundleWorld) -> TestResult<WorldObjectTarget> {
+    let at = BOARDING_LADDER;
+    let base = world
+        .base()
+        .tile(at.x, at.y, at.floor)
+        .ok_or("step=board observed=no-ladder-tile")?;
+    let ordinal = base
+        .ids()
+        .iter()
+        .zip(base.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .enumerate()
+        .find_map(|(ordinal, (id, _))| {
+            let ordinal = u8::try_from(ordinal).ok()?;
+            world
+                .facts()
+                .base_entry(at, ordinal, *id)
+                .filter(|entry| entry.appearance_id == LADDER_APPEARANCE && !entry.pickupable)
+                .map(|_| ordinal)
+        })
+        .ok_or("step=board observed=no-authored-ladder")?;
+    let key = crate::map::view::placement_key(at, ordinal)
+        .ok_or("step=board observed=no-ladder-placement-key")?;
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    Ok(WorldObjectTarget {
+        placement,
+        expected_revision: world.facts().object_revision(key),
+    })
+}
+
+async fn board(client: &mut DevClientSession, world: &BundleWorld, from: TilePos) -> TestResult {
+    let target = boarding_ladder_target(world)?;
+    let path = route(world, from, near_boarding_ladder)
+        .ok_or("step=board observed=no-walk-route-to-boarding-ladder")?;
+    walk_leg(client, world, "boarding-ladder", &path).await?;
+    let used = client
+        .use_object(&target.placement, target.expected_revision)
+        .await?;
+    if used.status != CommandStatus::Accepted || used.disposition != UseDisposition::Committed {
+        return Err(format!("step=board observed=ladder-use-refused:{used:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+    loop {
+        let at = tile(client.world_spatial().actor_position)?;
+        if at.floor == BOARDING_LADDER.floor + 1
+            && near_boarding_ladder(TilePos {
+                floor: BOARDING_LADDER.floor,
+                ..at
+            })
+        {
+            evidence(&format!(
+                "W15c_board ladder={BOARDING_LADDER:?} landed={at:?}"
+            ));
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("step=board observed=no-upper-deck-position-delta".into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
+}
+
 async fn sail(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -218,8 +298,14 @@ async fn sail(
     }
 
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route(world, from, |at| near(at, captain))
-        .ok_or("step=boat observed=no-walk-route-to-captain-bluebear")?;
+    let path = if let Some(path) = route(world, from, |at| near(at, captain)) {
+        path
+    } else {
+        board(client, world, from).await?;
+        let deck = tile(client.world_spatial().actor_position)?;
+        route(world, deck, |at| near(at, captain))
+            .ok_or("step=boat observed=no-walk-route-to-captain-bluebear")?
+    };
     walk_leg(client, world, "captain", &path).await?;
     let actor = actor_at(client, captain)?;
     say(client, actor, "hi").await?;
@@ -482,11 +568,29 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
         )?,
         TRAIL
     );
-    let captain = placement(&metadata.npcs, CAPTAIN)?;
+    boarding_ladder_target(&world)?;
     check_leg(
-        "Thais to Captain Bluebear",
+        "Thais to boarding ladder",
         TOWN,
-        route(&world, TOWN, |at| near(at, captain)).ok_or("captain unreachable")?,
+        route(&world, TOWN, near_boarding_ladder).ok_or("boarding ladder unreachable")?,
+    )?;
+    let captain = placement(&metadata.npcs, CAPTAIN)?;
+    let deck = TilePos {
+        y: BOARDING_LADDER.y + 1,
+        floor: BOARDING_LADDER.floor + 1,
+        ..BOARDING_LADDER
+    };
+    assert!(
+        world
+            .base()
+            .tile(deck.x, deck.y, deck.floor)
+            .is_some_and(|tile| tile.walkable())
+    );
+    assert!(world.enterable(deck));
+    check_leg(
+        "Upper deck to Captain Bluebear",
+        deck,
+        route(&world, deck, |at| near(at, captain)).ok_or("captain unreachable")?,
     )?;
     Ok(())
 }
