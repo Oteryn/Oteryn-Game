@@ -315,7 +315,7 @@ process measurements establish the reproduced OOM.
 | Game-server lib build and inventory with the checked-in profile, two Cargo jobs | Passed, 861 tests and 863 output lines |
 | Focused dispatch and game-server unit tests | `stackable_count_boundaries` and `builds_the_bound_row` passed |
 | Release world-bundle `pin-check` | Passed for the Oteryn bundle in 96.918 s including compilation |
-| Dispatch library Clippy with all features and one Cargo job | Running in the follow-up after the owner added the Clippy requirement |
+| Dispatch library Clippy with all features and one Cargo job | Passed in 5m 04s |
 | Hosted archive with the serial workflow proposal | Pending |
 
 The new game-server lib-test build peaked in game-server rustc at
