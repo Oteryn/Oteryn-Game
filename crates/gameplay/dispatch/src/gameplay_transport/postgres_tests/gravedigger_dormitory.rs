@@ -160,7 +160,7 @@ fn gate_landing<const N: usize>(
     let callback: Callback = serde_json::from_value(serde_json::json!({
         "key": "oteryn:quest-callback/fixture/gravedigger-mission-pad", "quest": QUEST, "trigger": "step_in",
         "selector": { "appearance": 1949, "native": { "position": pad.at, "appearance": 1949, "ordinal": pad.ordinal } },
-        "requires_world_admission": true, "reversible": false, "passages": [], "offerings": [],
+        "requires_world_admission": false, "reversible": false, "passages": [], "offerings": [],
         "storage": storage, "teleport": pad.destination,
         "return_on_failure": pad.denied.is_some(), "failure_teleport": pad.denied,
         "effects": { "teleport_effect": 11 },
