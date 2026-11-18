@@ -142,6 +142,34 @@ fn btest2_arena_step_requires_barbarian_completion() -> TestResult {
 }
 
 #[test]
+fn btest2_buddel_exchanges_equipped_ring() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario_route(true, Some(NativeScenario::BuddelEquipped)).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "Buddel worker panicked")??;
+    Ok(())
+}
+
+#[test]
+fn btest2_buddel_exchanges_nested_ring() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario_route(true, Some(NativeScenario::BuddelNested)).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "Buddel worker panicked")??;
+    Ok(())
+}
+
+#[test]
 fn btest2_buddel_exchanges_ring_for_confirmed_destination() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -195,7 +223,9 @@ fn btest2_iskan_reports_sniffler_and_unlocks_passage() -> TestResult {
 #[derive(Clone, Copy)]
 enum NativeScenario {
     Buddel,
+    BuddelEquipped,
     BuddelFare,
+    BuddelNested,
     CompletionGate,
     Iskan,
     Portals,
@@ -275,7 +305,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         let native = active.native_gameplay().ok_or("native")?;
         let (bytes, pins) = if matches!(route, Some(NativeScenario::RecreatedPillars)) {
             fixture::bundle_with_pillar_floors(native)?
-        } else if matches!(route, Some(NativeScenario::Buddel | NativeScenario::BuddelFare | NativeScenario::Iskan)) {
+        } else if matches!(route, Some(NativeScenario::Buddel | NativeScenario::BuddelEquipped | NativeScenario::BuddelFare | NativeScenario::BuddelNested | NativeScenario::Iskan)) {
             fixture::bundle_with_ice_islands(native)?
         } else if native_portals {
             fixture::bundle_with_pillars(native)?
@@ -396,6 +426,9 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         } else {
             super::item_look::seed_main_backpack(&harness, &[(coins, 2)]).await?;
         }
+        if let Some(route @ (NativeScenario::BuddelEquipped | NativeScenario::BuddelNested)) = route {
+            btest2_npc::seed_ring(&harness, route).await?;
+        }
         fixture::equip_sword(&harness).await?;
         owner.admit_progression_session(&mut admitted).await;
         assert!(
@@ -500,7 +533,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         } else {
             None
         };
-        if let Some(route @ (NativeScenario::Buddel | NativeScenario::BuddelFare | NativeScenario::Iskan)) = route {
+        if let Some(route @ (NativeScenario::Buddel | NativeScenario::BuddelEquipped | NativeScenario::BuddelFare | NativeScenario::BuddelNested | NativeScenario::Iskan)) = route {
             btest2_npc::exercise(owner, &deps, &harness, route).await?;
             drop(authority);
             drop(seal);

@@ -14,7 +14,7 @@ pub(super) async fn exercise(
     harness: &Harness,
     route: NativeScenario,
 ) -> TestResult {
-    let buddel = matches!(route, NativeScenario::Buddel | NativeScenario::BuddelFare);
+    let buddel = matches!(route, NativeScenario::Buddel | NativeScenario::BuddelEquipped | NativeScenario::BuddelFare | NativeScenario::BuddelNested);
     let key = if buddel {
         "oteryn:npc.buddel"
     } else {
@@ -132,6 +132,18 @@ pub(super) async fn exercise(
         let ring: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3097' AND lifecycle=1")
             .fetch_one(&harness.pool).await?;
         assert_eq!(ring, 0);
+        let fare: i64 = sqlx::query_scalar("SELECT fare_gold_units FROM game_newhaven_travel_receipts")
+            .fetch_one(&harness.pool).await?;
+        assert_eq!(fare, 0);
+        if let NativeScenario::BuddelEquipped | NativeScenario::BuddelNested = route {
+            let (lifecycle, quantity, located): (i16, i64, bool) = sqlx::query_as(
+                "SELECT lifecycle,quantity,EXISTS(SELECT 1 FROM game_item_nested_entries n WHERE n.item_instance_id=i.item_instance_id UNION ALL SELECT 1 FROM game_character_equipment_slots e WHERE e.item_instance_id=i.item_instance_id) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(super::id(201).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!((lifecycle, quantity, located), (2, 0, false));
+            let revision: String = sqlx::query_scalar("SELECT revision::text FROM game_character_equipment_state WHERE character_id=encode($1,'hex')::uuid")
+                .bind(super::id(41).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(revision, if matches!(route, NativeScenario::BuddelEquipped) { "2" } else { "1" });
+        }
     } else {
         assert_eq!((actor.x, actor.y, actor.floor), (32325, 31049, 7));
         for (track, _) in tracks.into_iter().skip(1) {
@@ -189,4 +201,28 @@ async fn talk(
         .conversation
         .map(|reply| reply.lines.join(" "))
         .unwrap_or_default())
+}
+
+pub(super) async fn seed_ring(harness: &Harness, route: NativeScenario) -> TestResult {
+    use super::id;
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    let nested = matches!(route, NativeScenario::BuddelNested);
+    for (seed, key) in [(201, "oteryn:item.tibia.i3097"), (202, "oteryn:item.tibia.i2854"), (203, "oteryn:item.tibia.i2854")].into_iter().take(if nested { 3 } else { 1 }) {
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($4,'hex')::uuid)")
+            .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(key).bind(id(204).as_slice()).execute(&mut *tx).await?;
+    }
+    if nested {
+        sqlx::query("INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,2,encode($5,'hex')::uuid)")
+            .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(70).as_slice()).bind(id(203).as_slice()).bind(id(204).as_slice()).execute(&mut *tx).await?;
+        for (parent, child) in [(203, 202), (202, 201)] {
+            sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
+                .bind(id(child).as_slice()).bind(id(42).as_slice()).bind(id(parent).as_slice()).bind(id(204).as_slice()).execute(&mut *tx).await?;
+        }
+    } else {
+        sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,9,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
+            .bind(id(41).as_slice()).bind(id(201).as_slice()).bind(id(42).as_slice()).bind(id(204).as_slice()).execute(&mut *tx).await?;
+    }
+    tx.commit().await?;
+    Ok(())
 }
