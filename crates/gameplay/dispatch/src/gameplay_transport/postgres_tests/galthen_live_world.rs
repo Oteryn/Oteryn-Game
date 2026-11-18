@@ -7,8 +7,12 @@ use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Offering, Position, Trigger};
+use oteryn_protocol_oteryn::refusal_detail::{
+    CAPABILITY_REFUSAL_DETAIL_V1, RefusalDetail, split_refusal_detail,
+};
 use oteryn_protocol_oteryn::world_object::{
-    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
+    COMMAND_TYPE_USE_INTENT, MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
+    decode_use_result, encode_item_use_intent,
 };
 use oteryn_protocol_oteryn::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, decode_step_result, encode_step_intent,
@@ -18,6 +22,7 @@ pub(super) const SATCHEL: &str = "galthen-satchel";
 pub(super) const COOLDOWN: &str = "galthen-yselda-shortcut-1-cooldown";
 pub(super) const COOLDOWN_EXPIRES_NOW: &str = "galthen-yselda-shortcut-1-cooldown-expires-now";
 pub(super) const TARGETED_USE: &str = "-targeted-use";
+pub(super) const HOTKEY_TARGETED_USE: &str = "-hotkey-targeted-use";
 pub(super) const LOW_LEVEL: &str = "-low-level";
 const SATCHEL_RECLAIM_SECONDS: i64 = 30 * 24 * 60 * 60;
 
@@ -94,6 +99,7 @@ fn galthen_iksupan_direct_use_level_gate_postgres() -> TestResult {
         (ROUTES[2].0, ROUTES[2].1),
         ("galthen-iksupan-entrance-low-level", ROUTES[2].1),
         ("galthen-iksupan-entrance-targeted-use", ROUTES[2].1),
+        ("galthen-iksupan-entrance-hotkey-targeted-use", ROUTES[2].1),
     ] {
         travel(name, source)?;
     }
@@ -208,7 +214,16 @@ pub(super) async fn exercise(
             return exercise_satchel(owner, admitted, h, actor, start, expected, target, key).await;
         }
         if name.ends_with(TARGETED_USE) {
-            return exercise_targeted_use(owner, admitted, h, actor, start, target).await;
+            return exercise_targeted_use(
+                owner,
+                admitted,
+                h,
+                actor,
+                start,
+                target,
+                name.ends_with(HOTKEY_TARGETED_USE),
+            )
+            .await;
         }
         let outcomes =
             super::quest_callbacks::wire_use_targets_retained(owner, admitted, &[(1, &target)])
@@ -249,6 +264,7 @@ async fn exercise_targeted_use(
     actor: ExactActorRef,
     start: Position,
     target: WorldObjectTarget,
+    hotkey: bool,
 ) -> TestResult {
     let fence = admitted.item_fence.ok_or("Iksupan item fence")?;
     let rope = Offering {
@@ -265,9 +281,18 @@ async fn exercise_targeted_use(
         .ok_or("Iksupan rope definition")?;
 
     let map = owner.bundle_map().ok_or("Iksupan map")?;
-    let effect_before = map.facts.movement_effects_since(0).last().map_or(0, |row| row.0);
+    let effect_before = map
+        .facts
+        .movement_effects_since(0)
+        .last()
+        .map_or(0, |row| row.0);
+    let capabilities: &[u32] = if hotkey {
+        &[4, 6, 11, 15, 18, CAPABILITY_REFUSAL_DETAIL_V1]
+    } else {
+        &[4, 6, 11, 15, 18]
+    };
     admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
+        SelectedCapabilities::select(owner.offered_capabilities(), capabilities)
             .ok_or("Iksupan targeted USE capabilities")?;
     let payload = encode_item_use_intent(&UseIntent {
         target: UseTarget::ItemByDefinition(reference),
@@ -276,22 +301,41 @@ async fn exercise_targeted_use(
         use_with_position: None,
     })
     .map_err(debug)?;
-    let (next, outcome, _) = super::item_craft::exchange(
-        owner,
-        *admitted,
-        admitted.continuity.next_command_id,
-        &payload,
-        Some(reference),
-    )
-    .await?;
-    *admitted = next;
+    let command_id = admitted.continuity.next_command_id;
+    let outcome = if hotkey {
+        let reply = wire(
+            owner,
+            admitted,
+            command_id,
+            COMMAND_TYPE_USE_INTENT,
+            payload,
+        )
+        .await?;
+        let (result, detail) = split_refusal_detail(&reply).map_err(debug)?;
+        assert_eq!(
+            detail.map(RefusalDetail::reference_message),
+            Some("Sorry, not possible."),
+        );
+        decode_use_result(result).map_err(debug)?
+    } else {
+        let (next, outcome, _) =
+            super::item_craft::exchange(owner, *admitted, command_id, &payload, Some(reference))
+                .await?;
+        *admitted = next;
+        outcome
+    };
     assert_eq!(
         outcome,
         UseDisposition::NotPossible,
         "Crystal registers only direct USE for the Iksupan entrance"
     );
     assert_eq!(
-        owner.runtime.lock().await.read_actor_position(actor)?.position(),
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)?
+            .position(),
         local(start)
     );
     assert!(map.facts.movement_effects_since(effect_before).is_empty());
