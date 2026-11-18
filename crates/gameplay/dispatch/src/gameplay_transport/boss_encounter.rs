@@ -2,10 +2,10 @@
 use super::connection::FreshAdmissionAuthority;
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use oteryn_protocol_oteryn::boss_encounter as wire;
-#[path = "boss_encounter/channel_rooms.rs"]
-pub(in crate::gameplay_transport) mod channel_rooms;
 #[path = "boss_encounter/catalogue.rs"]
 mod catalogue;
+#[path = "boss_encounter/channel_rooms.rs"]
+pub(in crate::gameplay_transport) mod channel_rooms;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn boss_cooldowns_wire(
