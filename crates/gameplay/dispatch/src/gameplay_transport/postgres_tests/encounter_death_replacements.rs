@@ -17,6 +17,8 @@ pub(super) const FALLEN: &str = "first-dragon-fallen-challenger-portal";
 pub(super) const LORE: &str = "forgotten-knowledge-lore-keeper-death-phase";
 pub(super) const VICTORY: &str = "first-dragon-reward-room-transfer";
 const MOUNTED: &str = "oteryn:creature.mounted_thorn_knight";
+const MOUNTED_SPAWN: Position = at(32624, 32880);
+const MOUNTED_ANNOUNCEMENT: &str = "The thorn knight unmounts!";
 const SHIELDED: &str = "oteryn:creature.the_shielded_thorn_knight";
 const ENRAGED: &str = "oteryn:creature.the_enraged_thorn_knight";
 const STEED: &str = "oteryn:creature.thorn_steed";
@@ -297,9 +299,10 @@ pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
             at(32624, 32886),
             at(32613, 32869),
             at(32636, 32892),
-            vec![json!({"creature":MOUNTED,"position":at(32624,32880)})],
+            vec![json!({"creature":MOUNTED,"position":MOUNTED_SPAWN})],
             json!({"terminal":ENRAGED,"replacements":[
-                {"defeated":MOUNTED,"spawn":[{"creature":SHIELDED},{"creature":STEED}]},
+                {"defeated":MOUNTED,"announcement":{"text":MOUNTED_ANNOUNCEMENT},
+                 "spawn":[{"creature":SHIELDED},{"creature":STEED}]},
                 {"defeated":SHIELDED,"spawn":[{"creature":ENRAGED}]}
             ]}),
         )
@@ -728,6 +731,16 @@ pub(super) async fn exercise(
     } else if name == BOWL {
         flower_bowl(owner, admitted, h).await?;
     } else if name == EARTH {
+        let map = owner.bundle_map().ok_or("Earth room")?;
+        let announcements = || {
+            map.facts
+                .movement_speech_since(0)
+                .into_iter()
+                .filter(|(_, speech)| speech.text == MOUNTED_ANNOUNCEMENT)
+                .map(|(_, speech)| speech)
+                .collect::<Vec<_>>()
+        };
+        assert!(announcements().is_empty());
         let [mounted] = live(owner, MOUNTED)
             .await?
             .try_into()
@@ -739,9 +752,24 @@ pub(super) async fn exercise(
             .map_err(|_| "one shielded knight")?;
         assert_eq!(live(owner, STEED).await?.len(), 1);
         assert!(live(owner, ENRAGED).await?.is_empty());
+        let lines = announcements();
+        let [line] = lines.as_slice() else {
+            return Err("one mounted knight announcement".into());
+        };
+        assert_eq!(line.speaker, mounted);
+        assert_eq!(line.talk_type, 36);
+        assert_eq!(
+            line.position,
+            crate::map::overlay::TilePos {
+                x: MOUNTED_SPAWN.x,
+                y: MOUNTED_SPAWN.y,
+                floor: MOUNTED_SPAWN.floor,
+            }
+        );
         super::engenc2_cults::kill(owner, admitted, shielded, SHIELDED, 102).await?;
         assert_eq!(live(owner, ENRAGED).await?.len(), 1);
         assert_eq!(live(owner, STEED).await?.len(), 1);
+        assert_eq!(announcements(), lines);
     } else if name == ENERGY {
         let map = owner.bundle_map().ok_or("Energy room")?;
         let return_cell = crate::map::overlay::TilePos {
