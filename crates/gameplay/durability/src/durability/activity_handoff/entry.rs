@@ -81,6 +81,10 @@ fn binding(
     if let Some(window) = mode.window_ms() {
         hash_field(&mut hash, b"boss-admission-window");
         hash_field(&mut hash, &window.get().to_be_bytes());
+        hash_field(&mut hash, &r.handoff_id);
+        hash_field(&mut hash, &assignment_scope_key(r.destination_scope));
+        hash_field(&mut hash, &r.destination_generation.get().to_be_bytes());
+        hash_field(&mut hash, &r.destination_assignment_source_revision.to_be_bytes());
     }
     if let Some(context) = soulpit {
         match &context.request.funding {
@@ -286,8 +290,8 @@ pub(super) async fn enter_in_transaction<
     }
     let window_ms = mode.window_ms().map(|duration| i32::try_from(duration.get()))
         .transpose().map_err(|_| DurabilityError::InvalidStoredState)?;
-    let now = quest_activity_now_ms(tx, root).await?;
     let joining = if let Some(duration) = window_ms {
+        let now = quest_activity_now_ms(tx, root).await?;
         open_enrollment(tx, r, duration, now).await?
     } else {
         false
@@ -347,6 +351,7 @@ pub(super) async fn enter_in_transaction<
             ));
         }
     }
+    let now = quest_activity_now_ms(tx, root).await?;
     let boss_plan = if mode.is_boss() {
         match super::boss_room::prepare_in_transaction(tx, r, now, premium).await? {
             Ok(plan) => Some(plan),
