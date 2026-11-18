@@ -229,15 +229,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Revision serialization precedes the runtime turn, matching the other
         // physical action owners. Keep the live target current through COMMIT.
         let mut revision = self.revision_sequencer.acquire(fence.character_id).await;
-        let mut creature_runtime =
-            if callback.creature_target.is_some() || callback.self_target.is_some() {
-                Some(CreatureTurn {
-                    runtime: self.runtime.lock().await,
-                    uncertain: AtomicBool::new(false),
-                })
-            } else {
-                None
-            };
+        let mut creature_runtime = if callback.creature_target.is_some()
+            || callback.self_target.is_some()
+            || callback.server_save_hotspot.is_some()
+        {
+            Some(CreatureTurn {
+                runtime: self.runtime.lock().await,
+                uncertain: AtomicBool::new(false),
+            })
+        } else {
+            None
+        };
         let creature = if callback.creature_target.is_some() || callback.self_target.is_some() {
             let runtime = &*creature_runtime.as_ref().ok_or(())?.runtime;
             let proof = if let Some(corpse) = corpse {
@@ -259,8 +261,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(|g| g.native_gameplay())
             .ok_or(())?;
         let weights = NativeItemWeights(native).with_wheel(self.premium_coordinator);
+        // Crystal 201189f8 spike_tasks/actions_thermometer.lua:13-31.
+        // Keep the actor at the sampled location through the gated hand-in.
+        let hotspot = if let Some(hotspot) = &callback.server_save_hotspot {
+            let runtime = &creature_runtime.as_ref().ok_or(())?.runtime;
+            runtime
+                .player_control_facts(actor, command.game_session_id)
+                .map_err(|_| ())?;
+            let position = runtime
+                .read_actor_position(actor)
+                .map_err(|_| ())?
+                .position();
+            let position = [position.x, position.y, i32::from(position.floor)];
+            if !hotspot.contains(
+                &callback.key,
+                self.world_id.as_bytes(),
+                self.reset_epoch,
+                position,
+            ) {
+                self.states
+                    .chat
+                    .push_quest_feedback(command.game_session_id, &hotspot.cold_reply);
+                return Ok(Some(outcome(UseDisposition::Committed)));
+            }
+            Some((self.reset_epoch, position))
+        } else {
+            None
+        };
         let use_ = QuestCarriedUse {
             recipe_target: None,
+            hotspot,
             source,
             intent: encoded,
         };
@@ -281,7 +311,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.holder,
                 fence,
                 QuestTransitionRequest {
-                    transition_key: callback.key,
+                    transition_key: callback.key.clone(),
                     cause: QuestCause::Command(command_ref),
                 },
                 std::sync::Arc::clone(catalogue),
@@ -299,6 +329,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?;
         if let Some(turn) = &mut creature_runtime {
+            if let (QuestTransitionOutcome::Committed(_), Some(spec), Some((_, [x, y, floor]))) =
+                (&result, &callback.server_save_hotspot, hotspot)
+            {
+                if let (Some(map), Ok(x), Ok(y), Ok(floor)) = (
+                    self.bundle_map(),
+                    u16::try_from(x),
+                    u16::try_from(y),
+                    i8::try_from(-floor),
+                ) {
+                    map.facts.emit_movement_effect(
+                        crate::map::overlay::TilePos { x, y, floor },
+                        u16::from(spec.hot_effect),
+                    );
+                }
+                for line in &callback.reply {
+                    self.states
+                        .chat
+                        .push_quest_feedback(command.game_session_id, line);
+                }
+            }
             if matches!(result, QuestTransitionOutcome::Committed(_))
                 && let Some(target) = capture_target
             {

@@ -15,7 +15,7 @@ pub struct DeathArea {
     pub maximum: [i32; 3],
 }
 impl DeathArea {
-    fn valid(self) -> bool {
+    pub(crate) fn valid(self) -> bool {
         (0..3).all(|axis| {
             self.minimum[axis] >= 0
                 && self.minimum[axis] <= self.maximum[axis]

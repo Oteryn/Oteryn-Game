@@ -913,6 +913,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let use_ = QuestCarriedUse {
             source,
             recipe_target,
+            hotspot: None,
             intent: encoded,
         };
         let capture_target = creature.as_ref().and_then(|proof| proof.live_target());

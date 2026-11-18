@@ -80,6 +80,9 @@ pub struct QuestCarriedUse {
     /// Exact second carried instance; absent for legacy tools and peer actions.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub recipe_target: Option<[u8; 16]>,
+    /// Current carrier position held by dispatch through the reward transaction.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hotspot: Option<(u64, [i32; 3])>,
     pub intent: Vec<u8>,
 }
 
@@ -141,6 +144,28 @@ pub(crate) async fn apply(
         })
     {
         return Ok(false);
+    }
+    match (
+        &callback.server_save_hotspot,
+        admission.carried_use.and_then(|use_| use_.hotspot),
+    ) {
+        (None, None) => {}
+        (Some(hotspot), Some((epoch, position))) => {
+            let world = fence.runtime_scope.world_id();
+            let reset: String = sqlx::query_scalar(
+                "SELECT coalesce((SELECT reset_epoch FROM game_world_reset_active
+                    WHERE world_id=encode($1,'hex')::uuid FOR SHARE),0)::text",
+            )
+            .bind(world.as_bytes().as_slice())
+            .fetch_one(&mut **tx)
+            .await?;
+            if reset != epoch.to_string()
+                || !hotspot.contains(&callback.key, world.as_bytes(), epoch, position)
+            {
+                return Ok(false);
+            }
+        }
+        _ => return Ok(false),
     }
     match (
         callback.creature_target.is_some() || callback.self_target.is_some(),

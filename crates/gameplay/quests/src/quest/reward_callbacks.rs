@@ -15,6 +15,8 @@ mod carried_bounds;
 mod carried_exchange_tests;
 mod colours_peer;
 mod corpse;
+mod hotspot;
+pub use hotspot::ServerSaveHotspot;
 mod inventory;
 mod published_markers;
 mod questpc7_registry_bounds;
@@ -245,6 +247,8 @@ pub struct RewardCallback {
     /// Ordinary carried USE binding; NPC dialogue cannot execute this callback.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub carried_item: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub server_save_hotspot: Option<ServerSaveHotspot>,
     /// Explicit selected-instance exchange; legacy tools retain their no-grant contract.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub carried_exchange: bool,
@@ -493,6 +497,10 @@ const DOCUMENTS: &[&str] = &[
 /// The current immutable catalogue's explicit authored callbacks plus the retained source owners.
 pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, String> {
     let mut callbacks = load()?;
+    #[cfg(any(test, feature = "test-support"))]
+    if let Some(callback) = &catalogue.reward_callback_fixture {
+        callbacks.push(callback.clone());
+    }
     if let Some(bindings) = catalogue.authored_bindings() {
         callbacks.extend(bindings.reward_callbacks().cloned());
     }
@@ -897,6 +905,9 @@ fn validate_document_with_capacity(
                             .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
                 }
             }
+            || c.server_save_hotspot
+                .as_ref()
+                .is_some_and(|hotspot| !hotspot.valid_for(c))
             || if c.carried_exchange {
                 !c.valid_carried_use()
                     || !carried_bounds::valid(c)

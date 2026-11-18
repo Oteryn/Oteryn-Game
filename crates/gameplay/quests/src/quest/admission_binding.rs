@@ -151,6 +151,16 @@ pub fn validate_for_catalogue(
     {
         return validate(transition, world_context);
     }
+    #[cfg(any(test, feature = "test-support"))]
+    if let Some(callback) = &catalogue.reward_callback_fixture
+        && callback.key == transition.key
+    {
+        return if !world_context && reward_callbacks::primary_transition(callback)? == *transition {
+            Ok(())
+        } else {
+            Err("fixture reward operation or context mismatch".into())
+        };
+    }
     let mut protected = BTreeSet::new();
     if let Some(bindings) = &catalogue.authored_bindings {
         for quest in &bindings.source.quests {
