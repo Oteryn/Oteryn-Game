@@ -40,8 +40,10 @@ fn exercise(timeout: bool) -> TestResult {
             y: 31478,
             floor: 6,
         };
-        let (scene, _, _) =
-            super::srx3_soul_war_world_fixture::source_world_with_input(start, qualify_neferi_loot)?;
+        let (scene, _, _) = super::srx3_soul_war_world_fixture::source_world_with_input(
+            start,
+            qualify_neferi_loot,
+        )?;
         let active = scene.controller.active().ok_or("active World")?;
         let native = active.native_gameplay().ok_or("native World")?;
         let candidate = captured_boss_levers()
@@ -223,7 +225,9 @@ fn exercise(timeout: bool) -> TestResult {
 
 // The test exercises admission and return without waiting for the production
 // Item publication. Keep the pinned Neferi table and its existing yields.
-fn qualify_neferi_loot(input: &mut crate::content::native_gameplay::NativeGameplayInput) -> TestResult {
+fn qualify_neferi_loot(
+    input: &mut crate::content::native_gameplay::NativeGameplayInput,
+) -> TestResult {
     use sha2::{Digest, Sha256};
     let section = input.loot_tables.as_mut().ok_or("pinned loot section")?;
     let mut loot: serde_json::Value = serde_json::from_slice(&section.bytes)?;
@@ -236,7 +240,9 @@ fn qualify_neferi_loot(input: &mut crate::content::native_gameplay::NativeGamepl
     ];
     let items = loot["items"].as_array_mut().ok_or("loot item facts")?;
     for key in expected {
-        let item = items.iter_mut().find(|item| item["item"]["key"] == key)
+        let item = items
+            .iter_mut()
+            .find(|item| item["item"]["key"] == key)
             .ok_or("existing Neferi item fact")?;
         item["materializable"] = true.into();
         if key == "oteryn:item.tibia.i36982" {
@@ -245,6 +251,9 @@ fn qualify_neferi_loot(input: &mut crate::content::native_gameplay::NativeGamepl
         }
     }
     section.bytes = serde_json::to_vec(&loot)?;
-    section.sha256 = format!("{:x}", Sha256::digest(&section.bytes));
+    section.sha256 = Sha256::digest(&section.bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
     Ok(())
 }
