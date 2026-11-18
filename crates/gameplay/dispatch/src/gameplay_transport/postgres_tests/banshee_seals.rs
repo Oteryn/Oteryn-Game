@@ -780,6 +780,18 @@ async fn exercise_queen(
             .any(|line| line.contains("prepared to receive my kiss"))
     );
     let actor = admitted.runtime_actor.ok_or("actor")?;
+    {
+        let runtime = owner.runtime.lock().await;
+        let spells = owner.states.spell_states.lock().await;
+        let character = spells
+            .get(&runtime, actor, session)
+            .ok_or("live character")?;
+        assert!(character.character_facts().level < 50);
+    }
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("talk clock")?;
     let low_level = owner
         .npc_talk(
             actor,
@@ -824,7 +836,7 @@ async fn exercise_queen(
             .iter()
             .any(|line| line.contains("spilled too much blood"))
     );
-    let repeated = super::classic_quests::talk(owner, admitted, queen, 11, "yes").await?;
+    let repeated = super::classic_quests::talk(owner, admitted, queen, 12, "yes").await?;
     assert!(
         !repeated
             .iter()
