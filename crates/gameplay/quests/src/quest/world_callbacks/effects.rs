@@ -460,6 +460,19 @@ pub struct DeathCrystalCircuit {
     pub spawn: String,
     pub boss_position: Position,
     pub charged_effect: Option<u16>,
+    pub vortex: Option<DeathVortex>,
+}
+
+/// A temporary item at the defeated creature's tile receives the next phase's creatures.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DeathVortex {
+    pub appearance: u16,
+    pub duration_ms: u32,
+    pub consume_creature: String,
+    pub consume_effect: Option<u16>,
+    pub threshold: u16,
+    pub spawn: String,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -481,6 +494,15 @@ impl DeathCrystalCircuit {
             || self.charged_effect == Some(0)
             || !creature(&self.defeated)
             || !creature(&self.spawn)
+            || self.vortex.as_ref().is_some_and(|vortex| {
+                vortex.appearance == 0
+                    || !(1..=3_600_000).contains(&vortex.duration_ms)
+                    || vortex.consume_effect == Some(0)
+                    || !(1..=1000).contains(&vortex.threshold)
+                    || !creature(&vortex.consume_creature)
+                    || !creature(&vortex.spawn)
+                    || vortex.consume_creature == vortex.spawn
+            })
             || self.spawn == self.retire
             || self.spawn == self.defeated
             || self.retire == self.defeated
@@ -737,6 +759,9 @@ fn valid_death_phases(
             return false;
         }
         known.insert(circuit.spawn.as_str());
+        if let Some(vortex) = &circuit.vortex {
+            known.insert(vortex.spawn.as_str());
+        }
     }
     let mut defeated = BTreeSet::new();
     for rule in &plan.replacements {

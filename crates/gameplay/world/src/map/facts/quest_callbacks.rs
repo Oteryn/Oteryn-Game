@@ -164,11 +164,40 @@ pub(super) struct CallbackStates {
     pub(super) creature_visuals: std::collections::VecDeque<(u64, CreatureVisualKind)>,
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
+    movement_item_expiries: BTreeMap<(u64, u64), (TilePos, u16)>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
     batch_blockers: BTreeSet<TilePos>,
     presences: BTreeMap<u64, (TilePos, EntryId)>,
     naginata_picks: Vec<NaginataPick>,
+}
+
+fn remove_callback_item(
+    states: &mut CallbackStates,
+    pos: TilePos,
+    key: u64,
+    appearance: u16,
+) -> bool {
+    let Some(entries) = states.movement_items.get_mut(&pos) else {
+        return false;
+    };
+    let Some(index) = entries.iter().position(|entry| {
+        matches!(entry.source, view::EntrySource::Added(id) if id.get() == key)
+            && entry.facts.appearance_id == appearance
+    }) else {
+        return false;
+    };
+    let Some(sequence) = states.movement_sequence.checked_add(1) else {
+        return false;
+    };
+    entries.remove(index);
+    if entries.is_empty() {
+        states.movement_items.remove(&pos);
+    }
+    states.changed.remove(&key);
+    states.movement_decays.retain(|(_, entry), _| *entry != key);
+    states.movement_sequence = sequence;
+    true
 }
 
 impl CallbackStates {
@@ -555,6 +584,7 @@ impl CallbackStates {
             p.floor == -11 && (33415..=33445).contains(&p.x) && (31522..=31554).contains(&p.y)
         };
         self.movement_items.retain(|p, _| !cleared(p));
+        self.movement_item_expiries.retain(|_, (p, _)| !cleared(p));
         self.solid_items.retain(|p| !cleared(p));
         self.batch_blockers.retain(|p| !inside(*p));
         self.portals.retain(|p, _| !cleared(p));
@@ -572,6 +602,7 @@ impl CallbackStates {
             + self.actions.len()
             + self.hidden.len()
             + self.movement_decays.len()
+            + self.movement_item_expiries.len()
             + self.movement_effects.len()
             + self.creature_visuals.len()
             + self.movement_speech.len()
@@ -877,6 +908,12 @@ impl BundleFacts {
             .find(|((_, key), _)| !states.key_reserved(*key))
             .map(|((due, _), _)| *due)
             .into_iter()
+            .chain(
+                states
+                    .movement_item_expiries
+                    .iter()
+                    .find_map(|(&(due, id), _)| (!states.key_reserved(id)).then_some(due)),
+            )
             .chain(states.portals.values().filter_map(|p| p.expires))
             .min()
     }
@@ -929,6 +966,18 @@ impl BundleFacts {
                         states.passable.remove(&key);
                     }
                 }
+                changed += 1;
+            }
+        }
+        let expiring: Vec<_> = states
+            .movement_item_expiries
+            .range(..=(now, u64::MAX))
+            .filter(|(deadline, _)| !states.key_reserved(deadline.1))
+            .map(|(&deadline, &(position, appearance))| (deadline, position, appearance))
+            .collect();
+        for (deadline, position, appearance) in expiring {
+            states.movement_item_expiries.remove(&deadline);
+            if remove_callback_item(states, position, deadline.1, appearance) {
                 changed += 1;
             }
         }
@@ -1191,6 +1240,40 @@ impl BundleFacts {
         effect: u16,
         consume: impl FnOnce() -> bool,
     ) -> bool {
+        self.create_callback_item(pos, appearance, effect, None, consume)
+    }
+
+    /// A death callback may give its volatile item a lifetime in the same Channel cycle.
+    pub fn create_expiring_movement_item(&self, pos: TilePos, appearance: u16, due: u64) -> bool {
+        self.create_callback_item(pos, appearance, 0, Some(due), || true)
+    }
+
+    pub fn live_expiring_movement_item(
+        &self,
+        key: u64,
+        pos: TilePos,
+        appearance: u16,
+        now: u64,
+    ) -> bool {
+        self.callbacks.lock().is_ok_and(|states| {
+            states
+                .movement_item_expiries
+                .range((
+                    std::ops::Bound::Excluded((now, u64::MAX)),
+                    std::ops::Bound::Unbounded,
+                ))
+                .any(|(&(_, candidate), &source)| key == candidate && source == (pos, appearance))
+        })
+    }
+
+    fn create_callback_item(
+        &self,
+        pos: TilePos,
+        appearance: u16,
+        effect: u16,
+        due: Option<u64>,
+        consume: impl FnOnce() -> bool,
+    ) -> bool {
         let Some(facts) = self.movement_item_facts(appearance) else {
             return false;
         };
@@ -1206,7 +1289,9 @@ impl BundleFacts {
         let Some(id) = super::super::overlay::EntryId::callback(sequence) else {
             return false;
         };
-        if !states.has_capacity(1 + usize::from(effect != 0)) {
+        if (due.is_some() && facts.pickupable)
+            || !states.has_capacity(1 + usize::from(effect != 0) + usize::from(due.is_some()))
+        {
             return false;
         }
         let entry = view::ComposedEntry {
@@ -1219,6 +1304,11 @@ impl BundleFacts {
         }
         states.movement_sequence = sequence;
         states.movement_items.entry(pos).or_default().push(entry);
+        if let Some(due) = due {
+            states
+                .movement_item_expiries
+                .insert((due, id.get()), (pos, appearance));
+        }
         if effect != 0 {
             if states.movement_effects.len() == 512 {
                 states.movement_effects.pop_front();
@@ -1244,30 +1334,14 @@ impl BundleFacts {
         if states.position_reserved(pos) {
             return false;
         }
-        let Some(index) = states.movement_items.get(&pos).and_then(|entries| {
-            entries.iter().position(|entry| {
-                matches!(entry.source,
-                view::EntrySource::Added(id) if id.get()==key)
-                    && entry.facts.appearance_id == appearance
-            })
-        }) else {
-            return false;
-        };
-        let Some(sequence) = states.movement_sequence.checked_add(1) else {
-            return false;
-        };
         let states = Arc::make_mut(&mut states);
-        let Some(entries) = states.movement_items.get_mut(&pos) else {
-            return false;
-        };
-        entries.remove(index);
-        if entries.is_empty() {
-            states.movement_items.remove(&pos);
+        let removed = remove_callback_item(states, pos, key, appearance);
+        if removed {
+            states
+                .movement_item_expiries
+                .retain(|(_, entry), _| *entry != key);
         }
-        states.changed.remove(&key);
-        states.movement_decays.retain(|(_, entry), _| *entry != key);
-        states.movement_sequence = sequence;
-        true
+        removed
     }
 
     /// W05b (Crystal thawing.lua:21-27): a daily world change's volatile Item, placed at

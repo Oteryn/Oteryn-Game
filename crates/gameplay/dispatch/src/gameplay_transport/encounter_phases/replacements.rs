@@ -25,6 +25,8 @@ pub(super) struct Replacements {
     members: Vec<Member>,
     completed_sweeps: BTreeSet<String>,
     crystal_charges: super::crystal_circuit::Charges,
+    room: DeathArea,
+    vortex_consumed: u16,
     scope: (RuntimeScopeRefV1, ScopeOwnershipGeneration),
     activation: u64,
     finished: bool,
@@ -57,6 +59,10 @@ impl Replacements {
         if let Some(circuit) = &plan.crystal_circuit {
             runtime.companion_policy(&circuit.defeated)?;
             runtime.companion_policy(&circuit.spawn)?;
+            if let Some(vortex) = &circuit.vortex {
+                runtime.companion_policy(&vortex.consume_creature)?;
+                runtime.companion_policy(&vortex.spawn)?;
+            }
         }
         Ok(Self {
             plan: plan.clone(),
@@ -72,6 +78,11 @@ impl Replacements {
                 .collect(),
             completed_sweeps: BTreeSet::new(),
             crystal_charges: super::crystal_circuit::Charges::default(),
+            room: DeathArea {
+                minimum: encounter.room_min,
+                maximum: encounter.room_max,
+            },
+            vortex_consumed: 0,
             scope: runtime.encounter_owner_scope(),
             activation: runtime.content_pin().activation_sequence(),
             finished: false,
@@ -99,18 +110,18 @@ impl Replacements {
         !self.finished
             && self.is_current(runtime)
             && !self.completed_sweeps.contains(creature)
-            && (self
-                .plan
-                .crystal_circuit
-                .as_ref()
-                .is_some_and(|plan| self.crystal_charges.crystal(plan, creature, at).is_some())
-                || self.plan.replacements.iter().any(|rule| {
-                    rule.defeated == creature
-                        && rule
-                            .retire_siblings_in
-                            .or(rule.observe_deaths_in)
-                            .is_some_and(|area| in_death_area(area, at))
-                }))
+            && (self.plan.crystal_circuit.as_ref().is_some_and(|plan| {
+                self.crystal_charges.crystal(plan, creature, at).is_some()
+                    || (plan.defeated == creature
+                        && plan.vortex.is_some()
+                        && in_death_area(self.room, at))
+            }) || self.plan.replacements.iter().any(|rule| {
+                rule.defeated == creature
+                    && rule
+                        .retire_siblings_in
+                        .or(rule.observe_deaths_in)
+                        .is_some_and(|area| in_death_area(area, at))
+            }))
     }
 
     pub(super) fn record_regional_member(
@@ -260,20 +271,37 @@ impl Replacements {
             };
             let defeated = &self.members[index].creature;
             if let Some(plan) = &self.plan.crystal_circuit
-                && let Some(crystal) = self.crystal_charges.crystal(plan, defeated, at)
+                && &plan.defeated == defeated
             {
-                self.members
-                    .try_reserve(plan.crystals.len())
-                    .map_err(|_| CarrierError::AllocationFailed)?;
-                let actors = self
-                    .crystal_charges
-                    .count_death(plan, crystal, runtime, cells)?;
+                if let Some(crystal) = self.crystal_charges.crystal(plan, defeated, at) {
+                    self.members
+                        .try_reserve(plan.crystals.len())
+                        .map_err(|_| CarrierError::AllocationFailed)?;
+                    let actors = self
+                        .crystal_charges
+                        .count_death(plan, crystal, runtime, cells)?;
+                    self.members.extend(actors.into_iter().map(|actor| Member {
+                        actor,
+                        creature: plan.spawn.clone(),
+                        death_at: None,
+                    }));
+                }
+                if in_death_area(self.room, at)
+                    && let Some(vortex) = &plan.vortex
+                    && let Some(at) = super::super::quest_callbacks::native(at)
+                    && let NativeMovementCollisionIndex::Bundle(index) = cells.index()
+                    && let Some(due) = death_us.checked_add(u64::from(vortex.duration_ms) * 1_000)
+                {
+                    // Crystal 201189f8, creaturescripts_rift_invader_death.lua:56-67.
+                    let map = index.map();
+                    if !map.facts.house_tile(at)
+                        && map.overlay.base().tile(at.x, at.y, at.floor).is_some()
+                    {
+                        map.facts
+                            .create_expiring_movement_item(at, vortex.appearance, due);
+                    }
+                }
                 self.members.swap_remove(index);
-                self.members.extend(actors.into_iter().map(|actor| Member {
-                    actor,
-                    creature: plan.spawn.clone(),
-                    death_at: None,
-                }));
                 continue;
             }
             let Some(rule) = self
@@ -412,6 +440,82 @@ impl Replacements {
             );
         }
         Ok(())
+    }
+
+    /// Crystal 201189f8, ferumbras_ascension/movements_vortex.lua:5-18.
+    pub(super) fn consume_vortex_step(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        cells: &crate::content::NativeEntryMovementCells,
+        map: &crate::map::boot::BundleMap,
+        step: crate::map::facts::MonsterStep,
+        entries: &[(u64, crate::map::view::EntryFacts)],
+        now_us: u64,
+    ) -> Result<bool, CarrierError> {
+        if !self.is_current(runtime) || self.finished || !in_death_area(self.room, step.to) {
+            return Ok(false);
+        }
+        let Some((plan, vortex)) = self
+            .plan
+            .crystal_circuit
+            .as_ref()
+            .and_then(|plan| plan.vortex.as_ref().map(|vortex| (plan, vortex)))
+        else {
+            return Ok(false);
+        };
+        let Some(index) = self.members.iter().position(|member| {
+            member.actor == step.actor
+                && member.death_at.is_none()
+                && member.creature == vortex.consume_creature
+        }) else {
+            return Ok(false);
+        };
+        let Some(position) = super::super::quest_callbacks::native(step.to) else {
+            return Ok(false);
+        };
+        if map.facts.house_tile(position)
+            || !entries.iter().any(|(key, facts)| {
+                facts.appearance_id == vortex.appearance
+                    && map.facts.live_expiring_movement_item(
+                        *key,
+                        position,
+                        vortex.appearance,
+                        now_us,
+                    )
+            })
+        {
+            return Ok(false);
+        }
+        let next = self
+            .vortex_consumed
+            .checked_add(1)
+            .ok_or(CarrierError::PlanConflict)?;
+        if next >= vortex.threshold {
+            let at = super::super::quest_callbacks::local(plan.boss_position);
+            if !super::placement(cells, runtime, at) {
+                return Err(CarrierError::PlanConflict);
+            }
+            let health = runtime.companion_policy(&vortex.spawn)?.maximum_health;
+            let actors = runtime.commit_quest_creature_replacement(
+                &[step.actor],
+                &[(vortex.spawn.as_str(), health, at)],
+                || true,
+            )?;
+            self.members.swap_remove(index);
+            self.members.extend(actors.into_iter().map(|actor| Member {
+                actor,
+                creature: vortex.spawn.clone(),
+                death_at: None,
+            }));
+        } else {
+            runtime.remove_encounter_actor(step.actor)?;
+            self.members.swap_remove(index);
+        }
+        self.vortex_consumed = next;
+        if let Some(effect) = vortex.consume_effect {
+            map.facts.emit_movement_effect(position, effect);
+        }
+        Ok(true)
     }
 
     pub(super) fn victors(

@@ -94,6 +94,38 @@ pub(super) struct Registry {
 }
 
 impl Registry {
+    pub(super) fn settle_vortex_step(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        map: &crate::map::boot::BundleMap,
+        step: crate::map::facts::MonsterStep,
+        entries: &[(u64, crate::map::view::EntryFacts)],
+        now_us: u64,
+    ) -> bool {
+        if map.overlay.runtime_scope() != runtime.binding().runtime_scope()
+            || !runtime
+                .read_actor_position(step.actor)
+                .is_ok_and(|at| at.position() == step.to)
+        {
+            return false;
+        }
+        let Ok(mut active) = self.active.lock() else {
+            return false;
+        };
+        active
+            .iter_mut()
+            .filter(|phase| phase.fight.contains(step.actor))
+            .any(|phase| {
+                if let Fight::Replacements(fight) = &mut phase.fight {
+                    fight
+                        .consume_vortex_step(runtime, &phase.cells, map, step, entries, now_us)
+                        .unwrap_or(false)
+                } else {
+                    false
+                }
+            })
+    }
+
     pub(super) fn replace_member(
         &self,
         runtime: &ChannelRuntimeV1,

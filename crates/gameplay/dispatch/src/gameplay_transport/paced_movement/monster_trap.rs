@@ -45,6 +45,12 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
         let Some(destination) = tile_entries(map, step.to) else {
             continue;
         };
+        if states
+            .encounter_phases
+            .settle_vortex_step(runtime, map, step, &destination.entries, now)
+        {
+            continue;
+        }
         if crate::gameplay_transport::quest_callbacks::monsters::settle_monster_step(
             runtime,
             states,
