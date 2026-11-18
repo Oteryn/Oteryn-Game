@@ -611,7 +611,7 @@ recover_legacy_postgres() {
   done
 }
 recover_owned_postgres() {
-  local journal project name inventory limit probe POSTGRES_CLEANUP_FAILED=0
+  local journal project name inventory limit probe probe_rc POSTGRES_CLEANUP_FAILED=0
   local POSTGRES_RECOVERY_DEADLINE=$((SECONDS + 60))
   recover_legacy_postgres || return 1
   # Reconcile the requested names before attempting optional foreign discovery.
@@ -642,10 +642,20 @@ recover_owned_postgres() {
     done <<< "$inventory"
     break
   done
+  local -a discovered=() misses=()
   for journal in "$POSTGRES_JOURNALS/"*; do
     [[ -d "$journal" ]] || continue
     project=${journal##*/}
     [[ "$project" =~ ^[a-z0-9][a-z0-9_-]*$ && "$project" != "$WP5_PROJECT" ]] || continue
+    if [[ -n "${candidates["$project-postgres"]:-}" || -n "${candidates["$project-portal-postgres"]:-}" ]]; then
+      discovered+=("$journal")
+    else
+      misses+=("$journal")
+    fi
+  done
+  # Spend the shared budget on discovered containers before probing misses.
+  for journal in "${discovered[@]}" "${misses[@]}"; do
+    project=${journal##*/}
     if (( POSTGRES_RECOVERY_DEADLINE - SECONDS < 5 )); then
       evidence "postgres_recovery=deferred operation=foreign_project_scan project=$project"
       break
@@ -655,8 +665,14 @@ recover_owned_postgres() {
         if [[ -z "${candidates["$project-postgres"]:-}" && -z "${candidates["$project-portal-postgres"]:-}" ]]; then
           # A late registration can miss the broad snapshot. An exact name
           # probe under the lock avoids a scoped list for still-empty projects.
+          probe_rc=0
           probe=$(timeout --foreground --signal=KILL 2s docker container inspect --format '{{.Name}}' \
-            "$project-postgres" "$project-portal-postgres" 2>/dev/null) || true
+            "$project-postgres" "$project-portal-postgres" 2>/dev/null) || probe_rc=$?
+          if (( probe_rc == 124 || probe_rc == 137 )); then
+            evidence "postgres_recovery=probe_timeout project=$project exit=$probe_rc"
+          elif [[ -z "$probe" ]] && (( probe_rc != 0 )); then
+            evidence "postgres_recovery=probe_no_result project=$project exit=$probe_rc"
+          fi
           [[ -n "$probe" ]] || exit 0
         fi
         recover_project_postgres "$project" "$journal"
