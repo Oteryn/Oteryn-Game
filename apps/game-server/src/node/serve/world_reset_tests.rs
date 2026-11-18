@@ -38,6 +38,42 @@ impl crate::durability::character_build::BuildFormula for ResetTestBuildFormula 
 #[test]
 fn planned_reset_drains_before_a_single_post_activation_highscore_cut()
 -> crate::bestiary_postgres_harness::TestResult {
+    reset_cut_retries(ResetCutFailure::Write)
+}
+
+#[test]
+fn planned_reset_retries_unknown_highscore_commit() -> crate::bestiary_postgres_harness::TestResult
+{
+    reset_cut_retries(ResetCutFailure::CommitTimeout)
+}
+
+#[test]
+fn planned_reset_retries_highscore_deadline() -> crate::bestiary_postgres_harness::TestResult {
+    reset_cut_retries(ResetCutFailure::PassDeadline)
+}
+
+enum ResetCutFailure {
+    Write,
+    CommitTimeout,
+    PassDeadline,
+}
+
+fn reset_cut_retries(failure: ResetCutFailure) -> crate::bestiary_postgres_harness::TestResult {
+    let clear_timeouts = matches!(failure, ResetCutFailure::PassDeadline);
+    let (trigger, fault) = match failure {
+        ResetCutFailure::CommitTimeout => (
+            "CREATE CONSTRAINT TRIGGER reset_cut_fail_once AFTER INSERT ON game_world_highscore_snapshots DEFERRABLE INITIALLY DEFERRED",
+            "PERFORM set_config('transaction_timeout','0',true); PERFORM pg_sleep(2.3); RAISE EXCEPTION 'late commit rollback';",
+        ),
+        ResetCutFailure::PassDeadline => (
+            "CREATE TRIGGER reset_cut_fail_once BEFORE INSERT ON game_world_highscore_snapshots",
+            "PERFORM pg_sleep(4);",
+        ),
+        ResetCutFailure::Write => (
+            "CREATE TRIGGER reset_cut_fail_once BEFORE INSERT ON game_world_highscore_snapshots",
+            "RAISE EXCEPTION 'transient reset cut failure';",
+        ),
+    };
     use crate::bestiary_postgres_harness::{
         CHARACTER, Harness, TestResult, configured_admin, context, debug, fence, id, runtime, scope,
     };
@@ -89,7 +125,11 @@ fn planned_reset_drains_before_a_single_post_activation_highscore_cut()
                     .bind(world.as_bytes().as_slice()).bind([1u8;32].as_slice()).execute(&h.pool).await?;
                 sqlx::query("INSERT INTO game_world_reset_jobs(world_id,reset_epoch,target_digest,retirement_binding,target_map_revision,target_server_digest,target_client_digest,target_frame_digest,target_house_tiles,calendar_revision,phase) SELECT world_id,reset_epoch,target_digest,sha256(convert_to('oteryn:world-reset-retirement:v1','UTF8') || target_digest),map_revision,server_digest,client_digest,frame_digest,'[]'::jsonb,calendar_revision,'RETIRING' FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid")
                     .bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
-                h.pool.execute("CREATE SEQUENCE reset_cut_failure; GRANT USAGE ON SEQUENCE reset_cut_failure TO oteryn_game_highscore_job; CREATE FUNCTION reset_cut_fail_once() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF nextval('reset_cut_failure')=1 THEN RAISE EXCEPTION 'transient reset cut failure'; END IF; RETURN NEW; END $$; CREATE TRIGGER reset_cut_fail_once BEFORE INSERT ON game_world_highscore_snapshots FOR EACH ROW EXECUTE FUNCTION reset_cut_fail_once()").await?;
+                sqlx::raw_sql(sqlx::AssertSqlSafe(format!("CREATE SEQUENCE reset_cut_failure; GRANT USAGE ON SEQUENCE reset_cut_failure TO oteryn_game_highscore_job; CREATE FUNCTION reset_cut_fail_once() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF nextval('reset_cut_failure')=1 THEN {fault} END IF; RETURN NEW; END $$; {trigger} FOR EACH ROW EXECUTE FUNCTION reset_cut_fail_once()"))).execute(&h.pool).await?;
+                if clear_timeouts {
+                    // Disable server timers in a preceding statement so the Root owns the timeout.
+                    h.pool.execute("CREATE FUNCTION reset_cut_disable_timeouts() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM set_config('transaction_timeout','0',true); PERFORM set_config('statement_timeout','0',true); RETURN NEW; END $$; CREATE TRIGGER reset_cut_disable_timeouts BEFORE INSERT ON game_world_highscore_heads FOR EACH ROW EXECUTE FUNCTION reset_cut_disable_timeouts()").await?;
+                }
                 h.root.await_ready().await?;
                 assert!(observe_reset(&h.root, world, &state, &drain).await,
                     "publication failure cannot prevent the reset drain");
@@ -133,6 +173,10 @@ fn planned_reset_drains_before_a_single_post_activation_highscore_cut()
                 let observe = async {
                     let published = async {
                         loop {
+                            // Mirror the node's maintenance pump if the failed pass retired its holder.
+                            if h.root.has_ready_demand() {
+                                h.root.maintain_ready_once().await?;
+                            }
                             let current: i64 = sqlx::query_scalar(
                                 "SELECT count(*) FROM game_world_highscore_heads WHERE published_reset_epoch=1",
                             ).fetch_one(&h.pool).await?;
@@ -176,12 +220,12 @@ fn planned_reset_drains_before_a_single_post_activation_highscore_cut()
 }
 
 #[test]
-fn highscore_epoch_upgrade_keeps_recent_and_previous_snapshots()
+fn highscore_epoch_upgrade_replaces_unproven_cut_and_retains_history()
 -> crate::bestiary_postgres_harness::TestResult {
     use crate::bestiary_postgres_harness::{
         CHARACTER, Harness, TestResult, configured_admin, debug, id, runtime, scope,
     };
-    use crate::durability::highscore_snapshot::SnapshotCatalogues;
+    use crate::durability::highscore_snapshot::{SnapshotCatalogues, publish_in_transaction};
     use crate::foundation::CharacterId;
     use sqlx::Executor;
     let Some(admin) = configured_admin() else {
@@ -192,15 +236,22 @@ fn highscore_epoch_upgrade_keeps_recent_and_previous_snapshots()
             let h = Harness::create(admin, "highscore_epoch_upgrade", true).await?;
             let result: TestResult = async {
                 let world = scope()?.world_id();
-                h.pool.execute("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) SELECT world_id,1,sha256('epoch'::bytea),'map-1',sha256('server'::bytea),sha256('client'::bytea),sha256('frame'::bytea),'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp()-interval '1 minute','2026-11' FROM game_character_roots; INSERT INTO game_world_reset_active SELECT world_id,reset_epoch FROM game_world_reset_epochs").await?;
                 let achievements = crate::achievement_catalogue::AchievementCatalogue::embedded().map_err(debug)?;
                 let catalogues = SnapshotCatalogues::activated(std::sync::Arc::new(achievements)).map_err(debug)?;
                 let character = CharacterId::decode(&id(CHARACTER)).map_err(debug)?;
                 h.root.await_ready().await?;
                 let first = h.root.refresh_highscore_schedule(world, catalogues.clone(), true).await.map_err(debug)?;
                 let previous = first.snapshots.iter().find(|s| s.category == 1).ok_or("missing experience snapshot")?.snapshot_id;
-                h.root.await_ready().await?;
-                h.root.refresh_highscore_schedule(world, catalogues.clone(), true).await.map_err(debug)?;
+                let mut legacy = h.pool.begin_with("BEGIN ISOLATION LEVEL REPEATABLE READ").await?;
+                let _: String = sqlx::query_scalar("SELECT pg_current_snapshot()::text").fetch_one(&mut *legacy).await?;
+                h.pool.execute("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) SELECT world_id,1,sha256('epoch'::bytea),'map-1',sha256('server'::bytea),sha256('client'::bytea),sha256('frame'::bytea),'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),'2026-11' FROM game_character_roots; INSERT INTO game_world_reset_active SELECT world_id,reset_epoch FROM game_world_reset_epochs").await?;
+                let visible_epochs: i64 = sqlx::query_scalar("SELECT count(*) FROM game_world_reset_active").fetch_one(&mut *legacy).await?;
+                assert_eq!(visible_epochs, 0, "the legacy read snapshot predates activation");
+                let stale = publish_in_transaction(&mut legacy, world, &catalogues).await.map_err(debug)?;
+                let stale_xp = stale.iter().find(|s| s.category == 1).ok_or("missing stale cut")?;
+                legacy.commit().await?;
+                let activation_ms: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM activated_at)*1000)::bigint FROM game_world_reset_epochs").fetch_one(&h.pool).await?;
+                assert!(stale_xp.computed_at_ms >= activation_ms);
 
                 // Retain both snapshots but recreate the pre-2858 head shape before applying
                 // the actual upgrade SQL in its own transaction, as the migrator does.
@@ -210,11 +261,17 @@ fn highscore_epoch_upgrade_keeps_recent_and_previous_snapshots()
                 migration.commit().await?;
 
                 h.root.await_ready().await?;
-                let refresh = h.root.refresh_highscore_schedule(world, catalogues, false).await.map_err(debug)?;
-                assert!(refresh.snapshots.is_empty(), "the first scheduled pass must keep the recent cut");
-                h.root.await_ready().await?;
                 let page = h.root.read_highscore_page(world, 1, None, 1, previous, character).await.map_err(debug)?;
                 assert_eq!(page.snapshot.snapshot_id, previous);
+                h.root.await_ready().await?;
+                let refresh = h.root.refresh_highscore_schedule(world, catalogues.clone(), false).await.map_err(debug)?;
+                assert_eq!(refresh.snapshots.len(), stale.len(), "the first scheduled pass must replace the unproven cut");
+                h.root.await_ready().await?;
+                let retained = h.root.read_highscore_page(world, 1, None, 1, stale_xp.snapshot_id, character).await.map_err(debug)?;
+                assert_eq!(retained.snapshot.snapshot_id, stale_xp.snapshot_id);
+                h.root.await_ready().await?;
+                let repeat = h.root.refresh_highscore_schedule(world, catalogues, false).await.map_err(debug)?;
+                assert!(repeat.snapshots.is_empty(), "the proven epoch needs only one cut");
                 Ok(())
             }.await;
             h.cleanup().await?;

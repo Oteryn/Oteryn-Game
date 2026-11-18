@@ -1,14 +1,15 @@
 //! One World's HIGHSCORES0 job. The composition root owns its dedicated projection-role Root
 //! and the actual planned-reset notifications. No client command can start or force this job.
 
-use super::{DurabilityError, DurabilityRoot, SnapshotCatalogues, SnapshotError, SnapshotInfo};
+use super::{CutLimits, DurabilityError, DurabilityRoot, SnapshotCatalogues, SnapshotError, SnapshotInfo};
 use crate::foundation::WorldId;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::mpsc;
 use tokio::time::{Instant, timeout_at};
 
-/// Retry promptly after holder contention or a failed database check of the durable schedule.
+/// Retry promptly after holder contention or a transient failure while checking or publishing
+/// a pending reset.
 const CONTENDED_RETRY: Duration = Duration::from_secs(5);
 
 pub struct HighscoreWorldJob {
@@ -41,11 +42,11 @@ impl HighscoreWorldJob {
     }
 
     /// First check is immediate. Every successful check schedules from durable database time,
-    /// including a recent snapshot skipped after restart. A scheduled pass can discover a newly
-    /// activated reset, so a database error on that pass retries promptly. Other periodic failures
-    /// back off one interval. A failed forced reset preserves the pending periodic deadline, and
-    /// a contended forced reset retries as a reset. A message on `planned_resets` forces one
-    /// complete cut. Closing the channel stops the job.
+    /// including a recent snapshot skipped after restart. A scheduled pass retries transient
+    /// failures promptly until it can check for a pending reset or publish the pending epoch.
+    /// An ordinary periodic publication failure backs off one interval. A failed forced reset
+    /// preserves the pending periodic deadline, and a contended forced reset retries as a reset.
+    /// A message on `planned_resets` forces one complete cut. Closing the channel stops the job.
     pub async fn run(&self, mut planned_resets: mpsc::Receiver<()>) {
         let interval = Duration::from_secs(30 * 60);
         let mut due = Instant::now();
@@ -60,9 +61,17 @@ impl HighscoreWorldJob {
             // Anchor before the database pass. Subtracting its elapsed time is conservative:
             // connection/lock delay can cause an early recheck, never postpone durable expiry.
             let started = Instant::now();
+            // A scheduled check can owe a reset until the locked heads establish its epoch.
+            let mut retry_schedule = !reset;
             let result = self
                 .root
-                .refresh_highscore_schedule(self.world, self.catalogues.clone(), reset)
+                .publish_highscore_cut(
+                    self.world,
+                    self.catalogues.clone(),
+                    !reset,
+                    CutLimits::REGISTERED,
+                    &mut retry_schedule,
+                )
                 .await;
             match result {
                 Ok(refresh) => {
@@ -75,10 +84,14 @@ impl HighscoreWorldJob {
                     let contended = contended(&error);
                     retry_reset = reset && contended;
                     let retry_soon = contended
-                        || (!reset
+                        || (retry_schedule
                             && matches!(
                                 &error,
-                                SnapshotError::Unavailable(DurabilityError::Database(_))
+                                SnapshotError::Unavailable(
+                                    DurabilityError::Database(_)
+                                        | DurabilityError::RootPassDeadlineExceeded
+                                        | DurabilityError::CommitOutcomeUnknown
+                                )
                             ));
                     due = next_due_after_failure(retry_soon, reset, Instant::now(), due, interval);
                     let reason = match &error {
