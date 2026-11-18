@@ -6,6 +6,7 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
+use sha2::{Digest, Sha256};
 
 pub(super) type QuestSpawn<'a> = (&'a str, i64, Position);
 
