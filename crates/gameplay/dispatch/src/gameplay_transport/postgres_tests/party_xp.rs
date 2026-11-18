@@ -769,7 +769,7 @@ async fn scenario(
         states
             .get_mut(&runtime, actor, session)
             .ok_or("cake player")?
-            .apply_owner_premium_transition(false, true, Some(u64::MAX))
+            .apply_owner_premium_transition(true, Some(u64::MAX))
             .map_err(debug)?;
     }
     if t94_case {
