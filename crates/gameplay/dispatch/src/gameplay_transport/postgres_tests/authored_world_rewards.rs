@@ -359,6 +359,13 @@ pub(super) async fn exercise_warzone_pump(
         vec![award]
     };
     assert_eq!(awards, expected);
+    let receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts
+         WHERE transition_key LIKE 'oteryn:quest-callback/dangerous-depth-pump-%'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(receipts, 1, "only the first USE writes quest progress");
     Ok(())
 }
 
