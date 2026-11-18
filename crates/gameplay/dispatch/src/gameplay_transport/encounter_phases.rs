@@ -278,9 +278,9 @@ pub(super) fn bind(
     }
     Ok(ActivePhase {
         key,
-        fight: Fight::Cults(CultsEncounter::bind(
+        fight: Fight::Cults(Box::new(CultsEncounter::bind(
             runtime, players, pillars, stops, centre,
-        )?),
+        )?)),
         credits,
         frozen: None,
         cells,
