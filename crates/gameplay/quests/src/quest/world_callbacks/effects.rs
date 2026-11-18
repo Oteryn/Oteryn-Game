@@ -57,6 +57,8 @@ pub struct FluidOffering {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub personal_return: Option<super::personal_return::PersonalReturn>,
     /// Exact creatures projected by a successful personal STEP receipt.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub ambush: Vec<EncounterMonster>,
@@ -410,6 +412,9 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects.personal_return.as_ref().is_some_and(|timer| !super::personal_return::valid(callback, timer)) {
+        return false;
+    }
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
     if inputs.len() > 8

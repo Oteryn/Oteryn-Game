@@ -41,6 +41,15 @@ pub fn validate_resolved_world(
         {
             continue;
         }
+        if let Some(expiry) = callback.personal_return_transition()?
+            && expiry.key == transition.key
+        {
+            return if &expiry == transition && !world_context {
+                Ok(())
+            } else {
+                Err("resolved personal timer operation or context mismatch".into())
+            };
+        }
         let operation = world_callbacks::primary_transition(callback)?;
         protected.extend(
             operation

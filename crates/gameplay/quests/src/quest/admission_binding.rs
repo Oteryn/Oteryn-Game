@@ -70,6 +70,9 @@ fn registry() -> Result<&'static Registry, String> {
                     world_callbacks::primary_transition(&callback)?
                 };
                 add(transition, true, protect)?;
+                if let Some(expiry) = callback.personal_return_transition()? {
+                    add(expiry, false, true)?;
+                }
             }
             // Native death writes share tracks with bound NPC trial stages.
             // Their specialised writer already requires an exact native-death proof.

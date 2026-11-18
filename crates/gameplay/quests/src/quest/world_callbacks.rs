@@ -200,6 +200,7 @@ mod mammoth_tests;
 mod native;
 mod nomads_land;
 mod nomads_window;
+pub mod personal_return;
 use native::valid_native_callback;
 pub use phase::select_storage_phase;
 
@@ -691,6 +692,10 @@ pub fn fixture_catalogue(
         catalogue = catalogue
             .with_fixture_transition(primary_transition(callback)?)
             .map_err(|error| format!("{error:?}"))?;
+        if let Some(transition) = callback.personal_return_transition()? {
+            catalogue = catalogue.with_fixture_transition(transition)
+                .map_err(|error| format!("{error:?}"))?;
+        }
     }
     catalogue.world_callback_fixture = Some(callbacks);
     Ok(catalogue)
@@ -1552,6 +1557,9 @@ fn extend_callbacks(
             });
         }
         transitions.push(primary_transition(callback)?);
+        if let Some(transition) = callback.personal_return_transition()? {
+            transitions.push(transition);
+        }
         if let Some(completion) = completion_transition(callback) {
             transitions.push(completion);
         }
