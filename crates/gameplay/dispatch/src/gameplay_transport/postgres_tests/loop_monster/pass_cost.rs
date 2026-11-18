@@ -237,13 +237,15 @@ fn monster_pass_cost_spread_passive_census_batches_field_reads() -> TestResult {
 
 #[test]
 fn foreground_logout_gets_holder_between_large_monster_profile_batches() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    assert!(!admin.is_empty());
     pass_cost(true, false, Some(ProfileRegression::Logout))
 }
 
 #[test]
 fn every_awake_monster_thinks_once_per_due_cycle_across_profile_batches() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    assert!(!admin.is_empty());
     pass_cost(true, false, Some(ProfileRegression::DueCycle))
 }
 
@@ -276,6 +278,10 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
         let mut owner = deps.owner(harness, &authority);
         owner.active_generation = Some(active);
         owner.movement_cells = deps.room.movement_cells().into();
+        if matches!(regression, Some(ProfileRegression::Logout)) {
+            deps.initialize(&owner).await;
+            super::super::track(&owner, &deps)?;
+        }
         let permit = owner.spell_lane_permit().await.ok_or("lane")?;
         let mut runtime = deps.runtime.lock().await;
         let objects = deps.door.lock().await;
@@ -403,6 +409,7 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                         // Own the guards here so the foreground can lock the runtime as
                         // soon as this physical pass returns.
                         let (mut runtime, mut states, mut attack) = (runtime, states, attack);
+                        let permit = permit;
                         owner.drive_monster_profiles(
                             &mut runtime, &mut states, &mut attack, &deps.room, native,
                             &permit, &revisions, &[], start, &names,
@@ -423,6 +430,16 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                     eprintln!("foreground logout elapsed_ms={}", started.elapsed().as_millis());
                 }
                 ProfileRegression::DueCycle => {
+                    // Each synthetic viewer position represents interest in its
+                    // spread chunk, making the full cohort due at the same tick.
+                    let viewers = actors.iter().map(|&actor| {
+                        runtime.read_actor_position(actor).map(|snapshot| snapshot.position())
+                    }).collect::<Result<Vec<_>, _>>().map_err(debug)?;
+                    states.monster_melee.creature_ai.wake_indexed(
+                        &viewers,
+                        |actor| runtime.read_actor_position(actor).ok().map(|snapshot| snapshot.position()),
+                        0,
+                    );
                     let started = std::time::Instant::now();
                     let mut seen = std::collections::BTreeSet::new();
                     let mut turns = 0;
