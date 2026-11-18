@@ -55,6 +55,17 @@ fn scenario() -> TestResult {
             )
             .await?;
 
+            let catalogue = NpcDataCatalogue::load(
+                std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+                std::ffi::OsStr::new("world"),
+                npc_catalogue_preproduction_limits(),
+            )
+            .map_err(debug)?;
+            let talk =
+                NpcTalkBook::from_model(&catalogue.service_model_for_project().map_err(debug)?);
+            assert!(talk.get("oteryn:npc.gamel").is_some());
+            owner.states.chat.install_npc_talk(Arc::new(talk));
+
             assert_eq!(
                 super::qengine_rewards::talk(&mut owner, &mut admitted, gamel, 200, "hi").await?,
                 NpcIntentDisposition::Ok
@@ -108,10 +119,42 @@ fn scenario() -> TestResult {
                 .remove_encounter_actor(obstruction)
                 .map_err(debug)?;
             super::qengine_rewards::talk(&mut owner, &mut admitted, gamel, 203, "bye").await?;
-            assert_eq!(
-                super::qengine_rewards::talk(&mut owner, &mut admitted, gamel, 204, "hi").await?,
-                NpcIntentDisposition::Ok
-            );
+            owner
+                .states
+                .npc_conversations
+                .fixture_interrupt_quest_dialogue_commit(session, 204)?;
+            owner.clock_origin = owner
+                .clock_origin
+                .checked_sub(Duration::from_secs(2))
+                .ok_or("NPC rate window")?;
+            let current = owner
+                .current_quest_fence(session)
+                .await
+                .map_err(|()| "NPC fence")?
+                .ok_or("NPC fence")?;
+            let command = UseCommand {
+                game_session_id: session,
+                command_id: 204,
+                item_fence: Some(current.item_fence()),
+            };
+            let uncertain = owner
+                .npc_talk(
+                    actor,
+                    command,
+                    NpcTalkIntent {
+                        npc_actor: gamel,
+                        text: "hi".into(),
+                    },
+                )
+                .await;
+            assert!(uncertain.unknown);
+            assert_eq!(bandits(&owner).await, 0, "reserved actors stay invisible");
+            let resumed = owner
+                .resume_npc_bank(actor, command)
+                .await
+                .ok_or("ambush receipt")?;
+            assert!(!resumed.unknown);
+            assert_eq!(resumed.disposition, NpcIntentDisposition::Ok);
             assert_eq!(bandits(&owner).await, 2);
             assert_eq!(
                 super::m39_bone_journey::stage(&h, GAMEL_AMBUSH_TRACK).await?,

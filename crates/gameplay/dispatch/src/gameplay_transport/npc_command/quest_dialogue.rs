@@ -349,7 +349,7 @@ pub(super) async fn apply(
                 command.game_session_id,
                 &step.context,
                 &intent,
-                vec!["Keep your voice down. Are you here to trade?".into()],
+                vec![oteryn_gameplay_npc::npc_talk::GAMEL_GREETING.into()],
             );
         }
         Some(permit)
@@ -629,6 +629,39 @@ async fn settle_creatures(
         pending.creatures = None;
     }
     true
+}
+
+/// A terminal session cannot retry the greeting. Resolve its ambush before
+/// the retiring actor loses ownership of the reserved native slots.
+pub(in crate::gameplay_transport) async fn settle_terminal_ambush(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+) -> bool {
+    let pending = {
+        let Ok(sessions) = admission.states.npc_conversations.sessions.lock() else {
+            return false;
+        };
+        sessions
+            .get(&session)
+            .and_then(|state| state.quest_dialogue.pending.as_ref())
+            .filter(|pending| pending.creatures.is_some())
+            .cloned()
+    };
+    let Some(pending) = pending else {
+        return true;
+    };
+    let Ok(receipt) = admission
+        .root
+        .reconcile_character_quest_transition(
+            admission.character,
+            pending.character,
+            pending.request,
+        )
+        .await
+    else {
+        return false;
+    };
+    settle_creatures(admission, session, receipt.is_some()).await
 }
 
 pub(in crate::gameplay_transport) async fn resume(

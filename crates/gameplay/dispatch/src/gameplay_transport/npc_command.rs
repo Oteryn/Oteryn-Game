@@ -63,6 +63,7 @@ mod npc_item_exchanges;
 mod planegazer_finale;
 mod premium_purchase;
 mod quest_dialogue;
+pub(super) use quest_dialogue::settle_terminal_ambush;
 mod quest_shop;
 pub(super) mod reward_callbacks;
 mod reward_facts;

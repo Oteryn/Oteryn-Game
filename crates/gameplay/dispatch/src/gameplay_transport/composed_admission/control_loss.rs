@@ -104,6 +104,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return GraceExpiryResult::Unknown;
         }
+        if !super::npc_command::settle_terminal_ambush(self, session).await {
+            return GraceExpiryResult::Unknown;
+        }
         let removed = {
             let mut runtime = self.runtime.lock().await;
             if runtime.house_actor_state(actor, session).is_ok() {

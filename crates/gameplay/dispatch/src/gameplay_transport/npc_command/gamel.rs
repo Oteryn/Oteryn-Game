@@ -6,7 +6,7 @@ use crate::gameplay_transport::connection::UseCommand;
 use oteryn_gameplay_entities::carrier::runtime_actor_companion::ReservedQuestCreatures;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
-const NPC: &str = "oteryn:npc.gamel";
+use oteryn_gameplay_npc::npc_talk::GAMEL_AMBUSH_NPC as NPC;
 pub(super) use oteryn_gameplay_quests::quest::loader::GAMEL_AMBUSH as TRANSITION;
 use oteryn_gameplay_quests::quest::loader::GAMEL_AMBUSH_TRACK as MISSION;
 pub(super) const LETTER: &str = "oteryn:item.tibia.i402";
@@ -78,7 +78,14 @@ pub(super) fn reserve(
                 y: npc.position.y.checked_add(dy)?,
                 floor: npc.position.floor,
             };
-            (!occupied
+            (!admission.bundle_map().is_some_and(|map| {
+                crate::content::bundle_spell_tiles::tile_pos(crate::content::LogicalCell {
+                    x: at.x,
+                    y: at.y,
+                    z: i32::from(at.floor),
+                })
+                .is_none_or(|tile| map.facts.house_tile(tile) || map.facts.doors().blocks(tile))
+            }) && !occupied
                 .iter()
                 .any(|pos| pos.x == at.x && pos.y == at.y && pos.floor == at.floor)
                 && super::super::respawn_cell_admissible(

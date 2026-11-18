@@ -26,6 +26,9 @@ const FAREWELLS: [&str; 3] = ["bye", "farewell", "goodbye"];
 /// Words that ask what the NPC offers.
 const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
+pub const GAMEL_AMBUSH_NPC: &str = "oteryn:npc.gamel";
+pub const GAMEL_GREETING: &str = "Keep your voice down. Are you here to trade?";
+
 const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/chosen-reward-callbacks.json"),
     include_str!("../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
@@ -342,7 +345,7 @@ impl NpcTalkBook {
         let journal_npcs = world_change_journals::npc_keys(source).unwrap_or_default();
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "npc-trade-3:v1|npc-marriage-1|oriental-trader-v1|al-dee-exchange-v1|uzgod-knife-v1|seymour-present-v1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
+                "npc-trade-3:v1|npc-marriage-1|oriental-trader-v1|al-dee-exchange-v1|uzgod-knife-v1|seymour-present-v1|gamel-avin-ambush-v1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::quest_access::book_digest(
                     &crate::content::npc_catalogue::quest_shops::book_digest(
                         &crate::content::npc_catalogue::grizzly_shop::book_digest(
@@ -388,7 +391,8 @@ impl NpcTalkBook {
                     | "oteryn:npc.lieutenant_harlan"
                     | "oteryn:npc.second_in_command_demeron"
             );
-            let native_quest = stag || native_npcs.contains(&reference.key.as_str());
+            let gamel = reference.key == GAMEL_AMBUSH_NPC;
+            let native_quest = stag || gamel || native_npcs.contains(&reference.key.as_str());
             if !caller_scope::allows(&reference.key, native_quest) {
                 continue;
             }
@@ -438,6 +442,8 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
+            } else if gamel {
+                (GAMEL_GREETING.into(), "Farewell.".into(), None, Vec::new())
             } else if reference.key == "oteryn:npc.grizzly_adams" {
                 // W15c: the existing NPC owner opens the conversation; confirmed task
                 // choices and their stateful replies belong to native Grizzly dispatch.
