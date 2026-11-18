@@ -187,7 +187,7 @@ pub(super) fn run_rotten_world_case(case: RottenWorldCase) -> TestResult {
                 );
             }
             if matches!(case, RottenWorldCase::ChargeInterval) {
-                assert_global_charge_interval(&h, &owner, character, player).await?;
+                assert_global_charge_interval(&h, &owner, character.as_bytes(), player).await?;
             }
             drop(owner);
             drop(authority);
@@ -205,7 +205,7 @@ pub(super) fn run_rotten_world_case(case: RottenWorldCase) -> TestResult {
 async fn assert_global_charge_interval(
     h: &Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    character: crate::foundation::CharacterId,
+    character: &[u8; 16],
     player: crate::foundation::ExactActorRef,
 ) -> TestResult {
     use oteryn_gameplay_quests::quest::rotten_blood::area_icons::TRACKS;
@@ -216,7 +216,7 @@ async fn assert_global_charge_interval(
             "SELECT value FROM game_character_quest_tracks
              WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
         )
-        .bind(character.as_bytes().as_slice())
+        .bind(character.as_slice())
         .bind(TRACKS[1])
         .fetch_one(&h.pool)
     };
