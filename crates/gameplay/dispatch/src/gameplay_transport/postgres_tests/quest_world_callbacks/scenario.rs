@@ -914,6 +914,8 @@ fn scenario_case(
         super::super::qewrath_incarnation::world()?
     } else if name == super::super::qewrath_herald_escape::NAME {
         super::super::qewrath_herald_escape::world(&callback)?
+    } else if name == super::super::qewrath_wall_recreation::NAME {
+        world(&super::super::qewrath_wall_recreation::fixture()?, trigger)?
     } else if name == "questpc7-outfits-formal" {
         // The fixture includes the same admitted entry appearance as the real palace.
         let mut physical = callback.clone();
@@ -2489,6 +2491,8 @@ fn scenario_case(
             Box::pin(super::super::qewrath_incarnation::exercise(&mut owner, &mut admitted)).await?;
         } else if name == super::super::qewrath_herald_escape::NAME {
             Box::pin(super::super::qewrath_herald_escape::exercise(&mut owner, &mut admitted)).await?;
+        } else if name == super::super::qewrath_wall_recreation::NAME {
+            Box::pin(super::super::qewrath_wall_recreation::exercise(&mut owner, &mut admitted, &world)).await?;
         } else if name.starts_with("qewrath-npc-handoff-") {
             Box::pin(super::super::qewrath_npc_handoffs::exercise(&mut owner, &mut admitted, &h, name)).await?;
         } else if name == "m16-marker" {

@@ -46,7 +46,10 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
             {"track":MISSION,"minimum":0,"maximum":2,"set":2}
         ]
     });
-    let digest = format!("{:x}", Sha256::digest(serde_json::to_vec(&callback)?));
+    let digest = Sha256::digest(serde_json::to_vec(&callback)?)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
     let input = json!({"schema":1,"quests":[{
         "quest":QUEST,"recipe_sha256":digest,"sources":[SOURCE],
         "tracks":[

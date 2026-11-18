@@ -18,6 +18,7 @@ impl CallbackStates {
         due: u64,
         entries: &[QuestTimedPassage],
         source_reset: Option<(u64, EntryFacts)>,
+        retain_replacements: bool,
     ) -> bool {
         let keys: BTreeSet<_> = entries.iter().map(|entry| entry.key).collect();
         if entries.is_empty()
@@ -57,17 +58,45 @@ impl CallbackStates {
                     revision,
                     restore,
                     overlay: None,
+                    retained_piece: None,
                 },
             );
         }
         for entry in entries {
             let revision = entry.expected_revision + 1;
+            // Crystal 201189f8 actions_mission01_lights.lua:47–68 leaves the
+            // transformed wall piece when it recreates the closed wall.
+            let retained_piece = if retain_replacements {
+                let Some((position, _)) = view::placement_of(entry.key) else {
+                    return false;
+                };
+                let Some(after) = entry.after else {
+                    return false;
+                };
+                let Some(sequence) = self.movement_sequence.checked_add(1) else {
+                    return false;
+                };
+                let Some(id) = EntryId::callback(sequence) else {
+                    return false;
+                };
+                self.movement_sequence = sequence;
+                Some((
+                    position,
+                    view::ComposedEntry {
+                        source: view::EntrySource::Added(id),
+                        facts: after,
+                    },
+                ))
+            } else {
+                None
+            };
             self.movement_decays.insert(
                 (due, entry.key),
                 MovementDecay {
                     revision,
                     restore: entry.before,
                     overlay: Some((false, self.passable.get(&entry.key).copied())),
+                    retained_piece,
                 },
             );
             self.changed

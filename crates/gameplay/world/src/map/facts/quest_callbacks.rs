@@ -59,6 +59,7 @@ struct MovementDecay {
     restore: EntryFacts,
     /// Remote resets restore visibility and the previous collision override too.
     overlay: Option<(bool, Option<bool>)>,
+    retained_piece: Option<(TilePos, view::ComposedEntry)>,
 }
 
 #[derive(Clone, Debug)]
@@ -102,6 +103,7 @@ pub enum QuestCallbackProjection {
         due: u64,
         entries: Vec<QuestTimedPassage>,
         source_reset: Option<(u64, EntryFacts)>,
+        retain_replacements: bool,
     },
     /// Each read revision, including cells which do not change, fences the batch.
     ReadsetTransforms {
@@ -246,6 +248,7 @@ impl CallbackStates {
                         revision,
                         restore: *restore,
                         overlay: None,
+                        retained_piece: None,
                     },
                 );
                 self.portals.insert(
@@ -281,6 +284,7 @@ impl CallbackStates {
                         revision,
                         restore: *restore,
                         overlay: None,
+                        retained_piece: None,
                     },
                 );
             }
@@ -307,6 +311,7 @@ impl CallbackStates {
                         revision,
                         restore: *restore,
                         overlay: None,
+                        retained_piece: None,
                     },
                 );
             }
@@ -314,8 +319,17 @@ impl CallbackStates {
                 due,
                 entries,
                 source_reset,
+                retain_replacements,
             } => {
-                if close || !self.project_timed_passages(owner, *due, entries, *source_reset) {
+                if close
+                    || !self.project_timed_passages(
+                        owner,
+                        *due,
+                        entries,
+                        *source_reset,
+                        *retain_replacements,
+                    )
+                {
                     return false;
                 }
             }
@@ -341,6 +355,7 @@ impl CallbackStates {
                             revision,
                             restore: *restore,
                             overlay: None,
+                            retained_piece: None,
                         },
                     );
                 }
@@ -365,6 +380,7 @@ impl CallbackStates {
                         revision,
                         restore: *restore,
                         overlay: None,
+                        retained_piece: None,
                     },
                 );
             }
@@ -822,6 +838,7 @@ impl BundleFacts {
                 revision,
                 restore,
                 overlay: None,
+                retained_piece: None,
             },
         );
         true
@@ -875,6 +892,13 @@ impl BundleFacts {
                 && let Some(revision) = decay.revision.checked_add(1)
             {
                 states.changed.insert(key, (revision, decay.restore));
+                if let Some((position, piece)) = decay.retained_piece {
+                    states
+                        .movement_items
+                        .entry(position)
+                        .or_default()
+                        .push(piece);
+                }
                 if let Some((hidden, passable)) = decay.overlay {
                     if hidden {
                         states.hidden.insert(key);

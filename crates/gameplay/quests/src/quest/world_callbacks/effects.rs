@@ -93,6 +93,9 @@ pub struct CallbackEffects {
     /// Restore remote passage objects independently of the source object.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub passages_reset_after_ms: Option<u32>,
+    /// Restore passage appearances while keeping the transformed pieces in the tile.
+    #[serde(default, skip_serializing_if = "super::is_false")]
+    pub retain_replaced_passages: bool,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
@@ -717,6 +720,12 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || effects.encounter.is_some()
                 || (!callback.passages.is_empty() && effects.passages_reset_after_ms.is_none())
         })
+        || (effects.retain_replaced_passages
+            && (effects.passages_reset_after_ms.is_none()
+                || callback
+                    .passages
+                    .iter()
+                    .any(|passage| passage.replacement.is_none() || !passage.if_present)))
         || effects.passages_reset_after_ms.is_some_and(|delay| {
             !(1..=3_600_000).contains(&delay)
                 || callback.actor_kind != ActorKind::Player

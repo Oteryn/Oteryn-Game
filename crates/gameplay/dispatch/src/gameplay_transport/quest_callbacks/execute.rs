@@ -371,7 +371,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let k = placement_key(p, ordinal)?;
                     let f = map.facts.base_entry(p, ordinal, *id)?;
                     ((f.appearance_id == passage.appearance
-                        || passage.replacement == Some(f.appearance_id)
+                        || (!callback.effects.retain_replaced_passages
+                            && passage.replacement == Some(f.appearance_id))
                         || passage.create_on_close == Some(f.appearance_id))
                         && !map.facts.house_tile(p)
                         && (!passage.if_present || !map.facts.base_hidden(k)))

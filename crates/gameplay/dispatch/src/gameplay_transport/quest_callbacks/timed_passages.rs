@@ -176,6 +176,7 @@ pub(super) fn prepare(
         due,
         entries,
         source_reset,
+        retain_replacements: callback.effects.retain_replaced_passages,
     };
     if !map
         .facts
