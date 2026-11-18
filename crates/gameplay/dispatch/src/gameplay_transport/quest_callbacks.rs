@@ -9,6 +9,7 @@ mod conditional_cells;
 use admission::{character_fence_required, stateless_observation_required};
 mod clear_area;
 mod committed_copy;
+mod curos;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
 mod dreamer_carrot;
@@ -101,6 +102,7 @@ pub(super) struct PendingCallbacks {
     personal: personal_encounter::Cohorts,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
+    curos: std::sync::Mutex<Vec<curos::SurvivalTrial>>,
     carrot_refusal:
         std::sync::Mutex<Option<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>>,
     soul_rewards:
@@ -145,12 +147,21 @@ impl PendingCallbacks {
 
 impl PendingCallbacks {
     pub(super) fn next_encounter_due_us(&self) -> Option<u64> {
-        self.timed
+        let timed = self
+            .timed
             .lock()
             .ok()?
             .iter()
             .map(|pending| pending.next_due_us())
-            .min()
+            .min();
+        let survival = self
+            .curos
+            .lock()
+            .ok()?
+            .iter()
+            .map(curos::SurvivalTrial::due)
+            .min();
+        timed.into_iter().chain(survival).min()
     }
 }
 
@@ -1417,7 +1428,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             *pair
         };
-        let (callback, key) = &selected_pair;
+        let (callback, key) = selected_pair;
+        if callback.key == oteryn_gameplay_quests::quest::the_new_frontier::CUROS {
+            return self
+                .enter_curos_trial(permit, actor, session, map, callback, key, origin, entered)
+                .await;
+        }
+        let key = &key;
         if callback.requires_live_premium() {
             let _ = self.session_premium_gate(session).await;
         }

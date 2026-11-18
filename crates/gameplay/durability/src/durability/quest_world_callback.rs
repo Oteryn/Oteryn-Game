@@ -100,7 +100,9 @@ impl super::DurabilityRoot {
             .into_iter()
             .find(|callback| {
                 callback.key == callback_key
-                    && (callback.is_read_only() || callback.effects.scene.is_some())
+                    && (callback.is_read_only()
+                        || callback.effects.scene.is_some()
+                        || callback.key == oteryn_gameplay_quests::quest::the_new_frontier::CUROS)
             })
             .ok_or(CharacterProgressionError::InvalidInput)?;
         let recovery = authority

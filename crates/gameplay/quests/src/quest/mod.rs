@@ -87,6 +87,7 @@ pub mod source_deaths;
 pub mod source_world_objects;
 pub mod targuna_ram;
 pub mod task_board;
+pub mod the_new_frontier;
 pub mod threatened_dreams;
 pub mod timers;
 pub mod unnatural_selection;
