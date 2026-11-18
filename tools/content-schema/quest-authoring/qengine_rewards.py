@@ -1037,7 +1037,7 @@ def build():
     engoutfit_m36.append(add, storage, callbacks, offers, declarations,
         f'crystal:{PIN}:data-global/npc/rock_steady.lua:56-98:sha256:{sha(inputs["data-global/npc/rock_steady.lua"])}')
     qmech_m39.append(add, callbacks, offers, declarations, inputs, PIN)
-    m39_keys = ('l2-cael-tome-', 'l2-zalamon-tome', 'l2-alliance-finish', 'l2-bone-', 'bone-pit-lost-sample')
+    m39_keys = ('l2-cael-tome-', 'l2-zalamon-tome', 'l2-alliance-', 'l2-bone-', 'bone-pit-lost-sample')
     m39_callbacks = [callback for callback in callbacks if callback['key'].split('/')[-1].startswith(m39_keys)]
     callbacks = [callback for callback in callbacks if callback not in m39_callbacks]
     m39_tracks = [track for track in declarations if track['key'].endswith('/corruption_hole')]

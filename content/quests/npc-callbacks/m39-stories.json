@@ -86,6 +86,122 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l2-alliance-report-orc",
+      "quest": "oteryn:quest.an_uneasy_alliance_quest",
+      "npc": "oteryn:npc.curos",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "With the death of their leader, the rebels return to our camps one by one, deeply humiliated. It might be a wise decision to let a useful tool like you continue to exist."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/curos.lua:83-85:sha256:6feee8de2475788bca144210fd47cbf857b5dce3a16215ff2647e971bcd3a42e"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/quest_door",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-alliance-start",
+      "quest": "oteryn:quest.an_uneasy_alliance_quest",
+      "npc": "oteryn:npc.curos",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/quest_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "So you still think you can be of any use for us? Words are cheap and easy. Admittedly, you've passed our first test but even some resilient beast might have accomplished that. ...",
+        "Your actions will tell if you are only yelping for attention like a puppy or if you have the teeth of a wolf. ...",
+        "A first tiny step was taken. You survived the test and ensured the survival of your allies for a while. Now it is time to make the next step. ...",
+        "So listen human: Our rule over the orcs is not unchallenged. Of course now and then someone shows up who thinks he can defeat us. Usually these fights end fast and bloody in the ring. ...",
+        "Right now, some coward from our midst, who is too afraid to face us in single combat, has gathered a group of followers, hoping more will follow and change sides. ...",
+        "With your help, his defeat will not only be deadly but also humiliating and so discourage others to follow his example. ...",
+        "You will seek out this rebel commander in his hideout and kill him. We will show them that not even a Mooh'Tah master is needed to get rid of such wannabe leaders but that a mere human can handle them. ...",
+        "Find him in the mountain north-west of here and kill him. If you find any loot, you can keep it."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/curos.lua:68-82:sha256:6feee8de2475788bca144210fd47cbf857b5dce3a16215ff2647e971bcd3a42e"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission06",
+          "minimum": 4,
+          "maximum": 5
+        }
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/l2-alliance-start-tower",
+      "quest": "oteryn:quest.an_uneasy_alliance_quest",
+      "npc": "oteryn:npc.curos",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "We are aware that the lizards use magic to spy on us. In the Dragonblaze Mountains north of here, there is a tower which can only be entered through one of their underground fortresses. ...",
+        "In this tower, there must be some accessory used for magical scrying. Some pond, a crystal ball, or a mirror maybe - it has to be something shiny. ...",
+        "Usually we would send one of our youngsters on such a mission, but we are few and there is little new blood in our ranks. ...",
+        "We can't send a Mooh'Tah master on such a trivial assignment, neither can we use orcs for an infiltration mission. ...",
+        "This is your chance to show us your potential. Infiltrate this tower and destroy their scrying device. Once you have blinded our enemy, we might respect you somewhat more."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/curos.lua:86-94:sha256:6feee8de2475788bca144210fd47cbf857b5dce3a16215ff2647e971bcd3a42e"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/l2-bone-return",
       "quest": "oteryn:quest.tibia_tales",
       "npc": "oteryn:npc.muriel",

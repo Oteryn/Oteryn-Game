@@ -1,0 +1,21 @@
+# QCX58 An Uneasy Alliance Quest
+
+Base `871c1dec7d9963420d455210e4cddc0c9df80d26`. Global requirements and rewards come from [quest page, curid 41956 oldid 683776](https://tibia.fandom.com/?curid=41956&oldid=683776) and [spoiler, curid 41957 oldid 891001](https://tibia.fandom.com/?curid=41957&oldid=891001), retained at qfacts commit `460e1d8c2c0e88c438ae5e54910db00822dc0129`. Map and storage evidence uses Crystal `201189f871d23597b82caf88fd611454a2ddefb8`.
+
+| Part | Comparison and disposition |
+| --- | --- |
+| Entry | The definition already lists Premium and six completed New Frontier missions. Runtime Curos had only the tower turn-in. Generated callbacks now require Premium and completed Mission 06. Crystal's own Mission 06 hand-in writes 4 at `data-global/npc/curos.lua:68–69`; its Alliance offer waits for 5 at line 70. The Global prerequisite admits the hand-in state as well as 5. |
+| Wrath of the Kahn | Added Curos's assignment and acknowledgement without loot, using the existing questline and door-credit tracks. The imported Renegade Orc death source has no live binding. The source door sample binds action 42552 at (33047, 31295, 7) to the credit track and leaves the appearance unresolved. The global melee break, levitate/parcel route and sealed-door interactions still need physical verification. |
+| Maw of the Dragon | Added Curos's mission assignment after acknowledgement. The Scrying Ball is already bound at (33155, 31297, -3), stack ordinal 2, appearance 10186, with action 40030 as the legacy identity. Its existing transformation 10187 and fenced ten-second reset agree with Crystal `data-global/scripts/quests/an_uneasy_alliance/actions_crystal_ball.lua:1–25`. The retained native placement lacks the legacy action attribute and is bound by native identity. The sealed tower door and approach route need physical verification. |
+| Tomes and other rewards | Curos gives one Tome of Knowledge (10217 ×1) at the tower report. The adjacent Top Tower chest already grants 10217 ×1 and is owned by Tomes of Knowledge, as is the separately described optional orc-land Tome. These existing identities avoid duplicate grants. There are no Alliance-specific reward-claim records, story XP, outfit, or documented additional access unlocks. See Crystal `data-global/npc/curos.lua:95–101` and `data-global/startup/tables/chest.lua:1375–1380,2778–2784`. |
+| Curos's tasks | The retained, inactive recipe describes a once-only circuit. Global gives one random task after both missions, then starts a 20-hour cooldown on turn-in. No daily NPC offers, turn-ins, achievements, or world callbacks were found. Crystal's Curos callback also ends without the dailies. |
+| Milk Delivery | Global gives 800 XP, 650 gp and The Milkman for a bucket of milk. The inactive recipe leaves the milk bucket unresolved. |
+| To Feed a Beast | Global gives 1800 XP and 2250 gp for a Crocodile Steak. The recipe identifies item 10219. Global describes using an Obsidian Knife on a Killer Caiman corpse. |
+| Honour The Dead | Global gives 1100 XP and 1000 gp and requires standing on the Master Grave. The inactive recipe groups this with a use objective. |
+| Foul Spirits | Global gives 1400 XP and 750 gp. The inactive recipe removes random failure. Global requires a Wooden Flute from the blood-spot square, possibly summoning two Haunted Treelings or two Carniphilas on failure and sometimes applying Curse for 20 turns and 300 total damage. Retrying requires the initial spirit form. |
+
+BLOCKER Wrath of the Kahn Renegade Orc damaging-player death-to-quest credit binding `data-global/scripts/quests/an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua:3–8`.
+
+OPEN-FACTS Exact minimum level (the infobox says 0?), daily assignment weights and storage IDs, carving odds, flute outcome odds and reset delay, daily target item and placement identities, and remaining mission door identities. The wiki establishes the 20-hour delay and Curse duration, and the pinned Crystal Curos source has no daily implementation to resolve the missing details.
+
+PARTIAL Live kill credit, melee wall and sealed-door approach verification, and the daily-task loop including its inactive approximation metadata. The Curos dispatch case uses durable prerequisite fixture transitions because the live upstream credit chain is outside this slice.
