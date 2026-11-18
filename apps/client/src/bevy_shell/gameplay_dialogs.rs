@@ -12,6 +12,9 @@ use oteryn_client_ui::world_interaction::menu::Menu;
 use oteryn_client_ui_bevy as source;
 use oteryn_renderer::TileCoord;
 
+mod channel_switch;
+use channel_switch::{SwitchView, channel_switch_body};
+
 #[derive(Default)]
 pub(super) struct Dialogs {
     next: u64,
@@ -24,6 +27,8 @@ struct Request {
 }
 enum Content {
     Logout,
+    /// chsw (capability 512): the Change Channel window, its confirmation and its errors.
+    ChannelSwitch,
     Context {
         menu: Option<Box<Menu>>,
         party: Option<Box<party::Target>>,
@@ -35,6 +40,9 @@ enum Content {
 enum Choice {
     Cancel,
     Logout,
+    SwitchRow([u8; 16]),
+    SwitchConfirm,
+    SwitchBack,
     Context(usize),
     Inspect,
     Invite,
@@ -65,6 +73,12 @@ impl HostOwner {
     pub(super) fn request_logout_confirmation(&mut self) {
         if self.phase == Phase::Playing && self.play.is_some() {
             self.dialogs.open(self.generation(), Content::Logout);
+        }
+    }
+    pub(super) fn request_channel_switch(&mut self) {
+        if let Some(play) = &self.play {
+            play.link.channel_switch_open();
+            self.dialogs.open(self.generation(), Content::ChannelSwitch);
         }
     }
     pub(super) fn request_world_context(&mut self, tile: TileCoord) {
@@ -109,6 +123,9 @@ impl HostOwner {
             || self.play.is_none()
         {
             return false;
+        }
+        if matches!(request.content, Content::ChannelSwitch) {
+            return self.choose_channel_switch(request, choice);
         }
         match (request.content, choice) {
             (
@@ -246,17 +263,43 @@ fn activate(
         owner.choose_dialog(reply.id, reply.choice);
     }
 }
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Bevy injects dialog state and retained row entities"
+)]
 fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
     skin: Res<Skin>,
     mut overlays: Query<(Entity, &mut Node), With<Overlay>>,
-    mut previous: Local<Option<u64>>,
+    mut previous: Local<Option<(u64, Option<SwitchView>)>>,
+    mut rows: Query<(&channel_switch::TableRow, &mut Text, &mut TextColor)>,
     mut panel: Local<Option<Entity>>,
     mut focus: ResMut<InputFocus>,
 ) {
     let pending = owner.dialogs.pending.as_ref();
-    let id = pending.map(|request| request.id);
+    // The Change Channel window follows its panel and redraws its countdown once a second.
+    let switch = pending
+        .filter(|request| matches!(request.content, Content::ChannelSwitch))
+        .and_then(|_| owner.play.as_ref())
+        .map(|play| {
+            let now_ms = crate::play::feature_0512_channel_switch::view::now_ms();
+            let panel = play.link.channel_switch_panel();
+            let left = panel
+                .status
+                .map_or(0, |s| i64::from(s.cooldown_left_ms))
+                .saturating_sub(now_ms.saturating_sub(panel.status_at_ms).max(0))
+                .max(0);
+            (panel, now_ms, (left + 999) / 1000)
+        });
+    let id = pending.map(|request| {
+        (
+            request.id,
+            switch
+                .as_ref()
+                .map(|(panel, _, second)| (panel.clone(), *second)),
+        )
+    });
     let Ok((overlay, mut node)) = overlays.single_mut() else {
         return;
     };
@@ -266,6 +309,16 @@ fn project(
         Display::None
     };
     if id == *previous {
+        return;
+    }
+    if let (Some((old_id, Some((old_panel, _)))), Some((new_id, Some((new_panel, _))))) =
+        (&*previous, &id)
+        && old_id == new_id
+        && old_panel == new_panel
+        && let Some((_, now_ms, _)) = &switch
+    {
+        channel_switch::refresh_rows(&mut rows, new_panel, *now_ms);
+        *previous = id;
         return;
     }
     *previous = id;
@@ -284,7 +337,11 @@ fn project(
                 modal: true,
             },
             Node {
-                width: px(300.),
+                width: px(if matches!(request.content, Content::ChannelSwitch) {
+                    460.
+                } else {
+                    300.
+                }),
                 max_width: percent(95.),
                 max_height: percent(95.),
                 padding: UiRect::axes(px(16.), px(29.)),
@@ -299,6 +356,7 @@ fn project(
     *panel = Some(window);
     let title = match request.content {
         Content::Logout => "Logout",
+        Content::ChannelSwitch => "Change Channel",
         Content::Context { .. } => "Actions",
     };
     source::dialog_caption(&mut commands, window, title, skin.font.clone());
@@ -319,6 +377,11 @@ fn project(
                 "Ok",
                 Choice::Logout,
             );
+        }
+        Content::ChannelSwitch => {
+            if let Some((panel, now_ms, _)) = &switch {
+                channel_switch_body(&mut commands, &skin, window, request.id, panel, *now_ms);
+            }
         }
         Content::Context {
             menu,

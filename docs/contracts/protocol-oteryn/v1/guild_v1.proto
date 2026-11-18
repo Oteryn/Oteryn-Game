@@ -39,7 +39,10 @@ message GuildSummary {
   uint32 own_rank = 5; string title = 6; string message = 7;
   repeated string ranks = 8; // 3..20 nonempty names, each <=128 bytes
 }
-message GuildMember { bytes character = 1; string name = 2; uint32 level = 3; string title = 4; }
+message GuildMember {
+  bytes character = 1; string name = 2; uint32 level = 3; string title = 4;
+  optional bytes channel = 5; // capability 513 only: current ChannelId of the World; absent offline
+}
 message GuildRoster {
   bytes guild = 1; uint64 revision = 2; repeated GuildMember members = 3;
   optional GuildRosterCursor next = 4;

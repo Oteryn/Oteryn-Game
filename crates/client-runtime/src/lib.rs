@@ -247,7 +247,7 @@ pub mod player_trade;
 pub mod player_typing;
 pub use oteryn_session::{CommandStatus, WorldSpatialEntity, player_typing::TypingUpdate};
 pub use oteryn_session::{
-    arena, boss_difficulty, character_info, creature_push, cyclopedia_character,
+    arena, boss_difficulty, channel_switch, character_info, creature_push, cyclopedia_character,
     cyclopedia_tracker, sanction_record, weapon_proficiency,
 };
 /// Prey command execution through the admitted session.

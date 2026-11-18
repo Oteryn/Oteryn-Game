@@ -32,7 +32,7 @@ impl TrainingQueue {
                         row.available
                             && row.character.character_id == selection.character_id
                             && selection.channel_id.as_ref().is_none_or(|id| {
-                                row.channels.iter().any(|channel| &channel.0 == id)
+                                row.channels.iter().any(|channel| &channel.id == id)
                             })
                     })
             })

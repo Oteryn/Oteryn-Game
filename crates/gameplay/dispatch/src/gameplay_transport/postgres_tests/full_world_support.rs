@@ -181,6 +181,22 @@ pub(super) async fn relogin_as(
     account: [u8; 16],
     successor: [u8; 16],
 ) -> TestResult<GameSessionId> {
+    relogin_into(h, character, account, successor, None)
+        .await
+        .map(|(session, _)| session)
+}
+
+/// `relogin_as`, optionally into another assigned Channel of the World (chsw).
+pub(super) async fn relogin_into(
+    h: &Harness,
+    character: [u8; 16],
+    account: [u8; 16],
+    successor: [u8; 16],
+    channel: Option<crate::foundation::ChannelId>,
+) -> TestResult<(
+    GameSessionId,
+    crate::foundation::fresh_admission_durability::FreshAdmissionCommitRequestV1,
+)> {
     use crate::durability::admission_authority_guards::AdmissionGuardStore;
     use crate::foundation::admission_authority_publication::{
         AdmissionAuthorityGuardKeyV1 as Key, AdmissionAuthorityGuardStateV1 as State,
@@ -192,11 +208,14 @@ pub(super) async fn relogin_as(
             .await?;
     let guards = AdmissionGuardStore::from_root(h.root.clone());
     let template = super::fresh_fixture::fresh::Source::new(now)?;
-    let current = crate::foundation::fnd04_verifier::FreshCurrentEvidence {
+    let mut current = crate::foundation::fnd04_verifier::FreshCurrentEvidence {
         account_id: crate::gameplay_transport::canonical_uuid(&account),
         character_id: crate::foundation::CharacterId::decode(&character).map_err(debug)?,
         ..template.current
     };
+    if let Some(channel) = channel {
+        current.channel_id = channel;
+    }
     let mut source = super::fresh_fixture::fresh::Source::with_current(now, current.clone())?;
     let keys = source
         .rows
@@ -242,7 +261,19 @@ pub(super) async fn relogin_as(
         .collect::<Option<Vec<_>>>()
         .ok_or("refreshed current publications")?;
     source.current.character_lease_generation = 2;
-    let next = if character == id(41) {
+    // Another Channel's admission is bound to that Channel's current ownership generation.
+    if channel.is_some() {
+        for row in &source.rows {
+            if let State::Runtime {
+                ownership_generation,
+                ..
+            } = &row.state
+            {
+                source.current.scope_ownership_generation = *ownership_generation;
+            }
+        }
+    }
+    let next = if character == id(41) && channel.is_none() {
         source.appearance_observer_request(
             &crate::gameplay_transport::canonical_uuid(&character),
             now,
@@ -275,7 +306,7 @@ pub(super) async fn relogin_as(
             .generation(),
         3
     );
-    Ok(next_session)
+    Ok((next_session, next))
 }
 
 // Shared lexical fixture: the controller, authority and owner borrow each other. Keeping
