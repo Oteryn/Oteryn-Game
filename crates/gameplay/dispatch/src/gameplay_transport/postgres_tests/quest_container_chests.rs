@@ -12,6 +12,9 @@ use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, generatio
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
+#[path = "quest_container_chests/forgemaster.rs"]
+mod forgemaster;
+
 #[derive(Clone, Copy)]
 enum Case {
     Authored,
@@ -26,6 +29,7 @@ enum Case {
     FullCharge,
     Full,
     Forgemaster,
+    ForgemasterChoices,
     Weight,
     DemonBoots,
     DemonHelmet,
@@ -59,6 +63,15 @@ fn nrwicked_forgemaster_use_refuses_an_unguarded_claim() -> TestResult {
     };
     drop(admin);
     execute(Case::Forgemaster, "NRWICKED_FORGEMASTER")
+}
+
+#[test]
+fn nrwicked_forgemaster_claims_one_of_eleven_after_verified_access() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    execute(Case::ForgemasterChoices, "NRWICKED_FORGEMASTER_CHOICES")
 }
 
 #[test]
@@ -175,6 +188,13 @@ fn scenario_case(
                     .collect(),
             )
         }
+        Case::ForgemasterChoices => (
+            forgemaster::CLAIM,
+            forgemaster::CHEST,
+            57237,
+            "oteryn:item.tibia.i49520",
+            vec![],
+        ),
         Case::Authored | Case::Forgemaster => (
             "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots",
             (33313, 31574, -15),
@@ -316,6 +336,16 @@ fn scenario_case(
         let owned_activation;
         let (controller, activated_pin) = if let Some(activation) = activation {
             activation
+        } else if matches!(case, Case::ForgemasterChoices) {
+            let mut input =
+                super::death_ml_loss_composed::production_input_with_source("content-1", None)?;
+            forgemaster::provision_items(&mut input)?;
+            owned_activation = crate::content::native_gameplay::test_support::try_activate_input(
+                deps.admitted.world_id,
+                &input,
+            )
+            .map_err(debug)?;
+            &owned_activation
         } else {
             owned_activation = super::death_ml_loss_composed::production_generation_with_pin(
                 deps.admitted.world_id,
@@ -337,6 +367,12 @@ fn scenario_case(
                 2472,
                 matches!(case, Case::ChoiceDoor).then_some(native),
             )?
+        } else if matches!(case, Case::ForgemasterChoices) {
+            super::quest_callbacks::source_world_choices(
+                chest,
+                &forgemaster::selectors().collect::<Vec<_>>(),
+                2472,
+            )?
         } else if let Some(chest) = catalogue {
             super::quest_catalogue_chests::catalogue_source_world(chest)?
         } else {
@@ -352,7 +388,16 @@ fn scenario_case(
             source_world(chest, unique, appearance, 0)?
         };
         let mut authored_shard = None;
-        let report = if matches!(case, Case::Authored | Case::Forgemaster) {
+        let report = if matches!(case, Case::ForgemasterChoices) {
+            let shard = forgemaster::claim_shard();
+            let report = crate::content::world_reward_claims::bind_reward_claims(
+                world.base().as_ref(),
+                &[&shard],
+                &|_| true,
+            )?;
+            authored_shard = Some(shard);
+            report
+        } else if matches!(case, Case::Authored | Case::Forgemaster) {
             // Exercise an authored selector on a real map without borrowing a source UID.
             let mut definition = None;
             for shard in crate::content::world_reward_claims::REWARD_CLAIM_SHARDS {
@@ -535,6 +580,56 @@ fn scenario_case(
             })
         };
         let target = target_at(chest.0)?;
+        if matches!(case, Case::ForgemasterChoices) {
+            let digest = report
+                .served
+                .iter()
+                .find(|row| row.key.as_str() == claim)
+                .ok_or("Forgemaster claim binding")?
+                .authority_digest;
+            let mut owner = deps.owner(&harness, &authority);
+            assert!(
+                owner
+                    .states
+                    .quest_callbacks
+                    .reward_claims_fixture
+                    .set(vec![authored_shard.ok_or("Forgemaster choice shard")?])
+                    .is_ok()
+            );
+            owner.active_generation = Some(generation);
+            owner.quest_catalogue = Some(forgemaster::catalogue(digest)?);
+            owner.movement_cells = (&cells).into();
+            owner.admit_progression_session(&mut admitted).await;
+            owner.admit_quest_session(&admitted).await;
+            deps.initialize(&owner).await;
+            let before =
+                forgemaster::use_chest(&mut owner, &admitted, deps.actor, 1, &target).await?;
+            assert_ne!(before, UseDisposition::Committed);
+            assert_eq!(forgemaster::claim_count(&harness).await?, 0);
+            forgemaster::allow_access(&harness, fence.character_id.as_bytes()).await?;
+            assert_eq!(
+                forgemaster::use_chest(&mut owner, &admitted, deps.actor, 2, &target).await?,
+                UseDisposition::Committed
+            );
+            let alternate = target_at(chest.0 - 2)?;
+            assert_ne!(
+                forgemaster::use_chest(&mut owner, &admitted, deps.actor, 3, &alternate).await?,
+                UseDisposition::Committed
+            );
+            assert_eq!(forgemaster::claim_count(&harness).await?, 1);
+            let bag = harness
+                .root
+                .read_character_backpack(&authority, fence.character_id)
+                .await
+                .map_err(debug)?
+                .ok_or("Forgemaster backpack")?;
+            assert_eq!(bag.entries.len(), 1);
+            assert_eq!(bag.entries[0].item.definition.production_key, root_key);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         if matches!(case, Case::Forgemaster) {
             let mut owner = deps.owner(&harness, &authority);
             let shard = authored_shard.ok_or("unguarded claim fixture")?;
