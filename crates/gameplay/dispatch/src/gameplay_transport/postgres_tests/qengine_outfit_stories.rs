@@ -885,6 +885,46 @@ pub(super) async fn exercise(
             ],
             136,
         ),
+        // TibiaWiki `Citizen_Outfits_Quest/Spoiler`: Lubo and Hanna on the mainland.
+        "qengine-rewards-qb-citizen-story" => (
+            "citizen",
+            &[
+                ("backpack-start", None, None, None),
+                ("backpack-materials", Some((5878, 100)), None, None),
+                ("backpack", None, None, Some(1)),
+                ("hat-start", None, None, None),
+                ("hat", Some((3374, 1)), None, Some(2)),
+            ],
+            136,
+        ),
+        // TibiaWiki `Warrior_Outfits_Quest/Spoiler`: Trisha, Cornelia and Morgan.
+        "qengine-rewards-qb-warrior-story" => (
+            "warrior",
+            &[
+                ("shoulder-start", None, None, None),
+                ("shoulder-bones", Some((5925, 100)), None, None),
+                ("shoulder-shells", Some((5899, 100)), None, None),
+                ("shoulder-spirit", Some((5884, 1)), None, None),
+                ("shoulder-claw", Some((5919, 1)), None, None),
+                ("shoulder-work", None, None, None),
+                ("shoulder", None, None, Some(1)),
+                ("sword-start", None, None, None),
+                ("sword", Some((5887, 1)), Some((5880, 100)), Some(2)),
+            ],
+            142,
+        ),
+        // TibiaWiki `Shaman_Outfits_Quest/Spoiler`: Hairycles gives the outfit, Chondur the addons.
+        "qengine-rewards-qb-shaman-story" => (
+            "shaman",
+            &[
+                ("hairycles", None, None, Some(0)),
+                ("staff-start", None, None, None),
+                ("staff", Some((3002, 5)), None, Some(2)),
+                ("mask-start", None, None, None),
+                ("mask", Some((3403, 5)), None, Some(1)),
+            ],
+            158,
+        ),
         _ => return Err("unknown outfit story".into()),
     };
     let outfit_family = if family == "druid-rook" {
@@ -916,6 +956,8 @@ pub(super) async fn exercise(
             "l4"
         } else if name.starts_with("qengine-rewards-l3-") {
             "l3"
+        } else if name.starts_with("qengine-rewards-qb-") {
+            "qb"
         } else {
             "l2"
         };
@@ -951,11 +993,17 @@ pub(super) async fn exercise(
                 .map(amount)
                 .collect();
         }
-        if family == "citizen-rook" && *suffix == "hat" {
+        if matches!(family, "citizen-rook" | "citizen") && *suffix == "hat" {
             expected_take = [(3374, 1), (5902, 50), (5890, 100)]
                 .iter()
                 .map(amount)
                 .collect();
+        }
+        if family == "shaman" && *suffix == "staff" {
+            expected_take = [(3002, 5), (5014, 1)].iter().map(amount).collect();
+        }
+        if family == "shaman" && *suffix == "mask" {
+            expected_take = [(3403, 5), (3348, 5)].iter().map(amount).collect();
         }
         if family == "pirate" && *suffix == "hat" {
             expected_take = [(6101, 1), (6102, 1), (6100, 1), (6099, 1)]
@@ -965,7 +1013,7 @@ pub(super) async fn exercise(
         }
         if matches!(
             family,
-            "royal-costume" | "druid-rook" | "druid" | "knight" | "assassin" | "hunter"
+            "royal-costume" | "druid-rook" | "druid" | "knight" | "assassin" | "hunter" | "warrior"
         ) {
             expected_take.extend(present.iter().map(amount));
         }
@@ -974,7 +1022,13 @@ pub(super) async fn exercise(
             callback.present,
             if matches!(
                 family,
-                "royal-costume" | "druid-rook" | "druid" | "knight" | "assassin" | "hunter"
+                "royal-costume"
+                    | "druid-rook"
+                    | "druid"
+                    | "knight"
+                    | "assassin"
+                    | "hunter"
+                    | "warrior"
             ) {
                 vec![]
             } else {
@@ -1027,6 +1081,9 @@ pub(super) async fn exercise(
         if family == "beggar" && *suffix == "first-start" {
             assert_eq!(callback.requires_outfits, vec!["oteryn:outfit.beggar"]);
         }
+        if family == "shaman" && matches!(*suffix, "staff-start" | "mask-start") {
+            assert_eq!(callback.requires_outfits, vec!["oteryn:outfit.shaman"]);
+        }
         if family == "golden" {
             assert_eq!(
                 serde_json::to_value(&callback)?["fee"],
@@ -1070,6 +1127,18 @@ pub(super) async fn exercise(
                 track: format!("{SHATTERED}shipwrecked"),
                 minimum: 2,
                 maximum: 2,
+            }]
+        } else if family == "shaman" && *suffix == "hairycles" {
+            vec![Requirement {
+                track: "oteryn:quest-progress/quest/u7_6/the_ape_city/questline".into(),
+                minimum: 18,
+                maximum: 18,
+            }]
+        } else if family == "shaman" && *suffix == "staff-start" {
+            vec![Requirement {
+                track: format!("{SHATTERED}reputation_in_sabrehaven"),
+                minimum: 12,
+                maximum: 22,
             }]
         } else if family == "festive" && *suffix != "base" {
             vec![Requirement {
@@ -1269,6 +1338,14 @@ pub(super) async fn exercise(
             "oteryn:quest-progress/quest/u7_6/the_ape_city/questline".into(),
             16,
         )]
+    } else if family == "shaman" {
+        vec![
+            (
+                "oteryn:quest-progress/quest/u7_6/the_ape_city/questline".into(),
+                18,
+            ),
+            (format!("{SHATTERED}reputation_in_sabrehaven"), 12),
+        ]
     } else if family == "assassin" {
         vec![(format!("{SHATTERED}shipwrecked"), 2)]
     } else if family == "oriental" {
@@ -1414,7 +1491,15 @@ pub(super) async fn exercise(
     // the largest source recipes, preserving every native weight check.
     if matches!(
         family,
-        "battle-mage" | "royal-costume" | "pirate" | "oriental" | "knight" | "hunter" | "mage"
+        "battle-mage"
+            | "royal-costume"
+            | "pirate"
+            | "oriental"
+            | "knight"
+            | "hunter"
+            | "mage"
+            | "shaman"
+            | "warrior"
     ) {
         let carrying_level = if family == "royal-costume" { 200 } else { 50 };
         earn_level(owner, admitted, authority, carrying_level).await?;
@@ -1523,6 +1608,12 @@ pub(super) async fn exercise(
         for (key, actor) in keys.into_iter().zip(actors) {
             npcs.insert(key.to_owned(), actor);
         }
+    } else if family == "citizen" {
+        let keys = ["oteryn:npc.lubo", "oteryn:npc.hanna"];
+        let actors = super::classic_quests::install(owner, admitted, keys).await?;
+        for (key, actor) in keys.into_iter().zip(actors) {
+            npcs.insert(key.to_owned(), actor);
+        }
     } else if family == "citizen-rook" {
         let keys = ["oteryn:npc.amber", "oteryn:npc.norma"];
         let actors = super::classic_quests::install(owner, admitted, keys).await?;
@@ -1564,6 +1655,22 @@ pub(super) async fn exercise(
         }
     } else if family == "assassin" {
         let keys = ["oteryn:npc.vescu", "oteryn:npc.erayo", "oteryn:npc.atrad"];
+        let actors = super::classic_quests::install(owner, admitted, keys).await?;
+        for (key, actor) in keys.into_iter().zip(actors) {
+            npcs.insert(key.to_owned(), actor);
+        }
+    } else if family == "warrior" {
+        let keys = [
+            "oteryn:npc.trisha",
+            "oteryn:npc.cornelia",
+            "oteryn:npc.morgan",
+        ];
+        let actors = super::classic_quests::install(owner, admitted, keys).await?;
+        for (key, actor) in keys.into_iter().zip(actors) {
+            npcs.insert(key.to_owned(), actor);
+        }
+    } else if family == "shaman" {
+        let keys = ["oteryn:npc.hairycles", "oteryn:npc.chondur"];
         let actors = super::classic_quests::install(owner, admitted, keys).await?;
         for (key, actor) in keys.into_iter().zip(actors) {
             npcs.insert(key.to_owned(), actor);
@@ -1716,7 +1823,8 @@ pub(super) async fn exercise(
                     | "assassin"
                     | "hunter"
                     | "mage"
-            ) || (matches!(family, "pirate" | "citizen-rook")
+                    | "warrior"
+            ) || (matches!(family, "pirate" | "citizen-rook" | "citizen")
                 && callback.key.ends_with("-hat")))
                 && needed.len() > 1
                 && index == 0

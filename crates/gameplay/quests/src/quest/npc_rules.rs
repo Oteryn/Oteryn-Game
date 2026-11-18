@@ -866,6 +866,14 @@ pub(super) fn extend(
     Ok(active)
 }
 
+/// Return the primary predecessor hash registered by NPC lowering.
+pub fn legacy_definition_hash(
+    catalogue: &super::QuestStateCatalogue,
+    quest: &str,
+) -> Option<[u8; 32]> {
+    catalogue.npc_legacy.get(quest).map(|(hash, _)| *hash)
+}
+
 /// Only an exact registered predecessor retains its old absent-track values.
 /// Existing rows, their values, pins and receipts are never rewritten.
 pub fn legacy_defaults<'a>(
