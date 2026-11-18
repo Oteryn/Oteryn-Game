@@ -382,9 +382,11 @@ pub(in super::super) fn exercise(
                 stage
             );
         }
-        let receipt_snapshot = "SELECT to_jsonb(receipt) FROM game_character_quest_receipts receipt ORDER BY 1";
-        let receipts_before: Vec<serde_json::Value> =
-            sqlx::query_scalar(receipt_snapshot).fetch_all(&h.pool).await?;
+        let receipt_snapshot =
+            "SELECT to_jsonb(receipt) FROM game_character_quest_receipts receipt ORDER BY 1";
+        let receipts_before: Vec<serde_json::Value> = sqlx::query_scalar(receipt_snapshot)
+            .fetch_all(&h.pool)
+            .await?;
         let allowed = callback
             .storage
             .first()
@@ -435,9 +437,13 @@ pub(in super::super) fn exercise(
             .await
             .map_err(debug)?;
         assert_eq!(before, after, "literal USE changed durable quest state");
-        let receipts: Vec<serde_json::Value> =
-            sqlx::query_scalar(receipt_snapshot).fetch_all(&h.pool).await?;
-        assert_eq!(receipts, receipts_before, "literal USE changed quest receipts");
+        let receipts: Vec<serde_json::Value> = sqlx::query_scalar(receipt_snapshot)
+            .fetch_all(&h.pool)
+            .await?;
+        assert_eq!(
+            receipts, receipts_before,
+            "literal USE changed quest receipts"
+        );
         eprintln!(
             "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED {} stage={stage:?} allowed={allowed} tracks_unchanged receipts_unchanged revision_unchanged duration={:?}",
             callback.key,
