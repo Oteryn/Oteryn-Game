@@ -399,9 +399,18 @@ pub(in super::super) fn exercise(
                 stage
             );
         }
-        let receipt_snapshot =
-            "SELECT to_jsonb(receipt) FROM game_character_quest_receipts receipt ORDER BY 1";
-        let receipts_before: Vec<serde_json::Value> = sqlx::query_scalar(receipt_snapshot)
+        // xmin also catches a write that assigns the existing value back to a row.
+        let quest_rows =
+            "SELECT 'state', xmin::text, to_jsonb(s) FROM game_character_quest_states s
+            WHERE character_id=encode($1,'hex')::uuid
+            UNION ALL SELECT 'track', xmin::text, to_jsonb(t) FROM game_character_quest_tracks t
+            WHERE character_id=encode($1,'hex')::uuid
+            UNION ALL SELECT 'receipt', xmin::text, to_jsonb(r) FROM game_character_quest_receipts r
+            WHERE character_id=encode($1,'hex')::uuid
+            ORDER BY 1, 3";
+        let character = fence.character_id.as_bytes().as_slice();
+        let rows_before: Vec<(String, String, serde_json::Value)> = sqlx::query_as(quest_rows)
+            .bind(character)
             .fetch_all(&h.pool)
             .await?;
         let allowed = callback.storage.first().is_none_or(|storage| {
@@ -474,10 +483,11 @@ pub(in super::super) fn exercise(
             .await
             .map_err(debug)?;
         assert_eq!(before, after, "passage changed durable quest state");
-        let receipts: Vec<serde_json::Value> = sqlx::query_scalar(receipt_snapshot)
+        let rows_after: Vec<(String, String, serde_json::Value)> = sqlx::query_as(quest_rows)
+            .bind(character)
             .fetch_all(&h.pool)
             .await?;
-        assert_eq!(receipts, receipts_before, "passage changed quest receipts");
+        assert_eq!(rows_after, rows_before, "passage wrote quest rows");
         eprintln!(
             "QUEST_CALLBACK_PASSAGE_POSTGRES_CASE_COMPLETED {} stage={stage:?} allowed={allowed} tracks_unchanged receipts_unchanged revision_unchanged duration={:?}",
             callback.key,
