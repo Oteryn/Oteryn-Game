@@ -14,6 +14,7 @@ pub(super) struct TimedEncounter {
     content: [u8; 32],
     map: [u8; 32],
     scope: (RuntimeScopeRefV1, ScopeOwnershipGeneration),
+    started_at: u64,
     spawn_at: u64,
     reset_at: u64,
     attempted_spawn: bool,
@@ -118,12 +119,146 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             content: runtime.content_pin().server_artifact_digest(),
             map: map.overlay.base().digest(),
             scope: runtime.encounter_owner_scope(),
+            started_at: now,
             spawn_at,
             reset_at,
             attempted_spawn: false,
             spawned: Vec::new(),
         });
         states.owner_wake.notify_one();
+        UseDisposition::Committed
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "movement owner supplies the exact StepIn and source"
+    )]
+    pub(super) fn admit_timed_room(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        map: &BundleMap,
+        callback: &Callback,
+        key: u64,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        entered: MovementPositionSnapshot,
+        optional_pvp: Option<bool>,
+    ) -> UseDisposition {
+        let Some(encounter) = &callback.effects.encounter else {
+            return UseDisposition::Rejected;
+        };
+        let Some((timing, room)) = encounter
+            .timing
+            .and_then(|timing| Some((timing, timing.admission?)))
+        else {
+            return UseDisposition::Rejected;
+        };
+        let Some(destination) = callback.teleport else {
+            return UseDisposition::Rejected;
+        };
+        let now = self.owner_now().get();
+        if runtime.owner_fence().is_err()
+            || states.is_dead(actor)
+            || !states.spell_idle(runtime, actor, session)
+            || !self.states.player_trades.physical(session, None)
+            || super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now())
+            || !matches(map, callback, key)
+            || self
+                .active_generation
+                .and_then(|active| active.native_gameplay())
+                .is_none_or(|native| native.install_companion_policies(runtime).is_err())
+        {
+            return UseDisposition::Rejected;
+        }
+        let Ok(census) = runtime.positioned_melee_census() else {
+            return UseDisposition::Rejected;
+        };
+        let occupants = census
+            .iter()
+            .filter(|(who, at, session)| {
+                *who != actor && session.is_some() && room_contains(encounter, at.position())
+            })
+            .count();
+        let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
+            return UseDisposition::Rejected;
+        };
+        let existing = pending.iter().position(|memo| {
+            memo.scope == runtime.encounter_owner_scope()
+                && memo.map == map.overlay.base().digest()
+                && memo.content == runtime.content_pin().server_artifact_digest()
+                && memo.callback.key == callback.key
+        });
+        let joining = existing.is_some() && room.capacity > 1;
+        let elapsed = existing.map_or(0, |index| {
+            now.saturating_sub(pending[index].started_at) / 1_000
+        });
+        if !room.allows_join(occupants, elapsed)
+            || existing.is_some_and(|index| now >= pending[index].reset_at)
+        {
+            return UseDisposition::Occupied;
+        }
+        let (Some(spawn_at), Some(reset_at)) = (
+            now.checked_add(u64::from(timing.spawn_after_ms) * 1_000),
+            now.checked_add(u64::from(timing.reset_after_ms) * 1_000),
+        ) else {
+            return UseDisposition::Exhausted;
+        };
+        if existing.is_none()
+            && (pending.len() >= MAX_TIMED_ENCOUNTERS || pending.try_reserve(1).is_err())
+        {
+            return UseDisposition::Exhausted;
+        }
+        let closed = crate::map::floor::BundleDoors(&map.facts);
+        // The source room admits several players onto its common landing cell.
+        let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
+            runtime,
+            self.movement_cells(),
+            actor,
+            session,
+            entered,
+            local(destination),
+            &closed,
+        ) else {
+            return UseDisposition::NotPossible;
+        };
+        let Ok(landing) = runtime.commit_source_step(proof) else {
+            return UseDisposition::Rejected;
+        };
+        if !joining {
+            if let Some(index) = existing {
+                let mut expired = pending.swap_remove(index);
+                super::personal_trial::cleanup(runtime, &mut expired.spawned);
+            }
+            pending.push(TimedEncounter {
+                callback: callback.clone(),
+                key,
+                revision: map.facts.object_revision(key),
+                content: runtime.content_pin().server_artifact_digest(),
+                map: map.overlay.base().digest(),
+                scope: runtime.encounter_owner_scope(),
+                started_at: now,
+                spawn_at,
+                reset_at,
+                attempted_spawn: false,
+                spawned: Vec::new(),
+            });
+            states.owner_wake.notify_one();
+        }
+        stage_room_move(
+            runtime,
+            states,
+            map,
+            actor,
+            session,
+            now,
+            entered,
+            landing,
+            optional_pvp,
+        );
+        if let Some(effect) = callback.effects.teleport_effect {
+            map.facts.emit_movement_effect(tile(destination), effect);
+        }
         UseDisposition::Committed
     }
 
@@ -143,6 +278,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        let mut states = self.states.spell_states.lock().await;
         let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
             return;
         };
@@ -171,6 +307,57 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             };
             if now >= memo.reset_at {
+                if let Some(room) = encounter.timing.and_then(|timing| timing.admission) {
+                    let Ok(players) = runtime.positioned_melee_census() else {
+                        index += 1;
+                        continue;
+                    };
+                    let closed = crate::map::floor::BundleDoors(&map.facts);
+                    let mut all_exited = true;
+                    for (actor, before, session) in players {
+                        let Some(session) =
+                            session.filter(|_| room_contains(encounter, before.position()))
+                        else {
+                            continue;
+                        };
+                        let after = crate::map::floor::prepare_quest_encounter_ejection(
+                            &runtime,
+                            self.movement_cells(),
+                            actor,
+                            session,
+                            before,
+                            local(room.exit),
+                            &closed,
+                        )
+                        .ok()
+                        .and_then(|proof| runtime.commit_source_step(proof).ok());
+                        if let Some(after) = after {
+                            stage_room_move(
+                                &runtime,
+                                &mut states,
+                                map,
+                                actor,
+                                session,
+                                now,
+                                before,
+                                after,
+                                None,
+                            );
+                            if let Some(effect) = memo.callback.effects.teleport_effect {
+                                map.facts.emit_movement_effect(tile(room.exit), effect);
+                            }
+                        } else {
+                            all_exited = false;
+                        }
+                    }
+                    super::personal_trial::cleanup(&mut runtime, &mut memo.spawned);
+                    if all_exited {
+                        pending.swap_remove(index);
+                    } else {
+                        index += 1;
+                    }
+                    continue;
+                }
                 if oteryn_gameplay_quests::quest::world_callbacks::personal_trial::admitted(
                     &memo.callback,
                 ) {
@@ -261,4 +448,49 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Death/despawn and source cleanup release only their source-owned ladder.
         super::monsters::settle_authored_monster_puzzles(&runtime, map);
     }
+}
+
+fn room_contains(encounter: &world_callbacks::Encounter, position: MovementLocalPosition) -> bool {
+    native(position).is_some_and(|position| {
+        encounter.contains(Position {
+            x: position.x,
+            y: position.y,
+            floor: position.floor,
+        })
+    })
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "movement projections share the exact encounter relocation"
+)]
+fn stage_room_move(
+    runtime: &ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    map: &BundleMap,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    now: u64,
+    before: MovementPositionSnapshot,
+    after: MovementPositionSnapshot,
+    optional_pvp: Option<bool>,
+) {
+    states.stage_special_movement_step(
+        runtime,
+        map,
+        actor,
+        session,
+        now,
+        Some(before.position()),
+        after.position(),
+        optional_pvp,
+    );
+    states.stage_underwater_step(
+        runtime,
+        actor,
+        session,
+        now,
+        underwater(map, before.position()),
+        underwater(map, after.position()),
+    );
 }

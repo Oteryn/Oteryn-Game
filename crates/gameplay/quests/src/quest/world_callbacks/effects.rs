@@ -33,6 +33,27 @@ pub struct TargetTransform {
     pub from: u16,
     pub to: u16,
     pub reset_after_ms: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub admission: Option<TimedRoomAdmission>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct TimedRoomAdmission {
+    pub capacity: u8,
+    pub join_for_ms: u32,
+    pub exit: Position,
+}
+
+impl TimedRoomAdmission {
+    /// A running room closes at the join deadline. A solo room can restart when empty.
+    pub fn allows_join(self, occupants: usize, elapsed_ms: u64) -> bool {
+        if self.capacity == 1 {
+            occupants == 0
+        } else {
+            occupants < usize::from(self.capacity) && elapsed_ms < u64::from(self.join_for_ms)
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -317,6 +338,14 @@ pub struct Encounter {
 pub enum EncounterPhase {
     #[serde(rename = "cults_boss_phase_closures")]
     Cults,
+}
+
+impl Encounter {
+    pub fn contains(&self, position: Position) -> bool {
+        position.floor == self.room_min.floor
+            && (self.room_min.x..=self.room_max.x).contains(&position.x)
+            && (self.room_min.y..=self.room_max.y).contains(&position.y)
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -777,8 +806,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && effects.item_reward.is_none()
             && effects.outfit_reward.is_none()
     });
+    let timed_room = effects.encounter.as_ref().and_then(|e| e.timing?.admission);
     if operations > 1
         || (operations > 0
+            && timed_room.is_none()
             && ((!personal_encounter
                 && !super::personal_trial::admitted(callback)
                 && (!lever
@@ -786,7 +817,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         && effects.party_transfer.is_none()
                         && callback.has_state())))
                 || !callback.passages.is_empty()
-                || callback.teleport.is_some())
+                || (callback.teleport.is_some() && timed_room.is_none()))
             && !(effects.encounter.is_some() && super::asura_authored::admitted(callback)))
     {
         return false;
@@ -841,6 +872,28 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
+        if let Some(room) = timed_room {
+            let mut allowed_effects = CallbackEffectSet::default();
+            allowed_effects.encounter = Some(encounter.clone());
+            allowed_effects.teleport_effect = effects.teleport_effect;
+            if *effects != allowed_effects
+                || callback.stateless_step_minimum_level() != Some(encounter.minimum_level)
+                || callback.lever.is_some()
+                || !callback.passages.is_empty()
+                || !callback.world_requirements.is_empty()
+                || !callback.teleport.is_some_and(in_room)
+                || callback.selector.position.is_none()
+                || !pos(room.exit)
+                || in_room(room.exit)
+                || !(1..=5).contains(&room.capacity)
+                || (room.capacity == 1) != (room.join_for_ms == 0)
+                || encounter
+                    .timing
+                    .is_none_or(|timing| room.join_for_ms >= timing.reset_after_ms)
+            {
+                return false;
+            }
+        }
         if (encounter.minimum_level == 0 && !source_party)
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
@@ -852,7 +905,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     || callback.item_reward().is_some()
                     || effects.outfit_reward.is_some()
                     || effects.mount_reward.is_some()
-                    || !(1..=60_000).contains(&timing.spawn_after_ms)
+                    || !(u32::from(timed_room.is_none())..=60_000).contains(&timing.spawn_after_ms)
                     || timing.reset_after_ms <= timing.spawn_after_ms
                     || timing.reset_after_ms > 3_600_000
                     || (u64::from(encounter.room_max.x.saturating_sub(encounter.room_min.x)) + 1)
@@ -862,7 +915,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                     .contains(&encounter.players.len())
             }
-            || !(1..=if encounter.phase.is_some() { 16 } else { 8 })
+            || !(1..=if encounter.phase.is_some() || timed_room.is_some() {
+                16
+            } else {
+                8
+            })
                 .contains(&encounter.monsters.len())
             || (encounter.phase.is_some() && encounter.timing.is_some())
             || (callback.reversible && !source_party)

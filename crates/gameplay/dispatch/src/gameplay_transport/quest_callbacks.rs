@@ -1530,6 +1530,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             })
                 });
             let result = match observation {
+                Ok(_)
+                    if level_allowed
+                        && level_scope_current
+                        && callback
+                            .effects
+                            .encounter
+                            .as_ref()
+                            .and_then(|encounter| encounter.timing?.admission)
+                            .is_some() =>
+                {
+                    self.admit_timed_room(
+                        &mut runtime,
+                        &mut states,
+                        map,
+                        callback,
+                        *key,
+                        actor,
+                        session,
+                        entered,
+                        optional_pvp,
+                    )
+                }
                 Ok(observation) if level_allowed && level_scope_current => {
                     Box::pin(self.execute_quest_callback(
                         permit,
