@@ -671,7 +671,7 @@ fn review_redacts_whole_records() {
     for (message, expected) in [
         ("rendering resumed\nżółw 🐢", "rendering resumed\nżółw 🐢"),
         (r#"sample \u0061 and %20"#, r#"sample \u0061 and %20"#),
-        ("https://host/maps/a@b", "https://host/maps/a@b"),
+        ("https://host/maps/a@b", placeholder),
         ("https://alice:pw@host", placeholder),
         ("https://alice:pw%40host", placeholder),
         (r#"https:\/\/alice:pw@host"#, placeholder),

@@ -514,3 +514,7 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "../../crash_report/rolling_log_tests.rs"]
+mod rolling_log_tests;

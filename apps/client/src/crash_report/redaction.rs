@@ -1,8 +1,10 @@
-//! Fail-closed credential detection for complete diagnostic records.
+//! Lexical credential detection for complete diagnostic records.
 
 pub(super) const PLACEHOLDER: &str = "[record redacted: possible credential]";
 
 const TRIGGERS: &[&str] = &[
+    "@",
+    "://",
     "pass",
     "pwd",
     "secret",
@@ -19,101 +21,90 @@ const TRIGGERS: &[&str] = &[
     "api-key",
     "private",
     "otp",
+    "code",
+    "key",
+    "sig",
+    "assertion",
+    "postgres",
+    "mysql",
+    "redis",
+    "mongodb",
+    "sslcert",
+    "sslkey",
 ];
 
 /// A log event or crash report is one record, including its continuation lines.
 pub fn redact(record: &str) -> String {
-    if contains_credential(record) {
+    let mut normalized = record.to_lowercase();
+    if has_trigger(&normalized) {
         return PLACEHOLDER.to_owned();
     }
 
-    // Check nested encodings on a copy. Fail closed if the existing decoding
-    // limit is reached before all escape layers can be inspected.
-    let mut remaining = record;
-    let mut decoded;
+    // Inspect each layer because later unescaping can change earlier matches.
     for _ in 0..8 {
-        let Some(next) = decode_escapes(remaining) else {
-            return record.to_owned();
+        let Some(decoded) = decode_escapes(&normalized) else {
+            break;
         };
-        if contains_credential(&next) {
+        normalized = decoded.to_lowercase();
+        if has_trigger(&normalized) {
             return PLACEHOLDER.to_owned();
         }
-        decoded = next;
-        remaining = &decoded;
     }
-    if decode_escapes(remaining).is_some() {
-        PLACEHOLDER.to_owned()
-    } else {
-        record.to_owned()
-    }
+    record.to_owned()
 }
 
-fn contains_credential(text: &str) -> bool {
-    let lower = text.to_ascii_lowercase();
-    TRIGGERS.iter().any(|trigger| lower.contains(trigger))
-        || lower.match_indices("://").any(|(index, marker)| {
-            let authority = lower[index + marker.len()..]
-                .split('/')
-                .next()
-                .unwrap_or_default();
-            authority.contains('@')
-        })
-        // Keep blocking connection strings and legacy OAuth/query assignments
-        // that were already treated as sensitive.
-        || lower.contains("postgres://")
-        || lower.contains("postgresql://")
-        || lower.match_indices(['=', ':']).any(|(index, delimiter)| {
-            let key = lower[..index]
-                .trim_end()
-                .trim_end_matches(['"', '\''])
-                .rsplit(|ch: char| !(ch.is_ascii_alphanumeric() || ch == '_'))
-                .next()
-                .unwrap_or_default();
-            key.ends_with("ticket")
-                || (delimiter == "="
-                    && matches!(key, "code" | "key" | "sig" | "signature" | "code_verifier" | "assertion"))
-        })
+fn has_trigger(text: &str) -> bool {
+    TRIGGERS.iter().any(|trigger| text.contains(trigger))
 }
 
-fn escaped_ascii(bytes: &[u8]) -> Option<(u8, usize)> {
-    let (digits, length) = match bytes {
-        [b'\\', b'"' | b'\'' | b'/' | b'\\', ..] => return Some((bytes[1], 2)),
-        [b'\\', b'b', ..] => return Some((8, 2)),
-        [b'\\', b'f', ..] => return Some((12, 2)),
-        [b'\\', b'n', ..] => return Some((b'\n', 2)),
-        [b'\\', b'r', ..] => return Some((b'\r', 2)),
-        [b'\\', b't', ..] => return Some((b'\t', 2)),
-        [b'\\', b'u', a, b, c, d, ..] => ([*a, *b, *c, *d], 6),
-        [b'%', a, b, ..] => ([b'0', b'0', *a, *b], 3),
-        _ => return None,
-    };
+fn hex(digits: &[u8]) -> Option<u32> {
     if !digits.iter().all(u8::is_ascii_hexdigit) {
         return None;
     }
-    let decoded = u8::from_str_radix(std::str::from_utf8(&digits).ok()?, 16).ok()?;
-    decoded.is_ascii().then_some((decoded, length))
+    u32::from_str_radix(std::str::from_utf8(digits).ok()?, 16).ok()
+}
+
+fn backslash_escape(bytes: &[u8]) -> Option<(char, usize)> {
+    match bytes {
+        [b'\\', b'"' | b'\'' | b'/' | b'\\', ..] => Some((char::from(bytes[1]), 2)),
+        [b'\\', b'b', ..] => Some(('\u{8}', 2)),
+        [b'\\', b'f', ..] => Some(('\u{c}', 2)),
+        [b'\\', b'n', ..] => Some(('\n', 2)),
+        [b'\\', b'r', ..] => Some(('\r', 2)),
+        [b'\\', b't', ..] => Some(('\t', 2)),
+        [b'\\', b'u', a, b, c, d, ..] => Some((char::from_u32(hex(&[*a, *b, *c, *d])?)?, 6)),
+        _ => None,
+    }
 }
 
 fn decode_escapes(text: &str) -> Option<String> {
     let bytes = text.as_bytes();
-    let mut out = String::new();
+    let mut out = Vec::new();
     let mut copied = 0;
     let mut index = 0;
     while index < bytes.len() {
-        if let Some((decoded, length)) = escaped_ascii(&bytes[index..]) {
-            out.push_str(&text[copied..index]);
-            out.push(char::from(decoded));
+        let remaining = &bytes[index..];
+        if let [b'%', a, b, ..] = remaining
+            && let Some(decoded) = hex(&[*a, *b])
+        {
+            out.extend_from_slice(&bytes[copied..index]);
+            out.push(decoded as u8);
+            index += 3;
+        } else if let Some((decoded, length)) = backslash_escape(remaining) {
+            out.extend_from_slice(&bytes[copied..index]);
+            out.extend_from_slice(decoded.encode_utf8(&mut [0; 4]).as_bytes());
             index += length;
-            copied = index;
         } else {
             index += 1;
+            continue;
         }
+        copied = index;
     }
     if copied == 0 {
         return None;
     }
-    out.push_str(&text[copied..]);
-    Some(out)
+    out.extend_from_slice(&bytes[copied..]);
+    Some(String::from_utf8_lossy(&out).into_owned())
 }
 
 #[cfg(test)]
@@ -151,8 +142,7 @@ mod tests {
             redact("https://login.example/authorize?client_id=c&code_verifier=v1"),
             PLACEHOLDER
         );
-        // Outside a query string these words are ordinary text.
-        assert_eq!(redact("exit code: 3"), "exit code: 3");
+        assert_eq!(redact("exit code: 3"), PLACEHOLDER);
     }
 
     #[test]
@@ -166,10 +156,7 @@ mod tests {
             redact("fetch https://user:pass@cdn.example/a/b?x=1"),
             PLACEHOLDER
         );
-        assert_eq!(
-            redact("plain https://cdn.example/a@b"),
-            "plain https://cdn.example/a@b"
-        );
+        assert_eq!(redact("plain https://cdn.example/a@b"), PLACEHOLDER);
     }
 
     #[test]
