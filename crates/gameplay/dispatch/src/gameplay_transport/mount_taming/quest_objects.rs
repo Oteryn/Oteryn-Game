@@ -5,10 +5,10 @@ use oteryn_gameplay_quests::quest::{
     world_callbacks::{ActorKind, Callback, Trigger},
 };
 
-// Crystal 201189f register_actions.lua:1035-1059.
-const SCYTHES: [&str; 2] = ["oteryn:item.tibia.i3453", "oteryn:item.tibia.i9596"];
+use oteryn_gameplay_world::terrain_tools::TerrainTool;
 
 pub(crate) fn accepts(callback: &Callback) -> bool {
+    let is_scythe = |key| TerrainTool::from_production_key(key) == Some(TerrainTool::Scythe);
     callback.trigger == Trigger::Use
         && callback.actor_kind == ActorKind::Player
         && callback.item_on_target.as_ref().is_some_and(|tool| {
@@ -17,11 +17,11 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                 || (callback.requires_world_admission
                     && tool.selected_instance
                     && tool.reusable
-                    && SCYTHES.contains(&tool.item.as_str())
+                    && is_scythe(tool.item.as_str())
                     && tool
                         .alternatives
                         .iter()
-                        .all(|item| SCYTHES.contains(&item.as_str())))
+                        .all(|item| is_scythe(item.as_str())))
         })
 }
 
