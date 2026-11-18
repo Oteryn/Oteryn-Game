@@ -22,6 +22,7 @@ pub(super) struct EncounterVisit {
 struct RoomDeadline {
     due: u64,
     exit: oteryn_gameplay_quests::quest::world_callbacks::Position,
+    eject_room: bool,
     scope: (
         crate::foundation::RuntimeScopeRefV1,
         crate::foundation::ScopeOwnershipGeneration,
@@ -135,7 +136,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if now < timeout.due {
                 return true;
             }
-            for &(actor, session) in &visit.participants {
+            let occupants;
+            let participants = if timeout.eject_room {
+                let Ok(census) = runtime.positioned_melee_census() else {
+                    return true;
+                };
+                occupants = census
+                    .into_iter()
+                    .filter(|(_, position, _)| room_contains(&visit.room, position.position()))
+                    .filter_map(|(actor, _, session)| session.map(|session| (actor, session)))
+                    .collect::<Vec<_>>();
+                &occupants
+            } else {
+                &visit.participants
+            };
+            for &(actor, session) in participants {
                 let Ok(expected) = runtime.read_actor_position(actor) else {
                     continue;
                 };
@@ -512,6 +527,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .get()
                 .saturating_add(u64::from(timeout.after_ms) * 1_000),
             exit: timeout.exit,
+            eject_room: timeout.eject_room,
             scope: runtime.encounter_owner_scope(),
             map: map.overlay.base().digest(),
         });

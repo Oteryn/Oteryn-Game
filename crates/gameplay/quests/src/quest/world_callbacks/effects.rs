@@ -482,6 +482,9 @@ impl BossPhases {
 pub struct SoloRoomTimeout {
     pub after_ms: u32,
     pub exit: Position,
+    /// Crystal Wanted portals:101-106 eject all players currently in the room.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub eject_room: bool,
     /// Use the existing Character boss clock for the sole authored monster.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub boss_cooldown_seconds: Option<u32>,
