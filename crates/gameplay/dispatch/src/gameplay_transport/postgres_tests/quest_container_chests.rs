@@ -547,15 +547,30 @@ fn scenario_case(
                     .is_ok()
             );
             owner.active_generation = Some(generation);
-            owner.quest_catalogue = quest_catalogue.clone();
+            owner.quest_catalogue = Some(std::sync::Arc::clone(&embedded_catalogue));
             owner.movement_cells = (&cells).into();
             owner.admit_progression_session(&mut admitted).await;
             owner.admit_quest_session(&admitted).await;
             deps.initialize(&owner).await;
-            assert_eq!(
-                wire_uses(&owner, admitted, &[1], &target).await?,
-                [UseDisposition::NotPossible]
-            );
+            let current = owner
+                .current_quest_fence(admitted.game_session_id)
+                .await
+                .map_err(|()| "Forgemaster claim fence read failed")?
+                .ok_or("Forgemaster claim fence")?;
+            let result = owner
+                .use_bundle_chest(
+                    deps.actor,
+                    crate::gameplay_transport::connection::UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: 1,
+                        item_fence: Some(current.item_fence()),
+                    },
+                    owner.bundle_map().ok_or("Forgemaster claim map")?,
+                    &target,
+                )
+                .await
+                .ok_or("Forgemaster selector did not bind in production USE")?;
+            assert_eq!(result.disposition, UseDisposition::NotPossible);
             let writes: i64 =
                 sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_reservations")
                     .fetch_one(&harness.pool)
