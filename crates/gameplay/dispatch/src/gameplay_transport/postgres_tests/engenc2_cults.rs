@@ -441,12 +441,54 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                     );
                     assert_ne!(cooldowns[0].0, cooldowns[1].0);
                     assert_eq!(cooldowns[0].1, cooldowns[1].1);
-                    return super::gravedg_zelos::exercise(
-                        &owner,
-                        &admitted,
-                        second.as_ref().ok_or("second admitted player")?,
-                    )
-                    .await;
+                    let second = second.as_ref().ok_or("second admitted player")?;
+                    super::gravedg_zelos::exercise(&owner, &admitted, second).await?;
+                    {
+                        let mut runtime = owner.runtime.lock().await;
+                        for (member, y) in [(&admitted, 100), (second, 101)] {
+                            runtime
+                                .place_respawned_player(
+                                    member.runtime_actor.ok_or("party actor")?,
+                                    member.game_session_id,
+                                    MovementLocalPosition {
+                                        x: 100,
+                                        y,
+                                        floor: 7,
+                                    },
+                                )
+                                .map_err(debug)?;
+                        }
+                    }
+                    let after_timeout = owner
+                        .bundle_map()
+                        .ok_or("Zelos map")?
+                        .facts
+                        .object_revision(key);
+                    assert!(after_timeout > 1, "timeout reset the lever");
+                    let retry = owner
+                        .use_object(
+                            deps.actor,
+                            UseCommand {
+                                game_session_id: admitted.game_session_id,
+                                command_id: 105,
+                                item_fence: admitted.item_fence,
+                            },
+                            WorldObjectTarget {
+                                placement,
+                                expected_revision: after_timeout,
+                            },
+                        )
+                        .await;
+                    assert_eq!(retry.disposition, UseDisposition::RequirementNotMet);
+                    assert_eq!(
+                        owner
+                            .bundle_map()
+                            .ok_or("Zelos map")?
+                            .facts
+                            .object_revision(key),
+                        after_timeout
+                    );
+                    return Ok(());
                 }
             };
             assert_eq!(
