@@ -188,10 +188,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Err(()) => return,
             };
             let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
-            let runtime = self.runtime.lock().await;
-            let now = self.owner_now().get();
             let eligible = {
-                let states = self.states.spell_states.lock().await;
+                let runtime = self.runtime.lock().await;
+                let Ok(states) = self.states.spell_states.try_lock() else {
+                    return;
+                };
+                let now = self.owner_now().get();
                 // Crystal mission05_web_terror.lua:88-103 and spider_queen_wrap.lua:23-30.
                 // A queued cast resolves only against a current, visible combat target.
                 visible_target(&runtime, &states, capture.target, capture.session, now)
@@ -213,7 +215,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     catalogue,
                 )
                 .await;
-            drop(runtime);
             drop(slot);
             match result {
                 Ok(
