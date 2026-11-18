@@ -47,7 +47,12 @@ def append(root, callbacks, offers, inputs, revision, sha):
     callback('start', 'yes', 1, [storage(TRACK, 0, 1), {
         'track': GUILD, 'minimum': 0, 'maximum': 1, 'set': 1,
     }], reply(88, 88), source(86, 96))
-    callback('return', 'mission', 0, [storage(TRACK, 2, 3)], reply(78, 79), source(76, 84),
+    # The Global return transcript has the authoritative wording.
+    returned = [
+        'So, he is dead as I feared. I warned him to go with this woman, but he gave in to temptation. My heart darkens and moans. But you have my sincere thanks. ...',
+        'Without your help I would have stayed in the dark about his fate. Please, take this as a little recompense.',
+    ]
+    callback('return', 'mission', 0, [storage(TRACK, 2, 3)], returned, source(76, 84),
              give={'item': 'oteryn:item.tibia.i3039', 'count': 1, 'contents': []},
              experience=3000)
 

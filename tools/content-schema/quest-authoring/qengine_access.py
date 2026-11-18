@@ -97,6 +97,8 @@ def document():
     # source-position Pits entrance and its live Character requirements here.
     rows.extend(row for row in qmech_m03_entry_bindings.callbacks(ROOT)
                 if row['quest'] != 'oteryn:quest.25_years_of_tibia_quest')
+    from great_dragon_hunt import dead_explorer
+    rows.append(dead_explorer(callback, position))
     return dict(schema=1, callbacks=sorted(rows, key=lambda row: row['key']))
 
 
