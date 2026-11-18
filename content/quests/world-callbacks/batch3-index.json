@@ -49,13 +49,6 @@
       "keys": []
     },
     {
-      "path": "content/quests/world-callbacks/batch3-b-the_dream_courts.json",
-      "keys": [
-        "oteryn:quest-callback/dream-courts/anatomy-book",
-        "oteryn:quest-callback/dream-courts/colourful-mushroom"
-      ]
-    },
-    {
       "path": "content/quests/world-callbacks/batch3-b-the_shattered_isles_quest.json",
       "keys": []
     },

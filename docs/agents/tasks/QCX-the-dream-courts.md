@@ -29,7 +29,7 @@ No explicit quest XP grant or fixed end-of-quest item allocation appears in eith
 | Court bookcase | (33671, 32203, 7) | 1 | 2438 | 23111 | Anatomy Book (29991) ×1 |
 | Feyrist tree stump | (33663, 32192, 7) | 1 | 25762 | 23110 | Colourful Mushroom (30009) ×1 |
 
-The existing world reward writer mints each supply once per character. Each pickup binds the retained position, object ordinal and appearance. The map entries for these objects have no startup UID. The two pickup receipts have their own durable quest key to preserve the existing Dream Courts definition hash used by Stricken Soul saves. The pickup callback shard is projected by `batch3_world.py`. [Spoiler](https://tibia.fandom.com/?curid=86674&oldid=1197565) · [Crystal container actions](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_dream_courts/actions_container_rewards.lua#L66-L81)
+The existing world reward writer mints each supply once per character. Each pickup binds the retained position, object ordinal and appearance. The map entries for these objects have no startup UID. The two pickup receipts have their own durable quest key to preserve the existing Dream Courts definition hash used by Stricken Soul saves. The pickup callbacks load from a dedicated quest file. The aggregate registry is an exact input to the historical source-transcription approval, so the quest uses its own registration instead of changing that approved input. [Spoiler](https://tibia.fandom.com/?curid=86674&oldid=1197565) · [Crystal container actions](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_dream_courts/actions_container_rewards.lua#L66-L81)
 
 ## Dispatch evidence
 
