@@ -64,7 +64,7 @@ const DEFIANCES: Room = Room {
 };
 
 #[test]
-fn wanted_step_sets_boss_cooldown_and_ejects_both_current_occupants_at_deadline() -> TestResult {
+fn wanted_step_ejects_both_occupants_and_resets_boss_only_after_cooldown() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -319,7 +319,7 @@ async fn exercise(admin: String, room: Room) -> TestResult {
     owner.drain_quest_encounter_deadlines().await;
     {
         let runtime = owner.runtime.lock().await;
-        assert_eq!(runtime.contains_live_creature(current_boss), !room.wanted);
+        assert!(runtime.contains_live_creature(current_boss));
         assert_eq!(
             runtime.read_actor_position(peer).map_err(debug)?.position(),
             local(if room.wanted {
@@ -358,14 +358,46 @@ async fn exercise(admin: String, room: Room) -> TestResult {
                 StepDisposition::Moved
             );
         }
-        let runtime = owner.runtime.lock().await;
-        assert_eq!(
-            runtime
-                .read_actor_position(deps.actor)
-                .map_err(debug)?
-                .position(),
-            start
-        );
+        {
+            let runtime = owner.runtime.lock().await;
+            assert_eq!(
+                runtime
+                    .read_actor_position(deps.actor)
+                    .map_err(debug)?
+                    .position(),
+                start
+            );
+            assert!(
+                runtime.contains_live_creature(current_boss),
+                "a refused admission leaves the room's surviving boss alone"
+            );
+        }
+        sqlx::query("UPDATE game_character_boss_cooldowns SET available_at=0 WHERE boss_key=$1")
+            .bind(room.boss)
+            .execute(&h.pool)
+            .await?;
+        set_time(due + 10_000_000);
+        step(&owner, &mut admitted, 5, StepDirection::East).await?;
+        {
+            let runtime = owner.runtime.lock().await;
+            assert_eq!(
+                runtime
+                    .read_actor_position(deps.actor)
+                    .map_err(debug)?
+                    .position(),
+                local(room.landing)
+            );
+            assert!(!runtime.contains_live_creature(current_boss));
+            assert!(
+                runtime
+                    .current_live_creature_census()
+                    .map_err(debug)?
+                    .into_iter()
+                    .any(
+                        |actor| runtime.matches_live_creature_identity(actor, room.boss.as_bytes())
+                    )
+            );
+        }
     } else {
         set_time(due + 10_000_000);
         owner.drain_quest_encounter_deadlines().await;
@@ -374,7 +406,7 @@ async fn exercise(admin: String, room: Room) -> TestResult {
             runtime.read_actor_position(peer).map_err(debug)?.position(),
             local(room.exit)
         );
-        assert!(!runtime.contains_live_creature(current_boss));
+        assert!(runtime.contains_live_creature(current_boss));
     }
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
@@ -382,7 +414,7 @@ async fn exercise(admin: String, room: Room) -> TestResult {
     .bind(KEY)
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!(receipts, if room.wanted { 1 } else { 2 });
+    assert_eq!(receipts, 2);
     drop(owner);
     drop(authority);
     drop(seal);
