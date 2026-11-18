@@ -263,7 +263,8 @@ pub(super) fn prepare(
                 player_name.as_deref(),
             )
             .ok()?;
-    let queen_confirmation = classic_quests::queen_confirmation(state, &context, actor, intent.npc_actor);
+    let queen_confirmation =
+        classic_quests::queen_confirmation(state, &context, actor, intent.npc_actor);
     let mut request = NpcProgramRequest {
         command: CommandRef::new(
             command.game_session_id,
@@ -405,13 +406,18 @@ pub(super) fn prepare(
         npc_actor: admission.states.chat.engaged(command.game_session_id)?,
         topic: plan.next_topic,
     };
-    let pz_refusal = teleport.as_ref().and_then(|plan| plan.pz_locked_reply.as_ref());
+    let pz_refusal = teleport
+        .as_ref()
+        .and_then(|plan| plan.pz_locked_reply.as_ref());
     if let Some(line) = pz_refusal {
         let Ok(states) = admission.states.spell_states.try_lock() else {
             return Some(Step::Refused);
         };
         if crate::gameplay_transport::pvp_live::pz_blocked(
-            &states, actor, command.game_session_id, admission.owner_now(),
+            &states,
+            actor,
+            command.game_session_id,
+            admission.owner_now(),
         ) {
             // Crystal 201189f8 the_queen_of_the_banshees.lua:137-149 resets topic 8 on refusal.
             if queen_confirmation {

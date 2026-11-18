@@ -13,16 +13,26 @@ const QUEST: &str = "oteryn:quest.the_rookie_guard_quest";
 const QUESTLINE: &str = "oteryn:quest-progress/quest/u9_1/the_rookie_guard/questline";
 const WARNING: &str = "oteryn:quest-progress/quest/u9_1/the_rookie_guard/level8_warning";
 const START: &str = "oteryn:quest-transition/rookie-guard-active-fixture";
-const GREET: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/vascalir.lua:64-74";
-const CONTINUE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/vascalir.lua:903-912";
+const GREET: &str =
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/vascalir.lua:64-74";
+const CONTINUE: &str =
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/vascalir.lua:903-912";
 
 #[test]
 fn vascalir_refuses_late_entry_and_records_level_eight_continuation() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(NAME, || {
         super::quest_world_callbacks::scenario(
-            NAME, Position { x: 33294, y: 31677, floor: -15 }, false,
+            NAME,
+            Position {
+                x: 33294,
+                y: 31677,
+                floor: -15,
+            },
+            false,
         )
     })
 }
@@ -65,20 +75,32 @@ pub(super) async fn exercise(
     let catalogue = QuestStateCatalogue::new(
         "content-1",
         vec![oteryn_gameplay_quests::quest::QuestTrack {
-            key: QUESTLINE.into(), quest: QUEST.into(), initial: -1, min: -1, max: 2,
+            key: QUESTLINE.into(),
+            quest: QUEST.into(),
+            initial: -1,
+            min: -1,
+            max: 2,
         }],
         vec![QuestTransition {
-            key: START.into(), quest: QUEST.into(),
+            key: START.into(),
+            quest: QUEST.into(),
             effects: vec![QuestEffect {
-                track: QUESTLINE.into(), from: QuestComparison::Eq(-1), effect: QuestEffectKind::Set(1),
+                track: QUESTLINE.into(),
+                from: QuestComparison::Eq(-1),
+                effect: QuestEffectKind::Set(1),
             }],
-            completes: false, experience: None, world_change: None,
+            completes: false,
+            experience: None,
+            world_change: None,
         }],
-    ).map_err(debug)?;
+    )
+    .map_err(debug)?;
     owner.quest_catalogue = Some(std::sync::Arc::new(
         NpcRuleCatalog::from_json_documents(&[&program])?.bind_fixture(catalogue)?,
     ));
-    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
     let [npc] = super::classic_quests::install(owner, admitted, [NPC]).await?;
     let talk = super::classic_quests::talk;
     let refused = talk(owner, admitted, npc, 6410, "hi").await?;
@@ -86,18 +108,32 @@ pub(super) async fn exercise(
     assert_eq!(stored_warning(h).await?, None);
 
     super::qengine_outfit_stories::commit_fixture(owner, admitted, START, 6409).await?;
-    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
     let warned = talk(owner, admitted, npc, 6411, "hi").await?;
-    assert!(warned.iter().any(|line| line.contains("unfinished questline")));
+    assert!(
+        warned
+            .iter()
+            .any(|line| line.contains("unfinished questline"))
+    );
     let accepted = talk(owner, admitted, npc, 6412, "continue").await?;
     assert!(accepted.iter().any(|line| line.contains("heed my words")));
     assert_eq!(stored_warning(h).await?, Some(1));
     let warned_again = talk(owner, admitted, npc, 6413, "hi").await?;
-    assert!(!warned_again.iter().any(|line| line.contains("unfinished questline")));
+    assert!(
+        !warned_again
+            .iter()
+            .any(|line| line.contains("unfinished questline"))
+    );
     Ok(())
 }
 
 async fn stored_warning(h: &Harness) -> TestResult<Option<i64>> {
-    Ok(sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
-        .bind(WARNING).fetch_optional(&h.pool).await?)
+    Ok(
+        sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+            .bind(WARNING)
+            .fetch_optional(&h.pool)
+            .await?,
+    )
 }

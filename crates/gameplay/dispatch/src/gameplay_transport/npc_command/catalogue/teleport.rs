@@ -168,7 +168,10 @@ pub(in crate::gameplay_transport) async fn commit(
             || !states.spell_idle(&runtime, actor, fence.game_session_id)
             || (proof.requires_pz_unlocked
                 && crate::gameplay_transport::pvp_live::pz_blocked(
-                    &states, actor, fence.game_session_id, admission.owner_now(),
+                    &states,
+                    actor,
+                    fence.game_session_id,
+                    admission.owner_now(),
                 ))
             || admission.states.npc_conversations.current_npc(
                 &admission.states.chat,
@@ -196,7 +199,10 @@ pub(in crate::gameplay_transport) async fn commit(
             &super::super::super::item_ref_admission::NativeItemWeights(native)
                 .with_wheel(admission.premium_coordinator),
             &admission.premium_coordinator,
-            NpcTeleportAdmission { arrival, pz_lock_checked: proof.requires_pz_unlocked },
+            NpcTeleportAdmission {
+                arrival,
+                pz_lock_checked: proof.requires_pz_unlocked,
+            },
         )
         .await;
     match result {

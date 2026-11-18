@@ -26,7 +26,10 @@ impl NpcRuleCatalog {
         let mut pz_locked_reply = None;
         for effect in &source.effects {
             match effect {
-                NpcRuleEffect::Teleport { position, pz_locked_reply: refusal } => {
+                NpcRuleEffect::Teleport {
+                    position,
+                    pz_locked_reply: refusal,
+                } => {
                     if destination.replace(*position).is_some() {
                         return Err(NpcRuleError::Invalid(
                             "multiple NPC teleport destinations".into(),
