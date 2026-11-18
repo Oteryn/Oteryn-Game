@@ -868,9 +868,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
         if let Some(room) = timed_room {
-            let mut allowed_effects = CallbackEffectSet::default();
-            allowed_effects.encounter = Some(encounter.clone());
-            allowed_effects.teleport_effect = effects.teleport_effect;
+            let allowed_effects = CallbackEffectSet::from_shared(CallbackEffects {
+                encounter: Some(encounter.clone()),
+                teleport_effect: effects.teleport_effect,
+                ..CallbackEffects::default()
+            });
             if *effects != allowed_effects
                 || callback.stateless_step_minimum_level() != Some(encounter.minimum_level)
                 || callback.lever.is_some()
