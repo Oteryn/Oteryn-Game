@@ -8,6 +8,7 @@ use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority, UseCommand};
 use crate::gameplay_transport::item_view::ItemKey;
 use oteryn_gameplay_items::reward_bag::{reward_bag_conversion, reward_bag_draw};
+use oteryn_protocol_oteryn::presentation::{CAPABILITY_ITEM_EFFECTS_V1, PresentationEventKind};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget, encode_item_use_intent};
 
 #[test]
@@ -249,8 +250,14 @@ fn scenario(
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
+        let glooth = bag_key == "oteryn:item.tibia.i21203";
+        let capabilities: &[u32] = if glooth {
+            &[4, 6, 11, 15, 18, CAPABILITY_ITEM_EFFECTS_V1]
+        } else {
+            &[4, 6, 11, 15, 18]
+        };
         admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
+            SelectedCapabilities::select(owner.offered_capabilities(), capabilities)
                 .ok_or("reward bag offer selectable")?;
         let bag_definition = crate::gameplay_transport::item_look::typed_definition(index, reference(bag_key).ok_or("bag reference")?).ok_or("bag definition")?;
         let command_id = 1;
@@ -296,7 +303,26 @@ fn scenario(
             .bind(source.as_slice()).fetch_one(&harness.pool).await?;
         assert_eq!(still_carried, (1, 1));
         admitted.continuity.next_command_id = command_id;
-        let (end, result, _) = exchange(&owner, admitted, command_id, &payload, reference(bag_key)).await?;
+        let (end, result) = if glooth {
+            use super::rust_lottery::exchange_with_visuals;
+            // Crystal glooth_bag.lua:31 emits one HITBYPOISON at the selected
+            // carried bag's tile. Item Effects already owns its wire projection.
+            let (end, result, actual, effects) =
+                exchange_with_visuals(&owner, admitted, command_id, &payload, reference(bag_key)).await?;
+            assert!(matches!(effects.as_slice(), [effect] if matches!(
+                effect.kind,
+                PresentationEventKind::MagicEffect { effect_id: 17, position, .. }
+                    if (position.x, position.y, position.floor) == (6, 0, 7)
+            )), "{effects:?}");
+            let (end, replayed, _, replay_effects) =
+                exchange_with_visuals(&owner, end, command_id, &actual, None).await?;
+            assert_eq!(replayed, UseDisposition::Committed);
+            assert!(replay_effects.is_empty(), "{replay_effects:?}");
+            (end, result)
+        } else {
+            let (end, result, _) = exchange(&owner, admitted, command_id, &payload, reference(bag_key)).await?;
+            (end, result)
+        };
         assert_eq!(result, UseDisposition::Committed);
         assert_eq!(craft_count().await?, 1);
         let expected = reward_bag_conversion(native, &bag_definition, draw).ok_or("admitted reward bag")?;
