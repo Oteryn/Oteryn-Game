@@ -41,7 +41,9 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    plant_hints: bool,
 ) -> TestResult {
+    let mut magic_cursor = 0;
     let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
         .fetch_one(&h.pool)
         .await?;
@@ -119,16 +121,25 @@ pub(super) async fn exercise(
         before
     );
     assert_eq!(stage(h, dance::DANCE_STATUS_TRACK).await?, Some(1));
+    if plant_hints {
+        super::quest_progress_magic::assert_hint(owner, &mut magic_cursor, None)?;
+    }
     select(owner, admitted, true)?;
     // Wrong real tile entries reset the active dance instead of granting progress.
     let (cardinal, _, _) = step(owner, admitted, Dir::East).await?;
     assert_eq!(cardinal.disposition, D::Moved);
     assert!(cardinal.step_wait_ms > 0);
     assert_eq!(stage(h, dance::DANCE_STATUS_TRACK).await?, Some(1));
+    if plant_hints {
+        super::quest_progress_magic::assert_hint(owner, &mut magic_cursor, Some(5))?;
+    }
     assert_eq!(
         step(owner, admitted, Dir::West).await?.0.disposition,
         D::Moved
     );
+    if plant_hints {
+        super::quest_progress_magic::assert_hint(owner, &mut magic_cursor, Some(5))?;
+    }
     let mut at = dance::TILES[0];
     let mut diagonals = std::collections::BTreeSet::new();
     for (index, tile) in dance::SEQUENCE.into_iter().enumerate() {
@@ -160,7 +171,17 @@ pub(super) async fn exercise(
             stage(h, dance::DANCE_STATUS_TRACK).await?,
             Some(i64::try_from(index)? + 2)
         );
+        if plant_hints {
+            super::quest_progress_magic::assert_hint(
+                owner,
+                &mut magic_cursor,
+                dance::SEQUENCE.get(index + 1).copied(),
+            )?;
+        }
         wire(owner, admitted, command, 1, payload).await?;
+        if plant_hints {
+            super::quest_progress_magic::assert_hint(owner, &mut magic_cursor, None)?;
+        }
         assert_eq!(
             owner
                 .runtime

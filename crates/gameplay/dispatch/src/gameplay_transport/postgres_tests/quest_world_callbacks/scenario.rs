@@ -25,6 +25,8 @@ fn scenario_case(
 ) -> TestResult {
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
+    let dance_hints = name == super::super::quest_progress_magic::NAME;
+    let native_dance = dance_hints || name == "unnatural-selection-dance-native";
     let source_tile_magic = name == super::super::quest_source_tile_magic::NAME;
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
@@ -361,7 +363,7 @@ fn scenario_case(
         callback("qm03/pits")?
     } else if nomads_window {
         callback(super::super::qengine_m02_use::NAME)?
-    } else if name == "unnatural-selection-dance-native" {
+    } else if native_dance {
         callback("unnatural-selection-dance-2")?
     } else if name.starts_with("qengine-rewards-m39-bone") {
         callback("bone-pit-collect")?
@@ -1771,6 +1773,22 @@ fn scenario_case(
                     .set(vec![callback.clone()])
                     .is_ok()
             );
+        }
+        if dance_hints {
+            let effects = super::super::quest_progress_magic::effects()?;
+            let rows = oteryn_gameplay_quests::quest::world_callbacks::load()?
+                .into_iter()
+                .filter(|row| matches!(
+                    row.native_rule,
+                    Some(oteryn_gameplay_quests::quest::world_callbacks::NativeRule::UnnaturalDance { .. })
+                ))
+                .map(|mut row| {
+                    row.effects = effects.clone();
+                    row
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(rows.len(), 9);
+            assert!(owner.states.quest_callbacks.fixture.set(rows).is_ok());
         }
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -3261,11 +3279,12 @@ fn scenario_case(
                 &h,
                 trigger,
             )).await?;
-        } else if name == "unnatural-selection-dance-native" {
+        } else if native_dance {
             Box::pin(super::super::m40_native_dance::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
+                dance_hints,
             ))
             .await?;
         } else if name == "unnatural-selection-dance-2" {

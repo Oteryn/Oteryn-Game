@@ -937,6 +937,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && !callback.is_read_only()
             && !(close && callback.opening_only);
         let mut fresh_effects = !durable;
+        let mut progress_magic_position = None;
         let mut success_message = if !durable {
             callback.success_message.clone()
         } else {
@@ -1220,6 +1221,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ) => {
                     fresh_effects = fresh;
                     if fresh {
+                        progress_magic_position = callback.effects.progress_magic.as_ref()
+                            .and_then(|magic| magic.committed_position(&committed.changes));
                         success_message = callback.committed_message(&committed.changes).map(str::to_owned);
                         // Crystal action_mead.lua:8-11 says both lines on the winning sip.
                         if callback.native_rule == Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::BarbarianMead)
@@ -1600,6 +1603,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, expected.position()),
                 underwater(map, snapshot.position()),
             );
+        }
+        // Crystal 201189f8 movements_mission3_dance_dance_evolution.lua:33-53.
+        if let (Some(position), Some(magic)) =
+            (progress_magic_position, &callback.effects.progress_magic)
+        {
+            for &effect in &magic.effects {
+                map.facts.emit_movement_effect(tile(position), effect);
+            }
         }
         // Crystal 201189f8 actions_mission5_ray_of_light.lua:2-7.
         if fresh_effects && let Some(effect) = callback.effects.source_magic {

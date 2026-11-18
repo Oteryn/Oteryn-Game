@@ -84,6 +84,9 @@ pub struct CallbackEffects {
     /// Source-authored public player MONSTER_SAY, emitted only after commit.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub player_speech: Option<String>,
+    /// Present an authored cue at the position for the committed track value.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub progress_magic: Option<ProgressMagic>,
     pub transform: Option<u16>,
     /// Restore the exact pre-transform source revision after this delay.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -256,6 +259,39 @@ pub struct MagicEffect {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
+pub struct ProgressMagic {
+    pub track: String,
+    pub stages: BTreeMap<i64, Position>,
+    pub effects: Vec<u16>,
+}
+
+impl ProgressMagic {
+    fn valid(&self, callback: &Callback) -> bool {
+        matches!(callback.trigger, Trigger::StepIn)
+            && callback.actor_kind == ActorKind::Player
+            && !callback.is_read_only()
+            && callback
+                .storage
+                .iter()
+                .any(|storage| storage.track == self.track)
+            && !self.stages.is_empty()
+            && self.stages.len() <= 32
+            && self.stages.values().all(|p| (-15..=0).contains(&p.floor))
+            && (1..=MAX_EFFECTS).contains(&self.effects.len())
+            && self.effects.iter().all(|id| *id != 0)
+    }
+
+    pub fn committed_position(
+        &self,
+        changes: &[super::super::QuestTrackChange],
+    ) -> Option<Position> {
+        let change = changes.iter().find(|change| change.track == self.track)?;
+        self.stages.get(&change.after).copied()
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct Portal {
     pub position: Position,
     pub destination: Position,
@@ -396,6 +432,13 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects
+        .progress_magic
+        .as_ref()
+        .is_some_and(|magic| !magic.valid(callback))
+    {
+        return false;
+    }
     if effects.source_magic.is_some_and(|id| {
         id == 0 || callback.trigger != Trigger::Use || callback.actor_kind != ActorKind::Player
     }) {

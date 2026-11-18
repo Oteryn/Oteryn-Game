@@ -50,6 +50,17 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
             )
         }
     };
+    let mut effects = callback.effects.clone();
+    // Crystal movements_mission3_dance_dance_evolution.lua:33-53. The cue
+    // follows the committed status without relaxing any native state guard.
+    if matches!(rule, NativeRule::UnnaturalDance { .. })
+        && effects
+            .progress_magic
+            .as_ref()
+            .is_some_and(|magic| magic.track == dance::DANCE_STATUS_TRACK)
+    {
+        effects.progress_magic = None;
+    }
     callback.quest == rule.quest()
         && callback.selector.native
             == match rule {
@@ -99,7 +110,7 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
         && callback.passages.is_empty()
         && callback.teleport.is_none()
         && callback.facing.is_none()
-        && callback.effects.is_empty()
+        && effects.is_empty()
         && !callback.completes
         && !callback.premium_required
         && callback.minimum_level.is_none()
@@ -112,7 +123,6 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
         && !callback.return_on_failure
         && callback.failure_message.is_none()
         && callback.success_message.is_none()
-        && callback.effects == Default::default()
 }
 
 impl Callback {
