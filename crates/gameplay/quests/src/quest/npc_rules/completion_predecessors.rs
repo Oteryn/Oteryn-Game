@@ -8,9 +8,11 @@ pub(super) fn register(
     active: &mut QuestStateCatalogue,
     source: &NpcRuleCatalog,
 ) -> Result<(), String> {
+    const FIRST_DRAGON: &str = "oteryn:quest.the_first_dragon_quest";
     for quest in [
         "oteryn:quest.a_father_s_burden_quest",
         "oteryn:quest.marlin_trophy_quest",
+        FIRST_DRAGON,
     ] {
         let mut transitions = active.transitions.clone();
         let mut changed = false;
@@ -19,12 +21,25 @@ pub(super) fn register(
             .iter()
             .filter(|p| p.document.quest == quest)
         {
-            if !program.document.rules.iter().any(|rule| rule.completes) {
-                continue;
-            }
             let mut previous = program.clone();
-            for rule in &mut previous.document.rules {
-                rule.completes = false;
+            if quest == FIRST_DRAGON {
+                // The previous program contained just Tamoril. The quiz uses
+                // the existing Gelidrazah track with the same bounds and defaults.
+                previous
+                    .document
+                    .rules
+                    .retain(|rule| rule.npc == "oteryn:npc.tamoril");
+                previous
+                    .document
+                    .source_files
+                    .retain(|file| file.path == "data-global/npc/tamoril.lua");
+            } else {
+                if !program.document.rules.iter().any(|rule| rule.completes) {
+                    continue;
+                }
+                for rule in &mut previous.document.rules {
+                    rule.completes = false;
+                }
             }
             previous.digest =
                 Sha256::digest(serde_json::to_vec(&previous.document).map_err(|e| e.to_string())?)
