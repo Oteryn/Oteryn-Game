@@ -346,6 +346,9 @@ pub(super) async fn exercise_column(
         oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
         UseDisposition::Rejected
     );
+    // Advance the command clock along with the column so ordinary use
+    // exhaustion cannot gate the second request.
+    owner.clock_origin -= std::time::Duration::from_secs(10);
     let map = owner.bundle_map().ok_or("column map")?;
     assert_eq!(map.facts.expire_movement_items(1), 0);
     assert_eq!(map.facts.expire_movement_items(10_000_000), 0);
