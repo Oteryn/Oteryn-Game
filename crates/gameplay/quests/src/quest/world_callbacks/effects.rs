@@ -805,11 +805,20 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     || window.effect == 0
                     || !(1..=8).contains(&window.count)
                     || window.repeat.as_ref().is_some_and(|repeat| {
+                        use crate::quest::reward_callbacks::{StateCondition, StateMutation};
                         !(1..=8).contains(&repeat.count)
-                            || !callback
+                            || !(callback
                                 .storage
                                 .iter()
                                 .any(|guard| guard.track == repeat.claim_track && guard.preserve)
+                                || callback.operations().any(|operation| {
+                                    operation.track == repeat.claim_track
+                                        && matches!(
+                                            operation.from,
+                                            StateCondition::ElapsedAtLeast { .. }
+                                        )
+                                        && operation.effect == (StateMutation::Add { value: 0 })
+                                }))
                     })
             })
     }) {

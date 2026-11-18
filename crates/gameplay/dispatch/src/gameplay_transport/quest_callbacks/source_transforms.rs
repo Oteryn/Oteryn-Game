@@ -38,7 +38,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if selected.len() <= 1
             || selected
                 .iter()
-                .any(|c| c.effects.target_transform.is_none())
+                .any(|c| c.effects.target_transform.is_none() && c.effects.timed_presence.is_none())
             || selected.iter().enumerate().any(|(i, a)| {
                 selected[..i]
                     .iter()
