@@ -238,6 +238,52 @@ mod tests {
     }
 
     #[test]
+    fn options_transfer_reports_minimap_lock_filesystem_error() -> TestResult {
+        let root =
+            std::env::temp_dir().join(format!("bevy-options-lock-error-{}", std::process::id()));
+        let result = (|| -> TestResult {
+            let maps = root.join("maps");
+            let lock = maps
+                .join("11111111-1111-4111-8111-111111111111")
+                .join(format!("{}-{}-1.lock", "01".repeat(32), "02".repeat(32)));
+            // A directory at the lock path prevents opening it even with elevated permissions.
+            std::fs::create_dir_all(&lock)?;
+            let error = std::fs::OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create(true)
+                .truncate(false)
+                .open(&lock)
+                .err()
+                .ok_or("a directory opened as a writable lock file")?;
+            let expected = format!("Minimap storage is read-only: {error}");
+
+            let mut app = super::super::tests::app(Page::Misc, Some(root.join("settings.json")))?;
+            let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), -7, &[])?;
+            view.bind_test_minimap(maps);
+            let (link, _, _) = play_channel();
+            app.world_mut().non_send_mut::<HostOwner>().play =
+                Some(crate::bevy_shell::owner::ActivePlay { view, link });
+
+            for action in [Action::Import, Action::Restore, Action::Defaults] {
+                app.world_mut()
+                    .non_send_mut::<HostOwner>()
+                    .settings
+                    .feedback
+                    .clear();
+                press(&mut app, action);
+                assert_eq!(
+                    app.world().non_send::<HostOwner>().settings.feedback,
+                    expected
+                );
+            }
+            Ok(())
+        })();
+        let _ = std::fs::remove_dir_all(root);
+        result
+    }
+
+    #[test]
     fn export_keeps_the_pending_draft_edits() -> TestResult {
         let id = std::process::id();
         let path = std::env::temp_dir().join(format!("bevy-options-export-draft-{id}.json"));

@@ -22,8 +22,11 @@ pub(super) fn cache_busy() -> io::Error {
 #[cfg(bevy_shell)]
 impl crate::play::PlayView {
     pub(crate) fn require_minimap_preferences_writer(&self) -> io::Result<()> {
-        if lock(&self.minimap).is_read_only() {
-            return Err(cache_busy());
+        let map = lock(&self.minimap);
+        if let Some(path) = map.path()
+            && matches!(map.cache_access.get(&path), Some(CacheAccess::ReadOnly(_)))
+        {
+            return map.require_cache_owner(&path);
         }
         Ok(())
     }
