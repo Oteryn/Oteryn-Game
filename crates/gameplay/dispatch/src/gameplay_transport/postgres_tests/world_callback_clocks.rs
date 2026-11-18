@@ -77,7 +77,7 @@ async fn clock(h: &Harness) -> TestResult<i64> {
     ).bind(QUEST).bind(CLOCK).fetch_one(&h.pool).await?)
 }
 
-async fn use_(
+pub(super) async fn use_(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     id: u64,
@@ -88,7 +88,7 @@ async fn use_(
     oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)
 }
 
-async fn step(
+pub(super) async fn step(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     id: u64,

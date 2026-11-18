@@ -815,6 +815,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let optional_pvp = self
                 .special_movement_policy(&permit, pending.actor, pending.session)
                 .await;
+            let calendar_open = self.quest_calendar_open(callback).await;
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             if runtime.read_actor_position(pending.actor) != Ok(pending.expected) {
@@ -839,6 +840,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         optional_pvp,
                         None,
                         pending.selected_tool.as_ref(),
+                        calendar_open,
                     ))
                     .await
                 }
@@ -1180,7 +1182,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
-            if !self.prepare_scene_items(&permit, actor, command, map, callback, resolved.placement_key, target.expected_revision, fence).await {
+            let calendar_open = self.quest_calendar_open(callback).await;
+            if calendar_open && !self.prepare_scene_items(&permit, actor, command, map, callback, resolved.placement_key, target.expected_revision, fence).await {
                 return UseDisposition::Rejected;
             }
             let mut runtime = self.runtime.lock().await;
@@ -1230,6 +1233,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 optional_pvp,
                 read_only_gate.as_ref(),
                 selected_tool.as_ref(),
+                calendar_open,
             ))
             .await;
             drop(states);
@@ -1498,6 +1502,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await;
             let optional_pvp = self.special_movement_policy(permit, actor, session).await;
+            let calendar_open = self.quest_calendar_open(callback).await;
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             if runtime.read_actor_position(actor) != Ok(entered) {
@@ -1522,6 +1527,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         optional_pvp,
                         read_only_gate.as_ref(),
                         None,
+                        calendar_open,
                     ))
                     .await
                 }
@@ -1601,6 +1607,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 entered
             }
+        }
+    }
+
+    async fn quest_calendar_open(&self, callback: &Callback) -> bool {
+        match callback.calendar_window {
+            Some(window) => self
+                .root
+                .quest_calendar_epoch_seconds()
+                .await
+                .is_ok_and(|now| window.allows(now)),
+            None => true,
         }
     }
 

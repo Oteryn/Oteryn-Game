@@ -1,7 +1,7 @@
 //! Calendar admission uses the same UTC epoch as the existing durable NPC owner.
 use super::NpcRuleError;
 
-pub(super) fn valid_date(month: u8, day: u8) -> bool {
+pub(in crate::quest) fn valid_date(month: u8, day: u8) -> bool {
     let maximum = match month {
         2 => 29, // Annual Feb 29 is eligible only when that date actually occurs.
         4 | 6 | 9 | 11 => 30,
@@ -46,7 +46,11 @@ impl NpcUtcCalendar {
     }
 }
 
-pub(super) fn within(seconds: i64, start: (u8, u8), end: (u8, u8)) -> Result<bool, NpcRuleError> {
+pub(in crate::quest) fn within(
+    seconds: i64,
+    start: (u8, u8),
+    end: (u8, u8),
+) -> Result<bool, NpcRuleError> {
     let calendar = NpcUtcCalendar::from_epoch(seconds)?;
     let date = (calendar.month, calendar.day);
     Ok(if start <= end {

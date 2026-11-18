@@ -39,6 +39,34 @@ pub enum Trigger {
 #[cfg(test)]
 mod admission_tests;
 mod asura_authored;
+#[cfg(test)]
+mod calendar_window_tests {
+    use super::CalendarWindow;
+
+    #[test]
+    fn annual_calendar_window_includes_bounds_and_wraps() {
+        let spring = CalendarWindow {
+            start_month: 4,
+            start_day: 1,
+            end_month: 5,
+            end_day: 1,
+        };
+        assert!(!spring.allows(1_775_001_599));
+        assert!(spring.allows(1_775_001_600));
+        assert!(spring.allows(1_777_679_999));
+        assert!(!spring.allows(1_777_680_000));
+
+        let winter = CalendarWindow {
+            start_month: 12,
+            start_day: 31,
+            end_month: 1,
+            end_day: 1,
+        };
+        assert!(winter.allows(-1));
+        assert!(winter.allows(0));
+        assert!(!winter.allows(86_400));
+    }
+}
 mod character_requirements;
 pub use character_requirements::CharacterRequirements;
 mod clear_area;
@@ -440,12 +468,42 @@ pub struct Admission {
     pub premium: bool,
 }
 
+/// Recurring UTC dates, inclusive at both ends.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CalendarWindow {
+    pub start_month: u8,
+    pub start_day: u8,
+    pub end_month: u8,
+    pub end_day: u8,
+}
+
+impl CalendarWindow {
+    fn valid(self) -> bool {
+        use super::npc_rules::calendar::valid_date;
+
+        valid_date(self.start_month, self.start_day) && valid_date(self.end_month, self.end_day)
+    }
+
+    pub fn allows(self, epoch_seconds: i64) -> bool {
+        self.valid()
+            && super::npc_rules::calendar::within(
+                epoch_seconds,
+                (self.start_month, self.start_day),
+                (self.end_month, self.end_day),
+            )
+            .unwrap_or(false)
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Callback {
     /// Live Character predicates, evaluated by the fenced receipt owner.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub admission: Option<Admission>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub calendar_window: Option<CalendarWindow>,
     pub key: String,
     pub quest: String,
     pub trigger: Trigger,
@@ -830,6 +888,13 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
     let mut keys = BTreeSet::new();
     let mut selectors = BTreeMap::<Vec<u8>, Vec<&Callback>>::new();
     for callback in callbacks {
+        if callback.calendar_window.is_some_and(|window| {
+            !window.valid()
+                || !matches!(callback.trigger, Trigger::StepIn | Trigger::Use)
+                || (callback.trigger == Trigger::StepIn && !callback.return_on_failure)
+        }) {
+            return Err("invalid callback calendar window".into());
+        }
         if callback
             .item_on_target
             .as_ref()

@@ -83,7 +83,7 @@ pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
         reward_bundle: false,
         achievements: Vec::new(),
         activation: None,
-        requirements: None, track_initials: Default::default(), required_completed_quests: Vec::new(), admission: None, requires_premium: false,
+        requirements: None, track_initials: Default::default(), required_completed_quests: Vec::new(), admission: None, calendar_window: None, requires_premium: false,
 world_change: None,
         actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
         key: SACRIFICE.into(), quest: QUEST.into(), trigger: Trigger::Use,

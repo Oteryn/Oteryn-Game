@@ -293,7 +293,7 @@ pub fn callbacks() -> Vec<super::world_callbacks::Callback> {
         reward_bundle: false,
         achievements: Vec::new(),
         activation: None,
-        requirements: None, track_initials: Default::default(), required_completed_quests: Vec::new(), admission: None, requires_premium: false,actor_kind: Default::default(), opening_only: false, requires_world_admission: false, facing: None, state_ops: Vec::new(), world_requirements: Vec::new(),
+        requirements: None, track_initials: Default::default(), required_completed_quests: Vec::new(), admission: None, calendar_window: None, requires_premium: false,actor_kind: Default::default(), opening_only: false, requires_world_admission: false, facing: None, state_ops: Vec::new(), world_requirements: Vec::new(),
             key,quest:if hive {HIVE_QUEST}else{DEEPLING_QUEST}.into(),trigger:Trigger::Use,
 use_range:1,disguise:None,completes:false,premium_required:false,present:vec![],required_travel:vec![],
             selector:Selector{ position_aliases: Vec::new(),ordinal:None,native: None,position:Some(Position{x:binding.position.0,y:binding.position.1,floor:binding.position.2}),unique:None,action:None,appearance:Some(binding.appearance)},

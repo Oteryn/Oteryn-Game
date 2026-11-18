@@ -433,7 +433,7 @@ fn scenario_in_world(
             let fixture = Callback {
                 track_initials: Default::default(),
                 required_completed_quests: Vec::new(),
-                admission: None,
+                admission: None, calendar_window: None,
                 requires_premium: false,
                 state_operations: Vec::new(),
                 world_change: None,

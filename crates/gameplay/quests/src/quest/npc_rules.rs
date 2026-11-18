@@ -5,7 +5,7 @@
 mod achievement_tests;
 mod admission;
 mod bounds;
-mod calendar;
+pub(super) mod calendar;
 mod equipped_storage;
 pub use calendar::NpcUtcCalendar;
 mod evaluate;

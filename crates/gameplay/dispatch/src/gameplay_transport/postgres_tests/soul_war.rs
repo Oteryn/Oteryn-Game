@@ -695,7 +695,7 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
                 track_initials: Default::default(),
                 character_requirements: None,
                 required_completed_quests: Vec::new(),
-                admission: None,
+                admission: None, calendar_window: None,
                 requires_premium: false,
                 state_ops: Vec::new(),
                 use_range: 1,

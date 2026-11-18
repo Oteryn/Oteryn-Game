@@ -775,7 +775,7 @@ pub fn callbacks() -> Vec<Callback> {
         premium_required: false,
         present: Vec::new(),
         required_travel: Vec::new(),
-        failure_teleport: None, track_initials: Default::default(), required_completed_quests: Vec::new(), admission: None, requires_premium: false,actor_kind: Default::default(), opening_only: false, requires_world_admission: false, facing: None, state_ops: Vec::new(), world_requirements: Vec::new(),
+        failure_teleport: None, track_initials: Default::default(), required_completed_quests: Vec::new(), admission: None, calendar_window: None, requires_premium: false,actor_kind: Default::default(), opening_only: false, requires_world_admission: false, facing: None, state_ops: Vec::new(), world_requirements: Vec::new(),
         key:gate_key(index),quest:super::shared_world_progress::HIVE_QUEST.into(),trigger:Trigger::Use,
         selector:Selector {
         position_aliases: Vec::new(),

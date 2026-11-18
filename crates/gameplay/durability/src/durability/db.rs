@@ -1318,6 +1318,29 @@ impl Drop for BootPassDeadline {
 }
 
 impl DurabilityRoot {
+    /// UTC seconds for a live quest admission, with the same fixture clock as the writer.
+    pub async fn quest_calendar_epoch_seconds(&self) -> Result<i64, DurabilityError> {
+        #[cfg(any(test, feature = "test-support"))]
+        if let Some(seconds) = self
+            .quest_test_clock_handle()
+            .map(|clock| clock.load(std::sync::atomic::Ordering::Acquire))
+            .filter(|seconds| *seconds >= 0)
+        {
+            return Ok(seconds);
+        }
+        self.try_issue_semantic_pass()?
+            .run(|holder, _| {
+                Box::pin(async move {
+                    Ok(sqlx::query_scalar(
+                        "SELECT floor(extract(epoch FROM transaction_timestamp()))::bigint",
+                    )
+                    .fetch_one(&mut **holder)
+                    .await?)
+                })
+            })
+            .await
+    }
+
     /// Classifies scheduled work, including its ordinary semantic passes, as background.
     /// Its independent owner key survives awaits and is inherited by `spawn_task`.
     /// Shared helpers cannot promote it to foreground or keep a retry ticket.

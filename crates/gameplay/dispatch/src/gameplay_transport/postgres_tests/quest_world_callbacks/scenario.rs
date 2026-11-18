@@ -554,6 +554,7 @@ fn scenario_case(
         }
     }
     if name.starts_with("qengine-rewards-world-clock")
+        || name == super::super::quest_calendar_window::NAME
         || matches!(
             name,
             "qengine-rewards-authored-world-rewards"

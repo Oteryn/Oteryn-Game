@@ -12,7 +12,7 @@ pub const ENTER: &str = "oteryn:quest-callback/srv6-schrodinger-island";
 pub(crate) fn callback() -> Callback {
     Callback {
         state_operations: Vec::new(),
-        failure_teleport: None, track_initials: Default::default(), required_completed_quests: Vec::new(), admission: None, requires_premium: false,
+        failure_teleport: None, track_initials: Default::default(), required_completed_quests: Vec::new(), admission: None, calendar_window: None, requires_premium: false,
 world_change: None,
         actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
         key: ENTER.into(),

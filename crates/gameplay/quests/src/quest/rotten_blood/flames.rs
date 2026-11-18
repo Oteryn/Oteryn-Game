@@ -77,7 +77,7 @@ pub(crate) fn callbacks() -> Vec<Callback> {
         achievements: Vec::new(),
         activation: None,
         requirements: None, track_initials: Default::default(), character_requirements: None, required_completed_quests: Vec::new(), requires_premium: false,
-        admission: None,
+        admission: None, calendar_window: None,
         world_change: None,
         actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
         state_ops: Vec::new(), world_requirements: Vec::new(), facing: None,

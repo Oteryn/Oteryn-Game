@@ -127,6 +127,7 @@ fn callback(
         required_completed_quests: Vec::new(),
         requires_premium: false,
         admission: None,
+        calendar_window: None,
         key: callback_key(suffix),
         quest: QUEST.into(),
         trigger,

@@ -22,7 +22,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         optional_pvp: Option<bool>,
         read_only_gate: Option<&ReadOnlyGate>,
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
+        calendar_open: bool,
     ) -> UseDisposition {
+        if !calendar_open {
+            if matches!(cause, QuestCause::Use(_))
+                && let Some(message) = &callback.failure_message
+            {
+                self.states.chat.push_quest_feedback(session, message);
+            }
+            return UseDisposition::Rejected;
+        }
         if callback.effects.encounter.is_none()
             && let Some(catalogue) = self.quest_catalogue.as_deref()
             && let Some(bindings) = catalogue.authored_bindings()
