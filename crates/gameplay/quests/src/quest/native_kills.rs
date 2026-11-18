@@ -4,7 +4,7 @@ use super::{QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, 
 use std::collections::BTreeMap;
 
 mod registry;
-pub use registry::{CounterRef, active_for, counter_for, tracks_creature_for};
+pub use registry::{CounterRef, active_for, admits_death_position, counter_for, tracks_creature_for};
 
 mod fugue;
 mod phase_settlements;

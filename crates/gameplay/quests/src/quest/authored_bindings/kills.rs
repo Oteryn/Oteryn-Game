@@ -6,6 +6,33 @@ use serde::{Deserialize, Serialize};
 
 pub const MAX_KILL_BINDINGS: usize = 128;
 
+/// Crystal201189f functions.lua:1064-1082 distinguishes party recipients from
+/// direct Player damage-map entries. Summon-owner credit is an explicit opt-in.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum DamageRecipients {
+    AllDamagers,
+    TopDamage,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DamageCredit {
+    pub recipients: DamageRecipients,
+    #[serde(default)]
+    pub summon_owner: bool,
+    pub recent_damage_ms: Option<u64>,
+}
+
+impl DamageCredit {
+    pub fn admits_hit(self, at_ms: Option<u64>, death_ms: u64) -> bool {
+        self.recent_damage_ms.is_none_or(|window| {
+            at_ms.and_then(|hit| death_ms.checked_sub(hit))
+                .is_some_and(|age| age <= window)
+        })
+    }
+}
+
 /// Inclusive victim bounds in native carrier coordinates (positive Tibia floor).
 /// Eligibility is frozen from the original lethal facts, never the recipient's later position.
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -42,6 +69,12 @@ pub struct KillCounter {
     pub advance_gate_to: Option<i64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub death_area: Option<DeathArea>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub death_areas: Vec<DeathArea>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub damage_credit: Option<DamageCredit>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub set_to_maximum: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub world_change: Option<String>,
     /// Exact native encounter callback; absent for ordinary party hunts.
@@ -61,6 +94,11 @@ impl KillCounter {
             || self.track == self.gate
             || self.minimum >= self.maximum
             || self.death_area.is_some_and(|area| !area.valid())
+            || self.death_areas.len() > 16
+            || self.death_areas.iter().any(|area| !area.valid())
+            || self.death_area.is_some() && !self.death_areas.is_empty()
+            || self.damage_credit.is_some_and(|credit| credit.recent_damage_ms == Some(0))
+            || self.encounter_source.is_some() && (self.damage_credit.is_some() || self.set_to_maximum || !self.death_areas.is_empty())
             || count
                 .is_none_or(|track| track.minimum > self.minimum || track.maximum < self.maximum)
             || gate.is_none_or(|track| {
@@ -116,20 +154,27 @@ impl KillCounter {
             QuestEffect {
                 track: self.gate.clone(),
                 from: QuestComparison::Eq(self.gate_value),
-                effect: self
-                    .advance_gate_to
-                    .map_or(QuestEffectKind::Add(0), |value| {
+                effect: self.advance_gate_to.map_or(QuestEffectKind::Add(0), |value| {
+                    if self.set_to_maximum {
+                        QuestEffectKind::Set(value)
+                    } else {
                         QuestEffectKind::SetWhenAtLeast {
                             other_effect: 1,
                             minimum: self.maximum - 1,
                             value,
                         }
-                    }),
+                    }
+                }),
             },
             QuestEffect {
                 track: self.track.clone(),
                 from: QuestComparison::Between(self.minimum, self.maximum - 1),
-                effect: QuestEffectKind::Add(1),
+                // Crystal201189f the_secret_library_quest/creaturescripts_kill.lua:10-39.
+                effect: if self.set_to_maximum {
+                    QuestEffectKind::Set(self.maximum)
+                } else {
+                    QuestEffectKind::Add(1)
+                },
             },
         ]
     }
@@ -148,6 +193,8 @@ impl KillCounter {
             minimum: self.minimum,
             maximum: self.maximum,
             death_area: self.death_area,
+            death_areas: &self.death_areas,
+            damage_credit: self.damage_credit,
             encounter_source: self.encounter_source.as_deref(),
         }
     }

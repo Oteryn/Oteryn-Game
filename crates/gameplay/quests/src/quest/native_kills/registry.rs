@@ -14,6 +14,8 @@ pub struct CounterRef<'a> {
     pub minimum: i64,
     pub maximum: i64,
     pub death_area: Option<crate::quest::authored_bindings::kills::DeathArea>,
+    pub death_areas: &'a [crate::quest::authored_bindings::kills::DeathArea],
+    pub damage_credit: Option<crate::quest::authored_bindings::kills::DamageCredit>,
     pub encounter_source: Option<&'a str>,
 }
 
@@ -29,9 +31,21 @@ impl Counter {
             minimum: 0,
             maximum: self.maximum,
             death_area: None,
+            death_areas: &[],
+            damage_credit: None,
             encounter_source: None,
         }
     }
+}
+
+pub fn admits_death_position(
+    area: Option<crate::quest::authored_bindings::kills::DeathArea>,
+    areas: &[crate::quest::authored_bindings::kills::DeathArea],
+    position: Option<[i32; 3]>,
+) -> bool {
+    area.is_none_or(|area| position.is_some_and(|at| area.contains(at)))
+        && (areas.is_empty()
+            || position.is_some_and(|at| areas.iter().any(|area| area.contains(at))))
 }
 
 pub fn counter_for<'a>(catalogue: &'a QuestStateCatalogue, key: &str) -> Option<CounterRef<'a>> {

@@ -14,6 +14,15 @@ pub enum NativeDeathSource {
         source: Arc<crate::foundation::PartySnapshot>,
         position: (u16, u16, i8),
     },
+    Damage {
+        death: crate::foundation::CreatureDeathOccurrenceKey,
+        session: crate::foundation::GameSessionId,
+        character: crate::foundation::CharacterId,
+        lease_generation: u64,
+        position: (u16, u16, i8),
+        hit_at_ms: Option<u64>,
+        death_at_ms: u64,
+    },
     Encounter(super::encounter_deaths::EncounterDeathContext),
     Source(super::source_deaths::SourceDeathContext),
 }
@@ -53,6 +62,12 @@ impl NativeQuestDeath {
                     .is_some_and(|counter| {
                         counter.creature == self.creature
                             && counter.encounter_source.is_none()
+                            && counter.damage_credit.is_none()
+                            && oteryn_gameplay_quests::quest::native_kills::admits_death_position(
+                                counter.death_area,
+                                counter.death_areas,
+                                position.map(|(x,y,z)| [i32::from(x), i32::from(y), i32::from(z)]),
+                            )
                             && if oteryn_gameplay_quests::quest::native_kills::counter(
                                 &self.transition,
                             )
@@ -65,6 +80,19 @@ impl NativeQuestDeath {
                                 })
                             }
                     })
+                }
+                NativeDeathSource::Damage { position: (x, y, z), hit_at_ms, death_at_ms, .. } => {
+                    oteryn_gameplay_quests::quest::native_kills::counter_for(catalogue, &self.transition)
+                        .is_some_and(|counter| {
+                            counter.creature == self.creature
+                                && counter.encounter_source.is_none()
+                                && self.definition_hash.is_some_and(|hash| catalogue.definition_hash(counter.quest) == Some(hash))
+                                && counter.damage_credit.is_some_and(|credit| credit.admits_hit(*hit_at_ms, *death_at_ms))
+                                && oteryn_gameplay_quests::quest::native_kills::admits_death_position(
+                                    counter.death_area, counter.death_areas,
+                                    Some([i32::from(*x), i32::from(*y), i32::from(*z)]),
+                                )
+                        })
                 }
                 NativeDeathSource::Encounter(source) => {
                     oteryn_gameplay_quests::quest::native_kills::counter_for(
@@ -96,6 +124,13 @@ impl NativeQuestDeath {
                     && death.runtime_scope() == fence.runtime_scope
                     && death.scope_ownership_generation() == fence.scope_ownership_generation
             }
+            NativeDeathSource::Damage { death, session, character, lease_generation, .. } => {
+                death.runtime_scope() == fence.runtime_scope
+                    && death.scope_ownership_generation() == fence.scope_ownership_generation
+                    && *session == fence.game_session_id
+                    && character.as_bytes() == fence.character_id.as_bytes()
+                    && *lease_generation == fence.character_lease_generation
+            }
             _ => matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. }),
         }
     }
@@ -104,7 +139,7 @@ impl NativeQuestDeath {
         match &self.source {
             NativeDeathSource::PositionedParty { source, .. } | NativeDeathSource::Party(source)
             | NativeDeathSource::InstanceBoss { party: source, .. } => Some(source.as_ref()),
-            NativeDeathSource::Source(_) | NativeDeathSource::Encounter(_) => None,
+            NativeDeathSource::Source(_) | NativeDeathSource::Encounter(_) | NativeDeathSource::Damage { .. } => None,
         }
     }
 
@@ -141,6 +176,23 @@ impl NativeQuestDeath {
             }
             NativeDeathSource::Source(source) => source.bind(binding),
             NativeDeathSource::Encounter(source) => source.bind(binding),
+            NativeDeathSource::Damage { death, session, character, lease_generation, position: (x, y, z), hit_at_ms, death_at_ms } => {
+                let digest = Sha256::new()
+                    .chain_update(*binding)
+                    .chain_update(b"native-damage-credit-v1")
+                    .chain_update(death.native_bytes())
+                    .chain_update(session.as_bytes())
+                    .chain_update(character.as_bytes())
+                    .chain_update(lease_generation.to_be_bytes())
+                    .chain_update(x.to_be_bytes())
+                    .chain_update(y.to_be_bytes())
+                    .chain_update(z.to_be_bytes())
+                    .chain_update([u8::from(hit_at_ms.is_some())])
+                    .chain_update(hit_at_ms.unwrap_or_default().to_be_bytes())
+                    .chain_update(death_at_ms.to_be_bytes())
+                    .finalize();
+                binding[1..].copy_from_slice(&digest);
+            }
         }
         let mut digest = Sha256::new()
             .chain_update(*binding)

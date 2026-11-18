@@ -6,6 +6,7 @@ use std::sync::Arc;
 mod encounters;
 mod guardians;
 pub(super) mod native_goals;
+mod party_credit;
 
 use oteryn_gameplay_quests::quest::grizzly_adams::{self as quest, GrizzlyAction};
 
@@ -40,6 +41,8 @@ struct NativeCounterCapture {
     creature: String,
     definition_hash: Option<[u8; 32]>,
     death_area: Option<oteryn_gameplay_quests::quest::authored_bindings::kills::DeathArea>,
+    death_areas: Vec<oteryn_gameplay_quests::quest::authored_bindings::kills::DeathArea>,
+    damage_credit: Option<oteryn_gameplay_quests::quest::authored_bindings::kills::DamageCredit>,
     encounter_source: Option<String>,
 }
 
@@ -62,6 +65,8 @@ fn capture_native(
                 creature: counter.creature.into(),
                 definition_hash,
                 death_area: counter.death_area,
+                death_areas: counter.death_areas.to_vec(),
+                damage_credit: counter.damage_credit,
                 encounter_source: counter.encounter_source.map(str::to_owned),
             })
         })
@@ -185,10 +190,23 @@ fn freeze_at(
         for counter in &snapshot.native_counters {
             if counter.creature == creature
                 && counter.encounter_source.is_none()
-                && counter.death_area.is_none_or(|area| {
-                    death_position.is_some_and(|position| area.contains(position))
-                })
+                && counter.damage_credit.is_none()
+                && oteryn_gameplay_quests::quest::native_kills::admits_death_position(
+                    counter.death_area, &counter.death_areas, death_position,
+                )
             {
+                use crate::durability::quest_state::native_kills::NativeDeathSource;
+                let source = if counter.death_area.is_some() || !counter.death_areas.is_empty() {
+                    let Some(position) = corpse.and_then(party_credit::position) else {
+                        continue;
+                    };
+                    NativeDeathSource::PositionedParty {
+                        source: Arc::clone(&native_source),
+                        position,
+                    }
+                } else {
+                    NativeDeathSource::Party(Arc::clone(&native_source))
+                };
                 native.push(super::quest_kills::Recipient {
                     actor: snapshot.actor,
                     session: snapshot.session,
@@ -199,10 +217,7 @@ fn freeze_at(
                         definition_hash: counter.definition_hash,
                         creature: creature.into(),
                         observed_revision: snapshot.observed_revision,
-                        source:
-                            crate::durability::quest_state::native_kills::NativeDeathSource::Party(
-                                Arc::clone(&native_source),
-                            ),
+                        source,
                     },
                 });
             }
@@ -381,6 +396,7 @@ pub(super) fn capture(
                 Some(entry.facts.corpse),
                 &live,
             );
+            frozen.native.extend(party_credit::capture(runtime, entry, &live));
             if matches!(entry.facts.death.runtime_scope(), crate::foundation::RuntimeScopeRefV1::Instance { .. }) {
                 for recipient in &mut frozen.native {
                     if recipient.death.transition != "oteryn:quest-transition/native-kills/first-dragon-selected" { continue; }
