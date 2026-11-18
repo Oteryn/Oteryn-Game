@@ -457,24 +457,34 @@ async fn observe_look_item(
         ItemLookOutcome::Text(text) => ItemLookResult::Text(text),
         ItemLookOutcome::Unavailable => return Err(unavailable),
     };
-    if definition.production_key == "oteryn:item.tibia.i9585"
-        && distance <= 4
+    let production_key = definition.production_key.as_str();
+    let marriage = production_key == "oteryn:item.tibia.i9585";
+    let arena_trophy = matches!(
+        production_key,
+        "oteryn:item.tibia.i5805" | "oteryn:item.tibia.i5806" | "oteryn:item.tibia.i5807"
+    );
+    // Crystal Item::getDescription projects a special description at any visible distance.
+    if (arena_trophy || (marriage && distance <= 4))
         && let ItemKey::Instance(instance) = key
     {
         drop(runtime);
-        let inscription = admission
-            .root
-            .read_marriage_inscription(
-                admission.character,
-                *admission.world_id.as_bytes(),
-                instance,
-            )
-            .await
-            .map_err(|_| unavailable)?;
+        let world = *admission.world_id.as_bytes();
+        let inscription = if marriage {
+            admission
+                .root
+                .read_marriage_inscription(admission.character, world, instance)
+                .await
+        } else {
+            admission
+                .root
+                .read_arena_trophy_inscription(admission.character, world, instance)
+                .await
+        }
+        .map_err(|_| unavailable)?;
         if let Some(inscription) = inscription {
             let (current, _, current_distance) =
                 observe_item(admission, actor, session, fence, views, target).await?;
-            if current != definition || current_distance > 4 {
+            if current != definition || (marriage && current_distance > 4) {
                 return Err(unavailable);
             }
             if let ItemLookResult::Text(text) = ordinary {

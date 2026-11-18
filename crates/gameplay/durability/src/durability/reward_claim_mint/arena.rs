@@ -5,6 +5,43 @@ use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use oteryn_protocol_oteryn::arena::{ArenaDisposition as D, ArenaResult, encode_match_result};
 
 impl DurabilityRoot {
+    /// Public description of a live arena award, after LOOK proves visibility.
+    pub async fn read_arena_trophy_inscription(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        world: [u8; 16],
+        item: [u8; 16],
+    ) -> std::result::Result<Option<String>, DurabilityError> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| Box::pin(async move {
+                let mut tx = begin_type2_transaction(holder, deadline).await?;
+                assert_recovery_fence(&mut tx, &recovery).await?;
+                let text = sqlx::query_scalar(
+                    "SELECT r.root_text FROM game_item_instances i
+                     JOIN game_reward_claim_mint_receipts r
+                       ON r.item_instance_id=i.item_instance_id AND r.transaction_id=i.minted_transaction_id
+                     WHERE i.item_instance_id=encode($1,'hex')::uuid
+                       AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1
+                       AND r.claim_family='RewardClaim' AND r.root_text IS NOT NULL
+                       AND (i.definition_production_key, r.claim_production_key) IN (
+                           ('oteryn:item.tibia.i5807', 'oteryn:reward.svargrond-arena.1.4'),
+                           ('oteryn:item.tibia.i5806', 'oteryn:reward.svargrond-arena.2.4'),
+                           ('oteryn:item.tibia.i5805', 'oteryn:reward.svargrond-arena.3.4')
+                       )",
+                )
+                .bind(item.as_slice())
+                .bind(world.as_slice())
+                .fetch_optional(&mut **tx)
+                .await?;
+                tx.commit(deadline).await?;
+                Ok(text)
+            }))
+            .await
+    }
+
     #[allow(
         clippy::too_many_arguments,
         reason = "the existing MINT owner plus the closed donor reward selector"
@@ -14,7 +51,7 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         gameplay: CurrentCharacterGameplayFence,
-        request: RewardClaimMintRequest,
+        mut request: RewardClaimMintRequest,
         rank: u8,
         category: u8,
         choice: u8,
@@ -32,6 +69,7 @@ impl DurabilityRoot {
             || request.achievement.is_some()
             || request.quest_transition.is_some()
             || request.key_number.is_some()
+            || request.root_text.is_some()
             || !contents::weight_pin_matches(&request, weights)
             || request.contents.iter().zip(&expected.contents).any(
                 |(actual, (source, quantity))| {
@@ -44,7 +82,6 @@ impl DurabilityRoot {
             return Err(RewardClaimMintError::InvalidInput);
         }
         let fence = gameplay.item_fence();
-        let binding = intent_binding(&request, fence.character_id)?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| RewardClaimMintError::AuthorityRejected)?;
@@ -82,6 +119,27 @@ impl DurabilityRoot {
                 let bytes=finish(&mut tx,gameplay,&request,&payload,&state,D::InventoryFull).await?;
                 tx.commit(deadline).await?;return Ok(Ok(bytes));
             }
+            if category == 4 {
+                let name: String = sqlx::query_scalar(
+                    "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+                )
+                .bind(fence.character_id.as_bytes().as_slice())
+                .fetch_one(&mut **tx)
+                .await?;
+                // Crystal 201189f svargrond_arena.lua:175-190.
+                let (difficulty, punctuation) = match rank {
+                    1 => ("greenhorn", ""),
+                    2 => ("scrapper", "."),
+                    3 => ("warlord", "."),
+                    _ => return Err(DurabilityError::InvalidStoredState),
+                };
+                request.root_text = Some(format!(
+                    "For victory in the Barbarian Arena at {difficulty} difficulty. Awarded to {name}{punctuation}"
+                ));
+                validate_request(&request).map_err(|_| DurabilityError::InvalidStoredState)?;
+            }
+            let binding = intent_binding(&request, fence.character_id)
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
             insert_reservation(&mut tx,&request,&binding,&reservation).await?;
             sqlx::query("UPDATE game_reward_claim_mint_reservations SET work_units_used=1 WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
                 .bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).execute(&mut **tx).await?;
