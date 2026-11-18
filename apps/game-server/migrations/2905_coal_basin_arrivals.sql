@@ -145,6 +145,16 @@ BEGIN
         SELECT 1 FROM game_coal_basin_arrivals r
         WHERE r.recipient=NEW.character_id AND r.move_transaction_id=NEW.cause_id
           AND r.quest_changed AND r.created_xact_id=pg_current_xact_id()
+          AND NOT EXISTS (
+            SELECT 1 FROM unnest(NEW.track_keys,NEW.values_before,NEW.values_after) AS t(key,before,after)
+            WHERE after<>1 OR CASE key
+                WHEN 'oteryn:quest-progress/quest/u7_4/the_ancient_tombs/default_start' THEN before=1
+                WHEN 'oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diphtrahs_treasure' THEN r.source_uid<>9035 OR before>0
+                WHEN 'oteryn:quest-track/ancient-tombs/diprath-treasure' THEN r.source_uid<>9035 OR before>0
+                WHEN 'oteryn:quest-progress/quest/u7_4/the_ancient_tombs/mahrdis_treasure' THEN r.source_uid<>9036 OR before>0
+                ELSE true
+            END
+          )
     ) OR NEW.transition_key<>'oteryn:quest-callback/ancient-tombs-coal-basin'
       OR NEW.quest_key<>'oteryn:quest.the_ancient_tombs_quest' OR NEW.completes
     THEN

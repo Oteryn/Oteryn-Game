@@ -130,7 +130,7 @@ pub enum QuestCause {
 }
 
 impl QuestCause {
-    const fn kind(self) -> &'static str {
+    pub(super) const fn kind(self) -> &'static str {
         match self {
             Self::ServerTimer(_) => "server_timer",
             Self::NativeHit(_) => "native_hit",

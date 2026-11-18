@@ -45,7 +45,17 @@ pub(in crate::durability) async fn apply(
         }
         pin = state.try_get("pinned_content_revision").map_err(DurabilityError::from)?;
     }
-    let keys: Vec<_> = std::iter::once(START).chain(basin.treasure.map(Treasure::track)).collect();
+    let timer_track = match basin.treasure {
+        Some(Treasure::Dipthrah) => Some(
+            oteryn_gameplay_quests::quest::timers::recipe("oteryn:quest-timer/ancient-tombs-diprath-treasure")
+                .ok_or(DurabilityError::InvalidStoredState)?.track
+        ),
+        _ => None,
+    };
+    let keys: Vec<_> = std::iter::once(START)
+        .chain(basin.treasure.map(Treasure::track))
+        .chain(timer_track)
+        .collect();
     let rows = sqlx::query(
         "SELECT track_key,quest_key,value FROM game_character_quest_tracks
          WHERE character_id=encode($1,'hex')::uuid AND track_key=ANY($2::text[])
@@ -61,7 +71,7 @@ pub(in crate::durability) async fn apply(
         let value: i64 = row.try_get("value").map_err(DurabilityError::from)?;
         stored.insert(key, value);
     }
-    let mut changes = Vec::new();
+    let mut before_values = BTreeMap::new();
     for key in keys {
         let track = catalogue.track(key).filter(|track| track.quest == QUEST)
             .ok_or(CharacterProgressionError::InvalidInput)?;
@@ -69,10 +79,15 @@ pub(in crate::durability) async fn apply(
         if !(track.min..=track.max).contains(&before) || !(track.min..=track.max).contains(&1) {
             return Err(DurabilityError::InvalidStoredState.into());
         }
-        if (key == START && before != 1) || (key != START && before <= 0) {
-            changes.push(QuestTrackChange { track: key.into(), before, after: 1 });
-        }
+        before_values.insert(key, before);
     }
+    // The existing Dipthrah timer and room gate use their own key for this
+    // same source storage. Either key can witness already advanced progress.
+    let treasure_previously_started = before_values.iter().any(|(&key, &value)| key != START && value > 0);
+    let changes: Vec<_> = before_values.into_iter()
+        .filter(|&(key,before)| (key == START && before != 1) || (key != START && !treasure_previously_started))
+        .map(|(key,before)| QuestTrackChange { track:key.into(), before, after:1 })
+        .collect();
     if !changes.is_empty() {
         let keys: Vec<_> = changes.iter().map(|change| change.track.as_str()).collect();
         let existing = keys.iter().filter(|&&key| stored.contains_key(key)).count();

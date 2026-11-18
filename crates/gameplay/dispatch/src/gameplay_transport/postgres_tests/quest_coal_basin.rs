@@ -2,15 +2,17 @@
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::debug};
 use crate::gameplay_transport::{
     connection::UseCommand,
-    item_move::{LoopMove, LoopMoveReplay, LoopMoveResult, LoopTarget},
-    item_view::ItemKey,
-    loop_move,
+    item_move::{ItemMoveStep, item_move},
+    item_view::{ItemKey, ItemViewContinuity, ItemViewError, SessionItemView},
 };
 use oteryn_gameplay_quests::quest::world_callbacks::{
     Offering, Position,
     coal_basins::{self, COIN, CoalBasin, Treasure},
 };
-use oteryn_protocol_oteryn::item_view::WorldTilePosition;
+use oteryn_protocol_oteryn::item_view::{
+    ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome, ItemMoveSelection,
+    WorldTilePosition, encode_item_move_intent_for,
+};
 
 pub(super) const START: Position = Position { x: 33072, y: 32589, floor: -13 };
 
@@ -63,18 +65,45 @@ pub(super) async fn exercise(
           WHERE e.character_id=encode($1,'hex')::uuid AND i.definition_production_key=$2 AND i.quantity=6",
     ).bind(donor.character_id.as_bytes().as_slice()).bind(COIN).fetch_one(pool).await?;
     let item: [u8;16] = item.try_into().map_err(|_| "coin stack ID")?;
-    let target = LoopTarget::Ground(WorldTilePosition {
+    let target = WorldTilePosition {
         x:i32::from(basin.position.x), y:i32::from(basin.position.y), floor:i16::from(basin.position.floor),
-    });
+    };
+    let source = ItemKey::Instance(item);
+    let mut view = SessionItemView::resume(ItemViewContinuity::default())
+        .with_map_view().with_equip_drop();
+    let handle = view.map_view(&[source], |handles| {
+        handles.handle(&source).ok_or(ItemViewError::Exhausted)
+    }).map_err(debug)?;
+    let selection = ItemMoveSelection {equip_drop:true, container_tree:false, world_interaction:true};
+    let mut payload = encode_item_move_intent_for(
+        &ItemMoveIntent {source:handle, destination:ItemMoveDestination::Ground(target)},
+        selection,
+    ).map_err(debug)?;
+    payload.extend_from_slice(&[0x30,2]); // Command 9 field 6 under ITEM_STACK_COUNT_V1.
     let command = UseCommand {
         game_session_id: depositor.game_session_id, command_id: 4507, item_fence: Some(donor.item_fence()),
     };
+    // An existing landing makes the recipient write fail after the original
+    // move and track updates. Both must roll back before this command retries.
+    sqlx::query(
+        "INSERT INTO game_character_pending_arrivals(character_id,occurrence_id,world_id,tile_x,tile_y,tile_floor)
+         VALUES(encode($1,'hex')::uuid,game_character_uuid_v7(),encode($2,'hex')::uuid,$3,$4,$5)",
+    ).bind(recipient.character_id.as_bytes().as_slice()).bind(owner.world_id.as_bytes().as_slice())
+      .bind(i32::from(flame.x)).bind(i32::from(flame.y)).bind(13_i16).execute(pool).await?;
+    let rolled_back = item_move(owner,depositor_actor,command,&payload,selection,true,&mut view).await;
+    assert_eq!(rolled_back, ItemMoveStep::Disconnect);
+    let quantity: i64 = sqlx::query_scalar(
+        "SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
+    ).bind(item.as_slice()).fetch_one(pool).await?;
+    assert_eq!(quantity,6);
+    let quest = owner.root.read_character_quest_state(owner.character,recipient.character_id).await.map_err(debug)?;
+    assert_eq!(quest.tracks().get(coal_basins::START),None);
+    sqlx::query("DELETE FROM game_character_pending_arrivals WHERE character_id=encode($1,'hex')::uuid")
+        .bind(recipient.character_id.as_bytes().as_slice()).execute(pool).await?;
     owner.states.quest_callbacks.interrupt_after_commit.store(true, Ordering::Release);
     assert_eq!(
-        loop_move::move_loop_item(owner,depositor_actor,command,LoopMove {
-            item:ItemKey::Instance(item), count:Some(2), target,
-        }).await,
-        LoopMoveResult::Unknown
+        item_move(owner,depositor_actor,command,&payload,selection,true,&mut view).await,
+        ItemMoveStep::Disconnect
     );
     let position = |p: Position| (i32::from(p.x), i32::from(p.y), -i16::from(p.floor));
     async fn at(owner: &ComposedFreshAdmission<'_, '_, '_>, actor: crate::foundation::ExactActorRef)
@@ -87,12 +116,15 @@ pub(super) async fn exercise(
     let quest = owner.root.read_character_quest_state(owner.character,recipient.character_id).await.map_err(debug)?;
     assert_eq!(quest.tracks().get(coal_basins::START),Some(&1));
     assert_eq!(quest.tracks().get(Treasure::Dipthrah.track()),Some(&1));
+    assert_eq!(quest.tracks().get("oteryn:quest-track/ancient-tombs/diprath-treasure"),Some(&1));
     let paid = owner.root.read_character_quest_state(owner.character,donor.character_id).await.map_err(debug)?;
     assert_eq!(paid.tracks().get(coal_basins::START),None);
-    assert_eq!(loop_move::committed_loop_move(owner,command).await,Some(LoopMoveReplay::Moved));
+    let replay = item_move(owner,depositor_actor,command,&payload,selection,true,&mut view).await;
+    assert!(matches!(replay,ItemMoveStep::Result(ItemMoveOutcome::Moved,_)),"{replay:?}");
     assert_eq!(at(owner,guest_actor).await?,position(destination));
     assert_eq!(at(owner,depositor_actor).await?,position(START));
-    assert_eq!(loop_move::committed_loop_move(owner,command).await,Some(LoopMoveReplay::Moved));
+    let replay = item_move(owner,depositor_actor,command,&payload,selection,true,&mut view).await;
+    assert!(matches!(replay,ItemMoveStep::Result(ItemMoveOutcome::Moved,_)),"{replay:?}");
     let sacrificed: Vec<(i64,bool,bool)> = sqlx::query_as(
         "SELECT (before_item->>'quantity')::bigint, recipient=encode($1,'hex')::uuid, quest_changed
            FROM game_coal_basin_arrivals",

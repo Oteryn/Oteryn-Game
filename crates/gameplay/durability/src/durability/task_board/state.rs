@@ -80,33 +80,8 @@ pub(super) fn inactive(data: &TaskBoardData) -> bool {
 }
 
 pub(super) fn cause_key(cause: QuestCause) -> (&'static str, [u8; 16], u64) {
-    match cause {
-        QuestCause::ServerTimer(id) => ("server_timer", *id.as_bytes(), 0),
-        QuestCause::NativeHit(id) => ("native_hit", *id.as_bytes(), 0),
-        QuestCause::CreatureDeath(id) => ("creature_death", *id.as_bytes(), 0),
-        QuestCause::SourceThink(id) => ("source_think", *id.as_bytes(), 0),
-        QuestCause::SourceStep(id) => ("source_step", *id.as_bytes(), 0),
-        QuestCause::Command(command) => (
-            "command",
-            *command.game_session_id().as_bytes(),
-            command.command_id().get(),
-        ),
-        QuestCause::Use(command) => (
-            "use",
-            *command.game_session_id().as_bytes(),
-            command.command_id().get(),
-        ),
-        QuestCause::Step(command) => (
-            "step",
-            *command.game_session_id().as_bytes(),
-            command.command_id().get(),
-        ),
-        QuestCause::ClaimObligation(command) => (
-            "claim_obligation",
-            *command.game_session_id().as_bytes(),
-            command.command_id().get(),
-        ),
-    }
+    let (id, ordinal) = cause.key();
+    (cause.kind(), id, ordinal)
 }
 
 pub(super) async fn replay(
