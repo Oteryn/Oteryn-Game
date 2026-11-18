@@ -72,6 +72,7 @@ mod repair_inputs;
 mod reward_inputs;
 #[path = "quest_world_callback/reward_inventory.rs"]
 mod reward_inventory;
+pub(super) mod room_cooldown;
 
 impl super::DurabilityRoot {
     /// Read a literal callback's quest gates under the live session and Character

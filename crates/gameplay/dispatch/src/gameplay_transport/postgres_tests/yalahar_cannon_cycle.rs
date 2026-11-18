@@ -50,7 +50,7 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
         })
     }).collect();
     let data = json!({"schema": 1, "quests": [{
-        "quest": QUEST, "recipe_sha256": format!("{:x}", Sha256::digest(SOURCE)),
+        "quest": QUEST, "recipe_sha256": Sha256::digest(SOURCE).iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
         "sources": [SOURCE],
         "tracks": [{"key": CORE_SAFE, "initial": -1, "minimum": -1, "maximum": 1}],
         "stages": stages
@@ -60,7 +60,9 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
 }
 
 async fn exercise(admin: &str) -> TestResult {
-    let h = Harness::create_with_admission_seed(admin, "yalahar_cannon_cycle", true, false).await?;
+    let h =
+        Harness::create_with_admission_seed(admin.to_owned(), "yalahar_cannon_cycle", true, false)
+            .await?;
     prepare_current_session(&h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h

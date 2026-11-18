@@ -154,6 +154,15 @@ impl PendingCallbacks {
             .iter()
             .map(|pending| pending.next_due_us())
             .min()
+            .into_iter()
+            .chain(
+                self.encounters
+                    .lock()
+                    .ok()?
+                    .iter()
+                    .filter_map(encounter::EncounterVisit::due),
+            )
+            .min()
     }
 }
 

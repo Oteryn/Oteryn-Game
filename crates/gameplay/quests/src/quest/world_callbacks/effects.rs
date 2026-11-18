@@ -336,6 +336,19 @@ pub struct Encounter {
     /// Source phases run on the shared encounter owner after atomic party admission.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phase: Option<EncounterPhase>,
+    /// An exact solo STEP cohort is sent to this exit after its fight window.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub solo_timeout: Option<SoloRoomTimeout>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct SoloRoomTimeout {
+    pub after_ms: u32,
+    pub exit: Position,
+    /// Use the existing Character boss clock for the sole authored monster.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub boss_cooldown_seconds: Option<u32>,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -889,7 +902,20 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
-        if (encounter.minimum_level == 0 && !source_party)
+        if encounter.solo_timeout.is_some_and(|timeout| {
+            callback.personal_room_entry().is_none()
+                || encounter.phase.is_some()
+                || encounter.monsters.len() != 1
+                || !(1..=3_600_000).contains(&timeout.after_ms)
+                || !pos(timeout.exit)
+                || in_room(timeout.exit)
+                || timeout.boss_cooldown_seconds.is_some_and(|seconds| {
+                    !(1..=30 * 24 * 60 * 60).contains(&seconds)
+                        || !encounter.monsters[0]
+                            .creature
+                            .starts_with("oteryn:creature.")
+                })
+        }) || (encounter.minimum_level == 0 && !source_party && encounter.solo_timeout.is_none())
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()

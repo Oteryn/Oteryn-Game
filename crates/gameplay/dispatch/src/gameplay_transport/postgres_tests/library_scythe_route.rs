@@ -39,7 +39,7 @@ fn library_scythe_dispatch_retains_either_tool_and_requires_permission_seven() -
 fn catalogue(permission: i64) -> TestResult<QuestStateCatalogue> {
     let data = json!({"schema": 1, "quests": [{
         "quest": QUEST,
-        "recipe_sha256": format!("{:x}", Sha256::digest(SOURCE)),
+        "recipe_sha256": Sha256::digest(SOURCE).iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
         "sources": [SOURCE],
         "tracks": [{"key": PERMISSION, "initial": permission, "minimum": -1, "maximum": 7}],
         "stages": [{
@@ -64,7 +64,9 @@ fn catalogue(permission: i64) -> TestResult<QuestStateCatalogue> {
 }
 
 async fn exercise(admin: &str, tool: &str, permission: i64) -> TestResult {
-    let h = Harness::create_with_admission_seed(admin, "library_scythe_route", true, false).await?;
+    let h =
+        Harness::create_with_admission_seed(admin.to_owned(), "library_scythe_route", true, false)
+            .await?;
     prepare_current_session(&h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h

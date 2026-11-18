@@ -91,7 +91,7 @@ fn binding(npc: &str, repair: bool) -> TestResult<QuestStateCatalogue> {
             )
             .collect();
     let binding = json!({"schema": 1, "quests": [{
-        "quest": QUEST, "recipe_sha256": format!("{:x}", Sha256::digest(source)),
+        "quest": QUEST, "recipe_sha256": Sha256::digest(source).iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
         "sources": [source], "tracks": tracks, "stages": stages
     }]});
     let base = QuestStateCatalogue::empty("content-1").ok_or("fixture catalogue")?;
@@ -99,8 +99,13 @@ fn binding(npc: &str, repair: bool) -> TestResult<QuestStateCatalogue> {
 }
 
 async fn exercise(admin: &str, repair: bool) -> TestResult {
-    let h =
-        Harness::create_with_admission_seed(admin, "yalahar_dialogue_draws", true, false).await?;
+    let h = Harness::create_with_admission_seed(
+        admin.to_owned(),
+        "yalahar_dialogue_draws",
+        true,
+        false,
+    )
+    .await?;
     prepare_current_session(&h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h

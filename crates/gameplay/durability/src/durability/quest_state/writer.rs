@@ -1936,6 +1936,14 @@ impl DurabilityRoot {
                     if let (Some(callback), Some((permit, context, _))) = (&callback, &context)
                         && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, &changes, context, (&recovery, &node)).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                    if let (Some(callback), Some((_, context, _))) = (&callback, &context)
+                        && !super::super::quest_world_callback::room_cooldown::admit(
+                            &mut tx, character, callback, context.reset_epoch
+                        ).await?
+                    {
+                        tx.rollback().await?;
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
                     if native_claim {
                         let Some((permit, world, _)) = &context else { return Err(DurabilityError::InvalidStoredState); };
                         if !super::super::quest_world_callback::context_is_current(&mut tx, permit, fence, world).await? {

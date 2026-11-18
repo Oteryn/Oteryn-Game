@@ -16,13 +16,30 @@ pub(super) struct EncounterVisit {
     room: oteryn_gameplay_quests::quest::world_callbacks::Encounter,
     participants: Vec<(ExactActorRef, GameSessionId)>,
     creatures: Vec<ExactActorRef>,
+    timeout: Option<RoomDeadline>,
+}
+
+struct RoomDeadline {
+    due: u64,
+    exit: oteryn_gameplay_quests::quest::world_callbacks::Position,
+    scope: (
+        crate::foundation::RuntimeScopeRefV1,
+        crate::foundation::ScopeOwnershipGeneration,
+    ),
+    map: [u8; 32],
 }
 
 impl EncounterVisit {
     fn active(&self, runtime: &ChannelRuntimeV1) -> bool {
-        self.creatures
-            .iter()
-            .any(|actor| runtime.contains_live_creature(*actor))
+        self.timeout.is_some()
+            || self
+                .creatures
+                .iter()
+                .any(|actor| runtime.contains_live_creature(*actor))
+    }
+
+    pub(super) fn due(&self) -> Option<u64> {
+        self.timeout.as_ref().map(|timeout| timeout.due)
     }
 }
 
@@ -55,6 +72,113 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
             })
         })
+    }
+
+    /// Crystal Wanted portals:93-106 and Defiances:75-90,108-121.
+    /// A departed cohort cannot hold its solo room while its boss is still alive.
+    fn retire_empty_solo_room(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        map: &BundleMap,
+        room: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
+        entrant: ExactActorRef,
+    ) -> bool {
+        let Ok(census) = runtime.positioned_melee_census() else {
+            return false;
+        };
+        if census.iter().any(|(who, position, session)| {
+            session.is_some() && *who != entrant && room_contains(room, position.position())
+        }) {
+            return true;
+        }
+        let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
+            return false;
+        };
+        let scope = runtime.encounter_owner_scope();
+        let map = map.overlay.base().digest();
+        visits.retain_mut(|visit| {
+            let Some(deadline) = &visit.timeout else {
+                return true;
+            };
+            if deadline.scope != scope || deadline.map != map {
+                return false;
+            }
+            if visit.room.room_min != room.room_min || visit.room.room_max != room.room_max {
+                return true;
+            }
+            super::personal_trial::cleanup(runtime, &mut visit.creatures);
+            false
+        });
+        true
+    }
+
+    pub(super) fn expire_quest_room_visits(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        map: &BundleMap,
+        now: u64,
+    ) {
+        let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
+            return;
+        };
+        let scope = runtime.encounter_owner_scope();
+        let digest = map.overlay.base().digest();
+        let closed = crate::map::floor::BundleDoors(&map.facts);
+        visits.retain_mut(|visit| {
+            let Some(timeout) = &visit.timeout else {
+                return visit.active(runtime);
+            };
+            if timeout.scope != scope || timeout.map != digest {
+                return false;
+            }
+            if now < timeout.due {
+                return true;
+            }
+            for &(actor, session) in &visit.participants {
+                let Ok(expected) = runtime.read_actor_position(actor) else {
+                    continue;
+                };
+                if !room_contains(&visit.room, expected.position()) {
+                    continue;
+                }
+                let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
+                    runtime,
+                    &self.movement_cells,
+                    actor,
+                    session,
+                    expected,
+                    local(timeout.exit),
+                    &closed,
+                ) else {
+                    return true;
+                };
+                let Ok(moved) = runtime.commit_source_step(proof) else {
+                    return true;
+                };
+                states.stage_special_movement_step(
+                    runtime,
+                    map,
+                    actor,
+                    session,
+                    now,
+                    Some(expected.position()),
+                    moved.position(),
+                    None,
+                );
+                states.stage_underwater_step(
+                    runtime,
+                    actor,
+                    session,
+                    now,
+                    underwater(map, expected.position()),
+                    underwater(map, moved.position()),
+                );
+                map.facts.emit_movement_effect(tile(timeout.exit), 11);
+            }
+            super::personal_trial::cleanup(runtime, &mut visit.creatures);
+            false
+        });
     }
 
     #[allow(
@@ -177,6 +301,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 expected_revision,
                 after,
             );
+        }
+        if encounter.solo_timeout.is_some()
+            && !self.retire_empty_solo_room(runtime, map, encounter, actor)
+        {
+            return UseDisposition::Rejected;
         }
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
@@ -361,6 +490,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let timeout = encounter.solo_timeout.map(|timeout| RoomDeadline {
+            due: self
+                .owner_now()
+                .get()
+                .saturating_add(u64::from(timeout.after_ms) * 1_000),
+            exit: timeout.exit,
+            scope: runtime.encounter_owner_scope(),
+            map: map.overlay.base().digest(),
+        });
         let mut visits = if encounter.phase.is_none() && !monsters.is_empty() {
             let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
                 return UseDisposition::Rejected;
@@ -418,7 +556,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 room: encounter.clone(),
                 participants: party,
                 creatures: actors.clone(),
+                timeout,
             });
+            states.owner_wake.notify_one();
         }
         drop(visits);
         if let Some(reservation) = reservation

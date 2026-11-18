@@ -33,7 +33,7 @@ fn yalahar_step_assigns_one_persistent_charge_and_refuses_a_second() -> TestResu
 fn catalogue() -> TestResult<QuestStateCatalogue> {
     let binding = json!({"schema": 1, "quests": [{
         "quest": QUEST,
-        "recipe_sha256": format!("{:x}", Sha256::digest(SOURCE)),
+        "recipe_sha256": Sha256::digest(SOURCE).iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
         "sources": [SOURCE],
         "tracks": [
             {"key": MISSION, "initial": 1, "minimum": -1, "maximum": 4},
@@ -61,8 +61,13 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
 }
 
 async fn exercise(admin: &str) -> TestResult {
-    let h =
-        Harness::create_with_admission_seed(admin, "yalahar_charge_machine", true, false).await?;
+    let h = Harness::create_with_admission_seed(
+        admin.to_owned(),
+        "yalahar_charge_machine",
+        true,
+        false,
+    )
+    .await?;
     prepare_current_session(&h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
