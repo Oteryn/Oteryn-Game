@@ -256,7 +256,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     )?;
     let (mut level, questline, guidance) = shrine_progress(&mut connection, clients).await?;
     if needs_guidance_level(level) {
-        client = provisioning::provision_fixture(client, clients, 0).await?;
+        client = provisioning::provision_fixture(client, clients, 0, 100).await?;
         level = shrine_progress(&mut connection, clients).await?.0;
     }
     if level >= 6 && questline == 0 && guidance == 0 {

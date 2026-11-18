@@ -44,6 +44,7 @@ fn observation() -> WorldSpatialObservation {
 struct SlowOwner {
     idle_cue: Cell<bool>,
     slow_browse: Cell<bool>,
+    named_refusal: Cell<Option<AdmissionRefusal>>,
     refuse_browse: Cell<bool>,
     visibility_delay: Cell<std::time::Duration>,
     vitals_delay: Cell<std::time::Duration>,
@@ -183,6 +184,33 @@ impl FreshAdmissionAuthority for SlowOwner {
             tokio::time::sleep(delay).await;
         }
         None
+    }
+
+    async fn observe_named_visible_entities(
+        &self,
+        actor: ExactActorRef,
+    ) -> Option<ChannelEntities> {
+        self.observe_named_visible_entities_result(actor).await.ok()
+    }
+
+    async fn observe_named_visible_entities_result(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<ChannelEntities, AdmissionRefusal> {
+        if let Some(refusal) = self.named_refusal.get() {
+            return Err(refusal);
+        }
+        let mut channel = self
+            .observe_visible_entities(actor)
+            .await
+            .ok_or(AdmissionRefusal::Rejected)?;
+        for entity in &mut channel.entities {
+            entity.display_name = Some(
+                oteryn_protocol_oteryn::entity_names::EntityDisplayName::new("Observer")
+                    .map_err(|_| AdmissionRefusal::Rejected)?,
+            );
+        }
+        Ok(channel)
     }
 
     async fn observe_character_inventory(
@@ -435,6 +463,57 @@ fn run(browse: bool) -> TestResult {
         })?
         .join()
         .map_err(|_| "visibility scheduler test thread panicked")?
+}
+
+#[test]
+fn periodic_named_visibility_holder_busy_keeps_admitted_peer_live() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> TestResult {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .start_paused(true)
+                .build()?
+                .block_on(async {
+                    let authority = SlowOwner::default();
+                    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+                    let mut admitted = admitted(false)?;
+                    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                        BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                        &[6, oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2],
+                    ).ok_or("named visibility capabilities")?;
+                    let actor = admitted.runtime_actor.ok_or("fixture actor")?;
+                    let mut session = setup::prepare(
+                        &mut server, &mut admitted, &authority, IDLE_LIVENESS,
+                        actor, observation(),
+                        integrity::Integrity::default(),
+                    ).await.map_err(|_| "prepare named visibility connection")?;
+                    let before = (session.sequence, session.revision);
+                    authority.named_refusal.set(Some(AdmissionRefusal::Unavailable));
+                    let next = poll::next(&mut server, &authority, &mut session).await;
+                    assert!(matches!(next, Next::Visibility));
+                    assert!(receive(&mut server, &authority, &mut session, next)
+                        .await.map_err(|_| "server closed live peer during a busy name lookup")?.is_none());
+                    assert_eq!((session.sequence, session.revision), before);
+                    let close = encode_container_view_intent(&ContainerViewIntent::Close { view_id: 15 })
+                        .map_err(|error| format!("{error:?}"))?;
+                    write_frame(
+                        &mut client,
+                        &command_frame(1, COMMAND_TYPE_CONTAINER_VIEW_INTENT, &close)?,
+                    ).await?;
+                    execute_ready_frame(&mut server, &authority, &mut session).await?;
+                    assert_eq!(session.admitted.continuity.next_command_id, 2);
+                    authority.named_refusal.set(None);
+                    assert!(receive(&mut server, &authority, &mut session, Next::Visibility)
+                        .await.map_err(|_| "visibility did not recover")?.is_none());
+                    authority.named_refusal.set(Some(AdmissionRefusal::Rejected));
+                    assert!(matches!(receive(&mut server, &authority, &mut session, Next::Visibility)
+                        .await, Err(ServeEnd::Disconnected)));
+                    Ok(())
+                })
+        })?
+        .join()
+        .map_err(|_| "named visibility fixture thread panicked")?
 }
 
 #[test]

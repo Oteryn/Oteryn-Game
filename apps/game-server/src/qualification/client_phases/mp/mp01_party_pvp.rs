@@ -1,5 +1,6 @@
 //! MP01: on the no-PvP World, three party members and a separately admitted, unprovisioned
 //! starter. On the Open PvP World (its own node), a provisioned attacker kills a provisioned victim.
+use super::observations::is_temple_arrival;
 use super::*;
 use bots::{Bot, attack_target, party};
 use oteryn_dev_client::{SessionEvent, client_ui::cyclopedia_character as panel};
@@ -459,6 +460,33 @@ async fn verify_pvp_state(bot: &mut Bot<'_, '_>) -> TestResult {
 
 /// The node-boot World is no-PvP (`tools/qualification/node_boot/run.sh:1021`, `world_type=1`), so
 /// the server pins every expert mode to Dove (`pvp_expert.rs:83-92` set, `:121-131` observe).
+fn expert_update(events: &[SessionEvent], after: u64) -> Option<pvp_expert::ExpertFightModes> {
+    events.iter().find_map(|event| match event {
+        SessionEvent::ExpertFightModes(delta) if delta.server_sequence > after => Some(delta.value),
+        _ => None,
+    })
+}
+
+/// The node-boot World is no-PvP (`tools/qualification/node_boot/run.sh:1021`, `world_type=1`), so
+/// the server pins every expert mode to Dove (`pvp_expert.rs:83-92` set, `:121-131` observe).
+fn refused_without_damage(
+    status: CommandStatus,
+    disposition: oteryn_protocol_oteryn::attack::AttackIntentDisposition,
+    before: Option<u32>,
+    after: Option<u32>,
+    damaged: bool,
+    hit_seen: bool,
+) -> bool {
+    status == CommandStatus::Rejected
+        && disposition == oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected
+        && before.is_some()
+        && !damaged
+        && !hit_seen
+        && before == after
+}
+
+/// A's attack on player D is refused on a no-PvP World (`pvp_live.rs:184` via
+/// `check_pvp_legality`, `legality.rs:90`) and D takes no damage in a bounded window.
 async fn nopvp_expert(bots: &mut [Bot<'_, '_>]) -> TestResult {
     let requested = pvp_expert::ExpertFightModes {
         modes: oteryn_protocol_oteryn::attack::FightModes {
@@ -711,6 +739,13 @@ async fn pvp_world_rows(
     };
     check("pvp-world", Ok(()), failures);
     let pair = fixture.pair(core);
+    let cells = (|| {
+        let room = crate::content::qualify_selected_native_gameplay_room(
+            crate::foundation::WorldId::decode(&pair.world)?,
+            native_input()?,
+        )?;
+        TestResult::Ok(world.movement_cells(room.movement_cells())?)
+    })();
     let (mut bots, setup) = tokio::time::timeout(
         Duration::from_secs(180),
         bots::connect_bots(&[
@@ -737,7 +772,7 @@ async fn pvp_world_rows(
         check(
             "pvp-combat",
             bounded_bots("pvp-combat", 480, &mut bots, async |bots| {
-                pvp_journey(bots, world, towns).await
+                pvp_journey(bots, world, towns, &cells?).await
             })
             .await,
             failures,
@@ -778,16 +813,63 @@ async fn pvp_world_rows(
     );
 }
 
-async fn latest_death(bot: &mut Bot<'_, '_>) -> TestResult<Option<(String, String, String)>> {
-    let pair = bot.pair;
-    let character = bot.character;
-    bots::observe(bot, async {
-    let mut database = sqlx::PgConnection::connect(pair.url).await?;
-    let receipt = sqlx::query_as("SELECT death_occurrence_id::text,original_character_revision::text,committed_character_revision::text FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid AND death_world_id=encode($2,'hex')::uuid AND death_channel_id=encode($3,'hex')::uuid ORDER BY committed_at DESC,death_occurrence_id DESC LIMIT 1")
-        .bind(character.as_slice()).bind(pair.world.as_slice()).bind(pair.channel.as_slice()).fetch_optional(&mut database).await?;
+fn victim_death_seen(
+    rows: &[panel::HistoryRow],
+    old: &[panel::HistoryRow],
+    at: i64,
+    level: u32,
+    killer: &str,
+) -> bool {
+    let description = character::death_cause(u64::from(level), &[killer.to_owned()]);
+    let killer = character::bounded_death_name(killer);
+    rows.iter().any(|row| {
+        !old.contains(row)
+            && row.at == at
+            && row.description == description
+            && row.death.as_ref().is_some_and(|death| {
+                death.level == level
+                    && death.killer == killer
+                    && death.most_damage == killer
+                    && death.unjustified
+            })
+    })
+}
+
+#[derive(PartialEq, Eq)]
+struct DeathReceipt {
+    id: String,
+    original_revision: String,
+    committed_revision: String,
+    at: i64,
+    level: u32,
+}
+
+async fn latest_death(bot: &mut Bot<'_, '_>) -> TestResult<Option<DeathReceipt>> {
+    let mut database = sqlx::PgConnection::connect(bot.pair.url).await?;
+    let receipt = sqlx::query_as::<_, (String, String, String, i64, i64)>(
+        "SELECT death_occurrence_id::text, original_character_revision::text, \
+         committed_character_revision::text, committed_at, level_before \
+         FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid \
+         AND death_world_id=encode($2,'hex')::uuid AND death_channel_id=encode($3,'hex')::uuid \
+         ORDER BY committed_at DESC, death_occurrence_id DESC LIMIT 1",
+    )
+    .bind(bot.character.as_slice())
+    .bind(bot.pair.world.as_slice())
+    .bind(bot.pair.channel.as_slice())
+    .fetch_optional(&mut database)
+    .await?;
     database.close().await?;
-    Ok(receipt)
-    }).await
+    receipt
+        .map(|(id, original_revision, committed_revision, at, level)| {
+            Ok(DeathReceipt {
+                id,
+                original_revision,
+                committed_revision,
+                at,
+                level: u32::try_from(level)?,
+            })
+        })
+        .transpose()
 }
 
 /// A's attack, B's damage, death and temple respawn, the durable death receipt, A's frag
@@ -796,6 +878,7 @@ async fn pvp_journey(
     bots: &mut [Bot<'_, '_>],
     world: &BundleWorld,
     towns: &oteryn_world_bundle::subarea::Table,
+    cells: &crate::content::NativeEntryMovementCells,
 ) -> TestResult {
     let url = bots[1].pair.url;
     let victim_character = bots[1].character;
@@ -881,31 +964,49 @@ async fn pvp_journey(
             .into());
         }
     }
+    let combat_tile = |at: TilePos| {
+        cells
+            .spell_tiles()
+            .lookup(
+                cells.scope(),
+                crate::content::LogicalCell {
+                    x: i32::from(at.x),
+                    y: i32::from(at.y),
+                    z: -i32::from(at.floor),
+                },
+            )
+            .is_ok_and(|facts| !facts.flags().protection_zone && facts.no_pvp_zone() == Some(false))
+    };
     let from = tile(bots[1].client()?.world_spatial().actor_position)?;
+    let attacker_start = tile(bots[0].client()?.world_spatial().actor_position)?;
+    let directions = [
+        StepDirection::North,
+        StepDirection::East,
+        StepDirection::South,
+        StepDirection::West,
+    ];
     let path = route(world, from, |at| {
-        world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|t| !t.protection_zone())
-            && [
-                StepDirection::North,
-                StepDirection::East,
-                StepDirection::South,
-                StepDirection::West,
-            ]
-            .iter()
-            .any(|d| {
-                destination(world, at, *d).is_some_and(|p| {
-                    world
-                        .base()
-                        .tile(p.x, p.y, p.floor)
-                        .is_some_and(|t| !t.protection_zone())
+        at != temple
+            && at != attacker_start
+            && combat_tile(at)
+            && directions.iter().any(|direction| {
+                destination(world, at, *direction).is_some_and(|neighbor| {
+                    neighbor.floor == at.floor
+                        && neighbor.x.abs_diff(at.x) + neighbor.y.abs_diff(at.y) == 1
+                        && combat_tile(neighbor)
                 })
             })
     })
-    .ok_or("no reachable non-PZ combat pair in pinned world")?;
+    .ok_or("no reachable PvP-enabled combat pair in pinned world")?;
     bots::walk_bot(bots, 1, world, &path).await?;
-    bots::approach(bots, 0, 1, world, true).await?;
+    let victim_tile = tile(bots[1].client()?.world_spatial().actor_position)?;
+    let path = route(world, attacker_start, |at| {
+        at.floor == victim_tile.floor
+            && at.x.abs_diff(victim_tile.x) + at.y.abs_diff(victim_tile.y) == 1
+            && combat_tile(at)
+    })
+    .ok_or("no reachable adjacent PvP-enabled attacker tile")?;
+    bots::walk_bot(bots, 0, world, &path).await?;
     let attacker = bots[0].own()?;
     let victim = bots[1].own()?;
     let mode = pvp_expert::ExpertFightModes {
@@ -946,7 +1047,11 @@ async fn pvp_journey(
         }
         Ok(false)
     }).await?;
+    let victim_client = bots[1].client()?;
+    let temple_position = spatial_basis::current(victim_client)?.position(temple);
+    let after = victim_client.last_server_sequence();
     bots::on_bot(bots, 0, async |bot| attack_target(bot, Some(&victim)).await).await?;
+    let mut temple_event = false;
     let mut victim_damaged = false;
     let mut attacker_saw_hit = false;
     // A level-100 victim takes many melee hits; its own regeneration is part of the fight.
@@ -958,16 +1063,21 @@ async fn pvp_journey(
                     if target == victim && source == attacker));
             }
         }
-        for event in &events[1] { if let SessionEvent::ActorVitals(delta) = event { victim_damaged |= delta.value.health < delta.value.max_health; } }
+        for event in &events[1] {
+            temple_event |= is_temple_arrival(event, after, temple_position);
+            if let SessionEvent::ActorVitals(delta) = event {
+                victim_damaged |= delta.value.health < delta.value.max_health;
+            }
+        }
         let client = bots[1].session.as_ref().ok_or("victim closed")?;
-        Ok(victim_damaged && attacker_saw_hit && tile(client.world_spatial().actor_position)? == temple
+        Ok(temple_event && victim_damaged && attacker_saw_hit && tile(client.world_spatial().actor_position)? == temple
             && client.actor_vitals().is_some_and(|v| v.health == v.max_health))
     }).await?;
     bots::on_bot(bots, 0, async |bot| attack_target(bot, None).await).await?;
     let death = bots::on_bot(bots, 1, latest_death)
         .await?
         .ok_or("MP01 respawn missing durable death receipt")?;
-    if Some(&death) == old_death.as_ref() || death.1 == death.2 {
+    if Some(&death) == old_death.as_ref() || death.original_revision == death.committed_revision {
         return Err("MP01 respawn reused old death/revision".into());
     }
     let kills = bots::on_bot(bots, 0, async |bot| {
@@ -975,24 +1085,30 @@ async fn pvp_journey(
     })
     .await?;
     let description = character::pvp_kill_description(&bots[1].name);
+    let deaths = bots::on_bot(bots, 1, async |bot| {
+        history(bot, character::CharacterTab::RecentDeaths).await
+    })
+    .await?;
     if !kills.iter().any(|k| {
         k.description == description
             && k.status == Some(character::KillStatus::Unjustified)
             && !old_kills.contains(k)
-    }) || !bots::on_bot(bots, 1, async |bot| {
-        history(bot, character::CharacterTab::RecentDeaths).await
-    })
-    .await?
-    .iter()
-    .any(|d| !old_deaths.contains(d))
+    }) || !victim_death_seen(&deaths, &old_deaths, death.at, death.level, &bots[0].name)
     {
         return Err("MP01 A kill view / B death view lack new attributed death".into());
     }
     let attacker_character = bots[0].character;
     let points = bots::observe_all(bots, async {
     let mut database = sqlx::PgConnection::connect(url).await?;
-    let points: Option<i32> = sqlx::query_scalar("SELECT points_milli FROM game_character_unjustified_points WHERE character_id=encode($1,'hex')::uuid AND victim_character_id=encode($2,'hex')::uuid AND death_occurrence_id=$3::text::uuid")
-        .bind(attacker_character.as_slice()).bind(victim_character.as_slice()).bind(&death.0).fetch_optional(&mut database).await?;
+    let points: Option<i32> = sqlx::query_scalar(
+        "SELECT p.points_milli FROM game_character_unjustified_points p \
+         JOIN game_public_death_classifications c USING (death_occurrence_id) \
+         JOIN game_public_death_killers k USING (death_occurrence_id) \
+         WHERE p.character_id=encode($1,'hex')::uuid AND p.victim_character_id=encode($2,'hex')::uuid \
+         AND p.death_occurrence_id=$3::text::uuid AND c.pvp AND c.killer_key='player' \
+         AND k.ordinal=0 AND k.kind='player' AND k.character_id=p.character_id",
+    )
+        .bind(attacker_character.as_slice()).bind(victim_character.as_slice()).bind(&death.id).fetch_optional(&mut database).await?;
     database.close().await?;
         Ok(points)
     }).await?;
@@ -1001,7 +1117,7 @@ async fn pvp_journey(
             oteryn_gameplay_combat_rules::pvp::skull::DAMAGE_POINTS_MILLI,
         ))
     {
-        return Err(format!("MP01 durable frag points={points:?};death={}", death.0).into());
+        return Err(format!("MP01 durable frag points={points:?};death={}", death.id).into());
     }
     // B has already proved its temple respawn; bring its new incarnation back into interest.
     bots::approach(bots, 1, 0, world, true).await?;
@@ -1051,7 +1167,7 @@ async fn pvp_journey(
     }
     evidence(&format!(
         "MP_CHECK MP01 death-frag PASS A=attributed-hit-and-new-kill B=damage-death-and-temple-respawn PG_death={} PG_points={points:?}",
-        death.0
+        death.id
     ));
     Ok(())
 }
@@ -1115,5 +1231,78 @@ mod tests {
         assert!(!proves_optional_world_refusal(minimum - 1, 100, true, true));
         assert!(!proves_optional_world_refusal(100, minimum, false, true));
         assert!(proves_optional_world_refusal(100, minimum, true, true));
+    }
+}
+
+#[cfg(test)]
+mod evidence_tests {
+    use super::*;
+    use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
+
+    #[test]
+    fn review_expert_observation_ignores_queued_mode() {
+        let mode = |server_sequence, expert| {
+            SessionEvent::ExpertFightModes(oteryn_dev_client::AppliedDelta {
+                server_sequence,
+                base_revision: 1,
+                new_revision: 2,
+                value: pvp_expert::ExpertFightModes {
+                    modes: oteryn_protocol_oteryn::attack::FightModes::DEFAULT,
+                    expert,
+                },
+            })
+        };
+        let stale = mode(8, pvp_expert::ExpertMode::Dove);
+        assert!(expert_update(std::slice::from_ref(&stale), 8).is_none());
+        let fresh = mode(9, pvp_expert::ExpertMode::RedFist);
+        assert_eq!(
+            expert_update(&[stale, fresh], 8).map(|update| update.expert),
+            Some(pvp_expert::ExpertMode::RedFist)
+        );
+    }
+
+    #[test]
+    fn review_new_victim_death_must_match_its_receipt() {
+        let expected = panel::HistoryRow {
+            at: 9_000,
+            status: None,
+            description: "Died at Level 100 by Attacker".into(),
+            death: Some(character::DeathDetails {
+                level: 100,
+                killer: "Attacker".into(),
+                most_damage: "Attacker".into(),
+                unjustified: true,
+            }),
+        };
+        let mut wrong = expected.clone();
+        if let Some(death) = wrong.death.as_mut() {
+            death.killer = "Bystander".into();
+        }
+        assert!(!victim_death_seen(&[wrong], &[], 9_000, 100, "Attacker"));
+        assert!(victim_death_seen(&[expected], &[], 9_000, 100, "Attacker"));
+    }
+
+    #[test]
+    fn review_nopvp_requires_victim_vitals() {
+        assert!(!refused_without_damage(
+            CommandStatus::Rejected,
+            AttackIntentDisposition::Rejected,
+            None,
+            None,
+            false,
+            false,
+        ));
+    }
+
+    #[test]
+    fn review_nopvp_requires_rejected_command_status() {
+        assert!(!refused_without_damage(
+            CommandStatus::Accepted,
+            AttackIntentDisposition::Rejected,
+            Some(100),
+            Some(100),
+            false,
+            false,
+        ));
     }
 }

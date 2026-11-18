@@ -11,7 +11,7 @@ from threading import Thread
 import uuid
 
 
-PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk", "combat-progression", "private-channel", "coin-converters", "rune-training", "sweep", "atelier", "victim")
+PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk", "combat-progression", "private-channel", "coin-converters", "rune-training", "sweep", "atelier", "victim", "knight-underlevel")
 CREATURE_KEY = re.compile(r"[A-Za-z0-9:._/-]{1,128}")
 CAPACITY = re.compile(rb"capacity [1-9][0-9]* [1-9][0-9]*\n")
 SPAWNED = re.compile(rb"spawned [0-9a-f]{32} [0-9]+ [0-9]+\n")
@@ -93,6 +93,16 @@ def spawn(socket_path, session, creature_key):
     return answer.decode("ascii").rstrip("\n")
 
 
+def inspect_damage(socket_path, session, target):
+    identifier = uuid.UUID(session)
+    if identifier.version != 7 or str(identifier) != session or not re.fullmatch(r"[0-9a-f]{32} [1-9][0-9]{0,19}", target):
+        raise ValueError("invalid qualification damage inspection")
+    answer = bytes(_request(socket_path, f"inspect-damage {session} {target}\n", 128))
+    if not re.fullmatch(rb"damage [0-9]{1,20} [0-9a-f]{32}\n", answer):
+        raise RuntimeError(f"node refused qualification damage inspection: {answer[:128]!r}")
+    return answer.decode("ascii").rstrip("\n")
+
+
 def carry_capacity(socket_path, session):
     """Read the current Character's level and carried-weight limit in centi-ounces."""
     identifier = uuid.UUID(session)
@@ -119,6 +129,7 @@ if __name__ == "__main__":
     group.add_argument("--recovery-epoch", type=int)
     group.add_argument("--capacity", action="store_true")
     parser.add_argument("--cancel-on-stdin", action="store_true")
+    group.add_argument("--inspect-damage", metavar="TARGET")
     args = parser.parse_args()
     if args.watch_stdin:
         def stop_when_parent_drops_pipe():
@@ -146,5 +157,7 @@ if __name__ == "__main__":
         print(carry_capacity(args.socket, args.session))
     elif args.spawn is not None:
         print(spawn(args.socket, args.session, args.spawn))
+    elif args.inspect_damage is not None:
+        print(inspect_damage(args.socket, args.session, args.inspect_damage))
     else:
         provision(args.socket, args.session, args.profile, sys.stdin if args.cancel_on_stdin else None)

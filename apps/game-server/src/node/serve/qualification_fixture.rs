@@ -10,6 +10,7 @@ fn profile_build(profile: &str) -> (&str, u32) {
     match profile {
         "atelier" | "sweep" => ("knight", SWEEP_LEVEL),
         "explorer" => ("knight", 100),
+        "knight-underlevel" => ("knight", 66),
         "victim" => (crate::durability::character_build::NO_VOCATION, 100),
         other => (other, 100),
     }
@@ -74,6 +75,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
             | "sweep"
             | "atelier"
             | "victim"
+            | "knight-underlevel"
     )
     .then_some((session, profile))
 }
@@ -297,6 +299,55 @@ pub(super) async fn spawn(
 }
 
 #[cfg(any(test, feature = "qualification-spawn"))]
+pub(super) async fn inspect_damage(
+    config: &NodeConfig,
+    owners: Option<SpawnOwners<'_>>,
+    request: &[u8],
+) -> Option<String> {
+    if !config.qualification_fixture {
+        return None;
+    }
+    let text = std::str::from_utf8(request).ok()?.strip_suffix('\n')?;
+    let mut fields = text.split(' ');
+    if fields.next()? != "inspect-damage" {
+        return None;
+    }
+    let session =
+        crate::foundation::GameSessionId::decode(&parse_operation_id(fields.next()?.as_bytes())?)
+            .ok()?;
+    let identity = super::super::operator_files::hex_bytes::<16>(fields.next()?).ok()?;
+    let generation = fields.next()?.parse::<std::num::NonZeroU64>().ok()?.get();
+    if fields.next().is_some() {
+        return None;
+    }
+    let mut runtime = owners?.runtime.lock().await;
+    runtime.positioned_player_for_session(session).ok()??;
+    let actor = runtime
+        .positioned_actor_census()
+        .ok()?
+        .into_iter()
+        .find(|(actor, _, session)| {
+            session.is_none()
+                && actor.actor_local_generation() == generation
+                && actor.placement_identity() == identity
+        })?
+        .0;
+    let total = runtime
+        .borrow_combat_death()
+        .current_session_damage_shares(actor)
+        .ok()?
+        .into_iter()
+        .find(|share| share.session == Some(session))
+        .map_or(0, |share| share.total);
+    let corpse = actor
+        .corpse_identity()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    Some(format!("damage {total} {corpse}"))
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
 #[allow(clippy::too_many_arguments)]
 async fn spawn_placed(
     root: &DurabilityRoot,
@@ -318,9 +369,8 @@ async fn spawn_placed(
             Err(error) => refuse(error.token(), error.detail()),
         };
     }
-    let mut published = None;
-    let placed = tokio::time::timeout(
-        Duration::from_secs(10),
+    let budget = SpawnBudget::new(tokio::time::Instant::now());
+    let placed = spawn_with_watchdog(budget.reply_deadline, async |published| {
         place(
             root,
             authority,
@@ -328,16 +378,15 @@ async fn spawn_placed(
             native,
             owners,
             SpawnRequest { session, key },
-            &mut published,
-        ),
-    )
+            budget,
+            published,
+        )
+        .await
+        .map(drop)
+    })
     .await;
-    let outcome = match placed {
-        Ok(outcome) => outcome,
-        Err(_) => Err(wild_spawn::SpawnRefusal::Deadline),
-    };
-    match classify_spawn_publication(published, outcome) {
-        Ok(creature) => {
+    match placed {
+        Ok(Ok(creature)) => {
             let identity = creature
                 .actor
                 .placement_identity()
@@ -350,7 +399,8 @@ async fn spawn_placed(
                 creature.actor.actor_local_id()
             )
         }
-        Err(refusal) => refuse(refusal.token(), refusal.detail()),
+        Ok(Err(refusal)) => refuse(refusal.token(), refusal.detail()),
+        Err(_) => refuse("deadline", None),
     }
 }
 
@@ -384,13 +434,14 @@ async fn place(
     native: &NativeGameplayState,
     owners: SpawnOwners<'_>,
     request: SpawnRequest<'_>,
+    budget: SpawnBudget,
     published: &mut Option<crate::foundation::CompanionSnapshot>,
 ) -> Result<crate::foundation::CompanionSnapshot, wild_spawn::SpawnRefusal> {
     let SpawnRequest { session, key } = request;
     let fence = wild_spawn::SpawnRefusal::Fence;
     let session = crate::foundation::GameSessionId::decode(&session)
         .map_err(|_| wild_spawn::SpawnRefusal::SessionUnknown)?;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+    let deadline = budget.work_deadline;
     let mut specimens = owners.specimens.lock().await;
     retry_publication(
         owners.runtime,
@@ -440,42 +491,72 @@ async fn place(
                 },
             )
             .await?;
-            let mut tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(
-                &mut holder,
-                deadline.into_std(),
-            )
+            let eligible = match spawn_transaction(&mut holder, budget, true, async |tx| {
+                wild_spawn::validate_placement(tx, root, authority, proof, &permit, &plan).await
+            })
             .await
-            .map_err(|error| fence(format!("qualification spawn transaction: {error:?}")))?;
-            let eligible =
-                wild_spawn::validate_placement(&mut tx, root, authority, proof, &permit, &plan)
-                    .await?;
-            if tokio::time::Instant::now() >= deadline {
-                return Err(wild_spawn::SpawnRefusal::Deadline);
+            {
+                SpawnTransaction::Clean(Ok(eligible)) => eligible,
+                outcome => {
+                    let result = finish_spawn_holder(holder, budget, outcome).await;
+                    root.request_ready();
+                    return result.map(|_| None);
+                }
+            };
+            let result = retry_spawn_collisions(
+                holder,
+                budget,
+                published,
+                async || {
+                    Err(wild_spawn::SpawnRefusal::Fence(
+                        "spawn publication requires a fresh plan".into(),
+                    ))
+                },
+                async |tx| {
+                    let fresh =
+                        wild_spawn::validate_placement(tx, root, authority, proof, &permit, &plan)
+                            .await?;
+                    let Ok(mut runtime) = owners.runtime.try_lock() else {
+                        return Err(wild_spawn::SpawnRefusal::Fence(
+                            "spawn runtime busy; retry fresh plan".into(),
+                        ));
+                    };
+                    if tokio::time::Instant::now() >= deadline {
+                        return Err(wild_spawn::SpawnRefusal::Deadline);
+                    }
+                    let tiles = publication_candidates(fresh, eligible.clone());
+                    let creature = wild_spawn::publish_placement(&mut runtime, key, &plan, &tiles)?;
+                    specimens.push(QualificationSpecimen {
+                        session: *session.as_bytes(),
+                        character,
+                        actor: creature.actor,
+                        key: key.to_owned(),
+                        content: runtime.content_pin().server_artifact_digest(),
+                    });
+                    Ok(Some(creature))
+                },
+            )
+            .await;
+            if let Some(creature) = published.clone() {
+                if result.is_err() {
+                    root.request_ready();
+                }
+                return Ok(Some(creature));
             }
-            // Busy returns from this attempt, dropping SQL and the holder before the retry waits.
-            let Ok(runtime) = owners.runtime.try_lock() else {
-                return Ok(None);
-            };
-            // Release the authoritative tile read only after it commits; no actor can
-            // become visible on a failed verification or transaction.
-            drop(runtime);
-            tx.commit().await.map_err(|error| {
-                fence(format!("qualification spawn transaction commit: {error:?}"))
-            })?;
-            let Ok(mut runtime) = owners.runtime.try_lock() else {
-                return Ok(None);
-            };
-            let creature = wild_spawn::publish_placement(&mut runtime, key, &plan, &eligible)?;
-            specimens.push(QualificationSpecimen {
-                session: *session.as_bytes(),
-                character,
-                actor: creature.actor,
-                key: key.to_owned(),
-                content: runtime.content_pin().server_artifact_digest(),
-            });
-            *published = Some(creature.clone());
-            drop(runtime);
-            Ok(Some(creature))
+            match result {
+                Err(wild_spawn::SpawnRefusal::Fence(error))
+                    if error == "spawn runtime busy; retry fresh plan" =>
+                {
+                    Ok(None)
+                }
+                Err(error) => {
+                    root.request_ready();
+                    Err(error)
+                }
+                Ok(()) => Err(wild_spawn::SpawnRefusal::Fence(
+                    "spawn returned without publication".into(),
+                )),
+            }
         },
         || wild_spawn::SpawnRefusal::Deadline,
     )
@@ -506,6 +587,7 @@ fn cleanup_specimens(
 }
 
 #[cfg(any(test, feature = "qualification-spawn"))]
+#[cfg(test)]
 fn classify_spawn_publication<T>(
     published: Option<T>,
     outcome: Result<T, wild_spawn::SpawnRefusal>,
@@ -552,6 +634,210 @@ async fn prepare_and_checkout<'a, T, P, H, E>(
     let prepared = prepare(runtime.lock().await)?;
     let holder = checkout(&prepared).await?;
     Ok((prepared, holder))
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+#[derive(Clone, Copy)]
+struct SpawnBudget {
+    work_deadline: tokio::time::Instant,
+    backend_deadline: tokio::time::Instant,
+    release_deadline: tokio::time::Instant,
+    reply_deadline: tokio::time::Instant,
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+impl SpawnBudget {
+    fn new(start: tokio::time::Instant) -> Self {
+        Self {
+            work_deadline: start + Duration::from_secs(8),
+            backend_deadline: start + Duration::from_secs(9),
+            release_deadline: start + Duration::from_millis(9_500),
+            reply_deadline: start + Duration::from_secs(10),
+        }
+    }
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+async fn spawn_with_watchdog<T>(
+    deadline: tokio::time::Instant,
+    operation: impl AsyncFnOnce(&mut Option<T>) -> Result<(), wild_spawn::SpawnRefusal>,
+) -> Result<Result<T, wild_spawn::SpawnRefusal>, tokio::time::error::Elapsed> {
+    let mut published = None;
+    let result = tokio::time::timeout_at(deadline, operation(&mut published)).await;
+    if let Some(published) = published {
+        if result.is_err() {
+            spawn_cleanup_warning("watchdog", "deadline_after_publication");
+        }
+        return Ok(Ok(published));
+    }
+    result.map(|result| {
+        result.and(Err(wild_spawn::SpawnRefusal::Fence(
+            "qualification spawn produced no receipt".into(),
+        )))
+    })
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+async fn begin_spawn_transaction(
+    holder: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
+    backend_deadline: tokio::time::Instant,
+) -> Result<sqlx::Transaction<'_, sqlx::Postgres>, wild_spawn::SpawnRefusal> {
+    let fence = wild_spawn::SpawnRefusal::Fence;
+    let setup = Duration::from_millis(500);
+    let started = tokio::time::Instant::now();
+    // Reserve one setup round trip between the server timer and the backend
+    // cutoff. A slower setup may have armed the timer late, so take no locks.
+    let tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(
+        holder,
+        (backend_deadline - setup).into_std(),
+    )
+    .await
+    .map_err(|error| fence(format!("qualification spawn transaction: {error:?}")))?;
+    if started.elapsed() >= setup {
+        return Err(fence(
+            "qualification spawn transaction setup deadline".into(),
+        ));
+    }
+    Ok(tx)
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+enum SpawnTransaction<T> {
+    Clean(Result<T, wild_spawn::SpawnRefusal>),
+    Uncertain(wild_spawn::SpawnRefusal),
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+async fn retry_spawn_collisions<T>(
+    mut holder: sqlx::pool::PoolConnection<sqlx::Postgres>,
+    budget: SpawnBudget,
+    published: &mut Option<T>,
+    mut reacquire: impl AsyncFnMut() -> Result<
+        sqlx::pool::PoolConnection<sqlx::Postgres>,
+        wild_spawn::SpawnRefusal,
+    >,
+    mut attempt: impl AsyncFnMut(
+        &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    ) -> Result<Option<T>, wild_spawn::SpawnRefusal>,
+) -> Result<(), wild_spawn::SpawnRefusal> {
+    loop {
+        spawn_collision(holder, budget, published, &mut attempt).await?;
+        if published.is_some() {
+            return Ok(());
+        }
+        holder = reacquire().await?;
+    }
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+async fn spawn_transaction<T>(
+    holder: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
+    budget: SpawnBudget,
+    commit: bool,
+    operation: impl AsyncFnOnce(
+        &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    ) -> Result<T, wild_spawn::SpawnRefusal>,
+) -> SpawnTransaction<T> {
+    let fence = wild_spawn::SpawnRefusal::Fence;
+    let mut phase = "transaction_begin";
+    let outcome = tokio::time::timeout_at(budget.work_deadline, async {
+        let mut tx = match begin_spawn_transaction(holder, budget.backend_deadline).await {
+            Ok(tx) => tx,
+            Err(error) => return SpawnTransaction::Uncertain(error),
+        };
+        phase = "transaction_work";
+        let result = operation(&mut tx).await;
+        phase = "transaction_release";
+        let released = if commit && result.is_ok() {
+            tx.commit().await
+        } else {
+            tx.rollback().await
+        };
+        if let Err(error) = released {
+            spawn_cleanup_warning(phase, &format!("{error:?}"));
+            return SpawnTransaction::Uncertain(result.err().unwrap_or_else(|| {
+                fence("qualification spawn transaction release failed".into())
+            }));
+        }
+        SpawnTransaction::Clean(result)
+    })
+    .await;
+    match outcome {
+        Ok(result) => result,
+        Err(_) => {
+            spawn_cleanup_warning(phase, "work_deadline");
+            SpawnTransaction::Uncertain(fence(format!("qualification spawn {phase} deadline")))
+        }
+    }
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+async fn spawn_collision<T>(
+    mut holder: sqlx::pool::PoolConnection<sqlx::Postgres>,
+    budget: SpawnBudget,
+    published: &mut Option<T>,
+    operation: impl AsyncFnOnce(
+        &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    ) -> Result<Option<T>, wild_spawn::SpawnRefusal>,
+) -> Result<(), wild_spawn::SpawnRefusal> {
+    let result = spawn_transaction(&mut holder, budget, false, async |tx| {
+        *published = operation(tx).await?;
+        Ok(())
+    })
+    .await;
+    finish_spawn_holder(holder, budget, result).await
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+async fn finish_spawn_holder<T>(
+    mut holder: sqlx::pool::PoolConnection<sqlx::Postgres>,
+    budget: SpawnBudget,
+    transaction: SpawnTransaction<T>,
+) -> Result<T, wild_spawn::SpawnRefusal> {
+    use sqlx::pool::PoolConnectionReturnDisposition;
+    let result = match transaction {
+        SpawnTransaction::Clean(result) => result,
+        SpawnTransaction::Uncertain(error) => {
+            // An unacknowledged BEGIN can leave a live transaction that SQLx
+            // has not recorded. Retire the socket before releasing the slot.
+            drop(holder.detach());
+            spawn_cleanup_warning("holder_retired", error.detail().unwrap_or(error.token()));
+            return Err(error);
+        }
+    };
+    let (disposition, cause) = holder
+        .return_to_pool_observed_until_with_cause(budget.release_deadline.into_std())
+        .await;
+    match disposition {
+        PoolConnectionReturnDisposition::ReturnedToIdle => result,
+        _ => {
+            let cause = cause.unwrap_or("unknown");
+            spawn_cleanup_warning("pool_return", cause);
+            result.and(Err(wild_spawn::SpawnRefusal::Fence(format!(
+                "qualification spawn pool return: {cause}"
+            ))))
+        }
+    }
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+fn spawn_cleanup_warning(phase: &'static str, cause: &str) {
+    use oteryn_error_codes::{FieldValue, Level, Line};
+    emit(
+        PROCESS,
+        &Line::new(Level::Warn, "node", "qualification_spawn_cleanup_failed")
+            .field("phase", FieldValue::Token(phase))
+            .field(
+                "cause",
+                FieldValue::Owned(cause.chars().take(200).collect()),
+            ),
+    );
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+fn publication_candidates<T: PartialEq>(fresh: Vec<T>, mut committed: Vec<T>) -> Vec<T> {
+    committed.retain(|candidate| fresh.contains(candidate));
+    committed
 }
 
 /// This fixture emits only classified errors/static context, never request bytes or node proof.
@@ -718,14 +1004,15 @@ async fn prepare_build(
         profile_build(profile)
     };
     let context = policy.context.clone();
-    let (xp_occurrence, build_occurrence) = if matches!(profile, "sweep" | "victim") {
-        (
-            fixture_occurrence(character.as_bytes(), profile, 1),
-            fixture_occurrence(character.as_bytes(), profile, 2),
-        )
-    } else {
-        qualification_build::fixture_occurrences(character, vocation, level, combat_progression)
-    };
+    let (xp_occurrence, build_occurrence) =
+        if matches!(profile, "sweep" | "victim" | "knight-underlevel") {
+            (
+                fixture_occurrence(character.as_bytes(), profile, 1),
+                fixture_occurrence(character.as_bytes(), profile, 2),
+            )
+        } else {
+            qualification_build::fixture_occurrences(character, vocation, level, combat_progression)
+        };
     qualification_build::prepare_character_with_policy_until(
         root,
         authority,
@@ -794,24 +1081,56 @@ async fn prepare_items(
         runtime_scope: current.current_runtime_scope(),
         scope_ownership_generation: current.current_scope_generation(),
     };
-    let inventory = qualification_build::retry_holder(
-        Some(root),
-        deadline,
-        |error| {
-            matches!(
-                error,
-                crate::durability::item_use::ItemUseError::Unavailable(
-                    DurabilityError::RootUnavailable
+    let read_inventory = async || {
+        qualification_build::retry_holder(
+            Some(root),
+            deadline,
+            |error| {
+                matches!(
+                    error,
+                    crate::durability::item_use::ItemUseError::Unavailable(
+                        DurabilityError::RootUnavailable
+                    )
                 )
-            )
-        },
-        async || root.read_item_use_inventory(authority, proof, fence).await,
-    )
-    .await
-    .map_err(|error| format!("qualification inventory: {error:?}"))?;
+            },
+            async || root.read_item_use_inventory(authority, proof, fence).await,
+        )
+        .await
+        .map_err(|error| format!("qualification inventory: {error:?}"))
+    };
+    let mut inventory = read_inventory().await?;
+    if inventory.backpack.is_none() {
+        use crate::durability::starter_grant::{StarterGrantOutcome, StarterTemplate};
+        let template = StarterTemplate {
+            key: fixture_gear_claim(current.current_game_session_id(), "backpack"),
+            ..StarterTemplate::main()
+        };
+        let outcome = qualification_build::retry_holder(
+            Some(root),
+            deadline,
+            |error| matches!(error, DurabilityError::RootUnavailable),
+            async || {
+                root.grant_starter_items(
+                    authority,
+                    proof,
+                    &fence,
+                    &FixtureItemContent(native),
+                    &template,
+                )
+                .await
+            },
+        )
+        .await
+        .map_err(|error| format!("qualification backpack recovery: {error:?}"))?;
+        if outcome == StarterGrantOutcome::NotAdmitted {
+            return Err("qualification backpack recovery was not admitted".into());
+        }
+        inventory = read_inventory().await?;
+    }
     let bag = inventory
         .backpack
-        .ok_or("qualification requires the real starter backpack")?;
+        .as_ref()
+        .ok_or("qualification backpack missing after recovery")?;
     let backpack = generation_item_facts(native, &bag.backpack.definition)
         .map_err(|error| format!("qualification backpack: {error:?}"))?;
     let index = native
@@ -850,6 +1169,14 @@ async fn prepare_items(
                 .ok_or("qualification Item absent")?
                 .into(),
         };
+        if inventory
+            .equipment
+            .iter()
+            .chain(bag.entries.iter().map(|entry| &entry.item))
+            .any(|existing| existing.definition == definition && existing.quantity == 1)
+        {
+            continue;
+        }
         let item = generation_item_facts(native, &definition)
             .map_err(|error| format!("qualification Item {key}: {error:?}"))?;
         let request = RewardClaimMintRequest {
@@ -928,6 +1255,62 @@ async fn prepare_items(
     Ok(())
 }
 
+fn fixture_gear_claim(session: crate::foundation::GameSessionId, item: &str) -> String {
+    let session = u128::from_be_bytes(*session.as_bytes());
+    format!("oteryn:qualification.gear.{item}:{session:032x}")
+}
+
+struct FixtureItemContent<'a>(&'a NativeGameplayState);
+
+impl crate::durability::item_transfer::ItemWeightLookup for FixtureItemContent<'_> {
+    fn generation_digest(&self) -> [u8; 32] {
+        self.0.source_digest()
+    }
+
+    fn weight_of(
+        &self,
+        definition: &crate::durability::item_mint::TypedDefinitionRef,
+    ) -> Result<u32, crate::durability::item_transfer::ItemWeightRefused> {
+        use crate::durability::item_transfer::ItemWeightRefused;
+        oteryn_gameplay_items::item_ref_admission::generation_item_facts(self.0, definition)
+            .map_err(|_| ItemWeightRefused::DefinitionMismatch)?
+            .weight
+            .ok_or(ItemWeightRefused::Unknown)
+    }
+}
+
+impl crate::durability::item_loop_move::ItemLoopContent for FixtureItemContent<'_> {
+    fn loop_content_digest(&self) -> [u8; 32] {
+        self.0.source_digest()
+    }
+
+    fn loop_facts(
+        &self,
+        definition: &crate::durability::item_mint::TypedDefinitionRef,
+    ) -> Option<crate::durability::item_transfer::ItemDefinitionFacts> {
+        oteryn_gameplay_items::item_ref_admission::generation_item_facts(self.0, definition).ok()
+    }
+}
+
+#[cfg(test)]
+fn fixture_item_committed(
+    outcome: crate::durability::reward_claim_mint::RewardClaimMintOutcome,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::durability::reward_claim_mint::RewardClaimMintOutcome;
+    let receipt = match outcome {
+        RewardClaimMintOutcome::Committed(receipt)
+        | RewardClaimMintOutcome::AlreadyCommitted(receipt) => receipt,
+    };
+    if receipt.quantity != 1 {
+        return Err(format!(
+            "qualification Item receipt has quantity {}",
+            receipt.quantity
+        )
+        .into());
+    }
+    Ok(())
+}
+
 fn finish_fixture_item(
     result: Result<
         crate::durability::reward_claim_mint::RewardClaimMintOutcome,
@@ -966,6 +1349,347 @@ async fn read_fixture_item_receipt<T>(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn control_spawn_source() -> Result<&'static str, &'static str> {
+        include_str!("qualification_fixture.rs")
+            .split_once("async fn place(")
+            .and_then(|(_, body)| body.split_once("async fn begin_spawn_transaction("))
+            .map(|(body, _)| body)
+            .ok_or("missing control spawn boundary")
+    }
+
+    #[test]
+    fn qualification_spawn_releases_runtime_before_durable_reads() -> Result<(), &'static str> {
+        let source = control_spawn_source()?;
+        let release = source
+            .find("drop(runtime)")
+            .ok_or("missing snapshot lock release")?;
+        let read = source
+            .find("read_spawn_tiles(")
+            .or_else(|| source.find("realize_creature_in_transaction("))
+            .ok_or("missing durable read")?;
+        assert!(release < read);
+        Ok(())
+    }
+
+    #[test]
+    fn qualification_spawn_keeps_collision_fence_until_publication() -> Result<(), &'static str> {
+        let source = control_spawn_source()?;
+        let probe = source
+            .find("spawn_transaction(&mut holder, budget, true")
+            .ok_or("missing committed probe")?;
+        let guard = source
+            .find("retry_spawn_collisions(")
+            .ok_or("missing collision transaction")?;
+        let fresh = source
+            .rfind("read_spawn_tiles(")
+            .ok_or("missing fresh collision read")?;
+        let publish = source.find("publish_spawn(").ok_or("missing publish")?;
+        assert!(probe < guard && guard < fresh && fresh < publish);
+        assert!(source[fresh..publish].contains(">= budget.work_deadline"));
+        Ok(())
+    }
+
+    #[test]
+    fn qualification_spawn_watchdog_caller_contract() -> Result<(), &'static str> {
+        let source = control_spawn_source()?;
+        assert!(
+            source.contains("finish_spawn_holder(holder, budget, failure)"),
+            "pool return must be observed"
+        );
+        assert!(
+            !source.contains(".detach()"),
+            "successful spawn must preserve the ready holder"
+        );
+        assert!(
+            source.contains("retry_spawn_collisions("),
+            "backend expiry must share the request clock"
+        );
+        assert!(
+            source.contains("published"),
+            "the caller must retain a published receipt"
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn qualification_spawn_reports_publication_if_cleanup_stalls() -> Result<(), &'static str>
+    {
+        let deadline = tokio::time::Instant::now() + Duration::from_millis(50);
+        let reply = spawn_with_watchdog(deadline, async |published| {
+            *published = Some(17);
+            std::future::pending().await
+        })
+        .await;
+        assert!(matches!(reply, Ok(Ok(17))));
+        let rejected = spawn_with_watchdog(deadline, async |_: &mut Option<()>| {
+            std::future::pending().await
+        })
+        .await;
+        assert!(rejected.is_err());
+        Ok(())
+    }
+
+    #[cfg(feature = "qualification-spawn")]
+    #[tokio::test]
+    async fn qualification_spawn_transaction_returns_pool_and_bounds_backend()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use sqlx::Connection as _;
+        let url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL").map_err(
+            |_| "OTERYN_TEST_POSTGRES_ADMIN_URL is required for the spawn transaction regression",
+        )?;
+        tokio::time::timeout(Duration::from_secs(12), async {
+            let pool = sqlx::postgres::PgPoolOptions::new()
+                .max_connections(1)
+                .connect(&url)
+                .await?;
+            let mut holder = pool.acquire().await?;
+            let mut writer = sqlx::PgConnection::connect(&url).await?;
+            let start = tokio::time::Instant::now();
+            let budget = SpawnBudget::new(start);
+            let probe = spawn_transaction(&mut holder, budget, true, async |tx| {
+                sqlx::query("CREATE TEMP TABLE qualification_spawn_committed_probe (id integer)")
+                    .execute(&mut **tx)
+                    .await
+                    .map_err(|e| wild_spawn::SpawnRefusal::Fence(e.to_string()))?;
+                Ok(())
+            })
+            .await;
+            assert!(matches!(probe, SpawnTransaction::Clean(Ok(()))));
+            let mut published = None;
+            spawn_collision(holder, budget, &mut published, async |tx| {
+                let committed: bool = sqlx::query_scalar(
+                    "SELECT to_regclass('pg_temp.qualification_spawn_committed_probe') IS NOT NULL",
+                )
+                .fetch_one(&mut **tx)
+                .await
+                .map_err(|e| wild_spawn::SpawnRefusal::Fence(e.to_string()))?;
+                assert!(
+                    committed,
+                    "the first probe must commit before the collision guard"
+                );
+                let key = sqlx::query_scalar::<_, i64>("SELECT pg_backend_pid()::bigint")
+                    .fetch_one(&mut **tx)
+                    .await
+                    .map_err(|e| wild_spawn::SpawnRefusal::Fence(e.to_string()))?;
+                sqlx::query("SELECT pg_advisory_xact_lock($1)")
+                    .bind(key)
+                    .execute(&mut **tx)
+                    .await
+                    .map_err(|e| wild_spawn::SpawnRefusal::Fence(e.to_string()))?;
+                let could_write: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock($1)")
+                    .bind(key)
+                    .fetch_one(&mut writer)
+                    .await
+                    .map_err(|e| wild_spawn::SpawnRefusal::Fence(e.to_string()))?;
+                assert!(!could_write);
+                Ok(Some(key))
+            })
+            .await
+            .map_err(|e| format!("{}: {:?}", e.token(), e.detail()))?;
+            let key = published.ok_or("collision did not record the receipt")?;
+            let mut holder = pool
+                .try_acquire()
+                .ok_or("spawn did not return the ready holder")?;
+            let pid: i64 = sqlx::query_scalar("SELECT pg_backend_pid()::bigint")
+                .fetch_one(&mut *holder)
+                .await?;
+            assert_eq!(key, pid);
+
+            // Model a BEGIN accepted by PostgreSQL while SQLx has not yet
+            // recorded transaction depth. The failure path must retire this PID.
+            sqlx::query("BEGIN").execute(&mut *holder).await?;
+            let failed = finish_spawn_holder::<()>(
+                holder, budget, SpawnTransaction::Uncertain(wild_spawn::SpawnRefusal::Fence("late BEGIN".into())),
+            ).await;
+            assert!(failed.is_err());
+            let mut holder = pool.acquire().await?;
+            let replacement: i64 = sqlx::query_scalar("SELECT pg_backend_pid()::bigint")
+                .fetch_one(&mut *holder).await?;
+            assert_ne!(replacement, pid, "a cancelled BEGIN backend was reused");
+
+            // A refused collision rolls back cleanly and retains the exact holder.
+            let mut published = None::<()>;
+            let refusal = spawn_collision(holder, budget, &mut published, async |_| {
+                Err(wild_spawn::SpawnRefusal::NoFreeTile("blocked".into()))
+            }).await;
+            assert!(matches!(refusal, Err(wild_spawn::SpawnRefusal::NoFreeTile(_))));
+            let mut holder = pool.try_acquire().ok_or("clean refusal did not return the holder")?;
+            let after_refusal: i64 = sqlx::query_scalar("SELECT pg_backend_pid()::bigint")
+                .fetch_one(&mut *holder).await?;
+            assert_eq!(replacement, after_refusal);
+
+            let start = tokio::time::Instant::now();
+            let late = SpawnBudget {
+                work_deadline: start + Duration::from_millis(900),
+                backend_deadline: start + Duration::from_millis(1500),
+                release_deadline: start + Duration::from_millis(1700),
+                reply_deadline: start + Duration::from_millis(1900),
+            };
+            let mut attempt = 0;
+            let mut published = None;
+            retry_spawn_collisions(holder, late, &mut published, async || {
+                // Simulate contention for the runtime on the first attempt.
+                tokio::time::sleep(Duration::from_millis(250)).await;
+                pool.acquire().await.map_err(|e| wild_spawn::SpawnRefusal::Fence(e.to_string()))
+            }, async |tx| {
+                attempt += 1;
+                if attempt == 1 {
+                    return Ok(None);
+                }
+                let timeout: f64 = sqlx::query_scalar(
+                    "SELECT extract(epoch FROM current_setting('transaction_timeout')::interval)::float8",
+                ).fetch_one(&mut **tx).await
+                    .map_err(|e| wild_spawn::SpawnRefusal::Fence(e.to_string()))?;
+                assert!((0.4..=0.75).contains(&timeout), "incorrect retry backend timer: {timeout}");
+                sqlx::query("SELECT pg_advisory_xact_lock($1)").bind(key)
+                    .execute(&mut **tx).await.map_err(|e| wild_spawn::SpawnRefusal::Fence(e.to_string()))?;
+                let held: bool = sqlx::query_scalar("SELECT NOT pg_try_advisory_xact_lock($1)")
+                    .bind(key).fetch_one(&mut writer).await.map_err(|e| wild_spawn::SpawnRefusal::Fence(e.to_string()))?;
+                assert!(held);
+                Ok(Some(()))
+            }).await.map_err(|e| format!("{}: {:?}", e.token(), e.detail()))?;
+            assert_eq!(attempt, 2);
+            assert_eq!(published, Some(()));
+
+            // Keep the socket alive and idle with a held lock. PostgreSQL
+            // must release it by itself even if no rollback or FIN arrives.
+            let mut holder = pool.acquire().await?;
+            let mut tx = begin_spawn_transaction(
+                &mut holder, tokio::time::Instant::now() + Duration::from_secs(1),
+            ).await.map_err(|e| format!("{}: {:?}", e.token(), e.detail()))?;
+            sqlx::query("SELECT pg_advisory_xact_lock($1)").bind(key)
+                .execute(&mut *tx).await?;
+            tokio::time::timeout(
+                Duration::from_secs(1),
+                sqlx::query("SELECT pg_advisory_xact_lock($1)").bind(key).execute(&mut writer),
+            ).await??;
+            drop(tx);
+            drop(holder.detach());
+
+            // Stall the real collision caller during pool cleanup after its
+            // guarded publication. The watchdog must still return the receipt.
+            let stall = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+            let release_stall = stall.clone();
+            let entered = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+            let hook_entered = entered.clone();
+            let stalled_pool = sqlx::postgres::PgPoolOptions::new().max_connections(1)
+                .after_release(move |_, _| {
+                    let stall = release_stall.clone();
+                    let entered = hook_entered.clone();
+                    Box::pin(async move {
+                        if stall.load(std::sync::atomic::Ordering::Relaxed) {
+                            entered.store(true, std::sync::atomic::Ordering::Relaxed);
+                            std::future::pending().await
+                        } else {
+                            Ok(true)
+                        }
+                    })
+                }).connect(&url).await?;
+            let holder = stalled_pool.acquire().await?;
+            let start = tokio::time::Instant::now();
+            let budget = SpawnBudget {
+                work_deadline: start + Duration::from_millis(350),
+                backend_deadline: start + Duration::from_millis(750),
+                release_deadline: start + Duration::from_millis(850),
+                reply_deadline: start + Duration::from_millis(1250),
+            };
+            let reply = spawn_with_watchdog(budget.reply_deadline, async |published| {
+                let result = spawn_collision(holder, budget, published, async |_| {
+                    stall.store(true, std::sync::atomic::Ordering::Relaxed);
+                    Ok(Some(17))
+                }).await;
+                assert!(matches!(&result, Err(error) if error.detail()
+                    == Some("qualification spawn pool return: after_release_timeout")));
+                result
+            }).await;
+            assert!(entered.load(std::sync::atomic::Ordering::Relaxed));
+            assert!(matches!(reply, Ok(Ok(17))));
+            let mut holder = pool.acquire().await?;
+            let victim: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+                .fetch_one(&mut *holder).await?;
+            let terminated: bool = sqlx::query_scalar("SELECT pg_terminate_backend($1, 1000)")
+                .bind(victim).fetch_one(&mut writer).await?;
+            assert!(terminated);
+            let outcome = finish_spawn_holder(
+                holder, SpawnBudget::new(tokio::time::Instant::now()), SpawnTransaction::Clean(Ok(())),
+            ).await;
+            assert!(matches!(outcome, Err(error) if error.detail()
+                == Some("qualification spawn pool return: ping_failed")));
+
+            let mut empty = pool.acquire().await?;
+            let returned = empty.return_to_pool_observed().await;
+            assert_eq!(returned, sqlx::pool::PoolConnectionReturnDisposition::ReturnedToIdle);
+            let outcome = finish_spawn_holder(
+                empty, SpawnBudget::new(tokio::time::Instant::now()), SpawnTransaction::Clean(Ok(())),
+            ).await;
+            assert!(matches!(outcome, Err(error) if error.detail()
+                == Some("qualification spawn pool return: no_evidence")));
+            Ok(())
+        })
+        .await?
+    }
+
+    #[test]
+    fn qualification_fixture_restores_missing_carried_gear() -> Result<(), &'static str> {
+        let source = include_str!("qualification_fixture.rs");
+        let prepared = source
+            .split_once("async fn prepare_items(")
+            .and_then(|(_, body)| body.split_once("fn fixture_item_committed("))
+            .map(|(body, _)| body)
+            .ok_or("missing fixture equipment preparation")?;
+        assert!(prepared.contains("grant_starter_items("));
+        assert!(prepared.contains("fixture_gear_claim("));
+        Ok(())
+    }
+
+    #[test]
+    fn delta_spawn_drops_tiles_blocked_since_the_fence_commit() {
+        assert!(publication_candidates(Vec::<u8>::new(), vec![1]).is_empty());
+        assert_eq!(publication_candidates(vec![2], vec![1, 2]), vec![2]);
+    }
+
+    #[test]
+    fn qualification_spawn_commits_before_placement() -> Result<(), &'static str> {
+        let place = control_spawn_source()?;
+        let probe = place
+            .find("spawn_transaction(&mut holder, budget, true")
+            .ok_or("missing committed fence probe")?;
+        let publish = place
+            .find("publish_spawn(")
+            .ok_or("missing runtime placement")?;
+        assert!(probe < publish);
+        let source = include_str!("qualification_fixture.rs");
+        let transaction = source
+            .split_once("async fn spawn_transaction<T>(")
+            .and_then(|(_, body)| body.split_once("async fn spawn_collision<T>("))
+            .map(|(body, _)| body)
+            .ok_or("missing spawn transaction boundary")?;
+        assert!(transaction.contains("if commit && result.is_ok()"));
+        assert!(transaction.contains("tx.commit().await"));
+        Ok(())
+    }
+
+    #[test]
+    fn review_accepts_fixture_item_receipt_replay() {
+        use crate::durability::reward_claim_mint::{
+            CommittedRewardClaimMint, RewardClaimMintOutcome,
+        };
+        let receipt = CommittedRewardClaimMint {
+            transaction_id: [1; 16],
+            event_id: [2; 16],
+            item_instance_id: [3; 16],
+            occurred_at_unix_ms: 1,
+            envelope_sha256: [4; 32],
+            quantity: 1,
+            destination: crate::durability::item_transfer::ContainerEntryPosition {
+                parent_item_instance_id: [5; 16],
+                placement_ordinal: 0,
+            },
+        };
+        assert!(fixture_item_committed(RewardClaimMintOutcome::Committed(receipt.clone())).is_ok());
+        assert!(fixture_item_committed(RewardClaimMintOutcome::AlreadyCommitted(receipt)).is_ok());
+    }
 
     #[test]
     fn retained_fixture_item_accepts_both_session_replay_outcomes() {

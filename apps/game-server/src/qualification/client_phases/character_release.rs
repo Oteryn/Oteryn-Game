@@ -1,3 +1,7 @@
+fn character_release_need(clients: &SeamClients<'_>, index: usize) -> verdict::Need {
+    fixture_need(clients.world, clients.characters[index])
+}
+
 fn fixture_need(world: [u8; 16], character: [u8; 16]) -> verdict::Need {
     verdict::Need::Fixture(world, character)
 }
@@ -8,7 +12,7 @@ fn fixture_need(world: [u8; 16], character: [u8; 16]) -> verdict::Need {
 // The first timeout per fixture is the root; later waits on it fail at once.
 pub(super) async fn wait_character_released(clients: &SeamClients<'_>, index: usize) -> TestResult {
     wait_reported_release(
-        verdict::Harness::global(), index, fixture_need(clients.world, clients.characters[index]), wait_fixture_released(clients, index),
+        verdict::Harness::global(), index, character_release_need(clients, index), wait_fixture_released(clients, index),
     ).await
 }
 

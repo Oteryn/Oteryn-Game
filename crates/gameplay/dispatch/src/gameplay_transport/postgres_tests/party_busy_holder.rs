@@ -1,7 +1,9 @@
-//! MP01: holder contention must not turn a fresh party invite into Unavailable.
+//! MP01: named visibility and party invites when the shared holder is busy.
 use crate::bestiary_postgres_harness::{Harness, TestResult, debug};
 use crate::gameplay_transport::{
-    ComposedFreshAdmission, connection::AdmittedSession, party_command::SessionPartyView,
+    ComposedFreshAdmission,
+    connection::{AdmissionRefusal, AdmittedSession, FreshAdmissionAuthority},
+    party_command::SessionPartyView,
 };
 use oteryn_protocol_oteryn::{party::*, world_spatial_entities::EntityRef};
 use std::{future::Future, task::Poll};
@@ -17,6 +19,27 @@ pub(super) async fn check(
     targets: &[EntityRef],
     h: &Harness,
 ) -> TestResult {
+    let observer = admitted[0].runtime_actor.ok_or("party observer")?;
+    let held = owner.root.try_issue_semantic_pass()?;
+    let projection = owner.observe_named_visible_entities_result(observer).await;
+    assert!(
+        matches!(projection, Err(AdmissionRefusal::Unavailable)),
+        "named visibility erased the current holder contention: {projection:?}"
+    );
+    drop(held);
+    let caught_up = owner
+        .observe_named_visible_entities_result(observer)
+        .await
+        .map_err(debug)?;
+    assert!(
+        caught_up.entities.iter().any(|entity| {
+            entity.identity == targets[1].identity
+                && entity.generation == targets[1].generation
+                && entity.display_name.is_some()
+        }),
+        "the next projection must publish the already-admitted peer's name"
+    );
+
     let mut view = SessionPartyView::default();
     let payload = encode_party_intent(PartyIntent::Invite(targets[1])).map_err(debug)?;
     let held = owner.root.try_issue_semantic_pass()?;

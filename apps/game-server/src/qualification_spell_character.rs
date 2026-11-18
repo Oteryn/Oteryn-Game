@@ -717,6 +717,9 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
 /// Advance an already classed disposable Character using its existing bound XP
 /// policy. This is an award, not a replacement of the Character or actor facts.
 #[cfg(test)]
+/// Advance an already classed disposable Character using its existing bound XP
+/// policy. This is an award, not a replacement of the Character or actor facts.
+#[cfg(test)]
 pub(super) async fn advance_source_level(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,

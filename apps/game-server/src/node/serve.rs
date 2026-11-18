@@ -3066,6 +3066,13 @@ async fn control_loop(
                     qualification_fixture::item_instance(config.qualification_fixture, &request),
                     "character_bootstrap",
                 ),
+                #[cfg(any(test, feature = "qualification-spawn"))]
+                Some(request) if request.starts_with(b"inspect-damage ") => (
+                    qualification_fixture::inspect_damage(config, spawn, &request)
+                        .await
+                        .unwrap_or_else(|| "rejected reason=damage_unavailable".to_owned()),
+                    "qualification_damage",
+                ),
                 Some(request) if request.starts_with(b"spawn ") => (
                     qualification_fixture::spawn(
                         root, authority, proof, config, native, spawn, &request,
@@ -3093,6 +3100,7 @@ async fn control_loop(
                     event_traced("event=ops_qualification_capacity result=served", connection);
                 }
                 "ops_health" => event_traced("event=ops_health result=served", connection),
+                "qualification_damage" => {}
                 "ops_diagnose" => {
                     event_traced("event=ops_diagnose result=served", connection);
                 }
@@ -3935,10 +3943,10 @@ async fn boot_and_serve(
         )
         .map_err(|_| BootError::Bind("control socket mode"))?;
     }
-    event(&format!(
-        "event=listener_bound address={}",
-        config.listener.address
-    ));
+    let bound_address = listener
+        .local_addr()
+        .map_err(|_| BootError::Bind("gameplay listener address"))?;
+    event(&format!("event=listener_bound address={bound_address}"));
     let readiness = Readiness {
         root,
         proof: &proof,

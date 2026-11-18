@@ -365,7 +365,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let level: i64 = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
         .bind(clients.characters[0].as_slice()).fetch_one(&mut connection).await?;
     if level < 20 {
-        client = provisioning::provision_fixture(client, clients, 0).await?;
+        client = provisioning::provision_fixture(client, clients, 0, 100).await?;
     }
 
     let (mut initial, _) = first_page(&mut client, world_bytes).await?;

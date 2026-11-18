@@ -2882,14 +2882,132 @@ fn parse_fixture_spawn(wire: String) -> Result<FixtureSpawn, String> {
 
 /// `spawn <session> <key>` through `provision.py --spawn`; Err carries the rejected token.
 /// Shared by `creature_sweep` and MP09 (both reach it through `use super::*`).
+struct HuntDeath {
+    actor: crate::foundation::ExactActorRef,
+    stamina: u16,
+    reward_occurrence: Option<[u8; 16]>,
+    shared: bool,
+    awards: BTreeMap<[u8; 16], u64>,
+}
+
+/// Match the durable Channel death key to the exact wire incarnation before deriving
+/// its corpse identity. Creature type and a neighbouring floor tile are insufficient.
+async fn committed_hunt_death(
+    client: &mut oteryn_dev_client::DevClientSession,
+    clients: &SeamClients<'_>,
+    principal: Option<[u8; 16]>,
+    key: &str,
+    target: oteryn_dev_client::EntityRef,
+    deadline: tokio::time::Instant,
+) -> TestResult<HuntDeath> {
+    use crate::foundation::{
+        ActorLocalGeneration, ActorLocalId, ActorRef, ExactActorRef, ScopeOwnershipGeneration,
+    };
+    let world = WorldId::decode(&clients.world)?;
+    let channel = ChannelId::decode(&clients.channel)?;
+    let scope = ScopeOwnershipGeneration::new(clients.scope_generation)
+        .map_err(|error| format!("invalid hunt scope generation: {error:?}"))?;
+    let prefix = [
+        clients.world.as_slice(),
+        clients.channel.as_slice(),
+        &clients.scope_generation.to_be_bytes(),
+    ]
+    .concat();
+    type ReceiptRow = (Vec<u8>, i32, bool, Option<Vec<u8>>);
+    tokio::time::timeout_at(deadline, async {
+        let mut database = sqlx::PgConnection::connect(clients.url).await?;
+        loop {
+            // The Channel death key is the exact byte sequence hashed by
+            // ExactActorRef::placement_identity after its domain separator.
+            let row: Option<ReceiptRow> = sqlx::query_as(
+                "SELECT r.death_key, m.stamina_minutes, r.shared, uuid_send(m.reward_occurrence_id)
+                 FROM game_party_kill_xp_receipts r JOIN game_party_kill_xp_members m
+                 ON m.death_key=r.death_key AND m.character_id=r.principal_id
+                 WHERE ($1::bytea IS NULL OR r.principal_id=encode($1,'hex')::uuid)
+                 AND r.creature_key=$2
+                 AND octet_length(r.death_key)=52 AND substring(r.death_key FROM 1 FOR 40)=$3
+                 AND substring(r.death_key FROM 45 FOR 8)=$4
+                 AND substring(sha256(convert_to('oteryn:runtime-player-placement:v1','UTF8')
+                     || r.death_key) FROM 1 FOR 16)=$5",
+            )
+            .bind(principal.as_ref().map(|id| id.as_slice()))
+            .bind(key)
+            .bind(&prefix)
+            .bind(target.generation.to_be_bytes().as_slice())
+            .bind(target.identity.as_slice())
+            .fetch_optional(&mut database)
+            .await?;
+            if let Some((death_key, stamina, shared, reward_occurrence)) = row {
+                let slot = death_key
+                    .get(40..44)
+                    .ok_or("missing death actor slot")?
+                    .try_into()?;
+                let actor = ExactActorRef(ActorRef::from_owner_parts(
+                    world,
+                    channel,
+                    scope,
+                    ActorLocalId(u32::from_be_bytes(slot)),
+                    ActorLocalGeneration(target.generation),
+                ));
+                if actor.placement_identity() != target.identity {
+                    return Err("durable death key did not match target".into());
+                }
+                let awards: Vec<(Vec<u8>, i64)> = sqlx::query_as(
+                    "SELECT uuid_send(character_id), xp_awarded FROM game_party_kill_xp_members
+                     WHERE death_key=$1 AND xp_awarded>0 LIMIT 51",
+                )
+                .bind(death_key)
+                .fetch_all(&mut database)
+                .await?;
+                if awards.len() > 50 {
+                    return Err("too many hunt award members".into());
+                }
+                return Ok(HuntDeath {
+                    actor,
+                    stamina: u16::try_from(stamina)?,
+                    reward_occurrence: reward_occurrence
+                        .map(|id| id.as_slice().try_into())
+                        .transpose()?,
+                    shared,
+                    awards: awards
+                        .into_iter()
+                        .map(|(id, xp)| {
+                            TestResult::Ok((id.as_slice().try_into()?, u64::try_from(xp)?))
+                        })
+                        .collect::<TestResult<_>>()?,
+                });
+            }
+            client.service_liveness(Duration::from_millis(100)).await?;
+            client.take_events();
+        }
+    })
+    .await
+    .map_err(|_| "no committed death receipt for the spawned creature")?
+}
+
 async fn request_spawn(session: String, key: String) -> Result<FixtureSpawn, String> {
     parse_fixture_spawn(request_spawn_control(session, key).await?)
 }
 
 async fn request_spawn_control(session: String, key: String) -> Result<String, String> {
+    request_fixture_control(session, "--spawn", key).await
+}
+
+async fn request_fixture_control(
+    session: String,
+    operation: &'static str,
+    argument: String,
+) -> Result<String, String> {
     let socket = required("NODE_BOOT_CONTROL_SOCKET").map_err(|error| error.to_string())?;
     let mut command = fixture_command();
-    command.args(["--socket", &socket, "--session", &session, "--spawn", &key]);
+    command.args([
+        "--socket",
+        &socket,
+        "--session",
+        &session,
+        operation,
+        &argument,
+    ]);
     let output = tokio::time::timeout(FIXTURE_COMMAND_DEADLINE, run_fixture_command(&mut command))
         .await
         .map_err(|error| error.to_string())?
@@ -5689,6 +5807,7 @@ pub(super) async fn journeys(
         let result = mp::run(
             &mp_clients[0],
             &mp_clients[1],
+            sweep_clients,
             world,
             &metadata.manifest.subareas,
         )

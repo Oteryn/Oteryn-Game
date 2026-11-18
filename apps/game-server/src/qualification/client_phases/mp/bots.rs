@@ -231,7 +231,7 @@ async fn connect_bot(bot: &mut Bot<'_, '_>, tag: u8, stage: &str) -> TestResult 
     Ok(())
 }
 
-async fn logout_at(bot: &mut Bot<'_, '_>, stage: &str) -> TestResult {
+pub(super) async fn logout_at(bot: &mut Bot<'_, '_>, stage: &str) -> TestResult {
     bot.progress(stage, "begin")?;
     let begin = bot
         .session
@@ -634,6 +634,12 @@ async fn logout_all(bots: &mut [Bot<'_, '_>]) -> TestResult {
 
 pub(super) async fn relog_all(bots: &mut [Bot<'_, '_>]) -> TestResult {
     logout_all(bots).await?;
+    // A logout reply only closes the client exchange. Complete every prior holder's
+    // durable release before starting any new session's liveness clock.
+    for bot in bots.iter() {
+        let released = wait_character_released(bot.pair, bot.index).await;
+        bot.contextualize("relog-terminal-release", released)?;
+    }
     for index in 0..bots.len() {
         let (readmitted, current) = bots.split_at_mut(index);
         let bot = current.first_mut().ok_or("relog bot absent")?;

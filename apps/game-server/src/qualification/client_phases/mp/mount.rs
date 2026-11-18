@@ -5,10 +5,12 @@ mod bots;
 mod diagnostics;
 pub(super) mod mp01_party_pvp;
 mod mp09_party_xp;
+mod observations;
 
 pub(super) async fn run(
     core: &SeamClients<'_>,
     packets: &SeamClients<'_>,
+    underlevel: &SeamClients<'_>,
     world: &BundleWorld,
     towns: &oteryn_world_bundle::subarea::Table,
 ) -> TestResult {
@@ -17,7 +19,10 @@ pub(super) async fn run(
         mp01_party_pvp::run(core, packets, world, towns),
     )
     .await;
-    let mp09 =
-        verdict::indexed_checked("MP09.full", mp09_party_xp::run(core, packets, world)).await;
+    let mp09 = verdict::indexed_checked(
+        "MP09.full",
+        mp09_party_xp::run(core, packets, underlevel, world),
+    )
+    .await;
     mp01.and(mp09)
 }

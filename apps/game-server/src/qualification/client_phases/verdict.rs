@@ -230,6 +230,11 @@ fn session_cause(text: &str, context: Option<(&'static str, String)>) -> Cause {
     transport(None, None, context)
 }
 
+#[cfg(test)]
+pub(super) fn test_fixture(index: u8) -> Need {
+    Need::Fixture([0; 16], [index; 16])
+}
+
 /// A precondition a row declares before it runs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) enum Need {
@@ -1185,20 +1190,35 @@ mod verdict_tests {
     }
 
     #[test]
+    fn qualification_release_failure_is_scoped_to_fixture_identity() {
+        let harness = harness(true, None);
+        let first = Need::Fixture([1; 16], [2; 16]);
+        harness.fail(first, "first fixture release".to_owned());
+        assert!(harness.blocked(&[first]).is_some());
+        assert!(
+            harness
+                .blocked(&[Need::Fixture([1; 16], [3; 16])])
+                .is_none()
+        );
+        assert!(
+            harness
+                .blocked(&[Need::Fixture([4; 16], [2; 16])])
+                .is_none()
+        );
+        assert!(harness.fixture_gate(first).is_err());
+    }
+
+    #[test]
     fn a_failed_fixture_blocks_later_rows_without_running_them() -> TestResult {
         let harness = harness(true, None);
         paused()?.block_on(async {
-            let root_row = Row::with_harness("E2EF6", "S16a", &["a"], harness)
-                .needs(&[Need::Fixture([0; 16], [1; 16])]);
+            let root_row =
+                Row::with_harness("E2EF6", "S16a", &["a"], harness).needs(&[test_fixture(1)]);
             let watch = root_row.watch();
             let result: TestResult = watch
                 .bound(Duration::from_secs(160), "deadline", async {
                     let timeout: Box<dyn Error> = "not terminally released".into();
-                    Err(harness.fixture_failed(
-                        Need::Fixture([0; 16], [1; 16]),
-                        1,
-                        timeout.as_ref(),
-                    ))
+                    Err(harness.fixture_failed(test_fixture(1), 1, timeout.as_ref()))
                 })
                 .await;
             assert_eq!(
@@ -1210,19 +1230,11 @@ mod verdict_tests {
                     "S16a/fixture1-released".into()
                 )
             );
-            assert!(
-                harness
-                    .fixture_gate(Need::Fixture([0; 16], [1; 16]))
-                    .is_err()
-            );
-            assert!(
-                harness
-                    .fixture_gate(Need::Fixture([0; 16], [0; 16]))
-                    .is_ok()
-            );
+            assert!(harness.fixture_gate(test_fixture(1)).is_err());
+            assert!(harness.fixture_gate(test_fixture(0)).is_ok());
 
-            let blocked = Row::with_harness("E2EF6", "C20a", &["a", "b"], harness)
-                .needs(&[Need::Fixture([0; 16], [1; 16])]);
+            let blocked =
+                Row::with_harness("E2EF6", "C20a", &["a", "b"], harness).needs(&[test_fixture(1)]);
             let mut ran = false;
             let result: TestResult = blocked
                 .watch()
@@ -1246,7 +1258,7 @@ mod verdict_tests {
         harness.fail(Need::Row("S16a"), "S16a/fixture1-released".into());
         assert_eq!(
             harness
-                .blocked(&[Need::Fixture([0; 16], [0; 16]), Need::Row("S16a")])
+                .blocked(&[test_fixture(0), Need::Row("S16a")])
                 .as_deref(),
             Some("S16a/fixture1-released")
         );
@@ -1261,12 +1273,9 @@ mod verdict_tests {
     fn no_failfast_runs_every_row_and_disables_the_watchdog() -> TestResult {
         let off = Harness::from_env(Some("1"), Some("5"))?;
         assert!(!off.failfast && off.no_progress.is_none());
-        off.fail(
-            Need::Fixture([0; 16], [1; 16]),
-            "S16a/fixture1-released".into(),
-        );
-        assert!(off.fixture_gate(Need::Fixture([0; 16], [1; 16])).is_ok());
-        assert_eq!(off.blocked(&[Need::Fixture([0; 16], [1; 16])]), None);
+        off.fail(test_fixture(1), "S16a/fixture1-released".into());
+        assert!(off.fixture_gate(test_fixture(1)).is_ok());
+        assert_eq!(off.blocked(&[test_fixture(1)]), None);
         let on = Harness::from_env(None, None)?;
         assert_eq!(
             (on.failfast, on.no_progress),

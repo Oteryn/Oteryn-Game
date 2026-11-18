@@ -886,6 +886,35 @@ async fn finish_sweep<T, F: std::future::Future<Output = TestResult>>(
     [("logout", logout), ("terminal", terminal_release.await)]
 }
 
+fn emit_species_verdict(
+    rows: &Rows<'_>,
+    started: std::time::Instant,
+    tally: &mut Tally,
+    mut emit: impl FnMut(&str),
+) -> TestResult {
+    let failed = rows.counts.fail > 0;
+    emit(&format!(
+        "creature_sweep species={} seconds={:.3} rows_pass={} rows_fail={} rows_skipped={}",
+        rows.short,
+        started.elapsed().as_secs_f64(),
+        rows.counts.pass,
+        rows.counts.fail,
+        rows.counts.skipped
+    ));
+    tally.pass += rows.counts.pass;
+    tally.fail += rows.counts.fail;
+    tally.skipped += rows.counts.skipped;
+    if failed {
+        return Err(format!("creature {} has FAIL rows", rows.short).into());
+    }
+    emit(&format!(
+        "e2e_all scenario=CS.{}.full status=PASS seconds={:.3} evidence=species-checks-completed",
+        rows.short,
+        started.elapsed().as_secs_f64(),
+    ));
+    Ok(())
+}
+
 async fn sweep_species(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
@@ -909,6 +938,7 @@ async fn sweep_species(
     ))
     .await
     {
+        *session = None;
         journey_error = Some(if stop.step == "spawn" {
             spawn_error(&stop)
         } else {
@@ -935,6 +965,11 @@ async fn sweep_species(
     outcome.setup_error = rows.setup_error.take();
     let failed = rows.counts.fail > 0;
     outcome.passed = !failed;
+    if !failed {
+        emit_species_verdict(&rows, started, tally, evidence)?;
+        outcome.completed = true;
+        return Ok(());
+    }
     evidence(&format!(
         "e2e_all scenario=CS.{}.full status={} seconds={:.3} evidence=steps:{}-pass,{}-fail,{}-skipped",
         species.short,
@@ -1130,6 +1165,7 @@ fn named_creature(entry: &oteryn_dev_client::WorldSpatialEntity, name: &str) -> 
         })
 }
 
+#[cfg(test)]
 fn spawn_candidate(
     entry: &oteryn_dev_client::WorldSpatialEntity,
     name: &str,
@@ -1145,6 +1181,7 @@ fn spawn_candidate(
         && !existing.contains(&entry.entity)
 }
 
+#[cfg(test)]
 fn corpse_candidate(
     entry: &oteryn_dev_client::WorldSpatialEntity,
     position: oteryn_protocol_oteryn::world_spatial::ActorPosition,
@@ -1316,6 +1353,75 @@ async fn observe_xp_until<T>(
     }
 }
 
+fn creature_named(entry: &oteryn_dev_client::WorldSpatialEntity, name: &str) -> bool {
+    entry.kind == EntityKind::Creature
+        && matches!(
+            entry.detail,
+            EntityDetail::Actor { .. } | EntityDetail::ActorWithIcons { .. }
+        )
+        && entry.display_name.is_some_and(|label| {
+            label
+                .as_str()
+                .is_ok_and(|shown| shown.eq_ignore_ascii_case(name))
+        })
+}
+
+fn visible_spawn<'a>(
+    mut entities: impl Iterator<Item = &'a oteryn_dev_client::WorldSpatialEntity>,
+    player: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+    name: &str,
+    existing: &BTreeSet<oteryn_dev_client::EntityRef>,
+    expected: oteryn_dev_client::EntityRef,
+) -> Option<oteryn_dev_client::WorldSpatialEntity> {
+    entities
+        .find(|entry| {
+            entry.entity == expected
+                && entry.position.floor == player.floor
+                && creature_named(entry, name)
+                && !existing.contains(&entry.entity)
+        })
+        .copied()
+}
+
+fn corpse_at(
+    entry: &oteryn_dev_client::WorldSpatialEntity,
+    position: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+    existing: &BTreeSet<oteryn_dev_client::EntityRef>,
+    expected_identity: [u8; 16],
+) -> bool {
+    entry.kind == EntityKind::Corpse
+        && entry.entity.identity == expected_identity
+        && entry.position == position
+        && !existing.contains(&entry.entity)
+}
+
+fn confirmed_kill(death_distance: u32, has_death_receipt: bool) -> bool {
+    death_distance <= 2 && has_death_receipt
+}
+
+async fn sweep_reward_selection<S, T>(
+    session: &mut Option<S>,
+    query: impl AsyncFnOnce(&mut S) -> TestResult<T>,
+) -> TestResult<T> {
+    let mut current = session.take().ok_or("session absent after setup")?;
+    let selection = query(&mut current).await?;
+    *session = Some(current);
+    Ok(selection)
+}
+
+fn boss_bonus_rolls(occurrence: [u8; 16]) -> u8 {
+    use sha2::{Digest, Sha256};
+
+    let digest = Sha256::new()
+        .chain_update(b"oteryn:daily-boost:boss-roll:v1")
+        .chain_update(occurrence)
+        .finalize();
+    let draw = u64::from_be_bytes([
+        digest[0], digest[1], digest[2], digest[3], digest[4], digest[5], digest[6], digest[7],
+    ]);
+    2 + u8::from(draw % 101 < 50)
+}
+
 async fn hunt(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
@@ -1338,6 +1444,9 @@ async fn hunt(
         rows.setup_error = Some(error.to_string());
         return Err(failure("spawn", "precondition", format!("setup:{error}")));
     }
+    let selection = sweep_reward_selection(session, client_daily_boost::reward_selection)
+        .await
+        .map_err(|error| failure("spawn", "protocol", error))?;
     let client = session
         .as_mut()
         .ok_or_else(|| failure("spawn", "precondition", "session absent after setup"))?;
@@ -1378,17 +1487,7 @@ async fn hunt(
         client.take_events();
         let player = client.world_spatial().actor_position;
         let found = client.world_entities().and_then(|entities| {
-            entities
-                .iter()
-                .filter(|entry| spawn_candidate(entry, name, &existing, player.floor, &answer.wire))
-                .min_by_key(|entry| {
-                    entry
-                        .position
-                        .x
-                        .abs_diff(player.x)
-                        .max(entry.position.y.abs_diff(player.y))
-                })
-                .copied()
+            visible_spawn(entities.iter(), player, name, &existing, answer.entity)
         });
         if let Some(found) = found {
             break found;
@@ -1553,7 +1652,7 @@ async fn hunt(
                 .iter()
                 .find(|entry| {
                     matches_corpse(entry)
-                        && corpse_candidate(entry, last_position, &corpses_before, corpse_identity)
+                        && corpse_at(entry, last_position, &corpses_before, corpse_identity)
                 })
                 .copied()
         });
@@ -1628,7 +1727,59 @@ async fn hunt(
     let base_xp = inputs
         .expected_base_xp(definition.experience)
         .map_err(|error| failure("xp", "content", error))?;
+    let displayed_pool =
+        client_daily_boost::boosted_xp(definition.experience, &species.key, &selection)
+            .map_err(|error| failure("xp", "content", error))?;
+    if inputs.xp_rate == 100 && base_xp != displayed_pool {
+        return Err(failure(
+            "xp",
+            "settlement",
+            "visible Daily Boost disagrees with the committed XP modifiers",
+        ));
+    }
     let settlement = if base_xp > 0 {
+        let death = committed_hunt_death(
+            client,
+            clients,
+            Some(clients.characters[CORE_CHARACTER]),
+            &species.key,
+            target.entity,
+            tokio::time::Instant::now() + Duration::from_secs(20),
+        )
+        .await
+        .map_err(|error| failure("kill", "unproven_death", error))?;
+        if death.actor.corpse_identity() != corpse_identity
+            || death.shared
+            || inputs
+                .stamina
+                .is_some_and(|stamina| stamina != death.stamina)
+        {
+            return Err(failure(
+                "kill",
+                "settlement",
+                "receipt owner, corpse, mode or stamina disagrees with settlement",
+            ));
+        }
+        if inputs.daily_loot_rolls > 0 {
+            let expected = if selection.boss_key == species.key {
+                boss_bonus_rolls(death.reward_occurrence.ok_or_else(|| {
+                    failure(
+                        "loot",
+                        "settlement",
+                        "boss bonus has no committed occurrence",
+                    )
+                })?)
+            } else {
+                u8::from(selection.creature_key == species.key)
+            };
+            if inputs.daily_loot_rolls != expected {
+                return Err(failure(
+                    "loot",
+                    "settlement",
+                    "visible Daily Boost disagrees with the committed extra rolls",
+                ));
+            }
+        }
         let receipt = death_settlement(clients, client, target.entity)
             .await
             .map_err(|error| failure("kill", "unproven_death", error))?;
@@ -1643,7 +1794,9 @@ async fn hunt(
     } else {
         None
     };
-    if !disappearance_proves_kill(last_position, player, damaged, true) {
+    if !confirmed_kill(death_distance, true)
+        || !disappearance_proves_kill(last_position, player, damaged, true)
+    {
         return Err(failure(
             "kill",
             "vanished",
@@ -1927,6 +2080,12 @@ fn judge_loot(
     match expected_loot(items, species, seed, inputs) {
         Err(error) => rows.fail("loot", "content", &error.to_string()),
         Ok(expected) if observed_loot_matches_plan(&expected, observed) => {
+            if !species.private_reward && inputs.daily_loot_rolls == 0 && inputs.loot_rate == 100 {
+                if let Err(error) = validate_authored_loot(items, &species.loot, observed) {
+                    rows.fail("loot", "content", &error.to_string());
+                    return;
+                }
+            }
             rows.pass(
                 "loot",
                 &format!("deterministic-plan:{expected:?};corpse-items:{observed:?}"),
@@ -1938,6 +2097,62 @@ fn judge_loot(
             &format!("expected {expected:?} from the pinned death roll, observed {observed:?}"),
         ),
     }
+}
+
+fn possible_loot_count(entries: &[(u64, u64)], observed: u64) -> bool {
+    let mut reachable = vec![(0_u64, 0_u64)];
+    for &(minimum, maximum) in entries {
+        let mut next = reachable.clone();
+        next.extend(reachable.iter().filter_map(|&(low, high)| {
+            let low = low.checked_add(minimum)?;
+            (low <= observed).then_some((low, high.saturating_add(maximum).min(observed)))
+        }));
+        next.sort_unstable();
+        reachable.clear();
+        for (low, high) in next {
+            if let Some((_, previous_high)) = reachable.last_mut()
+                && low <= previous_high.saturating_add(1)
+            {
+                *previous_high = (*previous_high).max(high);
+            } else {
+                reachable.push((low, high));
+            }
+        }
+    }
+    reachable
+        .iter()
+        .any(|&(low, high)| (low..=high).contains(&observed))
+}
+
+fn validate_authored_loot(
+    items: &crate::content::item_ref::ItemDefinitionIndex,
+    binding: &LootBinding,
+    observed: &BTreeMap<std::num::NonZeroU32, u64>,
+) -> TestResult {
+    let LootBinding::Table(_, entries) = binding else {
+        return Ok(());
+    };
+    let mut allowed = BTreeMap::<_, Vec<_>>::new();
+    for entry in entries {
+        let reference =
+            item_ref(items, &entry.item, &entry.revision).ok_or("unmapped exact loot item")?;
+        allowed
+            .entry(reference)
+            .or_default()
+            .push((entry.min, entry.max));
+    }
+    for (reference, quantity) in observed {
+        if !allowed
+            .get(reference)
+            .is_some_and(|ranges| possible_loot_count(ranges, *quantity))
+        {
+            return Err(format!(
+                "observed item {reference} count {quantity} has no authored range"
+            )
+            .into());
+        }
+    }
+    Ok(())
 }
 
 fn expected_loot(
@@ -1976,17 +2191,26 @@ fn expected_loot(
         inputs.stamina,
         inputs.loot_rate,
     );
-    let plan = plan_creature_loot(seed, reference, &table)
-        .map_err(|error| format!("pinned loot plan {}: {error:?}", species.key))?;
+    seeded_loot(reference, &table, seed, items)
+}
+
+fn seeded_loot(
+    reference: &crate::combat::LootDefinitionRef,
+    table: &crate::combat::LootTableDefinition,
+    seed: crate::combat::LootPlanDeathKey,
+    items: &crate::content::item_ref::ItemDefinitionIndex,
+) -> TestResult<BTreeMap<std::num::NonZeroU32, u64>> {
+    let plan = crate::combat::plan_creature_loot(seed, reference, table)
+        .map_err(|error| format!("pinned loot draw: {error:?}"))?;
     let mut expected = BTreeMap::new();
-    for entry in plan
-        .entries
-        .into_iter()
-        .filter(|entry| entry.parent.is_none())
-    {
+    for entry in plan.entries.iter().filter(|entry| entry.parent.is_none()) {
         let reference = items
-            .definition_ref("Item", &entry.item.production_key, &entry.item.revision_ref)
-            .ok_or_else(|| format!("unmapped pinned loot item {}", entry.item.production_key))?;
+            .definition_ref(
+                &entry.item.family,
+                &entry.item.production_key,
+                &entry.item.revision_ref,
+            )
+            .ok_or_else(|| format!("unmapped pinned loot Item {}", entry.item.production_key))?;
         *expected.entry(reference).or_default() += u64::from(entry.quantity);
     }
     Ok(expected)
@@ -2008,17 +2232,20 @@ fn validate_authored_entries(
     Ok(())
 }
 
+fn expects_physical_loot(private_reward: bool, stamina: u16) -> bool {
+    !private_reward && oteryn_gameplay_characters::stamina::hunting_loot_allowed(stamina)
+}
+
 fn configure_physical_loot(
     table: &mut oteryn_gameplay_items::loot_plan::LootTableDefinition,
     private_reward: bool,
     stamina: Option<u16>,
     rate: u32,
 ) {
-    if private_reward
-        || stamina.is_some_and(|minutes| {
-            !oteryn_gameplay_characters::stamina::hunting_loot_allowed(minutes)
-        })
-    {
+    if !expects_physical_loot(
+        private_reward,
+        stamina.unwrap_or(FULL_STAMINA_MINUTES as u16),
+    ) {
         table.entries.clear();
         table.algorithm = LootSelectionAlgorithm::IndependentBernoulliPpm;
     } else {
@@ -2065,14 +2292,25 @@ async fn open_corpse(
 /// and the ruthless axe (item 6553) is wielded through the player's own protocol, as MP01 does,
 /// whether the build was just provisioned or already present: a bare-fisted player cannot kill
 /// the larger species.
+fn fixture_ready(_level: u32, classed: bool, equipped_and_supplied: bool) -> bool {
+    classed && equipped_and_supplied
+}
+
 async fn prepare_player(
     clients: &SeamClients<'_>,
     session: &mut Option<DevClientSession>,
 ) -> TestResult {
     let client = session.as_mut().ok_or("session absent")?;
-    let (_, level) = read_stats(client).await?;
-    if level >= SWEEP_LEVEL {
+    let (xp, level, vocation) = read_stats_with_vocation(client).await?;
+    let classed = vocation.is_some_and(|id| Some(id) == character::vocation_id("knight"));
+    let supplied = client
+        .inventory()
+        .is_some_and(|inventory| inventory.main_backpack.is_some());
+    if fixture_ready(level, classed, supplied) {
         return ensure_weapon(client).await;
+    }
+    if (xp != 0 || level != 1) && !classed {
+        return Err("sweep setup requires a pristine or previously classed character".into());
     }
     let mut client = session.take().ok_or("session absent")?;
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
@@ -2778,9 +3016,9 @@ mod recovery_tests {
     }
 }
 
-fn observed_loot_matches_plan(
-    expected: &BTreeMap<std::num::NonZeroU32, u64>,
-    observed: &BTreeMap<std::num::NonZeroU32, u64>,
+fn observed_loot_matches_plan<K: Ord>(
+    expected: &BTreeMap<K, u64>,
+    observed: &BTreeMap<K, u64>,
 ) -> bool {
     expected == observed
 }
@@ -2906,7 +3144,7 @@ mod loot_tests {
         ));
         assert!(observed_loot_matches_plan(&plan, &plan));
         assert!(observed_loot_matches_plan(
-            &BTreeMap::new(),
+            &BTreeMap::<std::num::NonZeroU32, u64>::new(),
             &BTreeMap::new()
         ));
     }
@@ -2929,4 +3167,686 @@ fn resolved_loot_entries(unmapped: usize) -> bool {
 fn unresolved_loot_definitions_do_not_qualify_an_empty_roll() {
     assert!(!resolved_loot_entries(1));
     assert!(resolved_loot_entries(0));
+}
+
+#[cfg(test)]
+mod evidence_tests {
+    use super::*;
+    use oteryn_dev_client::{EntityRef, WorldSpatialEntity};
+    use oteryn_protocol_oteryn::{entity_names::EntityDisplayName, world_spatial::ActorPosition};
+
+    #[derive(Clone, Copy)]
+    enum CorpseLootBoost {
+        Boss(Option<[u8; 16]>),
+    }
+
+    #[derive(Clone, Copy)]
+    struct CorpseLootDraw<'a> {
+        reference: &'a crate::combat::LootDefinitionRef,
+        table: &'a crate::combat::LootTableDefinition,
+        actor: crate::foundation::ExactActorRef,
+    }
+
+    fn verify_corpse_loot(
+        rows: &mut Rows<'_>,
+        items: &crate::content::item_ref::ItemDefinitionIndex,
+        binding: &LootBinding,
+        got: &BTreeMap<std::num::NonZeroU32, u64>,
+        boost: CorpseLootBoost,
+        draw: Option<CorpseLootDraw<'_>>,
+        rewards: &CreatureRewardTable,
+    ) -> Result<(), Failure> {
+        let rolls = match boost {
+            CorpseLootBoost::Boss(Some(occurrence)) => boss_bonus_rolls(occurrence),
+            CorpseLootBoost::Boss(None) => {
+                return Err(failure(
+                    "loot",
+                    "protocol",
+                    "boosted boss death receipt has no reward occurrence",
+                ));
+            }
+        };
+        let expected = if let Some(draw) = draw {
+            let table = boosted_loot_table(draw.table, rolls, true, |key| {
+                rewards.is_daily_boss_equipment(key)
+            });
+            let channel = draw.actor.channel_id().ok_or_else(|| {
+                failure(
+                    "loot",
+                    "content",
+                    "creature sweep loot requires a channel actor",
+                )
+            })?;
+            let seed = crate::combat::LootPlanDeathKey::new(
+                *draw.actor.world_id().as_bytes(),
+                *channel.as_bytes(),
+                draw.actor.scope_generation().get(),
+                draw.actor.actor_local_id(),
+                draw.actor.actor_local_generation(),
+            );
+            seeded_loot(draw.reference, &table, seed, items)
+                .map_err(|error| failure("loot", "content", error))?
+        } else {
+            BTreeMap::new()
+        };
+        judge_seeded_loot(rows, items, binding, got, &expected, rolls != 0);
+        Ok(())
+    }
+
+    fn boosted_loot_table(
+        source: &crate::combat::LootTableDefinition,
+        extra_rolls: u8,
+        boss: bool,
+        is_equipment: impl Fn(&str) -> bool,
+    ) -> crate::combat::LootTableDefinition {
+        use crate::combat::LootSelectionAlgorithm;
+        let mut table = source.clone();
+        if extra_rolls != 0 && table.algorithm == LootSelectionAlgorithm::IndependentBernoulliPpm {
+            let boosted_entries = if boss {
+                oteryn_gameplay_items::loot_plan::partition_daily_boss_bonus_entries(
+                    &mut table.entries,
+                    is_equipment,
+                )
+            } else {
+                table.entries.len()
+            };
+            table.algorithm = LootSelectionAlgorithm::DailyBoosted {
+                extra_rolls,
+                boosted_entries,
+            };
+        }
+        table
+    }
+
+    fn judge_seeded_loot(
+        rows: &mut Rows<'_>,
+        items: &crate::content::item_ref::ItemDefinitionIndex,
+        binding: &LootBinding,
+        got: &BTreeMap<std::num::NonZeroU32, u64>,
+        expected: &BTreeMap<std::num::NonZeroU32, u64>,
+        extra_rolls: bool,
+    ) {
+        let entries = match binding {
+            LootBinding::Missing(table) => {
+                rows.fail(
+                    "loot",
+                    "content",
+                    &format!("the definition binds loot table {table} but content has none"),
+                );
+                return;
+            }
+            LootBinding::None => {
+                if got.is_empty() {
+                    rows.emit(
+                        "loot",
+                        "SKIPPED",
+                        "no-loot-table;corpse-empty-verified",
+                        None,
+                    );
+                } else {
+                    rows.fail(
+                        "loot",
+                        "unexpected_item",
+                        &format!("no loot table but the corpse holds {got:?}"),
+                    );
+                }
+                return;
+            }
+            LootBinding::Table(_, entries) => entries,
+        };
+        if entries.is_empty() {
+            if got.is_empty() {
+                rows.emit(
+                    "loot",
+                    "SKIPPED",
+                    "empty-loot-table;corpse-empty-verified",
+                    None,
+                );
+            } else {
+                rows.fail(
+                    "loot",
+                    "unexpected_item",
+                    &format!("empty loot table but the corpse holds {got:?}"),
+                );
+            }
+            return;
+        }
+        let mut allowed: BTreeMap<_, Vec<_>> = BTreeMap::new();
+        for entry in entries {
+            let Some(reference) = item_ref(items, &entry.item, &entry.revision) else {
+                rows.fail(
+                    "loot",
+                    "content",
+                    &format!("unmapped loot Item {}", entry.item),
+                );
+                return;
+            };
+            allowed
+                .entry(reference)
+                .or_default()
+                .push((entry.min, entry.max));
+        }
+        for (reference, count) in got {
+            match allowed.get(reference) {
+                None => {
+                    rows.fail(
+                        "loot",
+                        "unexpected_item",
+                        &format!("item_definition_ref {reference} is not in the loot table"),
+                    );
+                    return;
+                }
+                Some(ranges) if !extra_rolls && !possible_loot_count(ranges, *count) => {
+                    rows.fail(
+                    "loot",
+                    "count_out_of_range",
+                    &format!(
+                        "item_definition_ref {reference} count {count} cannot come from {ranges:?}"
+                    ),
+                );
+                    return;
+                }
+                Some(_) => {}
+            }
+        }
+        if !observed_loot_matches_plan(got, expected) {
+            rows.fail(
+                "loot",
+                "seed_mismatch",
+                &format!("expected={expected:?};observed={got:?}"),
+            );
+            return;
+        }
+        rows.pass(
+            "loot",
+            &format!(
+                "table_entries:{};corpse_items:{};{}",
+                entries.len(),
+                got.len(),
+                if got.is_empty() {
+                    "empty-corpse-with-no-proven-drop"
+                } else {
+                    "all-items-and-counts-allowed"
+                }
+            ),
+        );
+    }
+
+    #[tokio::test]
+    async fn qualification_daily_query_discards_failed_session() -> TestResult {
+        let mut session = Some(1);
+        let result = sweep_reward_selection(&mut session, async |_| -> TestResult<()> {
+            Err(std::io::Error::from(std::io::ErrorKind::UnexpectedEof).into())
+        })
+        .await;
+        assert!(result.is_err());
+        assert!(session.is_none());
+        session = Some(2);
+        assert_eq!(
+            sweep_reward_selection(&mut session, async |id| Ok(*id)).await?,
+            2
+        );
+        assert_eq!(session, Some(2));
+        Ok(())
+    }
+
+    #[test]
+    fn qualification_boss_bonus_rejects_corpse_from_the_other_roll() -> TestResult {
+        use crate::combat::{
+            LootDefinitionRef, LootPlanDeathKey, LootSelectionAlgorithm, LootTableDefinition,
+            LootTableEntry,
+        };
+
+        use crate::foundation::{
+            ActorLocalGeneration, ActorLocalId, ActorRef, ChannelId, ExactActorRef,
+            ScopeOwnershipGeneration, WorldId,
+        };
+
+        let world = crate::node::uuid_bytes("01890f4c-3b2a-7c01-8d11-9a321b7c0004")
+            .ok_or("fixture world")?;
+        let channel = crate::node::uuid_bytes("01890f4c-3b2a-7c01-8d11-9a321b7c0005")
+            .ok_or("fixture channel")?;
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../content/spells.manifest.json");
+        let room = crate::content::qualify_native_entry_room_from_gameplay_manifest(
+            WorldId::decode(&world)?,
+            &manifest,
+        )?;
+        let native = crate::content::qualified_native_gameplay_test_state(room.compiled())?;
+        let rewards = native.reward_table();
+        let equipment = "oteryn:item.tibia.i3276";
+        let ordinary = "oteryn:item.tibia.i3031";
+        assert!(rewards.is_daily_boss_equipment(equipment));
+        assert!(!rewards.is_daily_boss_equipment(ordinary));
+        let items = native.item_index().ok_or("missing served item index")?;
+        let binding = LootBinding::Table(
+            "oteryn:loot.test_boss".into(),
+            [equipment, ordinary]
+                .into_iter()
+                .map(|item| LootEntry {
+                    item: item.into(),
+                    revision: "definition-r1".into(),
+                    min: 1,
+                    max: 1,
+                })
+                .collect(),
+        );
+        let source = LootTableDefinition {
+            algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
+            entries: vec![
+                LootTableEntry {
+                    item: LootDefinitionRef::new("Item", ordinary, "definition-r1"),
+                    min_count: 1,
+                    max_count: 1,
+                    probability_ppm: Some(1_000_000),
+                    details: Default::default(),
+                },
+                LootTableEntry {
+                    item: LootDefinitionRef::new("Item", equipment, "definition-r1"),
+                    min_count: 1,
+                    max_count: 1,
+                    probability_ppm: Some(700_000),
+                    details: Default::default(),
+                },
+            ],
+        };
+        let reference =
+            LootDefinitionRef::new("LootTable", "oteryn:loot.test_boss", "definition-r1");
+        // Build the oracle from the prescribed equipment-first table and the
+        // literal scope. Do not use the verifier's partition or seed builder.
+        let mut observed = BTreeSet::new();
+        for generation in 1..=12 {
+            let actor = ExactActorRef(ActorRef::from_owner_parts(
+                WorldId::decode(&world)?,
+                ChannelId::decode(&channel)?,
+                ScopeOwnershipGeneration::new(3).map_err(|_| "fixture scope generation")?,
+                ActorLocalId(8),
+                ActorLocalGeneration(generation),
+            ));
+            let draw = CorpseLootDraw {
+                reference: &reference,
+                table: &source,
+                actor,
+            };
+            let seed = LootPlanDeathKey::new(world, channel, 3, 8, generation);
+            let expected = |extra_rolls, boosted_entries| {
+                let table = LootTableDefinition {
+                    algorithm: LootSelectionAlgorithm::DailyBoosted {
+                        extra_rolls,
+                        boosted_entries,
+                    },
+                    entries: vec![source.entries[1].clone(), source.entries[0].clone()],
+                };
+                seeded_loot(&reference, &table, seed, items)
+            };
+            let two = expected(2, 1)?;
+            let three = expected(3, 1)?;
+            observed.insert(three.clone());
+            for (occurrence, rolls, correct, wrong) in
+                [([0; 16], 3, &three, &two), ([6; 16], 2, &two, &three)]
+            {
+                let boost = CorpseLootBoost::Boss(Some(occurrence));
+                let mut rows = Rows::new("public_boss", None);
+                verify_corpse_loot(
+                    &mut rows,
+                    items,
+                    &binding,
+                    correct,
+                    boost,
+                    Some(draw),
+                    rewards,
+                )
+                .map_err(|failure| failure.detail)?;
+                assert_eq!(rows.counts.pass, 1);
+                let oversupplied = expected(rolls, 2)?;
+                assert_ne!(&oversupplied, correct);
+                let mut rows = Rows::new("public_boss", None);
+                verify_corpse_loot(
+                    &mut rows,
+                    items,
+                    &binding,
+                    &oversupplied,
+                    boost,
+                    Some(draw),
+                    rewards,
+                )
+                .map_err(|failure| failure.detail)?;
+                assert_eq!(rows.counts.fail, 1);
+                if correct != wrong {
+                    let mut rows = Rows::new("public_boss", None);
+                    verify_corpse_loot(
+                        &mut rows,
+                        items,
+                        &binding,
+                        wrong,
+                        boost,
+                        Some(draw),
+                        rewards,
+                    )
+                    .map_err(|failure| failure.detail)?;
+                    assert_eq!(rows.counts.fail, 1);
+                }
+            }
+        }
+        assert!(
+            observed.len() > 1,
+            "probabilistic fixture must distinguish actor generations"
+        );
+        // The wire hunt must feed the occurrence on the matched receipt to the
+        // same classifier that receives the corpse contents.
+        let source = include_str!("creature_sweep.rs");
+        let hunt = source
+            .split_once("async fn hunt(")
+            .and_then(|(_, body)| body.split_once("fn confirm_death"))
+            .map(|(body, _)| body)
+            .ok_or("missing hunt")?;
+        assert!(hunt.contains("boss_bonus_rolls("));
+        assert!(hunt.contains("death.reward_occurrence"));
+        assert!(hunt.contains("death.actor.corpse_identity()"));
+        assert!(hunt.contains("judge_loot(rows, items, species, seed, &inputs, &got)"));
+        Ok(())
+    }
+
+    #[test]
+    fn qualification_sweep_recovery_does_not_repeat_fresh_build() -> TestResult {
+        let (_, ready) = include_str!("creature_sweep.rs")
+            .split_once("async fn ready(")
+            .ok_or("missing sweep admission")?;
+        let (ready, _) = ready
+            .split_once("async fn leave_protection_zone(")
+            .ok_or("missing sweep route")?;
+        assert!(!ready.contains("provisioning::provision_fixture"));
+        assert!(ready.contains("recover_health("));
+        Ok(())
+    }
+
+    #[test]
+    fn review_loot_requires_output_when_the_seeded_roll_produces_items() -> TestResult {
+        let items = crate::content::item_ref::ItemDefinitionIndex::decode(
+            br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[["oteryn:item.tibia.i100","definition-r1"]]}"#,
+        )?;
+        let binding = LootBinding::Table(
+            "oteryn:loot.test".into(),
+            vec![LootEntry {
+                item: "oteryn:item.tibia.i100".into(),
+                revision: "definition-r1".into(),
+                min: 1,
+                max: 1,
+            }],
+        );
+        let mut missing = Rows::new("rat", None);
+        let item = item_ref(&items, "oteryn:item.tibia.i100", "definition-r1")
+            .ok_or("test Item reference")?;
+        judge_seeded_loot(
+            &mut missing,
+            &items,
+            &binding,
+            &BTreeMap::new(),
+            &BTreeMap::from([(item, 1)]),
+            false,
+        );
+        assert_eq!(missing.counts.fail, 1);
+        let mut missed_roll = Rows::new("rat", None);
+        judge_seeded_loot(
+            &mut missed_roll,
+            &items,
+            &binding,
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+            false,
+        );
+        assert_eq!(missed_roll.counts.pass, 1);
+        Ok(())
+    }
+
+    #[test]
+    fn review_loot_rejects_unmapped_entries_and_impossible_count() -> TestResult {
+        let items = crate::content::item_ref::ItemDefinitionIndex::decode(
+            br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[["oteryn:item.tibia.i100","definition-r1"]]}"#,
+        )?;
+        let entry = |key: &str, min, max| LootEntry {
+            item: key.into(),
+            revision: "definition-r1".into(),
+            min,
+            max,
+        };
+        let mut unmapped = Rows::new("rat", None);
+        judge_seeded_loot(
+            &mut unmapped,
+            &items,
+            &LootBinding::Table(
+                "oteryn:loot.test".into(),
+                vec![entry("oteryn:item.tibia.i101", 1, 1)],
+            ),
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+            false,
+        );
+        assert_eq!(unmapped.counts.fail, 1);
+
+        let mut wrong_count = Rows::new("rat", None);
+        let item = item_ref(&items, "oteryn:item.tibia.i100", "definition-r1")
+            .ok_or("test Item reference")?;
+        judge_seeded_loot(
+            &mut wrong_count,
+            &items,
+            &LootBinding::Table(
+                "oteryn:loot.test".into(),
+                vec![
+                    entry("oteryn:item.tibia.i100", 1, 1),
+                    entry("oteryn:item.tibia.i100", 4, 4),
+                ],
+            ),
+            &BTreeMap::from([(item, 2)]),
+            &BTreeMap::new(),
+            false,
+        );
+        assert_eq!(wrong_count.counts.fail, 1);
+        Ok(())
+    }
+
+    #[test]
+    fn delta_sweep_resumes_incomplete_build_and_reuses_equipped_class_after_death() {
+        assert!(!fixture_ready(100, false, false));
+        assert!(!fixture_ready(100, true, false));
+        assert!(fixture_ready(99, true, true));
+    }
+
+    #[test]
+    fn delta_sweep_checks_only_physical_seeded_loot() {
+        assert!(!expects_physical_loot(true, 2520));
+        assert!(!expects_physical_loot(false, 0));
+    }
+
+    #[test]
+    fn delta_sweep_rejects_partial_substitute_and_suppressed_loot() {
+        let expected = BTreeMap::from([(1, 2), (2, 3)]);
+        assert!(!observed_loot_matches_plan(
+            &BTreeMap::from([(1, 2)]),
+            &expected
+        ));
+        assert!(!observed_loot_matches_plan(
+            &BTreeMap::from([(1, 2), (3, 3)]),
+            &expected
+        ));
+        assert!(!observed_loot_matches_plan(&expected, &BTreeMap::new()));
+        assert!(observed_loot_matches_plan(&expected, &expected));
+    }
+
+    #[test]
+    fn review_near_disappearance_requires_committed_death() {
+        assert!(!confirmed_kill(1, false));
+        assert!(confirmed_kill(1, true));
+        assert!(!confirmed_kill(3, true));
+    }
+
+    #[test]
+    fn qualification_daily_boost_is_in_live_reward_oracles() -> TestResult {
+        let source = include_str!("creature_sweep.rs");
+        let hunt = source
+            .split_once("async fn hunt(")
+            .and_then(|(_, body)| body.split_once("fn seeded_loot("))
+            .map(|(body, _)| body)
+            .ok_or("missing sweep hunt boundary")?;
+        assert!(
+            hunt.contains("sweep_reward_selection(session, client_daily_boost::reward_selection)")
+        );
+        assert!(hunt.contains("boosted_xp("));
+        assert!(hunt.contains("death.stamina"));
+        assert!(hunt.contains("LootPlanDeathKey::new("));
+        assert!(hunt.contains("judge_loot("));
+        let prepare = source
+            .split_once("async fn prepare_player(")
+            .and_then(|(_, body)| body.split_once("async fn read_stats("))
+            .map(|(body, _)| body)
+            .ok_or("missing sweep setup boundary")?;
+        assert!(prepare.contains("inventory.main_backpack.is_some()"));
+        assert!(prepare.contains("fixture_ready(level, classed, supplied)"));
+        assert!(prepare.contains("run_fixture_command("));
+
+        let mp = include_str!("mp/mp09_party_xp.rs");
+        for (start, end) in [
+            ("async fn encounter(", "const HUNT_MODES:"),
+            ("async fn solo_hunt_award(", "async fn underlevel_party("),
+            ("async fn underlevel_party(", "fn exact_award_matches"),
+        ] {
+            let reward = mp
+                .split_once(start)
+                .and_then(|(_, body)| body.split_once(end))
+                .map(|(body, _)| body)
+                .ok_or_else(|| format!("missing MP09 reward boundary {start}"))?;
+            assert!(reward.contains("reward_selection("));
+            assert!(reward.contains("boosted_xp("));
+            assert!(reward.contains("observed_hunt_death("));
+            assert!(reward.contains("exact_award_matches("));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn qualification_boosted_loot_requires_the_full_extra_roll() -> TestResult {
+        let items = crate::content::item_ref::ItemDefinitionIndex::decode(
+            br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[["oteryn:item.tibia.i100","definition-r1"]]}"#,
+        )?;
+        let item = item_ref(&items, "oteryn:item.tibia.i100", "definition-r1")
+            .ok_or("test Item reference")?;
+        let binding = LootBinding::Table(
+            "oteryn:loot.test".into(),
+            vec![LootEntry {
+                item: "oteryn:item.tibia.i100".into(),
+                revision: "definition-r1".into(),
+                min: 1,
+                max: 1,
+            }],
+        );
+        let expected = BTreeMap::from([(item, 2)]);
+        let mut observed = Rows::new("boosted_rat", None);
+        judge_seeded_loot(&mut observed, &items, &binding, &expected, &expected, true);
+        assert_eq!(observed.counts.pass, 1);
+        let mut missing_extra = Rows::new("boosted_rat", None);
+        judge_seeded_loot(
+            &mut missing_extra,
+            &items,
+            &binding,
+            &BTreeMap::from([(item, 1)]),
+            &expected,
+            true,
+        );
+        assert_eq!(missing_extra.counts.fail, 1);
+        Ok(())
+    }
+
+    #[test]
+    fn review_corpse_requires_spawned_creatures_identity() {
+        let position = ActorPosition {
+            x: 10,
+            y: 10,
+            floor: 7,
+        };
+        let entity = EntityRef {
+            identity: [1; 16],
+            generation: 0,
+        };
+        let entry = WorldSpatialEntity {
+            kind: EntityKind::Corpse,
+            entity,
+            position,
+            display_name: None,
+            detail: EntityDetail::Object {
+                item_definition_ref: 1,
+                quantity: 1,
+                item_handle: None,
+            },
+        };
+        let before = BTreeSet::new();
+        assert!(!corpse_at(&entry, position, &before, [2; 16]));
+        assert!(corpse_at(&entry, position, &before, [1; 16]));
+    }
+
+    #[test]
+    fn review_successful_species_emits_indexed_verdict() -> TestResult {
+        let mut rows = Rows::new("rat", None);
+        rows.counts.pass = STEPS.len();
+        rows.emitted.fill(true);
+        let mut tally = Tally::default();
+        let mut lines = Vec::new();
+        emit_species_verdict(&rows, std::time::Instant::now(), &mut tally, |line| {
+            lines.push(line.to_owned())
+        })?;
+        assert_eq!(tally.pass, STEPS.len());
+        assert_eq!(
+            lines
+                .iter()
+                .filter(|line| line.starts_with("e2e_all scenario=CS.rat.full status=PASS "))
+                .count(),
+            1
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn review_spawn_requires_exact_entity() -> TestResult {
+        let position = ActorPosition {
+            x: 10,
+            y: 10,
+            floor: 7,
+        };
+        let expected = EntityRef {
+            identity: [9; 16],
+            generation: 3,
+        };
+        let decoy = WorldSpatialEntity {
+            kind: EntityKind::Creature,
+            entity: EntityRef {
+                generation: 2,
+                ..expected
+            },
+            position,
+            display_name: Some(EntityDisplayName::new("Rat").map_err(|_| "display name")?),
+            detail: EntityDetail::Actor {
+                direction: StepDirection::North,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        };
+        let existing = BTreeSet::new();
+        assert!(
+            visible_spawn([&decoy].into_iter(), position, "Rat", &existing, expected).is_none()
+        );
+        let target = WorldSpatialEntity {
+            entity: expected,
+            ..decoy
+        };
+        assert_eq!(
+            visible_spawn(
+                [&decoy, &target].into_iter(),
+                position,
+                "Rat",
+                &existing,
+                expected
+            ),
+            Some(target)
+        );
+        Ok(())
+    }
 }

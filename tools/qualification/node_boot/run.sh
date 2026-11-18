@@ -17,12 +17,12 @@ readonly ACCOUNT_ID=01934f10-7c00-7000-8000-000000000001
 readonly SECOND_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000002
 readonly PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000003
 readonly SECOND_PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000004
-readonly EXTRA_WORLD_ACCOUNTS=(01934f10-7c00-7000-8000-000000000007 01934f10-7c00-7000-8000-000000000008 01934f10-7c00-7000-8000-000000000009 01934f10-7c00-7000-8000-000000000010 01934f10-7c00-7000-8000-000000000011 01934f10-7c00-7000-8000-000000000012)
+readonly EXTRA_WORLD_ACCOUNTS=(01934f10-7c00-7000-8000-000000000007 01934f10-7c00-7000-8000-000000000008 01934f10-7c00-7000-8000-000000000009 01934f10-7c00-7000-8000-00000000000a 01934f10-7c00-7000-8000-00000000000b 01934f10-7c00-7000-8000-00000000000c)
 readonly FRESH_KEY_ID=node-boot-fresh-key-1
 readonly RECOVERY_KEY_ID=node-boot-recovery-key-1
 readonly WORLD_ID=01934f10-7c02-7001-805b-3b1122334401
 readonly CHANNEL_ID=01934f10-7c03-7001-805b-3b1122334401
-readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408 01934f10-7c04-7009-805b-3b1122334409 01934f10-7c04-7010-805b-3b1122334410 01934f10-7c04-7011-805b-3b1122334411 01934f10-7c04-7012-805b-3b1122334412)
+readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408 01934f10-7c04-7009-805b-3b1122334409 01934f10-7c04-700a-805b-3b112233440a 01934f10-7c04-700b-805b-3b112233440b 01934f10-7c04-700c-805b-3b112233440c)
 # CHAR-NAME-1: bootstrap intent contract version 2 names each Character (naming policy revision 1).
 readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two" "Party One" "Party Two" "Party Three" "Party Four" "Sweep One" "Sweep Two")
 # Runtime build writers bind to the shipped training formula's content revision,
@@ -52,14 +52,24 @@ if [[ "$BASE" != "$(realpath -m -- "$BASE")" ]] \
   echo 'NODE_BOOT_RESULT=BLOCKED reason=base_outside_srv_or_tmpdir'; exit 2
 fi
 [[ -z "${NODE_BOOT_PROJECT+x}" || "$NODE_BOOT_PROJECT" =~ ^[a-z0-9][a-z0-9_-]{0,47}$ ]] || { echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_project'; exit 2; }
-for node_boot_port in NODE_BOOT_PG_PORT NODE_BOOT_PLATFORM_PORT NODE_BOOT_GAME_PORT; do
+for node_boot_port in NODE_BOOT_PG_PORT NODE_BOOT_PLATFORM_PORT NODE_BOOT_GAME_PORT NODE_BOOT_PVP_GAME_PORT; do
   [[ -z "${!node_boot_port+x}" || ( "${!node_boot_port}" =~ ^[1-9][0-9]{3,4}$ && "${!node_boot_port}" -le 65535 ) ]] \
     || { echo "NODE_BOOT_RESULT=BLOCKED reason=invalid_port_${node_boot_port,,}"; exit 2; }
 done
 readonly SERVICE_USER BASE
-# The Open PvP World's node: its own tree under BASE (cleanup removes it) and the next port.
+# The Open PvP node has its own listener. Allow an override for parallel stacks.
 readonly PVP_BASE="$BASE/pvp"
-readonly PVP_GAME_PORT=$(( ${NODE_BOOT_GAME_PORT:-17181} + 1 ))
+node_boot_game_port="${NODE_BOOT_GAME_PORT:-17181}"
+# Port zero lets the real listener bind atomically and report its assigned port.
+PVP_GAME_PORT="${NODE_BOOT_PVP_GAME_PORT:-0}"
+if [[ -n "${NODE_BOOT_GAME_PORT+x}" && -z "${NODE_BOOT_PVP_GAME_PORT+x}" ]]; then
+  PVP_GAME_PORT=$((node_boot_game_port + 1))
+fi
+if [[ -n "${NODE_BOOT_PVP_GAME_PORT+x}" ]] && (( PVP_GAME_PORT == node_boot_game_port
+  || PVP_GAME_PORT == ${NODE_BOOT_PG_PORT:-15433}
+  || PVP_GAME_PORT == ${NODE_BOOT_PLATFORM_PORT:-18463} )); then
+  echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_port_node_boot_pvp_game_port'; exit 2
+fi
 # NODE_BOOT_KEEP_STACK=1 leaves the stack up after the seam stage; NODE_BOOT_REUSE_STACK=1
 # reruns only the seam stage against it, =teardown removes it. Local development only.
 NODE_BOOT_KEEP_STACK="${NODE_BOOT_KEEP_STACK:-0}"
@@ -72,6 +82,7 @@ case "$NODE_BOOT_KEEP_STACK/$NODE_BOOT_REUSE_STACK" in
     fi ;;
   *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_stack_reuse_mode'; exit 2 ;;
 esac
+
 
 GAME_SOURCE="$(git rev-parse --show-toplevel)"
 # The separately pinned portal-rs lane owns only Platform lifecycle and its stages.
@@ -300,11 +311,28 @@ if [[ "$NODE_BOOT_REUSE_STACK" != 0 ]]; then
     echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_identity_mismatch'; exit 2
   fi
   if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
+    if [[ "$NODE_BOOT_WORLD" == 1 ]] && ! python3 - "${NODE_BOOT_E2E_ONLY:-}" <<'PY_REUSED_GROUPS'
+import os
+import sys
+
+try:
+    selection = os.fsencode(sys.argv[1]).decode("utf-8").strip()
+except UnicodeDecodeError:
+    sys.exit(1)
+sys.exit(0 if selection and "mp" not in (group.strip() for group in selection.split(",")) else 1)
+PY_REUSED_GROUPS
+    then
+      echo 'NODE_BOOT_RESULT=BLOCKED reason=mp_requires_fresh_stack'; exit 2
+    fi
     if [[ "$(docker inspect -f '{{.State.Running}}' "$PG_CONTAINER_ID" 2>/dev/null)" != true ]] \
       || [[ "$(</proc/sys/kernel/random/boot_id)" != "$kept_boot_id" ]] \
       || ! signal_node_process 0 "$NODE_PROCESS_DIR" 2>/dev/null || ! sudo test -S "$BASE/run/control.sock"; then
       echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_not_running'; exit 2
     fi
+    if [[ -n "${NODE_BOOT_PVP_GAME_PORT+x}" && "${kept_pvp_port:-0}" != "$PVP_GAME_PORT" ]]; then
+      echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_mode_mismatch'; exit 2
+    fi
+    PVP_GAME_PORT="${kept_pvp_port:-$PVP_GAME_PORT}"
     STACK_KEPT=1
   fi
   BASE_IDENTITY=$kept_base_identity
@@ -376,6 +404,7 @@ save_reuse_state() { # the seam stage's inputs, for NODE_BOOT_REUSE_STACK=1
     printf 'kept_base=%q\nkept_service_user=%q\nkept_project=%q\nkept_lifecycle=%q\n' \
       "$BASE" "$SERVICE_USER" "$WP5_PROJECT" "${NODE_BOOT_LIFECYCLE:-}" &&
     printf 'kept_base_identity=%q\nkept_boot_id=%q\n' "$identity" "$(</proc/sys/kernel/random/boot_id)" &&
+    printf 'kept_pvp_port=%q\n' "$PVP_GAME_PORT" &&
     printf 'kept_mode=%q\n' "$NODE_BOOT_WORLD/$NODE_BOOT_SPELLS/${NODE_BOOT_GAME_PORT:-17181}"
   } > "$pending"; then
     rm -f -- "$pending"
@@ -924,6 +953,11 @@ if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   # Only the disposable gameplay packet accounts receive Premium. Use the
   # same audited Platform owner as the operator's Premium grant route.
   run_interruptible php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $operator=App\Identity\Models\Identity::where("account_id","'"$ACCOUNT_ID"'")->firstOrFail(); $ledger=app(App\ProductsEntitlements\Premium\PremiumTimeLedger::class); foreach (["'"$PACKET_ACCOUNT_ID"'","'"$SECOND_PACKET_ACCOUNT_ID"'"] as $account) { $target=App\Identity\Models\Identity::where("account_id",$account)->firstOrFail(); $ledger->grant($operator,$target,1,"Disposable node-boot gameplay qualification",(string) Illuminate\Support\Str::uuid()); }'
+fi
+if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+  for account in "${EXTRA_WORLD_ACCOUNTS[@]}"; do
+    php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>"nb-'"$account"'@example.invalid","password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>"'"$account"'","native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]);'
+  done
 fi
 evidence "platform_seed=synthetic_accounts=${#BOOTSTRAP_ACCOUNTS[@]} fresh_trust=published_public_key_only client_identities=1"
 fi # Platform lifecycle
@@ -1915,6 +1949,18 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
 }
 
 seam_stages() { # §4.6 every #823 stage against the node's own port
+  local spawn_proof
+  spawn_proof="$(OTERYN_TEST_POSTGRES_ADMIN_URL="$ADMIN_URL" \
+    cargo +1.100.0 test --locked -p oteryn-game-server --lib "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}" \
+    node::serve::qualification_fixture::tests::qualification_spawn_transaction_returns_pool_and_bounds_backend -- --exact)" || {
+    printf '%s\n' "$spawn_proof"
+    return 1
+  }
+  printf '%s\n' "$spawn_proof" >&2
+  grep -q '^test result: ok\. 1 passed; 0 failed; 0 ignored;' <<< "$spawn_proof" || {
+    printf '%s\n' 'Spawn PostgreSQL proof did not execute exactly one passing test' >&2
+    return 1
+  }
   # The bootstrap evidence ages past five seconds, so each admission fetches its own.
   sleep 6
   local qualification=node_boot_seam_against_running_node
@@ -1925,6 +1971,9 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   fi
   if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
     test_env+=("NODE_BOOT_PRIMARY_LOG=$node_log" "NODE_BOOT_WORLD_BUNDLE=$BASE/world/world.otbundle" "NODE_BOOT_WORLD_PIN=$BASE/world/world.json" "NODE_BOOT_MAP_REVISION=$MAP_REVISION" "RUST_MIN_STACK=${RUST_MIN_STACK:-67108864}")
+    local extra_accounts
+    extra_accounts="$(IFS=,; echo "${EXTRA_WORLD_ACCOUNTS[*]}")"
+    test_env+=("NODE_BOOT_EXTRA_WORLD_ACCOUNTS=$extra_accounts")
     test_env+=("NODE_BOOT_PACKET_ACCOUNT_ID=$PACKET_ACCOUNT_ID" "NODE_BOOT_PACKET_SECOND_ACCOUNT_ID=$SECOND_PACKET_ACCOUNT_ID")
     if [[ -n "${E2E_ALL_CAPTURE_DIR:-}" ]]; then
       test_env+=("OTERYN_E2E_ROW_BATCH=all")
@@ -2101,6 +2150,13 @@ SQL
   pvp_ops assignment assign --request assign-pvp.json --world "$PVP_WORLD_ID" --channel "$PVP_CHANNEL_ID" --node-id "$node" --revision "$revision"
   pvp_await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   pvp_await_log "event=readiness .*ready=true" 60
+  local bound_address
+  bound_address="$(sed -nE 's/.* event=listener_bound (trace=[^ ]+ )?detail="address=([^"]+)"$/\2/p' "$WORK/pvp-node.log" | tail -n 1)"
+  if [[ ! "$bound_address" =~ ^127\.0\.0\.1:([1-9][0-9]{3,4})$ ]] || (( BASH_REMATCH[1] > 65535 )); then
+    fail "PvP node did not report a valid bound listener"; return 1
+  fi
+  PVP_GAME_PORT="${BASH_REMATCH[1]}"
+  remember PVP_GAME_PORT "$PVP_GAME_PORT"
   local epoch_result
   epoch_result="$({
     echo 'PREPARE node_boot_world_epoch(UUID, UUID, TEXT) AS'
