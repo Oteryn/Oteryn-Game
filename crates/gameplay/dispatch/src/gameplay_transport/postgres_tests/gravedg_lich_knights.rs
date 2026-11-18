@@ -422,7 +422,7 @@ pub(super) fn configure_count(callback: &mut Callback) -> TestResult {
     encounter.monsters.push(
         oteryn_gameplay_quests::quest::world_callbacks::EncounterMonster {
             creature: "oteryn:creature.soulless_minion".into(),
-            position: at(118, 115),
+            position: at(119, 116),
         },
     );
     Ok(())
@@ -560,7 +560,11 @@ async fn use_count_remains(
             player,
             admitted.game_session_id,
             before,
-            dark_position,
+            MovementLocalPosition {
+                x: 118,
+                y: 115,
+                floor: 7,
+            },
             false,
             &closed,
             false,

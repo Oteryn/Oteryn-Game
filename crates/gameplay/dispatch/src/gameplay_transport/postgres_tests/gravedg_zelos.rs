@@ -589,6 +589,7 @@ pub(super) async fn tick_at(owner: &ComposedFreshAdmission<'_, '_, '_>, now: u64
 pub(super) fn lever_world(
     callback: &Callback,
     trigger: Position,
+    native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use super::fixture::id;
     use oteryn_world_bundle::{bundle, sector};
@@ -683,13 +684,11 @@ pub(super) fn lever_world(
         crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
         crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
         |key| {
-            let appearance = match key {
-                "oteryn:item.tibia.i31160" => 31160,
-                "oteryn:item.tibia.i31203" => 31203,
-                _ => return None,
-            };
+            if key != "oteryn:item.tibia.i31160" {
+                return crate::map::boot::native_item_definition(Some(native), key);
+            }
             Some(crate::map::facts::ItemDefinition {
-                reference: std::num::NonZeroU32::new(appearance)?,
+                reference: std::num::NonZeroU32::new(31160)?,
                 solid: Some(false),
                 blocks_projectile: false,
                 pickupable: false,

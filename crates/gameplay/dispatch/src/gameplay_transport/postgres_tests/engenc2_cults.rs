@@ -136,7 +136,6 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                 y: 100,
                 floor: -7,
             };
-            let world = super::gravedg_zelos::lever_world(&callback, trigger)?;
             let mut deps = Dependencies::new()?;
             let (controller, activated) =
                 super::death_ml_loss_composed::production_generation_with_pin(
@@ -145,6 +144,7 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                 )?;
             let generation = controller.active().ok_or("active generation")?;
             let native = generation.native_gameplay().ok_or("native profiles")?;
+            let world = super::gravedg_zelos::lever_world(&callback, trigger, native)?;
             let cells = world
                 .movement_cells(activated.qualified_room().movement_cells())
                 .map_err(debug)?;
