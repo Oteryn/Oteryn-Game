@@ -87,7 +87,7 @@ BEGIN
              AND reset_epoch IS NULL AND retirement_binding IS NULL AND target_digest IS NULL
              AND activity_handoff_id IS NULL AND activity_ownership_generation IS NULL
              AND ground_root_item_instance_id IS NOT NULL
-             AND ground_root_item_instance_id=item_instance_id AND placement_ordinal IS NULL))',
+             AND (ground_root_item_instance_id=item_instance_id)=(placement_ordinal IS NULL)))',
              relation,original);
     END LOOP;
 END $migration$;
@@ -101,9 +101,10 @@ BEGIN
     IF NOT FOUND THEN RETURN FALSE; END IF;
     IF NOT EXISTS (
            SELECT 1 FROM game_svargrond_ground_retirements e
-           JOIN game_item_decay_retire_reservations v USING (item_instance_id)
+           JOIN game_item_decay_retire_reservations v ON v.item_instance_id=r.item_instance_id
            JOIN game_runtime_scope_assignments a ON a.world_id=e.world_id AND a.channel_id=e.channel_id
-           WHERE e.item_instance_id=p_item AND e.created_xact_id=pg_current_xact_id()
+           WHERE e.item_instance_id=r.ground_root_item_instance_id
+             AND e.created_xact_id=pg_current_xact_id()
              AND r.occurred_at < e.expires_at_ms
              AND (e.world_id,e.channel_id,e.scope_generation) =
                  (r.world_id,r.channel_id,r.fence_scope_ownership_generation)
@@ -112,6 +113,8 @@ BEGIN
                  (r.world_id,r.channel_id,r.fence_scope_ownership_generation,r.transaction_id,
                   r.event_id,r.quantity_before,r.occurred_at,r.cause_kind)
              AND sha256(v.envelope)=r.envelope_sha256
+             AND v.ground_root_item_instance_id=r.ground_root_item_instance_id
+             AND v.placement_ordinal IS NOT DISTINCT FROM r.placement_ordinal
              AND a.state=1 AND a.ownership_generation=e.scope_generation
              AND (a.holder_node_id,a.holder_registration_revision)=
                  (v.fence_holder_node_id,v.fence_holder_registration_revision)
@@ -123,8 +126,18 @@ BEGIN
            WHERE q.item_instance_id=p_item AND q.transaction_id=r.transaction_id
              AND q.quantity_before=r.quantity_before)
        OR NOT EXISTS (SELECT 1 FROM game_item_ground_removal_evidence e
-           WHERE e.item_instance_id=p_item AND e.world_id=r.world_id AND e.channel_id=r.channel_id
+           WHERE e.item_instance_id=r.ground_root_item_instance_id
+             AND e.world_id=r.world_id AND e.channel_id=r.channel_id
              AND e.scope_kind=1 AND e.created_xact_id=pg_current_xact_id())
+       OR (r.placement_ordinal IS NOT NULL AND (
+           NOT EXISTS (SELECT 1 FROM game_item_corpse_entry_removal_evidence e
+               WHERE e.item_instance_id=p_item AND e.parent_item_instance_id=r.ground_root_item_instance_id
+                 AND e.placement_ordinal=r.placement_ordinal AND e.world_id=r.world_id
+                 AND e.channel_id=r.channel_id AND e.scope_kind=1 AND e.created_xact_id=pg_current_xact_id())
+           OR NOT EXISTS (SELECT 1 FROM game_item_decay_retire_receipts root
+               WHERE root.item_instance_id=r.ground_root_item_instance_id
+                 AND root.cause_kind='ARENA_RESET' AND root.placement_ordinal IS NULL
+                 AND root.created_xact_id=pg_current_xact_id())))
        OR EXISTS (SELECT 1 FROM game_item_ground_locations WHERE item_instance_id=p_item)
        OR EXISTS (SELECT 1 FROM game_item_corpse_container_entries
                   WHERE item_instance_id=p_item OR parent_item_instance_id=p_item)
@@ -164,10 +177,10 @@ CREATE CONSTRAINT TRIGGER game_svargrond_ground_retirement_consumed
 DO $migration$
 DECLARE f TEXT; body TEXT; item_ref TEXT;
 BEGIN
-    FOREACH f IN ARRAY ARRAY['game_item_decay_retire_consistency_guard',
+    FOREACH f IN ARRAY ARRAY['game_item_corpse_entry_removal_proven','game_item_decay_retire_consistency_guard',
                              'game_item_ground_removal_proven','game_item_instance_change_proven'] LOOP
         SELECT pg_get_functiondef(to_regprocedure(f||'()')) INTO STRICT body;
-        item_ref:=CASE WHEN f='game_item_ground_removal_proven'
+        item_ref:=CASE WHEN f IN ('game_item_corpse_entry_removal_proven','game_item_ground_removal_proven')
             THEN 'OLD.item_instance_id' ELSE 'NEW.item_instance_id' END;
         body:=regexp_replace(body,'\mBEGIN\M',
             'BEGIN IF game_svargrond_ground_retirement_proven('||item_ref||') THEN RETURN NULL; END IF;');

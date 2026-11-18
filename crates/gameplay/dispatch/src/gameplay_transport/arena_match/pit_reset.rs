@@ -21,9 +21,12 @@ pub(super) async fn reset_ground(
     let layout = Pit::new(state.pit)?.layout();
     let map = owner.bundle_map()?;
     let native = owner.active_generation?.native_gameplay()?;
-    let ground =
-        super::super::loop_move::loop_ground(owner, map.overlay.base(), native.item_index())
-            .await?;
+    let ground = super::super::loop_move::loop_ground(
+        owner,
+        map.overlay.base(),
+        native.item_index().map(std::sync::Arc::as_ref),
+    )
+    .await?;
     let observations = {
         let runtime = owner.runtime.lock().await;
         if runtime.owner_fence().is_err()
@@ -38,13 +41,20 @@ pub(super) async fn reset_ground(
             return None;
         }
         let occupants = runtime.positioned_actor_census().ok()?;
-        let blocked: std::collections::BTreeSet<_> = occupants
+        let mut blocked: std::collections::BTreeSet<_> = occupants
             .iter()
             .map(|(_, position, _)| {
                 let at = position.position();
                 [at.x, at.y, -i32::from(at.floor)]
             })
             .collect();
+        blocked.extend(runtime.visible_entities().npcs.into_iter().map(|npc| {
+            [
+                npc.position.x,
+                npc.position.y,
+                -i32::from(npc.position.floor),
+            ]
+        }));
         if layout.occupied_by_other(
             &fence.game_session_id,
             occupants.into_iter().filter_map(|(_, position, session)| {

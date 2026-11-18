@@ -90,33 +90,66 @@ impl DurabilityRoot {
                     {
                         continue;
                     }
-                    let step = DecayRetireStep {
+                    // The existing death-tree owner independently proves nested
+                    // Player inventories. Leave that custody with its owner.
+                    if crate::durability::world_reset::ground_step::is_death_container(&mut tx, item).await? {
+                        continue;
+                    }
+                    let entries: Vec<String> = sqlx::query_scalar(
+                        "SELECT item_instance_id::text FROM game_item_corpse_container_entries
+                         WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal LIMIT $2",
+                    ).bind(item.as_slice())
+                        .bind(i64::try_from(CORPSE_CONTAINER_ENTRIES_MAX + 1).map_err(|_| DurabilityError::InvalidStoredState)?)
+                        .fetch_all(&mut **tx).await?;
+                    if entries.len() > CORPSE_CONTAINER_ENTRIES_MAX {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    let mut steps = Vec::with_capacity(entries.len() + 1);
+                    for entry in entries {
+                        steps.push(uuid_text(&entry)?);
+                    }
+                    let mut already_pending = false;
+                    for entry in &steps {
+                        lock_cause(&mut tx, *entry).await?;
+                        if load_receipt(&mut tx, *entry).await?.is_some()
+                            || load_reservation(&mut tx, *entry, &state.scope_generation.to_string()).await?.is_some()
+                        {
+                            already_pending = true;
+                            break;
+                        }
+                    }
+                    if already_pending {
+                        continue;
+                    }
+                    steps.push(item);
+                    let step = |item_instance_id| DecayRetireStep {
                         corpse_item_instance_id: item,
-                        item_instance_id: item,
+                        item_instance_id,
                         cause: RetireCause::ArenaReset,
                     };
-                    let admitted = match world_reset_cause::admit_ground(&mut tx, &decay_fence, step).await? {
+                    let first = steps.first().copied().ok_or(DurabilityError::InvalidStoredState)?;
+                    let admitted = match world_reset_cause::admit_ground(&mut tx, &decay_fence, step(first)).await? {
                         Ok(admitted) => admitted,
                         Err(DecayRetireError::Refused(_)) => continue,
                         Err(error) => return Ok(Err(error)),
                     };
                     if admitted.corpse_ground.spatial_position != observation.spatial_position
                         || admitted.corpse_ground.runtime_scope_ownership_generation != state.scope_generation
-                        || admitted.definition.production_key != format!("oteryn:item.tibia.i{}", observation.appearance)
                     {
                         continue;
                     }
-                    let claimed: Option<(String, String)> = sqlx::query_as(
+                    let claimed = sqlx::query(
                         "INSERT INTO game_svargrond_ground_retirements
                            (item_instance_id,world_id,channel_id,character_id,game_session_id,run_id,
                             pit,rank,scope_generation,expires_at_ms,spatial_position,source_stack_ordinal)
                          SELECT g.item_instance_id,g.world_id,g.channel_id,encode($4,'hex')::uuid,
                             encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7,$8,$9::text::numeric,$10,
                             g.spatial_position,g.stack_ordinal
-                         FROM game_item_ground_locations g WHERE g.item_instance_id=encode($1,'hex')::uuid
+                         FROM game_item_ground_locations g JOIN game_item_instances i USING (item_instance_id)
+                         WHERE g.item_instance_id=encode($1,'hex')::uuid
                             AND g.spatial_position=$2 AND g.stack_ordinal=$3
-                         ON CONFLICT DO NOTHING
-                         RETURNING game_character_uuid_v7()::text,game_character_uuid_v7()::text",
+                            AND i.definition_production_key=$11
+                         ON CONFLICT DO NOTHING",
                     )
                     .bind(item.as_slice())
                     .bind(&observation.spatial_position)
@@ -128,15 +161,13 @@ impl DurabilityRoot {
                     .bind(i16::from(state.rank))
                     .bind(state.scope_generation.to_string())
                     .bind(state.deadline_ms)
-                    .fetch_optional(&mut **tx).await?;
-                    let Some((transaction, event)) = claimed else { continue };
-                    let transaction_id = uuid_text(&transaction)?;
-                    let event_id = uuid_text(&event)?;
-                    let tuple = tx.tuple();
-                    let mut message = decay_message(step, &decay_fence, &admitted);
-                    message.cause = None;
-                    message.arena_reset = Some(audit::OneItemArenaResetV1 {
-                        world_id: admitted.world_id.to_vec(),
+                    .bind(format!("oteryn:item.tibia.i{}", observation.appearance))
+                    .execute(&mut **tx).await?.rows_affected() == 1;
+                    if !claimed {
+                        continue;
+                    }
+                    let cause = audit::OneItemArenaResetV1 {
+                        world_id: decay_fence.runtime_scope.world_id().as_bytes().to_vec(),
                         channel_id: channel.as_bytes().to_vec(),
                         character_id: fence.character_id.as_bytes().to_vec(),
                         game_session_id: fence.game_session_id.as_bytes().to_vec(),
@@ -145,37 +176,17 @@ impl DurabilityRoot {
                         rank: u32::from(state.rank),
                         pit: u32::from(state.pit),
                         deadline_unix_ms: u64::try_from(state.deadline_ms).map_err(|_| DurabilityError::InvalidStoredState)?,
-                    });
-                    let envelope = match audit::encode_decay_retire_event(
-                        DecayRetireEventIdentity {
-                            event_id,
-                            transaction_id,
-                            occurred_at_unix_ms: admitted.database_now_unix_ms,
-                            server_build_id: SERVER_BUILD_ID,
-                        },
-                        message, tuple.tuple(),
-                    ) {
-                        Ok(envelope) => envelope,
-                        Err(error) => return Ok(Err(error.into())),
                     };
-                    let fact = node.fact();
-                    let reservation = Reservation {
-                        cause: step.cause,
-                        corpse_item_instance_id: item,
-                        fence_generation: state.scope_generation,
-                        transaction_id,
-                        event_id,
-                        occurred_at_unix_ms: admitted.database_now_unix_ms,
-                        deadline_unix_ms: admitted.deadline_unix_ms,
-                        quantity_before: admitted.quantity_before,
-                        placement_ordinal: None,
-                        envelope,
-                        fence_node_id: *fact.node_id().as_bytes(),
-                        fence_registration_revision: fact.registration_revision(),
-                        work_units_used: 0,
-                    };
-                    retirement_workflow::insert_reservation(&mut tx, step, &admitted, &reservation, tuple).await?;
-                    apply_retire(&mut tx, permit, step, &admitted, &reservation, tuple).await?;
+                    for entry in steps {
+                        let step = step(entry);
+                        let admitted = match world_reset_cause::admit_ground(&mut tx, &decay_fence, step).await? {
+                            Ok(admitted) => admitted,
+                            Err(error) => return Ok(Err(error)),
+                        };
+                        if let Err(error) = retire_step(&mut tx, permit, &node, &decay_fence, step, &admitted, cause.clone()).await? {
+                            return Ok(Err(error));
+                        }
+                    }
                     retired.push(item);
                 }
                 tx.commit(deadline).await?;
@@ -183,4 +194,58 @@ impl DurabilityRoot {
             })
         }).await?
     }
+}
+
+async fn retire_step(
+    tx: &mut mint_audit::Type2Transaction<'_>,
+    permit: &SpellLanePermit,
+    node: &NodeIncarnationProof,
+    fence: &CorpseDecayFence,
+    step: DecayRetireStep,
+    admitted: &Admitted,
+    mut cause: audit::OneItemArenaResetV1,
+) -> Pass<()> {
+    let (transaction, event): (String, String) =
+        sqlx::query_as("SELECT game_character_uuid_v7()::text, game_character_uuid_v7()::text")
+            .fetch_one(&mut ***tx)
+            .await?;
+    let transaction_id = uuid_text(&transaction)?;
+    let event_id = uuid_text(&event)?;
+    let tuple = tx.tuple();
+    let mut message = decay_message(step, fence, admitted);
+    message.cause = None;
+    cause.item_instance_id = step.item_instance_id.to_vec();
+    message.arena_reset = Some(cause);
+    let envelope = match audit::encode_decay_retire_event(
+        DecayRetireEventIdentity {
+            event_id,
+            transaction_id,
+            occurred_at_unix_ms: admitted.database_now_unix_ms,
+            server_build_id: SERVER_BUILD_ID,
+        },
+        message,
+        tuple.tuple(),
+    ) {
+        Ok(envelope) => envelope,
+        Err(error) => return Ok(Err(error.into())),
+    };
+    let fact = node.fact();
+    let reservation = Reservation {
+        cause: step.cause,
+        corpse_item_instance_id: step.corpse_item_instance_id,
+        fence_generation: fence.scope_ownership_generation.get(),
+        transaction_id,
+        event_id,
+        occurred_at_unix_ms: admitted.database_now_unix_ms,
+        deadline_unix_ms: admitted.deadline_unix_ms,
+        quantity_before: admitted.quantity_before,
+        placement_ordinal: admitted.placement_ordinal,
+        envelope,
+        fence_node_id: *fact.node_id().as_bytes(),
+        fence_registration_revision: fact.registration_revision(),
+        work_units_used: 0,
+    };
+    retirement_workflow::insert_reservation(tx, step, admitted, &reservation, tuple).await?;
+    apply_retire(tx, permit, step, admitted, &reservation, tuple).await?;
+    Ok(Ok(()))
 }

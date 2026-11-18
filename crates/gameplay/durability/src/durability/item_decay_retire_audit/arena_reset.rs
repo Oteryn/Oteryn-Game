@@ -29,7 +29,7 @@ pub(super) fn check(value: &OneItemDecayRetireV1) -> Result<DecayRetireShape, Au
     let cause = value.arena_reset.as_ref().ok_or(AuditError::InvalidInput)?;
     let before = value.before.as_ref().ok_or(AuditError::InvalidInput)?;
     let after = value.after.as_ref().ok_or(AuditError::InvalidInput)?;
-    let ground = value.ground.as_ref().ok_or(AuditError::InvalidInput)?;
+    let ground = scope_ground(value)?;
     check_state(before)?;
     check_state(after)?;
     mint::check_key_number(before)?;
@@ -53,7 +53,6 @@ pub(super) fn check(value: &OneItemDecayRetireV1) -> Result<DecayRetireShape, Au
     if value.cause.is_some()
         || value.world_reset.is_some()
         || value.activity_retirement.is_some()
-        || value.corpse_entry.is_some()
         || value.ground_container_entry.is_some()
         || before.item_instance_id != after.item_instance_id
         || before.world_id != after.world_id
@@ -79,7 +78,17 @@ pub(super) fn check(value: &OneItemDecayRetireV1) -> Result<DecayRetireShape, Au
         return Err(AuditError::InvalidInput);
     }
     DECAY_RETIRE_USAGE.check()?;
-    Ok(DecayRetireShape::Ground)
+    if let Some(entry) = &value.corpse_entry {
+        check_uuid_v7(&entry.corpse_item_instance_id)?;
+        if entry.corpse_item_instance_id == before.item_instance_id
+            || !(1..=mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX).contains(&entry.placement_ordinal)
+        {
+            return Err(AuditError::InvalidInput);
+        }
+        Ok(DecayRetireShape::Entry)
+    } else {
+        Ok(DecayRetireShape::Ground)
+    }
 }
 
 #[cfg(test)]
