@@ -28,6 +28,8 @@ fn questpc7_grave_whole_native_journey_and_reward() -> TestResult {
 }
 use super::questpc7_ferumbras::{guardian, step, use_at, value, walk};
 const QUEST: &str = "oteryn:quest.grave_danger_quest";
+// Measured on the complete 871c1dec catalogue.
+const EDRON_SAVE_HASH: &str = "5054575cd55c76480522bdc31bab711873fc7dd859b3832d4bcacbeeede0259e";
 const TRACK: &str = "oteryn:quest-progress/questpc7/grave/programme";
 const VISITS: &str = "oteryn:quest-progress/questpc7/grave/visits";
 const PASSAGES: &str = "oteryn:quest-progress/questpc7/grave/passages";
@@ -182,6 +184,34 @@ pub(super) async fn exercise(
         );
         assert_eq!(value(owner, a, VISITS).await?, i64::from(i + 1));
         assert_at(owner, a, c.teleport.ok_or("earned journey")?).await?;
+        if i == 0 {
+            // Preserve the real Edron write and restore the pin that its deployed
+            // definition would have recorded before Jack's start was introduced.
+            let mut save = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *save)
+                .await?;
+            let state = sqlx::query(
+                "UPDATE game_character_quest_states SET definition_hash = decode($2, 'hex')
+                 WHERE quest_key = $1 AND completed_character_revision IS NULL",
+            )
+            .bind(QUEST)
+            .bind(EDRON_SAVE_HASH)
+            .execute(&mut *save)
+            .await?;
+            assert_eq!(state.rows_affected(), 1);
+            let receipts = sqlx::query(
+                "UPDATE game_character_quest_receipts SET definition_hash = decode($2, 'hex')
+                 WHERE quest_key = $1",
+            )
+            .bind(QUEST)
+            .bind(EDRON_SAVE_HASH)
+            .execute(&mut *save)
+            .await?;
+            assert_eq!(receipts.rows_affected(), 2);
+            save.commit().await?;
+            owner.refresh_quest_session(a.game_session_id, true).await;
+        }
     }
     no_rewards(h).await?;
     let objectives = oteryn_gameplay_quests::quest::death_objectives::load().map_err(debug)?;

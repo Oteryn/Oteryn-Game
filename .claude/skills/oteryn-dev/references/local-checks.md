@@ -28,6 +28,11 @@ run all of it, and fix every failure of one run in one push.
    process per test, so a test that relies on state left by another passes
    locally under `cargo test` and fails in CI; `cargo nextest run -p <package>`
    reproduces CI when nextest is installed.
+   Then build the changed package without tests:
+   `cargo build --locked -p <package> --quiet` (its default library and binary
+   targets, no tests; it also works for a binary-only package). Test-only code
+   left ungated in a non-test build (an ungated `#[tokio::test]` helper) passes
+   every test run and review and fails only in the node-boot build.
 7. Governance, when `docs/agents/`, `tools/agents/`, `.claude/` or `AGENTS.md`
    changed: `python3 tools/agents/validate_governance.py` and
    `python3 -m unittest discover -s tools/agents/tests`.
@@ -94,5 +99,9 @@ matching one locally when your change can reach it; commands are copied from
   branch is merged: target dirs are tens of GB.
 - Check free disk space before a build. "No space left on device" mid-build
   leaves a corrupt incremental cache; delete the target dir and rebuild.
+- Before a heavy build check `df -h` and `free -g`; on a small host use
+  `CARGO_BUILD_JOBS=1`. Full disk then out-of-memory at `-j2` cost lanes hours.
+- Compile delegated code (`cargo check -p <crate>`) before sending it to a
+  20-25 minute runner; a compile error found there costs a whole cycle.
 - In shell pipelines take the exit code of the command, not of `tail`/`tee`:
   `set -o pipefail`, or `${PIPESTATUS[0]}`.

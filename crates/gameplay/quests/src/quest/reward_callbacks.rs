@@ -2170,7 +2170,7 @@ mod tests {
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
         // Shared, QuestPC7, other registered shards, M43 peer, Kingsday journal.
-        assert_eq!(load()?.len(), 207 + 59 + 124 + 1 + 1);
+        assert_eq!(load()?.len(), 207 + 59 + 125 + 1 + 1);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2450,36 +2450,73 @@ mod lane_tests {
     }
 
     #[test]
+    fn qpkg3_zalamon_binds_the_phantom_army_report() -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|callback| {
+                callback.key == "oteryn:quest-reward/chosen/children/phantom-army-report"
+            })
+            .ok_or("missing live Phantom Army report")?;
+        assert_eq!(callback.npc, "oteryn:npc.zalamon");
+        assert_eq!(callback.keywords, ["mission"]);
+        assert_eq!(callback.experience, Some(10_000));
+        let item = callback.give.as_ref().ok_or("missing serpent crest")?;
+        assert_eq!(
+            (item.item.as_str(), item.count),
+            ("oteryn:item.tibia.i10199", 1)
+        );
+        let effects: Vec<_> = callback
+            .storage
+            .iter()
+            .map(|rule| (rule.track.as_str(), rule.minimum, rule.maximum, rule.set))
+            .collect();
+        assert_eq!(
+            effects,
+            [
+                (
+                    "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+                    20,
+                    20,
+                    21
+                ),
+                (
+                    "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission05",
+                    -1,
+                    3,
+                    3
+                ),
+            ]
+        );
+        let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        assert!(loaded.catalogue().transition(&callback.key).is_some());
+        Ok(())
+    }
+
+    #[test]
     fn reward_amount_is_part_of_the_quest_definition_hash() -> Result<(), String> {
-        let before = parse(include_str!(
+        let quest = super::super::grizzly_adams::QUEST;
+        let document = parse_document(include_str!(
             "../../../../../content/quests/chosen-reward-callbacks.json"
         ))?;
-        let mut changed = before.clone();
-        changed
-            .first_mut()
-            .and_then(|c| c.give.as_mut())
-            .ok_or("reward")?
-            .count = 51;
+        let reward = document
+            .callbacks
+            .into_iter()
+            .find(|callback| callback.key == "oteryn:quest-reward/chosen/hunting-campaign")
+            .ok_or("hunting campaign reward")?;
+        let tracks: Vec<_> = document
+            .tracks
+            .into_iter()
+            .filter(|track| track.quest == quest)
+            .collect();
+        let mut changed = reward.clone();
+        changed.give.as_mut().ok_or("reward payout")?.count = 51;
         let empty = receipt_test_base::catalogue;
-        let before = extend_callbacks(
-            empty()?,
-            before,
-            parse_document(include_str!(
-                "../../../../../content/quests/chosen-reward-callbacks.json"
-            ))?
-            .tracks,
-        )?;
-        let changed = extend_callbacks(
-            empty()?,
-            changed,
-            parse_document(include_str!(
-                "../../../../../content/quests/chosen-reward-callbacks.json"
-            ))?
-            .tracks,
-        )?;
+        let before = extend_callbacks(empty()?, vec![reward], tracks.clone())?;
+        let changed = extend_callbacks(empty()?, vec![changed], tracks)?;
         assert_ne!(
-            before.definition_hash(super::super::grizzly_adams::QUEST),
-            changed.definition_hash(super::super::grizzly_adams::QUEST),
+            before.definition_hash(quest).ok_or("original quest hash")?,
+            changed.definition_hash(quest).ok_or("mutated quest hash")?,
             "a changed payout must not reuse a running quest's pinned value plan"
         );
         Ok(())
