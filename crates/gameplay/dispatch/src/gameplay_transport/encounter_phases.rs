@@ -282,6 +282,18 @@ impl Registry {
         })
     }
 
+    pub(super) fn azaram_reflects_death(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        now: u64,
+    ) -> bool {
+        self.active.lock().is_ok_and(|active| active.iter().any(|phase| {
+            phase.victory_exit_us.is_none() &&
+            matches!(&phase.fight, Fight::LordAzaram(fight) if fight.reflects_death(runtime, actor, now))
+        }))
+    }
+
     pub(super) fn azaram_monster_step(
         &self,
         runtime: &mut ChannelRuntimeV1,

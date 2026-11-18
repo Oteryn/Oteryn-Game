@@ -413,7 +413,7 @@ pub fn stage_player_batch_with_magnitude(
     if let Some(magnitude) = magnitude {
         prepared.analyser_element = magnitude.analyser_element();
     }
-    prepared.stage_soul_war_reflection(runtime, states)?;
+    prepared.stage_source_reflection(runtime, states)?;
     Ok(prepared)
 }
 
@@ -436,7 +436,7 @@ pub fn stage_player_batch_with_attack(
             super::super::analyser::element(b),
         )
     });
-    prepared.stage_soul_war_reflection(runtime, states)?;
+    prepared.stage_source_reflection(runtime, states)?;
     Ok(prepared)
 }
 
@@ -444,7 +444,7 @@ impl PlayerBatchPreflight {
     /// Reflection joins the same paid cast/attack successor. Only the sealed
     /// magnitude or attack owners call this after proving final source elements;
     /// a plain batch cannot infer a physical element from presentation metadata.
-    fn stage_soul_war_reflection(
+    fn stage_source_reflection(
         &mut self,
         runtime: &ChannelRuntimeV1,
         states: &ChannelSpellStates,
@@ -514,6 +514,24 @@ impl PlayerBatchPreflight {
                 let Some(element) = key.filter(|_| !healing) else {
                     continue;
                 };
+                // Crystal 201189f8 GraveDangerSinReflect returns each death
+                // component to the attacking player without the native blockHit cap.
+                if player_caster
+                    && element == "death"
+                    && amount > 0
+                    && states.encounter_phases.azaram_reflects_death(
+                        runtime,
+                        effect.target,
+                        self.batch.now_ms.saturating_mul(1_000),
+                    )
+                {
+                    lua_reflected.push((
+                        u32::try_from(amount).map_err(|_| SpellCastDisposition::Rejected)?,
+                        crate::player_lethal::PlayerHitKind::from_element(Some(element)),
+                        false,
+                        super::native_public_death_cause(runtime, effect.target),
+                    ));
+                }
                 let percent = runtime
                     .soul_war_reflection(effect.target, element)
                     .map_err(|_| SpellCastDisposition::Rejected)?;

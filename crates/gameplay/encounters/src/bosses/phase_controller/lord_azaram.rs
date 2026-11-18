@@ -89,6 +89,15 @@ impl LordAzaramEncounter {
         self.lord == actor || self.splinters.contains(&actor)
     }
 
+    pub fn reflects_death(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        now: u64,
+    ) -> bool {
+        now < self.expires && self.is_current(runtime) && self.sins.contains(&actor)
+    }
+
     pub fn owns_scoped_credit(&self, actor: ExactActorRef) -> bool {
         self.lord == actor
     }
