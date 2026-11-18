@@ -466,7 +466,7 @@ fn source_tiles() -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
         world: Extent {
             min_x: 33571,
             min_y: 32285,
-            max_x: 33620,
+            max_x: 33621,
             max_y: 32325,
             floors: vec![-10, -9],
         },

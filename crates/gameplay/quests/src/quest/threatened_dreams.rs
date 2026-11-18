@@ -108,18 +108,17 @@ pub(super) fn start_transition() -> Result<super::QuestTransition, String> {
 // A persisted quest retains its original hash even after compatible rules
 // are added. Derive the exact predecessor from the unchanged source rules.
 pub(super) fn retain_nightmare_predecessor(catalogue: &mut super::QuestStateCatalogue) {
-    let mut tracks = catalogue.tracks.clone();
-    tracks.remove(KROAZUR);
     let mut transitions = catalogue.transitions.clone();
     transitions.remove(REPORT);
     for counter in COUNTERS {
         transitions.remove(counter.transition);
     }
-    let hash = super::definition_hash(QUEST, &tracks, &transitions);
-    let defaults = tracks
-        .into_values()
+    let hash = super::definition_hash(QUEST, &catalogue.tracks, &transitions);
+    let defaults = catalogue
+        .tracks
+        .values()
         .filter(|track| track.quest == QUEST)
-        .map(|track| (track.key, track.initial))
+        .map(|track| (track.key.clone(), track.initial))
         .collect();
     catalogue
         .predecessors
@@ -699,17 +698,9 @@ pub(super) fn extend(
             return Err(format!("Threatened Dreams transition conflict {key}"));
         }
     }
-    let boss_credit = super::QuestTrack {
-        key: KROAZUR.into(),
-        quest: QUEST.into(),
-        initial: 0,
-        min: 0,
-        max: 1,
-    };
-    if tracks.insert(KROAZUR.into(), boss_credit).is_some()
-        || transitions
-            .insert(REPORT.into(), report_transition())
-            .is_some()
+    if transitions
+        .insert(REPORT.into(), report_transition())
+        .is_some()
     {
         return Err("Threatened Dreams report conflicts with existing rules".into());
     }

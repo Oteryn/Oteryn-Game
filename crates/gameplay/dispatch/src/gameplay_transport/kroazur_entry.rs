@@ -19,9 +19,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         entered: MovementPositionSnapshot,
     ) -> Option<MovementPositionSnapshot> {
-        let Some(map) = self.bundle_map() else {
-            return None;
-        };
+        let map = self.bundle_map()?;
         if !matches!(actor.runtime_scope(), RuntimeScopeRefV1::Channel { .. }) {
             return None;
         }
@@ -38,9 +36,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         };
         let pos = TilePos { x, y, floor };
-        let Some(base) = map.overlay.base().tile(x, y, floor) else {
-            return None;
-        };
+        let base = map.overlay.base().tile(x, y, floor)?;
         if !(0..base.depths().iter().filter(|depth| **depth == 0).count()).any(|ordinal| {
             u8::try_from(ordinal)
                 .ok()
@@ -53,9 +49,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let movement = {
             let runtime = self.runtime.lock().await;
-            let Ok(Some(movement)) = runtime.committed_movement_occurrence(actor) else {
-                return None;
-            };
+            let movement = runtime.committed_movement_occurrence(actor).ok()??;
             if movement.after() != entered
                 || movement.before().position() == p
                 || runtime.read_actor_position(actor) != Ok(entered)
@@ -68,9 +62,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return self.return_from_kroazur_entrance(session, movement).await;
         };
 
-        let Ok(payload) = wire::encode_boss_key(KROAZUR_BOSS) else {
-            return None;
-        };
+        let payload = wire::encode_boss_key(KROAZUR_BOSS).ok()?;
         let retry = super::AdmissionRetryBudget::for_command(self.root);
         let reply = retry
             .retry_unavailable(async || {
@@ -107,9 +99,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         movement: CommittedMovementOccurrence,
     ) -> Option<MovementPositionSnapshot> {
-        let (Some(permit), Some(map)) = (self.spell_lane_permit().await, self.bundle_map()) else {
-            return None;
-        };
+        let map = self.bundle_map()?;
+        let permit = self.spell_lane_permit().await?;
         let actor = movement.mover();
         let policy = self.special_movement_policy(&permit, actor, session).await;
         let mut runtime = self.runtime.lock().await;
@@ -123,7 +114,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let origin = movement.before().position();
         let entered = movement.after().position();
         let doors = crate::map::floor::BundleDoors(&map.facts);
-        let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+        let proof = crate::map::floor::prepare_quest_callback_teleport(
             &runtime,
             self.movement_cells(),
             actor,
@@ -132,9 +123,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             origin,
             false,
             &doors,
-        ) else {
-            return None;
-        };
+        )
+        .ok()?;
         let returned = runtime.commit_source_step(proof).ok()?;
         let now = self.owner_now().get();
         states.stage_special_movement_step(
