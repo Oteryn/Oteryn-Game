@@ -122,6 +122,28 @@ impl Registry {
         Ok(active)
     }
 
+    /// The caller has proved the room vacant with the same Channel lock held.
+    pub(super) fn reset_vacant_library_room(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        key: u64,
+    ) -> Result<bool, CarrierError> {
+        let mut active = self.active.lock().map_err(|_| CarrierError::PlanConflict)?;
+        let Some(index) = active
+            .iter()
+            .position(|phase| phase.key == key && matches!(phase.fight, Fight::Ghulosh(_)))
+        else {
+            return Ok(false);
+        };
+        if let Fight::Ghulosh(fight) = &mut active[index].fight
+            && fight.is_current(runtime)
+        {
+            fight.retire(runtime)?;
+        }
+        active.swap_remove(index);
+        Ok(true)
+    }
+
     pub(super) fn note_projected_death(
         &self,
         runtime: &mut ChannelRuntimeV1,

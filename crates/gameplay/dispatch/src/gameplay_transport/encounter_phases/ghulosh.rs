@@ -111,6 +111,24 @@ impl Ghulosh {
         Ok(())
     }
 
+    /// Retire only this room's actor generations after victory or a vacant-room reset.
+    pub(super) fn retire(&mut self, runtime: &mut ChannelRuntimeV1) -> Result<(), CarrierError> {
+        if !self.is_current(runtime) {
+            return Err(CarrierError::ContentPinWorldMismatch);
+        }
+        let book = match self.book {
+            Book::Tome(actor) | Book::Concentrated(actor) => Some(actor),
+            _ => None,
+        };
+        for actor in [self.boss, self.jaw].into_iter().chain(book) {
+            if runtime.contains_live_creature(actor) {
+                runtime.remove_encounter_actor(actor)?;
+            }
+        }
+        self.book = Book::Gone;
+        Ok(())
+    }
+
     pub(super) fn advance(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -118,17 +136,7 @@ impl Ghulosh {
         now_ms: u64,
     ) -> Result<(), CarrierError> {
         if self.finished {
-            let book = match self.book {
-                Book::Tome(actor) | Book::Concentrated(actor) => Some(actor),
-                _ => None,
-            };
-            for actor in Some(self.jaw).into_iter().chain(book) {
-                if runtime.contains_live_creature(actor) {
-                    runtime.remove_encounter_actor(actor)?;
-                }
-            }
-            self.book = Book::Gone;
-            return Ok(());
+            return self.retire(runtime);
         }
         if let Ok(snapshot) = runtime.companion_snapshot(self.boss)
             && snapshot.state.policy.definition_key == BASE

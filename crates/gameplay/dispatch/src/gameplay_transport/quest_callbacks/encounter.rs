@@ -129,6 +129,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Rejected;
         };
         let in_room = |at| super::timed_encounter::in_room(encounter, at);
+        if encounter.phase
+            == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Ghulosh)
+            && !census
+                .iter()
+                .any(|(_, at, session)| session.is_some() && in_room(at.position()))
+        {
+            match states
+                .encounter_phases
+                .reset_vacant_library_room(runtime, key)
+            {
+                Ok(true) => {
+                    let Ok(current) = runtime.positioned_melee_census() else {
+                        return UseDisposition::Rejected;
+                    };
+                    census = current;
+                }
+                Ok(false) => {}
+                Err(_) => return UseDisposition::Rejected,
+            }
+        }
         let mut timeout = None;
         if let Some(rule) = encounter.room_timeout {
             let Ok(mut timers) = self.states.quest_callbacks.timed.lock() else {
