@@ -556,7 +556,7 @@ fn definition(key: &str) -> TypedDefinitionRef {
 
 // Use the actual committed entry and its complete attributes, with a small
 // approach corridor so the ordinary production map owner handles the action.
-fn committed_world(
+pub(super) fn committed_world(
     position: (u16, u16, i8),
     appearance: u16,
     native: &crate::content::native_gameplay::NativeGameplayState,
@@ -847,7 +847,7 @@ fn execute_gate(gate: &'static Gate) -> TestResult {
     Ok(())
 }
 
-fn journey_target(
+pub(super) fn journey_target(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     position: (u16, u16, i8),
     ordinal: u8,
@@ -864,7 +864,7 @@ fn journey_target(
     })
 }
 
-async fn journey_step(
+pub(super) async fn journey_step(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
     direction: oteryn_protocol_oteryn::world_spatial::StepDirection,
@@ -950,7 +950,7 @@ async fn duplicate_pick(
     }
 }
 
-async fn journey_use(
+pub(super) async fn journey_use(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
     target: &WorldObjectTarget,

@@ -728,6 +728,9 @@
         "repeatable": {
           "type": "boolean"
         },
+        "per_occurrence_mint": {
+          "type": "boolean"
+        },
         "world_claim": {
           "type": "object",
           "additionalProperties": false,

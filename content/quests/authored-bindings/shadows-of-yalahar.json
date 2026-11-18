@@ -6,16 +6,142 @@
       "recipe_sha256": "48c84ea1c2b913d5eea7b7a063e5174590d45e62a9926600b4386021426d2e1e",
       "tracks": [
         {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_current",
+          "initial": -1,
+          "minimum": -1,
+          "maximum": 6
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_delivered_a",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_delivered_b",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_delivered_c",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/door_02",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/door_05",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/door_06",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/door_07",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/door_08",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/door_09",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/door_10",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
           "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission01",
           "initial": 0,
           "minimum": 0,
           "maximum": 2
         },
         {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission02",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission03",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission04",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission05",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 4
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission06",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission07",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission08",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission09",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission10",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 4
+        },
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission10_state",
+          "initial": -1,
+          "minimum": -1,
+          "maximum": 1
+        },
+        {
           "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
           "initial": 0,
           "minimum": 0,
-          "maximum": 1
+          "maximum": 17
         },
         {
           "key": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/research_boveas",
@@ -110,6 +236,12 @@
                 "topic": 0,
                 "next_topic": 0,
                 "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 1,
+                    "maximum": 1,
+                    "set": 2
+                  },
                   {
                     "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission01",
                     "minimum": 1,
@@ -335,6 +467,1278 @@
                     "maximum": 1
                   }
                 ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-02-start",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 2,
+                    "maximum": 2,
+                    "set": 3
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission02",
+                    "minimum": 0,
+                    "maximum": 2,
+                    "set": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/door_02",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "set": 1
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Find a mago-mechanic core in the factory quarter. Fire the cooler cannon at the red-hot core, then collect the cooled core from the dispenser."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:158-176"
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-03-start",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 4,
+                    "maximum": 4,
+                    "set": 5
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission03",
+                    "minimum": 0,
+                    "maximum": 2,
+                    "set": 1
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Use a pick on fallen earth elementals and bring me ten elemental crystals."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:192-202"
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-04-start",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 6,
+                    "maximum": 6,
+                    "set": 7
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission04",
+                    "minimum": 0,
+                    "maximum": 2,
+                    "set": 1
+                  }
+                ],
+                "take": [],
+                "give": {
+                  "item": "oteryn:item.tibia.i9235",
+                  "count": 1
+                },
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Take this disassembler. Use it on fallen worker golems and bring back six golem parts."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:217-229"
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-06-start",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 9,
+                    "maximum": 9,
+                    "set": 10
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission06",
+                    "minimum": 0,
+                    "maximum": 2,
+                    "set": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/door_06",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "set": 1
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Search the factory quarter for a golem blueprint."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:306-311"
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-07-start",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 11,
+                    "maximum": 11,
+                    "set": 12
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission07",
+                    "minimum": 0,
+                    "maximum": 2,
+                    "set": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/door_07",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "set": 1
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Bring me an old power core from the alchemists’ quarter. A burnt-out core will do."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:323-328"
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-08-start",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 13,
+                    "maximum": 13,
+                    "set": 14
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission08",
+                    "minimum": 0,
+                    "maximum": 2,
+                    "set": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/door_08",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "set": 1
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Find an original Yalahari stabilizer in the sunken quarter."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:340-348"
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-09-start",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 15,
+                    "maximum": 15,
+                    "set": 16
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission09",
+                    "minimum": 0,
+                    "maximum": 3,
+                    "set": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/door_09",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "set": 1
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Study the folios in the magicians’ quarter and try to reconstruct the ritual at the scribe’s desk."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:360-374"
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-02-report",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 3,
+                    "maximum": 3,
+                    "set": 4
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission02",
+                    "minimum": 0,
+                    "maximum": 2,
+                    "set": 2
+                  }
+                ],
+                "take": [
+                  {
+                    "item": "oteryn:item.tibia.i9249",
+                    "count": 1
+                  }
+                ],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "That is everything I asked for. Ask me for the next mission when you are ready."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:177-191"
+                ],
+                "failure_reply": [
+                  "Bring back the requested items before you report this mission."
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-03-report",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 5,
+                    "maximum": 5,
+                    "set": 6
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission03",
+                    "minimum": 0,
+                    "maximum": 2,
+                    "set": 2
+                  }
+                ],
+                "take": [
+                  {
+                    "item": "oteryn:item.tibia.i9251",
+                    "count": 10
+                  }
+                ],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "That is everything I asked for. Ask me for the next mission when you are ready."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:203-216"
+                ],
+                "failure_reply": [
+                  "Bring back the requested items before you report this mission."
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-04-report",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 7,
+                    "maximum": 7,
+                    "set": 8
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission04",
+                    "minimum": 0,
+                    "maximum": 2,
+                    "set": 2
+                  }
+                ],
+                "take": [
+                  {
+                    "item": "oteryn:item.tibia.i9233",
+                    "count": 6
+                  }
+                ],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "That is everything I asked for. Ask me for the next mission when you are ready."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:230-240"
+                ],
+                "failure_reply": [
+                  "Bring back the requested items before you report this mission."
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-06-report",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 10,
+                    "maximum": 10,
+                    "set": 11
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission06",
+                    "minimum": 0,
+                    "maximum": 2,
+                    "set": 2
+                  }
+                ],
+                "take": [
+                  {
+                    "item": "oteryn:item.tibia.i9247",
+                    "count": 1
+                  }
+                ],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "That is everything I asked for. Ask me for the next mission when you are ready."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:312-322"
+                ],
+                "failure_reply": [
+                  "Bring back the requested items before you report this mission."
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-07-report",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 12,
+                    "maximum": 12,
+                    "set": 13
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission07",
+                    "minimum": 0,
+                    "maximum": 2,
+                    "set": 2
+                  }
+                ],
+                "take": [
+                  {
+                    "item": "oteryn:item.tibia.i9252",
+                    "count": 1
+                  }
+                ],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "That is everything I asked for. Ask me for the next mission when you are ready."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:329-339"
+                ],
+                "failure_reply": [
+                  "Bring back the requested items before you report this mission."
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-08-report",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 14,
+                    "maximum": 14,
+                    "set": 15
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission08",
+                    "minimum": 0,
+                    "maximum": 2,
+                    "set": 2
+                  }
+                ],
+                "take": [
+                  {
+                    "item": "oteryn:item.tibia.i9248",
+                    "count": 1
+                  }
+                ],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "That is everything I asked for. Ask me for the next mission when you are ready."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:349-359"
+                ],
+                "failure_reply": [
+                  "Bring back the requested items before you report this mission."
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-09-report",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 16,
+                    "maximum": 16,
+                    "set": 17
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission09",
+                    "minimum": 2,
+                    "maximum": 2,
+                    "set": 3
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "You reconstructed the ritual. Ask me for the next mission when you are ready."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:375-384"
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-10-start",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission10",
+                    "minimum": 0,
+                    "maximum": 0,
+                    "set": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission10_state",
+                    "minimum": -1,
+                    "maximum": 1,
+                    "set": 0
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/door_10",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "set": 1
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "We need three substitute ingredients before we can perform the ritual."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:385-400"
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 17,
+                    "maximum": 17
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "key": "s5",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/shadows-of-yalahar/mission-05-start",
+              "quest": "oteryn:quest.shadows_of_yalahar_quest",
+              "npc": "oteryn:npc.telas",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission05",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/door_05",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "The generator in the alchemists’ quarter can charge you. Bring me one charge of each type A, B, and C."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:241-256"
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                  "minimum": 8,
+                  "maximum": 8
+                }
+              ]
+            },
+            "alternatives": [
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-05-charge-a",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_current",
+                    "minimum": 1,
+                    "maximum": 1,
+                    "set": -1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_delivered_a",
+                    "minimum": 0,
+                    "maximum": 0,
+                    "set": 1
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "I’ve collected the A charge."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:258-305"
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 8,
+                    "maximum": 8
+                  }
+                ],
+                "state_ops": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission05",
+                    "from": {
+                      "kind": "between",
+                      "minimum": 1,
+                      "maximum": 2
+                    },
+                    "effect": {
+                      "kind": "add",
+                      "value": 1
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-05-last-charge-a",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_current",
+                    "minimum": 1,
+                    "maximum": 1,
+                    "set": -1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_delivered_a",
+                    "minimum": 0,
+                    "maximum": 0,
+                    "set": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 8,
+                    "maximum": 8,
+                    "set": 9
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission05",
+                    "minimum": 3,
+                    "maximum": 3,
+                    "set": 4
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "I’ve collected the A charge. We now have all three."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:258-305"
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_delivered_b",
+                    "minimum": 1,
+                    "maximum": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_delivered_c",
+                    "minimum": 1,
+                    "maximum": 1
+                  }
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-05-charge-b",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_current",
+                    "minimum": 2,
+                    "maximum": 2,
+                    "set": -1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_delivered_b",
+                    "minimum": 0,
+                    "maximum": 0,
+                    "set": 1
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "I’ve collected the B charge."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:258-305"
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 8,
+                    "maximum": 8
+                  }
+                ],
+                "state_ops": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission05",
+                    "from": {
+                      "kind": "between",
+                      "minimum": 1,
+                      "maximum": 2
+                    },
+                    "effect": {
+                      "kind": "add",
+                      "value": 1
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-05-last-charge-b",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_current",
+                    "minimum": 2,
+                    "maximum": 2,
+                    "set": -1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_delivered_b",
+                    "minimum": 0,
+                    "maximum": 0,
+                    "set": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 8,
+                    "maximum": 8,
+                    "set": 9
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission05",
+                    "minimum": 3,
+                    "maximum": 3,
+                    "set": 4
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "I’ve collected the B charge. We now have all three."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:258-305"
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_delivered_a",
+                    "minimum": 1,
+                    "maximum": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_delivered_c",
+                    "minimum": 1,
+                    "maximum": 1
+                  }
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-05-charge-c",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_current",
+                    "minimum": 3,
+                    "maximum": 3,
+                    "set": -1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_delivered_c",
+                    "minimum": 0,
+                    "maximum": 0,
+                    "set": 1
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "I’ve collected the C charge."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:258-305"
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 8,
+                    "maximum": 8
+                  }
+                ],
+                "state_ops": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission05",
+                    "from": {
+                      "kind": "between",
+                      "minimum": 1,
+                      "maximum": 2
+                    },
+                    "effect": {
+                      "kind": "add",
+                      "value": 1
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-05-last-charge-c",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_current",
+                    "minimum": 3,
+                    "maximum": 3,
+                    "set": -1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_delivered_c",
+                    "minimum": 0,
+                    "maximum": 0,
+                    "set": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 8,
+                    "maximum": 8,
+                    "set": 9
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission05",
+                    "minimum": 3,
+                    "maximum": 3,
+                    "set": 4
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "I’ve collected the C charge. We now have all three."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:258-305"
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_delivered_a",
+                    "minimum": 1,
+                    "maximum": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_delivered_b",
+                    "minimum": 1,
+                    "maximum": 1
+                  }
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-05-resell-a",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_current",
+                    "minimum": 1,
+                    "maximum": 1,
+                    "set": -1
+                  }
+                ],
+                "take": [],
+                "give": {
+                  "item": "oteryn:item.tibia.i3035",
+                  "count": 9
+                },
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "I can resell that charge. Here are 9 platinum coins for your trouble."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:258-305"
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 8,
+                    "maximum": 8
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_delivered_a",
+                    "minimum": 1,
+                    "maximum": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission05",
+                    "minimum": 1,
+                    "maximum": 3
+                  }
+                ],
+                "per_occurrence_mint": true
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-05-resell-b",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_current",
+                    "minimum": 2,
+                    "maximum": 2,
+                    "set": -1
+                  }
+                ],
+                "take": [],
+                "give": {
+                  "item": "oteryn:item.tibia.i3035",
+                  "count": 9
+                },
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "I can resell that charge. Here are 9 platinum coins for your trouble."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:258-305"
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 8,
+                    "maximum": 8
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_delivered_b",
+                    "minimum": 1,
+                    "maximum": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission05",
+                    "minimum": 1,
+                    "maximum": 3
+                  }
+                ],
+                "per_occurrence_mint": true
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-05-resell-c",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_current",
+                    "minimum": 3,
+                    "maximum": 3,
+                    "set": -1
+                  }
+                ],
+                "take": [],
+                "give": {
+                  "item": "oteryn:item.tibia.i3035",
+                  "count": 9
+                },
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "I can resell that charge. Here are 9 platinum coins for your trouble."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:258-305"
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 8,
+                    "maximum": 8
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_delivered_c",
+                    "minimum": 1,
+                    "maximum": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission05",
+                    "minimum": 1,
+                    "maximum": 3
+                  }
+                ],
+                "per_occurrence_mint": true
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-05-resell-x",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_current",
+                    "minimum": 4,
+                    "maximum": 4,
+                    "set": -1
+                  }
+                ],
+                "take": [],
+                "give": {
+                  "item": "oteryn:item.tibia.i3035",
+                  "count": 15
+                },
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "I can resell that charge. Here are 15 platinum coins for your trouble."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:258-305"
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 8,
+                    "maximum": 8
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission05",
+                    "minimum": 1,
+                    "maximum": 3
+                  }
+                ],
+                "per_occurrence_mint": true
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-05-resell-y",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_current",
+                    "minimum": 5,
+                    "maximum": 5,
+                    "set": -1
+                  }
+                ],
+                "take": [],
+                "give": {
+                  "item": "oteryn:item.tibia.i3035",
+                  "count": 12
+                },
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "I can resell that charge. Here are 12 platinum coins for your trouble."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:258-305"
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 8,
+                    "maximum": 8
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission05",
+                    "minimum": 1,
+                    "maximum": 3
+                  }
+                ],
+                "per_occurrence_mint": true
+              },
+              {
+                "key": "oteryn:quest-reward/shadows-of-yalahar/mission-05-resell-z",
+                "quest": "oteryn:quest.shadows_of_yalahar_quest",
+                "npc": "oteryn:npc.telas",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/charge_current",
+                    "minimum": 6,
+                    "maximum": 6,
+                    "set": -1
+                  }
+                ],
+                "take": [],
+                "give": {
+                  "item": "oteryn:item.tibia.i3035",
+                  "count": 9
+                },
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "I can resell that charge. Here are 9 platinum coins for your trouble."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:258-305"
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/questline",
+                    "minimum": 8,
+                    "maximum": 8
+                  },
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission05",
+                    "minimum": 1,
+                    "maximum": 3
+                  }
+                ],
+                "per_occurrence_mint": true
               }
             ]
           }

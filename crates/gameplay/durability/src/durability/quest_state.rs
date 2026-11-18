@@ -419,7 +419,18 @@ impl QuestStateCopy {
                 env!("CARGO_MANIFEST_DIR"),
                 "/../../../tools/content-schema/world-authoring/samples/quest-door-bindings.json"
             )))
-            .map(|document| document.bindings)
+            .map(|mut document| {
+                // Shadows imports Crystal's quest state under a donor-qualified key.
+                // Keep every placement sharing a source action on that same track.
+                for binding in &mut document.bindings {
+                    if binding.track.starts_with(
+                        "oteryn:quest-progress/quest/u8_5/shadows_of_yalahar/",
+                    ) {
+                        binding.track.insert_str("oteryn:quest-progress/".len(), "crystalserver/");
+                    }
+                }
+                document.bindings
+            })
             .unwrap_or_default()
         });
         bindings

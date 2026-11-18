@@ -21,7 +21,7 @@ The M12 repair containers each yield one requested item. Crystal `data-global/sc
 
 The World NPC placement shard omits surface Telas and all five research NPCs. Crystal `data-global/world/world-npc.xml:117-118,618-619,633-634,3011-3012,3173-3174,3299-3300` and the committed placement candidate catalogue agree on the cells for Milos, Telas, Cerdras, Scutty, Dreadeye and Boveas respectively. The roster also omits Black Bert, Golem Servant, underground Telas and Telas Golem. The dispatch case instantiates the six M01 catalogue identities in its test layout. Admitting the production Telas placement also needs the completion trade guard to avoid making his shop available early.
 
-Crystal `data-global/startup/tables/chest.lua:579-586,3070-3157` supplies the ten imported claim selectors. Checked all ten roots against the committed World regions. Four matching appearances have no unique attribute and six appearances are absent at their selector cells. There are no Shadows rows in either world callback directory. The shared door reader resolves the captured actions to named tracks under `oteryn:quest-progress/quest/u8_5/shadows_of_yalahar/`. This quest's imported state tracks use the `crystalserver/` namespace and have no active writers for those door reads. Claim binding needs to preserve the mission-specific access path before enabling these placements.
+Crystal `data-global/startup/tables/chest.lua:579-586,3070-3157` supplies the ten imported claim selectors. The companion chest package restores the Deep Crystal selector. The shared door reader resolves Shadows actions to the donor-qualified `oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/` tracks. Telas writes `door_10 = 1` at Mission 10 start, which grants access through action 42521 at (32693,31564,13) per `data-global/startup/tables/door_quest.lua:1011-1014`. The same lookup applies to the other mapped Shadows doors.
 
 Crystal `data-global/startup/tables/door_quest.lua:974-1039` identifies 16 door cells. The committed map has the source actions at the M02, M05, M06, M07, both M08, four M10 and M11 cells. The M09 door also has its action. The M10 Fibula cell has no door object. The surface lab and both underground final cells have different appearance IDs and no quest action. The three Telas lever roots match the donor's lever forms, with no action attributes at those cells.
 
@@ -33,13 +33,13 @@ BLOCKER M09 folio ritual random failure with hostile spawn or relocation coupled
 
 BLOCKER M06/M12 chest guardians immediate, no-loot/no-XP tethered respawn data-global/startup/tables/chest.lua:3070,3142
 
-BLOCKER M10 ritual ingredients a persistent per-character draw without replacement data-global/npc/telas.lua:94-105,385-399
+BLOCKER M10 ritual ingredients: a persistent per-character draw without replacement is unavailable in the NPC callback and quest-track operations. Telas sets the Mission 10 start, ready state and door storage. Crystal `data-global/npc/telas.lua:94-105,385-400` also assigns the three random ingredient order tracks.
 
 BLOCKER M12 lift repair a persistent per-request draw with replacement data-global/npc/golem_servant.lua:84-108
 
 OPEN-FACTS — Exact live random distributions for extraction/disassembly, charges and ritual; exact individual Bert prices for the six M10 ingredients (the wiki gives an aggregate); charge Z's exact payout is donor-only; key/action/unique identifiers and precise selector cells are donor/map evidence; exact repair time limit is donor-only. The active guard radii for the summoned War Golems are unstated. The quest header mentions Mintwalin among ingredient areas but the detailed M10 list names six areas and no Mintwalin ingredient.
 
-PARTIAL — Mission 1 entry and turn-in are the first slice. Production placements for Telas and the five researchers, missions 2–13, all ten World claim placements and associated gates, the Animal Fetish placement, Black Bert guild eligibility, and final Telas trade and lab access remain open.
+PARTIAL — Telas now advances the questline through Mission 10 start. Mission 2–4 item acquisition, the Mission 5 charged-tile producer, the Mission 9 ritual, and the Mission 10 ingredient draw remain world/runtime work. Production NPC placements, the Animal Fetish placement, Black Bert guild eligibility, and Missions 10–13 beyond the Mission 10 start remain open.
 
 ## Local checks
 

@@ -48,6 +48,7 @@ OUTPUT = 'content/quests/missions/quest-state.json'
 MARKER = 'content/quests/missions/index.json'
 CHESTS = 'tools/content-schema/quest-authoring/samples/chests/claims.json'
 TOOL = 'tools/content-schema/quest-authoring/quest_state_lowering.py'
+SHADOWS_BINDINGS = 'content/quests/authored-bindings/shadows-of-yalahar.json'
 SCHEMA = 'OTERYN_QUEST_STATE_LOWERING/v1'
 # QUESTSTATE0-RL-02 and -06, as `apps/game-server/src/quest/mod.rs`.
 MAX_EFFECTS = 16
@@ -352,11 +353,31 @@ def append_source_herald_grouped_transitions(quests, records):
     quest['transitions'].sort(key=lambda t: t['key'])
 
 
+def widen_shadows_tracks(root, quests):
+    path = root / SHADOWS_BINDINGS
+    if not path.is_file():
+        return
+    [authored] = read(root, SHADOWS_BINDINGS)['quests']
+    [quest] = [q for q in quests if q['quest'] == authored['quest']]
+    by_key = {track['key']: track for track in authored['tracks']}
+    for track in quest['tracks']:
+        binding = by_key.get(track['key'])
+        if binding is None:
+            continue
+        require(binding['initial'] == track['initial']
+                and binding['minimum'] <= track['min']
+                and binding['maximum'] >= track['max'],
+                f'Shadows authored bounds exclude imported state for {track["key"]}')
+        track['min'] = binding['minimum']
+        track['max'] = binding['maximum']
+
+
 def expected(root):
     shards, records = definitions(root)
     owned = owners(records)
     values = mission_values(records)
     quests = [lower_quest(d, owned, values) for d in records if (d.get('source_data') or {}).get('progress')]
+    widen_shadows_tracks(root, quests)
     import quests_2_emperor_state
     quests_2_emperor_state.append_tracks(quests)
     append_source_herald_grouped_transitions(quests, records)
@@ -370,7 +391,8 @@ def expected(root):
     payload = {
         'schema': SCHEMA, 'classification': 'OTS_HYPOTHESIS_ONLY', 'family': 'Quest',
         'contract': 'docs/architecture/reviews/OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md',
-        'authoring_sources': [{'path': path, 'sha256': digest(root, path)} for path in (DEFINITIONS + 'index.json', *shards, CHESTS, TOOL, 'tools/content-schema/quest-authoring/quests_2_emperor_state.py', 'tools/content-schema/quest-authoring/questpc_chest_completion.py', 'tools/content-schema/quest-authoring/galthen_native_kills.py')],
+        'authoring_sources': [{'path': path, 'sha256': digest(root, path)} for path in (DEFINITIONS + 'index.json', *shards, CHESTS, TOOL, 'tools/content-schema/quest-authoring/quests_2_emperor_state.py', 'tools/content-schema/quest-authoring/questpc_chest_completion.py', 'tools/content-schema/quest-authoring/galthen_native_kills.py',
+            *([SHADOWS_BINDINGS] if (root / SHADOWS_BINDINGS).is_file() else []))],
         'counts': {
             'quests': len(quests), 'tracks': sum(len(q['tracks']) for q in quests), 'transitions': len(transitions),
             'effects': {kind: effects.count(kind) for kind in sorted(set(effects))},
