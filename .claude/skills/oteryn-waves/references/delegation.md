@@ -64,12 +64,15 @@ what any competent engineer would choose the same way. Point at repository
 files (`AGENTS.md`, task card, README of a directory) instead of pasting them.
 State what to do rather than what to avoid; a prohibition belongs only in the
 limits below. Send Codex work to Codex Cloud with model
-`gpt-6.1-sol` at reasoning effort `medium` and start each packet with
-"Reasoning effort: medium."; a Codex lane on the PC that writes code uses the
-same setting. Codex review runs `gpt-6.1-sol` at reasoning effort `high`
-(`oteryn-review`); its verified findings are fixed by a separate `medium`
+`gpt-6.2-sol` at reasoning effort `high` and start each packet with
+"Reasoning effort: high."; a Codex lane on the PC that writes code uses the
+same setting. Codex review runs in Codex Cloud, read-only, with
+`gpt-6.2-astra` at reasoning effort `high`, never `codex exec` on the PC
+(`oteryn-review`); its verified findings are fixed by a separate `high`
 run (`codex-review.sh ... --fix-confirmed`, `oteryn-review` §5). Owner decision 2026-11-11, replacing the 2026-11-05
-`high` for code-writing Codex. Repository subagents use the model and effort
+`high` for code-writing Codex; owner rule 2026-11-17 sets the model
+`gpt-6.2-sol` and moves review to Codex Cloud; owner rule 2026-11-18 sets review
+to `gpt-6.2-astra` and code-writing and fix runs to effort `high`. Repository subagents use the model and effort
 set in their own `.claude/agents/*.md` definition.
 
 Submit a Codex Cloud task with `scripts/codex-cloud.mjs` (2026-11-12: the old

@@ -1,5 +1,5 @@
 {
-  "id": 512,
+  "id": 514,
   "name": "CORPSE_CONTAINER_48_V1",
   "constant": "item_view::CAPABILITY_CORPSE_CONTAINER_48_V1",
   "requires": [

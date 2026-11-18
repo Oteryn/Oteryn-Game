@@ -84,7 +84,7 @@ fn death_tree_retirement_preserves_the_existing_corpse_capacity()
 -> Result<(), Box<dyn std::error::Error>> {
     let corpse_max = crate::foundation::loot_data::CORPSE_CONTAINER_ENTRIES_MAX;
     // Migrations 0242 and 2805 are history at the earlier 30-entry bound; CORPSE48
-    // (owner 2026-11-17) migration 2858 installs the current bound in both places.
+    // (owner 2026-11-17) migration 2900 installs the current bound in both places.
     let corpse_capacity = oteryn_gameplay_durability::GAME_MIGRATOR
         .iter()
         .find(|migration| migration.version == 242)
@@ -109,7 +109,7 @@ fn death_tree_retirement_preserves_the_existing_corpse_capacity()
     );
     let current = oteryn_gameplay_durability::GAME_MIGRATOR
         .iter()
-        .find(|migration| migration.version == 2858)
+        .find(|migration| migration.version == 2900)
         .ok_or("corpse 48 migration")?;
     assert!(current.sql.as_str().contains(&format!(
         "AND (cause_kind<>''CORPSE_DECAY'' OR placement_ordinal<={corpse_max}))"

@@ -19,5 +19,5 @@
   "consumers": [
     "crates/protocol-oteryn/src/item_view.rs MAX_OPEN_CONTAINER_ENTRIES, MAX_OPEN_CONTAINER_BYTES"
   ],
-  "notes": "ITEM-MOVE-WIRE-0 \u00a74.4, amended by SUMMER owner decision 20: the corpse view capacity is equal to GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX. Within FND02-STATE-DELTA-PAYLOAD-BYTES and FND02-SNAPSHOT-CHUNK-BYTES. CORPSE48: a session that selected capability 512 uses ITEMV0-RL-02-CORPSE48 (48 entries) instead; without 512 this 30-entry bound is unchanged and the server never sends more than the first 30 entries of a larger corpse."
+  "notes": "ITEM-MOVE-WIRE-0 \u00a74.4, amended by SUMMER owner decision 20: the corpse view capacity is equal to GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX. Within FND02-STATE-DELTA-PAYLOAD-BYTES and FND02-SNAPSHOT-CHUNK-BYTES. CORPSE48: a session that selected capability 514 uses ITEMV0-RL-02-CORPSE48 (48 entries) instead; without 514 this 30-entry bound is unchanged and the server never sends more than the first 30 entries of a larger corpse."
 }

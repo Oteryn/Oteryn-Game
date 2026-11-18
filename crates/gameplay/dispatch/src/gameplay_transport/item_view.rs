@@ -269,7 +269,7 @@ pub struct ItemHandleTable {
     house_capacity_v2: bool,
     /// Capability 18 is selected: the bound adds `MAPW-RL-04`.
     map_view: bool,
-    /// Capability 512 is selected: the bound adds the 18 extra domain-11 entries.
+    /// Capability 514 is selected: the bound adds the 18 extra domain-11 entries.
     corpse_48: bool,
     slots: Vec<Slot>,
     free: Vec<u32>,
@@ -303,7 +303,7 @@ impl ItemHandleTable {
         self
     }
 
-    /// The table of a session that selected capability 512.
+    /// The table of a session that selected capability 514.
     pub const fn with_corpse_container_48(mut self) -> Self {
         self.corpse_48 = true;
         self
@@ -565,7 +565,7 @@ pub struct SessionItemView {
     /// Capability 12 is selected: domain 9 shows the equipment.
     equip_drop: bool,
     appearances: bool,
-    /// Capability 512 is selected: domain 11 shows up to 48 corpse entries, otherwise 30.
+    /// Capability 514 is selected: domain 11 shows up to 48 corpse entries, otherwise 30.
     corpse_48: bool,
     /// WRITE-1: the last depot box opened by this connection. Observation data only:
     /// a text compositor must recheck locker reach and custody under its retained lane.
@@ -644,14 +644,14 @@ impl SessionItemView {
         self.appearances
     }
 
-    /// Capability 512 is selected: domain 11 shows up to 48 corpse entries.
+    /// Capability 514 is selected: domain 11 shows up to 48 corpse entries.
     pub fn with_corpse_container_48(mut self) -> Self {
         self.corpse_48 = true;
         self.table = self.table.with_corpse_container_48();
         self
     }
 
-    /// The corpse entries this session is shown: a session without capability 512 sees only the
+    /// The corpse entries this session is shown: a session without capability 514 sees only the
     /// first 30, so it can neither receive nor take an entry beyond the legacy bound.
     fn shown_entries(&self, mut entries: Vec<ViewItem>) -> Vec<ViewItem> {
         entries.truncate(

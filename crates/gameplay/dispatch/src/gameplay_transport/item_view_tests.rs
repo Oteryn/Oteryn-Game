@@ -1284,7 +1284,7 @@ fn a_forty_eight_entry_corpse_is_shown_whole_only_with_capability_512() {
     let contents: Vec<u16> = (100..148).collect();
     assert_eq!(contents.len(), MAX_CORPSE_CONTAINER_48_ENTRIES);
 
-    // CORPSE48: a 512 session sees and may take every entry.
+    // CORPSE48: a 514 session sees and may take every entry.
     let mut view =
         SessionItemView::resume(ItemViewContinuity::default()).with_corpse_container_48();
     view.snapshot(inventory(&[]), None).expect("fixture");
@@ -1293,7 +1293,7 @@ fn a_forty_eight_entry_corpse_is_shown_whole_only_with_capability_512() {
         .expect("48 entries");
     assert_eq!(decision, OpenDecision::Open);
     let shown =
-        decode_open_container_for(&delta.expect("delta").payload, false, true).expect("512 view");
+        decode_open_container_for(&delta.expect("delta").payload, false, true).expect("514 view");
     assert_eq!(shown.entries.len(), 48);
     assert_eq!(view.open_corpse_of(&instance(147)), Some(corpse(7)));
     assert_eq!(view.table().limit(), MAX_LIVE_ITEM_HANDLES + 18);

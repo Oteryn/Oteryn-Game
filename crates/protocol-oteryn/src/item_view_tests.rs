@@ -435,7 +435,7 @@ fn registries_bind_the_item_view_ids_and_limits() {
         limit("ITEMV0-RL-02"),
         Some(MAX_OPEN_CONTAINER_ENTRIES as u64)
     );
-    // CORPSE48 (owner 2026-11-17) raised durable corpse capacity to 48; capability 512
+    // CORPSE48 (owner 2026-11-17) raised durable corpse capacity to 48; capability 514
     // shows all of it, while the legacy domain-11 bound ITEMV0-RL-02 stays 30.
     assert_eq!(limit("GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX"), Some(48));
     assert_eq!(
@@ -1070,20 +1070,20 @@ fn appearance_selection_uses_extended_inventory_bounds_only_when_negotiated() {
     );
 }
 
-// CORPSE48: capability 512 CORPSE_CONTAINER_48_V1.
+// CORPSE48: capability 514 CORPSE_CONTAINER_48_V1.
 
 #[test]
 fn corpse_48_views_round_trip_forty_eight_entries_and_refuse_forty_nine() {
     let mut view = container(48, worst);
     view.container_handle = Some(handle(u64::MAX));
-    let bytes = encode_open_container_for(&view, false, true).expect("512 maximum");
+    let bytes = encode_open_container_for(&view, false, true).expect("514 maximum");
     assert_eq!(bytes.len(), MAX_OPEN_CONTAINER_CORPSE_48_BYTES);
     assert_eq!(MAX_OPEN_CONTAINER_CORPSE_48_BYTES, 1_499);
     assert_eq!(
         decode_open_container_for(&bytes, false, true),
         Ok(view.clone())
     );
-    // Without 512 the legacy bounds stay: 31..=48 entries are refused both ways.
+    // Without 514 the legacy bounds stay: 31..=48 entries are refused both ways.
     assert_eq!(
         encode_open_container(&view),
         Err(ItemViewWireError::LimitExceeded)
@@ -1122,7 +1122,7 @@ fn corpse_48_views_round_trip_forty_eight_entries_and_refuse_forty_nine() {
     for item in &mut view.entries {
         item.appearance_id = u16::MAX;
     }
-    let bytes = encode_open_container_for(&view, true, true).expect("499 and 512 maximum");
+    let bytes = encode_open_container_for(&view, true, true).expect("499 and 514 maximum");
     assert_eq!(bytes.len(), MAX_OPEN_CONTAINER_CORPSE_48_APPEARANCE_BYTES);
     assert_eq!(MAX_OPEN_CONTAINER_CORPSE_48_APPEARANCE_BYTES, 1_691);
     assert_eq!(decode_open_container_for(&bytes, true, true), Ok(view));

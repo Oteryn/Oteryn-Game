@@ -44,7 +44,7 @@ pub const CAPABILITY_ITEM_APPEARANCE_V1_REQUIRES: &[u32] = &[CAPABILITY_ITEM_VIE
 /// [`MAX_CORPSE_CONTAINER_48_ENTRIES`] corpse entries; requires item views. Without it every
 /// legacy domain-11 bound stays and the session is never sent more than
 /// [`MAX_OPEN_CONTAINER_ENTRIES`] entries.
-pub const CAPABILITY_CORPSE_CONTAINER_48_V1: u32 = 512;
+pub const CAPABILITY_CORPSE_CONTAINER_48_V1: u32 = 514;
 /// Capability 4 requires `WORLD_SPATIAL_ENTITIES`, which carries corpses in domain 1.
 pub const CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES: &[u32] = &[
     crate::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES, // WORLD_SPATIAL_ENTITIES
@@ -74,9 +74,9 @@ pub const MAX_CHARACTER_INVENTORY_ITEMS: usize = 30;
 /// (`GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX`).
 pub const MAX_OPEN_CONTAINER_ENTRIES: usize = 30;
 /// `ITEMV0-RL-02-CORPSE48`: entries in one domain-11 view of a session that selected
-/// capability 512, the corpse container capacity (`GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX`).
+/// capability 514, the corpse container capacity (`GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX`).
 pub const MAX_CORPSE_CONTAINER_48_ENTRIES: usize = 48;
-/// The live handles capability 512 adds to every `ITEMV0-RL-03*` bound: the extra
+/// The live handles capability 514 adds to every `ITEMV0-RL-03*` bound: the extra
 /// domain-11 entries.
 pub const MAX_CORPSE_CONTAINER_48_EXTRA_HANDLES: usize =
     MAX_CORPSE_CONTAINER_48_ENTRIES - MAX_OPEN_CONTAINER_ENTRIES;
@@ -123,14 +123,14 @@ pub const MAX_CHARACTER_INVENTORY_EQUIP_DROP_APPEARANCE_BYTES: usize =
     MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES + 4 * MAX_CHARACTER_INVENTORY_ITEMS;
 pub const MAX_OPEN_CONTAINER_APPEARANCE_BYTES: usize =
     MAX_OPEN_CONTAINER_BYTES + 4 * MAX_OPEN_CONTAINER_ENTRIES;
-/// Domain 11 under capability 512: the corpse handle 1 + 10 and 48 entry elements.
+/// Domain 11 under capability 514: the corpse handle 1 + 10 and 48 entry elements.
 pub const MAX_OPEN_CONTAINER_CORPSE_48_BYTES: usize =
     11 + MAX_CORPSE_CONTAINER_48_ENTRIES * MAX_ITEM_ENTRY_ELEMENT_BYTES;
-/// Domain 11 under capabilities 512 and 499.
+/// Domain 11 under capabilities 514 and 499.
 pub const MAX_OPEN_CONTAINER_CORPSE_48_APPEARANCE_BYTES: usize =
     MAX_OPEN_CONTAINER_CORPSE_48_BYTES + 4 * MAX_CORPSE_CONTAINER_48_ENTRIES;
 
-/// The domain-11 entry bound of a session: 48 with capability 512, 30 without.
+/// The domain-11 entry bound of a session: 48 with capability 514, 30 without.
 pub const fn max_open_container_entries(corpse_48: bool) -> usize {
     if corpse_48 {
         MAX_CORPSE_CONTAINER_48_ENTRIES
@@ -650,7 +650,7 @@ pub fn encode_open_container_with_appearances(
     encode_open_container_for(view, appearances, false)
 }
 
-/// Domain 11 for the selected capabilities 499 (`appearances`) and 512 (`corpse_48`).
+/// Domain 11 for the selected capabilities 499 (`appearances`) and 514 (`corpse_48`).
 pub fn encode_open_container_for(
     view: &OpenContainer,
     appearances: bool,
@@ -678,7 +678,7 @@ pub fn decode_open_container_with_appearances(
     decode_open_container_for(payload, appearances, false)
 }
 
-/// Domain 11 for the selected capabilities 499 (`appearances`) and 512 (`corpse_48`).
+/// Domain 11 for the selected capabilities 499 (`appearances`) and 514 (`corpse_48`).
 pub fn decode_open_container_for(
     payload: &[u8],
     appearances: bool,
