@@ -190,13 +190,13 @@ async fn exercise(h: &Harness) -> TestResult {
             .map_err(debug)?;
         assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
         owner.admit_quest_session(&admitted).await;
+        deps.initialize_player(&owner, actor, session).await;
         if index == 0 {
             super::desert_party_rite::select_movement(&owner, &mut admitted, false)?;
             initiator = admitted;
         }
         roster.push((actor, *fence.character_id.as_bytes()));
     }
-    deps.initialize(&owner).await;
     for (index, &(_, character)) in roster.iter().take(3).enumerate() {
         seed_crystal(h, character, 180 + u8::try_from(index)?).await?;
     }

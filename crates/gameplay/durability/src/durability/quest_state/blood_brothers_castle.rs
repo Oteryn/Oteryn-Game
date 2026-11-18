@@ -13,7 +13,7 @@ impl DurabilityRoot {
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
-        permit: &super::spell_owner_commit::SpellLanePermit,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
         entered: Position,
         members: [(CurrentCharacterGameplayFence, CommandRef); 4],
         catalogue: Arc<QuestStateCatalogue>,
@@ -53,6 +53,9 @@ impl DurabilityRoot {
             let Some(transition) = catalogue.transition(TRANSITION) else {
                 return Ok(Err(CharacterProgressionError::InvalidInput));
             };
+            let Some(entrance_track) = catalogue.track(rite::ENTRANCE) else {
+                return Err(DurabilityError::InvalidStoredState);
+            };
             let Some(hash) = catalogue.definition_hash(&transition.quest) else {
                 return Err(DurabilityError::InvalidStoredState);
             };
@@ -91,7 +94,7 @@ impl DurabilityRoot {
                 };
                 existing[index] = entrance.is_some();
                 players[index] = Some(rite::Participant {
-                    mission, entrance: entrance.unwrap_or(-1), has_charged_crystal,
+                    mission, entrance: entrance.unwrap_or(entrance_track.initial), has_charged_crystal,
                 });
             }
             let Some(plan) = rite::plan(entered, players) else { return Ok(Ok(false)); };
