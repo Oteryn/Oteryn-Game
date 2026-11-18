@@ -20,10 +20,22 @@ fn seclib2_ghulosh_party_use_transforms_respawns_book_and_exits_postgres() -> Te
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    run_ghulosh(&admin, false)
+}
+
+#[test]
+fn seclib2_ghulosh_party_timeout_ejects_roster_and_retires_phase_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_ghulosh(&admin, true)
+}
+
+fn run_ghulosh(admin: &str, expire: bool) -> TestResult {
     if admin.is_empty() {
         return Err("PostgreSQL test URL is empty".into());
     }
-    super::kill_reward_e2e::scenario_thread::run("seclib2-ghulosh", || {
+    super::kill_reward_e2e::scenario_thread::run("seclib2-ghulosh", move || {
         run(async |admin| {
             reset();
             let h = Harness::create_with_admission_seed(admin, "seclib2_ghulosh", true, false).await?;
@@ -70,7 +82,7 @@ fn seclib2_ghulosh_party_use_transforms_respawns_book_and_exits_postgres() -> Te
                         "/../../../content/world/placements/region-z13-x127-y127.b3"
                     )),
                     region: (13, 127, 127),
-                    bounds: (32664, 32711, 32666, 32712),
+                    bounds: (32660, 32711, 32666, 32713),
                     start: (32664, 32711),
                     expected: vec![ExpectedTile {
                         position: (32664,32711), ids: vec![11421], counted_entry: None,
@@ -210,6 +222,27 @@ fn seclib2_ghulosh_party_use_transforms_respawns_book_and_exits_postgres() -> Te
                 crate::gameplay_transport::encounter_phases::tick(&mut runtime, &spells, 15000);
                 exact(&runtime, BOOK)?;
             }
+            if expire {
+                owner.clock_origin -= std::time::Duration::from_secs(1190);
+                owner.drain_quest_encounter_deadlines().await;
+                {
+                    let runtime = owner.runtime.lock().await;
+                    for actor in [deps.actor, peer] {
+                        assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(), ENTRY);
+                    }
+                    exact(&runtime, BOOK)?;
+                }
+                owner.clock_origin -= std::time::Duration::from_secs(11);
+                owner.drain_quest_encounter_deadlines().await;
+                let runtime = owner.runtime.lock().await;
+                for actor in [deps.actor, peer] {
+                    assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(),
+                        MovementLocalPosition { x: 32660, y: 32713, floor: 13 });
+                }
+                for creature in [BOSS, DEATHGAZE, BOOK, DEATH, "oteryn:creature.bone_jaw"] {
+                    assert!(exact(&runtime, creature).is_err(), "{creature} survived the room deadline");
+                }
+            } else {
             for (actor, session) in [(deps.actor, session), (peer, peer_session)] {
                 {
                     let mut runtime = owner.runtime.lock().await;
@@ -235,6 +268,7 @@ fn seclib2_ghulosh_party_use_transforms_respawns_book_and_exits_postgres() -> Te
                     ).await;
                     assert_eq!(step.disposition, oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved);
                 }
+            }
             }
             drop(owner);
             drop(authority);
