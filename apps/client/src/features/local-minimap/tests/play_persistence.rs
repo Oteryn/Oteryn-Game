@@ -129,6 +129,7 @@ fn dropping_play_closes_and_joins_the_editor_before_reopening_the_cache()
         map.root = Some(root.clone());
         map.bind_world(world);
         map.binding = Some(([1; 32], [2; 32], 1));
+        map.load()?;
     }
     let shared = play.minimap.clone();
     let old_map = shared.clone();
@@ -153,6 +154,7 @@ fn dropping_play_closes_and_joins_the_editor_before_reopening_the_cache()
     assert!(closed, "ending play must release its editor thread");
     finished_before_replacement??;
 
+    drop(shared);
     play = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
     {
         let mut map = lock(&play.minimap);
@@ -163,7 +165,7 @@ fn dropping_play_closes_and_joins_the_editor_before_reopening_the_cache()
         assert_eq!(map.markers[0].label, "Old session final save");
         map.edit_marker(101, 200, -7, "New session".into(), 1)?;
     }
-    drop(shared);
+    drop(play);
     let mut restored = Minimap::default();
     restored.root = Some(root.clone());
     restored.bind_world(world);
@@ -176,7 +178,6 @@ fn dropping_play_closes_and_joins_the_editor_before_reopening_the_cache()
             .iter()
             .any(|marker| marker.label == "New session")
     );
-    drop(play);
     drop(restored);
     std::fs::remove_dir_all(root)?;
     Ok(())
@@ -232,7 +233,7 @@ fn minimap_editor_survives_temporary_play_view_replacement()
 }
 
 #[test]
-fn review_stale_minimap_clients_preserve_each_others_markers()
+fn review_successive_minimap_owners_preserve_each_others_markers()
 -> Result<(), Box<dyn std::error::Error>> {
     let root = std::env::temp_dir().join(format!(
         "minimap-shared-clients-{}-{}",
@@ -268,16 +269,18 @@ fn review_stale_minimap_clients_preserve_each_others_markers()
         play.set_live_map(&snapshot)?;
         Ok(play)
     };
-    let (mut first, second, autosave) = (open()?, open()?, open()?);
+    let mut first = open()?;
     let mut distant = snapshot.clone();
     distant.header.origin.x = 1000;
     distant.tiles[0].position.x = 1000;
     first.set_live_map(&distant)?;
     lock(&first.minimap).save()?;
     assert!(lock(&first.minimap).create_mark_at((100, 200, -7))?);
+    drop(first);
+    let second = open()?;
     assert!(lock(&second.minimap).create_mark_at((101, 200, -7))?);
-    lock(&autosave.minimap).save()?;
-    let reopened = open()?;
+    drop(second);
+    let mut reopened = open()?;
     assert!(lock(&reopened.minimap).cells.contains_key(&(-7, 1000, 200)));
     assert_eq!(
         lock(&reopened.minimap)
@@ -289,14 +292,17 @@ fn review_stale_minimap_clients_preserve_each_others_markers()
     );
     lock(&reopened.minimap).remove_marker(100, 200, -7)?;
     distant.tiles.clear();
-    first.set_live_map(&distant)?;
-    lock(&first.minimap).save()?;
-    lock(&second.minimap).edit_marker(101, 200, -7, "Gate".into(), 2)?;
+    reopened.set_live_map(&distant)?;
+    lock(&reopened.minimap).save()?;
+    lock(&reopened.minimap).edit_marker(101, 200, -7, "Gate".into(), 2)?;
+    drop(reopened);
     let final_view = open()?;
     let map = lock(&final_view.minimap);
     assert!(map.cells.contains_key(&(-7, 1000, 200)));
     assert_eq!(map.markers.len(), 1);
     assert_eq!(map.markers[0].label, "Gate");
+    drop(map);
+    drop(final_view);
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
@@ -401,6 +407,7 @@ fn check_live_map_palette(
         snapshot.tiles[0].items = vec![item(ground)];
         lock(&view.minimap).saved_at -= Duration::from_secs(5);
         view.set_live_map(&snapshot)?;
+        drop(view);
         let mut rejoined = open()?;
         rejoined.set_live_map(&snapshot)?;
         assert_eq!(lock(&rejoined.minimap).cells.get(&key), Some(&86));
@@ -455,33 +462,36 @@ fn review_busy_cache_returns_from_live_map_and_marker_creation()
     let mut view = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
     lock(&view.minimap).root = Some(root.clone());
     view.bind_minimap_world(world);
-    view.set_live_map(&snapshot)?;
-    let path = lock(&view.minimap).path().ok_or("missing cache path")?;
-    let held = Saved::lock_cache(&path)?;
+    let owner = review_view(&root)?;
     let (send, receive) = std::sync::mpsc::channel();
     let worker = std::thread::spawn(
         move || -> Result<_, Box<dyn std::error::Error + Send + Sync>> {
             lock(&view.minimap).saved_at -= Duration::from_secs(5);
             view.set_live_map(&snapshot)?;
-            let dirty = !lock(&view.minimap).cell_changes.is_empty();
+            let visible = lock(&view.minimap).cells.contains_key(&(-7, 100, 200));
             let mark = lock(&view.minimap).create_mark_at((100, 200, -7));
-            send.send((dirty, mark))?;
+            send.send((visible, mark))?;
             Ok((view, snapshot))
         },
     );
     let result = receive.recv_timeout(Duration::from_secs(2));
-    drop(held);
+    drop(owner);
     let worker_result = worker.join().map_err(|_| "live map worker panicked")?;
-    let (dirty, mark) = result?;
-    assert!(dirty);
+    let (visible, mark) = result?;
+    assert!(visible);
     assert_eq!(
         mark.err().map(|error| error.kind()),
         Some(io::ErrorKind::WouldBlock)
     );
     let (mut view, snapshot) = worker_result.map_err(|error| error.to_string())?;
     view.set_live_map(&snapshot)?;
-    assert!(lock(&view.minimap).cell_changes.is_empty());
-    assert!(lock(&view.minimap).create_mark_at((100, 200, -7))?);
+    assert!(!lock(&view.minimap).cells_dirty);
+    let refused = lock(&view.minimap).create_mark_at((100, 200, -7));
+    assert_eq!(refused.err().map(|e| e.kind()), Some(io::ErrorKind::WouldBlock));
+    drop(view);
+    let later = review_view(&root)?;
+    assert!(lock(&later.minimap).create_mark_at((100, 200, -7))?);
+    drop(later);
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
@@ -521,7 +531,7 @@ fn review_view(root: &std::path::Path) -> Result<PlayView, oteryn_renderer::Batc
 }
 
 #[test]
-fn review_busy_teardown_preserves_old_binding() -> Result<(), Box<dyn std::error::Error>> {
+fn review_owner_teardown_preserves_old_binding() -> Result<(), Box<dyn std::error::Error>> {
     for switch_binding in [false, true] {
         let root = std::env::temp_dir().join(format!(
             "minimap-teardown-{}-{switch_binding}",
@@ -530,7 +540,8 @@ fn review_busy_teardown_preserves_old_binding() -> Result<(), Box<dyn std::error
         let mut view = review_view(&root)?;
         view.set_live_map(&review_snapshot(100, true))?;
         let path = lock(&view.minimap).path().ok_or("missing cache path")?;
-        let held = Saved::lock_cache(&path)?;
+        let refused = Saved::lock_cache(&path);
+        assert_eq!(refused.err().map(|e| e.kind()), Some(io::ErrorKind::WouldBlock));
         let (send, receive) = std::sync::mpsc::channel();
         let worker = std::thread::spawn(move || -> Result<(), String> {
             if switch_binding {
@@ -538,12 +549,13 @@ fn review_busy_teardown_preserves_old_binding() -> Result<(), Box<dyn std::error
                 next.header.reset_epoch = 2;
                 view.set_live_map(&next)
                     .map_err(|error| error.to_string())?;
+                let refused = Saved::lock_cache(&path);
+                assert_eq!(refused.err().map(|e| e.kind()), Some(io::ErrorKind::WouldBlock));
             }
             drop(view);
             send.send(()).map_err(|error| error.to_string())
         });
         let closed = receive.recv_timeout(Duration::from_secs(2));
-        drop(held);
         worker.join().map_err(|_| "teardown worker panicked")??;
         closed?;
         let reopened = review_view(&root)?;
@@ -567,17 +579,18 @@ fn review_stale_clear_preserves_newer_restoration() -> Result<(), Box<dyn std::e
     let empty = review_snapshot(100, false);
     first.set_live_map(&empty)?;
     second.set_live_map(&empty)?;
-    second.set_live_map(&review_snapshot(200, true))?;
+    first.set_live_map(&review_snapshot(200, true))?;
     lock(&first.minimap).save()?;
     first.set_live_map(&review_snapshot(100, true))?;
     lock(&first.minimap).save()?;
-    assert!(lock(&second.minimap).create_mark_at((200, 200, -7))?);
+    assert!(lock(&first.minimap).create_mark_at((200, 200, -7))?);
+    drop(first);
     let reopened = review_view(&root)?;
     let map = lock(&reopened.minimap);
     assert_eq!(map.cells.get(&(-7, 100, 200)), Some(&55));
     assert_eq!(map.cells.get(&(-7, 200, 200)), Some(&55));
     drop(map);
-    drop((first, second, reopened));
+    drop((second, reopened));
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
@@ -587,15 +600,16 @@ fn review_empty_window_preserves_older_unseen_cache_cell() -> Result<(), Box<dyn
 {
     let root = std::env::temp_dir().join(format!("minimap-unseen-clear-{}", std::process::id()));
     let mut first = review_view(&root)?;
-    let mut second = review_view(&root)?;
     first.set_live_map(&review_snapshot(100, true))?;
     lock(&first.minimap).save()?;
+    drop(first);
+    let mut second = review_view(&root)?;
     second.set_live_map(&review_snapshot(100, false))?;
     assert!(lock(&second.minimap).create_mark_at((100, 200, -7))?);
     assert_eq!(lock(&second.minimap).cells.get(&(-7, 100, 200)), Some(&55));
     let reopened = review_view(&root)?;
     assert_eq!(lock(&reopened.minimap).cells.get(&(-7, 100, 200)), Some(&55));
-    drop((first, second, reopened));
+    drop((second, reopened));
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
@@ -623,15 +637,19 @@ fn review_concurrent_exploration_limit_allows_marker_writes()
     lock(&second.minimap).saved_at = Instant::now();
     second.set_live_map(&review_snapshot(200, true))?;
     lock(&first.minimap).save()?;
-    assert!(lock(&second.minimap).create_mark_at((200, 200, -7))?);
-    lock(&second.minimap).edit_marker(200, 200, -7, "Gate".into(), 1)?;
+    assert!(lock(&first.minimap).create_mark_at((200, 200, -7))?);
+    lock(&first.minimap).edit_marker(200, 200, -7, "Gate".into(), 1)?;
+    assert!(lock(&second.minimap).cells.contains_key(&(-7, 200, 200)));
+    lock(&second.minimap).save()?;
+    drop(first);
     let reopened = review_view(&root)?;
     let map = lock(&reopened.minimap);
     assert_eq!(map.cells.len(), MAX_CELLS);
     assert!(map.cells.contains_key(&(-7, 100, 200)));
     assert_eq!(map.markers[0].label, "Gate");
+    assert!(!map.cells.contains_key(&(-7, 200, 200)));
     drop(map);
-    drop((first, second, reopened));
+    drop((second, reopened));
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
@@ -646,13 +664,15 @@ fn monotonic_empty_view_cannot_erase_an_identical_confirmation()
     lock(&first.minimap).save()?;
     let mut second = review_view(&root)?;
     second.set_live_map(&review_snapshot(100, false))?;
-    second.set_live_map(&review_snapshot(200, true))?;
+    first.set_live_map(&review_snapshot(100, false))?;
+    first.set_live_map(&review_snapshot(200, true))?;
     first.set_live_map(&ground)?;
     lock(&first.minimap).save()?;
-    assert!(lock(&second.minimap).create_mark_at((200, 200, -7))?);
+    assert!(lock(&first.minimap).create_mark_at((200, 200, -7))?);
+    drop(first);
     let reopened = review_view(&root)?;
     assert_eq!(lock(&reopened.minimap).cells.get(&(-7, 100, 200)), Some(&55));
-    drop((first, second, reopened));
+    drop((second, reopened));
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
@@ -660,7 +680,7 @@ fn monotonic_empty_view_cannot_erase_an_identical_confirmation()
 #[test]
 fn monotonic_discovery_survives_clock_rollback() -> Result<(), Box<dyn std::error::Error>> {
     let root = std::env::temp_dir().join(format!("minimap-clock-{}", std::process::id()));
-    let mut view = review_view(&root)?;
+    let view = review_view(&root)?;
     let cache = lock(&view.minimap).path().ok_or("cache path")?;
     let export = root.join("portable.json");
     std::fs::create_dir_all(&root)?;
@@ -669,10 +689,12 @@ fn monotonic_discovery_survives_clock_rollback() -> Result<(), Box<dyn std::erro
         map.export_to(&export)?;
         map.import_from(&export)?;
     }
+    drop(view);
     // An older client imported this cache before the host clock was corrected.
     let mut saved: serde_json::Value = serde_json::from_slice(&std::fs::read(&cache)?)?;
     saved["imported_at"] = u64::MAX.into();
     std::fs::write(&cache, serde_json::to_vec(&saved)?)?;
+    let mut view = review_view(&root)?;
     view.set_live_map(&review_snapshot(100, true))?;
     assert!(lock(&view.minimap).create_mark_at((100, 200, -7))?);
     let reopened = review_view(&root)?;
@@ -690,7 +712,7 @@ fn monotonic_older_discovery_survives_empty_save() -> Result<(), Box<dyn std::er
     first.set_live_map(&review_snapshot(100, true))?;
     first.set_live_map(&review_snapshot(200, false))?;
     second.set_live_map(&review_snapshot(100, false))?;
-    assert!(lock(&second.minimap).cell_changes.is_empty());
+    assert!(!lock(&second.minimap).cells_dirty);
     lock(&second.minimap).save()?;
     assert!(lock(&first.minimap).create_mark_at((200, 200, -7))?);
     let reopened = review_view(&root)?;
@@ -716,8 +738,7 @@ fn monotonic_resolved_colour_wins_over_later_fallback() -> Result<(), Box<dyn st
     let root = std::env::temp_dir().join(format!("minimap-fallback-{}", std::process::id()));
     for resolved_first in [false, true] {
         let root = root.join(resolved_first.to_string());
-        let mut first = review_view(&root)?;
-        let mut second = review_view(&root)?;
+        let mut owner = review_view(&root)?;
         let mut resolved = review_snapshot(100, true);
         resolved.tiles[0].items.push(MapItem {
             definition: MapDefinition::Item(std::num::NonZeroU32::MIN),
@@ -728,17 +749,20 @@ fn monotonic_resolved_colour_wins_over_later_fallback() -> Result<(), Box<dyn st
         });
         let mut fallback = review_snapshot(100, true);
         fallback.tiles[0].more = true;
-        lock(&first.minimap).saved_at = Instant::now();
-        first.set_live_map(&resolved)?;
-        assert_eq!(lock(&first.minimap).cells.get(&(-7, 100, 200)), Some(&86));
-        second.set_live_map(&fallback)?;
+        lock(&owner.minimap).saved_at = Instant::now();
         if resolved_first {
-            lock(&first.minimap).save()?;
-            lock(&second.minimap).save()?;
+            owner.set_live_map(&resolved)?;
+            lock(&owner.minimap).save()?;
+            owner.set_live_map(&fallback)?;
+            lock(&owner.minimap).save()?;
         } else {
-            lock(&second.minimap).save()?;
-            assert!(lock(&first.minimap).create_mark_at((100, 200, -7))?);
+            owner.set_live_map(&fallback)?;
+            lock(&owner.minimap).save()?;
+            owner.set_live_map(&resolved)?;
+            assert!(lock(&owner.minimap).create_mark_at((100, 200, -7))?);
         }
+        assert_eq!(lock(&owner.minimap).cells.get(&(-7, 100, 200)), Some(&86));
+        drop(owner);
         let reopened = review_view(&root)?;
         assert_eq!(lock(&reopened.minimap).cells.get(&(-7, 100, 200)), Some(&86));
     }
@@ -747,11 +771,10 @@ fn monotonic_resolved_colour_wins_over_later_fallback() -> Result<(), Box<dyn st
 }
 
 #[test]
-fn monotonic_busy_teardown_journals_only_discoveries() -> Result<(), Box<dyn std::error::Error>> {
+fn monotonic_teardown_saves_only_discoveries_without_a_journal() -> Result<(), Box<dyn std::error::Error>> {
     let root = std::env::temp_dir().join(format!("minimap-journal-bounds-{}", std::process::id()));
     let mut view = review_view(&root)?;
     let path = lock(&view.minimap).path().ok_or("cache path")?;
-    let held = Saved::lock_cache(&path)?;
     view.set_live_map(&review_snapshot(100, true))?;
     // Eight visible floors across disjoint windows exceeded 64 MiB of old clears.
     for x in (30_000..57_200).step_by(32) {
@@ -760,13 +783,8 @@ fn monotonic_busy_teardown_journals_only_discoveries() -> Result<(), Box<dyn std
         view.set_live_map(&empty)?;
     }
     drop(view);
-    let names = Saved::staged_names(&path)?;
-    assert_eq!(names.len(), 1);
-    for name in &names {
-        assert!(std::fs::metadata(path.with_extension("pending").join(name))?.len() < MAX_BYTES);
-    }
-    assert_eq!(Saved::staged_changes(&path, names.iter())?.len(), 1);
-    drop(held);
+    assert!(!path.with_extension("pending").exists());
+    assert_eq!(Saved::read_from(&path)?.ok_or("missing cache")?.cells.len(), 1);
     let reopened = review_view(&root)?;
     assert_eq!(lock(&reopened.minimap).cells.get(&(-7, 100, 200)), Some(&55));
     drop(reopened);
@@ -784,21 +802,19 @@ fn monotonic_identical_snapshots_and_marker_noops_skip_cache_reads()
     {
         let mut map = lock(&view.minimap);
         map.edit_marker(100, 200, -7, "Home".into(), 1)?;
-        // Any attempted cache read will fail and any attempted lock will be refused.
+        // Any attempted cache read will fail.
         let path = map.path().ok_or("cache path")?;
-        let held = Saved::lock_cache(&path)?;
         std::fs::write(&path, b"unreadable cache")?;
         map.saved_at -= Duration::from_secs(5);
         drop(map);
         view.set_live_map(&ground)?;
         view.set_live_map(&ground)?;
         let mut map = lock(&view.minimap);
-        assert!(map.cell_changes.is_empty());
+        assert!(!map.cells_dirty);
         assert!(map.feedback.is_empty());
         assert!(!map.create_mark_at((100, 200, -7))?);
         map.edit_marker(100, 200, -7, "Home".into(), 1)?;
         map.remove_marker(101, 200, -7)?;
-        drop(held);
     }
     drop(view);
     std::fs::remove_dir_all(root)?;
@@ -806,7 +822,7 @@ fn monotonic_identical_snapshots_and_marker_noops_skip_cache_reads()
 }
 
 #[test]
-fn monotonic_legacy_journal_keeps_discoveries_and_ignores_clears()
+fn monotonic_legacy_journal_cannot_override_the_cache()
 -> Result<(), Box<dyn std::error::Error>> {
     let root = std::env::temp_dir().join(format!("minimap-legacy-journal-{}", std::process::id()));
     let mut view = review_view(&root)?;
@@ -814,6 +830,9 @@ fn monotonic_legacy_journal_keeps_discoveries_and_ignores_clears()
     lock(&view.minimap).save()?;
     let path = lock(&view.minimap).path().ok_or("cache path")?;
     drop(view);
+    let mut saved: serde_json::Value = serde_json::from_slice(&std::fs::read(&path)?)?;
+    saved["applied_journals"] = serde_json::json!(["already-applied.json"]);
+    std::fs::write(&path, serde_json::to_vec(&saved)?)?;
     let pending = path.with_extension("pending");
     std::fs::create_dir_all(&pending)?;
     std::fs::write(
@@ -823,10 +842,177 @@ fn monotonic_legacy_journal_keeps_discoveries_and_ignores_clears()
     let reopened = review_view(&root)?;
     let map = lock(&reopened.minimap);
     assert_eq!(map.cells.get(&(-7, 100, 200)), Some(&55));
-    assert_eq!(map.cells.get(&(-7, 200, 200)), Some(&86));
-    assert!(Saved::staged_names(&path)?.is_empty());
+    assert!(!map.cells.contains_key(&(-7, 200, 200)));
+    assert!(pending.join("legacy.json").exists());
     drop(map);
     drop(reopened);
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+
+#[test]
+fn exclusive_snapshot_refuses_marker_edits_and_transfers() -> Result<(), Box<dyn std::error::Error>>
+{
+    use crate::play::SettingsState;
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+
+    let root =
+        std::env::temp_dir().join(format!("minimap-exclusive-snapshot-{}", std::process::id()));
+    let owner = review_view(&root)?;
+    lock(&owner.minimap).edit_marker(100, 200, -7, "Home".into(), 1)?;
+    let mut reader = review_view(&root)?;
+    let portable = root.join("portable.json");
+    lock(&owner.minimap).export_to(&portable)?;
+    lock(&owner.minimap).edit_marker(100, 200, -7, "Gate".into(), 2)?;
+
+    #[cfg(bevy_shell)]
+    let submitted = reader.edit_minimap_marker((100, 200, -7), "Home".into(), 1);
+    #[cfg(not(bevy_shell))]
+    let submitted = lock(&reader.minimap).edit_marker(100, 200, -7, "Home".into(), 1);
+    assert_eq!(
+        submitted.err().map(|e| e.kind()),
+        Some(io::ErrorKind::WouldBlock)
+    );
+    assert!(reader.minimap_input(&[NormalizedInputEvent::Key {
+        code: KeyCode::new(16)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::NONE.with(Modifier::Alt).with(Modifier::Shift),
+        repeat: false,
+    }]));
+    {
+        let mut map = lock(&reader.minimap);
+        assert!(map.pending_edit.is_none());
+        assert!(map.feedback.contains("another client"));
+        assert_eq!(map.markers[0].label, "Home");
+        let remove = map.remove_marker(100, 200, -7);
+        assert_eq!(
+            remove.err().map(|e| e.kind()),
+            Some(io::ErrorKind::WouldBlock)
+        );
+    }
+    let mut settings = SettingsState::new(None);
+    settings.request_minimap_transfer(true, portable);
+    let error = settings
+        .apply_minimap_transfer(&mut reader)
+        .err()
+        .ok_or("import succeeded")?;
+    assert!(error.to_string().contains("another client"));
+    let output = root.join("reader.json");
+    settings.request_minimap_transfer(false, output.clone());
+    assert!(settings.apply_minimap_transfer(&mut reader).is_err());
+    assert!(!output.exists());
+
+    let active = lock(&owner.minimap).path().ok_or("cache path")?;
+    let before = std::fs::read(&active)?;
+    lock(&reader.minimap).saved_at -= Duration::from_secs(5);
+    reader.set_live_map(&review_snapshot(201, true))?;
+    assert_eq!(lock(&reader.minimap).cells.get(&(-7, 201, 200)), Some(&55));
+    assert_eq!(std::fs::read(&active)?, before);
+
+    drop(owner);
+    reader.set_live_map(&review_snapshot(200, true))?;
+    assert_eq!(lock(&reader.minimap).cells.get(&(-7, 200, 200)), Some(&55));
+    lock(&reader.minimap).save()?;
+    drop(reader);
+    let later = review_view(&root)?;
+    {
+        let mut map = lock(&later.minimap);
+        assert_eq!(map.markers[0].label, "Gate");
+        assert!(!map.cells.contains_key(&(-7, 200, 200)));
+        assert!(!map.cells.contains_key(&(-7, 201, 200)));
+        map.edit_marker(100, 200, -7, "Later".into(), 0)?;
+    }
+    drop(later);
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+
+#[test]
+fn exclusive_import_is_not_overwritten_by_pre_import_recovery()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::SettingsState;
+
+    let root =
+        std::env::temp_dir().join(format!("minimap-exclusive-import-{}", std::process::id()));
+    let mut owner = review_view(&root)?;
+    let path = lock(&owner.minimap).path().ok_or("cache path")?;
+    std::fs::create_dir_all(&root)?;
+    let portable = root.join("portable.json");
+    {
+        let mut map = lock(&owner.minimap);
+        map.set_cell_colour((-7, 100, 200), 24);
+        map.export_to(&portable)?;
+    }
+    let pending = path.with_extension("pending");
+    std::fs::create_dir_all(&pending)?;
+    std::fs::write(pending.join("old.json"), br#"[[[-7,100,200],{"Set":86}]]"#)?;
+    let mut settings = SettingsState::new(None);
+    settings.request_minimap_transfer(true, portable);
+    assert!(settings.apply_minimap_transfer(&mut owner)?);
+    drop(owner);
+    let reopened = review_view(&root)?;
+    assert_eq!(
+        lock(&reopened.minimap).cells.get(&(-7, 100, 200)),
+        Some(&24)
+    );
+    drop(reopened);
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+
+#[test]
+fn exclusive_load_uses_only_the_cache_even_with_pending_recovery()
+-> Result<(), Box<dyn std::error::Error>> {
+    let root =
+        std::env::temp_dir().join(format!("minimap-exclusive-recovery-{}", std::process::id()));
+    let mut owner = review_view(&root)?;
+    owner.set_live_map(&review_snapshot(100, true))?;
+    lock(&owner.minimap).save()?;
+    let path = lock(&owner.minimap).path().ok_or("cache path")?;
+    let pending = path.with_extension("pending");
+    std::fs::create_dir_all(&pending)?;
+    std::fs::write(pending.join("old.json"), br#"[[[-7,200,200],{"Set":86}]]"#)?;
+    // The old client allows this probe to own the lock temporarily. With session
+    // ownership, the owner already holds it and the probe returns WouldBlock.
+    let probe = Saved::lock_cache(&path);
+    let mut reader = review_view(&root)?;
+    assert!(!lock(&reader.minimap).cells.contains_key(&(-7, 200, 200)));
+    drop((owner, probe));
+    lock(&reader.minimap).saved_at -= Duration::from_secs(5);
+    reader.set_live_map(&review_snapshot(100, true))?;
+    assert!(!lock(&reader.minimap).cells.contains_key(&(-7, 200, 200)));
+    let output = root.join("deferred.json");
+    assert_eq!(
+        lock(&reader.minimap)
+            .export_to(&output)
+            .err()
+            .map(|e| e.kind()),
+        Some(io::ErrorKind::WouldBlock)
+    );
+    assert!(!output.exists());
+    let later = review_view(&root)?;
+    assert!(!lock(&later.minimap).cells.contains_key(&(-7, 200, 200)));
+    drop((reader, later));
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+
+#[test]
+fn exclusive_busy_teardown_creates_no_journal() -> Result<(), Box<dyn std::error::Error>> {
+    let root =
+        std::env::temp_dir().join(format!("minimap-exclusive-teardown-{}", std::process::id()));
+    let owner = review_view(&root)?;
+    let path = lock(&owner.minimap).path().ok_or("cache path")?;
+    let probe = Saved::lock_cache(&path);
+    let mut reader = review_view(&root)?;
+    reader.set_live_map(&review_snapshot(200, true))?;
+    drop(reader);
+    assert!(!path.with_extension("pending").exists());
+    assert_eq!(
+        probe.err().map(|e| e.kind()),
+        Some(io::ErrorKind::WouldBlock)
+    );
+    drop(owner);
     std::fs::remove_dir_all(root)?;
     Ok(())
 }

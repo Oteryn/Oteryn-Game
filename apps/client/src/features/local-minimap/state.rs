@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 #[path = "transfer.rs"]
 mod transfer;
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, btree_map::Entry},
     io,
-    path::PathBuf,
+    path::{Path, PathBuf},
     time::{Duration, Instant},
 };
 pub type SharedMinimap = std::sync::Arc<std::sync::Mutex<Minimap>>;
@@ -73,26 +73,12 @@ impl Drop for EditorOwner {
 }
 type CellPosition = (i16, i32, i32);
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-enum CellChange {
-    Discover,
-    Set(u8),
+#[derive(Debug)]
+enum CacheAccess {
+    Owner { _lock: std::fs::File },
+    ReadOnly,
 }
 
-impl CellChange {
-    fn merge(self, changes: &mut CellChanges, key: CellPosition) {
-        match self {
-            Self::Discover => {
-                changes.entry(key).or_insert(self);
-            }
-            Self::Set(_) => {
-                changes.insert(key, self);
-            }
-        }
-    }
-}
-
-type CellChanges = BTreeMap<CellPosition, CellChange>;
 type Binding = ([u8; 32], [u8; 32], u64);
 const MAX_CELLS: usize = 1_048_576;
 const MAX_MARKERS: usize = 512;
@@ -121,10 +107,8 @@ struct Saved {
     legacy_observed_at: Vec<u64>,
     #[serde(default, rename = "imported_at", skip_serializing)]
     _legacy_imported_at: u64,
-    // Keep receipts in the same atomic write as the cells, so a restart
-    // between replacing the cache and removing a journal cannot replay it.
-    #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
-    applied_journals: BTreeSet<String>,
+    #[serde(default, rename = "applied_journals", skip_serializing)]
+    _legacy_journal_receipts: Option<serde::de::IgnoredAny>,
     markers: Vec<Marker>,
 }
 
@@ -150,7 +134,9 @@ pub struct Minimap {
     root: Option<PathBuf>,
     world: Option<String>,
     binding: Option<Binding>,
-    cell_changes: CellChanges,
+    // Hold each cache lock for the session, including across binding changes.
+    cache_access: BTreeMap<PathBuf, CacheAccess>,
+    cells_dirty: bool,
     load_failed: bool,
     saved_at: Instant,
 }
@@ -176,7 +162,8 @@ impl Default for Minimap {
                 .or_else(|| crate::play::PreferenceStore::configuration_path("minimap")),
             world: None,
             binding: None,
-            cell_changes: BTreeMap::new(),
+            cache_access: BTreeMap::new(),
+            cells_dirty: false,
             load_failed: false,
             saved_at: Instant::now(),
         }
@@ -222,7 +209,7 @@ impl Minimap {
         if !(1..=36).contains(&world.len())
             || !world.bytes().all(|c| c.is_ascii_hexdigit() || c == b'-')
         {
-            if let Err(error) = self.flush_binding() {
+            if let Err(error) = self.save() {
                 self.feedback =
                     format!("Could not save minimap before refusing world binding: {error}");
             } else {
@@ -233,12 +220,12 @@ impl Minimap {
             self.binding = None;
             self.cells.clear();
             self.markers.clear();
-            self.cell_changes.clear();
+            self.cells_dirty = false;
             self.tracking = true;
             self.zoom = 1;
             self.quest_marks = Default::default();
         } else if self.world.as_deref() != Some(world) {
-            if let Err(error) = self.flush_binding() {
+            if let Err(error) = self.save() {
                 self.feedback = error.to_string();
             }
             self.quest_markers.clear();
@@ -249,7 +236,7 @@ impl Minimap {
             self.binding = None;
             self.cells.clear();
             self.markers.clear();
-            self.cell_changes.clear();
+            self.cells_dirty = false;
         }
     }
     pub fn replace_quest_marks(
@@ -288,12 +275,12 @@ impl Minimap {
         );
         if self.binding != Some(binding) {
             self.pending_edit = None;
-            if let Err(error) = self.flush_binding() {
+            if let Err(error) = self.save() {
                 self.feedback = error.to_string();
             }
             self.cells.clear();
             self.markers.clear();
-            self.cell_changes.clear();
+            self.cells_dirty = false;
             self.binding = Some(binding);
             self.load_failed = false;
             if let Err(error) = self.load() {
@@ -319,29 +306,25 @@ impl Minimap {
                     tr!("Local exploration limit reached; existing exploration is retained").into();
                 continue;
             }
-            if let std::collections::btree_map::Entry::Vacant(entry) = self.cells.entry(key) {
-                entry.insert(55);
-                self.cell_changes.insert(key, CellChange::Discover);
-            }
-            if let Some(&colour) = colours.get(&key)
-                && let Some(&current) = self.cells.get(&key)
-                && (current != colour
-                    || matches!(self.cell_changes.get(&key), Some(CellChange::Discover)))
-            {
+            if let Some(&colour) = colours.get(&key) {
                 self.set_cell_colour(key, colour);
+            } else if let Entry::Vacant(entry) = self.cells.entry(key) {
+                entry.insert(55);
+                self.cells_dirty = true;
             }
         }
-        if !self.cell_changes.is_empty()
+        if self.cells_dirty
             && self.saved_at.elapsed() >= Duration::from_secs(5)
             && let Err(error) = self.save()
         {
             self.feedback = lfmt!("Could not save minimap: {error}", error = error);
         }
     }
+
     fn set_cell_colour(&mut self, key: CellPosition, colour: u8) {
-        self.cells.insert(key, colour);
-        self.cell_changes
-            .insert(key, CellChange::Set(colour));
+        if self.cells.insert(key, colour) != Some(colour) {
+            self.cells_dirty = true;
+        }
     }
 
     pub fn follow(&mut self, x: i32, y: i32, floor: i16) {
@@ -446,6 +429,12 @@ impl Minimap {
         replacement: Option<Marker>,
         create_only: bool,
     ) -> io::Result<bool> {
+        let path = self.path();
+        if let Some(path) = &path {
+            self.require_cache_owner(path)?;
+        } else if self.world.is_some() {
+            return Err(io::Error::other("Minimap storage is unavailable"));
+        }
         if self
             .quest_markers
             .iter()
@@ -454,148 +443,102 @@ impl Minimap {
             return Err(io::Error::other("Quest markers are supplied by the server"));
         }
         let at_position = |marker: &Marker| (marker.x, marker.y, marker.floor) == position;
-        let current = self.markers.iter().find(|marker| at_position(marker));
-        if self.cell_changes.is_empty()
-            && ((create_only && current.is_some()) || current == replacement.as_ref())
-        {
+        let index = self.markers.iter().position(at_position);
+        let current = index.map(|index| &self.markers[index]);
+        if (create_only && current.is_some()) || current == replacement.as_ref() {
+            self.save()?;
             return Ok(false);
         }
-        self.update_cache(false, |markers| {
-            let index = markers.iter().position(at_position);
-            match (index, replacement) {
-                (Some(_), _) if create_only => return Ok(false),
-                (Some(index), Some(marker)) => markers[index] = marker,
-                (Some(_), None) => {
-                    markers.retain(|m| (m.x, m.y, m.floor) != position);
+        let mut markers = self.markers.clone();
+        match (index, replacement) {
+            (Some(index), Some(marker)) => markers[index] = marker,
+            (Some(_), None) => markers.retain(|marker| !at_position(marker)),
+            (None, Some(marker)) => {
+                if markers.len() >= MAX_MARKERS {
+                    return Err(io::Error::other(tr!(
+                        "The minimap supports up to 512 markers"
+                    )));
                 }
-                (None, Some(marker)) => {
-                    if markers.len() >= MAX_MARKERS {
-                        return Err(io::Error::other(tr!(
-                            "The minimap supports up to 512 markers"
-                        )));
-                    }
-                    markers.push(marker);
-                }
-                (None, None) => {}
+                markers.push(marker);
             }
-            Ok(true)
-        })
+            (None, None) => return Ok(false),
+        }
+        if let Some(path) = path {
+            self.write_cache(&path, markers)?;
+        } else {
+            self.markers = markers;
+        }
+        Ok(true)
     }
 
     pub fn save(&mut self) -> io::Result<()> {
-        if !self.cell_changes.is_empty() {
-            self.update_cache(false, |_| Ok(true))?;
+        if !self.cells_dirty {
+            return Ok(());
         }
+        match self.path() {
+            Some(path) if matches!(self.cache_access.get(&path), Some(CacheAccess::ReadOnly)) => {}
+            Some(path) => {
+                self.require_cache_owner(&path)?;
+                return self.write_cache(&path, self.markers.clone());
+            }
+            None if self.world.is_some() => {
+                return Err(io::Error::other("Minimap storage is unavailable"));
+            }
+            None => {}
+        }
+        self.cells_dirty = false;
         Ok(())
     }
 
-    fn flush_binding(&mut self) -> io::Result<()> {
-        match self.save() {
-            Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
-                let path = self.path().ok_or(error)?;
-                Saved::stage_changes(&path, &self.cell_changes)
-            }
-            result => result,
+    fn require_cache_owner(&self, path: &Path) -> io::Result<()> {
+        match self.cache_access.get(path) {
+            Some(CacheAccess::Owner { .. }) => Ok(()),
+            Some(CacheAccess::ReadOnly) => Err(transfer::cache_busy()),
+            None => Err(io::Error::other("Minimap storage is unavailable")),
         }
     }
 
-    fn update_cache(
-        &mut self,
-        recover: bool,
-        change: impl FnOnce(&mut Vec<Marker>) -> io::Result<bool>,
-    ) -> io::Result<bool> {
-        let Some(path) = self.path() else {
-            if self.world.is_some() {
-                return Err(io::Error::other("Minimap storage is unavailable"));
-            }
-            return change(&mut self.markers);
-        };
+    fn snapshot(&self, markers: Vec<Marker>) -> Saved {
+        Saved {
+            cells: self
+                .cells
+                .iter()
+                .map(|(&(f, x, y), &colour)| [i32::from(f), x, y, i32::from(colour)])
+                .collect(),
+            markers,
+            ..Saved::default()
+        }
+    }
+
+    fn write_cache(&mut self, path: &Path, markers: Vec<Marker>) -> io::Result<()> {
         if self.load_failed {
             return Err(io::Error::other(tr!("Invalid minimap file")));
         }
-        let _lock = Saved::lock_cache(&path)?;
-        // Merge local observations into the latest cache while holding its lock.
-        let Saved {
-            cells,
-            applied_journals,
-            markers,
-            ..
-        } = Saved::read_from(&path)?.unwrap_or_default();
-        let mut next_markers = markers.clone();
-        let changed = change(&mut next_markers)?;
-        let marker_changed = next_markers != markers;
-        if !recover && !marker_changed && self.cell_changes.is_empty() {
-            self.markers = next_markers;
-            return Ok(changed);
-        }
-        let journals = Saved::staged_names(&path)?;
-        let mut unapplied = journals.difference(&applied_journals);
-        let mut changes = Saved::staged_changes(&path, unapplied.clone())?;
-        for (&key, &change) in &self.cell_changes {
-            change.merge(&mut changes, key);
-        }
-        let mut cells = saved_cells(cells);
-        let mut dirty = marker_changed || unapplied.next().is_some();
-        let mut limit_reached = false;
-        for (key, change) in changes {
-            let current = cells.get(&key).copied();
-            if current.is_none() && cells.len() >= MAX_CELLS {
-                limit_reached = true;
-                continue;
-            }
-            let colour = match change {
-                CellChange::Set(colour) => colour,
-                CellChange::Discover => current.unwrap_or(55),
-            };
-            if current != Some(colour) {
-                cells.insert(key, colour);
-                dirty = true;
-            }
-        }
-        if dirty {
-            let mut saved = Saved {
-                cells: Vec::with_capacity(cells.len()),
-                applied_journals: journals.clone(),
-                markers: next_markers,
-                ..Saved::default()
-            };
-            for (&(f, x, y), &colour) in &cells {
-                saved.cells.push([i32::from(f), x, y, i32::from(colour)]);
-            }
-            saved.validate()?;
-            saved.write_to(&path)?;
-            next_markers = saved.markers;
-        }
-        for journal in journals {
-            let _ = std::fs::remove_file(path.with_extension("pending").join(journal));
-        }
-        if limit_reached {
-            self.feedback =
-                tr!("Local exploration limit reached; existing exploration is retained").into();
-        }
-        self.cells = cells;
-        self.markers = next_markers;
-        self.cell_changes.clear();
+        let saved = self.snapshot(markers);
+        saved.validate()?;
+        saved.write_to(path)?;
+        self.markers = saved.markers;
+        self.cells_dirty = false;
         self.saved_at = Instant::now();
-        Ok(changed)
+        Ok(())
     }
 
     fn load(&mut self) -> io::Result<()> {
         let Some(path) = self.path() else {
             return Ok(());
         };
-        if !Saved::staged_names(&path)?.is_empty() {
-            match self.update_cache(true, |_| Ok(true)) {
-                Ok(_) => return Ok(()),
-                Err(error) if error.kind() == io::ErrorKind::WouldBlock => {}
+        if let Entry::Vacant(entry) = self.cache_access.entry(path.clone()) {
+            let access = match Saved::lock_cache(&path) {
+                Ok(lock) => CacheAccess::Owner { _lock: lock },
+                Err(error) if error.kind() == io::ErrorKind::WouldBlock => CacheAccess::ReadOnly,
                 Err(error) => return Err(error),
-            }
+            };
+            entry.insert(access);
         }
-        let Some(saved) = Saved::read_from(&path)? else {
-            return Ok(());
-        };
-        self.cells = saved_cells(saved.cells);
-        self.markers = saved.markers;
+        if let Some(saved) = Saved::read_from(&path)? {
+            self.cells = saved_cells(saved.cells);
+            self.markers = saved.markers;
+        }
         Ok(())
     }
 }
@@ -614,7 +557,7 @@ impl Default for Saved {
             cells: Vec::new(),
             legacy_observed_at: Vec::new(),
             _legacy_imported_at: 0,
-            applied_journals: BTreeSet::new(),
+            _legacy_journal_receipts: None,
             markers: Vec::new(),
         }
     }
@@ -634,7 +577,7 @@ impl Saved {
 }
 impl Drop for Minimap {
     fn drop(&mut self) {
-        let _ = self.flush_binding();
+        let _ = self.save();
     }
 }
 #[cfg(test)]
@@ -676,6 +619,7 @@ mod quest_mark_tests {
         map.root = Some(directory.clone());
         map.bind_world("11111111-1111-4111-8111-111111111111");
         map.binding = Some(([1; 32], [2; 32], 1));
+        map.load()?;
         assert!(map.replace_quest_marks(treasure()));
         assert!(
             map.replace_quest_markers(&[oteryn_session::quest_log::QuestMapMark {

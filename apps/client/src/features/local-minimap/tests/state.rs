@@ -272,6 +272,7 @@ fn review_minimap_live_window_preserves_cached_palette() -> Result<(), Box<dyn s
     map.observe(&snapshot);
     map.set_cell_colour((-7, 0, 0), 86);
     map.edit_marker(0, 0, -7, "Home".into(), 1)?;
+    drop(map);
 
     let mut reopened = Minimap::default();
     reopened.root = Some(root.clone());
