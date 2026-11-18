@@ -66,6 +66,56 @@ pub(super) async fn initialize_authored_reward_text(
     Ok(())
 }
 
+impl DurabilityRoot {
+    /// Observe an authored body only while the exact instance is in current carried custody.
+    pub async fn read_carried_authored_text(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        command: CommandRef,
+        instance: [u8; 16],
+    ) -> std::result::Result<Option<(TypedDefinitionRef, String)>, DurabilityError> {
+        let record = recovery.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        let crate::foundation::RuntimeScopeRefV1::Channel { world_id, channel_id } = fence.runtime_scope else {
+            return Ok(None);
+        };
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &record).await?;
+            lock_admission_relations(&mut tx).await?;
+            if !character_item_fence_is_current(
+                &mut tx, &node, &fence, command, fence.character_id, *world_id.as_bytes(),
+                *channel_id.as_bytes(),
+            ).await? {
+                return Ok(None);
+            }
+            let row = sqlx::query(
+                "SELECT i.definition_family, i.definition_production_key, i.definition_revision_ref, t.text
+                   FROM game_item_instances i JOIN game_item_texts t USING(item_instance_id)
+                  WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid
+                    AND i.lifecycle=1 AND t.writer_character_id IS NULL AND t.text_revision=1
+                    AND EXISTS (SELECT 1 FROM game_quest_callback_carried(
+                        encode($3,'hex')::uuid,i.world_id,i.item_instance_id))",
+            )
+            .bind(instance.as_slice())
+            .bind(world_id.as_bytes().as_slice())
+            .bind(fence.character_id.as_bytes().as_slice())
+            .fetch_optional(&mut *tx).await?;
+            let result = row.map(|row| -> std::result::Result<_, sqlx::Error> {
+                Ok((TypedDefinitionRef {
+                    family: row.try_get("definition_family")?,
+                    production_key: row.try_get("definition_production_key")?,
+                    revision_ref: row.try_get("definition_revision_ref")?,
+                }, row.try_get("text")?))
+            }).transpose()?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(result)
+        })).await
+    }
+}
+
 /// Result data only: no current World, session, reach or retirement authority.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(

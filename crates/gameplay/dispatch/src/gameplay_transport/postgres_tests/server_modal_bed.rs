@@ -21,7 +21,7 @@ use oteryn_protocol_oteryn::{
 };
 use tokio::io::{AsyncReadExt, DuplexStream};
 
-async fn command(
+pub(super) async fn command(
     client: &mut DuplexStream,
     admitted: AdmittedSession,
     next: &mut u64,

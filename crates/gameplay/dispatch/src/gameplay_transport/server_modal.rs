@@ -4,6 +4,8 @@ use oteryn_protocol_oteryn::server_modal::input::{
     CAPABILITY_SERVER_MODAL_INPUT_V1, decode_answer_selected,
 };
 use oteryn_protocol_oteryn::server_modal::{CAPABILITY_SERVER_MODAL_V1, Dialog};
+#[path = "server_modal/carried_text.rs"]
+mod carried_text;
 #[path = "server_modal/owner.rs"]
 mod owner;
 #[path = "server_modal/rules.rs"]
@@ -149,6 +151,14 @@ macro_rules! authority_methods {
         ) -> impl std::future::Future<Output = Option<$crate::gameplay_transport::connection::UseOutcome>> {
             async { None }
         }
+        fn server_modal_offer_carried_text(
+            &self,
+            _admitted: $crate::gameplay_transport::AdmittedSession,
+            _command_id: u64,
+            _instance: [u8; 16],
+        ) -> impl std::future::Future<Output = Option<$crate::gameplay_transport::connection::UseOutcome>> {
+            async { None }
+        }
     };
 }
 pub(super) use authority_methods;
@@ -176,6 +186,14 @@ macro_rules! composed_methods {
             resolved: Option<$crate::gameplay_transport::item_view::ItemKey>,
         ) -> Option<connection::UseOutcome> {
             self.offer_bed_modal(admitted, target, resolved).await
+        }
+        async fn server_modal_offer_carried_text(
+            &self,
+            admitted: connection::AdmittedSession,
+            command_id: u64,
+            instance: [u8; 16],
+        ) -> Option<connection::UseOutcome> {
+            self.offer_carried_text_modal(admitted, command_id, instance).await
         }
     };
 }

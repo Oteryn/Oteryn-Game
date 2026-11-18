@@ -27,6 +27,7 @@ enum Case {
     Full,
     Weight,
     DemonBoots,
+    DreamersBook,
     DemonHelmet,
     DemonShield,
     Catalogue,
@@ -125,6 +126,10 @@ fn definition(key: &str) -> TypedDefinitionRef {
     }
 }
 
+pub(super) fn read_dreamers_book() -> TestResult {
+    scenario(Case::DreamersBook)
+}
+
 fn scenario(case: Case) -> TestResult {
     scenario_case(case, None, None, None)
 }
@@ -205,6 +210,14 @@ fn scenario_case(
             (32802, 31576, -7),
             6093,
             "oteryn:item.tibia.i2969",
+            vec![],
+        ),
+        // Crystal data-global/startup/tables/chest.lua:2124-2129.
+        Case::DreamersBook => (
+            "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chest_book",
+            (32850, 32285, -14),
+            6196,
+            "oteryn:item.tibia.i2821",
             vec![],
         ),
         Case::FullCharge => (
@@ -955,6 +968,9 @@ fn scenario_case(
                         states, 0,
                         "the existing timed owner interprets absent state as full definition values"
                     );
+                }
+                if matches!(case, Case::DreamersBook) && cold_replay {
+                    super::dreamers_carried_text::read(&owner, admitted, fence).await?;
                 }
                 if matches!(case, Case::RootText) {
                     let text: (String,i64,i64,bool,bool,bool) = sqlx::query_as("SELECT \

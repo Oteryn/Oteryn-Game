@@ -135,6 +135,24 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             return Some(Dispatch::Use(outcome));
         }
     }
+    if let Ok(UseIntent {
+        target: UseTarget::Item(handle),
+        use_with: None,
+        use_with_map_item: None,
+        use_with_position: None,
+    }) = &decoded
+        && admitted.continuity.selected_capabilities.contains(CAPABILITY_ITEM_USE_V1)
+        && admitted.continuity.selected_capabilities.contains(
+            oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
+        )
+        && let Some(ItemKey::Instance(instance)) =
+            item_view.as_ref().and_then(|view| view.resolve(*handle))
+        && let Some(outcome) = authority
+            .server_modal_offer_carried_text(*admitted, command.command_id, instance)
+            .await
+    {
+        return Some(Dispatch::Use(outcome));
+    }
     // A map handle reaches only its explicit world owner. It never widens the
     // carried-item or container admissions below; stale handles keep their refusal.
     if let Ok(UseIntent {
