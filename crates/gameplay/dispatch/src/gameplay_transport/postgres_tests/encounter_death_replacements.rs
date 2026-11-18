@@ -32,6 +32,13 @@ const ESSENCE_WAVE: [Position; 6] = [
     at(33613, 31018),
 ];
 const ESSENCE_OUTSIDE: [Position; 2] = [at(33632, 31028), at(33632, 31030)];
+
+// Three legal Crystal spectator waves exercise a sweep beyond the old 16-actor cutoff.
+fn late_essence_waves() -> impl Iterator<Item = [Position; 6]> {
+    [31017, 31018, 31019]
+        .into_iter()
+        .map(|y| [33609, 33610, 33611, 33612, 33613, 33614].map(|x| at(x, y)))
+}
 const DRAGON: &str = "oteryn:creature.the_first_dragon";
 const CHALLENGER: &str = "oteryn:creature.fallen_challenger";
 const SPIRIT: &str = "oteryn:creature.spirit_of_fertility";
@@ -413,8 +420,8 @@ pub(super) fn world(
     let extra = match name {
         BOWL => vec![BOWL_APPROACH],
         ENERGY => vec![LLOYD_REBIRTH, LLOYD_RETURN],
-        ESSENCE => ESSENCE_WAVE
-            .into_iter()
+        ESSENCE => late_essence_waves()
+            .flatten()
             .chain(ESSENCE_OUTSIDE)
             .chain([at(33617, 31023)])
             .collect(),
@@ -834,32 +841,37 @@ pub(super) async fn exercise(
         let cohort = live(owner, DRAGON_ESSENCE).await?;
         let (defeated, outside) = if name == ESSENCE {
             assert!(cohort.is_empty());
-            let [inside, .., outside_death, outside_survivor]: [ExactActorRef; 8] = {
+            let (inside, [outside_death, outside_survivor]) = {
                 let mut runtime = owner.runtime.lock().await;
                 let health = runtime
                     .companion_policy(DRAGON_ESSENCE)
                     .map_err(debug)?
                     .maximum_health;
-                let wave: Vec<_> = ESSENCE_WAVE
-                    .into_iter()
-                    .chain(ESSENCE_OUTSIDE)
-                    .map(|position| {
-                        (
-                            DRAGON_ESSENCE,
-                            health,
-                            super::quest_world_callbacks::local(position),
-                        )
-                    })
-                    .collect();
-                runtime
-                    .commit_quest_creature_replacement(&[], &wave, || true)
+                let spawn = |position| {
+                    (
+                        DRAGON_ESSENCE,
+                        health,
+                        super::quest_world_callbacks::local(position),
+                    )
+                };
+                let mut inside = Vec::new();
+                for wave in late_essence_waves() {
+                    inside.extend(
+                        runtime
+                            .commit_quest_creature_replacement(&[], &wave.map(spawn), || true)
+                            .map_err(debug)?,
+                    );
+                }
+                let [outside_death, outside_survivor] = runtime
+                    .commit_quest_creature_replacement(&[], &ESSENCE_OUTSIDE.map(spawn), || true)
                     .map_err(debug)?
                     .try_into()
-                    .map_err(|_| "six Essences in the late wave and two outside the room")?
+                    .map_err(|_| "two out-of-room Essences")?;
+                (inside[0], [outside_death, outside_survivor])
             };
             super::engenc2_cults::kill(owner, admitted, outside_death, DRAGON_ESSENCE, 100).await?;
             assert!(live(owner, DRAGON).await?.is_empty());
-            assert_eq!(live(owner, DRAGON_ESSENCE).await?.len(), 7);
+            assert_eq!(live(owner, DRAGON_ESSENCE).await?.len(), 19);
             (inside, Some(outside_survivor))
         } else {
             assert_eq!(cohort.len(), 6);

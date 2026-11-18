@@ -1570,6 +1570,8 @@ fn scenario_case(
                 5
             } else if monk {
                 4
+            } else if name == super::super::encounter_death_replacements::ESSENCE {
+                24 // Space for three spectator waves, the opening roster and the boundary probes.
             } else if callback.effects.encounter.is_some() {
                 16
             } else {

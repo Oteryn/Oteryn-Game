@@ -7,6 +7,11 @@ pub use encounter_defenders::EncounterDefenders;
 
 pub type EncounterHealProjection = (Vec<(ExactActorRef, String, u64, u64)>, Vec<usize>);
 
+// Crystal 201189f8, the_first_dragon/actions_lever.lua:7-23 and
+// creaturescripts_death_somewhat_beatable.lua:4-17. Each staged spectator can
+// trigger six Essences. Retire the resulting room in one owner transaction.
+const MAX_QUEST_PHASE_RETIREMENTS: usize = 15 * 6;
+
 /// Runtime-owned encounter state. The carrier calls these at the existing damage,
 /// heal and corpse-publication boundaries, while holding the same owner borrow.
 pub trait EncounterHooks: std::fmt::Debug + Send + Sync + std::any::Any {
@@ -387,7 +392,7 @@ impl ChannelRuntimeV1 {
         monsters: &[(&str, i64, MovementLocalPosition)],
         project: impl FnOnce() -> bool,
     ) -> Result<Vec<ExactActorRef>, CarrierError> {
-        if monsters.is_empty() || monsters.len() > 8 || retire.len() > 16 {
+        if monsters.is_empty() || monsters.len() > 8 || retire.len() > MAX_QUEST_PHASE_RETIREMENTS {
             return Err(CarrierError::PlanConflict);
         }
         let mut actors = Vec::new();
