@@ -89,12 +89,13 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             return None;
         }
         let own = runtime.read_actor_position(actor).ok()?.position();
-        if let Some(area) = &callback.self_target {
+        if callback.targets_self() {
             let visible = runtime.visible_entities();
             let player = visible.players.iter().find(|p| p.actor == actor)?;
             if player.actor.placement_identity() != target.identity
                 || player.generation != target.generation
-                || !area.contains(own.x, own.y, own.floor)
+                || callback.self_target.as_ref().is_some_and(|area|
+                    !area.contains(own.x, own.y, own.floor))
                 || key.is_some()
             {
                 return None;
@@ -102,7 +103,7 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             return Some(Self {
                 _runtime: std::marker::PhantomData,
                 fence, command, callback: callback.key.clone(), key: None,
-                self_target: Some(area.clone()), target: Target::Live { entity: target, actor },
+                self_target: callback.self_target.clone(), target: Target::Live { entity: target, actor },
                 intent: intent.clone(), corpse: None,
             });
         }

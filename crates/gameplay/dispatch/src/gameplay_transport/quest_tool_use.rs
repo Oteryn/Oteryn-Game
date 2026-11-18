@@ -156,7 +156,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 } else {
                     (c.peer_requires.is_some()
                         || c.creature_target.is_some()
-                        || c.self_target.is_some())
+                        || c.targets_self())
                         == intent.use_with.is_some()
                 }) && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
@@ -230,7 +230,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // physical action owners. Keep the live target current through COMMIT.
         let mut revision = self.revision_sequencer.acquire(fence.character_id).await;
         let mut creature_runtime =
-            if callback.creature_target.is_some() || callback.self_target.is_some() {
+            if callback.creature_target.is_some() || callback.targets_self() {
                 Some(CreatureTurn {
                     runtime: self.runtime.lock().await,
                     uncertain: AtomicBool::new(false),
@@ -238,7 +238,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
-        let creature = if callback.creature_target.is_some() || callback.self_target.is_some() {
+        let creature = if callback.creature_target.is_some() || callback.targets_self() {
             let runtime = &*creature_runtime.as_ref().ok_or(())?.runtime;
             let proof = if let Some(corpse) = corpse {
                 crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof::read_current_corpse(
@@ -269,7 +269,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|_| callback.capture_creature)
             .and_then(|proof| proof.target_actor());
         let capture_key = callback.creature_target.clone();
-        if callback.capture_creature
+        let costume = if let Some(spec) = callback.temporary_outfit {
+            if !native.policies().policies().iter().any(|policy|
+                policy.outfit_appearance() == Some(u32::from(spec.look_type)))
+            {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            }
+            let runtime = &*creature_runtime.as_ref().ok_or(())?.runtime;
+            let states = self.states.spell_states.lock().await;
+            let Some(current) = states.get(runtime, actor, command.game_session_id) else {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            };
+            let disguise = crate::spell::actor_conditions::stage_item_costume(
+                current, u32::from(spec.look_type), spec.duration_ms, self.owner_now().get()/1_000,
+            ).map_err(|_| ())?;
+            Some(disguise)
+        } else {
+            None
+        };
+        let costume_cues = callback.temporary_outfit.map(|_| (callback.reply.clone(), callback.magic_effects.clone()));
+        if (callback.capture_creature || costume.is_some())
             && let Some(turn) = &creature_runtime
         {
             turn.uncertain.store(true, Ordering::Relaxed);
@@ -299,6 +318,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?;
         if let Some(turn) = &mut creature_runtime {
+            if matches!(result, QuestTransitionOutcome::Committed(_))
+                && let Some(costume) = costume
+            {
+                let mut states = self.states.spell_states.lock().await;
+                if !states.commit(&turn.runtime, actor, command.game_session_id, costume) {
+                    return Err(());
+                }
+                states.owner_wake.notify_one();
+                if let Some((reply, cues)) = costume_cues {
+                    for line in reply {
+                        self.states.chat.push_quest_feedback(command.game_session_id,&line);
+                    }
+                    if let Some(position) = turn.runtime.read_actor_position(actor).ok()
+                        .and_then(|at| super::quest_callbacks::native(at.position()))
+                        && let Some(map) = self.bundle_map()
+                    {
+                        for effect in cues.into_iter().filter_map(|cue| cue.effect_id()) {
+                            map.facts.emit_movement_effect(position, effect);
+                        }
+                    }
+                }
+            }
             if matches!(result, QuestTransitionOutcome::Committed(_))
                 && let Some(target) = capture_target
             {

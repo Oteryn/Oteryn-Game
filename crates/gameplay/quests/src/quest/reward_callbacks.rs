@@ -177,6 +177,14 @@ pub struct SelfTarget {
     pub maximum: super::world_callbacks::Position,
 }
 
+/// A repeatable selected-item exchange whose only live effect is on the user.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct TemporaryOutfit {
+    pub look_type: u16,
+    pub duration_ms: u32,
+}
+
 impl SelfTarget {
     pub fn contains(&self, x: i32, y: i32, floor: i16) -> bool {
         floor == -i16::from(self.minimum.floor)
@@ -260,6 +268,8 @@ pub struct RewardCallback {
     /// Exact current self entity, inside the source-authored native area.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub self_target: Option<SelfTarget>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub temporary_outfit: Option<TemporaryOutfit>,
     /// Read-only source corpse sampling retains its native decay and contents.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub corpse_target: Option<CorpseTarget>,
@@ -374,6 +384,10 @@ impl OutfitReward {
     }
 }
 impl RewardCallback {
+    pub fn targets_self(&self) -> bool {
+        self.self_target.is_some() || self.temporary_outfit.is_some()
+    }
+
     fn valid_carried_inputs(&self) -> bool {
         let selected = |key: &str| {
             self.take
@@ -393,7 +407,8 @@ impl RewardCallback {
             (Some(source), None) => {
                 matches!(self.take.as_slice(), [input]
                 if input.item == *source && input.count == 1 && input.fluid_subtype.is_none())
-                    && (self.give.is_none() || self.creature_target.is_some())
+                    && (self.give.is_none() || self.creature_target.is_some()
+                        || self.temporary_outfit.is_some())
             }
             (None, None) => true,
         }
@@ -827,6 +842,23 @@ fn validate_document_with_capacity(
                     || c.creature_target.is_some()
                     || c.storage.iter().all(|s| s.preserve)
             })
+            || c.temporary_outfit.is_some_and(|outfit| {
+                outfit.look_type == 0 || !(1..=3_600_000).contains(&outfit.duration_ms)
+                    || !c.repeatable
+                    || c.carried_exchange
+                    || c.carried_item.is_none()
+                    || c.carried_target.is_some()
+                    || c.self_target.is_some()
+                    || c.peer_requires.is_some()
+                    || c.creature_target.is_some()
+                    || c.corpse_target.is_some()
+                    || c.inventory.is_empty() && c.requires.is_empty() && c.storage.is_empty()
+                    || c.give.as_ref().is_none_or(|give| {
+                        Some(&give.item) == c.carried_item.as_ref()
+                            || give.count != 1 || !give.contents.is_empty()
+                            || !give.backpack_outputs.is_empty() || !give.additional.is_empty()
+                    })
+            })
             || c.corpse_target
                 .as_ref()
                 .is_some_and(|target| !target.valid(c))
@@ -1101,7 +1133,7 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
         && !(callback.repeatable && callback.is_paid_exchange() && !callback.storage.is_empty())
         && callback.carried_target.is_none()
         && !temporal_payment::guarded(callback)
-        && callback.self_target.is_none()
+        && !callback.targets_self()
         && !callback
             .key
             .starts_with("oteryn:quest-reward/worldchg-m31/")

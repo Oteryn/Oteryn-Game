@@ -143,7 +143,7 @@ pub(crate) async fn apply(
         return Ok(false);
     }
     match (
-        callback.creature_target.is_some() || callback.self_target.is_some(),
+        callback.creature_target.is_some() || callback.targets_self(),
         admission.creature_use,
         admission.carried_use,
     ) {
