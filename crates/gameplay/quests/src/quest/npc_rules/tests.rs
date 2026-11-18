@@ -1577,7 +1577,7 @@ fn elemental_spheres_exchange_can_read_eleven_item_identities() -> Result<(), Np
             "kind":"item", "item":format!("oteryn:item.tibia.i{id}"), "op":"lt", "count":1
         })
     }));
-    let catalog = fixture_catalog(&fixture_document(vec![rule]))?;
+    let catalog = fixture_catalog(&fixture_document(vec![rule.clone()]))?;
     let mut expected = guards
         .into_iter()
         .chain([954])
@@ -1588,6 +1588,15 @@ fn elemental_spheres_exchange_can_read_eleven_item_identities() -> Result<(), Np
         catalog.item_exchange_keys("oteryn:npc.test"),
         Some(expected)
     );
+
+    rule["guards"]
+        .as_array_mut()
+        .ok_or_else(|| NpcRuleError::Invalid("elemental spheres exchange guards".into()))?
+        .push(serde_json::json!({
+            "kind":"item", "item":"oteryn:item.tibia.i676", "op":"lt", "count":1
+        }));
+    let catalog = fixture_catalog(&fixture_document(vec![rule]))?;
+    assert_eq!(catalog.item_exchange_keys("oteryn:npc.test"), None);
     Ok(())
 }
 
