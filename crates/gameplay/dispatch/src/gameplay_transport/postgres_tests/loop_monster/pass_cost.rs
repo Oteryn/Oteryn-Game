@@ -493,6 +493,14 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                             tokio::time::timeout(bound, owner.logout_session(admitted)).await;
                         (reply, started.elapsed())
                     };
+                    let mut foreground = std::pin::pin!(foreground);
+                    assert!(
+                        std::future::poll_fn(|cx| std::task::Poll::Ready(
+                            std::future::Future::poll(foreground.as_mut(), cx).is_pending()
+                        ))
+                        .await,
+                        "logout must wait while the profile pass holds the root"
+                    );
                     let (logout, profile) = tokio::join!(biased; foreground, background);
                     let (logout, elapsed) = logout;
                     let (profile, batch_elapsed) = profile;
