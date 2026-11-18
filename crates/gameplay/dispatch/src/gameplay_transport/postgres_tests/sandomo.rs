@@ -148,8 +148,13 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         let quest = "oteryn:quest.roshamuul_quest";
         let character = fence.character_id.as_bytes();
-        let revision = fence.expected_character_revision.get().to_string();
         let mut tx = h.pool.begin().await?;
+        let revision: String = sqlx::query_scalar(
+            "SELECT character_revision::text FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(character.as_slice())
+        .fetch_one(&mut *tx)
+        .await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx)
             .await?;
