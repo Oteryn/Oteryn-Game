@@ -310,6 +310,114 @@
   ],
   "callbacks": [
     {
+      "key": "oteryn:quest-reward/ape-city-catacombs-accept",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 17,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 16,
+          "maximum": 16,
+          "set": 17
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4835",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Hairycles sure you will make it. Just use hammer on all that looks like snake or lizard. Tell Hairycles if you succeed with mission."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=5846&oldid=1023981",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:174-181:sha256:b2307616dfa9b6bdff899c60daf02a09980299c80b211d73c948d8681732df73",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:442-450:sha256:b2307616dfa9b6bdff899c60daf02a09980299c80b211d73c948d8681732df73"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/ape-city-cough-syrup",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.padreia",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [],
+      "take": [],
+      "fee": {
+        "gold": 50,
+        "include_bank": true
+      },
+      "repeatable": true,
+      "give": {
+        "item": "oteryn:item.tibia.i4828",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. Here it is."
+      ],
+      "failure_reply": [
+        "You don't have enough money."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=5846&oldid=1023981",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/padreia.lua:61-92:sha256:1b521a3ff677c3c4db585886f43d233f999a945dcd0b6a11fb0fd1c3ce19f63a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/ape-city-shaman",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 18,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/shaman_outfit",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 18,
+          "maximum": 18
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.shaman",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Friend of the ape people! Take my gift and become me apprentice! Here is shaman clothing for you!"
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=5846&oldid=1023981",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:212-222:sha256:b2307616dfa9b6bdff899c60daf02a09980299c80b211d73c948d8681732df73",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:451-461:sha256:b2307616dfa9b6bdff899c60daf02a09980299c80b211d73c948d8681732df73"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/deepling-helmet",
       "quest": "oteryn:quest.outfit_and_addon_quests",
       "npc": "oteryn:npc.navigator",

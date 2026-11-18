@@ -30,6 +30,7 @@ DECISION = 'owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-
 REWARD_GREETING_OWNERS = {
     'oteryn:npc.zalamon': 'content/dialogues/quests/chosen-reward-greetings.json',
     'oteryn:npc.henricus': 'content/dialogues/quests/qnpcfx-m10-greetings.json',
+    'oteryn:npc.padreia': 'content/dialogues/quests/l6-story-greetings.json',
     'oteryn:npc.rafzan': 'content/dialogues/quests/m13-goblin-greetings.json',
 }
 
@@ -1066,6 +1067,7 @@ def build():
             forbids_addons=[{'outfit':'oteryn:outfit.rift_warrior','addons':bit}])
         if bit==2:callbacks[-1]['requires_addons']=[{'outfit':'oteryn:outfit.rift_warrior','addons':1}]
     source_offer('cledwyn',['addon'],0,3,[])
+    load_module('ape_city_rewards', 'tools/content-schema/quest-authoring/ape_city_rewards.py').append(callbacks, offers)
     questl2_ready.append(add, storage, callbacks, offers, inputs, PIN)
     ready_callbacks = [c for c in callbacks if c['key'].split('/')[-1].startswith(
         ('l2-white-raven-', 'l2-efreet-', 'l2-marid-'))]
