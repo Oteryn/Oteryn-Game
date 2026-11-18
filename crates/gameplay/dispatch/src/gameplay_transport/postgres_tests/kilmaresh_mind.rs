@@ -26,8 +26,8 @@ fn kilmaresh_mind_use_requires_equipped_ring_and_burns_one_potion_postgres() -> 
 fn exercise() -> TestResult {
     run(async |admin| {
         let start = MovementLocalPosition {
-            x: 33865,
-            y: 31533,
+            x: 33863,
+            y: 31527,
             floor: 7,
         };
         let scene = super::srx3_soul_war_world_fixture::source_world(start)?;
@@ -138,13 +138,15 @@ fn field_scenario() -> TestResult {
             y: 31533,
             floor: 7,
         };
-        let mut scene = super::srx3_soul_war_world_fixture::source_world(start)?;
-        let world = scene.pin.world_id();
+        let world = super::fixture::fence(1)?.runtime_scope.world_id();
+        let (controller, baseline) =
+            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+        let active = controller.active().ok_or("field native content")?;
         let map = field_world(world)?;
-        let room = scene
-            .room
+        let native_room = baseline.qualified_room();
+        let room = native_room
             .bundle_view(
-                map.movement_cells(scene.room.movement_cells())
+                map.movement_cells(native_room.movement_cells())
                     .map_err(debug)?,
                 map.frame_binding_digest(world),
                 map.map_revision_digest(),
@@ -155,17 +157,20 @@ fn field_scenario() -> TestResult {
                 },
             )
             .ok_or("energy field fixture room")?;
-        scene.room = room;
-        scene.pin = crate::foundation::ChannelContentPin::from_activation(
+        let pin = crate::foundation::ChannelContentPin::from_activation(
             world,
-            scene.pin.activation_sequence(),
-            scene.pin.server_artifact_digest(),
-            scene.pin.client_artifact_digest(),
-            scene.room.frame_binding().digest(),
-            scene.room.map_revision_digest(),
+            active.activation_sequence(),
+            active.identity().server_artifact_digest(),
+            active.identity().client_artifact_digest(),
+            room.frame_binding().digest(),
+            room.map_revision_digest(),
             (start.x, start.y, start.floor),
         );
-        let deps = scene.dependencies()?;
+        let deps = super::Dependencies::with_content(
+            pin.clone(),
+            room.clone(),
+            crate::spell::cast::v1_spell_book().map_err(debug)?,
+        )?;
         let h = Harness::create_with_admission_seed(admin, "kilmaresh_field", false, false).await?;
         super::house_transfer::prepare_owned_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
@@ -175,9 +180,9 @@ fn field_scenario() -> TestResult {
             .await
             .map_err(debug)?;
         let mut owner = deps.owner(&h, &authority);
-        owner.active_generation = scene.controller.active();
-        owner.rooms = SeamRooms::new(None, Some(&scene.room));
-        super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+        owner.active_generation = Some(active);
+        owner.rooms = SeamRooms::new(None, Some(&room));
+        super::boss_activity::issue_content_and_reset(&h, &pin).await?;
         let mut admitted = deps.admitted;
         super::srx3_activity_source_fixture::prepare_player(&h, &owner, &mut admitted, 250).await?;
         super::item_look::seed_main_backpack(
