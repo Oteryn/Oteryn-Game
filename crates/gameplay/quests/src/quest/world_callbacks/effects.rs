@@ -95,6 +95,9 @@ pub struct CallbackEffects {
     pub passages_reset_after_ms: Option<u32>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
+    /// Magic at the admitted object's tile, independent of its authored coordinates.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_magic: Option<u16>,
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teleport_effect: Option<u16>,
@@ -393,6 +396,11 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects.source_magic.is_some_and(|id| {
+        id == 0 || callback.trigger != Trigger::Use || callback.actor_kind != ActorKind::Player
+    }) {
+        return false;
+    }
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
     if inputs.len() > 8

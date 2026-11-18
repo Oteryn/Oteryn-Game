@@ -1601,6 +1601,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, snapshot.position()),
             );
         }
+        // Crystal 201189f8 actions_mission5_ray_of_light.lua:2-7.
+        if fresh_effects && let Some(effect) = callback.effects.source_magic {
+            map.facts.emit_movement_effect(pos, effect);
+        }
         if let Some(magic) = &callback.effects.magic {
             map.facts
                 .emit_movement_effect(tile(magic.position), magic.effect);

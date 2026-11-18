@@ -25,6 +25,7 @@ fn scenario_case(
 ) -> TestResult {
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
+    let source_tile_magic = name == super::super::quest_source_tile_magic::NAME;
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
     let ring_offering =
@@ -463,6 +464,10 @@ fn scenario_case(
             name.strip_suffix("-expiry").unwrap_or(name)
         })?
     };
+    if source_tile_magic {
+        callback.effects = super::super::quest_source_tile_magic::effects()?;
+        callback.success_message = None;
+    }
     if failure_landing {
         callback.selector.position = Some(trigger);
         callback.failure_teleport = Some(Position {
@@ -1756,6 +1761,7 @@ fn scenario_case(
             || failure_landing
             || name.ends_with("-expiry")
             || name == "triangle-tower-lever"
+            || source_tile_magic
         {
             assert!(
                 owner
@@ -3248,6 +3254,13 @@ fn scenario_case(
                 origin,
             ))
             .await?;
+        } else if source_tile_magic {
+            Box::pin(super::super::quest_source_tile_magic::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                trigger,
+            )).await?;
         } else if name == "unnatural-selection-dance-native" {
             Box::pin(super::super::m40_native_dance::exercise(
                 &mut owner,
