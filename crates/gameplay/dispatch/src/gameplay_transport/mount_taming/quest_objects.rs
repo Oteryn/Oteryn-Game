@@ -1,15 +1,27 @@
 //! Selected carried-tool callbacks routed through the existing World receipt owner.
 use oteryn_gameplay_quests::quest::{
     native_rules::NativeRule,
+    targuna_ram,
     world_callbacks::{ActorKind, Callback, Trigger},
 };
+
+// Crystal 201189f register_actions.lua:1035-1059.
+const SCYTHES: [&str; 2] = ["oteryn:item.tibia.i3453", "oteryn:item.tibia.i9596"];
 
 pub(crate) fn accepts(callback: &Callback) -> bool {
     callback.trigger == Trigger::Use
         && callback.actor_kind == ActorKind::Player
         && callback.item_on_target.as_ref().is_some_and(|tool| {
-            (tool.selected_instance && callback.requires_world_admission)
+            callback.key == targuna_ram::KEY
                 || matches!(callback.native_rule, Some(NativeRule::IceSealPaint { .. }))
+                || (callback.requires_world_admission
+                    && tool.selected_instance
+                    && tool.reusable
+                    && SCYTHES.contains(&tool.item.as_str())
+                    && tool
+                        .alternatives
+                        .iter()
+                        .all(|item| SCYTHES.contains(&item.as_str())))
         })
 }
 
@@ -34,7 +46,7 @@ pub(crate) fn matches_source(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use oteryn_gameplay_quests::quest::{targuna_ram, world_callbacks};
+    use oteryn_gameplay_quests::quest::world_callbacks;
 
     #[test]
     fn registered_ice_paint_callbacks_reach_the_carried_tool_owner() -> Result<(), String> {
