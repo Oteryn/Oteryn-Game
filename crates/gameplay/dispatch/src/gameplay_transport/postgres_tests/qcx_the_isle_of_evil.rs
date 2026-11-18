@@ -2,7 +2,8 @@
 use super::classic_quests::{install, progress, talk};
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
-use crate::foundation::{ChannelContentPin, ChannelRuntimeV1};
+use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
+use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, CommandId, CommandRef};
 use crate::gameplay_transport::connection::FirstEntryOutcome;
 use oteryn_gameplay_quests::quest::{isle_of_evil as quest, world_callbacks::Position};
 
@@ -56,7 +57,7 @@ fn rapanaio_accepts_a_mechanical_fish_without_fishing_credit() -> TestResult {
 }
 
 #[test]
-fn scutty_lends_the_worm_punisher_and_opens_the_door() -> TestResult {
+fn scutty_lends_the_worm_punisher_and_sets_the_door_flag() -> TestResult {
     run_case(
         "qcx86-hammer",
         Case::Exchange(Exchange {
@@ -246,6 +247,8 @@ fn scenario(case: Case) -> TestResult {
             )
             .await
             .map_err(debug)?;
+        owner.admit_progression_session(&mut admitted).await;
+        deps.initialize(&owner).await;
         let questline = format!("{}questline", quest::PREFIX);
         let mission07 = format!("{}mission07", quest::PREFIX);
         let initial: &[(&str, i64, i64)] = match case {
@@ -253,19 +256,40 @@ fn scenario(case: Case) -> TestResult {
             Case::Exchange(exchange) => exchange.changes,
             Case::KingReward => &[("questline", 15, 16), ("mission07", 3, 4)],
         };
-        for (suffix, value, _) in initial {
-            let track = format!("{}{suffix}", quest::PREFIX);
-            sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
-                .bind(id(41).as_slice()).bind(track).bind(quest::QUEST).bind(value)
-                .execute(&h.pool).await?;
-        }
         if !initial.is_empty() {
+            let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+            let outcome = slot
+                .commit_quest_transition(
+                    owner.root,
+                    owner.character,
+                    owner.holder,
+                    fence,
+                    QuestTransitionRequest {
+                        transition_key: quest::transition_key("accept-fight"),
+                        cause: QuestCause::Command(CommandRef::new(
+                            admitted.game_session_id,
+                            CommandId::new(2999).map_err(debug)?,
+                        )),
+                    },
+                    owner.quest_catalogue.clone().ok_or("quest catalogue")?,
+                )
+                .await
+                .map_err(debug)?;
+            assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
+            drop(slot);
+
             // Recorded from origin/main's embedded catalogue at qcx86's base SHA.
             // These characters started the quest before the NPC reward callbacks.
             let old_hash = "573e29f8cffaaffbe4014ccef1b899159e09bfaa39fd2b6486f865c8072dff0d";
-            sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision) SELECT character_id,$2,'content-1',decode($3,'hex'),character_revision,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+            sqlx::query("UPDATE game_character_quest_states SET definition_hash=decode($3,'hex') WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2")
                 .bind(id(41).as_slice()).bind(quest::QUEST).bind(old_hash)
                 .execute(&h.pool).await?;
+            for (suffix, value, _) in initial {
+                let track = format!("{}{suffix}", quest::PREFIX);
+                sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid ON CONFLICT (character_id,track_key) DO UPDATE SET value=EXCLUDED.value")
+                    .bind(id(41).as_slice()).bind(track).bind(quest::QUEST).bind(value)
+                    .execute(&h.pool).await?;
+            }
         }
         let input = match case {
             Case::Introduction => None,
@@ -284,8 +308,6 @@ fn scenario(case: Case) -> TestResult {
             assert_eq!(inserted.rows_affected(), 1);
             tx.commit().await?;
         }
-        owner.admit_progression_session(&mut admitted).await;
-        deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
 
         let (npc_key, greeting) = match case {
