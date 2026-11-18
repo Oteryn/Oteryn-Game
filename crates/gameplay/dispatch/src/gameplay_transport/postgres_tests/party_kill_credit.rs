@@ -30,6 +30,7 @@ enum Case {
     WindowStateless,
     WindowVisual,
     WindowReset,
+    WindowResetAmbiguous,
     WindowResetDeparted,
     Area,
     PartyArea,
@@ -159,6 +160,14 @@ fn mortal_shell_crystals_reset_at_two_minutes_with_a_remaining_damager() -> Test
 }
 
 #[test]
+fn mortal_shell_crystal_reset_waits_for_an_unambiguous_map_batch() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::WindowResetAmbiguous)
+}
+
+#[test]
 fn mortal_shell_crystals_stay_active_if_all_direct_damagers_depart() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -183,6 +192,7 @@ impl Case {
                 | Self::WindowStateless
                 | Self::WindowVisual
                 | Self::WindowReset
+                | Self::WindowResetAmbiguous
                 | Self::WindowResetDeparted
         )
     }
@@ -192,11 +202,12 @@ impl Case {
             Self::WindowStateless
                 | Self::WindowVisual
                 | Self::WindowReset
+                | Self::WindowResetAmbiguous
                 | Self::WindowResetDeparted
         )
     }
     fn has_reset(self) -> bool {
-        matches!(self, Self::WindowReset | Self::WindowResetDeparted)
+        matches!(self, Self::WindowReset | Self::WindowResetAmbiguous | Self::WindowResetDeparted)
     }
 }
 
@@ -298,7 +309,7 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
         Case::WindowStateless | Case::WindowVisual => {
             "Crystal201189f ferumbras_ascension/creaturescripts_bosses_kill.lua:126-134"
         }
-        Case::WindowReset | Case::WindowResetDeparted => {
+        Case::WindowReset | Case::WindowResetAmbiguous | Case::WindowResetDeparted => {
             "Crystal201189f ferumbras_ascension/creaturescripts_bosses_kill.lua:58-86,136-144"
         }
         Case::DefeatTime => {
@@ -481,11 +492,14 @@ fn run(admin: String, case: Case) -> TestResult {
                     .as_ref()
                     .and_then(|window| window.delayed_reset.as_ref())
                     .ok_or("crystal reset")?;
-                let objects = reset
+                let mut objects = reset
                     .positions
                     .iter()
                     .map(|position| (*position, reset.from))
                     .collect::<Vec<_>>();
+                if case == Case::WindowResetAmbiguous {
+                    objects.push((*reset.positions.get(1).ok_or("second crystal")?, reset.to));
+                }
                 super::quest_world_callbacks::world_with_objects(
                     &callback,
                     position,
@@ -710,6 +724,7 @@ fn run(admin: String, case: Case) -> TestResult {
             | Case::WindowStateless
             | Case::WindowVisual
             | Case::WindowReset
+            | Case::WindowResetAmbiguous
             | Case::WindowResetDeparted
             | Case::Outcome | Case::ShieldEasy | Case::ShieldHard => {
                 return Err("timed exit requires bundle cells".into());
@@ -886,8 +901,15 @@ async fn exercise_window(
                     .map_err(debug)?;
             }
         }
-        for clock in [319_999, 320_000, 320_000] {
-            let reset = clock == 320_000 && case == Case::WindowReset;
+        if case == Case::WindowResetAmbiguous {
+            change_second_crystal_entry(owner, crystals[1], 14961)?;
+        }
+        for (attempt, clock) in [319_999, 320_000, 320_000, 320_000].into_iter().enumerate() {
+            if case == Case::WindowResetAmbiguous && attempt == 2 {
+                change_second_crystal_entry(owner, crystals[1], 14955)?;
+            }
+            let reset = clock == 320_000
+                && (case == Case::WindowReset || case == Case::WindowResetAmbiguous && attempt >= 2);
             set_clock(clock);
             {
                 let runtime = owner.runtime.lock().await;
@@ -925,6 +947,27 @@ async fn exercise_window(
             assert_eq!(receipts, i64::from(reset));
         }
     }
+    Ok(())
+}
+
+fn change_second_crystal_entry(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    position: MovementLocalPosition,
+    appearance: u16,
+) -> TestResult {
+    use crate::map::{overlay::TilePos, view::{MapFacts, placement_key}};
+    let map = owner.bundle_map().ok_or("crystal bundle map")?;
+    let tile = TilePos {
+        x: u16::try_from(position.x)?,
+        y: u16::try_from(position.y)?,
+        floor: i8::try_from(-position.floor)?,
+    };
+    let key = placement_key(tile, 2).ok_or("competing crystal entry")?;
+    let replacement = map.facts.quest_callback_replacement(key, appearance)
+        .ok_or("competing crystal appearance")?;
+    assert!(map.facts.apply_quest_callback(
+        key, map.facts.object_revision(key), replacement, &[], &[], false, None,
+    ));
     Ok(())
 }
 
