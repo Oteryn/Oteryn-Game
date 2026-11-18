@@ -12,6 +12,55 @@ pub struct QuestTimedPassage {
 }
 
 impl CallbackStates {
+    pub(super) fn schedule_passage_close(
+        &mut self,
+        owner: u64,
+        due: u64,
+        entries: &[QuestTimedPassage],
+    ) -> bool {
+        let keys: BTreeSet<_> = entries.iter().map(|entry| entry.key).collect();
+        if entries.is_empty() || entries.len() > 8 || keys.len() != entries.len() {
+            return false;
+        }
+        for entry in entries {
+            let restore = entry.after.unwrap_or(entry.before);
+            if entry.key == owner
+                || entry.expected_revision == u64::MAX
+                || entry.before.pickupable
+                || restore.pickupable
+                || self.changed.get(&entry.key).map_or(0, |(rev, _)| *rev)
+                    != entry.expected_revision
+            {
+                return false;
+            }
+            if !self.hidden.contains(&entry.key) && restore == entry.before {
+                continue;
+            }
+            // A second crossing cannot postpone an already armed restoration.
+            if self
+                .movement_decays
+                .range(..=(due, u64::MAX))
+                .any(|((_, key), decay)| {
+                    *key == entry.key
+                        && decay.revision == entry.expected_revision
+                        && decay.restore == restore
+                        && decay.overlay == Some((false, None))
+                })
+            {
+                continue;
+            }
+            self.movement_decays.insert(
+                (due, entry.key),
+                MovementDecay {
+                    revision: entry.expected_revision,
+                    restore,
+                    overlay: Some((false, None)),
+                },
+            );
+        }
+        true
+    }
+
     pub(super) fn project_timed_passages(
         &mut self,
         owner: u64,

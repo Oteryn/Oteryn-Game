@@ -123,9 +123,11 @@ pub(super) fn prepare(
     passages: &mut Vec<u64>,
     replacements: &mut Vec<(u64, EntryFacts, bool)>,
 ) -> Result<Option<QuestCallbackProjection>, UseDisposition> {
-    let Some(delay) = callback.effects.passages_reset_after_ms else {
+    let delayed_close = callback.effects.passages_close_after_ms;
+    let Some(delay) = delayed_close.or(callback.effects.passages_reset_after_ms) else {
         return Ok(projection);
     };
+
     let due = now
         .checked_add(u64::from(delay) * 1_000)
         .ok_or(UseDisposition::Exhausted)?;
@@ -172,17 +174,22 @@ pub(super) fn prepare(
         return Ok(source_reset
             .map(|(due, restore)| QuestCallbackProjection::TimedTransform { due, restore }));
     }
-    let projection = QuestCallbackProjection::TimedPassages {
-        due,
-        entries,
-        source_reset,
+    let projection = if delayed_close.is_some() {
+        QuestCallbackProjection::DelayedPassageClose { due, entries }
+    } else {
+        let projection = QuestCallbackProjection::TimedPassages {
+            due,
+            entries,
+            source_reset,
+        };
+        if !map
+            .facts
+            .quest_timed_passages_ready(source.0, source.1, &projection)
+        {
+            return Err(UseDisposition::Rejected);
+        }
+        projection
     };
-    if !map
-        .facts
-        .quest_timed_passages_ready(source.0, source.1, &projection)
-    {
-        return Err(UseDisposition::Rejected);
-    }
     passages.clear();
     replacements.clear();
     Ok(Some(projection))

@@ -103,6 +103,11 @@ pub enum QuestCallbackProjection {
         entries: Vec<QuestTimedPassage>,
         source_reset: Option<(u64, EntryFacts)>,
     },
+    /// Restore listed objects after a pressure tile is crossed.
+    DelayedPassageClose {
+        due: u64,
+        entries: Vec<QuestTimedPassage>,
+    },
     /// Each read revision, including cells which do not change, fences the batch.
     ReadsetTransforms {
         entries: Vec<(u64, u64, Option<EntryFacts>)>,
@@ -316,6 +321,11 @@ impl CallbackStates {
                 source_reset,
             } => {
                 if close || !self.project_timed_passages(owner, *due, entries, *source_reset) {
+                    return false;
+                }
+            }
+            QuestCallbackProjection::DelayedPassageClose { due, entries } => {
+                if !self.schedule_passage_close(owner, *due, entries) {
                     return false;
                 }
             }
@@ -1628,6 +1638,9 @@ impl BundleFacts {
                     .saturating_mul(3)
                     .saturating_add(1 + usize::from(source_reset.is_some()))
             }
+            Some(QuestCallbackProjection::DelayedPassageClose { entries, .. }) => {
+                entries.len().saturating_add(1)
+            }
             Some(QuestCallbackProjection::Scene { mutations, .. }) => {
                 mutations.len().saturating_mul(3).saturating_add(1)
             }
@@ -1654,7 +1667,8 @@ impl BundleFacts {
                 QuestCallbackProjection::Portals { endpoints, .. } => endpoints
                     .iter()
                     .any(|(pos, _, _)| states.position_reserved(*pos)),
-                QuestCallbackProjection::TimedPassages { entries, .. } => entries
+                QuestCallbackProjection::TimedPassages { entries, .. }
+                | QuestCallbackProjection::DelayedPassageClose { entries, .. } => entries
                     .iter()
                     .any(|entry| states.reserved.contains(&entry.key)),
                 QuestCallbackProjection::TimedRemoteTransform { key, .. }
@@ -1700,6 +1714,13 @@ impl BundleFacts {
             *states = Arc::new(staged);
         }
         let states = Arc::make_mut(&mut states);
+        if close {
+            states.movement_decays.retain(|(_, entry), decay| {
+                decay.overlay.is_none()
+                    || (!passages.contains(entry)
+                        && !replacements.iter().any(|(key, _, _)| key == entry))
+            });
+        }
         for passage in passages {
             if close {
                 states.hidden.remove(passage);

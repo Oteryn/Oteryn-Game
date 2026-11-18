@@ -188,6 +188,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await;
         }
+        if callback.reversible
+            && callback
+                .lever
+                .is_some_and(|pair| !pair.contains(&after.appearance_id))
+        {
+            return UseDisposition::NothingToUse;
+        }
         let tree_reset = oteryn_gameplay_quests::quest::dreamer_death_ring::shared_reset(callback);
         let close = tree_reset
             || callback.trigger == Trigger::StepOut
@@ -332,6 +339,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Occupied;
             }
         }
+        let deferred_passage_close = callback.effects.passages_close_after_ms.is_some();
         let mut restored_trees = Vec::new();
         let mut passages = Vec::new();
         let mut replacements = Vec::new();
@@ -374,7 +382,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         || passage.replacement == Some(f.appearance_id)
                         || passage.create_on_close == Some(f.appearance_id))
                         && !map.facts.house_tile(p)
-                        && (!passage.if_present || !map.facts.base_hidden(k)))
+                        && (!passage.if_present
+                            || deferred_passage_close
+                            || !map.facts.base_hidden(k)))
                     .then_some(k)
                 })
                 .collect::<Vec<_>>();
@@ -434,7 +444,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if let Some(appearance) = passage_definition.replacement {
                 let Some(facts) = map.facts.quest_callback_replacement(
                     *passage,
-                    if close {
+                    if close || deferred_passage_close {
                         passage_definition.appearance
                     } else {
                         appearance
@@ -454,18 +464,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 passages.push(*passage);
             }
         }
-        projection = match super::timed_passages::prepare(
-            map,
-            callback,
-            (key, expected_revision),
-            lifecycle_now,
-            projection,
-            &mut passages,
-            &mut replacements,
-        ) {
-            Ok(projection) => projection,
-            Err(result) => return result,
-        };
+        if !close {
+            projection = match super::timed_passages::prepare(
+                map,
+                callback,
+                (key, expected_revision),
+                lifecycle_now,
+                projection,
+                &mut passages,
+                &mut replacements,
+            ) {
+                Ok(projection) => projection,
+                Err(result) => return result,
+            };
+        }
         let projection_target = match &projection {
             Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
                 key, ..

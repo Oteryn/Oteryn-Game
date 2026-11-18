@@ -93,6 +93,9 @@ pub struct CallbackEffects {
     /// Restore remote passage objects independently of the source object.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub passages_reset_after_ms: Option<u32>,
+    /// A pressure tile restores the listed passage objects after this delay.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub passages_close_after_ms: Option<u32>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
@@ -604,6 +607,24 @@ pub(super) fn valid(callback: &Callback) -> bool {
                             .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
                 })
         })
+        || effects.passages_close_after_ms.is_some_and(|delay| {
+            !(1..=3_600_000).contains(&delay)
+                || callback.actor_kind != ActorKind::Player
+                || callback.trigger != Trigger::StepIn
+                || callback.requires_durable_commit()
+                || callback.reversible
+                || callback.passages.is_empty()
+                || callback.teleport.is_some()
+                || callback
+                    .passages
+                    .iter()
+                    .any(|passage| passage.create_on_close.is_some())
+                || *effects
+                    != (CallbackEffects {
+                        passages_close_after_ms: Some(delay),
+                        ..CallbackEffects::default()
+                    })
+        })
         || effects.mount_reward.as_ref().is_some_and(|r| {
             !callback.requires_world_admission
                 || callback.trigger != Trigger::Use
@@ -646,7 +667,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
             !(1..=3_600_000).contains(&delay)
                 || callback.actor_kind != ActorKind::Player
                 || callback.trigger != Trigger::Use
-                || callback.reversible
+                || (callback.reversible
+                    && (callback.lever.is_none()
+                        || callback.requires_durable_commit()
+                        || callback.passages.iter().any(|passage| passage.if_present)))
                 || callback.passages.is_empty()
                 || callback
                     .passages
