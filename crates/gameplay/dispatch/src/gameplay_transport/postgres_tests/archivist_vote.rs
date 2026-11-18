@@ -109,6 +109,27 @@ pub(super) async fn with_npc(
         EntityRef,
     ) -> TestResult,
 ) -> TestResult {
+    with_npc_items(h, catalogue, npc, &[], exercise).await
+}
+
+pub(super) struct FixtureItem {
+    pub id: u16,
+    pub name: &'static str,
+    pub weight: u16,
+    pub stackable: bool,
+}
+
+pub(super) async fn with_npc_items(
+    h: &Harness,
+    catalogue: Arc<QuestStateCatalogue>,
+    npc: &str,
+    items: &[FixtureItem],
+    exercise: impl AsyncFnOnce(
+        &mut ComposedFreshAdmission<'_, '_, '_>,
+        &AdmittedSession,
+        EntityRef,
+    ) -> TestResult,
+) -> TestResult {
     prepare_current_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
@@ -117,8 +138,57 @@ pub(super) async fn with_npc(
         .await
         .map_err(debug)?;
     let world_id = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-    let (controller, activated) =
-        super::death_ml_loss_composed::production_generation_with_pin(world_id, "content-1")?;
+    let (controller, activated) = if items.is_empty() {
+        super::death_ml_loss_composed::production_generation_with_pin(world_id, "content-1")?
+    } else {
+        use crate::content::native_gameplay::{PinnedGameplayBytes, test_support};
+        use serde_json::{Value, json};
+        let mut input =
+            super::death_ml_loss_composed::production_input_with_source("content-1", None)?;
+        let mut profiles: Value = serde_json::from_slice(
+            &input
+                .item_profiles
+                .as_ref()
+                .ok_or("native item profiles")?
+                .bytes,
+        )?;
+        let records = profiles["records"]
+            .as_array_mut()
+            .ok_or("profile records")?;
+        for item in items {
+            let key = format!("oteryn:item.tibia.i{}", item.id);
+            let mut record = records
+                .iter()
+                .find(|record| {
+                    record["production_definition"]["production_key"]
+                        == if item.stackable {
+                            "oteryn:item.tibia.i3031"
+                        } else {
+                            "oteryn:item.tibia.i123"
+                        }
+                })
+                .ok_or("plain test item profile template")?
+                .clone();
+            record["production_definition"]["production_key"] = json!(key);
+            record["production_binding"]["target"]["key"] = json!(key);
+            record["production_binding"]["external_id"] = json!(item.id.to_string());
+            record["authoring"]["item"]["key"] = json!(format!("candidate:item/{}", item.id));
+            record["semantics"]["presentation"]["value"]["name"] =
+                json!({"state":"KNOWN","value":item.name});
+            record["semantics"]["physical"]["value"]["weight"] =
+                json!({"state":"KNOWN","value":item.weight});
+            records.push(record);
+        }
+        let bytes = serde_json::to_vec(&profiles)?;
+        input.item_profiles = Some(PinnedGameplayBytes {
+            sha256: <sha2::Sha256 as sha2::Digest>::digest(&bytes)
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect(),
+            bytes,
+        });
+        test_support::try_activate_input(world_id, &input).map_err(debug)?
+    };
     let generation = controller.active().ok_or("active content")?;
     let room = activated.qualified_room();
     let start = room.entry_start();

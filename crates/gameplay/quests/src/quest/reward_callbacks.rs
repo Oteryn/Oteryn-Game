@@ -327,6 +327,9 @@ pub struct RewardCallback {
     pub reply: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub failure_reply: Vec<String>,
+    /// Topic after a known hand-in refusal, such as Crystal npc/tonar.lua:79-81.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub failure_next_topic: Option<u16>,
     pub sources: Vec<String>,
 }
 
@@ -1113,6 +1116,7 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
     let terms = terms.as_object_mut().ok_or("reward terms")?;
     terms.remove("reply");
     terms.remove("failure_reply");
+    terms.remove("failure_next_topic");
     terms.remove("sources");
     let bytes = serde_json::to_vec(terms).map_err(|e| e.to_string())?;
     Ok(Some(Sha256::digest(bytes).into()))

@@ -102,6 +102,7 @@ pub(super) fn prepare(
     }
     let catalogue = admission.quest_catalogue.as_deref()?;
     let mut failure_reply = Vec::new();
+    let mut failure_next_topic = None;
     let mut refused = false;
     let step = quest_dialogue::prepare(
         admission,
@@ -114,11 +115,11 @@ pub(super) fn prepare(
             let meets_level = |minimum: Option<u32>| {
                 minimum.is_none_or(|minimum| inventory.is_some_and(|facts| facts.level >= minimum))
             };
-            let mut refusal = |lines: &[String]| {
+            let mut refusal = |lines: &[String], next_topic: Option<u16>| {
                 refused = !lines.is_empty();
                 (!lines.is_empty()).then(|| Choice {
                     transition: None,
-                    next_topic: None,
+                    next_topic: next_topic.map(Topic::from),
                     reply: lines.to_vec(),
                 })
             };
@@ -159,7 +160,8 @@ pub(super) fn prepare(
                         return None;
                     }
                     if !meets_level(callback.minimum_level)
-                        && let Some(choice) = refusal(&callback.failure_reply)
+                        && let Some(choice) =
+                            refusal(&callback.failure_reply, callback.failure_next_topic)
                     {
                         return Some(choice);
                     }
@@ -167,6 +169,7 @@ pub(super) fn prepare(
                     // transition: its locked owner must reject the level gate.
                     // Falling through would return the ordinary dialogue's Ok.
                     failure_reply = callback.failure_reply.clone();
+                    failure_next_topic = callback.failure_next_topic;
                     return Some(Choice {
                         transition: Some(callback.key.clone()),
                         next_topic: Some(Topic::from(callback.next_topic)),
@@ -178,7 +181,8 @@ pub(super) fn prepare(
                 let mut blocked = matching_stage;
                 if let Some(callback) = blocked.next()
                     && blocked.next().is_none()
-                    && let Some(choice) = refusal(&callback.failure_reply)
+                    && let Some(choice) =
+                        refusal(&callback.failure_reply, callback.failure_next_topic)
                 {
                     return Some(choice);
                 }
@@ -190,7 +194,7 @@ pub(super) fn prepare(
                 .find(|c| c.admits(&context.2, topic.number, &text, catalogue, tracks))
             {
                 if !meets_level(offer.minimum_level) {
-                    return refusal(&offer.failure_reply);
+                    return refusal(&offer.failure_reply, None);
                 }
                 return Some(Choice {
                     transition: None,
@@ -225,7 +229,7 @@ pub(super) fn prepare(
             });
             if let Some(offer) = blocked.next()
                 && blocked.next().is_none()
-                && let Some(choice) = refusal(&offer.failure_reply)
+                && let Some(choice) = refusal(&offer.failure_reply, None)
             {
                 return Some(choice);
             }
@@ -247,11 +251,12 @@ pub(super) fn prepare(
                     .inventory
                     .iter()
                     .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities))))
-                && let Some(choice) = refusal(&callback.failure_reply)
+                && let Some(choice) = refusal(&callback.failure_reply, callback.failure_next_topic)
             {
                 return Some(choice);
             }
             failure_reply = callback.failure_reply.clone();
+            failure_next_topic = callback.failure_next_topic;
             Some(Choice {
                 transition: Some(callback.key.clone()),
                 next_topic: Some(Topic::from(callback.next_topic)),
@@ -259,7 +264,11 @@ pub(super) fn prepare(
             })
         },
     );
-    step.map(|step| step.with_failure_reply(failure_reply).with_refusal(refused))
+    step.map(|step| {
+        step.with_failure_reply(failure_reply)
+            .with_failure_topic(failure_next_topic)
+            .with_refusal(refused)
+    })
 }
 
 #[cfg(test)]

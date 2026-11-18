@@ -123,6 +123,7 @@ pub(super) struct Step {
     transition: Option<String>,
     reply: Vec<String>,
     failure_reply: Vec<String>,
+    failure_next_topic: Option<Topic>,
     refused: bool,
 }
 
@@ -133,6 +134,10 @@ impl Step {
     }
     pub(super) fn with_refusal(mut self, refused: bool) -> Self {
         self.refused = refused;
+        self
+    }
+    pub(super) fn with_failure_topic(mut self, next_topic: Option<u16>) -> Self {
+        self.failure_next_topic = next_topic.map(Topic::from);
         self
     }
 }
@@ -187,6 +192,7 @@ pub(super) fn prepare(
         transition: choice.transition,
         reply: choice.reply,
         failure_reply: Vec::new(),
+        failure_next_topic: None,
         refused: false,
     })
 }
@@ -539,17 +545,25 @@ pub(super) async fn apply(
                 step.failure_reply,
             );
             let runtime = admission.runtime.lock().await;
-            let mut outcome = publish_committed_reply(
-                admission.states.npc_conversations.current_npc(
-                    &admission.states.chat,
-                    &runtime,
-                    actor,
-                    command.game_session_id,
-                    &intent,
-                ),
-                &step.context,
-                rendered,
+            let current = admission.states.npc_conversations.current_npc(
+                &admission.states.chat,
+                &runtime,
+                actor,
+                command.game_session_id,
+                &intent,
             );
+            if let Some(topic) = step.failure_next_topic
+                && current.as_ref() == Some(&step.context)
+                && let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
+                && let Some(state) = sessions.get_mut(&command.game_session_id)
+                && state.quest_dialogue.pending.is_none()
+                && state.quest_dialogue.topic(&step.context) == step.topic
+            {
+                state
+                    .quest_dialogue
+                    .apply_topic(step.context.clone(), Some(topic));
+            }
+            let mut outcome = publish_committed_reply(current, &step.context, rendered);
             outcome.disposition = NpcIntentDisposition::Rejected;
             outcome
         }

@@ -644,7 +644,7 @@ async fn kill_rat(
     Err("kill drain exhausted".into())
 }
 
-async fn mint_carried(
+pub(super) async fn mint_carried(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
@@ -946,6 +946,6 @@ fn market_ware(
     Err("admitted marketable ware".into())
 }
 
-async fn quantity(h: &Harness, key: &str) -> TestResult<i64> {
+pub(super) async fn quantity(h: &Harness, key: &str) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1").bind(key).fetch_one(&h.pool).await?)
 }

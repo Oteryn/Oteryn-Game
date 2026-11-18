@@ -860,6 +860,7 @@ async fn wardrobe(
         achievement_progress: vec![],
         reply: vec![],
         failure_reply: vec![],
+        failure_next_topic: None,
 
 
         sources: vec![],

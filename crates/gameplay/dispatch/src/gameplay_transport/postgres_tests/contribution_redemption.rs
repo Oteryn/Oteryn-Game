@@ -2,7 +2,7 @@
 use std::sync::Arc;
 
 use super::TestResult;
-use super::archivist_vote::with_npc;
+use super::archivist_vote::{FixtureItem, with_npc_items};
 use super::classic_quests::talk;
 use super::fixture::{Harness, debug, id, run};
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, npc_rules::NpcRuleCatalog};
@@ -152,7 +152,13 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
 }
 
 async fn exercise(h: &Harness) -> TestResult {
-    with_npc(h, Arc::new(catalogue()?), NPC, async |owner, admitted, npc| {
+    let cluster = FixtureItem {
+        id: 20062,
+        name: "cluster of solace",
+        weight: 280,
+        stackable: true,
+    };
+    with_npc_items(h, Arc::new(catalogue()?), NPC, &[cluster], async |owner, admitted, npc| {
         talk(owner, admitted, npc, 1, "hi").await?;
         for (index, word) in ["gratitude", "repairs", "books", "yes", "trade"].into_iter().enumerate() {
             talk(owner, admitted, npc, u64::try_from(index)? + 2, word).await?;
