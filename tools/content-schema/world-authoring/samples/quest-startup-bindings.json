@@ -32,6 +32,66 @@
   "bindings": [
     {
       "position": [
+        32171,
+        31853,
+        15
+      ],
+      "item": 1959,
+      "attribute": "unique",
+      "action": 35014,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 566
+    },
+    {
+      "position": [
+        32219,
+        31913,
+        15
+      ],
+      "item": 1949,
+      "attribute": "unique",
+      "action": 35019,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 591
+    },
+    {
+      "position": [
+        32265,
+        31898,
+        12
+      ],
+      "item": 353,
+      "attribute": "action",
+      "action": 25019,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 887
+    },
+    {
+      "position": [
+        32266,
+        31898,
+        12
+      ],
+      "item": 353,
+      "attribute": "action",
+      "action": 25019,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 887
+    },
+    {
+      "position": [
+        32267,
+        31898,
+        12
+      ],
+      "item": 353,
+      "attribute": "action",
+      "action": 25019,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 887
+    },
+    {
+      "position": [
         32573,
         32121,
         7
