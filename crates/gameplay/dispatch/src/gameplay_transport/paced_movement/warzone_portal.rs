@@ -17,7 +17,11 @@ pub(super) struct WarzonePortal {
     destination: LastPositionCell,
 }
 
-pub(super) fn at(map: &BundleMap, position: MovementLocalPosition) -> Option<WarzonePortal> {
+pub(super) fn at(
+    map: &BundleMap,
+    position: MovementLocalPosition,
+    now_us: u64,
+) -> Option<WarzonePortal> {
     if position.floor != 15 {
         return None;
     }
@@ -32,6 +36,14 @@ pub(super) fn at(map: &BundleMap, position: MovementLocalPosition) -> Option<War
         y: position.y.try_into().ok()?,
         floor: -15,
     };
+    // Crystal removes the stalagmite and creates the portal for eight seconds.
+    // Accept only the exact authored source slot while its live projection agrees.
+    let landing = TilePos {
+        x: x.try_into().ok()?,
+        y: y.try_into().ok()?,
+        floor: -15,
+    };
+    let projected = map.facts.quest_portal_destination(tile, now_us) == Some(landing);
     let base = map.overlay.base().tile(tile.x, tile.y, tile.floor)?;
     let is_portal = base
         .ids()
@@ -49,11 +61,14 @@ pub(super) fn at(map: &BundleMap, position: MovementLocalPosition) -> Option<War
             !map.facts.base_hidden(key)
                 && map
                     .facts
-                    .quest_callback_matches(key, None, Some(57243), None)
-                && map
-                    .facts
                     .base_entry(tile, ordinal, *id)
                     .is_some_and(|entry| entry.appearance_id == 1949)
+                && (map
+                    .facts
+                    .quest_callback_matches(key, None, Some(57243), None)
+                    || (projected
+                        && map.facts.quest_callback_base_appearance(tile, ordinal, *id)
+                            == Some(388)))
         });
     is_portal.then_some(WarzonePortal {
         key: boss,

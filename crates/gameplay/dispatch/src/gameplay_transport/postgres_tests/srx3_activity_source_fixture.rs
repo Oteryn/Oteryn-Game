@@ -176,6 +176,75 @@ impl SourceScene {
     }
 }
 
+pub(super) async fn prepare_independent_peer(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    leader: &AdmittedSession,
+) -> TestResult<AdmittedSession> {
+    use crate::gameplay_transport::connection::{ControllerBinding, SessionContinuity};
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+    let (current, operation) =
+        crate::world_party_runtime_postgres_cases::committed_fresh_player_from_source_owned(
+            &crate::world_party_runtime_postgres_cases::FreshPlayerOwners {
+                root: h.root.clone(),
+                node: h.node.clone(),
+                recovery: &h.recovery,
+            },
+            60,
+            63,
+            171,
+            now,
+            Some("platform-test"),
+        )
+        .await
+        .map_err(|error| format!("independent Fresh admission: {error}"))?;
+    let fence =
+        crate::gameplay_transport::item_fence_of(current).ok_or("actual second player fence")?;
+    let actor = {
+        let _permit = owner
+            .spell_lane_permit()
+            .await
+            .ok_or("actual source lane")?;
+        let mut runtime = owner.runtime.lock().await;
+        let reservation = runtime
+            .reserve_fresh_session(fence.game_session_id)
+            .map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .bind_attacker_lease(
+                actor,
+                fence.game_session_id,
+                current.current_character_lease(),
+            )
+            .map_err(debug)?;
+        actor
+    };
+    let mut continuity = SessionContinuity::FRESH;
+    continuity.selected_capabilities = leader.continuity.selected_capabilities;
+    let mut peer = AdmittedSession {
+        game_session_id: fence.game_session_id,
+        world_id: leader.world_id,
+        channel_id: leader.channel_id,
+        runtime_actor: Some(actor),
+        first_entry: crate::gameplay_transport::connection::FirstEntryOutcome::Positioned,
+        controller: Some(ControllerBinding {
+            transport: current
+                .current_transport()
+                .ok_or("actual second player transport")?,
+            account_id: super::fixture::id(63),
+        }),
+        continuity,
+        item_fence: Some(fence),
+    };
+    prepare_player_with_operation(h, owner, &mut peer, 1999, "knight", &operation)
+        .await
+        .map_err(|error| format!("independent progression preparation: {error}"))?;
+    Ok(peer)
+}
+
 pub(super) async fn prepare_player(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
