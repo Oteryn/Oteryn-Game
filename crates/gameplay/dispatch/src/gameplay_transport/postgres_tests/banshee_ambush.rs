@@ -278,10 +278,22 @@ fn scenario() -> TestResult {
                 let entered = runtime.commit_source_step(proof).map_err(debug)?;
                 (origin, entered)
             };
+            let effect_cursor = map
+                .facts
+                .movement_effects_since(0)
+                .last()
+                .map_or(0, |cue| cue.0);
             let after = owner
                 .step_quest_callback(&permit, actor, session, origin, entered)
                 .await;
             assert_eq!(after.position(), local(expected));
+            let cues: Vec<_> = map
+                .facts
+                .movement_effects_since(effect_cursor)
+                .into_iter()
+                .map(|(_, at, effect)| (at, effect))
+                .collect();
+            assert_eq!(cues, [(expected, 11)]);
             let runtime = owner.runtime.lock().await;
             let mut positions = runtime
                 .current_live_creature_census()
