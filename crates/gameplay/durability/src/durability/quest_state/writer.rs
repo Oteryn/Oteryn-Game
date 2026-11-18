@@ -1965,6 +1965,17 @@ impl DurabilityRoot {
 
                         { tx.rollback().await?; return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     }
+                    if native.as_ref().is_some_and(|death|
+                        oteryn_gameplay_quests::quest::source_deaths::is_arbaziloth_first_clear(&death.transition))
+                    {
+                        use super::super::character_appearance::{QuestOutfitGrant, grant_quest_outfit};
+                        let QuestCause::CreatureDeath(occurrence) = request.cause else {
+                            return Err(DurabilityError::InvalidStoredState);
+                        };
+                        grant_quest_outfit(
+                            &mut tx, fence.character_id, occurrence.as_bytes(), QuestOutfitGrant::FiendSlayer,
+                        ).await?;
+                    }
                     if let Some(world) = &callback
                         && let Some(reward) = &world.effects.outfit_reward
                     {

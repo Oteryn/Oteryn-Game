@@ -157,6 +157,18 @@ fn documents() -> Result<Vec<Document>, String> {
         })
         .collect()
 }
+const ARBAZILOTH_FIRST_CLEAR: &str =
+    "oteryn:quest-transition/native/no_rest_for_the_wicked/first_clear";
+const ARBAZILOTH_FIRST_CLEAR_WITH_DOOR_PROGRESS: &str =
+    "oteryn:quest-transition/native/no_rest_for_the_wicked/first_clear_with_door_progress";
+
+pub fn is_arbaziloth_first_clear(transition: &str) -> bool {
+    matches!(
+        transition,
+        ARBAZILOTH_FIRST_CLEAR | ARBAZILOTH_FIRST_CLEAR_WITH_DOOR_PROGRESS
+    )
+}
+
 // Crystal 201189f8 arbaziloth_death.lua:27-39. The first kill raises the
 // door stage only when it is still below one, including for imported saves.
 fn arbaziloth_first_clear_rules() -> [Rule; 3] {
@@ -173,7 +185,7 @@ fn arbaziloth_first_clear_rules() -> [Rule; 3] {
     };
     let rule = |name, effects| Rule {
         creature: "oteryn:creature.arbaziloth".into(),
-        transition: format!("oteryn:quest-transition/native/no_rest_for_the_wicked/{name}"),
+        transition: String::from(name),
         effects,
         room: None,
         top_damage_only: false,
@@ -183,14 +195,14 @@ fn arbaziloth_first_clear_rules() -> [Rule; 3] {
     };
     [
         rule(
-            "first_clear",
+            ARBAZILOTH_FIRST_CLEAR,
             vec![
                 effect("kill_arbaziloth/questline", "lt", 2, 2),
                 effect("forgemaster_door/questline", "lt", 1, 1),
             ],
         ),
         rule(
-            "first_clear_with_door_progress",
+            ARBAZILOTH_FIRST_CLEAR_WITH_DOOR_PROGRESS,
             vec![
                 effect("kill_arbaziloth/questline", "lt", 2, 2),
                 Effect {
@@ -200,7 +212,10 @@ fn arbaziloth_first_clear_rules() -> [Rule; 3] {
                 },
             ],
         ),
-        rule("start_questlog", vec![effect("questlog", "lt", 1, 1)]),
+        rule(
+            "oteryn:quest-transition/native/no_rest_for_the_wicked/start_questlog",
+            vec![effect("questlog", "lt", 1, 1)],
+        ),
     ]
 }
 
