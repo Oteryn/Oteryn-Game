@@ -14,7 +14,6 @@ use sha2::{Digest, Sha256};
 const QUEST: &str = "oteryn:quest.spike_task";
 const PHASE: &str = "oteryn:quest-progress/spike-task/lower-hunt-assignment";
 const COUNT: &str = "oteryn:quest-progress/spike-task/lower-hunt-kills";
-const ACCEPT: &str = "oteryn:quest-transition/hthreat-spike-test-accept";
 const CREDIT: &str = "oteryn:quest-transition/native-kills/spike-task-lower-drillworm";
 const DRILLWORM: &str = "oteryn:creature.drillworm";
 const INSIDE: MovementLocalPosition = MovementLocalPosition {
@@ -170,9 +169,6 @@ fn scenario() -> TestResult {
          owner,
          fence,
          admitted| {
-            use crate::durability::quest_state::{
-                QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
-            };
             let bindings = bindings()?;
             bindings.verify_embedded_recipe_evidence()?;
             let mut missing = bindings.clone();
@@ -182,31 +178,8 @@ fn scenario() -> TestResult {
                 .ok_or("actor admission")?
                 .personal_assignment = None;
             assert!(missing.verify_embedded_recipe_evidence().is_err());
-            let base = QuestStateCatalogue::new(
-                "content-1",
-                vec![QuestTrack {
-                    key: PHASE.into(),
-                    quest: QUEST.into(),
-                    initial: 0,
-                    min: 0,
-                    max: 1,
-                }],
-                vec![QuestTransition {
-                    key: ACCEPT.into(),
-                    quest: QUEST.into(),
-                    effects: vec![QuestEffect {
-                        track: PHASE.into(),
-                        from: QuestComparison::Eq(0),
-                        effect: QuestEffectKind::Set(1),
-                    }],
-                    completes: false,
-                    experience: None,
-                    world_change: None,
-                }],
-            )
-            .map_err(debug)?;
-            let catalogue = Arc::new(bindings.attach(&base)?);
-            owner.quest_catalogue = Some(catalogue.clone());
+            let base = QuestStateCatalogue::empty("content-1").ok_or("catalogue")?;
+            owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
             // Provision the actor's level before calling the normal death owner.
             let mut setup = h.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica")
@@ -222,34 +195,17 @@ fn scenario() -> TestResult {
 
             kill(&owner, actor, session, INSIDE, 100).await?;
             assert_eq!(count().await?, 0, "no credit before accepting the hunt");
-            let current = owner
-                .current_quest_fence(session)
-                .await
-                .map_err(debug)?
-                .ok_or("quest fence")?;
-            let mut slot = owner.revision_sequencer.acquire(current.character_id).await;
-            let outcome = slot
-                .commit_quest_transition(
-                    owner.root,
-                    owner.character,
-                    owner.holder,
-                    current,
-                    QuestTransitionRequest {
-                        transition_key: ACCEPT.into(),
-                        cause: QuestCause::Command(CommandRef::new(
-                            session,
-                            CommandId::new(101).map_err(debug)?,
-                        )),
-                    },
-                    catalogue,
-                )
-                .await
-                .map_err(debug)?;
-            assert!(
-                matches!(outcome, QuestTransitionOutcome::Committed(_)),
-                "{outcome:?}"
-            );
-            drop(slot);
+            // Provision the result of personally accepting the assignment. Only lethal
+            // work below may create the kill counter or credit receipt.
+            let mut setup = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *setup)
+                .await?;
+            let seeded = sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,1,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                .bind(fence.character_id.as_bytes().as_slice()).bind(PHASE).bind(QUEST)
+                .execute(&mut *setup).await?;
+            assert_eq!(seeded.rows_affected(), 1);
+            setup.commit().await?;
             kill(
                 &owner,
                 actor,

@@ -20,8 +20,7 @@ fn bindings() -> TestResult<Bindings> {
         let position = json!({"x":9,"y":0,"floor":-7});
         let mut effects = json!({});
         if disguise {
-            effects["timed_disguise"] =
-                json!({"look_type":307,"duration_ms":120000,"magic_effect":11});
+            effects["timed_disguise"] = json!({"creature":"oteryn:creature.mutated_bat","duration_ms":120000,"magic_effect":11});
         }
         let success_message = advances.then_some("Geomantic energy charged. You can report back.");
         if advances {

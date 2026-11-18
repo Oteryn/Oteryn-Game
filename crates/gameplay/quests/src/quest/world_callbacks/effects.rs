@@ -46,7 +46,7 @@ pub struct ItemDisguiseRequirement {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct TimedDisguise {
-    pub look_type: u32,
+    pub creature: String,
     pub duration_ms: u32,
     pub magic_effect: u16,
 }
@@ -520,7 +520,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || effects.restore_disguise
             || effects.requires_item_disguise.is_some()
             || effects.encounter.is_some()
-            || outfit.look_type == 0
+            || !outfit.creature.starts_with("oteryn:creature.")
+            || !super::super::valid_quest_key(&outfit.creature)
             || !(1..=600_000).contains(&outfit.duration_ms)
             || !(1..=255).contains(&outfit.magic_effect)
     }) {

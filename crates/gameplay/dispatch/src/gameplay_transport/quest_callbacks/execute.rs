@@ -110,22 +110,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return UseDisposition::Rejected;
             };
-            if base == disguise.look_type {
-                return UseDisposition::Rejected;
-            }
             let Some(appearance) = self
                 .active_generation
                 .and_then(|generation| generation.native_gameplay())
                 .and_then(|native| native.spell_appearances())
-                .and_then(|appearances| appearances.for_look_type(disguise.look_type))
+                .and_then(|appearances| {
+                    appearances.for_creature(&disguise.creature, "definition-r1")
+                })
             else {
                 return UseDisposition::Rejected;
             };
+            if base == appearance.look_type() {
+                return UseDisposition::Rejected;
+            }
             let mut next = current.clone();
             if crate::spell::actor_conditions::apply_appearance(
                 &mut next,
                 appearance.selection(),
-                disguise.look_type,
+                appearance.look_type(),
                 disguise.duration_ms,
                 now / 1000,
             )
