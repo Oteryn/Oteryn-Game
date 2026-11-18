@@ -462,7 +462,10 @@ fn scenario(case: Case) -> TestResult {
             )
             .await
             .map_err(|error| format!("W03 expiry scenario: {error}"))?,
-            Case::NativeDeath | Case::ProductionNativeDeath | Case::WarzoneNativeDeath(_) | Case::LargePrivateCorpse => return Err("native scenario already returned".into()),
+            Case::NativeDeath
+            | Case::ProductionNativeDeath
+            | Case::WarzoneNativeDeath(_)
+            | Case::LargePrivateCorpse => return Err("native scenario already returned".into()),
             Case::OfflineReward => {
                 assert_eq!(
                     sqlx::query_scalar::<_, i32>(

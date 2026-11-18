@@ -28,9 +28,12 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
             name,
             if name.starts_with("qengine-rewards-qworld-phase-") {
                 super::qworld_phase_steps::SOURCE
-            } else if let Some((position, _)) = super::authored_world_rewards::warzone_portal(name) {
+            } else if let Some((position, _)) = super::authored_world_rewards::warzone_portal(name)
+            {
                 position
-            } else if let Some((position, _, _, _)) = super::authored_world_rewards::warzone_pump(name) {
+            } else if let Some((position, _, _, _)) =
+                super::authored_world_rewards::warzone_pump(name)
+            {
                 position
             } else if name == "qengine-rewards-l2-white-raven" {
                 Position {
@@ -1122,9 +1125,11 @@ pub(super) async fn exercise(
         .await;
     }
     if let Some((position, boss)) = super::authored_world_rewards::warzone_portal(name) {
-        return Box::pin(super::authored_world_rewards::exercise_warzone_portal_cooldown(
-            owner, admitted, h, position, boss,
-        ))
+        return Box::pin(
+            super::authored_world_rewards::exercise_warzone_portal_cooldown(
+                owner, admitted, h, position, boss,
+            ),
+        )
         .await;
     }
     if let Some(pump) = super::authored_world_rewards::warzone_pump(name) {

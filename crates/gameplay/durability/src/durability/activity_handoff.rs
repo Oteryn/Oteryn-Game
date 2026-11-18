@@ -33,7 +33,7 @@ mod catalogue;
 mod entry;
 mod quest_encounter;
 #[cfg(any(test, feature = "test-support"))]
-pub use quest_encounter::{fixture_first_dragon_trials_permit, fixture_first_dragon_entry_permit};
+pub use quest_encounter::{fixture_first_dragon_entry_permit, fixture_first_dragon_trials_permit};
 mod outburst;
 mod primal;
 mod rotten_blood;
@@ -254,7 +254,9 @@ pub struct ActivityHandoffOwner {
 #[derive(Clone, Copy)]
 enum EntryMode {
     Activity,
-    Boss { window_ms: Option<std::num::NonZeroU32> },
+    Boss {
+        window_ms: Option<std::num::NonZeroU32>,
+    },
 }
 
 impl EntryMode {
@@ -281,7 +283,14 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         request: ActivityEnterRequest,
     ) -> Result<ActivityEnterOutcome> {
-        self.enter_inner(authority, node, request, EntryMode::Activity, &super::quest_state::grizzly::NoGrizzlyPremium).await
+        self.enter_inner(
+            authority,
+            node,
+            request,
+            EntryMode::Activity,
+            &super::quest_state::grizzly::NoGrizzlyPremium,
+        )
+        .await
     }
 
     pub async fn enter_boss_room(
@@ -290,18 +299,34 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         request: ActivityEnterRequest,
     ) -> Result<ActivityEnterOutcome> {
-        self.enter_inner(authority, node, request, EntryMode::Boss { window_ms: None }, &super::quest_state::grizzly::NoGrizzlyPremium).await
+        self.enter_inner(
+            authority,
+            node,
+            request,
+            EntryMode::Boss { window_ms: None },
+            &super::quest_state::grizzly::NoGrizzlyPremium,
+        )
+        .await
     }
 
     /// Join the selected quest's Premium predicate to the same admission transaction.
-    pub async fn enter_boss_room_with_premium<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
+    pub async fn enter_boss_room_with_premium<
+        G: super::quest_state::grizzly::GrizzlyPremiumGate,
+    >(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         request: ActivityEnterRequest,
         premium: &G,
     ) -> Result<ActivityEnterOutcome> {
-        self.enter_inner(authority, node, request, EntryMode::Boss { window_ms: None }, premium).await
+        self.enter_inner(
+            authority,
+            node,
+            request,
+            EntryMode::Boss { window_ms: None },
+            premium,
+        )
+        .await
     }
 
     /// Admit one entrant to a Warzone window. The room catalogue sets the capacity.
@@ -323,9 +348,15 @@ impl ActivityHandoffOwner {
             return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::InvalidInput));
         }
         self.enter_inner(
-            authority, node, request, EntryMode::Boss { window_ms: Some(window_ms) },
+            authority,
+            node,
+            request,
+            EntryMode::Boss {
+                window_ms: Some(window_ms),
+            },
             &super::quest_state::grizzly::NoGrizzlyPremium,
-        ).await
+        )
+        .await
     }
 
     async fn enter_inner<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
@@ -423,12 +454,17 @@ impl ActivityHandoffOwner {
         trigger: ActivityReturnReason,
     ) -> Result<ActivityReturnOutcome> {
         if !matches!(request.reason, ActivityReturnReason::Death { .. })
-            || !matches!(trigger, ActivityReturnReason::StaffKick { .. } | ActivityReturnReason::StaffKickLost { .. })
+            || !matches!(
+                trigger,
+                ActivityReturnReason::StaffKick { .. } | ActivityReturnReason::StaffKickLost { .. }
+            )
             || request.command_id.is_some()
             || matches!(trigger, ActivityReturnReason::StaffKick { .. } if request.destination_transport.is_none())
             || matches!(trigger, ActivityReturnReason::StaffKickLost { .. } if request.destination_transport.is_some())
         {
-            return Ok(ActivityReturnOutcome::Refused(ActivityRefusal::InvalidInput));
+            return Ok(ActivityReturnOutcome::Refused(
+                ActivityRefusal::InvalidInput,
+            ));
         }
         self.return_inner(authority, node, request, false, Some(trigger), None)
             .await
@@ -547,13 +583,18 @@ async fn now_ms(tx: &mut Transaction<'_, Postgres>) -> Result<i64> {
 
 // The existing root-scoped fixture quest clock can advance this quest's room
 // deadline without changing source policy or sleeping for the donor's twenty minutes.
-async fn quest_activity_now_ms(tx: &mut Transaction<'_, Postgres>, root: &DurabilityRoot) -> Result<i64> {
+async fn quest_activity_now_ms(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &DurabilityRoot,
+) -> Result<i64> {
     let now = now_ms(tx).await?;
     #[cfg(any(test, feature = "test-support"))]
     if let Some(clock) = root.quest_test_clock_handle() {
         let seconds = clock.load(std::sync::atomic::Ordering::Acquire);
         if seconds >= 0 {
-            return seconds.checked_mul(1000).ok_or(DurabilityError::InvalidStoredState);
+            return seconds
+                .checked_mul(1000)
+                .ok_or(DurabilityError::InvalidStoredState);
         }
     }
     #[cfg(not(any(test, feature = "test-support")))]

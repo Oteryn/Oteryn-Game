@@ -84,16 +84,26 @@ fn binding(
         hash_field(&mut hash, &r.handoff_id);
         hash_field(&mut hash, &assignment_scope_key(r.destination_scope));
         hash_field(&mut hash, &r.destination_generation.get().to_be_bytes());
-        hash_field(&mut hash, &r.destination_assignment_source_revision.to_be_bytes());
+        hash_field(
+            &mut hash,
+            &r.destination_assignment_source_revision.to_be_bytes(),
+        );
     }
     if let Some(context) = soulpit {
         match &context.request.funding {
             crate::durability::soulpit::SoulpitFunding::Core { source, definition } => {
                 hash_field(&mut hash, source);
-                for text in [&definition.family,&definition.production_key,&definition.revision_ref] { hash_field(&mut hash,text.as_bytes()); }
+                for text in [
+                    &definition.family,
+                    &definition.production_key,
+                    &definition.revision_ref,
+                ] {
+                    hash_field(&mut hash, text.as_bytes());
+                }
             }
             crate::durability::soulpit::SoulpitFunding::Soulseals { species } => {
-                hash_field(&mut hash,b"soulseals-v1");hash_field(&mut hash,species.as_bytes());
+                hash_field(&mut hash, b"soulseals-v1");
+                hash_field(&mut hash, species.as_bytes());
             }
         }
         hash_field(&mut hash, &context.request.intent);
@@ -272,7 +282,12 @@ pub(super) async fn enter_in_transaction<
             ));
         }
         return Ok(ActivityEnterOutcome::Replayed(
-            load_receipt(tx, bytes16(handoff)?, mode.window_ms().map(|_| r.initiating_character_id)).await?,
+            load_receipt(
+                tx,
+                bytes16(handoff)?,
+                mode.window_ms().map(|_| r.initiating_character_id),
+            )
+            .await?,
         ));
     }
     let guards = AdmissionGuardStore::from_root(root.clone());
@@ -288,8 +303,11 @@ pub(super) async fn enter_in_transaction<
     {
         return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::NoCapacity));
     }
-    let window_ms = mode.window_ms().map(|duration| i32::try_from(duration.get()))
-        .transpose().map_err(|_| DurabilityError::InvalidStoredState)?;
+    let window_ms = mode
+        .window_ms()
+        .map(|duration| i32::try_from(duration.get()))
+        .transpose()
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
     let joining = if let Some(duration) = window_ms {
         let now = quest_activity_now_ms(tx, root).await?;
         lock_boss_portal(tx, r).await?;
@@ -358,7 +376,9 @@ pub(super) async fn enter_in_transaction<
     }
     let now = quest_activity_now_ms(tx, root).await?;
     let boss_plan = if mode.is_boss() {
-        match super::boss_room::prepare_in_transaction(tx, r, now, window_ms.is_some(), premium).await? {
+        match super::boss_room::prepare_in_transaction(tx, r, now, window_ms.is_some(), premium)
+            .await?
+        {
             Ok(plan) => Some(plan),
             Err(reason) => return Ok(ActivityEnterOutcome::Refused(reason)),
         }
@@ -446,12 +466,20 @@ pub(super) async fn enter_in_transaction<
         super::boss_room::commit_in_transaction(tx, r, plan).await?;
     }
     Ok(ActivityEnterOutcome::Entered(
-        load_receipt(tx, r.handoff_id, mode.window_ms().map(|_| r.initiating_character_id)).await?,
+        load_receipt(
+            tx,
+            r.handoff_id,
+            mode.window_ms().map(|_| r.initiating_character_id),
+        )
+        .await?,
     ))
 }
 
 // A new group cannot race an existing room for the same channel portal.
-async fn lock_boss_portal(tx: &mut Transaction<'_, Postgres>, r: &ActivityEnterRequest) -> Result<()> {
+async fn lock_boss_portal(
+    tx: &mut Transaction<'_, Postgres>,
+    r: &ActivityEnterRequest,
+) -> Result<()> {
     sqlx::query(
         "SELECT pg_advisory_xact_lock(hashtextextended(
             'oteryn:boss-portal:' || encode($1,'hex') || ':' || $2, 0))",
@@ -468,7 +496,10 @@ async fn boss_portal_occupied(
     r: &ActivityEnterRequest,
     now: i64,
 ) -> Result<bool> {
-    let RuntimeScopeRefV1::Channel { world_id, channel_id } = r.participants[0].source.runtime_scope
+    let RuntimeScopeRefV1::Channel {
+        world_id,
+        channel_id,
+    } = r.participants[0].source.runtime_scope
     else {
         return Err(DurabilityError::InvalidStoredState);
     };
@@ -496,7 +527,11 @@ async fn open_enrollment(
     duration: i32,
     now: i64,
 ) -> Result<bool> {
-    let RuntimeScopeRefV1::Instance { world_id, instance_id } = r.destination_scope else {
+    let RuntimeScopeRefV1::Instance {
+        world_id,
+        instance_id,
+    } = r.destination_scope
+    else {
         return Err(DurabilityError::InvalidStoredState);
     };
     let p = &r.participants[0];
@@ -521,14 +556,22 @@ async fn open_enrollment(
          FOR UPDATE OF g,b",
     )
     .bind(assignment_scope_key(r.destination_scope).as_slice())
-    .bind(r.handoff_id.as_slice()).bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice())
-    .bind(&r.activity_key).bind(&r.template_revision).bind(&r.content_revision)
-    .bind(r.destination_generation.get().to_string()).bind(duration).bind(now)
-    .bind(channel_id.as_bytes().as_slice()).bind(r.destination_assignment_source_revision.to_string())
+    .bind(r.handoff_id.as_slice())
+    .bind(world_id.as_bytes().as_slice())
+    .bind(instance_id.as_slice())
+    .bind(&r.activity_key)
+    .bind(&r.template_revision)
+    .bind(&r.content_revision)
+    .bind(r.destination_generation.get().to_string())
+    .bind(duration)
+    .bind(now)
+    .bind(channel_id.as_bytes().as_slice())
+    .bind(r.destination_assignment_source_revision.to_string())
     .bind(r.destination_content.coordinate_frame_digest.as_slice())
     .bind(r.destination_content.map_revision_digest.as_slice())
     .bind(r.destination_content.server_artifact_digest.as_slice())
-    .fetch_optional(&mut **tx).await?;
+    .fetch_optional(&mut **tx)
+    .await?;
     if matches.is_none() {
         return Ok(false);
     }
@@ -543,7 +586,8 @@ async fn open_enrollment(
     )
     .bind(r.handoff_id.as_slice())
     .bind(p.source.character_id.as_bytes().as_slice())
-    .fetch_one(&mut **tx).await?)
+    .fetch_one(&mut **tx)
+    .await?)
 }
 
 async fn issue_activity_successor(
@@ -555,16 +599,21 @@ async fn issue_activity_successor(
     let RuntimeScopeRefV1::Channel { channel_id, .. } = p.source.runtime_scope else {
         return Err(DurabilityError::InvalidStoredState);
     };
-    issue_successor(tx, root, SuccessorSession {
-        terminal_security_return: false,
-        source: p.source,
-        destination: p.destination_game_session_id,
-        decision: r.handoff_id,
-        scope: r.destination_scope,
-        scope_generation: r.destination_generation,
-        origin: Some(*channel_id.as_bytes()),
-        transport: p.destination_transport,
-    }).await
+    issue_successor(
+        tx,
+        root,
+        SuccessorSession {
+            terminal_security_return: false,
+            source: p.source,
+            destination: p.destination_game_session_id,
+            decision: r.handoff_id,
+            scope: r.destination_scope,
+            scope_generation: r.destination_generation,
+            origin: Some(*channel_id.as_bytes()),
+            transport: p.destination_transport,
+        },
+    )
+    .await
 }
 
 async fn insert_participant(
@@ -667,7 +716,9 @@ pub(super) async fn issue_successor(
         .bind(source.game_session_id.as_bytes().as_slice()).bind(source.character_id.as_bytes().as_slice())
         .bind(source.connection_generation.get().to_string()).bind(source.character_lease_generation.to_string()).fetch_optional(&mut **tx).await?
         .ok_or(DurabilityError::Unavailable)?;
-    let (admission_generation, security_revoked) = super::super::platform_streams::session_security_lineage(tx, source.game_session_id).await?;
+    let (admission_generation, security_revoked) =
+        super::super::platform_streams::session_security_lineage(tx, source.game_session_id)
+            .await?;
     if security_revoked && !terminal_security_return {
         return Err(DurabilityError::Unavailable);
     }

@@ -112,28 +112,42 @@ impl ActivityHandoffOwner {
         source: CurrentCharacterItemFence,
         boss_key: &str,
     ) -> Result<Option<u64>> {
-        let recovery = authority.record_for(&self.root).map_err(|_| DurabilityError::Unavailable)?;
+        let recovery = authority
+            .record_for(&self.root)
+            .map_err(|_| DurabilityError::Unavailable)?;
         let key = boss_key.to_owned();
         let node = node.clone();
         let root = self.root.clone();
-        self.root.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &recovery).await?;
-            lock_admission_relations(&mut tx).await?;
-            assert_item_only_fence(&mut tx, &source, &node).await?
-                .map_err(|_| DurabilityError::Unavailable)?;
-            let now = quest_activity_now_ms(&mut tx, &root).await?;
-            let remaining_ms: Option<i64> = sqlx::query_scalar(
-                "SELECT available_at-$3 FROM game_character_boss_cooldowns
+        self.root
+            .try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    assert_item_only_fence(&mut tx, &source, &node)
+                        .await?
+                        .map_err(|_| DurabilityError::Unavailable)?;
+                    let now = quest_activity_now_ms(&mut tx, &root).await?;
+                    let remaining_ms: Option<i64> = sqlx::query_scalar(
+                        "SELECT available_at-$3 FROM game_character_boss_cooldowns
                  WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2 AND available_at>$3",
-            )
-            .bind(source.character_id.as_bytes().as_slice()).bind(key).bind(now)
-            .fetch_optional(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
-            remaining_ms
-                .map(|remaining| u64::try_from(remaining).map_err(|_| DurabilityError::InvalidStoredState))
-                .transpose()
-        })).await
+                    )
+                    .bind(source.character_id.as_bytes().as_slice())
+                    .bind(key)
+                    .bind(now)
+                    .fetch_optional(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    remaining_ms
+                        .map(|remaining| {
+                            u64::try_from(remaining)
+                                .map_err(|_| DurabilityError::InvalidStoredState)
+                        })
+                        .transpose()
+                })
+            })
+            .await
     }
 
     /// Routing advice only. Admission rechecks the assignment and window under locks.
@@ -144,10 +158,16 @@ impl ActivityHandoffOwner {
         source: CurrentCharacterItemFence,
         boss_key: &str,
     ) -> Result<Option<([u8; 16], ActivityReadyAllocation)>> {
-        let RuntimeScopeRefV1::Channel { world_id, channel_id } = source.runtime_scope else {
+        let RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } = source.runtime_scope
+        else {
             return Ok(None);
         };
-        let recovery = authority.record_for(&self.root).map_err(|_| DurabilityError::Unavailable)?;
+        let recovery = authority
+            .record_for(&self.root)
+            .map_err(|_| DurabilityError::Unavailable)?;
         let key = boss_key.to_owned();
         let node = node.clone();
         self.root.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {

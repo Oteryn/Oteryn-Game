@@ -65,13 +65,22 @@ fn ddepths_warzone_production_corpse_assets_activate_postgres() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| super::fixture::run(|admin| async move {
-            let h = Harness::create_with_admission_seed(admin, "warzone_corpse_assets", true, false).await?;
-            let result = check_production_corpse_assets();
-            let cleanup = h.cleanup().await;
-            result?;
-            cleanup
-        }).map_err(|error| error.to_string()))
+        .spawn(|| {
+            super::fixture::run(|admin| async move {
+                let h = Harness::create_with_admission_seed(
+                    admin,
+                    "warzone_corpse_assets",
+                    true,
+                    false,
+                )
+                .await?;
+                let result = check_production_corpse_assets();
+                let cleanup = h.cleanup().await;
+                result?;
+                cleanup
+            })
+            .map_err(|error| error.to_string())
+        })
         .map_err(|error| error.to_string())?
         .join()
         .map_err(|_| "Warzone corpse activation panicked")??;
@@ -88,21 +97,42 @@ fn check_production_corpse_assets() -> TestResult {
         .ok_or("active native gameplay")?
         .reward_table();
     for (creature, corpse, entry_count, max_fragments) in [
-        ("oteryn:creature.the_baron_from_below", "oteryn:item.tibia.i27633", 46, 1),
-        ("oteryn:creature.the_count_of_the_core", "oteryn:item.tibia.i27637", 47, 7),
-        ("oteryn:creature.the_duke_of_the_depths", "oteryn:item.tibia.i27641", 47, 1),
+        (
+            "oteryn:creature.the_baron_from_below",
+            "oteryn:item.tibia.i27633",
+            46,
+            1,
+        ),
+        (
+            "oteryn:creature.the_count_of_the_core",
+            "oteryn:item.tibia.i27637",
+            47,
+            7,
+        ),
+        (
+            "oteryn:creature.the_duke_of_the_depths",
+            "oteryn:item.tibia.i27641",
+            47,
+            1,
+        ),
     ] {
         let row = rewards
             .reward_boss_corpse(creature)
             .ok_or_else(|| format!("production corpse unavailable for {creature}"))?;
         assert_eq!(
-            row.corpse_item.as_ref().map(|item| item.production_key.as_str()),
+            row.corpse_item
+                .as_ref()
+                .map(|item| item.production_key.as_str()),
             Some(corpse)
         );
-        let private_reward = rewards
-            .row(creature)
-            .map_err(|reason| format!("complete reward row unavailable for {creature}: {reason:?}"))?;
-        assert_eq!(private_reward.loot_table.entries.len(), entry_count, "{creature}");
+        let private_reward = rewards.row(creature).map_err(|reason| {
+            format!("complete reward row unavailable for {creature}: {reason:?}")
+        })?;
+        assert_eq!(
+            private_reward.loot_table.entries.len(),
+            entry_count,
+            "{creature}"
+        );
         let fragment = private_reward
             .loot_table
             .entries
@@ -110,7 +140,11 @@ fn check_production_corpse_assets() -> TestResult {
             .find(|entry| entry.item.production_key == "oteryn:item.tibia.i27713")
             .ok_or_else(|| format!("heavy crystal fragment absent for {creature}"))?;
         assert_eq!(
-            (fragment.min_count, fragment.max_count, fragment.probability_ppm),
+            (
+                fragment.min_count,
+                fragment.max_count,
+                fragment.probability_ppm
+            ),
             (1, max_fragments, Some(1_000_000)),
             "{creature}"
         );
@@ -121,7 +155,10 @@ fn check_production_corpse_assets() -> TestResult {
 fn window_scenario(admin: String) -> TestResult {
     let runtime = crate::bestiary_postgres_harness::runtime()?;
     let harness = runtime.block_on(Harness::create_with_admission_seed(
-        admin, "boss_admission_window", true, false,
+        admin,
+        "boss_admission_window",
+        true,
+        false,
     ))?;
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         runtime.block_on(window_case(&harness))
@@ -145,7 +182,11 @@ async fn window_case(h: &Harness) -> TestResult {
     let owner = ActivityHandoffOwner::new(h.root.clone());
     let store = FreshAdmissionStore::from_root(h.root.clone());
     let seal = h.recovery.seal_current().map_err(debug)?;
-    let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
     let second_session = admit_member(h, &evidence.evidence, 1).await?;
     let mut second = first.clone();
     let member = &mut second.participants[0];
@@ -171,35 +212,54 @@ async fn window_case(h: &Harness) -> TestResult {
     let mut competing = second.clone();
     competing.handoff_id = id(92);
     competing.destination_scope = allocate_ready_instance(h, 93).await?;
-    let assignment = h.root.read_runtime_scope_assignment(competing.destination_scope)
-        .await.map_err(debug)?.ok_or("competing allocation")?;
+    let assignment = h
+        .root
+        .read_runtime_scope_assignment(competing.destination_scope)
+        .await
+        .map_err(debug)?
+        .ok_or("competing allocation")?;
     competing.destination_generation =
-        crate::foundation::ScopeOwnershipGeneration::new(assignment.ownership_generation).map_err(debug)?;
+        crate::foundation::ScopeOwnershipGeneration::new(assignment.ownership_generation)
+            .map_err(debug)?;
     competing.destination_assignment_source_revision = assignment.source_revision;
 
-    let clock: i64 = sqlx::query_scalar(
-        "SELECT floor(extract(epoch FROM clock_timestamp()))::bigint",
-    ).fetch_one(&h.pool).await?;
+    let clock: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&h.pool)
+            .await?;
     h.root.set_test_quest_clock(clock)?;
     let window = std::num::NonZeroU32::new(8_000).ok_or("nonzero enrollment window")?;
     let wrong_duration = std::num::NonZeroU32::new(7_000).ok_or("nonzero enrollment window")?;
     assert_eq!(
-        owner.enter_boss_admission_window(&authority, &h.node, first.clone(), wrong_duration).await?,
+        owner
+            .enter_boss_admission_window(&authority, &h.node, first.clone(), wrong_duration)
+            .await?,
         ActivityEnterOutcome::Refused(ActivityRefusal::InvalidInput)
     );
     let mut other_activity = first.clone();
     other_activity.activity_key = BOSS.into();
     assert_eq!(
-        owner.enter_boss_admission_window(&authority, &h.node, other_activity, window).await?,
+        owner
+            .enter_boss_admission_window(&authority, &h.node, other_activity, window)
+            .await?,
         ActivityEnterOutcome::Refused(ActivityRefusal::InvalidInput)
     );
     let second_source = second.participants[0].source;
-    assert!(owner.open_portal_room(&authority, &h.node, second_source, WARZONE_BOSS).await?.is_none());
+    assert!(
+        owner
+            .open_portal_room(&authority, &h.node, second_source, WARZONE_BOSS)
+            .await?
+            .is_none()
+    );
     for request in [&first, &second] {
         let account: String = sqlx::query_scalar(
             "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
         ).bind(request.initiating_character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
-        evidence.evidence.refresh_account(&h.root, &h.node, &account).await.map_err(debug)?;
+        evidence
+            .evidence
+            .refresh_account(&h.root, &h.node, &account)
+            .await
+            .map_err(debug)?;
         if request.initiating_character_id == second.initiating_character_id {
             let (handoff, allocation) = owner
                 .open_portal_room(&authority, &h.node, second_source, WARZONE_BOSS)
@@ -208,20 +268,31 @@ async fn window_case(h: &Harness) -> TestResult {
             assert_eq!(handoff, first.handoff_id);
             assert_eq!(allocation.scope, first.destination_scope);
             assert_eq!(
-                owner.enter_boss_admission_window(&authority, &h.node, competing.clone(), window).await?,
+                owner
+                    .enter_boss_admission_window(&authority, &h.node, competing.clone(), window)
+                    .await?,
                 ActivityEnterOutcome::Refused(ActivityRefusal::NoCapacity)
             );
         }
-        let outcome = owner.enter_boss_admission_window(
-            &authority, &h.node, request.clone(), window,
-        ).await.map_err(|error| format!("window entrant {:?}: {error:?}", request.initiating_character_id))?;
+        let outcome = owner
+            .enter_boss_admission_window(&authority, &h.node, request.clone(), window)
+            .await
+            .map_err(|error| {
+                format!(
+                    "window entrant {:?}: {error:?}",
+                    request.initiating_character_id
+                )
+            })?;
         let ActivityEnterOutcome::Entered(receipt) = outcome else {
             return Err(format!("window admission refused: {outcome:?}").into());
         };
         assert_eq!(receipt.handoff_id, first.handoff_id);
         assert_eq!(receipt.destination_scope, first.destination_scope);
         assert_eq!(receipt.participants.len(), 1);
-        assert_eq!(receipt.participants[0].character_id, request.initiating_character_id);
+        assert_eq!(
+            receipt.participants[0].character_id,
+            request.initiating_character_id
+        );
     }
     for request in [&first, &second] {
         let outcome = owner
@@ -232,11 +303,17 @@ async fn window_case(h: &Harness) -> TestResult {
         };
         assert_eq!(receipt.handoff_id, first.handoff_id);
         assert_eq!(receipt.participants.len(), 1);
-        assert_eq!(receipt.participants[0].character_id, request.initiating_character_id);
+        assert_eq!(
+            receipt.participants[0].character_id,
+            request.initiating_character_id
+        );
     }
     let members: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_boss_room_participants WHERE admission=encode($1,'hex')::uuid"
-    ).bind(first.handoff_id.as_slice()).fetch_one(&h.pool).await?;
+        "SELECT count(*) FROM game_boss_room_participants WHERE admission=encode($1,'hex')::uuid",
+    )
+    .bind(first.handoff_id.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
     assert_eq!(members, 2);
     let cooldowns: Vec<i64> = sqlx::query_scalar(
         "SELECT available_at FROM game_character_boss_cooldowns WHERE admission=encode($1,'hex')::uuid"
@@ -245,15 +322,34 @@ async fn window_case(h: &Harness) -> TestResult {
 
     sqlx::query(
         "SELECT pg_sleep(greatest(0, extract(epoch FROM admission_closes_at - clock_timestamp())))
-         FROM game_activity_handoff_groups WHERE handoff_id=encode($1,'hex')::uuid"
-    ).bind(first.handoff_id.as_slice()).fetch_one(&h.pool).await?;
+         FROM game_activity_handoff_groups WHERE handoff_id=encode($1,'hex')::uuid",
+    )
+    .bind(first.handoff_id.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
     let account: String = sqlx::query_scalar(
         "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
     ).bind(late.initiating_character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
-    evidence.evidence.refresh_account(&h.root, &h.node, &account).await.map_err(debug)?;
-    assert!(owner.open_portal_room(&authority, &h.node, late.participants[0].source, WARZONE_BOSS).await?.is_none());
+    evidence
+        .evidence
+        .refresh_account(&h.root, &h.node, &account)
+        .await
+        .map_err(debug)?;
+    assert!(
+        owner
+            .open_portal_room(
+                &authority,
+                &h.node,
+                late.participants[0].source,
+                WARZONE_BOSS
+            )
+            .await?
+            .is_none()
+    );
     assert_eq!(
-        owner.enter_boss_admission_window(&authority, &h.node, late, window).await?,
+        owner
+            .enter_boss_admission_window(&authority, &h.node, late, window)
+            .await?,
         ActivityEnterOutcome::Refused(ActivityRefusal::NoCapacity)
     );
 
@@ -262,36 +358,63 @@ async fn window_case(h: &Harness) -> TestResult {
         let account: String = sqlx::query_scalar(
             "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
         ).bind(request.initiating_character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
-        evidence.evidence.refresh_account(&h.root, &h.node, &account).await.map_err(debug)?;
+        evidence
+            .evidence
+            .refresh_account(&h.root, &h.node, &account)
+            .await
+            .map_err(debug)?;
         let member = &request.participants[0];
-        let source = item_fence_of(store.current_session_at(member.destination_game_session_id).await?.0)
-            .ok_or("Instance source fence")?;
+        let source = item_fence_of(
+            store
+                .current_session_at(member.destination_game_session_id)
+                .await?
+                .0,
+        )
+        .ok_or("Instance source fence")?;
         let destination = GameSessionId::decode(&id(tag)).map_err(debug)?;
-        let outcome = owner.return_participant(
-            &authority, &h.node, ActivityReturnRequest {
-                return_id: id(tag - 20),
-                handoff_id: first.handoff_id,
-                command_id: None,
-                source,
-                destination_game_session_id: destination,
-                destination_transport: Some(AuthenticatedTransportRefV1::decode(&[tag; 16]).map_err(debug)?),
-                destination_generation: member.source.scope_ownership_generation,
-                reason: ActivityReturnReason::Timeout,
-                current_vitals: member.source_position.vitals,
-                current_rest: member.source_position.rest,
-            },
-        ).await.map_err(|error| format!("returning window entrant {tag}: {error:?}"))?;
-        assert!(matches!(outcome, ActivityReturnOutcome::Returned(_)), "{outcome:?}");
+        let outcome = owner
+            .return_participant(
+                &authority,
+                &h.node,
+                ActivityReturnRequest {
+                    return_id: id(tag - 20),
+                    handoff_id: first.handoff_id,
+                    command_id: None,
+                    source,
+                    destination_game_session_id: destination,
+                    destination_transport: Some(
+                        AuthenticatedTransportRefV1::decode(&[tag; 16]).map_err(debug)?,
+                    ),
+                    destination_generation: member.source.scope_ownership_generation,
+                    reason: ActivityReturnReason::Timeout,
+                    current_vitals: member.source_position.vitals,
+                    current_rest: member.source_position.rest,
+                },
+            )
+            .await
+            .map_err(|error| format!("returning window entrant {tag}: {error:?}"))?;
+        assert!(
+            matches!(outcome, ActivityReturnOutcome::Returned(_)),
+            "{outcome:?}"
+        );
         let returned = item_fence_of(store.current_session_at(destination).await?.0)
             .ok_or("returned Channel fence")?;
         assert_eq!(returned.runtime_scope, member.source.runtime_scope);
     }
     let active: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_boss_room_participants
-         WHERE admission=encode($1,'hex')::uuid AND returned_at IS NULL"
-    ).bind(first.handoff_id.as_slice()).fetch_one(&h.pool).await?;
+         WHERE admission=encode($1,'hex')::uuid AND returned_at IS NULL",
+    )
+    .bind(first.handoff_id.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
     assert_eq!(active, 0);
-    assert!(owner.due_boss_rooms(&authority, &h.node, world).await?.is_empty());
+    assert!(
+        owner
+            .due_boss_rooms(&authority, &h.node, world)
+            .await?
+            .is_empty()
+    );
     Ok(())
 }
 

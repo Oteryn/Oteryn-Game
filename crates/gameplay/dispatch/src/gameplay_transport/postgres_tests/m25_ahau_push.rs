@@ -15,8 +15,8 @@ fn m25_push_peer_uses_genuine_fresh_admission_postgres() -> TestResult {
     let started = std::time::Instant::now();
     super::kill_reward_e2e::scenario_thread::run("m25-push-peer-fresh", || {
         super::fixture::run(async |admin| {
-            let h = Harness::create_with_admission_seed(admin, "m25_push_peer", false, false)
-                .await?;
+            let h =
+                Harness::create_with_admission_seed(admin, "m25_push_peer", false, false).await?;
             let source = super::house_transfer::RecoverySource::start(&h).await?;
             super::house_transfer::prepare_owned_session(&h)
                 .await
@@ -48,7 +48,12 @@ fn m25_push_peer_uses_genuine_fresh_admission_postgres() -> TestResult {
             )
             .await
             .map_err(|error| format!("M25 independent group account evidence: {error:?}"))?;
-            assert!(h.root.pending_native_source_publications(&h.node).await?.is_empty());
+            assert!(
+                h.root
+                    .pending_native_source_publications(&h.node)
+                    .await?
+                    .is_empty()
+            );
             let refreshed: i64 = sqlx::query_scalar(
                 "SELECT count(DISTINCT convert_from(semantic_facts,'UTF8')::jsonb->>'account_id') \
                  FROM game_durability_native_source_floors \
@@ -62,11 +67,17 @@ fn m25_push_peer_uses_genuine_fresh_admission_postgres() -> TestResult {
             ])
             .fetch_one(&h.pool)
             .await?;
-            assert_eq!(refreshed, 2, "both independent account decisions are current");
+            assert_eq!(
+                refreshed, 2,
+                "both independent account decisions are current"
+            );
             h.cleanup().await
         })
     })?;
-    eprintln!("M25_PUSH_PEER_FRESH_COMPLETED duration={:?}", started.elapsed());
+    eprintln!(
+        "M25_PUSH_PEER_FRESH_COMPLETED duration={:?}",
+        started.elapsed()
+    );
     Ok(())
 }
 
@@ -126,7 +137,11 @@ pub(super) async fn prepare_peer_and_party(
     assert_eq!(invited[0].disposition, PartyDisposition::Ok);
     let joined = roundtrip(owner, &mut peer, &[Step::Query, Step::Accept]).await?;
     assert_eq!(joined.len(), 2);
-    assert_eq!(joined[0].invitations.len(), 1, "one actual Party invitation");
+    assert_eq!(
+        joined[0].invitations.len(),
+        1,
+        "one actual Party invitation"
+    );
     for result in joined {
         assert_eq!(result.disposition, PartyDisposition::Ok);
     }
@@ -210,7 +225,11 @@ pub(super) async fn exercise(
         let runtime = view.runtime.lock().await;
         view.wire_observation(
             &runtime,
-            MovementLocalPosition { x: 34002, y: 31706, floor: 10 },
+            MovementLocalPosition {
+                x: 34002,
+                y: 31706,
+                floor: 10,
+            },
         )
         .ok_or("actual native PUSH destination projection")?
         .actor_position
