@@ -1,6 +1,7 @@
 //! The plain ritual-scroll USE debits both custody inputs and grants the achievement.
 use super::quest_world_callbacks::{self, tool_fixture};
 use super::{TestResult, fixture::debug};
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_gameplay_quests::quest::{
     QuestTrack,
     world_callbacks::{Callback, Offering, Position},

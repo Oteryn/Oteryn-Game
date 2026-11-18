@@ -108,6 +108,9 @@ fn extend_profile(profiles: &mut Vec<Value>, profile: Value) {
 
 fn replace_bytes(pin: &mut PinnedGameplayBytes, document: &Value) -> TestResult {
     pin.bytes = serde_json::to_vec(document)?;
-    pin.sha256 = format!("{:x}", Sha256::digest(&pin.bytes));
+    pin.sha256 = Sha256::digest(&pin.bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
     Ok(())
 }
