@@ -227,6 +227,9 @@ pub struct NativeClaimBinding {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct RewardCallback {
+    /// A release of additional dialogue over the same previously owned tracks.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub additive_dialogue_generation: Option<u16>,
     /// Source placement gates are proved by the live NPC dialogue dispatcher.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub placement: Option<DialoguePlacement>,
@@ -740,6 +743,14 @@ fn validate_document_with_capacity(
         }
     }
     for c in &document.callbacks {
+        if c.additive_dialogue_generation.is_some_and(|generation| {
+            !(1..=4).contains(&generation)
+                || c.carried_item.is_some()
+                || c.world_claim.is_some()
+                || !c.participants.is_empty()
+        }) {
+            return Err(format!("invalid additive NPC dialogue release {}", c.key));
+        }
         if c.placement.as_ref().is_some_and(|placement| {
             !placement.valid() || c.carried_item.is_some() || c.world_claim.is_some()
         }) || c.requirements.as_ref().is_some_and(|r| !r.valid())
@@ -1235,8 +1246,85 @@ fn extend_document(
     catalogue: QuestStateCatalogue,
     document: Document,
 ) -> Result<QuestStateCatalogue, String> {
-    extend_callbacks(catalogue, document.callbacks, document.tracks)
+    let releases: BTreeSet<_> = document
+        .callbacks
+        .iter()
+        .filter_map(|row| {
+            row.additive_dialogue_generation
+                .map(|n| (row.quest.clone(), n))
+        })
+        .collect();
+    if releases.is_empty() {
+        return extend_callbacks(catalogue, document.callbacks, document.tracks);
+    }
+    if releases.len() > 16 {
+        return Err("additive NPC dialogue release bound".into());
+    }
+    let mut active = extend_callbacks(
+        catalogue.clone(),
+        document.callbacks.clone(),
+        document.tracks.clone(),
+    )?;
+    for (quest, generation) in releases {
+        let predecessor = extend_callbacks(
+            catalogue.clone(),
+            document
+                .callbacks
+                .iter()
+                .filter(|row| {
+                    row.quest != quest
+                        || row
+                            .additive_dialogue_generation
+                            .is_none_or(|n| n < generation)
+                })
+                .cloned()
+                .collect(),
+            document.tracks.clone(),
+        )?;
+        register_additive_predecessor(&mut active, &predecessor, &quest)?;
+    }
+    Ok(active)
 }
+
+/// Accept the exact captured definition when the successor only adds operations
+/// over the same tracks. Missing rows still use the same defaults.
+pub fn register_additive_predecessor(
+    active: &mut QuestStateCatalogue,
+    predecessor: &QuestStateCatalogue,
+    quest: &str,
+) -> Result<(), String> {
+    let old_tracks = predecessor
+        .tracks
+        .values()
+        .filter(|track| track.quest == quest);
+    let new_tracks = active.tracks.values().filter(|track| track.quest == quest);
+    let newest = active.definition_hash(quest);
+    let hash = predecessor
+        .definition_hash(quest)
+        .filter(|hash| Some(*hash) != newest)
+        .ok_or("additive dialogue requires a changed existing definition")?;
+    if newest.is_none()
+        || !old_tracks.eq(new_tracks)
+        || predecessor
+            .transitions
+            .values()
+            .filter(|t| t.quest == quest)
+            .any(|t| active.transition(&t.key) != Some(t))
+    {
+        return Err(format!(
+            "additive dialogue changed existing state for {quest}"
+        ));
+    }
+    let entries = active.predecessors.entry(quest.into()).or_default();
+    if !entries.iter().any(|entry| entry.hash == hash) {
+        entries.push(super::NpcDefinitionPredecessor {
+            hash,
+            defaults: BTreeMap::new(),
+        });
+    }
+    Ok(())
+}
+
 fn extend_callbacks(
     catalogue: QuestStateCatalogue,
     callbacks: Vec<RewardCallback>,

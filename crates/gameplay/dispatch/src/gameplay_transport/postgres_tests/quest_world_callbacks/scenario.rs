@@ -2464,6 +2464,8 @@ fn scenario_case(
             .await?;
         } else if name.starts_with("qewrath-emiliana-") {
             Box::pin(super::super::qewrath_emiliana::exercise(&mut owner, &mut admitted, &h, name)).await?;
+        } else if name.starts_with("qewrath-npc-handoff-") {
+            Box::pin(super::super::qewrath_npc_handoffs::exercise(&mut owner, &mut admitted, &h, name)).await?;
         } else if name == "m16-marker" {
             Box::pin(super::super::m16_personal_map_marker::exercise(
                 &mut owner,

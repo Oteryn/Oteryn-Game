@@ -809,6 +809,7 @@ async fn wardrobe(
         .clone()
         .ok_or("wardrobe outfit")?;
     let seed = RewardCallback {
+        additive_dialogue_generation: None,
         placement: None,
         repeatable: false,
         required_claims: Vec::new(),
