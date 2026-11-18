@@ -435,19 +435,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // The activity handoff takes the movement lanes of both scopes.
                 // Finish this movement before requesting that handoff.
                 drop(permit);
-                Box::pin(self.kroazur_step_in(actor, session, snapshot)).await;
+                let snapshot = Box::pin(self.kroazur_step_in(actor, session, snapshot))
+                    .await
+                    .unwrap_or(snapshot);
                 let runtime = self.runtime.lock().await;
                 // NPC-TALK-2: a customer who stepped out of talk range ends its conversation now.
                 self.states.chat.close_out_of_range(&runtime, session);
                 let outcome = StepOutcome {
                     disposition: StepDisposition::Moved,
-                    moved_to: self.wire_observation(
-                        &runtime,
-                        runtime
-                            .read_actor_position(actor)
-                            .unwrap_or(snapshot)
-                            .position(),
-                    ),
+                    moved_to: self.wire_observation(&runtime, snapshot.position()),
                 };
                 (outcome, Some(duration))
             }

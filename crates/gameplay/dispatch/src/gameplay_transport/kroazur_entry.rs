@@ -18,28 +18,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
         entered: MovementPositionSnapshot,
-    ) {
+    ) -> Option<MovementPositionSnapshot> {
         let Some(map) = self.bundle_map() else {
-            return;
+            return None;
         };
         if !matches!(actor.runtime_scope(), RuntimeScopeRefV1::Channel { .. }) {
-            return;
+            return None;
         }
         let p = entered.position();
         // This action also marks the exit, which has its own unconditional callback.
         if (p.x, p.y, p.floor) == (33591, 32321, 10) {
-            return;
+            return None;
         }
         let (Ok(x), Ok(y), Ok(floor)) = (
             u16::try_from(p.x),
             u16::try_from(p.y),
             i8::try_from(-i32::from(p.floor)),
         ) else {
-            return;
+            return None;
         };
         let pos = TilePos { x, y, floor };
         let Some(base) = map.overlay.base().tile(x, y, floor) else {
-            return;
+            return None;
         };
         if !(0..base.depths().iter().filter(|depth| **depth == 0).count()).any(|ordinal| {
             u8::try_from(ordinal)
@@ -49,28 +49,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     !map.facts.base_hidden(key) && map.facts.action_at(key) == Some(25029)
                 })
         }) {
-            return;
+            return None;
         }
         let movement = {
             let runtime = self.runtime.lock().await;
             let Ok(Some(movement)) = runtime.committed_movement_occurrence(actor) else {
-                return;
+                return None;
             };
             if movement.after() != entered
                 || movement.before().position() == p
                 || runtime.read_actor_position(actor) != Ok(entered)
             {
-                return;
+                return None;
             }
             movement
         };
         let Some(admitted) = self.activity_runtimes.connection(session) else {
-            self.return_from_kroazur_entrance(session, movement).await;
-            return;
+            return self.return_from_kroazur_entrance(session, movement).await;
         };
 
         let Ok(payload) = wire::encode_boss_key(KROAZUR_BOSS) else {
-            return;
+            return None;
         };
         let retry = super::AdmissionRetryBudget::for_command(self.root);
         let reply = retry
@@ -81,9 +80,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .await;
         match reply {
-            Ok((CommandStatus::Accepted, _)) => {}
+            Ok((CommandStatus::Accepted, _)) => None,
             Ok((_, payload)) => {
-                self.return_from_kroazur_entrance(session, movement).await;
+                let returned = self.return_from_kroazur_entrance(session, movement).await;
                 let reason = match wire::decode_boss_activity_reply(&payload) {
                     Ok(wire::BossActivityReply::Refused(wire::BossActivityRefusal::Cooldown)) => {
                         "You have to wait before you can fight Kroazur again."
@@ -93,11 +92,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     _ => "You cannot enter Kroazur's room.",
                 };
-                self.states
-                    .chat
-                    .push_quest_feedback(admitted.game_session_id, reason);
+                self.states.chat.push_quest_feedback(session, reason);
+                returned
             }
-            Err(_) => super::operator_event("kroazur_entry_pending"),
+            Err(_) => {
+                super::operator_event("kroazur_entry_pending");
+                None
+            }
         }
     }
 
@@ -105,9 +106,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         session: GameSessionId,
         movement: CommittedMovementOccurrence,
-    ) {
+    ) -> Option<MovementPositionSnapshot> {
         let (Some(permit), Some(map)) = (self.spell_lane_permit().await, self.bundle_map()) else {
-            return;
+            return None;
         };
         let actor = movement.mover();
         let policy = self.special_movement_policy(&permit, actor, session).await;
@@ -117,7 +118,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || runtime.read_actor_position(actor) != Ok(movement.after())
             || states.is_dead(actor)
         {
-            return;
+            return None;
         }
         let origin = movement.before().position();
         let entered = movement.after().position();
@@ -132,28 +133,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             false,
             &doors,
         ) else {
-            return;
+            return None;
         };
-        if runtime.commit_source_step(proof).is_ok() {
-            let now = self.owner_now().get();
-            states.stage_special_movement_step(
-                &runtime,
-                map,
-                actor,
-                session,
-                now,
-                Some(entered),
-                origin,
-                policy,
-            );
-            states.stage_underwater_step(
-                &runtime,
-                actor,
-                session,
-                now,
-                super::paced_movement::underwater_drown::underwater(map, entered),
-                super::paced_movement::underwater_drown::underwater(map, origin),
-            );
-        }
+        let returned = runtime.commit_source_step(proof).ok()?;
+        let now = self.owner_now().get();
+        states.stage_special_movement_step(
+            &runtime,
+            map,
+            actor,
+            session,
+            now,
+            Some(entered),
+            origin,
+            policy,
+        );
+        states.stage_underwater_step(
+            &runtime,
+            actor,
+            session,
+            now,
+            super::paced_movement::underwater_drown::underwater(map, entered),
+            super::paced_movement::underwater_drown::underwater(map, origin),
+        );
+        Some(returned)
     }
 }
