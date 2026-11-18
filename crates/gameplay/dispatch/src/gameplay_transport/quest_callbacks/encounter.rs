@@ -271,17 +271,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .map(|(actor, session, _)| (*actor, *session))
             .collect();
-        let scoped_hash = self.quest_catalogue.as_deref().and_then(|catalogue| {
+        use oteryn_gameplay_quests::quest::authored_bindings::Trigger as BindingTrigger;
+        let scoped = self.quest_catalogue.as_deref().and_then(|catalogue| {
             let bindings = catalogue.authored_bindings()?;
-            bindings.quests.iter().find(|quest| quest.stages.iter().any(|stage|
-                matches!(&stage.trigger, oteryn_gameplay_quests::quest::authored_bindings::Trigger::MapUse { callback: source }
-                    if source.as_ref() == callback))
-                && quest.stages.iter().any(|stage|
-                    matches!(&stage.trigger, oteryn_gameplay_quests::quest::authored_bindings::Trigger::Kill { counter }
-                        if counter.encounter_source.as_deref() == Some(callback.key.as_str()))))
-                .and_then(|quest| catalogue.definition_hash(&quest.quest))
+            let quest =
+                bindings.quests.iter().find(|quest| {
+                    quest.stages.iter().any(|stage| matches!(
+                    &stage.trigger,
+                    BindingTrigger::MapUse { callback: source } if source.as_ref() == callback
+                ))
+                })?;
+            let counters: Vec<_> = quest
+                .stages
+                .iter()
+                .filter_map(|stage| match &stage.trigger {
+                    BindingTrigger::Kill { counter }
+                        if counter.encounter_source.as_deref() == Some(callback.key.as_str()) =>
+                    {
+                        Some(counter.creature.as_str())
+                    }
+                    _ => None,
+                })
+                .collect();
+            if counters.is_empty() {
+                return None;
+            }
+            Some((catalogue.definition_hash(&quest.quest)?, counters))
         });
-        let attack = if scoped_hash.is_some() {
+        let attack = if scoped.is_some() {
             match self.states.attack.try_lock() {
                 Ok(attack) => Some(attack),
                 Err(_) => return UseDisposition::Rejected,
@@ -297,7 +314,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let prepared = if let (Some(capture), Some(hash)) = (capture.as_mut(), scoped_hash) {
+        let prepared = if let (Some(capture), Some(hash)) =
+            (capture.as_mut(), scoped.as_ref().map(|(hash, _)| *hash))
+        {
             let damagers_only = encounter.weekday_monsters.is_some()
                 || encounter.phase == Some(world_callbacks::EncounterPhase::FacelessBane);
             match capture.prepare_encounter(runtime, &callback.key, hash, &party, damagers_only) {
@@ -329,9 +348,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             proofs,
             &monsters,
             |runtime, actors| {
-                let roster = if prepared.is_some() {
+                let roster = if let Some((_, counters)) = &scoped {
+                    let defenders = actors.iter().copied().zip(&monsters)
+                        .filter_map(|(actor, (creature, _, _))| {
+                            (encounter.weekday_monsters.is_none() || counters.contains(creature))
+                                .then_some(actor)
+                        }).collect();
                     Some(oteryn_gameplay_entities::carrier::encounter_access::EncounterDefenders::from_admission(
-                        party.iter().map(|(actor, _)| *actor).collect(), actors.to_vec(),
+                        party.iter().map(|(actor, _)| *actor).collect(), defenders,
                     )?)
                 } else { None };
                 credits

@@ -83,18 +83,24 @@ impl KillCounter {
                     _ => None,
                 })
                 .ok_or("authored encounter counter source")?;
-            let defenders = encounter
-                .monsters
-                .iter()
-                .filter(|monster| monster.creature == self.creature)
-                .count();
-            if self.minimum != 0
+            let matching = |monsters: &[super::super::world_callbacks::EncounterMonster]| {
+                monsters
+                    .iter()
+                    .filter(|monster| monster.creature == self.creature)
+                    .count()
+            };
+            let valid_roster = if let Some(week) = &encounter.weekday_monsters {
+                let mut counts = week.iter().map(|day| matching(day));
+                counts.clone().any(|count| count == 1) && counts.all(|count| count <= 1)
+            } else {
+                self.minimum == 0
+                    && (1..=8).contains(&encounter.monsters.len())
+                    && i64::try_from(matching(&encounter.monsters)) == Ok(self.maximum)
+            };
+            if !valid_roster
                 || encounter.timing.is_some()
                 || encounter.players.is_empty()
                 || encounter.players.len() > 8
-                || encounter.monsters.is_empty()
-                || encounter.monsters.len() > 8
-                || i64::try_from(defenders) != Ok(self.maximum)
             {
                 return Err("authored encounter counter roster/bounds".into());
             }
