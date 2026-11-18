@@ -857,6 +857,7 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
                 !phase::exclusive(peer, callback)
                     && !phase::disjoint(peer, callback)
                     && !guarded_routes::disjoint(callback, peer)
+                    && !super::elemental_spheres::separate_machine_gesture(peer, callback)
                     && !(super::elemental_spheres::machine_phases_are_disjoint(peer, callback)
                         && selector_partitions::disjoint(peer, callback))
                     && !(selector_gates::disjoint(peer, callback)

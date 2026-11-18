@@ -250,9 +250,12 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
         return false;
     };
-    if let Some(rule) = oteryn_gameplay_quests::quest::elemental_spheres::machine_use(&callback.key)
+    use oteryn_gameplay_quests::quest::elemental_spheres;
+    if let Some((position, appearance)) = elemental_spheres::machine_use(&callback.key)
+        .map(|rule| (rule.position, rule.appearance))
+        .or_else(|| elemental_spheres::machine_gem_use(&callback.key))
     {
-        return tile(rule.position) == pos
+        return tile(position) == pos
             && map
                 .overlay
                 .base()
@@ -265,7 +268,7 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
                         .nth(usize::from(ordinal))
                         .and_then(|(id, _)| map.facts.base_entry(pos, ordinal, *id))
                 })
-                .is_some_and(|facts| facts.appearance_id == rule.appearance);
+                .is_some_and(|facts| facts.appearance_id == appearance);
     }
     // These source-bound World ingresses retain no startup UID/AID in B3.
     // An appearance elsewhere in the stack cannot impersonate their source.
@@ -981,6 +984,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             super::world_map::resolve_map_target(&source, target, |_| None::<()>).ok()?
         };
+        use oteryn_gameplay_quests::quest::elemental_spheres;
         let mut selected = self
             .callback_content()
             .iter()
@@ -988,6 +992,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 c.actor_kind == world_callbacks::ActorKind::Player
                     && c.trigger == Trigger::Use
                     && !oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&c.key)
+                    && (elemental_spheres::machine_use(&c.key).is_none() || selected_tool.is_none())
+                    && (elemental_spheres::machine_gem_use(&c.key).is_none()
+                        || selected_tool.is_some())
                     && matches(map, c, resolved.placement_key)
                     && c.activation.as_ref().is_none_or(|activation| {
                         self.states

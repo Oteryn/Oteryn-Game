@@ -702,9 +702,26 @@ async fn consume_inputs(
         };
         inputs.extend(resolved);
     } else if let Some(required) = &callback.item_on_target {
-        let accepted: Vec<&str> = std::iter::once(required.item.as_str())
+        let mut accepted: Vec<&str> = std::iter::once(required.item.as_str())
             .chain(required.alternatives.iter().map(String::as_str))
             .collect();
+        use oteryn_gameplay_quests::quest::elemental_spheres;
+        if elemental_spheres::machine_gem_use(&callback.key).is_some() {
+            let vocation: Option<String> = sqlx::query_scalar(
+                "SELECT build.vocation FROM game_character_build_state build \
+                 JOIN game_character_quest_tracks stage USING(character_id) \
+                 WHERE build.character_id=encode($1,'hex')::uuid AND stage.track_key=$2 AND stage.value>0",
+            )
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(elemental_spheres::QUEST_LINE)
+            .fetch_optional(&mut **tx)
+            .await?;
+            let gem = vocation
+                .as_deref()
+                .and_then(oteryn_gameplay_progression::wheel::base_vocation)
+                .and_then(elemental_spheres::gem_for_vocation);
+            accepted.retain(|item| Some(*item) == gem);
+        }
         let row = sqlx::query(
             "SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item, \
              c.location,c.kind,i.quantity FROM \

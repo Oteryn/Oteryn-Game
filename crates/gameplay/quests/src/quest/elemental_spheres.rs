@@ -1,4 +1,4 @@
-//! Source-bound item arrivals at the Elemental Spheres Overlord altars.
+//! Source-bound sphere entry and item arrivals at the Overlord altars.
 
 use super::world_callbacks::{Callback, Position};
 use std::collections::BTreeSet;
@@ -8,6 +8,20 @@ pub const QUEST: &str = "oteryn:quest.elemental_spheres_quest";
 /// Crystal 201189f8, actions_machine1.lua:9-37. The counter is personal;
 /// both machine halves are shared map objects.
 pub const MACHINE_GEMS: &str = "oteryn:quest-progress/elemental_spheres/machine_gem_count";
+pub const QUEST_LINE: &str = "oteryn:quest-progress/elemental_spheres/quest_line";
+
+const ENCHANTED_GEMS: [(&str, &str); 4] = [
+    ("druid", "oteryn:item.tibia.i677"),
+    ("knight", "oteryn:item.tibia.i678"),
+    ("paladin", "oteryn:item.tibia.i675"),
+    ("sorcerer", "oteryn:item.tibia.i676"),
+];
+
+pub fn gem_for_vocation(base: &str) -> Option<&'static str> {
+    ENCHANTED_GEMS
+        .iter()
+        .find_map(|(vocation, gem)| (*vocation == base).then_some(*gem))
+}
 
 #[derive(Clone, Copy)]
 pub struct MachineUse {
@@ -74,6 +88,34 @@ pub fn machine_use(key: &str) -> Option<MachineUse> {
     USES.iter().find(|rule| rule.key == key).copied()
 }
 
+const GEM_USES: [(&str, Position, u16); 2] = [
+    (
+        "oteryn:quest-callback/elemental-spheres/left-deposit",
+        LEFT,
+        842,
+    ),
+    (
+        "oteryn:quest-callback/elemental-spheres/right-deposit",
+        RIGHT,
+        843,
+    ),
+];
+
+pub fn machine_gem_use(key: &str) -> Option<(Position, u16)> {
+    GEM_USES
+        .iter()
+        .find_map(|(id, at, appearance)| (*id == key).then_some((*at, *appearance)))
+}
+
+pub(super) fn separate_machine_gesture(left: &Callback, right: &Callback) -> bool {
+    let uses = |bare: &Callback, deposit: &Callback| {
+        machine_use(&bare.key).is_some_and(|rule| {
+            machine_gem_use(&deposit.key) == Some((rule.position, rule.appearance))
+        })
+    };
+    uses(left, right) || uses(right, left)
+}
+
 pub(super) fn machine_phases_are_disjoint(left: &Callback, right: &Callback) -> bool {
     machine_use(&left.key)
         .zip(machine_use(&right.key))
@@ -90,6 +132,16 @@ pub(super) fn retain_machine_predecessor(catalogue: &mut super::QuestStateCatalo
         return;
     }
     let mut transitions = catalogue.transitions.clone();
+    transitions.retain(|key, _| machine_gem_use(key).is_none());
+    let before_deposit = super::definition_hash(QUEST, &catalogue.tracks, &transitions);
+    catalogue
+        .predecessors
+        .entry(QUEST.into())
+        .or_default()
+        .push(super::NpcDefinitionPredecessor {
+            hash: before_deposit,
+            defaults: Default::default(),
+        });
     transitions.retain(|key, _| machine_use(key).is_none());
     let hash = super::definition_hash(QUEST, &tracks, &transitions);
     catalogue
@@ -114,7 +166,7 @@ pub fn sphere_destination(base_vocation: &str) -> Option<Position> {
 }
 
 pub(super) fn machine_callbacks() -> Result<Vec<Callback>, String> {
-    USES.into_iter().map(|rule| {
+    let toggles = USES.into_iter().map(|rule| {
         let opening = rule.appearance < 846;
         let replacement = |appearance| if opening { appearance + 4 } else { appearance - 4 };
         let paired_position = if rule.position == LEFT { RIGHT } else { LEFT };
@@ -145,7 +197,30 @@ pub(super) fn machine_callbacks() -> Result<Vec<Callback>, String> {
             "return_on_failure": false,
             "sources": ["crystalserver:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_machine1.lua:9-37"]
         })).map_err(|error| error.to_string())
-    }).collect()
+    });
+    let deposits = GEM_USES.into_iter().map(|(key, position, appearance)| {
+        let [(_, item), rest @ ..] = ENCHANTED_GEMS;
+        let alternatives = rest.map(|(_, gem)| gem);
+        serde_json::from_value(serde_json::json!({
+            "key": key,
+            "quest": QUEST,
+            "trigger": "use",
+            "selector": {"position": position, "appearance": appearance},
+            "requires_world_admission": true,
+            "reversible": false,
+            "passages": [],
+            "storage": [],
+            "state_ops": [{"track": MACHINE_GEMS, "from": {"kind": "any"},
+                "effect": {"kind": "add_at_least", "value": 1, "minimum": 1}}],
+            "item_on_target": {"item": item, "alternatives": alternatives, "count": 1,
+                "selected_instance": true},
+            "effects": {"magic": {"position": position, "effect": 48}},
+            "offerings": [],
+            "return_on_failure": false,
+            "sources": ["crystalserver:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/enchanting.lua:6-10,46-57"]
+        })).map_err(|error| error.to_string())
+    });
+    toggles.chain(deposits).collect()
 }
 
 #[derive(Clone, Copy, Debug)]
