@@ -340,7 +340,46 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
     let queue = owner.states.attack.lock().await.kills().clone();
     // This second current native actor really deals damage. It remains an invalid
     // Herald recipient even with the same admitted mission snapshot as the winner.
-    let lesser_contributor = if rule.top_damage_only {
+    let mut second = if rule.creature == super::bosscred_ungreez::CREATURE {
+        let (other, second) = super::grizzly_boss::vacancy::second_player(
+            &owner,
+            &deps,
+            h,
+            MovementLocalPosition {
+                x: position[0] - 1,
+                y: position[1],
+                floor: i16::try_from(-position[2])?,
+            },
+        )
+        .await?;
+        super::qengine_outfit_stories::seed_quest_prerequisites(h, &owner, &second, &seeds, 0xa7)
+            .await?;
+        owner
+            .refresh_quest_session(second.game_session_id, false)
+            .await;
+        assert!(
+            owner
+                .refresh_source_party_presence(other, second.game_session_id)
+                .await
+        );
+        Some(second)
+    } else {
+        None
+    };
+    let lesser_contributor = if let Some(second) = &second {
+        let session = second.game_session_id;
+        let actor = second.runtime_actor.ok_or("second admitted actor")?;
+        let runtime = owner.runtime.lock().await;
+        let lease = runtime
+            .bound_attacker_lease(actor, session)
+            .map_err(debug)?;
+        Some((
+            actor,
+            session,
+            *lease.character_id().as_bytes(),
+            lease.generation(),
+        ))
+    } else if rule.top_damage_only {
         let mut runtime = owner.runtime.lock().await;
         let session = crate::foundation::GameSessionId::decode(&id(77)).map_err(debug)?;
         let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
@@ -578,8 +617,8 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         i64::try_from(kills)?,
         "duplicate corpse projection must retain the first captured receipt"
     );
-    if rule.creature == super::bosscred_ungreez::CREATURE {
-        super::bosscred_ungreez::report(&mut owner, &mut admitted, &authority).await?;
+    if let Some(second) = &mut second {
+        super::bosscred_ungreez::report(&mut owner, &mut admitted, second, &authority).await?;
     }
     Ok(())
 }

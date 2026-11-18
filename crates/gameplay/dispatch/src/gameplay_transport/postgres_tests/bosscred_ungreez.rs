@@ -18,6 +18,7 @@ fn bosscred_ungreez_commits_only_top_damage_mission_credit() -> TestResult {
 pub(super) async fn report(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
+    lesser: &mut AdmittedSession,
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
     let [npc] = install(owner, admitted, ["oteryn:npc.henricus"]).await?;
@@ -25,5 +26,14 @@ pub(super) async fn report(
     talk(owner, admitted, npc, 31_001, "report").await?;
     assert_eq!(progress(owner, admitted, authority, QUESTLINE).await?, 20);
     assert_eq!(progress(owner, admitted, authority, MISSION).await?, 3);
+    owner
+        .states
+        .chat
+        .admit(lesser.game_session_id, "Second witness", owner.owner_now());
+    owner.states.chat.set_npc_service(lesser.game_session_id);
+    talk(owner, lesser, npc, 31_000, "hi").await?;
+    talk(owner, lesser, npc, 31_001, "report").await?;
+    assert_eq!(progress(owner, lesser, authority, QUESTLINE).await?, 18);
+    assert_eq!(progress(owner, lesser, authority, MISSION).await?, 0);
     Ok(())
 }
