@@ -25,6 +25,7 @@ fn annihilator_source_route_earned_reward_exit_and_reentry() -> TestResult {
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Route {
     Entry,
+    TimedSourceRepair,
     Combat,
     Complete,
     ObjectiveAtomicity,
@@ -59,8 +60,12 @@ pub(super) fn elvenbane_source_exploration() -> TestResult {
     run(Route::ElvenbaneExploration)
 }
 
+pub(super) fn timed_source_repair() -> TestResult {
+    run(Route::TimedSourceRepair)
+}
+
 fn run(route: Route) -> TestResult {
-    let combat = route != Route::Entry;
+    let combat = !matches!(route, Route::Entry | Route::TimedSourceRepair);
     let start = if matches!(
         route,
         Route::ObjectiveAtomicity | Route::ObjectiveAtomicityStale
@@ -515,6 +520,14 @@ fn run(route: Route) -> TestResult {
                 .await?;
             }
         }
+        if route == Route::TimedSourceRepair {
+            let mut callback = owner.callback_content().iter().find(|callback| {
+                callback.key == "oteryn:quest-callback/annihilator-entry"
+            }).ok_or("Annihilator entrance callback")?.clone();
+            callback.effects.reset_after_ms = Some(30_000);
+            owner.states.quest_callbacks.fixture.set(vec![callback])
+                .map_err(|_| "already installed callback fixture")?;
+        }
         let lever = target(map, 33226, 31671)?;
         assert_eq!(
             use_target(&mut owner, &mut admitted[0], &lever).await?,
@@ -530,6 +543,16 @@ fn run(route: Route) -> TestResult {
         }
         assert_eq!(runtime.visible_entities().creatures.len(), 6);
         drop(runtime);
+        if route == Route::TimedSourceRepair {
+            let key = crate::map::view::placement_key(
+                crate::map::overlay::TilePos { x: 33226, y: 31671, floor: -13 }, 1,
+            ).ok_or("source placement")?;
+            let due = map.facts.next_movement_decay_time().ok_or("source did not schedule its repair")?;
+            assert_eq!(map.facts.expire_movement_items(due - 1), 0);
+            assert_eq!(map.facts.object_revision(key), 1);
+            assert_eq!(map.facts.expire_movement_items(due), 1);
+            assert_eq!(map.facts.object_revision(key), 2);
+        }
         if combat {
             super::annihilator_combat::clear_corridor(&mut owner, &mut admitted[0]).await?;
         }
