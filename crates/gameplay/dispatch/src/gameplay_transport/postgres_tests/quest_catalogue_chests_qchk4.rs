@@ -1,4 +1,8 @@
 //! PostgreSQL USE qualification for the QCHK-4 reward sources.
+//!
+//! Each cohort exercises every reward placement in its quest through USE,
+//! including duplicate-command replay, cold-owner replay and repeat-use refusal.
+//! The scope is reward delivery at the source chest.
 
 use super::{TestResult, quest_catalogue_chests::phase_a_cohort};
 
