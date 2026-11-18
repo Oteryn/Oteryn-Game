@@ -78,6 +78,7 @@ fn qmrevfix_cults_second_lever_after_victory_postgres() -> TestResult {
 
 #[derive(Clone, Copy)]
 pub(super) enum PhaseScenario {
+    CountVlarkorth,
     Cults { reenter: bool },
     DukeKrule,
     EarlOsam,
@@ -99,6 +100,9 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
             prepare_current_session(&h).await?;
             let mut callback = callback()?;
             match scenario {
+                PhaseScenario::CountVlarkorth => {
+                    super::gravedg_lich_knights::configure_count(&mut callback)?
+                }
                 PhaseScenario::Cults { .. } => {}
                 PhaseScenario::DukeKrule => {
                     super::gravedg_lich_knights::configure_duke(&mut callback)?
@@ -346,6 +350,14 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                 "phase admission"
             );
             let reenter = match scenario {
+                PhaseScenario::CountVlarkorth => {
+                    return super::gravedg_lich_knights::exercise_count(
+                        &owner,
+                        &admitted,
+                        &second.ok_or("second admitted player")?,
+                    )
+                    .await;
+                }
                 PhaseScenario::Cults { reenter } => reenter,
                 PhaseScenario::DukeKrule => {
                     return super::gravedg_lich_knights::exercise_duke(

@@ -384,3 +384,84 @@ pub(super) async fn exercise_duke(
     }
     Ok(())
 }
+
+const COUNT: &str = "oteryn:creature.count_vlarkorth";
+
+#[test]
+fn gravedg_count_two_players_shield_timeout_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::engenc2_cults::phase_scenario(super::engenc2_cults::PhaseScenario::CountVlarkorth)
+}
+
+pub(super) fn configure_count(callback: &mut Callback) -> TestResult {
+    configure_duke(callback)?;
+    callback.key = "oteryn:quest-callback/grave-danger/count-vlarkorth".into();
+    let encounter = callback.effects.encounter.as_mut().ok_or("encounter")?;
+    encounter.phase = Some(EncounterPhase::GraveDangerCountVlarkorth { exit: at(103, 100) });
+    encounter.monsters[0].creature = COUNT.into();
+    Ok(())
+}
+
+pub(super) async fn exercise_count(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    partner: &AdmittedSession,
+) -> TestResult {
+    use super::gravedg_zelos::tick_at;
+    use oteryn_gameplay_spell::spell::Vocation;
+    let player = admitted.runtime_actor.ok_or("admitted player")?;
+    let peer = partner.runtime_actor.ok_or("admitted partner")?;
+    assert_position(owner, player, 116, 117).await?;
+    assert_position(owner, peer, 110, 117).await?;
+    let boss = {
+        let runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        for (actor, admission, vocation) in [
+            (player, admitted, Vocation::EliteKnight),
+            (peer, partner, Vocation::ElderDruid),
+        ] {
+            states
+                .get_mut(&runtime, actor, admission.game_session_id)
+                .ok_or("admitted spell state")?
+                .facts
+                .vocation = vocation;
+        }
+        runtime
+            .current_live_creature_census()
+            .map_err(debug)?
+            .into_iter()
+            .find(|&actor| runtime.matches_live_creature_identity(actor, COUNT.as_bytes()))
+            .ok_or("admitted Count Vlarkorth")?
+    };
+    hit(owner, admitted, boss, COUNT, 101).await?;
+    let now = owner.owner_now().get();
+    tick_at(owner, now).await;
+    tick_at(owner, now + 100_000).await;
+    {
+        let runtime = owner.runtime.lock().await;
+        let census = runtime.current_live_creature_census().map_err(debug)?;
+        for key in ["oteryn:creature.dark_knight", "oteryn:creature.dark_druid"] {
+            assert!(
+                census
+                    .iter()
+                    .any(|&actor| runtime.matches_live_creature_identity(actor, key.as_bytes())),
+                "{key}"
+            );
+        }
+    }
+    assert!(
+        hit_by_amount(owner, admitted, boss, COUNT, 102, 1)
+            .await
+            .is_err()
+    );
+    tick_at(owner, now + 120_100_001).await;
+    hit_by_amount(owner, admitted, boss, COUNT, 103, 1).await?;
+    tick_at(owner, now + 20 * 60 * 1_000_000).await;
+    for actor in [player, peer] {
+        assert_position(owner, actor, 103, 100).await?;
+    }
+    Ok(())
+}
