@@ -569,7 +569,18 @@ mod main_native_contract {
         assert_eq!(baseline.counts(), explicit.counts());
         let before = baseline.catalogue();
         let after = explicit.catalogue();
-        assert_eq!(before.tracks.len(), 2128);
+        assert_eq!(before.tracks.len(), 2130);
+        for supply in ["anatomy-book", "colourful-mushroom"] {
+            let key = format!("oteryn:quest-progress/dream-courts/supplies/{supply}");
+            let expected = crate::quest::QuestTrack {
+                key: key.clone(),
+                quest: "oteryn:quest.the_dream_courts_quest.labyrinth_supplies".into(),
+                initial: -1,
+                min: -1,
+                max: 1,
+            };
+            assert_eq!(before.tracks.get(&key), Some(&expected));
+        }
         for (key, value) in &before.tracks {
             assert_eq!(after.tracks.get(key), Some(value), "legacy track {key}");
         }

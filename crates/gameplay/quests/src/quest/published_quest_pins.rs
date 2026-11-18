@@ -139,7 +139,14 @@ mod tests {
         let catalogue = loaded.catalogue();
 
         for &(quest, refreshed, published) in CITATION_REFRESHES {
-            assert_eq!(catalogue.definition_hash(quest), Some(published), "{quest}");
+            assert_eq!(published_hash(quest, refreshed), published, "{quest}");
+            // Main's Grave Danger gameplay update has its own definition pin.
+            let expected = if quest == "oteryn:quest.grave_danger_quest" {
+                hash(b"5c6e9bc04b7dc5881f879e073bf3165d452e599d3633b64416cf1f611ac9523d")
+            } else {
+                published
+            };
+            assert_eq!(catalogue.definition_hash(quest), Some(expected), "{quest}");
             let mut unrelated_revision = refreshed;
             unrelated_revision[0] ^= 1;
             assert_eq!(
