@@ -57,6 +57,21 @@ fn require_cyclopedia(client: &DevClientSession) -> TestResult {
     Ok(())
 }
 
+fn display_matches(
+    cards: &[(&str, String)],
+    bars: [(u16, u16); 2],
+    magic_level: u16,
+    skills: [u16; 7],
+    resources: (u16, u16),
+) -> bool {
+    let minutes = |value: u16| format!("{}:{:02}", value / 60, value % 60);
+    let labels = ["Fist", "Club", "Sword", "Axe", "Distance", "Shielding", "Fishing"];
+    let expected = [("Magic level", magic_level.to_string())]
+        .into_iter().chain(labels.into_iter().zip(skills.map(|level| level.to_string())))
+        .chain([("Stamina", minutes(resources.0)), ("Offline training", minutes(resources.1))]);
+    bars == [(resources.0, 2520), (resources.1, 720)] && expected.eq(cards.iter().cloned())
+}
+
 async fn misc(
     client: &mut DevClientSession,
 ) -> TestResult<(Vec<(&'static str, String)>, [(u16, u16); 2], (u32, u32))> {
@@ -91,10 +106,9 @@ async fn misc(
             format!("step=misc-raw observed={raw:?};needed=stamina<=2520-offline<=720").into(),
         );
     }
-    if bars[0].1 != 2520 || bars[1].1 != 720 || bars[0].0 > 2520 || bars[1].0 > 720 {
-        return Err(
-            format!("step=misc-bars observed={bars:?};needed=stamina<=2520-offline<=720").into(),
-        );
+    let stats = panel.misc_general.ok_or("step=misc-raw observed=no-general-stats")?;
+    if !display_matches(&cards, bars, stats.magic_level, stats.skills, (stats.stamina_minutes, stats.offline_training_minutes)) {
+        return Err(format!("step=misc-display observed=cards:{cards:?},bars:{bars:?};needed=raw-stats:{stats:?}").into());
     }
     Ok((cards, bars, raw))
 }
@@ -118,4 +132,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "misc-cards:{}-bars:{bars_again:?}-durable",
         again.len()
     ))
+}
+
+#[cfg(test)]
+mod display_tests {
+    use super::*;
+
+    #[test]
+    fn misc_display_rejects_fabricated_card_and_bar_values() {
+        let skills = [10, 11, 12, 13, 14, 15, 16];
+        let cards = [
+            ("Magic level", "7".into()), ("Fist", "10".into()), ("Club", "11".into()),
+            ("Sword", "12".into()), ("Axe", "13".into()), ("Distance", "14".into()),
+            ("Shielding", "15".into()), ("Fishing", "16".into()), ("Stamina", "1:15".into()),
+            ("Offline training", "2:01".into()),
+        ];
+        assert!(!display_matches(&cards, [(0, 2520), (121, 720)], 7, skills, (75, 121)));
+        assert!(!display_matches(&cards, [(75, 2520), (121, 720)], 9, skills, (75, 121)));
+        assert!(display_matches(&cards, [(75, 2520), (121, 720)], 7, skills, (75, 121)));
+    }
 }

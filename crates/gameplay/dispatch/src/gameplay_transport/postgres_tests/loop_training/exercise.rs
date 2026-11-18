@@ -859,7 +859,14 @@ fn scenario(node_boot: bool, terminal_readback: bool) -> TestResult {
         );
         let stored:(i32,i64,i64)=sqlx::query_as("SELECT (SELECT charges FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid),(SELECT sword_tries FROM game_character_build_state),(SELECT count(*) FROM game_character_exercise_receipts)").bind(id(72).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(stored, (499, 7, 1));
-        let occurrence:Vec<u8>=sqlx::query_scalar("SELECT uuid_send(build_occurrence_id) FROM game_character_exercise_receipts ORDER BY committed_character_revision LIMIT 1").fetch_one(&h.pool).await?;
+        let (occurrence, binding): (Vec<u8>, Vec<u8>) = sqlx::query_as(
+            "SELECT uuid_send(e.build_occurrence_id),b.command_binding
+               FROM game_character_exercise_receipts e JOIN game_character_build_receipts b USING(build_occurrence_id)
+              ORDER BY e.committed_character_revision LIMIT 1",
+        ).fetch_one(&h.pool).await?;
+        let timing = crate::durability::exercise_training::ExerciseTiming::from_build_binding(&binding)
+            .ok_or("native exercise checkpoint lacks scheduler clocks")?;
+        assert!(timing.admits(1));
         let request = crate::durability::exercise_training::ExerciseCheckpoint {
             occurrence: crate::durability::character_build::BuildOccurrence::from_bytes(
                 occurrence.try_into().map_err(|_| "occurrence bytes")?,
@@ -884,6 +891,7 @@ fn scenario(node_boot: bool, terminal_readback: bool) -> TestResult {
             spent: 1,
             family: 3,
             gain_per_charge: 7,
+            timing: Some(timing),
         };
         let context = crate::durability::loop_training::TrainingContext {
             rates: owner

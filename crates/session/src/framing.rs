@@ -114,8 +114,25 @@ pub(super) async fn read_frame_after<S: AsyncRead + Unpin>(
     first: u8,
 ) -> Result<Vec<u8>, SessionError> {
     let mut prefix = [first, 0, 0, 0];
-    stream.read_exact(&mut prefix[1..]).await?;
-    read_frame_body(stream, prefix).await
+    stream
+        .read_exact(&mut prefix[1..])
+        .await
+        .map_err(truncated_idle_frame)?;
+    read_frame_body(stream, prefix)
+        .await
+        .map_err(|error| match error {
+            SessionError::Io(io) => truncated_idle_frame(io),
+            other => other,
+        })
+}
+
+// The idle reader already consumed a byte, so an EOF here is incomplete protocol data.
+fn truncated_idle_frame(error: io::Error) -> SessionError {
+    if error.kind() == io::ErrorKind::UnexpectedEof {
+        io::Error::new(io::ErrorKind::InvalidData, error).into()
+    } else {
+        error.into()
+    }
 }
 
 pub(super) async fn read_frame_body<S: AsyncRead + Unpin>(
@@ -165,5 +182,24 @@ pub(super) fn check_status_pairing(
         Ok(())
     } else {
         Err(SessionError::InconsistentCommandResult { command_id, status })
+    }
+}
+
+#[cfg(test)]
+mod offline_close_tests {
+    use super::*;
+
+    #[test]
+    fn started_idle_frame_is_truncated_instead_of_clean_eof() -> Result<(), SessionError> {
+        tokio::runtime::Builder::new_current_thread().build()?.block_on(async {
+        for data in [&[][..], &[0, 0, 4, 1][..]] {
+            let mut remaining = data;
+            assert!(matches!(
+                read_frame_after(&mut remaining, 0).await,
+                Err(SessionError::Io(error)) if error.kind() == std::io::ErrorKind::InvalidData
+            ));
+        }
+        Ok(())
+        })
     }
 }

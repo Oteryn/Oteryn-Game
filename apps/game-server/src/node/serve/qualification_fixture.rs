@@ -6,6 +6,14 @@ use crate::qualification_spell_character as qualification_build;
 #[cfg(any(test, feature = "qualification-spawn"))]
 use crate::qualification_wild_spawn as wild_spawn;
 
+fn fixture_level(profile: &str) -> u32 {
+    if matches!(profile, "atelier" | "sweep") {
+        1000
+    } else {
+        100
+    }
+}
+
 #[cfg(any(test, feature = "qualification-spawn"))]
 pub(super) fn recovery_replay(enabled: bool, bytes: &[u8]) -> String {
     let parsed = || {
@@ -63,6 +71,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
             | "coin-converters"
             | "rune-training"
             | "sweep"
+            | "atelier"
     )
     .then_some((session, profile))
 }
@@ -512,12 +521,12 @@ async fn prepare_build(
         ("sorcerer", unlock - 1)
     } else {
         (
-            if matches!(profile, "explorer" | "sweep") {
+            if matches!(profile, "explorer" | "sweep" | "atelier") {
                 "knight"
             } else {
                 profile
             },
-            if profile == "sweep" { 1000 } else { 100 },
+            fixture_level(profile),
         )
     };
     let context = policy.context.clone();
@@ -1096,7 +1105,7 @@ mod tests {
     fn qualification_request_accepts_only_named_profiles_and_v7_sessions() {
         let id = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
         for profile in [
-            "explorer", "knight", "paladin", "sorcerer", "druid", "monk", "sweep",
+            "explorer", "knight", "paladin", "sorcerer", "druid", "monk", "sweep", "atelier",
         ] {
             assert!(request(format!("qualify {id} {profile}\n").as_bytes()).is_some());
         }
@@ -1109,6 +1118,12 @@ mod tests {
             assert!(request(text.as_bytes()).is_none());
         }
     }
+}
+
+#[cfg(test)]
+#[test]
+fn final_review_atelier_fixture_is_within_the_native_writer_limit() {
+    assert!((100..=1000).contains(&fixture_level("atelier")));
 }
 
 #[cfg(test)]

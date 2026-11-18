@@ -36,6 +36,41 @@ pub struct TrainingWeapon {
     pub revision: u64,
     pub charges: u32,
 }
+/// The native cadence clock at START and at the sample that actually spent charges.
+#[derive(Debug, Clone, Copy)]
+pub struct ExerciseTiming {
+    pub started_us: u64,
+    pub sampled_us: u64,
+}
+
+impl ExerciseTiming {
+    const MARKER: [u8; 4] = *b"EX01";
+
+    fn append(self, binding: &mut Vec<u8>) {
+        binding.extend_from_slice(&Self::MARKER);
+        binding.extend_from_slice(&self.started_us.to_be_bytes());
+        binding.extend_from_slice(&self.sampled_us.to_be_bytes());
+    }
+
+    /// Reads the scheduler evidence from a build receipt. Legacy receipts have no clocks.
+    pub fn from_build_binding(binding: &[u8]) -> Option<Self> {
+        if binding.len() != 53 || binding[0] != 2 || binding[33..37] != Self::MARKER {
+            return None;
+        }
+        Some(Self {
+            started_us: u64::from_be_bytes(binding[37..45].try_into().ok()?),
+            sampled_us: u64::from_be_bytes(binding[45..53].try_into().ok()?),
+        })
+    }
+
+    /// At two seconds per charge, accumulated debt depends on the owner's sampled clock.
+    pub fn admits(self, charges_spent: u32) -> bool {
+        self.sampled_us
+            .checked_sub(self.started_us)
+            .is_some_and(|elapsed| u64::from(charges_spent) <= elapsed / 2_000_000)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ExerciseCheckpoint {
     pub occurrence: BuildOccurrence,
@@ -46,6 +81,7 @@ pub struct ExerciseCheckpoint {
     pub spent: u32,
     pub family: usize,
     pub gain_per_charge: u64,
+    pub timing: Option<ExerciseTiming>,
 }
 #[derive(Debug, Clone)]
 pub struct ExerciseCommitted {
@@ -176,7 +212,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder,deadline| { Box::pin(async move {
             let mut tx=begin_type2_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;lock_admission_relations(&mut tx).await?;
-            let binding=Sha256::new().chain_update(request.weapon).chain_update(request.before.revision.to_be_bytes())
+            let hasher=Sha256::new().chain_update(request.weapon).chain_update(request.before.revision.to_be_bytes())
                 .chain_update(request.before.charges.to_be_bytes()).chain_update(request.spent.to_be_bytes())
                 .chain_update(u64::try_from(request.family).map_err(unavailable)?.to_be_bytes())
                 .chain_update(request.gain_per_charge.to_be_bytes())
@@ -186,7 +222,14 @@ impl DurabilityRoot {
                 .chain_update(request.definition.definition.revision_ref.as_bytes()).chain_update([0])
                 .chain_update(request.definition.full.charges().unwrap_or(0).to_be_bytes())
                 .chain_update(if request.spent==request.before.charges {request.event_id} else {[0;16]})
-                .chain_update(serde_json::to_vec(&*context.rates).map_err(unavailable)?).finalize().to_vec();
+                .chain_update(serde_json::to_vec(&*context.rates).map_err(unavailable)?);
+            let binding = if let Some(timing) = request.timing {
+                let mut clocks = Vec::with_capacity(20);
+                timing.append(&mut clocks);
+                hasher.chain_update(clocks).finalize().to_vec()
+            } else {
+                hasher.finalize().to_vec()
+            };
             let prior=sqlx::query("SELECT binding,committed_character_revision::text,charges_after,weapon_revision::text FROM \
                      game_character_exercise_receipts WHERE build_occurrence_id=encode($1,'hex')::uuid")
                 .bind(request.occurrence.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
@@ -229,6 +272,7 @@ impl DurabilityRoot {
                 item_timed_state::write_expiry(&mut tx,&fence,&expiry,tuple).await.map_err(unavailable)?;
             }
             let mut build_binding=vec![2];build_binding.extend_from_slice(&binding);
+            if let Some(timing) = request.timing { timing.append(&mut build_binding); }
             let outcome=character_build::apply_build_in_transaction(&mut tx,&node,&fence,BuildChangeRequest {occurrence:request.occurrence,cause:BuildCause::Training,before,after:after.clone(),pruned_stance:None},context.formula.digest(),context.formula.content_revision().to_owned(),build_binding,None).await?.map_err(unavailable)?;
             let revision=match outcome {character_build::BuildCommitOutcome::Committed(receipt)|character_build::BuildCommitOutcome::AlreadyCommitted(receipt)=>receipt.committed_character_revision};
             let weapon_revision=if remaining==0 {request.before.revision} else {request.before.revision.checked_add(1).ok_or(DurabilityError::Unavailable)?};

@@ -23,10 +23,17 @@ USE_COUNTS = {
 class RowCommandRoutes(unittest.TestCase):
     def test_all_27_reviewed_use_calls_use_the_core_session_owner(self):
         self.assertEqual(sum(USE_COUNTS.values()), 27)
+        shared_calls = {"full_row_i10": 2, "full_row_i11": 4}
         for name, count in USE_COUNTS.items():
             with self.subTest(row=name):
                 source = (PHASES / f"{name}.rs").read_text()
-                self.assertEqual(source.count(".world_context_use("), count)
+                if name in shared_calls:
+                    helper_calls = source.count("use_ingredient(")
+                    helper_definitions = source.count("fn use_ingredient(")
+                    self.assertEqual(helper_calls - helper_definitions, shared_calls[name])
+                    self.assertEqual(source.count(".world_context_use("), helper_definitions)
+                else:
+                    self.assertEqual(source.count(".world_context_use("), count)
                 self.assertNotRegex(source, r"gated_command\(\s*(?:\w+::)*CAPABILITY_ITEM_USE_V1")
 
     def test_both_bed_calls_use_capability_11(self):

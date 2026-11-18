@@ -19,6 +19,8 @@ pub(super) struct Run {
     durable: TrainingWeapon,
     spent: u32,
     next_tick: u64,
+    started_us: u64,
+    last_charge_sample_us: u64,
     checkpoint_due: u64,
     pending: Option<Checkpoint>,
 }
@@ -208,6 +210,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     break;
                 }
                 run.spent += 1;
+                run.last_charge_sample_us = now;
                 run.next_tick = run.next_tick.checked_add(2_000_000)?;
                 let gain = run.gain_per_charge.checked_mul(u64::from(run.spent))?;
                 let next = oteryn_gameplay_progression::loop_training::add_gain(
@@ -264,6 +267,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     spent: run.spent,
                     family: run.family,
                     gain_per_charge: run.gain_per_charge,
+                    timing: Some(crate::durability::exercise_training::ExerciseTiming {
+                        started_us: run.started_us,
+                        sampled_us: run.last_charge_sample_us,
+                    }),
                 },
             ));
         }
@@ -513,7 +520,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Err(_) => return None,
                 }
             }
-            state.ready_at_us = now.checked_add(EXERCISE_START_EXHAUST_US)?;
+            // Start the cadence only after the weapon and dummy checks have completed.
+            let started_us = self.owner_now().get();
+            state.ready_at_us = started_us.checked_add(EXERCISE_START_EXHAUST_US)?;
             state.exercise = Some(Run {
                 actor,
                 fence: item,
@@ -525,8 +534,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 house_dummy: target.house_dummy,
                 durable,
                 spent: 0,
-                next_tick: now.checked_add(2_000_000)?,
-                checkpoint_due: now.checked_add(60_000_000)?,
+                next_tick: started_us.checked_add(2_000_000)?,
+                started_us,
+                last_charge_sample_us: started_us,
+                checkpoint_due: started_us.checked_add(60_000_000)?,
                 pending: None,
             });
         }

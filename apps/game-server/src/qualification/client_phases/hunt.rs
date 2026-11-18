@@ -60,6 +60,32 @@ pub(super) async fn hunt_target(
     hunt_observed_target(client, target).await
 }
 
+pub(super) async fn hunt_named_target(
+    client: &mut DevClientSession,
+    target: EntityRef,
+    name: &str,
+) -> TestResult {
+    if !client
+        .selected_capabilities()
+        .contains(&oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1)
+    {
+        return Err(format!("hunt for {name} requires the world-map capability").into());
+    }
+    let entry = client
+        .world_entities()
+        .and_then(|entities| {
+            select_hunt_target(
+                entities.iter(),
+                client.world_spatial().actor_position,
+                Some(target),
+            )
+        })
+        .filter(|entry| client_world::has_display_name(entry, name))
+        .copied()
+        .ok_or_else(|| format!("hunt route has no adjacent creature matching {name:?}"))?;
+    hunt_observed_target(client, entry).await
+}
+
 pub(super) async fn hunt_observed_target(
     client: &mut DevClientSession,
     target: WorldSpatialEntity,

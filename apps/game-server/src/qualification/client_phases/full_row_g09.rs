@@ -200,6 +200,25 @@ fn carried(
     })
 }
 
+fn watch_units(
+    entries: impl Iterator<Item = oteryn_dev_client::ItemEntry>,
+    definition: std::num::NonZeroU32,
+) -> u64 {
+    entries
+        .filter(|entry| entry.item_definition_ref == definition)
+        .map(|entry| u64::from(entry.count.get()))
+        .sum()
+}
+
+fn carried_units(client: &DevClientSession, definition: std::num::NonZeroU32) -> u64 {
+    client.inventory().map_or(0, |inventory| {
+        watch_units(
+            inventory.main_backpack.iter().chain(&inventory.entries).copied(),
+            definition,
+        )
+    })
+}
+
 async fn use_target(
     client: &mut DevClientSession,
     target: UseTarget,
@@ -261,7 +280,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             continue;
         };
         if let Some(handle) = carried(&client, definition).first().copied() {
-            found = Some((definition, handle, carried(&client, definition).len()));
+            found = Some((definition, handle, carried_units(&client, definition)));
             break;
         }
         let (status, disposition) =
@@ -284,7 +303,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             return Err(format!("{error};{observed}needed=pocket-watch-from-npc-seller").into());
         }
         if let Some(handle) = carried(&client, definition).first().copied() {
-            found = Some((definition, handle, carried(&client, definition).len()));
+            found = Some((definition, handle, carried_units(&client, definition)));
         }
     }
     let Some((definition, handle, count)) = found else {
@@ -292,7 +311,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=buy observed=no-watch-after-purchase;{observed}").into());
     };
     read_time(&mut client, handle).await?;
-    if carried(&client, definition).len() != count {
+    if carried_units(&client, definition) != count {
         return Err("step=consume observed=watch-consumed;needed=clock-read-keeps-item".into());
     }
     logout(&mut client).await?;
@@ -302,7 +321,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .first()
         .copied()
         .ok_or("step=fresh observed=watch-missing-after-readmission")?;
-    let result = verdict::observe(read_time(&mut fresh, again)).await;
+    let result = verdict::observe(async {
+        let before = carried_units(&fresh, definition);
+        if before != count {
+            return Err(format!("step=fresh observed=watch-units:{before};needed={count}").into());
+        }
+        read_time(&mut fresh, again).await?;
+        let after = carried_units(&fresh, definition);
+        if after != before {
+            return Err(format!("step=fresh-use observed=watch-units:{after};needed={before}").into());
+        }
+        Ok(())
+    }).await;
     logout(&mut fresh).await?;
     result
 }
@@ -310,6 +340,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn one_handle_can_hold_multiple_watch_units() -> TestResult {
+        let definition = std::num::NonZeroU32::MIN;
+        let watch = oteryn_dev_client::ItemEntry {
+            appearance_id: 0,
+            handle: oteryn_dev_client::ItemHandle::new(1).ok_or("handle")?,
+            item_definition_ref: definition,
+            count: std::num::NonZeroU32::new(2).ok_or("count")?,
+            sub_type: 0,
+        };
+        assert_eq!(watch_units(std::iter::once(watch), definition), 2);
+        Ok(())
+    }
 
     #[test]
     fn sellers_of_reads_only_sell_to_player_offers() {

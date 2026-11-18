@@ -6384,8 +6384,10 @@ async fn approach_spawn_target(
                 && let Some(respawn) = last_respawn.take()
             {
                 remaining_lanes.clear();
-                deadline = tokio::time::Instant::now()
-                    + spawn_observation_budget(std::iter::once(respawn));
+                deadline = named_respawn_deadline(
+                    spawn_observation_budget(std::iter::once(respawn)),
+                    |until| verdict::Harness::global().bounded_wait(until, "named-spawn-respawn"),
+                );
                 search = false;
             } else {
                 return Ok(None);
@@ -6418,8 +6420,10 @@ async fn approach_spawn_target(
             if respawn_wait == SpawnRespawn::Wait
                 && let Some(respawn) = last_respawn.take()
             {
-                deadline = tokio::time::Instant::now()
-                    + spawn_observation_budget(std::iter::once(respawn));
+                deadline = named_respawn_deadline(
+                    spawn_observation_budget(std::iter::once(respawn)),
+                    |until| verdict::Harness::global().bounded_wait(until, "named-spawn-respawn"),
+                );
                 chase_steps = 0;
             } else {
                 return Ok(None);
@@ -6518,6 +6522,15 @@ async fn approach_visible_spawn_target(
         steps += 1;
     }
     Err("could not approach a live creature within the route budget".into())
+}
+
+fn named_respawn_deadline(
+    timeout: Duration,
+    register: impl FnOnce(tokio::time::Instant),
+) -> tokio::time::Instant {
+    let deadline = tokio::time::Instant::now() + timeout;
+    register(deadline);
+    deadline
 }
 
 fn spawn_observation_budget(respawn_ms: impl Iterator<Item = u32>) -> Duration {
@@ -7439,6 +7452,19 @@ fn flr2_catalogue_admission() -> TestResult {
     Ok(())
 }
 
+#[cfg(test)]
+mod eligibility_review {
+    use super::*;
+
+    #[test]
+    fn named_respawn_registers_its_full_watchdog_window() {
+        let mut registered = None;
+        let deadline =
+            named_respawn_deadline(Duration::from_secs(92), |until| registered = Some(until));
+        assert_eq!(registered, Some(deadline));
+    }
+}
+
 async fn final_logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
     drive_final_logout(
         client,
@@ -7736,7 +7762,7 @@ fn qualification_spawn_and_fixture_command_have_outer_process_deadlines() -> Tes
 fn qualification_round_two_caller_contracts() {
     let checks = [
         (include_str!("npc_shop.rs"), "require_buy_funds(before_gold"),
-        (include_str!("full_row_p03.rs"), "hunt_target("),
+        (include_str!("full_row_p03.rs"), "hunt_named_target("),
         (include_str!("full_gold.rs"), "hunt_observed_target("),
         (include_str!("world.rs"), "world_map_tile(position)"),
         (

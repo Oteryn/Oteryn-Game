@@ -1,7 +1,7 @@
 //! G27: account friends and badge visibility (caps 43 and 199).
 //! Two sessions (the two provisioned accounts): both choose a main character, the first invites
 //! the second by its main-character name, the inviter's own accept is refused (code 10), the
-//! invitee accepts, the inviter sees the main character, and a revoke empties the list. Badge
+//! invitee accepts, the inviter sees the main character, and a revoke removes that friend from both lists. Badge
 //! visibility is then driven through the Cyclopedia badge request; a character with no earned
 //! badge cannot toggle one, so that leg ends FAIL `needed:earned-badge`.
 use super::*;
@@ -87,6 +87,30 @@ async fn friends(
     Ok((result.code, view))
 }
 
+fn peer_row<'a>(rows: &'a [serde_json::Value], peer: &str) -> Option<&'a serde_json::Value> {
+    rows.iter().find(|row| row["name"].as_str() == Some(peer))
+}
+
+async fn find_peer(client: &mut DevClientSession, name: &str) -> TestResult<Option<serde_json::Value>> {
+    let mut after = 0;
+    loop {
+        let (code, view) = friends(client, vip::Operation::FriendsQuery, after, "").await?;
+        let rows = view["account_friends"].as_array().filter(|_| code == 1)
+            .ok_or("step=friends-query observed=missing-list-or-refusal")?;
+        if let Some(row) = peer_row(rows, name) {
+            return Ok(Some(row.clone()));
+        }
+        let next = view["next_friend"].as_u64().ok_or("step=friends-query observed=missing-cursor")?;
+        if next == 0 {
+            return Ok(None);
+        }
+        if next <= after {
+            return Err(format!("step=friends-query observed=non-advancing-cursor:{next}").into());
+        }
+        after = next;
+    }
+}
+
 async fn panel_call(
     client: &mut DevClientSession,
     panel: &mut cyc::CyclopediaCharacterPanel,
@@ -128,36 +152,29 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if code != 1 {
         return Err(format!("step=invite observed=code:{code};needed=1").into());
     }
-    let (_, view) = friends(&mut a, vip::Operation::FriendsQuery, 0, "").await?;
-    if view["account_friends"][0]["state"] != "outgoing" {
-        return Err(format!(
-            "step=outgoing observed={};needed=outgoing",
-            view["account_friends"][0]["state"]
-        )
-        .into());
+    let row = find_peer(&mut a, &name_b).await?.ok_or("step=outgoing observed=peer-not-listed")?;
+    if row["state"] != "outgoing" {
+        return Err(format!("step=outgoing observed={row};needed=outgoing").into());
     }
-    let outgoing = view["account_friends"][0]["handle"]
-        .as_u64()
-        .ok_or("step=outgoing observed=no-handle")?;
+    let outgoing = row["handle"].as_u64().ok_or("step=outgoing observed=no-handle")?;
     let (self_accept, _) = friends(&mut a, vip::Operation::FriendAccept, outgoing, "").await?;
     if self_accept != 10 {
         return Err(format!("step=self-accept observed=code:{self_accept};needed=10").into());
     }
-    let (_, view) = friends(&mut b, vip::Operation::FriendsQuery, 0, "").await?;
-    let incoming = view["account_friends"][0]["handle"]
-        .as_u64()
-        .ok_or("step=incoming observed=no-handle")?;
+    let row = find_peer(&mut b, &name_a).await?.ok_or("step=incoming observed=peer-not-listed")?;
+    if row["state"] != "incoming" {
+        return Err(format!("step=incoming observed={row};needed=incoming").into());
+    }
+    let incoming = row["handle"].as_u64().ok_or("step=incoming observed=no-handle")?;
     let (code, _) = friends(&mut b, vip::Operation::FriendAccept, incoming, "").await?;
     if code != 1 {
         return Err(format!("step=accept observed=code:{code};needed=1").into());
     }
-    let (_, view) = friends(&mut a, vip::Operation::FriendsQuery, 0, "").await?;
-    if view["account_friends"][0]["main_character"].as_str() != Some(name_b.as_str()) {
-        return Err(format!(
-            "step=accepted-view observed={};needed={name_b}",
-            view["account_friends"][0]["main_character"]
-        )
-        .into());
+    for (client, peer) in [(&mut a, &name_b), (&mut b, &name_a)] {
+        let row = find_peer(client, peer).await?.ok_or("step=accepted-view observed=peer-not-listed")?;
+        if row["state"] != "friend" || row["main_character"].as_str() != Some(peer.as_str()) {
+            return Err(format!("step=accepted-view observed={row};needed=friend-{peer}").into());
+        }
     }
     let mut panel = cyc::CyclopediaCharacterPanel {
         selected: true,
@@ -222,18 +239,27 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if code != 1 {
         return Err(format!("step=revoke observed=code:{code};needed=1").into());
     }
-    let (_, view) = friends(&mut a, vip::Operation::FriendsQuery, 0, "").await?;
-    if !view["account_friends"]
-        .as_array()
-        .is_some_and(|rows| rows.is_empty())
-    {
-        return Err("step=revoke observed=friend-still-listed".into());
+    if find_peer(&mut a, &name_b).await?.is_some() || find_peer(&mut b, &name_a).await?.is_some() {
+        return Err("step=revoke observed=fixture-friend-still-listed".into());
     }
-    let _ = name_a;
     logout(&mut a).await?;
     logout(&mut b).await?;
     if earned.is_empty() {
         return Err(format!("friends-invite-accept-revoke-proven;step=badge-visibility observed={badge_note};needed:earned-badge").into());
     }
     Ok(format!("friends-and-{badge_note}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn friendship_uses_the_fixture_peer_and_allows_unrelated_rows_after_revoke() {
+        let unrelated = serde_json::json!({"name":"Other","state":"friend","handle":1});
+        let fixture = serde_json::json!({"name":"Fixture","state":"incoming","handle":2});
+        let rows = [unrelated.clone(), fixture];
+        assert_eq!(peer_row(&rows, "Fixture").and_then(|row| row["handle"].as_u64()), Some(2));
+        assert!(peer_row(&[unrelated], "Fixture").is_none());
+    }
 }

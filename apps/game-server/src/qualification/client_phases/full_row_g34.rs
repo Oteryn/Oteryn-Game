@@ -5,14 +5,13 @@
 //!    `npc-offers/*.json`), the nearest NPC whose first-step offer (topic 0, plain keyword,
 //!    track write) a fresh character can trigger, reachable by walking.
 //! 2. Walk to it, say "hi" and the offer keyword through the real NPC talk command; require
-//!    `Ok` replies and the NPC's reply text in the chat log.
+//!    `Ok` replies and the NPC's reply in a post-command conversation update.
 //! 3. Read the track before the talk (it must differ from the offer's `set`), then require the
 //!    durable track (`game_character_quest_tracks`, read-only SQL) to hold `set` and a receipt
 //!    that wrote that track from another value at the track's own last-write revision.
 //! 4. Log out, freshly admit and require the track value and that receipt again.
 use super::*;
 use oteryn_dev_client::DevClientSession;
-use oteryn_protocol_oteryn::chat::ChatLine;
 use sqlx::Connection;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -105,14 +104,19 @@ fn load_offers() -> TestResult<Vec<Offer>> {
     Ok(offers)
 }
 
-/// Whether the chat log holds a line that starts with the reply's first words.
-fn reply_seen(client: &DevClientSession, reply: &str) -> bool {
-    let head: String = reply.chars().take(24).collect();
-    client.chat_log().is_some_and(|log| {
-        log.lines().any(|line| match line {
-            ChatLine::Local { text, .. } | ChatLine::Private { text, .. } => text.contains(&head),
-            _ => false,
-        })
+fn answer_seen(
+    events: &[oteryn_dev_client::SessionEvent],
+    npc: oteryn_dev_client::EntityRef,
+    after: u64,
+    reply: &str,
+) -> bool {
+    events.iter().any(|event| match event {
+        oteryn_dev_client::SessionEvent::NpcConversation(delta) => {
+            delta.server_sequence > after
+                && delta.value.open.is_some_and(|(actor, _)| actor == npc)
+                && delta.value.lines.iter().any(|text| text == reply)
+        }
+        _ => false,
     })
 }
 
@@ -225,19 +229,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             return Err(format!("step=talk;text={text};observed={reply:?}").into());
         }
     }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    while !reply_seen(&client, &offer.reply) {
-        if tokio::time::Instant::now() >= deadline {
-            let _ = logout(&mut client).await;
-            return Err(format!(
-                "step=reply;npc={};keyword={};observed=no-npc-reply-line",
-                offer.npc, offer.keyword
-            )
-            .into());
+    let answer_after = client.last_server_sequence();
+    let expected = if offer.reply.contains("|PLAYERNAME|") {
+        let mut database = sqlx::PgConnection::connect(clients.url).await?;
+        let name: String = sqlx::query_scalar(
+            "SELECT name FROM game_character_roots WHERE character_id = encode($1, 'hex')::uuid",
+        ).bind(clients.characters[1].as_slice()).fetch_one(&mut database).await?;
+        oteryn_gameplay_npc::quest_greetings::render_player_name(&offer.reply, &name)
+    } else {
+        offer.reply.clone()
+    };
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while !answer_seen(&client.take_events(), actor, answer_after, &expected) {
+            client.service_liveness(Duration::from_millis(50)).await?;
         }
-        client.service_liveness(Duration::from_millis(50)).await?;
-        client.take_events();
-    }
+        Ok::<_, oteryn_dev_client::DevClientError>(())
+    }).await.map_err(|_| format!(
+        "step=reply;npc={};keyword={};observed=no-npc-reply-line",
+        offer.npc, offer.keyword
+    ))??;
     let value = track_value(clients, &offer.track).await?;
     let bound = bound_receipts(clients, &offer.track, offer.set).await?;
     logout(&mut client).await?;
@@ -262,6 +272,29 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn npc_answer_requires_the_expected_actor_and_full_line() {
+        use oteryn_dev_client::{AppliedDelta, EntityRef, SessionEvent};
+        use oteryn_protocol_oteryn::npc_service::{NpcConversation, NpcConversationState};
+
+        let actor = EntityRef { identity: [1; 16], generation: 1 };
+        let another = EntityRef { generation: 2, ..actor };
+        let event = |npc, text: &str| SessionEvent::NpcConversation(AppliedDelta {
+            server_sequence: 1,
+            base_revision: 1,
+            new_revision: 2,
+            value: NpcConversation {
+                open: Some((npc, NpcConversationState::Open)),
+                lines: vec![text.into()],
+            },
+        });
+        let expected = "The gates are now open for you.";
+        assert!(!answer_seen(&[event(another, expected)], actor, 0, expected));
+        assert!(!answer_seen(&[event(actor, "The gates are now open for someone else.")], actor, 0, expected));
+        assert!(!answer_seen(&[event(actor, expected)], actor, 1, expected));
+        assert!(answer_seen(&[event(actor, expected)], actor, 0, expected));
+    }
 
     #[test]
     fn parse_offers_keeps_only_fresh_first_step_offers() {

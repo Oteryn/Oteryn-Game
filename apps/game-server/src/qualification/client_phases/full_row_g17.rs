@@ -104,43 +104,78 @@ fn claim_reply_matches(payload: &[u8], disposition: u8, id: Option<[u8; 16]>) ->
     payload == expected.as_slice()
 }
 
-/// Whether the durable claim receipt for `offer` joins a minted item instance (read-only).
-async fn receipt_exists(clients: &SeamClients<'_>, offer: &[u8; 16]) -> TestResult<bool> {
-    use sqlx::Connection;
-    let mut database = sqlx::PgConnection::connect(clients.url).await?;
-    let count: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_returner_reward_claims c \
-         JOIN game_item_instances i ON i.item_instance_id = c.item_instance_id \
-         WHERE c.offer_id = encode($1, 'hex')::uuid",
-    )
-    .bind(offer.as_slice())
-    .fetch_one(&mut database)
-    .await?;
-    database.close().await?;
-    Ok(count == 1)
+fn delivery_matches(bound: i64, minted: i64, inbox_delta: i64) -> bool {
+    (bound, minted, inbox_delta) == (1, 1, 1)
 }
 
-async fn body(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult<[u8; 16]> {
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Delivery {
+    item: Option<Vec<u8>>,
+    minted: i64,
+    inbox: i64,
+}
+
+async fn delivery(clients: &SeamClients<'_>, offer: &[u8; 16]) -> TestResult<Delivery> {
+    use sqlx::Connection;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    read_delivery(&mut database, &clients.characters[1], &clients.world, offer).await
+}
+
+async fn read_delivery(database: &mut sqlx::PgConnection, character: &[u8; 16], world: &[u8; 16], offer: &[u8; 16]) -> TestResult<Delivery> {
+    let (item, minted, inbox) = sqlx::query_as(
+        "SELECT (SELECT uuid_send(i.item_instance_id)
+                  FROM game_returner_reward_claims c
+                  JOIN game_returner_reward_entitlements e USING(offer_id)
+                  JOIN game_item_instances i ON (i.item_instance_id,i.world_id)=(c.item_instance_id,e.world_id)
+                  JOIN game_item_character_inbox_locations l
+                    ON (l.item_instance_id,l.world_id)=(i.item_instance_id,i.world_id)
+                  WHERE c.offer_id=encode($3,'hex')::uuid AND e.character_id=encode($1,'hex')::uuid
+                    AND e.world_id=encode($2,'hex')::uuid AND l.character_id=e.character_id
+                    AND i.definition_family='Item' AND i.definition_production_key='oteryn:item.tibia.i266'
+                    AND i.definition_revision_ref='definition-r1' AND i.quantity=1 AND i.lifecycle=1
+                    AND i.minted_transaction_id=e.offer_id),
+                (SELECT count(*) FROM game_item_instances i
+                  WHERE i.world_id=encode($2,'hex')::uuid AND i.minted_transaction_id=encode($3,'hex')::uuid),
+                (SELECT coalesce(sum(i.quantity),0)::bigint
+                  FROM game_item_character_inbox_locations l JOIN game_item_instances i USING(item_instance_id,world_id)
+                  WHERE l.character_id=encode($1,'hex')::uuid AND l.world_id=encode($2,'hex')::uuid
+                    AND i.definition_family='Item' AND i.definition_production_key='oteryn:item.tibia.i266'
+                    AND i.lifecycle=1)",
+    ).bind(character.as_slice()).bind(world.as_slice()).bind(offer.as_slice())
+        .fetch_one(database).await?;
+    Ok(Delivery { item, minted, inbox })
+}
+
+async fn body(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult<([u8; 16], Delivery)> {
     let initial = state(client).await?;
     let inventory = client.inventory().cloned();
     match (initial.state, initial.id) {
         (1, Some(id)) => {
+            let before = delivery(clients, &id).await?;
+            if before.item.is_some() || before.minted != 0 {
+                return Err(format!("step=claim observed=preexisting-delivery:{before:?}").into());
+            }
             let reply = accepted(client, CAPABILITY, returner::CLAIM, &id).await?;
             if !claim_reply_matches(&reply, 1, Some(id)) {
                 return Err(format!("step=claim observed=reply:{reply:?}").into());
             }
             let after = state(client).await?;
-            if after.state != 2 {
+            if after.state != 2 || after.id != Some(id) {
                 return Err(format!("step=claim observed=state:{}", after.state).into());
+            }
+            let delivered = delivery(clients, &id).await?;
+            if !delivery_matches(i64::from(delivered.item.is_some()), delivered.minted, delivered.inbox - before.inbox) {
+                return Err(format!("step=claim observed=before:{before:?},after:{delivered:?};needed=one-exact-Inbox-mint").into());
             }
             let replay = accepted(client, CAPABILITY, returner::CLAIM, &id).await?;
             if !claim_reply_matches(&replay, 2, None) {
                 return Err(format!("step=claim-replay observed=reply:{replay:?}").into());
             }
-            if !receipt_exists(clients, &id).await? {
-                return Err("step=claim observed=no-claim-receipt-with-item".into());
+            let replayed = delivery(clients, &id).await?;
+            if replayed != delivered || client.inventory().cloned() != inventory {
+                return Err(format!("step=replay observed=changed-delivery:{replayed:?};needed={delivered:?}").into());
             }
-            Ok(id)
+            Ok((id, delivered))
         }
         (0, _) => {
             let (status, _) = send(client, CAPABILITY, returner::CLAIM, &BOGUS).await?;
@@ -167,14 +202,16 @@ async fn body(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestR
 async fn verify(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
-    data: &[u8; 16],
+    data: &([u8; 16], Delivery),
 ) -> TestResult {
+    let (id, delivered) = data;
     let after = state(client).await?;
-    if after.state == 1 {
+    if after.state == 1 || (after.state == 2 && after.id != Some(*id)) {
         return Err("step=relog observed=claimed-entitlement-offered-again".into());
     }
-    if !receipt_exists(clients, data).await? {
-        return Err("step=relog observed=no-claim-receipt-with-item".into());
+    let fresh = delivery(clients, id).await?;
+    if fresh != *delivered {
+        return Err(format!("step=relog observed=changed-delivery:{fresh:?};needed={delivered:?}").into());
     }
     Ok(())
 }
@@ -195,6 +232,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn returner_delivery_rejects_extra_mints_and_missing_inbox_quantity() {
+        assert!(!delivery_matches(1, 1, 0));
+        assert!(!delivery_matches(1, 2, 1));
+        assert!(delivery_matches(1, 1, 1));
+    }
 
     #[test]
     fn compact_is_one_bounded_token() {
@@ -221,5 +265,38 @@ mod tests {
         assert_eq!(BOGUS[6] >> 4, 7);
         assert_eq!(BOGUS[8] >> 6, 2);
         assert_eq!(returner::decode_claim(&BOGUS), Ok(BOGUS));
+    }
+}
+
+#[cfg(test)]
+mod delta_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn preclaim_delivery_query_runs_on_empty_claims() -> TestResult {
+        use sqlx::Connection;
+        // The PostgreSQL archive runs this test with the fixture; ordinary lib shards do not.
+        let Some(url) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL").ok() else {
+            return Ok(());
+        };
+        let mut db = sqlx::PgConnection::connect(&url).await?;
+        sqlx::raw_sql("
+          CREATE TEMP TABLE game_returner_reward_claims (offer_id uuid, item_instance_id uuid);
+          CREATE TEMP TABLE game_returner_reward_entitlements (offer_id uuid, character_id uuid, world_id uuid);
+          CREATE TEMP TABLE game_item_instances (item_instance_id uuid, world_id uuid, definition_family text,
+              definition_production_key text, definition_revision_ref text, quantity int, lifecycle int, minted_transaction_id uuid);
+          CREATE TEMP TABLE game_item_character_inbox_locations (item_instance_id uuid, world_id uuid, character_id uuid);
+        ").execute(&mut db).await?;
+        let result = read_delivery(&mut db, &[0; 16], &[0; 16], &[0; 16]).await?;
+        assert_eq!(result, Delivery { item: None, minted: 0, inbox: 0 });
+        sqlx::raw_sql("
+          INSERT INTO game_returner_reward_entitlements VALUES ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-000000000000');
+          INSERT INTO game_returner_reward_claims VALUES ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-000000000000');
+          INSERT INTO game_item_instances VALUES ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-000000000000','Item','oteryn:item.tibia.i266','definition-r1',1,1,'00000000-0000-0000-0000-000000000000');
+          INSERT INTO game_item_character_inbox_locations VALUES ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-000000000000');
+        ").execute(&mut db).await?;
+        let claimed = read_delivery(&mut db, &[0; 16], &[0; 16], &[0; 16]).await?;
+        assert_eq!(claimed, Delivery { item: Some(vec![0; 16]), minted: 1, inbox: 1 });
+        Ok(())
     }
 }

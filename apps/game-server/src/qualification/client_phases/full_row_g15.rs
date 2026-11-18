@@ -184,6 +184,33 @@ fn names_present(members: &[hunt::Member], names: &[&str]) -> bool {
     })
 }
 
+fn idle_members(members: &[hunt::Member], names: &[&str]) -> bool {
+    members.len() == names.len()
+        && names_present(members, names)
+        && members.iter().all(|member| {
+            member.available && !member.incomplete
+                && member.kills == 0
+                && member.xp == 0
+                && member.raw_xp == 0
+                && member.loot_items == 0
+                && member.loot_value == 0
+                && member.supplies == 0
+                && member.supply_cost == 0
+                && member.unpriced_loot == 0
+                && member.unpriced_supplies == 0
+                && member.damage == 0
+                && member.healing == 0
+                && member.needed_prices.is_empty()
+        })
+}
+
+fn leave_result(disposition: PartyDisposition, remaining: usize) -> TestResult {
+    if disposition != PartyDisposition::Ok || remaining != 0 {
+        return Err(format!("step=leave observed={disposition:?},members:{remaining};needed=ok-and-empty").into());
+    }
+    Ok(())
+}
+
 async fn members(
     client: &mut DevClientSession,
     prices: &[hunt::Price],
@@ -291,10 +318,9 @@ async fn body(
     let b_name = name_of(clients, 1).await?;
     for (who, client) in [("leader", &mut *a), ("member", &mut *b)] {
         let rows = members(client, &prices).await?;
-        if !names_present(&rows, &[a_name.as_str(), b_name.as_str()]) {
+        if !idle_members(&rows, &[a_name.as_str(), b_name.as_str()]) {
             return Err(format!(
-                "step=party-analyser observed={who}-names:{:?} needed={a_name}+{b_name}",
-                rows.iter().map(|m| m.name.as_str()).collect::<Vec<_>>()
+                "step=party-analyser observed={who}-members:{rows:?};needed=idle-{a_name}+{b_name}"
             )
             .into());
         }
@@ -313,11 +339,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         }
     };
     let outcome = verdict::observe(body(&mut a, &mut b, clients)).await;
-    party(&mut b, Some(PartyIntent::Leave)).await.ok();
-    party(&mut a, Some(PartyIntent::Leave)).await.ok();
+    let left_b = party(&mut b, Some(PartyIntent::Leave)).await.and_then(|(disposition, view)| {
+        leave_result(disposition, view.members.len())
+    });
+    let left_a = party(&mut a, Some(PartyIntent::Leave)).await.and_then(|(disposition, view)| {
+        leave_result(disposition, view.members.len())
+    });
     let closed_b = verdict::observe(finish(&mut b)).await;
     let closed_a = verdict::observe(finish(&mut a)).await;
     outcome?;
+    left_b?;
+    left_a?;
     closed_b?;
     closed_a
 }
@@ -360,6 +392,38 @@ mod tests {
         let rows = [member("Alpha"), member("beta")];
         assert!(names_present(&rows, &["alpha", "Beta"]));
         assert!(!names_present(&rows, &["gamma"]));
+    }
+
+    #[test]
+    fn idle_party_rejects_hunt_activity() {
+        let rows = [hunt::Member {
+            handle: 1,
+            name: "Alpha".into(),
+            available: true,
+            incomplete: false,
+            elapsed_seconds: 1,
+            kills: 1,
+            xp: 0,
+            raw_xp: 0,
+            loot_items: 0,
+            loot_value: 0,
+            supplies: 0,
+            supply_cost: 0,
+            unpriced_loot: 0,
+            unpriced_supplies: 0,
+            damage: 0,
+            healing: 0,
+            needed_prices: Vec::new(),
+        }];
+        assert!(!idle_members(&rows, &["Alpha"]));
+        assert!(idle_members(&[hunt::Member { kills: 0, ..rows[0].clone() }], &["Alpha"]));
+    }
+
+    #[test]
+    fn refused_party_leave_is_not_success() {
+        assert!(leave_result(PartyDisposition::Rejected, 0).is_err());
+        assert!(leave_result(PartyDisposition::Ok, 1).is_err());
+        assert!(leave_result(PartyDisposition::Ok, 0).is_ok());
     }
 
     #[test]

@@ -106,9 +106,44 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     journey.finish();
 }
 
+fn earned_bounty(current: u32, required: u32, before: u64, after: u64, award: u32) -> bool {
+    required > 0 && current == required && award > 0 && before.checked_add(u64::from(award)) == Some(after)
+}
+
+fn completed_rollover(initial: u64, reply: u64, world: u64, initial_seals: u64, seals: u64) -> bool {
+    reply > initial && reply == world && seals > initial_seals
+}
+
+async fn hunt_assignment(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    race: &str,
+    name: &str,
+) -> TestResult {
+    let target = travel_to_spawn_target(client, world, spawns, race).await?;
+    client_hunt::hunt_named_target(client, target, name).await
+}
+
+async fn observed_world_period(database: &mut sqlx::PgConnection, world: &[u8; 16]) -> TestResult<u64> {
+    let period: Option<i64> = sqlx::query_scalar("SELECT game_task_board_period(encode($1,'hex')::uuid)")
+        .bind(world.as_slice()).fetch_one(database).await?;
+    Ok(u64::try_from(period.ok_or("step=weekly-reset needed=published-world-period")?)?)
+}
+
 async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
+    use sqlx::Connection;
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let initial_period = observed_world_period(&mut database, &clients.world).await?;
     let mut client = connect_world(clients, 0x9a).await?;
     let initial = query(&mut client).await?;
+    if initial.period != initial_period {
+        return Err("step=weekly-query observed=board-period-disagrees-with-committed-world-period".into());
+    }
     journey.check(
         1,
         initial.refusal == 0 && !initial.shop.is_empty(),
@@ -129,7 +164,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         if started.refusal == 0 {
             break;
         }
-        client_hunt::hunt(&mut client).await?;
+        hunt_assignment(&mut client, world, &metadata.spawns, "oteryn:creature.rat", "Rat").await?;
         started = send(&mut client, 5, 0).await?;
     }
     journey.check(
@@ -171,12 +206,31 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         rerolled.refusal == 0 && rerolled.bounty.state == 1 && rerolled.bounty.offers.len() == 3,
         (&rerolled.refusal, &rerolled.bounty),
     );
+    let (number, offer) = rerolled.bounty.offers.iter().enumerate()
+        .find(|(_, offer)| metadata.spawns.sources.iter().any(|source| source.points.iter().any(|point| {
+            metadata.spawns.creatures.get(point.creature as usize).is_some_and(|creature| creature.key == offer.race)
+        }))).ok_or("step=bounty needed=rerolled-offer-with-authored-spawn")?;
+    let name = super::full_row_p02::creature_display_name(&offer.race)?;
+    let mut active = send(&mut client, 8, u16::try_from(number)?).await?;
+    if active.refusal != 0 || active.bounty.state != 2 || active.bounty.current != 0
+        || active.bounty.active.as_ref() != Some(offer)
+    {
+        return Err(format!("step=bounty-select observed={:?};needed={offer:?}", active.bounty).into());
+    }
+    while active.bounty.current < offer.required {
+        hunt_assignment(&mut client, world, &metadata.spawns, &offer.race, &name).await?;
+        let after = query(&mut client).await?;
+        if active.bounty.current.checked_add(1) != Some(after.bounty.current)
+            || after.bounty.active.as_ref() != Some(offer) || after.bounty_points != active.bounty_points
+        {
+            return Err(format!("step=bounty-kill observed={:?};needed=one-credited-kill-for-{}", after.bounty, offer.race).into());
+        }
+        active = after;
+    }
     let claimed = send(&mut client, 9, 0).await?;
-    journey.check(
-        5,
-        claimed.refusal == 0 && claimed.bounty_points > rerolled.bounty_points,
-        (&claimed.refusal, claimed.bounty_points),
-    );
+    journey.check(5, claimed.refusal == 0 && claimed.bounty.active.is_none()
+        && earned_bounty(active.bounty.current, offer.required, active.bounty_points, claimed.bounty_points, offer.points),
+        (&claimed.refusal, claimed.bounty_points, &claimed.bounty));
 
     let bought = send(
         &mut client,
@@ -202,19 +256,34 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         (&upgraded.refusal, upgraded.talisman[0]),
     );
 
-    let reset = query(&mut client).await?;
-    journey.check(
-        7,
-        reset.period > initial.period && reset.soulseals > initial.soulseals,
-        (
-            initial.period,
-            reset.period,
-            initial.soulseals,
-            reset.soulseals,
-        ),
-    );
+    let before_reset = query(&mut client).await?;
+    if before_reset.period != initial_period || before_reset.weekly.pending_soulseals == 0 {
+        return Err(format!("step=weekly-reset observed=period:{},pending-soulseals:{};needed=earned-weekly-reward-before-rollover",
+            before_reset.period, before_reset.weekly.pending_soulseals).into());
+    }
     logout(&mut client).await?;
     drop(client);
+    let until = tokio::time::Instant::now() + Duration::from_secs(60);
+    let period = loop {
+        let period = observed_world_period(&mut database, &clients.world).await?;
+        if period > initial_period {
+            break period;
+        }
+        if tokio::time::Instant::now() >= until {
+            return Err("step=weekly-reset needed=Control-published-next-week".into());
+        }
+        tokio::time::sleep(Duration::from_millis(250)).await;
+    };
+    let mut rolled = connect_world(clients, 0x9b).await?;
+    let reset = query(&mut rolled).await?;
+    journey.check(7, completed_rollover(initial_period, reset.period, period, initial.soulseals, reset.soulseals)
+        && !reset.weekly.started && reset.weekly_results.as_ref().is_some_and(|results| {
+            results.period == initial_period
+                && u64::from(results.soulseals) == before_reset.weekly.pending_soulseals
+                && before_reset.soulseals.checked_add(u64::from(results.soulseals)) == Some(reset.soulseals)
+        }), (&before_reset.weekly, &reset.weekly_results, reset.period, period));
+    logout(&mut rolled).await?;
+    drop(rolled);
     let mut fresh = connect_world(clients, 0x9b).await?;
     let persisted = query(&mut fresh).await?;
     journey.check(8, persisted == reset, (&reset, &persisted));
@@ -225,6 +294,14 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bounty_claim_and_weekly_rollover_require_independent_lifecycle_evidence() {
+        assert!(!earned_bounty(0, 3, 10, 12, 2));
+        assert!(earned_bounty(3, 3, 10, 12, 2));
+        assert!(!completed_rollover(7, 14, 7, 3, 4));
+        assert!(completed_rollover(7, 14, 14, 3, 4));
+    }
 
     #[test]
     fn scenario_commands_use_full_task_board_action_numbers() {

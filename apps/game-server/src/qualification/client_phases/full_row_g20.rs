@@ -131,6 +131,50 @@ fn identical_pair(keys: &[(u32, u8, bool)]) -> Option<(usize, usize)> {
     None
 }
 
+fn resource_matches(operation: Operation, payload: &wire::Payload) -> bool {
+    matches!(payload, wire::Payload::Resource(quote) if quote.operation == operation)
+}
+
+fn resource_transition(operation: Operation, resources: wire::Resources) -> Option<wire::ResourceQuote> {
+    use crate::domain::forge::ForgeDustResources;
+    use crate::domain::forge_dust::{DustLimit, ForgeDustBalance};
+    let mut expected = wire::ResourceQuote {
+        operation, full_resources: true, before: resources,
+        after_dust: resources.dust, after_limit: resources.dust_limit,
+        after_slivers: resources.slivers, after_cores: resources.cores,
+    };
+    match operation {
+        Operation::DustLimit => {
+            let limit = DustLimit::new(u16::try_from(resources.dust_limit).ok()?).ok()?;
+            let balance = ForgeDustBalance::new(u16::try_from(resources.dust).ok()?, limit).ok()?;
+            let next = balance.raise_limit().ok()?.after;
+            expected.after_dust = u32::from(next.balance());
+            expected.after_limit = u32::from(next.limit().get());
+            // Command 668's limit projection deliberately omits unrelated balances.
+            expected.full_resources = false;
+            expected.before = wire::Resources { dust: resources.dust, dust_limit: resources.dust_limit, ..Default::default() };
+            expected.after_slivers = 0;
+            expected.after_cores = 0;
+        }
+        Operation::DustToSlivers | Operation::SliversToCores => {
+            let source = ForgeDustResources { dust: u64::from(resources.dust), slivers: resources.slivers, cores: resources.cores };
+            let next = if operation == Operation::DustToSlivers { source.dust_to_slivers() } else { source.slivers_to_core() }.ok()?;
+            expected.after_dust = u32::try_from(next.dust).ok()?;
+            expected.after_slivers = next.slivers;
+            expected.after_cores = next.cores;
+        }
+        _ => return None,
+    }
+    Some(expected)
+}
+
+fn fusion_cost_matches(quote: &wire::Quote, cost: wire::Cost, tier: u8) -> bool {
+    quote.success_percent == oteryn_gameplay_items::forge::FORGE_BASE_SUCCESS_PERCENT
+        && quote.protection_percent == 0
+        && quote.target_tier == tier
+        && quote.cost == cost
+}
+
 async fn body(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
     let wire::Payload::Page(page) =
         preview(client, 1, wire::Selection::Browse { after: 0 }).await?
@@ -153,23 +197,21 @@ async fn body(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestR
             if format!("{:?}", effects.item) == format!("{first:?}") => {}
         other => return Err(format!("step=effects observed={other:?}").into()),
     }
-    let mut resource = false;
-    for operation in [
-        Operation::DustLimit,
-        Operation::DustToSlivers,
-        Operation::SliversToCores,
+    for (nonce, operation) in [
+        (3, Operation::DustLimit),
+        (4, Operation::DustToSlivers),
+        (5, Operation::SliversToCores),
     ] {
-        if !wire::resource_operation(operation) {
-            continue;
+        let observed = preview(client, nonce, wire::Selection::Resource(operation)).await?;
+        let expected = resource_transition(operation, page.resources);
+        let valid = match expected {
+            Some(expected) => resource_matches(operation, &observed)
+                && matches!(&observed, wire::Payload::Resource(quote) if *quote == expected),
+            None => operation != Operation::DustLimit && observed == wire::Payload::Refused,
+        };
+        if !valid {
+            return Err(format!("step=resource-{operation:?} observed={observed:?};needed={expected:?}").into());
         }
-        match preview(client, 3, wire::Selection::Resource(operation)).await? {
-            wire::Payload::Resource(_) => resource = true,
-            other => return Err(format!("step=resource observed={other:?}").into()),
-        }
-        break;
-    }
-    if !resource {
-        return Err("step=resource observed=no-resource-operation".into());
     }
     let keys: Vec<(u32, u8, bool)> = page
         .items
@@ -190,10 +232,17 @@ async fn body(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestR
         boost: false,
         protect: false,
     };
-    match preview(client, 4, selection).await? {
+    let first = &page.items[one];
+    let second = &page.items[two];
+    let tier = first.tier.checked_add(1).ok_or("step=pair observed=invalid-tier")?;
+    let price = oteryn_gameplay_items::forge::FORGE_REFERENCE_PRICES.iter()
+        .find(|row| row.classification == first.classification && row.tier == tier)
+        .ok_or("step=pair observed=no-authored-fusion-price")?;
+    let cost = wire::Cost { gold: price.gold, dust: oteryn_gameplay_items::forge::NORMAL_FUSION_DUST, cores: 0 };
+    match preview(client, 6, selection).await? {
         wire::Payload::Quote(quote)
-            if quote.success_percent <= 100
-                && quote.target_tier == page.items[one].tier.saturating_add(1) =>
+            if quote.selection == selection && quote.first == *first && quote.second == *second
+                && quote.resources == page.resources && fusion_cost_matches(&quote, cost, tier) =>
         {
             Ok(())
         }
@@ -212,6 +261,40 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn resource_preview_cannot_echo_a_different_operation() {
+        let quote = wire::ResourceQuote {
+            operation: Operation::DustToSlivers,
+            full_resources: true, before: wire::Resources::default(),
+            after_dust: 0, after_limit: 0, after_slivers: 0, after_cores: 0,
+        };
+        assert!(!resource_matches(Operation::DustLimit, &wire::Payload::Resource(quote)));
+    }
+
+    #[test]
+    fn fusion_preview_cannot_quote_the_wrong_cost() -> TestResult {
+        let item = |handle| -> TestResult<wire::Item> {
+            Ok(wire::Item {
+                handle: oteryn_protocol_oteryn::item_view::ItemHandle::new(handle).ok_or("handle")?,
+                definition_ref: 1, appearance: 1, name: "sword".into(), classification: 1,
+                tier: 0, maximum_tier: 1, container: false,
+            })
+        };
+        let first = item(1)?;
+        let second = item(2)?;
+        let cost = wire::Cost { gold: 25_000, dust: 100, cores: 0 };
+        let mut quote = wire::Quote {
+            selection: wire::Selection::Pair { operation: Operation::Fusion, first: first.handle,
+                second: second.handle, boost: false, protect: false },
+            first, second, resources: wire::Resources::default(),
+            cost, target_tier: 1, success_percent: 50, protection_percent: 0,
+        };
+        assert!(fusion_cost_matches(&quote, cost, 1));
+        quote.cost.gold = 1;
+        assert!(!fusion_cost_matches(&quote, cost, 1));
+        Ok(())
+    }
 
     #[test]
     fn compact_is_one_bounded_token() {

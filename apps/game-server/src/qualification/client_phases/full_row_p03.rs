@@ -7,13 +7,12 @@
 //! 3. Send `Select` for a drawn creature that has a compiled-world spawn;
 //!    require an active selection, bonus/grade/percent, 7,200 bonus seconds,
 //!    and a new durable selection epoch.
-//! 4. Send `BonusReroll`; if the ordinary character owns a wildcard, require
-//!    its debit and a changed bonus receipt; otherwise require the explicit
-//!    refusal and unchanged state. Then send an out-of-range `Select`, require
+//! 4. Spend wildcards on accepted bonus rerolls until the selected creature has an XP bonus.
+//!    A refusal cannot qualify the reroll. Then send an out-of-range `Select`, require
 //!    rejection, and prove by `Query` that the active selection was unchanged.
 //! 5. Walk to the selected creature and use native ATTACK/corpse/loot actions.
 //!    After the server hunting cadence, attack it again; require real combat
-//!    deltas and a `Query` checkpoint with fewer bonus seconds while the
+//!    and attributed XP award deltas plus a `Query` checkpoint with fewer bonus seconds while the
 //!    selected bonus and occurrence fence remain active.
 //! 6. Logout, obtain a fresh admission, and send `Query`; require the selected
 //!    creature, bonus, remaining time, reroll deadline, and selection epoch to
@@ -75,6 +74,58 @@ fn same_checkpoint(left: &wire::Slot, right: &wire::Slot) -> bool {
         && left.hunting_seconds == right.hunting_seconds
         && left.free_reroll_at == right.free_reroll_at
         && left.selection_epoch == right.selection_epoch
+}
+
+fn valid_bonus_reroll(accepted: bool, unchanged_on_refusal: bool) -> bool {
+    accepted && unchanged_on_refusal
+}
+
+fn reroll_current(response: &prey::PreyResponse, receipt: &Reply) -> TestResult<Reply> {
+    response.current.as_deref().map_or_else(|| Ok(receipt.clone()), |current| decoded(current, "bonus-reroll-current"))
+}
+
+fn reroll_epoch_matches(before: u64, after: u64) -> bool {
+    before.checked_add(1) == Some(after)
+}
+
+fn prey_effect_observed(timer_advanced: bool, awards_match: bool) -> bool {
+    timer_advanced && awards_match
+}
+
+async fn hunt_with_xp_bonus(
+    client: &mut oteryn_dev_client::DevClientSession,
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    selected: &wire::Slot,
+    name: &str,
+) -> TestResult<bool> {
+    use sqlx::Connection;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let target = travel_to_spawn_target(client, world, spawns, &selected.selected).await?;
+    let since: String = sqlx::query_scalar("SELECT clock_timestamp()::text").fetch_one(&mut database).await?;
+    client_hunt::hunt_named_target(client, target, name).await?;
+    type Award = (i16, i64, i16, i16, i64, i16, i32, i64, i64);
+    let awards: Vec<Award> = sqlx::query_as(
+        "SELECT m.prey_slot,m.prey_epoch,m.prey_grade,m.prey_percent,m.raw_share,
+                m.xp_boost_percent,m.stamina_minutes,m.xp_awarded,x.level_before
+         FROM game_party_kill_xp_receipts p JOIN game_party_kill_xp_members m USING(death_key)
+         JOIN game_character_xp_receipts x ON x.reward_occurrence_id=m.reward_occurrence_id
+         WHERE m.character_id=encode($1,'hex')::uuid AND p.creature_key=$2
+           AND p.committed_at >= $3::text::timestamptz AND m.prey_slot IS NOT NULL
+         ORDER BY p.committed_at,p.death_key LIMIT 2",
+    ).bind(clients.characters[1].as_slice()).bind(&selected.selected).bind(since).fetch_all(&mut database).await?;
+    let [(number, epoch, grade, percent, raw, boost, stamina, awarded, level)] = awards.as_slice() else {
+        return Err(format!("P03 step=hunt-xp observed=awards:{awards:?};needed=one-selected-creature-award").into());
+    };
+    let level = u32::try_from(*level)?;
+    let expected = |prey, premium| oteryn_gameplay_characters::hunting_experience::hunting_experience(
+        *raw, prey, *boost, *stamina, premium, level,
+    ).ok();
+    Ok(*number == i16::from(selected.slot) && u64::try_from(*epoch)? == selected.selection_epoch
+        && *grade == i16::from(selected.grade) && *percent == i16::from(selected.percent)
+        && [false,true].into_iter().any(|premium| expected(*percent, premium) == Some(*awarded)
+            && expected(0, premium).is_some_and(|base| base < *awarded)))
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -151,50 +202,39 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("P03 step=select observed={selected:?}").into());
     }
 
-    let bonus_reroll = command(
-        &mut client,
-        wire::Request::BonusReroll { slot: number },
-    )
-    .await?;
-    let selected = if matches!(
-        bonus_reroll.status,
-        CommandStatus::Accepted | CommandStatus::DuplicateReplay
-    ) {
-        let receipt = decoded(&bonus_reroll.payload, "bonus-reroll")?;
-        let current = decoded(
-            bonus_reroll
-                .current
-                .as_deref()
-                .ok_or("P03 step=bonus-reroll observed=missing-current-state")?,
-            "bonus-reroll-current",
-        )?;
+    let mut selected = selected;
+    let mut balance = active.wildcard_balance;
+    for _ in 0..8 {
+        let response = command(&mut client, wire::Request::BonusReroll { slot: number }).await?;
+        if !matches!(response.status, CommandStatus::Accepted | CommandStatus::DuplicateReplay) {
+            let after = query(&mut client, "bonus-reroll-refusal-check").await?;
+            return Err(format!("P03 step=bonus-reroll observed={:?},state-unchanged:{};needed=accepted-wildcard-reroll",
+                response.status, same_checkpoint(&selected, slot(&after, number)?)).into());
+        }
+        let receipt = decoded(&response.payload, "bonus-reroll")?;
+        let current = reroll_current(&response, &receipt)?;
         let rerolled = slot(&current, number)?.clone();
-        if receipt.status != 0
-            || receipt.wildcard_balance.checked_add(1) != Some(active.wildcard_balance)
-            || rerolled.selected != selected.selected
-            || rerolled.selection_epoch != selected.selection_epoch
-            || (rerolled.bonus, rerolled.grade, rerolled.percent)
-                == (selected.bonus, selected.grade, selected.percent)
+        let checked = query(&mut client, "bonus-reroll-readback").await?;
+        if !valid_bonus_reroll(receipt.status == 0 && current.status == 0
+            && receipt.wildcard_balance.checked_add(1) == Some(balance)
+            && current.wildcard_balance == receipt.wildcard_balance
+            && checked.wildcard_balance == current.wildcard_balance
+            && same_checkpoint(&rerolled, slot(&checked, number)?),
+            rerolled.selected == selected.selected && reroll_epoch_matches(selected.selection_epoch, rerolled.selection_epoch)
+                && (rerolled.bonus, rerolled.grade, rerolled.percent) != (selected.bonus, selected.grade, selected.percent))
         {
-            return Err(format!(
-                "P03 step=bonus-reroll observed-receipt={receipt:?}-state={rerolled:?}"
-            )
-            .into());
+            return Err(format!("P03 step=bonus-reroll observed=receipt:{receipt:?}-state:{rerolled:?}").into());
         }
-        rerolled
-    } else if bonus_reroll.status == CommandStatus::Rejected {
-        let after = query(&mut client, "bonus-reroll-refusal-check").await?;
-        if !same_checkpoint(&selected, slot(&after, number)?) {
-            return Err("P03 step=bonus-reroll-refusal observed=active-state-mutated".into());
+        balance = receipt.wildcard_balance;
+        selected = rerolled;
+        // XP has a per-kill durable award that identifies the exact selection and applied percentage.
+        if selected.bonus == 3 {
+            break;
         }
-        selected
-    } else {
-        return Err(format!(
-            "P03 step=bonus-reroll observed-command-status={:?}",
-            bonus_reroll.status
-        )
-        .into());
-    };
+    }
+    if selected.bonus != 3 {
+        return Err("P03 step=bonus-reroll needed=experience-bonus-for-attributed-kill-proof".into());
+    }
 
     let refusal = command(
         &mut client,
@@ -216,16 +256,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("P03 step=refusal observed=active-state-mutated".into());
     }
 
-    let target = travel_to_spawn_target(&mut client, world, &metadata.spawns, &selected.selected).await?;
-    client_hunt::hunt_target(&mut client, Some(target)).await?;
-    // Keep answering liveness while the interval runs out; a bare sleep lets
-    // the server drop the session as unresponsive.
+    let name = super::full_row_p02::creature_display_name(&selected.selected)?;
+    let first_award = hunt_with_xp_bonus(&mut client, clients, world, &metadata.spawns, &selected, &name).await?;
+    // Serve liveness while the hunting interval elapses.
     let until = tokio::time::Instant::now() + Duration::from_secs(61);
     while tokio::time::Instant::now() < until {
         client.service_liveness(Duration::from_millis(500)).await?;
+        client.take_events();
     }
-    let target = travel_to_spawn_target(&mut client, world, &metadata.spawns, &selected.selected).await?;
-    client_hunt::hunt_target(&mut client, Some(target)).await?;
+    let second_award = hunt_with_xp_bonus(&mut client, clients, world, &metadata.spawns, &selected, &name).await?;
     let checkpoint = query(&mut client, "effect-checkpoint").await?;
     let checkpoint = slot(&checkpoint, number)?.clone();
     if checkpoint.state != 2
@@ -233,7 +272,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         || checkpoint.bonus != selected.bonus
         || checkpoint.percent != selected.percent
         || checkpoint.selection_epoch != selected.selection_epoch
-        || checkpoint.hunting_seconds >= selected.hunting_seconds
+        || !prey_effect_observed(checkpoint.hunting_seconds < selected.hunting_seconds, first_award && second_award)
     {
         return Err(format!("P03 step=effect-checkpoint observed={checkpoint:?}").into());
     }
@@ -294,6 +333,14 @@ mod tests {
     use super::*;
 
     #[test]
+    fn rejected_prey_reroll_and_timer_only_effect_are_insufficient() {
+        assert!(!valid_bonus_reroll(false, true));
+        assert!(valid_bonus_reroll(true, true));
+        assert!(!prey_effect_observed(true, false));
+        assert!(prey_effect_observed(true, true));
+    }
+
+    #[test]
     fn checkpoint_comparison_includes_durable_occurrence_and_time() {
         let mut left = wire::Slot {
             slot: 1,
@@ -317,5 +364,20 @@ mod tests {
         left.selection_epoch -= 1;
         left.hunting_seconds -= 60;
         assert!(!same_checkpoint(&left, &right));
+    }
+}
+
+#[cfg(test)]
+mod delta_tests {
+    use super::*;
+
+    #[test]
+    fn charged_reroll_accepts_payload_and_next_epoch() {
+        let receipt = Reply { status: 0, wildcard_balance: 7, slots: vec![], list_size: 0,
+            expansion_owned: false, offered_today: vec![], offered_next: String::new() };
+        let response = prey::PreyResponse { request: wire::Request::BonusReroll { slot: 1 },
+            status: CommandStatus::Accepted, payload: vec![], current: None };
+        assert_eq!((reroll_current(&response, &receipt).ok(), reroll_epoch_matches(9, 10)), (Some(receipt), true));
+        assert!(!reroll_epoch_matches(9, 9));
     }
 }

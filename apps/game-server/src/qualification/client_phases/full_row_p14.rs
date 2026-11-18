@@ -47,6 +47,26 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     ));
 }
 
+fn server_close(result: Result<(), DevClientError>) -> TestResult<String> {
+    let Err(error) = result else {
+        return Err("step=3-server-ended-session observed=still-connected".into());
+    };
+    let mut cause = &error;
+    while let DevClientError::Context { source, .. } = cause {
+        cause = source;
+    }
+    if let DevClientError::Session(oteryn_dev_client::SessionError::Io(io)) = cause
+        && io.kind() == std::io::ErrorKind::UnexpectedEof
+    {
+        return Ok(error.to_string());
+    }
+    Err(format!("step=3-server-ended-session observed={error:?};needed=server-eof-after-disposition-3").into())
+}
+
+fn fresh_pool_matches(fresh_pool: u16, expected_minutes: u16) -> bool {
+    fresh_pool == expected_minutes
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -104,24 +124,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    let ended = match client.service_liveness(Duration::from_secs(5)).await {
-        Err(DevClientError::Session(error)) => {
-            let observed = error.to_string();
-            if !observed.starts_with("transport I/O failed: ") {
-                return Err(format!(
-                    "step=3-server-ended-session observed={error:?} need=server-closed-connection-after-disposition-3"
-                )
-                .into());
-            }
-            observed
-        }
-        observed => {
-            return Err(format!(
-                "step=3-server-ended-session observed={observed:?} need=server-closed-connection-after-disposition-3"
-            )
-            .into());
-        }
-    };
+    let ended = server_close(client.service_liveness(Duration::from_secs(5)).await)?;
     evidence(&format!(
         "P14_CHECK step=3 status=PASS observed=walked,statue-handle-{},disposition-3,revision-{},pool-seconds-{},server-ended-session-{ended}",
         statue.get(),
@@ -133,8 +136,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let fresh_pool = general_stats(&mut fresh).await?;
     let expected_minutes = u16::try_from(selected.pool_seconds / 60)?;
     if fresh.join_snapshot().game_session_id == before_session
-        || fresh_pool == 0
-        || fresh_pool > expected_minutes
+        || !fresh_pool_matches(fresh_pool, expected_minutes)
     {
         return Err(format!(
             "step=fresh-admission observed=session={:?},pool-minutes={fresh_pool},selected-pool-seconds={} need=new-session-with-durable-pool",
@@ -329,6 +331,8 @@ async fn general_stats(client: &mut DevClientSession) -> TestResult<u16> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use oteryn_dev_client::SessionError;
+    use std::io::{Error, ErrorKind};
 
     #[test]
     fn offline_payload_round_trips_maximum_handle() -> TestResult {
@@ -338,5 +342,23 @@ mod tests {
             .map_err(|error| format!("decode: {error:?}"))?;
         assert_eq!(decoded, handle);
         Ok(())
+    }
+
+    #[test]
+    fn offline_training_requires_contextual_server_eof() {
+        let error = |kind| DevClientError::Session(SessionError::Io(Error::from(kind)));
+        assert!(server_close(Err(error(ErrorKind::ConnectionReset))).is_err());
+        assert!(server_close(Err(DevClientError::Context {
+            phase: "liveness",
+            elapsed: Duration::ZERO,
+            last_frame: "training reply".into(),
+            source: Box::new(error(ErrorKind::UnexpectedEof)),
+        })).is_ok());
+    }
+
+    #[test]
+    fn offline_training_requires_the_awarded_pool_in_minutes() {
+        assert!(!fresh_pool_matches(1, 720));
+        assert!(fresh_pool_matches(720, 720));
     }
 }

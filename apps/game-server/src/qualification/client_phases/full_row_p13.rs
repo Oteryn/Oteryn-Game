@@ -7,16 +7,9 @@
 //!    base skills and loyalty-adjusted skills agree.
 //! 2. Send a malformed LOYALTY_SKILLS_QUERY and expect a rejected reply with
 //!    no payload; then send another valid query to prove refusal is inert.
-//! 3. Walk through the compiled world to a rat, select/attack it, and wait for
-//!    the real damage, death, corpse, use and loot state deltas. This is the
-//!    available legitimate player progression action; no fixture or SQL state
-//!    is used to award account loyalty.
-//! 4. Query again and expect newly earned loyalty points plus the corresponding
-//!    skill/magic projection. If the observed points do not advance, report the
-//!    exercised Game seam as MISSING-SERVER: its owner is explicitly read-only
-//!    and the Platform earning writer has no native player command.
-//! 5. Log out normally, make a fresh admission, query again, and require the
-//!    post-action points and every projected level to remain identical.
+//! 3. Credit a real native rat hunt and independently check the Platform-owned account total.
+//! 4. Require an account accrual in that projection and the same value from the Game query.
+//! 5. Log out and verify the updated projection after a fresh admission.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::loyalty_skills::{
@@ -29,20 +22,20 @@ const OWNER_GAP: &str =
 enum Verdict {
     Pass,
     Fail(String),
-    MissingServer,
+    MissingAccrual,
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let verdict = match verdict::indexed_timeout(Duration::from_secs(210), verdict::observe(journey(clients))).await {
         Ok(Ok(true)) => Verdict::Pass,
-        Ok(Ok(false)) => Verdict::MissingServer,
+        Ok(Ok(false)) => Verdict::MissingAccrual,
         Ok(Err(error)) => Verdict::Fail(error.to_string()),
         Err(_) => Verdict::Fail("step=journey observed=timeout-210s need=responsive-server".into()),
     };
     let (status, evidence_suffix) = match verdict {
         Verdict::Pass => ("PASS", String::new()),
-        Verdict::MissingServer => ("MISSING-SERVER", format!(" evidence={OWNER_GAP}")),
+        Verdict::MissingAccrual => ("FAIL", format!(" evidence=needed-platform-loyalty-accrual;{OWNER_GAP}")),
         Verdict::Fail(error) => {
             let safe = error.split_whitespace().collect::<Vec<_>>().join("-");
             evidence(&format!("P13_GAP {error}"));
@@ -106,6 +99,22 @@ async fn accepted_logout(client: &mut DevClientSession) -> TestResult {
     }
 }
 
+fn classify_loyalty(before: u32, after: u32, platform_before: u32, platform_after: u32) -> TestResult<bool> {
+    if before != platform_before || after != platform_after || platform_after < platform_before {
+        return Err(format!("step=loyalty-accrual observed=game:{before}->{after},account:{platform_before}->{platform_after}").into());
+    }
+    Ok(platform_after > platform_before)
+}
+
+async fn account_points(database: &mut sqlx::PgConnection, character: &[u8; 16]) -> TestResult<u32> {
+    let points: i64 = sqlx::query_scalar(
+        "SELECT coalesce(l.loyalty_points,0) FROM game_character_roots r
+         LEFT JOIN game_account_loyalty_projections l USING(account_id)
+         WHERE r.character_id=encode($1,'hex')::uuid",
+    ).bind(character.as_slice()).fetch_one(database).await?;
+    Ok(u32::try_from(points)?)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<bool> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -121,7 +130,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<bool> {
         return Err("step=baseline observed=capability-not-offered need=loyalty-skills-capability".into());
     }
     let initial_session = client.join_snapshot().game_session_id;
+    use sqlx::Connection;
+    let character = &clients.characters[1];
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let account_before = account_points(&mut database, character).await?;
     let before = snapshot(&mut client, "baseline-query").await?;
+    classify_loyalty(before.points, before.points, account_before, account_before)?;
 
     let (status, payload) = query(&mut client, &[0]).await?;
     if status != CommandStatus::Rejected || !payload.is_empty() {
@@ -135,11 +149,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<bool> {
     let target = travel_to_spawn_target(&mut client, world, &metadata.spawns, "oteryn:creature.rat")
         .await
         .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step=walk-to-training observed={error} need=reachable-rat"), error) })?;
-    client_hunt::hunt_target(&mut client, Some(target))
+    client_hunt::hunt_named_target(&mut client, target, "Rat")
         .await
         .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step=combat-training observed={error} need=attack-damage-corpse-and-loot-deltas"), error) })?;
-    evidence("P13_CHECK combat-training PASS attack-damage-corpse-use-loot-deltas");
-    let after = snapshot(&mut client, "post-training-query").await?;
+    evidence("P13_CHECK combat-training PASS named-rat-attack-damage-corpse-use-loot-deltas");
+    let until = tokio::time::Instant::now() + Duration::from_secs(10);
+    let account_after = loop {
+        let points = account_points(&mut database, character).await?;
+        if points != account_before || tokio::time::Instant::now() >= until {
+            break points;
+        }
+        client.service_liveness(Duration::from_millis(250)).await?;
+        client.take_events();
+    };
+    let after = snapshot(&mut client, "post-accrual-query").await?;
+    let accrued = classify_loyalty(before.points, after.points, account_before, account_after)?;
 
     accepted_logout(&mut client).await?;
     drop(client);
@@ -154,12 +178,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<bool> {
     }
     cleanup?;
     evidence("P13_CHECK fresh-admission PASS projection-identical-after-logout");
-    Ok(after.points > before.points)
+    Ok(accrued)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn loyalty_verdict_requires_a_real_account_accrual_and_detects_regression() -> TestResult {
+        assert!(!classify_loyalty(10, 10, 10, 10)?);
+        assert!(classify_loyalty(10, 10, 10, 12).is_err());
+        assert!(classify_loyalty(10, 9, 10, 10).is_err());
+        assert!(classify_loyalty(10, 11, 10, 10).is_err());
+        assert!(classify_loyalty(10, 12, 10, 12)?);
+        Ok(())
+    }
 
     #[test]
     fn missing_server_evidence_is_a_report_compatible_source() {
