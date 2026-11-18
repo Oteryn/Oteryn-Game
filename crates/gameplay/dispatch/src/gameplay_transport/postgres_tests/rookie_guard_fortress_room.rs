@@ -23,10 +23,20 @@ const TIMEOUT: Position = Position {
     y: 32173,
     floor: -10,
 };
-pub(super) const EXIT_TILE: Position = Position {
+const EXIT_TILE: Position = Position {
     x: 31945,
     y: 32174,
     floor: -10,
+};
+const TREASURE_TILE: Position = Position {
+    x: 31943,
+    y: 32174,
+    floor: -10,
+};
+const TREASURE: Position = Position {
+    x: 31932,
+    y: 32171,
+    floor: -11,
 };
 const QUEST: &str = "oteryn:quest.the_rookie_guard_quest";
 const TRACK: &str = "oteryn:quest-progress/quest/u9_1/the_rookie_guard/mission12";
@@ -42,6 +52,19 @@ fn fortress_room_rejects_a_second_player_and_retires_exact_boss_on_exit_or_timeo
     super::kill_reward_e2e::scenario_thread::run(NAME, || {
         super::quest_world_callbacks::scenario(NAME, ENTRY, false)
     })
+}
+
+pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
+    super::quest_world_callbacks::world_cells(
+        callback,
+        ENTRY,
+        100,
+        1,
+        &[(EXIT_TILE, 100), (TREASURE_TILE, 100)],
+        &[],
+        None,
+        &[TREASURE],
+    )
 }
 
 fn document() -> serde_json::Value {
@@ -63,7 +86,14 @@ fn document() -> serde_json::Value {
         {"key":"oteryn:quest-callback/rookie-guard-fortress-room-exit","quest":QUEST,
          "trigger":"step_in","selector":{"position":EXIT_TILE,"appearance":100},
          "storage":[],"passages":[],"offerings":[],"reversible":false,"return_on_failure":false,
-         "teleport":ENTRY,"effects":{"encounter_exit":ENTER},"sources":[SOURCE]}
+         "teleport":ENTRY,"effects":{"encounter_exit":ENTER},"sources":[SOURCE]},
+        {"key":"oteryn:quest-callback/rookie-guard-fortress-treasure","quest":QUEST,
+         "trigger":"step_in","selector":{"position":TREASURE_TILE,"appearance":100},
+         "requires_world_admission":true, "storage":[{"track":TRACK,"minimum":12,"maximum":12,"set":13}],
+         "passages":[],"offerings":[],"reversible":false,"return_on_failure":true,
+         "teleport":TREASURE,"effects":{"clear_area":{"minimum":{"x":31929,"y":32165,"floor":-10},
+              "maximum":{"x":31945,"y":32175,"floor":-10},"creatures":["oteryn:creature.kraknaknork"]}},
+         "sources":[SOURCE]}
     ]})
 }
 
@@ -181,8 +211,22 @@ pub(super) async fn exercise(
             1
         );
     }
+    let west = encode_step_intent(StepDirection::West);
     advance_clock(owner, 2)?;
-    wire(owner, admitted, 3, 1, east.clone()).await?;
+    wire(owner, admitted, 3, 1, west.clone()).await?;
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(player)
+            .map_err(debug)?
+            .position(),
+        local(LANDING),
+        "the live boss blocks the treasure teleporter"
+    );
+    advance_clock(owner, 2)?;
+    wire(owner, admitted, 4, 1, east.clone()).await?;
     {
         let mut runtime = owner.runtime.lock().await;
         let current = runtime.read_actor_position(player).map_err(debug)?;
@@ -209,17 +253,12 @@ pub(super) async fn exercise(
         runtime.commit_source_step(proof).map_err(debug)?;
     }
     advance_clock(owner, 2)?;
-    wire(owner, admitted, 4, 1, east).await?;
+    wire(owner, admitted, 5, 1, east.clone()).await?;
     advance_clock(owner, 301)?;
     owner.drain_quest_encounter_deadlines().await;
-    let runtime = owner.runtime.lock().await;
-    assert_eq!(
-        runtime
-            .read_actor_position(player)
-            .map_err(debug)?
-            .position(),
-        local(TIMEOUT)
-    );
+    let mut runtime = owner.runtime.lock().await;
+    let timed_out = runtime.read_actor_position(player).map_err(debug)?;
+    assert_eq!(timed_out.position(), local(TIMEOUT));
     assert_eq!(
         runtime.read_actor_position(peer).map_err(debug)?.position(),
         peer_outside
@@ -230,13 +269,52 @@ pub(super) async fn exercise(
             .map_err(debug)?
             .is_empty()
     );
+    let map = owner.bundle_map().ok_or("map")?;
+    let doors = crate::map::floor::BundleDoors(map.facts.doors());
+    let proof = crate::map::floor::prepare_quest_callback_teleport(
+        &runtime,
+        owner.movement_cells(),
+        player,
+        player_session,
+        timed_out,
+        origin,
+        false,
+        &doors,
+    )
+    .map_err(debug)?;
+    runtime.commit_source_step(proof).map_err(debug)?;
     drop(runtime);
+    advance_clock(owner, 2)?;
+    wire(owner, admitted, 6, 1, east).await?;
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let census = runtime.current_live_creature_census().map_err(debug)?;
+        let [boss] = census.as_slice() else {
+            return Err("one live boss expected".into());
+        };
+        assert!(runtime.kill_creature_for_test(*boss));
+    }
+    advance_clock(owner, 2)?;
+    wire(owner, admitted, 7, 1, west).await?;
+    advance_clock(owner, 301)?;
+    owner.drain_quest_encounter_deadlines().await;
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(player)
+            .map_err(debug)?
+            .position(),
+        local(TREASURE),
+        "defeat unlocks the treasure and cancels automatic ejection"
+    );
     let state: i64 =
         sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
             .bind(TRACK)
             .fetch_one(&h.pool)
             .await?;
-    assert_eq!(state, 12);
+    assert_eq!(state, 13);
     Ok(())
 }
 

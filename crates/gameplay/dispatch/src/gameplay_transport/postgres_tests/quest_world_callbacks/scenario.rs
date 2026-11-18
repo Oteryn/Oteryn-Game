@@ -660,7 +660,7 @@ fn scenario_case(
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
     let world = if name == super::super::rookie_guard_fortress_room::NAME {
-        world_with_objects(&callback, trigger, &[(super::super::rookie_guard_fortress_room::EXIT_TILE, 100)], &[])?
+        super::super::rookie_guard_fortress_room::world(&callback)?
     } else if name == super::super::rookie_guard_web_grease::NAME {
         world_with_objects(&callback, trigger, &[(super::super::rookie_guard_web_grease::WEB, 100)], &[])?
     } else if name == super::super::rookie_guard_wolf_return::NAME {
