@@ -19,8 +19,10 @@ pub(super) const VICTORY: &str = "first-dragon-reward-room-transfer";
 const MOUNTED: &str = "oteryn:creature.mounted_thorn_knight";
 const MOUNTED_SPAWN: Position = at(32624, 32880);
 const SHIELDED_DEATH_TILE: Position = at(32625, 32880);
-// Crystal 201189f8, data/items/items.xml:38499-38504,4091-4093 and data/items/appearances.dat.
-const BLOOD: [u16; 2] = [18615, 18616];
+// Crystal 201189f8, src/game/game.cpp:7417-7423 creates a blood small splash.
+// Both pool types are fixed in data/items/appearances.dat and src/utils/utils_definitions.hpp.
+const BLOOD: [u16; 2] = [2886, 2889];
+// Crystal data/items/items.xml:4091-4093 and data/items/appearances.dat.
 const MOVABLE_STATUE: u16 = 2025;
 const MOUNTED_ANNOUNCEMENT: &str = "The thorn knight unmounts!";
 const SHIELDED: &str = "oteryn:creature.the_shielded_thorn_knight";
