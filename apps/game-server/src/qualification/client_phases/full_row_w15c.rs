@@ -1,7 +1,8 @@
 //! W15c Killing in the Name Of (Grizzly Adams), derived from the NPC conversation owner
 //! (`gameplay_transport/npc_command/grizzly.rs`) and the quest rules (`quest/grizzly_adams/rules.rs`).
 //!
-//! 1. Walk to the authored Grizzly Adams placement, say `hi`, then `join`; assert the server's
+//! 1. Take Captain Bluebear’s boat to Port Hope, then walk to Grizzly Adams. Say `hi` and
+//!    `join`; assert the server's
 //!    reply lines (the durable join) and `points`.
 //! 2. Ask for the lowest-level task by name; assert the exact reply: a start offer (confirmed with
 //!    `yes`, then `status` must list it), or the exact level/premium refusal.
@@ -15,6 +16,20 @@ use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::npc_service as wire;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
+const CAPTAIN: &str = "oteryn:npc.captain_bluebear";
+const FARE: u64 = 160;
+const PORT_HOPE: TilePos = TilePos {
+    x: 32527,
+    y: 32784,
+    floor: 6,
+};
+// A jungle trail tile east of the harbor, within the bounded search of both endpoints.
+const TRAIL: TilePos = TilePos {
+    x: 32647,
+    y: 32785,
+    floor: 7,
+};
+
 const NPC: &str = "oteryn:npc.grizzly_adams";
 const REFUSALS: [&str; 2] = [
     "This task requires Premium.",
@@ -23,7 +38,9 @@ const REFUSALS: [&str; 2] = [
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(720), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok(Outcome::Started(task))) => (
             "PASS",
@@ -102,26 +119,45 @@ fn first_task() -> TestResult<String> {
         .ok_or_else(|| "step=catalogue observed=empty".into())
 }
 
-async fn reach(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    bytes: &[u8],
-) -> TestResult<EntityRef> {
-    let metadata = oteryn_world_bundle::bundle::visit(bytes, |_, _| Ok(()))?;
-    let npc = metadata
-        .npcs
+fn placement<'a>(
+    table: &'a oteryn_world_bundle::npc::Table,
+    key: &str,
+) -> TestResult<&'a oteryn_world_bundle::npc::Npc> {
+    table
         .npcs
         .iter()
-        .find(|npc| npc.key == NPC)
-        .ok_or("step=reach observed=no-grizzly-adams-placement-in-the-bundle")?;
-    let here = tile(client.world_spatial().actor_position)?;
-    let path = route(world, here, |at| {
-        npc.placements
-            .iter()
-            .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
-    })
-    .ok_or("step=reach observed=no-walk-route-from-spawn-to-grizzly-adams")?;
-    walk(client, world, &path).await?;
+        .find(|npc| npc.key == key)
+        .ok_or_else(|| format!("step=reach observed=missing-bundle-npc:{key}").into())
+}
+
+fn near(at: TilePos, npc: &oteryn_world_bundle::npc::Npc) -> bool {
+    npc.placements
+        .iter()
+        .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
+}
+
+async fn walk_leg(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    leg: &str,
+    path: &[StepDirection],
+) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    walk(client, world, path).await?;
+    let to = tile(client.world_spatial().actor_position)?;
+    evidence(&format!(
+        "W15c_walk leg={leg} from={from:?} to={to:?} steps={} span_x={} span_y={}",
+        path.len(),
+        from.x.abs_diff(to.x),
+        from.y.abs_diff(to.y)
+    ));
+    Ok(())
+}
+
+fn actor_at(
+    client: &DevClientSession,
+    npc: &oteryn_world_bundle::npc::Npc,
+) -> TestResult<EntityRef> {
     client
         .world_entities()
         .and_then(|entities| {
@@ -135,7 +171,113 @@ async fn reach(
             })
         })
         .map(|entry| entry.entity)
-        .ok_or_else(|| "step=reach observed=grizzly-adams-not-visible-after-walk".into())
+        .ok_or_else(|| format!("step=reach observed=npc-not-visible-after-walk:{}", npc.key).into())
+}
+
+fn carried_gold(
+    client: &DevClientSession,
+    coins: &[(std::num::NonZeroU32, u64)],
+) -> TestResult<u64> {
+    Ok(client
+        .inventory()
+        .ok_or("step=boat observed=no-inventory")?
+        .entries
+        .iter()
+        .filter_map(|entry| {
+            coins
+                .iter()
+                .find(|(key, _)| key == &entry.item_definition_ref)
+                .map(|(_, value)| u64::from(entry.count.get()) * value)
+        })
+        .sum())
+}
+
+async fn sail(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    captain: &oteryn_world_bundle::npc::Npc,
+    spawns: &oteryn_world_bundle::spawn::Table,
+) -> TestResult {
+    let index = provisioning::item_index()?;
+    let coins = [
+        (provisioning::item_reference(&index, 3031)?, 1),
+        (provisioning::item_reference(&index, 3035)?, 100),
+        (provisioning::item_reference(&index, 3043)?, 10_000),
+    ];
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(240);
+    while carried_gold(client, &coins)? < FARE {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("step=boat observed=fare-loot-budget-expired".into());
+        }
+        travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await?;
+        client_hunt::hunt(client).await?;
+    }
+
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = route(world, from, |at| near(at, captain))
+        .ok_or("step=boat observed=no-walk-route-to-captain-bluebear")?;
+    walk_leg(client, world, "captain", &path).await?;
+    let actor = actor_at(client, captain)?;
+    say(client, actor, "hi").await?;
+    let quote = say(client, actor, "port hope").await?;
+    expect(
+        &quote
+            .iter()
+            .map(|line| line.to_ascii_lowercase())
+            .collect::<Vec<_>>(),
+        &format!("port hope for {FARE} gold"),
+        "boat-quote",
+    )?;
+    let before = carried_gold(client, &coins)?;
+    expect(
+        &say(client, actor, "yes").await?,
+        "Set the sails!",
+        "boat-confirm",
+    )?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+    while tile(client.world_spatial().actor_position)? != PORT_HOPE
+        || carried_gold(client, &coins)?.checked_add(FARE) != Some(before)
+    {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("step=boat observed=missing-port-hope-arrival-or-fare-debit".into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
+    evidence(&format!("W15c_boat destination={PORT_HOPE:?} fare={FARE}"));
+    Ok(())
+}
+
+async fn reach(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    bytes: &[u8],
+) -> TestResult<EntityRef> {
+    let metadata = oteryn_world_bundle::bundle::visit(bytes, |_, _| Ok(()))?;
+    let npc = placement(&metadata.npcs, NPC)?;
+    let from = tile(client.world_spatial().actor_position)?;
+    if let Some(path) = route(world, from, |at| near(at, npc)) {
+        walk_leg(client, world, "grizzly-adams", &path).await?;
+        return actor_at(client, npc);
+    }
+
+    let to_trail = |from| route(world, from, |at| at == TRAIL);
+    let path = if let Some(path) = to_trail(from) {
+        path
+    } else {
+        sail(
+            client,
+            world,
+            placement(&metadata.npcs, CAPTAIN)?,
+            &metadata.spawns,
+        )
+        .await?;
+        to_trail(PORT_HOPE).ok_or("step=reach observed=no-walk-route-from-port-hope-to-trail")?
+    };
+    walk_leg(client, world, "jungle-trail", &path).await?;
+    let path = route(world, TRAIL, |at| near(at, npc))
+        .ok_or("step=reach observed=no-walk-route-from-trail-to-grizzly-adams")?;
+    walk_leg(client, world, "grizzly-adams", &path).await?;
+    actor_at(client, npc)
 }
 
 /// One real talk intent; returns the reply lines the server addressed to this character.
@@ -232,6 +374,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
             return Err(format!("step=task observed=unexpected-reply:{}", compact(&line)).into());
         }
     };
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = route(world, from, |at| at == TRAIL)
+        .ok_or("step=replay observed=no-walk-route-back-to-trail")?;
+    walk_leg(&mut client, world, "return-to-trail", &path).await?;
     logout(&mut client).await?;
     let mut client = connect_world(clients, 0xe5).await?;
     let actor = reach(&mut client, world, &bytes).await?;
