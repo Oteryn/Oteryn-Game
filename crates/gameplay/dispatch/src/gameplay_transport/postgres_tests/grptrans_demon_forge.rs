@@ -123,8 +123,12 @@ async fn exercise(h: &Harness) -> TestResult {
         .bind_attacker_lease(
             deps.actor,
             session,
-            CharacterLease::new(fence.character_id, fence.character_lease_generation)
-                .map_err(debug)?,
+            CharacterLease::new(
+                oteryn_protocol_oteryn::CharacterId::decode(fence.character_id.as_bytes())
+                    .map_err(debug)?,
+                fence.character_lease_generation,
+            )
+            .map_err(debug)?,
         )
         .map_err(debug)?;
     deps.runtime = tokio::sync::Mutex::new(runtime);
