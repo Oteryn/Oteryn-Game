@@ -26,7 +26,7 @@ fn scenario() -> TestResult {
     world_scenario!(
         "nfront1_ongulf",
         |h,
-         request,
+         _request,
          seal,
          authority,
          world_id,
@@ -117,6 +117,9 @@ fn scenario() -> TestResult {
                 first,
                 "the same mission command cannot reroll"
             );
+            drop(owner);
+            drop(authority);
+            drop(seal);
             h.cleanup().await?;
             Ok(())
         }

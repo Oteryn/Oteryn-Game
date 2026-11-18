@@ -44,7 +44,7 @@ fn scenario() -> TestResult {
         world,
         (i32::from(START.x), i32::from(START.y)),
         |h,
-         request,
+         _request,
          seal,
          authority,
          world_id,
@@ -67,6 +67,9 @@ fn scenario() -> TestResult {
             ));
             owner.admit_quest_session(&admitted).await;
             let result = exercise(&mut owner, &mut admitted, &h).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
             let cleanup = h.cleanup().await;
             result?;
             cleanup
