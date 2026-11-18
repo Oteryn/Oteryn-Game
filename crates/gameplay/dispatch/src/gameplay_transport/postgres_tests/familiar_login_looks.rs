@@ -11,6 +11,7 @@ use crate::gameplay_transport::spell_premium_coordinator::{
 };
 use crate::premium::{PremiumClass, PremiumConsumer};
 use crate::spell::Execution;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use std::sync::Arc;
 
 #[test]
@@ -167,6 +168,10 @@ fn scenario(name: &'static str, premium_current: bool) -> TestResult {
                 .await
                 .map_err(debug)?;
 
+            // Channel boot installs these in production (channel_boot.rs); Login needs them.
+            native
+                .install_companion_policies(&mut *owner.runtime.lock().await)
+                .map_err(debug)?;
             tutorial_vitals_fixture::admit(&owner, &deps, &request).await?;
             let after = h
                 .root
