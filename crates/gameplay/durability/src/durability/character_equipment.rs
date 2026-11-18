@@ -1645,7 +1645,7 @@ impl DurabilityRoot {
             recovery,
             node,
             fence,
-            command,
+            (command, None),
             content,
             EquipmentIntent::Move {
                 item: request.item,
@@ -1654,6 +1654,36 @@ impl DurabilityRoot {
             },
         )
         .await
+    }
+
+    /// Command 9 under a named House fence. The origin only qualifies the
+    /// equipment content pin and receipt's Channel field.
+    #[allow(clippy::too_many_arguments, reason = "the fenced equipment inputs plus the House origin")]
+    pub async fn commit_house_equipment_move<C: EquipmentMoveContent>(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &CurrentCharacterItemFence,
+        command: CommandRef,
+        content: &C,
+        request: EquipmentMove,
+        origin_channel: [u8; 16],
+    ) -> std::result::Result<
+        std::result::Result<EquipmentReceipt, EquipmentMoveRefusal>,
+        DurabilityError,
+    > {
+        self.commit_equipment_intent(
+            recovery,
+            node,
+            fence,
+            (command, Some(origin_channel)),
+            content,
+            EquipmentIntent::Move {
+                item: request.item,
+                from_slot: request.from_slot,
+                to_slot: request.to_slot,
+            },
+        ).await
     }
 
     /// Capability 180: selection and custody commit share the equipment owner transaction.
@@ -1698,7 +1728,7 @@ impl DurabilityRoot {
             recovery,
             node,
             fence,
-            command,
+            (command, None),
             content,
             EquipmentIntent::Hotkey {
                 definition: selection.0,
@@ -1726,7 +1756,7 @@ impl DurabilityRoot {
             recovery,
             node,
             fence,
-            command,
+            (command, None),
             content,
             EquipmentIntent::HotkeyMove {
                 item: request.item,
@@ -1742,7 +1772,7 @@ impl DurabilityRoot {
         recovery: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: &CurrentCharacterItemFence,
-        command: CommandRef,
+        (command, house_origin): (CommandRef, Option<[u8; 16]>),
         content: &C,
         intent: EquipmentIntent,
     ) -> std::result::Result<
@@ -1777,10 +1807,17 @@ impl DurabilityRoot {
                         {
                             return Ok(replay);
                         }
-                        let authority = assert_equipment_fence_in_transaction(
-                            &mut tx, &record, &node, &fence, command, digest,
-                        )
-                        .await?;
+                        let authority = if let Some(origin) = house_origin {
+                            assert_recovery_fence(&mut tx, &record).await?;
+                            super::db::lock_admission_relations(&mut tx).await?;
+                            house_read::assert_house_equipment_authority(
+                                &mut tx, &node, &fence, origin, digest, Some(command),
+                            ).await?
+                        } else {
+                            assert_equipment_fence_in_transaction(
+                                &mut tx, &record, &node, &fence, command, digest,
+                            ).await?
+                        };
                         let snapshot = read_equipment_in_transaction(&mut tx, &authority).await?;
                         let resolved = match &intent {
                             EquipmentIntent::Hotkey {

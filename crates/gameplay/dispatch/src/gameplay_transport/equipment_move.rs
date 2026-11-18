@@ -471,15 +471,17 @@ async fn move_equipment_inner(
     hotkey: bool,
 ) -> EquipmentMoveResult {
     let refused = EquipmentMoveResult::Refused(EquipmentMoveRefusal::Rejected);
-    // The equipment writer only grants Channel custody. Return a known refusal for
-    // House input before the Channel-only equipment clocks are consulted.
-    if admission
+    let session = command.game_session_id;
+    let Some(fence) = command.item_fence else {
+        return refused;
+    };
+    let house = admission
         .runtime
         .lock()
         .await
-        .house_actor_state(actor, command.game_session_id)
-        .is_ok()
-    {
+        .house_actor_state(actor, session)
+        .is_ok();
+    if house && hotkey {
         return refused;
     }
     // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard; the move is a key-33
@@ -521,9 +523,10 @@ async fn move_equipment_inner(
     if !trade_ready {
         return refused;
     }
-    if !admission
-        .checkpoint_timed_equipment(actor, command.game_session_id, true)
-        .await
+    if !house
+        && !admission
+            .checkpoint_timed_equipment(actor, command.game_session_id, true)
+            .await
     {
         return EquipmentMoveResult::Unknown;
     }
@@ -547,9 +550,12 @@ async fn move_equipment_inner(
     let Some(native) = native else {
         return refused;
     };
-    let Some(fence) = command.item_fence else {
+    if house
+        && house_equipment_digest(admission, actor, session, fence).await
+            != Some(native.source_digest())
+    {
         return refused;
-    };
+    }
     let Ok(command_id) = CommandId::new(command.command_id) else {
         return refused;
     };
@@ -576,7 +582,20 @@ async fn move_equipment_inner(
             let Some(durable) = durable_move(request) else {
                 return refused;
             };
-            if hotkey {
+            if house {
+                admission
+                    .root
+                    .commit_house_equipment_move(
+                        admission.character,
+                        admission.holder,
+                        &fence,
+                        CommandRef::new(session, command_id),
+                        &NativeItemWeights(native),
+                        durable,
+                        *admission.channel_id.as_bytes(),
+                    )
+                    .await
+            } else if hotkey {
                 admission
                     .root
                     .commit_hotkey_equipment_move(
@@ -613,6 +632,19 @@ async fn move_equipment_inner(
         .forget_weapon(actor, command.game_session_id);
     match committed {
         Ok(Ok(_receipt)) => {
+            if house {
+                let Ok(effects) = admission
+                    .read_house_admission_effects(actor, session, fence)
+                    .await
+                else {
+                    return EquipmentMoveResult::Unknown;
+                };
+                let runtime = admission.runtime.lock().await;
+                let _ = admission
+                    .install_house_admission_suppressions(&runtime, actor, session, fence, effects)
+                    .await;
+                return EquipmentMoveResult::Committed;
+            }
             if !admission
                 .checkpoint_timed_equipment(actor, command.game_session_id, true)
                 .await

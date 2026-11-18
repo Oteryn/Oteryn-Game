@@ -20,8 +20,8 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             "oteryn:item.tibia.i3505".into(),
         ),
         Case::ResidentEquip => (
-            "oteryn:item.tibia.i3354".into(),
-            "oteryn:item.tibia.i3354".into(),
+            "oteryn:item.tibia.i3375".into(),
+            "oteryn:item.tibia.i3375".into(),
         ),
         Case::CarpetTile { .. } => (
             "oteryn:item.tibia.i22736".to_owned(),

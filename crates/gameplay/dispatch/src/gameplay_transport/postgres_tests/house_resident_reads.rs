@@ -37,7 +37,7 @@ fn house_resident_mail_without_inscription_postgres() -> TestResult {
 }
 
 #[test]
-fn house_resident_equip_returns_command_result_postgres() -> TestResult {
+fn house_resident_equip_moves_helmet_postgres() -> TestResult {
     run_case(Case::ResidentEquip)
 }
 
@@ -435,7 +435,7 @@ pub(super) async fn exchange(
                         assert_eq!(
                             item_view::decode_item_move_result_with_equip_drop(reply.payload, true)
                                 .map_err(debug)?,
-                            item_view::ItemMoveOutcome::Rejected
+                            item_view::ItemMoveOutcome::Moved
                         );
                     }
                     break;
@@ -563,6 +563,15 @@ pub(super) async fn exchange(
         .fetch_one(&h.pool)
         .await?;
         assert_eq!(text, "Edited in the House");
+    }
+    if case == Case::ResidentEquip {
+        let slot: Option<i16> = sqlx::query_scalar(
+            "SELECT slot FROM game_character_equipment_slots WHERE item_instance_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(71).as_slice())
+        .fetch_optional(&h.pool)
+        .await?;
+        assert_eq!(slot, Some(1));
     }
     // A retained session with the wrong named House cannot authorize any of these reads.
     let mut tx = h.pool.begin().await?;
