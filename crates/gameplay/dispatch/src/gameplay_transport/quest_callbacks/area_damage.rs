@@ -86,31 +86,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         entered: MovementPositionSnapshot,
     ) {
         let at = entered.position();
-        if at.floor != 7 || !(32706..=32725).contains(&at.x) || !(32345..=32357).contains(&at.y) {
+        let Some(active) = self.active_generation else {
             return;
-        }
-        let Some(entries) =
-            crate::gameplay_transport::paced_movement::special_movement::tile_entries(map, at)
+        };
+        let Some(ground) = active
+            .native_gameplay()
+            .and_then(|native| native.item_index())
+            .and_then(|index| {
+                index.definition_ref("Item", "oteryn:item.tibia.i918", "definition-r1")
+            })
         else {
             return;
         };
-        let runtime = self.runtime.lock().await;
-        if runtime.read_actor_position(actor) != Ok(entered) {
-            return;
-        }
-        let Some(index) = crate::gameplay_transport::item_ref_admission::pinned_index(
-            &runtime,
-            self.active_generation,
-        ) else {
-            return;
-        };
-        let Some(ground) = index.definition_ref("Item", "oteryn:item.tibia.i918", "definition-r1")
+        let Some(entries) =
+            crate::gameplay_transport::paced_movement::special_movement::tile_entries(map, at)
         else {
             return;
         };
         if !entries.entries.iter().any(|(_, entry)| {
             entry.definition == oteryn_protocol_oteryn::world_map::MapDefinition::Item(ground)
         }) {
+            return;
+        }
+        let runtime = self.runtime.lock().await;
+        if runtime.content_pin().server_artifact_digest()
+            != active.identity().server_artifact_digest()
+            || runtime.read_actor_position(actor) != Ok(entered)
+        {
             return;
         }
         let draw = super::demon_oak::oak_draw(
@@ -202,9 +204,6 @@ fn environmental_hit(
     let Some(state) = states.get(runtime, actor, session) else {
         return false;
     };
-    let raw = raw
-        .saturating_sub(i64::from(state.equipped_mantra()))
-        .max(0);
     let damage = state
         .equipped_element_protection(element)
         .and_then(|protection| {
