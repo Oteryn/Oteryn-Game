@@ -87,9 +87,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
-        // A committed-but-unacknowledged USE still owns this captured merchant
-        // until the original receipt can publish its removal.
-        if (callback.effects.party_transfer.is_some() || callback.effects.loot_merchant)
+        if callback.effects.party_transfer.is_some()
             && self
                 .states
                 .quest_callbacks
@@ -97,9 +95,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .lock()
                 .map_or(true, |records| {
                     records.iter().any(|(owner, pending)| {
-                        *owner != session
-                            && pending.key == key
-                            && (callback.effects.loot_merchant || !pending.participants.is_empty())
+                        *owner != session && pending.key == key && !pending.participants.is_empty()
                     })
                 })
         {
@@ -510,6 +506,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(result) => return result,
         };
         let projection_target = match &projection {
+            // Keep the source and shared entrance reserved until the exact
+            // USE receipt can settle, including when its acknowledgment is lost.
+            Some(crate::map::facts::QuestCallbackProjection::MerchantTrap {
+                barricade, ..
+            }) => match barricade {
+                Some((at, _)) => match crate::map::view::placement_key(*at, 0) {
+                    Some(entrance) => Some(entrance),
+                    None => return UseDisposition::Rejected,
+                },
+                None => Some(key),
+            },
+            Some(crate::map::facts::QuestCallbackProjection::ReleaseMerchant { .. }) => Some(key),
             Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
                 key, ..
             }) => Some(*key),

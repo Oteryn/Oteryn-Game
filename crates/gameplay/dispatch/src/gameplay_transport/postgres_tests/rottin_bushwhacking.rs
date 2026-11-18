@@ -542,6 +542,9 @@ pub(super) async fn exercise_wave(
     drop(runtime);
     drain_next(owner).await?;
     let runtime = owner.runtime.lock().await;
+    let live = runtime
+        .current_live_creature_census()
+        .map_err(super::fixture::debug)?;
     assert!(!live.iter().any(|actor| {
         runtime.matches_live_creature_identity(*actor, b"oteryn:creature.travelling_merchant")
     }));
