@@ -1,8 +1,10 @@
-//! Armenius's pre-encounter conversation from Crystal 201189f8.
+//! Armenius's source conversation from Crystal 201189f8.
 use super::super::{ComposedFreshAdmission, connection::UseCommand};
 use super::*;
 
-use oteryn_gameplay_quests::quest::armenius::{FINAL_TOPIC, MISSION, NPC, RESOLVED_MISSION};
+use oteryn_gameplay_quests::quest::armenius::{
+    FINAL_TOPIC, MISSION, NPC, Outcome, RESOLVE, RESOLVED_MISSION, outcome,
+};
 
 pub(super) fn prepare(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
@@ -27,6 +29,18 @@ pub(super) fn prepare(
             {
                 return None;
             }
+            if topic.number == FINAL_TOPIC {
+                if final_outcome(runtime, command.game_session_id, command.command_id)?
+                    != Outcome::Dismissed
+                {
+                    return None;
+                }
+                return Some(quest_dialogue::Choice {
+                    transition: Some(RESOLVE.into()),
+                    next_topic: None,
+                    reply: vec!["Enough. Leave me alone.".into()],
+                });
+            }
             let (next, reply) = match topic.number {
                 0 => (2, "Speak plainly or leave me alone."),
                 2 => (3, "Those words unsettle me. You should leave."),
@@ -44,4 +58,29 @@ pub(super) fn prepare(
             })
         },
     )
+}
+
+pub(in crate::gameplay_transport) fn final_outcome(
+    runtime: &ChannelRuntimeV1,
+    session: GameSessionId,
+    command_id: u64,
+) -> Option<Outcome> {
+    use oteryn_simulation_determinism::{
+        DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+    };
+
+    let occurrence = super::super::npc_trade_command::derived(
+        b"oteryn:armenius-final-dialogue:v1",
+        session,
+        command_id,
+    );
+    let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+    deterministic_decision_u64(
+        &root,
+        DecisionOccurrenceId::from_bytes(occurrence),
+        "npc.armenius.outcome",
+        0,
+    )
+    .ok()
+    .map(outcome)
 }

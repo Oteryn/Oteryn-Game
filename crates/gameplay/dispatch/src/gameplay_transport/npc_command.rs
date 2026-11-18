@@ -35,7 +35,7 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 
 /// The instants of the talk intents of the last second of one session.
 type RecentIntents = VecDeque<u64>;
-mod armenius;
+pub(super) mod armenius;
 #[path = "benevola.rs"]
 mod benevola;
 mod cake;

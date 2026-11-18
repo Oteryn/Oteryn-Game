@@ -5,6 +5,7 @@ use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::foundation::{CommandId, CommandRef, WorldId};
 use crate::gameplay_transport::connection::FirstEntryOutcome;
+use oteryn_gameplay_quests::quest::armenius::{Outcome, RESOLVE, RESOLVED_MISSION};
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
 };
@@ -79,8 +80,14 @@ async fn exercise(h: &Harness) -> TestResult {
         completes: false,
         experience: None,
     };
+    let resolve = canonical
+        .catalogue()
+        .transition(RESOLVE)
+        .ok_or("resolution")?
+        .clone();
     let catalogue = Arc::new(
-        QuestStateCatalogue::new("content-1", vec![track], vec![transition]).map_err(debug)?,
+        QuestStateCatalogue::new("content-1", vec![track], vec![transition, resolve])
+            .map_err(debug)?,
     );
     owner.quest_catalogue = Some(Arc::clone(&catalogue));
     deps.initialize(&owner).await;
@@ -154,5 +161,22 @@ async fn exercise(h: &Harness) -> TestResult {
             );
         }
     }
+    let command = {
+        let runtime = owner.runtime.lock().await;
+        (2030..2100)
+            .find(|id| {
+                crate::gameplay_transport::npc_command::armenius::final_outcome(
+                    &runtime, session, *id,
+                ) == Some(Outcome::Dismissed)
+            })
+            .ok_or("dismissal decision")?
+    };
+    talk(&mut owner, &admitted, npc, command, "alori mort").await?;
+    let progress = owner
+        .root
+        .read_character_quest_state(&authority, fence.character_id)
+        .await
+        .map_err(debug)?;
+    assert_eq!(progress.tracks().get(MISSION), Some(&RESOLVED_MISSION));
     Ok(())
 }
