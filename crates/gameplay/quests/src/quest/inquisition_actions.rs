@@ -68,7 +68,7 @@ pub(crate) fn exclusive(left: &Callback, right: &Callback) -> bool {
 }
 
 pub fn summon(callback: &Callback) -> Option<&'static str> {
-    if callback.key == HAUNTED && *callback == haunted() {
+    if haunted_ruin(callback) {
         return Some("oteryn:creature.pirate_ghost");
     }
     vampire_branch(callback).map(|weakened| {
@@ -81,7 +81,11 @@ pub fn summon(callback: &Callback) -> Option<&'static str> {
 }
 
 pub fn holy_water(callback: &Callback) -> bool {
-    (callback.key == HAUNTED && *callback == haunted()) || nexus_claim(callback)
+    haunted_ruin(callback) || nexus_claim(callback)
+}
+
+pub fn haunted_ruin(callback: &Callback) -> bool {
+    callback.key == HAUNTED && *callback == haunted()
 }
 
 fn set(track: &str, minimum: i64, maximum: i64, value: i64) -> Storage {

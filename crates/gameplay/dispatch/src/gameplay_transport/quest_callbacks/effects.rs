@@ -22,7 +22,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         after: &mut EntryFacts,
     ) -> Result<Option<QuestCallbackProjection>, UseDisposition> {
         if let Some(target) = &callback.effects.target_transform {
-            return super::source_transforms::prepare(map, target).map(Some);
+            return match super::source_transforms::prepare(map, target) {
+                Err(UseDisposition::NothingToUse)
+                    if oteryn_gameplay_quests::quest::inquisition_actions::haunted_ruin(
+                        callback,
+                    ) =>
+                {
+                    // Another player's summon may already have closed the door.
+                    // Their existing timer stays in charge of reopening it.
+                    Ok(None)
+                }
+                result => result.map(Some),
+            };
         }
         if let Some(presence) = &callback.effects.item_presence {
             let pos = tile(presence.position);
