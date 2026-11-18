@@ -20,6 +20,8 @@ const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-glob
 // Crystal startup/tables/item.lua:2382-2391 places action 40004 on energy fields.
 const POS: (u16, u16, i8) = (33906, 31628, -9);
 const FIELD: u16 = 2126;
+const BAG: &str = "oteryn:item.tibia.i2853";
+const COIN: &str = "oteryn:item.tibia.i3031";
 const SHARDS: [&str; 3] = [
     "oteryn:item.tibia.i31354",
     "oteryn:item.tibia.i31355",
@@ -32,7 +34,16 @@ fn mind_energy_field_step_removes_one_owned_shard_without_changing_memories() ->
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(exercise)
+    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(admin, false).await)
+}
+
+#[test]
+fn mind_energy_field_debits_a_shard_in_a_closed_nested_bag() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty());
+    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(admin, true).await)
 }
 
 fn catalogue() -> TestResult<QuestStateCatalogue> {
@@ -60,7 +71,7 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
     Ok(Bindings::parse(&serde_json::to_vec(&data)?)?.attach(&base)?)
 }
 
-async fn exercise(admin: String) -> TestResult {
+async fn exercise(admin: String, nested: bool) -> TestResult {
     let h = Harness::create_with_admission_seed(admin, "mind_memory_fields", true, false).await?;
     prepare_current_session(&h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -105,7 +116,16 @@ async fn exercise(admin: String) -> TestResult {
         .bind(generation.identity().server_artifact_digest().as_slice())
         .bind(generation.identity().client_artifact_digest().as_slice())
         .bind(world.frame_binding_digest(admitted.world_id).as_slice()).execute(&h.pool).await?;
-    super::item_look::seed_main_backpack(&h, &SHARDS.map(|key| (key, 1))).await?;
+    let owned = if nested {
+        // Crystal 6-mind-travel.lua:126 uses getItemById(id, true).
+        // The closed bag contains one matching shard and an unrelated coin.
+        super::item_look::seed_main_backpack(&h, &[(BAG, 1), (SHARDS[1], 1), (COIN, 1)]).await?;
+        nest_backpack_contents(&h).await?;
+        1
+    } else {
+        super::item_look::seed_main_backpack(&h, &SHARDS.map(|key| (key, 1))).await?;
+        3
+    };
     owner.admit_quest_session(&admitted).await;
     for command in 1..=7u64 {
         owner.clock_origin = owner
@@ -136,7 +156,10 @@ async fn exercise(admin: String) -> TestResult {
         .bind(SHARDS.as_slice())
         .fetch_one(&h.pool)
         .await?;
-        assert_eq!(remaining, 3 - i64::try_from(command.div_ceil(2).min(3))?);
+        assert_eq!(
+            remaining,
+            owned - i64::try_from(command.div_ceil(2))?.min(owned)
+        );
     }
     let (receipts, preserved): (i64, i64) = sqlx::query_as(
         "SELECT count(*), count(*) FILTER (WHERE values_before = ARRAY[2]::bigint[]
@@ -146,13 +169,64 @@ async fn exercise(admin: String) -> TestResult {
     .bind(KEY)
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!(receipts, 3, "an empty inventory makes no debit");
+    assert_eq!(
+        receipts, owned,
+        "an inventory without a shard makes no debit"
+    );
     assert_eq!(
         preserved, receipts,
         "debit receipts preserve Memories progress"
     );
+    if nested {
+        let (debits, debited_nested): (i64, i64) = sqlx::query_as(
+            "SELECT count(*), count(*) FILTER (WHERE location_kind='nested'
+                AND item_instance_id=encode($2,'hex')::uuid AND quantity=1)
+             FROM game_quest_callback_consumptions WHERE transition_key=$1",
+        )
+        .bind(KEY)
+        .bind(id(72).as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!((debits, debited_nested), (1, 1));
+        let surviving_contents: Vec<String> = sqlx::query_scalar(
+            "SELECT i.definition_production_key FROM game_item_nested_entries n
+             JOIN game_item_instances i USING (item_instance_id)
+             WHERE n.parent_item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1",
+        )
+        .bind(id(71).as_slice())
+        .fetch_all(&h.pool)
+        .await?;
+        assert_eq!(surviving_contents, [COIN]);
+    }
     drop(owner);
     drop(authority);
     drop(seal);
     h.cleanup().await
+}
+
+async fn nest_backpack_contents(h: &Harness) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    let moved = sqlx::query(
+        "WITH entries AS (
+           DELETE FROM game_item_container_entries
+           WHERE parent_item_instance_id=encode($1,'hex')::uuid
+             AND item_instance_id IN (encode($2,'hex')::uuid,encode($3,'hex')::uuid)
+           RETURNING item_instance_id,world_id,placement_ordinal,placed_transaction_id
+         ) INSERT INTO game_item_nested_entries(
+           item_instance_id,parent_item_instance_id,world_id,placement_ordinal,placed_transaction_id)
+         SELECT item_instance_id,encode($4,'hex')::uuid,world_id,placement_ordinal,placed_transaction_id
+         FROM entries",
+    )
+    .bind(id(70).as_slice())
+    .bind(id(72).as_slice())
+    .bind(id(73).as_slice())
+    .bind(id(71).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(moved.rows_affected(), 2);
+    tx.commit().await?;
+    Ok(())
 }
