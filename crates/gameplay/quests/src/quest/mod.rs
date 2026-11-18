@@ -46,6 +46,7 @@ pub mod elemental_arrival;
 pub mod elemental_spheres;
 pub mod elvenbane;
 pub mod falcon;
+pub mod ferumbras_entry;
 pub mod fire_feathered_native;
 pub mod goblin_merchant;
 pub mod grave_danger;

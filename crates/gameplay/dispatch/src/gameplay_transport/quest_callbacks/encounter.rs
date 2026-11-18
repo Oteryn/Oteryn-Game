@@ -1,7 +1,9 @@
 //! Source parties are the players standing on the exact staging tiles, not a social-party id.
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
-use crate::map::view::EntryFacts;
+use crate::map::facts::QuestCallbackProjection;
+use crate::map::view::{EntryFacts, EntrySource, compose_tile};
+use oteryn_gameplay_quests::quest::ferumbras_entry;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(
@@ -145,6 +147,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }) {
             return UseDisposition::Occupied;
         }
+        let ferumbras = ferumbras_entry::admitted(callback);
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let mut players = Vec::new();
         let mut proofs = Vec::new();
@@ -153,9 +156,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .iter()
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
-                // Cults collects whoever stands on the five source staging tiles.
-                if encounter.phase
-                    == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults)
+                // These levers collect whoever stands on the source staging tiles.
+                if ferumbras
+                    || encounter.phase
+                        == Some(
+                            oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults,
+                        )
                 {
                     continue;
                 }
@@ -315,6 +321,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let projection = if ferumbras {
+            let Some(reset) = ferumbras_crystal_reset(map) else {
+                return UseDisposition::Rejected;
+            };
+            Some(reset)
+        } else {
+            None
+        };
         let Ok((snapshots, (phase, actors, roster))) = runtime.commit_quest_encounter_with_phase(
             proofs,
             &monsters,
@@ -340,7 +354,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             || {
                 map.facts
-                    .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
+                    .apply_quest_callback(key, expected_revision, after, &[], &[], false, projection.as_ref())
             },
         ) else {
             return UseDisposition::Rejected;
@@ -383,6 +397,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         UseDisposition::Committed
     }
+}
+
+fn ferumbras_crystal_reset(map: &BundleMap) -> Option<QuestCallbackProjection> {
+    use oteryn_gameplay_encounters::bosses::phase_controller::ferumbras::CRYSTALS;
+    let mut entries = Vec::with_capacity(CRYSTALS.len());
+    for (x, y) in CRYSTALS {
+        let at = TilePos {
+            x: u16::try_from(x).ok()?,
+            y: u16::try_from(y).ok()?,
+            floor: -14,
+        };
+        let Some(tile) = compose_tile(&map.overlay, &map.facts, at).ok()? else {
+            continue;
+        };
+        for entry in tile.entries {
+            if entry.facts.appearance_id == 14961
+                && let EntrySource::Base { placement_key, .. } = entry.source
+            {
+                entries.push((
+                    placement_key,
+                    map.facts.object_revision(placement_key),
+                    Some(map.facts.quest_callback_replacement(placement_key, 14955)?),
+                ));
+                break;
+            }
+        }
+    }
+    Some(QuestCallbackProjection::ReadsetTransforms {
+        entries,
+        reset: None,
+    })
 }
 
 #[allow(

@@ -771,6 +771,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
         super::schrodinger_island::callback(),
     ];
     native_callbacks.extend(super::elvenbane::callbacks());
+    native_callbacks.push(super::ferumbras_entry::callback());
     native_callbacks.extend(super::last_creep_native::callbacks()?);
     native_callbacks.extend(super::fire_feathered_native::callbacks());
     native_callbacks.extend(super::goblin_merchant::callbacks()?);
