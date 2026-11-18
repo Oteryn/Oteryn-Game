@@ -1,7 +1,7 @@
 //! Drive a real retained hammer USE and the resulting Disrepair hand-in.
 use super::classic_quests::{install, talk};
 use super::creature_push::scenario;
-use super::fixture::Harness;
+use super::fixture::{Harness, id};
 use super::rottin_bushwhacking::use_quest_tool;
 use super::rottin_rewards::experience;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
@@ -184,6 +184,29 @@ pub(super) async fn exercise(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!((fixed, retained), (6, 2));
+    // The live USE proved exact hammer custody. The retained content has no
+    // carried-weight admission for 3460 yet, so park the seeded tool before TALK.
+    // This keeps NPC MINT's carried-capacity checks enabled.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    let stored = sqlx::query(
+        "WITH retained AS (
+            DELETE FROM game_item_container_entries c USING game_item_instances i
+            WHERE c.item_instance_id=i.item_instance_id AND i.item_instance_id=encode($1,'hex')::uuid
+              AND i.definition_production_key=$2 AND i.lifecycle=1 AND i.quantity=1
+            RETURNING c.item_instance_id,c.world_id,c.character_id
+         )
+         INSERT INTO game_item_character_inbox_locations(item_instance_id,world_id,character_id,ordinal)
+         SELECT item_instance_id,world_id,character_id,1 FROM retained",
+    )
+    .bind(id(71).as_slice())
+    .bind(HAMMER)
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(stored.rows_affected(), 1);
+    tx.commit().await?;
     let [npc] = install(owner, &admitted, [ROTTIN]).await?;
     talk(owner, &admitted, npc, 1605, "hi").await?;
     assert_eq!(
