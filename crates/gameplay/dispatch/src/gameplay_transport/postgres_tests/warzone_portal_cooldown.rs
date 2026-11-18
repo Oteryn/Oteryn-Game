@@ -11,6 +11,8 @@ use oteryn_protocol_oteryn::world_spatial::StepDirection;
 use serde_json::json;
 
 pub(super) const CASE: &str = "dangerous-depths-warzone-four-portal";
+const COUNT_ENTRY: &str = "dangerous-depths-warzone-five-portal";
+const DUKE_ENTRY: &str = "dangerous-depths-warzone-six-portal";
 pub(super) const VICTORY: &str = "dangerous-depths-warzone-four-defeat-exit";
 const COUNT_VICTORY: &str = "dangerous-depths-warzone-five-defeat-exit";
 const DUKE_VICTORY: &str = "dangerous-depths-warzone-six-defeat-exit";
@@ -35,6 +37,49 @@ const RETURN: Position = at(33462, 32267);
 // The mounted encounter lever supplies the same native boss admission owner.
 const LEVER: Position = at(33650, 32314);
 const TELEPORT_EFFECT: u16 = 11; // Crystal items.xml:45547-45551, CONST_ME_TELEPORT.
+
+struct Entry {
+    portal: Position,
+    arrival: Position,
+    boss: &'static str,
+    track: &'static str,
+}
+
+fn entry(name: &str) -> Option<Entry> {
+    // Crystal movements_boss_entrance.lua:10-35.
+    Some(match name {
+        CASE => Entry {
+            portal: PORTAL,
+            arrival: ARRIVAL,
+            boss: BOSS,
+            track: TRACK,
+        },
+        COUNT_ENTRY => Entry {
+            portal: at(33324, 32109),
+            arrival: at(33681, 32338),
+            boss: "oteryn:creature.the_count_of_the_core",
+            track: "oteryn:quest-progress/dangerous-depths/warzone-v/admitted-at",
+        },
+        DUKE_ENTRY => Entry {
+            portal: at(33275, 32316),
+            arrival: at(33717, 32302),
+            boss: "oteryn:creature.the_duke_of_the_depths",
+            track: "oteryn:quest-progress/dangerous-depths/warzone-vi/admitted-at",
+        },
+        _ => return None,
+    })
+}
+
+pub(super) fn is_entry(name: &str) -> bool {
+    entry(name).is_some()
+}
+
+fn run_entry(name: &'static str) -> TestResult {
+    let spec = entry(name).ok_or("Warzone entrance")?;
+    super::kill_reward_e2e::scenario_thread::run(name, move || {
+        super::quest_world_callbacks::scenario(name, spec.portal, false)
+    })
+}
 
 struct VictoryExit {
     boss: &'static str,
@@ -324,26 +369,44 @@ fn warzone_step_stamps_each_entrant_and_refuses_a_retry_without_summoning_anothe
         return Ok(());
     };
     drop(admin);
-    super::kill_reward_e2e::scenario_thread::run(CASE, || {
-        super::quest_world_callbacks::scenario(CASE, PORTAL, false)
-    })
+    run_entry(CASE)
 }
 
-pub(super) fn callback() -> TestResult<Callback> {
+#[test]
+fn warzone_count_entrance_stamps_each_players_count_cooldown() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    run_entry(COUNT_ENTRY)
+}
+
+#[test]
+fn warzone_duke_entrance_stamps_each_players_duke_cooldown() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    run_entry(DUKE_ENTRY)
+}
+
+pub(super) fn callback(name: &str) -> TestResult<Callback> {
+    let spec = entry(name).ok_or("Warzone entrance")?;
     Ok(serde_json::from_value(json!({
-        "key":"oteryn:quest-callback/dangerous-depths/warzone-iv-entry",
+        "key":format!("oteryn:quest-callback/{name}"),
         "quest":QUEST,"trigger":"step_in",
-        "selector":{"position":PORTAL,"action":57243,"appearance":1949},
+        "selector":{"position":spec.portal,"action":57243,"appearance":1949},
         "reversible":false,"passages":[],"storage":[],"offerings":[],
         "requires_world_admission":true,"return_on_failure":true,
-        "teleport":ARRIVAL,
-        "state_operations":[{"track":TRACK,"from":{"kind":"any"},"effect":{"kind":"set_now"}}],
-        "effects":{"boss_admission_cooldown":{"creature":BOSS,"seconds":36000}},
+        "teleport":spec.arrival,
+        "state_operations":[{"track":spec.track,"from":{"kind":"any"},"effect":{"kind":"set_now"}}],
+        "effects":{"boss_admission_cooldown":{"creature":spec.boss,"seconds":36000},"teleport_effect":TELEPORT_EFFECT},
         "sources":[SOURCE]
     }))?)
 }
 
-pub(super) fn catalogue(callback: &Callback) -> TestResult<QuestStateCatalogue> {
+pub(super) fn catalogue(callback: &Callback, name: &str) -> TestResult<QuestStateCatalogue> {
+    let spec = entry(name).ok_or("Warzone entrance")?;
     use sha2::{Digest, Sha256};
     let digest: String = Sha256::digest(SOURCE)
         .iter()
@@ -351,8 +414,8 @@ pub(super) fn catalogue(callback: &Callback) -> TestResult<QuestStateCatalogue> 
         .collect();
     let fixture = json!({"schema":1,"quests":[{
         "quest":QUEST,"recipe_sha256":digest,"sources":[SOURCE],
-        "tracks":[{"key":TRACK,"initial":-1,"minimum":-1,"maximum":i64::MAX}],
-        "stages":[{"key":"warzone-iv-entry","completes":false,
+        "tracks":[{"key":spec.track,"initial":-1,"minimum":-1,"maximum":i64::MAX}],
+        "stages":[{"key":"admit-entrant","completes":false,
             "trigger":{"kind":"step_in","callback":callback}}]
     }]});
     let bindings = Bindings::parse(&serde_json::to_vec(&fixture)?)?;
@@ -363,7 +426,9 @@ pub(super) async fn exercise(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    name: &str,
 ) -> TestResult {
+    let spec = entry(name).ok_or("Warzone entrance")?;
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let origin = owner
         .runtime
@@ -378,7 +443,7 @@ pub(super) async fn exercise(
         let entered = runtime.read_actor_position(actor).map_err(debug)?;
         assert_eq!(
             entered.position(),
-            super::quest_world_callbacks::local(ARRIVAL)
+            super::quest_world_callbacks::local(spec.arrival)
         );
         assert!(
             runtime
@@ -415,8 +480,8 @@ pub(super) async fn exercise(
         origin
     );
     let approach = Position {
-        y: PORTAL.y - 1,
-        ..PORTAL
+        y: spec.portal.y - 1,
+        ..spec.portal
     };
     let peer = super::ferumbras_crystal_reset::admit_peer(owner, h, approach).await?;
     let peer_session = {
@@ -438,7 +503,7 @@ pub(super) async fn exercise(
     let runtime = owner.runtime.lock().await;
     assert_eq!(
         runtime.read_actor_position(peer).map_err(debug)?.position(),
-        super::quest_world_callbacks::local(ARRIVAL)
+        super::quest_world_callbacks::local(spec.arrival)
     );
     assert_eq!(
         runtime
@@ -454,9 +519,22 @@ pub(super) async fn exercise(
             .is_empty()
     );
     drop(runtime);
+    let map = owner.bundle_map().ok_or("Warzone entrance map")?;
+    assert_eq!(
+        map.facts
+            .movement_effects_since(0)
+            .iter()
+            .filter(|(_, pos, effect)| {
+                (pos.x, pos.y, pos.floor) == (spec.arrival.x, spec.arrival.y, spec.arrival.floor)
+                    && *effect == TELEPORT_EFFECT
+            })
+            .count(),
+        2,
+        "only the two admitted steps publish the arrival effect",
+    );
     let cooldowns: Vec<i64> = sqlx::query_scalar(
         "SELECT available_at - floor(extract(epoch FROM now()) * 1000)::bigint FROM game_character_boss_cooldowns WHERE boss_key=$1",
-    ).bind(BOSS).fetch_all(&h.pool).await?;
+    ).bind(spec.boss).fetch_all(&h.pool).await?;
     assert_eq!(cooldowns.len(), 2);
     assert!(
         cooldowns

@@ -362,8 +362,8 @@ fn scenario_case(
         super::super::warzone_portal_cooldown::terminal_callback(name, trigger)?
     } else if monster_step {
         super::super::zamulosh_monster_step::callback(name)?
-    } else if name == super::super::warzone_portal_cooldown::CASE {
-        super::super::warzone_portal_cooldown::callback()?
+    } else if super::super::warzone_portal_cooldown::is_entry(name) {
+        super::super::warzone_portal_cooldown::callback(name)?
     } else if death_replacement {
         super::super::encounter_death_replacements::callback(name, trigger)?
     } else if name == super::super::ferumbras_crystal_reset::CASE {
@@ -1732,8 +1732,8 @@ fn scenario_case(
                 super::super::engenc_asura_dispatch::catalogue(name)?,
             ));
         }
-        if name == super::super::warzone_portal_cooldown::CASE {
-            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::warzone_portal_cooldown::catalogue(&callback)?));
+        if super::super::warzone_portal_cooldown::is_entry(name) {
+            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::warzone_portal_cooldown::catalogue(&callback, name)?));
         }
         if super::super::first_dragon_descendant::handles(name) {
             owner.quest_catalogue = Some(std::sync::Arc::new(
@@ -1916,8 +1916,8 @@ fn scenario_case(
             Box::pin(super::super::warzone_portal_cooldown::exercise_victory(&owner, &mut admitted, &h, callback.clone(), name, trigger)).await?;
         } else if monster_step {
             Box::pin(super::super::zamulosh_monster_step::exercise(&owner, &h, callback.clone())).await?;
-        } else if name == super::super::warzone_portal_cooldown::CASE {
-            Box::pin(super::super::warzone_portal_cooldown::exercise(&owner, &mut admitted, &h)).await?;
+        } else if super::super::warzone_portal_cooldown::is_entry(name) {
+            Box::pin(super::super::warzone_portal_cooldown::exercise(&owner, &mut admitted, &h, name)).await?;
         } else if death_replacement {
             Box::pin(super::super::encounter_death_replacements::exercise(&mut owner, &mut admitted, &h, callback.clone(), trigger, name)).await?;
         } else if name == super::super::ferumbras_crystal_reset::CASE {
