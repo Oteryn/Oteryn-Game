@@ -82,14 +82,16 @@ impl NativeArenaAdmission {
         fence: CurrentCharacterGameplayFence,
     ) -> bool {
         let ready = if self.payment {
-            before.paid_rank == 0 && Some(self.quoted_rank) == before.completed.checked_add(1)
+            before
+                .with_halvar_payment()
+                .is_some_and(|paid| paid.paid_rank == self.quoted_rank)
         } else {
-            before.paid_rank == before.completed + 1
+            before.phase == 0
+                && before.rank == 0
+                && before.completed < 3
+                && before.paid_rank == before.completed + 1
         };
-        before.phase == 0
-            && before.rank == 0
-            && before.completed < 3
-            && ready
+        ready
             && self.command.game_session_id() == fence.game_session_id
             && self.actor.runtime_scope() == fence.runtime_scope
             && self.actor.scope_generation() == fence.scope_ownership_generation

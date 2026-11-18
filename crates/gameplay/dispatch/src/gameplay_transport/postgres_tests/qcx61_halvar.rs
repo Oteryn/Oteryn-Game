@@ -28,7 +28,7 @@ fn halvar_payment_opens_the_native_forcefield_without_a_second_fee() -> TestResu
     )
 }
 
-fn callback() -> TestResult<Callback> {
+pub(super) fn callback() -> TestResult<Callback> {
     Ok(serde_json::from_value(json!({
         "key":"oteryn:quest-callback/qcx61/arena-entrance",
         "quest":"oteryn:quest.barbarian_arena_quest",

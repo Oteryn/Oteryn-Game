@@ -106,6 +106,20 @@ impl MatchState {
             ..Self::default()
         }
     }
+
+    /// Crystal movements_arena_pit.lua:26-46 advances the rank at victory.
+    /// Halvar can sell that rank on the next visit (halvar.lua:74-107).
+    pub fn with_halvar_payment(&self) -> Option<Self> {
+        let can_pay = match self.phase {
+            0 => self.rank == 0,
+            3 => self.rank == self.completed && self.completed > 0,
+            _ => false,
+        };
+        (can_pay && self.paid_rank == 0 && self.completed < 3).then(|| Self {
+            paid_rank: self.completed + 1,
+            ..self.idle()
+        })
+    }
 }
 
 pub fn identity(command: CommandRef, purpose: &[u8]) -> [u8; 16] {
@@ -615,13 +629,11 @@ fn valid_transition(
     }
     let mut expected = ready.clone();
     match action {
-        A::Enter
-            if admission == Some(true)
-                && before.rank == 0
-                && before.paid_rank == 0
-                && before.completed < 3 =>
-        {
-            expected.paid_rank = before.completed + 1;
+        A::Enter if admission == Some(true) => {
+            let Some(paid) = before.with_halvar_payment() else {
+                return false;
+            };
+            expected = paid;
         }
         A::Enter if before.rank == 0 && before.completed < 3 => {
             if (admission == Some(false) && before.paid_rank != before.completed + 1)

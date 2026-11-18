@@ -309,7 +309,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await?;
             return Some(D::Applied);
         }
-        if read.dead || before.phase != 0 || before.rank != 0 || before.completed >= 3 {
+        if read.dead
+            || (!paying && (before.phase != 0 || before.rank != 0 || before.completed >= 3))
+        {
             return Some(D::WrongState);
         }
         let rank = before.completed + 1;
@@ -340,16 +342,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             match contact {
                 Contact::Halvar(intent, context) => {
-                    if before.paid_rank != 0
-                        || self
-                            .states
-                            .npc_conversations
-                            .current_npc(&self.states.chat, &runtime, actor, session, intent)
-                            .as_ref()
-                            != Some(*context)
+                    if self
+                        .states
+                        .npc_conversations
+                        .current_npc(&self.states.chat, &runtime, actor, session, intent)
+                        .as_ref()
+                        != Some(*context)
                     {
                         return Some(D::WrongState);
                     }
+                    let Some(paid) = before.with_halvar_payment() else {
+                        return Some(D::WrongState);
+                    };
                     change = Some(super::super::charm_progression::fee_change(
                         self,
                         &runtime,
@@ -359,7 +363,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             durable::identity(command, b"change-gold"),
                         ],
                     )?);
-                    after.paid_rank = rank;
+                    after = paid;
                 }
                 Contact::Entrance(snapshot, source) => {
                     let map = self.bundle_map()?;

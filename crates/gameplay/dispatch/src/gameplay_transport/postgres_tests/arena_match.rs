@@ -128,6 +128,7 @@ enum NativeScenario {
     RecreatedPillars,
     Departure,
     Halvar,
+    HalvarNextRank,
     PitGroundReset,
     Timeout,
     ResetMonsters,
@@ -197,6 +198,10 @@ pub(super) fn halvar_paid_entrance() -> TestResult {
     scenario_route(true, Some(NativeScenario::Halvar))
 }
 
+pub(super) fn halvar_next_rank() -> TestResult {
+    scenario_route(true, Some(NativeScenario::HalvarNextRank))
+}
+
 pub(super) fn native_pit_ground_reset() -> TestResult {
     scenario_route(true, Some(NativeScenario::PitGroundReset))
 }
@@ -211,6 +216,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
     let concede = matches!(route, Some(NativeScenario::Concession));
     let pit_ground_reset = matches!(route, Some(NativeScenario::PitGroundReset));
     let halvar = pit_ground_reset || matches!(route, Some(NativeScenario::Halvar));
+    let halvar_next_rank = matches!(route, Some(NativeScenario::HalvarNextRank));
     let leave_early = concede || matches!(route, Some(NativeScenario::Departure));
     let timeout_early = matches!(route, Some(NativeScenario::Timeout));
     let reset_monsters = matches!(route, Some(NativeScenario::ResetMonsters));
@@ -238,7 +244,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
             fixture::bundle_with_concession(native)?
         } else if shared_rewards {
             fixture::bundle_with_reward_chest(native)?
-        } else if halvar {
+        } else if halvar || halvar_next_rank {
             fixture::bundle_with_halvar(native)?
         } else if matches!(route, Some(NativeScenario::SpectatorTransfer)) {
             fixture::bundle_with_spectator(native)?
@@ -344,7 +350,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
             crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
-            if shared_rewards || halvar { &[4, 6, 11, 17, 170] } else { &[4, 6, 17, 170] },
+            if shared_rewards || halvar || halvar_next_rank { &[4, 6, 11, 17, 170] } else { &[4, 6, 17, 170] },
         )
         .ok_or("capability selection")?;
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
@@ -839,6 +845,9 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         }
         if shared_rewards {
             return super::qcx61_shared_rewards::after_first_rank(&mut owner, &mut admitted, &harness, deps.actor).await;
+        }
+        if halvar_next_rank {
+            return super::qcx61_halvar_next_rank::after_greenhorn(&mut owner, &mut admitted, &harness, deps.actor).await;
         }
         if matches!(route, Some(NativeScenario::TrophyInscription)) {
             return super::qcx61_trophy_inscription::after_first_rank(&owner, &mut admitted, &harness, deps.actor).await;
