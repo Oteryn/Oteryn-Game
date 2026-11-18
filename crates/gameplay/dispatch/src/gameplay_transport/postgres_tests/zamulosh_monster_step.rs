@@ -99,17 +99,25 @@ pub(super) async fn exercise(
     native
         .install_companion_policies(&mut *owner.runtime.lock().await)
         .map_err(debug)?;
-    let approach = super::quest_world_callbacks::local(Position {
-        y: position.y - 1,
-        ..position
-    });
     let map = owner.bundle_map().ok_or("map")?;
     let candidates = if position == FLOWER {
-        [(DEER, true), (SPIRIT, false)]
+        vec![(DEER, position, true), (SPIRIT, position, false)]
     } else {
-        [(DEER, true), (FRAZZLEMAW, false)]
+        let adjacent = Position {
+            x: position.x - 1,
+            ..position
+        };
+        vec![
+            (FRAZZLEMAW, adjacent, true),
+            (DEER, position, true),
+            (FRAZZLEMAW, position, false),
+        ]
     };
-    for (creature, survives) in candidates {
+    for (creature, destination, survives) in candidates {
+        let approach = super::quest_world_callbacks::local(Position {
+            y: destination.y - 1,
+            ..destination
+        });
         let actor = {
             let mut runtime = owner.runtime.lock().await;
             let policy = runtime.companion_policy(creature).map_err(debug)?;
@@ -121,7 +129,7 @@ pub(super) async fn exercise(
                 .map_err(debug)?;
             actor
         };
-        step_monster(owner, h, actor, position).await?;
+        step_monster(owner, h, actor, destination).await?;
         let mut runtime = owner.runtime.lock().await;
         assert_eq!(runtime.contains_live_creature(actor), survives);
         if position == PORTAL {
@@ -138,6 +146,11 @@ pub(super) async fn exercise(
                     return Err("expected one paired-creature cue".into());
                 };
                 assert_eq!(cue.text, MATCHED_CUE);
+                assert_eq!(cue.talk_type, 36);
+                assert_eq!(
+                    (cue.position.x, cue.position.y, cue.position.floor),
+                    (position.x, position.y, position.floor)
+                );
                 assert!(cue.captured_name.is_some());
             }
         }
@@ -150,11 +163,10 @@ pub(super) async fn exercise(
             map.facts
                 .movement_effects_since(0)
                 .into_iter()
-                .filter(|(_, at, effect)| (at.x, at.y, at.floor)
-                    == (PORTAL.x, PORTAL.y, PORTAL.floor)
-                    && *effect == THUNDER)
-                .count(),
-            1
+                .filter(|(_, _, effect)| *effect == THUNDER)
+                .map(|(_, at, _)| (at.x, at.y, at.floor))
+                .collect::<Vec<_>>(),
+            [(PORTAL.x, PORTAL.y, PORTAL.floor)]
         );
     }
     if position == FLOWER {
