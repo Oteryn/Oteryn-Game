@@ -1169,8 +1169,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     std::sync::Arc::clone(catalogue), &permit, context,
                 ).await;
                 if !matches!(allowed, Ok(true)) {
+                    // A refused travel USE stays on its starting tile. Level and
+                    // cooldown gates still publish the donor's teleport effect there.
                     if matches!(allowed, Ok(false))
-                        && callback.return_on_failure
+                        && (callback.return_on_failure
+                            || callback.minimum_level.is_some()
+                            || callback.boss_cooldown_requirement().is_some())
                         && let Some(effect) = callback.effects.teleport_effect
                         && let Some(at) = native(expected.position())
                     {
