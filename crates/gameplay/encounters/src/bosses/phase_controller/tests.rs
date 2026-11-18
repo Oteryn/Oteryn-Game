@@ -498,6 +498,7 @@ fn arbaziloth_replacement_retries_refused_placement() {
     let mut encounter =
         arbaziloth::ArbazilothEncounter::bind(&runtime, &[(player, session)], boss, forgemaster)
             .unwrap();
+    assert!(encounter.is_current(&runtime));
     assert!(encounter.shields_for(forgemaster).is_none());
     let shields = encounter.shields_for(boss).unwrap();
     for health in [100, 80, 60, 40] {
@@ -523,4 +524,6 @@ fn arbaziloth_replacement_retries_refused_placement() {
         encounter.advance(&mut runtime, 3102, |_, _| true).unwrap(),
         None
     );
+    runtime.remove_encounter_actor(enraged).unwrap();
+    assert!(!encounter.is_current(&runtime));
 }

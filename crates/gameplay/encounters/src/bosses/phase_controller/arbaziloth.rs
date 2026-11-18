@@ -116,6 +116,13 @@ impl ArbazilothEncounter {
 
     pub fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
         self.phase.current(runtime).is_ok()
+            && self.enraged.map_or_else(
+                || runtime.contains_live_creature(self.boss),
+                |enraged| {
+                    runtime.contains_live_creature(enraged)
+                        || runtime.retains_corpse_projection(enraged)
+                },
+            )
     }
 
     pub fn contains_terminal(&self, actor: ExactActorRef) -> bool {
