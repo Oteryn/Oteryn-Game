@@ -104,7 +104,7 @@ fn shuffled_room(
     label: &str,
     x: std::ops::RangeInclusive<i32>,
     y: std::ops::RangeInclusive<i32>,
-) -> impl Iterator<Item = MovementLocalPosition> {
+) -> std::vec::IntoIter<MovementLocalPosition> {
     let mut positions = y
         .flat_map(|y| x.clone().map(move |x| cell(x, y)))
         .collect::<Vec<_>>();
