@@ -267,7 +267,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if let Some(qualified) = earth_tree {
             if qualified {
-                map.facts.emit_movement_effect(to, 45);
+                map.facts.emit_movement_effect(to, 46);
             } else {
                 map.facts.emit_movement_effect(pos, 11);
                 map.facts.emit_movement_effect(to, 11);
