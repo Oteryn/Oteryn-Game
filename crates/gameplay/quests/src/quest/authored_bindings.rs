@@ -452,7 +452,7 @@ impl Bindings {
         }
         let mut world = super::world_callbacks::load()?;
         world.extend(self.world_callbacks().cloned());
-        if world.len() > MAX_BOUND_STAGES
+        if world.len() > super::world_callbacks::MAX_RUNTIME_CALLBACKS
             || world.iter().map(|c| &c.key).collect::<BTreeSet<_>>().len() != world.len()
         {
             return Err("authored/base world binding collision or bound".into());
