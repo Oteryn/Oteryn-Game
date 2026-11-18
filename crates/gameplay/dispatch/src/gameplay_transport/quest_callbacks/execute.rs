@@ -1424,7 +1424,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 due,
                 source_reset,
                 ..
-                ..
             }) = &mut projection
             {
                 let Some(delay) = callback.effects.passages_reset_after_ms else {
