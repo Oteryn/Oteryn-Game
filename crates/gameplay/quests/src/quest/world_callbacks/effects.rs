@@ -315,6 +315,8 @@ pub struct Encounter {
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub enum EncounterPhase {
+    #[serde(rename = "arbaziloth")]
+    Arbaziloth,
     #[serde(rename = "cults_boss_phase_closures")]
     Cults,
 }

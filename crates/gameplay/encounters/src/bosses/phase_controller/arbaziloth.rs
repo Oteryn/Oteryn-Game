@@ -67,8 +67,8 @@ use oteryn_gameplay_entities::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
 
-const BOSS: &str = "oteryn:creature.arbaziloth";
-const FORGEMASTER: &str = "oteryn:creature.the_forgemaster";
+pub const BOSS: &str = "oteryn:creature.arbaziloth";
+pub const FORGEMASTER: &str = "oteryn:creature.the_forgemaster";
 const ENRAGED: &str = "oteryn:creature.enraged_arbaziloth";
 const ENRAGED_ROLES: &[Role] = &[Role {
     creature: ENRAGED,
@@ -112,6 +112,29 @@ impl ArbazilothEncounter {
             enraged: None,
             shields: ShieldSequence::default(),
         })
+    }
+
+    pub fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
+        self.phase.current(runtime).is_ok()
+    }
+
+    pub fn contains_terminal(&self, actor: ExactActorRef) -> bool {
+        self.enraged == Some(actor)
+    }
+
+    pub fn projected_death(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        actor: ExactActorRef,
+    ) -> Result<bool, CarrierError> {
+        self.phase.projected_death(runtime, actor)
+    }
+
+    pub fn victors<'a>(
+        &'a self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Result<Option<&'a [(ExactActorRef, GameSessionId)]>, CarrierError> {
+        self.phase.victors(runtime)
     }
 
     pub fn shields_for(&mut self, actor: ExactActorRef) -> Option<&mut ShieldSequence> {

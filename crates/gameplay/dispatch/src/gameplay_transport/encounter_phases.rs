@@ -3,6 +3,7 @@ use super::{actor_spell::ChannelSpellStates, grizzly_kills, kill_reward::Pending
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
+use oteryn_gameplay_encounters::bosses::phase_controller::arbaziloth::{self, ArbazilothEncounter};
 use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
@@ -13,10 +14,77 @@ const MAX_ENCOUNTERS: usize = 64;
 #[derive(Debug)]
 pub(super) struct ActivePhase {
     key: u64,
-    fight: CultsEncounter,
+    fight: Fight,
     credits: Vec<grizzly_kills::EncounterCredit>,
     frozen: Option<(ExactActorRef, Vec<super::quest_kills::Recipient>)>,
     cells: crate::content::NativeEntryMovementCells,
+}
+
+#[derive(Debug)]
+enum Fight {
+    Arbaziloth(ArbazilothEncounter),
+    Cults(CultsEncounter),
+}
+
+impl Fight {
+    fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
+        match self {
+            Self::Arbaziloth(fight) => fight.is_current(runtime),
+            Self::Cults(fight) => fight.is_current(runtime),
+        }
+    }
+
+    fn contains(&self, actor: ExactActorRef) -> bool {
+        match self {
+            Self::Arbaziloth(fight) => fight.contains_terminal(actor),
+            Self::Cults(fight) => fight.contains(actor),
+        }
+    }
+
+    fn contains_terminal(&self, actor: ExactActorRef) -> bool {
+        match self {
+            Self::Arbaziloth(fight) => fight.contains_terminal(actor),
+            Self::Cults(fight) => fight.contains_terminal(actor),
+        }
+    }
+
+    fn projected_death(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        actor: ExactActorRef,
+    ) -> Result<bool, CarrierError> {
+        match self {
+            Self::Arbaziloth(fight) => fight.projected_death(runtime, actor),
+            Self::Cults(fight) => fight.projected_death(runtime, actor),
+        }
+    }
+
+    fn victors<'a>(
+        &'a self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Result<Option<&'a [(ExactActorRef, GameSessionId)]>, CarrierError> {
+        match self {
+            Self::Arbaziloth(fight) => fight.victors(runtime),
+            Self::Cults(fight) => fight.victors(runtime),
+        }
+    }
+
+    fn advance(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        now_ms: Option<u64>,
+        map_admits: impl Fn(&ChannelRuntimeV1, MovementLocalPosition) -> bool,
+    ) -> Result<(), CarrierError> {
+        match self {
+            Self::Arbaziloth(fight) => {
+                if let Some(now_ms) = now_ms {
+                    fight.advance(runtime, now_ms, map_admits)?;
+                }
+                Ok(())
+            }
+            Self::Cults(fight) => fight.advance(runtime, map_admits),
+        }
+    }
 }
 
 #[derive(Default, Debug)]
@@ -41,7 +109,7 @@ impl Registry {
                     // only after exact terminal decorations retire; tick retries failures.
                     let ActivePhase { fight, cells, .. } = phase;
                     fight
-                        .advance(runtime, |runtime, at| placement(cells, runtime, at))
+                        .advance(runtime, None, |runtime, at| placement(cells, runtime, at))
                         .is_err()
                 }
                 Ok(None) => phase
@@ -71,7 +139,7 @@ impl Registry {
         for phase in active.iter_mut().filter(|p| p.fight.contains(actor)) {
             if phase.fight.projected_death(runtime, actor).is_ok() {
                 let ActivePhase { fight, cells, .. } = phase;
-                let _ = fight.advance(runtime, |runtime, at| placement(cells, runtime, at));
+                let _ = fight.advance(runtime, None, |runtime, at| placement(cells, runtime, at));
             }
         }
         // Keep terminal admission credit until the same lethal turn captures it.
@@ -139,6 +207,28 @@ pub(super) fn bind(
         .encounter
         .as_ref()
         .ok_or(CarrierError::PlanConflict)?;
+    if encounter.phase == Some(EncounterPhase::Arbaziloth) {
+        let find_actor = |key: &str| {
+            actors
+                .iter()
+                .copied()
+                .find(|actor| runtime.matches_live_creature_identity(*actor, key.as_bytes()))
+                .ok_or(CarrierError::CreatureTargetMismatch)
+        };
+        let fight = ArbazilothEncounter::bind(
+            runtime,
+            players,
+            find_actor(arbaziloth::BOSS)?,
+            find_actor(arbaziloth::FORGEMASTER)?,
+        )?;
+        return Ok(ActivePhase {
+            key,
+            fight: Fight::Arbaziloth(fight),
+            credits,
+            frozen: None,
+            cells,
+        });
+    }
     if encounter.phase != Some(EncounterPhase::Cults) || actors.len() != 10 {
         return Err(CarrierError::PlanConflict);
     }
@@ -188,7 +278,9 @@ pub(super) fn bind(
     }
     Ok(ActivePhase {
         key,
-        fight: CultsEncounter::bind(runtime, players, pillars, stops, centre)?,
+        fight: Fight::Cults(CultsEncounter::bind(
+            runtime, players, pillars, stops, centre,
+        )?),
         credits,
         frozen: None,
         cells,
@@ -233,7 +325,7 @@ fn placement(
         )
 }
 
-pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates) {
+pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, now_ms: u64) {
     let Ok(mut active) = states.encounter_phases.active.lock() else {
         return;
     };
@@ -242,7 +334,9 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates) 
         let ActivePhase {
             key, fight, cells, ..
         } = phase;
-        if let Err(error) = fight.advance(runtime, |runtime, at| placement(cells, runtime, at)) {
+        if let Err(error) = fight.advance(runtime, Some(now_ms), |runtime, at| {
+            placement(cells, runtime, at)
+        }) {
             super::operator_event(&format!(
                 "encounter_phase_deferred key={key} reason={error:?}"
             ));
