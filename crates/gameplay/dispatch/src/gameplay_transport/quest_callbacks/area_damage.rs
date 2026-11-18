@@ -89,7 +89,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         entered: MovementPositionSnapshot,
         entries: &TileEntries,
     ) {
-        let at = entered.position();
         let Some(active) = self.active_generation else {
             return;
         };
