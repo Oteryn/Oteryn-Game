@@ -20,6 +20,8 @@ use sqlx::Row;
 use super::consume_transform_audit as audit;
 mod cake;
 pub use cake::CakeBakerContext;
+#[path = "consume_transform_cellar.rs"]
+mod cellar;
 mod dispenser;
 #[path = "consume_transform_ground.rs"]
 mod ground;
@@ -101,9 +103,6 @@ struct ActionGroundFences<'a> {
     recovery: &'a crate::character_recovery_fence::CharacterRecoveryFenceV1,
     node: &'a NodeIncarnationProof,
 }
-
-#[path = "consume_transform_cellar.rs"]
-mod cellar;
 
 impl DurabilityRoot {
     /// Compatibility surface for existing rust, lottery and reward callers.

@@ -67,9 +67,15 @@ mod tests {
             (29307, 29308, 120_000),
             (29308, FULL_BUCKET, 60_000),
         ] {
-            assert_eq!(use_on_egg(before, 1, 5).unwrap().filled_bucket, Some(after));
+            assert_eq!(
+                use_on_egg(before, 1, 5).and_then(|use_result| use_result.filled_bucket),
+                Some(after)
+            );
             assert_eq!(bucket_duration_ms(after), Some(duration));
         }
-        assert_eq!(use_on_egg(FULL_BUCKET, 1, 10).unwrap().filled_bucket, None);
+        assert_eq!(
+            use_on_egg(FULL_BUCKET, 1, 10).and_then(|use_result| use_result.filled_bucket),
+            None
+        );
     }
 }

@@ -158,6 +158,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Ok(HauntedTombUse::NoRoom) => return outcome(UseDisposition::NoRoom),
             Ok(HauntedTombUse::Ineligible | HauntedTombUse::Replay) => {}
+            Err(crate::durability::DurabilityError::CommitRejected) => {
+                return outcome(UseDisposition::Rejected);
+            }
             Err(_) => {
                 runtime.retire_owner_cycle();
                 return outcome(UseDisposition::Rejected);

@@ -1,8 +1,10 @@
 //! A signed-in Channel player's one sarcophagus use and its optional timed key.
 use super::*;
 use crate::durability::{
-    character_equipment::assert_current_equipment_in_transaction, item_loop_move::ItemLoopContent,
-    item_mint_audit::Type2Transaction, spell_items_abi::QualifiedItemDefinition,
+    character_equipment::{EquipmentError, assert_current_equipment_in_transaction},
+    item_loop_move::ItemLoopContent,
+    item_mint_audit::Type2Transaction,
+    spell_items_abi::QualifiedItemDefinition,
     spell_owner_commit::SpellLanePermit,
 };
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
@@ -56,7 +58,11 @@ impl DurabilityRoot {
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
             let (native, content) = *context;
-            assert_current_equipment_in_transaction(&mut tx, &recovery, &holder, &fence, Some(command), native.source_digest()).await?;
+            assert_current_equipment_in_transaction(&mut tx, &recovery, &holder, &fence, Some(command), native.source_digest()).await.map_err(|error| match error {
+                EquipmentError::Durability(error) => error,
+                EquipmentError::Database(error) => error.into(),
+                EquipmentError::Rejected(_) => DurabilityError::CommitRejected,
+            })?;
             lock_cause(&mut tx, command).await?;
             let previous: Option<(Vec<u8>, Vec<u8>, Vec<u8>, String)> = sqlx::query_as(
                 "SELECT uuid_send(character_id),map_digest,placement,source_revision::text
