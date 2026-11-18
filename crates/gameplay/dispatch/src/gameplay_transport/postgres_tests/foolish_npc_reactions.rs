@@ -269,12 +269,12 @@ fn scenario(admin: String, npc: &'static str) -> TestResult {
     )
 }
 
-struct TalkResult {
-    lines: Vec<String>,
-    inventory_changed: bool,
+pub(super) struct TalkResult {
+    pub(super) lines: Vec<String>,
+    pub(super) inventory_changed: bool,
 }
 
-async fn talk(
+pub(super) async fn talk(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     fence: CurrentCharacterGameplayFence,
