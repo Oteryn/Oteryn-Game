@@ -53,6 +53,7 @@ const CAVE_RAT: &str = "oteryn:creature.cave_rat";
 const CREDIT: &str = "oteryn:quest-transition/wave-egress/fixture";
 const TRACK: &str = "oteryn:quest-progress/fixture/wave-survived";
 const CUT: &str = "oteryn:quest-progress/fixture/weak-point";
+const CHAMPION: &str = "oteryn:achievement/champion_of_chazorai";
 const OAK_TOOL: &str = "oteryn:item.tibia.i919";
 
 #[test]
@@ -126,6 +127,16 @@ fn quest_wave_victory_requires_the_terminal_spawn_and_uses_reward_egress() -> Te
 }
 
 #[test]
+fn quest_wave_victory_awards_both_survivors_even_without_quest_progress() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("quest-victory-achievement", move || {
+        scenario(admin, Case::VictoryWithoutProgress)
+    })
+}
+
+#[test]
 fn quest_step_earth_hit_updates_current_vitals_once() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -150,6 +161,7 @@ enum Case {
     Periodic,
     Waves,
     Victory,
+    VictoryWithoutProgress,
     SurvivalStep,
     Stations,
     EarthStep,
@@ -165,17 +177,19 @@ fn scenario(admin: String, case: Case) -> TestResult {
         callback.key = "oteryn:quest-callback/fixture/quest-spawn".into();
         let initial_storage = std::mem::take(&mut callback.storage);
         callback.requires_world_admission = false;
+        let victory = matches!(case, Case::Victory | Case::VictoryWithoutProgress);
+        let credit_stage = i64::from(matches!(case, Case::VictoryWithoutProgress));
         let credit = || WaveCredit::Bound {
             key: CREDIT.into(),
             effects: vec![WaveCreditEffect {
                 track: TRACK.into(),
-                minimum: 0,
-                maximum: 0,
+                minimum: credit_stage,
+                maximum: credit_stage,
                 set: 1,
             }],
         };
-        let first_creature = if matches!(case, Case::Victory) { CAVE_RAT } else { RAT };
-        let terminal_position = if matches!(case, Case::Victory) { LANDING } else { SECOND };
+        let first_creature = if victory { CAVE_RAT } else { RAT };
+        let terminal_position = if victory { LANDING } else { SECOND };
         callback.effects.encounter = Some(Encounter {
             minimum_level: 0,
             room_min: LANDING,
@@ -206,15 +220,16 @@ fn scenario(admin: String, case: Case) -> TestResult {
                     EXIT
                 },
                 timeout_credit: match case {
-                    Case::Victory => None,
+                    Case::Victory | Case::VictoryWithoutProgress => None,
                     Case::WorldCredit => Some(WaveCredit::Reference(CREDIT.into())),
                     _ => Some(credit()),
                 },
                 // Crystal the_new_frontier/creaturescripts_tirecz_kill.lua:19-34.
-                victory: matches!(case, Case::Victory).then(|| WaveVictory {
+                victory: victory.then(|| WaveVictory {
                     creature: CAVE_RAT.into(),
                     exit: VICTORY_EXIT,
                     credit: Some(credit()),
+                    achievement: Some(CHAMPION.into()),
                 }),
                 eject_room: false,
                 stay_at_stations: false,
@@ -366,7 +381,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
-        if matches!(case, Case::Waves | Case::Victory | Case::SurvivalStep | Case::Stations | Case::UnreachableExit | Case::WorldCredit) {
+        if matches!(case, Case::Waves | Case::Victory | Case::VictoryWithoutProgress | Case::SurvivalStep | Case::Stations | Case::UnreachableExit | Case::WorldCredit) {
             owner.quest_catalogue = Some(std::sync::Arc::new(credit_catalogue(&callback, matches!(case, Case::WorldCredit))?));
         } else if matches!(case, Case::Retaliation) {
             owner.quest_catalogue = Some(std::sync::Arc::new(retaliation_catalogue(&callback)?));
@@ -417,8 +432,8 @@ fn scenario(admin: String, case: Case) -> TestResult {
         )
         .await?;
         match case {
-            Case::Waves | Case::Victory => {
-                wave_scenario(&h, &owner, &mut admitted, deps.actor, matches!(case, Case::Victory))
+            Case::Waves | Case::Victory | Case::VictoryWithoutProgress => {
+                wave_scenario(&h, &owner, &mut admitted, deps.actor, victory, 1-credit_stage)
                     .await?
             }
             Case::SurvivalStep => survival_step_scenario(&owner, &mut admitted, deps.actor).await?,
@@ -703,6 +718,7 @@ async fn wave_scenario(
     admitted: &mut AdmittedSession,
     player: ExactActorRef,
     victory: bool,
+    progress: i64,
 ) -> TestResult {
     assert_eq!(
         use_room(owner, admitted, 1).await?,
@@ -799,11 +815,19 @@ async fn wave_scenario(
     };
     let primary_after = read_credit(primary).await?;
     let partner_after = read_credit(partner).await?;
-    assert_eq!(primary_after.tracks().get(TRACK), Some(&1));
-    assert_eq!(partner_after.tracks().get(TRACK), Some(&1));
+    assert_eq!(primary_after.tracks().get(TRACK), Some(&progress));
+    assert_eq!(partner_after.tracks().get(TRACK), Some(&progress));
     owner.drain_quest_encounter_deadlines().await;
     assert_eq!(read_credit(primary).await?, primary_after);
     assert_eq!(read_credit(partner).await?, partner_after);
+    let grants: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_achievement_grant_requests
+         WHERE achievement_key = $1 AND source_kind = 'oteryn:quest-wave-victory'",
+    )
+    .bind(CHAMPION)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(grants, if victory { 2 } else { 0 });
     Ok(())
 }
 

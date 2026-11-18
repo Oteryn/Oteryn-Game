@@ -1,7 +1,8 @@
 //! Survivor progress uses the sole Character Quest writer and its movement receipt key.
 use super::*;
 use crate::foundation::{CharacterLease, ExactActorRef, ScopeOwnershipGeneration};
-use oteryn_gameplay_quests::quest::world_callbacks::Callback;
+use oteryn_gameplay_quests::quest::{QuestComparison, QuestEffectKind, QuestTransition};
+use oteryn_gameplay_quests::quest::world_callbacks::{Callback, waves::WaveRun};
 
 #[derive(Clone, Debug)]
 pub struct WaveEgress {
@@ -70,28 +71,27 @@ impl WaveEgress {
         })
     }
 
-    pub(super) fn matches(
+    pub(super) fn matching_run<'a>(
         &self,
         catalogue: &QuestStateCatalogue,
-        callbacks: &[Callback],
+        callbacks: &'a [Callback],
         request: &QuestTransitionRequest,
-    ) -> bool {
-        callbacks.iter().any(|callback| {
-            let Some(credit) = callback
-                .effects
-                .encounter
-                .as_ref()
-                .and_then(|room| room.wave_run.as_ref())
-                .and_then(|wave| wave.credit(self.victory))
-            else {
-                return false;
-            };
-            callback.key == self.callback
+    ) -> Option<&'a WaveRun> {
+        callbacks.iter().find_map(|callback| {
+            let run = callback.effects.encounter.as_ref()?.wave_run.as_ref()?;
+            let credit = run.credit(self.victory)?;
+            (callback.key == self.callback
                 && credit.key() == request.transition_key
                 && catalogue
                     .transition(credit.key())
-                    .is_some_and(|transition| credit.matches_transition(&callback.quest, transition))
+                    .is_some_and(|transition| credit.matches_transition(&callback.quest, transition)))
+                .then_some(run)
         })
+    }
+
+    pub(super) fn achievement<'a>(&self, run: &'a WaveRun) -> Option<&'a str> {
+        self.victory.then_some(())?;
+        run.victory.as_ref()?.achievement.as_deref()
     }
 
     pub(super) fn binding(
@@ -112,6 +112,16 @@ impl WaveEgress {
         binding[1..].copy_from_slice(&hash.finalize());
         binding
     }
+}
+
+/// Use the same receipt for a winner whose guarded progress does not advance.
+pub(super) fn without_progress(transition: &QuestTransition) -> QuestTransition {
+    let mut unchanged = transition.clone();
+    for effect in &mut unchanged.effects {
+        effect.from = QuestComparison::Any;
+        effect.effect = QuestEffectKind::Add(0);
+    }
+    unchanged
 }
 
 impl DurabilityRoot {

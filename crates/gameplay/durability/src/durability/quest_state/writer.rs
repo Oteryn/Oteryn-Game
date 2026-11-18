@@ -930,14 +930,14 @@ impl DurabilityRoot {
             &source_action,
             Some(super::QuestSourceAction::RottenArea(_))
         );
-        let wave_input = match &source_action {
+        let (wave_input, wave_achievement) = match &source_action {
             Some(super::QuestSourceAction::WaveEgress(input)) => {
-                if !input.matches(&catalogue, &world_callbacks, &request) {
+                let Some(run) = input.matching_run(&catalogue, &world_callbacks, &request) else {
                     return Err(CharacterProgressionError::InvalidInput);
-                }
-                true
+                };
+                (true, input.achievement(run).map(str::to_owned))
             }
-            _ => false,
+            _ => (false, None),
         };
         if source_key != soul_input
             || area_key != area_input
@@ -1164,6 +1164,10 @@ impl DurabilityRoot {
         }
         if let Some(input) = &source_action {
             binding = input.binding(fence.character_id, &request);
+        }
+        if let Some(key) = &wave_achievement {
+            let digest = Sha256::new().chain_update(binding).chain_update(key.as_bytes()).finalize();
+            binding[1..].copy_from_slice(&digest);
         }
         if let Some(input) = &flame {
             binding = input.binding(fence.character_id);
@@ -1831,6 +1835,11 @@ impl DurabilityRoot {
                             }
                         }) {
                         Ok(changes) => changes,
+                        Err(QuestRefusal::StageMismatch) if wave_achievement.is_some() && refusal.is_none() => {
+                            let unchanged = super::wave_egress::without_progress(transition);
+                            catalogue.evaluate_with_roll(&unchanged, &stored, now, None)
+                                .map_err(|_| DurabilityError::InvalidStoredState)?
+                        }
                         Err(refusal) => {
                             if let Some(recipe) = timer_recipe
                                 && refusal == QuestRefusal::StageMismatch
@@ -2061,6 +2070,11 @@ impl DurabilityRoot {
                         let occurrence = sha2::Sha256::digest(&occurrence);
                         let keys: Vec<_> = world.achievements.iter().map(String::as_str).collect();
                         super::super::account_achievement::grant_missing(&mut tx, fence.character_id, &keys, "oteryn:quest-world-reward", &occurrence).await?;
+                    }
+                    if let Some(key) = &wave_achievement {
+                        super::super::account_achievement::grant_missing(
+                            &mut tx, fence.character_id, &[key], "oteryn:quest-wave-victory", &binding[1..],
+                        ).await?;
                     }
                     let completes = catalogue.completes_after_claim_sets(transition, &stored, &changes);
                     if completes {

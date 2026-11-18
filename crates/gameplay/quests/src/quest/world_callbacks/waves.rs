@@ -36,6 +36,10 @@ pub struct WaveVictory {
     pub exit: Position,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub credit: Option<WaveCredit>,
+    /// Crystal creaturescripts_tirecz_kill.lua:26-30 awards this even when
+    /// the survivor's quest stage is ineligible for the progress writes.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub achievement: Option<String>,
 }
 
 /// An egress can reference an existing transition or declare its exact quest writes.
@@ -205,6 +209,12 @@ pub(super) fn valid(callback: &Callback, room: &Encounter, run: &WaveRun) -> boo
         && outside(run.timeout_exit)
         && run.victory.as_ref().is_none_or(|victory| {
             outside(victory.exit)
+                && victory.achievement.as_ref().is_none_or(|key| {
+                    matches!(victory.credit, Some(WaveCredit::Bound { .. }))
+                        && key.starts_with("oteryn:achievement/")
+                        && key.len() > "oteryn:achievement/".len()
+                        && crate::quest::valid_quest_key(key)
+                })
                 && run.waves.last().is_some_and(|last| {
                     matches!(&last.spawn, WaveSpawn::Fixed { monsters }
                         if monsters.iter().filter(|monster| monster.creature == victory.creature).count() == 1)
