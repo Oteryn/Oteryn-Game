@@ -1327,6 +1327,33 @@ async fn exercise_first_defeat_outfit(
     .fetch_one(pool)
     .await?;
     assert_eq!(grants, 0);
+    // Let one recipient commit, then defer the second. Retrying the same
+    // death must replay the first receipt without publishing its message.
+    sqlx::raw_sql(
+        "CREATE OR REPLACE FUNCTION qcredit_fail_first_defeat() RETURNS trigger
+         LANGUAGE plpgsql AS $$
+         BEGIN
+           IF EXISTS(SELECT 1 FROM game_account_appearance_unlock_receipts
+                     WHERE granting_character_id<>NEW.character_id
+                     AND unlock_key='oteryn:outfit.fiend_slayer/quest-grant/0') THEN
+               RETURN NULL;
+           END IF;
+           RETURN NEW;
+         END $$;",
+    )
+    .execute(pool)
+    .await?;
+    assert_eq!(
+        owner.drain_kill_rewards(players[0].session).await,
+        DrainOutcome::Deferred
+    );
+    let first = [
+        usize::try_from(track_value(pool, 60).await?)?,
+        usize::try_from(track_value(pool, 61).await?)?,
+        0,
+    ];
+    assert!(matches!(first, [1, 0, 0] | [0, 1, 0]));
+    assert_first_defeat_messages(owner, players, first);
     sqlx::query("DROP TRIGGER qcredit_fail_first_defeat ON game_character_quest_tracks")
         .execute(pool)
         .await?;
@@ -1342,7 +1369,7 @@ async fn exercise_first_defeat_outfit(
         .map_err(debug)?;
     assert_tracks(pool, [1, 1, 0]).await?;
     assert_first_defeat_outfits(pool).await?;
-    assert_first_defeat_messages(owner, players, [1, 1, 0]);
+    assert_first_defeat_messages(owner, players, [1 - first[0], 1 - first[1], 0]);
 
     death(owner, players, RAT, position, case, 201).await?;
     assert_tracks(pool, [1, 1, 0]).await?;
@@ -1372,8 +1399,13 @@ fn assert_first_defeat_messages(
     for (player, count) in players.iter().zip(expected) {
         let lines = owner.states.chat.drain(player.session);
         assert_eq!(
-            lines.iter().filter(|line| matches!(line, ChatLine::Private { speaker_name, text }
-                if speaker_name == "Game" && text == FIRST_DEFEAT_MESSAGE)).count(),
+            lines
+                .iter()
+                .filter(|line| {
+                    matches!(line, ChatLine::Private { speaker_name, text }
+                        if speaker_name == "Game" && text == FIRST_DEFEAT_MESSAGE)
+                })
+                .count(),
             count
         );
     }
