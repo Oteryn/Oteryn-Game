@@ -50,6 +50,24 @@ impl AppearanceCommands {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn base_look_for_disguise(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        fence: &CurrentCharacterGameplayFence,
+    ) -> Option<u32> {
+        let (_, content) = self.appearance_context()?;
+        if !current_runtime(runtime, actor, session, fence, &content) {
+            return None;
+        }
+        let state = self.root.read_current_character_appearance_state(
+            self.character, self.holder, *fence, content.earned_grant_keys(),
+        ).await.ok()?;
+        let (base, _) = catalogue::base(&content, &state);
+        content.look_type(&base.outfit_key, state.sex)
+    }
+
     pub(super) async fn current_mount(
         &self,
         actor: ExactActorRef,

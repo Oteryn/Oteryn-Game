@@ -87,6 +87,57 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
+        let timed_disguise = if let Some(disguise) = &callback.effects.timed_disguise {
+            let now = self.owner_now().get();
+            let Some(current) = states.get(runtime, actor, session) else {
+                return UseDisposition::Rejected;
+            };
+            let Ok(owned) = runtime.actor_conditions_at(actor, Some(session), now) else {
+                return UseDisposition::Rejected;
+            };
+            let outfit = crate::domain::condition::ConflictKey::Outfit;
+            if current.owned_conditions().active_at(outfit, now).is_some()
+                || owned.active_at(outfit, now).is_some()
+            {
+                return UseDisposition::Rejected;
+            }
+            let Some(fence) = fence.as_ref() else {
+                return UseDisposition::Rejected;
+            };
+            let Some(base) = self
+                .base_look_for_disguise(runtime, actor, session, fence)
+                .await
+            else {
+                return UseDisposition::Rejected;
+            };
+            if base == disguise.look_type {
+                return UseDisposition::Rejected;
+            }
+            let Some(appearance) = self
+                .active_generation
+                .and_then(|generation| generation.native_gameplay())
+                .and_then(|native| native.spell_appearances())
+                .and_then(|appearances| appearances.for_look_type(disguise.look_type))
+            else {
+                return UseDisposition::Rejected;
+            };
+            let mut next = current.clone();
+            if crate::spell::actor_conditions::apply_appearance(
+                &mut next,
+                appearance.selection(),
+                disguise.look_type,
+                disguise.duration_ms,
+                now / 1000,
+            )
+            .is_err()
+                || next.advance_batch_revision().is_err()
+            {
+                return UseDisposition::Rejected;
+            }
+            Some((next, disguise.magic_effect))
+        } else {
+            None
+        };
         if callback.effects.party_transfer.is_some()
             && self
                 .states
@@ -1544,6 +1595,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     text: oteryn_gameplay_quests::quest::children_puzzle::SPEECH.into(),
                     captured_name: None,
                 });
+        }
+        if let Some((next, effect)) = timed_disguise {
+            if !states.commit(runtime, actor, session, next) {
+                return UseDisposition::Rejected;
+            }
+            states.owner_wake.notify_one();
+            map.facts.emit_movement_effect(pos, effect);
         }
         if callback.effects.restore_disguise {
             let Some(current) = states.get(runtime, actor, session) else {

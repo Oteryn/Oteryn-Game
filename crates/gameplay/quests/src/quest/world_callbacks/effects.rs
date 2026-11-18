@@ -42,6 +42,15 @@ pub struct ItemDisguiseRequirement {
     pub condition: String,
 }
 
+/// An outfit installed after a successful player StepIn.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct TimedDisguise {
+    pub look_type: u32,
+    pub duration_ms: u32,
+    pub magic_effect: u16,
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
@@ -61,6 +70,8 @@ pub struct CallbackEffects {
     pub requires_item_disguise: Option<ItemDisguiseRequirement>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub restore_disguise: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub timed_disguise: Option<TimedDisguise>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mount_reward: Option<MountReward>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -496,6 +507,22 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || callback.actor_kind != ActorKind::Player
                 || callback.teleport.is_none()))
     {
+        return false;
+    }
+    if effects.timed_disguise.as_ref().is_some_and(|outfit| {
+        callback.trigger != Trigger::StepIn
+            || callback.actor_kind != ActorKind::Player
+            || !callback.return_on_failure
+            || callback.failure_teleport.is_some()
+            || callback.storage.is_empty()
+            || callback.disguise.is_some()
+            || effects.restore_disguise
+            || effects.requires_item_disguise.is_some()
+            || effects.encounter.is_some()
+            || outfit.look_type == 0
+            || !(1..=600_000).contains(&outfit.duration_ms)
+            || !(1..=255).contains(&outfit.magic_effect)
+    }) {
         return false;
     }
     if effects.completes_quest

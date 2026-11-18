@@ -1097,7 +1097,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             })
             || (callback.storage.iter().any(|storage| storage.read_only)
                 && (!callback.is_read_only()
-                    || callback.teleport.is_none()
+                    || (callback.teleport.is_none() && callback.effects.timed_disguise.is_none())
                     || (callback.trigger == Trigger::StepIn && !callback.return_on_failure)
                     || callback.lever.is_some()
                     || !callback.passages.is_empty()
