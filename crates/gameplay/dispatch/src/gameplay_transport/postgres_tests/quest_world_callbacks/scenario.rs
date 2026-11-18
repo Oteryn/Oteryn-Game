@@ -77,7 +77,11 @@ fn scenario_case(
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
-    let native_crop = name == super::super::iceisl_carried_tool::NAME
+    let iceisl_tool = matches!(
+        name,
+        super::super::iceisl_carried_tool::NAME | super::super::iceisl_chakoya::NAME
+    );
+    let native_crop = iceisl_tool
         || m03_use
         || qd_world
         || engenc_asura
@@ -940,7 +944,7 @@ fn scenario_case(
             || name == "srv7-reliable-ram"
             || name.starts_with("m09-treasure-")
             || name.starts_with("engoutfit-")
-            || name == super::super::iceisl_carried_tool::NAME
+            || iceisl_tool
             || name == "engitem-targuna-selected-tool"
             || name == "engitem-native-seal-paint"
             || name == super::super::engitem_seal_paint_lost_ack::NAME
@@ -1122,6 +1126,10 @@ fn scenario_case(
         } else if name == super::super::iceisl_carried_tool::NAME {
             super::super::iceisl_carried_tool::world(
                 generation.native_gameplay().ok_or("obelisk policies")?,
+            )?
+        } else if name == super::super::iceisl_chakoya::NAME {
+            super::super::iceisl_chakoya::world(
+                generation.native_gameplay().ok_or("crack policies")?,
             )?
         } else if qm48 {
             super::super::qm48_mammoth::world(
@@ -1698,6 +1706,10 @@ fn scenario_case(
         if name == super::super::iceisl_carried_tool::NAME {
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 super::super::iceisl_carried_tool::catalogue(&callback)?,
+            ));
+        } else if name == super::super::iceisl_chakoya::NAME {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                super::super::iceisl_chakoya::catalogue(&callback)?,
             ));
         }
         if draconia_escape {
@@ -2567,7 +2579,11 @@ fn scenario_case(
             ))
             .await?;
         } else if name == super::super::iceisl_carried_tool::NAME {
-            Box::pin(super::super::iceisl_carried_tool::exercise(&mut owner, &mut admitted, &h)).await?;
+            Box::pin(super::super::iceisl_carried_tool::exercise(&mut owner, &mut admitted, &h))
+                .await?;
+        } else if name == super::super::iceisl_chakoya::NAME {
+            Box::pin(super::super::iceisl_chakoya::exercise(&mut owner, &mut admitted, &h))
+                .await?;
         } else if name == "engitem-targuna-selected-tool" {
             Box::pin(super::super::srv7_reliable_ram::exercise_selected(
                 &mut owner,

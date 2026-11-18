@@ -295,6 +295,8 @@ pub struct EncounterPlayer {
 pub struct EncounterMonster {
     pub position: Position,
     pub creature: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub alternatives: Vec<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -311,6 +313,13 @@ pub struct Encounter {
     /// Source phases run on the shared encounter owner after atomic party admission.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phase: Option<EncounterPhase>,
+}
+
+impl Encounter {
+    /// Immediate creatures on shared terrain, without party entry or room cleanup.
+    pub fn is_open_spawn(&self) -> bool {
+        self.players.is_empty() && self.timing.is_none() && self.phase.is_none()
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -393,6 +402,7 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    let open_spawn = effects.encounter.as_ref().is_some_and(Encounter::is_open_spawn);
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
     if inputs.len() > 8
@@ -639,7 +649,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || effects.portals.is_some()
                 || effects.item_presence.is_some()
                 || effects.item_cycle.is_some()
-                || effects.encounter.is_some()
+                || (effects.encounter.is_some() && !open_spawn)
                 || (!callback.passages.is_empty() && effects.passages_reset_after_ms.is_none())
         })
         || effects.passages_reset_after_ms.is_some_and(|delay| {
@@ -762,6 +772,20 @@ pub(super) fn valid(callback: &Callback) -> bool {
             return false;
         }
     }
+    let guarded_open_spawn = open_spawn
+        && callback.trigger == Trigger::Use
+        && callback.actor_kind == ActorKind::Player
+        && callback.selector.native.is_some()
+        && callback.has_state_writes()
+        && callback.requires_world_admission
+        && callback.lever.is_none()
+        && !callback.reversible
+        && callback.item_on_target.as_ref().is_some_and(|tool| tool.selected_instance)
+        && effects.transform.is_some()
+        && effects.reset_after_ms.is_some();
+    if open_spawn && !guarded_open_spawn {
+        return false;
+    }
     let personal_encounter = effects.encounter.as_ref().is_some_and(|encounter| {
         callback.has_personal_state()
             && callback.requires_world_admission
@@ -780,6 +804,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
     if operations > 1
         || (operations > 0
             && ((!personal_encounter
+                && !guarded_open_spawn
                 && !super::personal_trial::admitted(callback)
                 && (!lever
                     || (effects.scene.is_none()
@@ -841,7 +866,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
-        if (encounter.minimum_level == 0 && !source_party)
+        if (encounter.minimum_level == 0 && !source_party && !open_spawn)
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()
@@ -859,8 +884,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         * (u64::from(encounter.room_max.y.saturating_sub(encounter.room_min.y)) + 1)
                         > 4096
             } else {
-                !(1..=if encounter.phase.is_some() { 16 } else { 8 })
-                    .contains(&encounter.players.len())
+                !open_spawn
+                    && !(1..=if encounter.phase.is_some() { 16 } else { 8 })
+                        .contains(&encounter.players.len())
             }
             || !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                 .contains(&encounter.monsters.len())
@@ -885,6 +911,13 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 !pos(m.position)
                     || !in_room(m.position)
                     || !super::super::valid_quest_key(&m.creature)
+                    || (!open_spawn && !m.alternatives.is_empty())
+                    || m.alternatives.len() > 7
+                    || m.alternatives.iter().enumerate().any(|(index, candidate)| {
+                        candidate == &m.creature
+                            || m.alternatives[..index].contains(candidate)
+                            || !super::super::valid_quest_key(candidate)
+                    })
             })
         {
             return false;

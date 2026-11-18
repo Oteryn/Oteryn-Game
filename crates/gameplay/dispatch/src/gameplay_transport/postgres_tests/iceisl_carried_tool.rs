@@ -77,6 +77,31 @@ pub(super) fn world(
 }
 
 pub(super) fn catalogue(callback: &Callback) -> TestResult<QuestStateCatalogue> {
+    catalogue_with_tracks(
+        callback,
+        "retaliation",
+        vec![
+            Track {
+                key: MARK.into(),
+                initial: -1,
+                minimum: -1,
+                maximum: 5,
+            },
+            Track {
+                key: STAGE.into(),
+                initial: 39,
+                minimum: -1,
+                maximum: 40,
+            },
+        ],
+    )
+}
+
+pub(super) fn catalogue_with_tracks(
+    callback: &Callback,
+    stage: &str,
+    tracks: Vec<Track>,
+) -> TestResult<QuestStateCatalogue> {
     let base = QuestStateCatalogue::empty("content-1").ok_or("fixture base catalogue")?;
     Ok(Bindings {
         schema: 1,
@@ -86,28 +111,15 @@ pub(super) fn catalogue(callback: &Callback) -> TestResult<QuestStateCatalogue> 
                 .into(),
             occurrence: None,
             admission: None,
-            tracks: vec![
-                Track {
-                    key: MARK.into(),
-                    initial: -1,
-                    minimum: -1,
-                    maximum: 5,
-                },
-                Track {
-                    key: STAGE.into(),
-                    initial: 39,
-                    minimum: -1,
-                    maximum: 40,
-                },
-            ],
+            tracks,
             stages: vec![Stage {
-                key: "retaliation".into(),
+                key: stage.into(),
                 completes: false,
                 trigger: Trigger::MapUse {
                     callback: Box::new(callback.clone()),
                 },
             }],
-            sources: vec![SOURCE.into()],
+            sources: callback.sources.clone(),
         }],
     }
     .attach(&base)?)
