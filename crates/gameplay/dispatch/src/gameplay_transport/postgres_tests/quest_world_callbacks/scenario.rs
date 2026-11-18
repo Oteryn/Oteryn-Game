@@ -1764,6 +1764,7 @@ fn scenario_case(
             || lever_fixture
             || target_swap
             || failure_landing
+            || exhausted_exit
             || name.ends_with("-expiry")
             || name == "triangle-tower-lever"
         {

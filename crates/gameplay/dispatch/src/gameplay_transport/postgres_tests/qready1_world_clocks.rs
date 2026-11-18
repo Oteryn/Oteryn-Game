@@ -27,7 +27,7 @@ fn qready1_raven_herb_interval_real_dispatch() -> TestResult {
         },
     )
 }
-pub(super) const EXHAUSTED_EXIT_CASE: &str = "qready1-threatened-raven-herb-exit-expiry";
+pub(super) const EXHAUSTED_EXIT_CASE: &str = "qready1-threatened-raven-herb-exhausted-exit";
 
 #[test]
 fn exhausted_timed_pickup_exits_without_second_reward_postgres() -> TestResult {
