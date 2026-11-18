@@ -318,7 +318,11 @@ pub enum EncounterPhase {
     #[serde(rename = "cults_boss_phase_closures")]
     Cults,
     #[serde(rename = "grave_danger_zelos")]
-    GraveDangerZelos { king: Position, exit: Position },
+    GraveDangerZelos {
+        exit: Position,
+        north_gate: Position,
+        north_arrival: Position,
+    },
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -871,10 +875,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                 .contains(&encounter.monsters.len())
             || (encounter.phase.is_some() && encounter.timing.is_some())
-            || matches!(encounter.phase, Some(EncounterPhase::GraveDangerZelos { king, exit })
-                if encounter.monsters.len() != 4 || !pos(king) || !in_room(king)
-                    || !pos(exit) || in_room(exit)
-                    || unique_monsters.contains(&king) || unique_to.contains(&king))
+            || matches!(encounter.phase, Some(EncounterPhase::GraveDangerZelos { exit, north_gate, north_arrival })
+                if encounter.monsters.len() < 5 || !pos(exit) || in_room(exit)
+                    || !pos(north_gate) || !in_room(north_gate)
+                    || !pos(north_arrival) || !in_room(north_arrival)
+                    || north_gate == north_arrival)
             || (callback.reversible && !source_party)
             || unique_from.len() != encounter.players.len()
             || (unique_to.len() != encounter.players.len() && !source_party)

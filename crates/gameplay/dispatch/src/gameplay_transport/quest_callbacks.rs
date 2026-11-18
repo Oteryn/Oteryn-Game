@@ -1280,6 +1280,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let entered = self
             .step_dynamic_quest_portal(permit, actor, session, entered)
             .await;
+        if let Some(landed) = self
+            .step_zelos_north_gate(actor, session, origin, entered)
+            .await
+        {
+            return landed;
+        }
         self.step_quest_trigger(permit, actor, session, origin, entered, Trigger::StepIn)
             .await
     }

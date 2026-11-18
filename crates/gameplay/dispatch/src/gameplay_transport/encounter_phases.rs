@@ -2,6 +2,7 @@
 use super::{actor_spell::ChannelSpellStates, grizzly_kills, kill_reward::PendingKillSettlement};
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
+    MovementPositionSnapshot,
 };
 use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
 use oteryn_gameplay_encounters::bosses::phase_controller::zelos::ZelosEncounter;
@@ -18,17 +19,19 @@ pub(super) struct ActivePhase {
     credits: Vec<grizzly_kills::EncounterCredit>,
     frozen: Option<(ExactActorRef, Vec<super::quest_kills::Recipient>)>,
     cells: crate::content::NativeEntryMovementCells,
-    timeout: Option<TimeoutExit>,
+    zelos_room: Option<ZelosRoom>,
 }
 
 #[derive(Debug)]
-struct TimeoutExit {
+struct ZelosRoom {
     exit: MovementLocalPosition,
+    north_gate: MovementLocalPosition,
+    north_arrival: MovementLocalPosition,
     min: MovementLocalPosition,
     max: MovementLocalPosition,
 }
 
-impl TimeoutExit {
+impl ZelosRoom {
     fn contains(&self, at: MovementLocalPosition) -> bool {
         self.min.floor == at.floor
             && (self.min.x..=self.max.x).contains(&at.x)
@@ -119,6 +122,26 @@ impl Registry {
             .min()
     }
 
+    fn north_gate(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        at: MovementLocalPosition,
+        now: u64,
+    ) -> Option<Option<MovementLocalPosition>> {
+        self.active.lock().ok()?.iter().find_map(|phase| {
+            let (Fight::Zelos(zelos), Some(room)) = (&phase.fight, &phase.zelos_room) else {
+                return None;
+            };
+            (room.north_gate == at && zelos.is_current(runtime)).then(|| {
+                zelos
+                    .north_gate_open(runtime, actor, session, now)
+                    .then_some(room.north_arrival)
+            })
+        })
+    }
+
     pub(super) fn reserve<'a>(
         &'a self,
         runtime: &mut ChannelRuntimeV1,
@@ -204,7 +227,7 @@ impl Registry {
         let target = entry.target;
         if let Some(phase) = active
             .iter_mut()
-            .find(|p| p.fight.contains_terminal(target))
+            .find(|p| matches!(p.fight, Fight::Cults(_)) && p.fight.contains_terminal(target))
         {
             if phase.fight.victors(runtime).ok().flatten().is_none() {
                 return;
@@ -245,35 +268,46 @@ pub(super) fn bind(
         .encounter
         .as_ref()
         .ok_or(CarrierError::PlanConflict)?;
-    if let Some(EncounterPhase::GraveDangerZelos { king, exit }) = encounter.phase {
+    if let Some(EncounterPhase::GraveDangerZelos {
+        exit,
+        north_gate,
+        north_arrival,
+    }) = encounter.phase
+    {
         let local =
             |at: oteryn_gameplay_quests::quest::world_callbacks::Position| MovementLocalPosition {
                 x: i32::from(at.x),
                 y: i32::from(at.y),
                 floor: -i16::from(at.floor),
             };
-        let king_at = local(king);
-        let timeout = TimeoutExit {
+        let zelos_room = ZelosRoom {
             exit: local(exit),
+            north_gate: local(north_gate),
+            north_arrival: local(north_arrival),
             min: local(encounter.room_min),
             max: local(encounter.room_max),
         };
-        if !timeout.contains(king_at)
-            || timeout.contains(timeout.exit)
-            || !placement(&cells, runtime, king_at)
-            || !placement(&cells, runtime, timeout.exit)
+        if zelos_room.contains(zelos_room.exit)
+            || !zelos_room.contains(zelos_room.north_gate)
+            || !zelos_room.contains(zelos_room.north_arrival)
+            || zelos_room.north_gate == zelos_room.north_arrival
+            || ![
+                zelos_room.exit,
+                zelos_room.north_gate,
+                zelos_room.north_arrival,
+            ]
+            .into_iter()
+            .all(|at| placement(&cells, runtime, at))
         {
             return Err(CarrierError::PlanConflict);
         }
         return Ok(ActivePhase {
             key,
-            fight: Fight::Zelos(ZelosEncounter::bind(
-                runtime, players, actors, king_at, now,
-            )?),
+            fight: Fight::Zelos(ZelosEncounter::bind(runtime, players, actors, now)?),
             credits,
             frozen: None,
             cells,
-            timeout: Some(timeout),
+            zelos_room: Some(zelos_room),
         });
     }
     if encounter.phase != Some(EncounterPhase::Cults) || actors.len() != 10 {
@@ -331,7 +365,7 @@ pub(super) fn bind(
         credits,
         frozen: None,
         cells,
-        timeout: None,
+        zelos_room: None,
     })
 }
 
@@ -401,13 +435,13 @@ fn tick_phase_kind(
             key,
             fight,
             cells,
-            timeout,
+            zelos_room,
             ..
         } = phase;
         if timed != matches!(fight, Fight::Zelos(_)) {
             return true;
         }
-        if let (Fight::Zelos(fight), Some(timeout)) = (&*fight, timeout.as_ref())
+        if let (Fight::Zelos(fight), Some(timeout)) = (&*fight, zelos_room.as_ref())
             && let Some(participants) = fight.timeout_participants(now)
             && !evacuate(runtime, cells, timeout, participants, &mut exits)
         {
@@ -471,7 +505,7 @@ type EvacuatedPlayer = (
 fn evacuate(
     runtime: &mut ChannelRuntimeV1,
     cells: &crate::content::NativeEntryMovementCells,
-    exit: &TimeoutExit,
+    exit: &ZelosRoom,
     participants: &[(ExactActorRef, GameSessionId)],
     exits: &mut Vec<EvacuatedPlayer>,
 ) -> bool {
@@ -509,4 +543,72 @@ fn evacuate(
         exits.push((cells.clone(), actor, session, before, after.position()));
     }
     true
+}
+
+impl super::ComposedFreshAdmission<'_, '_, '_> {
+    /// Crystal 201189f grave_danger_king_zelos.lua:352–374.
+    pub(super) async fn step_zelos_north_gate(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        origin: MovementPositionSnapshot,
+        entered: MovementPositionSnapshot,
+    ) -> Option<MovementPositionSnapshot> {
+        let map = self.bundle_map()?;
+        let now = self.owner_now();
+        let mut runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        let arrival = states.encounter_phases.north_gate(
+            &runtime,
+            actor,
+            session,
+            entered.position(),
+            now.get(),
+        )?;
+        let closed = crate::map::floor::BundleDoors(&map.facts);
+        let blocked = super::pvp_live::pz_blocked(&states, actor, session, now);
+        let destination = arrival.unwrap_or_else(|| origin.position());
+        let Ok(proof) = crate::map::floor::prepare_quest_encounter_admission(
+            &runtime,
+            self.movement_cells(),
+            actor,
+            session,
+            entered,
+            destination,
+            blocked,
+            &closed,
+            true,
+        ) else {
+            return Some(entered);
+        };
+        let Ok(landed) = runtime.commit_source_step(proof) else {
+            return Some(entered);
+        };
+        let underwater = super::paced_movement::underwater_drown::underwater;
+        states.stage_special_movement_step(
+            &runtime,
+            map,
+            actor,
+            session,
+            now.get(),
+            Some(entered.position()),
+            landed.position(),
+            None,
+        );
+        states.stage_underwater_step(
+            &runtime,
+            actor,
+            session,
+            now.get(),
+            underwater(map, entered.position()),
+            underwater(map, landed.position()),
+        );
+        if arrival.is_none() {
+            self.states.chat.push_quest_feedback(
+                session,
+                "The ritual of the Lich Knights still shields the king. Defeat all four of them first.",
+            );
+        }
+        Some(landed)
+    }
 }

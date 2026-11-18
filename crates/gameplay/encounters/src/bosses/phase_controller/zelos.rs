@@ -8,9 +8,14 @@ use oteryn_gameplay_entities::{
 const MAGNOR: usize = 0;
 const NARGOL: usize = 1;
 const REWAR: usize = 2;
+const RED: usize = 3;
 const MASS: usize = 8;
 const KING: usize = 9;
+const KNIGHTS: u64 = (1 << KING) - 1;
 const REGENERATION_US: u64 = 30_000_000;
+const BLOOD: &str = "oteryn:creature.vampiric_blood";
+const SOLDIER: &str = "oteryn:creature.risen_soldier";
+const REFILL_US: u64 = 10_000_000;
 const FETTER: &str = "oteryn:creature.fetter";
 const FETTER_WAVE_US: u64 = 20_000_000;
 const FETTER_LIMIT: usize = 6;
@@ -56,7 +61,7 @@ const ROLES: [Role; 10] = [
     },
     Role {
         creature: "oteryn:creature.king_zelos",
-        after: (1 << KING) - 1,
+        after: 0,
     },
 ];
 
@@ -71,17 +76,21 @@ pub struct ZelosEncounter {
     rewar_at: MovementLocalPosition,
     fetters: Vec<ExactActorRef>,
     fetter_due_us: Option<u64>,
+    king_gate_released: bool,
     king_at: MovementLocalPosition,
+    red_at: MovementLocalPosition,
+    soldiers: Vec<ExactActorRef>,
+    blood: Vec<ExactActorRef>,
+    refill_due_us: u64,
 }
 impl ZelosEncounter {
     pub fn bind(
-        runtime: &ChannelRuntimeV1,
+        runtime: &mut ChannelRuntimeV1,
         players: &[(ExactActorRef, GameSessionId)],
         actors: &[ExactActorRef],
-        king_at: MovementLocalPosition,
         now: u64,
     ) -> Result<Self, CarrierError> {
-        if actors.len() != 4 || players.len() > 10 {
+        if !(5..=16).contains(&actors.len()) || players.len() > 10 {
             return Err(CarrierError::PlanConflict);
         }
         let mut phase = NativePhaseOwner::bind(
@@ -92,7 +101,8 @@ impl ZelosEncounter {
             },
             players,
         )?;
-        for (role, def) in ROLES[..4].iter().enumerate() {
+        for role in [MAGNOR, NARGOL, REWAR, RED, KING] {
+            let def = ROLES[role];
             let actor = actors
                 .iter()
                 .copied()
@@ -103,24 +113,42 @@ impl ZelosEncounter {
         for role in &ROLES[4..] {
             runtime.companion_policy(role.creature)?;
         }
-        runtime.companion_policy(FETTER)?;
+        for key in [BLOOD, FETTER, SOLDIER] {
+            runtime.companion_policy(key)?;
+        }
+        let mut soldiers = Vec::new();
+        for &actor in actors {
+            if !phase.actors.contains(&Some(actor)) {
+                if !runtime.matches_live_creature_identity(actor, SOLDIER.as_bytes()) {
+                    return Err(CarrierError::CreatureTargetMismatch);
+                }
+                soldiers.push(actor);
+            }
+        }
         let position = |role: usize| {
             runtime
                 .read_actor_position(phase.actors[role].ok_or(CarrierError::PlanConflict)?)
                 .map(|snapshot| snapshot.position())
         };
-        Ok(Self {
+        let encounter = Self {
             magnor_at: position(MAGNOR)?,
             nargol_at: position(NARGOL)?,
             rewar_at: position(REWAR)?,
             fetters: Vec::with_capacity(FETTER_LIMIT),
             fetter_due_us: None,
-            king_at,
+            king_gate_released: false,
+            king_at: position(KING)?,
+            red_at: position(RED)?,
+            soldiers,
+            blood: Vec::new(),
+            refill_due_us: now.saturating_add(REFILL_US),
             phase,
             start_us: now,
             mass_due_us: None,
             ritual_completed_us: None,
-        })
+        };
+        super::gates::protect(runtime, &[encounter.king()?])?;
+        Ok(encounter)
     }
 
     pub fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
@@ -140,6 +168,9 @@ impl ZelosEncounter {
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
     ) -> Result<bool, CarrierError> {
+        if self.contains_terminal(actor) && !self.king_gate_released {
+            return Err(CarrierError::PlanConflict);
+        }
         self.phase.projected_death(runtime, actor)
     }
 
@@ -151,7 +182,10 @@ impl ZelosEncounter {
     }
 
     pub fn next_due_us(&self) -> u64 {
-        let mut due = self.start_us.saturating_add(LIMIT_US);
+        let mut due = self
+            .start_us
+            .saturating_add(LIMIT_US)
+            .min(self.refill_due_us);
         if self.phase.progress.dead() & (1 << MASS) == 0
             && let Some(mass) = self.mass_due_us
         {
@@ -162,11 +196,14 @@ impl ZelosEncounter {
         {
             due = due.min(fetters);
         }
-        if let Some((role, _)) = self.phase.pending().next() {
-            due = due.min(match (role, self.ritual_completed_us) {
-                (KING, Some(completed)) => completed.saturating_add(300_000),
-                _ => self.start_us,
-            });
+        if self.phase.pending().next().is_some() {
+            due = due.min(self.start_us);
+        }
+        if !self.king_gate_released && self.ritual_broken() {
+            due = due.min(
+                self.ritual_completed_us
+                    .map_or(self.start_us, |completed| completed.saturating_add(300_000)),
+            );
         }
         due
     }
@@ -190,6 +227,8 @@ impl ZelosEncounter {
                 .copied()
                 .flatten()
                 .chain(self.fetters.iter().copied())
+                .chain(self.soldiers.iter().copied())
+                .chain(self.blood.iter().copied())
             {
                 if runtime.contains_live_creature(actor) {
                     runtime.remove_encounter_actor(actor)?;
@@ -198,6 +237,7 @@ impl ZelosEncounter {
             return Ok(false);
         }
         self.advance_rewar(runtime, now, &place)?;
+        self.refill(runtime, now, &place)?;
         if let Some(deadline) = self.mass_due_us
             && now >= deadline
             && self.phase.progress.dead() & (1 << MASS) == 0
@@ -231,36 +271,74 @@ impl ZelosEncounter {
                     }
                 }
                 MASS => self.nargol_at,
-                KING => {
-                    let completed = *self.ritual_completed_us.get_or_insert(now);
-                    if now < completed.saturating_add(300_000) {
-                        break;
-                    }
-                    self.king_at
-                }
                 _ => return Err(CarrierError::PlanConflict),
             };
             if !runtime.native_summon_cell_free(at) {
                 return Err(CarrierError::PlanConflict);
             }
-            let actor = self
-                .phase
+            self.phase
                 .spawn_role(runtime, role, at, None, None, &place)?;
-            if role == KING
-                && self.ritual_completed_us.is_some_and(|completed| {
-                    completed.saturating_sub(self.start_us) > HALF_AFTER_US
-                })
-                && let Err(error) = super::gates::halve(runtime, actor)
-            {
-                runtime.remove_encounter_actor(actor)?;
-                self.phase.actors[KING] = None;
-                return Err(error);
-            }
             if role == MASS {
                 self.mass_due_us = Some(now.saturating_add(REGENERATION_US));
             }
         }
+        if self.ritual_broken() && !self.king_gate_released {
+            let completed = *self.ritual_completed_us.get_or_insert(now);
+            if now >= completed.saturating_add(300_000) {
+                let king = self.king()?;
+                if completed.saturating_sub(self.start_us) > HALF_AFTER_US {
+                    super::gates::halve(runtime, king)?;
+                } else {
+                    super::gates::unprotect(runtime, king)?;
+                }
+                self.king_gate_released = true;
+            }
+        }
         Ok(true)
+    }
+
+    pub fn north_gate_open(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: u64,
+    ) -> bool {
+        self.is_current(runtime)
+            && self.timeout_participants(now).is_none()
+            && self.king_gate_released
+            && self.phase.participants.contains(&(actor, session))
+            && self
+                .king()
+                .is_ok_and(|king| runtime.contains_live_creature(king))
+    }
+
+    fn ritual_broken(&self) -> bool {
+        self.phase.progress.dead() & KNIGHTS == KNIGHTS
+    }
+
+    fn king(&self) -> Result<ExactActorRef, CarrierError> {
+        self.phase.actors[KING].ok_or(CarrierError::PlanConflict)
+    }
+
+    // Crystal 201189f grave_danger_king_zelos.lua:74–96.
+    fn refill(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        now: u64,
+        place: &impl Fn(&ChannelRuntimeV1, MovementLocalPosition) -> bool,
+    ) -> Result<(), CarrierError> {
+        if now < self.refill_due_us {
+            return Ok(());
+        }
+        if self.phase.actors[RED].is_some_and(|actor| runtime.contains_live_creature(actor)) {
+            refill_one(runtime, &mut self.blood, self.red_at, 7, BLOOD, place)?;
+        }
+        if runtime.contains_live_creature(self.king()?) {
+            refill_one(runtime, &mut self.soldiers, self.king_at, 9, SOLDIER, place)?;
+        }
+        self.refill_due_us = now.saturating_add(REFILL_US);
+        Ok(())
     }
 
     // Crystal 201189f grave_danger_king_zelos.lua:164–277.
@@ -322,4 +400,49 @@ impl ZelosEncounter {
         self.fetter_due_us = Some(now.saturating_add(FETTER_WAVE_US));
         Ok(())
     }
+}
+
+fn refill_one(
+    runtime: &mut ChannelRuntimeV1,
+    owned: &mut Vec<ExactActorRef>,
+    centre: MovementLocalPosition,
+    radius: u32,
+    key: &str,
+    place: &impl Fn(&ChannelRuntimeV1, MovementLocalPosition) -> bool,
+) -> Result<(), CarrierError> {
+    owned.retain(|actor| runtime.contains_live_creature(*actor));
+    let nearby = |actor| {
+        runtime.read_actor_position(actor).is_ok_and(|snapshot| {
+            let at = snapshot.position();
+            at.floor == centre.floor
+                && at.x.abs_diff(centre.x) <= radius
+                && at.y.abs_diff(centre.y) <= radius
+        })
+    };
+    if owned.len() >= 32 || owned.iter().copied().filter(|&actor| nearby(actor)).count() >= 3 {
+        return Ok(());
+    }
+    let at = [
+        (-1, 0),
+        (1, 0),
+        (0, -1),
+        (0, 1),
+        (-1, -1),
+        (1, 1),
+        (-1, 1),
+        (1, -1),
+    ]
+    .into_iter()
+    .map(|(dx, dy)| MovementLocalPosition {
+        x: centre.x + dx,
+        y: centre.y + dy,
+        ..centre
+    })
+    .find(|&at| place(runtime, at) && runtime.native_summon_cell_free(at));
+    if let Some(at) = at {
+        let health = runtime.companion_policy(key)?.maximum_health;
+        let summoned = runtime.commit_quest_creature_spawn(&[(key, health, at)])?;
+        owned.extend(summoned);
+    }
+    Ok(())
 }

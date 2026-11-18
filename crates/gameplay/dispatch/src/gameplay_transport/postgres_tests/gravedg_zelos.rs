@@ -24,8 +24,9 @@ pub(super) fn configure(callback: &mut Callback) -> TestResult {
     callback.storage.clear();
     let encounter = callback.effects.encounter.as_mut().ok_or("encounter")?;
     encounter.phase = Some(EncounterPhase::GraveDangerZelos {
-        king: Position { x: 115, y: 113, floor: -7 },
         exit: Position { x: 103, y: 100, floor: -7 },
+        north_gate: Position { x: 116, y: 116, floor: -7 },
+        north_arrival: Position { x: 115, y: 114, floor: -7 },
     });
     encounter.minimum_level = 1;
     let entry = encounter.players.first().ok_or("party arrival")?.to;
@@ -39,6 +40,10 @@ pub(super) fn configure(callback: &mut Callback) -> TestResult {
     for (monster, name) in encounter.monsters.iter_mut().zip(KNIGHTS) {
         monster.creature = name.into();
     }
+    encounter.monsters.push(oteryn_gameplay_quests::quest::world_callbacks::EncounterMonster {
+        creature: "oteryn:creature.king_zelos".into(),
+        position: Position { x: 115, y: 113, floor: -7 },
+    });
     Ok(())
 }
 
@@ -102,6 +107,16 @@ pub(super) async fn exercise(
         }
         find(&runtime, KNIGHTS[1])?.ok_or("Nargol spawned by native USE")?
     };
+    use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+    let (step, _) = owner.ordinary_paced_step(
+        player, admitted.game_session_id, StepDirection::North, None, None,
+    ).await;
+    assert_eq!(step.disposition, StepDisposition::Moved);
+    {
+        let runtime = owner.runtime.lock().await;
+        let at = runtime.read_actor_position(player).map_err(debug)?.position();
+        assert_eq!((at.x, at.y, at.floor), (116, 117, 7), "the locked vortex returns the entrant");
+    }
     super::engenc2_cults::kill(owner, admitted, nargol, KNIGHTS[1], 101).await?;
     let now = owner.owner_now().get();
     tick_at(owner, now).await;
@@ -109,22 +124,27 @@ pub(super) async fn exercise(
     {
         let runtime = owner.runtime.lock().await;
         assert!(find(&runtime, mass)?.is_some(), "mass replaces Nargol");
+        assert!(find(&runtime, "oteryn:creature.fetter")?.is_some(), "Rewar room starts Fetter waves");
     }
     tick_at(owner, now + 29_999_999).await;
     {
         let runtime = owner.runtime.lock().await;
         assert!(find(&runtime, mass)?.is_some(), "mass survives until the deadline");
+        for add in ["oteryn:creature.vampiric_blood", "oteryn:creature.risen_soldier"] {
+            assert!(find(&runtime, add)?.is_some(), "ritual replenishes {add}");
+        }
     }
     tick_at(owner, now + 30_000_000).await;
     {
         let runtime = owner.runtime.lock().await;
         assert!(find(&runtime, mass)?.is_none(), "mass expires at 30 seconds");
         assert_ne!(find(&runtime, KNIGHTS[1])?.ok_or("regenerated Nargol")?, nargol);
-        assert!(find(&runtime, "oteryn:creature.king_zelos")?.is_none());
+        let king = find(&runtime, "oteryn:creature.king_zelos")?.ok_or("admitted king")?;
+        assert!(runtime.encounter_hooks().is_some_and(|hooks| hooks.contains(king)));
     }
     tick_at(owner, now + 24 * 60 * 1_000_000).await;
     let runtime = owner.runtime.lock().await;
-    for knight in KNIGHTS {
+    for knight in KNIGHTS.into_iter().chain(["oteryn:creature.king_zelos"]) {
         assert!(find(&runtime, knight)?.is_none(), "timeout cleans up {knight}");
     }
     for member in [player, partner] {
