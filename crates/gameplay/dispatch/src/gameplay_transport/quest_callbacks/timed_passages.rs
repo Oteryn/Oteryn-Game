@@ -167,7 +167,7 @@ pub(super) fn prepare(
             passable,
         });
     }
-    if entries.is_empty() {
+    if entries.is_empty() && !callback.reversible {
         // Source loops do not create objects whose conditional lookup found nothing.
         return Ok(source_reset
             .map(|(due, restore)| QuestCallbackProjection::TimedTransform { due, restore }));
@@ -176,6 +176,7 @@ pub(super) fn prepare(
         due,
         entries,
         source_reset,
+        independent_switch: callback.reversible,
     };
     if !map
         .facts

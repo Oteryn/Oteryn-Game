@@ -646,7 +646,16 @@ pub(super) fn valid(callback: &Callback) -> bool {
             !(1..=3_600_000).contains(&delay)
                 || callback.actor_kind != ActorKind::Player
                 || callback.trigger != Trigger::Use
-                || callback.reversible
+                || (callback.reversible
+                    && (callback.lever.is_none()
+                        || callback.selector.native.is_none()
+                        || callback.has_state()
+                        || callback.requires_world_admission
+                        || callback.teleport.is_some()
+                        || !callback.offerings.is_empty()
+                        || callback.item_on_target.is_some()
+                        || !callback.world_requirements.is_empty()
+                        || effects.reset_after_ms.is_some()))
                 || callback.passages.is_empty()
                 || callback
                     .passages

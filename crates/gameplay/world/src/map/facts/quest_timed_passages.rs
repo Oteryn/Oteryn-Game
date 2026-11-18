@@ -18,9 +18,10 @@ impl CallbackStates {
         due: u64,
         entries: &[QuestTimedPassage],
         source_reset: Option<(u64, EntryFacts)>,
+        independent_switch: bool,
     ) -> bool {
         let keys: BTreeSet<_> = entries.iter().map(|entry| entry.key).collect();
-        if entries.is_empty()
+        if (entries.is_empty() && !independent_switch)
             || entries.len() > 8
             || keys.len() != entries.len()
             || keys.contains(&owner)
@@ -41,6 +42,9 @@ impl CallbackStates {
             })
         {
             return false;
+        }
+        if independent_switch {
+            self.timed_passage_switches.insert(owner, due);
         }
         if let Some((source_due, restore)) = source_reset {
             let Some(revision) = self
@@ -83,6 +87,15 @@ impl CallbackStates {
 }
 
 impl BundleFacts {
+    pub fn timed_passage_switch_active(&self, key: u64, now: u64) -> bool {
+        self.callbacks.lock().is_ok_and(|states| {
+            states
+                .timed_passage_switches
+                .get(&key)
+                .is_some_and(|due| *due > now)
+        })
+    }
+
     /// Preflight the same bounded projection before reserving durable quest inputs.
     pub fn quest_timed_passages_ready(
         &self,
@@ -93,6 +106,7 @@ impl BundleFacts {
         let QuestCallbackProjection::TimedPassages {
             entries,
             source_reset,
+            independent_switch,
             ..
         } = projection
         else {
@@ -111,7 +125,9 @@ impl BundleFacts {
                 entries
                     .len()
                     .saturating_mul(3)
-                    .saturating_add(1 + usize::from(source_reset.is_some())),
+                    .saturating_add(
+                        1 + usize::from(source_reset.is_some()) + usize::from(*independent_switch),
+                    ),
             )
         {
             return false;

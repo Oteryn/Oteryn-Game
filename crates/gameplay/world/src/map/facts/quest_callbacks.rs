@@ -102,6 +102,7 @@ pub enum QuestCallbackProjection {
         due: u64,
         entries: Vec<QuestTimedPassage>,
         source_reset: Option<(u64, EntryFacts)>,
+        independent_switch: bool,
     },
     /// Each read revision, including cells which do not change, fences the batch.
     ReadsetTransforms {
@@ -157,6 +158,7 @@ pub(super) struct CallbackStates {
     pub(super) creature_visuals: std::collections::VecDeque<(u64, CreatureVisualKind)>,
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
+    timed_passage_switches: BTreeMap<u64, u64>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
     batch_blockers: BTreeSet<TilePos>,
@@ -314,8 +316,17 @@ impl CallbackStates {
                 due,
                 entries,
                 source_reset,
+                independent_switch,
             } => {
-                if close || !self.project_timed_passages(owner, *due, entries, *source_reset) {
+                if close
+                    || !self.project_timed_passages(
+                        owner,
+                        *due,
+                        entries,
+                        *source_reset,
+                        *independent_switch,
+                    )
+                {
                     return false;
                 }
             }
@@ -509,6 +520,7 @@ impl CallbackStates {
         self.hidden.retain(|key| !key_inside(key));
         self.passable.retain(|key, _| !key_inside(key));
         self.movement_decays.retain(|(_, key), _| !key_inside(key));
+        self.timed_passage_switches.retain(|key, _| !key_inside(key));
         let cleared = |p: &TilePos| {
             p.floor == -11 && (33415..=33445).contains(&p.x) && (31522..=31554).contains(&p.y)
         };
@@ -530,6 +542,7 @@ impl CallbackStates {
             + self.actions.len()
             + self.hidden.len()
             + self.movement_decays.len()
+            + self.timed_passage_switches.len()
             + self.movement_effects.len()
             + self.creature_visuals.len()
             + self.movement_speech.len()
@@ -836,6 +849,7 @@ impl BundleFacts {
             .map(|((due, _), _)| *due)
             .into_iter()
             .chain(states.portals.values().filter_map(|p| p.expires))
+            .chain(states.timed_passage_switches.values().copied())
             .min()
     }
 
@@ -847,6 +861,7 @@ impl BundleFacts {
         };
         let states = Arc::make_mut(&mut states);
         let mut changed = 0;
+        states.timed_passage_switches.retain(|_, due| *due > now);
         let expired: BTreeSet<_> = states
             .portals
             .values()
@@ -1617,6 +1632,7 @@ impl BundleFacts {
             Some(QuestCallbackProjection::TimedPassages {
                 entries,
                 source_reset,
+                independent_switch,
                 ..
             }) => {
                 // Changed entry, hidden entry and timer, plus the source revision/reset.
@@ -1626,7 +1642,9 @@ impl BundleFacts {
                 entries
                     .len()
                     .saturating_mul(3)
-                    .saturating_add(1 + usize::from(source_reset.is_some()))
+                    .saturating_add(
+                        1 + usize::from(source_reset.is_some()) + usize::from(*independent_switch),
+                    )
             }
             Some(QuestCallbackProjection::Scene { mutations, .. }) => {
                 mutations.len().saturating_mul(3).saturating_add(1)

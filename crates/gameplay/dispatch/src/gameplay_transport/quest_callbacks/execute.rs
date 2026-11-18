@@ -189,11 +189,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
         }
         let tree_reset = oteryn_gameplay_quests::quest::dreamer_death_ring::shared_reset(callback);
+        let timed_switch = callback.reversible && callback.effects.passages_reset_after_ms.is_some();
+        let lever_was_on = callback
+            .lever
+            .is_some_and(|pair| after.appearance_id == pair[1]);
         let close = tree_reset
             || callback.trigger == Trigger::StepOut
-            || callback
-                .lever
-                .is_some_and(|pair| after.appearance_id == pair[1]);
+            || (lever_was_on && !timed_switch);
         if !close
             && (!world_requirements_match(map, callback)
                 || !self.ground_requirements_match(runtime, map, callback)
@@ -218,7 +220,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let before = after;
         if let Some(pair) = callback.lever {
-            after.appearance_id = pair[usize::from(!close)];
+            if timed_switch && !pair.contains(&before.appearance_id) {
+                return UseDisposition::NothingToUse;
+            }
+            after.appearance_id = pair[usize::from(!close && !lever_was_on)];
+        }
+        if timed_switch && map.facts.timed_passage_switch_active(key, self.owner_now().get()) {
+            return if map.facts.apply_quest_callback(
+                key,
+                expected_revision,
+                after,
+                &[],
+                &[],
+                false,
+                None,
+            ) {
+                UseDisposition::Committed
+            } else {
+                UseDisposition::StaleState
+            };
         }
         if let Some(appearance) = callback.effects.transform {
             let Some(replacement) = map.facts.quest_callback_replacement(key, appearance) else {
@@ -358,6 +378,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Occupied;
             }
             let Some(t) = map.overlay.base().tile(p.x, p.y, p.floor) else {
+                if timed_switch && passage.if_present {
+                    continue;
+                }
                 return UseDisposition::Rejected;
             };
             let candidates = t
@@ -371,7 +394,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let k = placement_key(p, ordinal)?;
                     let f = map.facts.base_entry(p, ordinal, *id)?;
                     ((f.appearance_id == passage.appearance
-                        || passage.replacement == Some(f.appearance_id)
+                        || (!timed_switch && passage.replacement == Some(f.appearance_id))
                         || passage.create_on_close == Some(f.appearance_id))
                         && !map.facts.house_tile(p)
                         && (!passage.if_present || !map.facts.base_hidden(k)))
@@ -1400,6 +1423,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if let Some(crate::map::facts::QuestCallbackProjection::TimedPassages {
                 due,
                 source_reset,
+                ..
                 ..
             }) = &mut projection
             {
