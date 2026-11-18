@@ -146,7 +146,7 @@ pub(super) async fn exercise(
     appearance: u16,
 ) -> TestResult {
     let original = placement_key(NORTH, 1).ok_or("oven placement")?;
-    let assert_oven = |owner: &ComposedFreshAdmission<'_, '_, '_>, moved| -> TestResult {
+    let assert_oven = |owner: &ComposedFreshAdmission<'_, '_, '_>, moved: bool| -> TestResult {
         let map = owner.bundle_map().ok_or("map")?;
         assert_eq!(map.facts.base_hidden(original), moved);
         let cells = owner.movement_cells();
