@@ -54,6 +54,7 @@ const PRISMS: [(&str, Position); 4] = [
 const LLOYD_SPAWN: Position = at(32799, 32827);
 const LLOYD_REBIRTH: Position = at(32799, 32826);
 const LLOYD_RETURN: Position = at(32799, 32829);
+const LLOYD_RETURN_EFFECT: u16 = 11; // Crystal CONST_ME_TELEPORT.
 const REWARD_ROOM: Position = Position {
     x: 33617,
     y: 31020,
@@ -364,7 +365,7 @@ fn energy_callback(lever: Position) -> TestResult<Callback> {
     let replacements = PRISMS.map(|(creature, _)| {
         json!({
             "defeated":creature,"spawn":[],
-            "relocate":{"creature":LLOYD,"from":LLOYD_REBIRTH,"to":LLOYD_RETURN}
+            "relocate":{"creature":LLOYD,"from":LLOYD_REBIRTH,"to":LLOYD_RETURN,"arrival_effect":LLOYD_RETURN_EFFECT}
         })
     });
     let data = json!({"schema":1,"callbacks":[{
@@ -711,6 +712,21 @@ pub(super) async fn exercise(
         assert_eq!(live(owner, ENRAGED).await?.len(), 1);
         assert_eq!(live(owner, STEED).await?.len(), 1);
     } else if name == ENERGY {
+        let map = owner.bundle_map().ok_or("Energy room")?;
+        let return_cell = crate::map::overlay::TilePos {
+            x: LLOYD_RETURN.x,
+            y: LLOYD_RETURN.y,
+            floor: LLOYD_RETURN.floor,
+        };
+        let return_effects = || {
+            map.facts
+                .movement_effects_since(0)
+                .into_iter()
+                .filter(|&(_, position, effect)| {
+                    position == return_cell && effect == LLOYD_RETURN_EFFECT
+                })
+                .count()
+        };
         let [lloyd] = live(owner, LLOYD)
             .await?
             .try_into()
@@ -720,6 +736,7 @@ pub(super) async fn exercise(
             .try_into()
             .map_err(|_| "one prism B")?;
         super::engenc2_cults::kill(owner, admitted, prism, PRISM_B, 101).await?;
+        assert_eq!(return_effects(), 0);
         {
             let mut runtime = owner.runtime.lock().await;
             let spawn = runtime.read_actor_position(lloyd).map_err(debug)?;
@@ -742,6 +759,7 @@ pub(super) async fn exercise(
             .try_into()
             .map_err(|_| "one prism A")?;
         super::engenc2_cults::kill(owner, admitted, prism, PRISM_A, 102).await?;
+        assert_eq!(return_effects(), 1);
         let runtime = owner.runtime.lock().await;
         assert_eq!(
             runtime

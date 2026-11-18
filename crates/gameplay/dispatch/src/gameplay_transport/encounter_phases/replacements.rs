@@ -1,9 +1,11 @@
 //! Crystal 201189f8, forgotten_knowledge/creaturescripts_thorn_knight_death.lua:12-23
 //! and the_first_dragon/creaturescripts_death_dragon_essence.lua:3-12.
 use super::{CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition};
+use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
 use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
 use oteryn_gameplay_entities::carrier::QuestCorpseStep;
 use oteryn_gameplay_quests::quest::world_callbacks::{DeathPhases, Encounter};
+use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 
 use super::terminal_portal::Portal;
 use super::terminal_transfer::{Movement, Transfer};
@@ -194,7 +196,7 @@ impl Replacements {
     pub(super) fn advance(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
-        map_admits: impl Fn(&ChannelRuntimeV1, MovementLocalPosition) -> bool,
+        cells: &crate::content::NativeEntryMovementCells,
     ) -> Result<(), CarrierError> {
         if !self.is_current(runtime) {
             return Err(CarrierError::ContentPinWorldMismatch);
@@ -235,12 +237,20 @@ impl Replacements {
                         .then_some((member.actor, expected))
                     });
                 if let Some((actor, expected)) = guarded_actor {
-                    if !map_admits(runtime, to) {
+                    if !super::placement(cells, runtime, to) {
                         return Err(CarrierError::PlanConflict);
                     }
                     runtime
                         .borrow_movement_position()
                         .commit_creature_relocation(actor, expected, to)?;
+                    if let Some(effect) = relocate.arrival_effect
+                        && let NativeMovementCollisionIndex::Bundle(map) = cells.index()
+                    {
+                        map.map().facts.emit_movement_effect(
+                            super::super::quest_callbacks::tile(relocate.to),
+                            effect,
+                        );
+                    }
                 }
                 self.members.swap_remove(index);
                 continue;
@@ -263,7 +273,7 @@ impl Replacements {
                         .position
                         .map_or(at, super::super::quest_callbacks::local);
                     let policy = runtime.companion_policy(&actor.creature)?;
-                    if !map_admits(runtime, at) {
+                    if !super::placement(cells, runtime, at) {
                         return Err(CarrierError::PlanConflict);
                     }
                     Ok((actor.creature.as_str(), policy.maximum_health, at))

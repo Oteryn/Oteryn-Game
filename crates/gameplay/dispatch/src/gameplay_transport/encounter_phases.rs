@@ -53,11 +53,13 @@ impl Fight {
     fn advance(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
-        admits: impl Fn(&ChannelRuntimeV1, MovementLocalPosition) -> bool,
+        cells: &crate::content::NativeEntryMovementCells,
     ) -> Result<(), CarrierError> {
         match self {
-            Self::Cults(fight) => fight.advance(runtime, admits),
-            Self::Replacements(fight) => fight.advance(runtime, admits),
+            Self::Cults(fight) => {
+                fight.advance(runtime, |runtime, at| placement(cells, runtime, at))
+            }
+            Self::Replacements(fight) => fight.advance(runtime, cells),
         }
     }
 
@@ -143,9 +145,7 @@ impl Registry {
                     // only after exact terminal decorations retire; tick retries failures.
                     let ActivePhase { fight, cells, .. } = phase;
                     matches!(fight, Fight::Replacements(fight) if fight.completion_pending())
-                        || fight
-                            .advance(runtime, |runtime, at| placement(cells, runtime, at))
-                            .is_err()
+                        || fight.advance(runtime, cells).is_err()
                 }
                 Ok(None) => phase
                     .frozen
@@ -179,7 +179,7 @@ impl Registry {
                 .is_ok()
             {
                 let ActivePhase { fight, cells, .. } = phase;
-                let _ = fight.advance(runtime, |runtime, at| placement(cells, runtime, at));
+                let _ = fight.advance(runtime, cells);
                 if let Fight::Replacements(fight) = fight {
                     fight.project_portal(cells, now_us);
                 }
@@ -388,7 +388,7 @@ pub(super) fn tick(
         let ActivePhase {
             key, fight, cells, ..
         } = phase;
-        if let Err(error) = fight.advance(runtime, |runtime, at| placement(cells, runtime, at)) {
+        if let Err(error) = fight.advance(runtime, cells) {
             super::operator_event(&format!(
                 "encounter_phase_deferred key={key} reason={error:?}"
             ));

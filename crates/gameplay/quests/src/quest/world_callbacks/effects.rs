@@ -551,6 +551,8 @@ pub struct DeathRelocation {
     pub creature: String,
     pub from: Position,
     pub to: Position,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub arrival_effect: Option<u16>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -621,6 +623,7 @@ fn valid_death_phases(
                     || !in_room(relocate.from)
                     || !in_room(relocate.to)
                     || relocate.from == relocate.to
+                    || relocate.arrival_effect == Some(0)
             } else {
                 !(1..=8).contains(&rule.spawn.len())
             }
