@@ -137,7 +137,7 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     let source = callback.selector.position.ok_or("source tile")?;
-    let refused = name.ends_with(LOW_LEVEL) || name == COOLDOWN;
+    let refused = name.ends_with(LOW_LEVEL) || name == COOLDOWN || name.ends_with(TARGETED_USE);
     if matches!(name, COOLDOWN | COOLDOWN_EXPIRES_NOW) {
         const EPOCH: i64 = 1_700_000_000;
         h.root.set_test_quest_clock(EPOCH)?;
@@ -159,8 +159,6 @@ pub(super) async fn exercise(
         start
     } else if name == SATCHEL {
         at(32396, 32520, -7)
-    } else if name.ends_with(TARGETED_USE) {
-        start
     } else if name == COOLDOWN_EXPIRES_NOW {
         ROUTES[5].2
     } else {
@@ -265,7 +263,11 @@ async fn exercise_targeted_use(
         .ok_or("Iksupan rope definition")?;
 
     let map = owner.bundle_map().ok_or("Iksupan map")?;
-    let effect_before = map.facts.movement_effects_since(0).last().map_or(0, |row| row.0);
+    let effect_before = map
+        .facts
+        .movement_effects_since(0)
+        .last()
+        .map_or(0, |row| row.0);
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
             .ok_or("Iksupan targeted USE capabilities")?;
@@ -291,7 +293,12 @@ async fn exercise_targeted_use(
         "Crystal registers only direct USE for the Iksupan entrance"
     );
     assert_eq!(
-        owner.runtime.lock().await.read_actor_position(actor)?.position(),
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)?
+            .position(),
         local(start)
     );
     assert!(map.facts.movement_effects_since(effect_before).is_empty());
