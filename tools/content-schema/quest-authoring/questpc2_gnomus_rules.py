@@ -39,11 +39,15 @@ def outputs(root):
 
     mission = 'gnomes/ordnance'
     cooldown = 'gnomes/time_task_ordnance'
+
+    # The Global spoiler documents repeat access after 20 hours.
+    # https://tibia.fandom.com/?curid=83369&oldid=1105447
+    deadline = lambda op: dict(kind='storage_time', track=PREFIX + cooldown, op=op)
     rules = [
         rule('cooldown', 'ordnance', [121], [topic(1)],
-             [guard(mission, 'eq', 3), guard(cooldown, 'gt', 0)], '119-123'),
+             [guard(mission, 'eq', 3), deadline('gt')], '119-123'),
         rule('repeat-offer', 'ordnance', list(range(126, 131)), [topic(22)],
-             [guard(mission, 'eq', 3), guard(cooldown, 'le', 0)], '124-133'),
+             [guard(mission, 'eq', 3), deadline('le')], '124-133'),
         rule('initial-offer', 'ordnance', list(range(136, 141)), [topic(22)],
              [guard(mission, 'lt', 1)], '134-142'),
         rule('pending-first', 'ordnance', [144], [topic(1)],

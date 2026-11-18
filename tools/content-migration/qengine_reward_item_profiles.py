@@ -21,6 +21,8 @@ import questl2_ready
 
 IDS = {21897, 21898, 21899, 21901, 21902, 21905, 21906, 30168, 30169, 37002, 37003, 768, 769, 770, 3723, 15698, 16103, 16165, 16167, 16242, 12517, 12413, 16128, 16129, 20275, 20276, 5903, 5947, 133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
        4867, 5886, 5924, 5937, 5938, 5939, 5940, 5921, 6107, 5945, 7289, 6099, 6100, 6101, 6102, 6126, 12599, 12601, 12803, 22516, 22721, 28792, 28793}
+# Ferumbras chest: the Rift Tapestry and Teddy need portable reward custody.
+IDS |= {22731, 22775}
 # M51 arena trophy custody is qualified from the same pinned physical sources.
 CUSTODY_PROMOTIONS = {5805, 5806}
 # Closed source qualification admits zero speed only for these three native Items.

@@ -71,10 +71,9 @@
           "value": 3
         },
         {
-          "kind": "storage",
+          "kind": "storage_time",
           "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_ordnance",
-          "op": "gt",
-          "value": 0
+          "op": "gt"
         }
       ],
       "reply": [
@@ -115,10 +114,9 @@
           "value": 3
         },
         {
-          "kind": "storage",
+          "kind": "storage_time",
           "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_ordnance",
-          "op": "le",
-          "value": 0
+          "op": "le"
         }
       ],
       "reply": [

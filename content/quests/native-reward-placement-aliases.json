@@ -2,6 +2,118 @@
   "schema": 1,
   "aliases": [
     {
+      "claim": "oteryn:reward-claim.halls_of_hope.reward1",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6001,
+      "project_position": {
+        "x": 32349,
+        "y": 32194,
+        "z": 9
+      },
+      "appearance": 23740,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L591",
+        "content/world/placements/region-z09-x126-y125.b3:sha256:af575545ad0e010975c13f3b1f49c11abd4ddaa6956d7d96e21206e9a8d24bcb selector 32349,32194,9 ordinal 1 has appearance 23740 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.halls_of_hope.reward2",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6002,
+      "project_position": {
+        "x": 32382,
+        "y": 32368,
+        "z": 9
+      },
+      "appearance": 23740,
+      "ordinal": 2,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L597",
+        "content/world/placements/region-z09-x126-y126.b3:sha256:61983773d8ea041a8add37bd04dd9fa03376b60911815ce207e11c9e230c6e65 selector 32382,32368,9 ordinal 2 has appearance 23740 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.halls_of_hope.reward3",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6003,
+      "project_position": {
+        "x": 32287,
+        "y": 32119,
+        "z": 7
+      },
+      "appearance": 23740,
+      "ordinal": 2,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L603",
+        "content/world/placements/region-z07-x126-y125.b3:sha256:b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037 selector 32287,32119,7 ordinal 2 has appearance 23740 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.halls_of_hope.reward4",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6004,
+      "project_position": {
+        "x": 32389,
+        "y": 32001,
+        "z": 6
+      },
+      "appearance": 23741,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L609",
+        "content/world/placements/region-z06-x126-y125.b3:sha256:ade86a8e432522df4d30b1d8f56e8c6536a35c4e0664d426f4e895a2f80ddbfe selector 32389,32001,6 ordinal 1 has appearance 23741 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.halls_of_hope.reward5",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6005,
+      "project_position": {
+        "x": 32449,
+        "y": 32109,
+        "z": 8
+      },
+      "appearance": 23740,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L615",
+        "content/world/placements/region-z08-x126-y125.b3:sha256:89c271f6da935a4aa6eb3f7fda631fb27ee2d29cc511a2f6e337abe87c9f9d73 selector 32449,32109,8 ordinal 1 has appearance 23740 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.ghostsilver_lantern_quest",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6310,
+      "project_position": {
+        "x": 32825,
+        "y": 31664,
+        "z": 9
+      },
+      "appearance": 23736,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2916",
+        "content/world/placements/region-z09-x128-y123.b3:sha256:ffb1d0be93636d691911f9f09732a9ef486f846b95d9f24326cc5913ff463745 selector 32825,31664,9 ordinal 1 has appearance 23736 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.imbuing_crystal_quest",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6312,
+      "project_position": {
+        "x": 33026,
+        "y": 31662,
+        "z": 14
+      },
+      "appearance": 9253,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2932",
+        "content/world/placements/region-z14-x129-y123.b3:sha256:cd790600908ccd3f5d1c2198e8c45b1ee350e84ff2d10d079cfec872f51f23a7 selector 33026,31662,14 ordinal 1 has appearance 9253 and the tile has no unique tags."
+      ]
+    },
+    {
       "claim": "oteryn:reward-claim.kv.mintwallincyclops",
       "expected_revision": "reward-claim-r1",
       "expected_source_uid": 6138,
@@ -11,6 +123,22 @@
       "sources": [
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua",
         "Committed region-z14-x127-y125.b3: ground351 and chest2472 at32591,32097,14; both entries have no retained unique tag. Original source identity, reward and claim policy are unchanged."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.painting_of_agirl_quest",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6311,
+      "project_position": {
+        "x": 32883,
+        "y": 31686,
+        "z": 10
+      },
+      "appearance": 21858,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2924",
+        "content/world/placements/region-z10-x128-y123.b3:sha256:afb894429ec7d41754d8aa0cfeed1ba08fc8aa3e0add9ac1fa5372a517b6f9fb selector 32883,31686,10 ordinal 1 has appearance 21858 and the tile has no unique tags."
       ]
     }
   ]

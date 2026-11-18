@@ -321,7 +321,8 @@
     {
       "npc": "oteryn:npc.avar_tar",
       "keywords": [
-        "outfit"
+        "outfit",
+        "demon outfit"
       ],
       "topic": 0,
       "next_topic": 1,
