@@ -97,7 +97,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Some(outcome(UseDisposition::NotPossible));
             }
             let states = self.states.spell_states.lock().await;
-            if states.is_dead(actor) || !states.spell_idle(&runtime, actor, session) {
+            if states.is_dead(actor)
+                || !states.spell_idle(&runtime, actor, session)
+                || !self.states.player_trades.physical(session, None)
+            {
                 return Some(UseOutcome::rejected());
             }
             (index, expected)
@@ -129,7 +132,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
             .any(|item| {
-                item.definition.production_key == rules::AXE
+                index.definition_ref(
+                    &item.definition.family,
+                    &item.definition.production_key,
+                    &item.definition.revision_ref,
+                ) == Some(axe)
                     && match intent.target {
                         UseTarget::Item(_) => source == Some(item.item_instance_id),
                         UseTarget::ItemByDefinition(wanted) => wanted == axe,
@@ -158,6 +165,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let teleport = {
             let runtime = self.runtime.lock().await;
             if runtime.read_actor_position(actor) != Ok(expected)
+                || map.facts.base_hidden(resolved.placement_key)
                 || map.facts.object_revision(resolved.placement_key) != revision
             {
                 return Some(UseOutcome::rejected());
