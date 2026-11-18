@@ -368,7 +368,12 @@ fn placement(
         )
 }
 
-pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, now_us: u64) {
+pub(super) fn tick(
+    runtime: &mut ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    chat: &super::chat_intent::ChatRuntime,
+    now_us: u64,
+) {
     let Ok(mut active) = states.encounter_phases.active.lock() else {
         return;
     };
@@ -383,7 +388,7 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, 
         } = phase;
         let result = match fight {
             Fight::Cults(_) => fight.advance(runtime, room, cells),
-            Fight::Drume(fight) => fight.maintain(runtime, room, cells, now_us),
+            Fight::Drume(fight) => fight.maintain(runtime, room, cells, chat, now_us),
         };
         if let Err(error) = result {
             super::operator_event(&format!(

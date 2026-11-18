@@ -466,6 +466,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return disposition;
         }
+        // Crystal action_drume.lua:113-117 sends the time limit after admission.
+        let battlefield_notice = callback.effects.battlefield.as_ref().map(|battlefield| {
+            let minutes = battlefield.timeout_ms / 60_000;
+            format!("You have {minutes} minutes to defeat Drume.")
+        });
         for ((who, member_session, expected, _), snapshot) in players.into_iter().zip(snapshots) {
             states.stage_special_movement_step(
                 runtime,
@@ -487,6 +492,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
             if let Some(pos) = native(snapshot.position()) {
                 map.facts.emit_movement_effect(pos, 11);
+            }
+            if let Some(notice) = battlefield_notice.as_deref() {
+                self.states.chat.push_quest_feedback(member_session, notice);
             }
         }
         UseDisposition::Committed

@@ -118,7 +118,7 @@ pub(super) async fn admit_second(
 pub(super) async fn exercise(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     leader: &AdmittedSession,
-    second: ExactActorRef,
+    (second, second_session): (ExactActorRef, GameSessionId),
     spawn_boss: bool,
 ) -> TestResult {
     let first = leader.runtime_actor.ok_or("first actor")?;
@@ -173,8 +173,18 @@ pub(super) async fn exercise(
             crate::gameplay_transport::encounter_phases::tick(
                 &mut runtime,
                 &states,
+                &owner.states.chat,
                 owner.owner_now().get() + 1_200_000_000,
             );
+            crate::gameplay_transport::encounter_phases::tick(
+                &mut runtime,
+                &states,
+                &owner.states.chat,
+                owner.owner_now().get() + 1_201_000_000,
+            );
+        }
+        for session in [leader.game_session_id, second_session] {
+            assert_feedback(owner, session, "Your time is over.");
         }
         assert!(list(owner, LION).await?.is_empty());
         assert!(list(owner, KESAR).await?.is_empty());
@@ -229,6 +239,7 @@ pub(super) async fn vacate(
         crate::gameplay_transport::encounter_phases::tick(
             &mut runtime,
             &states,
+            &owner.states.chat,
             owner.owner_now().get(),
         );
         assert!(
@@ -255,6 +266,20 @@ pub(super) async fn assert_replaced(
             .all(|actor| !runtime.contains_live_creature(*actor))
     );
     Ok(())
+}
+
+pub(super) fn assert_feedback(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+    message: &str,
+) {
+    assert_eq!(
+        owner.states.chat.drain(session),
+        vec![oteryn_protocol_oteryn::chat::ChatLine::Private {
+            speaker_name: "Game".into(),
+            text: message.into(),
+        }]
+    );
 }
 
 async fn list(

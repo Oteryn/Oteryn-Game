@@ -269,6 +269,8 @@ pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResu
                 member.item_fence = None;
                 owner.admit_quest_session(&member).await;
                 assert!(owner.refresh_source_party_presence(actor, session).await);
+                owner.states.chat.admit(admitted.game_session_id, "Leader", owner.owner_now());
+                owner.states.chat.admit(session, "Second", owner.owner_now());
                 Some((actor, session))
             } else {
                 None
@@ -409,6 +411,11 @@ pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResu
             }
             if let Some(spawn_boss) = drume {
                 let (second_actor, second_session) = second.ok_or("second player")?;
+                for session in [admitted.game_session_id, second_session] {
+                    super::drume_battlefield::assert_feedback(
+                        &owner, session, "You have 20 minutes to defeat Drume.",
+                    );
+                }
                 if reenter {
                     let original = super::drume_battlefield::vacate(
                         &owner,
@@ -448,7 +455,7 @@ pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResu
                     )
                     .await?;
                 } else {
-                    super::drume_battlefield::exercise(&owner, &admitted, second_actor, spawn_boss)
+                    super::drume_battlefield::exercise(&owner, &admitted, (second_actor, second_session), spawn_boss)
                         .await?;
                 }
                 drop(owner);

@@ -1,5 +1,6 @@
 //! Crystal 201189f8, the_order_of_lion_quest/creaturescripts_commander_kills.lua:1-50.
 use super::*;
+use crate::gameplay_transport::chat_intent::ChatRuntime;
 use oteryn_gameplay_encounters::bosses::phase_controller::{NativePhaseOwner, Plan, Role};
 use oteryn_gameplay_quests::quest::world_callbacks::{Battlefield, Encounter};
 
@@ -11,9 +12,9 @@ const ALL_USURPERS: u64 = 0b011_1000;
 const DRUME: usize = 6;
 
 #[derive(Clone, Copy)]
-enum Ejection {
+enum Ejection<'a> {
     Defeat,
-    Timeout,
+    Timeout(&'a ChatRuntime),
 }
 
 const ROLES: &[Role] = &[
@@ -138,12 +139,13 @@ impl Skirmish {
         runtime: &mut ChannelRuntimeV1,
         room: &Encounter,
         cells: &crate::content::NativeEntryMovementCells,
+        chat: &ChatRuntime,
         now_us: u64,
     ) -> Result<(), CarrierError> {
         // Crystal action_drume.lua:16-17,21-32,115-120 schedules physical teardown
         // even when the boss has fallen and normal terminal credit already settled.
         if now_us >= self.deadline {
-            self.eject(runtime, room, cells, Ejection::Timeout)?;
+            self.eject(runtime, room, cells, Ejection::Timeout(chat))?;
             self.ejected = true;
             return Ok(());
         }
@@ -155,7 +157,7 @@ impl Skirmish {
         runtime: &mut ChannelRuntimeV1,
         room: &Encounter,
         cells: &crate::content::NativeEntryMovementCells,
-        reason: Ejection,
+        reason: Ejection<'_>,
     ) -> Result<(), CarrierError> {
         use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
         let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
@@ -166,6 +168,7 @@ impl Skirmish {
         let exit = local(self.battlefield.exit);
         let census = runtime.positioned_melee_census()?;
         let mut proofs = Vec::new();
+        let mut recipients = Vec::new();
         for (actor, position, session) in census {
             if let Some(session) = session
                 && super::super::quest_callbacks::room_contains(room, position.position())
@@ -176,10 +179,20 @@ impl Skirmish {
                     )
                     .map_err(|_| CarrierError::PlanConflict)?,
                 );
+                if matches!(reason, Ejection::Timeout(_)) {
+                    recipients.push(session);
+                }
             }
         }
         if !proofs.is_empty() {
             runtime.commit_quest_relocation(proofs, || true)?;
+        }
+        // The successful move consumes this player's room presence. If cleanup
+        // retries after a creature-removal error, these sessions are already outside.
+        if let Ejection::Timeout(chat) = reason {
+            for session in recipients {
+                chat.push_quest_feedback(session, "Your time is over.");
+            }
         }
         // Crystal commander_kills.lua:14-19 preserves monsters with a master.
         // The timeout in action_drume.lua:23-32 removes every monster in the room.
