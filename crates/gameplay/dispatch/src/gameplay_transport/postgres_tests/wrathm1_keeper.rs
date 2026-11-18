@@ -241,6 +241,12 @@ async fn claim_tail(
         .await
         .map_err(|()| "quest fence")?
         .ok_or("quest fence")?;
+    // The Content lane owns the preceding missions. This fixture supplies only
+    // their exact stored predecessor before exercising the real receipt writer.
+    let mut historical = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *historical)
+        .await?;
     sqlx::query(
         "INSERT INTO game_character_quest_tracks
          (character_id,track_key,quest_key,value,committed_character_revision)
@@ -251,7 +257,8 @@ async fn claim_tail(
     .bind(sqlx::types::Uuid::from_bytes(*fence.character_id.as_bytes()))
     .bind(oteryn_gameplay_quests::quest::wrath_sleeping_dragon::QUESTLINE)
     .bind(oteryn_gameplay_quests::quest::wrath_sleeping_dragon::QUEST)
-    .execute(&h.pool).await?;
+    .execute(&mut *historical).await?;
+    historical.commit().await?;
     owner
         .refresh_quest_session(player.game_session_id, false)
         .await;
