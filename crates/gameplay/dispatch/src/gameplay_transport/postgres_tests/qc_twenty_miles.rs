@@ -180,7 +180,11 @@ impl Seeder {
     ) -> TestResult {
         self.0 += 1;
         super::qengine_outfit_stories::seed_quest_prerequisites(h, owner, admitted, values, self.0)
-            .await
+            .await?;
+        owner
+            .refresh_quest_session(admitted.game_session_id, false)
+            .await;
+        Ok(())
     }
 }
 
@@ -270,6 +274,17 @@ pub(super) async fn exercise_chain(
 
     // Nothing starts without Brandon: the Guardian refuses an unstarted quest.
     refused!(guardian, "qc-twenty-miles-guardian-yes-start", ["hi", "assist", "yes"], -1);
+    // Partial Fire-Feathered progress routes the same Guardian to the orb dialogue.
+    let energy = oteryn_gameplay_quests::quest::fire_feathered_native::TRACKS[0].to_owned();
+    seeder.set(h, owner, admitted, &[(energy.clone(), 1)]).await?;
+    super::classic_quests::talk(owner, admitted, guardian, 21_001, "hi").await?;
+    let reply = super::classic_quests::talk(owner, admitted, guardian, 21_002, "yes").await?;
+    assert!(reply
+        .iter()
+        .any(|line| line.starts_with("Bring the darkness, life and light energies.")));
+    assert_eq!(track(h, &stage_key).await?, -1);
+    assert_eq!(track(h, &energy).await?, 1);
+    seeder.set(h, owner, admitted, &[(energy, 0)]).await?;
     accepted!(brandon, "qc-twenty-miles-brandon-yes", ["hi", "assist", "yes"], 1);
     // The start is once only.
     refused!(brandon, "qc-twenty-miles-brandon-yes", ["hi", "assist", "yes"], 1);

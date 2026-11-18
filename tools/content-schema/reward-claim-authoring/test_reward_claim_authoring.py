@@ -408,7 +408,7 @@ def test_the_committed_content_binds_exact_source_chest_transitions() -> None:
                        "griffinshield1", "griffinshield2", "griffinshield3",
                        "katanacorpse1", "katanacorpse2", "longsword1", "longsword2", "longsword3",
                        "madmageroom1", "madmageroom2", "madmageroom3",
-                       "minohell1", "minohell2", "minohell3")
+                       "minohell1", "minohell2", "minohell3", "legiondawnport", "witch_house_quest")
     }
     expected_claim_sets.update({
         "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards." + marker:
@@ -425,7 +425,9 @@ def test_the_committed_content_binds_exact_source_chest_transitions() -> None:
             {"oteryn:quest-transition/" + marker + "/chest"}
         for marker in ("quest/u6_1/emperors_cookies/rewards/cookies", "quest/key/id3802",
                        "quest/u8_1/koshei_the_deathless/koshei_the_deathless_legs",
-                       "quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum")
+                       "quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum",
+                       "quest/u7_6/explorer_society/skull_of_ratha/bag1",
+                       "quest/u7_6/explorer_society/skull_of_ratha/bag2")
     })
     # M35 routes these exact groups through native mint receipts, not the
     # legacy chest-transition owner (test_engclaim_m35.py verifies that split).
