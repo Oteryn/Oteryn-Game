@@ -10,15 +10,26 @@ use oteryn_protocol_oteryn::{boss_encounter as boss, world_spatial as movement};
 fn kilmaresh_wanted_step_uses_solo_room_cooldown_and_exit_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     drop(admin);
+    scenario(false)
+}
+
+#[test]
+fn kilmaresh_wanted_step_ejects_only_entrant_at_ten_minutes_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    scenario(true)
+}
+
+fn scenario(timeout: bool) -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| exercise().map_err(|error| error.to_string()))?
+        .spawn(move || exercise(timeout).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Kilmaresh Wanted case panicked")??;
     Ok(())
 }
 
-fn exercise() -> TestResult {
+fn exercise(timeout: bool) -> TestResult {
     run(async |admin| {
         let start = MovementLocalPosition { x: 33886, y: 31478, floor: 6 };
         let scene = super::srx3_soul_war_world_fixture::source_world(start)?;
@@ -62,6 +73,11 @@ fn exercise() -> TestResult {
         assert!(admitted.continuity.selected_capabilities.contains(boss::CAPABILITY_BOSS_ENCOUNTER_V1));
         super::srx3_activity_source_fixture::prepare_player(&h, &owner, &mut admitted, 250).await?;
         let peer = super::m25_ahau_push::prepare_peer_and_party(&h, &owner, &mut admitted).await?;
+        if timeout {
+            let now = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+                .fetch_one(&h.pool).await?;
+            h.root.set_test_quest_clock(now)?;
+        }
         let instance = super::activity_runtime::allocate_ready_instance(&h, 237).await?;
         let actor = admitted.runtime_actor.ok_or("Wanted player")?;
         let (step, _) = owner.paced_step(actor, admitted.game_session_id, movement::StepDirection::North).await;
@@ -81,20 +97,26 @@ fn exercise() -> TestResult {
 
         assert_eq!(owner.activity_runtimes.current_connection(peer).game_session_id, peer.game_session_id);
         assert_eq!(owner.activity_runtimes.current_connection(peer).item_fence.ok_or("peer fence")?.runtime_scope, scope);
-        let registered = owner.activity_runtimes.get(instance, fence.scope_ownership_generation.get()).ok_or("Wanted instance")?;
-        let view = owner.runtime_view(&registered);
-        let actor = entered.runtime_actor.ok_or("Wanted instance player")?;
-        let (step, _) = view.paced_step(actor, entered.game_session_id, movement::StepDirection::North).await;
-        assert_eq!(step.disposition, movement::StepDisposition::Moved);
-        view.committed_paced_movement(entered, step.moved_to).await;
+        if timeout {
+            h.root.advance_test_quest_clock(599)?;
+            owner.activity_lifecycle_pass().await.map_err(|_| "pre-deadline lifecycle")?;
+            assert_eq!(owner.activity_runtimes.current_connection(entered).game_session_id, entered.game_session_id);
+            h.root.advance_test_quest_clock(1)?;
+            owner.activity_lifecycle_pass().await.map_err(|_| "due lifecycle")?;
+        } else {
+            let registered = owner.activity_runtimes.get(instance, fence.scope_ownership_generation.get()).ok_or("Wanted instance")?;
+            let view = owner.runtime_view(&registered);
+            let actor = entered.runtime_actor.ok_or("Wanted instance player")?;
+            let (step, _) = view.paced_step(actor, entered.game_session_id, movement::StepDirection::North).await;
+            assert_eq!(step.disposition, movement::StepDisposition::Moved);
+            view.committed_paced_movement(entered, step.moved_to).await;
+        }
         let returned = owner.activity_runtimes.current_connection(entered);
         let fence = returned.item_fence.ok_or("Wanted return item fence")?;
         assert_eq!(fence.runtime_scope, scope);
         let actor = returned.runtime_actor.ok_or("Wanted returned player")?;
         assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), start);
         assert_eq!(owner.activity_runtimes.current_connection(peer).game_session_id, peer.game_session_id);
-        drop(view);
-        drop(registered);
         drop(owner);
         drop(authority);
         drop(seal);

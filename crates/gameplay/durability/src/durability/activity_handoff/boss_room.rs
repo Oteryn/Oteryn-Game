@@ -5,6 +5,7 @@ use super::super::boss_encounter::cooldown_storage::{
     BossCooldownAdmissionData, BossCooldownChange, BossRewardKey, set_boss_cooldowns_data,
 };
 use super::*;
+use oteryn_gameplay_content::content::bosses::activity_template::wanted;
 use oteryn_gameplay_encounter_rules::boss_room::{
     AdmissionRefusal, BossRoomPolicy, ParticipantFact, plan_fresh_room,
 };
@@ -224,7 +225,7 @@ impl ActivityHandoffOwner {
                 FROM game_boss_room_activities a JOIN game_activity_handoff_groups g ON g.handoff_id=a.admission \
                 JOIN game_runtime_scope_assignments ownership ON ownership.scope_key='\\x03'::bytea || uuid_send(g.world_id) || uuid_send(g.instance_id) \
                 JOIN game_durability_admission_runtime_guards readiness ON readiness.scope_key='\\x02'::bytea || uuid_send(g.world_id) || uuid_send(g.instance_id) \
-                WHERE a.world_id=encode($1,'hex')::uuid AND ((a.state=1 AND a.deadline <= $2) OR (a.state=2 AND a.exit_deadline <= $2) OR a.state=3) \
+                WHERE a.world_id=encode($1,'hex')::uuid AND ((a.state=1 AND a.deadline <= $2) OR (a.state=2 AND (a.exit_deadline <= $2 OR (a.boss_key=ANY($6) AND a.deadline <= $2))) OR a.state=3) \
                   AND ownership.state=1 AND ownership.ownership_generation=g.ownership_generation \
                   AND ownership.holder_node_id=encode($3,'hex')::uuid AND ownership.holder_registration_revision=$4::text::numeric \
                   AND readiness.ready AND readiness.ownership_generation=g.ownership_generation \
@@ -232,6 +233,7 @@ impl ActivityHandoffOwner {
                 ORDER BY a.admission LIMIT 15")
                 .bind(world.as_bytes().as_slice()).bind(now).bind(fact.node_id().as_bytes().as_slice())
                 .bind(fact.registration_revision().to_string()).bind(after.as_ref().map(|id|id.as_slice()))
+                .bind(wanted::boss_keys().as_slice())
                 .fetch_all(&mut *tx).await?;
             let next_after=if rows.len()==15 {rows.last().map(|row|bytes16(row.try_get("id")?)).transpose()?} else {None};
             let mut result=Vec::with_capacity(rows.len());
@@ -485,7 +487,7 @@ pub(super) async fn prepare_in_transaction<
     {
         return Ok(Err(ActivityRefusal::ContentChanged));
     }
-    if oteryn_gameplay_content::content::bosses::activity_template::wanted::is_wanted_boss(&r.activity_key) {
+    if wanted::is_wanted_boss(&r.activity_key) {
         let RuntimeScopeRefV1::Channel { world_id, channel_id } = initiator.source.runtime_scope else {
             return Ok(Err(ActivityRefusal::Position));
         };
@@ -698,7 +700,7 @@ pub(crate) async fn classify_and_record_defeat_in_transaction(
     if death == [0; 16] || minted < 0 {
         return Ok(BossRoomDefeatDecision::Conflict);
     }
-    let row=sqlx::query("SELECT a.admission,a.state,a.opened_at,a.deadline,a.boss_key,a.after_kill_ms,uuid_send(a.defeat_id) AS defeat_id,a.terminal_at FROM game_boss_room_activities a \
+    let row=sqlx::query("SELECT a.admission,a.state,a.opened_at,a.deadline,a.after_kill_ms,uuid_send(a.defeat_id) AS defeat_id,a.terminal_at FROM game_boss_room_activities a \
         JOIN game_activity_handoff_groups g ON g.handoff_id=a.admission WHERE a.world_id=encode($1,'hex')::uuid AND a.instance_id=encode($2,'hex')::uuid \
           AND g.ownership_generation=$3::text::numeric AND g.state=2 AND (a.boss_creature_key=$4 OR a.boss_key=$4) FOR UPDATE OF a")
         .bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice()).bind(generation.get().to_string()).bind(boss_key).fetch_optional(&mut **tx).await?;
@@ -728,11 +730,7 @@ pub(crate) async fn classify_and_record_defeat_in_transaction(
     // Crystal boss_lever_death.lua:26 cancels the fight timeout but creates
     // no after-kill timer when the authored value is zero.
     let after_kill_ms: i64 = row.try_get("after_kill_ms")?;
-    let boss_key: String = row.try_get("boss_key")?;
-    let exit = if oteryn_gameplay_content::content::bosses::activity_template::wanted::is_wanted_boss(&boss_key) {
-        // The Wanted script leaves its original ejection timer running after death.
-        Some(row.try_get::<i64, _>("deadline")?)
-    } else if after_kill_ms == 0 {
+    let exit = if after_kill_ms == 0 {
         None
     } else {
         Some(
