@@ -91,8 +91,8 @@ const KIND_CORPSE: i16 = 5;
 const KIND_INBOX: i16 = 6;
 /// A depot-search retrieval of an entry nested under a depot or Inbox root.
 const KIND_CUSTODY_NESTED: i16 = 7;
-#[path = "item_quick_loot.rs"]
 mod quest_pickup;
+#[path = "item_quick_loot.rs"]
 mod quick_loot;
 pub use quick_loot::is_loot_coin;
 pub(super) use quick_loot::pouch_weight;

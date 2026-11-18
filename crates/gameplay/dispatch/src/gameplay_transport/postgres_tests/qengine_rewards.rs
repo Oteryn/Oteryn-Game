@@ -964,7 +964,7 @@ pub(super) async fn exercise(
         return Box::pin(super::gerimor_reports::exercise(owner, admitted, h, authority)).await;
     }
     if name == super::rahemos_chance::NAME {
-        return Box::pin(super::rahemos_chance::exercise(owner, admitted)).await;
+        return Box::pin(super::rahemos_chance::exercise(owner, admitted, h)).await;
     }
     if name == super::shadow_nexus::NAME {
         return Box::pin(super::shadow_nexus::exercise(owner, admitted, h)).await;

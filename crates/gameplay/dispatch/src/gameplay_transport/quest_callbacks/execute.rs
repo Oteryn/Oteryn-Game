@@ -313,9 +313,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .as_ref()
                 .and_then(|chance| chance.pickup)
             {
+                let Some(native) = self.active_generation.and_then(|g| g.native_gameplay()) else {
+                    return UseDisposition::Rejected;
+                };
                 let Some(pickup) = super::use_chance::prepare_pickup(
                     runtime,
                     map,
+                    native,
                     pos,
                     key,
                     expected_revision,

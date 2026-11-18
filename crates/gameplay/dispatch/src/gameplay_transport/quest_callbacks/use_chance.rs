@@ -41,6 +41,7 @@ pub(in crate::gameplay_transport) fn wins(
 pub(super) fn prepare_pickup(
     runtime: &ChannelRuntimeV1,
     map: &BundleMap,
+    native: &crate::content::native_gameplay::NativeGameplayState,
     source: TilePos,
     key: u64,
     revision: u64,
@@ -60,10 +61,27 @@ pub(super) fn prepare_pickup(
     if map.facts.house_tile(at) {
         return None;
     }
-    let facts = map.facts.movement_item_facts(item.appearance)?;
-    if !facts.pickupable || facts.bound || facts.blocks_movement || facts.count != 1 {
+    let policy = native
+        .item_policy_for_source_id(u32::from(item.appearance))?
+        .record();
+    let definition = crate::map::boot::native_item_definition(
+        Some(native),
+        &policy.production_definition.production_key,
+    )?;
+    if !policy.admission.materializable || !definition.pickupable || definition.solid != Some(false)
+    {
         return None;
     }
+    let facts = crate::map::view::EntryFacts {
+        definition: oteryn_protocol_oteryn::world_map::MapDefinition::Item(definition.reference),
+        terrain_kind: None,
+        appearance_id: item.appearance,
+        blocks_projectile: definition.blocks_projectile,
+        pickupable: true,
+        bound: false,
+        count: 1,
+        sub_type: 0,
+    };
     let occurrence = Sha256::new()
         .chain_update(b"oteryn:quest-temporary-pickup:v1")
         .chain_update(runtime.content_pin().frame_binding_digest())

@@ -660,8 +660,6 @@ fn scenario_case(
     }
     let world = if name == super::super::haunted_ruin::NAME {
         world_with_objects(&callback, trigger, &[(super::super::haunted_ruin::DOOR, 7869)], &[7868])?
-    } else if name == super::super::rahemos_chance::NAME {
-        world_with_objects(&callback, trigger, &[(super::super::rahemos_chance::DOOR, 1662)], &[1663])?
     } else if name == super::super::shadow_nexus::NAME {
         world_with_objects(&callback, trigger, &[], &[7926, 7927, 7928, 7929, 7930, 7931])?
     } else if name == "authored-wrath-crystals" {

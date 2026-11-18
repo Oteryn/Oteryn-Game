@@ -1,4 +1,4 @@
-use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::debug};
+use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::{Harness, debug}};
 use crate::content::{ReferenceRationalPercent, ReferenceResistanceKind};
 use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::{FreshAdmissionAuthority, connection::UseCommand};
@@ -28,7 +28,7 @@ pub(super) fn callback(at: Position) -> TestResult<Callback> {
         "lever":[2772,2773],"reversible":false,"passages":[{"position":DOOR,"appearance":1662,"replacement":1663,"if_present":true}],"storage":[],"offerings":[],
         "return_on_failure":false,
         "effects":{"reset_after_ms":4000,"magic":{"position":DOOR,"effect":15},"use_chance":{
-            "faces":3,"winning_faces":1,"success_cue":{"dx":-1,"dy":0,"effect":15},
+            "faces":3,"winning_faces":1,"pickup":{"appearance":3595,"dx":-1,"dy":0},"success_cue":{"dx":-1,"dy":0,"effect":15},
             "failure_hit":{"kind":"physical","amount":200,"effect":3},
             "failure_message":"You guessed wrong! Take this! Carrot changed now the Hat!"
         }},
@@ -95,6 +95,36 @@ pub(super) async fn exercise(
         let remaining = super::underwater_drowning::health(owner, actor, session).await?;
         assert!((1..=10).contains(&before.saturating_sub(remaining)));
     }
+    let carrot = {
+        let map = owner.bundle_map().ok_or("map")?;
+        map.facts.movement_item_entries().into_iter().find_map(|(at, entry)| {
+            use crate::map::view::EntrySource;
+            if at.x == TARGET.x - 1 && at.y == TARGET.y && entry.facts.appearance_id == 3595
+                && let EntrySource::Added(id) = entry.source {
+                Some(id.get())
+            } else { None }
+        }).ok_or("temporary carrot")?
+    };
+    use crate::gameplay_transport::item_move::{LoopMove, LoopMoveResult, LoopTarget};
+    use crate::gameplay_transport::item_view::ItemKey;
+    let fence = owner.current_quest_fence(session).await.map_err(|()| "fence")?.ok_or("fence")?;
+    let movement = LoopMove {
+        item: ItemKey::MapAdded(carrot),
+        count: Some(1),
+        target: LoopTarget::MainBackpack,
+    };
+    let moved = crate::gameplay_transport::loop_move::move_loop_item_with_house_capacity(
+        owner, actor, UseCommand { game_session_id:session, command_id:win+1, item_fence:Some(fence.item_fence()) },
+        movement, false,
+    ).await;
+    assert_eq!(moved, LoopMoveResult::Committed);
+    let carrots: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_quest_temporary_pickups r JOIN game_item_container_entries b USING(item_instance_id)
+         WHERE r.definition_key='oteryn:item.tibia.i3595'"
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(carrots,1);
+    let map = owner.bundle_map().ok_or("map")?;
+    assert!(map.facts.quest_pickup(carrot, owner.owner_now().get()).is_none());
     owner.clock_origin=owner.clock_origin.checked_sub(std::time::Duration::from_secs(5)).ok_or("clock")?;
     owner.tick_timed_items().await;
     assert_eq!(appearance(owner, TARGET)?,2772);
