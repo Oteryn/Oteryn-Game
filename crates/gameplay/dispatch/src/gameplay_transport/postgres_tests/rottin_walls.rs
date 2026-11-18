@@ -1,9 +1,15 @@
 use super::{
-    AdmittedSession, ComposedFreshAdmission, TestResult,
-    fixture::{Harness, debug},
+    AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult,
+    fixture::{Harness, debug, id},
+    prepare_current_session,
 };
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
-use crate::gameplay_transport::FreshAdmissionAuthority;
+use crate::foundation::{
+    ChannelContentPin, ChannelRuntimeV1, CharacterId, CharacterLease, MovementLocalPosition, NodeId,
+};
+use crate::gameplay_transport::{
+    FreshAdmissionAuthority, SeamRooms, connection::FirstEntryOutcome,
+};
 use crate::map::view::{MapFacts, placement_key};
 use oteryn_gameplay_quests::quest::{
     classic_talk::ROTTIN_WALLCOUNT,
@@ -13,13 +19,13 @@ use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
 };
 
-pub(super) const NAME: &str = "rottin-repair-42501";
+const HAMMER: &str = "oteryn:item.tibia.i3460";
 const TARGET: Position = Position {
     x: 32647,
     y: 32216,
     floor: -7,
 };
-pub(super) const START: Position = Position {
+const START: Position = Position {
     x: 32647,
     y: 32217,
     floor: -7,
@@ -31,15 +37,163 @@ fn rottin_hammer_repairs_counts_and_resets_postgres() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    super::kill_reward_e2e::scenario_thread::run("rottin-walls", || {
-        super::quest_world_callbacks::scenario(NAME, TARGET, false)
+    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+        let h = Harness::create_with_admission_seed(admin, "rottin_walls", false, false).await?;
+        super::reset();
+        prepare_current_session(&h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let mut deps = Dependencies::new()?;
+        let (controller, activated) =
+            super::death_ml_loss_composed::production_generation_with_pin(
+                deps.admitted.world_id,
+                "content-1",
+            )?;
+        let generation = controller.active().ok_or("generation")?;
+        let native = generation.native_gameplay().ok_or("wall policies")?;
+        let definition = crate::content::ProjectV2DefinitionRef {
+            family: crate::content::ProjectV2Family::Item,
+            key: HAMMER.into(),
+            revision: "definition-r1".into(),
+        };
+        assert!(
+            oteryn_gameplay_items::item_craft::output_definition(native, &definition).is_some()
+        );
+
+        let world = world(native)?;
+        let entry = activated.qualified_room();
+        let cells = world
+            .movement_cells(entry.movement_cells())
+            .map_err(debug)?;
+        let map_revision = world.map_revision_digest();
+        let frame_binding = world.frame_binding_digest(deps.admitted.world_id);
+        let start = crate::content::NativeEntryStart {
+            x: i32::from(START.x),
+            y: i32::from(START.y),
+            floor: -i16::from(START.floor),
+        };
+        let room = entry
+            .bundle_view(cells.clone(), frame_binding, map_revision, start)
+            .ok_or("qualified wall room")?;
+        let pin = ChannelContentPin::from_activation(
+            deps.admitted.world_id,
+            1,
+            generation.identity().server_artifact_digest(),
+            generation.identity().client_artifact_digest(),
+            frame_binding,
+            map_revision,
+            (start.x, start.y, start.floor),
+        );
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            deps.admitted.world_id,
+            deps.admitted.channel_id,
+            NodeId::decode(&id(1)).map_err(debug)?,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            2,
+            pin,
+        )
+        .map_err(debug)?;
+        let reservation = runtime
+            .reserve_fresh_session(deps.admitted.game_session_id)
+            .map_err(debug)?;
+        deps.actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(
+                deps.actor,
+                MovementLocalPosition {
+                    x: start.x,
+                    y: start.y,
+                    floor: start.floor,
+                },
+            )
+            .map_err(debug)?;
+        deps.runtime = tokio::sync::Mutex::new(runtime);
+
+        let mut owner = deps.owner(&h, &authority);
+        owner.active_generation = Some(generation);
+        owner.movement_cells = (&cells).into();
+        owner.rooms = SeamRooms::new(Some(&room), Some(&room));
+        owner.quest_catalogue = Some(std::sync::Arc::new(
+            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                .map_err(debug)?
+                .catalogue()
+                .clone(),
+        ));
+        let mut admitted = deps.admitted;
+        admitted.first_entry = FirstEntryOutcome::Positioned;
+        admitted.runtime_actor = Some(deps.actor);
+        let fence =
+            super::death_ml_loss_composed::current_fence(&owner, admitted.game_session_id).await?;
+        admitted.item_fence = Some(fence.item_fence());
+        owner
+            .runtime
+            .lock()
+            .await
+            .bind_attacker_lease(
+                deps.actor,
+                admitted.game_session_id,
+                CharacterLease::new(
+                    CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+                    fence.character_lease_generation,
+                )
+                .map_err(debug)?,
+            )
+            .map_err(debug)?;
+        sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
+            .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
+            .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice())
+            .bind(generation.identity().client_artifact_digest().as_slice()).bind(frame_binding.as_slice()).execute(&h.pool).await?;
+        let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
+        h.root
+            .initialize_admission_equipment(
+                &authority,
+                &h.node,
+                &fence.item_fence(),
+                generation.identity().server_artifact_digest(),
+                fresh.operation(),
+            )
+            .await
+            .map_err(debug)?;
+        let template = crate::durability::starter_grant::StarterTemplate {
+            definition: crate::durability::item_mint::TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: "oteryn:item.tibia.i2854".into(),
+                revision_ref: "definition-r1".into(),
+            },
+            ..crate::durability::starter_grant::StarterTemplate::main()
+        };
+        h.root
+            .grant_starter_items(
+                &authority,
+                &h.node,
+                &fence.item_fence(),
+                &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native),
+                &template,
+            )
+            .await
+            .map_err(debug)?;
+        owner.admit_progression_session(&mut admitted).await;
+        deps.initialize(&owner).await;
+        let result = exercise(&mut owner, &mut admitted, &h, fence).await;
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        result.and(h.cleanup().await)
     })
 }
 
-pub(super) fn world(
+fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_scene_with_appearances};
+    use super::native_world_crop::{ExpectedTile, NativeCrop, native_scene_with_appearances};
     native_scene_with_appearances(
         native,
         vec![NativeCrop {
@@ -60,7 +214,7 @@ pub(super) fn world(
     )
 }
 
-pub(super) async fn exercise(
+async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
@@ -102,12 +256,12 @@ pub(super) async fn exercise(
         state.tracks().get(ROTTIN_WALLCOUNT).copied().unwrap_or(0),
         0
     );
-    super::quest_world_callbacks::input_item(
+    super::world_input_item::input_item(
         owner,
         fence.item_fence(),
         &Offering {
             position: TARGET,
-            item: "oteryn:item.tibia.i3460".into(),
+            item: HAMMER.into(),
             count: 1,
         },
         951,
@@ -192,7 +346,7 @@ async fn use_hammer(
         .active_generation
         .and_then(|g| g.native_gameplay())
         .and_then(|n| n.item_index())
-        .and_then(|i| i.definition_ref("Item", "oteryn:item.tibia.i3460", "definition-r1"))
+        .and_then(|i| i.definition_ref("Item", HAMMER, "definition-r1"))
         .ok_or("hammer reference")?;
     let payload = encode_item_use_intent(&UseIntent {
         target: if carried {

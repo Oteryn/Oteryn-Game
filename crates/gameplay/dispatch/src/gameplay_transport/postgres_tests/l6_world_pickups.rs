@@ -6,9 +6,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
 #[path = "l6_world_pickups/wire.rs"]
 mod wire;
-#[path = "l6_world_pickups/world.rs"]
-mod world;
-pub(super) use world::{
+pub(super) use super::native_world_crop::{
     ExpectedTeleport, ExpectedTile, NativeCrop, native_crop, native_scene,
     native_scene_with_appearances, small_ruby,
 };

@@ -77,9 +77,7 @@ fn scenario_case(
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
-    let rottin_walls = name == super::super::rottin_walls::NAME;
-    let native_crop = rottin_walls
-        || m03_use
+    let native_crop = m03_use
         || qd_world
         || engenc_asura
         || m49
@@ -115,9 +113,7 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if rottin_walls {
-        super::super::rottin_walls::START
-    } else if name == "qengine-rewards-smith-story" {
+    let start = if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
             y: 32254,
@@ -1029,9 +1025,7 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if rottin_walls {
-            super::super::rottin_walls::world(generation.native_gameplay().ok_or("wall policies")?)?
-        } else if m03_use {
+        let world = if m03_use {
             super::super::qengine_m03_use::world(
                 generation
                     .native_gameplay()
@@ -1992,14 +1986,6 @@ fn scenario_case(
                 &h,
                 fence,
                 &callback,
-            ))
-            .await?;
-        } else if rottin_walls {
-            Box::pin(super::super::rottin_walls::exercise(
-                &mut owner,
-                &mut admitted,
-                &h,
-                fence,
             ))
             .await?;
         } else if m07_repair {
