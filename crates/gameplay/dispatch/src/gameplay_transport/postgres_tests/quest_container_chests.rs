@@ -25,6 +25,7 @@ enum Case {
     CrystalKey,
     FullCharge,
     Full,
+    Forgemaster,
     Weight,
     DemonBoots,
     DemonHelmet,
@@ -49,6 +50,15 @@ fn execute(case: Case, marker: &'static str) -> TestResult {
 #[test]
 fn quest_authored_placement_without_legacy_uid_mints_once_and_replays() -> TestResult {
     execute(Case::Authored, "QUESTPC8_AUTHORED_PLACEMENT")
+}
+
+#[test]
+fn nrwicked_forgemaster_use_refuses_an_unguarded_claim() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    execute(Case::Forgemaster, "NRWICKED_FORGEMASTER")
 }
 
 #[test]
@@ -165,10 +175,14 @@ fn scenario_case(
                     .collect(),
             )
         }
-        Case::Authored => (
+        Case::Authored | Case::Forgemaster => (
             "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots",
             (33313, 31574, -15),
-            0,
+            if matches!(case, Case::Forgemaster) {
+                57237
+            } else {
+                0
+            },
             "oteryn:item.tibia.i3554",
             vec![],
         ),
@@ -338,7 +352,7 @@ fn scenario_case(
             source_world(chest, unique, appearance, 0)?
         };
         let mut authored_shard = None;
-        let report = if matches!(case, Case::Authored) {
+        let report = if matches!(case, Case::Authored | Case::Forgemaster) {
             // Exercise an authored selector on a real map without borrowing a source UID.
             let mut definition = None;
             for shard in crate::content::world_reward_claims::REWARD_CLAIM_SHARDS {
@@ -521,6 +535,37 @@ fn scenario_case(
             })
         };
         let target = target_at(chest.0)?;
+        if matches!(case, Case::Forgemaster) {
+            let mut owner = deps.owner(&harness, &authority);
+            let shard = authored_shard.ok_or("unguarded claim fixture")?;
+            assert!(
+                owner
+                    .states
+                    .quest_callbacks
+                    .reward_claims_fixture
+                    .set(vec![shard])
+                    .is_ok()
+            );
+            owner.active_generation = Some(generation);
+            owner.quest_catalogue = quest_catalogue.clone();
+            owner.movement_cells = (&cells).into();
+            owner.admit_progression_session(&mut admitted).await;
+            owner.admit_quest_session(&admitted).await;
+            deps.initialize(&owner).await;
+            assert_eq!(
+                wire_uses(&owner, admitted, &[1], &target).await?,
+                [UseDisposition::NotPossible]
+            );
+            let writes: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_reservations")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            assert_eq!(writes, 0);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         if matches!(case, Case::ChoiceDoor) {
             {
                 let mut owner = deps.owner(&harness, &authority);

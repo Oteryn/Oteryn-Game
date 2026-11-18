@@ -12,6 +12,60 @@ use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use oteryn_gameplay_quests::quest::reward_callbacks::{self, RewardCallback};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
+const FORGEMASTER_ACCESS: &str = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forge_master/access_door";
+// Crystal 201189f8, no_rest_for_the_wicked_rewards.lua:1-13.
+const FORGEMASTER_REWARDS: [(u16, &str); 11] = [
+    (57237, "oteryn:item.tibia.i49520"),
+    (57238, "oteryn:item.tibia.i49522"),
+    (57239, "oteryn:item.tibia.i49523"),
+    (57240, "oteryn:item.tibia.i49524"),
+    (57241, "oteryn:item.tibia.i49525"),
+    (57242, "oteryn:item.tibia.i49526"),
+    (57243, "oteryn:item.tibia.i49527"),
+    (57244, "oteryn:item.tibia.i49530"),
+    (57245, "oteryn:item.tibia.i49528"),
+    (57246, "oteryn:item.tibia.i49529"),
+    (57247, "oteryn:item.tibia.i50250"),
+];
+
+/// Route the Forgemaster's donor selectors through one guarded native claim.
+/// The ordinary MINT owner checks the access track and claims the shared key.
+pub(super) fn admits_forgemaster_claim(
+    map: &crate::map::boot::BundleMap,
+    claim: &ServedClaim,
+    bound: &BoundPlacement,
+) -> bool {
+    let matches = |placement: &BoundPlacement, uid| {
+        map.facts
+            .quest_callback_matches(placement.bundle_placement_key, Some(uid), None, None)
+    };
+    let Some((_, selected_item)) = FORGEMASTER_REWARDS
+        .iter()
+        .find(|(uid, _)| matches(bound, *uid))
+    else {
+        return true;
+    };
+    claim.placements.len() == FORGEMASTER_REWARDS.len()
+        && FORGEMASTER_REWARDS.iter().all(|(uid, item)| {
+            claim.placements.iter().any(|placement| {
+                matches(placement, *uid)
+                    && matches!(placement.placement.items.as_slice(), [reward]
+                        if reward.item.key().as_str() == *item && reward.count == 1)
+                    && placement.contents.is_empty()
+                    && placement.reward_callback.is_some()
+            })
+        })
+        && callback(claim, bound).is_some_and(|reward| {
+            reward.requires.iter().any(|requirement| {
+                requirement.track == FORGEMASTER_ACCESS
+                    && requirement.minimum == 1
+                    && requirement.maximum == 1
+            }) && reward
+                .give
+                .is_some_and(|give| give.item == *selected_item && give.backpack_outputs.is_empty())
+        })
+}
+
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }

@@ -137,6 +137,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
         .ok()?;
         let (claim, bound) = resolved.canonical?;
+        if !super::native_claim_reward::admits_forgemaster_claim(map, claim, bound) {
+            return Some(outcome(UseDisposition::NotPossible));
+        }
         let mut quest_transition = bound.placement.quest_transition.clone();
         match oteryn_gameplay_quests::quest::completion_sets::mint_transition_for_claim(
             claim.key.as_str(),
