@@ -440,6 +440,99 @@ class RoundTwoCallerTests(unittest.TestCase):
                     read = bash(setup + state + 'test -f "$POSTGRES_JOURNAL/record"', dict(env, TMPDIR=str(root / 'second')))
                     self.assertEqual(read.returncode, 0, read.stdout + read.stderr)
 
+    def test_postgres_recovery_with_legacy_and_concurrent_journals(self):
+        owner = '0123456789abcdef0123456789abcdef'
+        for service in ('postgres', 'portal-postgres'):
+            for scenario in ('legacy', 'legacy_custom', 'legacy_pending', 'legacy_locked',
+                             'vanished_first', 'late_registration', 'inventory_failed'):
+                with self.subTest(service=service, scenario=scenario), tempfile.TemporaryDirectory() as temp:
+                    root = Path(temp)
+                    current = root / 'tmp'
+                    original = root / 'original'
+                    locks = root / 'locks'
+                    journals = root / 'journal'
+                    for path in (current, original, locks, journals):
+                        path.mkdir()
+                    name = f'fixture-{service}'
+                    if scenario.startswith('legacy'):
+                        prior = original if scenario == 'legacy_custom' else current
+                        journal = prior / f'node-boot-locks-{os.getuid()}' / 'postgres/fixture'
+                        journal.parent.parent.mkdir(mode=0o700)
+                    else:
+                        journal = journals / 'fixture'
+                    journal.mkdir(parents=True)
+                    record = journal / f'{name}.{owner}'
+                    record.touch()
+                    first = journals / 'aardvark' / f'aardvark-postgres.{owner}'
+                    if scenario in ('vanished_first', 'late_registration'):
+                        first.parent.mkdir()
+                        first.touch()
+                    if scenario not in ('late_registration', 'legacy_pending'):
+                        (root / 'registered').touch()
+                    setup = r"""
+                        set -Eeuo pipefail
+                        WP5_PROJECT=fixture lock_directory=$FIXTURE/locks POSTGRES_JOURNALS=$FIXTURE/journal
+                        exec 9>>"$lock_directory/fixture"
+                        flock -n 9
+                        evidence() { echo "$*"; }
+                        timeout() { while [[ $1 == --* ]]; do shift; done; shift; "$@"; }
+                        docker() {
+                            case "$1" in
+                              container)
+                                if [[ " $* " == *" --format "* ]]; then
+                                    if [[ "$SCENARIO" == inventory_failed ]]; then return 124; fi
+                                    if [[ "$SCENARIO" == vanished_first ]]; then rm -f -- "$FIRST"; fi
+                                    if [[ "$SCENARIO" == late_registration && " $* " != *--filter*fixture-postgres* ]]; then
+                                        touch "$FIXTURE/registered"
+                                        return 0
+                                    fi
+                                    if [[ -f "$FIXTURE/registered" ]]; then
+                                        echo "$CONTAINER_NAME $OWNER"
+                                    fi
+                                elif [[ -f "$FIXTURE/registered" && " $* " == *"name=^/$CONTAINER_NAME$ "* ]]; then
+                                    echo owned-id
+                                fi ;;
+                              rm)
+                                [[ "${*: -1}" == owned-id ]] || return 1
+                                mv "$FIXTURE/registered" "$FIXTURE/removed" ;;
+                            esac
+                        }
+                    """
+                    # Remove the first entry after the old glob expands, before
+                    # the old first-entry gate runs. New code has no such gate.
+                    if scenario == 'vanished_first':
+                        setup += r"""
+                            set -T
+                            trap 'if [[ $BASH_COMMAND == *"records[0]"* ]]; then rm -f -- "$FIRST"; fi' DEBUG
+                        """
+                    if scenario == 'legacy_locked':
+                        setup += 'exec 6>>"$LEGACY_LOCK"; flock -n 6\n'
+                    script = setup + '\n'.join(function(n) for n in (
+                        'cleanup_owned_postgres', 'recover_project_postgres',
+                        'import_legacy_postgres_project', 'recover_legacy_postgres', 'recover_owned_postgres',
+                    )) + '\nrecover_owned_postgres\n'
+                    env = dict(FIXTURE=temp, TMPDIR=str(current), SCENARIO=scenario,
+                               FIRST=str(first), CONTAINER_NAME=name, OWNER=owner,
+                               LEGACY_LOCK=str(journal.parent.parent / 'fixture'),
+                               NODE_BOOT_LEGACY_TMPDIR=str(original) if scenario == 'legacy_custom' else '')
+                    result = bash(script, env)
+                    if scenario in ('legacy_locked', 'inventory_failed'):
+                        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+                        reason = 'legacy_project_in_use' if scenario == 'legacy_locked' else 'inventory_failed'
+                        self.assertIn(f'postgres_recovery={reason} project=fixture', result.stdout)
+                        self.assertTrue(record.exists())
+                        self.assertFalse((root / 'removed').exists())
+                        continue
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    if scenario == 'legacy_pending':
+                        self.assertFalse(record.exists())
+                        self.assertTrue((journals / 'fixture' / record.name).exists())
+                        (root / 'registered').touch()
+                        result = bash(script, dict(env, TMPDIR=str(original)))
+                        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertTrue((root / 'removed').exists(), result.stdout + result.stderr)
+                    self.assertFalse(record.exists())
+
     def test_postgres_cleanup_failure_retains_node_boot_artifacts(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -588,7 +681,8 @@ class RoundTwoCallerTests(unittest.TestCase):
                     """
                     script = setup + '\n'.join(function(n) for n in (
                         'interrupted', 'run_interruptible', 'create_owned_postgres',
-                        'cleanup_owned_postgres', 'recover_project_postgres', 'recover_owned_postgres', 'cleanup',
+                        'cleanup_owned_postgres', 'recover_project_postgres', 'import_legacy_postgres_project',
+                        'recover_legacy_postgres', 'recover_owned_postgres', 'cleanup',
                     )) + '\n' + platform_cleanup + '\n' + platform_start + '\n'
                     env = dict(os.environ, WORK=str(root / 'work'), FIXTURE=temp, SERVICE=service,
                                CLIENT_STATUS=str(client_status), CONTAINER_NAME=name, OUTCOME=outcome,

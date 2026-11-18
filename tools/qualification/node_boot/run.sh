@@ -508,38 +508,99 @@ cleanup_owned_postgres() {
   POSTGRES_CLEANUP_FAILED=1
 }
 recover_project_postgres() {
-  local project=$1 POSTGRES_JOURNAL=$2 COMPOSE_OWNER name record
-  for name in "$project-postgres" "$project-portal-postgres"; do
-    for record in "$POSTGRES_JOURNAL/$name".*; do
-      [[ -f "$record" ]] || continue
-      COMPOSE_OWNER=${record##*.}
-      [[ -n "${registered["$name.$COMPOSE_OWNER"]:-}" ]] || continue
-      cleanup_owned_postgres "$name" ""
-      [[ $POSTGRES_CLEANUP_FAILED == 0 ]] || return 1
-    done
-  done
+  local project=$1 POSTGRES_JOURNAL=$2 COMPOSE_OWNER name owner inventory limit
+  limit=$((POSTGRES_RECOVERY_DEADLINE - SECONDS))
+  if (( limit <= 0 )); then
+    evidence "postgres_recovery=deadline operation=inventory project=$project"
+    return 1
+  fi
+  (( limit <= 5 )) || limit=5
+  # Take the snapshot under the project lock, after any earlier project work.
+  inventory=$(timeout --foreground --signal=KILL "${limit}s" docker container ls --all \
+    --filter label=org.oteryn.node-boot.owner \
+    --filter "name=^/($project-postgres|$project-portal-postgres)$" \
+    --format '{{.Names}} {{.Label "org.oteryn.node-boot.owner"}}') || {
+      evidence "postgres_recovery=inventory_failed project=$project"
+      return 1
+    }
+  while read -r name owner; do
+    [[ "$name" == "$project-postgres" || "$name" == "$project-portal-postgres" ]] || continue
+    [[ "$owner" =~ ^[a-f0-9]{32}$ && -f "$POSTGRES_JOURNAL/$name.$owner" ]] || continue
+    COMPOSE_OWNER=$owner
+    cleanup_owned_postgres "$name" ""
+    [[ $POSTGRES_CLEANUP_FAILED == 0 ]] || return 1
+  done <<< "$inventory"
   rmdir -- "$POSTGRES_JOURNAL" 2>/dev/null || true
 }
+import_legacy_postgres_project() {
+  local project=$1 journal=$2 record marker
+  while IFS= read -r -d '' record; do
+    marker=${record##*/}
+    [[ "${marker##*.}" =~ ^[a-f0-9]{32}$ ]] || continue
+    if (( SECONDS >= POSTGRES_RECOVERY_DEADLINE )); then
+      evidence "postgres_recovery=deadline operation=legacy_import project=$project"
+      return 1
+    fi
+    # Publish in the new journal before removing the old marker.
+    mkdir -p -- "$POSTGRES_JOURNALS/$project" &&
+      : > "$POSTGRES_JOURNALS/$project/$marker" &&
+      rm -f -- "$record" || {
+        evidence "postgres_recovery=legacy_import_failed project=$project"
+        return 1
+      }
+  done < <(find "$journal" -mindepth 1 -maxdepth 1 -type f \
+    \( -name "$project-postgres.*" -o -name "$project-portal-postgres.*" \) -print0)
+  rmdir -- "$journal" 2>/dev/null || true
+}
+recover_legacy_postgres() {
+  local temp legacy journal project
+  # For an upgrade that also changes a custom scratch location, point
+  # NODE_BOOT_LEGACY_TMPDIR at that old TMPDIR for the first recovery.
+  for temp in "${TMPDIR:-/tmp}" /tmp "${NODE_BOOT_LEGACY_TMPDIR:-}"; do
+    [[ -n "$temp" ]] || continue
+    legacy="$temp/node-boot-locks-$(id -u)"
+    [[ -d "$legacy" && ! -L "$legacy" && -O "$legacy" &&
+       "$(stat -c %a -- "$legacy")" == 700 ]] || continue
+    for journal in "$legacy/postgres/"*; do
+      [[ -d "$journal" && ! -L "$journal" ]] || continue
+      project=${journal##*/}
+      # The old layout reserved postgres for the journal and could not
+      # acquire a project lock with that name.
+      [[ "$project" =~ ^[a-z0-9][a-z0-9_-]*$ && "$project" != postgres ]] || continue
+      if (( SECONDS >= POSTGRES_RECOVERY_DEADLINE )); then
+        evidence "postgres_recovery=deadline operation=legacy_scan project=$project"
+        return 1
+      fi
+      if [[ "$project" == "$WP5_PROJECT" ]]; then
+        (
+          if ! flock -n 7; then
+            evidence "postgres_recovery=legacy_project_in_use project=$project"
+            return 1
+          fi
+          import_legacy_postgres_project "$project" "$journal"
+        ) 7>>"$legacy/$project" || return 1
+      else
+        (
+          if flock -n 7 && flock -n 8; then
+            import_legacy_postgres_project "$project" "$journal"
+          fi
+        ) 7>>"$legacy/$project" 8>>"$lock_directory/$project" || return 1
+      fi
+    done
+  done
+}
 recover_owned_postgres() {
-  local journal project inventory name owner POSTGRES_CLEANUP_FAILED=0
+  local journal project POSTGRES_CLEANUP_FAILED=0
   local POSTGRES_RECOVERY_DEADLINE=$((SECONDS + 60))
-  local records=("$POSTGRES_JOURNALS/"*/*)
-  [[ -f "${records[0]}" ]] || return 0
-  # An empty lookup cannot disprove a pending create. Keep its record, but
-  # use one inventory query to avoid a Docker call for every absent owner.
-  inventory=$(timeout --foreground --signal=KILL 5s docker container ls --all \
-    --filter label=org.oteryn.node-boot.owner \
-    --format '{{.Names}} {{.Label "org.oteryn.node-boot.owner"}}') || return 1
-  local -A registered=()
-  while read -r name owner; do
-    [[ "$name" =~ ^[a-z0-9][a-z0-9_-]*$ && "$owner" =~ ^[a-f0-9]{32}$ ]] || continue
-    registered["$name.$owner"]=1
-  done <<< "$inventory"
+  recover_legacy_postgres || return 1
   for journal in "$POSTGRES_JOURNALS/"*; do
     [[ -d "$journal" ]] || continue
-    (( SECONDS < POSTGRES_RECOVERY_DEADLINE )) || return 1
     project=${journal##*/}
     [[ "$project" =~ ^[a-z0-9][a-z0-9_-]*$ ]] || continue
+    if (( SECONDS >= POSTGRES_RECOVERY_DEADLINE )); then
+      evidence "postgres_recovery=deadline operation=project_scan project=$project"
+      return 1
+    fi
     if [[ "$project" == "$WP5_PROJECT" ]]; then
       recover_project_postgres "$project" "$journal" || return 1
     else
