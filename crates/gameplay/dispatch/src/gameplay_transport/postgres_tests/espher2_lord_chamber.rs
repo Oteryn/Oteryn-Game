@@ -41,7 +41,7 @@ fn espher2_lord_switch_use_closes_its_wall_without_starting_early_postgres() -> 
                 )?;
             let generation = controller.active().ok_or("active generation")?;
             let native = generation.native_gameplay().ok_or("native profiles")?;
-            let world = super::source_world_crop::world(
+            let world = super::source_world_crop::compiled_region(
                 world_tile(encounter.room_min),
                 TilePos {
                     x: 33279,
