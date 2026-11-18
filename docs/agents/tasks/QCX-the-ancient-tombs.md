@@ -66,3 +66,23 @@ BLOCKER Omruc maze return-to-step-origin routing data-global/scripts/quests/the_
 ## PARTIAL
 
 Encounter and entrance parity, the unordered completion graph, Omruc and Vashresamun treasure claims and boss-room bindings, native return destination reconciliation, and achievement qualification.
+
+## Validation
+
+PG via shard (pgsplit build files applied on `2ed10172db54b0cb25d271eb66ac5c58dad015a9`). PostgreSQL 18.6 returned RC 0 with 9 passed, 0 failed and 0 ignored in 195.10 s.
+
+| Case | Duration |
+| --- | ---: |
+| Ashmunrah north table assembly | 27.47 s |
+| Ashmunrah north table enchantment | 26.02 s |
+| Dipthrah forcefield | 21.43 s |
+| Mahrdis forcefield | 24.63 s |
+| Morguthis forcefield | 19.27 s |
+| Morguthis seven-flame reentry | 17.50 s |
+| Rahemos forcefield | 19.24 s |
+| Five once-per-character sarcophagus claims | 18.67 s |
+| Thalas forcefield | 20.85 s |
+
+The baseline run returned RC 101 with nine failures. Assembly, enchantment, the five rewards, and the Mahrdis, Rahemos and Thalas forcefields reached their gameplay assertions and reproduced the differences. Dipthrah, Morguthis forcefield and Morguthis reentry needed fixture repairs before they reached the corresponding gameplay assertions. Those three have passing PostgreSQL evidence on the corrected head.
+
+The route-less run returned RC 0 with 9 passed in 0.01 s and incurred no PostgreSQL case time. Quest authoring returned RC 0 across 44 check steps. World bundle pin-check returned RC 0 for one world. Formatting and dispatch library Clippy with `-D warnings` returned RC 0. The authoring hash refresh changed proof digests and generated provenance only in the other quest records. World pin inputs were unchanged. The temporary shard files were removed.
