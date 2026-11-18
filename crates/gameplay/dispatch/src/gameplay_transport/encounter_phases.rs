@@ -12,7 +12,7 @@ use oteryn_gameplay_encounters::bosses::phase_controller::{
     sirs::SirsEncounter,
 };
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
-use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
+use oteryn_gameplay_world::map::{boot::BundleCollisionIndexExt, view::MapFacts};
 use std::sync::Mutex;
 
 mod duke_krule;

@@ -2,13 +2,12 @@ use super::ChannelSpellStates;
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::foundation::{
     ApplicationFacts, ChannelRuntimeV1, ConditionDefinition, ConditionValues, ExactActorRef,
+    owner_timer::SemanticTimeMicros,
 };
 use crate::player_lethal::{PlayerHitKind, PlayerLethalVitals, SourceAppearanceTarget};
 use oteryn_gameplay_encounters::bosses::phase_controller::duke_krule::{DukeEffect, ElementalForm};
 use oteryn_protocol_oteryn::analyser::AnalyserDamageSource;
-use oteryn_simulation_determinism::{
-    DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros,
-};
+use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 
 pub(super) fn apply(
     runtime: &mut ChannelRuntimeV1,
