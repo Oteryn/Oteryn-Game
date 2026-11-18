@@ -73,6 +73,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 false,
                 Some(&projection),
             ) {
+                states.owner_wake.notify_one();
                 UseDisposition::Committed
             } else {
                 UseDisposition::Rejected
