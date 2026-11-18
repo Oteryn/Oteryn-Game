@@ -46,12 +46,28 @@ pub(super) async fn apply(
             .ok_or(DurabilityError::InvalidStoredState)?;
         let state = sqlx::query("SELECT pinned_content_revision,definition_hash,completed_character_revision IS NOT NULL AS completed FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 FOR UPDATE")
             .bind(id).bind(&participant.quest).fetch_optional(&mut **tx).await?;
-        let (pin, hash) = if let Some(state) = &state {
+        let (pin, hash, defaults) = if let Some(state) = &state {
             let hash: Vec<u8> = state.try_get("definition_hash")?;
-            if hash.as_slice() != current_hash && !state.try_get::<bool, _>("completed")? {
+            let hash_bytes: &[u8; 32] = hash
+                .as_slice()
+                .try_into()
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            let defaults = oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
+                catalogue,
+                &participant.quest,
+                hash_bytes,
+            );
+            if *hash_bytes != current_hash
+                && !state.try_get::<bool, _>("completed")?
+                && defaults.is_none()
+            {
                 return Ok(false);
             }
-            (state.try_get::<String, _>("pinned_content_revision")?, hash)
+            (
+                state.try_get::<String, _>("pinned_content_revision")?,
+                hash,
+                defaults,
+            )
         } else {
             // Include the still-pending primary state in this same admission.
             if !crate::durability::quest_state::capacity::states_fit(
@@ -66,6 +82,7 @@ pub(super) async fn apply(
             (
                 catalogue.content_revision().to_owned(),
                 current_hash.to_vec(),
+                None,
             )
         };
         let mut keys: Vec<_> = participant.tracks().collect();
@@ -81,6 +98,13 @@ pub(super) async fn apply(
                 row.try_get::<String, _>("track_key")?,
                 row.try_get::<i64, _>("value")?,
             );
+        }
+        if let Some(defaults) = defaults {
+            for key in keys {
+                if let Some(&value) = defaults.get(key) {
+                    stored.entry(key.to_owned()).or_insert(value);
+                }
+            }
         }
         let Ok(changes) = catalogue.evaluate(transition, &stored, now) else {
             return Ok(false);

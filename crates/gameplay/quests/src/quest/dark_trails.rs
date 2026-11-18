@@ -9,6 +9,47 @@ pub const TRACK_PREFIX: &str = "oteryn:quest-progress/quest/u10_50/dark_trails/"
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/dark-trails.json");
 pub const DIALOGUE: &str = include_str!("../../../../../content/dialogues/quests/dark-trails.json");
 
+pub const ARCHIVE_VOTE: &str = "oteryn:quest-reward/dark-trails/archive-vote";
+pub const MARVIN: &str = "oteryn:npc.marvin";
+pub const MISSION07: &str = "oteryn:quest-progress/quest/u10_50/dark_trails/mission07";
+pub const MISSION08: &str = "oteryn:quest-progress/quest/u10_50/dark_trails/mission08";
+pub const VOTES: &str = "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points";
+const ORAMOND: &str = "oteryn:quest.oramond_quest";
+
+pub fn owns_vote_transition(key: &str) -> bool {
+    key == ARCHIVE_VOTE
+}
+
+pub(super) fn is_archive_vote(callback: &super::reward_callbacks::RewardCallback) -> bool {
+    callback.key == ARCHIVE_VOTE && vote_callback().is_ok_and(|expected| expected == *callback)
+}
+
+pub(super) fn vote_callback() -> Result<super::reward_callbacks::RewardCallback, String> {
+    let book = load()?;
+    serde_json::from_value(serde_json::json!({
+        "key": ARCHIVE_VOTE,
+        "quest": QUEST,
+        "npc": MARVIN,
+        "keywords": ["yes"],
+        "topic": 3,
+        "next_topic": 0,
+        "storage": [{"track": MISSION08, "minimum": -1, "maximum": 1, "set": 1}],
+        "requires": [{"track": MISSION07, "minimum": 1, "maximum": 1}],
+        "participants": [{
+            "quest": ORAMOND,
+            "storage": [],
+            "state_ops": [{
+                "track": VOTES,
+                "from": {"kind": "between", "minimum": 0, "maximum": i32::MAX},
+                "effect": {"kind": "add_at_least", "value": -1, "minimum": 0}
+            }]
+        }],
+        "take": [],
+        "reply": book.replies.get("source-only:marvin:84").ok_or("Marvin vote reply")?.lines,
+        "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marvin.lua:57-85"]
+    })).map_err(|error| error.to_string())
+}
+
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Track {

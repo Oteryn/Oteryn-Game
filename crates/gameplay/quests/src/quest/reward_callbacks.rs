@@ -513,7 +513,11 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, 
 /// available to immutable receipt reconciliation and catalogue validation.
 pub fn offered_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, String> {
     let mut callbacks = load_for(catalogue)?;
-    callbacks.retain(super::authored_bindings::personal_event_offered);
+    callbacks.retain(|callback| {
+        // The source adapter owns these topic and keyword semantics.
+        !super::dark_trails::owns_vote_transition(&callback.key)
+            && super::authored_bindings::personal_event_offered(callback)
+    });
     Ok(callbacks)
 }
 
@@ -522,6 +526,18 @@ pub fn load() -> Result<Vec<RewardCallback>, String> {
 }
 
 fn embedded_document() -> Result<Document, String> {
+    let mut document = base_document()?;
+    document.callbacks.push(archive_vote_callback()?);
+    Ok(document)
+}
+
+fn archive_vote_callback() -> Result<RewardCallback, String> {
+    let callback = super::dark_trails::vote_callback()?;
+    validate_callbacks(std::slice::from_ref(&callback))?;
+    Ok(callback)
+}
+
+fn base_document() -> Result<Document, String> {
     let mut document = parse_documents(DOCUMENTS)?;
     document
         .callbacks
@@ -984,6 +1000,7 @@ fn validate_document_with_capacity(
                 && c.counter.is_none()
                 && !c.value_only_guarded()
                 && !c.is_save_restart_only()
+                && !super::dark_trails::is_archive_vote(c)
                 && c.storage
                     .iter()
                     .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
@@ -1100,6 +1117,7 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
         && callback.map_mark.is_none()
         && !(callback.repeatable && callback.is_paid_exchange() && !callback.storage.is_empty())
         && callback.carried_target.is_none()
+        && !super::dark_trails::owns_vote_transition(&callback.key)
         && !temporal_payment::guarded(callback)
         && callback.self_target.is_none()
         && !callback
@@ -1193,8 +1211,32 @@ pub(crate) fn declare_tracks(
 }
 
 pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
-    let document = embedded_document()?;
-    extend_document(catalogue, document)
+    let base = base_document()?;
+    let mut extended = extend_document(catalogue, base)?;
+    let callback = archive_vote_callback()?;
+    // Keep exact pins for Characters who began either quest before the vote was wired.
+    for quest in std::iter::once(&callback.quest).chain(
+        callback
+            .participants
+            .iter()
+            .map(|participant| &participant.quest),
+    ) {
+        let hash = extended
+            .definition_hash(quest)
+            .ok_or("archive vote predecessor")?;
+        let defaults = extended
+            .tracks
+            .values()
+            .filter(|track| &track.quest == quest)
+            .map(|track| (track.key.clone(), track.initial))
+            .collect();
+        extended
+            .predecessors
+            .entry(quest.clone())
+            .or_default()
+            .push(super::NpcDefinitionPredecessor { hash, defaults });
+    }
+    extend_callbacks(extended, vec![callback], Vec::new())
 }
 
 #[cfg(test)]

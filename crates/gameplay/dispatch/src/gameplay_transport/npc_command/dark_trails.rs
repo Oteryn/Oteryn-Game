@@ -19,6 +19,9 @@ pub(super) fn prepare(
         intent,
         runtime,
         |context, topic, fresh, tracks| {
+            if context.2 == quest::MARVIN {
+                return marvin(&book, &intent.text, topic.number, tracks);
+            }
             let rule = book.select(&context.2, &intent.text, topic.number, tracks)?;
             if rule.greeting_only && !fresh {
                 return None;
@@ -30,4 +33,35 @@ pub(super) fn prepare(
             })
         },
     )
+}
+
+fn marvin(
+    book: &quest::Book,
+    text: &str,
+    topic: u16,
+    tracks: &std::collections::BTreeMap<String, i64>,
+) -> Option<Choice> {
+    let contains = |word| quest::message_contains(text, word);
+    let (line, next_topic, transition) = if contains("funding") {
+        if tracks.get(quest::MISSION07) == Some(&1)
+            && tracks.get(quest::VOTES).is_some_and(|&value| value > 0)
+        {
+            ("source-only:marvin:59", 1, None)
+        } else {
+            ("source-only:marvin:65", topic, None)
+        }
+    } else if contains("archives") {
+        (topic == 1).then_some(("source-only:marvin:69", 2, None))?
+    } else if contains("1") {
+        (topic == 2).then_some(("source-only:marvin:74", 3, None))?
+    } else if contains("yes") && topic == 3 {
+        ("source-only:marvin:84", 0, Some(quest::ARCHIVE_VOTE.into()))
+    } else {
+        return None;
+    };
+    Some(Choice {
+        transition,
+        next_topic: Some(next_topic.into()),
+        reply: book.replies.get(line)?.lines.clone(),
+    })
 }

@@ -24,6 +24,7 @@ pub(super) fn messages(npc: &str) -> Option<(String, String)> {
         "oteryn:npc.elliott" => ("elliott:129", Some("elliott:130")),
         "oteryn:npc.ezebeth" => ("ezebeth:118", None),
         "oteryn:npc.jacob" => ("jacob:132", Some("jacob:133")),
+        "oteryn:npc.marvin" => ("marvin:92", None),
         "oteryn:npc.quandons_ghost" => return Some(("Hi!".into(), DEFAULT_FAREWELL.into())),
         "oteryn:npc.roswitha" => ("roswitha:69", None),
         "oteryn:npc.sholley" => ("sholley:83", None),

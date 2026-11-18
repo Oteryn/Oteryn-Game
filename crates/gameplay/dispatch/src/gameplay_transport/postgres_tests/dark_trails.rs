@@ -14,10 +14,40 @@ fn dark_trails_npc_flow_commits_once_and_fences_conversation_topics() -> TestRes
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("dark-trails-npc", scenario)
+    super::kill_reward_e2e::scenario_thread::run("dark-trails-npc", || scenario(None))
 }
 
-fn scenario() -> TestResult {
+const VOTES: &str = "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points";
+
+#[test]
+fn dark_trails_marvin_spends_one_oramond_vote_and_credits_archives() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("dark-trails-marvin", || {
+        scenario(
+            Some((
+                "oteryn:npc.marvin",
+                "mission07",
+                2,
+                "mission08",
+                &["funding", "archives", "1", "yes", "yes"],
+                1,
+            )),
+        )
+    })
+}
+
+type VoteScenario = (
+    &'static str,
+    &'static str,
+    i64,
+    &'static str,
+    &'static [&'static str],
+    i64,
+);
+
+fn scenario(vote_case: Option<VoteScenario>) -> TestResult {
     let trigger = Position {
         x: 33294,
         y: 31677,
@@ -140,6 +170,43 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
+        if let Some((npc, prerequisite, votes, target, words, expected_votes)) = vote_case {
+            let mut seed = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *seed)
+                .await?;
+            for (track, quest, value) in [
+                (
+                    format!("{}{prerequisite}", quest::TRACK_PREFIX),
+                    quest::QUEST,
+                    1,
+                ),
+                (VOTES.into(), "oteryn:quest.oramond_quest", votes),
+            ] {
+                sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(id(41).as_slice()).bind(track).bind(quest).bind(value).execute(&mut *seed).await?;
+            }
+            seed.commit().await?;
+            owner.admit_quest_session(&admitted).await;
+            let [npc] = install(&owner, &admitted, [npc]).await?;
+            talk(&mut owner, &admitted, npc, 3000, "hi").await?;
+            for (ordinal, word) in (3001..).zip(words) {
+                talk(&mut owner, &admitted, npc, ordinal, word).await?;
+            }
+            let credit = progress(
+                &owner,
+                &admitted,
+                &authority,
+                &format!("{}{target}", quest::TRACK_PREFIX),
+            )
+            .await?;
+            assert_eq!(credit, 1, "{target} credit");
+            assert_eq!(
+                progress(&owner, &admitted, &authority, VOTES).await?,
+                expected_votes
+            );
+            return Ok(());
+        }
         owner.admit_quest_session(&admitted).await;
 
         let [ezebeth, beggar, rapanaio] = install(
