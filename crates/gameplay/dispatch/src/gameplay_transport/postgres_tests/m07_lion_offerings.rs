@@ -32,7 +32,7 @@ fn m07_lion_flower_west_postgres_bloom_reset_and_repeatable_pickup()->TestResult
 fn m07_lion_flower_east_postgres_bloom_reset_and_repeatable_pickup()->TestResult {
     run("m07/lion-flower-east",Position{x:33157,y:32364,floor:-6})
 }
-fn run(name:&'static str,source:Position)->TestResult {
+pub(super) fn run(name:&'static str,source:Position)->TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none(){return Ok(());}
     let started=std::time::Instant::now();eprintln!("POSTGRES_CASE_STARTED {name}");
     let result=(||->TestResult {
@@ -156,9 +156,30 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
         assert!(map.facts.apply_quest_callback(pagoda,1,restored,&[],&[],false,None));
     }
     pace(owner)?;
+    let tears = callback.key == "oteryn:quest-callback/m07/lion-tears";
+    if tears {
+        owner
+            .states
+            .chat
+            .admit(admitted.game_session_id, "Lion", owner.owner_now());
+    }
     let reply=super::quest_world_callbacks::wire(owner,admitted,3,2,payload(0)?).await?;
     assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,UseDisposition::Committed);
     assert_eq!(carried(harness,&offer.item).await?,0);
+    if tears {
+        // TibiaWiki Lion's Rock Quest/Spoiler, curid 69463, oldid 1041971.
+        let messages = owner.states.chat.drain(admitted.game_session_id);
+        let expected = "You have purified a sacred pedestal with holy water. You have now passed the last test to  enter the inner sanctum!";
+        let matching_messages = messages
+            .iter()
+            .filter(|line| matches!(
+                line,
+                oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == expected
+            ))
+            .count();
+        assert_eq!(matching_messages, 1, "{messages:?}");
+    }
+
     let state=owner.root.read_character_quest_state(owner.character, fence.character_id).await.map_err(debug)?;
     assert_eq!(state.tracks().get(&callback.storage[0].track).copied(),Some(1));
     assert_eq!(state.tracks().get(&callback.state_ops[0].track).copied(),Some(2),"first source offering starts at2");
