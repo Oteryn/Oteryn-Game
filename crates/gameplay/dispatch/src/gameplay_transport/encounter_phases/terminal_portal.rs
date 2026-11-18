@@ -124,7 +124,7 @@ pub(super) fn schedule_cleanup(
             (entry.appearance_id == cleanup.appearance
                 && !entry.pickupable
                 && !map.facts.base_hidden(key))
-            .then_some((key, entry))
+            .then_some((key, revision, entry))
         });
     if let Some((key, revision, entry)) = source {
         map.facts.apply_quest_callback(
