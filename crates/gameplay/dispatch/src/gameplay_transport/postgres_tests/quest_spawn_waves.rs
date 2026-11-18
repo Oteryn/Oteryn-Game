@@ -706,10 +706,11 @@ async fn stations_scenario(
     admitted: &mut AdmittedSession,
     player: ExactActorRef,
 ) -> TestResult {
-    let peer = stage_peer(h, owner, admitted).await?.runtime_actor.ok_or("staged peer")?;
+    let peer = stage_peer(h, owner, admitted).await?;
+    let peer_actor = peer.runtime_actor.ok_or("staged peer")?;
     guarded_wave_step(owner, admitted).await?;
     assert_eq!(position(owner, player).await?, local(TRIGGER));
-    assert_eq!(position(owner, peer).await?, local(PEER_START));
+    assert_eq!(position(owner, peer_actor).await?, local(PEER_START));
     advance(owner, 999).await;
     assert!(creatures(owner).await?.is_empty());
     advance(owner, 1).await;
@@ -717,8 +718,18 @@ async fn stations_scenario(
     advance(owner, 9_000).await;
     assert!(creatures(owner).await?.is_empty());
     assert_eq!(position(owner, player).await?, local(TRIGGER));
-    assert_eq!(position(owner, peer).await?, local(PEER_START));
+    assert_eq!(position(owner, peer_actor).await?, local(PEER_START));
     tokio::time::resume();
+    owner.drain_quest_encounter_deadlines().await;
+    for staged in [admitted.item_fence, peer.item_fence] {
+        let character = staged.ok_or("staging item fence")?.character_id;
+        let state = owner
+            .root
+            .read_character_quest_state(owner.character, character)
+            .await
+            .map_err(debug)?;
+        assert_eq!(state.tracks().get(TRACK).copied().unwrap_or(0), 0);
+    }
     Ok(())
 }
 
