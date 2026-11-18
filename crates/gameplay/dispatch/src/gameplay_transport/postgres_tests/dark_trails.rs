@@ -148,24 +148,34 @@ pub(super) fn scenario(audit: bool) -> TestResult {
             let [jacob, elliott, barazbaz] = install(
                 &owner,
                 &admitted,
-                ["oteryn:npc.jacob", "oteryn:npc.elliott", "oteryn:npc.barazbaz"],
+                [
+                    "oteryn:npc.jacob",
+                    "oteryn:npc.elliott",
+                    "oteryn:npc.barazbaz",
+                ],
             )
             .await?;
-            owner.states.chat.admit(admitted.game_session_id, "Dark Trails", owner.owner_now());
-            owner.states.chat.set_npc_service(admitted.game_session_id);
             let track = |suffix| format!("{}{suffix}", quest::TRACK_PREFIX);
             seed_quest_prerequisites(&h, &owner, &admitted, &[(track("mission05"), 1)], 108)
                 .await?;
+            owner
+                .refresh_quest_session(admitted.game_session_id, false)
+                .await;
             let book = quest::load()?;
+            let mut embedded_matches = Vec::new();
             for (base, npc, reply) in [
                 (3100, jacob, "jacob-investigate"),
                 (3110, elliott, "elliott-investigate"),
             ] {
                 talk(&mut owner, &admitted, npc, base, "hi").await?;
-                let singular = talk(&mut owner, &admitted, npc, base + 1, "abandoned sewer").await?;
-                let embedded = talk(&mut owner, &admitted, npc, base + 2, "the abandoned sewers").await?;
+                let singular =
+                    talk(&mut owner, &admitted, npc, base + 1, "abandoned sewer").await?;
+                let embedded =
+                    talk(&mut owner, &admitted, npc, base + 2, "the abandoned sewers").await?;
                 assert_ne!(singular, book.replies[reply].lines);
-                assert_ne!(embedded, book.replies[reply].lines);
+                if embedded == book.replies[reply].lines {
+                    embedded_matches.push(reply);
+                }
                 assert_eq!(
                     talk(&mut owner, &admitted, npc, base + 3, "abandoned sewers").await?,
                     book.replies[reply].lines
@@ -175,11 +185,38 @@ pub(super) fn scenario(audit: bool) -> TestResult {
             talk(&mut owner, &admitted, elliott, 3120, "hi").await?;
             talk(&mut owner, &admitted, elliott, 3121, "abandoned sewers").await?;
             talk(&mut owner, &admitted, elliott, 3122, "report").await?;
-            assert_eq!(progress(&owner, &admitted, &authority, &track("mission06")).await?, 1);
+            assert_eq!(
+                progress(&owner, &admitted, &authority, &track("mission06")).await?,
+                1
+            );
             talk(&mut owner, &admitted, elliott, 3123, "bye").await?;
             talk(&mut owner, &admitted, barazbaz, 3124, "hi").await?;
             talk(&mut owner, &admitted, barazbaz, 3125, "abandoned sewers").await?;
-            assert_eq!(progress(&owner, &admitted, &authority, &track("mission07")).await?, 1);
+            let archives_requested =
+                progress(&owner, &admitted, &authority, &track("mission07")).await?;
+            assert_eq!(
+                (embedded_matches, archives_requested),
+                (Vec::<&str>::new(), 1),
+                "only the exact sewer keyword opens the report, and Barazbaz accepts it before the vote"
+            );
+            talk(&mut owner, &admitted, barazbaz, 3126, "abandoned sewers").await?;
+            assert!(
+                progress(&owner, &admitted, &authority, &track("mission09")).await? < 1,
+                "Barazbaz still requires the archives vote"
+            );
+            seed_quest_prerequisites(&h, &owner, &admitted, &[(track("mission08"), 1)], 109)
+                .await?;
+            owner
+                .refresh_quest_session(admitted.game_session_id, false)
+                .await;
+            assert_eq!(
+                talk(&mut owner, &admitted, barazbaz, 3127, "abandoned sewers").await?,
+                book.replies["barazbaz-archives"].lines
+            );
+            assert_eq!(
+                progress(&owner, &admitted, &authority, &track("mission09")).await?,
+                1
+            );
             return Ok(());
         }
 

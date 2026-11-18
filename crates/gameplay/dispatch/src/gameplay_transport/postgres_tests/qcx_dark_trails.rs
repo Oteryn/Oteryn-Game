@@ -7,12 +7,13 @@ fn qcx_dark_trails_sewer_dialogue_matches_global() -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("qcx-dark-trails", || {
+    let result = super::kill_reward_e2e::scenario_thread::run("qcx-dark-trails", || {
         super::dark_trails::scenario(true)
-    })?;
+    });
     eprintln!(
-        "POSTGRES_CASE_COMPLETED qcx_dark_trails_sewer_dialogue_matches_global duration={:?}",
-        started.elapsed()
+        "POSTGRES_CASE_COMPLETED qcx_dark_trails_sewer_dialogue_matches_global duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
     );
-    Ok(())
+    result
 }

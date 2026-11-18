@@ -138,15 +138,25 @@ impl Book {
         topic: u16,
         tracks: &BTreeMap<String, i64>,
     ) -> Option<&Rule> {
-        let first_branch = self.branches.get(npc).and_then(|keywords| {
-            keywords
-                .iter()
-                .find(|keyword| message_contains(message, keyword))
-        });
+        let matches_keyword = |keyword: &str| {
+            // TibiaWiki Dark Trails Quest/Spoiler (curid 67963, oldid 1186618)
+            // specifies the exact plural phrase at both Glooth Brothers.
+            if keyword == "abandoned sewers"
+                && matches!(npc, "oteryn:npc.jacob" | "oteryn:npc.elliott")
+            {
+                message.eq_ignore_ascii_case(keyword)
+            } else {
+                message_contains(message, keyword)
+            }
+        };
+        let first_branch = self
+            .branches
+            .get(npc)
+            .and_then(|keywords| keywords.iter().find(|keyword| matches_keyword(keyword)));
         self.rules.iter().find(|rule| {
             rule.npc == npc
                 && first_branch.is_none_or(|keyword| keyword == &rule.keyword)
-                && message_contains(message, &rule.keyword)
+                && matches_keyword(&rule.keyword)
                 && rule.topic.is_none_or(|required| required == topic)
                 && rule.guards.iter().all(|guard| {
                     let initial = self

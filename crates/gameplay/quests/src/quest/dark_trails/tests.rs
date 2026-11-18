@@ -120,9 +120,10 @@ fn read_guards_are_revalidated_by_the_durable_transition_without_rewriting_them(
 -> Result<(), String> {
     let book = load()?;
     let before = state(&[("mission06", 1)]);
+    // TibiaWiki Dark Trails Quest/Spoiler (curid 67963, oldid 1186618).
     let rule = book
-        .select("oteryn:npc.barazbaz", "ritual", 0, &before)
-        .ok_or("ritual")?;
+        .select("oteryn:npc.barazbaz", "abandoned sewers", 0, &before)
+        .ok_or("archive referral")?;
     let catalogue =
         extend(super::super::QuestStateCatalogue::empty("dark-trails-test").ok_or("empty")?)?;
     let transition = catalogue
