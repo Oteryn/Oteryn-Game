@@ -16,6 +16,7 @@ use oteryn_gameplay_world::map::{boot::BundleCollisionIndexExt, view::MapFacts};
 use std::sync::Mutex;
 
 mod duke_krule;
+mod zelos;
 
 const MAX_ENCOUNTERS: usize = 64;
 
@@ -633,6 +634,7 @@ fn tick_phase_kind(
     };
     let mut exits = Vec::new();
     let mut duke_effects = Vec::new();
+    let mut magnor_bursts = Vec::new();
     active.retain(|phase| phase.fight.is_current(runtime));
     active.retain_mut(|phase| {
         let ActivePhase {
@@ -670,6 +672,9 @@ fn tick_phase_kind(
                 return true;
             }
         }
+        if let Fight::Zelos(zelos) = fight {
+            magnor_bursts.extend(zelos.take_magnor_bursts());
+        }
         let osam_push = match fight {
             Fight::EarlOsam(osam) => osam
                 .finish_push(now)
@@ -698,6 +703,9 @@ fn tick_phase_kind(
         for (source, effect) in duke_effects {
             duke_krule::apply(runtime, states, native, source, effect, now);
         }
+    }
+    for burst in magnor_bursts {
+        zelos::apply_magnor_burst(runtime, states, burst, now);
     }
     for (cells, actor, session, before, after) in exits {
         let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =

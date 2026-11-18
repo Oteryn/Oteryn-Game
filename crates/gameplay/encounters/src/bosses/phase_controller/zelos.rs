@@ -68,6 +68,12 @@ const ROLES: [Role; 10] = [
     },
 ];
 
+#[derive(Clone, Copy, Debug)]
+pub struct MagnorBurst {
+    pub shard: ExactActorRef,
+    pub position: MovementLocalPosition,
+}
+
 #[derive(Debug)]
 pub struct ZelosEncounter {
     phase: NativePhaseOwner,
@@ -86,6 +92,7 @@ pub struct ZelosEncounter {
     soldiers: Vec<ExactActorRef>,
     blood: Vec<ExactActorRef>,
     refill_due_us: u64,
+    magnor_bursts: Vec<MagnorBurst>,
 }
 impl ZelosEncounter {
     pub fn bind(
@@ -147,6 +154,7 @@ impl ZelosEncounter {
             soldiers,
             blood: Vec::new(),
             refill_due_us: now.saturating_add(REFILL_US),
+            magnor_bursts: Vec::new(),
             phase,
             start_us: now,
             mass_due_us: None,
@@ -182,19 +190,26 @@ impl ZelosEncounter {
             return Err(CarrierError::PlanConflict);
         }
         if self.phase.actors[FIRST_SHARD..MASS].contains(&Some(actor)) {
-            for shard in self.phase.actors[FIRST_SHARD..MASS]
-                .iter()
-                .copied()
-                .flatten()
-            {
+            if self.phase.progress.dead() & (1 << FIRST_SHARD) != 0 {
+                return Ok(false);
+            }
+            let mut bursts = Vec::with_capacity(MASS - FIRST_SHARD);
+            for role in FIRST_SHARD..MASS {
+                let shard = self.phase.actors[role].ok_or(CarrierError::PlanConflict)?;
+                // The lethal projection may already have detached the live position
+                // for the shard actually struck. All four occupy this encounter room.
+                let position = runtime
+                    .read_actor_position(shard)
+                    .map_or(self.magnor_at, |snapshot| snapshot.position());
+                bursts.push(MagnorBurst { shard, position });
+            }
+            for &MagnorBurst { shard, .. } in &bursts {
                 if shard != actor {
                     project_fixed_one_creature_death(&mut runtime.borrow_combat_death(), shard)?;
                 }
-            }
-            for role in FIRST_SHARD..MASS {
-                let shard = self.phase.actors[role].ok_or(CarrierError::PlanConflict)?;
                 self.phase.projected_death(runtime, shard)?;
             }
+            self.magnor_bursts.extend(bursts);
             return Ok(true);
         }
         self.phase.projected_death(runtime, actor)
@@ -257,6 +272,10 @@ impl ZelosEncounter {
         self.phase.victors(runtime)
     }
 
+    pub fn take_magnor_bursts(&mut self) -> Vec<MagnorBurst> {
+        std::mem::take(&mut self.magnor_bursts)
+    }
+
     pub fn next_due_us(&self) -> u64 {
         let mut due = self
             .start_us
@@ -272,7 +291,7 @@ impl ZelosEncounter {
         {
             due = due.min(fetters);
         }
-        if self.phase.pending().next().is_some() {
+        if !self.magnor_bursts.is_empty() || self.phase.pending().next().is_some() {
             due = due.min(self.start_us);
         }
         if !self.king_gate_released && self.ritual_broken() {
