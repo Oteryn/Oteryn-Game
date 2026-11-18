@@ -63,12 +63,13 @@ fn scenario(admin: String) -> TestResult {
                 y: 32149,
                 floor: 7,
             };
-            let map = super::cake_phases::cake_bundle(
+            let map = super::cake_phases::bundle_with_tops(
                 native,
                 world,
                 channel,
                 start,
                 &[(water, 12721), (fire, 5067)],
+                |key| crate::map::boot::native_item_definition(Some(native), key),
             )?;
             let cells = map
                 .movement_cells(pin.qualified_room().movement_cells())

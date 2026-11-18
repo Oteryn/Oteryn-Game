@@ -98,12 +98,40 @@ fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResul
 }
 /// Test-only open terrain at real donor coordinates. Item identities and compact
 /// references come from the actual active generation; production geometry is untouched.
-pub(super) fn cake_bundle(
+fn cake_bundle(
     native: &crate::content::native_gameplay::NativeGameplayState,
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
     start: crate::foundation::MovementLocalPosition,
     tops: &[(crate::foundation::MovementLocalPosition, u32)],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    let index = native.item_index().ok_or("native Item definition index")?;
+    bundle_with_tops(native, world, channel, start, tops, |key| {
+            Some(crate::map::facts::ItemDefinition {
+                reference: index.definition_ref("Item", key, "definition-r1")?,
+                solid: native
+                    .item_policy(key, "definition-r1")?
+                    .record()
+                    .attributes
+                    .blocks_movement,
+                blocks_projectile: native
+                    .item_policy(key, "definition-r1")?
+                    .record()
+                    .attributes
+                    .blocks_projectile?,
+                pickupable: false,
+                door: false,
+            })
+        })
+}
+
+pub(super) fn bundle_with_tops(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    world: crate::foundation::WorldId,
+    channel: crate::foundation::ChannelId,
+    start: crate::foundation::MovementLocalPosition,
+    tops: &[(crate::foundation::MovementLocalPosition, u32)],
+    item_definition: impl Fn(&str) -> Option<crate::map::facts::ItemDefinition>,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     use oteryn_world_bundle::writer::{
@@ -284,23 +312,7 @@ pub(super) fn cake_bundle(
         },
         world,
         channel,
-        |key| {
-            Some(crate::map::facts::ItemDefinition {
-                reference: index.definition_ref("Item", key, "definition-r1")?,
-                solid: native
-                    .item_policy(key, "definition-r1")?
-                    .record()
-                    .attributes
-                    .blocks_movement,
-                blocks_projectile: native
-                    .item_policy(key, "definition-r1")?
-                    .record()
-                    .attributes
-                    .blocks_projectile?,
-                pickupable: false,
-                door: false,
-            })
-        },
+        item_definition,
     )
     .map_err(debug)
 }
