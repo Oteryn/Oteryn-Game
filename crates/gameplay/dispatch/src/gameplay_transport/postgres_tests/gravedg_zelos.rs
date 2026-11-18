@@ -96,24 +96,35 @@ pub(super) async fn admit_partner(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     leader: &AdmittedSession,
 ) -> TestResult<AdmittedSession> {
+    admit_party_member(h, deps, owner, leader, 1).await
+}
+
+pub(super) async fn admit_party_member(
+    h: &Harness,
+    deps: &Dependencies,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    leader: &AdmittedSession,
+    index: u8,
+) -> TestResult<AdmittedSession> {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&h.pool)
             .await?;
     use crate::world_party_runtime_postgres_cases::{
-        FreshPlayerOwners, committed_fresh_player_owned,
+        FreshPlayerOwners, committed_fresh_player_from_source_owned,
     };
-    let current = committed_fresh_player_owned(
+    let (current, _) = committed_fresh_player_from_source_owned(
         &FreshPlayerOwners {
             root: h.root.clone(),
             node: h.node.clone(),
             recovery: &h.recovery,
         },
         // The first peer opens the independent platform source once per harness.
-        60,
-        62,
-        70,
+        59 + index,
+        61 + index,
+        69 + index,
         now,
+        (index > 1).then_some("platform-test"),
     )
     .await
     .map_err(|error| format!("second player's durable admission: {error}"))?;
@@ -130,7 +141,7 @@ pub(super) async fn admit_partner(
                 actor,
                 MovementLocalPosition {
                     x: 100,
-                    y: 101,
+                    y: 100 + i32::from(index),
                     floor: 7,
                 },
             )

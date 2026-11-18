@@ -79,6 +79,7 @@ fn qmrevfix_cults_second_lever_after_victory_postgres() -> TestResult {
 #[derive(Clone, Copy)]
 pub(super) enum PhaseScenario {
     CountVlarkorth,
+    FivePlayerCredit { azaram: bool },
     Cults { reenter: bool },
     DukeKrule,
     EarlOsam,
@@ -111,6 +112,9 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                 PhaseScenario::EarlOsam => {
                     super::gravedg_lich_knights::configure_osam(&mut callback)?
                 }
+                PhaseScenario::FivePlayerCredit { azaram } => {
+                    super::gravedg_lich_knights::configure_five(&mut callback, azaram)?;
+                }
                 PhaseScenario::LordAzaram => {
                     super::gravedg_lich_knights::configure_azaram(&mut callback)?
                 }
@@ -121,6 +125,9 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                 PhaseScenario::Sirs => {
                     Some(super::gravedg_lich_knights::credit_catalogue(&callback)?)
                 }
+                PhaseScenario::FivePlayerCredit { azaram } => Some(
+                    super::gravedg_lich_knights::five_credit_catalogue(&callback, azaram)?,
+                ),
                 _ => None,
             };
             let trigger = Position {
@@ -330,6 +337,17 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
             } else {
                 None
             };
+            let mut additional = Vec::new();
+            if matches!(scenario, PhaseScenario::FivePlayerCredit { .. }) {
+                for index in 2..=4 {
+                    additional.push(
+                        super::gravedg_zelos::admit_party_member(
+                            &h, &deps, &owner, &admitted, index,
+                        )
+                        .await?,
+                    );
+                }
+            }
             let key =
                 oteryn_world_bundle::bundle::placement_key(-7, 100, 100, 1).ok_or("lever key")?;
             let mut placement = world.base().digest().to_vec();
@@ -382,6 +400,12 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                             .ok_or("second admitted player")?,
                     )
                     .await;
+                }
+                PhaseScenario::FivePlayerCredit { azaram } => {
+                    let mut party = vec![admitted, second.ok_or("second admitted player")?];
+                    party.extend(additional);
+                    return super::gravedg_lich_knights::exercise_five(&h, &owner, &party, azaram)
+                        .await;
                 }
                 PhaseScenario::LordAzaram => {
                     return super::gravedg_lich_knights::exercise_azaram(

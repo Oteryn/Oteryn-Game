@@ -14,6 +14,14 @@ const CREDIT: &str = "oteryn:quest-transition/native-kills/gravedg-source-sirs";
 pub(super) fn credit_catalogue(
     callback: &Callback,
 ) -> TestResult<oteryn_gameplay_quests::quest::QuestStateCatalogue> {
+    encounter_credit_catalogue(callback, BAELOC, CREDIT)
+}
+
+fn encounter_credit_catalogue(
+    callback: &Callback,
+    boss: &str,
+    credit: &str,
+) -> TestResult<oteryn_gameplay_quests::quest::QuestStateCatalogue> {
     use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
     use serde_json::json;
     let phase = "oteryn:quest-progress/gravedg-fixture/sirs-phase";
@@ -31,7 +39,7 @@ pub(super) fn credit_catalogue(
             "stages": [
                 {"key": "entry", "completes": false, "trigger": {"kind": "map_use", "callback": callback}},
                 {"key": "credit", "completes": false, "trigger": {"kind": "kill", "counter": {
-                    "key": CREDIT, "creature": BAELOC, "track": kills,
+                    "key": credit, "creature": boss, "track": kills,
                     "gate": phase, "gate_value": 0, "maximum": 1, "encounter_source": callback.key
                 }}}
             ]
@@ -920,6 +928,97 @@ async fn exercise_condensed_sins(
             .vitals()
             .health;
         assert_eq!(previous - current, expected_reflection);
+    }
+    Ok(())
+}
+
+const FIVE_CREDIT: &str = "oteryn:quest-transition/native-kills/gravedg-five-player";
+
+#[test]
+fn gravedg_azaram_five_player_lever_and_credit_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::engenc2_cults::phase_scenario(super::engenc2_cults::PhaseScenario::FivePlayerCredit {
+        azaram: true,
+    })
+}
+
+#[test]
+fn gravedg_count_five_player_lever_and_credit_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::engenc2_cults::phase_scenario(super::engenc2_cults::PhaseScenario::FivePlayerCredit {
+        azaram: false,
+    })
+}
+
+pub(super) fn configure_five(callback: &mut Callback, azaram: bool) -> TestResult {
+    if azaram {
+        configure_azaram(callback)?;
+    } else {
+        configure_count(callback)?;
+    }
+    let encounter = callback.effects.encounter.as_mut().ok_or("encounter")?;
+    encounter.players = (0..5)
+        .map(
+            |index| oteryn_gameplay_quests::quest::world_callbacks::EncounterPlayer {
+                from: at(100, 100 + index),
+                to: at(116, 117),
+            },
+        )
+        .collect();
+    Ok(())
+}
+
+pub(super) fn five_credit_catalogue(
+    callback: &Callback,
+    azaram: bool,
+) -> TestResult<oteryn_gameplay_quests::quest::QuestStateCatalogue> {
+    encounter_credit_catalogue(callback, if azaram { LORD } else { COUNT }, FIVE_CREDIT)
+}
+
+pub(super) async fn exercise_five(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    party: &[AdmittedSession],
+    azaram: bool,
+) -> TestResult {
+    let key = if azaram { LORD } else { COUNT };
+    let boss = {
+        let runtime = owner.runtime.lock().await;
+        runtime
+            .current_live_creature_census()
+            .map_err(debug)?
+            .into_iter()
+            .find(|&target| runtime.matches_live_creature_identity(target, key.as_bytes()))
+            .ok_or("boss spawned by native lever USE")?
+    };
+    assert_eq!(party.len(), 5);
+    for (index, member) in party.iter().enumerate() {
+        assert_position(owner, member.runtime_actor.ok_or("party actor")?, 116, 117).await?;
+        hit_by_amount(owner, member, boss, key, 100 + u64::try_from(index)?, 1).await?;
+    }
+    super::engenc2_cults::kill(owner, &party[0], boss, key, 110).await?;
+    for member in party {
+        assert_eq!(
+            owner.drain_kill_rewards(member.game_session_id).await,
+            crate::gameplay_transport::kill_reward::DrainOutcome::Drained
+        );
+    }
+    let credited: i64 = sqlx::query_scalar(
+        "SELECT count(DISTINCT character_id) FROM game_character_quest_receipts WHERE transition_key=$1",
+    ).bind(FIVE_CREDIT).fetch_one(&h.pool).await?;
+    assert_eq!(
+        credited, 5,
+        "all five admitted damage contributors earn durable credit"
+    );
+    super::gravedg_zelos::tick_at(owner, owner.owner_now().get() + 60_000_000).await;
+    for member in party {
+        assert_position(owner, member.runtime_actor.ok_or("party actor")?, 103, 100).await?;
     }
     Ok(())
 }
