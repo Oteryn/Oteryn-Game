@@ -104,6 +104,7 @@ pub(super) struct PendingCallbacks {
     personal: personal_encounter::Cohorts,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     habitats: std::sync::Mutex<[Option<zamulosh_terrain::PendingHabitat>; 8]>,
+    habitat_resets: std::sync::Mutex<Vec<zamulosh_terrain::PendingHabitatReset>>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
     carrot_refusal:
         std::sync::Mutex<Option<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>>,

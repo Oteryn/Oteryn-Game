@@ -1252,6 +1252,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         && let QuestCause::Use(command) = cause {
                         self.project_mead_blackout(runtime,states,actor,command,&committed.changes,map);
                     }
+                    if fresh {
+                        self.commit_zamulosh_basin_use(runtime, states, map, callback, committed);
+                    }
                     self.apply_committed_quest_copy(session, fresh, committed);
                     if callback.effects.encounter.is_some()
                         && !self.refresh_grizzly_kill_snapshot_in_turn(runtime, session)
