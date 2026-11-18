@@ -153,7 +153,7 @@ pub(super) async fn exercise(
     Ok(())
 }
 
-async fn step_monster(
+pub(super) async fn step_monster(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
     actor: ExactActorRef,

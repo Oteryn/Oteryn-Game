@@ -9,6 +9,7 @@ use oteryn_protocol_oteryn::world_object::UseDisposition;
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 use serde_json::json;
 
+pub(super) const BOWL: &str = "first-dragon-angry-plant-corpse";
 pub(super) const EARTH: &str = "forgotten-knowledge-thorn-death-phases";
 pub(super) const ENERGY: &str = "forgotten-knowledge-prism-death-relocation";
 pub(super) const ESSENCE: &str = "first-dragon-essence-death-phase";
@@ -23,7 +24,13 @@ const DRAGON_ESSENCE: &str = "oteryn:creature.dragon_essence";
 const DRAGON: &str = "oteryn:creature.the_first_dragon";
 const CHALLENGER: &str = "oteryn:creature.fallen_challenger";
 const SPIRIT: &str = "oteryn:creature.spirit_of_fertility";
+const PLANT: &str = "oteryn:creature.angry_plant";
+const UNBEATABLE: &str = "oteryn:creature.unbeatable_dragon";
+const SOMEWHAT: &str = "oteryn:creature.somewhat_beatable";
 const FLAME: &str = "oteryn:item.tibia.i775";
+const FLOWER_BOWL: &str = "oteryn:item.tibia.i2983";
+const PLANT_TILE: Position = at(33625, 31022);
+const BOWL_APPROACH: Position = at(33625, 31021);
 const FINALE_LEVER: Position = at(33583, 30992);
 const CHALLENGERS: [Position; 2] = [at(33592, 31013), at(33574, 31013)];
 const STAGING: [Position; 2] = [at(33583, 30993), at(33582, 30993)];
@@ -65,6 +72,18 @@ const fn at(x: u16, y: u16) -> Position {
 
 const fn below(x: u16, y: u16) -> Position {
     Position { x, y, floor: -15 }
+}
+
+#[test]
+fn angry_plant_corpse_converts_unbeatable_dragon_and_preserves_encounter_membership() -> TestResult
+{
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(BOWL, || {
+        super::quest_world_callbacks::scenario(BOWL, FINALE_LEVER, false)
+    })
 }
 
 #[test]
@@ -134,6 +153,39 @@ fn dragon_essence_death_retires_the_five_siblings_and_summons_one_first_dragon()
 }
 
 pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
+    if name == BOWL {
+        let data = json!({"schema": 1, "callbacks": [{
+            "key": format!("oteryn:quest-callback/{BOWL}"),
+            "quest": "oteryn:quest.the_first_dragon_quest", "trigger": "use",
+            "selector": {"position": lever, "appearance": 8911},
+            "reversible": false, "passages": [], "storage": [], "offerings": [],
+            "return_on_failure": false,
+            "effects": {"encounter": {
+                "minimum_level": 0,
+                "players": [{"from": STAGING[0], "to": FINALE}],
+                "monsters": [
+                    {"creature": PLANT, "position": PLANT_TILE},
+                    {"creature": UNBEATABLE, "position": at(33622, 31021)}
+                ],
+                "room_min": at(33566, 31006), "room_max": at(33626, 31032),
+                "death_phases": {
+                    "terminal": SOMEWHAT, "replacements": [],
+                    "corpse_monster_step": {
+                        "defeated": PLANT, "item": FLOWER_BOWL,
+                        "creature": UNBEATABLE, "replace_with": SOMEWHAT
+                    }
+                }
+            }},
+            "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/creaturescripts_death_angry_plant.lua:3-7",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_flower_bowl.lua:3-18"
+            ]
+        }]});
+        let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&data.to_string())?
+            .try_into()
+            .map_err(|_| "one Flower Bowl phase callback")?;
+        return Ok(callback);
+    }
     if name == FALLEN {
         let data = json!({"schema": 1, "callbacks": [{
             "key": format!("oteryn:quest-callback/{FALLEN}"),
@@ -300,6 +352,7 @@ pub(super) fn world(
     name: &str,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     let extra = match name {
+        BOWL => vec![BOWL_APPROACH],
         ENERGY => vec![LLOYD_REBIRTH, LLOYD_RETURN],
         ESSENCE => vec![at(33617, 31023)],
         FALLEN => vec![
@@ -329,6 +382,88 @@ async fn live(
         .into_iter()
         .filter(|actor| runtime.matches_live_creature_identity(*actor, creature.as_bytes()))
         .collect())
+}
+
+async fn flower_bowl(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use super::quest_world_callbacks::local;
+    use crate::gameplay_transport::kill_reward::DrainOutcome;
+
+    let [plant] = live(owner, PLANT)
+        .await?
+        .try_into()
+        .map_err(|_| "one Angry Plant")?;
+    let [dragon] = live(owner, UNBEATABLE)
+        .await?
+        .try_into()
+        .map_err(|_| "one Unbeatable Dragon")?;
+    super::engenc2_cults::kill(owner, admitted, plant, PLANT, 101).await?;
+    put_dragon_on_approach(owner, dragon).await?;
+    super::zamulosh_monster_step::step_monster(owner, h, dragon, PLANT_TILE).await?;
+    assert_eq!(live(owner, UNBEATABLE).await?, vec![dragon]);
+    assert_eq!(
+        owner.drain_kill_rewards(admitted.game_session_id).await,
+        DrainOutcome::Drained
+    );
+    put_dragon_on_approach(owner, dragon).await?;
+    super::zamulosh_monster_step::step_monster(owner, h, dragon, PLANT_TILE).await?;
+    assert!(live(owner, UNBEATABLE).await?.is_empty());
+    let [next] = live(owner, SOMEWHAT)
+        .await?
+        .try_into()
+        .map_err(|_| "one Somewhat Beatable")?;
+    let player = admitted.runtime_actor.ok_or("player")?;
+    {
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(
+            runtime.read_actor_position(next).map_err(debug)?.position(),
+            local(PLANT_TILE)
+        );
+        assert!(
+            runtime.bound_corpse(plant.corpse_identity()).is_some(),
+            "the bowl stays on its tile"
+        );
+        let states = owner.states.spell_states.lock().await;
+        assert!(states.encounter_phases.blocks_channel_switch(
+            &runtime,
+            player,
+            admitted.game_session_id,
+            local(FINALE)
+        ));
+    }
+    super::engenc2_cults::kill(owner, admitted, next, SOMEWHAT, 102).await?;
+    let runtime = owner.runtime.lock().await;
+    let states = owner.states.spell_states.lock().await;
+    assert!(
+        !states.encounter_phases.blocks_channel_switch(
+            &runtime,
+            player,
+            admitted.game_session_id,
+            local(FINALE)
+        ),
+        "the replacement's death completes the fixture encounter"
+    );
+    Ok(())
+}
+
+async fn put_dragon_on_approach(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+) -> TestResult {
+    let mut runtime = owner.runtime.lock().await;
+    let before = runtime.read_actor_position(actor).map_err(debug)?;
+    runtime
+        .borrow_movement_position()
+        .commit_creature_relocation(
+            actor,
+            before,
+            super::quest_world_callbacks::local(BOWL_APPROACH),
+        )
+        .map_err(debug)?;
+    Ok(())
 }
 
 async fn fallen_portals(
@@ -454,6 +589,8 @@ pub(super) async fn exercise(
     );
     if let Some(peer) = peer {
         fallen_portals(owner, admitted, peer).await?;
+    } else if name == BOWL {
+        flower_bowl(owner, admitted, h).await?;
     } else if name == EARTH {
         let [mounted] = live(owner, MOUNTED)
             .await?
