@@ -758,6 +758,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/feaster-phase-routes.json"
     ))?);
     callbacks.extend(super::carried_step::callbacks());
+    callbacks.push(super::shadows_folio::callback()?);
     callbacks.extend(super::children_puzzle::callbacks());
     callbacks.extend(super::shared_switches::callbacks());
     callbacks.extend(parse_with_provenance(
@@ -1438,12 +1439,23 @@ fn extend_callbacks(
                 storage.set.max(storage.maximum)
             };
             let mead = callback.native_rule == Some(NativeRule::BarbarianMead);
+            let folio_track = callback.native_rule == Some(NativeRule::ShadowsFolio)
+                && [
+                    super::shadows_folio::STREAK,
+                    super::shadows_folio::HEADACHE,
+                    super::shadows_folio::OUTCOME,
+                ]
+                .contains(&storage.track.as_str());
             if let Some(track) = tracks.iter_mut().find(|track| track.key == storage.track) {
                 counter_initials::check_existing(callback, track)?;
                 // Sven resets only total sips. A fresh streak retains source absence=-1.
                 if mead && track.key == super::barbarian_mead::TRACKS[2] {
                     track.initial = -1;
                     track.min = -1;
+                }
+                if folio_track {
+                    track.min = track.min.min(storage.minimum);
+                    track.max = track.max.max(maximum);
                 }
                 if callback.native_rule.is_none()
                     && !storage.read_only
@@ -1454,6 +1466,7 @@ fn extend_callbacks(
             } else {
                 if callback.native_rule.is_some()
                     && !(mead && storage.track == super::barbarian_mead::DRAW)
+                    && !folio_track
                 {
                     return Err(format!(
                         "native callback {} requires an existing track {}",
@@ -1461,6 +1474,7 @@ fn extend_callbacks(
                     ));
                 }
                 let initial = if (mead && storage.track == super::barbarian_mead::DRAW)
+                    || folio_track
                     || callback.craft_reward_epoch(&storage.track)
                 {
                     0
@@ -1475,7 +1489,11 @@ fn extend_callbacks(
                     key: storage.track.clone(),
                     quest: callback.quest.clone(),
                     initial,
-                    min: initial,
+                    min: if folio_track {
+                        storage.minimum
+                    } else {
+                        initial
+                    },
                     max: if storage.preserve || storage.read_only {
                         storage.maximum
                     } else {

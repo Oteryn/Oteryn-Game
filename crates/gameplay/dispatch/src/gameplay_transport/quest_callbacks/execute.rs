@@ -1,6 +1,7 @@
 //! Durable callback commit followed by its prepared map effects.
 use super::*;
 use crate::durability::character_revision_sequencer::RevisionSlot;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
@@ -936,6 +937,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let durable = callback.requires_durable_commit()
             && !callback.is_read_only()
             && !(close && callback.opening_only);
+        use oteryn_gameplay_quests::quest::{native_rules::NativeRule, shadows_folio as folio};
+        let mut folio_outcome = None;
         let mut fresh_effects = !durable;
         let mut success_message = if !durable {
             callback.success_message.clone()
@@ -1221,6 +1224,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     fresh_effects = fresh;
                     if fresh {
                         success_message = callback.committed_message(&committed.changes).map(str::to_owned);
+                        if callback.native_rule == Some(NativeRule::ShadowsFolio) {
+                            folio_outcome = folio::Outcome::committed(&committed.changes);
+                        }
                         // Crystal action_mead.lua:8-11 says both lines on the winning sip.
                         if callback.native_rule == Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::BarbarianMead)
                             && committed.changes.iter().any(|change|
@@ -1563,10 +1569,58 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 states.owner_wake.notify_one();
             }
         }
+        if let Some(outcome) = folio_outcome {
+            if let Some(position) = native(expected.position()) {
+                match outcome {
+                    folio::Outcome::Relocation => {}
+                    folio::Outcome::Success => {
+                        map.facts.emit_movement_effect(position, 30);
+                    }
+                    _ => {
+                        map.facts.emit_movement_effect(position, 32);
+                    }
+                }
+            }
+            if let Some(creature) = outcome.creature()
+                && let Some(native_content) =
+                    self.active_generation.and_then(|g| g.native_gameplay())
+                && native_content.install_companion_policies(runtime).is_ok()
+                && let Ok(policy) = runtime.companion_policy(creature)
+            {
+                // Crystal forces the spawned hostile onto the reader's tile.
+                let _ = runtime.commit_quest_creature_spawn(&[(
+                    creature,
+                    policy.maximum_health,
+                    expected.position(),
+                )]);
+            }
+        }
+        let folio_relocation = folio_outcome == Some(folio::Outcome::Relocation);
+        let teleport = teleport.or_else(|| {
+            if !folio_relocation {
+                return None;
+            }
+            crate::map::floor::prepare_scripted_quest_teleport_facing(
+                runtime,
+                self.movement_cells(),
+                actor,
+                session,
+                expected,
+                local(folio::RELOCATION),
+                blocked,
+                &closed,
+                None,
+                true,
+            )
+            .ok()
+        });
         if let Some(proof) = teleport {
             let Ok(snapshot) = runtime.commit_source_step(proof) else {
                 return UseDisposition::Rejected;
             };
+            if folio_relocation {
+                map.facts.emit_movement_effect(tile(folio::RELOCATION), 11);
+            }
             // Crystal 201189f data-global/scripts/actions/other/dryad_garden.lua:18-19:
             // publish at the committed destination, never at the source or on refusal.
             if matches!(

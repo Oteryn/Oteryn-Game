@@ -18,6 +18,7 @@ pub enum NativeRule {
     LionTrial { trial: u8 },
     UnnaturalDance { tile: u8 },
     IceSealPaint { seal: u16 },
+    ShadowsFolio,
     SoulWarRemorse,
     SoulWarEnergy,
 }
@@ -30,6 +31,7 @@ impl NativeRule {
             Self::CultsSymbol { .. } => cults_of_tibia::QUEST,
             Self::UnnaturalDance { .. } => unnatural_selection::QUEST,
             Self::IceSealPaint { .. } => ice_islands_seals::QUEST,
+            Self::ShadowsFolio => super::shadows_folio::QUEST,
             Self::SoulWarRemorse | Self::SoulWarEnergy => super::soul_war::source_items::QUEST,
         }
     }
@@ -46,6 +48,7 @@ impl NativeRule {
                 cults_of_tibia::OBJECTS,
             ],
             Self::UnnaturalDance { .. } => unnatural_selection::TRACKS.to_vec(),
+            Self::ShadowsFolio => super::shadows_folio::TRACKS.to_vec(),
             Self::SoulWarRemorse => vec![super::soul_war::source_items::REMORSE],
             Self::SoulWarEnergy => super::soul_war::source_items::ENERGY_TRACKS.to_vec(),
             Self::IceSealPaint { .. } => ice_islands_seals::TRACKS.to_vec(),
@@ -63,6 +66,7 @@ impl NativeRule {
                 out.push(5);
                 out.extend_from_slice(&seal.to_be_bytes());
             }
+            Self::ShadowsFolio => out.push(7),
             Self::SoulWarRemorse => out.push(6),
             Self::SoulWarEnergy => out.push(4),
         }
@@ -75,6 +79,7 @@ impl NativeRule {
             Self::CultsSymbol { symbol } => symbol < cults_of_tibia::SYMBOL_COUNT,
             Self::UnnaturalDance { tile } => tile >= 1 && tile <= 9,
             Self::IceSealPaint { seal } => seal < ice_islands_seals::targets::TARGET_COUNT,
+            Self::ShadowsFolio => true,
             Self::SoulWarRemorse | Self::SoulWarEnergy => true,
         }
     }
@@ -110,6 +115,15 @@ impl NativeRule {
         values: &BTreeMap<String, i64>,
         roll: Option<u8>,
     ) -> Result<BTreeMap<String, i64>, QuestRefusal> {
+        self.evaluate_at(values, 0, roll)
+    }
+
+    pub(super) fn evaluate_at(
+        self,
+        values: &BTreeMap<String, i64>,
+        now: i64,
+        roll: Option<u8>,
+    ) -> Result<BTreeMap<String, i64>, QuestRefusal> {
         let tracks = self.tracks();
         if !self.valid_id() || values.len() != tracks.len() {
             return Err(QuestRefusal::NotSupported);
@@ -136,6 +150,14 @@ impl NativeRule {
                 after.push(if random { i64::from(roll) } else { 0 });
                 after
             }
+            Self::ShadowsFolio => super::shadows_folio::apply(
+                read(tracks[0])?,
+                read(tracks[1])?,
+                read(tracks[2])?,
+                now,
+                roll,
+            )?
+            .to_vec(),
             Self::CultsSymbol { symbol } => {
                 let snapshot = cults_of_tibia::apply_symbol(
                     symbol,

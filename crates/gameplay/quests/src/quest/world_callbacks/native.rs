@@ -1,6 +1,8 @@
 //! Closed source bindings and committed feedback for native world rules.
 use super::{Callback, NativeRule, Position, Trigger};
-use crate::quest::{QuestTrackChange, cults_of_tibia as cults, unnatural_selection as dance};
+use crate::quest::{
+    QuestTrackChange, cults_of_tibia as cults, shadows_folio, unnatural_selection as dance,
+};
 
 pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bool {
     if let NativeRule::LionTrial { trial } = rule {
@@ -8,13 +10,20 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
     }
     let (trigger, position, action, ranges, source): (_, _, _, &[(i64, i64)], _) = match rule {
         NativeRule::SoulWarRemorse | NativeRule::SoulWarEnergy => return false,
+        NativeRule::ShadowsFolio => (
+            Trigger::Use,
+            None,
+            Some(shadows_folio::ACTION),
+            &shadows_folio::RANGES,
+            shadows_folio::SOURCE,
+        ),
         NativeRule::IceSealPaint { seal } => {
             return crate::quest::ice_islands_seals::callbacks::admitted(callback, seal);
         }
         NativeRule::LionTrial { .. } => return false,
         NativeRule::BarbarianMead => (
             Trigger::Use,
-            (32201, 31154, -7),
+            Some((32201, 31154, -7)),
             None,
             &crate::quest::barbarian_mead::RANGES,
             crate::quest::barbarian_mead::SOURCE,
@@ -25,7 +34,7 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
             };
             (
                 Trigger::Use,
-                position,
+                Some(position),
                 Some(5535),
                 &[(0, 7), (0, i64::from(i32::MAX)), (0, i64::from(i32::MAX))],
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:",
@@ -43,7 +52,7 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
             // entry into the tile; it never guesses an absent UID or modifies map data.
             (
                 Trigger::StepIn,
-                position,
+                Some(position),
                 None,
                 &[(1, 16), (-1, 3), (-1, 15)],
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:",
@@ -57,12 +66,7 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
                 _ => None,
             }
         && callback.trigger == trigger
-        && callback.selector.position
-            == Some(Position {
-                x: position.0,
-                y: position.1,
-                floor: position.2,
-            })
+        && callback.selector.position == position.map(|(x, y, floor)| Position { x, y, floor })
         && callback.selector.position_aliases.is_empty()
         && callback.selector.action == action
         && callback.selector.ordinal.is_none()
@@ -157,6 +161,7 @@ impl Callback {
                 }
             }
             Some(NativeRule::IceSealPaint { .. }) => None,
+            Some(NativeRule::ShadowsFolio) => shadows_folio::Outcome::committed(changes)?.message(),
             Some(NativeRule::SoulWarRemorse | NativeRule::SoulWarEnergy) => None,
             Some(NativeRule::LionTrial { .. }) | None => self.success_message.as_deref(),
         }

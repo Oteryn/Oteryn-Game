@@ -1801,6 +1801,19 @@ impl DurabilityRoot {
                             .fetch_one(&mut *tx).await?;
                         Some(u8::try_from(draw).map_err(|_| DurabilityError::InvalidStoredState)?)
                     } else { None };
+                    use oteryn_gameplay_quests::quest::shadows_folio as folio;
+                    let folio_value = |key: &str| stored.get(key).copied()
+                        .or_else(|| catalogue.track(key).map(|track| track.initial)).unwrap_or(0);
+                    let roll = if refusal.is_none() && transition.effects.iter().any(|effect| matches!(effect.effect,
+                        oteryn_gameplay_quests::quest::QuestEffectKind::Native(
+                            oteryn_gameplay_quests::quest::native_rules::NativeRule::ShadowsFolio)
+                    )) && folio::eligible(
+                        folio_value(folio::MISSION), folio_value(folio::STREAK), folio_value(folio::HEADACHE), now,
+                    ) {
+                        let draw: i16 = sqlx::query_scalar("SELECT random(0, 9999)::smallint")
+                            .fetch_one(&mut *tx).await?;
+                        Some(folio::Outcome::from_dice(draw / 100 + 1, draw % 100 + 1) as u8)
+                    } else { roll };
                     let mut changes = match refusal
                         .map_or_else(|| grizzly_plan.as_ref().map_or_else(
                             || counter_reset_plan.as_ref().map_or_else(

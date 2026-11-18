@@ -79,6 +79,7 @@ mod quests_2_focus;
 pub mod reward_callbacks;
 pub mod rotten_blood;
 pub mod schrodinger_island;
+pub mod shadows_folio;
 pub mod shared_switches;
 pub mod shared_world_progress;
 pub mod soul_war;
@@ -794,7 +795,7 @@ impl QuestStateCatalogue {
                 .iter()
                 .map(|(track, value)| (track.key.clone(), *value))
                 .collect();
-            Some(rule.evaluate_with_roll(&snapshot, roll)?)
+            Some(rule.evaluate_at(&snapshot, now, roll)?)
         } else {
             None
         };
