@@ -109,6 +109,15 @@ pub fn claim_key(rank: u8, category: u8) -> String {
     format!("oteryn:reward.svargrond-arena.{rank}.{category}")
 }
 
+/// Crystal 201189f8 data-global/lib/quests/svargrond_arena.lua:175-190.
+pub fn trophy_inscription(rank: u8, recipient: &str) -> Option<String> {
+    let tier = ["greenhorn", "scrapper", "warlord"].get(usize::from(rank.checked_sub(1)?))?;
+    let period = if rank == 1 { "" } else { "." };
+    Some(format!(
+        "It is given to the courageous victor of the barbarian arena in {tier} difficulty. Awarded to {recipient}{period}"
+    ))
+}
+
 /// Crystal 201189f8 startup/tables/chest.lua:2307-2419 groups the
 /// three weapon placements of each rank under one storage entitlement.
 pub const CHEST_CLAIM_PREFIX: &str = "oteryn:reward-claim.quest.u8_0.barbarian_arena.";

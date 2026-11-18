@@ -457,6 +457,35 @@ async fn observe_look_item(
         ItemLookOutcome::Text(text) => ItemLookResult::Text(text),
         ItemLookOutcome::Unavailable => return Err(unavailable),
     };
+    if matches!(
+        definition.production_key.as_str(),
+        "oteryn:item.tibia.i5805" | "oteryn:item.tibia.i5806" | "oteryn:item.tibia.i5807"
+    ) && let ItemKey::Instance(instance) = key
+    {
+        drop(runtime);
+        let description = admission
+            .root
+            .read_arena_trophy_inscription(
+                admission.character,
+                *admission.world_id.as_bytes(),
+                instance,
+            )
+            .await
+            .map_err(|_| unavailable)?;
+        if let Some(description) = description {
+            let (current, _, _) =
+                observe_item(admission, actor, session, fence, views, target).await?;
+            if current != definition {
+                return Err(unavailable);
+            }
+            if let ItemLookResult::Text(text) = ordinary {
+                return Ok(ItemLookResult::Text(bounded_text(format!(
+                    "{text}\n{description}"
+                ))));
+            }
+        }
+        return Ok(ordinary);
+    }
     if definition.production_key == "oteryn:item.tibia.i9585"
         && distance <= 4
         && let ItemKey::Instance(instance) = key

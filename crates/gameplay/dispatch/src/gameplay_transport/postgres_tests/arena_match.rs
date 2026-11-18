@@ -131,6 +131,7 @@ enum NativeScenario {
     Timeout,
     ResetMonsters,
     SharedRewards,
+    TrophyInscription,
 }
 
 #[test]
@@ -184,6 +185,10 @@ pub(super) fn chest_and_wire_share_rewards() -> TestResult {
 
 pub(super) fn south_portal_concession() -> TestResult {
     scenario_route(true, Some(NativeScenario::Concession))
+}
+
+pub(super) fn trophy_look() -> TestResult {
+    scenario_route(true, Some(NativeScenario::TrophyInscription))
 }
 
 pub(super) fn halvar_paid_entrance() -> TestResult {
@@ -818,6 +823,9 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         }
         if shared_rewards {
             return super::qcx61_shared_rewards::after_first_rank(&mut owner, &mut admitted, &harness, deps.actor).await;
+        }
+        if matches!(route, Some(NativeScenario::TrophyInscription)) {
+            return super::qcx61_trophy_inscription::after_first_rank(&owner, &mut admitted, &harness, deps.actor).await;
         }
         }
         let victories: i64 = sqlx::query_scalar("SELECT count(*) FROM game_arena_victories")
