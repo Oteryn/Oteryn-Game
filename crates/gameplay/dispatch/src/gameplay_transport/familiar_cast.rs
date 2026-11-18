@@ -478,39 +478,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let parameters = &profile.spell()["execution"]["native_behavior"]["parameters"];
         let minimum_level = parameters["login"]["minimum_level"].as_u64().ok_or(())?;
-        if u64::from(owned.level()) < minimum_level {
-            let projection = self
+        // Below the login level gate, a Character with no persisted familiar projection
+        // has nothing to restore. This includes a newly bootstrapped Character whose
+        // policy-bound progression and Premium access are still unavailable.
+        let nothing_to_restore = u64::from(owned.level()) < minimum_level
+            && self
                 .root
                 .read_character_familiar_state(self.character, fence.character_id)
                 .await
-                .map_err(|_| ())?;
-            let state = projection.state();
-            let session_id = crate::gameplay_transport::canonical_uuid(session.as_bytes());
-            let has_lifecycle_to_reconcile =
-                state
-                    .lifecycle
-                    .as_ref()
-                    .map_or(state.saved_expiry_unix != 0, |lifecycle| {
-                        lifecycle.open
-                            || lifecycle.familiar_remaining_ms != 0
-                            || lifecycle.clean_end_game_session_id.as_ref() == Some(&session_id)
-                    });
-            // Below the login level gate, an empty projection has no familiar, cooldown or
-            // vocation look to reconcile. A newly created Character can reach this point before
-            // progression is initialized or Premium has been observed.
-            if !has_lifecycle_to_reconcile
-                && state.cooldowns.is_empty()
-                && state.granted_looks.is_empty()
-            {
-                return Ok(None);
-            }
-        }
+                .map_err(|_| ())?
+                .committed_character_revision()
+                .is_none();
         let group = {
             let runtime = self.runtime.lock().await;
             if !current_owner(&runtime, &fence, actor, session)
                 || runtime.content_pin().server_artifact_digest() != content.source_digest()
             {
                 return Err(());
+            }
+            if nothing_to_restore {
+                return Ok(None);
             }
             self.root
                 .initialize_familiar_group(self.character, self.holder, fence)
