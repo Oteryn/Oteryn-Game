@@ -89,7 +89,7 @@ pub fn think(
             let _ =
                 runtime.commit_quest_creature_spawn(&[(creature_key, policy.maximum_health, at)]);
         }
-        Ok(Some(text))
+        Ok(Some(*text))
     })
 }
 
