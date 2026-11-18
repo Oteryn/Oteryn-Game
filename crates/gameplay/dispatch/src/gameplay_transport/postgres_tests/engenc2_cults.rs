@@ -68,15 +68,15 @@ fn callback() -> TestResult<Callback> {
 
 #[test]
 fn engenc2_cults_callback_native_phases_and_settlement_postgres() -> TestResult {
-    cults_scenario(false)
+    encounter_scenario(false, None)
 }
 
 #[test]
 fn qmrevfix_cults_second_lever_after_victory_postgres() -> TestResult {
-    cults_scenario(true)
+    encounter_scenario(true, None)
 }
 
-fn cults_scenario(reenter: bool) -> TestResult {
+pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -84,16 +84,31 @@ fn cults_scenario(reenter: bool) -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("engenc2-cults", move || {
         run(async |admin| {
             reset();
-            let h =
-                Harness::create_with_admission_seed(admin, "engenc2_cults", true, false).await?;
+            let tag = match drume {
+                Some(true) => "drume_usurpers",
+                Some(false) => "drume_lions",
+                None => "engenc2_cults",
+            };
+            let h = Harness::create_with_admission_seed(admin, tag, true, false).await?;
             prepare_current_session(&h).await?;
-            let callback = callback()?;
+            let mut callback = callback()?;
+            if drume.is_some() {
+                super::drume_battlefield::bind(&mut callback)?;
+            }
             let trigger = Position {
                 x: 100,
                 y: 100,
                 floor: -7,
             };
-            let world = super::quest_world_callbacks::world(&callback, trigger)?;
+            let world = if let Some(battlefield) = callback.effects.battlefield {
+                super::quest_world_callbacks::world_with_cells(
+                    &callback,
+                    trigger,
+                    &[battlefield.exit, battlefield.captain, battlefield.boss],
+                )?
+            } else {
+                super::quest_world_callbacks::world(&callback, trigger)?
+            };
             let mut deps = Dependencies::new()?;
             let (controller, activated) =
                 super::death_ml_loss_composed::production_generation_with_pin(
@@ -243,6 +258,20 @@ fn cults_scenario(reenter: bool) -> TestResult {
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             owner.admit_quest_session(&admitted).await;
+            let second = if drume.is_some() {
+                let (actor, session) =
+                    super::drume_battlefield::admit_second(&owner, &h, &admitted).await?;
+                deps.initialize_player(&owner, actor, session).await;
+                let mut member = admitted;
+                member.runtime_actor = Some(actor);
+                member.game_session_id = session;
+                member.item_fence = None;
+                owner.admit_quest_session(&member).await;
+                assert!(owner.refresh_source_party_presence(actor, session).await);
+                Some(actor)
+            } else {
+                None
+            };
             assert!(
                 owner
                     .refresh_source_party_presence(deps.actor, admitted.game_session_id)
@@ -320,6 +349,19 @@ fn cults_scenario(reenter: bool) -> TestResult {
                     .len(),
                 1
             );
+            if let Some(spawn_boss) = drume {
+                super::drume_battlefield::exercise(
+                    &owner,
+                    &admitted,
+                    second.ok_or("second player")?,
+                    spawn_boss,
+                )
+                .await?;
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
             {
                 use crate::gameplay_transport::capabilities::{
                     BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
@@ -543,7 +585,7 @@ async fn value(h: &Harness) -> TestResult<i64> {
     .await?)
 }
 
-async fn kill(
+pub(super) async fn kill(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &crate::gameplay_transport::connection::AdmittedSession,
     target: ExactActorRef,
