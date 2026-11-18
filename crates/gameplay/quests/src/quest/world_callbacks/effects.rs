@@ -513,6 +513,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     && input.ingredients.is_empty()
             })
             && callback.offerings.is_empty()
+            && callback.passages.is_empty()
             && effects.carried_inputs.is_empty()
             && callback.item_reward().is_none())
     {

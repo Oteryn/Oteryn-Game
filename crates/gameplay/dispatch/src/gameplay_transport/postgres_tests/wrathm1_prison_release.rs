@@ -7,7 +7,7 @@ use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
     authored_bindings::{Bindings, BoundQuest, Stage, Track, Trigger as BindingTrigger},
     reward_callbacks::ItemReward,
-    world_callbacks::{NativeSelector, Position, Selector, Storage, Trigger},
+    world_callbacks::{ItemOnTarget, NativeSelector, Position, Selector, Storage, Trigger},
 };
 use oteryn_protocol_oteryn::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
@@ -30,6 +30,21 @@ const OUTSIDE: Position = Position {
     y: 31183,
     floor: -8,
 };
+const DETECTION: Position = Position {
+    x: 33382,
+    y: 31110,
+    floor: -8,
+};
+const APPROACH: Position = Position {
+    x: DETECTION.x + 1,
+    ..DETECTION
+};
+const PRISON: Position = Position {
+    x: 33361,
+    y: 31206,
+    floor: -8,
+};
+const CATCH_SCRIPT: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/movements_crate.lua:219-225,264-267";
 const QUEST: &str = "oteryn:quest.wrath_of_the_emperor_quest";
 const RELEASE: &str = "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/prison_release_status";
 const CAUGHT: &str = "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/guardcaught_you";
@@ -54,6 +69,14 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
         &[
             (33362, 31202, 33362, 31203, -8),
             (33359, 31183, 33359, 31183, -8),
+            (
+                DETECTION.x,
+                DETECTION.y,
+                APPROACH.x,
+                APPROACH.y,
+                DETECTION.floor,
+            ),
+            (PRISON.x, PRISON.y, PRISON.x, PRISON.y, PRISON.floor),
         ],
         &[],
         TilePos {
@@ -131,6 +154,32 @@ fn catalogue(revision: &str) -> TestResult<QuestStateCatalogue> {
     arm.storage[0].set = 1;
     arm.storage[1].set = 1;
     arm.storage.truncate(2);
+    let mut catch = callback.clone();
+    catch.key = "oteryn:quest-callback/test/wrathm1-guard-catch".into();
+    catch.sources = vec![CATCH_SCRIPT.into()];
+    catch.selector.native = Some(NativeSelector {
+        position: DETECTION,
+        ordinal: 0,
+        appearance: 351,
+    });
+    catch.teleport = Some(PRISON);
+    catch.storage = vec![callback.storage[1].clone()];
+    catch.storage[0].set = 1;
+    catch.effects = Default::default();
+    catch.effects.restore_disguise = true;
+    catch.effects.optional_step_input = true;
+    catch.item_on_target = Some(ItemOnTarget {
+        item: CRATE.into(),
+        alternatives: Vec::new(),
+        count: 1,
+        replacement: None,
+        target_replacement: None,
+        target_remove: false,
+        reusable: false,
+        on_step: true,
+        selected_instance: false,
+        ingredients: Vec::new(),
+    });
     let bindings = Bindings {
         schema: 1,
         quests: vec![BoundQuest {
@@ -161,6 +210,13 @@ fn catalogue(revision: &str) -> TestResult<QuestStateCatalogue> {
                     },
                 },
                 Stage {
+                    key: "guard-catch".into(),
+                    completes: false,
+                    trigger: BindingTrigger::StepIn {
+                        callback: Box::new(catch),
+                    },
+                },
+                Stage {
                     key: "prison-exit".into(),
                     completes: false,
                     trigger: BindingTrigger::StepIn {
@@ -168,7 +224,7 @@ fn catalogue(revision: &str) -> TestResult<QuestStateCatalogue> {
                     },
                 },
             ],
-            sources: vec![SCRIPT.into()],
+            sources: vec![SCRIPT.into(), CATCH_SCRIPT.into()],
         }],
     };
     let base = QuestStateCatalogue::empty(revision).ok_or("quest catalogue")?;
@@ -227,6 +283,36 @@ pub(super) async fn exercise(
                 .await?;
             assert_eq!(values, [-1, 0]);
         }
+    }
+    for expected in [1, 0, 0] {
+        super::questpc8_mystery_geometry::arrive(
+            owner,
+            admitted,
+            TilePos {
+                x: APPROACH.x,
+                y: APPROACH.y,
+                floor: APPROACH.floor,
+            },
+        )
+        .await?;
+        step(owner, admitted, StepDirection::West).await?;
+        let current = owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?;
+        assert_eq!(
+            current.position(),
+            super::quest_world_callbacks::local(PRISON)
+        );
+        assert_eq!(quantity().await?, expected);
+        let caught: i64 =
+            sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+                .bind(CAUGHT)
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(caught, 1);
     }
     Ok(())
 }
