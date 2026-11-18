@@ -277,13 +277,14 @@ fn exercise_use(
             };
             let storage = callback.storage.first().ok_or("guard storage")?;
             let seed = "oteryn:quest-transition/fixture/stag-stage";
+            let initial = if selected.is_some() { stage } else { -1 };
             let catalogue = std::sync::Arc::new(
                 QuestStateCatalogue::new(
                     "content-1",
                     vec![QuestTrack {
                         key: storage.track.clone(),
                         quest: callback.quest.clone(),
-                        initial: -1,
+                        initial,
                         min: -1,
                         max: 13,
                     }],
@@ -320,7 +321,7 @@ fn exercise_use(
                             admission: None,
                             tracks: vec![Track {
                                 key: storage.track.clone(),
-                                initial: -1,
+                                initial,
                                 minimum: -1,
                                 maximum: 13,
                             }],
@@ -339,31 +340,33 @@ fn exercise_use(
             } else {
                 catalogue
             };
-            let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-            let seeded = slot
-                .commit_quest_transition(
-                    owner.root,
-                    owner.character,
-                    owner.holder,
-                    fence,
-                    crate::durability::quest_state::QuestTransitionRequest {
-                        transition_key: seed.into(),
-                        cause: crate::durability::quest_state::QuestCause::Command(
-                            crate::foundation::CommandRef::new(
-                                admitted.game_session_id,
-                                crate::foundation::CommandId::new(900).map_err(debug)?,
+            if selected.is_none() {
+                let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+                let seeded = slot
+                    .commit_quest_transition(
+                        owner.root,
+                        owner.character,
+                        owner.holder,
+                        fence,
+                        crate::durability::quest_state::QuestTransitionRequest {
+                            transition_key: seed.into(),
+                            cause: crate::durability::quest_state::QuestCause::Command(
+                                crate::foundation::CommandRef::new(
+                                    admitted.game_session_id,
+                                    crate::foundation::CommandId::new(900).map_err(debug)?,
+                                ),
                             ),
-                        ),
-                    },
-                    catalogue.clone(),
-                )
-                .await
-                .map_err(debug)?;
-            assert!(matches!(
-                seeded,
-                crate::durability::quest_state::QuestTransitionOutcome::Committed(_)
-            ));
-            drop(slot);
+                        },
+                        catalogue.clone(),
+                    )
+                    .await
+                    .map_err(debug)?;
+                assert!(matches!(
+                    seeded,
+                    crate::durability::quest_state::QuestTransitionOutcome::Committed(_)
+                ));
+                drop(slot);
+            }
             owner.quest_catalogue = Some(catalogue);
         }
         let key = oteryn_world_bundle::bundle::placement_key(
@@ -492,11 +495,18 @@ fn exercise_use(
             .await
             .map_err(debug)?;
         if selected.is_some() {
+            let permission = &callback.storage.first().ok_or("permission track")?.track;
+            let initial = stage.ok_or("permission stage")?;
             assert_eq!(
-                before.tracks(),
-                after.tracks(),
+                before.tracks().get(permission).copied().unwrap_or(initial),
+                initial
+            );
+            assert_eq!(
+                after.tracks().get(permission).copied().unwrap_or(initial),
+                initial,
                 "entry must preserve permission"
             );
+
             let reads: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_world_tool_reads")
                 .fetch_one(&h.pool)
                 .await?;
