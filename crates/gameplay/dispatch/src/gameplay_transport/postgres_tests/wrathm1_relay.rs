@@ -1,4 +1,4 @@
-//! The retained first Wrath relay switch through ordinary map USE and Channel expiry.
+//! The retained Wrath light and wall switches through ordinary map USE and Channel expiry.
 use super::fixture::debug;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::content::native_gameplay::NativeGameplayState;
@@ -20,6 +20,14 @@ pub(super) const SOURCE: Position = Position {
 const LAMP_X: [u16; 3] = [33369, 33372, 33375];
 const LAMP_Y: u16 = 31075;
 const LAMP_FLOOR: i8 = -8;
+const WALL_SWITCH: Position = Position {
+    x: 33349,
+    y: 31075,
+    floor: -8,
+};
+const WALL_X: u16 = 33355;
+const WALL_Y: u16 = 31068;
+const WALL_ITEMS: [u16; 4] = [8348, 8291, 8293, 8348];
 
 #[test]
 fn wrathm1_relay_switch_reverses_without_extending_shared_light_timer() -> TestResult {
@@ -38,6 +46,14 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
         &[
             (SOURCE.x - 1, SOURCE.y, SOURCE.x, SOURCE.y, SOURCE.floor),
             (LAMP_X[0], LAMP_Y, LAMP_X[2], LAMP_Y, LAMP_FLOOR),
+            (
+                WALL_SWITCH.x,
+                WALL_SWITCH.y,
+                WALL_SWITCH.x,
+                WALL_SWITCH.y,
+                WALL_SWITCH.floor,
+            ),
+            (WALL_X, WALL_Y, WALL_X, WALL_Y + 3, SOURCE.floor),
         ],
         &[9126, 10479],
         tile(SOURCE),
@@ -95,17 +111,53 @@ pub(super) async fn exercise(
             require_state: false,
         })
         .collect();
+    let mut wall = callback.clone();
+    wall.key = "oteryn:quest-callback/test/wrathm1-relay-wall".into();
+    wall.sources = vec!["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/actions_mission01_lights.lua:45-73".into()];
+    wall.selector.native = Some(NativeSelector {
+        position: WALL_SWITCH,
+        ordinal: 1,
+        appearance: 9125,
+    });
+    let walls = [0, 1, 2, 3].map(|offset| Position {
+        x: WALL_X,
+        y: WALL_Y + offset,
+        floor: SOURCE.floor,
+    });
+    wall.passages = walls
+        .into_iter()
+        .zip(WALL_ITEMS)
+        .map(|(position, appearance)| Passage {
+            position,
+            appearance,
+            if_present: true,
+            replacement: Some(8290),
+            replacement_passable: Some(true),
+            create_on_close: None,
+            require_state: false,
+        })
+        .collect();
     owner
         .states
         .quest_callbacks
         .fixture
-        .set(vec![callback])
+        .set(vec![callback, wall])
         .map_err(|_| "relay callback fixture already set")?;
     super::questpc8_mystery_geometry::arrive(owner, admitted, tile(SOURCE)).await?;
     let map = owner.bundle_map().ok_or("relay map")?;
     let source = placement_key(tile(SOURCE), 2).ok_or("lever key")?;
-    let mut placement = map.overlay.base().digest().to_vec();
-    placement.extend_from_slice(&source.to_be_bytes());
+    let target = |key: u64| {
+        let mut placement = map.overlay.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        placement
+    };
+    let placement = target(source);
+    let wall_source = placement_key(tile(WALL_SWITCH), 1).ok_or("wall switch key")?;
+    let wall_placement = target(wall_source);
+    let wall_keys = walls
+        .into_iter()
+        .map(|wall| placement_key(tile(wall), 1).ok_or("wall key"))
+        .collect::<Result<Vec<_>, _>>()?;
     let lamp_keys = lamps
         .into_iter()
         .map(|lamp| placement_key(tile(lamp), 1).ok_or("lamp key"))
@@ -127,6 +179,9 @@ pub(super) async fn exercise(
     };
 
     use_switch(owner, admitted, &placement, 1).await?;
+    super::questpc8_mystery_geometry::arrive(owner, admitted, tile(WALL_SWITCH)).await?;
+    use_switch(owner, admitted, &wall_placement, 0).await?;
+
     let map = owner.bundle_map().ok_or("relay map")?;
     assert_eq!(map.facts.object_revision(source), 2);
     assert_eq!(map.facts.next_movement_decay_time(), Some(due));
@@ -139,6 +194,20 @@ pub(super) async fn exercise(
         assert_eq!(map.facts.object_revision(key), 2);
     }
     assert_eq!(map.facts.object_revision(source), 2);
+    let wall_due = map
+        .facts
+        .next_movement_decay_time()
+        .ok_or("shared wall deadline")?;
+    assert!(wall_due > due);
+    for &key in &wall_keys {
+        assert_eq!(map.facts.object_revision(key), 1);
+    }
+    assert_eq!(map.facts.expire_movement_items(wall_due - 1), 0);
+    assert_eq!(map.facts.expire_movement_items(wall_due), 4);
+    for key in wall_keys {
+        assert_eq!(map.facts.object_revision(key), 2);
+    }
+    assert_eq!(map.facts.object_revision(wall_source), 1);
     Ok(())
 }
 
