@@ -10,10 +10,11 @@ use oteryn_gameplay_quests::quest::{
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use serde_json::json;
 use sha2::{Digest, Sha256};
-use std::sync::Arc;
+use std::sync::{Arc, atomic::Ordering};
 
 pub(super) const NAME: &str = "qespike-sphere-machine";
 pub(super) const BELOW_THRESHOLD: &str = "qespike-sphere-machine-below-threshold";
+pub(super) const LOST_ACK: &str = "qespike-sphere-machine-lost-ack";
 const QUEST: &str = "oteryn:quest.elemental_spheres_quest";
 const COUNTER: &str = "oteryn:quest-progress/elemental_spheres/machine_gem_count";
 const LEFT: Position = Position {
@@ -48,6 +49,17 @@ fn sphere_machine_below_twenty_toggles_on_and_off_without_debit_or_travel() -> T
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(BELOW_THRESHOLD, || {
         super::quest_world_callbacks::scenario(BELOW_THRESHOLD, LEFT, false)
+    })
+}
+
+#[test]
+fn sphere_machine_replays_committed_debit_and_finishes_travel_after_lost_ack() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(LOST_ACK, || {
+        super::quest_world_callbacks::scenario(LOST_ACK, LEFT, false)
     })
 }
 
@@ -135,13 +147,15 @@ pub(super) async fn exercise(
     admitted: &mut AdmittedSession,
     h: &Harness,
     callback: &Callback,
-    funded: bool,
+    scenario: &str,
 ) -> TestResult {
     let revision = owner
         .quest_catalogue
         .as_ref()
         .ok_or("quest catalogue")?
         .content_revision();
+    let funded = scenario != BELOW_THRESHOLD;
+    let lost_ack = scenario == LOST_ACK;
     let initial = if funded { 24 } else { 19 };
     owner.quest_catalogue = Some(Arc::new(catalogue(revision, callback, initial)?));
     owner
@@ -205,6 +219,43 @@ pub(super) async fn exercise(
         .map_err(debug)?
         .position();
     let command = admitted.continuity.next_command_id;
+    if lost_ack {
+        owner
+            .states
+            .quest_callbacks
+            .interrupt_after_commit
+            .store(true, Ordering::Release);
+        assert!(
+            super::quest_callbacks::wire_use_targets_retained(
+                owner,
+                admitted,
+                &[(command, &target)]
+            )
+            .await
+            .is_err(),
+            "a committed debit with an unpublished travel has no acknowledgement"
+        );
+        assert!(owner.has_pending_quest_callback(admitted.game_session_id));
+        assert_eq!(balance(h).await?, Some(4));
+        assert_eq!(object(LEFT, 842)?, left);
+        assert_eq!(object(RIGHT, 843)?, right);
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            origin
+        );
+        assert!(
+            owner
+                .reconcile_quest_callbacks(admitted.game_session_id)
+                .await
+        );
+        assert!(!owner.has_pending_quest_callback(admitted.game_session_id));
+    }
     let result =
         super::quest_callbacks::wire_use_targets_retained(owner, admitted, &[(command, &target)])
             .await?;
@@ -261,15 +312,20 @@ pub(super) async fn exercise(
             origin
         }
     );
-    let balance: Option<i64> =
-        sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
-            .bind(COUNTER)
-            .fetch_optional(&h.pool)
-            .await?;
+    let balance = balance(h).await?;
     if funded {
         assert_eq!(balance, Some(4));
     } else {
         assert_eq!(balance.unwrap_or(initial), 19);
     }
     Ok(())
+}
+
+async fn balance(h: &Harness) -> TestResult<Option<i64>> {
+    Ok(
+        sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+            .bind(COUNTER)
+            .fetch_optional(&h.pool)
+            .await?,
+    )
 }

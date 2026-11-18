@@ -56,7 +56,9 @@ fn scenario_case(
     let mound = name == super::super::qespike_mound::NAME;
     let sphere_machine = matches!(
         name,
-        super::super::qespike_sphere_machine::NAME | super::super::qespike_sphere_machine::BELOW_THRESHOLD
+        super::super::qespike_sphere_machine::BELOW_THRESHOLD
+            | super::super::qespike_sphere_machine::LOST_ACK
+            | super::super::qespike_sphere_machine::NAME
     );
     let elemental_pin = name.starts_with("qn1-elemental-");
     let qm50 = name == "goblin-merchant-elevator-upper";
@@ -2504,7 +2506,7 @@ fn scenario_case(
                 &mut admitted,
                 &h,
                 &callback,
-                name == super::super::qespike_sphere_machine::NAME,
+                name,
             ))
             .await?;
         } else if name == super::super::qespike_arkulius::NAME {
