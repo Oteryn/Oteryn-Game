@@ -82,7 +82,7 @@ mod treasure_source;
 #[cfg(test)]
 mod treasure_source_tests;
 pub use effects::{
-    CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPhase,
+    Battlefield, CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPhase,
     EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence,
     MagicEffect, MountReward, PartyStation, PartyTransfer, Portal, PortalPair, QuestCompletion,
     RewardDoor, TargetTransform,

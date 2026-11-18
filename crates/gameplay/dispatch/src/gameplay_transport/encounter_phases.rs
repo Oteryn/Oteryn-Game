@@ -8,12 +8,78 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
 
+mod drume;
+
 const MAX_ENCOUNTERS: usize = 64;
+
+#[derive(Debug)]
+enum Fight {
+    Cults(CultsEncounter),
+    Drume(drume::Skirmish),
+}
+
+impl Fight {
+    fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
+        match self {
+            Self::Cults(fight) => fight.is_current(runtime),
+            Self::Drume(fight) => !fight.ejected && fight.phase.is_current(runtime),
+        }
+    }
+
+    fn contains(&self, actor: ExactActorRef) -> bool {
+        match self {
+            Self::Cults(fight) => fight.contains(actor),
+            Self::Drume(fight) => (0..=6).any(|role| fight.phase.role_actor(role) == Some(actor)),
+        }
+    }
+
+    fn contains_terminal(&self, actor: ExactActorRef) -> bool {
+        match self {
+            Self::Cults(fight) => fight.contains_terminal(actor),
+            Self::Drume(fight) => fight.contains_terminal(actor),
+        }
+    }
+
+    fn projected_death(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        actor: ExactActorRef,
+    ) -> Result<bool, CarrierError> {
+        match self {
+            Self::Cults(fight) => fight.projected_death(runtime, actor),
+            Self::Drume(fight) => fight.phase.projected_death(runtime, actor),
+        }
+    }
+
+    fn victors(
+        &self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Result<Option<&[(ExactActorRef, GameSessionId)]>, CarrierError> {
+        match self {
+            Self::Cults(fight) => fight.victors(runtime),
+            Self::Drume(fight) => fight.phase.victors(runtime),
+        }
+    }
+
+    fn advance(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        room: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
+        cells: &crate::content::NativeEntryMovementCells,
+    ) -> Result<(), CarrierError> {
+        match self {
+            Self::Cults(fight) => {
+                fight.advance(runtime, |runtime, at| placement(cells, runtime, at))
+            }
+            Self::Drume(fight) => fight.advance(runtime, room, cells),
+        }
+    }
+}
 
 #[derive(Debug)]
 pub(super) struct ActivePhase {
     key: u64,
-    fight: CultsEncounter,
+    fight: Fight,
     room: oteryn_gameplay_quests::quest::world_callbacks::Encounter,
     participants: Vec<(ExactActorRef, GameSessionId)>,
     credits: Vec<grizzly_kills::EncounterCredit>,
@@ -61,10 +127,10 @@ impl Registry {
                 Ok(Some(_)) => {
                     // Credit was captured in the lethal turn. Release the lever
                     // only after exact terminal decorations retire; tick retries failures.
-                    let ActivePhase { fight, cells, .. } = phase;
-                    fight
-                        .advance(runtime, |runtime, at| placement(cells, runtime, at))
-                        .is_err()
+                    let ActivePhase {
+                        fight, cells, room, ..
+                    } = phase;
+                    fight.advance(runtime, room, cells).is_err()
                 }
                 Ok(None) => phase
                     .frozen
@@ -92,8 +158,10 @@ impl Registry {
         };
         for phase in active.iter_mut().filter(|p| p.fight.contains(actor)) {
             if phase.fight.projected_death(runtime, actor).is_ok() {
-                let ActivePhase { fight, cells, .. } = phase;
-                let _ = fight.advance(runtime, |runtime, at| placement(cells, runtime, at));
+                let ActivePhase {
+                    fight, cells, room, ..
+                } = phase;
+                let _ = fight.advance(runtime, room, cells);
             }
         }
         // Keep terminal admission credit until the same lethal turn captures it.
@@ -161,6 +229,28 @@ pub(super) fn bind(
         .encounter
         .as_ref()
         .ok_or(CarrierError::PlanConflict)?;
+    if let Some(battlefield) = callback.effects.battlefield {
+        if encounter.phase != Some(EncounterPhase::Drume)
+            || actors.len() != 6
+            || !placement(&cells, runtime, drume::local(battlefield.exit))
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        return Ok(ActivePhase {
+            key,
+            fight: Fight::Drume(drume::Skirmish::bind(
+                runtime,
+                players,
+                actors,
+                battlefield,
+            )?),
+            room: encounter.clone(),
+            participants: players.to_vec(),
+            credits,
+            frozen: None,
+            cells,
+        });
+    }
     if encounter.phase != Some(EncounterPhase::Cults) || actors.len() != 10 {
         return Err(CarrierError::PlanConflict);
     }
@@ -210,7 +300,9 @@ pub(super) fn bind(
     }
     Ok(ActivePhase {
         key,
-        fight: CultsEncounter::bind(runtime, players, pillars, stops, centre)?,
+        fight: Fight::Cults(CultsEncounter::bind(
+            runtime, players, pillars, stops, centre,
+        )?),
         room: encounter.clone(),
         participants: players.to_vec(),
         credits,
@@ -264,16 +356,21 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates) 
     active.retain(|phase| phase.fight.is_current(runtime));
     active.retain_mut(|phase| {
         let ActivePhase {
-            key, fight, cells, ..
+            key,
+            fight,
+            cells,
+            room,
+            ..
         } = phase;
-        if let Err(error) = fight.advance(runtime, |runtime, at| placement(cells, runtime, at)) {
+        if let Err(error) = fight.advance(runtime, room, cells) {
             super::operator_event(&format!(
                 "encounter_phase_deferred key={key} reason={error:?}"
             ));
             return true;
         }
-        fight
-            .victors(runtime)
-            .is_ok_and(|victors| victors.is_none())
+        fight.is_current(runtime)
+            && fight
+                .victors(runtime)
+                .is_ok_and(|victors| victors.is_none())
     });
 }

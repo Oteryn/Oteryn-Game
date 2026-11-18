@@ -144,6 +144,22 @@ impl NativePhaseOwner {
         }
         Ok(())
     }
+    pub fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
+        self.current(runtime).is_ok()
+    }
+
+    pub fn role_actor(&self, role: usize) -> Option<ExactActorRef> {
+        self.actors.get(role).copied().flatten()
+    }
+
+    pub fn decoration_actor(&self, role: usize) -> Option<ExactActorRef> {
+        self.decorations.get(role).copied().flatten()
+    }
+
+    pub fn dead_roles(&self) -> u64 {
+        self.progress.dead()
+    }
+
     /// Called by the existing source spawn/admission owner, after it commits a ready role.
     pub fn attach(
         &mut self,

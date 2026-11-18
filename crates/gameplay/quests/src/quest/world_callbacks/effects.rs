@@ -113,6 +113,8 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
     pub encounter: Option<Encounter>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub battlefield: Option<Battlefield>,
 }
 
 /// The original wire shapes retain distinct owners: a child quest or the current quest.
@@ -327,6 +329,16 @@ pub struct Encounter {
 pub enum EncounterPhase {
     #[serde(rename = "cults_boss_phase_closures")]
     Cults,
+    #[serde(rename = "drume_skirmish")]
+    Drume,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Battlefield {
+    pub exit: Position,
+    pub captain: Position,
+    pub boss: Position,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -851,6 +863,14 @@ pub(super) fn valid(callback: &Callback) -> bool {
     {
         return false;
     }
+    if effects.battlefield.is_some()
+        != effects
+            .encounter
+            .as_ref()
+            .is_some_and(|encounter| encounter.phase == Some(EncounterPhase::Drume))
+    {
+        return false;
+    }
     if let Some(encounter) = &effects.encounter {
         let in_room = |p: Position| {
             p.floor == encounter.room_min.floor
@@ -860,7 +880,29 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_from: BTreeSet<_> = encounter.players.iter().map(|p| p.from).collect();
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
-        let source_party = encounter.phase == Some(EncounterPhase::Cults);
+        let source_party = encounter.phase.is_some();
+        if let Some(battlefield) = &effects.battlefield
+            && (!pos(battlefield.exit)
+                || in_room(battlefield.exit)
+                || !in_room(battlefield.captain)
+                || !in_room(battlefield.boss)
+                || battlefield.captain == battlefield.boss
+                || encounter.monsters.len() != 6
+                || encounter
+                    .monsters
+                    .iter()
+                    .filter(|row| row.creature == "oteryn:creature.lion_commander")
+                    .count()
+                    != 3
+                || encounter
+                    .monsters
+                    .iter()
+                    .filter(|row| row.creature == "oteryn:creature.usurper_commander")
+                    .count()
+                    != 3)
+        {
+            return false;
+        }
         if (encounter.minimum_level == 0 && !source_party)
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
