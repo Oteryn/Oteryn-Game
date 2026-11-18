@@ -296,7 +296,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let _ = map.facts.emit_movement_effect(tile, 11);
             }
             placed = Some(record);
-            self.states.chat.close_out_of_range(&runtime, session);
+            let ended_by_program = matches!(
+                &held.route,
+                newhaven_travel::Departure::Quest(proof) if proof.end_on_arrival
+            ) && self.states.chat.end_engagement(session, held.npc);
+            if !ended_by_program {
+                // An immediate program close carries its reply in the committed TALK receipt.
+                self.states.chat.close_out_of_range(&runtime, session);
+            }
         }
         let mut current = self.current_quest_fence(session).await.ok()??;
         if current.item_fence() != capture.session {

@@ -57,6 +57,7 @@ pub(super) struct CommitStep {
     teleport: Option<oteryn_gameplay_quests::quest::npc_rules::NpcRulePosition>,
     teleport_encounter:
         Option<oteryn_gameplay_quests::quest::npc_rules::teleport::NpcTeleportEncounter>,
+    end_on_arrival: bool,
     magic: usize,
     supersedes_topic: bool,
 }
@@ -472,6 +473,11 @@ pub(super) fn prepare(
         request,
         fallback_lines,
         supersedes_topic,
+        end_on_arrival: teleport.is_some()
+            && plan
+                .effects
+                .iter()
+                .any(|effect| matches!(effect, NpcRuleEffect::EndConversation { delay_ms: 0 })),
         magic: teleport.as_ref().map_or(0, |p| p.magic.len()),
         teleport_encounter: teleport.as_ref().and_then(|p| p.encounter.clone()),
         teleport: teleport.map(|p| p.destination),
@@ -594,6 +600,7 @@ pub(super) async fn apply(
         fallback_lines,
         teleport,
         teleport_encounter,
+        end_on_arrival,
         magic,
         supersedes_topic,
     } = match step {
@@ -746,6 +753,7 @@ pub(super) async fn apply(
                     context: next.context.clone(),
                     magic,
                     encounter: teleport_encounter,
+                    end_on_arrival,
                 },
                 destination,
                 &mut runtime,

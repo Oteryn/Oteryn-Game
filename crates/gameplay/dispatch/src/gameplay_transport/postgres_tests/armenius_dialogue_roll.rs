@@ -119,9 +119,11 @@ fn rules_for_stage(mission: i64) -> Vec<Value> {
         let value = index + 1;
         let mut effects = vec![json!({"kind":"set","track":MISSION,"value":2})];
         if let Some(position) = [Some(SEWER), Some(BASEMENT), None][index] {
+            // Crystal armenius.lua:88-95 uses the selected line as the walk-away.
             effects.extend([
                 json!({"kind":"teleport","position":position}),
                 json!({"kind":"magic_effect","effect":"CONST_ME_TELEPORT"}),
+                json!({"kind":"end_conversation","delay_ms":0}),
             ]);
         }
         if value == 2 {
@@ -244,7 +246,7 @@ pub(super) async fn exercise(
             draw < u64::MAX - u64::MAX % 3 && draw % 3 + 1 == result as u64
         })
         .ok_or("command for the requested roll")?;
-    super::classic_quests::talk(
+    let lines = super::classic_quests::talk(
         owner,
         admitted,
         npc,
@@ -252,6 +254,11 @@ pub(super) async fn exercise(
         if repeat { "What now?" } else { "alori mort" },
     )
     .await?;
+    assert_eq!(lines, [REPLIES[result - 1]]);
+    let chat = &owner.states.chat;
+    let session = admitted.game_session_id;
+    assert_eq!(chat.engaged(session).is_some(), result == 3);
+    assert!(chat.take_walked_away(session).is_empty());
     assert_eq!(super::m39_bone_journey::stage(h, MISSION).await?, Some(2));
     let grant: i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/his_true_face'")
         .fetch_one(&h.pool).await?;

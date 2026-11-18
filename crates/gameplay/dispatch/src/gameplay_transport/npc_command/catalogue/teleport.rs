@@ -20,6 +20,7 @@ pub(in crate::gameplay_transport) struct DepartureProof {
     pub context: Context,
     pub magic: usize,
     pub encounter: Option<NpcTeleportEncounter>,
+    pub end_on_arrival: bool,
 }
 
 fn prepare_encounter<'a>(
