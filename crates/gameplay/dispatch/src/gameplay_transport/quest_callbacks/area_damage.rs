@@ -164,7 +164,7 @@ pub(super) fn oak_earth_hit(
     position: TilePos,
     (minimum, maximum): (u32, u32),
     draw: Option<u64>,
-    now: crate::foundation::owner_timer::SemanticTimeMicros,
+    now: oteryn_simulation_determinism::SemanticTimeMicros,
 ) {
     let Some(raw) = draw.and_then(|draw| {
         oteryn_gameplay_domain::domain::source_normal_draw::source_normal_draw(
@@ -199,7 +199,7 @@ fn environmental_hit(
     raw: i64,
     kind: PlayerHitKind,
     element: ReferenceResistanceKind,
-    now: crate::foundation::owner_timer::SemanticTimeMicros,
+    now: oteryn_simulation_determinism::SemanticTimeMicros,
 ) -> bool {
     let Some(state) = states.get(runtime, actor, session) else {
         return false;
@@ -220,7 +220,7 @@ fn environmental_hit(
             session,
             damage,
             kind,
-            now,
+            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get()),
             AnalyserDamageSource::None,
         )
         .is_some()
