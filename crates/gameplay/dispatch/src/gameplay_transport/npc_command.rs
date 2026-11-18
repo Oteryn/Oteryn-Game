@@ -758,14 +758,14 @@ pub(super) async fn npc_bank_talk(
         admission.owner_now(),
         super::item_ref_admission::pinned_index(&runtime, admission.active_generation),
     );
-    if ordinary.disposition == NpcIntentDisposition::NoConversation
-        && let Some(refusal) =
-            cobra::refuse_unpoisoned_greeting(admission, &runtime, actor, session, &intent)
-    {
-        return refusal;
-    }
     if ordinary.disposition != NpcIntentDisposition::Ok {
         admission.states.npc_conversations.cancel_bank(session);
+        if ordinary.disposition == NpcIntentDisposition::NoConversation
+            && let Some(refusal) =
+                cobra::refuse_unpoisoned_greeting(admission, &runtime, actor, session, &intent)
+        {
+            return refusal;
+        }
         return ordinary;
     }
     if oteryn_gameplay_npc::greeting::words(&intent.text)
