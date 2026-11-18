@@ -159,10 +159,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             unreachable!("explicit targets resolved above")
                         }
                         AutoWalkTarget::Object(target) => {
-                            match world_map::resolve_map_target(&source, &target, |_| Some(())) {
-                                Ok(target) => target.pos,
-                                Err(_) => return Ok(None),
+                            let Ok(target) =
+                                world_map::resolve_map_target(&source, &target, |_| Some(()))
+                            else {
+                                return Ok(None);
+                            };
+                            // Extended-range quest callbacks use the player's chosen position.
+                            // A failed reach check must not walk into range and apply the callback.
+                            if self.callback_content().iter().any(|callback| {
+                                callback.use_range > 1
+                                    && super::super::quest_callbacks::matches(
+                                        map,
+                                        callback,
+                                        target.placement_key,
+                                    )
+                            }) {
+                                return Ok(None);
                             }
+                            target.pos
                         }
                     };
                     native(pos)

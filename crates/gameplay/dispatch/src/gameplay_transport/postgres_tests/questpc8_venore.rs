@@ -2,7 +2,7 @@
 use super::fixture::{Harness, debug, id};
 use super::questpc8_authored_programmes::{object_target, use_target};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
-use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::map::overlay::TilePos;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
@@ -87,17 +87,6 @@ pub(super) async fn exercise(
         )
         .ok_or("NPC capability")?;
     let [norman, scott, frank] = install_npcs(owner, admitted).await?;
-    let chamber = (33005..=33035)
-        .flat_map(|x| (32130..=32160).map(move |y| (x, y)))
-        .filter(|(x, y)| {
-            owner.movement_cells().index().lookup(
-                owner.movement_cells().scope(),
-                crate::content::LogicalCell { x: *x, y: *y, z: 8 },
-            ) == Ok(crate::content::CollisionClass::Walkable)
-        })
-        .take(8)
-        .collect::<Vec<_>>();
-    eprintln!("VENORE_NATIVE_CHAMBER_WALKABLE {chamber:?}");
     let mut command = 1;
     say_refused(owner, admitted, norman, &mut command, "construction jobs").await?;
     assert_eq!(
@@ -130,21 +119,11 @@ pub(super) async fn exercise(
     refresh(owner, admitted).await;
     let far_target = object_target(owner, first, 1)?;
     assert_eq!(
-        owner
-            .use_object(
-                admitted.runtime_actor.ok_or("player")?,
-                UseCommand {
-                    game_session_id: admitted.game_session_id,
-                    command_id: command,
-                    item_fence: admitted.item_fence,
-                },
-                far_target,
-            )
-            .await
-            .disposition,
+        use_target(owner, admitted, command, &far_target).await?,
         UseDisposition::TooFar,
         "declared large-machine reach remains bounded at two cells"
     );
+    command += 1;
     assert_eq!(progress(h, "stage").await?, 1);
     assert_eq!(
         quantity(h, 17513).await?,
@@ -532,8 +511,7 @@ async fn arrive_in_rings(
             .then_some((x, y))
         })
         .collect::<Vec<_>>();
-    eprintln!("VENORE_NATIVE_LANDING_NEAR {at:?} walkable={nearby:?}");
-    Err(format!("no native adjacent landing at {at:?}").into())
+    Err(format!("no native landing at {at:?} in the requested range, nearby walkable cells: {nearby:?}").into())
 }
 async fn carry(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
