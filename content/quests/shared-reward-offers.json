@@ -22,6 +22,236 @@
       ]
     },
     {
+      "npc": "oteryn:npc.ajax",
+      "keywords": [
+        "behemoth fang",
+        "behemoth fangs"
+      ],
+      "topic": 0,
+      "next_topic": 10,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 14,
+          "maximum": 14,
+          "set": 14
+        }
+      ],
+      "reply": [
+        "You bring 50 behemoth fangs?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ajax",
+      "keywords": [
+        "crude iron"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 13
+        }
+      ],
+      "reply": [
+        "You bring crude iron?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ajax",
+      "keywords": [
+        "gelagos"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Annoying kid. Bro hates him, but talking no help. Bro needs fighting spirit!"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ajax",
+      "keywords": [
+        "iron ore"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 12
+        }
+      ],
+      "reply": [
+        "You bring 100 iron ore?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ajax",
+      "keywords": [
+        "lizard leather"
+      ],
+      "topic": 0,
+      "next_topic": 11,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 15,
+          "maximum": 15,
+          "set": 15
+        }
+      ],
+      "reply": [
+        "You bring 50 lizard leather?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ajax",
+      "keywords": [
+        "mine"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "YOURS? WHAT IS YOURS! NOTHING IS YOURS! IS MINE! GO AWAY, YES?!"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ajax",
+      "keywords": [
+        "present"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 11
+        }
+      ],
+      "reply": [
+        "Bron gave me present. Ugly, but nice from him. Me want to give present too. You help me?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ajax",
+      "keywords": [
+        "no"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "YOU STUPID! STUBBORN! I KILL YOU! WILL LEAVE NOW?!"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ajax",
+      "keywords": [
+        "no"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "ARRRRRRRRRR! YOU ME DRIVE MAD! HOW I MAKE YOU GO??"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ajax",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "I GIVE YOU NO!"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ajax",
+      "keywords": [
+        "say please"
+      ],
+      "topic": 4,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Please? What you mean please? Like I say please you say bye? Please?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ajax",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 11
+        }
+      ],
+      "reply": [
+        "Good! Me make shiny weapon. If you help me, I make one for you too. Like axe I wear. I need stuff. Listen. ...",
+        "Me need 100 iron ore. Then need crude iron. Then after that 50 behemoth fangs. And 50 lizard leather. You understand?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.alesar",
       "keywords": [
         "mission"
@@ -119,6 +349,26 @@
       "npc": "oteryn:npc.amber",
       "keywords": [
         "addon",
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Sorry, but I can only make one backpack per person, else I'd have to close my shop and open a leather manufactory."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.amber",
+      "keywords": [
+        "addon",
         "outfit",
         "backpack",
         "leather"
@@ -134,8 +384,8 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_backpack_rook",
-          "minimum": 1,
-          "maximum": 1,
+          "minimum": 0,
+          "maximum": 4,
           "set": 2
         }
       ],
@@ -578,6 +828,194 @@
       ],
       "reply": [
         "Let me analyse the samples."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.bron",
+      "keywords": [
+        "brother is right. fist not always good."
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Oh! He really said that? I am so proud of you. These are really good news. Everything would be great... if only there wasn't this person near my house."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.bron",
+      "keywords": [
+        "recruitment",
+        "violence",
+        "outfit",
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Convincing Ajax that it is not always necessary to use brute force... this would be such an achievement. Definitely a hard task though. ...",
+        "Listen, I simply have to ask, maybe a stranger can influence him better than I can. Would you help me with my brother?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.bron",
+      "keywords": [
+        "red piece of cloth"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 7
+        }
+      ],
+      "reply": [
+        "Have you really managed to fulfil the task and brought me 50 pieces of red cloth and 50 pieces of green cloth?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.bron",
+      "keywords": [
+        "spider silk",
+        "rolls of spider silk"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8
+        }
+      ],
+      "reply": [
+        "Oh, did you bring 10 rolls of spider silk yarn for me?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.bron",
+      "keywords": [
+        "warrior's sweat",
+        "warriors sweat"
+      ],
+      "topic": 0,
+      "next_topic": 10,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 9
+        }
+      ],
+      "reply": [
+        "Were you able to get hold of a flask with pure warrior's sweat?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.bron",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6
+        }
+      ],
+      "reply": [
+        "I'm impressed... I am sure this was Ajax' idea. I would love to give him a present, but if I leave my hut to gather ingredients, he will surely notice. ...",
+        "Would you maybe help me again, one last time, my friend? I assure you that your efforts will not be in vain."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.bron",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Really! That is such an incredibly nice offer! I already have a plan. You have to teach him that sometimes words are stronger than fists. ...",
+        "Maybe you can provoke him with something to get angry, like saying... 'MINE!' or something. But beware, I'm sure that he will try to hit you. ...",
+        "Don't do this if you feel weak or ill. He will probably want to make you leave by using violence, but just stay strong and refuse to give up. ...",
+        "If he should ask what else is necessary to make you leave, tell him to 'say please'. Afterwards, do leave and return to him one hour later. ...",
+        "This way he might learn that violence doesn't always help, but that a friendly word might just do the trick. ...",
+        "Have you understood everything I told you and are really willing to take this risk?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.bron",
+      "keywords": [
+        "person"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "This... person... makes me want to... say something bad... must... control myself. <sweats> I really don't know what to do anymore. ...",
+        "I wonder if Ajax has an idea. Could you ask him about Gelagos?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.bron",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6
+        }
+      ],
+      "reply": [
+        "Great! You see, I really would love to sew a nice shirt for him. I just need a few things for that, so please listen closely: ...",
+        "He loves green and red, so I will need about 50 pieces of red cloth - like the material heroes make their capes of - and 50 pieces of the green cloth Djinns like. ...",
+        "Secondly, I need about 10 rolls of spider silk yarn. I think mermaids can yarn silk of large spiders to create a smooth thread. ...",
+        "The only remaining thing needed would be a bottle of warrior's sweat to spray it over the shirt... he just loves this smell. ...",
+        "Have you understood everything I told you and are willing to handle this task?"
       ]
     },
     {
@@ -2452,6 +2890,81 @@
       ]
     },
     {
+      "npc": "oteryn:npc.hanna",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_hat",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Pretty, isn't it? My friend Amber taught me how to make it, but I could help you with one if you like. What do you say?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hanna",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_hat",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "Oh, you're back already? Did you bring a legion helmet, 100 chicken feathers and 50 honeycombs?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hanna",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Pretty hat, isn't it?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.hjaern",
       "keywords": [
         "shard"
@@ -3278,6 +3791,107 @@
       ]
     },
     {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_backpack",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Sorry, the backpack I wear is not for sale. It's handmade from rare minotaur leather."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Sorry, but I can only make one backpack per person, else I'd have to close my shop and open a leather manufactory."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit",
+        "backpack",
+        "leather"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_backpack",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Ah, right, almost forgot about the backpack! Have you brought me 100 pieces of minotaur leather as requested?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "backpack",
+        "minotaur",
+        "leather"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_backpack",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Well, if you really like this backpack, I could make one for you, but minotaur leather is hard to come by these days. Are you willing to put some work into this?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.lugri",
       "keywords": [
         "legs",
@@ -3735,6 +4349,26 @@
           "set": 1,
           "preserve": true
         }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.morgan",
+      "keywords": [
+        "forge"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_sword_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "What would you like me to forge for you? A knight's sword or a warrior's sword?"
       ]
     },
     {
@@ -4240,12 +4874,39 @@
         "hat"
       ],
       "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_hat_rook",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_hat_rook",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "Have you brought a legion helmet, 50 honeycombs and 100 chicken feathers?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.norma",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "topic": 0,
       "next_topic": 1,
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_hat_rook",
           "minimum": -1,
-          "maximum": 0,
+          "maximum": 2,
           "set": 1
         },
         {
@@ -4257,33 +4918,6 @@
       ],
       "reply": [
         "Shall I teach you how to make a feather hat?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.norma",
-      "keywords": [
-        "addon",
-        "outfit",
-        "hat"
-      ],
-      "topic": 0,
-      "next_topic": 2,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_hat_rook",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 2
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_hat_rook",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 0
-        }
-      ],
-      "reply": [
-        "Have you brought a legion helmet, 50 honeycombs and 100 chicken feathers?"
       ]
     },
     {
@@ -5405,6 +6039,132 @@
       ],
       "reply": [
         "Have you brought 50 bear paws and 50 wolf paws?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.trisha",
+      "keywords": [
+        "dragon claw"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Have you actually managed to obtain the red dragon claw I asked for?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.trisha",
+      "keywords": [
+        "earn"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "I'm not sure if you are enough of a hero to earn them. You could try, though. What do you think?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.trisha",
+      "keywords": [
+        "fighting spirit"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "So, can you show me your fighting spirit?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.trisha",
+      "keywords": [
+        "hardened bones"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "How are you faring with your mission? Have you collected all 100 hardened bones?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.trisha",
+      "keywords": [
+        "turtle shells"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Did you get us 100 turtle shells so we can make new shields?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.trisha",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Bring me 100 hardened bones, 100 turtle shells, fighting spirit and a claw from a mighty dragon king. Did you understand everything I told you and are willing to handle this task?"
       ]
     },
     {

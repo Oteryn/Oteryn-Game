@@ -1645,11 +1645,17 @@ fn scenario_case(
             || name == "questpc7-hoist-story"
             || (name.starts_with("questpc7-eligibility-") && !name.ends_with("no-premium"))
             || name.starts_with("questpc7-outfits-")
+            || name.starts_with("qengine-rewards-qb-")
         {
             use crate::gameplay_transport::spell_premium_coordinator::{
                 SpellPremiumCoordinator, purchase_fixture,
             };
-            let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
+            let premium_account = if name.ends_with("-free-account") {
+                id(41)
+            } else {
+                id(40)
+            };
+            let (consumer, clock, activation, _) = purchase_fixture::current(premium_account);
             Some(SpellPremiumCoordinator::new(
                 consumer,
                 Some(clock),
@@ -1669,11 +1675,12 @@ fn scenario_case(
         if let Some(premium) = &eligibility_premium {
             owner.premium_coordinator = Some(premium);
             owner.admit_premium(id(40), deps.admitted.game_session_id);
-            assert!(
+            assert_eq!(
                 owner
                     .session_premium_gate(deps.admitted.game_session_id)
                     .await
-                    .premium_current()
+                    .premium_current(),
+                !name.ends_with("-free-account")
             );
         }
 

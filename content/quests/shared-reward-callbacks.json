@@ -5372,8 +5372,8 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_backpack_rook",
-          "minimum": 1,
-          "maximum": 1,
+          "minimum": 0,
+          "maximum": 4,
           "set": 2
         }
       ],
@@ -5476,7 +5476,7 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_hat_rook",
-          "minimum": 1,
+          "minimum": 0,
           "maximum": 1,
           "set": 0
         }
@@ -5521,7 +5521,7 @@
         {
           "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_hat_rook",
           "minimum": -1,
-          "maximum": 0,
+          "maximum": 2,
           "set": 1
         },
         {
@@ -8626,6 +8626,1166 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/morgan.lua:sha256:fbef2b0d61842368915e506ff5d2e1e96f00a3f55bb3cad4ee97178824832610"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qb-barbarian-ajax-axe",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.ajax",
+      "keywords": [
+        "axe"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 16,
+          "maximum": 16,
+          "set": 17
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.barbarian",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Axe is done! For you. Take. Wear like me."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ajax.lua:sha256:ae0ffccf94c5a9353da66f9357d0a72b9d17acc7441bc642e81b707ee1eda67d"
+      ],
+      "requires_premium": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon_wait_timer",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 7201
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qb-barbarian-ajax-axe-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.ajax",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 12
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Good. You get 100 iron ore first. Come back."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ajax.lua:sha256:ae0ffccf94c5a9353da66f9357d0a72b9d17acc7441bc642e81b707ee1eda67d"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/qb-barbarian-ajax-crude-iron",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.ajax",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 9,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 14
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5892",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Good! Now bring 50 behemoth fangs."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ajax.lua:sha256:ae0ffccf94c5a9353da66f9357d0a72b9d17acc7441bc642e81b707ee1eda67d"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/qb-barbarian-ajax-fangs",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.ajax",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 10,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 14,
+          "maximum": 14,
+          "set": 15
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5893",
+          "count": 50
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Good! Now bring 50 lizard leather."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ajax.lua:sha256:ae0ffccf94c5a9353da66f9357d0a72b9d17acc7441bc642e81b707ee1eda67d"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/qb-barbarian-ajax-gelagos",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.ajax",
+      "keywords": [
+        "fighting spirit"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "If you want to help bro, bring him fighting spirit. Magic fighting spirit. Ask Djinn."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ajax.lua:sha256:ae0ffccf94c5a9353da66f9357d0a72b9d17acc7441bc642e81b707ee1eda67d"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/qb-barbarian-ajax-leather",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.ajax",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 11,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 15,
+          "maximum": 15,
+          "set": 16
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5876",
+          "count": 50
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah! All stuff there. I will start making axes now. Come later and ask me for axe."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ajax.lua:sha256:ae0ffccf94c5a9353da66f9357d0a72b9d17acc7441bc642e81b707ee1eda67d"
+      ],
+      "requires_premium": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon_wait_timer",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qb-barbarian-ajax-ore",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.ajax",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 13
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5880",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Good! Now bring crude iron."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ajax.lua:sha256:ae0ffccf94c5a9353da66f9357d0a72b9d17acc7441bc642e81b707ee1eda67d"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/qb-barbarian-ajax-please",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.ajax",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Oh. Easy. Okay. Please is good. Now don't say anything. Head aches."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ajax.lua:sha256:ae0ffccf94c5a9353da66f9357d0a72b9d17acc7441bc642e81b707ee1eda67d"
+      ],
+      "requires_premium": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon_wait_timer",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qb-barbarian-ajax-wait",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.ajax",
+      "keywords": [
+        "back",
+        "brother"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You back. You know, you right. Brother is right. Fist not always good. Tell him that!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ajax.lua:sha256:ae0ffccf94c5a9353da66f9357d0a72b9d17acc7441bc642e81b707ee1eda67d"
+      ],
+      "requires_premium": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon_wait_timer",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 3601
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qb-barbarian-bron-cloth",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.bron",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5910",
+          "count": 50
+        },
+        {
+          "item": "oteryn:item.tibia.i5911",
+          "count": 50
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Terrific! I will start to trim it while you gather 10 rolls of spider silk. I'm sure that Ajax will love it."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bron.lua:sha256:81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/qb-barbarian-bron-person",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.bron",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Again, I have to thank you for your selfless offer to help me. I hope that Ajax can come up with something, now that he has experienced the power of words."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bron.lua:sha256:81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/qb-barbarian-bron-spirit",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.bron",
+      "keywords": [
+        "fighting spirit"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5884",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Fighting spirit? What am I supposed to do with this fi... - oh! I feel strange... ME MIGHTY! ME WILL CHASE OFF ANNOYING KIDS! GROOOAARR!! RRRRRRRRRRRRAAAAAAAGE!!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bron.lua:sha256:81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/qb-barbarian-bron-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.bron",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You are indeed not only well educated, but also very courageous. I wish you good luck, you are my last hope."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bron.lua:sha256:81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/qb-barbarian-bron-sweat",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.bron",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 10,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5885",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Good work! Now I can finally finish this present for Ajax. Because you were such a great help, I have also a present for you. Will you accept it?"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bron.lua:sha256:81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/qb-barbarian-bron-task",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.bron",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, my friend! Come back to me once you have collected 50 pieces of red cloth and 50 pieces of green cloth."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bron.lua:sha256:81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/qb-barbarian-bron-wig",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.bron",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.barbarian",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "I have kept this traditional barbarian wig safe for many years now. It is now yours! I hope you will wear it proudly, friend."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bron.lua:sha256:81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/qb-barbarian-bron-yarn",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.bron",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 9,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5886",
+          "count": 10
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I'm impressed! You really managed to get spider silk yarn for me! I will immediately start to work on this shirt. Please don't forget to bring me warrior's sweat!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bron.lua:sha256:81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/qb-citizen-backpack",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit",
+        "backpack"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_backpack",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.citizen",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lubo.lua:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack_timer",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 7201
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qb-citizen-backpack-materials",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_backpack",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5878",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lubo.lua:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack_timer",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qb-citizen-backpack-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_backpack",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lubo.lua:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qb-citizen-hat",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.hanna",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_hat",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 0
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3374",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5902",
+          "count": 50
+        },
+        {
+          "item": "oteryn:item.tibia.i5890",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.citizen",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hanna.lua:sha256:cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qb-citizen-hat-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.hanna",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_hat",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hanna.lua:sha256:cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qb-warrior-shoulder",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.cornelia",
+      "keywords": [
+        "addon",
+        "armour",
+        "armor",
+        "outfit",
+        "spike",
+        "trisha"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.warrior",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cornelia.lua:sha256:421600da97cb55bf1b5e5fb9a54df0c7cd36f10c1b383f2b84a8bdd2f7bd89e2"
+      ],
+      "requires_premium": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_timer",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 7201
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qb-warrior-shoulder-bones",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.trisha",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5925",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/trisha.lua:sha256:e443d360f36f83bddcdb04abbf4a60c93342ea084689b464628192116c777e86"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/qb-warrior-shoulder-claw",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.trisha",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5919",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/trisha.lua:sha256:e443d360f36f83bddcdb04abbf4a60c93342ea084689b464628192116c777e86"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/qb-warrior-shoulder-shells",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.trisha",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5899",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/trisha.lua:sha256:e443d360f36f83bddcdb04abbf4a60c93342ea084689b464628192116c777e86"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/qb-warrior-shoulder-spirit",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.trisha",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5884",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/trisha.lua:sha256:e443d360f36f83bddcdb04abbf4a60c93342ea084689b464628192116c777e86"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/qb-warrior-shoulder-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.trisha",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/trisha.lua:sha256:e443d360f36f83bddcdb04abbf4a60c93342ea084689b464628192116c777e86"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/qb-warrior-shoulder-work",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.cornelia",
+      "keywords": [
+        "addon",
+        "armour",
+        "armor",
+        "outfit",
+        "spike",
+        "trisha"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cornelia.lua:sha256:421600da97cb55bf1b5e5fb9a54df0c7cd36f10c1b383f2b84a8bdd2f7bd89e2"
+      ],
+      "requires_premium": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_timer",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qb-warrior-sword",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.morgan",
+      "keywords": [
+        "warrior's sword"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_sword_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5887",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5880",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.warrior",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/morgan.lua:sha256:fbef2b0d61842368915e506ff5d2e1e96f00a3f55bb3cad4ee97178824832610"
+      ],
+      "requires_premium": true,
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.warrior",
+          "addons": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qb-warrior-sword-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.morgan",
+      "keywords": [
+        "warrior's sword"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_sword_addon",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/morgan.lua:sha256:fbef2b0d61842368915e506ff5d2e1e96f00a3f55bb3cad4ee97178824832610"
+      ],
+      "requires_premium": true,
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.warrior",
+          "addons": 2
+        }
       ]
     },
     {
