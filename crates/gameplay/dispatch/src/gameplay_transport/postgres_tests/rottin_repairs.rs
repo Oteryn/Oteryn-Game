@@ -101,6 +101,7 @@ pub(super) fn catalogue(handyman: bool) -> TestResult<QuestStateCatalogue> {
                     "passages": [], "offerings": [], "return_on_failure": false,
                     "item_on_target": {"item": HAMMER, "count": 1, "selected_instance": true, "reusable": true},
                     "storage": [{"track": WALLS, "minimum": 0, "maximum": 5, "set": 6, "add": 1}],
+                    "activation": {"track": WALLS, "minimum": 0, "maximum": 5},
                     "effects": {"transform": 6474, "reset_after_ms": 120000},
                     "sources": [repair_source]
                 }}
