@@ -321,6 +321,9 @@ fn run(route: Route) -> TestResult {
             selected
                 .contains(oteryn_protocol_oteryn::world_object::CAPABILITY_WORLD_INTERACTION_V1)
         );
+        // The upper rooms include defenders that keep their distance behind pillars.
+        // Give the participant the source Paladin kit for the full defender circuit.
+        let ranged = matches!(route, Route::ElvenbaneDefenders | Route::ElvenbaneComplete);
         for (index, member) in admitted.iter_mut().enumerate() {
             member.continuity.selected_capabilities = selected;
             owner.admit_progression_session(member).await;
@@ -330,7 +333,7 @@ fn run(route: Route) -> TestResult {
                 super::party_xp::initialize_build(
                     &owner,
                     member.game_session_id,
-                    "knight",
+                    if ranged { "paladin" } else { "knight" },
                     220 + u8::try_from(index)?,
                 )
                 .await?;
@@ -390,6 +393,26 @@ fn run(route: Route) -> TestResult {
                         ),
                 )
                 .await?;
+                if ranged {
+                    // Seed a stack in the existing equipped spear slot so random
+                    // breakage cannot turn a full-room test into a fists fight.
+                    let mut tx = h.pool.begin().await?;
+                    sqlx::query("SET LOCAL session_replication_role=replica")
+                        .execute(&mut *tx)
+                        .await?;
+                    let spears = sqlx::query(
+                        "UPDATE game_item_instances AS i SET quantity=20 \
+                         FROM game_character_equipment_slots AS e \
+                         WHERE i.item_instance_id=e.item_instance_id AND e.slot=5 \
+                         AND e.character_id=encode($1,'hex')::uuid \
+                         AND i.definition_production_key='oteryn:item.tibia.i3277'",
+                    )
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .execute(&mut *tx)
+                    .await?;
+                    assert_eq!(spears.rows_affected(), 1, "equipped source Paladin spear");
+                    tx.commit().await?;
+                }
             }
             let stamina = owner
                 .root

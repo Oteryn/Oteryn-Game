@@ -230,13 +230,22 @@ pub(super) async fn verify(
                     .echo_portals(now_ms + 30_000)
                     .any(|portal| portal.occurrence == occurrence)
             );
-            for step in 1..=12 {
-                runtime
-                    .drive_echo_wardens(now_ms + 30_000 + step * 400, |_| true)
-                    .map_err(debug)?;
+            // The production step starts the raid after its Bestiary read, so the
+            // next spawn is anchored to the owner's actual activation time.
+            let last_spawn = walker.owner_now().get() / 1_000
+                + plan
+                    .spawn_delay_ms(plan.spawn_count() - 1)
+                    .ok_or("last raid spawn")?;
+            while let Some(due) = runtime.next_echo_due_ms().filter(|due| *due <= last_spawn) {
+                runtime.drive_echo_wardens(due, |_| true).map_err(debug)?;
             }
             let children = runtime.visible_entities().creatures;
-            assert_eq!(children.len(), usize::from(plan.spawn_count()));
+            assert_eq!(
+                children.len(),
+                usize::from(plan.spawn_count()),
+                "complete {:?} raid after attempt {attempt}",
+                plan.outcome()
+            );
             let mut wardens = 0;
             for child in &children {
                 let snapshot = runtime.companion_snapshot(child.actor).map_err(debug)?;

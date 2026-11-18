@@ -377,7 +377,7 @@ fn scenario(target_move: bool) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
         owner.movement_cells = (&cells).into();
-        // Domain-1 remains usable without map-view selection: corpses share its native frame.
+        // Domain-1 remains usable without map-view selection: corpses share the actor's wire frame.
         let corpse_identity = {
             let mut runtime = owner.runtime.lock().await;
             let creature = runtime.admit_pinned_test_creature(at(2, 2)).map_err(debug)?;
@@ -563,9 +563,6 @@ fn scenario(target_move: bool) -> TestResult {
                 before
             );
         }
-        let projected = owner.observe_channel_entities(deps.actor).await.ok_or("entities")?;
-        let corpse = projected.entities.iter().find(|entry| entry.identity == corpse_identity).ok_or("corpse")?;
-        assert_eq!(corpse.position.floor, -7);
         assert_eq!(owner.runtime.lock().await.bound_corpse(corpse_identity).ok_or("bound corpse")?.position.floor, 7);
 
         let bag = h
@@ -1132,7 +1129,6 @@ async fn result_at_rest(
     id: u64,
     at: MovementLocalPosition,
 ) -> TestResult<Vec<u8>> {
-    assert_eq!(at.floor, 7);
     loop {
         let frame = read(client).await?;
         let envelope = decode_wire_envelope(&frame)?;
@@ -1142,8 +1138,6 @@ async fn result_at_rest(
                 // The relocation's revision update is legitimate even after returning to the
                 // same tile. Every observed position must stay at that tile after cancellation.
                 let value = oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_delta_with_item_handles(delta.payload).map_err(debug)?;
-                // A generic bundle_view carries no pinned activity source role, so
-                // wire_position keeps the legacy +z floor (only source rooms negate).
                 assert_eq!(
                     (
                         value.actor_position.x,

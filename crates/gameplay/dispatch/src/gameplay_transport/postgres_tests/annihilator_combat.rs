@@ -2,7 +2,8 @@
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::debug};
 use oteryn_protocol_oteryn::attack::*;
 
-const HEALTH_POTION: &str = "oteryn:item.tibia.i7643";
+pub(super) const KNIGHT_POTION: &str = "oteryn:item.tibia.i7643";
+pub(super) const PALADIN_POTION: &str = "oteryn:item.tibia.i23374";
 
 pub(super) async fn prepare_supplies(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -50,6 +51,11 @@ pub(super) async fn prepare_supplies(
         StarterGrantOutcome::Minted(_) | StarterGrantOutcome::AlreadyGranted
     ));
     if stock {
+        let potion = if build.vocation() == "paladin" {
+            PALADIN_POTION
+        } else {
+            KNIGHT_POTION
+        };
         for occurrence in [4000, 4001] {
             super::quest_world_callbacks::input_item(
                 owner,
@@ -60,7 +66,7 @@ pub(super) async fn prepare_supplies(
                         y: 31671,
                         floor: -13,
                     },
-                    item: HEALTH_POTION.into(),
+                    item: potion.into(),
                     count: 100,
                 },
                 occurrence,
@@ -75,6 +81,7 @@ pub(super) async fn prepare_supplies(
 pub(super) async fn heal(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     member: &mut AdmittedSession,
+    potion: &str,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_object::*;
     member.item_fence = Some(
@@ -96,7 +103,7 @@ pub(super) async fn heal(
         .active_generation
         .and_then(|g| g.native_gameplay())
         .and_then(|n| n.item_index())
-        .and_then(|i| i.definition_ref("Item", HEALTH_POTION, "definition-r1"))
+        .and_then(|i| i.definition_ref("Item", potion, "definition-r1"))
         .ok_or("potion reference")?;
     let (next, status, result, _) = super::special_potions::exchange(
         owner,
@@ -158,7 +165,7 @@ pub(super) async fn clear_corridor(
                 initial.health, initial.maximum_health,
                 "source full health before combat"
             );
-            targets.push((x, target, initial));
+            targets.push((x, target));
         }
         targets
     };
@@ -173,7 +180,7 @@ pub(super) async fn clear_corridor(
     )
     .await?;
     let mut observed_incoming_damage = false;
-    for (x, target, initial) in corridor {
+    for (x, target) in corridor {
         let entity = oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
             identity: target.actor.placement_identity(),
             generation: target.generation,
@@ -191,18 +198,6 @@ pub(super) async fn clear_corridor(
             owner
                 .refresh_attack_weapon(player, member.game_session_id)
                 .await;
-            if pass % 8 == 0 {
-                let state = owner.states.attack.lock().await.combat_state(
-                    player,
-                    member.game_session_id,
-                    owner.owner_now(),
-                );
-                eprintln!(
-                    "ANNIHILATOR_ATTACK_STATE pass={pass} target_bound={} in_fight={}",
-                    state.target.is_some(),
-                    state.in_fight
-                );
-            }
             let before_attack = owner
                 .runtime
                 .lock()
@@ -273,13 +268,7 @@ pub(super) async fn clear_corridor(
                 break;
             }
             if needs_healing {
-                heal(owner, member).await?;
-            }
-            if pass % 32 == 0 {
-                eprintln!(
-                    "ANNIHILATOR_COMBAT_PROGRESS x={x} pass={pass} before_attack={before_attack} after_attack={after_attack} health={remaining}/{}",
-                    initial.maximum_health
-                );
+                heal(owner, member, KNIGHT_POTION).await?;
             }
             owner.clock_origin = owner
                 .clock_origin
@@ -290,7 +279,7 @@ pub(super) async fn clear_corridor(
         }
         assert!(
             killed,
-            "source full-health demon survived real combat budget"
+            "source full-health demon at x={x} survived real combat budget"
         );
         let outcome = owner.drain_kill_rewards(member.game_session_id).await;
         assert!(
