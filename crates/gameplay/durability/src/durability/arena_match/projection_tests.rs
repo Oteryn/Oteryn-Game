@@ -94,7 +94,8 @@ fn m51_commit_clock_refuses_late_victory_and_portal_progress()
         &status,
         fence,
         command,
-        99_999
+        99_999,
+        None
     ));
     for now in [100_000, 100_001] {
         assert!(
@@ -106,7 +107,8 @@ fn m51_commit_clock_refuses_late_victory_and_portal_progress()
                 &status,
                 fence,
                 command,
-                now
+                now,
+                None
             ),
             "read-before-expiry cannot credit a death after the commit deadline"
         );
@@ -135,7 +137,8 @@ fn m51_commit_clock_refuses_late_victory_and_portal_progress()
             &advance,
             fence,
             command,
-            99_999
+            99_999,
+            None
         ));
         for now in [100_000, 100_001] {
             assert!(
@@ -147,7 +150,8 @@ fn m51_commit_clock_refuses_late_victory_and_portal_progress()
                     &advance,
                     fence,
                     command,
-                    now
+                    now,
+                    None
                 ),
                 "an expired portal cannot renew or complete the run"
             );
@@ -159,7 +163,8 @@ fn m51_commit_clock_refuses_late_victory_and_portal_progress()
                 &status,
                 fence,
                 command,
-                now
+                now,
+                None
             ));
         }
     }

@@ -465,6 +465,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     disposition = D::WrongState;
                 }
                 A::Enter if after.rank == 0 && after.completed < 3 => {
+                    if after.paid_rank != 0 {
+                        return None;
+                    }
                     let rank = after.completed + 1;
                     let runtime = self.runtime.lock().await;
                     let at = runtime.read_actor_position(actor).ok()?.position();
@@ -479,6 +482,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 .expected_character_revision
                                 .get()
                                 .checked_add(1)?,
+                            paid_rank: 0,
                             rank,
                             pit: 1,
                             phase: 1,

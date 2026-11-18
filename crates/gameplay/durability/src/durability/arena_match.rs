@@ -19,11 +19,13 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 pub mod donor;
+mod native_admission;
 mod native_death;
 mod native_departure;
 mod native_origin;
 mod native_step;
 mod native_timeout;
+pub use native_admission::NativeArenaAdmission;
 pub use native_death::NativeArenaDeath;
 pub use native_departure::NativeArenaDeparture;
 pub use native_origin::NativeArenaOrigin;
@@ -37,6 +39,8 @@ pub(in crate::durability) mod terminal;
 pub struct MatchState {
     pub completed: u8,
     pub entry_revision: u64,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub paid_rank: u8,
     pub rank: u8,
     pub pit: u8,
     pub phase: u8,
@@ -44,6 +48,9 @@ pub struct MatchState {
     pub session: [u8; 16],
     pub scope_generation: u64,
     pub run: [u8; 16],
+}
+fn is_zero(value: &u8) -> bool {
+    *value == 0
 }
 impl MatchState {
     /// Crystal svargrond_arena.lua:259-313: victory does not renew the pit's
@@ -344,7 +351,11 @@ impl DurabilityRoot {
                     .bind(fence.character_id.as_bytes().as_slice()).bind(prior.run.as_slice()).bind(i16::from(prior.rank)).bind(i16::from(prior.pit)).bind(death_key).execute(&mut **tx).await?;
                 ready.phase=2;
             }
-            if !valid_transition(&prior,&ready,&request.after,request.disposition,&request.payload,fence,command,now_ms) {return Err(DurabilityError::InvalidStoredState);}
+            let admission = match &request.native_origin {
+                Some(NativeArenaOrigin::Admission(origin)) => Some(origin.is_payment()),
+                _ => None,
+            };
+            if !valid_transition(&prior,&ready,&request.after,request.disposition,&request.payload,fence,command,now_ms,admission) {return Err(DurabilityError::InvalidStoredState);}
             let mut after=request.after;
             let mut disposition=request.disposition;
             // Claim shared custody before charging an entry fee or moving to the
@@ -354,14 +365,16 @@ impl DurabilityRoot {
                 after=ready.clone();
                 disposition=ArenaDisposition::Busy;
             }
-            let entering=disposition==ArenaDisposition::Applied && after.phase==1 && prior.rank==0;
+            let entering=disposition==ArenaDisposition::Applied && after.phase==1 && prior.rank==0 && prior.paid_rank==0;
+            let paying=disposition==ArenaDisposition::Applied && admission==Some(true) && after.paid_rank!=0;
+            let fee_rank=if paying {after.paid_rank} else {after.rank};
             let mut fee_occurrence=None;
-            if entering {
-                if after.rank!=prior.completed+1 || after.pit!=1 || after.rank>3 {return Err(DurabilityError::InvalidStoredState);}
+            if entering || paying {
+                if fee_rank!=prior.completed+1 || !(1..=3).contains(&fee_rank) {return Err(DurabilityError::InvalidStoredState);}
                 let Some(change)=request.change else {return Err(DurabilityError::InvalidStoredState);};
                 let occurrence=identity(command,b"fee");
                 let fee=FeeBurnRequest{cause:FeeBurnCause::ArenaEntry{occurrence},
-                    fee_gold_units:donor::FEES[usize::from(after.rank-1)],
+                    fee_gold_units:donor::FEES[usize::from(fee_rank-1)],
                     transaction_id:identity(command,b"fee-tx"),event_id:identity(command,b"fee-event"),
                     occurred_at_unix_ms:now_ms,server_build_id:super::character_authority::SERVER_BUILD_ID.into(),change};
                 match burn_fee_in_transaction(&mut tx,&fence,&fee).await {
@@ -392,7 +405,7 @@ impl DurabilityRoot {
             if let Some(occurrence)=fee_occurrence {
                 let next=root.revision.checked_add(1).ok_or(DurabilityError::InvalidStoredState)?;
                 sqlx::query("INSERT INTO game_arena_entry_receipts(character_id,game_session_id,command_id,fee_occurrence,rank,original_character_revision,committed_character_revision,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision) SELECT character_id,encode($2,'hex')::uuid,$3::text::numeric,encode($4,'hex')::uuid,$5,character_revision,$6::text::numeric,level,level,total_experience,total_experience,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
-                    .bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(occurrence.as_slice()).bind(i16::from(after.rank)).bind(next.to_string()).execute(&mut **tx).await?;
+                    .bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(occurrence.as_slice()).bind(i16::from(fee_rank)).bind(next.to_string()).execute(&mut **tx).await?;
                 for query in ["UPDATE game_character_roots SET character_revision=$2::text::numeric WHERE character_id=encode($1,'hex')::uuid AND character_revision=$3::text::numeric", "UPDATE game_character_progression_state SET character_revision=$2::text::numeric WHERE character_id=encode($1,'hex')::uuid AND character_revision=$3::text::numeric"] {
                     if sqlx::query(query).bind(fence.character_id.as_bytes().as_slice()).bind(next.to_string()).bind(root.revision.to_string()).execute(&mut **tx).await?.rows_affected()!=1 {return Err(DurabilityError::InvalidStoredState);}
                 }
@@ -545,6 +558,7 @@ fn valid_transition(
     fence: CurrentCharacterGameplayFence,
     command: CommandRef,
     now_ms: i64,
+    admission: Option<bool>,
 ) -> bool {
     use oteryn_protocol_oteryn::arena::{
         ArenaAction as A, ArenaDisposition as D, decode_match_request,
@@ -572,10 +586,27 @@ fn valid_transition(
     }
     let mut expected = ready.clone();
     match action {
+        A::Enter
+            if admission == Some(true)
+                && before.rank == 0
+                && before.paid_rank == 0
+                && before.completed < 3 =>
+        {
+            expected.paid_rank = before.completed + 1;
+        }
         A::Enter if before.rank == 0 && before.completed < 3 => {
+            if (admission == Some(false) && before.paid_rank != before.completed + 1)
+                || (admission.is_none() && before.paid_rank != 0)
+            {
+                return false;
+            }
             expected = MatchState {
                 completed: before.completed,
-                entry_revision: fence.expected_character_revision.get().saturating_add(1),
+                entry_revision: fence
+                    .expected_character_revision
+                    .get()
+                    .saturating_add(u64::from(before.paid_rank == 0)),
+                paid_rank: 0,
                 rank: before.completed + 1,
                 pit: 1,
                 phase: 1,
