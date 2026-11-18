@@ -348,6 +348,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         now: oteryn_simulation_determinism::SemanticTimeMicros,
     ) -> Option<(u64, ActorVitals)> {
         // Lock order (§1.2): the lane before any Channel guard.
+        let cake_remaining = self.cake_regeneration_remaining_ms().await;
         let mut permit = self.spell_lane_permit().await?;
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
@@ -358,6 +359,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .get_mut(&runtime, actor, session)?
             .expire_owner_premium(now.get())
             .ok()?;
+        if let Some(remaining) = cake_remaining
+            && runtime.owner_fence().is_ok()
+            && runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            let state = states.get_mut(&runtime, actor, session)?;
+            let _ = crate::gameplay_transport::cake_event::apply_world_cake_regeneration(
+                state,
+                remaining,
+                now.get(),
+                runtime.content_pin().server_artifact_digest(),
+            );
+        }
         let state = states.get(&runtime, actor, session)?;
         if !crate::spell::actor_conditions::has_periodic_damage(state) {
             return states.tick_in_environment(

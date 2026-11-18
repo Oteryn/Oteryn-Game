@@ -294,6 +294,19 @@ pub async fn commit_in_transaction<const N: usize>(
         .execute(&mut **tx).await.map_err(DurabilityError::from)?;
     super::world_event_outcomes::capture_kill(tx, &input).await?;
     super::world_event::capture_kill(tx, &input).await?;
+    let cake_bonus: bool = if input.members.iter().any(|member| member.premium) {
+        sqlx::query_scalar(
+            "SELECT EXISTS (SELECT 1 FROM game_cake_phases
+             WHERE world_id=encode($1,'hex')::uuid
+             AND bonus_activated_at<=statement_timestamp() AND statement_timestamp()<bonus_until)",
+        )
+        .bind(scope.runtime_scope().world_id().as_bytes().as_slice())
+        .fetch_one(&mut **tx)
+        .await
+        .map_err(DurabilityError::from)?
+    } else {
+        false
+    };
     let mut awards = Vec::with_capacity(input.members.len());
     for member in input.members {
         let bounty = super::task_board::read_talisman_in_transaction(tx, member.fence).await?;
@@ -375,6 +388,15 @@ pub async fn commit_in_transaction<const N: usize>(
             modifiers.level,
         )
         .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        // Crystal world_bonus.lua:5-9 adds half of the otherwise final gain.
+        let cake_applied = cake_bonus && member.premium;
+        let amount = if cake_applied {
+            amount
+                .checked_add(amount / 2)
+                .ok_or(CharacterProgressionError::InvalidInput)?
+        } else {
+            amount
+        };
         let mut request = member.request;
         request.amount = oteryn_simulation_determinism::ExactI64::new(amount);
         let xp = if amount > 0 {
@@ -391,6 +413,7 @@ pub async fn commit_in_transaction<const N: usize>(
                     member.party_id,
                     member.party_revision,
                     member.shared,
+                    cake_applied,
                 )),
             )
             .await??;
@@ -423,6 +446,7 @@ fn hunting_binding(
     party_id: Option<[u8; 16]>,
     party_revision: Option<u64>,
     shared: bool,
+    cake_applied: bool,
 ) -> [u8; 32] {
     let mut binding = Vec::new();
     binding.extend_from_slice(death);
@@ -439,6 +463,9 @@ fn hunting_binding(
     // Appended only while the bonus applies, so level-50+ bindings stay as before PAR-C14.
     if modifiers.level < 50 {
         binding.extend_from_slice(&modifiers.level.to_be_bytes());
+    }
+    if cake_applied {
+        binding.extend_from_slice(b"cake-world-bonus");
     }
     Sha256::digest(binding).into()
 }

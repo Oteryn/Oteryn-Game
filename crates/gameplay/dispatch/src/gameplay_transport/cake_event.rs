@@ -32,6 +32,99 @@ type CachedCakeMapSources = ([u8; 32], [u8; 32], Vec<CakeMapSource>);
 #[derive(Default)]
 pub(super) struct SourceCache(std::sync::Mutex<Option<CachedCakeMapSources>>);
 
+pub(super) const CAKE_REGENERATION_KEY: &str = "world.cake.regeneration";
+
+/// Cache the durable world window across player ticks in this Channel.
+#[derive(Default)]
+pub(super) struct BonusCache(tokio::sync::Mutex<Option<BonusSample>>);
+
+struct BonusSample {
+    sampled_at: std::time::Instant,
+    remaining_ms: u64,
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn cake_regeneration_remaining_ms(&self) -> Option<u32> {
+        const REFRESH_INTERVAL: std::time::Duration = std::time::Duration::from_secs(5);
+        let mut cache = self.states.cake_bonus.0.lock().await;
+        if cache
+            .as_ref()
+            .is_none_or(|sample| sample.sampled_at.elapsed() >= REFRESH_INTERVAL)
+        {
+            let sampled_at = std::time::Instant::now();
+            let bonus = self.root.cake_world_bonus(self.world_id).await.ok()?;
+            *cache = Some(BonusSample {
+                sampled_at,
+                remaining_ms: bonus.map_or(0, |bonus| bonus.remaining_ms),
+            });
+        }
+        let sample = cache.as_ref()?;
+        let elapsed = u64::try_from(sample.sampled_at.elapsed().as_millis()).ok()?;
+        let remaining = sample.remaining_ms.checked_sub(elapsed)?;
+        u32::try_from(remaining)
+            .ok()
+            .filter(|remaining| *remaining > 0)
+    }
+}
+
+pub(super) fn apply_world_cake_regeneration(
+    state: &mut crate::spell::cast::PlayerSpellState,
+    remaining_ms: u32,
+    now_us: u64,
+    content_digest: [u8; 32],
+) -> Option<()> {
+    use oteryn_gameplay_domain::domain::condition::{ConditionValues, ConflictKey};
+    use oteryn_gameplay_foundation::foundation::condition::{
+        ApplicationFacts, ConditionDefinition, ConditionSourceKind,
+    };
+    use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+
+    let before = state.owned_conditions();
+    if state.vitals().health == 0
+        || before
+            .active_at(ConflictKey::Recovery, now_us)
+            .is_some_and(|condition| condition.definition().key() == CAKE_REGENERATION_KEY)
+    {
+        return Some(());
+    }
+    // Crystal world_bonus.lua:26-48 adds a separate COMBAT/sub0 regeneration
+    // condition. Nonzero vocation gains yield at least one additional point.
+    let vocation = state.source_party_vocation();
+    let rate = crate::spell::food_regeneration::rate(vocation);
+    let extra = |gain: u32| if gain == 0 { 0 } else { (gain / 4).max(1) };
+    let definition = ConditionDefinition::new(
+        CAKE_REGENERATION_KEY,
+        1,
+        ConditionValues::SpellRegeneration {
+            sub_id: 0,
+            duration_ms: remaining_ms,
+            health_gain: extra(rate.health_amount),
+            health_interval_ms: rate.health_period_ms,
+            mana_gain: extra(rate.mana_amount),
+            mana_interval_ms: rate.mana_period_ms,
+        },
+    )?;
+    let root = GameplayDecisionRoot::from_bytes(content_digest);
+    let facts = ApplicationFacts {
+        now: now_us,
+        base_speed: 1,
+        mana_shield_capacity: 0,
+        target_reentry_protected: false,
+        source_reentry_protected: false,
+        target_is_player: true,
+        decision_root: &root,
+        occurrence: DecisionOccurrenceId::from_bytes([0; 16]),
+    };
+    let mut next = before.clone();
+    next.apply(&definition, None, ConditionSourceKind::SelfUse, &[], &facts)
+        .ok()?;
+    let revision = state.revision().checked_add(1)?;
+    let expected = state.owned_conditions().clone();
+    state.apply_batch_conditions(&expected, &next).ok()?;
+    state.source_set_batch_revision(revision);
+    Some(())
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     fn immutable_cake_candidate(&self, target: &WorldObjectTarget) -> bool {
         let Some(map) = self.bundle_map() else {

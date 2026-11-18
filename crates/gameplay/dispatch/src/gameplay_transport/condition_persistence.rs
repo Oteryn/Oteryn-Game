@@ -56,6 +56,13 @@ pub(super) fn restore(
                 next.remove_type(kind);
             }
         }
+        // The world clock continues during logout. Refresh this condition from
+        // its authoritative remaining interval on the next live condition turn.
+        if next.get(ConflictKey::Recovery).is_some_and(|condition| {
+            condition.definition().key() == super::cake_event::CAKE_REGENERATION_KEY
+        }) {
+            next.dispel_key(ConflictKey::Recovery);
+        }
         // A qualified bed rest may have consumed food while the actor was offline.
         if bed_rest.is_some() {
             next.remove_type(ConditionType::FoodRegeneration);
