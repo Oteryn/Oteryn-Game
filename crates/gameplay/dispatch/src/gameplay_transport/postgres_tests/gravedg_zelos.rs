@@ -358,10 +358,14 @@ pub(super) async fn exercise(
         assert!(burst_count > 0, "the party must be in burst range");
         let mut states = owner.states.spell_states.lock().await;
         for (member, session) in party {
-            states
+            let state = states
                 .get_mut(&runtime, member, session)
-                .ok_or("party spell state")?
-                .set_health_for_test(starting_health);
+                .ok_or("party spell state")?;
+            // Keep both entrants alive through all four bursts to read the full HP loss.
+            state
+                .apply_wheel_maximum_bonus(starting_health, 0)
+                .map_err(debug)?;
+            state.restore_saved_vitals(starting_health, state.vitals().mana);
         }
         (shard, burst_count)
     };
