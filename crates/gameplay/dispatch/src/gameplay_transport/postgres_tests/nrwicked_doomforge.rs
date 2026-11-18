@@ -202,8 +202,7 @@ fn portal_fixture(destination: TilePos) -> TestResult<(Vec<u8>, crate::map::boot
     portal.key = "oteryn:item.tibia.i37000".into();
     let mut fire = portal.clone();
     fire.key = "oteryn:item.tibia.i49362".into();
-    fire.id = 1;
-    portal.id = 0;
+    fire.id = portal.id + 1;
     manifest.palette.truncate(1);
     manifest.palette.push(portal);
     manifest.palette.push(fire);
