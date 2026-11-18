@@ -227,8 +227,15 @@ async fn exercise(h: &Harness, vocation: crate::spell::Vocation, reward: u16) ->
         .await;
     let greeting =
         super::npc_dialogue_fixture::talk(&mut owner, &admitted, arkulius, 700, "hi").await?;
-    let missing =
-        super::npc_dialogue_fixture::talk(&mut owner, &admitted, arkulius, 701, "mission").await?;
+    let missing = super::npc_dialogue_fixture::talk_with_disposition(
+        &mut owner,
+        &admitted,
+        arkulius,
+        701,
+        "mission",
+        oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::Rejected,
+    )
+    .await?;
     assert!(
         missing.iter().all(|line| !line.contains("revived soon")),
         "Arkulius must withhold payment without Neutral Matter: {missing:?}"
