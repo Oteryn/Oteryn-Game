@@ -142,6 +142,17 @@ async fn exercise(h: &Harness) -> TestResult {
                 .fixture_quest_topic(session)?,
             topic
         );
+        if topic == 2 {
+            talk(&mut owner, &admitted, npc, 2011, "alori").await?;
+            assert_eq!(
+                owner
+                    .states
+                    .npc_conversations
+                    .fixture_quest_topic(session)?,
+                2,
+                "an incomplete formula cannot advance Mission03 dialogue"
+            );
+        }
     }
     Ok(())
 }
