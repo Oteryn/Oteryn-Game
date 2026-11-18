@@ -852,7 +852,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                     .await?;
             assert_eq!(
                 canonical,
-                i64::try_from(actual_kills)?,
+                i64::from(actual_kills),
                 "each distinct death commits once"
             );
             let before: (i64,i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_character_quest_receipts)").fetch_one(&h.pool).await?;
@@ -1029,7 +1029,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
         .await?;
         assert_eq!(
             counts,
-            (i64::try_from(actual_kills)?, 0, 0),
+            (i64::from(actual_kills), 0, 0),
             "each death settles without XP or chests"
         );
     }
