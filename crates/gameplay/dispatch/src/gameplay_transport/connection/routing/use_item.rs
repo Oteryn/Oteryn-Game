@@ -119,19 +119,27 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         && intent.use_with.is_none()
         && intent.use_with_map_item.is_none()
         && intent.use_with_position.is_none()
-        && matches!(intent.target, UseTarget::Item(_) | UseTarget::WorldObject(_))
-        && admitted.continuity.selected_capabilities.contains(
-            oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
+        && matches!(
+            intent.target,
+            UseTarget::Item(_) | UseTarget::WorldObject(_)
         )
-        && admitted.continuity.selected_capabilities.contains(
-            oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
-        )
+        && admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1)
+        && admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1)
     {
         let resolved = match intent.target {
             UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
             _ => None,
         };
-        if let Some(outcome) = authority.server_modal_offer_bed(*admitted, intent.target.clone(), resolved).await {
+        if let Some(outcome) = authority
+            .server_modal_offer_bed(*admitted, intent.target.clone(), resolved)
+            .await
+        {
             return Some(Dispatch::Use(outcome));
         }
     }
@@ -263,7 +271,13 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         };
         // Probe the quest receipt before fresh handle/custody admission. A
         // committed sample remains replayable after either handle disappears.
-        if transport::cosmetic_item_use::quest_targets::probes(intent)
+        if (transport::cosmetic_item_use::quest_targets::probes(intent)
+            || matches!(
+                intent.use_with_map_item,
+                Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(
+                    _
+                ))
+            ))
             && let Some(outcome) = tokio::time::timeout(
                 std::time::Duration::from_secs(10),
                 authority.use_quest_tool(

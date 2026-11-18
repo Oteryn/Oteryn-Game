@@ -226,7 +226,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
                 &harness,
                 &deps,
                 fence,
-                &map,
+                owner.bundle_map().ok_or("egg bundle map")?,
                 reference(key),
                 reference(oven),
             )

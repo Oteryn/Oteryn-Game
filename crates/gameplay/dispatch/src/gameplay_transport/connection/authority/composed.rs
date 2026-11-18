@@ -1201,6 +1201,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(Some(outcome));
         }
+        if matches!(
+            intent.use_with_map_item,
+            Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(
+                _
+            ))
+        ) {
+            return Ok(None);
+        }
         let corpse = match target {
             Some(item_view::ItemKey::Instance(id)) if intent.use_with_map_item.is_some() => {
                 Some(id)
