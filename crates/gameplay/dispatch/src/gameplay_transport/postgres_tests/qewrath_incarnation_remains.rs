@@ -46,7 +46,7 @@ fn fixture() -> TestResult<QuestStateCatalogue> {
         "keywords":["sceptre"],"topic":0,"next_topic":0,"take":[],"give":null,"outfit":null,"achievement":null,
         "reply":["The sceptre is almost torn from your hand as you banish the presence of the emperor."],"sources":[SOURCE], "carried_item":SCEPTRE,"creature_target":"oteryn:creature.fury_of_the_emperor",
         "present":[{"item":SCEPTRE,"count":1}],
-        "corpse_target":{"appearance":11361,"maximum_age_ms":60000,"retain_tool":true,
+        "corpse_target":{"appearance":11361,"retain_tool":true,
             "additional_creatures":[CREATURE,"oteryn:creature.scorn_of_the_emperor","oteryn:creature.spite_of_the_emperor"]},
         "storage":[{"track":QUESTLINE,"minimum":0,"maximum":34,"set":0,"preserve":true}],
         "state_ops":[
@@ -128,6 +128,11 @@ pub(super) async fn exercise(
         (9200, None, UseDisposition::Committed),
         (
             9201,
+            Some(ItemKey::Entity(corpse_handle)),
+            UseDisposition::Rejected,
+        ),
+        (
+            9202,
             Some(ItemKey::Instance(*corpse.as_bytes())),
             UseDisposition::Rejected,
         ),
@@ -154,7 +159,7 @@ pub(super) async fn exercise(
             .ok_or("sceptre USE not owned")?;
         assert_eq!(outcome.disposition, expected);
     }
-    let counts: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_quest_corpse_samples WHERE source_item=$1 AND corpse_item=$2),(SELECT quantity FROM game_item_instances WHERE item_instance_id=$1 AND lifecycle=1),(SELECT count(*) FROM game_quest_callback_consumptions WHERE item_instance_id=$1)")
+    let counts: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_quest_corpse_samples WHERE source_item=$1 AND corpse_item=$2 AND maximum_age_ms IS NULL),(SELECT quantity FROM game_item_instances WHERE item_instance_id=$1 AND lifecycle=1),(SELECT count(*) FROM game_quest_callback_consumptions WHERE item_instance_id=$1)")
         .bind(source).bind(corpse).fetch_one(&h.pool).await?;
     assert_eq!(counts, (1, 1, 0));
     for (track, value) in [(STATUS, 1), (MISSION, 2)] {

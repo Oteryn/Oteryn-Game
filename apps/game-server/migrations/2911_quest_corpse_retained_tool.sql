@@ -5,8 +5,8 @@
 ALTER TABLE game_quest_corpse_samples
  ALTER COLUMN source_item DROP NOT NULL,
  ALTER COLUMN maximum_age_ms DROP NOT NULL,
- ADD CONSTRAINT game_quest_corpse_sample_tool_age_match
- CHECK((source_item IS NULL)=(maximum_age_ms IS NULL));
+ ADD CONSTRAINT game_quest_corpse_sample_age_requires_tool
+ CHECK(maximum_age_ms IS NULL OR source_item IS NOT NULL);
 
 CREATE OR REPLACE FUNCTION game_quest_corpse_sample_complete() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE source_row RECORD; sample_row RECORD; input_row RECORD; ingress_json JSONB; proof JSONB;
@@ -58,6 +58,9 @@ BEGIN
    )
   THEN RAISE EXCEPTION 'corpse sample lacks retained selected tool' USING ERRCODE='23514'; END IF;
   RETURN NULL;
+ END IF;
+ IF sample_row.maximum_age_ms IS NULL THEN
+  RAISE EXCEPTION 'consumed corpse tool requires a freshness window' USING ERRCODE='23514';
  END IF;
  SELECT * INTO input_row FROM game_quest_callback_consumptions c
  WHERE (c.character_id,c.cause_id,c.cause_ordinal,c.transition_key)=(NEW.character_id,NEW.cause_id,NEW.cause_ordinal,NEW.transition_key)

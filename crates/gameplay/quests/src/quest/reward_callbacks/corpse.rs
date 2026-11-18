@@ -20,10 +20,12 @@ impl CorpseTarget {
             && !callback.capture_creature
             && !callback.fresh_corpse
             && (if callback.carried_item.is_some() {
+                // Crystal 201189f8 actions_mission10_a_message_of_freedom_sceptre.lua:20–32
+                // limits the player's reuse of the sceptre independently of corpse age.
                 self.maximum_age_ms
-                    .is_some_and(|age| (1..=3_600_000).contains(&age))
+                    .map_or(self.retain_tool, |age| (1..=3_600_000).contains(&age))
             } else {
-                // Crystal 201189f8 actions_mission03_the_keeper.lua:17–21
+                // Crystal 201189f8 actions_mission03_the_keeper.lua:19–24
                 // uses the original corpse directly, with no extra freshness window.
                 self.maximum_age_ms.is_none()
                     && !self.retain_tool
