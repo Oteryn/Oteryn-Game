@@ -1192,8 +1192,23 @@ pub(crate) fn declare_tracks(
     extend_callbacks(catalogue, Vec::new(), load_document()?.tracks)
 }
 
-pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
+// Active Outfit definition on main at 871c1dec7, after NPC and reward activation.
+const MAIN_OUTFIT_DEFINITION: [u8; 32] = [
+    0xf0, 0x3f, 0xaa, 0x35, 0xab, 0xd9, 0xaf, 0x89, 0xc2, 0x81, 0xd3, 0xb4, 0xf7, 0xdb, 0x2d, 0xd5,
+    0x69, 0xae, 0x32, 0xea, 0xdd, 0x91, 0x87, 0x72, 0x7e, 0x78, 0x82, 0xe4, 0xc9, 0x0e, 0x3c, 0xcf,
+];
+
+pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let document = embedded_document()?;
+    // QB extends the existing track schema without changing any track defaults.
+    catalogue
+        .predecessors
+        .entry("oteryn:quest.outfit_and_addon_quests".into())
+        .or_default()
+        .push(super::NpcDefinitionPredecessor {
+            hash: MAIN_OUTFIT_DEFINITION,
+            defaults: BTreeMap::new(),
+        });
     extend_document(catalogue, document)
 }
 
@@ -2959,6 +2974,20 @@ mod outfit_reward_predecessor_tests {
         let before = declare_tracks(lowered.catalogue().clone())?;
         let active = super::super::npc_rules::extend(before.clone(), &bindings)?;
         Ok((before, active))
+    }
+
+    #[test]
+    fn outfit_accepts_exact_main_active_definition() -> Result<(), String> {
+        let loaded = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let hash = MAIN_OUTFIT_DEFINITION;
+        assert_ne!(catalogue.definition_hash(QUEST), Some(hash));
+        assert_eq!(
+            super::super::npc_rules::legacy_defaults(catalogue, QUEST, &hash),
+            Some(&BTreeMap::new())
+        );
+        Ok(())
     }
 
     fn complete_rewards(before: &QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {

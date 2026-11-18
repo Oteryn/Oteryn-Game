@@ -8658,6 +8658,7 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ajax.lua:sha256:ae0ffccf94c5a9353da66f9357d0a72b9d17acc7441bc642e81b707ee1eda67d"
       ],
+      "requires_premium": true,
       "state_ops": [
         {
           "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon_wait_timer",
@@ -8698,7 +8699,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ajax.lua:sha256:ae0ffccf94c5a9353da66f9357d0a72b9d17acc7441bc642e81b707ee1eda67d"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qb-barbarian-ajax-crude-iron",
@@ -8731,7 +8733,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ajax.lua:sha256:ae0ffccf94c5a9353da66f9357d0a72b9d17acc7441bc642e81b707ee1eda67d"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qb-barbarian-ajax-fangs",
@@ -8764,7 +8767,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ajax.lua:sha256:ae0ffccf94c5a9353da66f9357d0a72b9d17acc7441bc642e81b707ee1eda67d"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qb-barbarian-ajax-gelagos",
@@ -8792,7 +8796,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ajax.lua:sha256:ae0ffccf94c5a9353da66f9357d0a72b9d17acc7441bc642e81b707ee1eda67d"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qb-barbarian-ajax-leather",
@@ -8826,6 +8831,7 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ajax.lua:sha256:ae0ffccf94c5a9353da66f9357d0a72b9d17acc7441bc642e81b707ee1eda67d"
       ],
+      "requires_premium": true,
       "state_ops": [
         {
           "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon_wait_timer",
@@ -8869,7 +8875,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ajax.lua:sha256:ae0ffccf94c5a9353da66f9357d0a72b9d17acc7441bc642e81b707ee1eda67d"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qb-barbarian-ajax-please",
@@ -8898,6 +8905,7 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ajax.lua:sha256:ae0ffccf94c5a9353da66f9357d0a72b9d17acc7441bc642e81b707ee1eda67d"
       ],
+      "requires_premium": true,
       "state_ops": [
         {
           "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon_wait_timer",
@@ -8938,6 +8946,7 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ajax.lua:sha256:ae0ffccf94c5a9353da66f9357d0a72b9d17acc7441bc642e81b707ee1eda67d"
       ],
+      "requires_premium": true,
       "state_ops": [
         {
           "track": "oteryn:quest-progress/quest/u7_8/barbarian_outfits/barbarian_addon_wait_timer",
@@ -8987,7 +8996,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bron.lua:sha256:81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qb-barbarian-bron-person",
@@ -9015,7 +9025,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bron.lua:sha256:81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qb-barbarian-bron-spirit",
@@ -9048,7 +9059,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bron.lua:sha256:81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qb-barbarian-bron-start",
@@ -9076,7 +9088,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bron.lua:sha256:81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qb-barbarian-bron-sweat",
@@ -9109,7 +9122,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bron.lua:sha256:81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qb-barbarian-bron-task",
@@ -9137,7 +9151,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bron.lua:sha256:81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qb-barbarian-bron-wig",
@@ -9168,7 +9183,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bron.lua:sha256:81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qb-barbarian-bron-yarn",
@@ -9201,7 +9217,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bron.lua:sha256:81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qb-citizen-backpack",
@@ -9240,6 +9257,13 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lubo.lua:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d"
+      ],
+      "requires_premium": true,
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.citizen",
+          "addons": 1
+        }
       ],
       "state_ops": [
         {
@@ -9293,6 +9317,13 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lubo.lua:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d"
       ],
+      "requires_premium": true,
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.citizen",
+          "addons": 1
+        }
+      ],
       "state_ops": [
         {
           "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack_timer",
@@ -9337,6 +9368,13 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lubo.lua:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d"
+      ],
+      "requires_premium": true,
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.citizen",
+          "addons": 1
+        }
       ]
     },
     {
@@ -9387,6 +9425,13 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hanna.lua:sha256:cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956"
+      ],
+      "requires_premium": true,
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.citizen",
+          "addons": 2
+        }
       ]
     },
     {
@@ -9421,6 +9466,13 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/hanna.lua:sha256:cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956"
+      ],
+      "requires_premium": true,
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.citizen",
+          "addons": 2
+        }
       ]
     },
     {
@@ -9458,6 +9510,7 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cornelia.lua:sha256:421600da97cb55bf1b5e5fb9a54df0c7cd36f10c1b383f2b84a8bdd2f7bd89e2"
       ],
+      "requires_premium": true,
       "state_ops": [
         {
           "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_timer",
@@ -9503,7 +9556,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/trisha.lua:sha256:e443d360f36f83bddcdb04abbf4a60c93342ea084689b464628192116c777e86"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qb-warrior-shoulder-claw",
@@ -9536,7 +9590,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/trisha.lua:sha256:e443d360f36f83bddcdb04abbf4a60c93342ea084689b464628192116c777e86"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qb-warrior-shoulder-shells",
@@ -9569,7 +9624,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/trisha.lua:sha256:e443d360f36f83bddcdb04abbf4a60c93342ea084689b464628192116c777e86"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qb-warrior-shoulder-spirit",
@@ -9602,7 +9658,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/trisha.lua:sha256:e443d360f36f83bddcdb04abbf4a60c93342ea084689b464628192116c777e86"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qb-warrior-shoulder-start",
@@ -9636,7 +9693,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/trisha.lua:sha256:e443d360f36f83bddcdb04abbf4a60c93342ea084689b464628192116c777e86"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qb-warrior-shoulder-work",
@@ -9670,6 +9728,7 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cornelia.lua:sha256:421600da97cb55bf1b5e5fb9a54df0c7cd36f10c1b383f2b84a8bdd2f7bd89e2"
       ],
+      "requires_premium": true,
       "state_ops": [
         {
           "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_timer",
@@ -9721,6 +9780,7 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/morgan.lua:sha256:fbef2b0d61842368915e506ff5d2e1e96f00a3f55bb3cad4ee97178824832610"
       ],
+      "requires_premium": true,
       "forbids_addons": [
         {
           "outfit": "oteryn:outfit.warrior",
@@ -9755,6 +9815,7 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/morgan.lua:sha256:fbef2b0d61842368915e506ff5d2e1e96f00a3f55bb3cad4ee97178824832610"
       ],
+      "requires_premium": true,
       "forbids_addons": [
         {
           "outfit": "oteryn:outfit.warrior",

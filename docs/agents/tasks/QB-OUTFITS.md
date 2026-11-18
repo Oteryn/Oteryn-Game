@@ -93,10 +93,9 @@ Cornelia donors. Global wins over the donors:
 | Warrior shoulder spikes | `Warrior_Outfits_Quest/Spoiler` | Trisha 32346,31749,7 takes 100 hardened bones, 100 turtle shells, fighting spirit and a dragon claw; Cornelia 32335,31794,7 adorns the armour two hours later, for everyone (the Crystal donor's one hour for women is not global) |
 | Warrior sword | `Warrior_Outfits_Quest/Spoiler` | Morgan takes a piece of royal steel and 100 iron ore |
 
-- Both Citizen routes share the catalogue tracks `u7_8/citizen_outfits/*`, so
-  each addon is earned once, by either route.
-- The full-outfit achievement is granted by the server lane's generic table
-  (FULLOUT), not by these callbacks.
+- Both Citizen routes grant the same addon entitlements. Mainland hand-ins
+  check ownership before taking materials.
+- Full-outfit achievement support is tracked in the server lane (FULLOUT).
 
 Tests: QB-3 cells in the Python and compiler placement tests;
 `qb_citizen_hand_ins_are_placed_and_story_completes` and
@@ -132,7 +131,7 @@ placed at their single agreeing promotion-candidate cells (Bron as a source-back
 | Axe (addon 1) | `Barbarian_Outfits_Quest/Spoiler` | Ajax takes 100 iron ore, a huge chunk of crude iron, 50 perfect behemoth fangs and 50 lizard leathers, then forges the axe two hours later (7201 s) |
 | Outfit | `Barbarian_Outfits` | Premium outfit (looktype 143 male, 147 female); addons from this quest |
 
-- The Brutal Politeness achievement is granted by the generic full-outfit table, not here.
+- Brutal Politeness is part of the full-outfit achievement follow-up (FULLOUT).
 - Items are the catalogue ids 5884, 5910, 5911, 5886, 5885, 5880, 5892, 5893 and 5876.
 - Tracks are the existing `u7_8/barbarian_outfits/barbarian_addon` and `barbarian_addon_wait_timer`.
 

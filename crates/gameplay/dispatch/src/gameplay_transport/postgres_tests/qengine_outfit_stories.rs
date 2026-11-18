@@ -564,6 +564,133 @@ pub(super) async fn seed_quest_prerequisites(
     Ok(())
 }
 
+#[test]
+fn qb_outfit_progress_advances_from_main_definition() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-qb-main-predecessor")
+}
+
+#[test]
+fn qb_citizen_owned_hat_refuses_mainland_exchange_without_consuming() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-qb-owned-hat")
+}
+
+#[test]
+fn qb_citizen_free_account_refuses_mainland_exchange_without_consuming() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-qb-free-account")
+}
+
+fn select_outfit_capabilities(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    let mut selected = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    selected.extend([3, 6, 25]);
+    selected.sort_unstable();
+    selected.dedup();
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        owner.appearance_available(),
+    );
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
+            .ok_or("capabilities")?;
+    Ok(())
+}
+
+async fn citizen_hat_regression(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    name: &str,
+) -> TestResult {
+    select_outfit_capabilities(owner, admitted)?;
+    let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
+    let hat = callbacks
+        .iter()
+        .find(|callback| callback.key == "oteryn:quest-reward/qb-citizen-hat")
+        .ok_or("mainland hat callback")?;
+    let [hanna] = super::classic_quests::install(owner, admitted, ["oteryn:npc.hanna"]).await?;
+    let ready = hat
+        .storage
+        .iter()
+        .map(|state| (state.track.clone(), state.minimum))
+        .collect::<Vec<_>>();
+    seed_quest_prerequisites(h, owner, admitted, &ready, 106).await?;
+
+    if name.ends_with("main-predecessor") {
+        // Restore a historical pin alongside the progress populated by the fixture.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision) SELECT character_id,$1,'content-1',decode('f03faa35abd9af89c281d3b4f7db2dd569ae32eadd9187727e7882e4c90e3ccf','hex'),character_revision,character_revision FROM game_character_roots")
+            .bind(&hat.quest).execute(&mut *tx).await?;
+        tx.commit().await?;
+    }
+    if name.ends_with("owned-hat") {
+        let rook_hat = callbacks
+            .iter()
+            .find(|callback| callback.key == "oteryn:quest-reward/l6-citizen-rook-hat")
+            .and_then(|callback| callback.outfit.as_ref())
+            .ok_or("Rookgaard hat reward")?;
+        sqlx::query("WITH receipt AS (INSERT INTO game_account_appearance_unlock_receipts(grant_occurrence_id,account_id,unlock_key,content_revision,granting_character_id,source_kind,source_event_id) SELECT game_character_uuid_v7(),account_id,$1,$2,character_id,'quest',$3 FROM game_character_roots RETURNING grant_occurrence_id,account_id,unlock_key) INSERT INTO game_account_appearance_unlocks(account_id,unlock_key,grant_occurrence_id) SELECT account_id,unlock_key,grant_occurrence_id FROM receipt")
+            .bind(rook_hat.grant_key(2))
+            .bind(oteryn_gameplay_quests::quest::reward_callbacks::PROVENANCE)
+            .bind(b"qb-rook-hat-fixture".as_slice()).execute(&h.pool).await?;
+    }
+    let accepted = name.ends_with("main-predecessor");
+    assert_eq!(
+        owner
+            .session_premium_gate(admitted.game_session_id)
+            .await
+            .premium_current(),
+        !name.ends_with("free-account")
+    );
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    let mut bags = Vec::new();
+    let mut occurrence = 500;
+    let mut inventory_before = Vec::new();
+    for item in &hat.take {
+        supply(owner, admitted, h, item, &mut bags, &mut occurrence).await?;
+        let available = quantity(h, &item.item).await?;
+        assert!(available >= i64::from(item.count));
+        inventory_before.push(available);
+    }
+    let before = counts(h).await?;
+    let (result, _, _) =
+        super::qengine_rewards::wire_reward(owner, admitted, hanna, hat, accepted).await?;
+    if accepted {
+        assert_eq!(
+            result,
+            NpcIntentDisposition::Ok,
+            "an active reward must accept main's pinned progress"
+        );
+        for state in &hat.storage {
+            let value: i64 = sqlx::query_scalar(
+                "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
+            )
+            .bind(&state.track)
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(value, state.set);
+        }
+    } else {
+        assert_eq!(result, NpcIntentDisposition::Rejected);
+        assert_eq!(counts(h).await?, before);
+    }
+    for (item, available) in hat.take.iter().zip(inventory_before) {
+        let consumed = if accepted { i64::from(item.count) } else { 0 };
+        assert_eq!(quantity(h, &item.item).await?, available - consumed);
+    }
+    Ok(())
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -571,6 +698,14 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if matches!(
+        name,
+        "qengine-rewards-qb-main-predecessor"
+            | "qengine-rewards-qb-owned-hat"
+            | "qengine-rewards-qb-free-account"
+    ) {
+        return Box::pin(citizen_hat_regression(owner, admitted, h, name)).await;
+    }
     let (family, steps, look): (&str, &[StoryStep], u16) = match name {
         "qengine-rewards-l2-wizard-skull-story" => (
             "wizard",
@@ -1086,6 +1221,13 @@ pub(super) async fn exercise(
             "exact source quest gift"
         );
 
+        if batch == "qb" {
+            assert!(
+                callback.requires_premium,
+                "Premium gate for {}",
+                callback.key
+            );
+        }
         if family == "beggar" && *suffix == "first-materials" {
             assert_eq!(
                 serde_json::to_value(&callback)?["fee"],
@@ -1464,21 +1606,7 @@ pub(super) async fn exercise(
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
-    let mut selected = admitted
-        .continuity
-        .selected_capabilities
-        .as_slice()
-        .to_vec();
-    selected.extend([3, 6, 25]);
-    selected.sort_unstable();
-    selected.dedup();
-    let offered = crate::gameplay_transport::appearance_change::offer::offered(
-        owner.offered_capabilities(),
-        owner.appearance_available(),
-    );
-    admitted.continuity.selected_capabilities =
-        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
-            .ok_or("capabilities")?;
+    select_outfit_capabilities(owner, admitted)?;
     // Earn ordinary carrying capacity through the real progression owner for
     // the largest source recipes, preserving every native weight check.
     if matches!(
