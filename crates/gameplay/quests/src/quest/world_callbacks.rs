@@ -845,7 +845,6 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
     }
     let mut keys = BTreeSet::new();
     let mut selectors = BTreeMap::<Vec<u8>, Vec<&Callback>>::new();
-    let mut group_switches = BTreeMap::new();
     for callback in callbacks {
         if callback
             .item_on_target
@@ -860,20 +859,6 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
         }
         if !keys.insert(&callback.key) {
             return Err("duplicate callback across registries".into());
-        }
-        if let Some(group) = callback
-            .effects
-            .timed_group_transfer
-            .as_ref()
-            .filter(|group| !group.switches.is_empty())
-        {
-            let position = callback
-                .selector
-                .position
-                .ok_or_else(|| format!("missing group switch position for {}", callback.key))?;
-            if group_switches.insert(position, (callback, group)).is_some() {
-                return Err(format!("duplicate group switch at {position:?}"));
-            }
         }
         let selector = serde_json::to_vec(&(
             callback.trigger,
@@ -894,6 +879,28 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
             return Err("duplicate callback selector across registries".into());
         }
         peers.push(callback);
+    }
+    validate_group_switch_bindings(callbacks)
+}
+
+pub(super) fn validate_group_switch_bindings(callbacks: &[Callback]) -> Result<(), String> {
+    let mut group_switches = BTreeMap::new();
+    for callback in callbacks {
+        let Some(group) = callback
+            .effects
+            .timed_group_transfer
+            .as_ref()
+            .filter(|group| !group.switches.is_empty())
+        else {
+            continue;
+        };
+        let position = callback
+            .selector
+            .position
+            .ok_or_else(|| format!("missing group switch position for {}", callback.key))?;
+        if group_switches.insert(position, (callback, group)).is_some() {
+            return Err(format!("duplicate group switch at {position:?}"));
+        }
     }
     for &(callback, group) in group_switches.values() {
         for switch in &group.switches {

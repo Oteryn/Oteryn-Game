@@ -457,6 +457,7 @@ impl Bindings {
         {
             return Err("authored/base world binding collision or bound".into());
         }
+        super::world_callbacks::validate_group_switch_bindings(&world)?;
         catalogue.authored_bindings = Some(std::sync::Arc::new(RuntimeBindings {
             source: self.clone(),
             world,
