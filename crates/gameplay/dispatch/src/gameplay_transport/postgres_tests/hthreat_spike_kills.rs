@@ -56,6 +56,59 @@ fn bindings() -> TestResult<Bindings> {
     Ok(Bindings::parse(&serde_json::to_vec(&document)?)?)
 }
 
+async fn reach_lower_spike_level(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+) -> TestResult {
+    use super::fixture::{debug, id};
+    use crate::durability::character_progression::{
+        ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
+    };
+    let binding = owner
+        .progression_binding(session)
+        .ok_or("progression binding")?;
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(debug)?
+        .ok_or("quest fence")?;
+    let current = owner
+        .root
+        .read_character_progression(owner.character, fence.character_id)
+        .await
+        .map_err(debug)?
+        .ok_or("current progression")?;
+    let amount = 7_915_800_i64
+        .checked_sub(current.total_experience.get())
+        .ok_or("level 80 XP")?;
+    let outcome = owner
+        .revision_sequencer
+        .acquire(fence.character_id)
+        .await
+        .commit_experience(
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence,
+            ExperienceAwardRequest {
+                occurrence: ExperienceRewardOccurrence::from_bytes(id(105)).map_err(debug)?,
+                amount: oteryn_simulation_determinism::ExactI64::new(amount),
+                context: binding.context.clone(),
+                policy_revision: binding.policy_revision.clone(),
+                reward_revision: binding.reward_revision.clone(),
+                policy: binding.policy.clone(),
+            },
+            None,
+        )
+        .await
+        .map_err(debug)?;
+    let ExperienceCommitOutcome::Committed(receipt) = outcome else {
+        return Err(format!("level 80 experience provision: {outcome:?}").into());
+    };
+    assert_eq!(receipt.level_after, 80);
+    Ok(())
+}
+
 async fn kill(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     killer: ExactActorRef,
@@ -180,14 +233,7 @@ fn scenario() -> TestResult {
             assert!(missing.verify_embedded_recipe_evidence().is_err());
             let base = QuestStateCatalogue::empty("content-1").ok_or("catalogue")?;
             owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
-            // Provision the actor's level before calling the normal death owner.
-            let mut setup = h.pool.begin().await?;
-            sqlx::query("SET LOCAL session_replication_role=replica")
-                .execute(&mut *setup)
-                .await?;
-            sqlx::query("UPDATE game_character_progression_state SET level=80,total_experience=7915800 WHERE character_id=encode($1,'hex')::uuid")
-                .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *setup).await?;
-            setup.commit().await?;
+            reach_lower_spike_level(&owner, session).await?;
             owner.refresh_quest_session(session, true).await;
             let count = async || -> TestResult<i64> {
                 Ok(sqlx::query_scalar("SELECT coalesce((SELECT value FROM game_character_quest_tracks WHERE track_key=$1),0)")
