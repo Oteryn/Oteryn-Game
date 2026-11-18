@@ -135,7 +135,7 @@ impl Skirmish {
     ) -> Result<(), CarrierError> {
         // Crystal action_drume.lua:16-17,21-32,115-120 schedules physical teardown
         // even when the boss has fallen and normal terminal credit already settled.
-        if now_us >= self.deadline || !Self::has_players(runtime, room)? {
+        if now_us >= self.deadline {
             self.eject(runtime, room, cells)?;
             self.ejected = true;
             return Ok(());

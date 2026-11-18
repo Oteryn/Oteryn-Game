@@ -379,12 +379,41 @@ pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResu
             if let Some(spawn_boss) = drume {
                 let (second_actor, second_session) = second.ok_or("second player")?;
                 if reenter {
-                    super::drume_battlefield::vacate(
+                    let original = super::drume_battlefield::vacate(
                         &owner,
                         [
                             (deps.actor, admitted.game_session_id),
                             (second_actor, second_session),
                         ],
+                    )
+                    .await?;
+                    for command_id in [2, 3] {
+                        owner.clock_origin = owner
+                            .clock_origin
+                            .checked_sub(std::time::Duration::from_secs(1))
+                            .ok_or("lever retry clock")?;
+                        let revision =
+                            crate::map::view::MapFacts::object_revision(world.facts(), key);
+                        let result = owner
+                            .use_object(
+                                deps.actor,
+                                UseCommand {
+                                    game_session_id: admitted.game_session_id,
+                                    command_id,
+                                    item_fence: admitted.item_fence,
+                                },
+                                WorldObjectTarget {
+                                    placement: placement.clone(),
+                                    expected_revision: revision,
+                                },
+                            )
+                            .await;
+                        assert_eq!(result.disposition, UseDisposition::Committed);
+                    }
+                    super::drume_battlefield::assert_replaced(
+                        &owner,
+                        [deps.actor, second_actor],
+                        &original,
                     )
                     .await?;
                 } else {

@@ -44,7 +44,7 @@ fn drume_final_lion_death_clears_squads_and_ejects_both_players() -> TestResult 
 }
 
 #[test]
-fn drume_phase_tick_retires_vacated_battlefield_before_timeout() -> TestResult {
+fn drume_lever_replaces_vacated_battlefield_before_timeout() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -171,18 +171,18 @@ pub(super) async fn exercise(
 pub(super) async fn vacate(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     players: [(ExactActorRef, GameSessionId); 2],
-) -> TestResult {
-    let actors = players.map(|(actor, _)| actor);
-    assert_positions(owner, actors, LANDING).await?;
-    assert_eq!(list(owner, LION).await?.len(), 3);
-    assert_eq!(list(owner, USURPER).await?.len(), 3);
-    let destination = super::quest_world_callbacks::local(EXIT);
+) -> TestResult<Vec<ExactActorRef>> {
+    assert_positions(owner, players.map(|(actor, _)| actor), LANDING).await?;
+    let mut original = list(owner, LION).await?;
+    assert_eq!(original.len(), 3);
+    original.extend(list(owner, USURPER).await?);
+    assert_eq!(original.len(), 6);
     {
         let map = owner.bundle_map().ok_or("battlefield map")?;
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let mut runtime = owner.runtime.lock().await;
         let mut proofs = Vec::new();
-        for (actor, session) in players {
+        for ((actor, session), y) in players.into_iter().zip([100, 101]) {
             proofs.push(
                 crate::map::floor::prepare_quest_encounter_ejection(
                     &runtime,
@@ -190,7 +190,11 @@ pub(super) async fn vacate(
                     actor,
                     session,
                     runtime.read_actor_position(actor).map_err(debug)?,
-                    destination,
+                    MovementLocalPosition {
+                        x: 100,
+                        y,
+                        floor: 7,
+                    },
                     &closed,
                 )
                 .map_err(debug)?,
@@ -206,17 +210,29 @@ pub(super) async fn vacate(
             owner.owner_now().get(),
         );
         assert!(
-            states
-                .encounter_phases
-                .active
-                .lock()
-                .map_err(|_| "phases")?
-                .is_empty()
+            original
+                .iter()
+                .all(|actor| runtime.contains_live_creature(*actor))
         );
     }
-    assert!(list(owner, LION).await?.is_empty());
-    assert!(list(owner, USURPER).await?.is_empty());
-    assert_positions(owner, actors, destination).await
+    Ok(original)
+}
+
+pub(super) async fn assert_replaced(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    players: [ExactActorRef; 2],
+    original: &[ExactActorRef],
+) -> TestResult {
+    assert_positions(owner, players, LANDING).await?;
+    assert_eq!(list(owner, LION).await?.len(), 3);
+    assert_eq!(list(owner, USURPER).await?.len(), 3);
+    let runtime = owner.runtime.lock().await;
+    assert!(
+        original
+            .iter()
+            .all(|actor| !runtime.contains_live_creature(*actor))
+    );
+    Ok(())
 }
 
 async fn list(

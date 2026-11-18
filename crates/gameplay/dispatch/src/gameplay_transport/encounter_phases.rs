@@ -113,6 +113,29 @@ impl Registry {
         })
     }
 
+    pub(super) fn retire_vacated_drume(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        key: u64,
+    ) -> Result<(), CarrierError> {
+        let mut active = self.active.lock().map_err(|_| CarrierError::PlanConflict)?;
+        let Some(index) = active.iter().position(|phase| phase.key == key) else {
+            return Ok(());
+        };
+        let phase = &active[index];
+        let Fight::Drume(fight) = &phase.fight else {
+            return Err(CarrierError::PlanConflict);
+        };
+        if phase.fight.is_current(runtime) {
+            if drume::Skirmish::has_players(runtime, &phase.room)? {
+                return Err(CarrierError::PlanConflict);
+            }
+            fight.eject(runtime, &phase.room, &phase.cells)?;
+        }
+        active.remove(index);
+        Ok(())
+    }
+
     pub(super) fn reserve<'a>(
         &'a self,
         runtime: &mut ChannelRuntimeV1,
@@ -123,12 +146,8 @@ impl Registry {
             if !phase.fight.is_current(runtime) {
                 return false;
             }
-            if let Fight::Drume(fight) = &phase.fight {
-                // A new party may replace a vacated same-key battlefield. It
-                // must remove the previous roster before admitting a new one.
-                return phase.key != key
-                    || drume::Skirmish::has_players(runtime, &phase.room).unwrap_or(true)
-                    || fight.eject(runtime, &phase.room, &phase.cells).is_err();
+            if matches!(phase.fight, Fight::Drume(_)) {
+                return true;
             }
             match phase.fight.victors(runtime) {
                 Ok(Some(_)) => {

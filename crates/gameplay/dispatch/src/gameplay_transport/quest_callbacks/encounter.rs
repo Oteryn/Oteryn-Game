@@ -178,7 +178,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 after,
             );
         }
-        let Ok(census) = runtime.positioned_melee_census() else {
+        let Ok(mut census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };
         // Crystal action_drume.lua:35-38 requires the lever user on the first staging tile.
@@ -205,7 +205,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let mut players = Vec::new();
-        let mut proofs = Vec::new();
         for member in &encounter.players {
             let mut occupants = census
                 .iter()
@@ -257,6 +256,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return UseDisposition::Rejected;
             }
+            players.push((who, member_session, expected, member.to));
+        }
+        if !players
+            .iter()
+            .any(|(who, s, _, _)| *who == actor && *s == session)
+        {
+            return UseDisposition::Rejected;
+        }
+        // Crystal action_drume.lua:77-82 clears a vacated arena before spawning the new squads.
+        if !preflight && callback.effects.battlefield.is_some() {
+            if states
+                .encounter_phases
+                .retire_vacated_drume(runtime, key)
+                .is_err()
+            {
+                return UseDisposition::Occupied;
+            }
+            let Ok(current) = runtime.positioned_melee_census() else {
+                return UseDisposition::Rejected;
+            };
+            census = current;
+        }
+        let mut proofs = Vec::new();
+        for &(who, member_session, expected, destination) in &players {
             let blocked =
                 super::super::pvp_live::pz_blocked(states, who, member_session, self.owner_now());
             let Ok(proof) = crate::map::floor::prepare_quest_encounter_ingress(
@@ -265,21 +288,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 who,
                 member_session,
                 expected,
-                local(member.to),
+                local(destination),
                 blocked,
                 &closed,
                 callback.effects.battlefield.is_some(),
             ) else {
                 return UseDisposition::NotPossible;
             };
-            players.push((who, member_session, expected));
             proofs.push(proof);
-        }
-        if !players
-            .iter()
-            .any(|(who, s, _)| *who == actor && *s == session)
-        {
-            return UseDisposition::Rejected;
         }
         let mut monsters = Vec::new();
         for monster in &encounter.monsters {
@@ -318,7 +334,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let party: Vec<_> = players
             .iter()
-            .map(|(actor, session, _)| (*actor, *session))
+            .map(|(actor, session, _, _)| (*actor, *session))
             .collect();
         let scoped_hash = self.quest_catalogue.as_deref().and_then(|catalogue| {
             let bindings = catalogue.authored_bindings()?;
@@ -438,7 +454,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return disposition;
         }
-        for ((who, member_session, expected), snapshot) in players.into_iter().zip(snapshots) {
+        for ((who, member_session, expected, _), snapshot) in players.into_iter().zip(snapshots) {
             states.stage_special_movement_step(
                 runtime,
                 map,
