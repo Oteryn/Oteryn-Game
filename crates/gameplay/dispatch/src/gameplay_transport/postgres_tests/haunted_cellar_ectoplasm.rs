@@ -7,6 +7,7 @@ use crate::durability::{
     quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest},
 };
 use crate::foundation::{CommandId, CommandRef};
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::map::{overlay::TilePos, view::placement_key};
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
@@ -98,7 +99,7 @@ pub(super) async fn exercise(
     assert!(matches!(outcome,QuestTransitionOutcome::Committed(_)));
     drop(slot);
     owner.refresh_quest_session(admitted.game_session_id,false).await;
-    admitted.capabilities =
+    admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(
             owner.offered_capabilities(), &[4,6,11,15,18],
         ).ok_or("USE capabilities")?;

@@ -9,7 +9,7 @@ use crate::durability::{
 use crate::foundation::{CommandId, CommandRef};
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
-    world_callbacks::{self, Callback, Offering, Position},
+    world_callbacks::{self, Callback, Offering, Position, Storage},
 };
 use oteryn_protocol_oteryn::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
@@ -20,11 +20,15 @@ use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
 pub(super) const NAME: &str = "haunted-cellar-disguise";
+pub(super) const FINISH: &str = "haunted-cellar-third-challenge";
 const QUEST: &str = "oteryn:quest.the_dream_courts_quest";
 const ENTRY: &str = "oteryn:quest-callback/dream-courts-haunted-cellar";
 const START: &str = "oteryn:quest-transition/haunted-cellar-fixture/start";
+const START_AFTER_CHALLENGES: &str = "oteryn:quest-transition/haunted-cellar-fixture/start-after-challenges";
 const HAUNTED: &str = "oteryn:quest-progress/crystalserver/quest/u12_00/the_dream_courts/haunted_house/questline";
 const CELLAR: &str = "oteryn:quest-progress/crystalserver/quest/u12_00/the_dream_courts/haunted_house/cellar";
+const TEMPLE: &str = "oteryn:quest-progress/quest/u12_00/the_dream_courts/haunted_house/temple";
+const TOMB: &str = "oteryn:quest-progress/quest/u12_00/the_dream_courts/haunted_house/tomb";
 // Crystal registers an AID. This room binds it to a test floor tile.
 const TRIGGER: Position = Position {x:32717,y:32280,floor:-8};
 const EXIT: Position = Position {x:32727,..TRIGGER};
@@ -52,14 +56,22 @@ pub(super) fn world(callback:&Callback) -> TestResult<crate::map::boot::BundleWo
 }
 
 pub(super) fn catalogue(base:&QuestStateCatalogue, callback:&Callback) -> TestResult<Arc<QuestStateCatalogue>> {
-    let base = base.with_fixture_transition(QuestTransition {
-        key:START.into(),quest:QUEST.into(),effects:vec![QuestEffect {
-            track:HAUNTED.into(),from:QuestComparison::Eq(0),effect:QuestEffectKind::Set(1)
-        }],
-        completes:false,experience:None,world_change:None,
-    }).map_err(debug)?;
-    let base = base.with_fixture_transition(world_callbacks::primary_transition(callback)?).map_err(debug)?;
-    let document = serde_json::json!({"schema":1,"callbacks":[callback]}).to_string();
+    let mut base = base.clone();
+    for (key, progress) in [(START, 0), (START_AFTER_CHALLENGES, 1)] {
+        let effects = [(HAUNTED, 1), (TEMPLE, progress), (TOMB, progress)]
+            .into_iter().map(|(track, value)| QuestEffect {
+                track:track.into(),from:QuestComparison::Eq(0),effect:QuestEffectKind::Set(value),
+            }).collect();
+        base = base.with_fixture_transition(QuestTransition {
+            key:key.into(),quest:QUEST.into(),effects,
+            completes:false,experience:None,world_change:None,
+        }).map_err(debug)?;
+    }
+    let callbacks = admission_phases(callback)?;
+    for entry in &callbacks {
+        base = base.with_fixture_transition(world_callbacks::primary_transition(entry)?).map_err(debug)?;
+    }
+    let document = serde_json::json!({"schema":1,"callbacks":callbacks}).to_string();
     let base = world_callbacks::with_fixture_world_document(&base,&document)?;
     let disguise = serde_json::json!({"schema":1,"tracks":[],"callbacks":[{
         "key":"oteryn:quest-reward/dream-courts/haunted-cellar-disguise",
@@ -78,6 +90,26 @@ pub(super) fn catalogue(base:&QuestStateCatalogue, callback:&Callback) -> TestRe
     )?))
 }
 
+/// The existing disjoint STEP phases express Crystal movements_slime_looktype.lua:17-18.
+fn admission_phases(callback:&Callback) -> TestResult<[Callback;3]> {
+    let flag = |track:&str,value| -> Result<Storage,serde_json::Error> {serde_json::from_value(serde_json::json!({
+        "track":track,"minimum":value,"maximum":value,"set":value,"preserve":true,
+    }))};
+    let mut temple_pending = callback.clone();
+    temple_pending.key.push_str("-temple-pending");
+    temple_pending.storage.push(flag(TEMPLE,0)?);
+    let mut tomb_pending = callback.clone();
+    tomb_pending.key.push_str("-tomb-pending");
+    tomb_pending.storage.extend([flag(TEMPLE,1)?,flag(TOMB,0)?]);
+    let mut final_challenge = callback.clone();
+    final_challenge.key.push_str("-last-challenge");
+    let stage = final_challenge.storage.iter_mut().find(|entry|entry.track==HAUNTED).ok_or("haunted track")?;
+    stage.set=2;
+    stage.preserve=false;
+    final_challenge.storage.extend([flag(TEMPLE,1)?,flag(TOMB,1)?]);
+    Ok([temple_pending,tomb_pending,final_challenge])
+}
+
 #[test]
 fn haunted_cellar_self_use_applies_a_timed_slime_look_and_the_step_keeps_the_empty_container() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
@@ -85,9 +117,16 @@ fn haunted_cellar_self_use_applies_a_timed_slime_look_and_the_step_keeps_the_emp
     super::kill_reward_e2e::scenario_thread::run(NAME, || scenario(NAME,TRIGGER,false))
 }
 
+#[test]
+fn haunted_cellar_advances_the_haunted_house_journal_when_it_is_the_third_challenge() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(FINISH, || scenario(FINISH,TRIGGER,false))
+}
+
 pub(super) async fn exercise(
     owner:&ComposedFreshAdmission<'_, '_, '_>, admitted:&mut AdmittedSession,
-    harness:&Harness, fence:CurrentCharacterGameplayFence,
+    harness:&Harness, fence:CurrentCharacterGameplayFence, finishes:bool,
 ) -> TestResult {
     input_item(owner,fence.item_fence(),&Offering {
         position:Position{x:TRIGGER.x-1,..TRIGGER},item:FULL_FIXTURE.into(),count:1
@@ -95,7 +134,7 @@ pub(super) async fn exercise(
     let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
     let outcome = slot.commit_quest_transition(
         owner.root,owner.character,owner.holder,fence,
-        QuestTransitionRequest { transition_key:START.into(),cause:QuestCause::Command(
+        QuestTransitionRequest { transition_key:if finishes { START_AFTER_CHALLENGES } else { START }.into(),cause:QuestCause::Command(
             CommandRef::new(admitted.game_session_id,CommandId::new(2910).map_err(debug)?))},
         owner.quest_catalogue.clone().ok_or("quest catalogue")?,
     ).await.map_err(debug)?;
@@ -121,12 +160,14 @@ pub(super) async fn exercise(
     let states = owner.states.spell_states.lock().await;
     let effects = states.get(&runtime,actor,admitted.game_session_id).ok_or("spell state")?.owned_conditions();
     assert_eq!(effects.outfit_at(owner.owner_now().get()),None);
-    let (progress,retained):(i64,i64) = sqlx::query_as(
+    let (progress,retained,journal):(i64,i64,i64) = sqlx::query_as(
         "SELECT (SELECT value FROM game_character_quest_tracks
                  WHERE character_id=encode($1,'hex')::uuid AND track_key=$2),
-                (SELECT count(*) FROM game_item_instances WHERE definition_production_key=$3 AND lifecycle=1)"
-    ).bind(fence.character_id.as_bytes().as_slice()).bind(CELLAR).bind(FIXTURE_CONTAINER).fetch_one(&harness.pool).await?;
-    assert_eq!((progress,retained),(1,1));
+                (SELECT count(*) FROM game_item_instances WHERE definition_production_key=$3 AND lifecycle=1),
+                (SELECT value FROM game_character_quest_tracks
+                 WHERE character_id=encode($1,'hex')::uuid AND track_key=$4)"
+    ).bind(fence.character_id.as_bytes().as_slice()).bind(CELLAR).bind(FIXTURE_CONTAINER).bind(HAUNTED).fetch_one(&harness.pool).await?;
+    assert_eq!((progress,retained,journal),(1,1,if finishes { 2 } else { 1 }));
     Ok(())
 }
 
