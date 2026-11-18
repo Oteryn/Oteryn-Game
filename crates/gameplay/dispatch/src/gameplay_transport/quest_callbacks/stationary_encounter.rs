@@ -1,6 +1,7 @@
 //! Crystal 201189f8 movements_marziel_blood.lua:27-37. The stepper stays in place.
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 pub(super) struct Group<P> {
     pub proofs: Vec<P>,
@@ -84,6 +85,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if rows.is_empty() {
             return Ok(Vec::new());
         }
+        let Some(native) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+        else {
+            return Err(UseDisposition::Rejected);
+        };
+        native
+            .install_companion_policies(runtime)
+            .map_err(|_| UseDisposition::Rejected)?;
         let census = runtime
             .positioned_melee_census()
             .map_err(|_| UseDisposition::Rejected)?;

@@ -47,7 +47,8 @@ fn binding() -> Value {
         "character_requirements":{"sex":"female"},
         "world_requirements":[{"position":STATUE,"appearance":8325}],
         "storage":[{"track":MISSION,"minimum":-1,"maximum":1,"set":1,"preserve":true}],
-        "effects":{"carried_inputs":[{"item":"oteryn:item.tibia.i2874","count":1,"fluid_subtype":5}],
+        "effects":{"player_speech":"AAAAH... THE SCENT OF A WOMAN... GIVE ME MORE...",
+            "carried_inputs":[{"item":"oteryn:item.tibia.i2874","count":1,"fluid_subtype":5}],
             "stationary_encounter":[
                 {"creature":BRIDE,"position":{"x":32938,"y":31458,"floor":-2}},
                 {"creature":BRIDE,"position":{"x":32942,"y":31458,"floor":-2}}

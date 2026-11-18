@@ -531,6 +531,17 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
         })
 }
 
+// Crystal 201189f8 movements_marziel_blood.lua:27-37 and actions_ghost_tear.lua:16-37
+// spend exact custody to publish the scene while preserving the mission gate.
+pub(super) fn has_encounter_custody_effect(callback: &Callback) -> bool {
+    !callback.effects.stationary_encounter.is_empty()
+        && !callback.storage.is_empty()
+        && (!callback.effects.carried_inputs.is_empty()
+            || callback.item_on_target.as_ref().is_some_and(|input| {
+                input.selected_instance && !input.reusable && input.replacement.is_none()
+            }))
+}
+
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
     if effects.achievement.as_ref().is_some_and(|key| {
