@@ -24,6 +24,15 @@ pub enum NativeDeathSource {
         death_at_ms: u64,
         died_at_unix_ms: u64,
     },
+    DelayedReset {
+        death: crate::foundation::CreatureDeathOccurrenceKey,
+        session: crate::foundation::GameSessionId,
+        character: crate::foundation::CharacterId,
+        lease_generation: u64,
+        position: (u16, u16, i8),
+        death_at_ms: u64,
+        observed_at_ms: u64,
+    },
     Encounter(super::encounter_deaths::EncounterDeathContext),
     Source(super::source_deaths::SourceDeathContext),
 }
@@ -39,6 +48,13 @@ pub struct NativeQuestDeath {
 }
 
 impl NativeQuestDeath {
+    pub fn delayed_reset_cause(death: crate::foundation::CreatureDeathOccurrenceKey) -> Result<QuestCause> {
+        let digest = Sha256::new().chain_update(b"oteryn:quest:delayed-death-reset/v1")
+            .chain_update(death.native_bytes()).finalize();
+        ExperienceRewardOccurrence::from_bytes(digest[..16].try_into().expect("SHA-256 prefix"))
+            .map(QuestCause::CreatureDeath)
+    }
+
     pub(super) fn evaluation_time(&self, catalogue: &QuestStateCatalogue, now: i64) -> i64 {
         if let NativeDeathSource::Damage { died_at_unix_ms, .. } = self.source
             && oteryn_gameplay_quests::quest::native_kills::counter_for(catalogue, &self.transition)
@@ -107,6 +123,22 @@ impl NativeQuestDeath {
                                 )
                         })
                 }
+                NativeDeathSource::DelayedReset { death, position: (x, y, z), death_at_ms, observed_at_ms, .. } => {
+                    Self::delayed_reset_cause(*death).ok() == Some(request.cause)
+                        && catalogue.authored_bindings().is_some_and(|bindings| {
+                            bindings.world_callbacks().any(|callback| {
+                                callback.effects.death_window.as_ref().is_some_and(|window| {
+                                    window.creatures.as_slice() == [self.creature.as_str()]
+                                        && window.area.is_none_or(|area| area.contains([i32::from(*x), i32::from(*y), i32::from(*z)]))
+                                        && window.delayed_reset.as_ref().is_some_and(|reset| {
+                                            reset.character_reset.as_ref().is_some_and(|track_reset| track_reset.transition == self.transition)
+                                                && observed_at_ms.checked_sub(*death_at_ms).is_some_and(|elapsed| elapsed >= u64::from(reset.delay_ms))
+                                        })
+                                        && self.definition_hash.is_some_and(|hash| catalogue.definition_hash(&callback.quest) == Some(hash))
+                                })
+                            })
+                        })
+                }
                 NativeDeathSource::Encounter(source) => {
                     oteryn_gameplay_quests::quest::native_kills::counter_for(
                         catalogue,
@@ -137,7 +169,8 @@ impl NativeQuestDeath {
                     && death.runtime_scope() == fence.runtime_scope
                     && death.scope_ownership_generation() == fence.scope_ownership_generation
             }
-            NativeDeathSource::Damage { death, session, character, lease_generation, .. } => {
+            NativeDeathSource::Damage { death, session, character, lease_generation, .. }
+            | NativeDeathSource::DelayedReset { death, session, character, lease_generation, .. } => {
                 death.runtime_scope() == fence.runtime_scope
                     && death.scope_ownership_generation() == fence.scope_ownership_generation
                     && *session == fence.game_session_id
@@ -152,7 +185,7 @@ impl NativeQuestDeath {
         match &self.source {
             NativeDeathSource::PositionedParty { source, .. } | NativeDeathSource::Party(source)
             | NativeDeathSource::InstanceBoss { party: source, .. } => Some(source.as_ref()),
-            NativeDeathSource::Source(_) | NativeDeathSource::Encounter(_) | NativeDeathSource::Damage { .. } => None,
+            NativeDeathSource::Source(_) | NativeDeathSource::Encounter(_) | NativeDeathSource::Damage { .. } | NativeDeathSource::DelayedReset { .. } => None,
         }
     }
 
@@ -207,12 +240,29 @@ impl NativeQuestDeath {
                     .finalize();
                 binding[1..].copy_from_slice(&digest);
             }
+            NativeDeathSource::DelayedReset { death, session, character, lease_generation, position: (x, y, z), death_at_ms, .. } => {
+                let digest = Sha256::new()
+                    .chain_update(*binding)
+                    .chain_update(b"native-delayed-death-reset-v1")
+                    .chain_update(death.native_bytes())
+                    .chain_update(session.as_bytes())
+                    .chain_update(character.as_bytes())
+                    .chain_update(lease_generation.to_be_bytes())
+                    .chain_update(x.to_be_bytes())
+                    .chain_update(y.to_be_bytes())
+                    .chain_update(z.to_be_bytes())
+                    .chain_update(death_at_ms.to_be_bytes())
+                    .finalize();
+                binding[1..].copy_from_slice(&digest);
+            }
         }
         let mut digest = Sha256::new()
             .chain_update(*binding)
             .chain_update(b"native-quest-death-v1")
-            .chain_update(self.creature.as_bytes())
-            .chain_update(self.observed_revision.to_be_bytes());
+            .chain_update(self.creature.as_bytes());
+        if !matches!(self.source, NativeDeathSource::DelayedReset { .. }) {
+            digest.update(self.observed_revision.to_be_bytes());
+        }
         if let Some(hash) = self.definition_hash {
             digest.update(b"authored-definition-v1");
             digest.update(hash);
@@ -228,6 +278,9 @@ impl NativeQuestDeath {
         fence: CurrentCharacterGameplayFence,
         catalogue: &QuestStateCatalogue,
     ) -> StoredResult<bool> {
+        if matches!(self.source, NativeDeathSource::DelayedReset { .. }) {
+            return Ok(self.permits_scope(&fence));
+        }
         if let NativeDeathSource::Source(source) = &self.source {
             return source.admit(tx, fence, self).await;
         }

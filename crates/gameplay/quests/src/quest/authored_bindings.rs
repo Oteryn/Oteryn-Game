@@ -337,6 +337,19 @@ impl Bindings {
                         super::world_callbacks::validate_callbacks(std::slice::from_ref(
                             callback.as_ref(),
                         ))?;
+                        if let Some(reset) = stage.death_reset()
+                            && (!transitions.insert(&reset.transition)
+                                || super::native_kills::counter(&reset.transition).is_some()
+                                || reset.tracks.iter().any(|key| {
+                                    !quest.tracks.iter().any(|track| {
+                                        &track.key == key
+                                            && track.minimum <= 0
+                                            && track.maximum >= 0
+                                    })
+                                }))
+                        {
+                            return Err("authored delayed death reset identity/tracks".into());
+                        }
                         let expected = if matches!(&stage.trigger, Trigger::MapUse { .. }) {
                             super::world_callbacks::Trigger::Use
                         } else {
@@ -452,6 +465,24 @@ impl Bindings {
                 transitions.push(occurrence.transition()?);
             }
             for stage in &quest.stages {
+                if let Some(reset) = stage.death_reset() {
+                    transitions.push(QuestTransition {
+                        key: reset.transition.clone(),
+                        quest: quest.quest.clone(),
+                        effects: reset
+                            .tracks
+                            .iter()
+                            .map(|track| super::QuestEffect {
+                                track: track.clone(),
+                                from: super::QuestComparison::Any,
+                                effect: super::QuestEffectKind::Set(0),
+                            })
+                            .collect(),
+                        completes: false,
+                        experience: None,
+                        world_change: None,
+                    });
+                }
                 if stage.is_native_encounter() || stage.is_stateless_death_window() {
                     continue;
                 }
@@ -532,6 +563,19 @@ impl Bindings {
 }
 
 impl Stage {
+    fn death_reset(&self) -> Option<&super::world_callbacks::DeathTrackReset> {
+        let Trigger::StepIn { callback } = &self.trigger else {
+            return None;
+        };
+        callback
+            .effects
+            .death_window
+            .as_ref()?
+            .delayed_reset
+            .as_ref()?
+            .character_reset
+            .as_ref()
+    }
     fn is_stateless_death_window(&self) -> bool {
         matches!(&self.trigger, Trigger::StepIn { callback }
             if !self.completes && !callback.has_state()

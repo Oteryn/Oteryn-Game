@@ -179,6 +179,15 @@ pub struct DeathMapReset {
     pub from: u16,
     pub to: u16,
     pub positions: Vec<Position>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub character_reset: Option<DeathTrackReset>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DeathTrackReset {
+    pub transition: String,
+    pub tracks: Vec<String>,
 }
 
 impl DeathMapReset {
@@ -190,6 +199,17 @@ impl DeathMapReset {
             && (1..=8).contains(&self.positions.len())
             && self.positions.iter().enumerate().all(|(index, position)| {
                 (-15..=0).contains(&position.floor) && !self.positions[..index].contains(position)
+            })
+            && self.character_reset.as_ref().is_none_or(|reset| {
+                reset
+                    .transition
+                    .starts_with(crate::quest::native_kills::PREFIX)
+                    && crate::quest::valid_quest_key(&reset.transition)
+                    && (1..=crate::quest::QUESTSTATE0_RL_02).contains(&reset.tracks.len())
+                    && reset.tracks.iter().enumerate().all(|(index, track)| {
+                        crate::quest::valid_quest_key(track)
+                            && !reset.tracks[..index].contains(track)
+                    })
             })
     }
 }
