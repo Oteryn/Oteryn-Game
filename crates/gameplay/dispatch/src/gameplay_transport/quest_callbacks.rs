@@ -34,6 +34,7 @@ mod scene_items;
 mod shared_gate;
 mod soul_war_reward;
 mod source_transforms;
+mod step_damage;
 mod timed_encounter;
 mod timed_passages;
 
@@ -1420,6 +1421,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             *pair
         };
         let (callback, key) = &selected_pair;
+        if let Some(damage) = callback.effects.vocation_step_damage {
+            self.apply_vocation_step_damage(actor, session, entered, map, callback, *key, damage)
+                .await;
+            return entered;
+        }
         if callback.requires_live_premium() {
             let _ = self.session_premium_gate(session).await;
         }

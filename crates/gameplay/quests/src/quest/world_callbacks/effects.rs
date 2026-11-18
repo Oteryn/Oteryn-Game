@@ -42,6 +42,40 @@ pub struct ItemDisguiseRequirement {
     pub condition: String,
 }
 
+/// Selects one hit by base vocation, including promoted characters.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct VocationStepDamage {
+    pub vocation: StepDamageVocation,
+    pub matching: StepDamage,
+    pub other: StepDamage,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum StepDamageVocation {
+    Sorcerer,
+    Druid,
+    Paladin,
+    Knight,
+    Monk,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct StepDamage {
+    pub kind: StepDamageKind,
+    pub amount: u16,
+    pub effect: u8,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum StepDamageKind {
+    Fire,
+    Physical,
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
@@ -103,6 +137,8 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
     pub encounter: Option<Encounter>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vocation_step_damage: Option<VocationStepDamage>,
 }
 
 /// The original wire shapes retain distinct owners: a child quest or the current quest.
@@ -393,6 +429,40 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if let Some(damage) = effects.vocation_step_damage {
+        let standalone = CallbackEffects {
+            vocation_step_damage: Some(damage),
+            ..CallbackEffects::default()
+        };
+        return callback.trigger == Trigger::StepIn
+            && callback.actor_kind == ActorKind::Player
+            && (callback.selector.appearance.is_some()
+                || callback.selector.native.is_some()
+                || callback.selector.action.is_some())
+            && effects.shared == standalone
+            && effects.legacy.is_empty()
+            && !callback.requires_durable_commit()
+            && callback.admission.is_none()
+            && callback.activation.is_none()
+            && callback.world_change.is_none()
+            && callback.requirements.is_none()
+            && !callback.return_on_failure
+            && !callback.reversible
+            && callback.item_on_target.is_none()
+            && callback.lever.is_none()
+            && callback.disguise.is_none()
+            && callback.facing.is_none()
+            && callback.native_rule.is_none()
+            && callback.teleport.is_none()
+            && callback.remote_teleport.is_none()
+            && callback.passages.is_empty()
+            && callback.world_requirements.is_empty()
+            && callback.success_message.is_none()
+            && callback.failure_message.is_none()
+            && [damage.matching, damage.other]
+                .iter()
+                .all(|hit| hit.amount > 0 && hit.effect > 0);
+    }
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
     if inputs.len() > 8

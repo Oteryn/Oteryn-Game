@@ -85,7 +85,8 @@ pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPhase,
     EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence,
     MagicEffect, MountReward, PartyStation, PartyTransfer, Portal, PortalPair, QuestCompletion,
-    RewardDoor, TargetTransform,
+    RewardDoor, StepDamage, StepDamageKind, StepDamageVocation, TargetTransform,
+    VocationStepDamage,
 };
 pub use ground_stack::{
     GroundStackEntry, GroundStackFact, ground_stack_matches, ground_stack_matches_at,

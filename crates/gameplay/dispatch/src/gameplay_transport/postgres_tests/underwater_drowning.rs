@@ -21,7 +21,7 @@ const DROME_DRUNK_KEY: &str = "drome.drunk";
 fn fixm10_swimming_and_map_traps_postgres() -> TestResult {
     on_thread(|| {
         scenario(None, false)?;
-        scenario_in_world(None, false, false)
+        scenario_in_world(None, false, false, false)
     })
 }
 
@@ -74,7 +74,7 @@ fn on_thread(scenario: fn() -> TestResult) -> TestResult {
 }
 
 /// One row at native floor -7: dry ground, underwater ground, swimming ground and a spike trap.
-fn underwater_row(portals: bool) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+fn underwater_row(portals: bool, five_ways: bool) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     let ground = |key: &str, id| PaletteEntry {
         key: key.into(),
@@ -146,6 +146,15 @@ fn underwater_row(portals: bool) -> TestResult<(Vec<u8>, crate::map::BundlePins)
                 palette,
                 depth: 0,
                 attrs: Attrs {
+                    action: if five_ways {
+                        match x {
+                            0 => Some(2045),
+                            2 => Some(2051),
+                            _ => None,
+                        }
+                    } else {
+                        None
+                    },
                     teleport: if portals {
                         match x {
                             0 => Some((2, 0, (-7_i8).to_ne_bytes()[0])),
@@ -237,7 +246,7 @@ async fn drowning(
 }
 
 /// One production paced step, then the owner clock moves past its pacing window.
-async fn step(
+pub(super) async fn step(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     mover: (
         crate::gameplay_transport::connection::AdmittedSession,
@@ -300,13 +309,18 @@ async fn install(
 }
 
 fn scenario(callback: Option<(u16, u16, bool)>, portals: bool) -> TestResult {
-    scenario_in_world(callback, portals, true)
+    scenario_in_world(callback, portals, true, false)
+}
+
+pub(super) fn five_ways_scenario() -> TestResult {
+    scenario_in_world(None, false, true, true)
 }
 
 fn scenario_in_world(
     callback: Option<(u16, u16, bool)>,
     portals: bool,
     optional: bool,
+    five_ways: bool,
 ) -> TestResult {
     let started = std::time::Instant::now();
     let result = run(async |admin| {
@@ -327,7 +341,7 @@ fn scenario_in_world(
         let active = controller.active().ok_or("active")?;
         // Activated content digests (custody reads pin them), the test row's map binding.
         let channel = Dependencies::new()?.admitted.channel_id;
-        let (bytes, pins) = underwater_row(portals)?;
+        let (bytes, pins) = underwater_row(portals, five_ways)?;
         let base = crate::map::load(&bytes, &pins).map_err(debug)?;
         let map = boot(
             &bytes,
@@ -410,6 +424,9 @@ fn scenario_in_world(
             .bind(id(42).as_slice()).bind(if optional { 1_i16 } else { 2_i16 }).execute(&h.pool).await?;
         let (actor, session) = (deps.actor, deps.admitted.game_session_id);
         let mover = (deps.admitted, actor, session);
+        if five_ways {
+            return super::five_ways_damage::exercise(&mut owner, mover).await;
+        }
         if portals {
             install(&owner, actor, session, false).await?;
             step(&mut owner, mover, StepDirection::West, 2).await?;
@@ -786,7 +803,7 @@ fn scenario_in_world(
     result
 }
 
-async fn health(
+pub(super) async fn health(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     session: GameSessionId,
@@ -916,7 +933,7 @@ fn m10_move_yellow_pillow_postgres_real_dispatch() -> TestResult {
             let active = controller.active().ok_or("active")?;
             // Activated content digests (custody reads pin them), the test row's map binding.
             let channel = Dependencies::new()?.admitted.channel_id;
-            let (bytes, mut pins) = underwater_row(false)?;
+            let (bytes, mut pins) = underwater_row(false, false)?;
             let mut bundle = oteryn_world_bundle::bundle::read(&bytes).map_err(debug)?;
             bundle.manifest.palette[4].key = "oteryn:item.tibia.i2397".into();
             let coin_palette = u32::try_from(bundle.manifest.palette.len())?;
