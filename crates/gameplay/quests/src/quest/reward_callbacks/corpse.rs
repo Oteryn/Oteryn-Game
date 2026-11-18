@@ -5,15 +5,29 @@ use serde::{Deserialize, Serialize};
 #[serde(deny_unknown_fields)]
 pub struct CorpseTarget {
     pub appearance: u32,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub minimum_age_ms: u32,
     pub maximum_age_ms: u32,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub reusable_tool: bool,
+}
+
+fn is_zero(value: &u32) -> bool {
+    *value == 0
 }
 
 impl CorpseTarget {
     pub(super) fn valid(&self, callback: &super::RewardCallback) -> bool {
         self.appearance > 0
             && (1..=3_600_000).contains(&self.maximum_age_ms)
+            && self.minimum_age_ms < self.maximum_age_ms
             && callback.creature_target.is_some()
             && callback.carried_item.is_some()
             && !callback.capture_creature
+            && !callback.fresh_corpse
+            && (!self.reusable_tool
+                || (callback.take.is_empty()
+                    && callback.give.is_some()
+                    && callback.per_occurrence_mint))
     }
 }

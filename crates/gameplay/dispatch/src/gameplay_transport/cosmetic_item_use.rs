@@ -737,7 +737,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(None);
         };
         let callbacks = reward_callbacks::load_for(catalogue).map_err(|_| ())?;
-        let bound = callbacks
+        let mut bound = callbacks
             .iter()
             .filter(|c| c.carried_item.as_deref() == Some(&item.definition.production_key))
             .filter(|c| {
@@ -745,6 +745,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     == target_item.map(|item| item.definition.production_key.as_str())
             })
             .collect::<Vec<_>>();
+        if bound.iter().any(|callback| {
+            callback
+                .corpse_target
+                .as_ref()
+                .is_some_and(|target| target.reusable_tool)
+        }) {
+            let appearance = if let (Some(ItemKey::Instance(item)), Some(_)) =
+                (target, intent.use_with_map_item.as_ref())
+            {
+                self.root
+                    .read_ground_action_source(self.character, item_fence, item)
+                    .await
+                    .map_err(|_| ())?
+                    .and_then(|ground| {
+                        ground
+                            .definition()
+                            .production_key
+                            .strip_prefix("oteryn:item.tibia.i")?
+                            .parse::<u32>()
+                            .ok()
+                    })
+            } else {
+                None
+            };
+            bound.retain(|callback| {
+                callback.corpse_target.as_ref().is_none_or(|target| {
+                    !target.reusable_tool || appearance == Some(target.appearance)
+                })
+            });
+        }
         if bound.is_empty() {
             return Ok(None);
         }

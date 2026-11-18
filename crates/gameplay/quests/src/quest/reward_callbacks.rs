@@ -400,6 +400,10 @@ impl RewardCallback {
             (None, Some(_)) => false,
             (Some(source), None) => {
                 (self.carried_tracker.is_some() && self.take.is_empty() && self.give.is_none())
+                    || self
+                        .corpse_target
+                        .as_ref()
+                        .is_some_and(|target| target.reusable_tool)
                     || matches!(self.take.as_slice(), [input]
                 if input.item == *source && input.count == 1 && input.fluid_subtype.is_none())
                         && (self.give.is_none() || self.creature_target.is_some())

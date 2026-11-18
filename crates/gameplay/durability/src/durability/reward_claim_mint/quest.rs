@@ -526,8 +526,10 @@ pub(crate) async fn apply(
     }
     let mut plan = oteryn_gameplay_quests::quest::reward_callbacks::durable_plan(callback)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
-    if callback.carried_tracker.is_some() && callback.take.is_empty() {
-        // A reusable detector leaves no consumption row. Keep the exact
+    if (callback.carried_tracker.is_some() && callback.take.is_empty())
+        || callback.corpse_target.as_ref().is_some_and(|target| target.reusable_tool)
+    {
+        // A reusable tool leaves no consumption row. Keep the exact
         // command observation on its ordinary reward receipt for replay.
         plan["carried_observation"] = serde_json::to_value(admission.carried_use)
             .map_err(|_| DurabilityError::InvalidStoredState)?;
