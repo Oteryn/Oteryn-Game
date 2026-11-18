@@ -7,7 +7,7 @@ pub(super) const CLAIM: &str = "oteryn:reward-claim.nrwicked-forgemaster";
 const ACCESS_CALLBACK: &str = "oteryn:quest-reward/nrwicked-forgemaster-key";
 const QUEST: &str = "oteryn:quest.no_rest_for_the_wicked_quest";
 const ACCESS: &str = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forge_master/access_door";
-const CLAIMED: &str = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forgemaster_door/reward";
+pub(super) const CLAIMED: &str = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forgemaster_door/reward";
 pub(super) const CHEST: (u16, u16, i8) = (34061, 32334, -14);
 const REWARDS: [u16; 11] = [
     49520, 49522, 49523, 49524, 49525, 49526, 49527, 49530, 49528, 49529, 50250,

@@ -15,6 +15,7 @@ use oteryn_protocol_oteryn::world_object::UseDisposition;
 use oteryn_gameplay_quests::quest::QuestStateCatalogue;
 
 const FORGEMASTER_ACCESS: &str = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forge_master/access_door";
+const FORGEMASTER_CLAIMED: &str = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forgemaster_door/reward";
 // Crystal 201189f8, no_rest_for_the_wicked_rewards.lua:1-13.
 const FORGEMASTER_REWARDS: [(u16, &str); 11] = [
     (57237, "oteryn:item.tibia.i49520"),
@@ -63,6 +64,12 @@ pub(super) fn admits_forgemaster_claim(
                 requirement.track == FORGEMASTER_ACCESS
                     && requirement.minimum == 1
                     && requirement.maximum == 1
+            }) && reward.storage.iter().any(|state| {
+                state.track == FORGEMASTER_CLAIMED
+                    && state.maximum == 0
+                    && state.set == 1
+                    && !state.preserve
+                    && !state.read_only
             }) && reward
                 .give
                 .is_some_and(|give| give.item == *selected_item && give.backpack_outputs.is_empty())

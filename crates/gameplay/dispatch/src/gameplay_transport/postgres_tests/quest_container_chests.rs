@@ -645,6 +645,12 @@ fn scenario_case(
                 UseDisposition::Rejected
             );
             assert_eq!(forgemaster::claim_count(&harness).await?, 1);
+            let quest = harness
+                .root
+                .read_character_quest_state(&authority, fence.character_id)
+                .await
+                .map_err(debug)?;
+            assert_eq!(quest.tracks().get(forgemaster::CLAIMED), Some(&1));
             let bag = harness
                 .root
                 .read_character_backpack(&authority, fence.character_id)
