@@ -16,7 +16,14 @@ use super::terminal_transfer::{Movement, Transfer};
 struct Member {
     actor: ExactActorRef,
     creature: String,
-    death_at: Option<(MovementLocalPosition, u64)>,
+    death_at: Option<Death>,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Death {
+    at: MovementLocalPosition,
+    now_us: u64,
+    contributor_at: Option<MovementLocalPosition>,
 }
 
 #[derive(Debug)]
@@ -196,7 +203,26 @@ impl Replacements {
                 .terminal_portal
                 .and_then(|plan| Portal::open(plan, now_us));
         }
-        member.death_at = Some((at, now_us));
+        let contributor_at = if self
+            .plan
+            .contributor_route
+            .as_ref()
+            .is_some_and(|route| route.creature == member.creature)
+        {
+            runtime
+                .borrow_combat_death()
+                .top_damage_contributor(actor)?
+                .present()
+                .and_then(|winner| runtime.read_actor_position(winner.actor).ok())
+                .map(|position| position.position())
+        } else {
+            None
+        };
+        member.death_at = Some(Death {
+            at,
+            now_us,
+            contributor_at,
+        });
         self.finished = finished;
         Ok(true)
     }
@@ -262,7 +288,14 @@ impl Replacements {
             return Err(CarrierError::ContentPinWorldMismatch);
         }
         while !self.finished {
-            let Some((index, (at, death_us))) = self
+            let Some((
+                index,
+                Death {
+                    at,
+                    now_us: death_us,
+                    contributor_at,
+                },
+            )) = self
                 .members
                 .iter()
                 .enumerate()
@@ -271,6 +304,53 @@ impl Replacements {
                 break;
             };
             let defeated = &self.members[index].creature;
+            if let Some(route) = &self.plan.contributor_route
+                && &route.creature == defeated
+            {
+                // Crystal 201189f8, forgotten_knowledge/creaturescripts_bound_astral_power.lua:15-26.
+                let stops: Vec<_> = route
+                    .stops
+                    .iter()
+                    .filter(|stop| {
+                        contributor_at.is_some_and(|position| {
+                            within_source_distance(position, stop.near, route.maximum_distance)
+                        })
+                    })
+                    .collect();
+                if !stops.is_empty() {
+                    let health = runtime.companion_policy(defeated)?.maximum_health;
+                    let spawn = stops
+                        .iter()
+                        .map(|stop| {
+                            let at = super::super::quest_callbacks::local(stop.spawn_at);
+                            if !super::placement(cells, runtime, at) {
+                                return Err(CarrierError::PlanConflict);
+                            }
+                            Ok((route.creature.as_str(), health, at))
+                        })
+                        .collect::<Result<Vec<_>, _>>()?;
+                    self.members
+                        .try_reserve(spawn.len())
+                        .map_err(|_| CarrierError::AllocationFailed)?;
+                    let next = runtime.commit_quest_creature_spawn(&spawn)?;
+                    for stop in stops {
+                        announce(
+                            runtime,
+                            cells,
+                            self.members[index].actor,
+                            super::super::quest_callbacks::local(stop.near),
+                            &route.announcement,
+                        );
+                    }
+                    self.members.extend(next.into_iter().map(|actor| Member {
+                        actor,
+                        creature: route.creature.clone(),
+                        death_at: None,
+                    }));
+                }
+                self.members.swap_remove(index);
+                continue;
+            }
             if let Some(plan) = &self.plan.crystal_circuit
                 && &plan.defeated == defeated
             {
@@ -397,30 +477,18 @@ impl Replacements {
             if let Some(delay) = rule.clear_fixed_items_after_ms {
                 super::terminal_portal::schedule_fixed_item_cleanup(cells, at, delay, death_us);
             }
-            if let Some(announcement) = &rule.announcement
-                && let NativeMovementCollisionIndex::Bundle(map) = cells.index()
-                && let Some(position) = super::super::quest_callbacks::native(
+            if let Some(announcement) = &rule.announcement {
+                // Crystal 201189f8, creaturescripts_death_dragon_essence.lua:11-12
+                // and creaturescripts_thorn_knight_death.lua:13-17.
+                announce(
+                    runtime,
+                    cells,
+                    self.members[index].actor,
                     announcement
                         .position
                         .map_or(at, super::super::quest_callbacks::local),
-                )
-                && let Ok(creature) =
-                    runtime.companion_snapshot_including_dead(self.members[index].actor)
-                && let Ok(name) = oteryn_protocol_oteryn::entity_names::EntityDisplayName::new(
-                    &creature.state.policy.display_name,
-                )
-            {
-                // Crystal 201189f8, creaturescripts_death_dragon_essence.lua:11-12
-                // and creaturescripts_thorn_knight_death.lua:13-17.
-                map.map()
-                    .facts
-                    .emit_movement_speech(crate::map::facts::MovementSpeech {
-                        speaker: self.members[index].actor,
-                        position,
-                        talk_type: 36,
-                        text: announcement.text.clone(),
-                        captured_name: Some(name),
-                    });
+                    &announcement.text,
+                );
             }
             self.members.swap_remove(index);
             if rule.retire_siblings_in.is_some() {
@@ -538,4 +606,39 @@ fn in_death_area(area: DeathArea, position: MovementLocalPosition) -> bool {
             floor: at.floor,
         })
     })
+}
+
+fn within_source_distance(at: MovementLocalPosition, center: Position, maximum: u8) -> bool {
+    // Crystal 201189f8, src/lua/functions/map/position_functions.cpp:113-118.
+    let center = super::super::quest_callbacks::local(center);
+    at.x.abs_diff(center.x)
+        .max(at.y.abs_diff(center.y))
+        .max(u32::from(at.floor.abs_diff(center.floor)))
+        <= u32::from(maximum)
+}
+
+fn announce(
+    runtime: &ChannelRuntimeV1,
+    cells: &crate::content::NativeEntryMovementCells,
+    speaker: ExactActorRef,
+    at: MovementLocalPosition,
+    text: &str,
+) {
+    if let NativeMovementCollisionIndex::Bundle(map) = cells.index()
+        && let Some(position) = super::super::quest_callbacks::native(at)
+        && let Ok(creature) = runtime.companion_snapshot_including_dead(speaker)
+        && let Ok(name) = oteryn_protocol_oteryn::entity_names::EntityDisplayName::new(
+            &creature.state.policy.display_name,
+        )
+    {
+        map.map()
+            .facts
+            .emit_movement_speech(crate::map::facts::MovementSpeech {
+                speaker,
+                position,
+                talk_type: 36,
+                text: text.to_owned(),
+                captured_name: Some(name),
+            });
+    }
 }

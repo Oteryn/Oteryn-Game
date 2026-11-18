@@ -441,6 +441,8 @@ pub struct DeathPhases {
     pub terminal: String,
     pub replacements: Vec<DeathReplacement>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub contributor_route: Option<DeathContributorRoute>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub crystal_circuit: Option<DeathCrystalCircuit>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub corpse_monster_step: Option<CorpseMonsterStep>,
@@ -451,6 +453,41 @@ pub struct DeathPhases {
     /// Room movement on the sealed terminal death. Quest credit uses its own writer.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub terminal_transfer: Option<TerminalTransfer>,
+}
+
+/// Select the next member of a recurring encounter from the sealed top contributor's position.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DeathContributorRoute {
+    pub creature: String,
+    pub maximum_distance: u8,
+    pub stops: Vec<DeathContributorStop>,
+    pub announcement: String,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DeathContributorStop {
+    pub near: Position,
+    pub spawn_at: Position,
+}
+
+impl DeathContributorRoute {
+    fn valid(&self, in_room: &impl Fn(Position) -> bool) -> bool {
+        let unique_near: BTreeSet<_> = self.stops.iter().map(|stop| stop.near).collect();
+        let unique_spawn: BTreeSet<_> = self.stops.iter().map(|stop| stop.spawn_at).collect();
+        self.maximum_distance <= 12
+            && (1..=8).contains(&self.stops.len())
+            && unique_near.len() == self.stops.len()
+            && unique_spawn.len() == self.stops.len()
+            && self
+                .stops
+                .iter()
+                .all(|stop| in_room(stop.near) && in_room(stop.spawn_at))
+            && !self.announcement.trim().is_empty()
+            && self.announcement.len() <= 256
+            && !self.announcement.chars().any(char::is_control)
+    }
 }
 
 /// Defeating a creature in a crystal's region contributes to one live encounter.
@@ -738,6 +775,7 @@ fn valid_death_phases(
         || !valid_quest_key(&plan.terminal)
         || plan.replacements.len() > 8
         || (plan.replacements.is_empty()
+            && plan.contributor_route.is_none()
             && plan.crystal_circuit.is_none()
             && plan.corpse_monster_step.is_none()
             && plan.corpse_portal.is_none()
@@ -757,6 +795,18 @@ fn valid_death_phases(
         .iter()
         .map(|actor| actor.creature.as_str())
         .collect();
+    if let Some(route) = &plan.contributor_route
+        && (!creature(&route.creature)
+            || !known.contains(route.creature.as_str())
+            || route.creature == plan.terminal
+            || !route.valid(&in_room)
+            || plan
+                .crystal_circuit
+                .as_ref()
+                .is_some_and(|circuit| circuit.defeated == route.creature))
+    {
+        return false;
+    }
     if let Some(step) = &plan.corpse_monster_step {
         known.insert(step.replace_with.as_str());
     }
@@ -772,6 +822,10 @@ fn valid_death_phases(
     let mut defeated = BTreeSet::new();
     for rule in &plan.replacements {
         if rule.defeated == plan.terminal
+            || plan
+                .contributor_route
+                .as_ref()
+                .is_some_and(|route| route.creature == rule.defeated)
             || plan
                 .crystal_circuit
                 .as_ref()

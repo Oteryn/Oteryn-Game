@@ -83,11 +83,11 @@ mod treasure_source;
 mod treasure_source_tests;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, CorpseMonsterStep, CorpsePortal, CorpsePortalCleanup,
-    DeathAnnouncement, DeathArea, DeathCrystalCircuit, DeathPhases, Encounter, EncounterMonster,
-    EncounterPhase, EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement,
-    ItemLayoutCycle, ItemPresence, MagicEffect, MonsterStepEffect, MountReward, PartyStation,
-    PartyTransfer, Portal, PortalPair, QuestCompletion, RewardDoor, TargetTransform,
-    TerminalPortal, TerminalTransfer,
+    DeathAnnouncement, DeathArea, DeathContributorRoute, DeathCrystalCircuit, DeathPhases,
+    Encounter, EncounterMonster, EncounterPhase, EncounterPlayer, EncounterTiming, Facing,
+    ItemCycle, ItemDisguiseRequirement, ItemLayoutCycle, ItemPresence, MagicEffect,
+    MonsterStepEffect, MountReward, PartyStation, PartyTransfer, Portal, PortalPair,
+    QuestCompletion, RewardDoor, TargetTransform, TerminalPortal, TerminalTransfer,
 };
 pub use ground_stack::{
     GroundStackEntry, GroundStackFact, ground_stack_matches, ground_stack_matches_at,
