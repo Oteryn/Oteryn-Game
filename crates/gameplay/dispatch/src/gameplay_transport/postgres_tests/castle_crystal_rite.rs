@@ -54,6 +54,7 @@ fn binding() -> Value {
         "selector":{"position":STATIONS[0],"position_aliases":STATIONS[1..],"ordinal":0},
         "lever":null,"reversible":false,"teleport":null,"offerings":[],"passages":[],
         "item_on_target":null,"return_on_failure":false,"failure_message":null,
+        "success_message":"Vengoth castle beckons to you... Report back to Julius.",
         "requires_world_admission":true,
         "storage":[
             {"track":MISSION,"minimum":3,"maximum":4,"set":3,"preserve":true},

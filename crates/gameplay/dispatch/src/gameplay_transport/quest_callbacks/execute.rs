@@ -968,13 +968,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None
         };
         let party_context = if let Some(plan) = &party {
-            let Some(context) = self.party_context(runtime, plan).await else {
+            let entry_track = callback
+                .effects
+                .party_rite
+                .as_ref()
+                .map(|rite| rite.entry_track.as_str());
+            let Some(context) = self.party_context(runtime, plan, entry_track).await else {
                 return UseDisposition::Rejected;
             };
             context
         } else {
             Vec::new()
         };
+        let newly_admitted: Vec<_> = party_context
+            .iter()
+            .filter_map(|member| {
+                member.entry_before.filter(|&entry| entry != 1)?;
+                GameSessionId::decode(&member.session).ok()
+            })
+            .collect();
         let mut peer_slots = Vec::new();
         if callback.effects.party_rite.is_some() {
             for member in &party_context {
@@ -1359,12 +1371,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         if let Some(plan) = party {
-            if callback.effects.party_rite.is_some() {
-                for member in plan.sessions() {
-                    self.schedule_quest_refresh(member);
-                }
-            }
-            return self.commit_party_transfer(
+            let participants = plan.sessions();
+            let result = self.commit_party_transfer(
                 runtime,
                 states,
                 map,
@@ -1375,7 +1383,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 close,
                 session,
                 optional_pvp,
+                callback.effects.party_transfer.is_some(),
             );
+            if callback.effects.party_rite.is_some() && result == UseDisposition::Committed {
+                for member in participants {
+                    self.schedule_quest_refresh(member);
+                }
+                if fresh_effects && let Some(message) = &callback.success_message {
+                    for member in newly_admitted {
+                        self.states.chat.push_quest_feedback(member, message);
+                    }
+                }
+            }
+            return result;
         }
         if callback.effects.encounter.is_some() && !close {
             let disposition = self.execute_quest_encounter(

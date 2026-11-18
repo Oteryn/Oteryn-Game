@@ -706,6 +706,7 @@ async fn durable_refusals(
             scope_generation: fence.scope_ownership_generation.get(),
             actor_placement: actor.placement_identity(),
             movement_revision: position.revision(),
+            entry_before: None,
         });
     }
     let map = owner.bundle_map().ok_or("map")?;

@@ -64,11 +64,19 @@ pub(super) fn generation_with_item(
             6450,
         ),
     };
-    let key = format!("oteryn:item.tibia.i{id}");
-    if !records
-        .iter()
-        .any(|row| row["production_definition"]["production_key"] == key)
-    {
+    let mut definitions = vec![(id, template, name, weight)];
+    if id == 9201 {
+        // Crystal 201189f8 data/items/items.xml:24975-24979.
+        definitions.push((9234, template, "worm punisher", 6450));
+    }
+    for (id, template, name, weight) in definitions {
+        let key = format!("oteryn:item.tibia.i{id}");
+        if records
+            .iter()
+            .any(|row| row["production_definition"]["production_key"] == key)
+        {
+            continue;
+        }
         let mut record = records
             .iter()
             .find(|row| row["production_definition"]["production_key"] == template)

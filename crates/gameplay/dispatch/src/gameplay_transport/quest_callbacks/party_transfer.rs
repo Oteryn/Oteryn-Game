@@ -105,6 +105,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         runtime: &ChannelRuntimeV1,
         plan: &Plan<P>,
+        entry_track: Option<&str>,
     ) -> Option<Vec<QuestWorldPartyMember>> {
         let mut result = Vec::new();
         for member in &plan.members {
@@ -117,6 +118,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return None;
             }
+            let entry_before = if let Some(track) = entry_track {
+                let snapshot = self
+                    .root
+                    .read_character_quest_state(self.character, fence.character_id)
+                    .await
+                    .ok()?;
+                Some(snapshot.tracks().get(track).copied().or_else(|| {
+                    self.quest_catalogue
+                        .as_deref()?
+                        .track(track)
+                        .map(|t| t.initial)
+                })?)
+            } else {
+                None
+            };
             result.push(QuestWorldPartyMember {
                 character: *fence.character_id.as_bytes(),
                 session: *member.session.as_bytes(),
@@ -125,6 +141,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 scope_generation: fence.scope_ownership_generation.get(),
                 actor_placement: member.actor.placement_identity(),
                 movement_revision: member.expected.revision(),
+                entry_before,
             });
         }
         Some(result)
@@ -146,6 +163,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         close: bool,
         initiator: GameSessionId,
         optional_pvp: Option<bool>,
+        lever_rite: bool,
     ) -> UseDisposition {
         let Ok(snapshots) = runtime.commit_source_steps_and_project(plan.proofs, || {
             map.facts
@@ -175,7 +193,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if let Some(at) = native(snapshot.position()) {
                 map.facts.emit_movement_effect(at, 11);
             }
-            if let Some(at) = native(member.expected.position()) {
+            if lever_rite && let Some(at) = native(member.expected.position()) {
                 map.facts.emit_movement_effect(at, 3);
             }
         }

@@ -61,6 +61,8 @@ pub struct QuestWorldPartyMember {
     pub scope_generation: u64,
     pub actor_placement: [u8; 16],
     pub movement_revision: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub entry_before: Option<i64>,
 }
 
 #[path = "quest_world_callback/carried_batch.rs"]
@@ -1246,6 +1248,7 @@ pub(super) async fn party_is_current(
             || !sessions.insert(member.session)
             || member.actor_placement == [0; 16]
             || member.movement_revision == 0
+            || member.entry_before.is_some() != rite.is_some()
             || member.scope_generation != initiator.scope_ownership_generation.get()
         {
             return Ok(false);

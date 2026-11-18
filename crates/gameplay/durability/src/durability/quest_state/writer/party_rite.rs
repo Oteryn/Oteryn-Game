@@ -47,6 +47,9 @@ pub(super) async fn apply(
         let Some(entry) = changes.iter().find(|change| change.track == rite.entry_track) else {
             return Ok(false);
         };
+        if member.entry_before != Some(entry.before) {
+            return Ok(false);
+        }
         if entry.before != 1 {
             let crystal: Option<String> = sqlx::query_scalar(
                 "SELECT i.item_instance_id::text

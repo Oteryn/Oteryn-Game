@@ -3273,6 +3273,8 @@ fn scenario_case(
                 },
             ))
             .await?;
+        } else if name == super::super::worm_punisher_progress::HEATING {
+            Box::pin(super::super::worm_punisher_progress::exercise_heating(&mut owner, &mut admitted, &h)).await?;
         } else if name == super::super::worm_punisher_progress::ROTATING {
             Box::pin(super::super::worm_punisher_progress::exercise_rotation(&mut owner, &mut admitted, &h)).await?;
         } else if worm_punisher {
