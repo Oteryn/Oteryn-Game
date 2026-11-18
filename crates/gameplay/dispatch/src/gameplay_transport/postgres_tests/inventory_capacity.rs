@@ -1,7 +1,7 @@
 //! INVCAP-1: the real connection sends the own character's capacity, read through the
 //! session's item fence with the move capacity rules, and the client panel shows Tibia's Cap.
 use super::fixture::{Harness, debug};
-use super::kill_reward_e2e::scenario_thread::run_async;
+use super::kill_reward_e2e_fixtures::scenario_thread::run_async;
 use super::{Dependencies, TestResult, id, prepare_current_session};
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::gameplay_transport::{
@@ -86,7 +86,7 @@ fn inventory_capacity_real_connection_postgres() -> TestResult {
         admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
         admitted.controller.as_mut().ok_or("controller")?.transport =
             current.current_transport().ok_or("transport")?;
-        super::item_look::seed_main_backpack(&h, &[("oteryn:item.tibia.i3031", 3)]).await?;
+        super::item_look_fixtures::seed_main_backpack(&h, &[("oteryn:item.tibia.i3031", 3)]).await?;
         // Without capability 508 the owner reads nothing.
         admitted.continuity.selected_capabilities = select(&[6])?;
         assert_eq!(owner.observe_inventory_capacity(admitted).await, None);

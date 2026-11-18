@@ -85,12 +85,12 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         .map_err(debug)?;
     let base = Dependencies::new()?;
     let world = if case == Case::StaticAqueduct {
-        super::super::house_wrap::static_timed_decoration_bundle(
+        super::super::house_wrap_fixtures::static_timed_decoration_bundle(
             base.admitted.world_id,
             base.admitted.channel_id,
         )?
     } else if matches!(case, Case::BedKit(_)) {
-        super::super::house_wrap::static_bed_decoration_bundle(
+        super::super::house_wrap_fixtures::static_bed_decoration_bundle(
             base.admitted.world_id,
             base.admitted.channel_id,
         )?
@@ -98,17 +98,17 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         case,
         Case::ResidentMount | Case::ResidentTick | Case::ResidentAppearanceRevoked
     ) {
-        super::super::house_wrap::walkable_house_bundle(
+        super::super::house_wrap_fixtures::walkable_house_bundle(
             base.admitted.world_id,
             base.admitted.channel_id,
         )?
     } else if case == Case::StaticWindow {
-        super::super::house_wrap::static_decoration_bundle(
+        super::super::house_wrap_fixtures::static_decoration_bundle(
             base.admitted.world_id,
             base.admitted.channel_id,
         )?
     } else {
-        super::super::house_wrap::wrap_bundle(base.admitted.world_id, base.admitted.channel_id)?
+        super::super::house_wrap_fixtures::wrap_bundle(base.admitted.world_id, base.admitted.channel_id)?
     };
     use crate::content::native_gameplay::test_support::cosmetics_fixture::{
         activated_with_optional_cosmetics, cosmetics_test_packet,
@@ -133,7 +133,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     };
     let (controller, native_pin) = if matches!(
         case,
-        Case::ResidentTimedEquip(super::super::house_resident_reads::ClockCase::Logout)
+        Case::ResidentTimedEquip(super::super::house_resident_reads_fixtures::ClockCase::Logout)
     ) {
         // Terminal training commits against the seeded Character interpretation.
         super::super::death_ml_loss_composed::production_generation_with_pin(
@@ -376,7 +376,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             .bind([2_u8; 32].as_slice()).bind([3_u8; 32].as_slice())
             .execute(&h.pool).await?;
     }
-    super::super::item_look::seed_main_backpack(h, &contents).await?;
+    super::super::item_look_fixtures::seed_main_backpack(h, &contents).await?;
     let body = encode_item_use_intent(&UseIntent {
         target: UseTarget::Item(std::num::NonZeroU64::new(1).ok_or("handle")?),
         use_with: None,
@@ -408,7 +408,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             | Case::BedKit(_)
             | Case::CarpetTile { .. }
     ) {
-        let (next, refused, _) = super::super::rust_lottery::exchange(
+        let (next, refused, _) = super::super::rust_lottery_fixtures::exchange(
             &owner,
             admitted,
             1,
@@ -427,7 +427,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         assert_eq!(receipts(h).await?, 0);
     }
     if let Some((_, mount_key)) = cosmetics {
-        super::super::house_resident_reads::select_mount(h, &owner, &mut admitted, mount_key).await?;
+        super::super::house_resident_reads_fixtures::select_mount(h, &owner, &mut admitted, mount_key).await?;
     }
     if case == Case::ResidentQuest {
         owner.admit_quest_session(&admitted).await;
@@ -439,9 +439,9 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     if matches!(
         case,
-        Case::ResidentTimedEquip(super::super::house_resident_reads::ClockCase::Logout)
+        Case::ResidentTimedEquip(super::super::house_resident_reads_fixtures::ClockCase::Logout)
     ) {
-        super::super::house_resident_reads::prepare_logout_vocation(&owner, admitted).await?;
+        super::super::house_resident_reads_fixtures::prepare_logout_vocation(&owner, admitted).await?;
     }
     let mut transfer = vec![8, 1, 18, HOUSE.len() as u8];
     transfer.extend(HOUSE.as_bytes());
@@ -469,15 +469,15 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         }
     }
     if case == Case::ResidentAppearanceRevoked {
-        return super::super::house_resident_reads::appearance_revoked(h, &owner, admitted).await;
+        return super::super::house_resident_reads_fixtures::appearance_revoked(h, &owner, admitted).await;
     }
     if matches!(case, Case::ResidentQuest | Case::ResidentMount) {
-        return super::super::house_resident_reads::presentation_exchange(&owner, admitted, case).await;
+        return super::super::house_resident_reads_fixtures::presentation_exchange(&owner, admitted, case).await;
     }
     if matches!(
         case,
-        Case::ResidentTimedEquip(super::super::house_resident_reads::ClockCase::Logout
-            | super::super::house_resident_reads::ClockCase::Writer)
+        Case::ResidentTimedEquip(super::super::house_resident_reads_fixtures::ClockCase::Logout
+            | super::super::house_resident_reads_fixtures::ClockCase::Writer)
     ) {
         // These cases exercise resident custody and lifecycle. Use the fixture's
         // engineering collision cells to avoid unrelated bundle zone and terrain owners.
@@ -492,7 +492,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             | Case::ResidentEquip
             | Case::ResidentTimedEquip(_)
     ) {
-        return super::super::house_resident_reads::exchange(
+        return super::super::house_resident_reads_fixtures::exchange(
             h, &mut owner, admitted, before_ref, case,
         )
         .await;

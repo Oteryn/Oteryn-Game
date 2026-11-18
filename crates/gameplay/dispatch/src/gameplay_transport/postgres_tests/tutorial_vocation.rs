@@ -30,16 +30,16 @@ fn vocation_scenario(missing_bag: bool, retained: bool, post_commit: bool) -> Te
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("tutorial-vocation", move || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("tutorial-vocation", move || {
         run(async |admin| {
             let h = Harness::create_newhaven(admin, "tutorial_vocation").await?;
             let recovery = if retained {
-                Some(super::house_transfer::RecoverySource::start(&h).await?)
+                Some(super::house_transfer_fixtures::RecoverySource::start(&h).await?)
             } else {
                 None
             };
             let request = if retained {
-                super::house_transfer::prepare_owned_session_request(&h).await?
+                super::house_transfer_fixtures::prepare_owned_session_request(&h).await?
             } else {
                 prepare_current_session(&h).await?
             };
@@ -89,7 +89,7 @@ fn vocation_scenario(missing_bag: bool, retained: bool, post_commit: bool) -> Te
             admitted.first_entry =
                 crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
             assert_eq!(
-                super::cyclopedia::support::exchange(&owner, &mut admitted, 1, 6243, &[])
+                super::cyclopedia_fixtures::support::exchange(&owner, &mut admitted, 1, 6243, &[])
                     .await?
                     .0,
                 CommandStatus::Rejected,
@@ -111,7 +111,7 @@ fn vocation_scenario(missing_bag: bool, retained: bool, post_commit: bool) -> Te
                 &[], current.current_runtime_scope(), current.current_scope_generation().get(), "policy-1", OFFERS,
             ).map_err(debug)?;
             let (status, bytes) =
-                super::cyclopedia::support::exchange(&owner, &mut admitted, 2, 6243, &[]).await?;
+                super::cyclopedia_fixtures::support::exchange(&owner, &mut admitted, 2, 6243, &[]).await?;
             assert_eq!(
                 status,
                 CommandStatus::Accepted,
@@ -119,7 +119,7 @@ fn vocation_scenario(missing_bag: bool, retained: bool, post_commit: bool) -> Te
             );
             assert_eq!(bytes, [0, 0], "no offer before entering the portal");
             assert_eq!(
-                super::cyclopedia::support::exchange(&owner, &mut admitted, 3, 6243, &[4])
+                super::cyclopedia_fixtures::support::exchange(&owner, &mut admitted, 3, 6243, &[4])
                     .await?
                     .0,
                 CommandStatus::Rejected,
@@ -154,11 +154,11 @@ fn vocation_scenario(missing_bag: bool, retained: bool, post_commit: bool) -> Te
                 .await
                 .map_err(|()| "portal tutorial transition")?;
             let (status, offer) =
-                super::cyclopedia::support::exchange(&owner, &mut admitted, 4, 6243, &[]).await?;
+                super::cyclopedia_fixtures::support::exchange(&owner, &mut admitted, 4, 6243, &[]).await?;
             assert_eq!(status, CommandStatus::Accepted);
             assert_eq!(offer, [31, 0]);
             assert_eq!(
-                super::cyclopedia::support::exchange(&owner, &mut admitted, 5, 6243, &[6])
+                super::cyclopedia_fixtures::support::exchange(&owner, &mut admitted, 5, 6243, &[6])
                     .await?
                     .0,
                 CommandStatus::Rejected
@@ -261,7 +261,7 @@ fn vocation_scenario(missing_bag: bool, retained: bool, post_commit: bool) -> Te
                     owner.lose_control(admitted, std::time::Duration::ZERO, None).await,
                     ControlLossResult::Recorded,
                 );
-                let token = super::house_transfer::RecoverySource::token(88)?;
+                let token = super::house_transfer_fixtures::RecoverySource::token(88)?;
                 let prior = admitted;
                 admitted = owner.resume_session(ResumeAttempt {
                     game_session_id: prior.game_session_id,
@@ -273,7 +273,7 @@ fn vocation_scenario(missing_bag: bool, retained: bool, post_commit: bool) -> Te
                 assert_eq!(admitted.game_session_id, prior.game_session_id);
                 assert_eq!(admitted.continuity.connection_generation, prior.continuity.connection_generation + 1);
             }
-            let (status, selected) = super::cyclopedia::support::exchange(
+            let (status, selected) = super::cyclopedia_fixtures::support::exchange(
                 &owner,
                 &mut admitted,
                 6,
@@ -290,13 +290,13 @@ fn vocation_scenario(missing_bag: bool, retained: bool, post_commit: bool) -> Te
                 .map_err(debug)?;
             assert_eq!(build.vocation(), "paladin");
             assert_eq!(
-                super::cyclopedia::support::exchange(&owner, &mut admitted, 7, 6243, &[])
+                super::cyclopedia_fixtures::support::exchange(&owner, &mut admitted, 7, 6243, &[])
                     .await?
                     .1,
                 selected
             );
             assert_eq!(
-                super::cyclopedia::support::exchange(&owner, &mut admitted, 8, 6243, &[1])
+                super::cyclopedia_fixtures::support::exchange(&owner, &mut admitted, 8, 6243, &[1])
                     .await?
                     .0,
                 CommandStatus::Rejected,
@@ -310,7 +310,7 @@ fn vocation_scenario(missing_bag: bool, retained: bool, post_commit: bool) -> Te
             );
             // The connection owner rejects this generation before it can return a
             // command result. Keep the handler refusal and the transport closure covered.
-            let refusal = super::cyclopedia::support::exchange(&owner, &mut stale, 9, 6243, &[])
+            let refusal = super::cyclopedia_fixtures::support::exchange(&owner, &mut stale, 9, 6243, &[])
                 .await
                 .err()
                 .ok_or("non-current connection returned a command result")?;

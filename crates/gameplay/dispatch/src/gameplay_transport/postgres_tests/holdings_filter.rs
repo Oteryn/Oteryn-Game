@@ -48,7 +48,7 @@ fn holdings_filter_reaches_off_page_display_name_through_dispatch_and_client_mod
             panel.items.search = "GoLd CoIn".into();
             panel.items.location = Some(Location::Stash);
             let command = request(&mut panel, Intent::Items).ok_or("holdings request")?;
-            let (status, payload) = super::cyclopedia::support::exchange(&owner, &mut admitted, 1, command.kind, &command.payload).await?;
+            let (status, payload) = super::cyclopedia_fixtures::support::exchange(&owner, &mut admitted, 1, command.kind, &command.payload).await?;
             assert_eq!(status, CommandStatus::Accepted);
             assert!(apply_result(&mut panel, &GatedCommandResult { command_id: 1, status, server_sequence: 1, payload }));
             let page = panel.items.page.as_ref().ok_or("holdings page")?;
@@ -61,13 +61,13 @@ fn holdings_filter_reaches_off_page_display_name_through_dispatch_and_client_mod
                 &mut panel,"oteryn:item.tibia.i3031",Some(Location::Stash),
             ).ok_or("long key filter")?;
             assert!(command.payload.len()>20);
-            let (status,payload)=super::cyclopedia::support::exchange(&owner,&mut admitted,2,command.kind,&command.payload).await?;
+            let (status,payload)=super::cyclopedia_fixtures::support::exchange(&owner,&mut admitted,2,command.kind,&command.payload).await?;
             assert_eq!(status,CommandStatus::Accepted);
             assert!(apply_result(&mut panel,&GatedCommandResult {command_id:2,status,server_sequence:2,payload}));
             assert_eq!(panel.items.page.as_ref().ok_or("key page")?.total,1);
 
             admitted.continuity.selected_capabilities=SelectedCapabilities::select(&offers,&[199]).ok_or("legacy selection")?;
-            assert_eq!(super::cyclopedia::support::exchange(&owner,&mut admitted,3,command.kind,&command.payload).await?.0,CommandStatus::Rejected);
+            assert_eq!(super::cyclopedia_fixtures::support::exchange(&owner,&mut admitted,3,command.kind,&command.payload).await?.0,CommandStatus::Rejected);
             drop(owner); drop(authority); drop(seal);
             h.cleanup().await
         }).map_err(|error| error.to_string())

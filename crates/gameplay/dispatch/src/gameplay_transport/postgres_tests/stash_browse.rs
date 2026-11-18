@@ -1,5 +1,5 @@
 //! Global stash selection through the production fenced reader, beyond the first page.
-use super::death_ml_loss_composed::production_generation_with_pin;
+use super::death_ml_loss_composed_fixtures::production_generation_with_pin;
 use super::fixture::{Harness, debug, id, run};
 use super::{TestResult, prepare_current_session};
 use crate::domain::CharacterId;

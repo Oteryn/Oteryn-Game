@@ -1,5 +1,5 @@
 //! Real ordinary/native player casts must consume assigned outgoing charms.
-use super::death_ml_loss_composed::{current_fence, production_generation_with_source};
+use super::death_ml_loss_composed_fixtures::{current_fence, production_generation_with_source};
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_build::{
@@ -197,7 +197,7 @@ async fn scenario_with_harness(
         .map_err(debug)?;
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
     let (controller, pin) = if charm == "leech" {
-        super::item_spell_augments::activate(world, true)?
+        super::item_spell_augments_fixtures::activate(world, true)?
     } else {
         production_generation_with_source(
             world,

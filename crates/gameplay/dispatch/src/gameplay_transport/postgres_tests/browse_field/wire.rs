@@ -1,5 +1,5 @@
 use super::super::fixture::{Harness, debug, id, join_two};
-use super::super::item_look::read_frame;
+use super::super::item_look_fixtures::read_frame;
 use super::{Case, FIELD, TestResult};
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::connection::{

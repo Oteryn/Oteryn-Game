@@ -1,5 +1,5 @@
 //! Riding uses the real appearance owner, mounted PostgreSQL fixture and visibility codec.
-use super::appearance_change_postgres::observer_visibility_tests;
+use super::appearance_change_postgres_fixtures::observer_visibility_tests;
 use super::*;
 use crate::content::native_gameplay::test_support::cosmetics_fixture::{
     activated_with_optional_cosmetics, cosmetics_test_packet,

@@ -2,7 +2,7 @@
 use super::{
     TestResult,
     fixture::{Harness, run},
-    item_look::large_stack,
+    item_look_fixtures::large_stack,
 };
 use oteryn_gameplay_social::{
     cast::{

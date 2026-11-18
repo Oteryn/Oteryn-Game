@@ -1,6 +1,10 @@
 //! HOUSE-ITEM-WIRE-1: framed commands, real composed House owner and runtime-role PG.
+use tokio::io::AsyncReadExt;
+use tokio::io::AsyncWriteExt;
+use super::house_wrap_fixtures::{wrap_bundle};
+
 use super::fixture::{Harness, debug, id, run};
-use super::house_transfer::{RecoverySource, prepare_owned_session};
+use super::house_transfer_fixtures::{RecoverySource, prepare_owned_session};
 use super::{Dependencies, TestResult};
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::house_scope_handoff::{
@@ -21,7 +25,6 @@ use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
     house_wrap as wire,
 };
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 const HOUSE: &str = "oteryn:content.house.admiral_s_avenue_1";
 const POSITION: [i32; 3] = [32310, 32804, 7];
@@ -230,7 +233,7 @@ async fn scenario(h: &Harness,cask:bool) -> TestResult {
     if cask {return house_cask(&owner,h,admitted).await;}
 
     // Seed a real placed oven and a backpack, then restore every constraint before commands.
-    super::item_look::seed_main_backpack(h, &[]).await?;
+    super::item_look_fixtures::seed_main_backpack(h, &[]).await?;
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role = replica")
         .execute(&mut *tx)
@@ -430,7 +433,7 @@ async fn exchange_checked(
                 admitted.continuity.selected_capabilities.as_slice(),
             );
             loop {
-                let bytes = super::item_look::read_frame(&mut client).await?;
+                let bytes = super::item_look_fixtures::read_frame(&mut client).await?;
                 let envelope = decode_wire_envelope(&bytes)?;
                 match envelope.message_type() {
                     MessageType::CommandResult => {
@@ -528,186 +531,6 @@ async fn exchange_checked(
     reply.ok_or_else(|| format!("wrap command {command}: {end:?}").into())
 }
 
-pub(super) fn wrap_bundle(
-    world: crate::foundation::WorldId,
-    channel: crate::foundation::ChannelId,
-) -> TestResult<crate::map::boot::BundleWorld> {
-    wrap_bundle_with_static_decorations(world, channel, &[], false)
-}
-
-pub(super) fn walkable_house_bundle(
-    world: crate::foundation::WorldId,
-    channel: crate::foundation::ChannelId,
-) -> TestResult<crate::map::boot::BundleWorld> {
-    wrap_bundle_with_static_decorations(world, channel, &[], true)
-}
-
-pub(super) fn static_decoration_bundle(
-    world: crate::foundation::WorldId,
-    channel: crate::foundation::ChannelId,
-) -> TestResult<crate::map::boot::BundleWorld> {
-    static_decoration_bundle_with(world,channel,&[("oteryn:item.tibia.i5302",7,0)])
-}
-
-pub(super) fn static_timed_decoration_bundle(
-    world: crate::foundation::WorldId,
-    channel: crate::foundation::ChannelId,
-) -> TestResult<crate::map::boot::BundleWorld> {
-    static_decoration_bundle_with(world,channel,&[("oteryn:item.tibia.i35949",7,0)])
-}
-
-pub(super) fn static_bed_decoration_bundle(
-    world: crate::foundation::WorldId,
-    channel: crate::foundation::ChannelId,
-) -> TestResult<crate::map::boot::BundleWorld> {
-    static_decoration_bundle_with(world,channel,&[("oteryn:item.tibia.i2491",7,0),("oteryn:item.tibia.i2492",7,1)])
-}
-
-struct StaticDecoration {
-    key: &'static str,
-    x: u16,
-    y: u16,
-    definition: crate::map::facts::ItemDefinition,
-}
-
-fn static_decoration_bundle_with(
-    world: crate::foundation::WorldId,
-    channel: crate::foundation::ChannelId,
-    declarations: &[(&'static str,u16,u16)],
-) -> TestResult<crate::map::boot::BundleWorld> {
-    let (controller, _) = crate::content::native_gameplay::test_support::activated_with_loot_tables(world,None);
-    let native=controller.active().and_then(|active|active.native_gameplay()).ok_or("native generation")?;
-    let index=native.item_index().ok_or("Item index")?;
-    let mut extras=Vec::with_capacity(declarations.len());
-    for &(key,x,y) in declarations {
-        let reference=index.definition_ref("Item",key,"definition-r1").ok_or("decoration reference")?;
-        let policy=native.item_policy(key,"definition-r1").ok_or("decoration policy")?.record();
-        extras.push(StaticDecoration {key,x,y,definition:crate::map::facts::ItemDefinition {
-            reference,solid:policy.attributes.blocks_movement,
-            blocks_projectile:policy.attributes.blocks_projectile.ok_or("decoration projectile fact")?,
-            pickupable:false,door:false }});
-    }
-    wrap_bundle_with_static_decorations(world, channel, &extras, false)
-}
-
-fn wrap_bundle_with_static_decorations(
-    world: crate::foundation::WorldId,
-    channel: crate::foundation::ChannelId,
-    extras: &[StaticDecoration],
-    adjacent_ground: bool,
-) -> TestResult<crate::map::boot::BundleWorld> {
-    use crate::map::boot::{self, tests as fixture};
-    use oteryn_world_bundle::bundle;
-    let (bytes, mut pins) =
-        fixture::bundle_with_items("oteryn:item.tibia.i1629", "oteryn:item.tibia.i1000");
-    let mut data = bundle::read(&bytes).map_err(debug)?;
-    let sector = data.sectors.first_mut().ok_or("sector")?;
-    let mut entrance = sector
-        .tiles
-        .iter()
-        .find(|t| t.x == 3)
-        .ok_or("grass tile")?
-        .clone();
-    let seed=sector.tiles.iter().find(|tile|tile.x==7).ok_or("House tile")?;
-    let ground=seed.items.first().ok_or("House ground")?.palette;
-    let flags=seed.flags;
-    // Clear only the fixture seed before placing actual native decorations.
-    if adjacent_ground {
-        let portal = seed.items.last().ok_or("teleport appearance")?.clone();
-        let mut ground_tile = seed.clone();
-        ground_tile.house = 3437;
-        ground_tile.items.truncate(1);
-        for offset in [1, 2] {
-            let mut adjacent = ground_tile.clone();
-            adjacent.x += offset;
-            if offset == 2 {
-                let mut portal = portal.clone();
-                portal.attrs.teleport = Some((32311, 32803, (-7_i8).to_ne_bytes()[0]));
-                adjacent.items.push(portal);
-            }
-            sector.tiles.push(adjacent);
-        }
-    }
-    for tile in &mut sector.tiles {
-        if tile.x == 7 { tile.items.truncate(1); }
-    }
-    for extra in extras {
-        let palette=if let Some(at)=data.manifest.palette.iter().position(|entry|entry.key==extra.key) {
-            u32::try_from(at)?
-        } else {
-            let at=u32::try_from(data.manifest.palette.len())?;
-            data.manifest.palette.push(bundle::PaletteEntry {key:extra.key.into(),family:bundle::Family::Item,
-                id:extra.definition.reference.get()-1,terrain:None});
-            at
-        };
-        let item=oteryn_world_bundle::sector::Item {palette,depth:0,attrs:Default::default()};
-        if let Some(tile)=sector.tiles.iter_mut().find(|tile|tile.x==extra.x&&tile.y==extra.y) {
-            tile.house=3437;
-            tile.items.push(item);
-        } else {
-            sector.tiles.push(oteryn_world_bundle::sector::Tile {x:extra.x,y:extra.y,flags,house:3437,zones:Vec::new(),
-                items:vec![oteryn_world_bundle::sector::Item {palette:ground,depth:0,attrs:Default::default()},item]});
-        }
-    }
-    for tile in &mut sector.tiles {
-        if tile.x == 7 {
-            tile.house = 3437;
-        }
-        if tile.x == 6 {
-            tile.house = 3437;
-            tile.items.last_mut().ok_or("door")?.attrs.door = Some(42);
-        }
-        tile.x += 32303;
-        tile.y += 32804;
-    }
-    if adjacent_ground {
-        let mut landing = sector
-            .tiles
-            .iter()
-            .find(|tile| tile.x == 32311)
-            .ok_or("east ground")?
-            .clone();
-        landing.y -= 1;
-        sector.tiles.push(landing);
-    }
-    entrance.x = 32309;
-    entrance.y = 32805;
-    sector.tiles.push(entrance);
-    // Native sector encoding orders by (y, x), including the second bed half.
-    sector.tiles.sort_by_key(|tile| (tile.y, tile.x));
-    sector.sx = 1009;
-    sector.sy = 1025;
-    data.manifest.world.min_x = 32288;
-    data.manifest.world.min_y = 32800;
-    data.manifest.world.max_x = 32320;
-    data.manifest.world.max_y = 32832;
-    let bytes = oteryn_world_bundle_compiler::bundle::write_with_npcs(
-        &data.manifest,
-        &data.sectors,
-        &data.spawns,
-        &data.npcs,
-    )
-    .map_err(debug)?;
-    pins.digest = bundle::read(&bytes).map_err(debug)?.digest;
-    let base = crate::map::load(&bytes, &pins).map_err(debug)?;
-    boot::boot(
-        &bytes,
-        &boot::BootPins {
-            bundle: pins,
-            map_revision: crate::map::overlay::map_revision(&base),
-            start: crate::map::overlay::TilePos {
-                x: 32309,
-                y: 32805,
-                floor: -7,
-            },
-        },
-        world,
-        channel,
-        |key| extras.iter().find(|extra|extra.key==key).map(|extra|extra.definition).or_else(||fixture::door_items(key)),
-    )
-    .map_err(debug)
-}
-
 async fn furniture_query(
     owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession,
     command: u64, page: u16,
@@ -738,7 +561,7 @@ async fn house_cask(owner:&ComposedFreshAdmission<'_, '_, '_>,h:&Harness,mut adm
     use oteryn_protocol_oteryn::world_object::{UseIntent,UseTarget,MapUseTarget,UseDisposition};
     use crate::gameplay_transport::item_view::ItemKey;
     // Historical fixture with real named-House placement/provenance and a partial counter.
-    super::item_look::seed_main_backpack(h,&[("oteryn:item.tibia.i283",2),("oteryn:item.tibia.i283",2),("oteryn:item.tibia.i25904",1)]).await?;
+    super::item_look_fixtures::seed_main_backpack(h,&[("oteryn:item.tibia.i283",2),("oteryn:item.tibia.i283",2),("oteryn:item.tibia.i25904",1)]).await?;
     let mut tx=h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i25880','definition-r1',1,1,game_character_uuid_v7())")

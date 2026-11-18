@@ -1,6 +1,6 @@
 //! The real connection handler supplies the keyboard descriptor consumed by the client.
 use super::fixture::{Harness, debug};
-use super::kill_reward_e2e::scenario_thread::run_async;
+use super::kill_reward_e2e_fixtures::scenario_thread::run_async;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::gameplay_transport::{
     capabilities::{OfferedCapability, SelectedCapabilities},
@@ -77,7 +77,7 @@ fn modal_defaults_real_dispatch_to_client_keyboard_model() -> TestResult {
             ..Default::default()
         };
         let query = ui::query(&mut panel).ok_or("modal query")?;
-        let (status, payload) = super::cyclopedia::support::exchange(
+        let (status, payload) = super::cyclopedia_fixtures::support::exchange(
             &owner,
             &mut admitted,
             1,

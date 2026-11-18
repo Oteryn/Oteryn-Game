@@ -1,7 +1,7 @@
 //! CONTAINER-MANUAL-SORT-1 (capability 510): a slotted command-9 container move through the
 //! actual connection router and the PostgreSQL item loop owner.
 use super::fixture::{Harness, debug, id, run};
-use super::{Dependencies, TestResult, item_look, prepare_current_session};
+use super::{Dependencies, TestResult, item_look_fixtures, prepare_current_session};
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::FirstEntryOutcome;
@@ -22,7 +22,7 @@ const SORT: ItemMoveSelection = ItemMoveSelection {
 
 #[test]
 fn container_manual_sort_postgres_places_moves_at_the_slot_and_keeps_merges() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("container-manual-sort", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("container-manual-sort", scenario)
 }
 fn scenario() -> TestResult {
     run(async |admin| {
@@ -74,7 +74,7 @@ fn scenario() -> TestResult {
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice()).bind(generation.identity().client_artifact_digest().as_slice()).bind(frame_digest.as_slice()).execute(&harness.pool).await?;
 
         // Main backpack 70: 71 gold x3, 72 bag, 73 i3577 x7 (newest first: 73, 72, 71).
-        item_look::seed_main_backpack(
+        item_look_fixtures::seed_main_backpack(
             &harness,
             &[
                 ("oteryn:item.tibia.i3031", 3),
@@ -138,7 +138,7 @@ fn scenario() -> TestResult {
             // The domain-9 snapshot names the main backpack and its entries by handle.
             let (mut backpack, mut entries) = (None, Vec::new());
             loop {
-                let frame = item_look::read_frame(&mut client).await?;
+                let frame = item_look_fixtures::read_frame(&mut client).await?;
                 let e = protocol::decode_wire_envelope(&frame).map_err(debug)?;
                 if e.message_type() == protocol::MessageType::SnapshotChunk {
                     let (_, domains) =
@@ -277,7 +277,7 @@ async fn send(
     client.write_u32(u32::try_from(frame.len())?).await?;
     client.write_all(&frame).await?;
     loop {
-        let frame = item_look::read_frame(client).await?;
+        let frame = item_look_fixtures::read_frame(client).await?;
         let e = protocol::decode_wire_envelope(&frame).map_err(debug)?;
         if e.message_type() == protocol::MessageType::CommandResult {
             let r = protocol::decode_command_result(e.payload()).map_err(debug)?;

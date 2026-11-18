@@ -173,7 +173,7 @@ fn scenario(mode: Mode) -> TestResult {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        super::item_look::seed_main_backpack(&harness, &[(coin, 100), (bag, 1)]).await?;
+        super::item_look_fixtures::seed_main_backpack(&harness, &[(coin, 100), (bag, 1)]).await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -364,7 +364,7 @@ async fn exchange_with_boss_fences(
         let mut source = None;
         let mut bag = None;
         loop {
-            let raw = super::item_look::read_frame(&mut client).await?;
+            let raw = super::item_look_fixtures::read_frame(&mut client).await?;
             let envelope = crate::foundation::decode_wire_envelope(&raw)?;
             if envelope.message_type() == crate::foundation::MessageType::SnapshotChunk {
                 let (_, domains) =
@@ -409,7 +409,7 @@ async fn exchange_with_boss_fences(
                 )
                 .await?;
                 loop {
-                    let raw = super::item_look::read_frame(&mut client).await?;
+                    let raw = super::item_look_fixtures::read_frame(&mut client).await?;
                     let envelope = crate::foundation::decode_wire_envelope(&raw)?;
                     if envelope.message_type() == crate::foundation::MessageType::StateDelta {
                         let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?;
@@ -513,7 +513,7 @@ async fn exchange_with_boss_fences(
         .await?;
         client.shutdown().await?;
         loop {
-            let raw = super::item_look::read_frame(&mut client).await?;
+            let raw = super::item_look_fixtures::read_frame(&mut client).await?;
             let envelope = crate::foundation::decode_wire_envelope(&raw)?;
             if envelope.message_type() == crate::foundation::MessageType::CommandResult {
                 let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
@@ -602,7 +602,7 @@ async fn capacity_reread(
     let client_task = async {
         let mut source = None;
         loop {
-            let raw = super::item_look::read_frame(&mut client).await?;
+            let raw = super::item_look_fixtures::read_frame(&mut client).await?;
             let envelope = crate::foundation::decode_wire_envelope(&raw)?;
             if envelope.message_type() == crate::foundation::MessageType::SnapshotChunk {
                 let (_, domains) =
@@ -623,7 +623,7 @@ async fn capacity_reread(
             }
         }
         let first = loop {
-            let raw = super::item_look::read_frame(&mut client).await?;
+            let raw = super::item_look_fixtures::read_frame(&mut client).await?;
             if let Some(capacity) = capacity_of(&raw)? {
                 break capacity;
             }
@@ -649,7 +649,7 @@ async fn capacity_reread(
         send(&mut client, 1, COMMAND_TYPE_ITEM_MOVE_INTENT, &payload).await?;
         let mut moved = false;
         let second = loop {
-            let raw = super::item_look::read_frame(&mut client).await?;
+            let raw = super::item_look_fixtures::read_frame(&mut client).await?;
             let envelope = crate::foundation::decode_wire_envelope(&raw)?;
             if envelope.message_type() == crate::foundation::MessageType::CommandResult {
                 let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
@@ -696,7 +696,7 @@ async fn command_result(
     command_id: u64,
 ) -> TestResult<(oteryn_protocol_oteryn::CommandStatus, Vec<u8>)> {
     loop {
-        let raw = super::item_look::read_frame(client).await?;
+        let raw = super::item_look_fixtures::read_frame(client).await?;
         let envelope = crate::foundation::decode_wire_envelope(&raw)?;
         if envelope.message_type() == crate::foundation::MessageType::CommandResult {
             let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;

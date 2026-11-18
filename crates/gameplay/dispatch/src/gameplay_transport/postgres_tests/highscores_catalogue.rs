@@ -1,6 +1,6 @@
 //! The current server World policy, query predicate and client selector share one round trip.
 use super::fixture::{Harness, debug, id};
-use super::kill_reward_e2e::scenario_thread::run_async;
+use super::kill_reward_e2e_fixtures::scenario_thread::run_async;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::gameplay_transport::{
     capabilities::{OfferedCapability, SelectedCapabilities},
@@ -61,7 +61,7 @@ fn highscores_catalogue_and_type_predicate_reach_dispatch_client_state_and_selec
             .bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
             sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'policy-1',$2,20,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'catalogue-fixture')")
             .bind(world.as_bytes().as_slice()).bind(mode).execute(&h.pool).await?;
-            super::highscores_world::snapshot(&h.pool, world, 1, character.as_bytes(), 1).await?;
+            super::highscores_world_fixtures::snapshot(&h.pool, world, 1, character.as_bytes(), 1).await?;
             let query = oteryn_protocol_oteryn::highscores::HighscoresQuery {
                 world: Some(wire::WorldId::decode(world.as_bytes()).map_err(debug)?),
                 details: true,
@@ -109,7 +109,7 @@ fn highscores_catalogue_and_type_predicate_reach_dispatch_client_state_and_selec
             panel.selected = true;
             panel.catalogue_selected = true;
             let command = ui::request(&mut panel, Action::Catalogue).ok_or("catalogue request")?;
-            let (status, payload) = super::cyclopedia::support::exchange(
+            let (status, payload) = super::cyclopedia_fixtures::support::exchange(
                 &owner,
                 &mut admitted,
                 1,
@@ -133,7 +133,7 @@ fn highscores_catalogue_and_type_predicate_reach_dispatch_client_state_and_selec
             assert_eq!(ui::world_choices(&panel).count(), 1);
             let command =
                 ui::request(&mut panel, Action::WorldType(Some(kind))).ok_or("typed highscores")?;
-            let (status, payload) = super::cyclopedia::support::exchange(
+            let (status, payload) = super::cyclopedia_fixtures::support::exchange(
                 &owner,
                 &mut admitted,
                 2,
@@ -165,7 +165,7 @@ fn highscores_catalogue_and_type_predicate_reach_dispatch_client_state_and_selec
             )
             .map_err(debug)?;
             assert_eq!(
-                super::cyclopedia::support::exchange(
+                super::cyclopedia_fixtures::support::exchange(
                     &owner,
                     &mut admitted,
                     3,
@@ -177,7 +177,7 @@ fn highscores_catalogue_and_type_predicate_reach_dispatch_client_state_and_selec
                 CommandStatus::Rejected
             );
             let foreign = crate::foundation::WorldId::decode(&id(90)).map_err(debug)?;
-            super::highscores_world::snapshot(&h.pool, foreign, 1, character.as_bytes(), 1).await?;
+            super::highscores_world_fixtures::snapshot(&h.pool, foreign, 1, character.as_bytes(), 1).await?;
             for (command_id, action) in [
                 (4, Action::WorldType(None)),
                 (
@@ -189,7 +189,7 @@ fn highscores_catalogue_and_type_predicate_reach_dispatch_client_state_and_selec
             ] {
                 let command =
                     ui::request(&mut panel, action).ok_or("untyped public World query")?;
-                let (status, payload) = super::cyclopedia::support::exchange(
+                let (status, payload) = super::cyclopedia_fixtures::support::exchange(
                     &owner,
                     &mut admitted,
                     command_id,
@@ -232,7 +232,7 @@ fn highscores_catalogue_and_type_predicate_reach_dispatch_client_state_and_selec
             admitted.continuity.selected_capabilities =
                 SelectedCapabilities::select(&offers, &[9]).ok_or("legacy highscores selection")?;
             assert_eq!(
-                super::cyclopedia::support::exchange(
+                super::cyclopedia_fixtures::support::exchange(
                     &owner,
                     &mut admitted,
                     6,

@@ -304,7 +304,7 @@ fn scenario_with_premium(
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated_pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
@@ -1072,7 +1072,7 @@ fn scenario_with_premium(
             input.extend(frame);
         }
         let (end, output) =
-            super::weather_wire::fixture_access::serve_input(&owner, admitted, &input).await?;
+            super::weather_wire_fixtures::fixture_access::serve_input(&owner, admitted, &input).await?;
         let mut replies = Vec::new();
         let mut search_replies = Vec::new();
         let mut cursor = output.as_slice();

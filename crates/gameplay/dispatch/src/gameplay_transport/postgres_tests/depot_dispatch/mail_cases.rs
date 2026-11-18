@@ -306,7 +306,7 @@ async fn post_parcel_and_observe_capacity(
                     }
                 }
             }
-            if let Some(capacity) = super::super::player_trade::capacity_frame(&frame, selected)? {
+            if let Some(capacity) = super::super::player_trade_fixtures::capacity_frame(&frame, selected)? {
                 break capacity;
             }
         };
@@ -337,7 +337,7 @@ async fn post_parcel_and_observe_capacity(
                     assert_eq!(result.payload, [MailOutcome::Posted as u8]);
                     posted = true;
                 }
-                if let Some(after) = super::super::player_trade::capacity_frame(&frame, selected)? {
+                if let Some(after) = super::super::player_trade_fixtures::capacity_frame(&frame, selected)? {
                     assert!(posted);
                     assert_eq!(after.capacity, before.capacity);
                     assert!(

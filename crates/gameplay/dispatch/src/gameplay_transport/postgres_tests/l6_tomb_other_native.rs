@@ -3,7 +3,7 @@ use super::TestResult;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 #[test]
 fn l6_tomb_other_native_missing_3953_uses_source_branch() -> TestResult {
-    super::l6_tomb_native::run(
+    super::l6_tomb_native_fixtures::run(
         "l6-tomb-native-missing-3953",
         Position {
             x: 33146,
@@ -19,7 +19,7 @@ fn l6_tomb_other_native_missing_3953_uses_source_branch() -> TestResult {
 }
 #[test]
 fn l6_tomb_other_native_present_3953_uses_source_branch() -> TestResult {
-    super::l6_tomb_native::run(
+    super::l6_tomb_native_fixtures::run(
         "l6-tomb-native-present-3953",
         Position {
             x: 33146,
@@ -35,7 +35,7 @@ fn l6_tomb_other_native_present_3953_uses_source_branch() -> TestResult {
 }
 #[test]
 fn l6_tomb_other_native_missing_3954_uses_source_branch() -> TestResult {
-    super::l6_tomb_native::run(
+    super::l6_tomb_native_fixtures::run(
         "l6-tomb-native-missing-3954",
         Position {
             x: 33042,
@@ -51,7 +51,7 @@ fn l6_tomb_other_native_missing_3954_uses_source_branch() -> TestResult {
 }
 #[test]
 fn l6_tomb_other_native_present_3954_uses_source_branch() -> TestResult {
-    super::l6_tomb_native::run(
+    super::l6_tomb_native_fixtures::run(
         "l6-tomb-native-present-3954",
         Position {
             x: 33042,
@@ -67,7 +67,7 @@ fn l6_tomb_other_native_present_3954_uses_source_branch() -> TestResult {
 }
 #[test]
 fn l6_tomb_other_native_missing_3955_uses_source_branch() -> TestResult {
-    super::l6_tomb_native::run(
+    super::l6_tomb_native_fixtures::run(
         "l6-tomb-native-missing-3955",
         Position {
             x: 33350,
@@ -83,7 +83,7 @@ fn l6_tomb_other_native_missing_3955_uses_source_branch() -> TestResult {
 }
 #[test]
 fn l6_tomb_other_native_present_3955_uses_source_branch() -> TestResult {
-    super::l6_tomb_native::run(
+    super::l6_tomb_native_fixtures::run(
         "l6-tomb-native-present-3955",
         Position {
             x: 33350,
@@ -99,7 +99,7 @@ fn l6_tomb_other_native_present_3955_uses_source_branch() -> TestResult {
 }
 #[test]
 fn l6_tomb_other_native_missing_3956_uses_source_branch() -> TestResult {
-    super::l6_tomb_native::run(
+    super::l6_tomb_native_fixtures::run(
         "l6-tomb-native-missing-3956",
         Position {
             x: 33187,
@@ -115,7 +115,7 @@ fn l6_tomb_other_native_missing_3956_uses_source_branch() -> TestResult {
 }
 #[test]
 fn l6_tomb_other_native_present_3956_uses_source_branch() -> TestResult {
-    super::l6_tomb_native::run(
+    super::l6_tomb_native_fixtures::run(
         "l6-tomb-native-present-3956",
         Position {
             x: 33187,

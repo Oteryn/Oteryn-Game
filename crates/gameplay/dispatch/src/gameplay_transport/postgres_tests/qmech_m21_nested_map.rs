@@ -44,7 +44,7 @@ fn source_view(nested: bool, immovable: bool) -> TestResult {
                 .map_err(debug)?;
             let mut deps = Dependencies::new()?;
             let (controller, activated_pin) =
-                super::death_ml_loss_composed::production_generation_with_pin(
+                super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                     deps.admitted.world_id,
                     "content-1",
                 )?;
@@ -193,7 +193,7 @@ fn source_view(nested: bool, immovable: bool) -> TestResult {
                     .bind(generation.identity().server_artifact_digest().as_slice())
                     .bind(generation.identity().client_artifact_digest().as_slice())
                     .bind(activated_pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
-                super::item_look::seed_main_backpack(&h, &[]).await?;
+                super::item_look_fixtures::seed_main_backpack(&h, &[]).await?;
             }
             let key = ItemKey::MapBase {
                 bundle_digest: world.base().digest(),
@@ -405,9 +405,9 @@ fn qmech_m21_postgres_shared_ruby_real_reset() -> TestResult {
     let result = std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| {
-            super::quest_world_callbacks::scenario(
+            super::quest_world_callbacks_fixtures::scenario(
                 "l6-small-ruby-reset",
-                super::l6_world_pickups::RUBY,
+                super::l6_world_pickups_fixtures::RUBY,
                 false,
             )
             .map_err(|e| e.to_string())

@@ -673,7 +673,7 @@ fn coin_use_scenario() -> TestResult {
             let (exchange_result, commits) = crate::durability::coin_exchange::audit_commit_probe::capture(
                 &h.root,
                 diagnostic_command,
-                super::item_craft::exchange(&owner, admitted, command_id, &payload, Some(definition)),
+                super::item_craft_fixtures::exchange(&owner, admitted, command_id, &payload, Some(definition)),
             ).await;
             let (end, result, _) = match exchange_result {
                 Ok(result) => result,

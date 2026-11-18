@@ -1,6 +1,6 @@
 //! Command 6241 reaches both server-info owners and enforces capability selection.
 use super::fixture::{Harness, debug};
-use super::kill_reward_e2e::scenario_thread::run_async;
+use super::kill_reward_e2e_fixtures::scenario_thread::run_async;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::gameplay_transport::{
     capabilities::{OfferedCapability, SelectedCapabilities},
@@ -76,7 +76,7 @@ fn server_info_real_dispatch_queries_and_unselected_rejection() -> TestResult {
                 SelectedCapabilities::select(&offers, if selected { &[500] } else { &[] })
                     .ok_or("selection")?;
             for query in &queries {
-                let (status, payload) = super::cyclopedia::support::exchange(
+                let (status, payload) = super::cyclopedia_fixtures::support::exchange(
                     &owner,
                     &mut admitted,
                     command,

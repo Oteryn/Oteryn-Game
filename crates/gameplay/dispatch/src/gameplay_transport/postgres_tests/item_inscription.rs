@@ -33,7 +33,7 @@ fn item_inscription_read_returns_carried_text_and_refuses_foreign_items_postgres
             sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
             sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
             // Item 71: a write-once document (2818 -> read-only 2834); item 72: a letter.
-            super::item_look::seed_main_backpack(&h,&[("oteryn:item.tibia.i2818",1),("oteryn:item.tibia.i3505",1)]).await?;
+            super::item_look_fixtures::seed_main_backpack(&h,&[("oteryn:item.tibia.i2818",1),("oteryn:item.tibia.i3505",1)]).await?;
             let mut admitted=deps.admitted;
             admitted.item_fence=Some(fence);
             let read=async |admitted:crate::gameplay_transport::connection::AdmittedSession,item:[u8;16]| owner.item_inscription_read(admitted,Some(ItemKey::Instance(item))).await.map(|bytes| Reply::decode(&bytes));
@@ -52,7 +52,7 @@ fn item_inscription_read_returns_carried_text_and_refuses_foreign_items_postgres
             assert_eq!(sealed.text,"One inscription: żółw 🐢");
             assert!(!sealed.writable,"the write-once target only shows its text");
             sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) SELECT encode($1,'hex')::uuid,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,'Foreign Reader' FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid").bind(id(90).as_slice()).bind(id(41).as_slice()).execute(&h.pool).await?;
-            super::item_look::seed_character_backpack(&h,90,98,&[("oteryn:item.tibia.i3505",1)]).await?;
+            super::item_look_fixtures::seed_character_backpack(&h,90,98,&[("oteryn:item.tibia.i3505",1)]).await?;
             let foreign_count:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND character_id<>encode($2,'hex')::uuid").bind(id(99).as_slice()).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(foreign_count,1,"foreign letter exists in another character's bag");
             // Not carried (unknown), the main backpack itself and a map entry are refused.

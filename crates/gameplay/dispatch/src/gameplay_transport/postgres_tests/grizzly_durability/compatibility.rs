@@ -12,7 +12,7 @@ fn grizzly_legacy_active_quest_pin_refuses_without_reinterpreting_value() -> Tes
         eprintln!("GRIZZLY_LEGACY_PIN POSTGRES_CASE_SKIPPED no_admin_url");
         return Ok(());
     }
-    super::super::kill_reward_e2e::scenario_thread::run("grizzly-legacy-pin", scenario)
+    super::super::kill_reward_e2e_fixtures::scenario_thread::run("grizzly-legacy-pin", scenario)
 }
 
 fn scenario() -> TestResult {

@@ -6,7 +6,7 @@ use super::TestResult;
 fn srx3_soul_war_tagged_instance_death_receipt_namespace_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {return Ok(());}
     let started=std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-soul-war-namespace",||run(async |admin| {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-soul-war-namespace",||run(async |admin| {
         let h=Harness::create_with_admission_seed(admin,"srx3_soul_war_namespace",false,false).await?;
         let mut tx=h.pool.begin().await?;
         sqlx::query("CREATE TEMP TABLE srx3_soul_war_key_gate (LIKE game_character_soul_war_receipts INCLUDING DEFAULTS INCLUDING CONSTRAINTS) ON COMMIT DROP")

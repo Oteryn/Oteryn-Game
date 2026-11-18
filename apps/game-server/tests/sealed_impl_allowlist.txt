@@ -54,10 +54,10 @@ crates/gameplay/dispatch/src/gameplay_transport/actor_spell_commit.rs | player_p
 # while relocation and admission-release proofs are owner-crate test fixtures.
 crates/gameplay/dispatch/src/gameplay_transport/bed_sleep_production.rs | house_presence_seal::Sealed | NativeBedPresence
 crates/gameplay/dispatch/src/gameplay_transport/familiar_cast.rs | source_reservation_seal::Sealed | PreparedFamiliarLifecycle
-crates/gameplay/dispatch/src/gameplay_transport/kill_reward_postgres_fixture/summer_handoff.rs | fresh_source_sealed::Sealed | Ready
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/kill_reward_e2e/summer_handoff.rs | fresh_source_sealed::Sealed | Ready
 crates/gameplay/dispatch/src/gameplay_transport/mod.rs | recovery_source_sealed::Sealed | ChannelOwnedLossSource
 crates/gameplay/dispatch/src/gameplay_transport/monk_save_fresh_fixture.rs | fresh_source_sealed::Sealed | Source
-crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/bed_sleep_fixture.rs | house_presence_seal::Sealed | FixturePresence
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/bed_sleep_fixture.rs | house_presence_seal::Sealed | FixturePresence
 crates/gameplay/dispatch/src/gameplay_transport/resume.rs | recovery_source_sealed::Sealed | ChannelResumeSource
 crates/gameplay/dispatch/src/gameplay_transport/resume.rs | recovery_source_sealed::Sealed | Completion
 crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs | PremiumGateOwner | SpellPremiumCoordinator
@@ -159,8 +159,8 @@ crates/gameplay/world/src/movement/source_floor_change.rs | source_step_seal::Se
 crates/gameplay/dispatch/src/gameplay_transport/item_use/soul_war_source.rs | source_reservation_seal::Sealed | PendingSourceUse
 crates/gameplay/dispatch/src/gameplay_transport/loop_move/elemental_arrival/realization.rs | source_reservation_seal::Sealed | RealizationGuard
 crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/rotten_area.rs | source_reservation_seal::Sealed | CohortProof
-crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qn1_elemental_world_pin/handoff.rs | map_initializer_seal::Sealed | EmptyMap
 crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qn1_environment_field.rs | map_initializer_seal::Sealed | MapFixture
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/qn1_elemental_world_pin/handoff.rs | map_initializer_seal::Sealed | EmptyMap
 crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/underwater_drowning.rs | map_initializer_seal::Sealed | FieldFixture
 crates/gameplay/dispatch/src/gameplay_transport/soul_war_callbacks/player_source.rs | source_proof_seal::Sealed | PlayerSourceSnapshot
 crates/gameplay/durability/src/durability/creature_source_items/source_step/creature.rs | source_reservation_seal::Sealed | SourceCreatureGroundStep

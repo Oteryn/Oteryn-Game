@@ -11,7 +11,7 @@ use oteryn_protocol_oteryn::quick_loot::*;
 
 #[test]
 fn quick_loot_postgres_dispatch_assignment_transfer_replay_and_fences() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("quick-loot", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quick-loot", scenario)
 }
 
 fn request(action: QuickLootAction) -> QuickLootRequest {
@@ -29,7 +29,7 @@ fn request(action: QuickLootAction) -> QuickLootRequest {
 
 #[test]
 fn quick_loot_pouch_postgres_dispatch_unlimited_slots_coin_only_and_weight() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("quick-pouch", || scenario_with_pouch(true))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quick-pouch", || scenario_with_pouch(true))
 }
 
 fn scenario() -> TestResult {
@@ -48,7 +48,7 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
         let generation = controller.active().ok_or("active")?;
         let room = pin.qualified_room().clone();
         let frame_digest = pin.frame_binding().digest();

@@ -74,7 +74,7 @@ fn run_fault(name: &str, scenario: fn() -> TestResult) -> TestResult {
         eprintln!("<TASK_BOARD> POSTGRES_CASE_SKIPPED: {name}: OTERYN_TEST_POSTGRES_ADMIN_URL is not set");
         return Ok(());
     }
-    super::super::kill_reward_e2e::scenario_thread::run(name, scenario)
+    super::super::kill_reward_e2e_fixtures::scenario_thread::run(name, scenario)
 }
 
 #[test]

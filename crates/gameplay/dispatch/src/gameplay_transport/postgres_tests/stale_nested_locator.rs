@@ -1,6 +1,6 @@
 //! F32: cached presentation positions must never redirect a durable nested-bag move.
 use super::fixture::{Harness, debug, id, run};
-use super::{Dependencies, TestResult, item_look, prepare_current_session};
+use super::{Dependencies, TestResult, item_look_fixtures, prepare_current_session};
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::FirstEntryOutcome;
@@ -40,7 +40,7 @@ fn f32_full_view_boundary_shrink() -> TestResult {
 
 fn scenario(exercise: fn() -> TestResult) -> TestResult {
     // Match the existing live-container fixture's stack requirement.
-    super::kill_reward_e2e::scenario_thread::run("f32-locator", exercise)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("f32-locator", exercise)
 }
 fn exercise(mutation: Mutation) -> TestResult {
     run(async |admin| {
@@ -55,7 +55,7 @@ fn exercise(mutation: Mutation) -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
         let generation = controller.active().ok_or("active")?;
         let room = pin.qualified_room().clone();
         let frame_digest = pin.frame_binding().digest();
@@ -106,7 +106,7 @@ fn exercise(mutation: Mutation) -> TestResult {
                 ("oteryn:item.tibia.i2854", 1),
             );
         }
-        item_look::seed_main_backpack(&harness, &entries).await?;
+        item_look_fixtures::seed_main_backpack(&harness, &entries).await?;
         {
             let mut tx = harness.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica")
@@ -147,7 +147,7 @@ fn exercise(mutation: Mutation) -> TestResult {
         let exercise = async {
             let mut inventory = None;
             loop {
-                let frame = item_look::read_frame(&mut client).await?;
+                let frame = item_look_fixtures::read_frame(&mut client).await?;
                 let envelope = protocol::decode_wire_envelope(&frame).map_err(debug)?;
                 if envelope.message_type() == protocol::MessageType::SnapshotChunk {
                     let (_, domains) =
@@ -390,7 +390,7 @@ async fn views(
     client: &mut tokio::io::DuplexStream,
 ) -> TestResult<protocol::container_tree::ContainerViews> {
     loop {
-        let frame = item_look::read_frame(client).await?;
+        let frame = item_look_fixtures::read_frame(client).await?;
         let envelope = protocol::decode_wire_envelope(&frame).map_err(debug)?;
         if envelope.message_type() == protocol::MessageType::StateDelta {
             let delta = protocol::decode_state_delta(envelope.payload()).map_err(debug)?;
@@ -419,7 +419,7 @@ async fn send(
     client.write_u32(u32::try_from(frame.len())?).await?;
     client.write_all(&frame).await?;
     loop {
-        let frame = item_look::read_frame(client).await?;
+        let frame = item_look_fixtures::read_frame(client).await?;
         let e = protocol::decode_wire_envelope(&frame).map_err(debug)?;
         if e.message_type() == protocol::MessageType::CommandResult {
             let r = protocol::decode_command_result(e.payload()).map_err(debug)?;
