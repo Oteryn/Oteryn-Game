@@ -1234,6 +1234,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if self.states.quest_callbacks.interrupt_after_commit.swap(false, std::sync::atomic::Ordering::AcqRel) {
                         return UseDisposition::Rejected;
                     }
+                    if let Some(geode) = oteryn_gameplay_quests::quest::dangerous_depth_geodes::binding(&callback.key)
+                        && let QuestCause::Use(command) = cause
+                        && self.project_warzone_geode_opening(permit, map, geode, &callback.key, command).await.is_err()
+                    {
+                        return UseDisposition::Rejected;
+                    }
                     if fresh
                         && callback.native_rule == Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::BarbarianMead)
                         && let QuestCause::Use(command) = cause {

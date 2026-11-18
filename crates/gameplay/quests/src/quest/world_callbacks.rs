@@ -17,7 +17,7 @@ pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-cal
 pub const MAX_CALLBACKS: usize = 512;
 // The merged source cohorts and native callbacks share a separate boot bound.
 // Reserve one route for each pair of prior-pump flags at each Crystal pump.
-pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1024 + 3 * 4;
+pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1024 + 3 * 4 + 3;
 pub const MAX_EFFECTS: usize = 8;
 pub const MAX_SELECTOR_POSITIONS: usize = 8;
 
@@ -778,6 +778,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     native_callbacks.extend(super::goblin_merchant::callbacks()?);
     native_callbacks.extend(super::shared_world_progress::callbacks());
     native_callbacks.extend(super::hive_access::callbacks());
+    native_callbacks.extend(super::dangerous_depth_geodes::callbacks());
     native_callbacks.push(super::dreamer_carrot::callback());
     native_callbacks.push(super::dreamer_death_ring::reset_callback());
     native_callbacks.extend(super::dreamer_fire_bug::callbacks());
@@ -905,6 +906,8 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
         let operation_tracks: BTreeSet<_> = callback.operations().map(|s| &s.track).collect();
         let alias_positions: BTreeSet<_> = selector.position_aliases.iter().copied().collect();
         if !completed_quests::valid(callback)
+            || (super::dangerous_depth_geodes::binding(&callback.key).is_some()
+                && !super::dangerous_depth_geodes::shared_input(callback))
             || (callback.key == super::dreamer_fire_bug::IGNITE
                 && !super::dreamer_fire_bug::callbacks().contains(callback))
             || (matches!(

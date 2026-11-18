@@ -4,6 +4,7 @@ pub(super) mod carrot;
 pub(crate) mod character_requirements;
 mod completed_quests;
 pub(super) mod completion;
+mod dangerous_depth_geode;
 mod ground_read;
 pub(crate) mod ground_stack;
 #[path = "quest_world_callback_npc_input.rs"]
@@ -610,6 +611,11 @@ pub(super) async fn consume(
         && callback.effects.carried_inputs.is_empty()
     {
         return Ok(true);
+    }
+    if oteryn_gameplay_quests::quest::dangerous_depth_geodes::shared_input(callback)
+        && !dangerous_depth_geode::contribute(tx, world_id, channel_id, context.reset_epoch, &callback.key, command).await?
+    {
+        return Ok(false);
     }
     consume_inputs(
         tx, permit, fence, request, callback, changes, context, command, world_id, channel_id,
