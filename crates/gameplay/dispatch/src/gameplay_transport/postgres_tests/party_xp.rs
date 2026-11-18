@@ -67,6 +67,7 @@ pub(super) enum Case {
     CharmParry,
     T94,
     CharmSecondary,
+    CakeWorldBonus,
 }
 impl Case {
     fn forge(self) -> bool {
@@ -91,6 +92,7 @@ impl Case {
         matches!(
             self,
             Self::Shared
+                | Self::CakeWorldBonus
                 | Self::Modifiers
                 | Self::Replay
                 | Self::Rollback
@@ -577,6 +579,10 @@ async fn scenario(
                 .is_some()
         );
         assert!(states.load_owned_build(&runtime, actor, session, &build));
+        if matches!(case, Case::CakeWorldBonus) && index == 0 {
+            states.get_mut(&runtime, actor, session).ok_or("cake player")?
+                .apply_owner_promotion_transition(false, true, Some(u64::MAX)).map_err(debug)?;
+        }
     }
     for (actor, session) in &players {
         assert!(owner.refresh_source_party_presence(*actor, *session).await);
@@ -753,6 +759,15 @@ async fn scenario(
     }
     let first_id = first.current_character_lease().character_id();
     let second_id = second.current_character_lease().character_id();
+    if matches!(case, Case::CakeWorldBonus) {
+        sqlx::query("INSERT INTO game_cake_world_progress(world_id,event_year) VALUES(encode($1,'hex')::uuid,2026)")
+            .bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_cake_phases(world_id,event_year,stage,layer,bonus_activated_at,bonus_until) VALUES(encode($1,'hex')::uuid,2026,3,4,statement_timestamp(),statement_timestamp()+interval '604800 seconds')")
+            .bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
+        for (actor, session) in players.iter().copied() {
+            let _ = owner.tick_spell_periodic(actor, session).await;
+        }
+    }
     if t94_case {
         t94::prepare(h, &recovery, world, first_id, second_id).await?;
     }
@@ -1602,10 +1617,25 @@ async fn scenario(
             (first_award, second_award),
             if matches!(case, Case::Modifiers) {
                 (6, 4)
+            } else if matches!(case, Case::CakeWorldBonus) {
+                (18, 8)
             } else {
                 (8, 8)
             }
         );
+    }
+    if matches!(case, Case::CakeWorldBonus) {
+        use oteryn_gameplay_domain::domain::condition::{ConditionValues, ConflictKey};
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        for (actor, session) in players.iter().copied() {
+            let state = states.get(&runtime, actor, session).ok_or("cake player state")?;
+            let effect = state.owned_conditions().get(ConflictKey::Recovery)
+                .ok_or("world regeneration applies to both premium and free players")?;
+            assert!(matches!(effect.definition().values(), ConditionValues::SpellRegeneration {
+                sub_id: 0, health_gain: 1, mana_gain: 1, ..
+            }));
+        }
     }
     let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_party_kill_xp_receipts")
         .fetch_one(&h.pool)
