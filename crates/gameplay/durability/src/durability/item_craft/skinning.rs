@@ -245,9 +245,12 @@ pub(super) async fn prepare(
 fn in_reach(request: &SkinningRequest, position: &[u8]) -> Result<bool, DurabilityError> {
     let cell = super::super::spell_items_abi::decode_ground_cell(position)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
+    // A creature death writes the runtime floor. Legacy skinnable map
+    // objects write the signed native tile floor.
+    let floor = if request.lord_ashes { cell.z } else { -cell.z };
     Ok(request.actor_position[0].abs_diff(cell.x) <= 1
         && request.actor_position[1].abs_diff(cell.y) <= 1
-        && request.actor_position[2] == -cell.z)
+        && request.actor_position[2] == floor)
 }
 
 // Crystal skinning.lua:259–268 advances the Character's claim stage but

@@ -1,6 +1,13 @@
 //! The four Crystal rewards use the existing Arkulius dialogue transaction.
 use super::fixture::{Harness, debug, run};
 use super::{Dependencies, TestResult, prepare_current_session};
+use crate::durability::character_build::{
+    BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildOccurrence, DurableBuildState,
+    convert_vocation,
+};
+use crate::gameplay_transport::spell_premium_coordinator::{
+    SpellPremiumCoordinator, purchase_fixture,
+};
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestTransition, elemental_spheres,
 };
@@ -71,7 +78,11 @@ async fn exercise(h: &Harness, vocation: crate::spell::Vocation, reward: u16) ->
         crate::spell::cast::v1_spell_book().map_err(debug)?,
     )?;
     let admitted = deps.admitted;
+    let account = super::fixture::id(40);
+    let (consumer, clock, _activation, _proof) = purchase_fixture::current(account);
+    let premium = SpellPremiumCoordinator::new(consumer, Some(clock), None, Some(h.root.clone()));
     let mut owner = deps.owner(h, &authority);
+    owner.premium_coordinator = Some(&premium);
     owner.active_generation = controller.active();
     {
         let mut runtime = deps.runtime.lock().await;
@@ -125,6 +136,45 @@ async fn exercise(h: &Harness, vocation: crate::spell::Vocation, reward: u16) ->
         .await
         .map_err(|()| "quest fence")?
         .ok_or("quest fence")?;
+    let formula = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .and_then(|native| native.training_formula())
+        .ok_or("training formula")?;
+    let vocation_key = match vocation {
+        crate::spell::Vocation::Sorcerer => "sorcerer",
+        crate::spell::Vocation::Druid => "druid",
+        crate::spell::Vocation::Paladin => "paladin",
+        crate::spell::Vocation::Knight => "knight",
+        _ => return Err("Arkulius reward vocation".into()),
+    };
+    let before = DurableBuildState::default();
+    let after = convert_vocation(formula, &before, vocation_key).map_err(debug)?;
+    assert!(matches!(
+        h.root
+            .commit_character_build(
+                &authority,
+                &h.node,
+                fence,
+                BuildChangeRequest {
+                    occurrence: BuildOccurrence::from_bytes(super::fixture::id(190))
+                        .map_err(debug)?,
+                    cause: BuildCause::VocationChoice,
+                    before,
+                    after,
+                    pruned_stance: None,
+                },
+                formula,
+            )
+            .await
+            .map_err(debug)?,
+        BuildCommitOutcome::Committed(_)
+    ));
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "post-vocation fence")?
+        .ok_or("post-vocation fence")?;
     {
         use crate::durability::quest_state::{
             QuestCause, QuestTransitionOutcome, QuestTransitionRequest,

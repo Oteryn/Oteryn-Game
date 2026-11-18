@@ -574,12 +574,11 @@ pub(super) async fn seed_character_main_backpack(
     sqlx::query(
         "INSERT INTO game_item_container_slots(character_id, item_instance_id, world_id, \
         placed_transaction_id) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, \
-        encode($3,'hex')::uuid, encode($4,'hex')::uuid)",
+        encode($3,'hex')::uuid, game_character_uuid_v7())",
     )
     .bind(character.as_slice())
     .bind(id(bag).as_slice())
     .bind(id(42).as_slice())
-    .bind(id(72).as_slice())
     .execute(&mut *tx)
     .await?;
     for (offset, (key, quantity)) in entries.iter().enumerate() {
@@ -589,8 +588,8 @@ pub(super) async fn seed_character_main_backpack(
         let ordinal = i64::try_from(offset)? + 1;
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',$4,1,encode($5,'hex')::uuid)")
             .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(key).bind(quantity).bind(id(72).as_slice()).execute(&mut *tx).await?;
-        sqlx::query("INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid)")
-            .bind(character.as_slice()).bind(id(42).as_slice()).bind(id(bag).as_slice()).bind(id(seed).as_slice()).bind(ordinal).bind(id(72).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,game_character_uuid_v7())")
+            .bind(character.as_slice()).bind(id(42).as_slice()).bind(id(bag).as_slice()).bind(id(seed).as_slice()).bind(ordinal).execute(&mut *tx).await?;
     }
     tx.commit().await?;
     Ok(())
