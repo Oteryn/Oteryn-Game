@@ -290,6 +290,18 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     .await
                     .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                     #[cfg(test)]
+                    if let Ok(Some((holder_ready, row_locked))) =
+                        NORMAL_MAP_READ_GATE.try_with(|gate| gate.borrow_mut().take())
+                    {
+                        // This transaction already owns the holder and has proved its scope.
+                        holder_ready
+                            .send(())
+                            .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                        row_locked
+                            .await
+                            .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    }
+                    #[cfg(test)]
                     NORMAL_MAP_READ_EPOCH.fetch_add(1, Ordering::Relaxed);
                     let read = plan
                         .read(&mut tx, &authority)
