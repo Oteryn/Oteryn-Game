@@ -32,7 +32,6 @@ impl GroundSearch {
 
     fn valid(&self) -> bool {
         (2..=50).contains(&self.attempts)
-            && !self.appearances.is_empty()
             && self.appearances.len() <= 8
             && self
                 .appearances
