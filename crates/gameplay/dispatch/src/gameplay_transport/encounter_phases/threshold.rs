@@ -34,6 +34,17 @@ impl Threshold {
         if self.source != source || !runtime.contains_live_creature(self.boss) {
             return Err(CarrierError::CreatureTargetMismatch);
         }
+        // Crystal movements_faceless_tiles.lua:11-17 finds the boss within a
+        // same-floor spectator square centred on the Cathedral, not the player.
+        let boss = runtime.read_actor_position(self.boss)?.position();
+        let center = self.spec.release_center;
+        let radius = u32::from(self.spec.release_radius);
+        if boss.floor != -i16::from(center.floor)
+            || boss.x.abs_diff(i32::from(center.x)) > radius
+            || boss.y.abs_diff(i32::from(center.y)) > radius
+        {
+            return Err(CarrierError::CreatureTargetMismatch);
+        }
         if self.protected {
             gates::release(runtime, self.boss)?;
             self.protected = false;

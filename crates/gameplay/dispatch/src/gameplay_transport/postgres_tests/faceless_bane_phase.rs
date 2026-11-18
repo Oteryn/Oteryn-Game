@@ -32,6 +32,9 @@ const SUMMONS: [&str; 3] = [
 const LEVER: Position = at(33637, 32562);
 const ENTRY: Position = at(33617, 32567);
 const RELEASE: Position = at(33617, 32566);
+const RELEASE_CENTER: Position = at(33617, 32563);
+const OUTSIDE_RELEASE: Position = at(33606, 32563);
+const RELEASE_BOUNDARY: Position = at(33607, 32573);
 const EXIT: Position = Position {
     x: 33618,
     y: 32523,
@@ -54,11 +57,13 @@ pub(super) fn binding() -> TestResult<Callback> {
                 "room_min":at(33607,32553),"room_max":at(33627,32570),
                 "monsters":[{"position":at(33617,32561),"creature":BOSS}]},
             "threshold_rearm":{"health_percent":20,"restores":5,"summons":SUMMONS,
+                "release_center":RELEASE_CENTER,"release_radius":10,
                 "exit":EXIT,"time_limit_ms":900000}
         },
         "sources":[
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/faceless_bane.lua:1-24",
-            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_dream_courts/creaturescripts_faceless_bane.lua:11-28"
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_dream_courts/creaturescripts_faceless_bane.lua:11-28",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_dream_courts/movements_faceless_tiles.lua:11-17"
         ]
     }))?)
 }
@@ -83,7 +88,7 @@ pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleW
         &[(RELEASE, 431)],
         &[],
         None,
-        &[EXIT],
+        &[EXIT, OUTSIDE_RELEASE, RELEASE_BOUNDARY],
     )
 }
 
@@ -213,21 +218,26 @@ pub(super) async fn exercise(
     for creature in SUMMONS {
         assert_eq!(live(owner, creature).await?.len(), 1);
     }
-    let command = admitted.continuity.next_command_id;
-    assert_eq!(
-        decode_step_result(
-            &wire(
-                owner,
-                admitted,
-                command,
-                COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-                encode_step_intent(StepDirection::North)
-            )
-            .await?
-        )
-        .map_err(debug)?,
-        StepDisposition::Moved
-    );
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let before = runtime.read_actor_position(boss).map_err(debug)?;
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(boss, before, local(OUTSIDE_RELEASE))
+            .map_err(debug)?;
+    }
+    step(owner, admitted, StepDirection::North).await?;
+    {
+        let mut runtime = owner.runtime.lock().await;
+        assert!(damage(&mut runtime, boss, b"outside-release-square", 1).is_err());
+        let before = runtime.read_actor_position(boss).map_err(debug)?;
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(boss, before, local(RELEASE_BOUNDARY))
+            .map_err(debug)?;
+    }
+    step(owner, admitted, StepDirection::South).await?;
+    step(owner, admitted, StepDirection::North).await?;
     {
         let mut runtime = owner.runtime.lock().await;
         assert_eq!(
@@ -264,6 +274,27 @@ pub(super) async fn exercise(
         );
     }
     assert!(live(owner, BOSS).await?.is_empty());
+    Ok(())
+}
+
+async fn step(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    direction: StepDirection,
+) -> TestResult {
+    let command = admitted.continuity.next_command_id;
+    let result = wire(
+        owner,
+        admitted,
+        command,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        encode_step_intent(direction),
+    )
+    .await?;
+    assert_eq!(
+        decode_step_result(&result).map_err(debug)?,
+        StepDisposition::Moved
+    );
     Ok(())
 }
 

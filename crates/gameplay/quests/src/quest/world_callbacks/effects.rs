@@ -444,6 +444,8 @@ pub struct ThresholdRearm {
     pub health_percent: u8,
     pub restores: u8,
     pub summons: Vec<String>,
+    pub release_center: Position,
+    pub release_radius: u8,
     pub exit: Position,
     pub time_limit_ms: u32,
 }
@@ -1155,6 +1157,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || !(1..=99).contains(&phase.health_percent)
                 || !(1..=8).contains(&phase.restores)
                 || !(1..=8).contains(&phase.summons.len())
+                || !in_room(phase.release_center)
+                || !(1..=32).contains(&phase.release_radius)
                 || phase.summons.iter().any(|creature| {
                     !creature.starts_with("oteryn:creature.")
                         || !super::super::valid_quest_key(creature)
