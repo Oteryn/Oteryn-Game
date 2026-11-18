@@ -64,6 +64,7 @@ pub(super) async fn hunt_named(
         last_position: target.position,
         removed: false,
         prior_corpses,
+        corpses_during_absence: BTreeSet::new(),
     };
     let corpse = loop {
         client.service_liveness(Duration::from_millis(100)).await?;
@@ -231,6 +232,7 @@ struct HuntEvidence {
     last_position: oteryn_protocol_oteryn::world_spatial::ActorPosition,
     removed: bool,
     prior_corpses: BTreeSet<oteryn_dev_client::EntityRef>,
+    corpses_during_absence: BTreeSet<oteryn_dev_client::EntityRef>,
 }
 
 impl HuntEvidence {
@@ -246,21 +248,26 @@ impl HuntEvidence {
             .chain(&delta.enter)
             .find(|entity| entity.entity == target)
         {
+            // A live return invalidates corpses that entered during the previous absence.
+            self.prior_corpses.append(&mut self.corpses_during_absence);
             self.last_position = actor.position;
             self.removed = false;
             self.damaged |= matches!(actor.detail, EntityDetail::Actor { health_percent, .. }
                 | EntityDetail::ActorWithIcons { health_percent, .. } if health_percent < 100);
         }
         self.removed |= delta.leave.contains(&target);
-        if !self.removed {
-            self.prior_corpses.extend(
-                delta
-                    .enter
-                    .iter()
-                    .filter(|entry| entry.kind == EntityKind::Corpse)
-                    .map(|entry| entry.entity),
-            );
-        }
+        let corpses = if self.removed {
+            &mut self.corpses_during_absence
+        } else {
+            &mut self.prior_corpses
+        };
+        corpses.extend(
+            delta
+                .enter
+                .iter()
+                .filter(|entry| entry.kind == EntityKind::Corpse)
+                .map(|entry| entry.entity),
+        );
     }
 
     fn corpse<'a>(
@@ -300,7 +307,7 @@ fn named_corpse<'a>(
 }
 
 #[test]
-fn round4_live_warlock_reentry_blocks_unrelated_corpse() {
+fn round5_live_warlock_reentry_excludes_corpse_from_separate_delta() {
     use oteryn_dev_client::{EntityDetail, EntityKind, EntityRef, ItemHandle, WorldSpatialEntity};
     use oteryn_protocol_oteryn::world_spatial::ActorPosition;
     let at = ActorPosition {
@@ -342,6 +349,7 @@ fn round4_live_warlock_reentry_blocks_unrelated_corpse() {
         last_position: at,
         removed: false,
         prior_corpses: BTreeSet::new(),
+        corpses_during_absence: BTreeSet::new(),
     };
     let mut delta = oteryn_dev_client::WorldSpatialEntitiesDelta {
         content_generation: [0; 32],
@@ -352,9 +360,11 @@ fn round4_live_warlock_reentry_blocks_unrelated_corpse() {
     };
     observed.apply(id, &delta);
     delta.leave.clear();
-    delta.enter = vec![actor, corpse];
+    delta.enter = vec![corpse];
     observed.apply(id, &delta);
-    assert_eq!(observed.corpse(delta.enter.iter(), id), None);
+    delta.enter = vec![actor];
+    observed.apply(id, &delta);
+    assert_eq!(observed.corpse([actor, corpse].iter(), id), None);
     delta.enter.clear();
     delta.leave.push(id);
     observed.apply(id, &delta);
