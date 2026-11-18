@@ -58,9 +58,27 @@ pub(super) async fn exercise(
         .and_then(|g| g.native_gameplay())
         .and_then(|native| native.training_formula())
         .ok_or("training formula")?;
+    let position = callback.selector.position.ok_or("entry lever tile")?;
+    let map = owner.bundle_map().ok_or("entry map")?;
+    let key = source_lever(
+        map,
+        crate::map::overlay::TilePos {
+            x: position.x,
+            y: position.y,
+            floor: position.floor,
+        },
+    )?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let target = WorldObjectTarget {
+        placement,
+        expected_revision: 0,
+    };
     let mut players = Vec::new();
     let mut missing_sphere = None;
-    for (index, station) in party.stations.iter().enumerate() {
+    // Admit the Paladin at the lever first, so the real USE can be tested
+    // while only two of the four source positions are occupied.
+    for (index, station) in party.stations.iter().enumerate().rev() {
         let member = u8::try_from(index)?;
         let session = if Some(station.from) == party.initiator_at {
             admitted.game_session_id
@@ -187,39 +205,24 @@ pub(super) async fn exercise(
                 .ok_or("spell state")?;
             assert!(states.load_owned_build(&runtime, actor, session, &build));
         }
-        owner.refresh_quest_session(session, false).await;
+        owner.refresh_quest_session(session, true).await;
         players.push((actor, local(station.from), local(station.to)));
+        if players.len() == 2 {
+            let refused = enter(owner, admitted, 101, target.clone()).await?;
+            assert_eq!(refused, UseDisposition::Rejected);
+        }
     }
 
-    let position = callback.selector.position.ok_or("entry lever tile")?;
-    let map = owner.bundle_map().ok_or("entry map")?;
-    let key = source_lever(
-        map,
-        crate::map::overlay::TilePos {
-            x: position.x,
-            y: position.y,
-            floor: position.floor,
-        },
-    )?;
-    let mut placement = map.overlay.base().digest().to_vec();
-    placement.extend_from_slice(&key.to_be_bytes());
-    let fence = fence(owner, admitted.game_session_id).await?;
-    let target = WorldObjectTarget {
-        placement,
-        expected_revision: 0,
-    };
-    let actor = admitted.runtime_actor.ok_or("initiator")?;
-    let command = UseCommand {
-        game_session_id: admitted.game_session_id,
-        command_id: 101,
-        item_fence: Some(fence.item_fence()),
-    };
-    let refused = owner.use_object(actor, command, target.clone()).await;
-    assert_eq!(refused.disposition, UseDisposition::Rejected);
+    let refused = enter(owner, admitted, 102, target.clone()).await?;
+    assert_eq!(refused, UseDisposition::Rejected);
     assert_eq!(
-        map.facts.object_revision(key),
+        owner
+            .bundle_map()
+            .ok_or("entry map")?
+            .facts
+            .object_revision(key),
         0,
-        "a missing sphere must leave the lever ready"
+        "two occupants and a missing sphere must each leave the lever ready"
     );
     {
         let runtime = owner.runtime.lock().await;
@@ -235,21 +238,8 @@ pub(super) async fn exercise(
     }
     let (character, bag, item) = missing_sphere.ok_or("withheld non-initiator sphere")?;
     super::super::item_look::seed_character_main_backpack(h, character, bag, &[(item, 1)]).await?;
-    owner.clock_origin = owner
-        .clock_origin
-        .checked_sub(std::time::Duration::from_secs(1))
-        .ok_or("USE gate clock")?;
-    let outcome = owner
-        .use_object(
-            actor,
-            UseCommand {
-                command_id: 102,
-                ..command
-            },
-            target,
-        )
-        .await;
-    assert_eq!(outcome.disposition, UseDisposition::Committed);
+    let outcome = enter(owner, admitted, 103, target).await?;
+    assert_eq!(outcome, UseDisposition::Committed);
     let retained: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id)
          WHERE i.definition_production_key IN ('oteryn:item.tibia.i942','oteryn:item.tibia.i946',
@@ -270,6 +260,31 @@ pub(super) async fn exercise(
         );
     }
     Ok(())
+}
+
+async fn enter(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command_id: u64,
+    target: WorldObjectTarget,
+) -> TestResult<UseDisposition> {
+    let fence = fence(owner, admitted.game_session_id).await?;
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(1))
+        .ok_or("USE gate clock")?;
+    Ok(owner
+        .use_object(
+            admitted.runtime_actor.ok_or("initiator")?,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id,
+                item_fence: Some(fence.item_fence()),
+            },
+            target,
+        )
+        .await
+        .disposition)
 }
 
 async fn fence(
