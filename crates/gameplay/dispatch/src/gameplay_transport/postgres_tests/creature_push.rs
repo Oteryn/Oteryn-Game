@@ -117,16 +117,6 @@ fn bundle_for(trap: Option<u16>, repair: bool) -> TestResult<(Vec<u8>, crate::ma
         npcs: Default::default(),
     };
     if trap == Some(12187) {
-        for (id, appearance) in [(7, 12187), (8, 12189), (9, 3682)] {
-            manifest.palette.push(PaletteEntry {
-                key: format!("oteryn:item.tibia.i{appearance}"),
-                family: Family::Item,
-                id,
-                terrain: None,
-            });
-        }
-    }
-    if trap == Some(12187) {
         manifest.palette.push(terrain(
             "oteryn:terrain.tibia.i10480",
             10,
@@ -135,14 +125,12 @@ fn bundle_for(trap: Option<u16>, repair: bool) -> TestResult<(Vec<u8>, crate::ma
         ));
     }
     if repair {
-        for (id, appearance) in [(7, 12183), (8, 6474)] {
-            manifest.palette.push(PaletteEntry {
-                key: format!("oteryn:item.tibia.i{appearance}"),
-                family: Family::Item,
-                id,
-                terrain: None,
-            });
-        }
+        manifest.palette.push(PaletteEntry {
+            key: "oteryn:item.tibia.i12183".into(),
+            family: Family::Item,
+            id: 7,
+            terrain: None,
+        });
     }
     let mut tiles = Vec::new();
     for y in 0..=8 {
