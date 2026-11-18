@@ -82,7 +82,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
             return;
         };
-        let doors = crate::map::floor::BundleDoors(&map.facts);
+        let doors = crate::map::floor::BundleDoors(map.facts.doors());
         visits.retain_mut(|visit| {
             let Some(ejection) = visit.ejection.as_ref() else {
                 return visit.active(runtime);
@@ -98,15 +98,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let [(actor, session)] = visit.participants.as_slice() else {
                 return false;
             };
+            // Crystal data/libs/functions/functions.lua:226-238 also clears
+            // monsters left in the room. Retire only this visit's exact actors
+            // so a stale timer cannot remove another admission's creatures.
+            visit.creatures.retain(|creature| {
+                runtime
+                    .read_actor_position(*creature)
+                    .is_ok_and(|position| room_contains(&visit.room, position.position()))
+                    && runtime.remove_encounter_actor(*creature).is_err()
+            });
+            let pending_cleanup = !visit.creatures.is_empty();
             if runtime.player_control_facts(*actor, *session).is_err() {
-                return false;
+                return pending_cleanup;
             }
             let Ok(expected) = runtime.read_actor_position(*actor) else {
-                return false;
+                return pending_cleanup;
             };
             let from = expected.position();
             if !room_contains(&visit.room, from) {
-                return false;
+                return pending_cleanup;
             }
             let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
                 runtime,
@@ -146,7 +156,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     map.facts.emit_movement_effect(pos, 11);
                 }
             }
-            false
+            pending_cleanup
         });
     }
 
