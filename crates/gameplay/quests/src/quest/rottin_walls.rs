@@ -66,6 +66,44 @@ pub(crate) fn callbacks() -> [Callback; 6] {
     })
 }
 
+/// Retain the exact pre-hammer pin for characters who already accepted Disrepair.
+pub(super) fn retain_predecessor(catalogue: &mut super::QuestStateCatalogue) -> Result<(), String> {
+    let tracks: Vec<_> = catalogue
+        .tracks
+        .values()
+        .filter(|track| track.quest == QUEST)
+        .cloned()
+        .map(|mut track| {
+            if track.key == super::classic_talk::ROTTIN_WALLCOUNT {
+                track.max = 0;
+            }
+            track
+        })
+        .collect();
+    let defaults = tracks
+        .iter()
+        .map(|track| (track.key.clone(), track.initial))
+        .collect();
+    let transitions = catalogue
+        .transitions
+        .values()
+        .filter(|transition| transition.quest == QUEST && !transition.key.starts_with(PREFIX))
+        .cloned()
+        .collect();
+    let predecessor =
+        super::QuestStateCatalogue::new(catalogue.content_revision(), tracks, transitions)
+            .map_err(|error| format!("{error:?}"))?;
+    let hash = predecessor
+        .definition_hash(QUEST)
+        .ok_or("Rottin predecessor definition")?;
+    catalogue
+        .predecessors
+        .entry(QUEST.into())
+        .or_default()
+        .push(super::NpcDefinitionPredecessor { hash, defaults });
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -107,6 +145,16 @@ mod tests {
             )
         };
         validate(reset)?;
+        // Captured by running the existing NPC case with the base catalogue.
+        let prior = [
+            213, 240, 38, 86, 164, 115, 74, 12, 93, 92, 21, 227, 246, 158, 57, 59, 158, 103, 133,
+            26, 221, 105, 16, 177, 56, 211, 145, 223, 48, 215, 141, 56,
+        ];
+        assert_eq!(
+            super::super::npc_rules::legacy_defaults(catalogue, QUEST, &prior)
+                .and_then(|defaults| defaults.get(super::super::classic_talk::ROTTIN_WALLCOUNT)),
+            Some(&0),
+        );
         let mut alias = reset.clone();
         alias.key.push_str("-alias");
         assert!(validate(&alias).is_err());
