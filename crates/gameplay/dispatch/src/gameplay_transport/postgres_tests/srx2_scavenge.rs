@@ -1055,16 +1055,7 @@ async fn exercise_rabbit(
     );
     assert_eq!(body().await?, "oteryn:item.tibia.i6017");
 
-    // Age only the fixture clock. The real deadline worker must produce the stage-one receipt.
-    let mut tx = h.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *tx)
-        .await?;
-    sqlx::query("UPDATE game_item_mint_receipts SET materialized_at=materialized_at-11000 WHERE item_instance_id=encode($1,'hex')::uuid")
-        .bind(corpse.as_slice()).execute(&mut *tx).await?;
-    sqlx::query("UPDATE game_spell_field_temporal_schedules SET expires_at_unix_ms=expires_at_unix_ms-11000 WHERE item_instance_id=encode($1,'hex')::uuid")
-        .bind(corpse.as_slice()).execute(&mut *tx).await?;
-    tx.commit().await?;
+    age_rabbit_fixture(h, corpse, 11_000).await?;
     owner.drain_source_item_deadlines().await;
     assert_eq!(body().await?, "oteryn:item.tibia.i4301");
     assert_eq!(
@@ -1117,5 +1108,25 @@ async fn exercise_rabbit(
     let schedules: Vec<i64> = sqlx::query_scalar("SELECT p.expires_at_unix_ms-m.materialized_at FROM game_spell_field_temporal_schedules p JOIN game_item_mint_receipts m USING(item_instance_id) WHERE p.item_instance_id=encode($1,'hex')::uuid ORDER BY source_stage")
         .bind(corpse.as_slice()).fetch_all(&h.pool).await?;
     assert_eq!(schedules, [10_000, 310_000, 610_000]);
+
+    // The third stage must accept the real skinning receipt as its predecessor.
+    age_rabbit_fixture(h, corpse, 600_000).await?;
+    owner.states.spell_states.lock().await.next_item_deadline_pass_us = 0;
+    owner.drain_source_item_deadlines().await;
+    assert_eq!(body().await?, "oteryn:item.tibia.i4303");
+    Ok(())
+}
+
+/// Move the fixture's original clock, leaving the real deadline worker to produce receipts.
+async fn age_rabbit_fixture(h: &Harness, corpse: [u8; 16], millis: i64) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("UPDATE game_item_mint_receipts SET materialized_at=materialized_at-$2 WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(corpse.as_slice()).bind(millis).execute(&mut *tx).await?;
+    sqlx::query("UPDATE game_spell_field_temporal_schedules SET expires_at_unix_ms=expires_at_unix_ms-$2 WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(corpse.as_slice()).bind(millis).execute(&mut *tx).await?;
+    tx.commit().await?;
     Ok(())
 }
