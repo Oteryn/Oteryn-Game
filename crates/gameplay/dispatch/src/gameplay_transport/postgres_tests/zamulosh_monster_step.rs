@@ -5,6 +5,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 
 pub(super) const CASE: &str = "ferumbras-zamulosh-lovely-monster-step";
 pub(super) const BLOSSOM: &str = "first-dragon-fertility-blossom-step";
+pub(super) const HABITAT: &str = "ferumbras-zamulosh-grass-habitat";
 const FRAZZLEMAW: &str = "oteryn:creature.lovely_frazzlemaw";
 const DEER: &str = "oteryn:creature.lovely_deer";
 const SPIRIT: &str = "oteryn:creature.spirit_of_fertility";
@@ -25,6 +26,37 @@ const PORTAL: Position = Position {
     y: 32666,
     floor: -12,
 };
+// The donor registers AID 34306. The fixture places it beside the source basin.
+const HABITAT_LEVER: Position = Position {
+    x: 33632,
+    y: 32667,
+    floor: -12,
+};
+const BASIN: Position = Position {
+    x: 33631,
+    y: 32667,
+    floor: -12,
+};
+const HABITAT_TILES: [(Position, u16); 2] = [
+    (
+        Position {
+            x: 33641,
+            y: 32664,
+            floor: -12,
+        },
+        4515,
+    ),
+    (
+        Position {
+            x: 33642,
+            y: 32667,
+            floor: -12,
+        },
+        4518,
+    ),
+];
+// The donor clears whatever terrain occupies these cells. The mounted World uses 417.
+const PREVIOUS_TERRAIN: u16 = 417;
 
 #[test]
 fn zamulosh_monster_step_retires_only_the_creature_paired_with_the_portal() -> TestResult {
@@ -46,6 +78,110 @@ fn spirit_of_fertility_replaces_itself_and_consumes_only_the_source_dry_flower()
     super::kill_reward_e2e::scenario_thread::run(BLOSSOM, || {
         super::quest_world_callbacks::scenario(BLOSSOM, FLOWER, false)
     })
+}
+
+#[test]
+fn zamulosh_grass_habitat_changes_basin_at_use_and_terrain_after_two_seconds() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(HABITAT, || {
+        super::quest_world_callbacks::scenario(HABITAT, HABITAT_LEVER, false)
+    })
+}
+
+pub(super) fn habitat_callback() -> TestResult<Callback> {
+    let delayed_edits = HABITAT_TILES.map(|(position, appearance)| {
+        serde_json::json!({
+            "position":position,"remove":PREVIOUS_TERRAIN,"create":appearance,"passable":true
+        })
+    });
+    let document = serde_json::json!({"schema":1,"callbacks":[{
+        "key":"oteryn:quest-callback/ferumbras/zamulosh/grass-habitat",
+        "quest":"oteryn:quest.ferumbras_ascension_quest",
+        "trigger":"use","selector":{"position":HABITAT_LEVER,"action":34306,"appearance":9125},
+        "lever":[9125,9126],"reversible":false,"passages":[],"storage":[],"offerings":[],
+        "return_on_failure":false,
+        "effects":{"scene":{
+            "open":[{"position":BASIN,"remove":11114,"create":22196,"passable":true}],
+            "close":[],"delayed_open":{"delay_ms":2000,"edits":delayed_edits}
+        }},
+        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_grass.lua:15-27,393-420,439-472"]
+    }]});
+    let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&document.to_string())?
+        .try_into()
+        .map_err(|_| "one grass habitat callback")?;
+    Ok(callback)
+}
+
+pub(super) fn habitat_world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
+    super::quest_world_callbacks::world_with_scene_cells(
+        callback,
+        HABITAT_LEVER,
+        &[
+            (BASIN, 11114),
+            (HABITAT_TILES[0].0, PREVIOUS_TERRAIN),
+            (HABITAT_TILES[1].0, PREVIOUS_TERRAIN),
+        ],
+        &[22196, HABITAT_TILES[0].1, HABITAT_TILES[1].1],
+        &[],
+    )
+}
+
+pub(super) async fn exercise_habitat(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut super::AdmittedSession,
+    callback: Callback,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+
+    owner
+        .states
+        .quest_callbacks
+        .fixture
+        .set(vec![callback])
+        .map_err(|_| "callback installed")?;
+    let map = owner.bundle_map().ok_or("habitat map")?;
+    let has = |at: Position, appearance: u16| -> TestResult<bool> {
+        let pos = crate::map::overlay::TilePos {
+            x: at.x,
+            y: at.y,
+            floor: at.floor,
+        };
+        let tile = crate::map::view::compose_tile(&map.overlay, &map.facts, pos)
+            .map_err(debug)?
+            .ok_or("habitat tile")?;
+        Ok(tile
+            .entries
+            .iter()
+            .any(|entry| entry.facts.appearance_id == appearance))
+    };
+    let before = owner.owner_now().get();
+    assert_eq!(
+        super::questpc7_ferumbras::use_at(owner, admitted, HABITAT_LEVER, 9125).await?,
+        UseDisposition::Committed
+    );
+    let due = map
+        .facts
+        .next_movement_decay_time()
+        .ok_or("deferred terrain")?;
+    assert!(due >= before + 2_000_000 && due <= owner.owner_now().get() + 2_000_000);
+    assert!(has(BASIN, 22196)?);
+    assert!(!has(BASIN, 11114)?);
+    let _channel = owner.runtime.lock().await;
+    assert_eq!(map.facts.expire_movement_items(due - 1), 0);
+    for (at, next) in HABITAT_TILES {
+        assert!(has(at, PREVIOUS_TERRAIN)?);
+        assert!(!has(at, next)?);
+    }
+    assert_eq!(map.facts.expire_movement_items(due), 1);
+    for (at, next) in HABITAT_TILES {
+        assert!(!has(at, PREVIOUS_TERRAIN)?);
+        assert!(has(at, next)?);
+    }
+    assert_eq!(map.facts.expire_movement_items(due), 0);
+    Ok(())
 }
 
 pub(super) fn callback(name: &str) -> TestResult<Callback> {
