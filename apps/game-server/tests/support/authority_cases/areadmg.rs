@@ -79,8 +79,14 @@ fn run(case: Case) -> TestResult {
                     let h =
                         fixture::Harness::create_with_admission_seed(admin, "areadmg", true, false)
                             .await?;
+                    let started = std::time::Instant::now();
                     let result = exercise(&h, case).await;
                     h.cleanup().await?;
+                    eprintln!(
+                        "POSTGRES_CASE_COMPLETED areadmg/{case:?} duration={:?} success={}",
+                        started.elapsed(),
+                        result.is_ok(),
+                    );
                     result
                 })
                 .map_err(debug)
@@ -475,6 +481,11 @@ async fn oak_cut(
     if final_cut {
         assert_eq!(monsters, ["oteryn:creature.demon"]);
         assert_eq!(cut(2).await?, UseDisposition::NotPossible);
+        assert_eq!(
+            composed_test_owner::area_damage_player_health(owner, actor, session).await?,
+            after,
+            "waiting for the Demon does not apply another axe hit",
+        );
         {
             let mut runtime = runtime.lock().await;
             for monster in actors {
@@ -482,6 +493,11 @@ async fn oak_cut(
             }
         }
         assert_eq!(cut(3).await?, UseDisposition::Committed);
+        assert_eq!(
+            composed_test_owner::area_damage_player_health(owner, actor, session).await?,
+            after,
+            "victory settlement does not apply another axe hit",
+        );
         let finished = h
             .root
             .read_character_quest_state(owner.character, fence.character_id)
