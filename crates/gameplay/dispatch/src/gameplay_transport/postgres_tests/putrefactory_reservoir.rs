@@ -219,24 +219,28 @@ pub(super) async fn exercise(
         ).await;
         held.run(|_, _| Box::pin(async { Ok(()) })).await?;
         assert_eq!(tracks().await?, values);
-        h.root.advance_test_quest_clock(1).map_err(debug)?;
-        owner.tick_timed_items_at(21_100).await;
+        h.root.advance_test_quest_clock(2).map_err(debug)?;
+        owner.tick_timed_items_at(22_100).await;
         let charged = tracks().await?;
         assert_eq!(
             charged,
             vec![
                 (CHARGE.to_owned(), first_charge + 1),
-                (PASSIVE_CLOCK.to_owned(), STARTED_AT + 21),
+                (PASSIVE_CLOCK.to_owned(), STARTED_AT + 22),
                 (CLOCK.to_owned(), STARTED_AT),
             ]
         );
         // A delayed pulse re-arms from 20.1 seconds, not the start of its bucket.
-        h.root.advance_test_quest_clock(19).map_err(debug)?;
+        h.root.advance_test_quest_clock(18).map_err(debug)?;
         owner.tick_timed_items_at(40_000).await;
         assert_eq!(tracks().await?, charged);
-        // The containing item clock checks once per second.
+        // The next global pulse has opened, but the character's previous
+        // delayed settlement is only 19 seconds old. Retry until it is due.
         h.root.advance_test_quest_clock(1).map_err(debug)?;
         owner.tick_timed_items_at(41_000).await;
+        assert_eq!(tracks().await?, charged);
+        h.root.advance_test_quest_clock(1).map_err(debug)?;
+        owner.tick_timed_items_at(42_000).await;
         assert_eq!(tracks().await?[0], (CHARGE.to_owned(), first_charge + 2));
         let receipts: i64 = sqlx::query_scalar(
             "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1 AND cause_kind='source_think'",

@@ -76,6 +76,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.apply_committed_quest_copy(session, false, &committed);
                 self.schedule_quest_refresh(session);
             }
+            Ok(QuestTransitionOutcome::Refused(
+                oteryn_gameplay_quests::quest::QuestRefusal::RechargeCoolingDown,
+            )) => return false,
             Err(
                 crate::durability::character_progression::CharacterProgressionError::Unavailable(_),
             ) => return false,

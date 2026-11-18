@@ -818,10 +818,11 @@ impl QuestStateCatalogue {
                         effect.effect,
                         QuestEffectKind::SetNow | QuestEffectKind::SetNowWithBinding { .. }
                     )
-                    && transition
-                        .effects
-                        .iter()
-                        .any(|effect| matches!(effect.effect, QuestEffectKind::Recharge { .. }))
+                    && ((transition.key == rotten_blood::putrefactory::PASSIVE_TICK
+                        && effect.track == rotten_blood::putrefactory::PASSIVE_CLOCK)
+                        || transition.effects.iter().any(|effect| {
+                            matches!(effect.effect, QuestEffectKind::Recharge { .. })
+                        }))
                 {
                     return Err(QuestRefusal::RechargeCoolingDown);
                 }
