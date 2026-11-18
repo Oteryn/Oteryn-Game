@@ -118,6 +118,9 @@ pub struct CallbackEffects {
     /// Move the current players in a bounded source rectangle before spawning.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub encounter_group: Option<EncounterGroup>,
+    /// Start an immutable source object's ItemType appearance sequence at Channel startup.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub object_cycle: Option<ObjectCycle>,
 }
 
 /// The original wire shapes retain distinct owners: a child quest or the current quest.
@@ -333,6 +336,58 @@ pub struct ItemCycle {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
+pub struct ObjectCycle {
+    pub initial: u16,
+    pub stages: Vec<ObjectCycleStage>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ObjectCycleStage {
+    pub appearance: u16,
+    pub duration_ms: u32,
+    pub next: u16,
+}
+
+impl ObjectCycle {
+    fn valid(&self, callback: &Callback) -> bool {
+        let Some(selector) = &callback.selector.native else {
+            return false;
+        };
+        if !(2..=MAX_EFFECTS).contains(&self.stages.len())
+            || callback.trigger != Trigger::Use
+            || !callback.requires_world_admission
+            || !callback
+                .item_on_target
+                .as_ref()
+                .is_some_and(|tool| tool.selected_instance)
+            || callback.effects.transform.is_some()
+            || callback.lever.is_some()
+        {
+            return false;
+        }
+        let appearances: BTreeSet<_> = self.stages.iter().map(|s| s.appearance).collect();
+        let mut reachable = BTreeSet::new();
+        let mut current = self.initial;
+        while reachable.insert(current) {
+            let Some(stage) = self.stages.iter().find(|s| s.appearance == current) else {
+                return false;
+            };
+            current = stage.next;
+        }
+        reachable == appearances
+            && appearances.len() == self.stages.len()
+            && appearances.contains(&selector.appearance)
+            && self.stages.iter().all(|s| {
+                s.appearance != 0
+                    && s.appearance != s.next
+                    && (1..=3_600_000).contains(&s.duration_ms)
+            })
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct EncounterPlayer {
     pub from: Position,
     pub to: Position,
@@ -525,6 +580,13 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
     let stationary = &effects.stationary_encounter;
+    if effects
+        .object_cycle
+        .as_ref()
+        .is_some_and(|cycle| !cycle.valid(callback))
+    {
+        return false;
+    }
     if effects
         .encounter_group
         .as_ref()

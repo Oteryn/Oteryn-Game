@@ -10,16 +10,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         shutdown: &oteryn_foundation::CancellationToken,
     ) {
-        if self
+        let Some(native) = self
             .active_generation
             .and_then(|active| active.native_gameplay())
-            .is_none()
-        {
+        else {
             return;
-        }
+        };
         let wake = self.states.spell_states.lock().await.owner_wake.clone();
         let mut npc_voices = {
             let runtime = self.runtime.lock().await;
+            if runtime.owner_fence().is_ok()
+                && native.source_digest() == runtime.content_pin().server_artifact_digest()
+            {
+                self.initialize_source_quest_object_cycles();
+            }
             self.states
                 .chat
                 .npc_talk()
@@ -221,6 +225,60 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             if let Some(cycle) = npc_voices.as_mut() {
                 self.emit_npc_voices(cycle, self.owner_now().get()).await;
+            }
+        }
+    }
+
+    // Crystal 201189f8 data-global/items/items.xml:24775-24801,25010-25023.
+    // The wormholes and crucibles advance even when nobody uses a hammer.
+    fn initialize_source_quest_object_cycles(&self) {
+        use crate::map::{overlay::TilePos, view::placement_key};
+        let Some(map) = self.bundle_map() else { return };
+        let now = self.owner_now().get();
+        let mut cycles = std::collections::BTreeMap::new();
+        for callback in self.callback_content() {
+            let (Some(binding), Some(selector)) =
+                (&callback.effects.object_cycle, &callback.selector.native)
+            else {
+                continue;
+            };
+            let at = selector.position;
+            let pos = TilePos {
+                x: at.x,
+                y: at.y,
+                floor: at.floor,
+            };
+            let Some(key) = placement_key(pos, selector.ordinal) else {
+                continue;
+            };
+            let Some(base_id) = map
+                .overlay
+                .base()
+                .tile(pos.x, pos.y, pos.floor)
+                .and_then(|tile| {
+                    tile.ids()
+                        .iter()
+                        .zip(tile.depths())
+                        .filter(|(_, depth)| **depth == 0)
+                        .nth(usize::from(selector.ordinal))
+                        .map(|(id, _)| *id)
+                })
+            else {
+                continue;
+            };
+            cycles
+                .entry(key)
+                .and_modify(|prior| {
+                    if *prior != Some((base_id, binding)) {
+                        *prior = None;
+                    }
+                })
+                .or_insert(Some((base_id, binding)));
+        }
+        for (key, entry) in cycles {
+            if let Some((base_id, binding)) = entry {
+                map.facts
+                    .initialize_quest_object_cycle(key, base_id, binding, now);
             }
         }
     }

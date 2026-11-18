@@ -37,6 +37,8 @@ pub use elemental_arrival::ElementalArrivalReservation;
 #[path = "quest_item_batch.rs"]
 mod item_batch;
 pub use item_batch::QuestMapItemMove;
+#[path = "quest_object_cycle.rs"]
+mod object_cycle;
 #[path = "quest_timed_passages.rs"]
 mod timed_passages;
 pub use timed_passages::QuestTimedPassage;
@@ -157,6 +159,7 @@ pub(super) struct CallbackStates {
     pub(super) creature_visuals: std::collections::VecDeque<(u64, CreatureVisualKind)>,
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
+    object_cycles: BTreeMap<u64, object_cycle::ObjectCycle>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
     batch_blockers: BTreeSet<TilePos>,
@@ -530,6 +533,7 @@ impl CallbackStates {
             + self.actions.len()
             + self.hidden.len()
             + self.movement_decays.len()
+            + self.object_cycles.len()
             + self.movement_effects.len()
             + self.creature_visuals.len()
             + self.movement_speech.len()
@@ -836,6 +840,7 @@ impl BundleFacts {
             .map(|((due, _), _)| *due)
             .into_iter()
             .chain(states.portals.values().filter_map(|p| p.expires))
+            .chain(states.next_object_cycle_due())
             .min()
     }
 
@@ -890,7 +895,7 @@ impl BundleFacts {
                 changed += 1;
             }
         }
-        changed
+        changed + states.advance_object_cycles(now)
     }
     /// A movement callback may use a served Item even if the bundle never places that state.
     /// Unlike lever callbacks, house furniture movement is explicitly allowed by the source.
