@@ -149,24 +149,6 @@ fn run(name: &'static str, rewards: bool) -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
 
         let treasure = format!("{PREFIX}morguthis_treasure");
-        if !rewards {
-            // A restored character has all seven flames and a value above the door's stage.
-            let mut tx = h.pool.begin().await?;
-            sqlx::query("SET LOCAL session_replication_role=replica")
-                .execute(&mut *tx)
-                .await?;
-            sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT encode($1,'hex')::uuid,$2||'morguthis_blue_flame_storage'||n::text,$3,1,2 FROM generate_series(1,7) n")
-            .bind(id(41).as_slice()).bind(PREFIX).bind(QUEST).execute(&mut *tx).await?;
-            sqlx::query(
-                "INSERT INTO game_character_quest_tracks VALUES(encode($1,'hex')::uuid,$2,$3,3,2)",
-            )
-            .bind(id(41).as_slice())
-            .bind(&treasure)
-            .bind(QUEST)
-            .execute(&mut *tx)
-            .await?;
-            tx.commit().await?;
-        }
 
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
@@ -238,6 +220,25 @@ fn run(name: &'static str, rewards: bool) -> TestResult {
             .map_err(debug)?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
+        if !rewards {
+            // A restored character has all seven flames and a value above the door's stage.
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT encode($1,'hex')::uuid,$2||'morguthis_blue_flame_storage'||n::text,$3,1,2 FROM generate_series(1,7) n")
+            .bind(id(41).as_slice()).bind(PREFIX).bind(QUEST).execute(&mut *tx).await?;
+            sqlx::query(
+                "INSERT INTO game_character_quest_tracks VALUES(encode($1,'hex')::uuid,$2,$3,3,2)",
+            )
+            .bind(id(41).as_slice())
+            .bind(&treasure)
+            .bind(QUEST)
+            .execute(&mut *tx)
+            .await?;
+            tx.commit().await?;
+        }
+
         owner.admit_quest_session(&admitted).await;
         if rewards {
             return claim_parts(&mut owner, &mut admitted, &h, deps.actor).await;
