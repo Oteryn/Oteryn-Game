@@ -220,6 +220,11 @@ async fn exercise_satchel(
             h.root.advance_test_quest_clock(advance)?;
         }
         target.expected_revision = map.facts.object_revision(key);
+        let effect_before = map
+            .facts
+            .movement_effects_since(0)
+            .last()
+            .map_or(0, |row| row.0);
         let outcomes =
             super::quest_callbacks::wire_use_targets_retained(owner, admitted, &[(id, &target)])
                 .await?;
@@ -229,6 +234,13 @@ async fn exercise_satchel(
                 oteryn_protocol_oteryn::CommandStatus::Accepted,
                 UseDisposition::Committed
             )],
+        );
+        assert!(
+            map.facts
+                .movement_effects_since(effect_before)
+                .iter()
+                .any(|(_, at, effect)| *effect == 53
+                    && (at.x, at.y, at.floor) == (exit.x, exit.y, exit.floor))
         );
         {
             let mut runtime = owner.runtime.lock().await;

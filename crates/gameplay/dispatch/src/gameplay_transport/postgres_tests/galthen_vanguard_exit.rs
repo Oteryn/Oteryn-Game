@@ -74,9 +74,14 @@ pub(super) async fn exercise(
     let before = view.runtime.lock().await.read_actor_position(actor)?;
     // The transport walks on TooFar and retries. Check the owner's reach gate
     // before driving the adjacent USE over the wire below.
-    let outcome = view.use_world_object(actor, command, exit_target(view)?).await;
+    let outcome = view
+        .use_world_object(actor, command, exit_target(view)?)
+        .await;
     assert_eq!(outcome.disposition, UseDisposition::TooFar);
-    assert_eq!(view.runtime.lock().await.read_actor_position(actor)?, before);
+    assert_eq!(
+        view.runtime.lock().await.read_actor_position(actor)?,
+        before
+    );
     let returns: i64 = sqlx::query_scalar("SELECT count(*) FROM game_activity_runtime_returns")
         .fetch_one(&h.pool)
         .await?;

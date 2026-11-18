@@ -202,7 +202,8 @@ def _requested_inputs(root, extra_keys=()):
     authored_callbacks = []
     # Executable authored callbacks use the same exact canonical/native Item
     # qualification as source chests. Include every output, never a partial bag.
-    for relative in ('authored-world-callbacks.json', 'chosen-reward-callbacks.json'):
+    for relative in ('authored-world-callbacks.json', 'chosen-reward-callbacks.json',
+                     'world-callbacks/galthen.json'):
         path = root / 'content/quests' / relative
         if not path.is_file():
             continue
