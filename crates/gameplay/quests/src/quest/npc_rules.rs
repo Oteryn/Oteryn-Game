@@ -4,6 +4,8 @@
 #[cfg(test)]
 mod achievement_tests;
 mod admission;
+mod bank_deposit;
+pub use bank_deposit::{BankDepositBonus, BoundBankDepositBonus};
 mod bounds;
 mod calendar;
 mod equipped_storage;
@@ -330,6 +332,8 @@ pub struct NpcRuleDocument {
     pub premium_required: bool,
     pub tracks: Vec<NpcTrackDefinition>,
     pub rules: Vec<NpcRule>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bank_deposit_bonus: Option<BankDepositBonus>,
     #[serde(default)]
     pub source_files: Vec<NpcSourceFile>,
 }
@@ -857,6 +861,13 @@ fn extend_from_source(
                     },
                 );
             }
+        }
+        if let Some(bonus) = &program.document.bank_deposit_bonus
+            && transitions
+                .insert(bonus.key.clone(), bonus.transition(quest))
+                .is_some()
+        {
+            return Err("duplicate bank deposit bonus".into());
         }
         // An unexecutable definition marker binds every guard, reply, effect and
         // source reference into the existing quest definition hash.

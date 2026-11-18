@@ -77,6 +77,7 @@ fn program_sources(sources_list: &[String], schema: u32, quest: &str) -> bool {
 pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> {
     let mut quests = BTreeSet::new();
     let mut keys = BTreeSet::new();
+    let mut deposit_bonuses = BTreeSet::new();
     for program in &catalogue.programs {
         let document = &program.document;
         if document.quest == super::questpc2_albinius_source::QUEST
@@ -190,6 +191,20 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                 || tracks.insert(&track.key, track).is_some()
             {
                 return Err(invalid(format!("invalid NPC track: {}", track.key)));
+            }
+        }
+        if let Some(bonus) = &document.bank_deposit_bonus {
+            let track = tracks.get(&bonus.track);
+            if !bonus.valid()
+                || !deposit_bonuses.insert(&bonus.npc)
+                || !keys.insert(&bonus.key)
+                || !program_sources(&bonus.sources, document.schema, &document.quest)
+                || track.is_none_or(|track| {
+                    !(track.min..=track.max).contains(&bonus.before)
+                        || !(track.min..=track.max).contains(&bonus.after)
+                })
+            {
+                return Err(invalid("invalid NPC bank deposit bonus"));
             }
         }
         for file in &document.source_files {
