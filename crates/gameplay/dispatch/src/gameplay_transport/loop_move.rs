@@ -1160,12 +1160,11 @@ pub(super) async fn move_loop_item_with_house_capacity(
     }
 }
 
-/// The Ground cell reached after a drop onto a native tile in the actor's reach.
-fn drop_tile(
-    map: &crate::map::boot::BundleMap,
+fn reachable_drop_tile(
+    base: &WorldBase,
     at: (i32, i32, i16),
     to: WorldTilePosition,
-) -> Result<WorldTilePosition, LoopMoveResult> {
+) -> Result<TilePos, LoopMoveResult> {
     if !in_reach(at, (to.x, to.y, to.floor)) {
         return Err(LoopMoveResult::TooFar);
     }
@@ -1175,10 +1174,34 @@ fn drop_tile(
         y: u16::try_from(to.y).map_err(|_| blocked)?,
         floor: i8::try_from(to.floor).map_err(|_| blocked)?,
     };
-    let base = map.overlay.base();
     if base.tile(entered.x, entered.y, entered.floor).is_none() {
         return Err(blocked);
     }
+    Ok(entered)
+}
+
+#[cfg(test)]
+fn drop_cell(
+    base: &WorldBase,
+    at: (i32, i32, i16),
+    to: WorldTilePosition,
+) -> Result<Vec<u8>, LoopMoveResult> {
+    let entered = reachable_drop_tile(base, at, to)?;
+    Ok(ground_cell(
+        i32::from(entered.x),
+        i32::from(entered.y),
+        i16::from(entered.floor),
+    ))
+}
+
+/// The Ground cell reached after a drop onto a native tile in the actor's reach.
+fn drop_tile(
+    map: &crate::map::boot::BundleMap,
+    at: (i32, i32, i16),
+    to: WorldTilePosition,
+) -> Result<WorldTilePosition, LoopMoveResult> {
+    let entered = reachable_drop_tile(map.overlay.base(), at, to)?;
+    let blocked = LoopMoveResult::Refused(LoopMoveRefusal::Blocked);
     let landed = crate::map::floor::item_drop_destination(map, entered).map_err(|_| blocked)?;
     if entered != landed && map.facts.house_id(entered) != map.facts.house_id(landed) {
         return Err(blocked);
