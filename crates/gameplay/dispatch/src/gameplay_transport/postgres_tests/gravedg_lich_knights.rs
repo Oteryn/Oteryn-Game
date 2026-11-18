@@ -3,7 +3,9 @@ use super::{
     AdmittedSession, ComposedFreshAdmission, TestResult,
     fixture::{Harness, debug},
 };
-use crate::foundation::{CommandId, CommandRef, ExactActorRef, OwnerDamageCommand};
+use crate::foundation::{
+    CommandId, CommandRef, ExactActorRef, MovementLocalPosition, OwnerDamageCommand,
+};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase, Position};
 
 const NICTROS: &str = "oteryn:creature.sir_nictros";
