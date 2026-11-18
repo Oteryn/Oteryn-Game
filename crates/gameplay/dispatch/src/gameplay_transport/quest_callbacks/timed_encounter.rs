@@ -190,8 +190,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             memo.scope == runtime.encounter_owner_scope()
                 && memo.map == map.overlay.base().digest()
                 && memo.content == runtime.content_pin().server_artifact_digest()
-                && memo.callback.key == callback.key
+                && memo
+                    .callback
+                    .effects
+                    .encounter
+                    .as_ref()
+                    .is_some_and(|other| {
+                        other
+                            .timing
+                            .is_some_and(|timing| timing.admission.is_some())
+                            && other.room_min == encounter.room_min
+                            && other.room_max == encounter.room_max
+                    })
         });
+        if existing.is_some_and(|index| {
+            pending[index].callback.effects.encounter.as_ref() != Some(encounter)
+        }) {
+            return UseDisposition::Rejected;
+        }
         let joining = existing.is_some() && room.capacity > 1;
         let elapsed = existing.map_or(0, |index| {
             now.saturating_sub(pending[index].started_at) / 1_000
@@ -292,7 +308,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if memo.content != runtime.content_pin().server_artifact_digest()
                 || memo.map != map.overlay.base().digest()
                 || memo.scope != runtime.encounter_owner_scope()
-                || map.facts.object_revision(memo.key) != memo.revision
+                || (memo
+                    .callback
+                    .effects
+                    .encounter
+                    .as_ref()
+                    .and_then(|encounter| encounter.timing?.admission)
+                    .is_none()
+                    && map.facts.object_revision(memo.key) != memo.revision)
             {
                 pending.remove(index);
                 continue;
