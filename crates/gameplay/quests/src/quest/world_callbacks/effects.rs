@@ -93,6 +93,9 @@ pub struct CallbackEffects {
     /// Source-authored public player MONSTER_SAY, emitted only after commit.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub player_speech: Option<String>,
+    /// Shared timed one-way levers may acknowledge reuse without extending the window.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub active_lever_speech: Option<String>,
     pub transform: Option<u16>,
     /// Restore the exact pre-transform source revision after this delay.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -110,7 +113,7 @@ pub struct CallbackEffects {
     /// A shared switch's ordered cues and its wrong-order response.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub switch_cues: Option<SwitchCues>,
-    /// One cue at a committed landing, or at the restored STEP origin on refusal.
+    /// Cue at a landing or a refused STEP origin. A bound native portal cues its own tile.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teleport_effect: Option<u16>,
     pub portals: Option<PortalPair>,
@@ -704,15 +707,28 @@ pub(super) fn valid(callback: &Callback) -> bool {
     if effects.item_reward_per_use && !super::per_use_reward::admitted(callback) {
         return false;
     }
-    if effects.player_speech.as_ref().is_some_and(|text| {
-        callback.actor_kind != ActorKind::Player
+    if effects.active_lever_speech.is_some()
+        && (callback.trigger != Trigger::Use
+            || callback.lever.is_none()
+            || callback.reversible
+            || callback.has_state()
+            || effects.reset_after_ms.is_none())
+    {
+        return false;
+    }
+    if [&effects.player_speech, &effects.active_lever_speech]
+        .into_iter()
+        .flatten()
+        .any(|text| {
+            callback.actor_kind != ActorKind::Player
             || text.is_empty()
             // CHAT0-RL-01: 255 Unicode scalars, each at most four UTF-8 bytes.
             || text.len() > 1_020
             || text.chars().count() > 255
             || text.trim() != text.as_str()
             || text.chars().any(char::is_control)
-    }) {
+        })
+    {
         return false;
     }
     if effects

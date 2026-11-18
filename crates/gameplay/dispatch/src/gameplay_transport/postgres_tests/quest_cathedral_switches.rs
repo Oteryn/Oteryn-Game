@@ -18,6 +18,8 @@ const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-glob
 pub(super) const START: Position = at(32615, 32483, -9);
 const PORTAL: Position = at(32615, 32484, -9);
 const LANDING: Position = at(32615, 32485, -10);
+const RETURN_PORTAL: Position = at(32615, 32484, -10);
+const RETURN_LANDING: Position = at(32615, 32482, -9);
 const LEVERS: [Position; 6] = [
     at(32645, 32465, -9),
     at(32647, 32483, -9),
@@ -41,24 +43,30 @@ fn source_bindings() -> TestResult<Vec<Callback>> {
             "selector": {"native":{"position":lever,"ordinal":1,"appearance":2772}},
             "lever": [2772,2773], "reversible": false, "return_on_failure": false,
             "passages": [], "storage": [], "offerings": [],
-            "effects": {"reset_after_ms":600_000}, "sources": [SOURCE]
+            "effects": {"reset_after_ms":600_000,"active_lever_speech":"It doesn't move."},
+            "sources": [SOURCE]
         }))?);
     }
     let requirements: Vec<_> = LEVERS
         .iter()
         .map(|lever| json!({"position":lever,"appearance":2773}))
         .collect();
-    callbacks.push(serde_json::from_value(json!({
-        "key": "oteryn:quest-callback/cathedral-switch-portal",
-        "quest": QUEST,
-        "trigger": "step_in",
-        "selector": {"native":{"position":PORTAL,"ordinal":1,"appearance":1949}},
-        "reversible": false, "return_on_failure": true,
-        "passages": [], "storage": [], "offerings": [],
-        "world_requirements": requirements, "teleport": LANDING,
-        "effects": {"native_portal_destination":LANDING,"teleport_effect":11},
-        "sources": [SOURCE]
-    }))?);
+    for (name, portal, landing, requirements) in [
+        ("entrance", PORTAL, LANDING, requirements),
+        ("return", RETURN_PORTAL, RETURN_LANDING, Vec::new()),
+    ] {
+        callbacks.push(serde_json::from_value(json!({
+            "key": format!("oteryn:quest-callback/cathedral-switch-{name}"),
+            "quest": QUEST,
+            "trigger": "step_in",
+            "selector": {"native":{"position":portal,"ordinal":1,"appearance":1949}},
+            "reversible": false, "return_on_failure": true,
+            "passages": [], "storage": [], "offerings": [],
+            "world_requirements": requirements, "teleport": landing,
+            "effects": {"native_portal_destination":landing,"teleport_effect":11},
+            "sources": [SOURCE]
+        }))?);
+    }
     Ok(callbacks)
 }
 
@@ -104,12 +112,18 @@ pub(super) async fn exercise(
             UseDisposition::Committed
         );
         assert_eq!(appearance(map, lever)?, 2773);
+        if index == 0 {
+            let opened = target(map, lever)?;
+            owner.states.test_owner_time.store(now + 500_000, Ordering::Relaxed);
+            assert_eq!(use_target(owner, member, &opened).await?, UseDisposition::Committed);
+            assert_eq!(target(map, lever)?.expected_revision, opened.expected_revision);
+        }
     }
     relocate(owner, actor, session, (START.x, START.y, 9)).await?;
     step(owner, member, StepDirection::South).await?;
     assert_eq!(position(owner, actor).await?, local(LANDING));
     step(owner, member, StepDirection::North).await?;
-    assert_eq!(position(owner, actor).await?, local(at(32615, 32482, -9)));
+    assert_eq!(position(owner, actor).await?, local(RETURN_LANDING));
 
     owner.states.test_owner_time.store(700_000_001, Ordering::Relaxed);
     map.facts.expire_movement_items(700_000_000);

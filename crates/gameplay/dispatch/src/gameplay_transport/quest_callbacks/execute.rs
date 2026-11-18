@@ -226,6 +226,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         if close && callback.lever.is_some() && !callback.reversible {
+            // Crystal dark_cathedral_teleports.lua:18-24 acknowledges a lever
+            // that is already active without writing a new deadline.
+            if let Some(speech) = &callback.effects.active_lever_speech {
+                self.states
+                    .chat
+                    .publish_quest_speech(runtime, actor, session, speech);
+                return UseDisposition::Committed;
+            }
             return UseDisposition::NothingToUse;
         }
         if oteryn_gameplay_quests::quest::world_callbacks::personal_trial::admitted(callback)
@@ -1698,7 +1706,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(effect) = callback.effects.teleport_effect
             && let Some(destination) = callback.teleport
         {
-            map.facts.emit_movement_effect(tile(destination), effect);
+            let at = if callback.effects.native_portal_destination.is_some() {
+                pos
+            } else {
+                tile(destination)
+            };
+            map.facts.emit_movement_effect(at, effect);
         }
         if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
             pending.remove(&session);
