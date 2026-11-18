@@ -1035,39 +1035,59 @@ fn check_equip_tier(tiered: bool, bad_tier: &str, good_tier: &str) -> TestResult
 
 #[test]
 fn saved_equip_does_not_send_a_legacy_request_after_reconnect() -> TestResult {
-    check_saved_equip_on_legacy_world(false, false)
+    check_saved_equip_on_legacy_world(LegacyEquipCase::Single)
 }
 
 #[test]
 fn saved_multiaction_equip_does_not_send_a_legacy_request_after_reconnect() -> TestResult {
-    check_saved_equip_on_legacy_world(true, false)
+    check_saved_equip_on_legacy_world(LegacyEquipCase::Multi)
 }
 
 #[test]
 fn reopened_multiaction_with_unsupported_equip_tier_cannot_be_saved() -> TestResult {
-    check_saved_equip_on_legacy_world(true, true)
+    check_saved_equip_on_legacy_world(LegacyEquipCase::ReopenMulti)
 }
 
-fn check_saved_equip_on_legacy_world(multi: bool, reopen: bool) -> TestResult {
+#[test]
+fn saved_multiaction_dispatches_ready_equip_after_unsupported_tier_on_reconnect() -> TestResult {
+    check_saved_equip_on_legacy_world(LegacyEquipCase::MultiWithFallback)
+}
+
+enum LegacyEquipCase {
+    Single,
+    Multi,
+    MultiWithFallback,
+    ReopenMulti,
+}
+
+fn check_saved_equip_on_legacy_world(case: LegacyEquipCase) -> TestResult {
     let (mut app, _) = super::super::tests::fixture()?;
     let (tiered, _, tiered_outbox) = crate::play::play_channel();
     tiered_outbox.bevy_equip_capabilities(true);
-    tiered_outbox.bevy_hotkey_equip_items(vec![256]);
+    tiered_outbox.bevy_hotkey_equip_items(vec![256, 257]);
     let equip = BarAction::Equip {
         definition: 256u32.try_into()?,
         upgrade_tier: 3,
     };
-    let action = if multi {
-        BarAction::Multi {
+    let action = match case {
+        LegacyEquipCase::Single => equip,
+        LegacyEquipCase::Multi | LegacyEquipCase::ReopenMulti => BarAction::Multi {
             actions: vec![equip],
-        }
-    } else {
-        equip
+        },
+        LegacyEquipCase::MultiWithFallback => BarAction::Multi {
+            actions: vec![
+                equip,
+                BarAction::Equip {
+                    definition: 257u32.try_into()?,
+                    upgrade_tier: 0,
+                },
+            ],
+        },
     };
     assert!(tiered.assign_bar_action(0, action.clone()));
     let (legacy, mut commands, legacy_outbox) = crate::play::play_channel();
     legacy_outbox.bevy_equip_capabilities(false);
-    legacy_outbox.bevy_hotkey_equip_items(vec![256]);
+    legacy_outbox.bevy_hotkey_equip_items(vec![256, 257]);
     {
         let mut owner = app.world_mut().non_send_mut::<HostOwner>();
         owner.settings.sync_bar_actions(&tiered);
@@ -1079,7 +1099,7 @@ fn check_saved_equip_on_legacy_world(multi: bool, reopen: bool) -> TestResult {
         owner.play.as_mut().ok_or("play")?.link = legacy;
     }
     let slot = super::super::tests::slot(&mut app, 0)?;
-    if reopen {
+    if matches!(case, LegacyEquipCase::ReopenMulti) {
         let generation = app.world().non_send::<HostOwner>().generation();
         app.world_mut()
             .resource_mut::<EditorState>()
@@ -1093,16 +1113,22 @@ fn check_saved_equip_on_legacy_world(multi: bool, reopen: bool) -> TestResult {
         assert!(editor.multi.is_some(), "refused save must keep the draft");
     } else {
         app.world_mut().trigger(Activate { entity: slot });
+        if matches!(case, LegacyEquipCase::MultiWithFallback) {
+            assert!(
+                matches!(commands.try_recv()?, crate::combat_input::PlayCommand::ServerMechanic(cmd)
+                    if cmd.command_type == 348 && cmd.payload == [0, 0, 1, 1])
+            );
+        }
         assert!(
             commands.try_recv().is_err(),
-            "legacy Equip sent from {action:?}"
+            "unexpected legacy Equip sent from {action:?}"
         );
     }
     Ok(())
 }
 
 #[test]
-fn chat_on_projects_and_executes_live_chord_when_legacy_chord_is_for_typing() -> TestResult {
+fn unchanged_chat_on_binding_preserves_chat_off_shortcut() -> TestResult {
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
 
     let (mut app, mut commands) = super::super::tests::fixture()?;
@@ -1136,11 +1162,22 @@ fn chat_on_projects_and_executes_live_chord_when_legacy_chord_is_for_typing() ->
             .iter(app.world())
             .any(|(field, text)| field.0 == 3 && text.value() == "ALT+F1")
     );
+    let bind = captioned(&mut app, "Bind key")?;
+    app.world_mut().trigger(Activate { entity: bind });
+    assert_eq!(
+        app.world().resource::<EditorState>().message,
+        "Saved action assignment"
+    );
     let close = control(&mut app, |edit| matches!(edit, Edit::Close))?;
     app.world_mut().trigger(Activate { entity: close });
     app.update();
 
-    for (key, modifier, casts) in [(14, Modifier::Shift, false), (58, Modifier::Alt, true)] {
+    use oteryn_client_ui::chat::ComposerMode::{Off, On};
+    for (mode, key, modifier, casts) in [
+        (On, 14, Modifier::Shift, false),
+        (On, 58, Modifier::Alt, true),
+        (Off, 14, Modifier::Shift, true),
+    ] {
         let code = KeyCode::new(key)?;
         let events =
             [ButtonState::Pressed, ButtonState::Released].map(|state| NormalizedInputEvent::Key {
@@ -1150,6 +1187,7 @@ fn chat_on_projects_and_executes_live_chord_when_legacy_chord_is_for_typing() ->
                 repeat: false,
             });
         let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.play.as_ref().ok_or("play")?.link.chat_set_mode(mode);
         owner.route_input(&events, false);
         let play = owner.play.as_mut().ok_or("play")?;
         assert_eq!(play.view.tick(&play.link), Ok(()));

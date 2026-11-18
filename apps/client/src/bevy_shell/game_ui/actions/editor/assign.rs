@@ -168,19 +168,19 @@ pub(super) fn apply(
             } else {
                 &chord
             };
+            let live_context = link.preference_chat_open();
             if !binding.is_extra_action_bar_slot() {
-                if prefs
-                    .action_keys
-                    .0
-                    .get(&slot)
-                    .is_some_and(|saved| saved.trim().eq_ignore_ascii_case(chord))
-                {
+                if prefs.action_keys.0.get(&slot).is_some_and(|saved| {
+                    saved.trim().eq_ignore_ascii_case(chord)
+                        || slot_chord(&prefs, &binding, slot, live_context)
+                            .trim()
+                            .eq_ignore_ascii_case(chord)
+                }) {
                     return SAVED.into();
                 }
                 prefs.action_keys.0.remove(&slot);
             }
             let options_context = prefs.hotkey_contexts.chat_on;
-            let live_context = link.preference_chat_open();
             let switch_context = !binding.is_extra_action_bar_slot()
                 && !prefs.manual_hotkey_profile
                 && !prefs.chat_context_hotkeys
