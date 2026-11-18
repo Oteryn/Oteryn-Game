@@ -146,6 +146,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ))
             }
         };
+        if let Some(summon) = summon {
+            // Reach the projection only once the carrier can reserve the exact
+            // summon. Returning false rolls the tentative actor back before SQL.
+            let mut ready = false;
+            let _ = runtime.commit_quest_creature_spawn_with_projection(&[summon], || {
+                ready = true;
+                false
+            });
+            if !ready {
+                return UseDisposition::Occupied;
+            }
+        }
         if map.facts.object_revision(key) != expected_revision {
             // A known-commit source visual batch may have published its first
             // fixed object before a retry. Only that retained exact post-CAS

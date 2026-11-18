@@ -270,6 +270,18 @@ async fn exercise(h: &Harness) -> TestResult {
             .get("oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission07"),
         Some(&2)
     );
+    let inventory = h
+        .root
+        .read_item_use_inventory(&authority, &h.node, fence)
+        .await
+        .map_err(debug)?;
+    assert!(
+        !inventory
+            .backpack
+            .iter()
+            .flat_map(|bag| &bag.entries)
+            .any(|entry| { entry.item.definition.production_key == WATER })
+    );
     assert_eq!(map.facts.expire_movement_items(110_000_102), 1);
     assert_eq!(appearance(), Some(7925));
     Ok(())

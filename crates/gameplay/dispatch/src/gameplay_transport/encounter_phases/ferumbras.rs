@@ -44,6 +44,11 @@ struct Vortex {
 #[derive(Debug)]
 pub(in crate::gameplay_transport) struct Fight {
     opening: ExactActorRef,
+    owner: (
+        crate::foundation::RuntimeScopeRefV1,
+        crate::foundation::ScopeOwnershipGeneration,
+    ),
+    activation: u64,
     cells: crate::content::NativeEntryMovementCells,
     crystals: Crystals,
     splinters: Vec<ExactActorRef>,
@@ -73,6 +78,8 @@ impl Fight {
             .ok_or(CarrierError::CreatureTargetMismatch)?;
         Ok(Self {
             opening,
+            owner: runtime.encounter_owner_scope(),
+            activation: runtime.content_pin().activation_sequence(),
             cells,
             crystals: Crystals::default(),
             splinters: Vec::new(),
@@ -90,12 +97,21 @@ impl Fight {
         })
     }
 
+    fn current(&self, runtime: &ChannelRuntimeV1) -> bool {
+        runtime.owner_fence().is_ok()
+            && self.owner == runtime.encounter_owner_scope()
+            && self.activation == runtime.content_pin().activation_sequence()
+    }
+
     pub(super) fn note_death(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
         now: Option<u64>,
     ) {
+        if !self.current(runtime) {
+            return;
+        }
         let Ok(snapshot) = runtime.companion_snapshot_including_dead(actor) else {
             return;
         };
@@ -279,6 +295,9 @@ impl Fight {
         states: &mut ChannelSpellStates,
         now: u64,
     ) -> Result<bool, CarrierError> {
+        if !self.current(runtime) {
+            return Ok(true);
+        }
         let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(bundle) =
             self.cells.index()
         else {

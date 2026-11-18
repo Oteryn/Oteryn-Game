@@ -163,6 +163,13 @@ async fn exercise(h: &Harness) -> TestResult {
     deps.initialize_player(&owner, second_actor, second).await;
 
     let map = owner.bundle_map().ok_or("bundle")?;
+    let crystal = TilePos {
+        x: 33390,
+        y: 31468,
+        floor: -14,
+    };
+    let crystal_key = placement_key(crystal, 1).ok_or("crystal placement")?;
+    assert!(map.facts.transform_movement_item(crystal_key, 14961));
     let lever = placement_key(LEVER, 2).ok_or("lever")?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&lever.to_be_bytes());
@@ -180,12 +187,19 @@ async fn exercise(h: &Harness) -> TestResult {
             },
         )
     };
+    owner.states.test_owner_time.store(100, Ordering::Relaxed);
     assert_eq!(
-        use_lever(deps.actor, first, 1)
-            .await
-            .map_err(debug)?
-            .disposition,
+        use_lever(deps.actor, first, 1).await.disposition,
         UseDisposition::Committed
+    );
+    assert_eq!(
+        crate::map::view::compose_tile(&map.overlay, &map.facts, crystal)
+            .map_err(debug)?
+            .ok_or("reset crystal tile")?
+            .entries[1]
+            .facts
+            .appearance_id,
+        14955
     );
     let mut runtime = owner.runtime.lock().await;
     for actor in [deps.actor, second_actor] {
