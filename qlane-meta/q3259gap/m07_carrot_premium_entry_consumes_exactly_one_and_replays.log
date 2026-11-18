@@ -1,0 +1,1107 @@
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+warning: `tokio` (lib) generated 2 warnings (2 duplicates)
+warning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14
+    |
+260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |              ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |
+
+warning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)
+warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)
+   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)
+warning: unused import: `exercise::EXERCISE_READBACK_BARRIER`
+ --> crates/gameplay/dispatch/src/gameplay_transport/loop_training/mod.rs:4:39
+  |
+4 | pub(in crate::gameplay_transport) use exercise::EXERCISE_READBACK_BARRIER;
+  |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `ExpiredLossReleaseV1`
+ --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/full_world_support.rs:6:53
+  |
+6 | pub(super) use crate::durability::fresh_admission::{ExpiredLossReleaseV1, FreshAdmissionStore};
+  |                                                     ^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `taints::source_player_census`
+  --> crates/gameplay/dispatch/src/gameplay_transport/soul_war_callbacks.rs:48:16
+   |
+48 | pub(super) use taints::source_player_census;
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `set_enforcement` is never used
+   --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/staff.rs:231:42
+    |
+231 |     pub(in crate::gameplay_transport) fn set_enforcement(enabled: bool) {
+    |                                          ^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `house_prey_transfer_observation` is never used
+  --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/prey/live.rs:59:42
+   |
+34 | impl ChannelSpellStates {
+   | ----------------------- method in this implementation
+...
+59 |     pub(in crate::gameplay_transport) fn house_prey_transfer_observation(
+   |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `pit_exit_open` is never used
+   --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:165:38
+    |
+165 | pub(in crate::gameplay_transport) fn pit_exit_open(
+    |                                      ^^^^^^^^^^^^^
+
+warning: function `expire_pit` is never used
+   --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:175:38
+    |
+175 | pub(in crate::gameplay_transport) fn expire_pit(
+    |                                      ^^^^^^^^^^
+
+warning: method `regression_arena_pit_time` is never used
+   --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:269:42
+    |
+266 | impl ComposedFreshAdmission<'_, '_, '_> {
+    | --------------------------------------- method in this implementation
+...
+269 |     pub(in crate::gameplay_transport) fn regression_arena_pit_time(
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `activity_lifecycle_pass` is never used
+  --> crates/gameplay/dispatch/src/gameplay_transport/activity_lifecycle.rs:15:25
+   |
+12 | impl ComposedFreshAdmission<'_, '_, '_> {
+   | --------------------------------------- method in this implementation
+...
+15 |     pub(super) async fn activity_lifecycle_pass(&self) -> Result<(), ()> {
+   |                         ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `mushroom_damage_receipts_for_test` is never used
+    --> crates/gameplay/dispatch/src/gameplay_transport/actor_spell.rs:1866:19
+     |
+1863 | impl ChannelSpellStates {
+     | ----------------------- method in this implementation
+...
+1866 |     pub(crate) fn mushroom_damage_receipts_for_test(
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `source_damage_receipt_for_test` and `source_heal_receipt_for_test` are never used
+  --> crates/gameplay/dispatch/src/gameplay_transport/actor_spell/soul_war_attacks.rs:35:42
+   |
+33 | impl ChannelSpellStates {
+   | ----------------------- methods in this implementation
+34 |     /// Canonical committed HP memo, without a second test damage/heal owner.
+35 |     pub(in crate::gameplay_transport) fn source_damage_receipt_for_test(
+   |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+46 |     pub(in crate::gameplay_transport) fn source_heal_receipt_for_test(
+   |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `cast_stance_with_readback_pause` is never used
+  --> crates/gameplay/dispatch/src/gameplay_transport/stance_cast.rs:52:48
+   |
+50 | impl ComposedFreshAdmission<'_, '_, '_> {
+   | --------------------------------------- method in this implementation
+51 |     #[cfg(test)]
+52 |     pub(in crate::gameplay_transport) async fn cast_stance_with_readback_pause(
+   |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `park_committed_ranged_shot_for_test` is never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/attack/ranged.rs:951:48
+    |
+950 | impl ComposedFreshAdmission<'_, '_, '_> {
+    | --------------------------------------- method in this implementation
+951 |     pub(in crate::gameplay_transport) async fn park_committed_ranged_shot_for_test(
+    |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `fresh_current_actor_capability_selection` is never used
+    --> crates/gameplay/dispatch/src/gameplay_transport/connection.rs:1002:44
+     |
+1002 | pub(in crate::gameplay_transport) async fn fresh_current_actor_capability_selection<
+     |                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `arm` is never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/field_removal.rs:270:42
+    |
+270 |     pub(in crate::gameplay_transport) fn arm(family: u8, after: bool) -> oneshot::Receiver<()> {
+    |                                          ^^^
+
+warning: associated function `lose_next_kooldown_ack` is never used
+  --> crates/gameplay/dispatch/src/gameplay_transport/drome_cube_use/kooldown_aid.rs:12:42
+   |
+10 | impl ComposedFreshAdmission<'_, '_, '_> {
+   | --------------------------------------- associated function in this implementation
+11 |     #[cfg(test)]
+12 |     pub(in crate::gameplay_transport) fn lose_next_kooldown_ack() {
+   |                                          ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `lose_next_ack` is never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/drome_cube_use/kooldown_aid.rs:358:19
+    |
+358 |     pub(crate) fn lose_next_ack() {
+    |                   ^^^^^^^^^^^^^
+
+warning: function `lose_next_ack` is never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/drome_cube_use.rs:413:19
+    |
+413 |     pub(crate) fn lose_next_ack() {
+    |                   ^^^^^^^^^^^^^
+
+warning: function `install` is never used
+  --> crates/gameplay/dispatch/src/gameplay_transport/item_use/soul_war_source/test_pause.rs:19:4
+   |
+19 | fn install(command: CommandRef, point: Point) -> Arc<Notify> {
+   |    ^^^^^^^
+
+warning: methods `pause_soul_war_before_names_for_test`, `pause_soul_war_before_write_for_test`, `pause_soul_war_after_write_for_test`, and `refuse_soul_war_handoff_once_for_test` are never used
+  --> crates/gameplay/dispatch/src/gameplay_transport/item_use/soul_war_source/test_pause.rs:60:42
+   |
+59 | impl super::ComposedFreshAdmission<'_, '_, '_> {
+   | ---------------------------------------------- methods in this implementation
+60 |     pub(in crate::gameplay_transport) fn pause_soul_war_before_names_for_test(
+   |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+67 |     pub(in crate::gameplay_transport) fn pause_soul_war_before_write_for_test(
+   |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+74 |     pub(in crate::gameplay_transport) fn pause_soul_war_after_write_for_test(
+   |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+81 |     pub(in crate::gameplay_transport) fn refuse_soul_war_handoff_once_for_test(
+   |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `inject_fault` is never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/condition_potions.rs:454:38
+    |
+454 | pub(in crate::gameplay_transport) fn inject_fault(point: u8) {
+    |                                      ^^^^^^^^^^^^
+
+warning: function `run_matching_crystal_consumables` is never used
+  --> crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests.rs:87:15
+   |
+87 | pub(crate) fn run_matching_crystal_consumables() -> TestResult {
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `core_head_for_test` is never used
+    --> crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1466:19
+     |
+ 563 | impl KillSettlementQueue {
+     | ------------------------ method in this implementation
+...
+1466 |     pub(super) fn core_head_for_test(
+     |                   ^^^^^^^^^^^^^^^^^^
+
+warning: function `lose_next_ack` is never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/mining/mod.rs:311:42
+    |
+311 |     pub(in crate::gameplay_transport) fn lose_next_ack() {
+    |                                          ^^^^^^^^^^^^^
+
+warning: constant `GATHERING` is never used
+ --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/achievement_granters.rs:5:7
+  |
+5 | const GATHERING: [(&str, i64); 4] = [
+  |       ^^^^^^^^^
+
+warning: function `seed_gathering` is never used
+  --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/achievement_granters.rs:18:21
+   |
+18 | pub(super) async fn seed_gathering(h: &Harness) -> TestResult {
+   |                     ^^^^^^^^^^^^^^
+
+warning: function `assert_gathering` is never used
+  --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/achievement_granters.rs:49:21
+   |
+49 | pub(super) async fn assert_gathering(
+   |                     ^^^^^^^^^^^^^^^^
+
+warning: struct `EnteredActivityFixture` is never constructed
+   --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/activity_runtime.rs:239:19
+    |
+239 | pub(super) struct EnteredActivityFixture {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `enter_fixture` is never used
+   --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/activity_runtime.rs:248:21
+    |
+248 | pub(super) async fn enter_fixture(h: &Harness) -> TestResult<EnteredActivityFixture> {
+    |                     ^^^^^^^^^^^^^
+
+warning: function `exchange_uncertain` is never used
+ --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/event_object_uncertainty.rs:9:21
+  |
+9 | pub(super) async fn exchange_uncertain(
+  |                     ^^^^^^^^^^^^^^^^^^
+
+warning: constant `NPC_CELL` is never used
+  --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/full_world_support.rs:61:18
+   |
+61 | pub(super) const NPC_CELL: (u16, u16) = (9, 1);
+   |                  ^^^^^^^^
+
+warning: function `exchange_capture` is never used
+   --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_wire.rs:107:21
+    |
+107 | pub(super) async fn exchange_capture(
+    |                     ^^^^^^^^^^^^^^^^
+
+warning: enum `CaptureGoal` is never used
+   --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_wire.rs:138:6
+    |
+138 | enum CaptureGoal {
+    |      ^^^^^^^^^^^
+
+warning: function `exchange_capture_effect` is never used
+   --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_wire.rs:145:21
+    |
+145 | pub(super) async fn exchange_capture_effect(
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `exchange_capture_switch_effect` is never used
+   --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_wire.rs:180:21
+    |
+180 | pub(super) async fn exchange_capture_switch_effect(
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `exchange_capture_goal` is never used
+   --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_wire.rs:213:10
+    |
+213 | async fn exchange_capture_goal(
+    |          ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `acknowledge_captured_activity` is never used
+   --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_wire.rs:430:10
+    |
+430 | async fn acknowledge_captured_activity<S>(
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `capture_end_kind` is never used
+   --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_wire.rs:490:4
+    |
+490 | fn capture_end_kind(end: &crate::gameplay_transport::connection::ConnectionEnd) -> String {
+    |    ^^^^^^^^^^^^^^^^
+
+warning: function `capture_activity_return` is never used
+   --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_wire.rs:506:21
+    |
+506 | pub(super) async fn capture_activity_return(
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `clock` is never read
+    --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_transfer.rs:1061:16
+     |
+1060 | pub(super) struct RecoverySource {
+     |                   -------------- field in this struct
+1061 |     pub(super) clock: std::sync::Arc<std::sync::atomic::AtomicU64>,
+     |                ^^^^^
+
+warning: method `stop_peer` is never used
+    --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_transfer.rs:1071:19
+     |
+1070 | impl RecoverySource {
+     | ------------------- method in this implementation
+1071 |     pub(super) fn stop_peer(&self) { self.task.abort(); }
+     |                   ^^^^^^^^^
+
+warning: function `run_stock_random_outfit` is never used
+  --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics.rs:44:15
+   |
+44 | pub(super) fn run_stock_random_outfit() -> TestResult {
+   |               ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `run_stock_named_outfit` is never used
+  --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics.rs:48:15
+   |
+48 | pub(super) fn run_stock_named_outfit(name: &'static str) -> TestResult {
+   |               ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `nx5_production_case` is never used
+   --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics.rs:581:15
+    |
+581 | pub(super) fn nx5_production_case(kind: u8) -> TestResult {
+    |               ^^^^^^^^^^^^^^^^^^^
+
+warning: variants `ProductionOutfit`, `ProductionParts`, `ProductionOtOnly`, `ProductionMount`, and `RandomOutfit` are never constructed
+  --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics/positive.rs:15:5
+   |
+ 9 | pub(super) enum Case {
+   |                 ---- variants in this enum
+...
+15 |     ProductionOutfit,
+   |     ^^^^^^^^^^^^^^^^
+16 |     ProductionParts,
+   |     ^^^^^^^^^^^^^^^
+17 |     ProductionOtOnly,
+   |     ^^^^^^^^^^^^^^^^
+18 |     ProductionMount,
+   |     ^^^^^^^^^^^^^^^
+19 |     RandomOutfit,
+   |     ^^^^^^^^^^^^
+   |
+   = note: `Case` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: function `set_runtime` is never used
+  --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/planned_world_reset/planned_world_reset_fixture.rs:50:15
+   |
+50 | pub(crate) fn set_runtime(
+   |               ^^^^^^^^^^^
+
+warning: function `source_world_objects` is never used
+   --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_callbacks.rs:179:15
+    |
+179 | pub(super) fn source_world_objects(
+    |               ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `source_world_spatial` is never used
+   --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_callbacks.rs:193:15
+    |
+193 | pub(super) fn source_world_spatial(
+    |               ^^^^^^^^^^^^^^^^^^^^
+
+warning: variants `RuneEmblem` and `BloodHerb` are never constructed
+   --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_callbacks.rs:612:5
+    |
+611 | pub(super) enum DefinitionReadyClaim {
+    |                 -------------------- variants in this enum
+612 |     RuneEmblem,
+    |     ^^^^^^^^^^
+613 |     BloodHerb,
+    |     ^^^^^^^^^
+    |
+    = note: `DefinitionReadyClaim` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: function `catalogue_scenario` is never used
+   --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:132:15
+    |
+132 | pub(super) fn catalogue_scenario(
+    |               ^^^^^^^^^^^^^^^^^^
+
+warning: function `exchange_with_visuals` is never used
+   --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/rust_lottery.rs:454:21
+    |
+454 | pub(super) async fn exchange_with_visuals(
+    |                     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `platform` is never used
+   --> /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/store.rs:104:15
+    |
+104 | pub(super) fn platform(world: &[u8; 16]) -> crate::gameplay_transport::store::StorePlatform {
+    |               ^^^^^^^^
+
+warning: method `time_guardian_cast_position_for_test` is never used
+  --> crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks.rs:73:42
+   |
+64 | impl NativeCallbackState {
+   | ------------------------ method in this implementation
+...
+73 |     pub(in crate::gameplay_transport) fn time_guardian_cast_position_for_test(
+   |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `eruption_master_receipt_for_test`, `outburst_cast_receipt_for_test`, `enable_omrafir_declared_think_review_for_test`, `omrafir_terminal_failure_for_test`, `source_stage_done_for_test`, and `time_guardian_cast_position_for_test` are never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks.rs:685:42
+    |
+466 | impl NativeCallbacks {
+    | -------------------- methods in this implementation
+...
+685 |     pub(in crate::gameplay_transport) fn eruption_master_receipt_for_test(
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+696 |     pub(in crate::gameplay_transport) fn outburst_cast_receipt_for_test(
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+738 |     pub(in crate::gameplay_transport) async fn enable_omrafir_declared_think_review_for_test(
+    |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+750 |     pub(in crate::gameplay_transport) async fn omrafir_terminal_failure_for_test(
+    |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+805 |     pub(in crate::gameplay_transport) async fn source_stage_done_for_test(
+    |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+820 |     pub(in crate::gameplay_transport) fn time_guardian_cast_position_for_test(
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `eruption_receipt_for_test`, `source_stage_done_for_test`, and `outburst_receipt` are never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/casts.rs:179:19
+    |
+177 | impl NativeCasts {
+    | ---------------- methods in this implementation
+178 |     #[cfg(test)]
+179 |     pub(super) fn eruption_receipt_for_test(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+202 |     pub(super) fn source_stage_done_for_test(&self, issuer: ExactActorRef) -> Option<Vec<bool>> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+206 |     pub(super) fn outburst_receipt(
+    |                   ^^^^^^^^^^^^^^^^
+
+warning: fields `master`, `requested`, `health_before`, and `health_after` are never read
+  --> crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/eruption.rs:12:9
+   |
+10 | pub(in crate::gameplay_transport) struct EruptionMasterReceipt {
+   |                                          --------------------- fields in this struct
+11 |     #[cfg(test)]
+12 |     pub master: crate::foundation::ExactActorRef,
+   |         ^^^^^^
+13 |     #[cfg(test)]
+14 |     pub requested: u32,
+   |         ^^^^^^^^^
+15 |     #[cfg(test)]
+16 |     pub health_before: i64,
+   |         ^^^^^^^^^^^^^
+17 |     #[cfg(test)]
+18 |     pub health_after: i64,
+   |         ^^^^^^^^^^^^
+   |
+   = note: `EruptionMasterReceipt` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `caster` is never read
+  --> crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/eruption.rs:25:5
+   |
+22 | struct Pending {
+   |        ------- field in this struct
+...
+25 |     caster: crate::foundation::ExactActorRef,
+   |     ^^^^^^
+   |
+   = note: `Pending` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: method `receipt` is never used
+  --> crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/eruption.rs:39:19
+   |
+34 | impl EruptionPreludes {
+   | --------------------- method in this implementation
+...
+39 |     pub(super) fn receipt(
+   |                   ^^^^^^^
+
+warning: methods `enable_declared_think_review` and `terminal_failure_for_test` are never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/omrafir.rs:166:19
+    |
+164 | impl NativeOmrafir {
+    | ------------------ methods in this implementation
+165 |     #[cfg(test)]
+166 |     pub(super) fn enable_declared_think_review(&mut self) {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+170 |     pub(super) fn terminal_failure_for_test(&self, actor: ExactActorRef) -> Option<&'static str> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `global_health` is never read
+  --> crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/outburst_cast.rs:19:9
+   |
+15 | pub(in crate::gameplay_transport) struct OutburstCastReceipt {
+   |                                          ------------------- field in this struct
+...
+19 |     pub global_health: u64,
+   |         ^^^^^^^^^^^^^
+   |
+   = note: `OutburstCastReceipt` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: method `receipt` is never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/outburst_cast.rs:108:19
+    |
+ 65 | impl OutburstCasts {
+    | ------------------ method in this implementation
+...
+108 |     pub(super) fn receipt(&self, caster: ExactActorRef) -> Option<OutburstCastReceipt> {
+    |                   ^^^^^^^
+
+warning: field `actor` is never read
+  --> crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/time_guardian.rs:33:5
+   |
+29 | struct Pending {
+   |        ------- field in this struct
+...
+33 |     actor: crate::foundation::ExactActorRef,
+   |     ^^^^^
+   |
+   = note: `Pending` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: method `cast_position_for_test` is never used
+  --> crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/time_guardian.rs:78:19
+   |
+76 | impl NativeTimeGuardian {
+   | ----------------------- method in this implementation
+77 |     #[cfg(test)]
+78 |     pub(super) fn cast_position_for_test(
+   |                   ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `ProfilePassSnapshot` is never constructed
+   --> crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/retained.rs:266:42
+    |
+266 | pub(in crate::gameplay_transport) struct ProfilePassSnapshot {
+    |                                          ^^^^^^^^^^^^^^^^^^^
+
+warning: methods `snapshot_for_test`, `pause_after_physical_for_test`, and `clear_physical_pause_for_test` are never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/retained.rs:326:42
+    |
+278 | impl ProfilePassOwner {
+    | --------------------- methods in this implementation
+...
+326 |     pub(in crate::gameplay_transport) fn snapshot_for_test(&self) -> Option<ProfilePassSnapshot> {
+    |                                          ^^^^^^^^^^^^^^^^^
+...
+346 |     pub(in crate::gameplay_transport) fn pause_after_physical_for_test(
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+358 |     pub(in crate::gameplay_transport) fn clear_physical_pause_for_test(&mut self) {
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `has_attempts` is never used
+  --> crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/rotten_waves.rs:75:42
+   |
+40 | impl RoomWaveStates {
+   | ------------------- method in this implementation
+...
+75 |     pub(in crate::gameplay_transport) fn has_attempts(&self) -> bool {
+   |                                          ^^^^^^^^^^^^
+
+warning: method `wave_children` is never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/rotten_waves.rs:238:42
+    |
+236 | impl RoomWaveStates {
+    | ------------------- method in this implementation
+237 |     #[cfg(test)]
+238 |     pub(in crate::gameplay_transport) fn wave_children(
+    |                                          ^^^^^^^^^^^^^
+
+warning: function `stop_after_soulpit_commit_once` is never used
+    --> crates/gameplay/dispatch/src/gameplay_transport/native_activity.rs:1317:42
+     |
+1317 |     pub(in crate::gameplay_transport) fn stop_after_soulpit_commit_once() {
+     |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `source_exit_movement_for_test` is never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/native_activity_return.rs:180:25
+    |
+ 61 | impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
+    | --------------------------------------------------- method in this implementation
+...
+180 |     pub(super) async fn source_exit_movement_for_test(
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `retain_benevola_for_test` is never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/benevola.rs:344:42
+    |
+342 | impl NpcConversations {
+    | --------------------- method in this implementation
+343 |     /// Fault injection retains exactly the original invocation after an ambiguous acknowledgement.
+344 |     pub(in crate::gameplay_transport) fn retain_benevola_for_test(
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `yeo_request_for_test` is never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/yeo.rs:372:42
+    |
+371 | impl NpcConversations {
+    | --------------------- method in this implementation
+372 |     pub(in crate::gameplay_transport) fn yeo_request_for_test(
+    |                                          ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `normal_map_read_epoch_for_test` is never used
+  --> crates/gameplay/dispatch/src/gameplay_transport/primal_callbacks.rs:17:15
+   |
+17 | pub(super) fn normal_map_read_epoch_for_test() -> u64 {
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `source_started_for_test`, `deferred_original_deadlines_for_test`, `pod_execution_deadlines_for_test`, and `queued_pod_expiry_sources_for_test` are never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/primal_callbacks.rs:200:19
+    |
+198 | impl PrimalCallbacks {
+    | -------------------- methods in this implementation
+199 |     #[cfg(test)]
+200 |     pub(super) fn source_started_for_test(&self) -> bool {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^
+...
+210 |     pub(super) fn deferred_original_deadlines_for_test(&self) -> Result<Vec<(u64, u64)>, ()> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+215 |     pub(super) fn pod_execution_deadlines_for_test(&self) -> Vec<([u8; 16], u64, u64, bool)> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+229 |     pub(super) fn queued_pod_expiry_sources_for_test(&self) -> Vec<[u8; 16]> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `drain_primal_pod_callbacks` and `drain_primal_pod_creates_through` are never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/primal_callbacks.rs:433:25
+    |
+369 | impl super::ComposedFreshAdmission<'_, '_, '_> {
+    | ---------------------------------------------- methods in this implementation
+...
+433 |     pub(super) async fn drain_primal_pod_callbacks(&self) {
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+459 |     pub(super) async fn drain_primal_pod_creates_through(&self, cutoff: u64) -> Result<(), ()> {
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `original_deadlines_for_test` is never used
+  --> crates/gameplay/dispatch/src/gameplay_transport/primal_callbacks/deferred.rs:60:19
+   |
+16 | impl DeferredCallbacks {
+   | ---------------------- method in this implementation
+...
+60 |     pub(super) fn original_deadlines_for_test(&self) -> Vec<(u64, u64)> {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `MassiveStateForTest` is never constructed
+   --> crates/gameplay/dispatch/src/gameplay_transport/rotten_blood_callbacks.rs:240:19
+    |
+240 | pub(super) struct MassiveStateForTest {
+    |                   ^^^^^^^^^^^^^^^^^^^
+
+warning: struct `MushroomProgressForTest` is never constructed
+   --> crates/gameplay/dispatch/src/gameplay_transport/rotten_blood_callbacks.rs:247:19
+    |
+247 | pub(super) struct MushroomProgressForTest {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `PortalClockForTest` is never constructed
+   --> crates/gameplay/dispatch/src/gameplay_transport/rotten_blood_callbacks.rs:256:19
+    |
+256 | pub(super) struct PortalClockForTest {
+    |                   ^^^^^^^^^^^^^^^^^^
+
+warning: methods `pause_mushroom_after_player_commit_for_test`, `mushroom_progress_for_test`, `portal_clock_for_test`, `actual_massive_commit_for_test`, `massive_state_for_test`, and `actual_agony_commit_for_test` are never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/rotten_blood_callbacks.rs:356:19
+    |
+323 | impl RottenBloodCallbacks {
+    | ------------------------- methods in this implementation
+...
+356 |     pub(super) fn pause_mushroom_after_player_commit_for_test(&mut self) {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+360 |     pub(super) fn mushroom_progress_for_test(&self) -> Option<MushroomProgressForTest> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+364 |     pub(super) fn portal_clock_for_test(&self, actor: ExactActorRef) -> Option<PortalClockForTest> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^
+...
+374 |     pub(super) fn actual_massive_commit_for_test(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+382 |     pub(super) fn massive_state_for_test(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^
+...
+390 |     pub(super) fn actual_agony_commit_for_test(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: fields `actor`, `before`, `after`, and `amount` are never read
+  --> crates/gameplay/dispatch/src/gameplay_transport/rotten_blood_callbacks/advanced.rs:94:16
+   |
+93 | pub(super) struct AgonyCommit {
+   |                   ----------- fields in this struct
+94 |     pub(super) actor: ExactActorRef,
+   |                ^^^^^
+95 |     pub(super) before: u32,
+   |                ^^^^^^
+96 |     pub(super) after: u32,
+   |                ^^^^^
+97 |     pub(super) amount: u32,
+   |                ^^^^^^
+   |
+   = note: `AgonyCommit` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: methods `portal_clock_for_test`, `massive_commit_for_test`, `massive_state_for_test`, `source_state_for_test`, and `agony_commit` are never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/rotten_blood_callbacks/advanced.rs:118:19
+    |
+116 | impl AdvancedCallbacks {
+    | ---------------------- methods in this implementation
+117 |     #[cfg(test)]
+118 |     pub(super) fn portal_clock_for_test(&self, actor: ExactActorRef) -> Option<PortalClockForTest> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^
+...
+196 |     pub(super) fn massive_commit_for_test(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^
+...
+209 |     pub(super) fn massive_state_for_test(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^
+...
+232 |     pub(in crate::gameplay_transport) fn source_state_for_test(
+    |                                          ^^^^^^^^^^^^^^^^^^^^^
+...
+288 |     pub(super) fn agony_commit(&self, actor: ExactActorRef) -> Option<AgonyCommit> {
+    |                   ^^^^^^^^^^^^
+
+warning: method `portal_diagnostics_for_test` is never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/rotten_blood_callbacks/advanced.rs:737:42
+    |
+736 | impl super::RottenBloodCallbacks {
+    | -------------------------------- method in this implementation
+737 |     pub(in crate::gameplay_transport) fn portal_diagnostics_for_test(
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `drain_rotten_movement_callbacks` is never used
+  --> crates/gameplay/dispatch/src/gameplay_transport/rotten_blood_callbacks/advanced/footprints.rs:28:25
+   |
+26 | impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
+   | ------------------------------------------------------------ method in this implementation
+27 |     #[cfg(test)]
+28 |     pub(crate) async fn drain_rotten_movement_callbacks(&self) {
+   |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `drain_rotten_portal_callbacks` is never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/rotten_blood_callbacks/advanced/portals.rs:116:25
+    |
+114 | impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
+    | ------------------------------------------------------------ method in this implementation
+115 |     #[cfg(test)]
+116 |     pub(crate) async fn drain_rotten_portal_callbacks(&self) {
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `pause_after_player_commit_for_test` and `progress_for_test` are never used
+  --> crates/gameplay/dispatch/src/gameplay_transport/rotten_blood_callbacks/mushroom.rs:61:19
+   |
+59 | impl Mushrooms {
+   | -------------- methods in this implementation
+60 |     #[cfg(test)]
+61 |     pub(super) fn pause_after_player_commit_for_test(&mut self) {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+65 |     pub(super) fn progress_for_test(&self) -> Option<super::MushroomProgressForTest> {
+   |                   ^^^^^^^^^^^^^^^^^
+
+warning: methods `source_attack_schedule_for_test`, `pause_attack_after_player_commit_for_test`, and `source_attack_seen_for_test` are never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/soul_war_callbacks/attacks.rs:618:42
+    |
+616 | impl SoulWarCallbacks {
+    | --------------------- methods in this implementation
+617 |     /// Observe the real accepted queue; this creates no source proposal or timer.
+618 |     pub(in crate::gameplay_transport) fn source_attack_schedule_for_test(
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+635 |     pub(in crate::gameplay_transport) fn pause_attack_after_player_commit_for_test(&mut self) {
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+639 |     pub(in crate::gameplay_transport) fn source_attack_seen_for_test(
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `Snapshot` is never constructed
+  --> crates/gameplay/dispatch/src/gameplay_transport/soul_war_callbacks/greed/retention_test.rs:42:42
+   |
+42 | pub(in crate::gameplay_transport) struct Snapshot {
+   |                                          ^^^^^^^^
+
+warning: multiple methods are never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/soul_war_callbacks/greed/retention_test.rs:51:42
+    |
+ 50 | impl SoulWarCallbacks {
+    | --------------------- methods in this implementation
+ 51 |     pub(in crate::gameplay_transport) fn pause_greed_before_think_for_test(
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 63 |     pub(in crate::gameplay_transport) fn pause_greed_after_health_for_test(
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 74 |     pub(in crate::gameplay_transport) fn pause_greed_after_spawn_for_test(
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 86 |     pub(in crate::gameplay_transport) fn greed_pending_for_test(&self) -> Option<Snapshot> {
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^
+...
+100 |     pub(in crate::gameplay_transport) fn greed_observed_for_test(
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^
+...
+110 |     pub(in crate::gameplay_transport) fn greed_timer_due_for_test(&self) -> Option<u64> {
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^
+...
+116 |     pub(in crate::gameplay_transport) fn greed_spawn_due_for_test(&self, key: &str) -> Option<u64> {
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `hatred_entry_for_test` is never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/soul_war_callbacks/hatred.rs:285:42
+    |
+203 | impl SoulWarCallbacks {
+    | --------------------- method in this implementation
+...
+285 |     pub(in crate::gameplay_transport) fn hatred_entry_for_test(&self) -> Option<(u64, bool)> {
+    |                                          ^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `source_for_test` is never used
+  --> crates/gameplay/dispatch/src/gameplay_transport/soul_war_cloak_blood/step.rs:21:42
+   |
+20 | impl PendingBloodStep {
+   | --------------------- method in this implementation
+21 |     pub(in crate::gameplay_transport) fn source_for_test(&self) -> &CloakBloodPlayerStep {
+   |                                          ^^^^^^^^^^^^^^^
+
+warning: methods `drive_shared_soulpits` and `drive_one_soulpit` are never used
+  --> crates/gameplay/dispatch/src/gameplay_transport/soulpit/source_owner_compat.rs:4:48
+   |
+ 3 | impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
+   | --------------------------------------------------- methods in this implementation
+ 4 |     pub(in crate::gameplay_transport) async fn drive_shared_soulpits(
+   |                                                ^^^^^^^^^^^^^^^^^^^^^
+...
+13 |     pub(in crate::gameplay_transport) async fn drive_one_soulpit(
+   |                                                ^^^^^^^^^^^^^^^^^
+
+warning: methods `retained_spite_movement_for_test` and `retained_spite_step_for_test` are never used
+   --> crates/gameplay/dispatch/src/gameplay_transport/spite_step.rs:165:25
+    |
+163 | impl ComposedFreshAdmission<'_, '_, '_> {
+    | --------------------------------------- methods in this implementation
+164 |     #[cfg(test)]
+165 |     pub(super) async fn retained_spite_movement_for_test(
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+179 |     pub(super) async fn retained_spite_step_for_test(
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `test_exploding_corpses` and `test_somersault` are never used
+  --> crates/gameplay/dispatch/src/gameplay_transport/tibiadrome.rs:28:42
+   |
+27 | impl Drome {
+   | ---------- methods in this implementation
+28 |     pub(in crate::gameplay_transport) fn test_exploding_corpses(
+   |                                          ^^^^^^^^^^^^^^^^^^^^^^
+...
+36 |     pub(in crate::gameplay_transport) fn test_somersault(
+   |                                          ^^^^^^^^^^^^^^^
+
+warning: function `select` is never used
+  --> crates/gameplay/dispatch/src/gameplay_transport/tibiadrome/modifiers/test_context.rs:54:38
+   |
+54 | pub(in crate::gameplay_transport) fn select(
+   |                                      ^^^^^^
+
+warning: `oteryn-gameplay-dispatch` (lib test) generated 94 warnings (run `cargo fix --lib -p oteryn-gameplay-dispatch --tests` to apply 3 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 50s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/build/oteryn-gameplay-dispatch/346ea2b916a74613/out/oteryn_gameplay_dispatch-346ea2b916a74613)
+
+running 1 test
+test gameplay_transport::monk_save::postgres_tests::m07_dreamer_carrot::m07_carrot_premium_entry_consumes_exactly_one_and_replays ... PGTPL reused oteryn_tpl_9541d0b8f2fcab0e
+DURABILITY_ROOT_REESTABLISHED
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975019040 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975019054 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975019058 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975019254 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975019258 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975019260 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975019307 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975019344 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975019388 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975019440 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975019456 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975034079 level=info module=durability event=db_tx_end outcome=ok ms=13 operation=begin attempts=1
+oteryn-game-server ts=1794975034087 level=info module=durability event=holder_window window_ms=15123 held_ms=1031 passes=13 refused=0
+oteryn-game-server ts=1794975034087 level=info module=durability event=holder_usage caller=crates/gameplay/durability/src/durability/character_authority.rs:313:14 passes=1 held_ms=820 refused=0
+oteryn-game-server ts=1794975034087 level=info module=durability event=holder_usage caller=crates/gameplay/durability/src/durability/admission_journal.rs:87:38 passes=3 held_ms=91 refused=0
+oteryn-game-server ts=1794975034087 level=info module=durability event=holder_usage caller=crates/gameplay/durability/src/durability/runtime_scope_assignment.rs:1175:36 passes=1 held_ms=34 refused=0
+oteryn-game-server ts=1794975034087 level=info module=durability event=holder_usage caller=crates/gameplay/durability/src/durability/premium_activation_latch.rs:205:14 passes=1 held_ms=21 refused=0
+oteryn-game-server ts=1794975034087 level=info module=durability event=holder_usage caller=crates/gameplay/durability/src/durability/runtime_scope_assignment.rs:787:14 passes=1 held_ms=15 refused=0
+oteryn-game-server ts=1794975034087 level=info module=durability event=holder_usage caller=crates/gameplay/durability/src/durability/character_authority.rs:346:14 passes=1 held_ms=14 refused=0
+oteryn-game-server ts=1794975034087 level=info module=durability event=holder_usage caller=maintenance passes=1 held_ms=12 refused=0
+oteryn-game-server ts=1794975034087 level=info module=durability event=holder_usage caller=crates/gameplay/durability/src/durability/runtime_scope_assignment.rs:302:14 passes=1 held_ms=10 refused=0
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975042255 level=info module=durability event=db_tx_end outcome=ok ms=2 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975042317 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975042511 level=info module=durability event=db_tx_end outcome=ok ms=8 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975042820 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975042843 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975042849 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975042856 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975042896 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975042909 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975042936 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975042951 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975042961 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043068 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043080 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043100 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043107 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043111 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn-game-server ts=1794975043121 level=info module=gameplay_transport event=admission_entry_decision outcome=playable attempts=1 elapsed_ms=0 phase=callback_dawnport
+oteryn-game-server ts=1794975043122 level=info module=gameplay_transport event=admission_entry_decision outcome=playable attempts=1 elapsed_ms=0 phase=grizzly_resume
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043123 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn-game-server ts=1794975043127 level=info module=gameplay_transport event=admission_entry_decision outcome=playable attempts=1 elapsed_ms=5 phase=quest_callbacks
+oteryn-game-server ts=1794975043127 level=info module=gameplay_transport event=admission_entry_decision outcome=playable attempts=1 elapsed_ms=0 phase=hireling_ingress
+oteryn-game-server ts=1794975043128 level=info module=gameplay_transport event=admission_entry_decision outcome=playable attempts=1 elapsed_ms=0 phase=trade_continuity
+oteryn-game-server ts=1794975043128 level=info module=gameplay_transport event=join_progress phase=baseline first_entry=Positioned
+oteryn-game-server ts=1794975043128 level=info module=gameplay_transport event=join_progress phase=activity_scope first_entry=Positioned
+oteryn-game-server ts=1794975043128 level=info module=gameplay_transport event=join_progress phase=initial first_entry=Positioned
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043129 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043136 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043141 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043150 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn-game-server ts=1794975043160 level=info module=gameplay_transport event=join_progress phase=items first_entry=Positioned
+oteryn-game-server ts=1794975043160 level=info module=gameplay_transport event=join_progress phase=sessions first_entry=Positioned
+oteryn-game-server ts=1794975043160 level=info module=gameplay_transport event=join_progress phase=world first_entry=Positioned
+oteryn-game-server ts=1794975043160 level=info module=gameplay_transport event=join_progress phase=snapshot_encode first_entry=Positioned
+oteryn-game-server ts=1794975043160 level=warn module=gameplay_transport event=join_snapshot_summary domains=3 map_selected=false map_present=false spatial_floor=9
+oteryn-game-server ts=1794975043160 level=info module=gameplay_transport event=join_progress phase=snapshot_write first_entry=Positioned
+oteryn-game-server ts=1794975043161 level=info module=gameplay_transport event=join_progress phase=snapshot_flushed first_entry=Positioned
+oteryn-game-server ts=1794975043162 level=info module=gameplay_transport event=join_progress phase=live_sounds first_entry=Positioned
+oteryn-game-server ts=1794975043162 level=info module=gameplay_transport event=join_progress phase=live_movement_effects first_entry=Positioned
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043163 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1
+oteryn-game-server ts=1794975043236 level=info module=gameplay_transport event=join_progress phase=live_ready first_entry=Positioned
+oteryn-game-server ts=1794975043236 level=warn module=gameplay_transport event=connection_live_started phase=frame
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043245 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043252 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043258 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043264 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043267 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043271 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043277 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043287 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043293 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043300 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+SRX3_ROTTEN_PORTAL_STEP_INGRESS at=MovementLocalPosition { x: 100, y: 100, floor: 9 } active=[] pending=0
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043351 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043363 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043371 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043379 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043625 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1
+QUEST_CALLBACK commit refused key=oteryn:quest-callback/dreamers-challenge-carrot-entry outcome=Ok(Refused(SourceOfferingMissing))
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043648 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043655 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043658 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043662 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043668 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043671 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn-game-server ts=1794975043678 level=warn module=gameplay_transport event=serve_end reason=disconnected phase=frame_error source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:483:32 next_command_id=2 server_sequence=2
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043683 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043688 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043691 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn-game-server ts=1794975043697 level=info module=gameplay_transport event=admission_entry_decision outcome=playable attempts=1 elapsed_ms=0 phase=callback_dawnport
+oteryn-game-server ts=1794975043697 level=info module=gameplay_transport event=admission_entry_decision outcome=playable attempts=1 elapsed_ms=0 phase=grizzly_resume
+oteryn-game-server ts=1794975043697 level=info module=gameplay_transport event=admission_entry_decision outcome=playable attempts=1 elapsed_ms=0 phase=quest_callbacks
+oteryn-game-server ts=1794975043697 level=info module=gameplay_transport event=admission_entry_decision outcome=playable attempts=1 elapsed_ms=0 phase=hireling_ingress
+oteryn-game-server ts=1794975043697 level=info module=gameplay_transport event=admission_entry_decision outcome=playable attempts=1 elapsed_ms=0 phase=trade_continuity
+oteryn-game-server ts=1794975043697 level=info module=gameplay_transport event=join_progress phase=baseline first_entry=Positioned
+oteryn-game-server ts=1794975043697 level=info module=gameplay_transport event=join_progress phase=activity_scope first_entry=Positioned
+oteryn-game-server ts=1794975043697 level=info module=gameplay_transport event=join_progress phase=initial first_entry=Positioned
+oteryn-game-server ts=1794975043697 level=info module=gameplay_transport event=join_progress phase=items first_entry=Positioned
+oteryn-game-server ts=1794975043697 level=info module=gameplay_transport event=join_progress phase=sessions first_entry=Positioned
+oteryn-game-server ts=1794975043697 level=info module=gameplay_transport event=join_progress phase=world first_entry=Positioned
+oteryn-game-server ts=1794975043697 level=info module=gameplay_transport event=join_progress phase=snapshot_encode first_entry=Positioned
+oteryn-game-server ts=1794975043697 level=warn module=gameplay_transport event=join_snapshot_summary domains=3 map_selected=false map_present=false spatial_floor=9
+oteryn-game-server ts=1794975043697 level=info module=gameplay_transport event=join_progress phase=snapshot_write first_entry=Positioned
+oteryn-game-server ts=1794975043697 level=info module=gameplay_transport event=join_progress phase=snapshot_flushed first_entry=Positioned
+oteryn-game-server ts=1794975043697 level=info module=gameplay_transport event=join_progress phase=live_sounds first_entry=Positioned
+oteryn-game-server ts=1794975043697 level=info module=gameplay_transport event=join_progress phase=live_movement_effects first_entry=Positioned
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043698 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn-game-server ts=1794975043703 level=info module=gameplay_transport event=join_progress phase=live_ready first_entry=Positioned
+oteryn-game-server ts=1794975043704 level=warn module=gameplay_transport event=connection_live_started phase=frame
+oteryn-game-server ts=1794975043704 level=warn module=gameplay_transport event=serve_end reason=disconnected phase=frame_error source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:483:32 next_command_id=2 server_sequence=3
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043706 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043718 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043721 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043791 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043807 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043810 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043887 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043892 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043895 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn-game-server ts=1794975043900 level=info module=gameplay_transport event=admission_entry_decision outcome=playable attempts=1 elapsed_ms=0 phase=callback_dawnport
+oteryn-game-server ts=1794975043900 level=info module=gameplay_transport event=admission_entry_decision outcome=playable attempts=1 elapsed_ms=0 phase=grizzly_resume
+oteryn-game-server ts=1794975043900 level=info module=gameplay_transport event=admission_entry_decision outcome=playable attempts=1 elapsed_ms=0 phase=quest_callbacks
+oteryn-game-server ts=1794975043900 level=info module=gameplay_transport event=admission_entry_decision outcome=playable attempts=1 elapsed_ms=0 phase=hireling_ingress
+oteryn-game-server ts=1794975043900 level=info module=gameplay_transport event=admission_entry_decision outcome=playable attempts=1 elapsed_ms=0 phase=trade_continuity
+oteryn-game-server ts=1794975043900 level=info module=gameplay_transport event=join_progress phase=baseline first_entry=Positioned
+oteryn-game-server ts=1794975043900 level=info module=gameplay_transport event=join_progress phase=activity_scope first_entry=Positioned
+oteryn-game-server ts=1794975043900 level=info module=gameplay_transport event=join_progress phase=initial first_entry=Positioned
+oteryn-game-server ts=1794975043900 level=info module=gameplay_transport event=join_progress phase=items first_entry=Positioned
+oteryn-game-server ts=1794975043900 level=info module=gameplay_transport event=join_progress phase=sessions first_entry=Positioned
+oteryn-game-server ts=1794975043900 level=info module=gameplay_transport event=join_progress phase=world first_entry=Positioned
+oteryn-game-server ts=1794975043900 level=info module=gameplay_transport event=join_progress phase=snapshot_encode first_entry=Positioned
+oteryn-game-server ts=1794975043900 level=warn module=gameplay_transport event=join_snapshot_summary domains=3 map_selected=false map_present=false spatial_floor=9
+oteryn-game-server ts=1794975043900 level=info module=gameplay_transport event=join_progress phase=snapshot_write first_entry=Positioned
+oteryn-game-server ts=1794975043900 level=info module=gameplay_transport event=join_progress phase=snapshot_flushed first_entry=Positioned
+oteryn-game-server ts=1794975043900 level=info module=gameplay_transport event=join_progress phase=live_sounds first_entry=Positioned
+oteryn-game-server ts=1794975043900 level=info module=gameplay_transport event=join_progress phase=live_movement_effects first_entry=Positioned
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043901 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn-game-server ts=1794975043906 level=info module=gameplay_transport event=join_progress phase=live_ready first_entry=Positioned
+oteryn-game-server ts=1794975043906 level=warn module=gameplay_transport event=connection_live_started phase=frame
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043907 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043911 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043917 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975043921 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044215 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044220 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044223 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044230 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044237 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044242 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044249 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044252 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044258 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044263 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044272 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044277 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044283 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+SRX3_ROTTEN_PORTAL_STEP_INGRESS at=MovementLocalPosition { x: 100, y: 100, floor: 9 } active=[] pending=0
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044291 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044300 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044306 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044311 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044426 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044540 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044546 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044549 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044567 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044574 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044576 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn-game-server ts=1794975044582 level=warn module=gameplay_transport event=serve_end reason=disconnected phase=frame_error source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:483:32 next_command_id=3 server_sequence=5
+oteryn-game-server ts=1794975044582 level=warn module=gameplay_transport event=command_integrity mode=REPORT_ONLY flood=0 cadence=1 exhaust=0 reach=0 cadence_signal=0 exhaust_signal=0 reach_signal=0
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044590 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044593 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044595 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn-game-server ts=1794975044599 level=info module=gameplay_transport event=admission_entry_decision outcome=playable attempts=1 elapsed_ms=0 phase=callback_dawnport
+oteryn-game-server ts=1794975044599 level=info module=gameplay_transport event=admission_entry_decision outcome=playable attempts=1 elapsed_ms=0 phase=grizzly_resume
+oteryn-game-server ts=1794975044599 level=info module=gameplay_transport event=admission_entry_decision outcome=playable attempts=1 elapsed_ms=0 phase=quest_callbacks
+oteryn-game-server ts=1794975044599 level=info module=gameplay_transport event=admission_entry_decision outcome=playable attempts=1 elapsed_ms=0 phase=hireling_ingress
+oteryn-game-server ts=1794975044599 level=info module=gameplay_transport event=admission_entry_decision outcome=playable attempts=1 elapsed_ms=0 phase=trade_continuity
+oteryn-game-server ts=1794975044599 level=info module=gameplay_transport event=join_progress phase=baseline first_entry=Positioned
+oteryn-game-server ts=1794975044599 level=info module=gameplay_transport event=join_progress phase=activity_scope first_entry=Positioned
+oteryn-game-server ts=1794975044599 level=info module=gameplay_transport event=join_progress phase=initial first_entry=Positioned
+oteryn-game-server ts=1794975044600 level=info module=gameplay_transport event=join_progress phase=items first_entry=Positioned
+oteryn-game-server ts=1794975044600 level=info module=gameplay_transport event=join_progress phase=sessions first_entry=Positioned
+oteryn-game-server ts=1794975044600 level=info module=gameplay_transport event=join_progress phase=world first_entry=Positioned
+oteryn-game-server ts=1794975044600 level=info module=gameplay_transport event=join_progress phase=snapshot_encode first_entry=Positioned
+oteryn-game-server ts=1794975044600 level=warn module=gameplay_transport event=join_snapshot_summary domains=3 map_selected=false map_present=false spatial_floor=9
+oteryn-game-server ts=1794975044600 level=info module=gameplay_transport event=join_progress phase=snapshot_write first_entry=Positioned
+oteryn-game-server ts=1794975044600 level=info module=gameplay_transport event=join_progress phase=snapshot_flushed first_entry=Positioned
+oteryn-game-server ts=1794975044600 level=info module=gameplay_transport event=join_progress phase=live_sounds first_entry=Positioned
+oteryn-game-server ts=1794975044600 level=info module=gameplay_transport event=join_progress phase=live_movement_effects first_entry=Positioned
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044601 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+oteryn-game-server ts=1794975044603 level=info module=gameplay_transport event=join_progress phase=live_ready first_entry=Positioned
+oteryn-game-server ts=1794975044603 level=warn module=gameplay_transport event=connection_live_started phase=frame
+oteryn-game-server ts=1794975044604 level=warn module=gameplay_transport event=serve_end reason=disconnected phase=frame_error source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:483:32 next_command_id=3 server_sequence=6
+oteryn_gameplay_dispatch-346ea2b916a74613 ts=1794975044605 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1
+M07 POSTGRES_CASE_COMPLETED carrot real_STEP premium=true missing_before_premium carried_atomic_debit origin_fire replay_no_extra_effects no_progress
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3018 filtered out; finished in 28.71s
+
