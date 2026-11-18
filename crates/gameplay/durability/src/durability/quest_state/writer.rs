@@ -881,6 +881,7 @@ impl DurabilityRoot {
         if (request.transition_key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE
             || request.transition_key == oteryn_gameplay_quests::quest::dreamer_carrot::KEY
             || request.transition_key.starts_with(world_callbacks::GROUND_CLEANUP_PREFIX)
+            || request.transition_key.starts_with(world_callbacks::GROUND_SUPPLY_PREFIX)
             || request.transition_key.starts_with(world_callbacks::OFFERING_PORTAL_PREFIX)
             || request.transition_key.starts_with(world_callbacks::RANKED_TOLL_PREFIX)
             || request.transition_key.starts_with(world_callbacks::SOLO_ROOM_PREFIX))
@@ -2358,6 +2359,15 @@ impl DurabilityRoot {
                     if timer_recipe.is_some() { server_timer::audit(&mut tx,&request).await?; }
                     if let Some(callback) = &reward_callback {
                         map_marks::record(&mut tx, fence, callback, committed_revision).await?;
+                    }
+                    if let Some(callback) = &callback && !callback.effects.ground_supply.is_empty() {
+                        let Some((permit, context, Some(native))) = &context else {
+                            return Err(DurabilityError::InvalidStoredState);
+                        };
+                        super::super::quest_world_callback::ground_supply::mint(
+                            &mut tx,permit,&reward_root,&recovery,&node,fence,&request,
+                            callback,context,native,&binding,
+                        ).await?;
                     }
                     let committed = CommittedQuestTransition {
                         character_id: character,

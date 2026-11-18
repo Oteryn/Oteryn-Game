@@ -19,6 +19,7 @@ pub const MAX_CALLBACKS: usize = 512;
 pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1024;
 pub const MAX_EFFECTS: usize = 8;
 pub const GROUND_CLEANUP_PREFIX: &str = "oteryn:quest-callback/ground-cleanup/";
+pub const GROUND_SUPPLY_PREFIX: &str = "oteryn:quest-callback/ground-supply/";
 pub const OFFERING_PORTAL_PREFIX: &str = "oteryn:quest-callback/offering-portal/";
 pub const RANKED_TOLL_PREFIX: &str = "oteryn:quest-callback/ranked-toll/";
 pub const SOLO_ROOM_PREFIX: &str = "oteryn:quest-callback/solo-room/";
@@ -578,6 +579,7 @@ impl Callback {
 
     pub fn uses_empty_world_transition(&self) -> bool {
         self.effects.cleanup_offerings
+            || !self.effects.ground_supply.is_empty()
             || self.effects.offering_portal.is_some()
             || self.standalone_solo_room()
             || self.effects.ranked_toll.is_some()

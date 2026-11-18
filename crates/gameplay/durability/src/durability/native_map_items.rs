@@ -45,15 +45,27 @@ pub async fn initialize_in_transaction(
     node: &NodeIncarnationProof,
     proof: &(impl NativeMapInitializationProof + ?Sized),
 ) -> Result<Vec<MaterializedNativeMapItem>> {
+    let record = recovery.record_for(root)
+        .map_err(|_| SpellItemError::Rejected("map recovery authority"))?;
+    materialize_in_transaction(tx,permit,root,&record,node,proof,true).await
+}
+
+#[allow(clippy::too_many_arguments, reason = "the existing native Ground owner and its original admission proofs")]
+pub(super) async fn materialize_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    permit: &SpellLanePermit,
+    root: &DurabilityRoot,
+    record: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+    node: &NodeIncarnationProof,
+    proof: &(impl NativeMapInitializationProof + ?Sized),
+    initializing_map: bool,
+) -> Result<Vec<MaterializedNativeMapItem>> {
     let binding = proof.current_binding().map_err(SpellItemError::Rejected)?;
     if binding.scope_generation == 0 || proof.placements().len() > 128 {
         return Err(SpellItemError::Rejected("map initialization budget/scope"));
     }
     permit.check_channel(binding.world, binding.channel)?;
-    let record = recovery
-        .record_for(root)
-        .map_err(|_| SpellItemError::Rejected("map recovery authority"))?;
-    assert_recovery_fence(tx, &record).await?;
+    assert_recovery_fence(tx, record).await?;
     super::db::lock_admission_relations(tx).await?;
     let epoch: String = sqlx::query_scalar("SELECT coalesce((SELECT reset_epoch FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid),0)::text")
         .bind(binding.world.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
@@ -86,7 +98,9 @@ pub async fn initialize_in_transaction(
     .await?;
     // Immutable script creation records identify candidates only. The actual
     // current recovery, Scope, Node and map owner were checked above.
-    elemental_energy::adopt(tx, permit, &binding, node, epoch).await?;
+    if initializing_map {
+        elemental_energy::adopt(tx, permit, &binding, node, epoch).await?;
+    }
     let mut keys = BTreeSet::new();
     let mut out = Vec::new();
     for p in proof.placements() {
@@ -172,7 +186,7 @@ pub async fn initialize_in_transaction(
         super::ground_cell_limit::check_ground_cell_root_insert_with_recovery(
             tx,
             permit,
-            &record,
+            record,
             node,
             (scope, binding.scope_generation),
             &p.ground,
@@ -204,9 +218,9 @@ pub async fn initialize_in_transaction(
     if proof.current_binding().map_err(SpellItemError::Rejected)? != binding {
         return Err(SpellItemError::Rejected("map owner changed before commit"));
     }
-    sqlx::query("SET CONSTRAINTS ALL IMMEDIATE")
-        .execute(&mut **tx)
-        .await?;
+    if initializing_map {
+        sqlx::query("SET CONSTRAINTS ALL IMMEDIATE").execute(&mut **tx).await?;
+    }
     Ok(out)
 }
 

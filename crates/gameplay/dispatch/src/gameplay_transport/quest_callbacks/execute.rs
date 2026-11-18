@@ -1244,6 +1244,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 context.into()
             };
+            let context = if callback.effects.ground_supply.is_empty() {
+                context
+            } else {
+                if callback.effects.ground_supply.iter().any(|item| {
+                    let at = tile(item.position);
+                    map.facts.house_tile(at)
+                        || map.overlay.base().tile(at.x, at.y, at.floor).is_none()
+                }) {
+                    return UseDisposition::Rejected;
+                }
+                context.with_ground_supply_face(key, expected_revision, before.appearance_id)
+            };
             let reward_weights = self
                 .active_generation
                 .and_then(|g| g.native_gameplay())

@@ -103,3 +103,37 @@ REVOKE ALL ON FUNCTION game_quest_stone_splash_proof(),
     game_dreamer_stone_field_current(game_item_instances,game_item_ground_locations) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION game_dreamer_stone_field_current(game_item_instances,game_item_ground_locations)
     TO oteryn_game_runtime;
+
+-- Crystal 201189f dreamers_challenge_quest/actions_tic_tac.lua:3-12.
+-- Quest supply placements share the native map Item/Ground/audit owner, with
+-- provenance fenced to the exact same-transaction, authored USE receipt.
+DO $migration$
+DECLARE
+    body TEXT;
+    begin_at INTEGER;
+    proof CONSTANT TEXT := $proof$
+ IF left(NEW.placement_key,13)='quest-supply/' OR NEW.source_attributes ? 'quest_supply' THEN
+  IF NOT EXISTS (
+    SELECT 1 FROM game_character_quest_receipts q
+    WHERE encode(uuid_send(q.character_id),'hex')=NEW.source_attributes #>> '{quest_supply,character}'
+      AND encode(uuid_send(q.cause_id),'hex')=NEW.source_attributes #>> '{quest_supply,session}'
+      AND q.cause_ordinal::text=NEW.source_attributes #>> '{quest_supply,command}'
+      AND q.transition_key=NEW.source_attributes #>> '{quest_supply,transition}'
+      AND q.transition_key LIKE 'oteryn:quest-callback/ground-supply/%'
+      AND q.cause_kind='use' AND q.request_binding=NEW.source_binding
+      AND NEW.created_xact_id=pg_current_xact_id() AND q.created_xact_id=NEW.created_xact_id
+      AND NEW.placement_key='quest-supply/'||encode(uuid_send(q.cause_id),'hex')||'/'||q.cause_ordinal::text||'/'
+          ||(NEW.source_attributes #>> '{quest_supply,index}')
+      AND NEW.source_attributes #>> '{quest_supply,index}' IN ('0','1','2','3','4','5','6','7')
+      AND NOT NEW.blocks_movement AND NOT NEW.blocks_projectile AND NOT NEW.immovable_block_solid
+      AND NEW.owner_kind IS NULL
+  ) THEN RAISE EXCEPTION 'Quest Ground supply needs its original USE receipt' USING ERRCODE='23514'; END IF;
+ END IF;
+$proof$;
+BEGIN
+    body:=pg_get_functiondef('game_native_map_item_proven()'::regprocedure);
+    begin_at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
+    IF begin_at=0 THEN RAISE EXCEPTION 'missing native map Item proof'; END IF;
+    EXECUTE overlay(body placing E'BEGIN\n'||proof from begin_at for 5);
+END
+$migration$;

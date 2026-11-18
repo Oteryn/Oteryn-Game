@@ -505,6 +505,7 @@ impl QuestStateCatalogue {
                     || transition
                         .key
                         .starts_with(world_callbacks::GROUND_CLEANUP_PREFIX)
+                    || transition.key.starts_with(world_callbacks::GROUND_SUPPLY_PREFIX)
                     || transition
                         .key
                         .starts_with(world_callbacks::OFFERING_PORTAL_PREFIX)

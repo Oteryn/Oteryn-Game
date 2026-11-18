@@ -9,6 +9,15 @@ pub struct QuestWorldToolContext {
     world: QuestWorldContext,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) selected_tool: Option<SelectedQuestTool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) ground_supply: Option<GroundSupplyFace>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub(super) struct GroundSupplyFace {
+    pub(super) source: u64,
+    pub(super) revision: u64,
+    pub(super) before: u16,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -22,10 +31,19 @@ impl From<QuestWorldContext> for QuestWorldToolContext {
         Self {
             world,
             selected_tool: None,
+            ground_supply: None,
         }
     }
 }
 impl QuestWorldToolContext {
+    pub fn with_ground_supply_face(mut self, source: u64, revision: u64, before: u16) -> Self {
+        self.ground_supply = Some(GroundSupplyFace {
+            source,
+            revision,
+            before,
+        });
+        self
+    }
     /// The replay identity of a legacy World claim. Like main's RewardClaim
     /// chest owner, its receipt is keyed by cause and claim; the actor's
     /// movement proof is re-derived by a rebuilt owner and is checked live.
@@ -71,6 +89,7 @@ impl QuestWorldContext {
         Some(QuestWorldToolContext {
             world: self,
             selected_tool: Some(SelectedQuestTool { source, intent }),
+            ground_supply: None,
         })
     }
 }

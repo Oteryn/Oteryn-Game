@@ -6,6 +6,7 @@ mod completed_quests;
 pub(super) mod completion;
 mod ground_read;
 pub(crate) mod ground_stack;
+pub(super) mod ground_supply;
 #[path = "quest_world_callback_npc_input.rs"]
 mod npc_input;
 mod selected_tool;
