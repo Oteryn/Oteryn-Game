@@ -346,6 +346,19 @@ pub(super) async fn exercise_cathedral(
         let mut runtime = owner.runtime.lock().await;
         let expected = runtime.read_actor_position(actor).map_err(debug)?;
         assert_eq!(expected.position(), arrival);
+        let creatures = runtime.current_live_creature_census().map_err(debug)?;
+        assert_eq!(creatures.len(), 1);
+        let warlock = creatures[0];
+        assert!(runtime.matches_live_creature_identity(warlock, cathedral::WARLOCK.as_bytes()));
+        let spawn = local(cathedral::WARLOCK_SPAWN);
+        assert_eq!(
+            runtime.read_actor_position(warlock).map_err(debug)?.position(),
+            spawn
+        );
+        assert_eq!(
+            runtime.read_actor_position(resident).map_err(debug)?.position(),
+            spawn
+        );
         let doors = crate::map::floor::BundleDoors(&map.facts);
         let return_to_entrance = crate::map::floor::prepare_quest_callback_teleport(
             &runtime,

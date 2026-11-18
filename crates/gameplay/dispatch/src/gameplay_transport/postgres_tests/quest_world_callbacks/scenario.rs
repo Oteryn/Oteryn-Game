@@ -1547,6 +1547,8 @@ fn scenario_case(
                 5
             } else if monk {
                 4
+            } else if name == super::super::stag_engine::CATHEDRAL {
+                3 // The descending player, the resident and the Ancient Lion Warlock.
             } else if callback.effects.encounter.is_some() {
                 16
             } else {
