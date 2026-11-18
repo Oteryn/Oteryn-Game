@@ -53,8 +53,8 @@ turned into a new owner prompt.
 ### Owner review rule for every PR (2026-11-09)
 
 The owner authorizes one manual Codex review (Codex Cloud, read-only, single
-agent, model `gpt-6.2-sol`, reasoning effort `high`, never `codex exec` on the
-PC, per owner rule 2026-11-17, or, from a session without
+agent, model `gpt-6.2-astra`, reasoning effort `high`, never `codex exec` on the
+PC, per owner rules 2026-11-17 and 2026-11-18, or, from a session without
 the PC, one native `@codex review` PR comment naming the exact head) of every
 Game PR before it merges. This
 replaces the 2026-10-29 trial and its "at most 5 a day" limit. These reviews
@@ -78,7 +78,7 @@ implementation, repair or any other Codex use.
 Owner decision 2026-11-11 (fix of confirmed findings): the review run itself stays
 read-only and never edits code. Findings the coordinator has verified against the
 code may then be handed, as one list, to a single code-writing Codex run at
-reasoning effort `medium`, model `gpt-6.2-sol` (on the PC: `codex-review.sh <worktree> <tag>
+reasoning effort `high`, model `gpt-6.2-sol` (owner rule 2026-11-18; on the PC: `codex-review.sh <worktree> <tag>
 --fix-confirmed <file>`). That run writes a red test per finding before any fix,
 reports a finding it cannot reproduce without changing code, changes no existing
 assertion, timeout or budget and nothing outside the list, and commits nothing;

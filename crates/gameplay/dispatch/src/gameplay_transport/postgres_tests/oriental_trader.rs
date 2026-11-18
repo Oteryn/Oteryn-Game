@@ -121,6 +121,15 @@ async fn achievement(h: &Harness) -> TestResult<(i64, i64)> {
     .await?)
 }
 
+async fn source_kind(h: &Harness) -> TestResult<String> {
+    Ok(sqlx::query_scalar(
+        "SELECT source_kind FROM game_account_achievements WHERE achievement_key=$1",
+    )
+    .bind(ACHIEVEMENT)
+    .fetch_one(&h.pool)
+    .await?)
+}
+
 fn scenario() -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "oriental_trader", true, false).await?;
@@ -289,8 +298,9 @@ fn scenario() -> TestResult {
             decode_npc_intent_result(&replies[0].1).map_err(debug)?,
             NpcIntentDisposition::Ok
         );
-        // Oteryn's accepted P11 boundary grants on the committed sale, never on opening UI.
-        assert_eq!(achievement(&h).await?, (0, 0));
+        // Crystal yasir.lua:820,826: opening the trade window grants Si, Ariki!, with no sale.
+        assert_eq!(achievement(&h).await?, (1, 1));
+        assert_eq!(source_kind(&h).await?, "oteryn:npc-trade-open");
         owner.clock_origin = owner
             .clock_origin
             .checked_sub(std::time::Duration::from_secs(2))
@@ -325,7 +335,9 @@ fn scenario() -> TestResult {
             replies[3],
             (CommandStatus::DuplicateReplay, replies[2].1.clone())
         );
+        // The committed sale keeps its idempotent grant and does not grant twice.
         assert_eq!(achievement(&h).await?, (1, 1));
+        assert_eq!(source_kind(&h).await?, "oteryn:npc-trade-open");
         let trades: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_npc_trades WHERE npc_key=$1")
                 .bind(YASIR)

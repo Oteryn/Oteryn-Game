@@ -94,5 +94,9 @@ matching one locally when your change can reach it; commands are copied from
   branch is merged: target dirs are tens of GB.
 - Check free disk space before a build. "No space left on device" mid-build
   leaves a corrupt incremental cache; delete the target dir and rebuild.
+- Before a heavy build check `df -h` and `free -g`; on a small host use
+  `CARGO_BUILD_JOBS=1`. Full disk then out-of-memory at `-j2` cost lanes hours.
+- Compile delegated code (`cargo check -p <crate>`) before sending it to a
+  20-25 minute runner; a compile error found there costs a whole cycle.
 - In shell pipelines take the exit code of the command, not of `tail`/`tee`:
   `set -o pipefail`, or `${PIPESTATUS[0]}`.
