@@ -6,6 +6,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 pub(super) const CASE: &str = "ferumbras-zamulosh-lovely-monster-step";
 pub(super) const BLOSSOM: &str = "first-dragon-fertility-blossom-step";
 pub(super) const HABITAT: &str = "ferumbras-zamulosh-grass-habitat";
+const STALE_HABITAT: &str = "ferumbras-zamulosh-grass-habitat-stale";
 const FRAZZLEMAW: &str = "oteryn:creature.lovely_frazzlemaw";
 const DEER: &str = "oteryn:creature.lovely_deer";
 const SPIRIT: &str = "oteryn:creature.spirit_of_fertility";
@@ -91,6 +92,21 @@ fn zamulosh_grass_habitat_changes_basin_at_use_and_terrain_after_two_seconds() -
     })
 }
 
+#[test]
+fn zamulosh_grass_habitat_drops_the_whole_batch_when_one_terrain_revision_changes() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(STALE_HABITAT, || {
+        super::quest_world_callbacks::scenario(STALE_HABITAT, HABITAT_LEVER, false)
+    })
+}
+
+pub(super) fn is_habitat(name: &str) -> bool {
+    matches!(name, HABITAT | STALE_HABITAT)
+}
+
 pub(super) fn habitat_callback() -> TestResult<Callback> {
     let delayed_edits = HABITAT_TILES.map(|(position, appearance)| {
         serde_json::json!({
@@ -133,6 +149,7 @@ pub(super) async fn exercise_habitat(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut super::AdmittedSession,
     callback: Callback,
+    name: &str,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_object::UseDisposition;
 
@@ -175,12 +192,37 @@ pub(super) async fn exercise_habitat(
         assert!(has(at, PREVIOUS_TERRAIN)?);
         assert!(!has(at, next)?);
     }
-    assert_eq!(map.facts.expire_movement_items(due), 1);
+    let stale = name == STALE_HABITAT;
+    if stale {
+        let (at, _) = HABITAT_TILES[0];
+        let pos = crate::map::overlay::TilePos {
+            x: at.x,
+            y: at.y,
+            floor: at.floor,
+        };
+        let key = crate::map::view::placement_key(pos, 1).ok_or("fixture terrain placement")?;
+        let replacement = map
+            .facts
+            .quest_callback_replacement(key, PREVIOUS_TERRAIN)
+            .ok_or("fixture terrain facts")?;
+        // A concurrent map writer published a new revision of this exact placement.
+        assert!(map.facts.apply_quest_callback(
+            key,
+            map.facts.object_revision(key),
+            replacement,
+            &[],
+            &[],
+            false,
+            None,
+        ));
+    }
+    assert_eq!(map.facts.expire_movement_items(due), usize::from(!stale));
     for (at, next) in HABITAT_TILES {
-        assert!(!has(at, PREVIOUS_TERRAIN)?);
-        assert!(has(at, next)?);
+        assert_eq!(has(at, PREVIOUS_TERRAIN)?, stale);
+        assert_eq!(has(at, next)?, !stale);
     }
     assert_eq!(map.facts.expire_movement_items(due), 0);
+    assert_eq!(map.facts.next_movement_decay_time(), None);
     Ok(())
 }
 

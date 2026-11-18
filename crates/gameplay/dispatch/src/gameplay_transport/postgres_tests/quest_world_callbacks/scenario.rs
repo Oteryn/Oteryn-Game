@@ -362,7 +362,7 @@ fn scenario_case(
         super::super::warzone_portal_cooldown::terminal_callback(name, trigger)?
     } else if monster_step {
         super::super::zamulosh_monster_step::callback(name)?
-    } else if name == super::super::zamulosh_monster_step::HABITAT {
+    } else if super::super::zamulosh_monster_step::is_habitat(name) {
         super::super::zamulosh_monster_step::habitat_callback()?
     } else if super::super::warzone_portal_cooldown::is_entry(name) {
         super::super::warzone_portal_cooldown::callback(name)?
@@ -672,7 +672,7 @@ fn scenario_case(
         super::super::shulgrax_flower_pattern::cycle_world(&callback)?
     } else if name == super::super::shulgrax_flower_pattern::CASE {
         super::super::shulgrax_flower_pattern::world(&callback)?
-    } else if name == super::super::zamulosh_monster_step::HABITAT {
+    } else if super::super::zamulosh_monster_step::is_habitat(name) {
         super::super::zamulosh_monster_step::habitat_world(&callback)?
     } else if super::super::warzone_portal_cooldown::is_victory(name) {
         super::super::warzone_portal_cooldown::portal_world(&callback, name, trigger)?
@@ -1920,8 +1920,8 @@ fn scenario_case(
             Box::pin(super::super::warzone_portal_cooldown::exercise_victory(&owner, &mut admitted, &h, callback.clone(), name, trigger)).await?;
         } else if monster_step {
             Box::pin(super::super::zamulosh_monster_step::exercise(&owner, &h, callback.clone())).await?;
-        } else if name == super::super::zamulosh_monster_step::HABITAT {
-            Box::pin(super::super::zamulosh_monster_step::exercise_habitat(&owner, &mut admitted, callback.clone())).await?;
+        } else if super::super::zamulosh_monster_step::is_habitat(name) {
+            Box::pin(super::super::zamulosh_monster_step::exercise_habitat(&owner, &mut admitted, callback.clone(), name)).await?;
         } else if super::super::warzone_portal_cooldown::is_entry(name) {
             Box::pin(super::super::warzone_portal_cooldown::exercise(&owner, &mut admitted, &h, name)).await?;
         } else if death_replacement {
