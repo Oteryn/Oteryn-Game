@@ -61,9 +61,10 @@ fn grizzly_npc_wire_task_xp_crosses_level_50_and_unlocks_live_promotion() -> Tes
 
 #[test]
 fn grizzly_npc_wire_trophy_hunter_backpack_request_refused() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    assert!(!admin.is_empty(), "PostgreSQL admin URL is empty");
     super::kill_reward_e2e::scenario_thread::run("grizzly-backpack-refusal", || scenario(7))
 }
 
@@ -493,8 +494,14 @@ fn scenario(case: u8) -> TestResult {
                 0
             );
         } else if case == 7 {
-            seed(&h, &[(quest::POINTS_STORAGE, 70), (quest::PROMOTION_STORAGE, 4)]).await?;
-            owner.refresh_quest_session(admitted.game_session_id, false).await;
+            seed(
+                &h,
+                &[(quest::POINTS_STORAGE, 70), (quest::PROMOTION_STORAGE, 4)],
+            )
+            .await?;
+            owner
+                .refresh_quest_session(admitted.game_session_id, false)
+                .await;
             wire::talk_with_line(
                 &mut owner,
                 &mut admitted,
@@ -503,7 +510,10 @@ fn scenario(case: u8) -> TestResult {
                 "Sorry, not possible.",
             )
             .await?;
-            assert_eq!(value(&owner, &authority, quest::PROMOTION_STORAGE).await?, 6);
+            assert_eq!(
+                value(&owner, &authority, quest::PROMOTION_STORAGE).await?,
+                6
+            );
             let (entitlements, backpacks): (i64, i64) = sqlx::query_as(
                 "SELECT (SELECT count(*) FROM game_character_grizzly_reward_entitlements), \
                  (SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i9601')",

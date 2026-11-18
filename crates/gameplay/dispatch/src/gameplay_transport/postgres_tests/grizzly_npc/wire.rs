@@ -164,7 +164,16 @@ pub(super) async fn talk_with_line(
     commands: &[(u64, &str)],
     line: &str,
 ) -> TestResult {
-    conversation(owner, admitted, npc, commands, Some(NpcIntentDisposition::Ok), None, Some(line)).await
+    conversation(
+        owner,
+        admitted,
+        npc,
+        commands,
+        Some(NpcIntentDisposition::Ok),
+        None,
+        Some(line),
+    )
+    .await
 }
 
 async fn conversation(
@@ -280,10 +289,17 @@ async fn conversation(
                             let frame = read_frame(&mut client).await?;
                             let envelope = decode_wire_envelope(&frame).map_err(debug)?;
                             if envelope.message_type() == MessageType::StateDelta {
-                                let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
+                                let delta =
+                                    oteryn_protocol_oteryn::decode_state_delta(envelope.payload())
+                                        .map_err(debug)?;
                                 if delta.domain_id == STATE_DOMAIN_NPC_CONVERSATION {
                                     if let Some(line) = expected_line.filter(|_| last) {
-                                        assert_eq!(decode_npc_conversation(delta.payload).map_err(debug)?.lines, [line]);
+                                        assert_eq!(
+                                            decode_npc_conversation(delta.payload)
+                                                .map_err(debug)?
+                                                .lines,
+                                            [line]
+                                        );
                                     }
                                     break;
                                 }
