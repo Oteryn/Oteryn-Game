@@ -90,7 +90,10 @@ impl DurabilityRoot {
             RuntimeScopeRefV1::Channel { channel_id, .. } => (1_i16, *channel_id.as_bytes()),
             RuntimeScopeRefV1::Instance { instance_id, .. } => (2_i16, instance_id),
         };
-        let intent = serde_json::to_vec(&json!({"world":scope.world_id().as_bytes(),"scope_kind":kind,"scope":id,"generation":generation.get(),"death":plan.death,"boss":plan.boss_key,"minted":plan.minted_at_unix_ms,"personal_rewards":plan.rewards.is_some()})).map_err(|_| DurabilityError::InvalidStoredState)?;
+        // A retained non-private death can be observed again at a later wall clock.
+        // Its native occurrence is the identity; minted_at remains first-commit metadata.
+        // Private rewards additionally bind their original frozen mint timestamp.
+        let intent = serde_json::to_vec(&json!({"world":scope.world_id().as_bytes(),"scope_kind":kind,"scope":id,"generation":generation.get(),"death":plan.death,"boss":plan.boss_key,"minted":plan.rewards.as_ref().map(|reward| reward.minted_at_unix_ms),"personal_rewards":plan.rewards.is_some()})).map_err(|_| DurabilityError::InvalidStoredState)?;
         sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:boss-death-atomic:' || encode($1,'hex') || ':' || encode($2,'hex'),0))")
             .bind(scope.world_id().as_bytes().as_slice()).bind(plan.death.as_slice()).execute(&mut **tx).await?;
         let previous: Option<Vec<u8>> = sqlx::query_scalar("SELECT intent FROM game_boss_death_settlements WHERE world_id=encode($1,'hex')::uuid AND death_id=encode($2,'hex')::uuid")
