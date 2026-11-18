@@ -50,6 +50,20 @@ fn marziel_step_debits_only_female_carried_blood_and_spawns_brides() -> TestResu
 }
 
 pub(super) fn catalogue(revision: &str) -> TestResult<QuestStateCatalogue> {
+    let effects = serde_json::json!({
+        "required_sex":"female",
+        "required_fluid_subtype":5,
+        "target_transform":{"position":STATUE,"from":8325,"to":8326},
+        "encounter":{
+            "minimum_level":0,"players":[],"spawn_in_place":true,
+            "room_min":{"x":32936,"y":31456,"floor":-2},
+            "room_max":{"x":32944,"y":31464,"floor":-2},
+            "monsters":[
+                {"position":{"x":32938,"y":31458,"floor":-2},"creature":"oteryn:creature.vampire_bride"},
+                {"position":{"x":32942,"y":31458,"floor":-2},"creature":"oteryn:creature.vampire_bride"}
+            ]
+        }
+    });
     let document = serde_json::json!({
         "schema":1,
         "quests":[{
@@ -67,20 +81,7 @@ pub(super) fn catalogue(revision: &str) -> TestResult<QuestStateCatalogue> {
                     "passages":[],"offerings":[],
                     "storage":[{"track":TRACK,"minimum":0,"maximum":0,"set":1}],
                     "item_on_target":{"item":"oteryn:item.tibia.i2874","count":1,"on_step":true},
-                    "effects":{
-                        "required_sex":"female",
-                        "required_fluid_subtype":5,
-                        "target_transform":{"position":STATUE,"from":8325,"to":8326},
-                        "encounter":{
-                            "minimum_level":0,"players":[],"spawn_in_place":true,
-                            "room_min":{"x":32936,"y":31456,"floor":-2},
-                            "room_max":{"x":32944,"y":31464,"floor":-2},
-                            "monsters":[
-                                {"position":{"x":32938,"y":31458,"floor":-2},"creature":"oteryn:creature.vampire_bride"},
-                                {"position":{"x":32942,"y":31458,"floor":-2},"creature":"oteryn:creature.vampire_bride"}
-                            ]
-                        }
-                    },
+                    "effects":effects,
                     "sources":[SOURCE]
                 }
             }}]
