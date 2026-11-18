@@ -411,19 +411,17 @@ impl ChannelRuntimeV1 {
         self.owner_fence()?;
         let before = self.carrier.clone();
         let result = (|| {
-            for actor in members
-                .iter()
-                .filter(|actor| self.contains_live_creature(**actor))
-                .copied()
-                .collect::<Vec<_>>()
-            {
-                self.remove_encounter_actor(actor)?;
+            for &actor in members {
+                if self.contains_live_creature(actor) {
+                    self.remove_encounter_actor(actor)?;
+                }
             }
             if !self.native_summon_cell_free(successor.2) {
                 return Err(CarrierError::InvalidSpawnDefinition);
             }
-            self.commit_quest_creature_spawn(&[successor])?;
-            Ok(())
+            let (key, health, at) = successor;
+            let created = self.admit_encounter_actor(key, health, at)?;
+            self.install_creature_policy(created, key)
         })();
         if result.is_err() {
             self.carrier = before;

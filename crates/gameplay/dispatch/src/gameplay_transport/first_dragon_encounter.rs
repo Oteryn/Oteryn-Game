@@ -1,7 +1,12 @@
 //! Native First Dragon phase hooks on the shared boss activity.
 use super::ComposedFreshAdmission;
+use crate::content::{CollisionClass, LogicalCell, NativeEntryMovementCells};
 use crate::foundation::{
-    ExactActorRef, GameSessionId, MovementLocalPosition, MovementPositionSnapshot,
+    CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
+    MovementPositionSnapshot,
+};
+use oteryn_simulation_determinism::{
+    DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
 
 pub(super) async fn step_in(
@@ -45,9 +50,6 @@ pub(super) async fn step_in(
     };
     runtime.commit_source_step(proof).unwrap_or(committed)
 }
-
-use crate::content::{CollisionClass, LogicalCell, NativeEntryMovementCells};
-use crate::foundation::{CarrierError, ChannelRuntimeV1};
 
 const FALLEN: &str = "oteryn:creature.fallen_challenger";
 const SPIRIT: &str = "oteryn:creature.spirit_of_fertility";
@@ -106,9 +108,15 @@ fn shuffled_room(
     let mut positions = y
         .flat_map(|y| x.clone().map(move |x| cell(x, y)))
         .collect::<Vec<_>>();
-    let end = positions.len().saturating_sub(1) as u32;
-    let offset = super::echo_warden::draw(runtime, seed, label, 0, end).unwrap_or(0);
-    positions.rotate_left(offset as usize);
+    let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+    let occurrence = DecisionOccurrenceId::from_bytes(seed);
+    for ordinal in (1..positions.len()).rev() {
+        let Ok(draw) = deterministic_decision_u64(&root, occurrence, label, ordinal as u64) else {
+            break;
+        };
+        let index = (u128::from(draw) * (ordinal as u128 + 1)) >> 64;
+        positions.swap(ordinal, index as usize);
+    }
     positions.into_iter()
 }
 
