@@ -461,12 +461,15 @@ async fn exercise_window(
     for (player, origin) in players.iter().zip(original) {
         assert_eq!(enter_exit(owner, *player, portal).await?, origin);
     }
+    set_clock(199_000);
+    death(owner, players, RAT, landing, case, 99).await?;
     set_clock(200_000);
     death(owner, players, RAT, ward, Case::Window, 100).await?;
     assert_eq!(enter_exit(owner, players[0], portal).await?, original[0]);
     set_clock(201_000);
     death(owner, players, CAVE_RAT, ward, Case::Window, 101).await?;
     set_clock(202_000);
+    death(owner, players, RAT, ward, case, 102).await?;
     assert_eq!(enter_exit(owner, players[0], portal).await?, landing);
     move_to(owner, players[0], original[0]).await?;
     if case == Case::WindowConsumed {
