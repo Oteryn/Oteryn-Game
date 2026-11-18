@@ -361,7 +361,12 @@ async fn exercise(h: &Harness) -> TestResult {
     assert_eq!(
         charge(&mut owner, &admitted, command + 1, left, EMERALD).await?,
         UseDisposition::Exhausted,
-        "the pending entry reserves the opposite half against a different USE"
+        "the pending entry reserves the opposite half against a gem deposit"
+    );
+    assert_eq!(
+        click(&mut owner, &admitted, command + 2, left).await?,
+        UseDisposition::Exhausted,
+        "the opposite half cannot toggle until the original entry is reconciled"
     );
     assert_eq!(gems(h).await?, 3);
     assert_eq!(carried(h, EMERALD).await?, 1);
