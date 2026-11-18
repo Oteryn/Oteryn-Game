@@ -59,6 +59,7 @@ struct MovementDecay {
     restore: EntryFacts,
     /// Remote resets restore visibility and the previous collision override too.
     overlay: Option<(bool, Option<bool>)>,
+    action: Option<u16>,
 }
 
 #[derive(Clone, Debug)]
@@ -74,6 +75,12 @@ struct DynamicPortal {
 pub enum QuestCallbackProjection {
     /// Restore exactly this revision at an original source deadline.
     TimedTransform { due: u64, restore: EntryFacts },
+    /// An action-triggered spawn rearms that exact placement when its timer expires.
+    TimedAction {
+        due: u64,
+        restore: EntryFacts,
+        action: u16,
+    },
     /// A source glyph and its native portal share one revision-fenced deadline.
     TimedEntrance {
         due: u64,
@@ -246,6 +253,7 @@ impl CallbackStates {
                         revision,
                         restore: *restore,
                         overlay: None,
+                        action: None,
                     },
                 );
                 self.portals.insert(
@@ -281,6 +289,7 @@ impl CallbackStates {
                         revision,
                         restore: *restore,
                         overlay: None,
+                        action: None,
                     },
                 );
             }
@@ -307,6 +316,7 @@ impl CallbackStates {
                         revision,
                         restore: *restore,
                         overlay: None,
+                        action: None,
                     },
                 );
             }
@@ -341,6 +351,7 @@ impl CallbackStates {
                             revision,
                             restore: *restore,
                             overlay: None,
+                            action: None,
                         },
                     );
                 }
@@ -349,6 +360,30 @@ impl CallbackStates {
                         self.changed.insert(*key, (revision + 1, *after));
                     }
                 }
+            }
+            QuestCallbackProjection::TimedAction {
+                due,
+                restore,
+                action,
+            } => {
+                let Some(revision) = self
+                    .changed
+                    .get(&owner)
+                    .map_or(0, |(r, _)| *r)
+                    .checked_add(1)
+                else {
+                    return false;
+                };
+                self.actions.insert(owner, None);
+                self.movement_decays.insert(
+                    (*due, owner),
+                    MovementDecay {
+                        revision,
+                        restore: *restore,
+                        overlay: None,
+                        action: Some(*action),
+                    },
+                );
             }
             QuestCallbackProjection::TimedTransform { due, restore } => {
                 let Some(revision) = self
@@ -365,6 +400,7 @@ impl CallbackStates {
                         revision,
                         restore: *restore,
                         overlay: None,
+                        action: None,
                     },
                 );
             }
@@ -822,6 +858,7 @@ impl BundleFacts {
                 revision,
                 restore,
                 overlay: None,
+                action: None,
             },
         );
         true
@@ -875,6 +912,9 @@ impl BundleFacts {
                 && let Some(revision) = decay.revision.checked_add(1)
             {
                 states.changed.insert(key, (revision, decay.restore));
+                if let Some(action) = decay.action {
+                    states.actions.insert(key, Some(action));
+                }
                 if let Some((hidden, passable)) = decay.overlay {
                     if hidden {
                         states.hidden.insert(key);
@@ -1674,7 +1714,8 @@ impl BundleFacts {
                         }
                     })
                 }
-                QuestCallbackProjection::TimedTransform { .. } => false,
+                QuestCallbackProjection::TimedAction { .. }
+                | QuestCallbackProjection::TimedTransform { .. } => false,
             })
             || expected == u64::MAX
             || passages.len() + replacements.len() > 8

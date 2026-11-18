@@ -85,7 +85,7 @@ pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPhase,
     EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence,
     MagicEffect, MountReward, PartyStation, PartyTransfer, Portal, PortalPair, QuestCompletion,
-    RewardDoor, SolidTeleport, TargetTransform,
+    RewardDoor, SolidTeleport, StepSpawn, TargetTransform,
 };
 pub use ground_stack::{
     GroundStackEntry, GroundStackFact, ground_stack_matches, ground_stack_matches_at,
@@ -659,6 +659,26 @@ pub fn stateless_ground_requirements(key: &str) -> Option<Vec<WorldRequirement>>
 
 /// Read the same closed content shape at boot and at the durable mutation boundary.
 /// Read the same catalogue-scoped bindings at dispatch and under the durable writer.
+#[cfg(any(test, feature = "test-support"))]
+pub fn with_fixture_world_document(
+    catalogue: &QuestStateCatalogue,
+    document: &str,
+) -> Result<QuestStateCatalogue, String> {
+    use super::authored_bindings::{Bindings, RuntimeBindings};
+    let mut fixture = catalogue.clone();
+    let mut world = load_for(catalogue)?;
+    world.extend(parse(document)?);
+    validate_registry(&world)?;
+    fixture.authored_bindings = Some(std::sync::Arc::new(RuntimeBindings {
+        source: catalogue.authored_bindings().cloned().unwrap_or(Bindings {
+            schema: 1,
+            quests: Vec::new(),
+        }),
+        world,
+    }));
+    Ok(fixture)
+}
+
 pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String> {
     match catalogue.authored_world_callbacks() {
         Some(callbacks) => Ok(callbacks.to_vec()),
@@ -1103,8 +1123,8 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             })
             || (callback.storage.iter().any(|storage| storage.read_only)
                 && (!callback.is_read_only()
-                    || callback.teleport.is_none()
-                    || (callback.trigger == Trigger::StepIn && !callback.return_on_failure)
+                    || (callback.effects.step_spawn.is_none() && (callback.teleport.is_none()
+                        || (callback.trigger == Trigger::StepIn && !callback.return_on_failure)))
                     || callback.lever.is_some()
                     || !callback.passages.is_empty()
                     || !callback.offerings.is_empty()

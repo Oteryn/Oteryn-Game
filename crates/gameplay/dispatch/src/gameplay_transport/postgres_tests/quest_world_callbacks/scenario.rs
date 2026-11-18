@@ -354,7 +354,11 @@ fn scenario_case(
     let draconia_escape = name.starts_with("draconia-escape-");
     use super::super::dreamers_wall_portal;
     let dreamers_wall = matches!(name, dreamers_wall_portal::BLOCKED | dreamers_wall_portal::CLEAR);
-    let mut callback = if dreamers_wall {
+    use super::super::lucifuga_bait_spawn;
+    let lucifuga = name == lucifuga_bait_spawn::NAME;
+    let mut callback = if lucifuga {
+        lucifuga_bait_spawn::binding()?
+    } else if dreamers_wall {
         dreamers_wall_portal::binding()?
     } else if m03_use {
         super::super::qengine_m03_use::callback()?
@@ -1697,6 +1701,11 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
+        if lucifuga {
+            owner.quest_catalogue = Some(lucifuga_bait_spawn::catalogue(
+                owner.quest_catalogue.as_ref().ok_or("quest catalogue")?,
+            )?);
+        }
         if name == nightmare_intruders_turn_in::NAME {
             owner.quest_catalogue = Some(nightmare_intruders_turn_in::catalogue(
                 owner.quest_catalogue.as_ref().ok_or("quest catalogue")?,
@@ -2884,6 +2893,8 @@ fn scenario_case(
                 trigger,
             )
             .await?;
+        } else if lucifuga {
+            Box::pin(lucifuga_bait_spawn::exercise(&owner, &mut admitted, fence)).await?;
         } else if outfit_world
             || callback.effects != Default::default() && !dreamers_wall
             || callback.quest == "oteryn:quest.waterfall_quest" && stateless_destination.is_none()

@@ -101,6 +101,8 @@ pub struct CallbackEffects {
     pub portals: Option<PortalPair>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub solid_teleport: Option<SolidTeleport>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub step_spawn: Option<StepSpawn>,
     pub item_cycle: Option<ItemCycle>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
@@ -177,6 +179,41 @@ impl SolidTeleport {
                 .cells
                 .iter()
                 .all(|cell| (-15..=0).contains(&cell.floor))
+    }
+}
+
+/// One native spawn on a qualifying step. The source action rearms independently.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct StepSpawn {
+    pub creature: String,
+    pub rearm_step_ms: u32,
+    pub rearm_steps: u8,
+}
+
+impl StepSpawn {
+    fn valid(&self, callback: &Callback) -> bool {
+        callback.trigger == Trigger::StepIn
+            && callback.actor_kind == ActorKind::Player
+            && callback.is_read_only()
+            && callback.requires_world_admission
+            && callback.selector.action.is_some()
+            && !callback.return_on_failure
+            && callback.teleport.is_none()
+            && callback.remote_teleport.is_none()
+            && callback.effects
+                == CallbackEffectSet::from_shared(CallbackEffects {
+                    step_spawn: Some(self.clone()),
+                    ..CallbackEffects::default()
+                })
+            && super::super::valid_quest_key(&self.creature)
+            && self.creature.starts_with("oteryn:creature.")
+            && self.rearm_steps > 0
+            && (1..=3_600_000).contains(
+                &self
+                    .rearm_step_ms
+                    .saturating_mul(u32::from(self.rearm_steps)),
+            )
     }
 }
 
@@ -427,6 +464,13 @@ pub(super) fn valid(callback: &Callback) -> bool {
         .solid_teleport
         .as_ref()
         .is_some_and(|teleport| !teleport.valid(callback))
+    {
+        return false;
+    }
+    if effects
+        .step_spawn
+        .as_ref()
+        .is_some_and(|spawn| !spawn.valid(callback))
     {
         return false;
     }

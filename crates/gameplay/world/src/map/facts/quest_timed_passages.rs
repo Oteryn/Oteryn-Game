@@ -57,6 +57,7 @@ impl CallbackStates {
                     revision,
                     restore,
                     overlay: None,
+                    action: None,
                 },
             );
         }
@@ -68,6 +69,7 @@ impl CallbackStates {
                     revision,
                     restore: entry.before,
                     overlay: Some((false, self.passable.get(&entry.key).copied())),
+                    action: None,
                 },
             );
             self.changed

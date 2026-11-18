@@ -904,6 +904,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
+        if let Some(spawn) = &callback.effects.step_spawn {
+            let (QuestCause::Step(command), Some(action)) = (cause, callback.selector.action)
+            else {
+                return UseDisposition::Rejected;
+            };
+            return self.step_spawn(
+                runtime,
+                states,
+                map,
+                spawn,
+                key,
+                expected_revision,
+                after,
+                action,
+                expected.position(),
+                command,
+            );
+        }
         let party = if let Some(party) = &callback.effects.party_transfer {
             if after.appearance_id != party.activation_appearance {
                 return if map.facts.apply_quest_callback(

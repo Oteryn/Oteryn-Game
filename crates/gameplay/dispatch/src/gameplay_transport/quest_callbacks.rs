@@ -34,6 +34,7 @@ mod scene_items;
 mod shared_gate;
 mod soul_war_reward;
 mod source_transforms;
+mod step_spawn;
 mod timed_encounter;
 mod timed_passages;
 
@@ -338,6 +339,9 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
         return true;
     }
     let selector = &callback.selector;
+    if callback.effects.step_spawn.is_some() && map.facts.action_at(key) != selector.action {
+        return false;
+    }
     // A native-only selector has no legacy alternative. Empty legacy terms
     // must not turn an exact source mismatch into a wildcard over every tile.
     if selector.position.is_none()
