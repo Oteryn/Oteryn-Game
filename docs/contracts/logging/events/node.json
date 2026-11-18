@@ -313,6 +313,17 @@
       "note": "Qualification fixture preparation refused; session and profile only past the early refusal."
     },
     {
+      "event": "qualification_spawn_cleanup_failed",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "phase",
+        "cause"
+      ],
+      "codes": [],
+      "note": "Qualification fixture spawn cleanup failed; cause is bounded to 200 characters."
+    },
+    {
       "event": "qualification_spawn_refused",
       "level": "warn",
       "span": false,

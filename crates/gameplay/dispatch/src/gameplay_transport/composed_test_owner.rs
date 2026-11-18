@@ -77,6 +77,9 @@ impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
 }
 
 // The dedicated PG target uses the same caller and constructor as in-crate tests.
+pub use super::character_progression_binding::{
+    ProgressionBinding, ProgressionDurable, ProgressionRounds, bind_character_progression,
+};
 pub use super::connection::{FreshAdmissionAuthority, UseCommand};
 pub use super::item_view::ItemKey;
 

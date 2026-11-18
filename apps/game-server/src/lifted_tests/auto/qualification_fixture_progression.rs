@@ -11,15 +11,8 @@ use crate::durability::character_progression::{
 };
 use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use crate::qualification_spell_character::{QualificationBuildSpec, prepare_character_with_policy};
+use oteryn_gameplay_dispatch::gameplay_transport::composed_test_owner as binding;
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
-
-// Use the same production binder as the existing progression PostgreSQL target.
-#[allow(
-    dead_code,
-    reason = "this fixture uses only the admission binding entry point"
-)]
-#[path = "../../../../../crates/gameplay/dispatch/src/gameplay_transport/character_progression_binding.rs"]
-mod binding;
 
 #[derive(Clone, Copy)]
 enum Case {
