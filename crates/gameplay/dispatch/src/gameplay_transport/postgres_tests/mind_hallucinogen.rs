@@ -201,7 +201,7 @@ async fn exercise(admin: String) -> TestResult {
         )
         .await?;
         assert_eq!(
-            decode_step_result(&step).map_err(debug)?.disposition,
+            decode_step_result(&step).map_err(debug)?,
             StepDisposition::Moved
         );
         assert_eq!(
