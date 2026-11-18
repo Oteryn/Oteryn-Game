@@ -1515,8 +1515,14 @@ pub async fn decide_character_service_for_node(
 }
 
 impl Decider for CommandDecider<'_, '_, '_> {
-    async fn next_retained_create_receipt(&mut self, after: Option<&str>) -> Result<Option<(String, Vec<u8>)>, crate::native_admission_source::SourceError> {
-        self.root.next_retained_create_receipt(self.authority, self.proof, &self.source_authority, after).await.map_err(|_| crate::native_admission_source::SourceError::Unavailable)
+    async fn next_retained_create_receipt(
+        &mut self,
+        after: Option<&str>,
+    ) -> Result<Option<(String, Vec<u8>)>, crate::native_admission_source::SourceError> {
+        self.root
+            .next_retained_create_receipt(self.authority, self.proof, &self.source_authority, after)
+            .await
+            .map_err(|_| crate::native_admission_source::SourceError::Unavailable)
     }
 
     async fn stop_services_receipt(&mut self, operation: &str, receipt: &[u8]) {
