@@ -2,7 +2,8 @@
 //! BossLever creates one boss per attempt; it is never an ordinary respawn point.
 use super::*;
 use oteryn_gameplay_content::content::{
-    ActiveGeneration, bosses::activity_template::QualifiedActivityRoomTemplate,
+    ActiveGeneration,
+    bosses::activity_template::{QualifiedActivityRoomTemplate, wanted},
 };
 
 impl ChannelRuntimeV1 {
@@ -30,7 +31,13 @@ impl ChannelRuntimeV1 {
         }
         let creature = template.creature_key();
         let policy = self.companion_policy(creature)?;
-        if policy.reward_boss != Some(true) {
+        // The Wanted portals also summon qualified ordinary-loot bosses.
+        let eligible = match policy.reward_boss {
+            Some(true) => true,
+            Some(false) => wanted::is_wanted_boss(template.boss_key()),
+            None => false,
+        };
+        if !eligible {
             return Err(CarrierError::InvalidSpawnDefinition);
         }
         let health = policy.maximum_health;
