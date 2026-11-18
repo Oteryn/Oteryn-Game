@@ -1,8 +1,78 @@
 //! Forgotten Knowledge replica levers, Crystal 201189f actions_servants_mechanism.lua.
 use super::*;
-use crate::durability::quest_world_callback::replica_window::ReplicaKind;
+use crate::durability::quest_world_callback::replica_window::{ReplicaKind, ReplicaPortalAccess};
+
+pub(super) const REPLICA_PORTAL: TilePos = TilePos {
+    x: 32815,
+    y: 32870,
+    floor: -13,
+};
+pub(super) const REPLICA_CHAMBER: TilePos = TilePos {
+    x: 32760,
+    y: 32876,
+    floor: -14,
+};
+const REPLICA_PORTAL_REFUSAL: TilePos = TilePos {
+    x: 32815,
+    y: 32872,
+    floor: -13,
+};
+
+pub(super) fn replica_portal_destination(access: ReplicaPortalAccess) -> Option<TilePos> {
+    match access {
+        ReplicaPortalAccess::Dormant => None,
+        ReplicaPortalAccess::InsufficientEnergy | ReplicaPortalAccess::LloydCooldown => {
+            Some(REPLICA_PORTAL_REFUSAL)
+        }
+        ReplicaPortalAccess::Ready => Some(REPLICA_CHAMBER),
+    }
+}
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn replica_portal_access(
+        &self,
+        permit: &SpellLanePermit,
+        session: GameSessionId,
+    ) -> Option<ReplicaPortalAccess> {
+        let fence = self.current_quest_fence(session).await.ok()??;
+        let native = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())?;
+        self.root
+            .read_replica_portal(
+                permit,
+                self.character,
+                self.holder,
+                fence,
+                native.source_digest(),
+            )
+            .await
+            .ok()
+    }
+
+    pub(super) fn announce_replica_portal(
+        &self,
+        map: &BundleMap,
+        session: GameSessionId,
+        access: ReplicaPortalAccess,
+        destination: TilePos,
+    ) {
+        let refusal = match access {
+            ReplicaPortalAccess::Ready => {
+                map.facts.emit_movement_effect(destination, 12);
+                return;
+            }
+            ReplicaPortalAccess::InsufficientEnergy => {
+                "Seems that you don't absorb enough energy to use this portal."
+            }
+            ReplicaPortalAccess::LloydCooldown => "You have to wait to challenge this enemy again!",
+            ReplicaPortalAccess::Dormant => return,
+        };
+        map.facts.emit_movement_effect(REPLICA_PORTAL, 11);
+        map.facts.emit_movement_effect(destination, 11);
+        self.states.chat.push_quest_feedback(session, refusal);
+    }
+
     pub(super) async fn use_replica_lever(
         &self,
         actor: ExactActorRef,

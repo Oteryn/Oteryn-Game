@@ -2168,7 +2168,7 @@ impl DurabilityRoot {
                     }
                     use crate::durability::quest_world_callback::replica_window;
                     if let Some(kind) = replica_window::ReplicaKind::from_death_transition(&request.transition_key) {
-                        replica_window::credit(&mut *tx, fence.runtime_scope, kind).await?;
+                        replica_window::credit(&mut tx, fence.runtime_scope, kind).await?;
                     }
                     // The same native receipt that owns shared Hive/Deeplings credit
                     // also owns personal progress in this World occurrence. Historical

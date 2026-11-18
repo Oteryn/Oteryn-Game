@@ -9,10 +9,25 @@ use oteryn_protocol_oteryn::world_object::{
 };
 
 pub(super) const NAME: &str = "fknow-energy-replica-credit";
+const PORTAL: Position = Position {
+    x: 32815,
+    y: 32870,
+    floor: -13,
+};
+const DESTINATION: Position = Position {
+    x: 32760,
+    y: 32876,
+    floor: -14,
+};
+const REFUSAL: Position = Position {
+    x: 32815,
+    y: 32872,
+    floor: -13,
+};
 const AT: Position = Position {
-    x: 32327,
-    y: 32093,
-    floor: -7,
+    x: 32814,
+    y: 32870,
+    floor: -13,
 };
 
 pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
@@ -21,11 +36,20 @@ pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleW
     fixture.selector.action = Some(26663);
     fixture.selector.appearance = Some(9125);
     fixture.selector.position = Some(AT);
-    quest_world_callbacks::world_with_objects(&fixture, AT, &[], &[9126])
+    quest_world_callbacks::world_cells(
+        &fixture,
+        AT,
+        9125,
+        1,
+        &[],
+        &[9126],
+        None,
+        &[DESTINATION, REFUSAL],
+    )
 }
 
 #[test]
-fn fknow_energy_replica_deaths_credit_the_native_killer_once() -> TestResult {
+fn fknow_energy_replica_lever_credit_and_portal() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -132,5 +156,44 @@ pub(super) async fn exercise(
             );
         }
     }
+    use oteryn_protocol_oteryn::world_spatial::{
+        StepDirection, StepDisposition, decode_step_result, encode_step_intent,
+    };
+    let actor = admitted.runtime_actor.ok_or("replica player")?;
+    let step = async |admitted: &mut AdmittedSession, direction, expected| -> TestResult {
+        super::m44_source_lifecycle::wait_for_world_action(owner, admitted).await?;
+        let command = admitted.continuity.next_command_id;
+        let reply =
+            quest_world_callbacks::wire(owner, admitted, command, 1, encode_step_intent(direction))
+                .await?;
+        assert_eq!(
+            decode_step_result(&reply).map_err(debug)?,
+            StepDisposition::Moved
+        );
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            quest_world_callbacks::local(expected)
+        );
+        Ok(())
+    };
+    step(admitted, StepDirection::East, AT).await?;
+    step(admitted, StepDirection::East, PORTAL).await?;
+    // Both kinds of personal credit are present, but Golden expired in this World.
+    step(admitted, StepDirection::West, AT).await?;
+
+    sqlx::query(
+        "UPDATE game_forgotten_knowledge_replica_windows SET expires_at = statement_timestamp() + interval '10 minutes', kills=5
+         WHERE world_id=encode($1,'hex')::uuid AND replica_kind=2",
+    )
+    .bind(admitted.world_id.as_bytes().as_slice())
+    .execute(&harness.pool)
+    .await?;
+    step(admitted, StepDirection::East, DESTINATION).await?;
     Ok(())
 }

@@ -147,13 +147,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(pos) = native(entered.position()) else {
             return entered;
         };
-        let Some(to) = map
-            .facts
-            .quest_portal_destination(pos, self.owner_now().get())
-        else {
+        use super::replica_window::{REPLICA_PORTAL, replica_portal_destination};
+        let replica = if pos == REPLICA_PORTAL {
+            let Some(access) = self.replica_portal_access(permit, session).await else {
+                return entered;
+            };
+            Some(access)
+        } else {
+            None
+        };
+        let destination = || {
+            if let Some(access) = replica {
+                replica_portal_destination(access)
+            } else {
+                map.facts
+                    .quest_portal_destination(pos, self.owner_now().get())
+            }
+        };
+        let Some(to) = destination() else {
             return entered;
         };
         let optional_pvp = self.special_movement_policy(permit, actor, session).await;
+        if let Some(access) = replica
+            && self.replica_portal_access(permit, session).await != Some(access)
+        {
+            return entered;
+        }
         let locks = tokio::time::timeout(std::time::Duration::from_secs(10), async {
             loop {
                 let runtime = self.runtime.lock().await;
@@ -179,11 +198,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // The policy lookup awaited outside the owner. A lever/expiry may have
         // removed the pair while it was in flight; never teleport through that stale read.
-        if map
-            .facts
-            .quest_portal_destination(pos, self.owner_now().get())
-            != Some(to)
-        {
+        if destination() != Some(to) {
             return entered;
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
@@ -207,6 +222,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(snapshot) = runtime.commit_source_step(proof) else {
             return entered;
         };
+        if let Some(access) = replica {
+            self.announce_replica_portal(map, session, access, to);
+        }
         if pos == tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::SOURCE)
             && to == tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::DESTINATION)
         {
