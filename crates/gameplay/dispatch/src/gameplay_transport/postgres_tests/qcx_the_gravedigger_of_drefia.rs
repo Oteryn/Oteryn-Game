@@ -144,8 +144,8 @@ fn bloodgong() -> TestResult {
                         admitted.game_session_id,
                         CommandId::new(900).map_err(debug)?,
                     )),
-                    catalogue: catalogue.clone(),
                 },
+                catalogue.clone(),
             )
             .await
             .map_err(debug)?;
