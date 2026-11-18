@@ -83,7 +83,6 @@ impl ScreenshotPreferences {
         } else {
             Path::new(&effective.directory)
         };
-        std::fs::create_dir_all(directory)?;
         static NEXT: AtomicU64 = AtomicU64::new(0);
         let stamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)

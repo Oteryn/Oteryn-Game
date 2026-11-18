@@ -411,6 +411,19 @@ mod tests {
 
     #[test]
     fn two_clients_share_the_daily_budget() -> TestResult {
+        // The crash ring is process-wide and other tests can evict this warning.
+        const CHILD: &str = "OTERYN_TEST_LOG_CONTENTION";
+        if std::env::var_os(CHILD).is_none() {
+            let status = std::process::Command::new(std::env::current_exe()?)
+                .args([
+                    "--exact",
+                    "bevy_shell::diagnostics::logging::tests::two_clients_share_the_daily_budget",
+                ])
+                .env(CHILD, "1")
+                .status()?;
+            assert!(status.success());
+            return Ok(());
+        }
         let directory = temp("shared");
         let writers = [(); 2].map(|()| Arc::new(RollingFile::new(directory.clone(), 7, 1000)));
         let date = "2030-01-01";
@@ -513,8 +526,24 @@ mod tests {
         fs::write(directory.join("client-2030-01-01.log"), vec![b'a'; 300])?;
         fs::write(directory.join("client-2030-01-02.log"), vec![b'b'; 300])?;
         let file = RollingFile::new(directory.clone(), KEEP_FILES, 1_000);
+        // A parallel subprocess can briefly inherit the lock before it execs.
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
         for index in 0..100 {
-            file.write_dated("2030-01-03", &format!("line {index:04}\n"))?;
+            let line = format!("line {index:04}\n");
+            loop {
+                match file.write_dated("2030-01-03", &line) {
+                    Err(error)
+                        if error.kind() == io::ErrorKind::WouldBlock
+                            && std::time::Instant::now() < deadline =>
+                    {
+                        std::thread::yield_now();
+                    }
+                    result => {
+                        result?;
+                        break;
+                    }
+                }
+            }
         }
         // The older file goes so the others use at most half; today stops at the budget.
         assert_eq!(

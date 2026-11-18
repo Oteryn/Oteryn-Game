@@ -12,6 +12,10 @@ use std::path::PathBuf;
 mod named;
 
 /// F12 captures the rendered window; explicit audit mode keeps its diagnostic PNG path.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "The input and capture systems share the F12 entry point"
+)]
 pub(super) fn capture_on_key(
     mut commands: Commands,
     keys: Res<ButtonInput<KeyCode>>,
@@ -20,6 +24,7 @@ pub(super) fn capture_on_key(
     viewport: Res<super::game_ui::viewport::WorldViewport>,
     mut automatic: Local<super::screenshots::AutomaticState>,
     captures: Query<&super::screenshots::Capture>,
+    clock: Res<Time<Real>>,
 ) {
     super::screenshots::observe(
         &mut commands,
@@ -27,15 +32,13 @@ pub(super) fn capture_on_key(
         *viewport,
         &mut automatic,
         &captures,
+        &clock,
     );
     if !keys.just_pressed(KeyCode::F12) {
         return;
     }
     if let Some(path) = &output.path {
-        use bevy::render::view::screenshot::{Screenshot, save_to_disk};
-        commands
-            .spawn(Screenshot::primary_window())
-            .observe(save_to_disk(path.with_extension("png")));
+        super::screenshots::request_audit(&mut commands, path.with_extension("png"));
     } else {
         super::screenshots::request(&mut commands, &mut owner, *viewport);
     }
@@ -283,6 +286,7 @@ mod screenshot_tests {
         app.insert_non_send(HostOwner::new(None)?)
             .insert_resource(AuditOutput::new(None))
             .init_resource::<ButtonInput<KeyCode>>()
+            .init_resource::<Time<Real>>()
             .init_resource::<super::super::game_ui::viewport::WorldViewport>()
             .add_systems(Update, capture_on_key);
         app.world_mut()

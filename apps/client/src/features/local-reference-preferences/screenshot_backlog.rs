@@ -4,7 +4,7 @@ use crate::play::PlayLink;
 use std::{
     collections::VecDeque,
     io,
-    path::PathBuf,
+    path::{Path, PathBuf},
     time::{Duration, Instant},
 };
 #[derive(Default)]
@@ -99,7 +99,7 @@ impl SettingsState {
             // An asynchronous renderer may not have supplied this frame yet. Do not save
             // or consume retained frames until capture succeeds.
             let current = source.capture(preferences.game_only)?;
-            let folder = screenshot_directory(&preferences.folder)?;
+            let folder = screenshot_directory(Path::new(&preferences.directory))?;
             for (_, frame) in &runtime.frames {
                 paths.push(frame.save_to(&folder)?);
             }

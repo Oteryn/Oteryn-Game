@@ -1,10 +1,10 @@
 //! Screenshot requests share the settings caller on every platform; native capture supplies pixels.
-use super::SettingsState;
+use super::{PreferenceStore, SettingsState};
 #[path = "screenshot_backlog.rs"]
 mod backlog;
 pub(super) use backlog::ScreenshotRuntime;
 use std::{
-    fs::OpenOptions,
+    fs::{DirBuilder, File},
     io::{self, BufWriter, Write},
     path::{Path, PathBuf},
     sync::atomic::{AtomicU64, Ordering},
@@ -36,7 +36,7 @@ impl Pixels {
     }
 
     pub fn save(&self, folder: &str) -> io::Result<PathBuf> {
-        self.save_to(&screenshot_directory(folder)?)
+        self.save_to(&screenshot_directory(Path::new(folder))?)
     }
 
     fn save_to(&self, folder: &Path) -> io::Result<PathBuf> {
@@ -50,12 +50,7 @@ impl Pixels {
             std::process::id(),
             SEQUENCE.fetch_add(1, Ordering::Relaxed)
         ));
-        let mut file = BufWriter::new(
-            OpenOptions::new()
-                .write(true)
-                .create_new(true)
-                .open(&path)?,
-        );
+        let mut file = BufWriter::new(create_capture_file(&path)?);
         let result = self
             .write_bmp(&mut file)
             .and_then(|()| file.flush())
@@ -92,45 +87,79 @@ impl Pixels {
     }
 }
 
-fn screenshot_directory(folder: &str) -> io::Result<PathBuf> {
-    let folder = if folder.is_empty() {
-        let local = std::env::var_os("LOCALAPPDATA");
-        #[cfg(unix)]
-        if local.is_none() {
-            return private_capture_directory();
+fn screenshot_directory(folder: &Path) -> io::Result<PathBuf> {
+    if !folder.as_os_str().is_empty() {
+        if !folder.is_absolute() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Choose an absolute screenshot folder",
+            ));
         }
-        local.map_or_else(std::env::temp_dir, PathBuf::from).join("Oteryn/screenshots")
-    } else if folder.trim().is_empty() {
-        return Err(io::Error::other(tr!("Choose a screenshot folder")));
-    } else {
-        PathBuf::from(folder)
-    };
-
-    if !folder.is_absolute() {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "Choose an absolute screenshot folder",
-        ));
+        return Ok(folder.to_path_buf());
     }
-    std::fs::create_dir_all(&folder)?;
-    Ok(folder)
+    if let Some(path) = PreferenceStore::path().filter(|path| path.is_absolute()) {
+        return Ok(path.with_file_name("screenshots"));
+    }
+    if let Some(local) = std::env::var_os("LOCALAPPDATA")
+        .map(PathBuf::from)
+        .filter(|path| path.is_absolute())
+    {
+        return Ok(local.join("Oteryn/screenshots"));
+    }
+    #[cfg(unix)]
+    {
+        private_capture_directory()
+    }
+    #[cfg(not(unix))]
+    {
+        Ok(std::env::temp_dir().join("Oteryn/screenshots"))
+    }
 }
 
-/// Create the fallback with private permissions from its first moment on a shared temp volume.
+/// Open a new screenshot with private permissions before writing any pixels.
+pub(crate) fn create_capture_file(path: &Path) -> io::Result<File> {
+    let mut directory = DirBuilder::new();
+    directory.recursive(true);
+    let mut options = File::options();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
+        directory.mode(0o700);
+        options.mode(0o600);
+    }
+    if let Some(parent) = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+    {
+        directory.create(parent)?;
+    }
+    options.open(path)
+}
+
+/// Keep the fallback private and reuse it for all captures in this process.
 #[cfg(unix)]
 fn private_capture_directory() -> io::Result<PathBuf> {
-    use std::{os::unix::fs::DirBuilderExt, time::{SystemTime, UNIX_EPOCH}};
-    static SEQUENCE: AtomicU64 = AtomicU64::new(0);
+    use std::{
+        os::unix::fs::DirBuilderExt,
+        sync::Mutex,
+        time::{SystemTime, UNIX_EPOCH},
+    };
+    static DIRECTORY: Mutex<Option<PathBuf>> = Mutex::new(None);
+    let mut directory = DIRECTORY
+        .lock()
+        .map_err(|_| io::Error::other("Screenshot directory lock poisoned"))?;
+    if let Some(path) = directory.as_ref() {
+        return Ok(path.clone());
+    }
     let stamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_err(io::Error::other)?
         .as_nanos();
-    let folder = std::env::temp_dir().join(format!(
-        "oteryn-screenshots-{}-{stamp}-{}",
-        std::process::id(),
-        SEQUENCE.fetch_add(1, Ordering::Relaxed),
-    ));
+    let folder =
+        std::env::temp_dir().join(format!("oteryn-screenshots-{}-{stamp}", std::process::id()));
     std::fs::DirBuilder::new().mode(0o700).create(&folder)?;
+    *directory = Some(folder.clone());
     Ok(folder)
 }
 

@@ -108,6 +108,8 @@ pub(in crate::bevy_shell) struct Layout {
     pub geometry: Geometry,
     /// `None` until the user resizes a content-sized window.
     pub size: Option<Vec2>,
+    /// Preferred size at the first grip drag, before a content-sized window had a saved size.
+    first_resize_origin: Option<Vec2>,
     pub zoom: f32,
     /// The user's move from the window's laid-out position, in UI pixels.
     pub offset: Vec2,
@@ -120,6 +122,7 @@ impl Layout {
             size: geometry
                 .height
                 .map(|height| Vec2::new(geometry.width, height)),
+            first_resize_origin: None,
             zoom: 1.,
             offset: Vec2::ZERO,
         }
@@ -469,6 +472,7 @@ type Fonts<'w, 's> = Query<
 
 /// How long the layout must stay unchanged before it is written, so a drag writes once.
 const SAVE_DELAY: std::time::Duration = std::time::Duration::from_secs(1);
+const EXIT_SAVE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(1);
 
 #[derive(Resource, Default)]
 struct SavedBaseline {
@@ -498,6 +502,7 @@ fn load_layouts(
 struct ExitSave {
     reader: MessageCursor<AppExit>,
     deferred: Option<AppExit>,
+    deadline: Option<std::time::Duration>,
 }
 
 impl ExitSave {
@@ -527,7 +532,12 @@ fn persist(
     if exit_save.deferred.is_some() {
         exit_save.retain(&mut exits);
     }
-    if let Some(baseline) = loaded.layouts.as_ref()
+    if exit_save
+        .deadline
+        .is_some_and(|deadline| time.elapsed() >= deadline)
+    {
+        bevy::log::warn!("Could not save window layout before exit: layout lock is still held");
+    } else if let Some(baseline) = loaded.layouts.as_ref()
         && (loaded.reset_pending || baseline != &*layouts)
         && let Some(path) = owner.and_then(|owner| owner.window_layouts_path())
     {
@@ -552,7 +562,11 @@ fn persist(
                     continue;
                 };
                 if layout.size != before.size {
-                    saved.size = match (before.size, layout.size, saved.size) {
+                    saved.size = match (
+                        before.size.or(layout.first_resize_origin),
+                        layout.size,
+                        saved.size,
+                    ) {
                         (Some(before), Some(edited), Some(latest)) => {
                             Some(Vec2::select(edited.cmpne(before), edited, latest))
                         }
@@ -580,8 +594,10 @@ fn persist(
                 *pending = Some(time.elapsed());
                 if error.kind() == io::ErrorKind::WouldBlock {
                     if exiting {
-                        // The runner checks AppExit after this schedule. Keep the request
-                        // here until a later frame can finish the save.
+                        exit_save
+                            .deadline
+                            .get_or_insert(time.elapsed() + EXIT_SAVE_TIMEOUT);
+                        // The runner reads AppExit after this schedule.
                         exit_save.retain(&mut exits);
                         return;
                     }
@@ -593,6 +609,7 @@ fn persist(
     } else {
         *pending = None;
     }
+    exit_save.deadline = None;
     if let Some(exit) = exit_save.deferred.take() {
         exits.write(exit);
     }

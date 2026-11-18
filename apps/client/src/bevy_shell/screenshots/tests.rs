@@ -25,11 +25,15 @@ fn app(folder: &std::path::Path, game_only: bool) -> Result<App, Box<dyn std::er
     app.insert_non_send(owner)
         .insert_resource(super::super::audit::AuditOutput::new(None))
         .init_resource::<ButtonInput<KeyCode>>()
+        .init_resource::<Time<Real>>()
         .insert_resource(WorldViewport {
             origin: UVec2::ONE,
             size: UVec2::new(2, 1),
         })
         .add_systems(Update, super::super::audit::capture_on_key);
+    app.world_mut()
+        .resource_mut::<Time<Real>>()
+        .update_with_instant(std::time::Instant::now());
     Ok(app)
 }
 fn capture(app: &mut App) -> TestResult {
@@ -100,7 +104,14 @@ fn game_only_crops_rendered_pixels_and_write_errors_reach_player() -> TestResult
             .starts_with("Screenshot failed:")
     );
     assert_eq!(std::fs::read(blocked)?, b"occupied");
-    assert!(save(&frame(), &root, Some(WorldViewport::default())).is_err());
+    assert!(
+        save(
+            &frame(),
+            root.to_str().ok_or("capture directory")?,
+            Some(WorldViewport::default())
+        )
+        .is_err()
+    );
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
@@ -192,6 +203,25 @@ fn capture_death(destination: &std::path::Path, backlog: bool) -> TestResult {
             .count(),
         0
     );
+    // At the next backlog interval the request is for buffering only.
+    if backlog {
+        let mut clock = app.world_mut().resource_mut::<Time<Real>>();
+        let now = clock.last_update().ok_or("capture clock")?;
+        clock.update_with_instant(now + std::time::Duration::from_secs(1));
+        app.update();
+        let entity = app
+            .world_mut()
+            .query_filtered::<Entity, With<Screenshot>>()
+            .single(app.world())?;
+        app.world_mut().trigger(ScreenshotCaptured {
+            entity,
+            image: frame(),
+        });
+        assert_eq!(
+            app.world().non_send::<HostOwner>().status,
+            "Saved 2 screenshot(s)"
+        );
+    }
     Ok(())
 }
 
@@ -316,5 +346,112 @@ fn inherited_f12_marker_preserves_existing_captures() -> TestResult {
     std::fs::remove_dir_all(root)?;
     assert!(status?.success());
     assert_eq!(preserved?, b"existing capture");
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn manual_and_death_captures_share_private_destinations() -> TestResult {
+    use std::{os::unix::fs::PermissionsExt, path::Path, process::Command};
+    const TEST: &str =
+        "bevy_shell::screenshots::tests::manual_and_death_captures_share_private_destinations";
+    const CHILD: &str = "OTERYN_TEST_CAPTURE_DESTINATION";
+    let root = std::env::temp_dir();
+    if let Some(explicit) = std::env::var_os(CHILD) {
+        let explicit = explicit == "explicit";
+        let chosen = root.join("chosen");
+        let destination = if explicit {
+            chosen.as_path()
+        } else {
+            Path::new("")
+        };
+        let mut manual = app(destination, false)?;
+        capture(&mut manual)?;
+        let status = &manual.world().non_send::<HostOwner>().status;
+        let path = Path::new(
+            status
+                .strip_prefix("Screenshot saved: ")
+                .ok_or(status.as_str())?,
+        );
+        let folder = path.parent().ok_or("capture directory")?;
+        if explicit {
+            assert_eq!(folder, chosen);
+        } else if let Some(config) = crate::play::PreferenceStore::path() {
+            assert_eq!(folder, config.with_file_name("screenshots"));
+        } else if let Some(local) = std::env::var_os("LOCALAPPDATA") {
+            assert_eq!(folder, Path::new(&local).join("Oteryn/screenshots"));
+        } else {
+            assert_eq!(folder.parent(), Some(root.as_path()));
+        }
+        capture_death(destination, true)?;
+        let files = std::fs::read_dir(folder)?.collect::<Result<Vec<_>, _>>()?;
+        assert_eq!(
+            files.len(),
+            3,
+            "expected F12, death and backlog in {folder:?}"
+        );
+        assert_eq!(folder.metadata()?.permissions().mode() & 0o777, 0o700);
+        for file in files {
+            assert_eq!(file.metadata()?.permissions().mode() & 0o777, 0o600);
+            assert_eq!(&std::fs::read(file.path())?[..2], b"BM");
+        }
+        return Ok(());
+    }
+
+    let root = root.join(format!("oteryn-capture-matrix-{}", std::process::id()));
+    std::fs::create_dir(&root)?;
+    let mut failures = Vec::new();
+    for mask in 0..8 {
+        for explicit in [false, true] {
+            let case = root.join(format!("{mask}-{explicit}"));
+            std::fs::create_dir(&case)?;
+            let mut child = Command::new("sh");
+            child
+                .args(["-c", r#"umask 022; exec "$@""#, "sh"])
+                .arg(std::env::current_exe()?)
+                .args(["--exact", TEST])
+                .env(CHILD, if explicit { "explicit" } else { "default" })
+                .env("TMPDIR", &case);
+            for (bit, name) in ["HOME", "XDG_CONFIG_HOME", "LOCALAPPDATA"]
+                .into_iter()
+                .enumerate()
+            {
+                if mask & (1 << bit) == 0 {
+                    child.env_remove(name);
+                } else {
+                    child.env(name, case.join(name));
+                }
+            }
+            if !child.status()?.success() {
+                failures.push((mask, explicit));
+            }
+        }
+    }
+    std::fs::remove_dir_all(root)?;
+    assert!(
+        failures.is_empty(),
+        "failed destination cases: {failures:?}"
+    );
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn audit_f12_replaces_png_with_private_capture() -> TestResult {
+    use std::os::unix::fs::PermissionsExt;
+    let root = std::env::temp_dir().join(format!("oteryn-audit-capture-{}", std::process::id()));
+    std::fs::create_dir(&root)?;
+    let output = root.join("new").join("audit.json");
+    let mut app = app(&root, false)?;
+    app.insert_resource(super::super::audit::AuditOutput::new(Some(output.clone())));
+    capture(&mut app)?;
+    capture(&mut app)?;
+    let path = output.with_extension("png");
+    assert_eq!(&std::fs::read(&path)?[..8], b"\x89PNG\r\n\x1a\n");
+    assert_eq!(path.metadata()?.permissions().mode() & 0o777, 0o600);
+    let folder = path.parent().ok_or("capture directory")?;
+    assert_eq!(folder.metadata()?.permissions().mode() & 0o777, 0o700);
+    assert_eq!(std::fs::read_dir(folder)?.count(), 1);
+    std::fs::remove_dir_all(root)?;
     Ok(())
 }

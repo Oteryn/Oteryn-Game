@@ -102,6 +102,9 @@ pub(super) fn reshape(
         (size + side * distance).min(room),
     );
     let preferred = layout.size.unwrap_or(Vec2::new(layout.width(), size.y));
+    if layout.size.is_none() {
+        layout.first_resize_origin = Some(preferred);
+    }
     layout.resize(requested, viewport);
     let next = layout.size.unwrap_or(size);
     layout.size = Some(Vec2::select(side.cmpeq(Vec2::ZERO), preferred, next));

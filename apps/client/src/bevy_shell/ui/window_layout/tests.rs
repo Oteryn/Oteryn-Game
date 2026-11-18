@@ -1828,6 +1828,9 @@ fn concurrent_market_resizes_and_moves_merge_each_axis() -> TestResult {
 fn window_close_waits_for_pending_move_to_be_saved() -> TestResult {
     let (mut app, path, saved) = saved_market("close-busy")?;
     install_close(&mut app);
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+        std::time::Duration::ZERO,
+    ));
     let screen = app
         .world_mut()
         .spawn((Window::default(), PrimaryWindow))
@@ -1848,6 +1851,7 @@ fn window_close_waits_for_pending_move_to_be_saved() -> TestResult {
     app.update();
     assert_eq!(app.should_exit(), None);
     assert_eq!(WindowLayouts::load(&path)?, saved);
+    lock.unlock()?;
     drop(lock);
     app.update();
     assert_eq!(app.should_exit(), Some(AppExit::Success));
@@ -1856,5 +1860,81 @@ fn window_close_waits_for_pending_move_to_be_saved() -> TestResult {
         Vec2::new(12., 34.)
     );
     std::fs::remove_dir_all(path.parent().ok_or("directory")?)?;
+    Ok(())
+}
+
+#[test]
+fn window_close_exits_even_if_layout_lock_stays_held() -> TestResult {
+    let (mut app, path, saved) = saved_market("close-timeout")?;
+    install_close(&mut app);
+    let screen = app
+        .world_mut()
+        .spawn((Window::default(), PrimaryWindow))
+        .id();
+    let panel = app.world_mut().spawn(window("market", default())).id();
+    app.update();
+    app.world_mut()
+        .get_mut::<UiTransform>(panel)
+        .ok_or("panel")?
+        .translation = Val2::px(12., 34.);
+    let lock = std::fs::File::options()
+        .read(true)
+        .write(true)
+        .open(path.with_extension("json.lock"))?;
+    lock.lock()?;
+    app.world_mut()
+        .write_message(bevy::window::WindowCloseRequested { window: screen });
+    app.update();
+    assert_eq!(app.should_exit(), None);
+    app.world_mut()
+        .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+            std::time::Duration::from_secs(5),
+        ));
+    app.update();
+    assert_eq!(app.should_exit(), Some(AppExit::Success));
+    assert_eq!(WindowLayouts::load(&path)?, saved);
+    drop(lock);
+    std::fs::remove_dir_all(path.parent().ok_or("directory")?)?;
+    Ok(())
+}
+
+#[test]
+fn concurrent_first_bosstiary_resizes_merge_each_axis() -> TestResult {
+    for horizontal_first in [true, false] {
+        let (mut first, path, _) = saved_market("first-resize")?;
+        let (mut second, _, _) = saved_market("first-resize")?;
+        WindowLayouts::default().save(&path)?;
+        for (app, horizontal) in [
+            (&mut first, horizontal_first),
+            (&mut second, !horizontal_first),
+        ] {
+            stacking::ui_layout(app, UVec2::new(1600, 900));
+            app.world_mut().spawn((
+                Window {
+                    resolution: (1600, 900).into(),
+                    ..default()
+                },
+                PrimaryWindow,
+            ));
+            let panel = app.world_mut().spawn(window("bosstiary", default())).id();
+            app.update();
+            assert_eq!(
+                app.world().resource::<WindowLayouts>().0["bosstiary"].size,
+                None
+            );
+            let side = if horizontal { IVec2::X } else { IVec2::Y };
+            drag_grip(app, panel, side, side.as_vec2() * 100.)?;
+        }
+        for app in [&mut first, &mut second] {
+            app.world_mut().write_message(AppExit::Success);
+            app.update();
+        }
+        assert_eq!(
+            WindowLayouts::load(&path)?.0["bosstiary"].size,
+            Some(Vec2::new(750., 400.)),
+            "horizontal first: {horizontal_first}"
+        );
+        std::fs::remove_dir_all(path.parent().ok_or("directory")?)?;
+    }
     Ok(())
 }
