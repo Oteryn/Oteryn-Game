@@ -2,6 +2,42 @@
 use super::{ActorKind, Callback, Trigger};
 
 impl Callback {
+    /// Paid STEP admission uses stored values as guards and records item custody
+    /// without creating or advancing any Quest state.
+    pub fn guarded_ground_step(&self) -> bool {
+        self.trigger == Trigger::StepIn
+            && self.actor_kind == ActorKind::Player
+            && self.requires_world_admission
+            && self.return_on_failure
+            && self.teleport.is_some()
+            && self.remote_teleport.is_none()
+            && self.offerings.len() >= 2
+            && !self.storage.is_empty()
+            && self
+                .storage
+                .iter()
+                .all(|guard| guard.preserve && !guard.read_only)
+            && self.operation_count() == 0
+            && self.passages.is_empty()
+            && self.world_requirements.is_empty()
+            && self.item_on_target.is_none()
+            && self.item_reward().is_none()
+            && self.native_rule.is_none()
+            && self.world_change.is_none()
+            && self.experience.is_none()
+            && self.monk_reward.is_none()
+            && self.admission.is_none()
+            && !self.completes
+            && !self.reversible
+            && !self.opening_only
+            && *self.effects
+                == (super::CallbackEffects {
+                    teleport_effect: self.effects.teleport_effect,
+                    scripted_teleport: self.effects.scripted_teleport,
+                    ..Default::default()
+                })
+    }
+
     pub fn has_ground_stack_requirements(&self) -> bool {
         self.world_requirements
             .iter()

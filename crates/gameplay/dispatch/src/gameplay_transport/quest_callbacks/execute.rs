@@ -1255,7 +1255,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         && let QuestCause::Use(command) = cause {
                         self.project_mead_blackout(runtime,states,actor,command,&committed.changes,map);
                     }
-                    self.apply_committed_quest_copy(session, fresh, committed);
+                    if !callback.guarded_ground_step() {
+                        self.apply_committed_quest_copy(session, fresh, committed);
+                    }
                     if callback.effects.encounter.is_some()
                         && !self.refresh_grizzly_kill_snapshot_in_turn(runtime, session)
                     {

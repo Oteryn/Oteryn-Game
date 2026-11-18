@@ -2046,7 +2046,8 @@ impl DurabilityRoot {
                         let keys: Vec<_> = world.achievements.iter().map(String::as_str).collect();
                         super::super::account_achievement::grant_missing(&mut tx, fence.character_id, &keys, "oteryn:quest-world-reward", &occurrence).await?;
                     }
-                    let completes = catalogue.completes_after_claim_sets(transition, &stored, &changes);
+                    let guard_only = callback.as_ref().is_some_and(|callback| callback.guarded_ground_step());
+                    let completes = !guard_only && catalogue.completes_after_claim_sets(transition, &stored, &changes);
                     if completes {
                         use oteryn_gameplay_quests::quest::shared_world_progress as shared;
                         use oteryn_gameplay_world_change::counter::CounterKind as K;
@@ -2134,7 +2135,7 @@ impl DurabilityRoot {
                            level_before, level_after, experience_before, experience_after, \
                            profile_revision, ruleset_revision, content_revision, \
                            simulation_revision, evidence_revision, declaration_revision, \
-                           policy_revision, reward_revision, committed_at) \
+                           policy_revision, reward_revision, committed_at, guard_only) \
                          SELECT s.character_id, $2, encode($3,'hex')::uuid, \
                            $4::text::numeric(20,0), $5, $6, $7, $8, $9, $10, $11::text[], \
                            $12::bigint[], $13::bigint[], $14::text::numeric(20,0), \
@@ -2142,7 +2143,7 @@ impl DurabilityRoot {
                            s.total_experience, s.profile_revision, s.ruleset_revision, \
                            s.content_revision, s.simulation_revision, s.evidence_revision, \
                            s.declaration_revision, s.policy_revision, s.reward_revision, \
-                           floor(extract(epoch FROM statement_timestamp())*1000)::bigint \
+                           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $16 \
                            FROM game_character_progression_state s \
                           WHERE s.character_id = encode($1,'hex')::uuid",
                     )
@@ -2161,6 +2162,7 @@ impl DurabilityRoot {
                     .bind(&after)
                     .bind(&original)
                     .bind(&committed)
+                    .bind(guard_only)
                     .execute(&mut *tx)
                     .await?;
                     if receipt.rows_affected() != 1 {
@@ -2183,64 +2185,66 @@ impl DurabilityRoot {
                     if let Some(input)=&flame {
                         super::rotten_flame::record(&mut tx,fence,input,&binding).await?;
                     }
-                    for change in &changes {
-                        let written = sqlx::query(
-                            "INSERT INTO game_character_quest_tracks(character_id, track_key, \
-                               quest_key, value, committed_character_revision) \
-                             VALUES (encode($1,'hex')::uuid, $2, $3, $4, \
-                               $5::text::numeric(20,0)) \
-                             ON CONFLICT (character_id, track_key) DO UPDATE \
-                               SET value = EXCLUDED.value, \
-                                   committed_character_revision = \
-                                     EXCLUDED.committed_character_revision",
-                        )
-                        .bind(id)
-                        .bind(&change.track)
-                        .bind(quest)
-                        .bind(change.after)
-                        .bind(&committed)
-                        .execute(&mut *tx)
-                        .await?;
+                    if !guard_only {
+                        for change in &changes {
+                            let written = sqlx::query(
+                                "INSERT INTO game_character_quest_tracks(character_id, track_key, \
+                                   quest_key, value, committed_character_revision) \
+                                 VALUES (encode($1,'hex')::uuid, $2, $3, $4, \
+                                   $5::text::numeric(20,0)) \
+                                 ON CONFLICT (character_id, track_key) DO UPDATE \
+                                   SET value = EXCLUDED.value, \
+                                       committed_character_revision = \
+                                         EXCLUDED.committed_character_revision",
+                            )
+                            .bind(id)
+                            .bind(&change.track)
+                            .bind(quest)
+                            .bind(change.after)
+                            .bind(&committed)
+                            .execute(&mut *tx)
+                            .await?;
+                            if written.rows_affected() != 1 {
+                                return Err(DurabilityError::InvalidStoredState);
+                            }
+                        }
+                        let completed = completes.then_some(committed.as_str());
+                        let written = if stored_state.is_some() {
+                            sqlx::query(
+                                "UPDATE game_character_quest_states \
+                                    SET committed_character_revision = $3::text::numeric(20,0), \
+                                        completed_character_revision = coalesce(\
+                                          completed_character_revision, $4::text::numeric(20,0)) \
+                                  WHERE character_id = encode($1,'hex')::uuid AND quest_key = $2",
+                            )
+                            .bind(id)
+                            .bind(quest)
+                            .bind(&committed)
+                            .bind(completed)
+                            .execute(&mut *tx)
+                            .await?
+                        } else {
+                            sqlx::query(
+                                "INSERT INTO game_character_quest_states(character_id, quest_key, \
+                                   pinned_content_revision, definition_hash, \
+                                   started_character_revision, completed_character_revision, \
+                                   committed_character_revision) \
+                                 VALUES (encode($1,'hex')::uuid, $2, $3, $4, \
+                                   $5::text::numeric(20,0), $6::text::numeric(20,0), \
+                                   $5::text::numeric(20,0))",
+                            )
+                            .bind(id)
+                            .bind(quest)
+                            .bind(&pin)
+                            .bind(hash.as_slice())
+                            .bind(&committed)
+                            .bind(completed)
+                            .execute(&mut *tx)
+                            .await?
+                        };
                         if written.rows_affected() != 1 {
                             return Err(DurabilityError::InvalidStoredState);
                         }
-                    }
-                    let completed = completes.then_some(committed.as_str());
-                    let written = if stored_state.is_some() {
-                        sqlx::query(
-                            "UPDATE game_character_quest_states \
-                                SET committed_character_revision = $3::text::numeric(20,0), \
-                                    completed_character_revision = coalesce(\
-                                      completed_character_revision, $4::text::numeric(20,0)) \
-                              WHERE character_id = encode($1,'hex')::uuid AND quest_key = $2",
-                        )
-                        .bind(id)
-                        .bind(quest)
-                        .bind(&committed)
-                        .bind(completed)
-                        .execute(&mut *tx)
-                        .await?
-                    } else {
-                        sqlx::query(
-                            "INSERT INTO game_character_quest_states(character_id, quest_key, \
-                               pinned_content_revision, definition_hash, \
-                               started_character_revision, completed_character_revision, \
-                               committed_character_revision) \
-                             VALUES (encode($1,'hex')::uuid, $2, $3, $4, \
-                               $5::text::numeric(20,0), $6::text::numeric(20,0), \
-                               $5::text::numeric(20,0))",
-                        )
-                        .bind(id)
-                        .bind(quest)
-                        .bind(&pin)
-                        .bind(hash.as_slice())
-                        .bind(&committed)
-                        .bind(completed)
-                        .execute(&mut *tx)
-                        .await?
-                    };
-                    if written.rows_affected() != 1 {
-                        return Err(DurabilityError::InvalidStoredState);
                     }
                     if completes && !super::counter_alias::apply(&mut tx, fence, &request, transition, &catalogue, &committed).await? {
                         tx.rollback().await?;
