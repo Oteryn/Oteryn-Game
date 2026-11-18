@@ -43,7 +43,6 @@ pub(super) struct ReplyStep {
     supersedes_topic: bool,
 }
 pub(super) enum Step {
-    QueenCombatRefusal(Vec<String>),
     Reply(Box<ReplyStep>),
     Refused,
     Held,
@@ -409,18 +408,6 @@ pub(super) fn prepare(
         Err(_) => return Some(Step::Refused),
     };
     if queen_kiss {
-        let states = admission.states.spell_states.try_lock().ok()?;
-        if super::super::pvp_live::pz_blocked(
-            &states,
-            actor,
-            command.game_session_id,
-            admission.owner_now(),
-        ) {
-            state.classic = None;
-            let lines =
-                oteryn_gameplay_quests::quest::classic_dialogue::reply(&context.2, "line-147")?;
-            return Some(Step::QueenCombatRefusal(lines.to_vec()));
-        }
         state.classic = None;
     }
     let next = Conversation {
@@ -682,9 +669,6 @@ pub(super) async fn apply(
                 );
             }
             return response;
-        }
-        Step::QueenCombatRefusal(lines) => {
-            return response(admission, command.game_session_id, &intent, lines);
         }
         Step::Refused => return rejected(),
         Step::Held => return unknown(),

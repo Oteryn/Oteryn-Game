@@ -952,6 +952,13 @@ pub(super) async fn npc_bank_talk(
         drop(_trade_permit);
         return hero_of_bounac::apply(admission, actor, command, intent, step).await;
     }
+    if let Some(step) =
+        classic_quests::refuse_queen_kiss_in_combat(admission, actor, command, &intent, &runtime)
+    {
+        drop(runtime);
+        drop(_trade_permit);
+        return classic_quests::apply(admission, actor, command, intent, step).await;
+    }
     if let Some(step) = catalogue::prepare(
         admission,
         actor,

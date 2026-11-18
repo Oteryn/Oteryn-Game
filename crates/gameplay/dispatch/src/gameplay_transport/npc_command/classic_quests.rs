@@ -58,6 +58,38 @@ pub(super) fn queen_kiss_confirmation(
             && classic_talk::queen_kiss_confirmation(&intent.text, conversation.topic))
 }
 
+pub(super) fn refuse_queen_kiss_in_combat(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+    runtime: &ChannelRuntimeV1,
+) -> Option<Step> {
+    let session = command.game_session_id;
+    let context = admission.states.npc_conversations.current_npc(
+        &admission.states.chat,
+        runtime,
+        actor,
+        session,
+        intent,
+    )?;
+    if context.2 != classic_talk::QUEEN {
+        return None;
+    }
+    let states = admission.states.spell_states.try_lock().ok()?;
+    if !super::super::pvp_live::pz_blocked(&states, actor, session, admission.owner_now()) {
+        return None;
+    }
+    let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
+    let state = sessions.get_mut(&session)?;
+    if !queen_kiss_confirmation(state.classic.as_ref(), &context, actor, intent) {
+        return None;
+    }
+    let reply = classic_dialogue::reply(&context.2, "line-147")?.to_vec();
+    state.classic = None;
+    Some(Step::Reply(reply))
+}
+
 pub(super) fn prepare(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
