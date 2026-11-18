@@ -267,12 +267,20 @@ pub async fn apply_batch_in_transaction(
         .map_err(DurabilityError::from)?
         .try_into()
         .map_err(|_| DurabilityError::InvalidStoredState)?;
-    if catalogue.definition_hash(rule.quest()) != Some(hash)
-        && !state
-            .try_get::<bool, _>("completed")
-            .map_err(DurabilityError::from)?
-    {
-        return Err(CharacterProgressionError::ProgressionContextMismatch);
+    let mut predecessor_defaults = None;
+    if catalogue.definition_hash(rule.quest()) != Some(hash) {
+        predecessor_defaults = oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
+            catalogue,
+            rule.quest(),
+            &hash,
+        );
+        if predecessor_defaults.is_none()
+            && !state
+                .try_get::<bool, _>("completed")
+                .map_err(DurabilityError::from)?
+        {
+            return Err(CharacterProgressionError::ProgressionContextMismatch);
+        }
     }
     let pin: String = state
         .try_get("pinned_content_revision")
@@ -308,6 +316,18 @@ pub async fn apply_batch_in_transaction(
             row.try_get("value").map_err(DurabilityError::from)?,
         );
     }
+    // A predecessor retains its original absent values. Keep the persisted
+    // rows separate so those logical defaults do not count against capacity.
+    let mut effective = std::borrow::Cow::Borrowed(&stored);
+    if let Some(defaults) = predecessor_defaults {
+        for key in &keys {
+            if !stored.contains_key(*key)
+                && let Some(value) = defaults.get(*key)
+            {
+                effective.to_mut().insert((*key).to_owned(), *value);
+            }
+        }
+    }
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM transaction_timestamp()))::bigint")
             .fetch_one(&mut **tx)
@@ -315,7 +335,7 @@ pub async fn apply_batch_in_transaction(
             .map_err(DurabilityError::from)?;
     let mut merged: BTreeMap<String, QuestTrackChange> = BTreeMap::new();
     for component in &transitions {
-        let evaluated = match catalogue.evaluate(component, &stored, now) {
+        let evaluated = match catalogue.evaluate(component, &effective, now) {
             Ok(changes) => changes,
             Err(QuestRefusal::StageMismatch | QuestRefusal::OutOfRange) => continue,
             Err(_) => return Err(CharacterProgressionError::InvalidInput),
@@ -338,7 +358,7 @@ pub async fn apply_batch_in_transaction(
         let definition = catalogue
             .track(phase)
             .ok_or(CharacterProgressionError::InvalidInput)?;
-        let value = stored.get(phase).copied().unwrap_or(definition.initial);
+        let value = effective.get(phase).copied().unwrap_or(definition.initial);
         if !(definition.min..=definition.max).contains(&value) {
             return Err(DurabilityError::InvalidStoredState.into());
         }
