@@ -130,6 +130,19 @@ fn bloodgong() -> TestResult {
             .map_err(|()| "fence")?
             .ok_or("fence")?;
         admitted.item_fence = Some(fence.item_fence());
+        sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
+            .bind(id(42).as_slice())
+            .bind(id(43).as_slice())
+            .execute(&h.pool)
+            .await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
+            .bind(id(42).as_slice())
+            .bind(id(43).as_slice())
+            .bind(generation.identity().server_artifact_digest().as_slice())
+            .bind(generation.identity().client_artifact_digest().as_slice())
+            .bind(activated.frame_binding().digest().as_slice())
+            .execute(&h.pool)
+            .await?;
         owner.admit_progression_session(&mut admitted).await;
         let catalogue = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
         let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
