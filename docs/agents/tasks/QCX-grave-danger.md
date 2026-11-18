@@ -55,6 +55,10 @@ The spoiler's opening summary groups six visits with holy water. Its Femor Hills
 
 - Quest authoring `--part checks` passed all 44 commands, including 269 schema cases. The quest dialogue authoring suite passed all 5 cases.
 - `cargo fmt --all -- --check` passed. Pin regeneration and pin-check both verified the existing world digest `0676b1568f55a55fbe994f344a8e0c60debf766751d12849f56c19f60c93aae5`.
+- PG via shard (pgsplit build files applied on `c44eb69f9165250f009c135a8e5e8fc1f4b87ff3`): `jack_starts_twelve_graves_and_answers_an_early_report` passed in 46.68 s with live PostgreSQL. The route-less Cargo run passed in 0.02 s. Dispatch Clippy passed with `-D warnings`.
+- The earlier 42.83 s live run failed in fixture setup because the admitted player had no position. The fixture now initializes the pinned position before placing Jack.
+- With the base quest runtime restored locally, the same live case failed in 38.46 s because `late` returned `Rejected`. The fixed dialogue fixture and the shard were held constant.
+- With the base dialogue restored locally and the fixed start enabled, the live case failed in 56.72 s because `report` returned the donor reply instead of the pinned global transcript.
 
 ## OPEN-FACTS
 
