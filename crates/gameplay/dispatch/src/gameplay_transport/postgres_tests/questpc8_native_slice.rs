@@ -17,6 +17,16 @@ pub(super) fn world(
     prototypes: &[u16],
     start: TilePos,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    world_with_items(native, patches, prototypes, start, |_, _| true)
+}
+
+pub(super) fn world_with_items(
+    native: &NativeGameplayState,
+    patches: &[(u16, u16, u16, u16, i8)],
+    prototypes: &[u16],
+    start: TilePos,
+    retain: impl Fn(TilePos, &str) -> bool,
+) -> TestResult<crate::map::boot::BundleWorld> {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
     let directory = root.join("content/world/placements");
     let index: serde_json::Value =
@@ -80,6 +90,15 @@ pub(super) fn world(
                             withheld += 1;
                             continue;
                         }
+                        let at = TilePos {
+                            x: tile.x,
+                            y: tile.y,
+                            floor,
+                        };
+                        tile.items.retain(|item| {
+                            keys.get(item.palette as usize)
+                                .is_none_or(|key| retain(at, key))
+                        });
                         for item in &mut tile.items {
                             item.palette = add(keys
                                 .get(usize::try_from(item.palette)?)

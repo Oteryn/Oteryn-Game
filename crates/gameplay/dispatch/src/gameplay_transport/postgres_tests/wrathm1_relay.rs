@@ -17,9 +17,20 @@ pub(super) const SOURCE: Position = Position {
     y: 31067,
     floor: -9,
 };
-const DETECTION: Position = Position { x: 33370, y: 31075, floor: -8 };
-const APPROACH: Position = Position { y: 31074, ..DETECTION };
-const PRISON: Position = Position { x: 33361, y: 31206, floor: -8 };
+const DETECTION: Position = Position {
+    x: 33370,
+    y: 31075,
+    floor: -8,
+};
+const APPROACH: Position = Position {
+    y: 31074,
+    ..DETECTION
+};
+const PRISON: Position = Position {
+    x: 33361,
+    y: 31206,
+    floor: -8,
+};
 const LAMP_X: [u16; 3] = [33369, 33372, 33375];
 const LAMP_Y: u16 = 31075;
 const LAMP_FLOOR: i8 = -8;
@@ -64,7 +75,15 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
         (WALL_X, WALL_Y, WALL_X, WALL_Y + 3, SOURCE.floor),
     ];
     for start in neighbours(SOURCE) {
-        match super::questpc8_native_slice::world(native, &patches, &[9126, 10479], tile(start)) {
+        // Keep the donor detection ground and route visible. The retained wall
+        // fixture on that cell prevents entering it through the wire Step command.
+        match super::questpc8_native_slice::world_with_items(
+            native,
+            &patches,
+            &[9126, 10479],
+            tile(start),
+            |at, key| at != tile(DETECTION) || key != "oteryn:item.tibia.i7144",
+        ) {
             Err(error) if error.to_string() == "StartNotEnterable" => continue,
             result => return result,
         }
@@ -181,7 +200,11 @@ pub(super) async fn exercise(
     guard.key = "oteryn:quest-callback/test/wrathm1-relay-guard".into();
     guard.sources = vec!["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/movements_crate.lua:268-273".into()];
     guard.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn;
-    guard.selector.native = Some(NativeSelector { position: DETECTION, ordinal: 0, appearance: 10480 });
+    guard.selector.native = Some(NativeSelector {
+        position: DETECTION,
+        ordinal: 0,
+        appearance: 10480,
+    });
     guard.lever = None;
     guard.reversible = false;
     guard.effects = Default::default();
@@ -303,20 +326,30 @@ async fn cross_guard(
     expected: Position,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{
-        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition,
-        decode_step_result, encode_step_intent,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
+        encode_step_intent,
     };
     super::questpc8_mystery_geometry::arrive(owner, admitted, tile(APPROACH)).await?;
     owner.clock_origin -= std::time::Duration::from_secs(2);
     let reply = super::quest_world_callbacks::wire(
-        owner, admitted, admitted.continuity.next_command_id, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-        encode_step_intent(StepDirection::South)
-    ).await?;
-    assert_eq!(decode_step_result(&reply).map_err(debug)?, StepDisposition::Moved);
+        owner,
+        admitted,
+        admitted.continuity.next_command_id,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        encode_step_intent(StepDirection::South),
+    )
+    .await?;
+    assert_eq!(
+        decode_step_result(&reply).map_err(debug)?,
+        StepDisposition::Moved
+    );
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let runtime = owner.runtime.lock().await;
     assert_eq!(
-        runtime.read_actor_position(actor).map_err(debug)?.position(),
+        runtime
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
         super::quest_world_callbacks::local(expected),
         "relay guard landing while the switch is active or expired"
     );

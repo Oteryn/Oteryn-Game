@@ -20,11 +20,10 @@ async fn install(
     owner.states.chat.install_npc_talk(std::sync::Arc::new(
         NpcTalkBook::from_model_with_native_quests(&model, &[NPC]),
     ));
-    owner.states.chat.admit(
-        admitted.game_session_id,
-        "Prisoner",
-        owner.owner_now(),
-    );
+    owner
+        .states
+        .chat
+        .admit(admitted.game_session_id, "Prisoner", owner.owner_now());
     owner.states.chat.set_npc_service(admitted.game_session_id);
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
@@ -74,12 +73,15 @@ async fn install(
         .ok_or_else(|| "source Zumtah placement".into())
 }
 
-
-use oteryn_gameplay_quests::quest::{world_callbacks::Position, wrath_zumtah as quest};
 use crate::map::overlay::TilePos;
+use oteryn_gameplay_quests::quest::{world_callbacks::Position, wrath_zumtah as quest};
 
 pub(super) const NAME: &str = "qengine-rewards-wrathm1-zumtah";
-pub(super) const START: Position = Position { x: 33366, y: 31205, floor: -8 };
+pub(super) const START: Position = Position {
+    x: 33366,
+    y: 31205,
+    floor: -8,
+};
 
 #[test]
 fn wrathm1_zumtah_dialogue_arms_release_and_projects_beetle() -> TestResult {
@@ -92,8 +94,19 @@ fn wrathm1_zumtah_dialogue_arms_release_and_projects_beetle() -> TestResult {
     })
 }
 
-pub(super) fn world(native: &crate::content::native_gameplay::NativeGameplayState) -> TestResult<crate::map::boot::BundleWorld> {
-    super::questpc8_native_slice::world(native, &[(33365, 31204, 33368, 31206, -8)], &[], TilePos { x: START.x, y: START.y, floor: START.floor })
+pub(super) fn world(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    super::questpc8_native_slice::world(
+        native,
+        &[(33365, 31204, 33368, 31206, -8)],
+        &[],
+        TilePos {
+            x: START.x,
+            y: START.y,
+            floor: START.floor,
+        },
+    )
 }
 
 pub(super) async fn exercise(
@@ -102,25 +115,40 @@ pub(super) async fn exercise(
     h: &Harness,
 ) -> TestResult {
     let npc = install(owner, admitted).await?;
-    let path = ["hi", "exit", "no", "yes", "exit", "no", "yes", "exit", "no", "yes", "278", "exit", "exit", "exit", "exit", "exit"];
+    let path = [
+        "hi", "exit", "no", "yes", "exit", "no", "yes", "exit", "no", "yes", "278", "exit", "exit",
+        "exit", "exit", "exit",
+    ];
     for (index, text) in path.into_iter().enumerate() {
         super::classic_quests::talk(owner, admitted, npc, 7200 + index as u64, text).await?;
     }
     for key in [quest::STATUS, quest::RELEASE] {
-        let value: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
-            .bind(key).fetch_one(&h.pool).await?;
+        let value: i64 =
+            sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+                .bind(key)
+                .fetch_one(&h.pool)
+                .await?;
         assert_eq!(value, 1);
     }
     let actor = admitted.runtime_actor.ok_or("actor")?;
     {
         let runtime = owner.runtime.lock().await;
         let states = owner.states.spell_states.lock().await;
-        let player = states.get(&runtime, actor, admitted.game_session_id).ok_or("spell state")?;
-        assert_eq!(player.owned_conditions().outfit_at(owner.owner_now().get()), Some(348));
+        let player = states
+            .get(&runtime, actor, admitted.game_session_id)
+            .ok_or("spell state")?;
+        assert_eq!(
+            player.owned_conditions().outfit_at(owner.owner_now().get()),
+            Some(348)
+        );
     }
     super::classic_quests::talk(owner, admitted, npc, 7300, "exit").await?;
-    let repeats: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1")
-        .bind(quest::RETURN).fetch_one(&h.pool).await?;
+    let repeats: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+    )
+    .bind(quest::RETURN)
+    .fetch_one(&h.pool)
+    .await?;
     assert_eq!(repeats, 1);
     Ok(())
 }
