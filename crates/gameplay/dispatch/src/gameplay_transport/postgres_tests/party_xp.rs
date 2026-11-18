@@ -579,10 +579,6 @@ async fn scenario(
                 .is_some()
         );
         assert!(states.load_owned_build(&runtime, actor, session, &build));
-        if matches!(case, Case::CakeWorldBonus) && index == 0 {
-            states.get_mut(&runtime, actor, session).ok_or("cake player")?
-                .apply_owner_promotion_transition(false, true, Some(u64::MAX)).map_err(debug)?;
-        }
     }
     for (actor, session) in &players {
         assert!(owner.refresh_source_party_presence(*actor, *session).await);
@@ -767,6 +763,14 @@ async fn scenario(
         for (actor, session) in players.iter().copied() {
             let _ = owner.tick_spell_periodic(actor, session).await;
         }
+        let (actor, session) = players[0];
+        let runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        states
+            .get_mut(&runtime, actor, session)
+            .ok_or("cake player")?
+            .apply_owner_premium_transition(false, true, Some(u64::MAX))
+            .map_err(debug)?;
     }
     if t94_case {
         t94::prepare(h, &recovery, world, first_id, second_id).await?;
@@ -1629,12 +1633,22 @@ async fn scenario(
         let runtime = owner.runtime.lock().await;
         let states = owner.states.spell_states.lock().await;
         for (actor, session) in players.iter().copied() {
-            let state = states.get(&runtime, actor, session).ok_or("cake player state")?;
-            let effect = state.owned_conditions().get(ConflictKey::Recovery)
+            let state = states
+                .get(&runtime, actor, session)
+                .ok_or("cake player state")?;
+            let effect = state
+                .owned_conditions()
+                .get(ConflictKey::Recovery)
                 .ok_or("world regeneration applies to both premium and free players")?;
-            assert!(matches!(effect.definition().values(), ConditionValues::SpellRegeneration {
-                sub_id: 0, health_gain: 1, mana_gain: 1, ..
-            }));
+            assert!(matches!(
+                effect.definition().values(),
+                ConditionValues::SpellRegeneration {
+                    sub_id: 0,
+                    health_gain: 1,
+                    mana_gain: 1,
+                    ..
+                }
+            ));
         }
     }
     let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_party_kill_xp_receipts")
