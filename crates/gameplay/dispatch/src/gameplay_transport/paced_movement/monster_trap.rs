@@ -41,6 +41,22 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
         if !runtime.contains_live_creature(step.actor) {
             continue;
         }
+        if map.overlay.runtime_scope() == runtime.binding().runtime_scope()
+            && states
+                .encounter_phases
+                .first_dragon_plant_at(runtime, step.to)
+            && runtime
+                .replace_quest_creature_at(
+                    step.actor,
+                    "oteryn:creature.unbeatable_dragon",
+                    "oteryn:creature.somewhat_beatable",
+                    step.to,
+                    || true,
+                )
+                .is_ok()
+        {
+            continue;
+        }
         let Some(destination) = tile_entries(map, step.to) else {
             continue;
         };

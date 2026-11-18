@@ -1965,6 +1965,15 @@ pub fn record_creature_kill(
         states
             .encounter_phases
             .note_projected_death(runtime, target);
+        if wild
+            && creature
+                .as_ref()
+                .is_ok_and(|key| key == "oteryn:creature.angry_plant")
+        {
+            states
+                .encounter_phases
+                .mark_first_dragon_plant(runtime, target);
+        }
     }
     let Ok(creature) = creature else {
         refuse("no_loot_binding", "unknown");

@@ -22,9 +22,41 @@ pub(super) struct ActivePhase {
 #[derive(Default, Debug)]
 pub(super) struct Registry {
     pub(super) active: Mutex<Vec<ActivePhase>>,
+    first_dragon_plants: Mutex<Vec<ExactActorRef>>,
 }
 
 impl Registry {
+    // Crystal creaturescripts_death_angry_plant.lua:3–7 marks the exact corpse
+    // created by this death. The runtime binding follows the real corpse lifetime.
+    pub(super) fn mark_first_dragon_plant(&self, runtime: &ChannelRuntimeV1, actor: ExactActorRef) {
+        if !runtime.retains_corpse_projection(actor) {
+            return;
+        }
+        if let Ok(mut plants) = self.first_dragon_plants.lock() {
+            plants.retain(|plant| runtime.retains_corpse_projection(*plant));
+            if !plants.contains(&actor) && plants.try_reserve(1).is_ok() {
+                plants.push(actor);
+            }
+        }
+    }
+
+    pub(super) fn first_dragon_plant_at(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        at: MovementLocalPosition,
+    ) -> bool {
+        self.first_dragon_plants.lock().is_ok_and(|plants| {
+            plants.iter().any(|actor| {
+                runtime
+                    .bound_corpse(actor.corpse_identity())
+                    .is_some_and(|corpse| {
+                        corpse.position == at
+                            && corpse.item.production_key == "oteryn:item.tibia.i2983"
+                    })
+            })
+        })
+    }
+
     pub(super) fn reserve<'a>(
         &'a self,
         runtime: &mut ChannelRuntimeV1,
