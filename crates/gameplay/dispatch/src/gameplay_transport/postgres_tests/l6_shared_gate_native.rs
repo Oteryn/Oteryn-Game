@@ -179,6 +179,10 @@ fn l6_native_gate_50138_rejects_global_count_with_personal_four() -> TestResult 
 fn l6_native_gate_50138_accepts_personal_five_without_global_count() -> TestResult {
     run("l6-tomb-gate-native-open-50138")
 }
+#[test]
+fn l6_native_gate_50138_rejects_global_count_without_personal_record() -> TestResult {
+    run("l6-tomb-gate-native-missing-personal-50138")
+}
 fn run(name: &'static str) -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -457,7 +461,7 @@ pub(super) async fn exercise(
         (12123, false) | (_, true) => case.required,
         (_, false) => case.required - 1,
     };
-    if case.action == 12123 {
+    if case.action == 12123 && !name.contains("-missing-personal-") {
         let personal_count = if open { 5_i64 } else { 4 };
         let character = owner
             .current_quest_fence(admitted.game_session_id)
