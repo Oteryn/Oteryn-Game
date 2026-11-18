@@ -350,8 +350,14 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
+    let galthen_live = name.starts_with("galthen-");
     let exhausted_exit = name == super::super::qready1_world_clocks::EXHAUSTED_EXIT_CASE;
-    let mut callback = if exhausted_exit {
+    let mut callback = if galthen_live {
+        callback(
+            name.strip_suffix(super::super::galthen_live_world::LOW_LEVEL)
+                .unwrap_or(name),
+        )?
+    } else if exhausted_exit {
         callback("qready1-threatened-raven-herb")?
     } else if m03_use {
         super::super::qengine_m03_use::callback()?
@@ -1385,7 +1391,8 @@ fn scenario_case(
             "questpc7-eligibility-high" => Some(1000),
             "qengine-rewards-feaster-prefix" | "qengine-rewards-feaster-thaian" => Some(250),
             "questpc7-ferumbras" | "qengine-rewards-heart-story" => Some(150),
-            "questpc7-grave" => Some(250),
+            "galthen-forest-1" | "galthen-forest-2" | "questpc7-grave" => Some(250),
+            "galthen-iksupan-entrance" => Some(150),
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
             _ => None,
@@ -1944,6 +1951,16 @@ fn scenario_case(
                 &mut admitted,
                 &h,
                 &callback,
+            ))
+            .await?;
+        } else if galthen_live {
+            Box::pin(super::super::galthen_live_world::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                &callback,
+                deps.actor,
+                name,
             ))
             .await?;
         } else if exhausted_exit {

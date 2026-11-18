@@ -1,0 +1,168 @@
+//! Crystal 201189f8 world bindings through dispatched STEP and USE.
+use super::fixture::{Harness, debug};
+use super::quest_world_callbacks::{local, scenario, wire};
+use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use crate::foundation::ExactActorRef;
+use crate::map::view::MapFacts;
+use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position, Trigger};
+use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+use oteryn_protocol_oteryn::world_spatial::{
+    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, decode_step_result, encode_step_intent,
+};
+
+pub(super) const SATCHEL: &str = "galthen-satchel";
+pub(super) const LOW_LEVEL: &str = "-low-level";
+
+const fn at(x: u16, y: u16, floor: i8) -> Position {
+    Position { x, y, floor }
+}
+
+// Literal coordinates from the five travel registrations in the pinned donor.
+const ROUTES: [(&str, Position, Position); 5] = [
+    (
+        "galthen-forest-1",
+        at(32424, 32500, -10),
+        at(32405, 32497, -10),
+    ),
+    (
+        "galthen-forest-2",
+        at(32405, 32498, -10),
+        at(32424, 32498, -10),
+    ),
+    (
+        "galthen-iksupan-entrance",
+        at(32728, 32878, -7),
+        at(34015, 31890, -8),
+    ),
+    (
+        "galthen-sphere-1",
+        at(34038, 31726, -10),
+        at(34000, 31733, -9),
+    ),
+    (
+        "galthen-sphere-2",
+        at(34000, 31732, -9),
+        at(34038, 31727, -10),
+    ),
+];
+
+#[test]
+fn galthen_live_travel_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    for (name, source, _) in ROUTES {
+        super::kill_reward_e2e::scenario_thread::run(name, || scenario(name, source, false))?;
+    }
+    for (name, source) in [
+        ("galthen-forest-1-low-level", ROUTES[0].1),
+        ("galthen-iksupan-entrance-low-level", ROUTES[2].1),
+    ] {
+        super::kill_reward_e2e::scenario_thread::run(name, || scenario(name, source, false))?;
+    }
+    Ok(())
+}
+
+#[test]
+fn galthen_live_satchel_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(SATCHEL, || {
+        scenario(SATCHEL, at(32366, 32542, -8), false)
+    })
+}
+
+pub(super) async fn exercise(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    callback: &Callback,
+    actor: ExactActorRef,
+    name: &str,
+) -> TestResult {
+    let source = callback.selector.position.ok_or("source tile")?;
+    let refused = name.ends_with(LOW_LEVEL);
+    let start = at(source.x - 1, source.y, source.floor);
+    let expected = if refused {
+        start
+    } else if name == SATCHEL {
+        h.root.set_test_quest_clock(1_700_000_000)?;
+        at(32396, 32520, -7)
+    } else {
+        ROUTES
+            .iter()
+            .find(|(key, _, _)| *key == name)
+            .ok_or("Galthen route")?
+            .2
+    };
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)?
+            .position(),
+        local(start)
+    );
+    if callback.trigger == Trigger::StepIn {
+        let reply = wire(
+            owner,
+            admitted,
+            1,
+            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+            encode_step_intent(StepDirection::East),
+        )
+        .await?;
+        decode_step_result(&reply).map_err(debug)?;
+    } else {
+        let key = oteryn_world_bundle::bundle::placement_key(source.floor, source.x, source.y, 1)
+            .ok_or("source object")?;
+        let map = owner.bundle_map().ok_or("map")?;
+        let mut placement = map.overlay.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        let target = WorldObjectTarget {
+            placement,
+            expected_revision: map.facts.object_revision(key),
+        };
+        let outcomes =
+            super::quest_callbacks::wire_use_targets_retained(owner, admitted, &[(1, &target)])
+                .await?;
+        assert_eq!(
+            outcomes.first().map(|(_, result)| *result),
+            Some(if refused {
+                UseDisposition::Rejected
+            } else {
+                UseDisposition::Committed
+            })
+        );
+    }
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)?
+            .position(),
+        local(expected)
+    );
+    if name == SATCHEL {
+        let nested: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM (
+                SELECT item_instance_id, parent_item_instance_id FROM game_item_container_entries
+                UNION ALL
+                SELECT item_instance_id, parent_item_instance_id FROM game_item_nested_entries
+             ) edges
+             JOIN game_item_instances bag ON bag.item_instance_id=edges.parent_item_instance_id
+             JOIN game_item_instances item ON item.item_instance_id=edges.item_instance_id
+             WHERE bag.definition_production_key='oteryn:item.tibia.i36813'
+                AND item.definition_production_key='oteryn:item.tibia.i36810' AND item.quantity=1",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(nested, 1);
+    }
+    Ok(())
+}
