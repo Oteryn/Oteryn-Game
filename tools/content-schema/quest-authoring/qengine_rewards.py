@@ -18,7 +18,6 @@ import taming_cosmetics
 import wizard_cosmetics
 import engoutfit_m36
 import qmech_m39
-import galthen_idol
 from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -1086,9 +1085,7 @@ def build():
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     item_disguises = load_module('quest_item_disguises', 'tools/content-schema/quest-authoring/quest_item_disguises.py').build(ROOT)
-    shared_callbacks = sorted([*callbacks, galthen_idol.build(ROOT, outfits)], key=lambda c:c['key'])
-    shared_rewards = {'schema':1,'tracks':declarations,'callbacks':shared_callbacks,'item_disguises':item_disguises}
-    validate_callbacks(shared_rewards)
+    validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks,'item_disguises':item_disguises})
     validate_callbacks({'schema':1,'callbacks':fibula_callbacks})
     validate_callbacks({'schema':1,'callbacks':l13_callbacks})
     validate_callbacks({'schema':1,'callbacks':programme_callbacks})
@@ -1102,7 +1099,7 @@ def build():
             'content/cosmetics/outfits/authoring.json': encoded(author),
             'content/cosmetics/outfits/native-cosmetics.json': native_cosmetics,
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
-            'content/quests/shared-reward-callbacks.json': encoded(shared_rewards),
+            'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks,'item_disguises':item_disguises}),
             'content/quests/npc-callbacks/fibula.json': encoded({'schema':1,'callbacks':fibula_callbacks}),
             'content/quests/npc-callbacks/l13-outfits.json': encoded({'schema':1,'callbacks':l13_callbacks}),
             'content/quests/npc-callbacks/questpc7-programmes.json': encoded({'schema':1,'callbacks':programme_callbacks}),

@@ -8629,40 +8629,6 @@
       ]
     },
     {
-      "key": "oteryn:quest-reward/qcx81-living-idol-of-tukh",
-      "quest": "oteryn:quest.adventures_of_galthen_quest",
-      "npc": "oteryn:npc.ahau_s_dead_chamberlain",
-      "keywords": [
-        "idol"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i40578",
-          "count": 1
-        }
-      ],
-      "give": null,
-      "outfit": {
-        "outfit": "oteryn:outfit.ancient_aucar",
-        "addons": 0
-      },
-      "forbids_outfits": [
-        "oteryn:outfit.ancient_aucar"
-      ],
-      "achievement": null,
-      "carried_item": "oteryn:item.tibia.i40578",
-      "reply": [
-        "You have received the ancient aucar outfit!"
-      ],
-      "sources": [
-        "https://tibia.fandom.com/?curid=94719&oldid=1199250#Ahau",
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua:1-31:sha256:944dfe3c80292a4bfe6bae209634f8a94c885cdef5db2285954e2ff1442b52ac"
-      ]
-    },
-    {
       "key": "oteryn:quest-reward/sam-backpack",
       "quest": "oteryn:quest.sam_s_old_backpack_quest",
       "npc": "oteryn:npc.sam",
