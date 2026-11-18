@@ -172,6 +172,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return UseDisposition::NothingToUse;
         }
+        // A reversible scenery toggle is defined only for its two lever appearances.
+        if let Some(pair) = callback.lever
+            && callback.reversible
+            && !pair.contains(&after.appearance_id)
+            && callback.passages.iter().any(|passage| passage.if_present)
+        {
+            return UseDisposition::NothingToUse;
+        }
         if callback.effects.reward_door.is_some() {
             return self
                 .execute_reward_door(
