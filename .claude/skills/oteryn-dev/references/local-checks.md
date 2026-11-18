@@ -7,8 +7,12 @@ run all of it, and fix every failure of one run in one push.
 
 ## Order (cheapest first)
 
-1. If the branch conflicts with `main`, merge `origin/main` first (only
-   then; `ci-merge.md`, *Before every push*); then `cargo fmt --all`.
+1. If the branch conflicts with `main`, merge `origin/main` first; then
+   `cargo fmt --all`. It conflicts when GitHub reports the PR conflicted, or
+   when, after `git fetch origin main`,
+   `git merge-tree --write-tree origin/main HEAD` exits exactly 1. A conflict
+   and the main-red case are the only reasons to merge (`ci-merge.md`,
+   *Before every push*).
 2. Generated content: `python3 tools/content-migration/regenerate_content.py --resolve`
    (same as `tools/merge-driver/regen.sh`; the python form is the one the
    session allowlist permits) if anything under
