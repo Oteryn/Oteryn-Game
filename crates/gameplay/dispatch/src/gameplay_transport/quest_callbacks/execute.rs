@@ -202,7 +202,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .lever
                 .is_some_and(|pair| after.appearance_id == pair[1]);
         let guarded_switch = callback.guarded_switch();
-        let current_read_only_gate = || {
+        let current_read_only_gate = |runtime: &ChannelRuntimeV1| {
             read_only_gate.is_some_and(|gate| {
                 gate.actor == actor
                     && gate.session == session
@@ -210,7 +210,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && runtime.read_actor_position(actor) == Ok(gate.expected)
             })
         };
-        if guarded_switch && (runtime.owner_fence().is_err() || !current_read_only_gate()) {
+        if guarded_switch && (runtime.owner_fence().is_err() || !current_read_only_gate(runtime)) {
             return UseDisposition::Rejected;
         }
         if let Some(sequence) = &callback.effects.sequence_prime {
@@ -934,7 +934,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::StaleState;
             }
         }
-        if callback.is_read_only() && !current_read_only_gate() {
+        if callback.is_read_only() && !current_read_only_gate(runtime) {
             return UseDisposition::Rejected;
         }
         let party = if let Some(party) = &callback.effects.party_transfer {
