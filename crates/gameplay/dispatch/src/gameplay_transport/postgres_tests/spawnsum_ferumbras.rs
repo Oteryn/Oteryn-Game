@@ -164,6 +164,12 @@ async fn exercise(h: &Harness) -> TestResult {
     deps.initialize_player(&owner, second_actor, second).await;
 
     let map = owner.bundle_map().ok_or("bundle")?;
+    assert!(
+        map.facts
+            .movement_item_facts(20121)
+            .is_some_and(|entry| !entry.pickupable),
+        "the existing vortex Item is served even with no base occurrence",
+    );
     let crystal = TilePos {
         x: 33390,
         y: 31468,

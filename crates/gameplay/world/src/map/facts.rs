@@ -373,13 +373,15 @@ impl BundleFacts {
             }
         }
         // 7252: painted baby seal (Crystal actions_paint.lua:27), absent from the base palette.
+        // 7926–7931: Shadow Nexus phase states (Crystal actions_holy_water.lua:105-135).
         // 13842: W05b Thawing ice flower (Crystal thawing.lua:1).
+        // 20121: Ferumbras's transient Rift Invader vortex (Crystal register_lever_tables.lua:13).
         let mut movement_solidities = BTreeMap::new();
         let movement_definitions: BTreeMap<_, _> = [
-            435, 1025, 1841, 1949, 5022, 7252, 9125, 9126, 9929, 9933, 9934, 9935, 9936, 9937,
-            9938, 9939, 10186, 10187, 12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055,
-            14064, 14074, 14076, 14077, 14163, 14164, 14255, 17939, 21804, 21805, 21812, 22059,
-            22074, 26077, 26087, 26100,
+            435, 1025, 1841, 1949, 5022, 7252, 7926, 7927, 7928, 7929, 7930, 7931, 9125, 9126,
+            9929, 9933, 9934, 9935, 9936, 9937, 9938, 9939, 10186, 10187, 12369, 13842, 13843,
+            13976, 14018, 14020, 14053, 14055, 14064, 14074, 14076, 14077, 14163, 14164, 14255,
+            17939, 20121, 21804, 21805, 21812, 22059, 22074, 26077, 26087, 26100,
         ]
         .into_iter()
         .chain(6594..=6608)
