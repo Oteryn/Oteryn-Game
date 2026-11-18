@@ -121,6 +121,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let origin = movement.before().position();
         let entered = movement.after().position();
+        let doors = crate::map::floor::BundleDoors(&map.facts);
         let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
             &runtime,
             self.movement_cells(),
@@ -129,7 +130,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             movement.after(),
             origin,
             false,
-            &crate::map::floor::BundleDoors(&map.facts),
+            &doors,
         ) else {
             return;
         };
