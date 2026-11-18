@@ -226,10 +226,8 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         // generic writer must not impersonate her protected quest operation.
         // Import only that predecessor, as the other native Quest fixtures do;
         // the death and all its rewards still use the real fenced owners.
-        super::qengine_outfit_stories::seed_quest_prerequisites(
-            h, &owner, &admitted, &seeds, 0xa6,
-        )
-        .await?;
+        super::qengine_outfit_stories::seed_quest_prerequisites(h, &owner, &admitted, &seeds, 0xa6)
+            .await?;
     } else if !seeds.is_empty() {
         let fence = owner
             .current_quest_fence(session)
@@ -406,26 +404,8 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                 .bound_attacker_lease(actor, session)
                 .map_err(debug)?;
             let health = runtime.companion_snapshot(target).map_err(debug)?.health;
-            let damage = if let Some((other_actor, other_session, _, _)) = lesser_contributor {
-                assert!(
-                    health > 2,
-                    "Herald has distinct most-damage and lesser contributors"
-                );
-                runtime
-                    .borrow_exact_actor_commit_at(now)
-                    .commit_damage_for_bound_attacker(
-                        target,
-                        other_actor,
-                        CommandRef::new(other_session, CommandId::new(1).map_err(debug)?),
-                        0,
-                        crate::foundation::OwnerDamageCommand {
-                            target: rule.creature.as_bytes(),
-                            occurrence: other_session.as_bytes(),
-                            binding: b"srvenc-source-lesser-damage",
-                            damage: 1,
-                        },
-                    )
-                    .map_err(debug)?;
+            let damage = if lesser_contributor.is_some() {
+                assert!(health > 2, "top-damage and lethal contributors must differ");
                 health - 1
             } else {
                 health
@@ -448,6 +428,35 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                     },
                 )
                 .map_err(debug)?;
+            // The one-point hitter lands the lethal blow. Settlement must choose the
+            // damage leader from the ledger instead of trusting the lethal actor.
+            let (lethal_actor, lethal_session, lethal_lease) =
+                if let Some((other_actor, other_session, _, _)) = lesser_contributor {
+                    runtime
+                        .borrow_exact_actor_commit_at(now)
+                        .commit_damage_for_bound_attacker(
+                            target,
+                            other_actor,
+                            CommandRef::new(other_session, CommandId::new(1).map_err(debug)?),
+                            0,
+                            crate::foundation::OwnerDamageCommand {
+                                target: rule.creature.as_bytes(),
+                                occurrence: other_session.as_bytes(),
+                                binding: b"srvenc-source-lesser-damage",
+                                damage: 1,
+                            },
+                        )
+                        .map_err(debug)?;
+                    (
+                        other_actor,
+                        other_session,
+                        runtime
+                            .bound_attacker_lease(other_actor, other_session)
+                            .map_err(debug)?,
+                    )
+                } else {
+                    (actor, session, lease)
+                };
             for _ in 0..2 {
                 crate::gameplay_transport::kill_reward::record_creature_kill(
                     &mut runtime,
@@ -460,10 +469,10 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                     },
                     target,
                     crate::combat::CapturedRewardPrincipal {
-                        character: lease.character_id(),
-                        lease_generation: lease.generation(),
-                        session,
-                        actor,
+                        character: lethal_lease.character_id(),
+                        lease_generation: lethal_lease.generation(),
+                        session: lethal_session,
+                        actor: lethal_actor,
                     },
                     now,
                     Some(observed),
