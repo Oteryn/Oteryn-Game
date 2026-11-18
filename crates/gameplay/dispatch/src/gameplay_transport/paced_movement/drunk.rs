@@ -64,6 +64,10 @@ pub(super) fn admitted_direction(
     let mut occurrence = [0; 16];
     occurrence.copy_from_slice(&digest[..16]);
     let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+    #[cfg(test)]
+    let root = states
+        .drunk_seed_fixture
+        .map_or(root, GameplayDecisionRoot::from_bytes);
     let Ok(sample) = oteryn_simulation_determinism::deterministic_decision_u64(
         &root,
         DecisionOccurrenceId::from_bytes(occurrence),

@@ -68,6 +68,9 @@ IDS |= {22008}
 IDS |= {2973}
 # M01c Grimvale: harvested blossoms, distinct from either planted nightshade.
 IDS |= {22082}
+# M01c Stampede: Terrified Elephant drops Tusk Shield in Crystal 201189f8
+# (data-global/monster/mammals/terrified_elephant.lua:86). Keep canonical defense 36.
+IDS |= {3443}
 # M44: source flower harvest and the two remaining native pagoda offerings.
 IDS |= {21389, 21466}
 IDS |= questl2_ready.ITEMS

@@ -5,6 +5,7 @@ import json
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+import elephant_corpse_profiles
 import import_spell_families as producer
 import monster_seven_spell_overlay as overlay
 import register_spell_families as registration
@@ -69,6 +70,7 @@ class AcceptedOverlayTests(unittest.TestCase):
         # registers the pinned item-profile supplement. QENGINE2 adds its
         # source-qualified reward Item proof alongside the registered SEASON outputs.
         successor_proofs = {
+            elephant_corpse_profiles.PROOF,
             "tools/content-schema/native-gameplay/engnpc2-slug-corpse-profiles.json",
             "tools/content-schema/native-gameplay/m42-hot-ingredient-profile.json",
             "tools/content-schema/native-gameplay/questpc5-parchment-profile.json",
@@ -102,8 +104,7 @@ class AcceptedOverlayTests(unittest.TestCase):
                 actual.keys() - {qengine.PROOF} - (successor_proofs | merged_outputs)),
         }, sort_keys=True), flush=True)
         self.assertTrue((successor_proofs | merged_outputs) <= actual.keys())
-        # Retain the accepted main residual of 45; engnpc2-slug, m42-hot-ingredient,
-        # and questpc5-parchment add three distinct source proofs to the merged set.
+        # Require each named successor proof and retain the exact legacy residual.
         self.assertEqual(len(actual.keys() - {qengine.PROOF} - (successor_proofs | merged_outputs)),45)
         self.assertIn(qengine.PROOF,actual)
         # Independently rebuild the packet from the producer's closed source IDs; a count

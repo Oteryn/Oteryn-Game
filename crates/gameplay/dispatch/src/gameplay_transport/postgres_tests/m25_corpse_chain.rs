@@ -1,4 +1,4 @@
-//! Actual native M25 corpse MINTs retain the original source deadline chain.
+//! Native corpse MINTs retain the original source deadline chain.
 use super::TestResult;
 use sqlx::Row;
 
@@ -6,7 +6,8 @@ pub(super) async fn assert_native_corpse_chain(pool: &sqlx::PgPool, creature: &s
     let chain = match creature {
         "oteryn:creature.ahau" => [42069, 42072, 42071, 42070],
         "oteryn:creature.mitmah_vanguard" => [44687, 44686, 44685, 44684],
-        _ => return Err("M25 corpse proof requires its exact native boss".into()),
+        "oteryn:creature.terrified_elephant" => [6052, 4360, 4361, 4362],
+        _ => return Err("corpse proof requires an exact native creature".into()),
     };
     let root = format!("oteryn:item.tibia.i{}", chain[0]);
     let mints = sqlx::query(
@@ -26,7 +27,7 @@ pub(super) async fn assert_native_corpse_chain(pool: &sqlx::PgPool, creature: &s
     let mint = &mints[0];
     let materialized = mint
         .try_get::<Option<i64>, _>("materialized_at")?
-        .ok_or("actual M25 corpse must be materialized before its chain is checked")?;
+        .ok_or("actual corpse must be materialized before its chain is checked")?;
     assert!(materialized > 0);
     assert_eq!(mint.try_get::<Option<i64>, _>("lifetime")?, Some(670000));
     let rows = sqlx::query(
@@ -102,6 +103,6 @@ pub(super) async fn assert_native_corpse_chain(pool: &sqlx::PgPool, creature: &s
             vec![54678, 54679, 54680, 54681]
         )
     );
-    eprintln!("M25_ACTUAL_CORPSE_CHAIN_REACHED creature={creature} schedules=3 lifetime_ms=670000");
+    eprintln!("NATIVE_CORPSE_CHAIN_REACHED creature={creature} schedules=3 lifetime_ms=670000");
     Ok(())
 }

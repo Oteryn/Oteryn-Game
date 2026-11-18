@@ -135,7 +135,8 @@ fn source_spawn_case_with_gaz_heal(
             } else {
             let mut selected = false;
             let mut created = false;
-            for _ in 0..128 {
+            // Content-seeded rolls can delay Maxxen's first generator proposal past 128 steps.
+            for _ in 0..256 {
                 owner.drain_monster_melee().await;
                 let runtime = owner.runtime.lock().await;
                 let states = owner.states.spell_states.lock().await;
