@@ -232,15 +232,19 @@ fn scenario() -> TestResult {
             owner.admit_quest_session(&admitted).await;
         }
 
-        let permit = owner.spell_lane_permit().await.ok_or("spell lane")?;
-        let map = owner.bundle_map().ok_or("bundle map")?;
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            cells.index()
+        else {
+            return Err("bundle collision index".into());
+        };
+        let map = index.map();
         for (actor, session, start, expected, cohorts) in [
             (actor, session, START, DESTINATION, 1),
             (actor, session, START, START, 1),
             (peer, peer_session, WITNESS, DESTINATION, 2),
             (peer, peer_session, WITNESS, WITNESS, 2),
         ] {
-            let (origin, entered) = {
+            let origin = {
                 let mut runtime = owner.runtime.lock().await;
                 let mut origin = runtime.read_actor_position(actor).map_err(debug)?;
                 let closed = crate::map::floor::BundleDoors(&map.facts);
@@ -258,35 +262,37 @@ fn scenario() -> TestResult {
                     .map_err(debug)?;
                     origin = runtime.commit_source_step(proof).map_err(debug)?;
                 }
-                let direction = if start.x < TRIGGER.x {
-                    crate::movement::CardinalStep::East
-                } else {
-                    crate::movement::CardinalStep::West
-                };
-                let proof = crate::map::floor::prepare_bundle_step(
-                    &runtime,
-                    owner.movement_cells(),
-                    actor,
-                    session,
-                    origin,
-                    direction,
-                    false,
-                    &closed,
-                )
-                .map_err(debug)?;
-                assert_eq!(proof.destination(), local(TRIGGER));
-                let entered = runtime.commit_source_step(proof).map_err(debug)?;
-                (origin, entered)
+                origin
             };
+            let direction = if start.x < TRIGGER.x {
+                crate::gameplay_transport::StepDirection::East
+            } else {
+                crate::gameplay_transport::StepDirection::West
+            };
+            owner.clock_origin = owner
+                .clock_origin
+                .checked_sub(std::time::Duration::from_secs(1))
+                .ok_or("advance step clock")?;
             let effect_cursor = map
                 .facts
                 .movement_effects_since(0)
                 .last()
                 .map_or(0, |cue| cue.0);
-            let after = owner
-                .step_quest_callback(&permit, actor, session, origin, entered)
+            let (outcome, _) = owner
+                .ordinary_paced_step(actor, session, direction, Some(origin), None)
                 .await;
-            assert_eq!(after.position(), local(expected));
+            assert_eq!(
+                outcome.disposition,
+                crate::gameplay_transport::StepDisposition::Moved
+            );
+            let runtime = owner.runtime.lock().await;
+            assert_eq!(
+                runtime
+                    .read_actor_position(actor)
+                    .map_err(debug)?
+                    .position(),
+                local(expected)
+            );
             let cues: Vec<_> = map
                 .facts
                 .movement_effects_since(effect_cursor)
@@ -294,7 +300,6 @@ fn scenario() -> TestResult {
                 .map(|(_, at, effect)| (at, effect))
                 .collect();
             assert_eq!(cues, [(expected, 11)]);
-            let runtime = owner.runtime.lock().await;
             let mut positions = runtime
                 .current_live_creature_census()
                 .map_err(debug)?
