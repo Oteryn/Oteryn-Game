@@ -308,6 +308,13 @@ fn chamber(two_players: bool) -> TestResult {
                 );
                 owner.drain_quest_encounter_deadlines().await;
                 let runtime = owner.runtime.lock().await;
+                assert!(
+                    runtime
+                        .current_live_creature_census()
+                        .map_err(debug)?
+                        .is_empty(),
+                    "timeout must remove the Lord it summoned"
+                );
                 for actor in [deps.actor, peer_actor] {
                     assert_eq!(
                         runtime
