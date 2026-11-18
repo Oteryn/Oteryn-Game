@@ -26,13 +26,14 @@ use tokio::sync::Mutex;
 mod world;
 type TestResult<T = ()> = fixture::TestResult<T>;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum Case {
     PitsMatching,
     PitsOther,
     OakFifth,
     OakFinal,
     OakArea,
+    OakBonebeasts,
 }
 
 #[test]
@@ -58,6 +59,11 @@ fn areadmg_demon_oak_final_cut_summons_demon_then_finishes_after_clear() -> Test
 #[test]
 fn areadmg_demon_oak_step_in_rolls_earth_damage() -> TestResult {
     run(Case::OakArea)
+}
+
+#[test]
+fn areadmg_demon_oak_non_wave_roll_controls_bonebeast_retaliation() -> TestResult {
+    run(Case::OakBonebeasts)
 }
 
 fn run(case: Case) -> TestResult {
@@ -348,18 +354,9 @@ async fn exercise(h: &fixture::Harness, case: Case) -> TestResult {
             check_step(&owner, actor, session, StepDirection::North, expected).await
         }
         Case::OakArea => area(&mut owner, &runtime, actor, session).await,
-        Case::OakFifth | Case::OakFinal => {
+        Case::OakFifth | Case::OakFinal | Case::OakBonebeasts => {
             super::engnpc2_live_transport::seed_tool(h, native, rules::AXE).await?;
-            oak_cut(
-                h,
-                &owner,
-                &runtime,
-                actor,
-                fence,
-                native,
-                matches!(case, Case::OakFinal),
-            )
-            .await
+            oak_cut(h, &owner, &runtime, actor, fence, native, case).await
         }
     }
 }
@@ -386,12 +383,13 @@ async fn oak_cut(
     actor: ExactActorRef,
     fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
     native: &NativeGameplayState,
-    final_cut: bool,
+    case: Case,
 ) -> TestResult {
-    let track_values: [i64; 4] = if final_cut {
-        [10, 11, 11, 11]
-    } else {
-        [5, 0, 0, 0]
+    let final_cut = matches!(case, Case::OakFinal);
+    let track_values: [i64; 4] = match case {
+        Case::OakFinal => [10, 11, 11, 11],
+        Case::OakBonebeasts => [2, 0, 0, 0],
+        _ => [5, 0, 0, 0],
     };
     for (track, value) in rules::CUT_TRACKS.into_iter().zip(track_values) {
         sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
@@ -440,8 +438,13 @@ async fn oak_cut(
             .ok_or("axe action fell through")?;
         Ok(outcome.disposition)
     };
+    let first = if matches!(case, Case::OakBonebeasts) {
+        bonebeast_command(&*runtime.lock().await, actor, session, 1, true)?
+    } else {
+        1
+    };
     let before = composed_test_owner::area_damage_player_health(owner, actor, session).await?;
-    assert_eq!(cut(1).await?, UseDisposition::Committed);
+    assert_eq!(cut(first).await?, UseDisposition::Committed);
     let after = composed_test_owner::area_damage_player_health(owner, actor, session).await?;
     assert!((170..=210).contains(&(before - after)), "Earth retaliation");
     let (mut monsters, actors) = {
@@ -496,6 +499,18 @@ async fn oak_cut(
                 .y,
             32340
         );
+    } else if matches!(case, Case::OakBonebeasts) {
+        assert_eq!(monsters, ["oteryn:creature.bonebeast"; 4]);
+        let miss = bonebeast_command(&*runtime.lock().await, actor, session, first + 1, false)?;
+        assert_eq!(cut(miss).await?, UseDisposition::Committed);
+        assert_eq!(
+            runtime
+                .lock()
+                .await
+                .current_live_creature_census()
+                .map_err(debug)?,
+            actors
+        );
     } else {
         assert_eq!(
             monsters,
@@ -518,7 +533,7 @@ async fn area(
 ) -> TestResult {
     let mut unchanged = false;
     let mut struck = false;
-    for step in 1..=256 {
+    for step in 1_u16..=256 {
         let expected = {
             let runtime = runtime.lock().await;
             next_area_damage(&runtime, actor, session)?
@@ -527,10 +542,10 @@ async fn area(
             .clock_origin
             .checked_sub(std::time::Duration::from_secs(1))
             .ok_or("clock")?;
-        let direction = if step % 2 == 1 {
-            StepDirection::West
-        } else {
+        let direction = if step.is_multiple_of(2) {
             StepDirection::East
+        } else {
+            StepDirection::West
         };
         check_step(owner, actor, session, direction, expected).await?;
         unchanged |= expected == 0;
@@ -547,29 +562,54 @@ fn next_area_damage(
     actor: ExactActorRef,
     session: GameSessionId,
 ) -> TestResult<u32> {
-    use oteryn_simulation_determinism::{
-        DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
-    };
-    use sha2::{Digest, Sha256};
-
     let revision = runtime
         .read_actor_position(actor)
         .map_err(debug)?
         .revision()
         + 1;
-    let occurrence = Sha256::new()
-        .chain_update(actor.placement_identity())
-        .chain_update(session.as_bytes())
-        .chain_update(revision.to_be_bytes())
-        .finalize();
-    let occurrence = DecisionOccurrenceId::from_bytes(occurrence[..16].try_into()?);
-    let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
-    let draw = |index| {
-        deterministic_decision_u64(&root, occurrence, "demon_oak.area", index).map_err(debug)
-    };
+    let draw = |index| oak_decision(runtime, actor, session, revision, "demon_oak.area", index);
     if !draw(0)?.is_multiple_of(24) {
         return Ok(0);
     }
     oteryn_gameplay_domain::domain::source_normal_draw::source_normal_draw(draw(1)?, 270, 310)
         .ok_or_else(|| "source Earth damage".into())
+}
+
+fn bonebeast_command(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    first: u64,
+    spawn: bool,
+) -> TestResult<u64> {
+    for command in first..first + 256 {
+        let draw = oak_decision(runtime, actor, session, command, "demon_oak.retaliation", 0)?;
+        if (draw % 100 >= 89) == spawn {
+            return Ok(command);
+        }
+    }
+    Err("the fixed scenario never drew the requested Bonebeast result".into())
+}
+
+fn oak_decision(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    ordinal: u64,
+    domain: &str,
+    slot: u64,
+) -> TestResult<u64> {
+    use oteryn_simulation_determinism::{
+        DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+    };
+    use sha2::{Digest, Sha256};
+
+    let occurrence = Sha256::new()
+        .chain_update(actor.placement_identity())
+        .chain_update(session.as_bytes())
+        .chain_update(ordinal.to_be_bytes())
+        .finalize();
+    let occurrence = DecisionOccurrenceId::from_bytes(occurrence[..16].try_into()?);
+    let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+    deterministic_decision_u64(&root, occurrence, domain, slot).map_err(debug)
 }
