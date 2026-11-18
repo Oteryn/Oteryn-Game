@@ -201,6 +201,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || callback
                 .lever
                 .is_some_and(|pair| after.appearance_id == pair[1]);
+        let guarded_switch = callback.guarded_switch();
         let current_read_only_gate = || {
             read_only_gate.is_some_and(|gate| {
                 gate.actor == actor
@@ -209,11 +210,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && runtime.read_actor_position(actor) == Ok(gate.expected)
             })
         };
+        if guarded_switch && (runtime.owner_fence().is_err() || !current_read_only_gate()) {
+            return UseDisposition::Rejected;
+        }
         if let Some(sequence) = &callback.effects.sequence_prime {
-            if !current_read_only_gate()
-                || callback
-                    .lever
-                    .is_none_or(|pair| pair[0] != after.appearance_id)
+            if callback
+                .lever
+                .is_none_or(|pair| pair[0] != after.appearance_id)
             {
                 return UseDisposition::NothingToUse;
             }
@@ -238,10 +241,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return UseDisposition::NothingToUse;
             }
-            if callback.guarded_switch()
-                && current_read_only_gate()
-                && let Some(effect) = callback.effects.requirement_failure_magic
-            {
+            if guarded_switch && let Some(effect) = callback.effects.requirement_failure_magic {
                 map.facts.emit_movement_effect(pos, effect);
                 return UseDisposition::Committed;
             }
@@ -934,14 +934,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::StaleState;
             }
         }
-        if callback.is_read_only()
-            && !read_only_gate.is_some_and(|gate| {
-                gate.actor == actor
-                    && gate.session == session
-                    && gate.callback == callback.key
-                    && runtime.read_actor_position(actor) == Ok(gate.expected)
-            })
-        {
+        if callback.is_read_only() && !current_read_only_gate() {
             return UseDisposition::Rejected;
         }
         let party = if let Some(party) = &callback.effects.party_transfer {
@@ -1560,7 +1553,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         );
                     }
                 }
-            } else if (!callback.is_read_only() || callback.guarded_switch())
+            } else if (!callback.is_read_only() || guarded_switch)
                 && !personal_gift_preserves_object
                 && !apply_scene()
             {
