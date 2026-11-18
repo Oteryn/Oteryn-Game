@@ -31,7 +31,11 @@ Sources for item IDs, NPC cells and donor differences. [Items](https://github.co
 - The Tibia Tales predecessor registry retains the exact definition hash observed on the base NPC catalogue, `8d75517e41359a25abea653c8fd44fa5b4d2768c1470d9acaa9442b73f543065`. Only the Hidden Threats registration is added to the shared registry.
 - PostgreSQL baseline with the pgsplit build files applied on `2ece2eb0da2efb38c28383058d0d6b5bbed377c9` and the completed local fixture. The prompt returned no quest reply in 49.44 s. The worker issued zero amethysts in 26.85 s. Both failed their intended assertions.
 
-- World `pin-refresh` reproduced the existing Oteryn bundle digest.
+- PG via shard (pgsplit build files applied on `5b01ca8a5362b70b8f54057558eeece160511a90`) passed 2/2. Servant wording and durable access took 45.42 s. The worker reward and repeat greeting took 33.59 s. The cases dispatch against real PostgreSQL with fixture NPC placements and verify acceptance of the exact prior Tibia Tales definition.
+- The same filter without the admin URL returned `Ok` for both cases in 0.00 s. These exercised the fallback only.
+- Quest authoring passed all 44 check commands. `cargo fmt --all -- --check` and a direct format check of the auto-mounted test passed.
+- Dispatch library Clippy passed with all features and `-D warnings`.
+- World `pin-refresh` reproduced the existing Oteryn bundle digest. `pin-check` passed for the one world.
 
 ## Remaining work
 
