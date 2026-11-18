@@ -23,17 +23,24 @@ fn bloodgong_uses_native_statue_without_donor_action_id() -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::super::kill_reward_e2e::scenario_thread::run("qcx74-bloodgong", bloodgong)?;
+    let result = super::kill_reward_e2e::scenario_thread::run("qcx74-bloodgong", bloodgong);
     eprintln!("qcx74 Bloodgong: {:.2}s", started.elapsed().as_secs_f64());
-    Ok(())
+    result
 }
 
 fn bloodgong() -> TestResult {
-    let trigger = Position { x: 32998, y: 32416, floor: -11 };
+    let trigger = Position {
+        x: 32998,
+        y: 32416,
+        floor: -11,
+    };
     // The imported tile contains i17469 followed by i19112, without placement tags.
-    let mut map_source = world_callbacks::load()?.into_iter()
-        .find(|callback| callback.key == CALLBACK).ok_or("Bloodgong callback")?;
+    let mut map_source = world_callbacks::load()?
+        .into_iter()
+        .find(|callback| callback.key == CALLBACK)
+        .ok_or("Bloodgong callback")?;
     map_source.selector.action = None;
+    map_source.selector.native = None;
     map_source.selector.appearance = Some(17469);
     let world = world_with_objects(&map_source, trigger, &[(trigger, 19112)], &[])?;
     let ordinal = 2;
@@ -42,7 +49,7 @@ fn bloodgong() -> TestResult {
         quest: QUEST.into(),
         effects: vec![QuestEffect {
             track: ANOINTED.into(),
-            from: QuestComparison::Between(-1, 0),
+            from: QuestComparison::Eq(0),
             effect: QuestEffectKind::Set(1),
         }],
         completes: false,
@@ -50,8 +57,7 @@ fn bloodgong() -> TestResult {
         experience: None,
     };
     run(async |admin| {
-        let h = Harness::create_with_admission_seed(admin, "qcx74_bloodgong", false, false)
-            .await?;
+        let h = Harness::create_with_admission_seed(admin, "qcx74_bloodgong", false, false).await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -113,7 +119,8 @@ fn bloodgong() -> TestResult {
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                 .map_err(debug)?
                 .catalogue()
-                .with_fixture_transition(seed_transition).map_err(debug)?;
+                .with_fixture_transition(seed_transition)
+                .map_err(debug)?;
         owner.quest_catalogue = Some(std::sync::Arc::new(catalogue));
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -125,16 +132,23 @@ fn bloodgong() -> TestResult {
         admitted.item_fence = Some(fence.item_fence());
         let catalogue = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
         let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-        let seeded = slot.commit_quest_transition(
-            owner.root, owner.character, owner.holder, fence,
-            QuestTransitionRequest {
-                transition_key: SEED.into(),
-                cause: QuestCause::Command(CommandRef::new(
-                    admitted.game_session_id, CommandId::new(900).map_err(debug)?,
-                )),
-                catalogue: catalogue.clone(),
-            },
-        ).await.map_err(debug)?;
+        let seeded = slot
+            .commit_quest_transition(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                QuestTransitionRequest {
+                    transition_key: SEED.into(),
+                    cause: QuestCause::Command(CommandRef::new(
+                        admitted.game_session_id,
+                        CommandId::new(900).map_err(debug)?,
+                    )),
+                    catalogue: catalogue.clone(),
+                },
+            )
+            .await
+            .map_err(debug)?;
         assert!(matches!(seeded, QuestTransitionOutcome::Committed(_)));
         drop(slot);
         owner.admit_progression_session(&mut admitted).await;
@@ -160,13 +174,26 @@ fn bloodgong() -> TestResult {
             expected_revision: 0,
         };
         let reply = wire(
-            &owner, &mut admitted, 1, 2,
+            &owner,
+            &mut admitted,
+            1,
+            2,
             world_object::encode_use_intent(&target).map_err(debug)?,
-        ).await?;
-        assert_eq!(world_object::decode_use_result(&reply).map_err(debug)?, UseDisposition::Committed);
-        let state = h.root.read_character_quest_state(&authority, fence.character_id)
-            .await.map_err(debug)?;
+        )
+        .await?;
+        assert_eq!(
+            world_object::decode_use_result(&reply).map_err(debug)?,
+            UseDisposition::Committed
+        );
+        let state = h
+            .root
+            .read_character_quest_state(&authority, fence.character_id)
+            .await
+            .map_err(debug)?;
         assert_eq!(state.tracks().get(TOLLED), Some(&1));
-        Ok(())
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        h.cleanup().await
     })
 }
