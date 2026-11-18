@@ -266,7 +266,19 @@ pub(super) async fn exercise(
     relocate(owner, peer, peer_session, peer_approach).await?;
     advance_clock(owner, 2)?;
     wire(owner, admitted, 4, 1, east.clone()).await?;
-    advance_clock(owner, 301)?;
+    // Crystal mission12_into_fortress.lua:575 leaves the fight active for five minutes.
+    advance_clock(owner, 290)?;
+    owner.drain_quest_encounter_deadlines().await;
+    {
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(
+            runtime.read_actor_position(player).map_err(debug)?.position(),
+            local(LANDING),
+            "the timeout keeps the admitted player in the room before the deadline"
+        );
+        assert_eq!(runtime.current_live_creature_census().map_err(debug)?.len(), 1);
+    }
+    advance_clock(owner, 11)?;
     owner.drain_quest_encounter_deadlines().await;
     let mut runtime = owner.runtime.lock().await;
     let timed_out = runtime.read_actor_position(player).map_err(debug)?;
