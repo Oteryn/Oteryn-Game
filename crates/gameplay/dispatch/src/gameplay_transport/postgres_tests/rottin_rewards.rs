@@ -64,10 +64,15 @@ pub(super) fn catalogue(repeat: bool) -> TestResult<QuestStateCatalogue> {
         .collect::<String>();
     // First completion grants the account achievement. Later completions can
     // reuse the item-only occurrence owner after the quest's daily cooldown.
-    let (cooldown, achievement) = if repeat {
-        (json!({"kind": "elapsed_at_least", "seconds": 72000}), None)
+    let (prior_stamp, cooldown, achievement) = if repeat {
+        (
+            1,
+            json!({"kind": "elapsed_at_least", "seconds": 72001}),
+            None,
+        )
     } else {
         (
+            0,
             json!({"kind": "between", "minimum": 0, "maximum": 0}),
             Some(ACHIEVEMENT),
         )
@@ -80,7 +85,7 @@ pub(super) fn catalogue(repeat: bool) -> TestResult<QuestStateCatalogue> {
             "sources": [DONOR],
             "tracks": [
                 {"key": TRACK, "initial": 1, "minimum": 1, "maximum": 2},
-                {"key": COOLDOWN, "initial": 0, "minimum": 0, "maximum": i64::MAX}
+                {"key": COOLDOWN, "initial": prior_stamp, "minimum": 0, "maximum": i64::MAX}
             ],
             "stages": [{
                 "key": "lucky-loop",
@@ -124,39 +129,18 @@ pub(super) async fn exercise(
     h: &Harness,
     repeat: bool,
 ) -> TestResult {
-    if repeat {
-        // Import the previous completion's timestamp. The turn-in below uses
-        // production guards and compares it against the database clock.
-        let mut tx = h.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role=replica")
-            .execute(&mut *tx)
-            .await?;
-        sqlx::query(
-            "INSERT INTO game_character_quest_tracks
-             (character_id, track_key, quest_key, value, committed_character_revision)
-             SELECT character_id, $2, $3, floor(extract(epoch from now()))::bigint - 72001,
-                    character_revision
-             FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
-        )
-        .bind(id(41).as_slice())
-        .bind(COOLDOWN)
-        .bind(QUEST)
-        .execute(&mut *tx)
-        .await?;
-        tx.commit().await?;
-    }
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
     let [npc] = install(owner, admitted, [ROTTIN]).await?;
     talk(owner, admitted, npc, 1701, "hi").await?;
     let before_xp = experience(h).await?;
-    let before_stamp: i64 = sqlx::query_scalar(
-        "SELECT COALESCE((SELECT value FROM game_character_quest_tracks WHERE track_key=$1),0)",
-    )
-    .bind(COOLDOWN)
-    .fetch_one(&h.pool)
-    .await?;
+    let before_stamp = owner
+        .quest_catalogue
+        .as_ref()
+        .and_then(|catalogue| catalogue.track(COOLDOWN))
+        .ok_or("fixture cooldown track")?
+        .initial;
     assert_eq!(
         talk(owner, admitted, npc, 1702, "yes").await?,
         ["Good hunt."]
