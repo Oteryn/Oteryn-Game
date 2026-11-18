@@ -112,6 +112,61 @@ impl ChannelActorCarrier {
 }
 
 impl ChannelRuntimeV1 {
+    /// Give this projected death a destination that becomes live with its exact corpse Item.
+    pub fn bind_quest_corpse_portal(
+        &mut self,
+        actor: ExactActorRef,
+        item_key: &str,
+        destination: MovementLocalPosition,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        let projection = self
+            .carrier
+            .corpse_projections
+            .iter_mut()
+            .find(|projection| projection.occurrence.actor == actor)
+            .ok_or(CarrierError::CommittedLethalUnavailable)?;
+        if let Some((existing_item, existing_destination)) = &projection.portal {
+            return if existing_item == item_key && *existing_destination == destination {
+                Ok(())
+            } else {
+                Err(CarrierError::CorpseProjectionConflict)
+            };
+        }
+        projection.portal = Some((item_key.to_owned(), destination));
+        Ok(())
+    }
+
+    pub fn quest_corpse_portal_at(
+        &self,
+        at: MovementLocalPosition,
+    ) -> Option<(ExactActorRef, MovementLocalPosition)> {
+        self.owner_fence().ok()?;
+        self.carrier
+            .corpse_projections
+            .iter()
+            .rev()
+            .find_map(|projection| {
+                let (item_key, destination) = projection.portal.as_ref()?;
+                if projection.position.context != self.pinned_position_context()
+                    || projection.position() != at
+                    || at == *destination
+                {
+                    return None;
+                }
+                let actor = projection.occurrence.actor;
+                self.carrier
+                    .corpse_item_bindings
+                    .iter()
+                    .any(|binding| {
+                        binding.actor == actor
+                            && binding.minted_item.production_key == *item_key
+                            && binding.item.production_key == *item_key
+                    })
+                    .then_some((actor, *destination))
+            })
+    }
+
     /// MAP-ITEM-REF-1 Part B: bind `actor`'s projected corpse to the corpse Item its committed
     /// MINT created (`item_instance_id` and the typed definition `commit_corpse_mint` was given).
     /// The projection must be retained in this generation (`CommittedLethalUnavailable`

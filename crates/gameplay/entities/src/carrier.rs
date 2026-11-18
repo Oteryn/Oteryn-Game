@@ -722,6 +722,7 @@ pub struct RuntimeCorpseProjection {
     pub position: VersionedPosition,
     /// The lethal receipt's owner clock (ms), when its committing turn supplied one.
     death_at_ms: Option<u64>,
+    portal: Option<(String, MovementLocalPosition)>,
 }
 
 impl RuntimeCorpseProjection {

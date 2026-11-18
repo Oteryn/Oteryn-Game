@@ -147,10 +147,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(pos) = native(entered.position()) else {
             return entered;
         };
-        let Some(to) = map
+        let (corpse, to) = if let Some(to) = map
             .facts
             .quest_portal_destination(pos, self.owner_now().get())
-        else {
+        {
+            (
+                None,
+                super::local(Position {
+                    x: to.x,
+                    y: to.y,
+                    floor: to.floor,
+                }),
+            )
+        } else if let Some((corpse, to)) = self
+            .runtime
+            .lock()
+            .await
+            .quest_corpse_portal_at(entered.position())
+        {
+            (Some(corpse), to)
+        } else {
             return entered;
         };
         let optional_pvp = self.special_movement_policy(permit, actor, session).await;
@@ -179,11 +195,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // The policy lookup awaited outside the owner. A lever/expiry may have
         // removed the pair while it was in flight; never teleport through that stale read.
-        if map
-            .facts
-            .quest_portal_destination(pos, self.owner_now().get())
-            != Some(to)
-        {
+        let current = match corpse {
+            Some(corpse) => {
+                runtime.quest_corpse_portal_at(entered.position()) == Some((corpse, to))
+            }
+            None => {
+                map.facts
+                    .quest_portal_destination(pos, self.owner_now().get())
+                    == native(to)
+            }
+        };
+        if !current {
             return entered;
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
@@ -194,11 +216,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             actor,
             session,
             entered,
-            local(Position {
-                x: to.x,
-                y: to.y,
-                floor: to.floor,
-            }),
+            to,
             blocked,
             &closed,
         ) else {
@@ -208,9 +226,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return entered;
         };
         if pos == tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::SOURCE)
-            && to == tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::DESTINATION)
+            && to == local(oteryn_gameplay_quests::quest::dreamer_fire_bug::DESTINATION)
         {
-            map.facts.emit_movement_effect(to, 11);
+            map.facts.emit_movement_effect(
+                tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::DESTINATION),
+                11,
+            );
         }
         states.stage_special_movement_step(
             &runtime,

@@ -96,6 +96,16 @@ impl Replacements {
             return Ok(false);
         }
         let (_, at) = runtime.borrow_combat_death().projected_death(actor)?;
+        if let Some(portal) = &self.plan.corpse_portal
+            && member.creature == portal.defeated
+        {
+            // Crystal 201189f8, creaturescripts_death_fallen.lua:10-14.
+            runtime.bind_quest_corpse_portal(
+                actor,
+                &portal.item,
+                super::super::quest_callbacks::local(portal.destination),
+            )?;
+        }
         let finished = member.creature == self.plan.terminal;
         if finished && let Some(plan) = self.plan.terminal_transfer {
             self.transfer = Some(Transfer::capture(runtime, plan)?);

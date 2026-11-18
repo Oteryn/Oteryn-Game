@@ -385,10 +385,20 @@ pub struct DeathPhases {
     pub terminal: String,
     pub replacements: Vec<DeathReplacement>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub corpse_portal: Option<CorpsePortal>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub terminal_portal: Option<TerminalPortal>,
     /// Room movement on the sealed terminal death. Quest credit uses its own writer.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub terminal_transfer: Option<TerminalTransfer>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct CorpsePortal {
+    pub defeated: String,
+    pub item: String,
+    pub destination: Position,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -504,6 +514,7 @@ fn valid_death_phases(
         || !valid_quest_key(&plan.terminal)
         || plan.replacements.len() > 8
         || (plan.replacements.is_empty()
+            && plan.corpse_portal.is_none()
             && plan.terminal_portal.is_none()
             && plan.terminal_transfer.is_none())
         || plan
@@ -550,6 +561,12 @@ fn valid_death_phases(
         }
     }
     known.contains(plan.terminal.as_str())
+        && plan.corpse_portal.as_ref().is_none_or(|portal| {
+            known.contains(portal.defeated.as_str())
+                && portal.item.starts_with("oteryn:item.tibia.i")
+                && valid_quest_key(&portal.item)
+                && in_room(portal.destination)
+        })
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]

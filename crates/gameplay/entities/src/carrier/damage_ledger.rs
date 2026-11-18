@@ -1237,6 +1237,7 @@ impl ChannelActorCarrier {
                     },
                     position: existing.position,
                     death_at_ms: existing.death_at_ms,
+                    portal: existing.portal.clone(),
                 },
             });
         }
@@ -1269,6 +1270,7 @@ impl ChannelActorCarrier {
                 },
                 position,
                 death_at_ms,
+                portal: None,
             },
         })
     }
