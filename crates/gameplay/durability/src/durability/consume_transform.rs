@@ -19,16 +19,16 @@ use sqlx::Row;
 
 use super::consume_transform_audit as audit;
 mod cake;
-pub use cake::CakeBakerContext;
 mod dispenser;
 #[path = "consume_transform_ground.rs"]
 mod ground;
+#[path = "consume_transform_house.rs"]
+mod house;
 pub mod mind;
 #[path = "consume_transform_planting.rs"]
 mod planting;
+pub use cake::CakeBakerContext;
 pub use ground::{GroundActionContext, GroundActionSource};
-#[path = "consume_transform_house.rs"]
-mod house;
 pub use house::{HouseActionContext, HouseDecorationBaseItem};
 
 #[derive(Debug, Clone)]
