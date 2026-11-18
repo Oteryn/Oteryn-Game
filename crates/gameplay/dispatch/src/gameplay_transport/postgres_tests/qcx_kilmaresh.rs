@@ -41,7 +41,7 @@ fn alyxo() -> TestResult {
             .map_err(debug)?;
         let deps = Dependencies::new()?;
         let owner = deps.owner(&h, &authority);
-        let (controller, _) =
+        let (controller, activation) =
             crate::content::native_gameplay::test_support::activated_with_loot_tables(
                 deps.admitted.world_id,
                 None,
@@ -61,10 +61,21 @@ fn alyxo() -> TestResult {
             .await
             .map_err(|()| "quest fence")?
             .ok_or("active quest session")?;
+        sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
+            .bind(id(41).as_slice()).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
+            .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
+        let generation = controller.active().ok_or("generation")?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
+            .bind(id(42).as_slice()).bind(id(43).as_slice())
+            .bind(generation.identity().server_artifact_digest().as_slice())
+            .bind(generation.identity().client_artifact_digest().as_slice())
+            .bind(activation.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+        super::super::item_look::seed_main_backpack(&h, &[]).await?;
         let permit = owner.spell_lane_permit().await.ok_or("NPC item lane")?;
 
         // Create durable hand-in states at the claim boundary.
-        for (command, lyre, tortoise) in [(100, 3, 3), (101, 4, 2)] {
+        for (command, lyre, tortoise) in [(100, 3, 3), (101, 4, 2), (102, 4, 3)] {
             for (track, value) in [(FAFNAR, 301), (LYRE, lyre), (TORTOISE, tortoise)] {
                 sqlx::query(
                     "INSERT INTO game_character_quest_tracks
@@ -79,9 +90,10 @@ fn alyxo() -> TestResult {
                 .execute(&h.pool)
                 .await?;
             }
-            let result = owner
-                .root
-                .commit_character_npc_program(
+            let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+            let result = slot
+                .commit_npc_program(
+                    owner.root,
                     owner.character,
                     owner.holder,
                     &permit,
@@ -99,15 +111,25 @@ fn alyxo() -> TestResult {
                             .into(),
                     },
                     catalogue.clone(),
-                    &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native),
+                    &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native)
+                        .with_wheel(owner.premium_coordinator),
                     &owner.premium_coordinator,
                 )
                 .await
                 .map_err(debug)?;
-            assert!(
-                matches!(result.transition, QuestTransitionOutcome::Refused(_)),
-                "Alyxo granted a reward with lyre={lyre} and tortoise={tortoise}: {result:?}"
+            let complete = lyre == 4 && tortoise == 3;
+            assert_eq!(
+                matches!(result.transition, QuestTransitionOutcome::Committed(_)),
+                complete,
+                "Unexpected Alyxo claim result with lyre={lyre} and tortoise={tortoise}: {result:?}"
             );
+            let quantity: i64 = sqlx::query_scalar(
+                "SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances
+                 WHERE definition_production_key='oteryn:item.tibia.i31574' AND lifecycle=1",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(quantity, i64::from(complete));
         }
         Ok(())
     })
