@@ -189,7 +189,10 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
                 control_button(&mut commands, &skins, ActionControl::Slot(slot), SLOT_SIZE);
             commands
                 .entity(entity)
-                .insert(bar_size(Vec2::splat(SLOT_SIZE)))
+                .insert((
+                    bar_size(Vec2::splat(SLOT_SIZE)),
+                    bevy::picking::hover::Hovered::default(),
+                ))
                 .insert(Node {
                     width: px(SLOT_SIZE),
                     min_width: px(SLOT_SIZE),

@@ -2,7 +2,6 @@
 use super::item_actions::item_source;
 #[path = "readiness.rs"]
 mod readiness;
-use readiness::action_ready;
 use crate::play::{
     PlayLink, SettingsState,
     mailbox::{Mailbox, lock},
@@ -114,7 +113,7 @@ pub enum BarAction {
     },
     Equip {
         definition: NonZeroU32,
-        /// Upgrade tier the hotkey is bound to (0 = any); the equip request carries no tier yet.
+        /// Exact upgrade tier on tiered worlds (0 = unforged).
         #[serde(default)]
         upgrade_tier: u8,
     },
@@ -134,6 +133,12 @@ pub enum BarAction {
         ability: PassiveAbility,
     },
 }
+impl BarAction {
+    pub(crate) fn equip_tier_supported(&self, tiered: bool) -> bool {
+        tiered || !matches!(self, Self::Equip { upgrade_tier, .. } if *upgrade_tier != 0)
+    }
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct BarActions(pub BTreeMap<usize, BarAction>);
@@ -276,6 +281,11 @@ impl SettingsState {
     }
 }
 
+fn action_ready(mailbox: &Mailbox, action: &BarAction) -> bool {
+    action.equip_tier_supported(mailbox.hotkey_equip.tiered)
+        && readiness::action_ready(mailbox, action)
+}
+
 pub(in crate::play) fn activate(link: &PlayLink, slot: NonZeroU32) -> bool {
     let (handled, insert) = {
         let mut mailbox = lock(&link.mailbox);
@@ -317,6 +327,10 @@ fn activate_inner(
         return false;
     };
     if mailbox.world_input_blocked() {
+        return true;
+    }
+    if !action.equip_tier_supported(mailbox.hotkey_equip.tiered) {
+        mailbox.spell_bar.feedback = "This world does not support exact upgrade tiers.".into();
         return true;
     }
     if read_items && super::item_cooldowns::begin(mailbox, commands, slot, &action, true) {

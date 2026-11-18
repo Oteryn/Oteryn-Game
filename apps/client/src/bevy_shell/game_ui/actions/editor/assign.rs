@@ -66,7 +66,12 @@ pub(super) fn toggle_multi(
         *draft = Some(actions);
         return message;
     };
-    if !actions.is_empty()
+    let tiered = link.hotkey_equip_panel().tiered;
+    let supported = actions
+        .iter()
+        .all(|action| action.equip_tier_supported(tiered));
+    if supported
+        && !actions.is_empty()
         && link.assign_bar_action(
             slot,
             BarAction::Multi {
@@ -76,10 +81,17 @@ pub(super) fn toggle_multi(
     {
         return tr!("Multiaction saved").into();
     }
-    let message = lfmt!(
-        "Assign at least one live spell or carried object.\n{}",
-        multi_message(&actions)
-    );
+    let message = if supported {
+        lfmt!(
+            "Assign at least one live spell or carried object.\n{}",
+            multi_message(&actions)
+        )
+    } else {
+        format!(
+            "This world does not support exact upgrade tiers.\n{}",
+            multi_message(&actions)
+        )
+    };
     *draft = Some(actions);
     message
 }

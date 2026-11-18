@@ -972,6 +972,11 @@ fn disabled_bar_tooltips_hide_object_hint() -> TestResult {
 
 #[test]
 fn action_hint_obeys_global_tooltip_setting_and_delay() -> TestResult {
+    use bevy::picking::{
+        backend::HitData,
+        hover::{HoverMap, update_is_hovered},
+        pointer::PointerId,
+    };
     use bevy::time::TimeUpdateStrategy;
     use std::time::Duration;
     let (mut app, _) = fixture()?;
@@ -980,17 +985,30 @@ fn action_hint_obeys_global_tooltip_setting_and_delay() -> TestResult {
         .world_mut()
         .query_filtered::<Entity, With<ActionHint>>()
         .single(app.world())?;
-    let prefs = &mut app
-        .world_mut()
-        .non_send_mut::<HostOwner>()
-        .settings
-        .preferences;
-    prefs.tooltips_enabled = false;
-    prefs.action_bar.tooltips = true;
-    prefs.tooltip_delay_ms = 100;
-    app.world_mut()
-        .entity_mut(first)
-        .insert(bevy::picking::hover::Hovered(true));
+    {
+        let owner = &mut *app.world_mut().non_send_mut::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        assert!(link.assign_bar_action(
+            0,
+            crate::play::BarAction::Use {
+                definition: 256u32.try_into()?,
+                sub_type: None,
+                mode: crate::play::ItemUseMode::Use,
+            }
+        ));
+        owner.settings.sync_bar_actions(link);
+        let prefs = &mut owner.settings.preferences;
+        prefs.tooltips_enabled = false;
+        prefs.action_bar.tooltips = true;
+        prefs.tooltip_delay_ms = 100;
+    }
+    let mut hover = HoverMap::default();
+    hover
+        .entry(PointerId::Mouse)
+        .or_default()
+        .insert(first, HitData::new(Entity::PLACEHOLDER, 0., None, None));
+    app.insert_resource(hover)
+        .add_systems(PreUpdate, update_is_hovered);
     for (enabled, ms, visible) in [
         (false, 0, false),
         (true, 0, false),
@@ -1008,8 +1026,12 @@ fn action_hint_obeys_global_tooltip_setting_and_delay() -> TestResult {
         )));
         app.update();
         assert_eq!(
-            !app.world().get::<Text>(hint).ok_or("hint")?.0.is_empty(),
-            visible
+            app.world().get::<Text>(hint).ok_or("hint")?.0,
+            if visible {
+                "Object appearance unavailable."
+            } else {
+                ""
+            }
         );
     }
     Ok(())

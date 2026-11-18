@@ -305,7 +305,7 @@ pub(super) fn slot_chord<'a>(
     if binding.is_extra_action_bar_slot() {
         return prefs.binding_chord(binding);
     }
-    if let Some(chord) = prefs.action_keys.0.get(&slot) {
+    if let Some(chord) = prefs.legacy_action_chord(slot, chat_on) {
         return chord;
     }
     prefs

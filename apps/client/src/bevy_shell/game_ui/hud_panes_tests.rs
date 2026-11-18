@@ -901,21 +901,22 @@ fn logout_retries_failed_dock_save() -> TestResult {
 
 #[test]
 fn scaled_context_menu_keeps_its_last_entry_inside_the_window() -> TestResult {
-    check_scaled_context_menus(bevy::text::DEFAULT_FONT_DATA)
+    check_scaled_context_menus(bevy::text::DEFAULT_FONT_DATA, None)
 }
 
 #[test]
-fn scaled_context_menus_fit_production_skin_font_when_available() -> TestResult {
-    // UI art is supplied separately from the repository, as at client startup.
-    let Some(root) = std::env::var_os("OTERYN_UI_ASSETS") else {
-        return Ok(());
-    };
-    check_scaled_context_menus(&std::fs::read(
-        std::path::Path::new(&root).join("fonts/verdanab.ttf"),
-    )?)
+fn scaled_context_menus_fit_production_skin_font_or_wider_fixture() -> TestResult {
+    if let Some(root) = std::env::var_os("OTERYN_UI_ASSETS") {
+        let font = std::fs::read(std::path::Path::new(&root).join("fonts/verdanab.ttf"))?;
+        check_scaled_context_menus(&font, None)
+    } else {
+        // At 13 px Bevy's bundled Fira Mono is wider on these menu captions than
+        // the production 11 px Verdana Bold, including "Communication Lists".
+        check_scaled_context_menus(bevy::text::DEFAULT_FONT_DATA, Some(13.))
+    }
 }
 
-fn check_scaled_context_menus(font_bytes: &[u8]) -> TestResult {
+fn check_scaled_context_menus(font_bytes: &[u8], fixture_size: Option<f32>) -> TestResult {
     use super::super::{actions, chat};
     use crate::bevy_shell::gameplay_dialogs::popup;
     use bevy::ui::UiSystems;
@@ -1013,6 +1014,24 @@ fn check_scaled_context_menus(font_bytes: &[u8]) -> TestResult {
             .world_mut()
             .query_filtered::<Entity, With<popup::PopupScrim>>()
             .single(app.world())?;
+        if let Some(size) = fixture_size {
+            let mut labels = app.world_mut().query::<(Entity, &ChildOf, &TextFont)>();
+            let labels: Vec<_> = labels
+                .iter(app.world())
+                .filter(|(_, parent, _)| {
+                    app.world()
+                        .get::<popup::PopupEntry>(parent.parent())
+                        .is_some()
+                })
+                .map(|(entity, _, _)| entity)
+                .collect();
+            for label in labels {
+                app.world_mut()
+                    .get_mut::<TextFont>(label)
+                    .ok_or("menu label font")?
+                    .font_size = bevy::text::FontSize::Px(size);
+            }
+        }
         if forced {
             app.world_mut().get_mut::<Node>(frame).ok_or("frame")?.width = px(150.);
         }
