@@ -169,6 +169,19 @@ pub(super) async fn habitat(
         }),
     )
     .await?;
+    let seeds = zamulosh::HABITATS
+        .iter()
+        .filter(|source| !source.key.ends_with("-grass"))
+        .take(6)
+        .map(|source| (source.track.into(), 1))
+        .chain(std::iter::once((HABITAT_COUNT.into(), 6)))
+        .collect::<Vec<_>>();
+    super::qengine_outfit_stories::seed_quest_prerequisites(harness, owner, first, &seeds, 0xb5)
+        .await?;
+    owner
+        .refresh_quest_session(first.game_session_id, false)
+        .await;
+    assert_eq!(basin(owner)?, 11114);
     let source = crate::content::LogicalCell {
         x: 33616,
         y: 32664,
@@ -200,8 +213,9 @@ pub(super) async fn habitat(
     );
     assert_eq!(
         super::questpc7_ferumbras::value(owner, first, HABITAT_COUNT).await?,
-        1
+        7
     );
+    assert_eq!(basin(owner)?, 22196);
     assert_eq!(
         use_lever(owner, &mut second, GRASS_LEVER, 9126).await?,
         UseDisposition::Committed
@@ -223,5 +237,74 @@ pub(super) async fn habitat(
     let transformed = map.spell_tiles.lookup(destination).map_err(debug)?;
     assert_eq!(transformed.ground_source_id(), expected.ground_source_id());
     assert_eq!(transformed.top_source_ids(), expected.top_source_ids());
+    let db_now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?
+        .as_secs();
+    owner
+        .root
+        .set_test_quest_clock(i64::try_from(db_now + 3602)?)
+        .map_err(debug)?;
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(3590))
+        .ok_or("clock origin")?;
+    owner.drain_zamulosh_resets().await;
+    assert_eq!(
+        super::questpc7_ferumbras::value(owner, first, HABITAT_COUNT).await?,
+        7
+    );
+    assert_eq!(basin(owner)?, 22196);
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(10))
+        .ok_or("clock origin")?;
+    owner.drain_zamulosh_resets().await;
+    assert_eq!(
+        super::questpc7_ferumbras::value(owner, first, HABITAT_COUNT).await?,
+        0
+    );
+    for source in &zamulosh::HABITATS {
+        assert_eq!(
+            super::questpc7_ferumbras::value(owner, first, source.track)
+                .await?
+                .max(0),
+            0
+        );
+    }
+    assert_eq!(
+        super::questpc7_ferumbras::value(owner, &second, HABITAT_COUNT).await?,
+        1
+    );
+    assert_eq!(basin(owner)?, 11114);
     Ok(())
+}
+
+fn basin(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult<u16> {
+    use crate::map::{overlay::TilePos, view::MapFacts};
+    let at = TilePos {
+        x: 33631,
+        y: 32667,
+        floor: -12,
+    };
+    let map = owner.bundle_map().ok_or("habitat map")?;
+    let base = map
+        .overlay
+        .base()
+        .tile(at.x, at.y, at.floor)
+        .ok_or("basin tile")?;
+    let appearances: Vec<_> = base
+        .ids()
+        .iter()
+        .zip(base.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .enumerate()
+        .filter_map(|(i, (&id, _))| map.facts.base_entry(at, i.try_into().ok()?, id))
+        .filter_map(|facts| {
+            matches!(facts.appearance_id, 11114 | 22196).then_some(facts.appearance_id)
+        })
+        .collect();
+    let [appearance] = appearances.as_slice() else {
+        return Err("exact habitat basin".into());
+    };
+    Ok(*appearance)
 }
