@@ -267,7 +267,13 @@ pub(crate) fn native_scene_with_appearances(
             .map(|policy| policy.record());
         Some(crate::map::facts::ItemDefinition {
             reference: item_index.definition_ref("Item", key, "definition-r1")?,
-            solid: profile.and_then(|profile| profile.attributes.blocks_movement),
+            solid: profile
+                .and_then(|profile| profile.attributes.blocks_movement)
+                .or_else(|| {
+                    // Crystal items.xml:3963-3968 identifies the retained mystic flame
+                    // as a walk-on teleport. The crop independently verifies its endpoint.
+                    (!teleports.is_empty() && key == "oteryn:item.tibia.i1959").then_some(false)
+                }),
             blocks_projectile: profile
                 .and_then(|profile| profile.attributes.blocks_projectile)
                 .unwrap_or(true),
