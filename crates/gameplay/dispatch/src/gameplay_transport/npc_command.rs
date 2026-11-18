@@ -46,6 +46,7 @@ mod coin_exchange;
 mod dark_trails;
 mod endgame;
 mod fire_feathered;
+mod gamel;
 mod grizzly;
 mod grizzly_shop;
 mod healing;
@@ -807,6 +808,11 @@ pub(super) async fn npc_bank_talk(
             _trade_permit = Some(permit);
         }
         runtime = admission.runtime.lock().await;
+    }
+    if let Some(step) = gamel::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
     }
     if let Some(outcome) = healing::apply(admission, &mut runtime, actor, command, &intent) {
         return outcome;

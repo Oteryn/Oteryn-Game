@@ -146,6 +146,8 @@ struct Pending {
     context: Context,
     next_topic: Option<Topic>,
     reply: Vec<String>,
+    creatures:
+        Option<oteryn_gameplay_entities::carrier::runtime_actor_companion::ReservedQuestCreatures>,
 }
 
 /// Bind a pure, source-backed selector to the actual current conversation.
@@ -333,6 +335,27 @@ pub(super) async fn apply(
     ) else {
         return rejected();
     };
+    let ambush = transition == super::gamel::TRANSITION;
+    let ambush_permit = if ambush {
+        let Some(permit) = admission.spell_lane_permit().await else {
+            return rejected();
+        };
+        let Some(inventory) = super::reward_facts::read(admission, command).await else {
+            return rejected();
+        };
+        if !inventory.quantities.contains_key(super::gamel::LETTER) {
+            return reply(
+                &admission.states.chat,
+                command.game_session_id,
+                &step.context,
+                &intent,
+                vec!["Keep your voice down. Are you here to trade?".into()],
+            );
+        }
+        Some(permit)
+    } else {
+        None
+    };
     let mut slot = admission
         .revision_sequencer
         .acquire(item_fence.character_id)
@@ -391,6 +414,11 @@ pub(super) async fn apply(
         cause: QuestCause::Command(CommandRef::new(command.game_session_id, id)),
     };
     {
+        let mut runtime = if ambush {
+            Some(admission.runtime.lock().await)
+        } else {
+            None
+        };
         let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() else {
             return rejected();
         };
@@ -404,6 +432,21 @@ pub(super) async fn apply(
         if state.topic(&step.context) != step.topic {
             return rejected();
         }
+        let creatures = if let Some(runtime) = runtime.as_deref_mut() {
+            let Some(reserved) = super::gamel::reserve(
+                admission,
+                runtime,
+                actor,
+                command.game_session_id,
+                &intent,
+                &step.context,
+            ) else {
+                return rejected();
+            };
+            Some(reserved)
+        } else {
+            None
+        };
         state.pending = Some(Pending {
             actor,
             character: fence.character_id,
@@ -412,6 +455,7 @@ pub(super) async fn apply(
             context: step.context.clone(),
             next_topic: step.next_topic,
             reply: step.reply.clone(),
+            creatures,
         });
     }
     let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue)
@@ -474,6 +518,7 @@ pub(super) async fn apply(
         .await
     };
     drop(slot);
+    drop(ambush_permit);
     #[cfg(test)]
     if value_callback && let Err(error) = &outcome {
         eprintln!("quest reward commit: {error:?}");
@@ -487,6 +532,11 @@ pub(super) async fn apply(
                 && state.quest_dialogue.interrupt_after_commit == Some(command.command_id)
             {
                 state.quest_dialogue.interrupt_after_commit = None;
+                return unknown();
+            }
+            if ambush
+                && !settle_creatures(admission, command.game_session_id, newly_committed).await
+            {
                 return unknown();
             }
             finish(admission, command.game_session_id, true);
@@ -526,6 +576,9 @@ pub(super) async fn apply(
             _,
         )) => unknown(),
         _ => {
+            if ambush && !settle_creatures(admission, command.game_session_id, false).await {
+                return unknown();
+            }
             finish(admission, command.game_session_id, false);
             if step.failure_reply.is_empty() {
                 return rejected();
@@ -552,6 +605,30 @@ pub(super) async fn apply(
             )
         }
     }
+}
+
+async fn settle_creatures(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+    committed: bool,
+) -> bool {
+    let mut runtime = admission.runtime.lock().await;
+    let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() else {
+        return false;
+    };
+    let Some(pending) = sessions
+        .get_mut(&session)
+        .and_then(|state| state.quest_dialogue.pending.as_mut())
+    else {
+        return false;
+    };
+    if let Some(reserved) = &pending.creatures {
+        if runtime.settle_quest_creatures(reserved, committed).is_err() {
+            return false;
+        }
+        pending.creatures = None;
+    }
+    true
 }
 
 pub(in crate::gameplay_transport) async fn resume(
@@ -588,6 +665,14 @@ pub(in crate::gameplay_transport) async fn resume(
         .await
     {
         Ok(receipt) => {
+            if pending.creatures.is_some()
+                && !settle_creatures(admission, command.game_session_id, receipt.is_some()).await
+            {
+                return Some(NpcTalkOutcome {
+                    unknown: true,
+                    ..NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
+                });
+            }
             finish(admission, command.game_session_id, receipt.is_some());
             if receipt.is_some() {
                 admission

@@ -28,6 +28,12 @@ use super::{
 };
 
 const EMBEDDED: &str = include_str!("../../../../../content/quests/missions/quest-state.json");
+/// Native NPC greeting owned by the Gamel dispatch path.
+pub const GAMEL_AMBUSH: &str =
+    "oteryn:quest-transition/quest/u8_1/secret_service/avinmission01/npc_1";
+pub const GAMEL_AMBUSH_TRACK: &str =
+    "oteryn:quest-progress/quest/u8_1/secret_service/avinmission01";
+
 const SCHEMA: &str = "OTERYN_QUEST_STATE_LOWERING/v1";
 
 /// The NPC dialogue a source transition was written from (format §3.2): the source NPC bundle
@@ -254,6 +260,29 @@ pub(super) fn lower_embedded_quest_state(
     content_revision: &str,
 ) -> Result<LoweredQuestState, QuestLoadError> {
     let mut lowered = parse_quest_state(EMBEDDED, content_revision)?;
+    // Crystal gamel.lua:63–67 supplies the omitted inventory predicate at
+    // NPC ingress. Keep the generic import inexact and qualify only this
+    // embedded runtime definition after checking its projected predecessor.
+    let mut catalogue = lowered.catalogue;
+    let Some(transition) = catalogue.transitions.get_mut(GAMEL_AMBUSH) else {
+        return Err(QuestLoadError::Effect(GAMEL_AMBUSH.into()));
+    };
+    match transition.effects.as_mut_slice() {
+        [effect]
+            if effect.track == GAMEL_AMBUSH_TRACK
+                && effect.from == QuestComparison::Eq(1)
+                && effect.effect == QuestEffectKind::Computed =>
+        {
+            effect.effect = QuestEffectKind::Set(2);
+        }
+        _ => return Err(QuestLoadError::Effect(GAMEL_AMBUSH.into())),
+    }
+    lowered.catalogue = QuestStateCatalogue::new(
+        catalogue.content_revision,
+        catalogue.tracks.into_values().collect(),
+        catalogue.transitions.into_values().collect(),
+    )
+    .map_err(QuestLoadError::Catalogue)?;
     // Native goals own their zero-based counters before callbacks add read-only guards.
     lowered.catalogue =
         super::native_kill_goals::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;

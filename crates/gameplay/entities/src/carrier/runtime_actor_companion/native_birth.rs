@@ -293,3 +293,69 @@ impl ChannelRuntimeV1 {
         birth.install_on_data(&mut self.carrier, &self.continuity)
     }
 }
+
+/// Invisible native births retained while an NPC quest transition settles.
+#[derive(Clone, Debug)]
+pub struct ReservedQuestCreatures(Vec<PreparedNativeCreatureBirth>);
+
+impl ChannelRuntimeV1 {
+    pub fn reserve_quest_creatures(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        creature: &str,
+        positions: &[MovementLocalPosition],
+    ) -> Result<ReservedQuestCreatures, CarrierError> {
+        if positions.is_empty() || positions.len() > 8 {
+            return Err(CarrierError::PlanConflict);
+        }
+        let mut births = Vec::new();
+        births
+            .try_reserve_exact(positions.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        for position in positions {
+            let birth = self
+                .prepare_native_creature_birth(actor, session, creature, *position)
+                .and_then(|mut birth| {
+                    self.reserve_native_creature_birth(&mut birth)?;
+                    Ok(birth)
+                });
+            match birth {
+                Ok(birth) => births.push(birth),
+                Err(error) => {
+                    for birth in &births {
+                        self.rollback_native_creature_birth(birth)?;
+                    }
+                    return Err(error);
+                }
+            }
+        }
+        Ok(ReservedQuestCreatures(births))
+    }
+
+    pub fn settle_quest_creatures(
+        &mut self,
+        reserved: &ReservedQuestCreatures,
+        committed: bool,
+    ) -> Result<(), CarrierError> {
+        let mut indexes = [0; 8];
+        for (birth, index) in reserved.0.iter().zip(&mut indexes) {
+            self.validate_native_creature_birth(birth)?;
+            *index = self.carrier.validate_ref(&self.continuity, birth.actor.0)?;
+        }
+        if committed {
+            let first = self.carrier.next_tile_entry_order()?;
+            first
+                .checked_add((reserved.0.len() - 1) as u64)
+                .ok_or(CarrierError::PositionRevisionExhausted)?;
+            for (offset, (birth, index)) in reserved.0.iter().zip(indexes).enumerate() {
+                birth.publish_reserved(&mut self.carrier, index, first + offset as u64);
+            }
+        } else {
+            for birth in &reserved.0 {
+                self.rollback_native_creature_birth(birth)?;
+            }
+        }
+        Ok(())
+    }
+}

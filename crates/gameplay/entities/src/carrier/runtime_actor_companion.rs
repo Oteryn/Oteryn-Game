@@ -457,6 +457,7 @@ impl PreparedCompanionSpawn {
 
 #[path = "runtime_actor_companion/native_birth.rs"]
 pub(super) mod native_birth;
+pub use native_birth::ReservedQuestCreatures;
 
 impl ChannelRuntimeV1 {
     #[allow(clippy::too_many_arguments)]
