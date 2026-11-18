@@ -232,7 +232,7 @@ pub(super) fn scenario(case: u8) -> TestResult {
             channel_pin,
             crate::content::qualify_native_entry_room(world).map_err(debug)?,
             crate::spell::cast::v1_spell_book().map_err(debug)?,
-            if case == 5 { 5 } else { 2 },
+            if matches!(case, 5 | 13) { 5 } else { 2 },
         )?;
         let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
         h.root
