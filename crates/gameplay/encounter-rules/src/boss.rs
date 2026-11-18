@@ -68,6 +68,50 @@ pub fn reward_eligibility(participants: &[RewardParticipation]) -> Vec<bool> {
         .collect()
 }
 
+/// Ordinary reward bosses retain boss-rewards-v1's damage and fair-share guard.
+/// Only Elemental Spheres uses the donor's nonzero-score exception.
+pub fn reward_eligibility_for_boss(boss: &str, participants: &[RewardParticipation]) -> Vec<bool> {
+    if matches!(
+        boss,
+        "oteryn:creature.earth_overlord"
+            | "oteryn:creature.energy_overlord"
+            | "oteryn:creature.fire_overlord"
+            | "oteryn:creature.ice_overlord"
+    ) {
+        return reward_eligibility(participants);
+    }
+    const SCALE: u128 = 1_000_000_000;
+    let dealt: u128 = participants
+        .iter()
+        .map(|p| u128::from(p.damage_dealt))
+        .sum();
+    let received: u128 = participants
+        .iter()
+        .map(|p| u128::from(p.damage_received))
+        .sum();
+    let healed: u128 = participants
+        .iter()
+        .map(|p| u128::from(p.healing_others))
+        .sum();
+    let dealers = participants.iter().filter(|p| p.damage_dealt > 0).count() as u128;
+    let fraction = |value: u64, total: u128| {
+        if total == 0 {
+            0
+        } else {
+            u128::from(value) * SCALE / total
+        }
+    };
+    participants
+        .iter()
+        .map(|p| {
+            let score = fraction(p.damage_dealt, dealt)
+                + fraction(p.damage_received, received)
+                + fraction(p.healing_others, healed);
+            p.damage_dealt > 0 && score * 100 * dealers >= 30 * SCALE
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

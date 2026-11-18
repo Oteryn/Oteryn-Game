@@ -263,7 +263,11 @@ pub(super) async fn apply_in_transaction(
                         && fence.character_lease_generation == snapshot.lease
                 })
                 .ok_or(CharacterProgressionError::AuthorityRejected)?;
-            if let Some(receipt) =
+            sqlx::query("SAVEPOINT overlord_quest_credit")
+                .execute(&mut **tx)
+                .await
+                .map_err(crate::durability::DurabilityError::from)?;
+            let outcome =
                 crate::durability::quest_state::kill_objectives::apply_batch_in_transaction(
                     tx,
                     node,
@@ -271,8 +275,18 @@ pub(super) async fn apply_in_transaction(
                     &[(objective.transition, &objective.source)],
                     catalogue,
                 )
-                .await?
-            {
+                .await;
+            if outcome.is_err() {
+                sqlx::query("ROLLBACK TO SAVEPOINT overlord_quest_credit")
+                    .execute(&mut **tx)
+                    .await
+                    .map_err(crate::durability::DurabilityError::from)?;
+            }
+            sqlx::query("RELEASE SAVEPOINT overlord_quest_credit")
+                .execute(&mut **tx)
+                .await
+                .map_err(crate::durability::DurabilityError::from)?;
+            if let Some(receipt) = outcome? {
                 committed.push(receipt);
             }
         }

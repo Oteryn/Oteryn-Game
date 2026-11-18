@@ -54,3 +54,66 @@ END $$;
 DO $$ BEGIN
     EXECUTE format('ALTER FUNCTION game_boss_reward_death_complete() SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $$;
+
+-- A definition mismatch never discards the canonical death. Only the fenced
+-- quest owner can record this terminal no-grant result in that death's transaction.
+
+CREATE TABLE game_boss_death_settlements (
+    world_id UUID NOT NULL,
+    death_id UUID NOT NULL,
+    boss_key TEXT NOT NULL,
+    minted_at BIGINT NOT NULL CHECK(minted_at>0),
+    scope_kind SMALLINT NOT NULL CHECK(scope_kind IN (1,2)),
+    scope_id UUID NOT NULL,
+    scope_generation NUMERIC(20,0) NOT NULL CHECK(scope_generation>0),
+    personal_rewards BOOLEAN NOT NULL,
+    intent BYTEA NOT NULL,
+    created_xact_id XID8 NOT NULL DEFAULT pg_current_xact_id(),
+    PRIMARY KEY(world_id,death_id)
+);
+CREATE TRIGGER game_boss_death_settlements_stamp BEFORE INSERT ON game_boss_death_settlements
+    FOR EACH ROW EXECUTE FUNCTION game_item_stamp_created_xact_id();
+CREATE TRIGGER game_boss_death_settlements_immutable BEFORE UPDATE OR DELETE ON game_boss_death_settlements
+    FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
+CREATE TRIGGER game_boss_death_settlements_no_truncate BEFORE TRUNCATE ON game_boss_death_settlements
+    EXECUTE FUNCTION game_item_reject_truncate();
+REVOKE ALL ON game_boss_death_settlements FROM PUBLIC;
+GRANT SELECT,INSERT ON game_boss_death_settlements TO oteryn_game_runtime;
+
+CREATE FUNCTION game_boss_death_quest_skip_create_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM game_boss_death_settlements d
+        WHERE d.world_id=NEW.world_id AND d.death_id=NEW.death_id
+          AND d.created_xact_id=pg_current_xact_id()
+          AND d.boss_key IN ('oteryn:creature.earth_overlord','oteryn:creature.energy_overlord','oteryn:creature.fire_overlord','oteryn:creature.ice_overlord')) THEN
+        RAISE EXCEPTION 'quest skip requires the same-transaction Overlord death' USING ERRCODE='23514';
+    END IF;
+    RETURN NEW;
+END $$;
+DO $$ BEGIN
+    EXECUTE format('ALTER FUNCTION game_boss_death_quest_skip_create_guard() SET search_path=pg_catalog,%I,pg_temp',current_schema());
+END $$;
+REVOKE ALL ON FUNCTION game_boss_death_quest_skip_create_guard() FROM PUBLIC;
+
+CREATE TABLE game_boss_death_quest_skips (
+    world_id UUID NOT NULL,
+    death_id UUID NOT NULL,
+    character_id UUID NOT NULL REFERENCES game_character_roots(character_id),
+    quest_key TEXT NOT NULL CHECK(quest_key='oteryn:quest.elemental_spheres_quest'),
+    definition_hash BYTEA NOT NULL CHECK(octet_length(definition_hash)=32),
+    request_binding BYTEA NOT NULL CHECK(octet_length(request_binding)=33),
+    reason TEXT NOT NULL CHECK(reason='incompatible_definition'),
+    created_xact_id XID8 NOT NULL DEFAULT pg_current_xact_id(),
+    PRIMARY KEY(world_id,death_id,character_id,quest_key),
+    FOREIGN KEY(world_id,death_id) REFERENCES game_boss_death_settlements(world_id,death_id)
+);
+CREATE TRIGGER game_boss_death_quest_skips_stamp BEFORE INSERT ON game_boss_death_quest_skips
+    FOR EACH ROW EXECUTE FUNCTION game_item_stamp_created_xact_id();
+CREATE TRIGGER game_boss_death_quest_skips_create BEFORE INSERT ON game_boss_death_quest_skips
+    FOR EACH ROW EXECUTE FUNCTION game_boss_death_quest_skip_create_guard();
+CREATE TRIGGER game_boss_death_quest_skips_immutable BEFORE UPDATE OR DELETE ON game_boss_death_quest_skips
+    FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
+CREATE TRIGGER game_boss_death_quest_skips_no_truncate BEFORE TRUNCATE ON game_boss_death_quest_skips
+    EXECUTE FUNCTION game_item_reject_truncate();
+REVOKE ALL ON game_boss_death_quest_skips FROM PUBLIC;
+GRANT SELECT,INSERT ON game_boss_death_quest_skips TO oteryn_game_runtime;

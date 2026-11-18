@@ -2,6 +2,7 @@
 //! death-time census and the original immutable table; the ordinary corpse has no reward loot.
 use super::*;
 use crate::domain::item_definition::ItemDefinitionFacts;
+use crate::durability::boss_encounter::reward_chest::scoped_death_id;
 use crate::durability::boss_encounter::reward_chest::{
     BOSS_REWARD_CONTRIBUTORS_MAX, BOSS_REWARD_ITEMS_MAX, BOSS_REWARD_PARTICIPANTS_MAX,
     BossRewardChestPlan, BossRewardContributor, BossRewardDeath, BossRewardItem,
@@ -11,14 +12,14 @@ use crate::foundation::RuntimeScopeRefV1;
 use oteryn_gameplay_encounter_rules::boss::pity::{
     boosted_probability_ppm, is_pity_item, pity_boss_key,
 };
+use oteryn_gameplay_encounter_rules::boss::reward_eligibility_for_boss;
 use oteryn_gameplay_encounters::bosses::reward_chest::{
-    FrozenBossContribution, contribution_loot_factors, freeze_personal_rewards, reward_eligibility,
-    reward_expiry, top_contributor,
+    FrozenBossContribution, contribution_loot_factors, freeze_personal_rewards, reward_expiry,
+    top_contributor,
 };
 use oteryn_gameplay_items::loot_plan::{
     LootPlan, LootPlanError, LootTableDefinition, plan_boss_loot_with_bonus,
 };
-use sha2::{Digest, Sha256};
 
 #[cfg(test)]
 #[allow(clippy::expect_used, reason = "bounded owner settlement test fixtures")]
@@ -59,30 +60,6 @@ pub(in crate::gameplay_transport) fn personal_death_id(
         death.actor_local_id(),
         death.actor_local_generation(),
     )
-}
-
-fn scoped_death_id(
-    scope: RuntimeScopeRefV1,
-    generation: u64,
-    actor: u32,
-    actor_generation: u64,
-) -> [u8; 16] {
-    let (kind, scope_id) = match scope {
-        RuntimeScopeRefV1::Channel { channel_id, .. } => (1_u8, *channel_id.as_bytes()),
-        RuntimeScopeRefV1::Instance { instance_id, .. } => (2_u8, instance_id),
-    };
-    let digest = Sha256::new()
-        .chain_update(b"oteryn:personal-boss-death:v1\0")
-        .chain_update(scope.world_id().as_bytes())
-        .chain_update([kind])
-        .chain_update(scope_id)
-        .chain_update(generation.to_be_bytes())
-        .chain_update(actor.to_be_bytes())
-        .chain_update(actor_generation.to_be_bytes())
-        .finalize();
-    let mut result = [0; 16];
-    result.copy_from_slice(&digest[..16]);
-    result
 }
 
 /// Aggregate identical selected Items before making physical stacks, like the donor's
@@ -206,7 +183,8 @@ fn plan_personal_death_with_slots(
             contribution: participant.contribution,
         })
         .collect::<Vec<_>>();
-    let eligible = reward_eligibility(
+    let eligible = reward_eligibility_for_boss(
+        boss_key,
         &census
             .iter()
             .map(|row| row.contribution)
@@ -341,7 +319,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let _ = entry.boss_slot_bonuses.set(Vec::new());
             }
         }
-        self.settle_personal_boss_rewards(entry).await
+        self.prepare_personal_boss_rewards(entry).await
     }
 
     /// The room's primary native death starts its authored after-kill return
@@ -413,8 +391,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// No current recipient lease is needed to issue an earned entitlement. This call is
     /// authorized by the current scope owner and the frozen, retained participant admissions;
     /// collection later proves the recipient's current session independently.
-    pub(super) async fn settle_personal_boss_rewards(&self, entry: &PendingKillSettlement) -> bool {
+    pub(super) async fn prepare_personal_boss_rewards(
+        &self,
+        entry: &PendingKillSettlement,
+    ) -> bool {
         let Some(frozen) = &entry.boss_reward else {
+            if oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_some() {
+                let plan = crate::durability::boss_encounter::reward_chest::BossDeathAtomicPlan {
+                    death: personal_death_id(entry.facts.death),
+                    boss_key: entry.creature.clone(),
+                    minted_at_unix_ms: entry.facts.died_at_unix_ms,
+                    rewards: None,
+                };
+                let _ = entry.boss_reward_plan.set(plan);
+            }
             return true;
         };
         let admission = self;
@@ -445,6 +435,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !current_pin {
             operator_event("boss_reward_settlement_deferred reason=scope_or_content_fenced");
             return false;
+        }
+        if entry.boss_reward_plan.get().is_some() {
+            return true;
         }
         // Use the authored boss identity when present, otherwise the qualified creature key.
         // reward_boss is the native classification; Bosstiary membership is not required.
@@ -509,25 +502,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return false;
             }
         };
-        match admission
-            .root
-            .settle_boss_reward_chests(
-                admission.character,
-                admission.holder,
-                entry.facts.death.runtime_scope(),
-                entry.facts.death.scope_ownership_generation(),
-                plan,
-            )
-            .await
-        {
-            Ok(true) => true,
-            result => {
-                operator_event(&format!(
-                    "boss_reward_settlement_deferred creature={} result={result:?}",
-                    entry.creature
-                ));
-                false
-            }
-        }
+        let _ = entry.boss_reward_plan.set(plan.into());
+        true
     }
 }

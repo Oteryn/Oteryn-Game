@@ -247,6 +247,8 @@ fn admit_native_bindings(
         super::completion_sets::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    super::source_deaths::retain_overlord_predecessor(&mut lowered.catalogue)
+        .map_err(QuestLoadError::Json)?;
     Ok(lowered)
 }
 

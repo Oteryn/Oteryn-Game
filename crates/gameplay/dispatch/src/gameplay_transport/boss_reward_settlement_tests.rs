@@ -100,14 +100,19 @@ fn selected(quantities: &[u32]) -> LootPlan {
 #[test]
 fn boss_reward_settlement_retains_full_census_and_replays_independently_of_input_order() {
     let mut frozen = frozen();
-    let first = plan_personal_death(id(90), "oteryn:boss.fixture", &frozen, |definition| {
-        Some(facts(
-            definition,
-            ItemStackClass::Stackable {
-                proven_maximum: None,
-            },
-        ))
-    })
+    let first = plan_personal_death(
+        id(90),
+        "oteryn:creature.earth_overlord",
+        &frozen,
+        |definition| {
+            Some(facts(
+                definition,
+                ItemStackClass::Stackable {
+                    proven_maximum: None,
+                },
+            ))
+        },
+    )
     .expect("plan");
     assert_eq!(
         first.contributors.len(),
@@ -117,7 +122,7 @@ fn boss_reward_settlement_retains_full_census_and_replays_independently_of_input
     assert_eq!(
         first.chests.len(),
         3,
-        "Crystal 201189f reward_chest.lua:54-69 rewards every nonzero score"
+        "The Elemental Spheres exception preserves every nonzero Crystal score"
     );
     assert_eq!(
         first.chests[0].character_id.as_bytes(),
@@ -130,21 +135,29 @@ fn boss_reward_settlement_retains_full_census_and_replays_independently_of_input
             .all(|item| item.quantity <= 100)
     );
     frozen.participants.reverse();
-    let replay = plan_personal_death(id(90), "oteryn:boss.fixture", &frozen, |definition| {
-        Some(facts(
-            definition,
-            ItemStackClass::Stackable {
-                proven_maximum: None,
-            },
-        ))
-    })
+    let replay = plan_personal_death(
+        id(90),
+        "oteryn:creature.earth_overlord",
+        &frozen,
+        |definition| {
+            Some(facts(
+                definition,
+                ItemStackClass::Stackable {
+                    proven_maximum: None,
+                },
+            ))
+        },
+    )
     .expect("replay");
     assert_eq!(replay, first);
     frozen.participants.push(frozen.participants[0].clone());
     assert!(matches!(
-        plan_personal_death(id(90), "oteryn:boss.fixture", &frozen, |definition| Some(
-            facts(definition, ItemStackClass::NonStackable)
-        )),
+        plan_personal_death(
+            id(90),
+            "oteryn:creature.earth_overlord",
+            &frozen,
+            |definition| Some(facts(definition, ItemStackClass::NonStackable))
+        ),
         Err(PlanError::InvalidCensus)
     ));
 }

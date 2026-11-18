@@ -342,3 +342,25 @@ pub fn overlord_predecessor(
     )
     .map_err(|error| format!("{error:?}"))
 }
+
+pub(super) fn retain_overlord_predecessor(
+    catalogue: &mut QuestStateCatalogue,
+) -> Result<(), String> {
+    let quest = "oteryn:quest.elemental_spheres_quest";
+    let previous = overlord_predecessor(catalogue)?;
+    let hash = previous
+        .definition_hash(quest)
+        .ok_or("Elemental Spheres predecessor missing")?;
+    let defaults = previous
+        .declared_tracks()
+        .map(|track| (track.key.clone(), track.initial))
+        .collect();
+    let predecessors = catalogue.predecessors.entry(quest.into()).or_default();
+    if !predecessors
+        .iter()
+        .any(|predecessor| predecessor.hash == hash)
+    {
+        predecessors.push(super::NpcDefinitionPredecessor { hash, defaults });
+    }
+    Ok(())
+}

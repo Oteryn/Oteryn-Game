@@ -126,6 +126,8 @@ pub struct PendingKillSettlement {
     /// Capability 492: each reward recipient's Moonsilver pity bonus (permille of base),
     /// read once before the personal roll so a settlement retry re-plans the same items.
     pub(super) boss_pity: Arc<OnceLock<BossSlotBonuses>>,
+    pub(super) boss_reward_plan:
+        Arc<OnceLock<crate::durability::boss_encounter::reward_chest::BossDeathAtomicPlan>>,
     pub ground: DeathGroundContext,
     /// The killed actor whose committed corpse projection the minted corpse
     /// Item binds to (MAP-ITEM-REF-1 Part B, D607).
@@ -250,6 +252,7 @@ impl PendingKillSettlement {
             bosstiary_only,
             boss_slot_bonuses: Arc::new(OnceLock::new()),
             boss_pity: Arc::new(OnceLock::new()),
+            boss_reward_plan: Arc::default(),
             ground,
             target,
             activity_observed_at: observed_at,
@@ -2178,6 +2181,7 @@ pub fn record_creature_kill(
                             bosstiary_only: None,
                             boss_slot_bonuses: Arc::new(OnceLock::new()),
                             boss_pity: Arc::new(OnceLock::new()),
+                            boss_reward_plan: Arc::default(),
                             ground,
                             target,
                             activity_observed_at: observed_at,
@@ -2595,6 +2599,7 @@ pub fn record_creature_kill(
         bosstiary_only: None,
         boss_slot_bonuses: Arc::new(OnceLock::new()),
         boss_pity: Arc::new(OnceLock::new()),
+        boss_reward_plan: Arc::default(),
         ground,
         target,
         source_death_pending: false,
@@ -3781,6 +3786,16 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             .iter()
             .any(|death| death.occurrence == entry.facts.occurrence && death.reward_principal_gone);
         if proficiency_only {
+            if admission
+                .settle_boss_without_experience(&permit, entry)
+                .await
+                .is_err()
+            {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            }
             drop(permit);
             if let Some(race) = entry.row.as_ref().and_then(|row| row.race.as_ref())
                 && !admission

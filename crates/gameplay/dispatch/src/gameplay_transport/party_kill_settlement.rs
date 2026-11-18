@@ -259,6 +259,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if entry.row.as_ref().is_some_and(|row| row.race.is_some()) {
             self.freeze_task_board_recipients(permit, entry).await?;
         }
+        if !self.prepare_boss_rewards(entry).await {
+            return Err(CharacterProgressionError::Unavailable(
+                DurabilityError::Unavailable,
+            ));
+        }
         let plan = self.discover_party_xp(permit, entry).await?;
         let analyser_receipts = self.analyser_receipts(entry.target).await;
         if let Ok(mut receipts) = analyser_receipts.lock() {
@@ -410,6 +415,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
+                    if let Some(plan) = entry.boss_reward_plan.get() {
+                        if !owner.root.settle_boss_death_atomic(&mut tx, owner.character, owner.holder,
+                            entry.facts.death.runtime_scope(), entry.facts.death.scope_ownership_generation(), plan.clone()).await? {
+                            return Err(DurabilityError::Unavailable);
+                        }
+                    }
                     let death = key(entry);
                     if let Some(awards) = party_kill_xp::reconcile_in_transaction(
                         &mut tx,
@@ -757,5 +768,126 @@ fn publish_stamina(
         {
             states.hunting_experience(runtime, member.actor, member.session, now.get());
         }
+    }
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    /// A departed top damager still refuses XP. The frozen personal rewards and
+    /// remaining physical damagers' BossStorage share the same durable owner.
+    pub(super) async fn settle_boss_without_experience(
+        &self,
+        permit: &SpellLanePermit,
+        entry: &PendingKillSettlement,
+    ) -> Result<(), CharacterProgressionError> {
+        if entry.boss_reward.is_none()
+            && oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_none()
+        {
+            return Ok(());
+        }
+        if !self.prepare_boss_rewards(entry).await {
+            return Err(CharacterProgressionError::Unavailable(
+                DurabilityError::Unavailable,
+            ));
+        }
+        let mut recipients = std::collections::BTreeMap::new();
+        for (character, session, lease) in super::quest_kill_objectives::overlord_recipients(entry)
+        {
+            recipients.insert(character, (session, lease));
+        }
+        let mut slots = Vec::new();
+        let mut fences = Vec::new();
+        for (character, (session, lease)) in recipients {
+            let mut slot = self.revision_sequencer.acquire(character).await;
+            let mut fence = self
+                .current_quest_fence(session)
+                .await
+                .map_err(|_| CharacterProgressionError::Unavailable(DurabilityError::Unavailable))?
+                .ok_or_else(rejected)?;
+            if fence.character_id != character || fence.character_lease_generation != lease {
+                return Err(rejected());
+            }
+            fence.expected_character_revision = slot.cursor(self.root, self.character).await.map_err(|error| match error {
+                crate::durability::character_authority::CharacterAuthorityError::Unavailable(error) => CharacterProgressionError::Unavailable(error),
+                _ => rejected(),
+            })?;
+            slot.observe_endgame_progression();
+            slots.push(slot);
+            fences.push(fence);
+        }
+        let runtime = self.runtime.lock().await;
+        if runtime.owner_fence().is_err() {
+            return Err(rejected());
+        }
+        let attack = self.states.attack.lock().await;
+        let mut context = (self, &*runtime, &*attack, entry, &fences);
+        let result = self
+            .root
+            .try_issue_semantic_pass()?
+            .run_with_context(&mut context, move |holder, deadline, context| {
+                Box::pin(async move {
+                    let (owner, runtime, attack, entry, fences) = context;
+                    let binding = runtime.binding();
+                    let mut tx = item_tx::begin_spell_owner_transaction(holder, deadline).await?;
+                    let _scope = item_tx::assert_spell_item_scope_in_transaction(
+                        &mut tx,
+                        permit,
+                        owner.root,
+                        owner.character,
+                        owner.holder,
+                        binding.runtime_scope(),
+                        binding.scope_generation().get(),
+                    )
+                    .await
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                    let plan = entry
+                        .boss_reward_plan
+                        .get()
+                        .ok_or(DurabilityError::InvalidStoredState)?;
+                    if !owner
+                        .root
+                        .settle_boss_death_atomic(
+                            &mut tx,
+                            owner.character,
+                            owner.holder,
+                            entry.facts.death.runtime_scope(),
+                            entry.facts.death.scope_ownership_generation(),
+                            plan.clone(),
+                        )
+                        .await?
+                    {
+                        return Err(DurabilityError::Unavailable);
+                    }
+                    let objectives =
+                        if oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature)
+                            .is_some()
+                        {
+                            super::quest_kill_objectives::apply_in_transaction(
+                                &mut tx,
+                                owner.holder,
+                                entry,
+                                &[],
+                                fences,
+                                owner.quest_catalogue.as_deref(),
+                            )
+                            .await
+                            .map_err(|error| {
+                                super::operator_event(&format!(
+                                    "boss_quest_settle_deferred reason={error:?}"
+                                ));
+                                DurabilityError::Unavailable
+                            })?
+                        } else {
+                            Vec::new()
+                        };
+                    party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
+                    super::quest_kill_objectives::publish(attack.kills(), &objectives);
+                    Ok(())
+                })
+            })
+            .await;
+        drop(attack);
+        drop(runtime);
+        drop(slots);
+        result.map_err(CharacterProgressionError::Unavailable)
     }
 }
