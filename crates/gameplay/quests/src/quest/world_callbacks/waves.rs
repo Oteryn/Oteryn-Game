@@ -1,0 +1,118 @@
+//! Crystal 201189f8 data-global/scripts/quests: children_of_the_revolution/movements_click.lua:16-125;
+//! the_new_frontier/action_arena.lua:1-89 and movement_minotaur_boss.lua:1-41.
+use super::{Callback, Encounter, EncounterMonster, Position, TargetTransform, Trigger};
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct WaveRun {
+    pub timeout_ms: u32,
+    pub timeout_exit: Position,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub clear_exit: Option<Position>,
+    /// Stations can open a route that participants subsequently take themselves.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub stay_at_stations: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hatch: Option<TargetTransform>,
+    pub waves: Vec<Wave>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Wave {
+    pub at_ms: u32,
+    pub spawn: WaveSpawn,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum WaveSpawn {
+    Fixed {
+        monsters: Vec<EncounterMonster>,
+    },
+    Scatter {
+        creature: String,
+        count: u8,
+        attempts_per_creature: u8,
+        min: Position,
+        max: Position,
+    },
+}
+
+impl WaveSpawn {
+    pub fn creatures(&self) -> impl Iterator<Item = &str> {
+        let (monsters, scattered) = match self {
+            Self::Fixed { monsters } => (monsters.as_slice(), None),
+            Self::Scatter { creature, .. } => (&[][..], Some(creature.as_str())),
+        };
+        monsters
+            .iter()
+            .map(|monster| monster.creature.as_str())
+            .chain(scattered)
+    }
+}
+
+pub fn contains(room: &Encounter, at: Position) -> bool {
+    at.floor == room.room_min.floor
+        && (room.room_min.x..=room.room_max.x).contains(&at.x)
+        && (room.room_min.y..=room.room_max.y).contains(&at.y)
+}
+
+pub(super) fn valid(callback: &Callback, room: &Encounter, run: &WaveRun) -> bool {
+    let outside = |p: Position| (-15..=0).contains(&p.floor) && !contains(room, p);
+    let area = (u32::from(room.room_max.x.saturating_sub(room.room_min.x)) + 1)
+        .saturating_mul(u32::from(room.room_max.y.saturating_sub(room.room_min.y)) + 1);
+    matches!(callback.trigger, Trigger::Use | Trigger::StepIn)
+        && (1..=3_600_000).contains(&run.timeout_ms)
+        && area <= 4096
+        && room.phase.is_none()
+        && room.timing.is_none()
+        && room.monsters.is_empty()
+        && outside(run.timeout_exit)
+        && run
+            .clear_exit
+            .is_none_or(|p| !run.waves.is_empty() && outside(p))
+        && run.hatch.as_ref().is_none_or(|hatch| {
+            run.stay_at_stations
+                && outside(hatch.position)
+                && hatch.from != 0
+                && hatch.to != 0
+                && hatch.from != hatch.to
+                && (1..=run.timeout_ms).contains(&hatch.reset_after_ms)
+        })
+        && run.waves.len() <= 32
+        && run
+            .waves
+            .windows(2)
+            .all(|pair| pair[0].at_ms < pair[1].at_ms)
+        && run.waves.iter().all(|wave| {
+            wave.at_ms < run.timeout_ms
+                && wave.spawn.creatures().all(crate::quest::valid_quest_key)
+                && match &wave.spawn {
+                    WaveSpawn::Fixed { monsters } => {
+                        (1..=32).contains(&monsters.len())
+                            && monsters.iter().enumerate().all(|(index, monster)| {
+                                contains(room, monster.position)
+                                    && monsters[..index]
+                                        .iter()
+                                        .all(|prior| prior.position != monster.position)
+                            })
+                    }
+                    WaveSpawn::Scatter {
+                        count,
+                        attempts_per_creature,
+                        min,
+                        max,
+                        ..
+                    } => {
+                        (1..=32).contains(count)
+                            && (1..=10).contains(attempts_per_creature)
+                            && contains(room, *min)
+                            && contains(room, *max)
+                            && min.x <= max.x
+                            && min.y <= max.y
+                    }
+                }
+        })
+}

@@ -67,6 +67,7 @@ mod native_trials;
 #[cfg(test)]
 mod paid_step_tests;
 mod per_use_reward;
+pub mod periodic_bosses;
 pub mod personal_trial;
 pub mod phase;
 mod questpc7_compat;
@@ -81,6 +82,7 @@ mod state_operations;
 mod treasure_source;
 #[cfg(test)]
 mod treasure_source_tests;
+pub mod waves;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPhase,
     EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence,
@@ -601,6 +603,8 @@ impl Callback {
 struct Document {
     schema: u32,
     callbacks: Vec<Callback>,
+    #[serde(default)]
+    periodic_bosses: Vec<periodic_bosses::PeriodicBoss>,
 }
 
 /// Shared World prerequisites for exact native source callbacks. Ordinary quest
@@ -879,7 +883,11 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
 
 fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, String> {
     let document: Document = serde_json::from_str(text).map_err(|e| e.to_string())?;
-    if document.schema != 1 || document.callbacks.len() > MAX_CALLBACKS {
+    if document.schema != 1
+        || document.callbacks.len() > MAX_CALLBACKS
+        || (!authored && !document.periodic_bosses.is_empty())
+        || !periodic_bosses::valid(&document.periodic_bosses)
+    {
         return Err("callback bounds".into());
     }
     let mut keys = BTreeSet::new();

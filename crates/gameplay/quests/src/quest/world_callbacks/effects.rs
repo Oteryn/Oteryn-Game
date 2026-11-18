@@ -311,6 +311,8 @@ pub struct Encounter {
     /// Source phases run on the shared encounter owner after atomic party admission.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phase: Option<EncounterPhase>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub wave_run: Option<super::waves::WaveRun>,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -777,9 +779,15 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && effects.item_reward.is_none()
             && effects.outfit_reward.is_none()
     });
+    let wave_encounter = effects.encounter.as_ref().is_some_and(|room| {
+        room.wave_run.is_some()
+            && callback.actor_kind == ActorKind::Player
+            && (personal_encounter || (!callback.has_state() && callback.offerings.is_empty()))
+    });
     if operations > 1
         || (operations > 0
             && ((!personal_encounter
+                && !wave_encounter
                 && !super::personal_trial::admitted(callback)
                 && (!lever
                     || (effects.scene.is_none()
@@ -841,7 +849,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
-        if (encounter.minimum_level == 0 && !source_party)
+        let wave_run = encounter.wave_run.as_ref();
+        let stay = wave_run.is_some_and(|run| run.stay_at_stations);
+
+        if (encounter.minimum_level == 0 && !source_party && wave_run.is_none())
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()
@@ -862,8 +873,12 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                     .contains(&encounter.players.len())
             }
-            || !(1..=if encounter.phase.is_some() { 16 } else { 8 })
-                .contains(&encounter.monsters.len())
+            || if let Some(run) = wave_run {
+                !wave_encounter || !super::waves::valid(callback, encounter, run)
+            } else {
+                !(1..=if encounter.phase.is_some() { 16 } else { 8 })
+                    .contains(&encounter.monsters.len())
+            }
             || (encounter.phase.is_some() && encounter.timing.is_some())
             || (callback.reversible && !source_party)
             || unique_from.len() != encounter.players.len()
@@ -878,7 +893,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || encounter.players.iter().any(|p| {
                 !pos(p.from)
                     || !pos(p.to)
-                    || !in_room(p.to)
+                    || if stay { p.from != p.to } else { !in_room(p.to) }
                     || (in_room(p.from) && callback.personal_room_entry() != Some(p.from))
             })
             || encounter.monsters.iter().any(|m| {

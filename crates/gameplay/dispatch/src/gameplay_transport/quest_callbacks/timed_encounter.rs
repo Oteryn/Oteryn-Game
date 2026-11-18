@@ -170,6 +170,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        self.tick_periodic_bosses(&mut runtime, map);
+        if let Ok(mut states) = self.states.spell_states.try_lock() {
+            self.tick_wave_runs(&mut runtime, &mut states, map);
+        }
         let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
             return;
         };

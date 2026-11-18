@@ -2,6 +2,7 @@
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::view::EntryFacts;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 pub(in crate::gameplay_transport) fn room_contains(
     encounter: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
@@ -43,6 +44,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 visit.participants.contains(&(actor, session))
                     && room_contains(&visit.room, position)
                     && visit.active(runtime)
+            })
+        }) {
+            return true;
+        }
+        if callbacks.waves.lock().map_or(true, |runs| {
+            runs.iter().any(|run| {
+                run.current(runtime)
+                    && run.participants.contains(&(actor, session))
+                    && room_contains(&run.room, position)
             })
         }) {
             return true;
@@ -181,6 +191,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };
+        let wave = encounter.wave_run.as_ref();
+        let stay = wave.is_some_and(|run| run.stay_at_stations);
         let personal_entry = callback.personal_room_entry().map(local);
         if census.iter().any(|(who, pos, occupant_session)| {
             occupant_session.is_some()
@@ -247,6 +259,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return UseDisposition::Rejected;
             }
+            players.push((who, member_session, expected));
+            if stay {
+                continue;
+            }
             let blocked =
                 super::super::pvp_live::pz_blocked(states, who, member_session, self.owner_now());
             let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
@@ -261,7 +277,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ) else {
                 return UseDisposition::NotPossible;
             };
-            players.push((who, member_session, expected));
             proofs.push(proof);
         }
         if !players
@@ -269,6 +284,116 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .any(|(who, s, _)| *who == actor && *s == session)
         {
             return UseDisposition::Rejected;
+        }
+        if let Some(wave) = wave {
+            let Some(native) = self.active_generation.and_then(|a| a.native_gameplay()) else {
+                return UseDisposition::Rejected;
+            };
+            if native.install_companion_policies(runtime).is_err()
+                || wave
+                    .waves
+                    .iter()
+                    .flat_map(|wave| wave.spawn.creatures())
+                    .any(|creature| runtime.companion_policy(creature).is_err())
+            {
+                return UseDisposition::Rejected;
+            }
+            let Ok(mut runs) = self.states.quest_callbacks.waves.lock() else {
+                return UseDisposition::Rejected;
+            };
+            runs.retain(|run| run.current(runtime));
+            if runs
+                .iter()
+                .any(|run| run.key == key || run.overlaps(encounter))
+            {
+                return UseDisposition::Occupied;
+            }
+            if runs.len() >= super::timed_encounter::MAX_TIMED_ENCOUNTERS
+                || runs.try_reserve(1).is_err()
+            {
+                return UseDisposition::Exhausted;
+            }
+            let mut hatch = match &wave.hatch {
+                Some(hatch) => match super::source_transforms::prepare(map, hatch) {
+                    Ok(projection) => Some(projection),
+                    Err(refusal) => return refusal,
+                },
+                None => None,
+            };
+            if preflight {
+                return UseDisposition::Committed;
+            }
+            if let Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
+                due,
+                ..
+            }) = &mut hatch
+                && let Some(hatch) = &wave.hatch
+            {
+                *due = self
+                    .owner_now()
+                    .get()
+                    .saturating_add(u64::from(hatch.reset_after_ms) * 1000);
+            }
+            let lever = if let Some(pair) = callback.lever {
+                let (Some(revision), Some(restore)) = (
+                    expected_revision.checked_add(1),
+                    map.facts.quest_callback_replacement(key, pair[0]),
+                ) else {
+                    return UseDisposition::Rejected;
+                };
+                Some((revision, restore))
+            } else {
+                None
+            };
+            let Ok(snapshots) = runtime.commit_quest_relocation(proofs, || {
+                map.facts.apply_quest_callback(
+                    key,
+                    expected_revision,
+                    after,
+                    &[],
+                    &[],
+                    false,
+                    hatch.as_ref(),
+                )
+            }) else {
+                return UseDisposition::Rejected;
+            };
+            runs.push(super::waves::ActiveWaveRun::new(
+                runtime,
+                key,
+                encounter.clone(),
+                players
+                    .iter()
+                    .map(|(who, session, _)| (*who, *session))
+                    .collect(),
+                lever,
+            ));
+            states.owner_wake.notify_one();
+            for ((who, member_session, expected), snapshot) in players.into_iter().zip(snapshots) {
+                let now = self.owner_now().get();
+                states.stage_special_movement_step(
+                    runtime,
+                    map,
+                    who,
+                    member_session,
+                    now,
+                    Some(expected.position()),
+                    snapshot.position(),
+                    None,
+                );
+                states.stage_underwater_step(
+                    runtime,
+                    who,
+                    member_session,
+                    now,
+                    underwater(map, expected.position()),
+                    underwater(map, snapshot.position()),
+                );
+                if let Some(pos) = super::native(snapshot.position()) {
+                    map.facts.emit_movement_effect(pos, 11);
+                }
+            }
+            return UseDisposition::Committed;
         }
         let mut monsters = Vec::new();
         for monster in &encounter.monsters {

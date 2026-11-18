@@ -21,6 +21,7 @@ mod ground_stack;
 mod mead;
 pub(super) mod monsters;
 mod party_transfer;
+mod periodic_bosses;
 mod personal_encounter;
 mod personal_trial;
 mod phase;
@@ -36,6 +37,7 @@ mod soul_war_reward;
 mod source_transforms;
 mod timed_encounter;
 mod timed_passages;
+mod waves;
 
 use super::paced_movement::underwater_drown::underwater;
 use crate::durability::{
@@ -99,8 +101,10 @@ struct ObservedWorldCallback {
 #[derive(Default)]
 pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
+    periodic_bosses: std::sync::Mutex<periodic_bosses::PeriodicBosses>,
     personal: personal_encounter::Cohorts,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
+    waves: std::sync::Mutex<Vec<waves::ActiveWaveRun>>,
     encounters: std::sync::Mutex<Vec<encounter::EncounterVisit>>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
     carrot_refusal:
@@ -109,6 +113,8 @@ pub(super) struct PendingCallbacks {
         std::sync::Mutex<std::collections::HashMap<GameSessionId, soul_war_reward::Pending>>,
     #[cfg(test)]
     pub(super) fixture: OnceLock<Vec<Callback>>,
+    #[cfg(test)]
+    pub(super) periodic_boss_fixture: OnceLock<Vec<world_callbacks::periodic_bosses::PeriodicBoss>>,
     #[cfg(test)]
     pub(super) reward_claims_fixture: OnceLock<Vec<String>>,
     #[cfg(test)]
