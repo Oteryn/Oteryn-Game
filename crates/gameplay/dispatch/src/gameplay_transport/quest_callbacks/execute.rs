@@ -1627,6 +1627,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     return UseDisposition::Rejected;
                 }
+                if let Some(effect) = spawn.source_magic {
+                    map.facts.emit_movement_effect(pos, effect);
+                }
                 if let Some(effect) = spawn.magic {
                     map.facts.emit_movement_effect(tile(spawn.position), effect);
                 }

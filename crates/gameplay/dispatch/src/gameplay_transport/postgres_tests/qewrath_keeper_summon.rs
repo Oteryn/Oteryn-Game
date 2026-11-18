@@ -51,8 +51,7 @@ fn fixture() -> TestResult<Bindings> {
         "storage":[{"track":QUESTLINE,"minimum":0,"maximum":34,"set":0,"preserve":true}],
         "item_on_target":{"item":POISON,"count":1,"selected_instance":true},
         "effects":{
-            "offering_spawn":{"creature":KEEPER,"position":SPAWN,"magic":11},
-            "magic":{"position":PLANT,"effect":8}
+            "offering_spawn":{"creature":KEEPER,"position":SPAWN,"magic":11,"source_magic":8}
         },
         "sources":[SOURCE]
     });

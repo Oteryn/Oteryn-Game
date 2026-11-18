@@ -322,6 +322,8 @@ pub struct OfferingSpawn {
     pub position: Position,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub magic: Option<u16>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_magic: Option<u16>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -578,6 +580,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || !spawn.creature.starts_with("oteryn:creature.")
             || !super::super::valid_quest_key(&spawn.creature)
             || spawn.magic == Some(0)
+            || spawn.source_magic == Some(0)
+            || (spawn.source_magic.is_some() && effects.magic.is_some())
             || *effects
                 != CallbackEffectSet::from_shared(CallbackEffects {
                     offering_spawn: Some(spawn.clone()),
