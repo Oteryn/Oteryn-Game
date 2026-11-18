@@ -403,6 +403,24 @@ fn condition_attributes(
 }
 
 impl PreparedMagnitudeOwner {
+    /// Retain qualified damage targets even when the target response reduces the HP change to zero.
+    pub fn direct_damage_targets(&self) -> impl Iterator<Item = ExactActorRef> + '_ {
+        let hits = match &self.plan {
+            NativeCombatPlan::Combat(plan) if plan.element != Element::Healing => {
+                plan.hits.as_slice()
+            }
+            _ => &[],
+        };
+        hits.iter()
+            .filter(|hit| hit.delay_ms == 0 && hit.magnitude > 0)
+            .filter_map(|hit| {
+                self.targets
+                    .iter()
+                    .find(|target| target.source_id == hit.target)
+            })
+            .map(|target| target.actor)
+    }
+
     /// Race identities come from the already-qualified creature owner snapshots.
     pub fn charm_targets(&self) -> impl Iterator<Item = (ExactActorRef, &str)> {
         self.targets

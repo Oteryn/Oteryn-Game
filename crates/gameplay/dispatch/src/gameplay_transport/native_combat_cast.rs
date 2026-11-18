@@ -3036,6 +3036,13 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 (attempt,batch)
             };
             if batch.applied { states.analyser.supplies(actor,session,&attempt.request.operations); }
+            if batch.applied && let Some(map) = owner.bundle_map()
+                && let Some(magnitude) = attempt.prepared.magnitude.as_deref()
+            {
+                for target in magnitude.direct_damage_targets() {
+                    super::super::encounter_phases::bosses::publish_shield_hits(map, &runtime, target, 1);
+                }
+            }
             // Only this actual applied receipt can credit a positive attack/heal. The
             // retained original batch supplies event time; a retry never renews it.
             attack.record_committed_shared_experience_batch(&runtime,content,

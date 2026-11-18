@@ -184,6 +184,10 @@ fn validate_numeric_predecessor(
         )
         .map_err(|_| Error::StaleOwner)
 }
+#[allow(
+    clippy::too_many_arguments,
+    reason = "fenced timer effects use the current bundle map"
+)]
 fn apply_due_under_current_owners(
     runtime: &mut crate::foundation::ChannelRuntimeV1,
     states: &mut super::ChannelSpellStates,
@@ -192,6 +196,7 @@ fn apply_due_under_current_owners(
     now: oteryn_simulation_determinism::SemanticTimeMicros,
     content: &crate::content::native_gameplay::NativeGameplayState,
     catalogue: &crate::content::charm_source::CanonicalCharmCatalogue,
+    map: Option<&crate::map::boot::BundleMap>,
 ) -> Result<FireReport, Error> {
     // Both physical/state locks stayed held across every fenced SQL owner read.
     // Each due callback independently compares the exact active source again.
@@ -243,6 +248,7 @@ fn apply_due_under_current_owners(
         states,
         content,
         catalogue,
+        map,
     };
     let report = timer.fire_one_due_current_with_context(
         runtime,
@@ -1015,6 +1021,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             owner.owner_now(),
                             content,
                             owner.imported_charms,
+                            owner.bundle_map(),
                         )
                         .map_err(|_| DurabilityError::Unavailable)?,
                     );
@@ -1046,6 +1053,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .and_then(|active| active.native_gameplay())
                 .ok_or(Error::StaleOwner)?,
             self.imported_charms,
+            self.bundle_map(),
         )?;
         self.record_spell_kills(
             &mut runtime,

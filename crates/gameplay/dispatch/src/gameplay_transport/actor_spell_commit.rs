@@ -1025,6 +1025,7 @@ pub(in crate::gameplay_transport) struct DueCharmCommit<'a> {
     pub states: &'a mut ChannelSpellStates,
     pub content: &'a crate::content::native_gameplay::NativeGameplayState,
     pub catalogue: &'a crate::content::charm_source::CanonicalCharmCatalogue,
+    pub map: Option<&'a crate::map::boot::BundleMap>,
 }
 impl crate::spell::delayed_execution::due_commit_seal::Sealed for DueCharmCommit<'_> {}
 impl crate::spell::delayed_execution::DueCombatCommit for DueCharmCommit<'_> {
@@ -1075,7 +1076,27 @@ impl crate::spell::delayed_execution::DueCombatCommit for DueCharmCommit<'_> {
                 .set(prepared)
                 .map_err(|_| Error::InvalidPayload)?;
         }
-        commit_due_batch(runtime, self.states, payload, batch, inputs.children.get())
+        let receipt =
+            commit_due_batch(runtime, self.states, payload, batch, inputs.children.get())?;
+        if receipt.applied
+            && let Some(map) = self.map
+        {
+            let magnitude = match payload {
+                TimerPayload::Strike(saved) => saved.resolved.as_ref().map(|r| &r.magnitude),
+                TimerPayload::OrdinaryCombat(saved) => {
+                    saved.resolved.as_ref().map(|r| &r.magnitude)
+                }
+                _ => None,
+            };
+            if let Some(magnitude) = magnitude {
+                for target in magnitude.direct_damage_targets() {
+                    crate::gameplay_transport::encounter_phases::bosses::publish_shield_hits(
+                        map, runtime, target, 1,
+                    );
+                }
+            }
+        }
+        Ok(receipt)
     }
 }
 
