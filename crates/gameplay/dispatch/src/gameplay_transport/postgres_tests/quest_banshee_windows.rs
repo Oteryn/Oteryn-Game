@@ -22,7 +22,7 @@ const FIRST: Position = at(32315,31910,-12);
 const SECOND: Position = at(32212,31888,-12);
 const FIRST_WALL: Position = at(32259,31891,-10);
 const SECOND_WALL: Position = at(32259,31890,-10);
-const TRAPDOOR_LEVER: Position = at(32266,31861,-11);
+pub(super) const TRAPDOOR_LEVER: Position = at(32266,31861,-11);
 const TRAPDOOR: Position = at(32266,31860,-11);
 
 const fn at(x: u16,y: u16,floor: i8) -> Position {
@@ -85,6 +85,23 @@ pub(super) async fn exercise(
     let [operator, traveler] = members else { return Err("two Banshee participants".into()); };
     let operator_actor = operator.runtime_actor.ok_or("first switch operator")?;
     let traveler_actor = traveler.runtime_actor.ok_or("second switch operator")?;
+
+    // Crystal action-1-first_seal_lever.lua:9-14 creates real ground. Item
+    // 369 carries floorchange=down in Crystal data/items/items.xml:744-747.
+    // The fixture positions the operator on the retained lever tile before
+    // issuing native USE and STEP, independent of the adjacent debris.
+    let upper = map.overlay.base().tile(TRAPDOOR.x, TRAPDOOR.y, TRAPDOOR.floor)
+        .ok_or("native Banshee trapdoor tile")?;
+    assert!(upper.ground().is_none(), "the closed tile holds only its wall");
+    owner.states.test_owner_time.store(10_000_001,Ordering::Relaxed);
+    assert_eq!(use_target(owner,operator,&target(map,TRAPDOOR_LEVER)?).await?,UseDisposition::Committed);
+    step(owner,operator,StepDirection::North).await?;
+    let position = owner.runtime.lock().await
+        .read_actor_position(operator_actor).map_err(debug)?.position();
+    assert_eq!(position, local(at(32266,31860,-12)));
+    map.facts.expire_movement_items(13_000_000);
+    relocate(owner,operator_actor,operator.game_session_id,(START.x,START.y,12)).await?;
+
     let walls = [FIRST_WALL,SECOND_WALL].map(|p| TilePos{x:p.x,y:p.y,floor:p.floor});
     let first = placement_key(walls[0],1).ok_or("first wall placement")?;
     let second = placement_key(walls[1],1).ok_or("second wall placement")?;
@@ -129,18 +146,5 @@ pub(super) async fn exercise(
     assert!(!map.facts.base_hidden(first));
     assert_eq!(map.facts.next_movement_decay_time(),None);
 
-    // Crystal action-1-first_seal_lever.lua:9-14 creates real ground. Item
-    // 369 carries floorchange=down in Crystal data/items/items.xml:744-747.
-    let upper = map.overlay.base().tile(TRAPDOOR.x, TRAPDOOR.y, TRAPDOOR.floor)
-        .ok_or("native Banshee trapdoor tile")?;
-    assert!(upper.ground().is_none(), "the closed tile holds only its wall");
-    owner.states.test_owner_time.store(330_000_001,Ordering::Relaxed);
-    relocate(owner, operator_actor, operator.game_session_id,
-        (TRAPDOOR_LEVER.x, TRAPDOOR_LEVER.y, 11)).await?;
-    assert_eq!(use_target(owner,operator,&target(map,TRAPDOOR_LEVER)?).await?,UseDisposition::Committed);
-    step(owner,operator,StepDirection::North).await?;
-    let position = owner.runtime.lock().await
-        .read_actor_position(operator_actor).map_err(debug)?.position();
-    assert_eq!(position, local(at(32266,31860,-12)));
     Ok(())
 }

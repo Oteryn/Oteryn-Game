@@ -345,7 +345,11 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
             runtime
                 .bind_attacker_lease(actor, session, current.current_character_lease())
                 .map_err(debug)?;
-            let at = start;
+            let at = if route == Route::BansheeWindows && index == 0 {
+                super::quest_banshee_windows::TRAPDOOR_LEVER
+            } else {
+                start
+            };
             runtime
                 .initialize_pinned_test_position(actor, local(at))
                 .map_err(debug)?;
