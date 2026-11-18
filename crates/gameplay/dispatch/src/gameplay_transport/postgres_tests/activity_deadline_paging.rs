@@ -91,6 +91,15 @@ async fn window_case(h: &Harness) -> TestResult {
     second.initiating_character_id =
         CharacterId::decode(member.source.character_id.as_bytes()).map_err(debug)?;
 
+    let mut competing = second.clone();
+    competing.handoff_id = id(92);
+    competing.destination_scope = allocate_ready_instance(h, 93).await?;
+    let assignment = h.root.read_runtime_scope_assignment(competing.destination_scope)
+        .await.map_err(debug)?.ok_or("competing allocation")?;
+    competing.destination_generation =
+        crate::foundation::ScopeOwnershipGeneration::new(assignment.ownership_generation).map_err(debug)?;
+    competing.destination_assignment_source_revision = assignment.source_revision;
+
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
     let window = std::num::NonZeroU32::new(8_000).ok_or("nonzero enrollment window")?;
@@ -99,6 +108,12 @@ async fn window_case(h: &Harness) -> TestResult {
             "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
         ).bind(request.initiating_character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
         evidence.evidence.refresh_account(&h.root, &h.node, &account).await.map_err(debug)?;
+        if request.initiating_character_id == second.initiating_character_id {
+            assert_eq!(
+                owner.enter_boss_admission_window(&authority, &h.node, competing.clone(), window).await?,
+                ActivityEnterOutcome::Refused(ActivityRefusal::NoCapacity)
+            );
+        }
         let outcome = owner.enter_boss_admission_window(
             &authority, &h.node, request.clone(), window,
         ).await?;
