@@ -351,7 +351,9 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if name == super::super::first_dragon_descendant::CASE {
+    let mut callback = if name == super::super::ferumbras_crystal_reset::CASE {
+        super::super::ferumbras_crystal_reset::callback()?
+    } else if name == super::super::first_dragon_descendant::CASE {
         super::super::first_dragon_descendant::callback()?
     } else if m03_use {
         super::super::qengine_m03_use::callback()?
@@ -649,7 +651,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if name == "authored-wrath-crystals" {
+    let world = if name == super::super::ferumbras_crystal_reset::CASE {
+        super::super::ferumbras_crystal_reset::world(&callback)?
+    } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::world()?
     } else if name == "nx6-wayfarer" {
         super::super::questpc8_wrath_source_dragon::world()?
@@ -1874,7 +1878,9 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if name == super::super::first_dragon_descendant::CASE {
+        if name == super::super::ferumbras_crystal_reset::CASE {
+            Box::pin(super::super::ferumbras_crystal_reset::exercise(&mut owner, &mut admitted, &h, callback.clone())).await?;
+        } else if name == super::super::first_dragon_descendant::CASE {
             Box::pin(super::super::first_dragon_descendant::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if m03_use {
             Box::pin(super::super::qengine_m03_use::exercise(
