@@ -1,12 +1,12 @@
 //! Crystal 201189f8 world bindings through dispatched STEP and USE.
 use super::fixture::{Harness, debug};
-use super::quest_world_callbacks::{local, scenario, wire};
+use super::quest_world_callbacks::{input_item, local, scenario, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::ExactActorRef;
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::gameplay_transport::item_view::ItemKey;
 use crate::map::view::MapFacts;
-use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position, Trigger};
+use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Offering, Position, Trigger};
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
 };
@@ -204,15 +204,30 @@ pub(super) async fn exercise(
             return exercise_satchel(owner, admitted, h, actor, start, expected, target, key).await;
         }
         if name == "galthen-iksupan-entrance" {
-            let item = "oteryn:item.tibia.i3003";
-            super::item_look::seed_main_backpack(h, &[(item, 1)]).await?;
+            let fence = admitted.item_fence.ok_or("Iksupan item fence")?;
+            let rope = Offering {
+                position: start,
+                item: "oteryn:item.tibia.i3003".into(),
+                count: 1,
+            };
+            input_item(owner, fence, &rope, 1, true).await?;
+            let rope_instance: Vec<u8> = sqlx::query_scalar(
+                "SELECT uuid_send(entry.item_instance_id) FROM game_item_container_entries entry
+                   JOIN game_item_instances item USING (item_instance_id)
+                  WHERE entry.character_id=encode($1,'hex')::uuid
+                    AND item.definition_production_key=$2 AND item.lifecycle=1",
+            )
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(&rope.item)
+            .fetch_one(&h.pool)
+            .await?;
             let result = owner
                 .tame_mount(
                     actor,
                     UseCommand {
                         game_session_id: admitted.game_session_id,
                         command_id: admitted.continuity.next_command_id,
-                        item_fence: admitted.item_fence,
+                        item_fence: Some(fence),
                     },
                     UseIntent {
                         target: UseTarget::Item(std::num::NonZeroU64::MIN),
@@ -220,7 +235,11 @@ pub(super) async fn exercise(
                         use_with_map_item: Some(MapUseTarget::Object(target.clone())),
                         use_with_position: None,
                     },
-                    Some(ItemKey::Instance(super::fixture::id(71))),
+                    Some(ItemKey::Instance(
+                        rope_instance
+                            .try_into()
+                            .map_err(|_| "Iksupan rope identity")?,
+                    )),
                     None,
                     false,
                 )
