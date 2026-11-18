@@ -28,8 +28,10 @@ linker, so its full test list and link input totals remain unavailable.
 In the resubmitted baseline, the dispatch test rustc high-water mark was
 15,092,520 KiB (14.39 GiB) before the LLVM coordinator thread appeared.
 RSS continued rising after codegen started. The cgroup recorded one OOM
-kill when rustc received SIGKILL. There was no final linker invocation. Its
-source tree has 4,238 test attributes and 29 direct lifted-test mounts in
+kill when rustc received SIGKILL. At the last sample the cgroup held
+17.01 GB of anonymous memory and 23.02 MB of file-backed memory.
+The dispatch test process was the largest resident process and there was
+no final linker invocation. The dispatch source tree has 4,238 test attributes and 29 direct lifted-test mounts in
 `lib.rs`. The build script generates another 735 PostgreSQL module mounts
 for the same test crate. The PostgreSQL subtree contains 2,171 test
 attributes, including nested helper files. A repeat of the baseline confirmed 735 generated module mounts and the
