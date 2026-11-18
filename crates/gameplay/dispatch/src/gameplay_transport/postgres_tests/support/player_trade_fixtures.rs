@@ -920,11 +920,20 @@ async fn read_priority_case(
     use crate::gameplay_transport::session_ingress::SessionCommandStream;
     for session in admitted {
         let expected = crate::gameplay_transport::character_gameplay_fence::current(
-            owner, session.game_session_id, true,
-        ).await.ok_or("separate canonical fence reads")?;
-        let batched = owner.current_quest_fence_durable(session.game_session_id).await?
+            owner,
+            session.game_session_id,
+            true,
+        )
+        .await
+        .ok_or("separate canonical fence reads")?;
+        let batched = owner
+            .current_quest_fence_durable(session.game_session_id)
+            .await?
             .ok_or("batched canonical fence")?;
-        assert_eq!(batched, expected, "batch preserves every current generation and revision");
+        assert_eq!(
+            batched, expected,
+            "batch preserves every current generation and revision"
+        );
         owner.trade_open(*session).await.ok_or("open trade owner")?;
     }
     let mut streams = [
@@ -948,6 +957,12 @@ async fn read_priority_case(
         .await?,
         ResultCode::Offered,
     );
+    // The destination preflight yielded to this offer. Exercise the safe-exit boundary
+    // directly while the real peer's offer is open.
+    assert!(matches!(
+        owner.logout_session_as(admitted[1], true).await,
+        Err(oteryn_protocol_oteryn::channel_switch::SwitchLock::Trade)
+    ));
     assert_eq!(
         trade_command_handoff(
             &h.root,
@@ -1093,12 +1108,17 @@ async fn trade_command_handoff(
         let _observation = root.foreground_demand()?;
         let background = root.clone();
         root.spawn_task(async move {
-            assert!(matches!(background.try_issue_semantic_pass(),
-                Err(crate::durability::DurabilityError::RootUnavailable)));
+            assert!(matches!(
+                background.try_issue_semantic_pass(),
+                Err(crate::durability::DurabilityError::RootUnavailable)
+            ));
             Ok::<(), crate::durability::DurabilityError>(())
-        }).await.map_err(debug)??;
+        })
+        .await
+        .map_err(debug)??;
         Ok::<(), Box<dyn std::error::Error>>(())
-    }).await?;
+    })
+    .await?;
     let result = command.await?;
     root.try_issue_background_semantic_pass()?
         .run(|_, _| Box::pin(async { Ok(()) }))

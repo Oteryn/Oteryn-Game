@@ -249,7 +249,7 @@ fn scenario_case(
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
         let world = if matches!(case, Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured) {
-            super::quest_callbacks_fixtures::source_world_choices_with_door(
+            super::quest_callbacks::source_world_choices_with_door(
                 chest,
                 captured_choices.as_deref().unwrap_or(&[
                     (33227, 6085),

@@ -85,6 +85,9 @@ pub struct GuildMember {
     pub name: String,
     pub level: u8,
     pub title: String,
+    /// The member's current Channel of this World (SOCIAL_CHANNEL_V1, capability 513);
+    /// None when the member is offline or the capability was not selected.
+    pub channel: Option<[u8; 16]>,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GuildInvitation {

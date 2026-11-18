@@ -52,6 +52,9 @@ mod vocationless_vitals;
 include!(concat!(env!("OUT_DIR"), "/postgres_test_support_mounts.rs"));
 include!(concat!(env!("OUT_DIR"), "/postgres_tests_mounts.rs"));
 
+// Keep the module paths used by the digest-pinned reward qualification tests.
+use self::quest_callbacks_fixtures as quest_callbacks;
+
 use super::{ComposedFreshAdmission, MonkSave};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::fresh_admission::FreshAdmissionStore;
@@ -720,6 +723,8 @@ fn shutdown_flush_is_fenced_out_for_a_terminal_session_and_reports_an_unavailabl
 /// the training formula and the progression; only its training content revision is the fixture
 /// Character's interpretation (production pairs both as `s3b-content-1`).
 mod death_ml_loss_composed {
+    pub(super) use super::death_ml_loss_composed_fixtures::production_generation_with_pin;
+
     #[cfg(oteryn_pg_shard_primary)]
     use super::TestResult;
     #[cfg(oteryn_pg_shard_primary)]

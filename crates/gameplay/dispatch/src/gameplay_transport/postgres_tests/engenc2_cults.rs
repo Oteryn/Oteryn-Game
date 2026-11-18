@@ -320,6 +320,29 @@ fn cults_scenario(reenter: bool) -> TestResult {
                     .len(),
                 1
             );
+            {
+                use crate::gameplay_transport::capabilities::{
+                    BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
+                };
+                use crate::gameplay_transport::channel_switch::ChannelSwitchOutcome;
+                use oteryn_protocol_oteryn::channel_switch as wire;
+                let mut picker = admitted;
+                picker.continuity.selected_capabilities = SelectedCapabilities::select(
+                    BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                    &[wire::CAPABILITY_CHANNEL_SWITCH_V1],
+                )
+                .ok_or("switch capability")?;
+                let Some(ChannelSwitchOutcome::Refused(payload)) = owner
+                    .channel_switch_request_wire(picker, 2, &wire::encode_request(id(44)))
+                    .await
+                else {
+                    return Err("active encounter allowed switch".into());
+                };
+                assert_eq!(
+                    wire::decode_status(&payload).map(|s| s.lock),
+                    Some(wire::SwitchLock::Event)
+                );
+            }
             let plan = oteryn_gameplay_encounters::bosses::phase_controller::cults::plan();
             let mut command = 100;
             for i in (0..5).flat_map(|i| [i, i + 5]).chain([10]) {

@@ -569,7 +569,7 @@ pub(super) fn scenario_with_definition_ready_claim(
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated_pin) =
-            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+            super::death_ml_loss_composed::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;

@@ -115,6 +115,13 @@ pub(super) async fn exercise(
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
         .ok_or("clock")?;
+    // A creature in the authored room does not establish an active trial.
+    let unrelated = owner.runtime.lock().await.admit_encounter_actor(
+        "oteryn:creature.rat", 20,
+        crate::foundation::MovementLocalPosition { x: 32854, y: 32673, floor: 7 },
+    ).map_err(debug)?;
+    super::channel_switch_fixtures::assert_encounter_switch_lock(owner, *admitted, false).await?;
+    owner.runtime.lock().await.remove_encounter_actor(unrelated).map_err(debug)?;
     let reply = super::quest_world_callbacks_fixtures::wire(
         owner,
         admitted,
@@ -137,6 +144,8 @@ pub(super) async fn exercise(
         .quest_callbacks
         .next_encounter_due_us()
         .ok_or("the committed entry schedules its native trial")?;
+    assert_eq!(elephants(owner).await?, 0, "before the spawn has been processed");
+    super::channel_switch_fixtures::assert_encounter_switch_lock(owner, *admitted, true).await?;
     owner.drain_quest_encounter_deadlines().await;
     if owner.owner_now().get() < spawn_at {
         assert_eq!(
