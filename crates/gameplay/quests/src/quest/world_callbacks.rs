@@ -1837,6 +1837,41 @@ mod tests {
     }
 
     #[test]
+    fn feaster_stateless_level_gate_requires_player_step_in_and_a_return_path() -> Result<(), String> {
+        let callback = serde_json::json!({
+            "key": "oteryn:quest-callback/feaster-donor-entrance",
+            "quest": "oteryn:quest.feaster_of_souls_quest",
+            "trigger": "step_in",
+            "selector": {"position": {"x": 32625, "y": 32076, "floor": -7}},
+            "teleport": {"x": 31914, "y": 32354, "floor": -8},
+            "effects": {"teleport_effect": 11},
+            "reversible": false,
+            "return_on_failure": true,
+            "passages": [],
+            "offerings": [],
+            "storage": [],
+            "minimum_level": 250,
+            "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_entrances.lua:17-33"]
+        });
+        let packet = |callback| serde_json::json!({"schema": 1, "callbacks": [callback]}).to_string();
+        let parsed = parse(&packet(callback.clone()))?;
+        assert!(!parsed[0].requires_durable_commit());
+        for (field, value) in [
+            ("trigger", "use".into()),
+            ("trigger", "step_out".into()),
+            ("actor_kind", "monster".into()),
+            ("minimum_level", 0.into()),
+            ("teleport", serde_json::Value::Null),
+            ("return_on_failure", false.into()),
+        ] {
+            let mut invalid = callback.clone();
+            invalid[field] = value;
+            assert!(parse(&packet(invalid)).is_err(), "{field}");
+        }
+        Ok(())
+    }
+
+    #[test]
     fn conditional_storage_compiles_exact_value_effect_and_rejects_guard_overloading()
     -> Result<(), String> {
         let callback = serde_json::json!({
