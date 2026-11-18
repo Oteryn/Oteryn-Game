@@ -4,6 +4,7 @@ use super::fixture::{Harness, debug, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::{CharacterId, CharacterLease};
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Offering, Position};
 use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
@@ -396,11 +397,14 @@ pub(super) async fn exercise_world(
         .digest()
         .to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
-    let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget {
-        placement,
-        expected_revision: 0,
-    })
-    .map_err(debug)?;
+    let encode_target = |expected_revision| {
+        oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget {
+            placement: placement.clone(),
+            expected_revision,
+        })
+        .map_err(debug)
+    };
+    let payload = encode_target(0)?;
     let reward = callback.effects.item_reward.as_ref();
     let tool = callback.item_on_target.as_ref();
     // The counter or chain track that this step advances is the first one that is written.
@@ -426,18 +430,17 @@ pub(super) async fn exercise_world(
     };
     let try_use = async |owner: &mut ComposedFreshAdmission<'_, '_, '_>,
                          admitted: &mut AdmittedSession,
-                         command: u64|
+                         command: u64,
+                         payload: Vec<u8>|
            -> TestResult<UseDisposition> {
-        let bytes =
-            super::quest_world_callbacks::wire(owner, admitted, command, 2, payload.clone())
-                .await?;
+        let bytes = super::quest_world_callbacks::wire(owner, admitted, command, 2, payload).await?;
         oteryn_protocol_oteryn::world_object::decode_use_result(&bytes).map_err(debug)
     };
     // A step whose stage is not reached is refused and leaves everything untouched.
     if guarded {
         let command = admitted.continuity.next_command_id;
         assert_eq!(
-            try_use(owner, admitted, command).await?,
+            try_use(owner, admitted, command, payload.clone()).await?,
             UseDisposition::Rejected,
             "stage guard"
         );
@@ -455,7 +458,7 @@ pub(super) async fn exercise_world(
         // Neither a missing nor a wrong item moves the quest.
         let command = admitted.continuity.next_command_id;
         assert_eq!(
-            try_use(owner, admitted, command).await?,
+            try_use(owner, admitted, command, payload.clone()).await?,
             UseDisposition::Rejected,
             "missing item"
         );
@@ -463,7 +466,7 @@ pub(super) async fn exercise_world(
         mint(owner, admitted, &item(3031), nonce).await?;
         let command = admitted.continuity.next_command_id;
         assert_eq!(
-            try_use(owner, admitted, command).await?,
+            try_use(owner, admitted, command, payload.clone()).await?,
             UseDisposition::Rejected,
             "wrong item"
         );
@@ -474,7 +477,7 @@ pub(super) async fn exercise_world(
     }
     let command = admitted.continuity.next_command_id;
     assert_eq!(
-        try_use(owner, admitted, command).await?,
+        try_use(owner, admitted, command, payload.clone()).await?,
         UseDisposition::Committed
     );
     let expected = if written.increment {
@@ -493,15 +496,16 @@ pub(super) async fn exercise_world(
     let after = audits().await?;
     // The same command id replays the committed result without a second effect.
     assert_eq!(
-        try_use(owner, admitted, command).await?,
+        try_use(owner, admitted, command, payload.clone()).await?,
         UseDisposition::Committed
     );
     assert_eq!(audits().await?, after);
     assert_eq!(track(h, &written.track).await?, expected);
     // A new use is refused: the stage moved, the counter is spent or the item is gone.
     let next = admitted.continuity.next_command_id;
+    let revision = owner.bundle_map().ok_or("map")?.facts.object_revision(key);
     assert_eq!(
-        try_use(owner, admitted, next).await?,
+        try_use(owner, admitted, next, encode_target(revision)?).await?,
         UseDisposition::Rejected,
         "second use"
     );
