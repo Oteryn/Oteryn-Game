@@ -68,12 +68,17 @@ impl DurabilityRoot {
                 Ok(root) => root,
                 Err(error) => return Ok(Err(error)),
             };
-            // Crystal/Canary citizen.lua: Svargrond requires Barbarian Test questline 8.
+            // Crystal citizen.lua:39-40 reads the Barbarian Test questline. The older
+            // numeric storage binding remains a fallback for existing Characters.
             let citizenship = if citizenship == Some(16) {
                 let progress: Option<i64> = sqlx::query_scalar(
-                    "SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid \
-                     AND track_key='oteryn:quest-progress/storage/41174'"
-                ).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+                    "SELECT value FROM game_character_quest_tracks
+                     WHERE character_id=encode($1,'hex')::uuid
+                     AND track_key IN ($2, 'oteryn:quest-progress/storage/41174')
+                     ORDER BY (track_key = $2) DESC LIMIT 1"
+                ).bind(fence.character_id.as_bytes().as_slice())
+                 .bind(oteryn_gameplay_quests::quest::barbarian_mead::TRACKS[0])
+                 .fetch_optional(&mut *tx).await?;
                 citizenship.filter(|_| progress.is_some_and(|value| value >= 8))
             } else { citizenship };
             // assert_gameplay_fence already holds the Character root FOR UPDATE.

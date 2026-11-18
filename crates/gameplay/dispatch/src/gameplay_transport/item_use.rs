@@ -797,7 +797,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             other: None,
         };
-        self.commit_fluid(actor, command, fence, request, drink_restore(fluid))
+        self.commit_fluid_at(actor, command, fence, request, None, true)
             .await
     }
 
@@ -964,7 +964,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             other: None,
         };
         let disposition = self
-            .commit_fluid_at(actor, &command, fence, request, splash, None)
+            .commit_fluid_at(actor, &command, fence, request, splash, false)
             .await
             .unwrap_or_else(|d| d);
         Some(UseOutcome {
@@ -1051,24 +1051,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         Some(
-            self.commit_fluid(actor, command, fence, request, None)
+            self.commit_fluid_at(actor, command, fence, request, None, false)
                 .await,
         )
     }
 
-    /// PREPARE, commit and settle of one fluid command; only a known commit applies `restore`.
-    async fn commit_fluid(
-        &self,
-        actor: ExactActorRef,
-        command: &UseCommand,
-        fence: CurrentCharacterItemFence,
-        request: ItemFluidRequest,
-        restore: Option<ReferencePotionRestore>,
-    ) -> Result<UseDisposition, UseDisposition> {
-        self.commit_fluid_at(actor, command, fence, request, None, restore)
-            .await
-    }
-
+    /// Prepare, commit and settle one fluid command. Only a newly committed
+    /// self-use applies the drink effect.
     async fn commit_fluid_at(
         &self,
         actor: ExactActorRef,
@@ -1076,7 +1065,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         fence: CurrentCharacterItemFence,
         request: ItemFluidRequest,
         splash: Option<ItemFluidSplash>,
-        restore: Option<ReferencePotionRestore>,
+        drink: bool,
     ) -> Result<UseDisposition, UseDisposition> {
         let session = command.game_session_id;
         let reserved: Vec<[u8; 16]> = std::iter::once(request.change.item_instance_id)
@@ -1092,6 +1081,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             gate.start_drink(self.owner_ms())?;
         }
+        let fluid = drink.then_some(request.change.fluid_before);
+        let restore = fluid.and_then(drink_restore);
         let analyser_supply = restore.as_ref().map(|_| request.change.definition.clone());
         let commit =
             self.root
@@ -1122,6 +1113,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &Effect::Potion(vec![restore]),
                 self.owner_ms(),
             );
+        }
+        if known_commit
+            && matches!(fluid, Some(2 | 3 | 13 | 16))
+            && let Some(state) = states.get(&runtime, actor, session)
+            && let Ok(next) =
+                crate::spell::actor_conditions::stage_item_drunk(state, self.owner_now().get())
+        {
+            states.commit(&runtime, actor, session, next);
         }
         if let Some(gate) = states.item_uses.gate(&runtime, actor, session) {
             gate.settle(
@@ -1214,8 +1213,7 @@ fn fluid_source_subtype(id: u32) -> Option<u8> {
 
 /// Crystal `data-global/scripts/actions/other/fluids.lua:130-135`: mana fluid (10)
 /// restores `math.random(50, 150)` mana and life fluid (11) `addHealth(60)`.
-/// The drunk (2, 3, 13, 16) and poison (6) conditions are not modelled
-/// (`PARITY_PENDING`); every other fluid is only drunk.
+/// The alcoholic fluid effect is applied separately from vitals restoration.
 fn drink_restore(fluid: u8) -> Option<ReferencePotionRestore> {
     let (resource, min, max) = match fluid {
         10 => (ReferenceRestoreResource::Mana, 50, 150),

@@ -1,7 +1,9 @@
 //! Mutators of the real PlayerSpellState condition/vitals successor. The owning
 //! Channel transaction qualifies actors and commits its final revision once.
 mod item_actions;
-pub use item_actions::{stage_item_costume, stage_item_health_loss, stage_quest_disguise};
+pub use item_actions::{
+    stage_item_costume, stage_item_drunk, stage_item_health_loss, stage_quest_disguise,
+};
 
 use super::cast::PlayerSpellState;
 use super::combat_batch::OwnerCombatChange;
@@ -40,11 +42,19 @@ fn apply_definition(
     now_ms: u64,
     shield_capacity: u32,
 ) -> Result<(), SpellCastDisposition> {
+    apply_definition_at(state, definition, now_us(now_ms)?, shield_capacity)
+}
+fn apply_definition_at(
+    state: &mut PlayerSpellState,
+    definition: ConditionDefinition,
+    now_us: u64,
+    shield_capacity: u32,
+) -> Result<(), SpellCastDisposition> {
     // All definitions admitted here are fixed and make no random decision. This
     // inert context cannot grant authority; the outer owner already proves it.
     let root = GameplayDecisionRoot::from_bytes([0; 32]);
     let facts = ApplicationFacts {
-        now: now_us(now_ms)?,
+        now: now_us,
         base_speed: u16::try_from(state.base_speed).map_err(|_| SpellCastDisposition::Rejected)?,
         mana_shield_capacity: shield_capacity,
         target_reentry_protected: false,

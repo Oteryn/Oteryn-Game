@@ -61,6 +61,32 @@ pub fn stage_item_costume(
     Ok(next)
 }
 
+/// Crystal fluids.lua:1-2,121-122 applies the same 60-second Drunk condition
+/// for wine, beer, rum and mead.
+pub fn stage_item_drunk(
+    state: &PlayerSpellState,
+    now_us: u64,
+) -> Result<PlayerSpellState, SpellCastDisposition> {
+    if state.health == 0 {
+        return rejected();
+    }
+    let mut next = state.clone();
+    apply_definition_at(
+        &mut next,
+        definition(
+            "item.fluid.drunk",
+            ConditionValues::TimedStatus {
+                kind: oteryn_gameplay_domain::domain::condition::StatusKind::Drunk,
+                duration_ms: 60_000,
+            },
+        )?,
+        now_us,
+        0,
+    )?;
+    next.advance_batch_revision()?;
+    Ok(next)
+}
+
 /// Crystal 201189f fireworks_rocket.lua:11 and creature_functions.cpp:591-608:
 /// Lua HP loss skips armor/origin reductions but retains mana shields and survival.
 pub fn stage_item_health_loss(
