@@ -69,7 +69,7 @@ pub(super) fn closest_vortex_landing(
                     ..destination
                 })
             })
-            .filter(|&at| free(at))
+            .filter(|&at| at != entered && free(at))
             .min_by_key(|at| at.x.abs_diff(entered.x).max(at.y.abs_diff(entered.y)));
         if landing.is_some() {
             return landing;

@@ -267,6 +267,64 @@ pub(super) async fn exercise(
             "blocked vortex landing"
         );
     }
+    use oteryn_protocol_oteryn::creature_push::{CreaturePushDisposition, CreaturePushIntent};
+    use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+    let (troll, intent) = {
+        let mut runtime = owner.runtime.lock().await;
+        let key = "oteryn:creature.troll";
+        let health = runtime.companion_policy(key).map_err(debug)?.maximum_health;
+        let at = MovementLocalPosition {
+            x: 116,
+            y: 116,
+            floor: 7,
+        };
+        let troll = runtime
+            .commit_quest_creature_spawn(&[(key, health, at)])
+            .map_err(debug)?[0];
+        let visible = runtime.visible_entities();
+        let target = visible
+            .creatures
+            .iter()
+            .find(|entity| entity.actor == troll)
+            .ok_or("visible troll")?;
+        let to = MovementLocalPosition {
+            x: 115,
+            y: 117,
+            floor: 7,
+        };
+        let destination = owner
+            .wire_observation(&runtime, to)
+            .ok_or("visible vortex")?
+            .actor_position;
+        (
+            troll,
+            CreaturePushIntent {
+                target: EntityRef {
+                    identity: troll.placement_identity(),
+                    generation: target.generation,
+                },
+                destination,
+            },
+        )
+    };
+    assert_eq!(
+        owner
+            .push_creature_now(player, admitted.game_session_id, intent)
+            .await,
+        CreaturePushDisposition::Moved,
+    );
+    {
+        let runtime = owner.runtime.lock().await;
+        let landing = runtime
+            .read_actor_position(troll)
+            .map_err(debug)?
+            .position();
+        assert_eq!(
+            (landing.x, landing.y, landing.floor),
+            (111, 116, 7),
+            "a pushed monster takes the same blocked vortex route"
+        );
+    }
     {
         let mut runtime = owner.runtime.lock().await;
         let current = runtime.read_actor_position(nargol).map_err(debug)?;

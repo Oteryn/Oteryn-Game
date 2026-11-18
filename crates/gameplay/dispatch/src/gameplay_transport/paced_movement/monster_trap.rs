@@ -41,6 +41,13 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
         if !runtime.contains_live_creature(step.actor) {
             continue;
         }
+        let mut step = step;
+        if let Some(landed) = states
+            .encounter_phases
+            .zelos_monster_step(runtime, step, map, now)
+        {
+            step.to = landed;
+        }
         states
             .encounter_phases
             .azaram_monster_step(runtime, step, now);

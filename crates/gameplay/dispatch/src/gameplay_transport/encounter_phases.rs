@@ -287,6 +287,65 @@ impl Registry {
         })
     }
 
+    pub(super) fn zelos_monster_step(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        step: crate::map::facts::MonsterStep,
+        map: &crate::map::boot::BundleMap,
+        now: u64,
+    ) -> Option<MovementLocalPosition> {
+        let entered = runtime.read_actor_position(step.actor).ok()?;
+        if step.from == step.to || entered.position() != step.to {
+            return None;
+        }
+        let active = self.active.lock().ok()?;
+        let (cells, destination, corridor) = active.iter().find_map(|phase| {
+            let (Fight::Zelos(zelos), Some(room)) = (&phase.fight, &phase.timed_room) else {
+                return None;
+            };
+            if !zelos.is_current(runtime) || zelos.timeout_participants(now).is_some() {
+                return None;
+            }
+            if room.north_vortex.is_some_and(|(gate, _)| gate == step.to) {
+                return Some((&phase.cells, step.from, false));
+            }
+            room.corridors
+                .iter()
+                .find_map(|&(from, to)| (from == step.to).then_some((&phase.cells, to, true)))
+        })?;
+        let doors = crate::map::floor::BundleDoors(&map.facts);
+        let direct = crate::movement::relocate::relocate_creature(
+            runtime,
+            step.actor,
+            cells,
+            &doors,
+            destination,
+        );
+        let landed = match direct {
+            Ok(landed) => landed,
+            Err(_) if corridor => {
+                let fallback = zelos::closest_vortex_landing(step.to, destination, |at| {
+                    crate::movement::relocate::creature_cell_admissible(cells, &doors, at)
+                        && !runtime
+                            .position_occupied_by_other(step.actor, at)
+                            .unwrap_or(true)
+                })?;
+                crate::movement::relocate::relocate_creature(
+                    runtime, step.actor, cells, &doors, fallback,
+                )
+                .ok()?
+            }
+            Err(_) => return None,
+        };
+        crate::movement::monster_map::apply_committed_step_in(
+            runtime,
+            cells,
+            step.actor,
+            landed.position(),
+        );
+        Some(landed.position())
+    }
+
     fn count_accepts_remains(
         &self,
         runtime: &ChannelRuntimeV1,
