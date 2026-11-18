@@ -302,6 +302,21 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
             }
             for effect in &rule.effects {
                 let valid = match effect {
+                    NpcRuleEffect::AssignFrontierKeywords => {
+                        use super::frontier_negotiations as frontier;
+                        document.quest == frontier::QUEST
+                            && rule.key == frontier::RULE
+                            && rule.npc == frontier::NPC
+                            && !rule.continue_matching
+                            && frontier::KEYWORDS.iter().all(|(track, choices)| {
+                                tracks.iter().any(|(key, definition)| {
+                                    key.as_str() == *track
+                                        && definition.initial == 0
+                                        && definition.min == 0
+                                        && definition.max >= i64::from(*choices)
+                                })
+                            })
+                    }
                     NpcRuleEffect::BigfootMatchmakerTarget => {
                         document.quest == "oteryn:quest.bigfoot_s_burden_quest"
                             && tracks.keys().any(|key| key.as_str() == "oteryn:quest-progress/quest/u9_60/bigfoots_burden/matchmaker_id_needed")

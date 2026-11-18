@@ -7,6 +7,7 @@ mod admission;
 mod bounds;
 mod calendar;
 mod equipped_storage;
+pub mod frontier_negotiations;
 pub use calendar::NpcUtcCalendar;
 mod evaluate;
 mod hidden_threats;
@@ -193,6 +194,7 @@ pub enum NpcRuleEffect {
     CompleteSource {
         track: String,
     },
+    AssignFrontierKeywords,
     BigfootMatchmakerTarget,
     BigfootSoulMelody,
     Set {
@@ -508,8 +510,10 @@ impl NpcRuleCatalog {
         RUNTIME
             .get_or_init(|| {
                 let mut catalogue = Self::load_embedded()?;
+                let frontier = frontier_negotiations::program();
                 let supplemental = Self::from_json_documents(&[
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/draconia.json"),
+                    &frontier,
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/m41-kilmaresh.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-albinius.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-gerimor.json"),
@@ -547,6 +551,7 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.hero_of_rathleton_quest"
                                 | "oteryn:quest.hot_cuisine_quest"
                                 | "oteryn:quest.in_service_of_yalahar_quest"
+                                | "oteryn:quest.the_new_frontier_quest"
                                 | "oteryn:quest.the_paradox_tower_quest"
                                 | "oteryn:quest.marlin_trophy_quest"
                                 | "oteryn:quest.the_djinn_war_efreet_faction"

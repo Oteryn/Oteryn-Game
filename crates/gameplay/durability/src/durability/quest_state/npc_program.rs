@@ -548,7 +548,7 @@ impl DurabilityRoot {
                 tx.commit(deadline).await?;
                 return Ok(Ok(result));
             }
-            let plan=match evaluated {
+            let mut plan=match evaluated {
                 Ok(Some(plan)) if plan.selected_rule_keys.first()==Some(&request.transition_key) && (!plan.track_changes.is_empty() || plan.completes)=>plan,
                 _=>return Ok(Ok(refused(QuestRefusal::StageMismatch))),
             };
@@ -596,6 +596,13 @@ impl DurabilityRoot {
                     (catalogue.content_revision().to_owned(),hash)
                 }
             };
+            if plan.effects.contains(&oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::AssignFrontierKeywords) {
+                use oteryn_gameplay_quests::quest::npc_rules::frontier_negotiations;
+                let entropy: i16 = sqlx::query_scalar("SELECT floor(random() * 64)::smallint")
+                    .fetch_one(&mut **tx).await?;
+                let entropy = u8::try_from(entropy).map_err(|_| DurabilityError::InvalidStoredState)?;
+                plan.track_changes.extend(frontier_negotiations::assign_keywords(entropy, &effective_tracks));
+            }
             let keys=plan.track_changes.iter().map(|c|c.key.as_str()).collect::<Vec<_>>();
             let existing=keys.iter().filter(|k|tracks.contains_key(**k)).count();
             if !capacity::tracks_fit(&mut tx,character,&keys,existing).await? {return Ok(Ok(refused(QuestRefusal::CapacityExceeded)));}

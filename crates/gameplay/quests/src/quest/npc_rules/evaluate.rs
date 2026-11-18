@@ -149,6 +149,8 @@ impl<'a> Staged<'a> {
                     "unresolved native effect".into(),
                 ));
             }
+            // The fenced NPC writer supplies the actual keyword values.
+            NpcRuleEffect::AssignFrontierKeywords => {}
             NpcRuleEffect::CompleteSource { track } => self.set_track(track, 1)?,
             NpcRuleEffect::Set { track, value } => self.set_track(track, *value)?,
             NpcRuleEffect::Add { track, value } => {
@@ -394,7 +396,8 @@ fn plan_with_teleport(
                         ))
                     && !matches!(
                         effect,
-                        NpcRuleEffect::CompleteSource { .. }
+                        NpcRuleEffect::AssignFrontierKeywords
+                            | NpcRuleEffect::CompleteSource { .. }
                             | NpcRuleEffect::Set { .. }
                             | NpcRuleEffect::Add { .. }
                             | NpcRuleEffect::SetNowPlus { .. }
