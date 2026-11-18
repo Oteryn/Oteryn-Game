@@ -75,7 +75,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(item_fence) = command.item_fence else {
             return Ok(reject());
         };
-        let Some(_permit) = self.spell_lane_permit().await else {
+        let Some(permit) = self.spell_lane_permit().await else {
             return Ok(reject());
         };
         let Some(fence) = self
@@ -149,9 +149,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
             .map_err(|_| ())?;
+        if matches!(result, QuestTransitionOutcome::Committed(_))
+            && let Ok(at) = runtime.read_actor_position(actor)
+        {
+            let position = at.position();
+            let mut states = self.states.spell_states.lock().await;
+            for effect in callback
+                .magic_effects
+                .iter()
+                .filter_map(|cue| cue.effect_id())
+            {
+                states
+                    .sounds
+                    .record_item_effect(&runtime, actor, position, effect, false);
+            }
+            if let Some(map) = self.bundle_map()
+                && let (Ok(x), Ok(y), Ok(floor)) = (
+                    u16::try_from(position.x),
+                    u16::try_from(position.y),
+                    i8::try_from(-position.floor),
+                )
+            {
+                for text in &callback.reply {
+                    map.facts
+                        .emit_movement_speech(crate::map::facts::MovementSpeech {
+                            speaker: actor,
+                            position: crate::map::overlay::TilePos { x, y, floor },
+                            talk_type: 36,
+                            text: text.clone(),
+                            captured_name: None,
+                        });
+                }
+                states.owner_wake.notify_one();
+            }
+        }
         drop(runtime);
         drop(revision);
-        drop(_permit);
+        drop(permit);
         if !matches!(
             result,
             QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)

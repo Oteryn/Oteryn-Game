@@ -252,10 +252,14 @@ impl DirectCorpseClaim {
                     && counter.track != mission.track
                     && (1..=8).contains(&counter.maximum)
             })
-            && callback
-                .storage
-                .iter()
-                .all(|state| !state.preserve && !state.at_least && !state.increment)
+            && callback.storage.iter().all(|state| {
+                !state.preserve
+                    && !state.at_least
+                    && !state.increment
+                    && !state.read_only
+                    && state.add.is_none()
+                    && state.set_if.is_none()
+            })
             && callback.npc.is_empty()
             && callback.keywords.is_empty()
             && callback.topic == 0
@@ -272,6 +276,10 @@ impl DirectCorpseClaim {
             && callback.state_ops.is_empty()
             && !callback.completes
             && !callback.repeatable
+            && callback
+                .magic_effects
+                .iter()
+                .all(|cue| cue.target == super::npc_magic::Target::Player)
     }
 }
 

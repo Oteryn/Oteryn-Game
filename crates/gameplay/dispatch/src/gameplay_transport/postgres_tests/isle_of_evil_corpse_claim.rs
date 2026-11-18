@@ -57,6 +57,7 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
             "storage":[{"track":claim,"minimum":0,"maximum":0,"set":1},
                        {"track":MISSION,"minimum":1,"maximum":1,"set":2}],
             "take":[],"give":null,"outfit":null,"achievement":null,
+            "magic_effects":[{"effect":"CONST_ME_MAGIC_BLUE","target":"player"}],
             "reply":["Recovered a reward from the boss corpse."],
             "sources":["Crystal 201189f8 actions_corpse_bosses.lua:36-67"]
         }}})

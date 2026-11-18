@@ -28,7 +28,7 @@ use super::world_callbacks::Callback;
 use super::{QuestStateCatalogue, QuestTrack, QuestTransition};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub const MAX_BINDING_BYTES: usize = 8 * 1024 * 1024;
 pub const MAX_BOUND_QUESTS: usize = 128;
@@ -159,6 +159,7 @@ impl Bindings {
         }
         let mut quests = BTreeSet::new();
         let mut transitions = BTreeSet::new();
+        let mut corpse_appearances = BTreeSet::new();
         for quest in &self.quests {
             if !super::valid_quest_key(&quest.quest)
                 || !quest.quest.starts_with("oteryn:quest.")
@@ -196,6 +197,7 @@ impl Bindings {
                 }
             }
             let mut stages = BTreeSet::new();
+            let mut corpse_groups = BTreeMap::<_, Vec<_>>::new();
             for stage in &quest.stages {
                 if stage.key.is_empty()
                     || stage.key.len() > 128
@@ -215,6 +217,7 @@ impl Bindings {
                         if callback.quest != quest.quest
                             || !transitions.insert(&callback.key)
                             || callback.carried_item.is_some()
+                            || callback.direct_corpse_claim.is_some()
                             || !callback.participants.is_empty()
                             || callback
                                 .state_ops
@@ -309,6 +312,25 @@ impl Bindings {
                         {
                             return Err("authored dialogue/carried trigger mismatch".into());
                         }
+                        if let Some(claim) = &callback.direct_corpse_claim {
+                            let counter =
+                                callback.counter.as_ref().ok_or("corpse claim counter")?;
+                            if !corpse_appearances.insert(claim.appearance)
+                                || !quest.tracks.iter().any(|track| {
+                                    track.key == counter.track
+                                        && track.initial == 0
+                                        && track.minimum == 0
+                                        && track.maximum == counter.maximum
+                                })
+                            {
+                                return Err("authored corpse identity/counter".into());
+                            }
+                            corpse_groups.entry(&counter.track).or_default().push((
+                                &callback.storage[0].track,
+                                &callback.storage[1],
+                                counter.maximum,
+                            ));
+                        }
                         (&callback.key, &callback.quest, &callback.storage)
                     }
                     Trigger::MapUse { callback } | Trigger::StepIn { callback } => {
@@ -354,6 +376,21 @@ impl Bindings {
                     })
                 {
                     return Err("authored foreign/unbounded stage".into());
+                }
+            }
+            for group in corpse_groups.values() {
+                let distinct = group
+                    .iter()
+                    .map(|(claim, _, _)| claim)
+                    .collect::<BTreeSet<_>>();
+                if distinct.len() != group.len()
+                    || group.iter().any(|(_, mission, bound)| {
+                        *mission != group[0].1 || usize::try_from(*bound).ok() != Some(group.len())
+                    })
+                {
+                    return Err(
+                        "authored corpse group does not match its completion counter".into(),
+                    );
                 }
             }
         }
