@@ -1,13 +1,13 @@
 //! Hall admission through the real world-object USE owner on PostgreSQL.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
-use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition};
 use crate::gameplay_transport::connection::{
     FirstEntryOutcome, FreshAdmissionAuthority, UseCommand,
 };
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::world_callbacks::{
-    Callback, EncounterMonster, EncounterPhase, EncounterPlayer, Position,
+    Callback, EncounterMonster, EncounterPhase, EncounterPlayer, Position, Trigger,
 };
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::sync::Arc;
@@ -58,6 +58,16 @@ fn callback(trigger: Position, case: Case) -> TestResult<Callback> {
         from: trigger,
         to: Position { x: 104, ..trigger },
     }];
+    if matches!(case, Case::Ravager) {
+        encounter.players.push(EncounterPlayer {
+            from: Position { y: 101, ..trigger },
+            to: Position {
+                x: 104,
+                y: 101,
+                ..trigger
+            },
+        });
+    }
     encounter.monsters = monsters
         .iter()
         .map(|&(x, creature)| EncounterMonster {
@@ -78,17 +88,40 @@ fn callback(trigger: Position, case: Case) -> TestResult<Callback> {
     Ok(callback)
 }
 
+fn exit_callback(entry: &Callback, y: u16) -> Callback {
+    let mut exit = entry.clone();
+    exit.key = format!("oteryn:quest-callback/dtrails2/exit-{y}");
+    exit.trigger = Trigger::StepIn;
+    exit.selector.position = Some(Position {
+        x: 103,
+        y,
+        floor: -7,
+    });
+    exit.selector.unique = None;
+    // Match the one entry on the fixture's exit tile.
+    exit.selector.appearance = Some(1949);
+    exit.lever = None;
+    exit.reversible = false;
+    exit.effects.encounter = None;
+    exit.teleport = Some(Position {
+        x: 101,
+        y,
+        floor: -7,
+    });
+    exit
+}
+
 fn world(trigger: Position, case: Case) -> TestResult<crate::map::boot::BundleWorld> {
     use crate::map::overlay::TilePos;
     use oteryn_world_bundle::{bundle, sector, writer};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
     data.manifest.palette.truncate(1);
-    for (index, appearance) in [2772, 2773, 519, 2129].into_iter().enumerate() {
+    for (index, appearance) in [2772, 2773, 519, 2129, 1949].into_iter().enumerate() {
         let mut terrain = data.manifest.palette[0].clone();
         terrain.key = format!("oteryn:terrain.tibia.i{appearance}");
         terrain.id = u32::try_from(index + 1)?;
-        if matches!(appearance, 2772 | 2773) {
+        if matches!(appearance, 1949 | 2772 | 2773) {
             terrain.terrain = Some(bundle::Terrain {
                 kind: bundle::TerrainKind::Common,
                 walkable: None,
@@ -128,6 +161,13 @@ fn world(trigger: Position, case: Case) -> TestResult<crate::map::boot::BundleWo
                     Case::Shargon if (111..=113).contains(&x) => items[0].palette = 4,
                     _ => {}
                 }
+            }
+            if x == 103 && matches!(y, 100 | 101) && matches!(case, Case::Ravager) {
+                items.push(sector::Item {
+                    palette: 5,
+                    depth: 0,
+                    attrs: Default::default(),
+                });
             }
             tiles.push(sector::Tile {
                 x,
@@ -265,13 +305,36 @@ fn scenario(case: Case) -> TestResult {
                 .install_companion_policies(&mut runtime)
                 .map_err(debug)?;
             deps.runtime = tokio::sync::Mutex::new(runtime);
+            let evidence = if matches!(case, Case::Ravager) {
+                Some(super::house_transfer::RecoverySource::start(&h).await?)
+            } else {
+                None
+            };
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
                 .open_character_authority(&seal)
                 .await
                 .map_err(debug)?;
+            let peer_session = if let Some(evidence) = &evidence {
+                super::maintain_ready(&h.root).await?;
+                let character = create_peer(&h, &authority, &evidence.evidence).await?;
+                Some(
+                    super::activity_deadline_paging::admit_created_member(
+                        &h,
+                        &evidence.evidence,
+                        0,
+                        character,
+                    )
+                    .await?,
+                )
+            } else {
+                None
+            };
             let mut owner = deps.owner(&h, &authority);
+            if let Some(evidence) = &evidence {
+                owner.evidence = &evidence.evidence;
+            }
             owner.active_generation = Some(generation);
             owner.movement_cells = (&cells).into();
             owner.rooms = crate::gameplay_transport::SeamRooms::new(Some(&room), Some(&room));
@@ -281,14 +344,12 @@ fn scenario(case: Case) -> TestResult {
                     .catalogue()
                     .clone(),
             ));
-            assert!(
-                owner
-                    .states
-                    .quest_callbacks
-                    .fixture
-                    .set(vec![callback.clone()])
-                    .is_ok()
-            );
+            let mut callbacks = vec![callback.clone()];
+            if peer_session.is_some() {
+                callbacks.push(exit_callback(&callback, 100));
+                callbacks.push(exit_callback(&callback, 101));
+            }
+            assert!(owner.states.quest_callbacks.fixture.set(callbacks).is_ok());
             let mut admitted = deps.admitted;
             admitted.runtime_actor = Some(deps.actor);
             admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -355,6 +416,11 @@ fn scenario(case: Case) -> TestResult {
                     .refresh_source_party_presence(deps.actor, admitted.game_session_id)
                     .await
             );
+            let peer = if let Some(session) = peer_session {
+                Some((initialize_peer(&owner, admitted, session).await?, session))
+            } else {
+                None
+            };
             let key =
                 oteryn_world_bundle::bundle::placement_key(-7, 100, 100, 1).ok_or("lever key")?;
             let mut placement = world.base().digest().to_vec();
@@ -379,7 +445,11 @@ fn scenario(case: Case) -> TestResult {
                 "phase admission"
             );
             match case {
-                Case::Ravager => verify_ravager(&owner, &cells).await?,
+                Case::Ravager => {
+                    let peer = peer.ok_or("independent second Character")?;
+                    verify_ravager(&owner, &cells).await?;
+                    verify_exits(&owner, [(deps.actor, admitted.game_session_id), peer]).await?;
+                }
                 Case::Shargon => verify_shargon(&owner, &cells).await?,
             }
             drop(owner);
@@ -544,4 +614,156 @@ async fn verify_shargon(
         "runes refuse the fight without kill credit"
     );
     Ok(())
+}
+
+async fn initialize_peer(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: super::AdmittedSession,
+    session: GameSessionId,
+) -> TestResult<ExactActorRef> {
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|()| "peer fence")?
+        .ok_or("independently admitted peer")?;
+    let facts = match crate::gameplay_transport::spell_character_facts::load_character_cast_facts(
+        owner.root,
+        owner.character,
+        fence.character_id,
+    )
+    .await
+    {
+        crate::gameplay_transport::spell_character_facts::CastFactsLoad::Ready {
+            facts, ..
+        } => facts,
+        _ => return Err("peer cast facts".into()),
+    };
+    let actor = {
+        let mut runtime = owner.runtime.lock().await;
+        let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(
+                actor,
+                MovementLocalPosition {
+                    x: 100,
+                    y: 101,
+                    floor: 7,
+                },
+            )
+            .map_err(debug)?;
+        runtime
+            .bind_attacker_lease(
+                actor,
+                session,
+                crate::foundation::CharacterLease::new(
+                    crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                        .map_err(debug)?,
+                    fence.character_lease_generation,
+                )
+                .map_err(debug)?,
+            )
+            .map_err(debug)?;
+        assert!(
+            owner
+                .states
+                .spell_states
+                .lock()
+                .await
+                .initialize(&runtime, actor, session, facts, (0, 0), owner.owner_now())
+                .is_some()
+        );
+        actor
+    };
+    admitted.game_session_id = session;
+    admitted.runtime_actor = Some(actor);
+    admitted.item_fence = Some(fence.item_fence());
+    owner.admit_progression_session(&mut admitted).await;
+    owner.admit_quest_session(&admitted).await;
+    assert!(owner.refresh_source_party_presence(actor, session).await);
+    Ok(actor)
+}
+
+async fn verify_exits(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    participants: [(ExactActorRef, GameSessionId); 2],
+) -> TestResult {
+    for ((actor, session), y) in participants.into_iter().zip([100, 101]) {
+        let at = |x| MovementLocalPosition { x, y, floor: 7 };
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            at(104)
+        );
+        owner
+            .paced_step(
+                actor,
+                session,
+                oteryn_protocol_oteryn::world_spatial::StepDirection::West,
+            )
+            .await;
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            at(101)
+        );
+    }
+    Ok(())
+}
+async fn create_peer(
+    h: &Harness,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    evidence: &crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
+) -> TestResult<[u8; 16]> {
+    let account = crate::gameplay_transport::canonical_uuid(&id(120));
+    evidence
+        .refresh_account(&h.root, &h.node, &account)
+        .await
+        .map_err(debug)?;
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+    let operation = id(80);
+    let source = serde_json::json!({
+        "contract_version":3,
+        "variant":"OPERATOR_CONTROL_PLANE_BOOTSTRAP",
+        "issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY",
+        "issuer_decision_id":crate::gameplay_transport::canonical_uuid(&id(90)),
+        "source_revision":"2",
+        "operation_id":crate::gameplay_transport::canonical_uuid(&operation),
+        "operation":"INITIAL_CHARACTER_BOOTSTRAP",
+        "account_id":account,
+        "target_world_id":crate::gameplay_transport::canonical_uuid(&id(42)),
+        "requested_name":"Ravager Partner",
+        "requested_sex":"Male",
+        "interpretation_context":{"profile_revision":"profile-1","ruleset_revision":"ruleset-1","content_revision":"content-1","starter_template_revision":"starter-1"},
+        "issued_at_source":now.to_string(),
+        "expires_at_source":(now+120).to_string(),
+        "audience":"OTERYN_GAME_CHARACTER_AUTHORITY",
+    });
+    // The strict producer fixture decoder is also used by Character authority
+    // tests. Birth, creation receipt and audit are committed by the real owner.
+    let intent = crate::character_bootstrap_intent::decode_producer_response(
+        &serde_json::to_vec(&source)?,
+        operation,
+    )
+    .map_err(debug)?;
+    let created = h
+        .root
+        .bootstrap_character(authority, &h.node, &intent)
+        .await
+        .map_err(debug)?;
+    assert_eq!(created.revision.get(), 1);
+    Ok(*created.character_id.as_bytes())
 }
