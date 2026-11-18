@@ -65,16 +65,31 @@ pub fn exclusive(left: &Callback, right: &Callback) -> bool {
         && left.effects.target_transform.is_some()
         && left.effects.target_transform == right.effects.target_transform
         && left.item_on_target == right.item_on_target;
+    // Crystal 201189f8 actions_lersatio_mirrors.lua:38-79 uses the same
+    // timed source transform on both hits and starts an encounter on the second.
+    let timed_source = left.trigger == Trigger::Use
+        && left.requires_world_admission
+        && right.requires_world_admission
+        && left.selector.native.is_some()
+        && left.effects.transform.is_some()
+        && left.effects.transform == right.effects.transform
+        && left.effects.reset_after_ms.is_some()
+        && left.effects.reset_after_ms == right.effects.reset_after_ms
+        && left.item_on_target == right.item_on_target;
     left.actor_kind == ActorKind::Player
         && right.actor_kind == ActorKind::Player
-        && (source_trial || matches!(left.trigger, Trigger::StepIn | Trigger::StepOut))
+        && (source_trial
+            || timed_source
+            || matches!(left.trigger, Trigger::StepIn | Trigger::StepOut))
         && left.trigger == right.trigger
         && left.selector == right.selector
         && left.quest == right.quest
         && left.storage.iter().any(|a| {
-            (a.preserve || source_trial)
+            !a.at_least
+                && (a.preserve || source_trial || timed_source)
                 && right.storage.iter().any(|b| {
-                    (b.preserve || source_trial)
+                    !b.at_least
+                        && (b.preserve || source_trial || timed_source)
                         && a.track == b.track
                         && (a.maximum < b.minimum || b.maximum < a.minimum)
                 })

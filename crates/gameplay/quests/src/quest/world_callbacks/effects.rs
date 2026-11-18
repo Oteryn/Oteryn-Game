@@ -786,11 +786,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || effects.encounter.is_some()
                 || (!callback.passages.is_empty()
                     && effects.passages_reset_after_ms.is_none()
-                    && (effects.encounter_group.is_none()
-                        || callback
-                            .passages
-                            .iter()
-                            .any(|passage| passage.replacement.is_none())))
+                    && callback.passages.iter().any(|passage| {
+                        passage.replacement.is_none()
+                            || (!passage.if_present && effects.encounter_group.is_none())
+                    }))
         })
         || effects.passages_reset_after_ms.is_some_and(|delay| {
             !(1..=3_600_000).contains(&delay)

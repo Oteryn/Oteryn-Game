@@ -35,9 +35,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: &UseCommand,
     ) {
         if selected.len() <= 1
-            || selected
-                .iter()
-                .any(|c| c.effects.target_transform.is_none())
             || selected.iter().enumerate().any(|(i, a)| {
                 selected[..i]
                     .iter()
