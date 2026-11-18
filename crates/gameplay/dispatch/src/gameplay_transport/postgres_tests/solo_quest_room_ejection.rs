@@ -73,6 +73,7 @@ fn solo_quest_room_ejects_the_admitted_player_after_the_last_monster_dies() -> T
 #[derive(Clone, Copy)]
 pub(super) struct BossRoom {
     pub minimum_level: u32,
+    pub player_level: Option<i64>,
     pub already_fought: bool,
     pub with_occupant: bool,
     pub allowed: bool,
@@ -141,6 +142,22 @@ async fn exercise_world(h: &Harness, boss: Option<BossRoom>, buff: Option<StepBu
         bindings.attach(&QuestStateCatalogue::new("content-1", vec![], vec![]).map_err(debug)?)?;
     let world = world_with_cells(&callback, ENTRY, &[EXIT, BYSTANDER])?;
     prepare_current_session(h).await?;
+    if let Some(level) = boss.and_then(|room| room.player_level) {
+        // Arrange the progression snapshot before admitting the real STEP command.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        let updated = sqlx::query(
+            "UPDATE game_character_progression_state SET level=$2 WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(41).as_slice())
+        .bind(level)
+        .execute(&mut *tx)
+        .await?;
+        assert_eq!(updated.rows_affected(), 1);
+        tx.commit().await?;
+    }
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
