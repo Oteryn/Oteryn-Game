@@ -1,6 +1,6 @@
 //! A durable fresh winner remains discoverable while another pass owns the root.
 use super::fixture::{Harness, debug};
-use super::kill_reward_e2e::scenario_thread::run_async as run;
+use super::kill_reward_e2e_fixtures::scenario_thread::run_async as run;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::gameplay_transport::ReconciliationDisposition;
 use std::time::Duration;
@@ -29,7 +29,7 @@ fn seam_fresh_commit_busy_spell_read_still_sends_accepted_postgres() -> TestResu
         let h = Harness::create_with_admission_seed(admin, "seam_fresh_spell_busy", true, false)
             .await?;
         let result: TestResult = async {
-            let source = super::house_transfer::RecoverySource::start(&h).await?;
+            let source = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
             let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs();
             let mut runtime = super::fresh_fixture::fresh::Source::new(i64::try_from(now)?)?;
             runtime.rows.retain(|row| matches!(row.key,
@@ -41,7 +41,7 @@ fn seam_fresh_commit_busy_spell_read_still_sends_accepted_postgres() -> TestResu
             let deps = Dependencies::new()?;
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &source.evidence;
-            let token = super::house_transfer::RecoverySource::fresh_token(91)?;
+            let token = super::house_transfer_fixtures::RecoverySource::fresh_token(91)?;
             let frame = oteryn_protocol_oteryn::encode_client_bootstrap(&oteryn_protocol_oteryn::ClientBootstrapValue {
                 schema_revision: 1,
                 character_id: crate::foundation::CharacterId::decode(&super::fixture::id(41)).map_err(debug)?,
@@ -87,7 +87,7 @@ fn seam_fresh_commit_busy_spell_read_still_sends_accepted_postgres() -> TestResu
             h.root.await_ready().await?;
             assert_eq!(owner.lose_control(admitted, Duration::ZERO, None).await,
                 ControlLossResult::Recorded, "the acknowledged identity enters the loss lifecycle");
-            let recovery = super::house_transfer::RecoverySource::token(92)?;
+            let recovery = super::house_transfer_fixtures::RecoverySource::token(92)?;
             let resumed = owner.resume(ResumeAttempt {
                 game_session_id: admitted.game_session_id,
                 recovery_material: recovery.as_bytes(),

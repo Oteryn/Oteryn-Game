@@ -76,7 +76,7 @@ impl NativeCapture {
             .ok_or("actual wave observation")?
             .actor_position;
         let mut frames = Vec::new();
-        super::super::boss_activity::capture_current_snapshot(owner, admitted, &mut frames).await?;
+        super::super::boss_activity_fixtures::capture_current_snapshot(owner, admitted, &mut frames).await?;
         self.stages.push(WaveStage {
             wave,
             admission,

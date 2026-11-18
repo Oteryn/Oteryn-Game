@@ -148,8 +148,10 @@ fn scenario() -> TestResult {
                 framed.extend(u32::try_from(command.len())?.to_be_bytes());
                 framed.extend(command);
             }
-            let (_, output) =
-                super::weather_wire::fixture_access::serve_input(&owner, admitted, &framed).await?;
+            let (_, output) = super::weather_wire_fixtures::fixture_access::serve_input(
+                &owner, admitted, &framed,
+            )
+            .await?;
             let mut reader = output.as_slice();
             let mut journals = Vec::new();
             let mut lists = Vec::new();

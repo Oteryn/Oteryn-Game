@@ -33,7 +33,7 @@ fn instance_equipment_retains_content_after_origin_activation_postgres() -> Test
 }
 
 async fn scenario(h: &Harness) -> TestResult {
-    let (_evidence, request) = super::activity_runtime::prepare_activity_fixture(h).await?;
+    let (_evidence, request) = super::activity_runtime_fixtures::prepare_activity_fixture(h).await?;
     let source = request.participants[0].source;
     let digest = request.destination_content.server_artifact_digest;
     let seal = h.recovery.seal_current().map_err(debug)?;

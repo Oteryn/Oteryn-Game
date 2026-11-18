@@ -9,7 +9,7 @@ fn srx3_elder_generic_terminal_refuses_direct_and_nested_contents_postgres() -> 
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("srx3-elder-terminal", || {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-elder-terminal", || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(admin, "srx3_elder_terminal", false, false)
                 .await?;

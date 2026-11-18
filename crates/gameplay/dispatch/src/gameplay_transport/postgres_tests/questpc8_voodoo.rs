@@ -1,5 +1,5 @@
 //! Retained independent Voodoo regression shares the stronger cold-replay route harness.
-use super::{TestResult, quest_world_callbacks};
+use super::{TestResult, quest_world_callbacks_fixtures as quest_world_callbacks};
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
 #[test]
@@ -8,7 +8,7 @@ fn questpc8_voodoo_three_native_witches_two_boxes_and_replay() -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("questpc8-voodoo", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("questpc8-voodoo", || {
         quest_world_callbacks::scenario(
             "authored-voodoo",
             Position {

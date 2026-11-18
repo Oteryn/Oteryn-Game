@@ -20,7 +20,7 @@ use std::time::{Duration, Instant};
 #[test]
 fn first_vocation_vitals_dispatch_refills_pools_once_and_restores_after_restart_postgres()
 -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("tutorial-first-vocation", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("tutorial-first-vocation", || {
         scenario("tutorial_first_vocation", 70, 30)
     })
 }
@@ -28,7 +28,7 @@ fn first_vocation_vitals_dispatch_refills_pools_once_and_restores_after_restart_
 #[test]
 fn first_vocation_vitals_old_full_pools_refill_to_new_maxima_after_restart_postgres() -> TestResult
 {
-    super::kill_reward_e2e::scenario_thread::run("tutorial-first-vocation-maxima", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("tutorial-first-vocation-maxima", || {
         scenario("tutorial_first_vocation_maxima", 245, 150)
     })
 }
@@ -47,10 +47,11 @@ fn scenario(tag: &str, health: u32, mana: u32) -> TestResult {
             .map_err(debug)?;
         let dependencies = Dependencies::new()?;
         let (actor, session) = (dependencies.actor, dependencies.admitted.game_session_id);
-        let (controller, _) = super::death_ml_loss_composed::production_generation_with_pin(
-            dependencies.admitted.world_id,
-            "content-1",
-        )?;
+        let (controller, _) =
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                dependencies.admitted.world_id,
+                "content-1",
+            )?;
         let active = controller.active().ok_or("active generation")?;
         let mut owner = dependencies.owner(&h, &authority);
         owner.active_generation = Some(active);

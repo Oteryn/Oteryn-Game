@@ -271,7 +271,7 @@ fn scenario(case: &ExchangeCase, filled: bool) -> TestResult {
                 generation: placed.generation,
             }
         };
-        super::item_look::seed_main_backpack(&h, case.inputs).await?;
+        super::item_look_fixtures::seed_main_backpack(&h, case.inputs).await?;
         if filled {
             let mut tx = h.pool.begin().await?;
             // Lane-private initial custody only; no production guard is changed.

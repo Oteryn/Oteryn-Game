@@ -14,7 +14,7 @@ fn appearance_holder_busy_postgres_waits_without_runtime_locks_and_keeps_stale_r
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::item_look::large_stack(scenario)
+    super::item_look_fixtures::large_stack(scenario)
 }
 
 fn scenario() -> TestResult {
