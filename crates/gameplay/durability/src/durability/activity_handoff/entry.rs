@@ -446,6 +446,14 @@ async fn insert_participant(
         .bind(s.cell.x).bind(s.cell.y).bind(s.cell.floor).bind(s.coordinate_frame_digest.as_slice()).bind(s.map_revision_digest.as_slice()).bind(s.server_artifact_digest.as_slice())
         .bind(world_id.as_bytes().as_slice()).execute(&mut **tx).await?;
     let exit = p.exit_position;
+    let use_exit = oteryn_gameplay_content::content::bosses::activity_template::vanguard_use_exit(
+        &r.activity_key,
+        &r.template_revision,
+    )
+    .map(|exit| {
+        let cell = exit.destination();
+        vec![cell.x, cell.y, cell.z]
+    });
     let rest = s
         .rest
         .map(|values| {
@@ -456,14 +464,15 @@ async fn insert_participant(
         })
         .transpose()
         .map_err(|_| DurabilityError::InvalidStoredState)?;
-    sqlx::query("INSERT INTO game_activity_runtime_placements(handoff_id,character_id,destination_x,destination_y,destination_floor,exit_x,exit_y,exit_floor,exit_coordinate_frame_digest,exit_map_revision_digest,exit_server_artifact_digest,saved_health,saved_mana,saved_rest,destination_transport_ref,selected_capabilities) \
-        VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)")
+    sqlx::query("INSERT INTO game_activity_runtime_placements(handoff_id,character_id,destination_x,destination_y,destination_floor,exit_x,exit_y,exit_floor,exit_coordinate_frame_digest,exit_map_revision_digest,exit_server_artifact_digest,saved_health,saved_mana,saved_rest,destination_transport_ref,selected_capabilities,use_exit_cell) \
+        VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)")
         .bind(r.handoff_id.as_slice()).bind(p.source.character_id.as_bytes().as_slice()).bind(p.destination_cell.x).bind(p.destination_cell.y).bind(p.destination_cell.floor)
         .bind(exit.cell.x).bind(exit.cell.y).bind(exit.cell.floor).bind(exit.coordinate_frame_digest.as_slice()).bind(exit.map_revision_digest.as_slice()).bind(exit.server_artifact_digest.as_slice())
         .bind(s.vitals.map(|v| i32::try_from(v.health())).transpose().map_err(|_| DurabilityError::InvalidStoredState)?)
         .bind(s.vitals.map(|v| i32::try_from(v.mana())).transpose().map_err(|_| DurabilityError::InvalidStoredState)?)
         .bind(rest).bind(p.destination_transport.map(|t| t.to_bytes().to_vec()))
         .bind(p.selected_capabilities.iter().map(|id| i64::from(*id)).collect::<Vec<_>>())
+        .bind(use_exit)
         .execute(&mut **tx).await?;
     Ok(())
 }

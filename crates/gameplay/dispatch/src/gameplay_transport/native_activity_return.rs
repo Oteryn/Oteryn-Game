@@ -11,6 +11,7 @@ use super::native_activity::{
     NativeActivityCommit, NativeActivityOutcome, activity_continuity, finish_activity_kills,
     seal_activity_kills,
 };
+use super::source_boss_exit::SourceBossUseExit;
 use super::{ComposedFreshAdmission, SecureIdentifiers};
 use crate::durability::activity_handoff::{
     ActivityHandoffOwner, ActivityRefusal, ActivityReturnOutcome, ActivityReturnPlacement,
@@ -38,6 +39,7 @@ pub(super) struct ActivityReturnAttemptKey {
 pub(super) struct NativeActivityReturnAttempt<'a> {
     source: RegisteredRuntime<'a>,
     source_exit: Option<super::source_boss_exit::SourceBossExitProof>,
+    use_exit: Option<SourceBossUseExit>,
     exit_effect_start: Option<u64>,
     destination: RegisteredRuntime<'a>,
     admitted: AdmittedSession,
@@ -144,7 +146,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 ActivityRefusal::InvalidInput,
             ));
         }
-        self.prepare_native_activity_return(admitted, Some(command_id), reason, None)
+        self.prepare_native_activity_return(admitted, Some(command_id), reason, None, None)
             .await
     }
 
@@ -172,7 +174,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 ActivityRefusal::InvalidInput,
             ));
         }
-        self.prepare_native_activity_return(admitted, None, reason, None)
+        self.prepare_native_activity_return(admitted, None, reason, None, None)
             .await
     }
 
@@ -206,8 +208,30 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         admitted: AdmittedSession,
         proof: super::source_boss_exit::SourceBossExitProof,
     ) -> Result<NativeActivityOutcome, ()> {
-        self.prepare_native_activity_return(admitted, None, ActivityReturnReason::Exit, Some(proof))
-            .await
+        self.prepare_native_activity_return(
+            admitted,
+            None,
+            ActivityReturnReason::Exit,
+            Some(proof),
+            None,
+        )
+        .await
+    }
+
+    pub(super) async fn return_source_boss_use_exit(
+        &self,
+        admitted: AdmittedSession,
+        command_id: u64,
+        proof: SourceBossUseExit,
+    ) -> Result<NativeActivityOutcome, ()> {
+        self.prepare_native_activity_return(
+            admitted,
+            Some(command_id),
+            ActivityReturnReason::Exit,
+            None,
+            Some(proof),
+        )
+        .await
     }
 
     /// Resolve retained return tokens before a socket-end handler records loss.
@@ -294,9 +318,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         command: Option<u64>,
         reason: ActivityReturnReason,
         source_exit: Option<super::source_boss_exit::SourceBossExitProof>,
+        use_exit: Option<SourceBossUseExit>,
     ) -> Result<NativeActivityOutcome, ()> {
         let refuse = |reason| Ok(NativeActivityOutcome::Refused(reason));
-        if matches!(reason, ActivityReturnReason::OwnerLost) {
+        if command == Some(0) || matches!(reason, ActivityReturnReason::OwnerLost) {
             return refuse(ActivityRefusal::InvalidInput);
         }
         let Some(fence) = admitted.item_fence else {
@@ -353,6 +378,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             let held = pending.lock().await;
             if held.trigger_reason != reason
                 || held.source_exit != source_exit
+                || held.use_exit != use_exit
                 || held.admitted.controller != admitted.controller
                 || held.admitted.item_fence != admitted.item_fence
             {
@@ -495,6 +521,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     .read_death_return_placement(self.character, self.holder, fence, occurrence)
                     .await
             }
+            ActivityReturnReason::Exit if command.is_some() => {
+                owner
+                    .read_use_return_placement(self.character, self.holder, fence)
+                    .await
+            }
             _ => {
                 owner
                     .read_return_placement(self.character, self.holder, fence)
@@ -620,6 +651,16 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     placement.exit_position.cell.y,
                     i32::from(placement.exit_position.cell.floor),
                 ) != (target.x, target.y, target.z)
+            {
+                return refuse(ActivityRefusal::AuthorityRejected);
+            }
+        }
+        if let Some(proof) = use_exit.as_ref() {
+            let target = proof.destination();
+            let landing = placement.exit_position.cell;
+            if !proof.matches(&source_view, &from, actor)
+                || (landing.x, landing.y, i32::from(landing.floor))
+                    != (target.x, target.y, target.z)
             {
                 return refuse(ActivityRefusal::AuthorityRejected);
             }
@@ -776,6 +817,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             let pending = Arc::new(tokio::sync::Mutex::new(NativeActivityReturnAttempt {
                 source: source.clone(),
                 source_exit,
+                use_exit,
                 exit_effect_start: None,
                 destination: destination.clone(),
                 admitted,

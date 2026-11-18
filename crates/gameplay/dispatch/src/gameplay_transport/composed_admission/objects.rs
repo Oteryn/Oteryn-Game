@@ -392,6 +392,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(outcome) = self.use_soulpit_exit(actor, command, &target).await {
             return outcome;
         }
+        if let Some(outcome) = self.use_vanguard_exit(actor, command, &target).await {
+            return outcome;
+        }
         if let Some(outcome) = self.use_cake_world_object(actor, command, &target).await {
             return outcome;
         }

@@ -13,7 +13,7 @@ mod first_dragon;
 
 #[path = "activity_template/galthen.rs"]
 mod galthen;
-pub use galthen::{BossCallbackSourceClosure, QualifiedBossExitTeleporter};
+pub use galthen::{BossCallbackSourceClosure, QualifiedBossExitTeleporter, vanguard_use_exit};
 mod outburst;
 #[path = "activity_template/rotten_blood.rs"]
 mod rotten_blood;

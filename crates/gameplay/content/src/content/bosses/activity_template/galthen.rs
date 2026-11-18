@@ -24,6 +24,31 @@ impl QualifiedBossExitTeleporter {
     }
 }
 
+/// Crystal 201189f8 actions_mitmah_vanguard_exit.lua:1–17 binds a manual
+/// return separate from the timeout destination in actions_mitmah_vanguard.lua.
+pub fn vanguard_use_exit(
+    boss_key: &str,
+    template_revision: &str,
+) -> Option<QualifiedBossExitTeleporter> {
+    (boss_key == "oteryn:boss.mitmah_vanguard"
+        && template_revision.strip_prefix("crystal-") == Some(VANGUARD_LEVER_SHA256))
+    .then_some(QualifiedBossExitTeleporter {
+        trigger: LogicalCell {
+            x: 34068,
+            y: 31418,
+            z: 11,
+        },
+        destination: LogicalCell {
+            x: 34053,
+            y: 31431,
+            z: 11,
+        },
+    })
+}
+
+const VANGUARD_LEVER_SHA256: &str =
+    "47896b61cb0b2d1a4f04c72c9330cce5a4e3a885a1069117eeab5cf5150c170a";
+
 pub(super) fn exact_closure(candidate: &BossLeverCandidate) -> bool {
     let Some(proof) = &candidate.source_callback_closure else {
         return false;
@@ -38,7 +63,7 @@ pub(super) fn exact_closure(candidate: &BossLeverCandidate) -> bool {
         ),
         Some("oteryn:creature.mitmah_vanguard") => (
             "mitmah_vanguard",
-            "47896b61cb0b2d1a4f04c72c9330cce5a4e3a885a1069117eeab5cf5150c170a",
+            VANGUARD_LEVER_SHA256,
             "bb631589f2d316ad907ed3a2fa0bdfacbae29d0fe9ab1909805e39e6c0e8855e",
             "d9ecdc5e3241798184e8fd5fbd1269b7f4ebe2ba771dabc798e942fb9277a568",
             None,
