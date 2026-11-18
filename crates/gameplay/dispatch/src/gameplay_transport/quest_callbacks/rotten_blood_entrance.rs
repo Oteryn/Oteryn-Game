@@ -131,7 +131,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
         }
         if penalize {
-            states.apply_blood_entrance_health_loss(&runtime, actor, session, now);
+            states.apply_blood_entrance_health_loss(
+                &runtime,
+                actor,
+                session,
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get()),
+            );
         }
         if message.is_none()
             && returned != entered
