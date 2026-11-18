@@ -25,10 +25,10 @@ use oteryn_protocol_oteryn::chat::{
 use oteryn_protocol_oteryn::npc_service::{MAX_OPEN_CONVERSATIONS_PER_NPC, TALK_RANGE_TILES};
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
+use super::ComposedFreshAdmission;
 use super::actor_spell::ChannelSpellStates;
 use super::chat_relay::ChatRelay;
 use super::npc_talk::{NpcTalkBook, TalkNpc, talk};
-use super::ComposedFreshAdmission;
 use crate::chat::relay::{RelayDestination, RelayLine};
 use crate::chat::{
     ChatEgress, ChatLimiter, ChatPosition, ChatRefusal, ChatText, SpeechMode, YellGate, local_line,
