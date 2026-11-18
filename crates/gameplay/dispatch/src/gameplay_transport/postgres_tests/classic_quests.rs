@@ -402,6 +402,9 @@ pub(super) async fn exercise_rottin(
         progress(owner, admitted, authority, &format!("{TRACK}questline")).await?,
         0
     );
+    // TibiaWiki /Spoiler (curid 50782, oldid 928967), Mission 1 transcript.
+    let opening = talk(owner, admitted, rottin, 1702, "quest").await?;
+    assert!(opening.iter().any(|line| line.contains("rabbit feet are actually lucky charms")));
     // Establish only the test's prior completed mission through its existing
     // source transition; this is not a production path around the deferred hand-in.
     let fence = owner
@@ -413,17 +416,29 @@ pub(super) async fn exercise_rottin(
     let result = slot.commit_quest_transition(owner.root, owner.character, owner.holder, fence,
         QuestTransitionRequest {
             transition_key: "oteryn:quest-transition/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline/npc_1".into(),
-            cause: QuestCause::Command(CommandRef::new(admitted.game_session_id, CommandId::new(1702).map_err(debug)?)),
+            cause: QuestCause::Command(CommandRef::new(admitted.game_session_id, CommandId::new(1704).map_err(debug)?)),
         }, owner.quest_catalogue.as_ref().ok_or("catalogue")?.clone()).await.map_err(debug)?;
     assert!(matches!(result, QuestTransitionOutcome::Committed(_)));
     drop(slot);
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
+    // TibiaWiki /Spoiler (curid 50782, oldid 928967), Mission 2 transcript.
     let offered = talk(owner, admitted, rottin, 1703, "mission").await?;
-    assert_eq!(offered.len(), 5);
-    assert!(offered[1].contains("deer stands"));
-    let accepted = talk(owner, admitted, rottin, 1704, "yes").await?;
+    assert_eq!(offered.len(), 1);
+    assert!(offered[0].contains("ready for another quest"));
+    let explained = talk(owner, admitted, rottin, 1710, "yes").await?;
+    assert_eq!(explained.len(), 4);
+    assert!(explained[0].contains("deer stands"));
+    assert_eq!(
+        progress(owner, admitted, authority, &format!("{TRACK}questline")).await?,
+        2
+    );
+    assert_eq!(
+        progress(owner, admitted, authority, &format!("{TRACK}mission02")).await?,
+        0
+    );
+    let accepted = talk(owner, admitted, rottin, 1711, "yes").await?;
     assert!(
         accepted
             .iter()
@@ -447,13 +462,13 @@ pub(super) async fn exercise_rottin(
         .await?,
         0
     );
-    talk(owner, admitted, rottin, 1705, "yes").await?;
+    talk(owner, admitted, rottin, 1712, "yes").await?;
     let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key='oteryn:quest-transition/classic/rottin-wood/start-disrepair'")
         .fetch_one(&h.pool).await?;
     assert_eq!(receipts, 1);
     // The donor refuses an incomplete repair without changing state or money.
     // A completed repair's combined reward remains deferred to its shared owner.
-    talk(owner, admitted, rottin, 1706, "mission").await?;
+    talk(owner, admitted, rottin, 1713, "mission").await?;
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
@@ -468,7 +483,7 @@ pub(super) async fn exercise_rottin(
             admitted.runtime_actor.ok_or("actor")?,
             UseCommand {
                 game_session_id: admitted.game_session_id,
-                command_id: 1707,
+                command_id: 1714,
                 item_fence: Some(fence.item_fence()),
             },
             NpcTalkIntent {
