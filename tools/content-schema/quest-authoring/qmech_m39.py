@@ -57,6 +57,41 @@ def append(add, callbacks, offers, declarations, inputs, pin):
         'next_topic':12,'storage':[state(child+'questline',17,17,preserve=True)],
         'reply':['Have you found the way which will lead us to the great gate?']})
 
+    # Lower the existing source dialogue for the two quest admissions.
+    prepared = ROOT / 'content/dialogues/quest-batches/quests-5/children_of_the_revolution.json'
+    source_rules = {rule['key'].rsplit('/', 1)[-1]: rule
+                    for rule in json.loads(prepared.read_bytes())['rules']}
+    quest_page = 'https://tibia.fandom.com/?curid=41842&oldid=683807'
+    spoiler = 'https://tibia.fandom.com/?curid=41844&oldid=1160862'
+    door = ('crystal:201189f871d23597b82caf88fd611454a2ddefb8:'
+            'data-global/scripts/quests/children_of_the_revolution/actions_zalamon_door.lua:5-17')
+    entry_requires = [
+        {'track':frontier+'mission08','minimum':2,'maximum':2},
+        {'track':'oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission11',
+         'minimum':-1,'maximum':1},
+    ]
+    for name, stage, requires in [('offer-help',0,entry_requires), ('yes-1',0,entry_requires),
+                                  ('mission-18',18,[])]:
+        source = source_rules[name]
+        offers.append({'npc':source['npc'],'keywords':source['keywords'],
+            'topic':source['topic'] or 0,'any_topic':source['topic'] is None,
+            'next_topic':source['next_topic'],
+            'storage':[state(child+'questline',stage,stage,preserve=True)],
+            'requires':requires,'reply':source['replies']})
+    for name, source_name, states, requires in [
+        ('recruitment','accept-2',[state(child+'questline',0,1),
+                                   state(child+'mission00',0,1,maximum=2)],entry_requires),
+        ('phantom-army-access','accept-13',[state(child+'questline',18,19),
+                                            state(child+'mission05',-1,1,maximum=3),
+                                            state(child+'teleport_access',0,1,maximum=1)],[]),
+    ]:
+        source = source_rules[source_name]
+        add('l2-zalamon-'+name, 'children_of_the_revolution_quest', 'zalamon',
+            source['keywords'], states, topic=source['topic'], requires=requires)
+        callbacks[-1].update(requires_premium=True, reply=source['replies'],
+                             sources=[quest_page, spoiler, *source['sources'],
+                                      *([door] if requires else [])])
+
     # TibiaWiki quest reward and Phantom Army report, with Crystal's item identity.
     add('l2-zalamon-phantom-army', 'children_of_the_revolution_quest', 'zalamon', ['mission'],
         [state(child+'questline',20,21),state(child+'mission05',-1,3,maximum=3)], give=(10199,1))

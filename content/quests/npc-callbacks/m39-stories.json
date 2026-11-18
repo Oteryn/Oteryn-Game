@@ -918,6 +918,100 @@
       "requires_premium": true
     },
     {
+      "key": "oteryn:quest-reward/l2-zalamon-phantom-army-access",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 13,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 18,
+          "maximum": 18,
+          "set": 19
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission05",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/teleport_access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You did well on your quezzt zzo far. I hope you will reach zze great gate in time. If we are lucky, it will zztill be open. ...",
+        "If not, it will already be overrun by enemy zzoldierzz. Direct confrontation will be inevitable in zzat cazze, palezzkin. Now clear your mind and approach zze portal."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=41842&oldid=683807",
+        "https://tibia.fandom.com/?curid=41844&oldid=1160862",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:337-348"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/l2-zalamon-recruitment",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission00",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Be warned. Zze mountain pazzezz have been dezzerted for zzeveral weekzz now. No one made it acrozz and I fear you won't meet a zzingle friendly zzoul up zzere."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/?curid=41842&oldid=683807",
+        "https://tibia.fandom.com/?curid=41844&oldid=1160862",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:257-268",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/actions_zalamon_door.lua:5-17"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission11",
+          "minimum": -1,
+          "maximum": 1
+        }
+      ],
+      "requires_premium": true
+    },
+    {
       "key": "oteryn:quest-reward/l2-zalamon-tome",
       "quest": "oteryn:quest.children_of_the_revolution_quest",
       "npc": "oteryn:npc.zalamon",
