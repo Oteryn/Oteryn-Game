@@ -407,7 +407,8 @@ impl RewardCallback {
             (Some(source), None) => {
                 matches!(self.take.as_slice(), [input]
                 if input.item == *source && input.count == 1 && input.fluid_subtype.is_none())
-                    && (self.give.is_none() || self.creature_target.is_some()
+                    && (self.give.is_none()
+                        || self.creature_target.is_some()
                         || self.temporary_outfit.is_some())
             }
             (None, None) => true,
@@ -554,7 +555,10 @@ fn embedded_document() -> Result<Document, String> {
 fn parse_item_self_rewards(source: &str) -> Result<Document, String> {
     let document = parse_documents(&[source])?;
     if document.callbacks.is_empty()
-        || document.callbacks.iter().any(|callback| callback.temporary_outfit.is_none())
+        || document
+            .callbacks
+            .iter()
+            .any(|callback| callback.temporary_outfit.is_none())
         || !document.item_disguises.is_empty()
     {
         return Err("invalid item self-reward document".into());
@@ -564,17 +568,28 @@ fn parse_item_self_rewards(source: &str) -> Result<Document, String> {
 
 #[cfg(any(test, feature = "test-support"))]
 pub fn with_fixture_item_self_document(
-    catalogue: &QuestStateCatalogue, source: &str,
+    catalogue: &QuestStateCatalogue,
+    source: &str,
 ) -> Result<QuestStateCatalogue, String> {
     let document = parse_item_self_rewards(source)?;
     let callbacks = document.callbacks.clone();
     let mut extended = extend_document(catalogue.clone(), document)?;
-    extended.fixture_reward_callbacks.clone_from(&catalogue.fixture_reward_callbacks);
+    extended
+        .fixture_reward_callbacks
+        .clone_from(&catalogue.fixture_reward_callbacks);
     extended.fixture_reward_callbacks.extend(callbacks);
-    extended.authored_bindings.clone_from(&catalogue.authored_bindings);
-    extended.completion_sets.clone_from(&catalogue.completion_sets);
-    extended.fixture_npc_rules.clone_from(&catalogue.fixture_npc_rules);
-    extended.fixture_source_deaths.clone_from(&catalogue.fixture_source_deaths);
+    extended
+        .authored_bindings
+        .clone_from(&catalogue.authored_bindings);
+    extended
+        .completion_sets
+        .clone_from(&catalogue.completion_sets);
+    extended
+        .fixture_npc_rules
+        .clone_from(&catalogue.fixture_npc_rules);
+    extended
+        .fixture_source_deaths
+        .clone_from(&catalogue.fixture_source_deaths);
     load_for(&extended)?;
     Ok(extended)
 }
@@ -878,7 +893,8 @@ fn validate_document_with_capacity(
                     || c.storage.iter().all(|s| s.preserve)
             })
             || c.temporary_outfit.is_some_and(|outfit| {
-                outfit.look_type == 0 || !(1..=3_600_000).contains(&outfit.duration_ms)
+                outfit.look_type == 0
+                    || !(1..=3_600_000).contains(&outfit.duration_ms)
                     || !c.repeatable
                     || c.carried_exchange
                     || c.carried_item.is_none()
@@ -890,8 +906,10 @@ fn validate_document_with_capacity(
                     || c.inventory.is_empty() && c.requires.is_empty() && c.storage.is_empty()
                     || c.give.as_ref().is_none_or(|give| {
                         Some(&give.item) == c.carried_item.as_ref()
-                            || give.count != 1 || !give.contents.is_empty()
-                            || !give.backpack_outputs.is_empty() || !give.additional.is_empty()
+                            || give.count != 1
+                            || !give.contents.is_empty()
+                            || !give.backpack_outputs.is_empty()
+                            || !give.additional.is_empty()
                     })
             })
             || c.corpse_target
@@ -2237,8 +2255,13 @@ mod tests {
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
         // Shared, QuestPC7, other registered shards, M43 peer, Kingsday journal.
-        assert_eq!(load()?.into_iter().filter(|callback| callback.temporary_outfit.is_none()).count(),
-                   207 + 59 + 125 + 1 + 1);
+        assert_eq!(
+            load()?
+                .into_iter()
+                .filter(|callback| callback.temporary_outfit.is_none())
+                .count(),
+            207 + 59 + 125 + 1 + 1
+        );
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;

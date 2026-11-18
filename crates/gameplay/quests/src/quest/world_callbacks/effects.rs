@@ -687,7 +687,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || !callback.has_personal_state()
         })
         || effects.requires_temporary_look.is_some_and(|look| {
-            look == 0 || look > u32::from(u16::MAX)
+            look == 0
+                || look > u32::from(u16::MAX)
                 || effects.requires_item_disguise.is_some()
                 || callback.trigger != Trigger::StepIn
                 || callback.actor_kind != ActorKind::Player

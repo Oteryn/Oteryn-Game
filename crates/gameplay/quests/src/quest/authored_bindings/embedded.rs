@@ -14,7 +14,9 @@ pub(in crate::quest) fn native_death_rewards() -> impl Iterator<Item = &'static 
 }
 
 pub(in crate::quest) fn native_item_self_rewards() -> impl Iterator<Item = &'static str> {
-    NATIVE_ITEM_SELF_REWARDS.iter().map(|(_, document)| *document)
+    NATIVE_ITEM_SELF_REWARDS
+        .iter()
+        .map(|(_, document)| *document)
 }
 
 impl Bindings {

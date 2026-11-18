@@ -1245,8 +1245,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
-            let reward_admission = if callback.item_reward().is_some() || disguise_gate
-            {
+            let reward_admission = if callback.item_reward().is_some() || disguise_gate {
                 self.active_generation
                     .and_then(|g| g.native_gameplay())
                     .zip(reward_weights.as_ref())

@@ -154,9 +154,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 (if c.corpse_target.is_some() {
                     corpse.is_some()
                 } else {
-                    (c.peer_requires.is_some()
-                        || c.creature_target.is_some()
-                        || c.targets_self())
+                    (c.peer_requires.is_some() || c.creature_target.is_some() || c.targets_self())
                         == intent.use_with.is_some()
                 }) && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
@@ -229,15 +227,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Revision serialization precedes the runtime turn, matching the other
         // physical action owners. Keep the live target current through COMMIT.
         let mut revision = self.revision_sequencer.acquire(fence.character_id).await;
-        let mut creature_runtime =
-            if callback.creature_target.is_some() || callback.targets_self() {
-                Some(CreatureTurn {
-                    runtime: self.runtime.lock().await,
-                    uncertain: AtomicBool::new(false),
-                })
-            } else {
-                None
-            };
+        let mut creature_runtime = if callback.creature_target.is_some() || callback.targets_self()
+        {
+            Some(CreatureTurn {
+                runtime: self.runtime.lock().await,
+                uncertain: AtomicBool::new(false),
+            })
+        } else {
+            None
+        };
         let creature = if callback.creature_target.is_some() || callback.targets_self() {
             let runtime = &*creature_runtime.as_ref().ok_or(())?.runtime;
             let proof = if let Some(corpse) = corpse {
@@ -270,8 +268,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(|proof| proof.target_actor());
         let capture_key = callback.creature_target.clone();
         let costume = if let Some(spec) = callback.temporary_outfit {
-            if !native.policies().policies().iter().any(|policy|
-                policy.outfit_appearance() == Some(u32::from(spec.look_type)))
+            if !native
+                .policies()
+                .policies()
+                .iter()
+                .any(|policy| policy.outfit_appearance() == Some(u32::from(spec.look_type)))
             {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             }
@@ -281,13 +282,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             };
             let disguise = crate::spell::actor_conditions::stage_item_costume(
-                current, u32::from(spec.look_type), spec.duration_ms, self.owner_now().get()/1_000,
-            ).map_err(|_| ())?;
+                current,
+                u32::from(spec.look_type),
+                spec.duration_ms,
+                self.owner_now().get() / 1_000,
+            )
+            .map_err(|_| ())?;
             Some(disguise)
         } else {
             None
         };
-        let costume_cues = callback.temporary_outfit.map(|_| (callback.reply.clone(), callback.magic_effects.clone()));
+        let costume_cues = callback
+            .temporary_outfit
+            .map(|_| (callback.reply.clone(), callback.magic_effects.clone()));
         if (callback.capture_creature || costume.is_some())
             && let Some(turn) = &creature_runtime
         {
@@ -328,9 +335,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 states.owner_wake.notify_one();
                 if let Some((reply, cues)) = costume_cues {
                     for line in reply {
-                        self.states.chat.push_quest_feedback(command.game_session_id,&line);
+                        self.states
+                            .chat
+                            .push_quest_feedback(command.game_session_id, &line);
                     }
-                    if let Some(position) = turn.runtime.read_actor_position(actor).ok()
+                    if let Some(position) = turn
+                        .runtime
+                        .read_actor_position(actor)
+                        .ok()
                         .and_then(|at| super::quest_callbacks::native(at.position()))
                         && let Some(map) = self.bundle_map()
                     {
