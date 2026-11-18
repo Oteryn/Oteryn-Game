@@ -158,12 +158,16 @@ pub(super) async fn client_looks(
                 return Err(format!("LOOK refused goblet {}", entry.item_definition_ref).into());
             };
             assert!(text.starts_with("You see "), "{text}");
-            descriptions.push((
-                entry.item_definition_ref,
-                text.lines()
-                    .find(|line| line.contains("Awarded to"))
-                    .map(str::to_owned),
-            ));
+            let description = text
+                .lines()
+                .last()
+                .filter(|line| line.contains("Awarded to"));
+            assert_eq!(
+                text.matches("Awarded to").count(),
+                usize::from(description.is_some()),
+                "{text}"
+            );
+            descriptions.push((entry.item_definition_ref, description.map(str::to_owned)));
             break;
         }
     }
