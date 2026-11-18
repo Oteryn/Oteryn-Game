@@ -734,7 +734,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let _ = pillar::project(self, state, PillarProjection::Fighting);
             let current = runtime.read_actor_position(actor).ok()?.position();
-            if !at_entrance(current) && !(1..=10).any(|pit| in_pit(current, pit)) {
+            if !at_entrance(current) && !(1..=10).any(|pit| in_pit(current, pit)) && halvar::entrance_source(self, current).is_none() {
                 return None;
             }
             pit_reset::reset_monsters(&mut runtime, actor, session, state)?;

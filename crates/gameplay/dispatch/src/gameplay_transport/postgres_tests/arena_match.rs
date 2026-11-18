@@ -127,6 +127,7 @@ enum NativeScenario {
     Portals,
     RecreatedPillars,
     Departure,
+    Halvar,
     Timeout,
     ResetMonsters,
     SharedRewards,
@@ -185,10 +186,15 @@ pub(super) fn south_portal_concession() -> TestResult {
     scenario_route(true, Some(NativeScenario::Concession))
 }
 
+pub(super) fn halvar_paid_entrance() -> TestResult {
+    scenario_route(true, Some(NativeScenario::Halvar))
+}
+
 fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expire: bool) -> TestResult {
     let native_portals = route.is_some();
     let shared_rewards = matches!(route, Some(NativeScenario::SharedRewards));
     let concede = matches!(route, Some(NativeScenario::Concession));
+    let halvar = matches!(route, Some(NativeScenario::Halvar));
     let leave_early = concede || matches!(route, Some(NativeScenario::Departure));
     let timeout_early = matches!(route, Some(NativeScenario::Timeout));
     let reset_monsters = matches!(route, Some(NativeScenario::ResetMonsters));
@@ -216,6 +222,8 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
             fixture::bundle_with_concession(native)?
         } else if shared_rewards {
             fixture::bundle_with_reward_chest(native)?
+        } else if halvar {
+            fixture::bundle_with_halvar(native)?
         } else if native_portals {
             fixture::bundle_with_pillars(native)?
         } else {
@@ -355,6 +363,9 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                 admitted.game_session_id,
                 &build
             ));
+        }
+        if halvar {
+            return super::qcx61_halvar::exercise(&mut owner, &mut admitted, &harness, deps.actor).await;
         }
         assert_eq!(
             command(&owner, &mut admitted, A::Status)

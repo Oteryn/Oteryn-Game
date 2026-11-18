@@ -9,31 +9,37 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 pub(in super::super) fn bundle(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false, false, false)
+    bundle_layout(native, true, false, false, false, false)
 }
 
 pub(in super::super) fn bundle_with_pillars(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false, false, false)
+    bundle_layout(native, true, false, false, false, false)
 }
 
 pub(in super::super) fn bundle_with_pillar_floors(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, false, true, false, false)
+    bundle_layout(native, false, true, false, false, false)
 }
 
 pub(in super::super) fn bundle_with_concession(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false, true, false)
+    bundle_layout(native, true, false, true, false, false)
 }
 
 pub(in super::super) fn bundle_with_reward_chest(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false, false, true)
+    bundle_layout(native, true, false, false, true, false)
+}
+
+pub(in super::super) fn bundle_with_halvar(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+    bundle_layout(native, true, false, false, false, true)
 }
 
 fn bundle_layout(
@@ -42,6 +48,7 @@ fn bundle_layout(
     pillar_floors_only: bool,
     with_concession: bool,
     with_reward_chest: bool,
+    with_halvar: bool,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::writer::{Extent, Sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
@@ -142,7 +149,7 @@ fn bundle_layout(
             tiles.insert(at, tile);
         }
     }
-    if with_concession {
+    if with_concession || with_halvar {
         // The B3 counterpart is untagged Item1949 at ordinal 1.
         let appearance = u32::try_from(bundle.manifest.palette.len())?;
         bundle.manifest.palette.push(oteryn_world_bundle::writer::PaletteEntry {
@@ -157,14 +164,21 @@ fn bundle_layout(
             }),
         });
         let mut tile = bundle.sectors[0].tiles[0].clone();
-        tile.x = 32209;
-        tile.y = 31104;
+        (tile.x, tile.y) = if with_halvar { (32246, 31097) } else { (32209, 31104) };
         tile.items.push(oteryn_world_bundle::sector::Item {
             palette: appearance,
             depth: 0,
             attrs: Default::default(),
         });
         tiles.insert((tile.x, tile.y, -7), tile);
+        if with_halvar {
+            for y in [31098, 31099] {
+                let mut floor = bundle.sectors[0].tiles[0].clone();
+                floor.x = 32246;
+                floor.y = y;
+                tiles.insert((floor.x, floor.y, -7), floor);
+            }
+        }
     }
     if with_reward_chest {
         // Crystal 201189f8 chest.lua:2324-2329.
