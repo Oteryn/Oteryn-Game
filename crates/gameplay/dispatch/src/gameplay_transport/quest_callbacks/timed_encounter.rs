@@ -171,6 +171,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         }
         self.drain_admitted_boss_deadlines(&mut runtime, map);
+        self.drain_distractions(&mut runtime, map);
         let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
             return;
         };

@@ -377,7 +377,7 @@ impl ChannelRuntimeV1 {
         monsters: &[(&str, i64, MovementLocalPosition)],
         project: impl FnOnce() -> bool,
     ) -> Result<Vec<ExactActorRef>, CarrierError> {
-        if monsters.is_empty() || monsters.len() > 8 {
+        if monsters.is_empty() || monsters.len() > 9 {
             return Err(CarrierError::PlanConflict);
         }
         let mut actors = Vec::new();

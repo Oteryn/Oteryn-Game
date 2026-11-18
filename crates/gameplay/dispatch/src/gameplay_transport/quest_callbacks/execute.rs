@@ -988,6 +988,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return UseDisposition::Rejected;
         };
+        let distraction = match self.prepare_distraction(runtime, map, callback, key, pos) {
+            Ok(distraction) => distraction,
+            Err(disposition) => return disposition,
+        };
         let mut success_preface = None;
         if callback.effects.encounter.is_some() && callback.has_personal_state() && !durable {
             return UseDisposition::Rejected;
@@ -1522,6 +1526,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             underwater(map, after.position()),
                         );
                     }
+                }
+            } else if let Some(distraction) = distraction {
+                if !self.publish_distraction(
+                    runtime,
+                    states,
+                    map,
+                    key,
+                    expected_revision,
+                    before,
+                    pos,
+                    distraction,
+                ) {
+                    return UseDisposition::Rejected;
                 }
             } else if !ambush.is_empty() {
                 // The map CAS and positions publish as a single Channel turn.

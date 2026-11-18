@@ -65,9 +65,30 @@ pub struct EncounterTimeout {
     pub message: String,
 }
 
+/// Hide an item-on-target guard until its original distraction actors retire.
+/// Crystal 201189f8 mission12_into_fortress.lua:251-294.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Distraction {
+    pub duration_ms: u32,
+    pub radius: u8,
+    pub eject_to: Position,
+    pub spawns: Vec<DistractionSpawn>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DistractionSpawn {
+    pub creature: String,
+    pub offset_y: i16,
+    pub count: u8,
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub distraction: Option<Distraction>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub personal_return: Option<super::personal_return::PersonalReturn>,
     /// Exact creatures projected by a successful personal STEP receipt.
@@ -541,6 +562,45 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 .placement_cues
                 .iter()
                 .any(|cue| cue.effect == 0 || !pos(cue.position))
+    }) {
+        return false;
+    }
+
+    if effects.distraction.as_ref().is_some_and(|distraction| {
+        callback.trigger != Trigger::Use
+            || callback.actor_kind != ActorKind::Player
+            || !callback.requires_world_admission
+            || callback.reversible
+            || callback.lever.is_some()
+            || callback.teleport.is_some()
+            || callback.selector.appearance.is_none()
+            || !callback.passages.is_empty()
+            || callback.item_on_target.as_ref().is_none_or(|tool| {
+                !tool.reusable
+                    || !tool.selected_instance
+                    || tool.target_remove
+                    || tool.target_replacement.is_some()
+            })
+            || effects.encounter.is_some()
+            || effects.party_transfer.is_some()
+            || effects.scene.is_some()
+            || !effects.ambush.is_empty()
+            || !(1..=3_600_000).contains(&distraction.duration_ms)
+            || !(1..=8).contains(&distraction.radius)
+            || !pos(distraction.eject_to)
+            || !(1..=9).contains(
+                &distraction
+                    .spawns
+                    .iter()
+                    .map(|spawn| usize::from(spawn.count))
+                    .sum::<usize>(),
+            )
+            || distraction.spawns.iter().any(|spawn| {
+                spawn.count == 0
+                    || !(1..=8).contains(&spawn.offset_y.unsigned_abs())
+                    || !spawn.creature.starts_with("oteryn:creature.")
+                    || !super::super::valid_quest_key(&spawn.creature)
+            })
     }) {
         return false;
     }

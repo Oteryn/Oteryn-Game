@@ -11,6 +11,7 @@ mod clear_area;
 mod committed_copy;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
+mod distraction;
 mod dreamer_carrot;
 mod effects;
 mod encounter;
@@ -99,6 +100,7 @@ struct ObservedWorldCallback {
 #[derive(Default)]
 pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
+    distractions: std::sync::Mutex<Vec<distraction::DistractionVisit>>,
     personal: personal_encounter::Cohorts,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     encounters: std::sync::Mutex<Vec<encounter::EncounterVisit>>,
@@ -161,7 +163,14 @@ impl PendingCallbacks {
             .iter()
             .filter_map(encounter::EncounterVisit::due)
             .min();
-        pending.into_iter().chain(visits).min()
+        let distractions = self
+            .distractions
+            .lock()
+            .ok()?
+            .iter()
+            .map(|visit| visit.due)
+            .min();
+        pending.into_iter().chain(visits).chain(distractions).min()
     }
 }
 
