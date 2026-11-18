@@ -162,6 +162,8 @@ const ARBAZILOTH_QUEST: &str = "oteryn:quest.no_rest_for_the_wicked_quest";
 const HARD_KILLS: &str =
     "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/hard_kills";
 const DOOR: &str = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forgemaster_door/questline";
+const HARD_UNLOCK: &str = "oteryn:quest-transition/native/no_rest_for_the_wicked/hard_unlock";
+const HARD_INCREMENT: &str = "oteryn:quest-transition/native/no_rest_for_the_wicked/hard_increment";
 const HARD_FIRST_CLEAR: &str =
     "oteryn:quest-transition/native/no_rest_for_the_wicked/hard_first_clear";
 const HARD_FIRST_CLEAR_WITH_DOOR_PROGRESS: &str =
@@ -300,6 +302,18 @@ pub fn arbaziloth_hard_transitions() -> impl Iterator<Item = &'static str> {
         .flatten()
         .filter(|rule| rule.creature == ARBAZILOTH_ENRAGED)
         .map(|rule| rule.transition.as_str())
+}
+
+/// Freeze one counter operation at admission so replay cannot turn an
+/// already counted ninth kill into the tenth kill.
+pub fn arbaziloth_hard_counter(tracks: &BTreeMap<String, i64>) -> Option<&'static str> {
+    [HARD_UNLOCK, HARD_INCREMENT]
+        .into_iter()
+        .find(|key| rule(key).is_some_and(|rule| rule.active(tracks)))
+}
+
+pub fn is_arbaziloth_hard_counter(key: &str) -> bool {
+    matches!(key, HARD_UNLOCK | HARD_INCREMENT)
 }
 
 pub fn rules() -> Result<&'static [Rule], &'static str> {

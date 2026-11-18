@@ -741,6 +741,7 @@ pub(super) struct EncounterCredit {
     lease_generation: u64,
     observed_revision: u64,
     counters: Vec<&'static str>,
+    hard_counter: Option<&'static str>,
     source: PartySnapshot,
 }
 
@@ -789,6 +790,9 @@ pub(super) fn capture_encounter_admission(
             lease_generation: lease.generation(),
             observed_revision: revision,
             counters: oteryn_gameplay_quests::quest::native_kills::active_encounter(copy.tracks()),
+            hard_counter: oteryn_gameplay_quests::quest::source_deaths::arbaziloth_hard_counter(
+                copy.tracks(),
+            ),
             source,
         });
     }
@@ -830,9 +834,11 @@ pub(super) fn freeze_encounter_credit(
                 continue;
             };
             let at = position.position();
-            for transition in
-                oteryn_gameplay_quests::quest::source_deaths::arbaziloth_hard_transitions()
-            {
+            use oteryn_gameplay_quests::quest::source_deaths;
+            for transition in source_deaths::arbaziloth_hard_transitions().filter(|key| {
+                !source_deaths::is_arbaziloth_hard_counter(key)
+                    || participant.hard_counter == Some(*key)
+            }) {
                 recipients.push(super::quest_kills::Recipient {
                     actor: participant.actor,
                     session: participant.session,
