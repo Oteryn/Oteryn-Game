@@ -14,15 +14,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     // data-global/scripts/quests/what_a_foolish_quest/action_cat_basket.lua:32-35;
     // data-global/scripts/quests/the_gravedigger_of_drefia/movements_necromancer_servant.lua:9-11;
     // data-global/scripts/quests/the_gravedigger_of_drefia/actions_sacrifice.lua:3-10.
-    pub(super) fn spawn_quest_creature(
+    pub(in crate::gameplay_transport) fn spawn_quest_creature(
         &self,
         runtime: &mut ChannelRuntimeV1,
         states: &ChannelSpellStates,
         map: &BundleMap,
         spawn: &CreatureSpawn,
-    ) {
+    ) -> bool {
         let Some(native) = self.active_generation.and_then(|g| g.native_gameplay()) else {
-            return;
+            return false;
         };
         let position = local(spawn.position);
         if runtime.owner_fence().is_err()
@@ -42,23 +42,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .is_ok_and(|census| census.iter().all(|(_, at, _)| at.position() != position))
             || native.install_companion_policies(runtime).is_err()
         {
-            return;
+            return false;
         }
         let Ok(policy) = runtime.companion_policy(&spawn.creature) else {
-            return;
+            return false;
         };
         let mut expiry = match spawn.lifetime_ms {
             Some(ms) => {
                 let Some(due) = self.owner_now().get().checked_add(u64::from(ms) * 1000) else {
-                    return;
+                    return false;
                 };
                 let Ok(mut held) = self.states.quest_callbacks.source_creature_expiry.lock() else {
-                    return;
+                    return false;
                 };
                 if held.len() >= super::timed_encounter::MAX_TIMED_ENCOUNTERS
                     || held.try_reserve(1).is_err()
                 {
-                    return;
+                    return false;
                 }
                 Some((held, due))
             }
@@ -69,7 +69,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             policy.maximum_health,
             position,
         )]) else {
-            return;
+            return false;
         };
         if let Some((held, due)) = expiry.as_mut()
             && let Some(actor) = actors.first()
@@ -80,6 +80,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             });
             states.owner_wake.notify_one();
         }
+        true
     }
 
     pub(super) fn expire_quest_creatures(&self, runtime: &mut ChannelRuntimeV1, now: u64) {

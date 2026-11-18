@@ -182,6 +182,8 @@ pub struct NpcFireDamage {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct NpcAfterCommit {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub nearby_creatures: Vec<String>,
     pub fire_damage: Option<NpcFireDamage>,
     pub end_conversation_delay_ms: Option<u32>,
 }

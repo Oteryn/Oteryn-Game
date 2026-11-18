@@ -499,7 +499,7 @@ pub(super) async fn apply(
             admission
                 .refresh_level_up_vitals(actor, command.game_session_id)
                 .await;
-            let runtime = admission.runtime.lock().await;
+            let mut runtime = admission.runtime.lock().await;
             if newly_committed && let Some(callback) = &reward_callback {
                 super::magic_effects::publish(
                     admission,
@@ -529,7 +529,7 @@ pub(super) async fn apply(
             {
                 super::npc_after_commit::publish(
                     admission,
-                    &runtime,
+                    &mut runtime,
                     actor,
                     command,
                     &intent,
@@ -597,17 +597,45 @@ pub(in crate::gameplay_transport) async fn resume(
         .request
         .transition_key
         .starts_with("oteryn:quest-reward/");
+    let reaction = admission
+        .quest_catalogue
+        .as_deref()
+        .and_then(|catalogue| {
+            oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue).ok()
+        })
+        .and_then(|rows| {
+            rows.into_iter()
+                .find(|row| row.key == pending.request.transition_key)
+        })
+        .and_then(|row| row.npc_after_commit);
     match admission
         .root
         .reconcile_character_quest_transition(
             admission.character,
             pending.character,
-            pending.request,
+            pending.request.clone(),
         )
         .await
     {
         Ok(receipt) => {
-            finish(admission, command.game_session_id, receipt.is_some());
+            let retained = {
+                let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() else {
+                    return Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected));
+                };
+                let state = &mut sessions.get_mut(&command.game_session_id)?.quest_dialogue;
+                state
+                    .pending
+                    .take_if(|candidate| {
+                        candidate.request.cause == pending.request.cause
+                            && candidate.request.transition_key == pending.request.transition_key
+                    })
+                    .map(|candidate| {
+                        if receipt.is_some() {
+                            state.apply_topic(candidate.context, candidate.next_topic);
+                        }
+                    })
+                    .is_some()
+            };
             if receipt.is_some() {
                 admission
                     .refresh_quest_session(command.game_session_id, false)
@@ -623,8 +651,8 @@ pub(in crate::gameplay_transport) async fn resume(
                     pending.reply,
                 );
                 rendered.inventory_changed = value_callback;
-                let runtime = admission.runtime.lock().await;
-                Some(publish_committed_reply(
+                let mut runtime = admission.runtime.lock().await;
+                let mut outcome = publish_committed_reply(
                     admission.states.npc_conversations.current_npc(
                         &admission.states.chat,
                         &runtime,
@@ -634,7 +662,20 @@ pub(in crate::gameplay_transport) async fn resume(
                     ),
                     &pending.context,
                     rendered,
-                ))
+                );
+                if retained && let Some(effects) = &reaction {
+                    super::npc_after_commit::publish(
+                        admission,
+                        &mut runtime,
+                        pending.actor,
+                        command,
+                        &pending.intent,
+                        &pending.context,
+                        effects,
+                        &mut outcome,
+                    );
+                }
+                Some(outcome)
             } else {
                 Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected))
             }
