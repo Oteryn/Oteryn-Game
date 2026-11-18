@@ -11,7 +11,7 @@ fn passive_rotten_charge_advances_after_twenty_seconds() -> TestResult {
 }
 
 #[test]
-fn bakragore_admission_opens_a_twenty_five_minute_fight() -> TestResult {
+fn bakragore_admission_opens_a_twenty_minute_fight() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }

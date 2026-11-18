@@ -469,8 +469,8 @@ fn scenario_with_step(
                 .bind("oteryn:boss.bakragore")
                 .fetch_one(&h.pool)
                 .await?;
-                // Rotten Blood Quest/Spoiler, curid 102953, oldid 1107075, Bakragore.
-                assert_eq!(fight_ms, 25 * 60 * 1000);
+                // Crystal 201189f8 config.lua.dist:659 sets the default fight duration.
+                assert_eq!(fight_ms, 1_200_000);
                 drop(owner);
                 drop(authority);
                 drop(seal);
