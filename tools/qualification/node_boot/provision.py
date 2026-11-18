@@ -11,7 +11,7 @@ from threading import Thread
 import uuid
 
 
-PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk", "combat-progression", "private-channel", "coin-converters", "rune-training", "sweep", "atelier")
+PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk", "combat-progression", "private-channel", "coin-converters", "rune-training", "sweep", "atelier", "victim")
 CREATURE_KEY = re.compile(r"[A-Za-z0-9:._/-]{1,128}")
 CAPACITY = re.compile(rb"capacity [1-9][0-9]* [1-9][0-9]*\n")
 SPAWNED = re.compile(rb"spawned [0-9a-f]{32} [0-9]+ [0-9]+\n")
@@ -83,6 +83,8 @@ def spawn(socket_path, session, creature_key):
     ):
         raise ValueError("invalid qualification spawn request")
     answer = bytes(_request(socket_path, f"spawn {session} {creature_key}\n", 128))
+    if creature_key == "cleanup" and answer == b"cleaned\n":
+        return "cleaned"
     if not SPAWNED.fullmatch(answer):
         raise RuntimeError(
             f"node refused qualification spawn: node_answer={answer[:128]!r} "

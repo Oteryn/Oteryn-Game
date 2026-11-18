@@ -199,16 +199,25 @@ def pinned_sha(root: Path, relative: Path, variable: str) -> str:
     return match[1]
 
 
+# Groups that run for hours or need a second World use dedicated shards.
+ON_DEMAND_GROUPS = frozenset({"creature_sweep", "mp"})
+
+
 def group_partition(groups: list[str]) -> list[list[str]]:
-    """Keep the sweep off the fixtures used by the core and multiplayer journeys."""
-    journey = [g for g in groups if g not in ("rows", "creature_sweep")]
+    """Core-like groups | f4..f6 | f7 and later, in registry order.
+
+    These are the combinations the single-machine run already executes
+    together; a group gets its own shard only through the custom set.
+    ON_DEMAND_GROUPS never join a partition.
+    """
+    journey = [g for g in groups if g != "rows" and g not in ON_DEMAND_GROUPS]
     numbered = {g: int(m[1]) for g in journey if (m := re.fullmatch(r"f(\d+)[a-z]*", g))}
     parts = [
         [g for g in journey if g not in numbered],
         [g for g in journey if g in numbered and numbered[g] < 7],
         [g for g in journey if g in numbered and numbered[g] >= 7],
     ]
-    return [part for part in parts if part] + ([["creature_sweep"]] if "creature_sweep" in groups else [])
+    return [part for part in parts if part]
 
 
 def row_batches(indices: list[int], start: int, end: int | None, size: int) -> list[tuple[int, int]]:
@@ -273,10 +282,12 @@ def plan(
     if set_name == "reference":
         shards = [shard("reference", "node_boot", platform, True, {})]
     elif set_name == "pr":
-        shards = [basic_shard, *map(group_shard, group_partition(registry)),
+        isolated_groups = ([group] for group in registry if group in ON_DEMAND_GROUPS)
+        shards = [basic_shard, *map(group_shard, group_partition(registry)), *map(group_shard, isolated_groups),
                   *(row_shard(first, length) for first, length in PR_ROW_BATCHES)]
     elif set_name == "full":
-        shards = [basic_shard, *map(group_shard, group_partition(registry)),
+        isolated_groups = ([group] for group in registry if group in ON_DEMAND_GROUPS)
+        shards = [basic_shard, *map(group_shard, group_partition(registry)), *map(group_shard, isolated_groups),
                   *(row_shard(f, n) for f, n in row_batches(indices, 0, None, size)),
                   spells_shard, portal_shard]
     else:

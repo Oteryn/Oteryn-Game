@@ -17,7 +17,7 @@ use std::sync::{Arc, Mutex, MutexGuard, OnceLock, PoisonError};
 #[path = "indexed_verdict.rs"]
 mod indexed;
 pub(crate) use indexed::indexed_evidence;
-pub(super) use indexed::{indexed, indexed_checked};
+pub(super) use indexed::{indexed, indexed_advisory, indexed_checked};
 #[path = "indexed_result.rs"]
 mod indexed_result;
 pub(crate) use indexed_result::{
@@ -239,6 +239,10 @@ pub(super) enum Need {
     Row(&'static str),
 }
 
+fn fixture_character_need(world: [u8; 16], character: [u8; 16], _index: usize) -> Need {
+    Need::Fixture(world, character)
+}
+
 struct Tracker {
     last: tokio::time::Instant,
     phase: &'static str,
@@ -259,6 +263,7 @@ pub(super) struct Watch {
     harness: &'static Harness,
     tracker: Arc<Mutex<Tracker>>,
     scenario: Option<&'static str>,
+    advisory: bool,
 }
 
 impl Watch {
@@ -268,6 +273,7 @@ impl Watch {
             needs: Vec::new(),
             harness,
             scenario: None,
+            advisory: false,
             tracker: Arc::new(Mutex::new(Tracker {
                 last: tokio::time::Instant::now(),
                 phase: "start",
@@ -516,6 +522,43 @@ impl Harness {
             )),
             None => Ok(()),
         }
+    }
+
+    pub(super) fn fixture_gate_for_character(
+        &self,
+        world: [u8; 16],
+        character: [u8; 16],
+        index: usize,
+    ) -> TestResult {
+        match self.blocked(&[fixture_character_need(world, character, index)]) {
+            Some(root) => Err(HarnessError::boxed(
+                Cause::BlockedBy { root: root.clone() },
+                format!(
+                    "fixture {} release blocked by {root}",
+                    uuid_text(&character)
+                ),
+            )),
+            None => Ok(()),
+        }
+    }
+
+    pub(super) fn fixture_failed_for_character(
+        &self,
+        world: [u8; 16],
+        character: [u8; 16],
+        index: usize,
+        error: &dyn Error,
+    ) -> Box<dyn Error> {
+        let name = format!(
+            "fixture-{}-{}-released",
+            uuid_text(&world),
+            uuid_text(&character)
+        );
+        self.fail(
+            fixture_character_need(world, character, index),
+            format!("{}/{name}", self.running_row()),
+        );
+        HarnessError::boxed(Cause::Precondition { name }, error.to_string())
     }
 
     /// The running row becomes the root of every later row needing this fixture.
@@ -860,6 +903,12 @@ impl Groups {
         Ok(Self(Some(selected)))
     }
 
+    pub(super) fn explicitly_runs(&self, group: &str) -> bool {
+        self.0
+            .as_ref()
+            .is_some_and(|selected| selected.contains(group))
+    }
+
     pub(super) fn explicitly_selected(&self) -> bool {
         self.0.is_some()
     }
@@ -867,7 +916,7 @@ impl Groups {
     pub(super) fn runs(&self, group: &str) -> bool {
         self.0
             .as_ref()
-            .is_none_or(|selected| selected.contains(group))
+            .map_or(group != "mp", |selected| selected.contains(group))
     }
 }
 
@@ -977,6 +1026,54 @@ mod verdict_tests {
             .enable_all()
             .start_paused(true)
             .build()?)
+    }
+
+    #[test]
+    fn fixture_identity_classifier_ignores_pair_local_indices() {
+        assert_ne!(
+            fixture_character_need([1; 16], [2; 16], 0),
+            fixture_character_need([1; 16], [3; 16], 0)
+        );
+        assert_ne!(
+            fixture_character_need([1; 16], [2; 16], 0),
+            fixture_character_need([4; 16], [2; 16], 0)
+        );
+        assert_eq!(
+            fixture_character_need([1; 16], [2; 16], 0),
+            fixture_character_need([1; 16], [2; 16], 1)
+        );
+    }
+
+    #[test]
+    fn fixture_release_failures_are_scoped_to_world_and_character() {
+        let h = Harness::new(true, None);
+        let _first = h.fixture_failed_for_character(
+            [1; 16],
+            [2; 16],
+            0,
+            &std::io::Error::other("core release unavailable"),
+        );
+        assert!(
+            h.fixture_gate_for_character([1; 16], [3; 16], 0).is_ok(),
+            "packet/0 must not inherit core/0's release failure"
+        );
+        assert!(
+            h.fixture_gate_for_character([4; 16], [2; 16], 0).is_ok(),
+            "another World owns another fixture need"
+        );
+        assert!(
+            h.fixture_gate_for_character([1; 16], [2; 16], 1).is_err(),
+            "the actual character retains its own release failure"
+        );
+    }
+
+    #[test]
+    fn on_demand_mp_is_never_selected_by_the_default_group_set() -> TestResult {
+        assert!(!Groups::parse(None, GROUPS)?.runs("mp"));
+        assert!(!Groups::parse(None, GROUPS)?.explicitly_runs("mp"));
+        assert!(!Groups::parse(Some("core"), GROUPS)?.explicitly_runs("mp"));
+        assert!(Groups::parse(Some("mp"), GROUPS)?.explicitly_runs("mp"));
+        Ok(())
     }
 
     #[test]
@@ -1263,7 +1360,13 @@ mod verdict_tests {
     #[test]
     fn group_selection_includes_declared_prerequisites_and_rejects_unknown_names() -> TestResult {
         let all = Groups::parse(None, GROUPS)?;
-        assert!(GROUPS.iter().all(|(group, _)| all.runs(group)));
+        for (group, _) in GROUPS {
+            assert_eq!(
+                all.runs(group),
+                *group != "mp",
+                "default selection: {group}"
+            );
+        }
         assert!(Groups::parse(Some(" "), GROUPS)?.runs("core"));
         let some = Groups::parse(Some("f6, f7run"), GROUPS)?;
         assert!(some.runs("f6") && some.runs("f7run"));

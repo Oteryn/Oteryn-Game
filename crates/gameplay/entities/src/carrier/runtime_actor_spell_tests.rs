@@ -1021,6 +1021,79 @@ fn source_relocation_stages_same_slot_with_batch_and_reserves_destination_until_
     assert_eq!(f.runtime.read_actor_position(f.caster).unwrap(), current);
 }
 
+#[test]
+fn qualification_next_round_spawn_refuses_parked_relocation_destination()
+-> Result<(), Box<dyn std::error::Error>> {
+    struct Proof(
+        ExactActorRef,
+        MovementPositionSnapshot,
+        MovementLocalPosition,
+    );
+    impl relocation_seal::Sealed for Proof {}
+    impl SpellRelocationProof for Proof {
+        fn parts(
+            &self,
+        ) -> (
+            ExactActorRef,
+            MovementPositionSnapshot,
+            MovementLocalPosition,
+        ) {
+            (self.0, self.1, self.2)
+        }
+    }
+    let mut f = master_assignment_fixture();
+    f.runtime
+        .remove_test_actor(f.targets[2])
+        .map_err(|error| format!("{error:?}"))?;
+    let expected = f
+        .runtime
+        .read_actor_position(f.caster)
+        .map_err(|error| format!("{error:?}"))?;
+    let destination = MovementLocalPosition {
+        x: expected.position().x + 1,
+        ..expected.position()
+    };
+    let mut original = batch(&f, 1, vec![damage(f.targets[0], 0, 1)]);
+    original.binding = b"{\"source\":\"qualification-reserved-destination\"}".to_vec();
+    let relocation =
+        QualifiedSpellRelocation::bind(&mut original, Proof(f.caster, expected, destination))
+            .map_err(|error| format!("{error:?}"))?;
+    let mut staged = f
+        .runtime
+        .stage_spell_batch_with_relocation(&original, &relocation)
+        .map_err(|error| format!("{error:?}"))?;
+    f.runtime
+        .reserve_spell_batch(&mut staged)
+        .map_err(|error| format!("{error:?}"))?;
+    drop(staged);
+    let before = f.runtime.visible_entities().creatures.len();
+    let pin = f.runtime.content_pin().clone();
+    assert_eq!(
+        f.runtime
+            .realize_native_qualification_once(pin, "creature:rat", destination),
+        Err(CarrierError::PlanConflict)
+    );
+    assert_eq!(f.runtime.visible_entities().creatures.len(), before);
+    let staged = f
+        .runtime
+        .stage_spell_batch_with_relocation(&original, &relocation)
+        .map_err(|error| format!("{error:?}"))?;
+    assert!(
+        f.runtime
+            .commit_spell_batch(staged)
+            .map_err(|error| format!("{error:?}"))?
+            .applied
+    );
+    assert_eq!(
+        f.runtime
+            .read_actor_position(f.caster)
+            .map_err(|error| format!("{error:?}"))?
+            .position(),
+        destination
+    );
+    Ok(())
+}
+
 fn master_assignment_fixture() -> Fixture {
     use super::super::runtime_actor_companion::{
         CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags,

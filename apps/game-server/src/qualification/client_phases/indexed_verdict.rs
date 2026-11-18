@@ -91,7 +91,7 @@ impl Watch {
                 self.harness.fail(Need::Row(self.row), root.clone());
                 line.push_str(&cause.suffix(&root));
             }
-            lines.push(line);
+            lines.push(advisory_line(line, self.advisory));
         }
         lines
     }
@@ -181,7 +181,11 @@ pub(crate) fn indexed(
     scenario: &'static str,
     journey: impl Future<Output = TestResult>,
 ) -> impl Future<Output = bool> {
-    Box::pin(async move { indexed_run(scenario, journey, false).await.is_ok() })
+    Box::pin(async move {
+        indexed_run(Harness::global(), scenario, journey, false, false)
+            .await
+            .is_ok()
+    })
 }
 
 /// A checked row reports completion to its caller as well as to evidence consumers.
@@ -189,21 +193,39 @@ pub(crate) fn indexed_checked(
     scenario: &'static str,
     journey: impl Future<Output = TestResult>,
 ) -> impl Future<Output = TestResult> {
-    indexed_run(scenario, journey, true)
+    indexed_checked_with(Harness::global(), scenario, journey)
+}
+
+pub(crate) fn indexed_advisory(
+    scenario: &'static str,
+    journey: impl Future<Output = TestResult>,
+) -> impl Future<Output = TestResult> {
+    indexed_run(Harness::global(), scenario, journey, true, true)
+}
+
+fn indexed_checked_with(
+    harness: &'static Harness,
+    scenario: &'static str,
+    journey: impl Future<Output = TestResult>,
+) -> impl Future<Output = TestResult> {
+    indexed_run(harness, scenario, journey, true, false)
 }
 
 fn indexed_run(
+    harness: &'static Harness,
     scenario: &'static str,
     journey: impl Future<Output = TestResult>,
     report_success: bool,
+    advisory: bool,
 ) -> impl Future<Output = TestResult> {
     // Keep the row on the heap to limit the parent journey's debug-build poll frame.
     Box::pin(crate::qualification::client_world::FIXTURE_WORKERS.scope(
         Default::default(),
         async move {
             let started = std::time::Instant::now();
-            let mut watch = Watch::new(scenario, Harness::global());
+            let mut watch = Watch::new(scenario, harness);
             watch.scenario = Some(scenario);
+            watch.advisory = advisory;
             let mut result = watch.run_indexed(journey).await;
             if report_success && result.is_ok() {
                 let state = watch.state();
@@ -306,7 +328,15 @@ fn indexed_evidence_for(harness: &Harness, mut line: String) -> Option<String> {
         watch.state().pending.push(line);
         None
     } else {
-        Some(line)
+        Some(advisory_line(line, watch.advisory))
+    }
+}
+
+fn advisory_line(line: String, advisory: bool) -> String {
+    if advisory {
+        line.replacen("e2e_all ", "CREATURE_SWEEP_CALIBRATION ", 1)
+    } else {
+        line
     }
 }
 
@@ -355,6 +385,42 @@ mod tests {
         let mut watch = Watch::new("C03.full", harness);
         watch.scenario = Some("C03.full");
         watch
+    }
+
+    #[test]
+    fn indexed_watchdog_cancellation_reaches_the_stage_caller() -> TestResult {
+        runtime()?.block_on(async {
+            let harness = Box::leak(Box::new(Harness::new(true, Some(Duration::from_secs(1)))));
+            let result = indexed_checked_with(
+                harness,
+                "REVIEW.cancel.full",
+                std::future::pending::<TestResult>(),
+            )
+            .await;
+            assert!(result.is_err());
+            assert!(
+                harness
+                    .blocked(&[Need::Row("REVIEW.cancel.full")])
+                    .is_some()
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn indexed_failure_reaches_the_stage_caller() -> TestResult {
+        runtime()?.block_on(async {
+            assert!(
+                indexed_checked_with(
+                    Box::leak(Box::new(Harness::new(true, None))),
+                    "REVIEW.failure.full",
+                    async { Err("scenario failed".into()) }
+                )
+                .await
+                .is_err()
+            );
+            Ok(())
+        })
     }
 
     #[test]
@@ -763,6 +829,18 @@ mod tests {
             ));
             Ok(())
         })
+    }
+}
+
+#[cfg(test)]
+mod advisory_tests {
+    #[test]
+    fn calibration_verdict_is_not_a_scored_species() {
+        let line =
+            "e2e_all scenario=CS.calibration.cyclops.attempt1.full status=FAIL seconds=0.000"
+                .to_owned();
+        assert!(!super::advisory_line(line.clone(), true).starts_with("e2e_all "));
+        assert_eq!(super::advisory_line(line.clone(), false), line);
     }
 }
 

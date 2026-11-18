@@ -8,6 +8,12 @@ use oteryn_gameplay_foundation::foundation::condition::{
 };
 use sha2::{Digest, Sha256};
 
+/// The retained cohort slice at its original condition observation time.
+pub(super) struct CreatureFieldBatch<'a> {
+    pub(super) observed_at: u64,
+    pub(super) actors: &'a [crate::foundation::ExactActorRef],
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn tick_creature_fields(
         &self,
@@ -15,16 +21,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         runtime: &mut ChannelRuntimeV1,
         states: &ChannelSpellStates,
         native: &crate::content::native_gameplay::NativeGameplayState,
-        now: u64,
+        batch: CreatureFieldBatch<'_>,
         native_health_names: &super::source_names::NativeHealthNamesData,
     ) -> Result<(), DurabilityError> {
+        let now = batch.observed_at;
         native_health_names
             .validate_frame(runtime)
             .map_err(|_| DurabilityError::Unavailable)?;
         let mut plans = Vec::new();
         let mut source_players = Vec::new();
 
-        let creatures = runtime.visible_entities().creatures;
+        // The retained cursor already owns this exact bounded batch. Looking up
+        // each actor directly avoids a whole-world census for every slice.
+        let creatures = batch
+            .actors
+            .iter()
+            .filter_map(|actor| runtime.companion_snapshot(*actor).ok())
+            .collect::<Vec<_>>();
         // Passive source creatures are outside the AI table, but still own field conditions.
         let positions = creatures
             .iter()
@@ -33,10 +46,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map.prefetch_empty_tiles(runtime, &positions)
             .await
             .map_err(|_| DurabilityError::Unavailable)?;
-        for visible in creatures {
-            let Ok(snapshot) = runtime.companion_snapshot(visible.actor) else {
-                continue;
-            };
+        for snapshot in creatures {
+            let visible = &snapshot;
             let read = map
                 .read_items(runtime, visible.position)
                 .await
@@ -99,7 +110,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             });
                     let digest = Sha256::new()
                         .chain_update(visible.actor.placement_identity())
-                        .chain_update(visible.revision.to_be_bytes())
+                        .chain_update(visible.position_revision.to_be_bytes())
                         .chain_update(item.item_instance_id)
                         .finalize();
                     let mut occurrence = [0; 16];

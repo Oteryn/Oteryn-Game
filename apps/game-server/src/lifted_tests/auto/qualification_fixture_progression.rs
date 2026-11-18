@@ -24,6 +24,8 @@ mod binding;
 #[derive(Clone, Copy)]
 enum Case {
     Admitted,
+    Resume,
+    FreshnessRace,
     Advanced,
     Vocation,
     Skill,
@@ -347,7 +349,9 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
     if matches!(case, Case::MismatchedReward) {
         served.reward_revision = "other-reward".into();
     }
-    let result = prepare_character_with_policy(
+    let pause = matches!(case, Case::FreshnessRace)
+        .then(crate::qualification_spell_character::pause_next_fixture_build_read);
+    let preparing = prepare_character_with_policy(
         &h.root,
         &authority,
         &h.node,
@@ -359,10 +363,97 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
             xp_occurrence: id(83),
             build_occurrence: id(84),
         },
-        served,
-    )
-    .await;
-    if matches!(case, Case::Admitted | Case::BootstrapOnly) {
+        served.clone(),
+    );
+    let mut result = if let Some(pause) = pause {
+        let ordinary_write = async {
+            pause.entered.notified().await;
+            let written: TestResult = async {
+                let ordinary_sequencer = CharacterRevisionSequencer::new();
+                let mut ordinary_slot = ordinary_sequencer.acquire(initial.character_id).await;
+                let formula = crate::spell::mana_training::CompiledTrainingFormula::from_profile(
+                    include_bytes!(
+                        "../../../../../tools/content-schema/native-gameplay/build-training.json"
+                    ),
+                    &context().content,
+                )
+                .map_err(debug)?;
+                let after = convert_vocation(&formula, &before_build, "druid").map_err(debug)?;
+                ordinary_slot
+                    .commit_build(
+                        &h.root,
+                        &authority,
+                        &h.node,
+                        initial,
+                        BuildChangeRequest {
+                            occurrence: BuildOccurrence::from_bytes(id(85)).map_err(debug)?,
+                            cause: BuildCause::VocationChoice,
+                            before: before_build.clone(),
+                            after,
+                            pruned_stance: None,
+                        },
+                        &formula,
+                        None,
+                    )
+                    .await
+                    .map_err(debug)?;
+                Ok(())
+            }
+            .await;
+            pause.resume.notify_one();
+            written
+        };
+        let (prepared, written) = tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            tokio::join!(preparing, ordinary_write)
+        })
+        .await?;
+        written?;
+        prepared
+    } else {
+        preparing.await
+    };
+    if matches!(case, Case::FreshnessRace) {
+        assert!(
+            result.is_err(),
+            "a changed build must refuse fixture provisioning"
+        );
+        let after = h
+            .root
+            .read_character_progression(&authority, initial.character_id)
+            .await
+            .map_err(debug)?
+            .ok_or("progression absent")?;
+        assert_eq!(
+            after.total_experience,
+            ExactI64::new(0),
+            "fixture XP must not commit from a stale build snapshot"
+        );
+        assert_eq!(
+            after.character_revision.get(),
+            2,
+            "only the ordinary build committed"
+        );
+        return Ok(());
+    }
+    if matches!(case, Case::Resume) {
+        result?;
+        result = prepare_character_with_policy(
+            &h.root,
+            &authority,
+            &h.node,
+            &current,
+            QualificationBuildSpec {
+                vocation: "knight",
+                level: 2,
+                context: served.context.clone(),
+                xp_occurrence: id(83),
+                build_occurrence: id(84),
+            },
+            served,
+        )
+        .await;
+    }
+    if matches!(case, Case::Admitted | Case::BootstrapOnly | Case::Resume) {
         result?;
         let after = h
             .root
@@ -404,7 +495,7 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
             Case::MismatchedContext => "spell fixture progression context mismatch",
             Case::MismatchedPolicy => "spell fixture progression policy revision mismatch",
             Case::MismatchedReward => "spell fixture progression reward revision mismatch",
-            Case::Admitted | Case::BootstrapOnly | Case::CombatSetupReplay | Case::BuildSetupReplay => {
+            Case::Admitted | Case::BootstrapOnly | Case::CombatSetupReplay | Case::BuildSetupReplay | Case::Resume | Case::FreshnessRace => {
                 return Err("positive fixture case reached refusal assertion".into());
             }
         };
@@ -475,6 +566,16 @@ fn qualification_fixture_refuses_earned_skills_without_xp() -> TestResult {
 #[test]
 fn qualification_fixture_refuses_earned_xp_after_death_returns_it_to_zero() -> TestResult {
     run(Case::EarnedThenDied, "qfixture_earned_death")
+}
+
+#[test]
+fn qualification_fixture_resumes_after_build_commit() -> TestResult {
+    run(Case::Resume, "qfixture_resume")
+}
+
+#[test]
+fn qualification_fixture_rejects_a_build_changed_between_freshness_reads() -> TestResult {
+    run(Case::FreshnessRace, "qfixture_race")
 }
 
 #[test]

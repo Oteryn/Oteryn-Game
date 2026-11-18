@@ -72,8 +72,7 @@ class QualificationWiringTests(unittest.TestCase):
         setup = control.split("let combat_progression", 1)[1].split("if !combat_progression", 1)[0]
         compact = "".join(setup.split())
         self.assertIn(
-            "let(xp_occurrence,build_occurrence)="
-            "qualification_build::fixture_occurrences(character,vocation,level,combat_progression);",
+            "else{qualification_build::fixture_occurrences(character,vocation,level,combat_progression)}",
             compact,
         )
         self.assertIn(

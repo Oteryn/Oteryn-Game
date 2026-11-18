@@ -467,7 +467,9 @@ impl AdmissionRetryBudget<'_> {
             match step().await {
                 Ok(value) => return Ok(value),
                 Err(error) => {
-                    if matches!(error, DurabilityError::RootUnavailable)
+                    if (matches!(error, DurabilityError::RootUnavailable)
+                        || (stage == "release_commit"
+                            && matches!(error, DurabilityError::Unavailable)))
                         && self
                             .retries_unavailable(AdmissionRefusal::Unavailable)
                             .await

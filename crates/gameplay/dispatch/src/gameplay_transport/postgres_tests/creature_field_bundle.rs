@@ -54,9 +54,14 @@ async fn exercise(harness: &Harness) -> TestResult {
     owner.active_generation = Some(active);
     owner.movement_cells = deps.room.movement_cells().into();
     let permit = owner.spell_lane_permit().await.ok_or("field lane")?;
-    let health_names = owner.read_native_health_names(&permit).await.map_err(debug)?;
+    let health_names = owner
+        .read_native_health_names(&permit)
+        .await
+        .map_err(debug)?;
     let mut runtime = deps.runtime.lock().await;
-    let native_health_names = owner.seal_native_health_names(&runtime, health_names).map_err(debug)?;
+    let native_health_names = owner
+        .seal_native_health_names(&runtime, health_names)
+        .map_err(debug)?;
     let objects = deps.door.lock().await;
     let states = owner.states.spell_states.lock().await;
     // TEST_PARAMETERS: an existing residual Drown condition distinguishes PZ suppression
@@ -188,7 +193,17 @@ async fn exercise(harness: &Harness) -> TestResult {
             );
             for now in [1_000_000, 2_000_000] {
                 owner
-                    .tick_creature_fields(&mut map, runtime, states, native, now, native_health_names)
+                    .tick_creature_fields(
+                        &mut map,
+                        runtime,
+                        states,
+                        native,
+                        crate::gameplay_transport::creature_field::CreatureFieldBatch {
+                            observed_at: now,
+                            actors: &actors[..],
+                        },
+                        native_health_names,
+                    )
                     .await?;
                 assert!(map.validate_transaction(runtime).await);
                 for (ordinal, actor) in actors.iter().enumerate() {

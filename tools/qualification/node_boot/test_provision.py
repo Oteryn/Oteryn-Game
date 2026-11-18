@@ -170,6 +170,8 @@ class ProvisionTests(unittest.TestCase):
 
     def test_q02_sweep_profile_reaches_the_node(self):
         self.exchange(b"qualified\n", "sweep")
+    def test_victim_profile_reaches_the_control_socket(self):
+        self.exchange(b"qualified\n", "victim")
 
     def test_refusal_retains_the_exact_node_answer(self):
         with self.assertRaises(RuntimeError) as refused:
@@ -202,7 +204,8 @@ class SpawnTests(unittest.TestCase):
     KEY = "oteryn:creature.rat"
     IDENTITY = "0123456789abcdef0123456789abcdef"
 
-    def exchange(self, answer):
+    def exchange(self, answer, key=None):
+        key = self.KEY if key is None else key
         with tempfile.TemporaryDirectory() as directory:
             path = str(Path(directory) / "control.sock")
             with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:
@@ -219,13 +222,13 @@ class SpawnTests(unittest.TestCase):
                         while chunk := connection.recv(128):
                             request.extend(chunk)
                             self.assertLessEqual(len(request), 256)
-                        self.assertEqual(request, f"spawn {SESSION} {self.KEY}\n".encode())
+                        self.assertEqual(request, f"spawn {SESSION} {key}\n".encode())
                         connection.sendall(answer)
 
                 with ThreadPoolExecutor(max_workers=1) as executor:
                     served = executor.submit(serve)
                     try:
-                        return PROVISION.spawn(path, SESSION, self.KEY)
+                        return PROVISION.spawn(path, SESSION, key)
                     finally:
                         served.result(timeout=3)
 
@@ -236,6 +239,11 @@ class SpawnTests(unittest.TestCase):
     def test_spawned_reply_requires_the_actor_local_identity(self):
         with self.assertRaises(RuntimeError):
             self.exchange(f"spawned {self.IDENTITY} 7\n".encode())
+
+    def test_cleanup_reply_is_specific_to_the_cleanup_request(self):
+        self.assertEqual(self.exchange(b"cleaned\n", "cleanup"), "cleaned")
+        with self.assertRaises(RuntimeError):
+            self.exchange(b"cleaned\n")
 
     def test_refusal_retains_the_exact_node_answer(self):
         with self.assertRaises(RuntimeError) as refused:

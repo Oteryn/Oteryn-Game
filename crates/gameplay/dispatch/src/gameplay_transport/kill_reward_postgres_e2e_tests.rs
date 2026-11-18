@@ -271,7 +271,7 @@ fn scenario_with_creature_charmed(
         ranged_spell,
         elemental_area,
         settings,
-        false,
+        Observation::None,
     )
 }
 
@@ -284,7 +284,27 @@ pub(super) fn analyser_scenario() -> TestResult {
         false,
         false,
         (None, None, None),
-        true,
+        Observation::Analyser,
+    )
+}
+
+#[derive(Clone, Copy)]
+enum Observation {
+    None,
+    Analyser,
+    CorpseUse,
+}
+
+pub(super) fn corpse_use_scenario() -> TestResult {
+    scenario_with_creature_observed(
+        None,
+        false,
+        None,
+        false,
+        false,
+        false,
+        (None, None, None),
+        Observation::CorpseUse,
     )
 }
 
@@ -300,8 +320,9 @@ fn scenario_with_creature_observed(
     ranged_spell: bool,
     elemental_area: bool,
     settings: KillScenarioSettings<'_>,
-    analyser: bool,
+    observation: Observation,
 ) -> TestResult {
+    let analyser = matches!(observation, Observation::Analyser);
     let (charm, boss_policy, daily_target) = settings;
     let holy_target =
         matches!(radiant, Some("paragon" | "templar")) && ranged_spell && !elemental_area;
@@ -1590,6 +1611,9 @@ fn scenario_with_creature_observed(
             "{creature_key} commits a positive native loot plan"
         );
 
+        if matches!(observation, Observation::CorpseUse) {
+            Box::pin(super::creature_sweep_corpse_use::open(&owner, admitted)).await?;
+        }
         let mut analyser_facts = Vec::new();
         if analyser {
             use oteryn_protocol_oteryn::analyser::{

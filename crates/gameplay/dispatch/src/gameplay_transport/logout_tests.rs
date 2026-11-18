@@ -18,7 +18,6 @@ fn nbeof_logout_storage_and_unknown_commit_fail_without_retry()
             DurabilityError::InvalidStoredState,
             DurabilityError::CommitRejected,
             DurabilityError::RootPassDeadlineExceeded,
-            DurabilityError::Unavailable,
         ] {
             let budget = super::AdmissionRetryBudget {
                 deadline: tokio::time::Instant::now() + super::COMMAND_HOLDER_WINDOW,
@@ -254,5 +253,38 @@ fn an_unreadable_familiar_fence_is_unknown_and_only_a_mismatch_is_fenced_out() -
         familiar_end_read(logout, Some((GameSessionState::Terminal, None, Some(ours)))),
         FamiliarFenceRead::Mismatch
     );
+    Ok(())
+}
+
+#[test]
+fn unavailable_terminal_release_retries_the_fenced_store() -> Result<(), Box<dyn std::error::Error>>
+{
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()?
+        .block_on(async {
+            let budget = super::AdmissionRetryBudget {
+                deadline: tokio::time::Instant::now() + super::COMMAND_HOLDER_WINDOW,
+                backoff: super::RECONCILE_BACKOFF,
+                stale_rounds: super::FRESH_ADMISSION_ROUNDS,
+                root: None,
+                _foreground: None,
+                waiter: std::sync::OnceLock::new(),
+            };
+            let mut attempts = 0;
+            let result = budget
+                .retry_durability("release_commit", || {
+                    attempts += 1;
+                    std::future::ready(if attempts == 1 {
+                        Err(crate::durability::DurabilityError::Unavailable)
+                    } else {
+                        Ok(())
+                    })
+                })
+                .await;
+            assert!(result.is_ok());
+            assert_eq!(attempts, 2);
+        });
     Ok(())
 }

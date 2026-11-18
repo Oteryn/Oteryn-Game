@@ -243,6 +243,58 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Err(())
             };
         }
+        // Native spell proposals carry the source closure's actual formula revision.
+        let formula_revisions = native
+            .creature_profiles()
+            .records
+            .iter()
+            .filter_map(|record| record.attack_definitions.as_ref())
+            .flat_map(|definitions| &definitions.profiles)
+            .filter(|profile| {
+                matches!(
+                    profile.data,
+                    crate::content::ProjectV2AuthoringProfileData::Formula(_)
+                )
+            })
+            .map(|profile| profile.target.revision.as_str())
+            .collect::<std::collections::BTreeSet<_>>();
+        let formula_revision = if formula_revisions.len() == 1 {
+            formula_revisions.iter().next().copied().ok_or(())?
+        } else {
+            revisions.formula()
+        };
+        let schedule_revisions = crate::ability::RevisionSet::new(
+            revisions.ruleset(),
+            revisions.content(),
+            revisions.world_policy(),
+            formula_revision,
+            revisions.simulation(),
+        )
+        .map_err(|_| ())?;
+        let source_attack_abilities = native
+            .creature_profiles()
+            .records
+            .iter()
+            .filter_map(|record| record.attack_definitions.as_ref())
+            .flat_map(|definitions| &definitions.profiles)
+            .filter(|profile| {
+                matches!(
+                    profile.data,
+                    crate::content::ProjectV2AuthoringProfileData::Ability(_)
+                )
+            })
+            .map(|profile| &profile.target)
+            .collect::<std::collections::BTreeSet<_>>();
+        let needs_reference_parties = native.creature_profiles().records.iter().any(|record| {
+            matches!(&record.profile.data, crate::content::ProjectV2AuthoringProfileData::Creature(creature)
+                if creature.details.as_ref().is_some_and(|details| details.reference_level_overrides.iter()
+                    .any(|area| area.party_mode == crate::content::ProjectV2ReferenceLevelPartyMode::LowestMember)))
+        });
+        let source_metadata = (
+            schedule_revisions,
+            source_attack_abilities,
+            needs_reference_parties,
+        );
         // The coalesced monster scheduler must not retake the returned holder
         // ahead of a waiting foreground owner (notably logout during world boot).
         let pass = self
@@ -264,16 +316,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 room,
                 native,
                 permit,
-                revisions,
                 candidates,
                 primal_pending.as_ref(),
                 native_pending.as_ref(),
                 native_health_names,
+                source_metadata,
             );
             pass.run_with_context(&mut context, move |holder, deadline, context| {
             Box::pin(async move {
-                let (owner, runtime, states, attack, room, native, permit, revisions, candidates, primal_pending, native_pending, native_health_names) =
+                let (owner, runtime, states, attack, room, native, permit, candidates, primal_pending, native_pending, native_health_names, source_metadata) =
                     context;
+                let (schedule_revisions, source_attack_abilities, needs_reference_parties) = source_metadata;
                 let mut tx = begin_spell_owner_transaction(holder, deadline).await.inspect_err(|_| {
                     #[cfg(test)]
                     native_owner_turn(room, "profile_transaction", "begin_refused");
@@ -300,12 +353,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // can need it, then release this read transaction after one task.
                 let source_parties = if has_due_source || runtime.has_pending_source_creature_deaths()
                     || native_pending.is_some() || states.spite_steps.creatures.is_pending() {
-                    let required = native.creature_profiles().records.iter().any(|record| {
-                        matches!(&record.profile.data, crate::content::ProjectV2AuthoringProfileData::Creature(creature)
-                            if creature.details.as_ref().is_some_and(|details| details.reference_level_overrides.iter()
-                                .any(|area| area.party_mode == crate::content::ProjectV2ReferenceLevelPartyMode::LowestMember)))
-                    });
-                    physical_spell::read_reference_parties(&mut tx, &authority, owner.root, runtime, states, required).await
+                    physical_spell::read_reference_parties(&mut tx, &authority, owner.root, runtime, states, *needs_reference_parties).await
                 } else { Default::default() };
                 let source_instance = matches!(scope, crate::foundation::RuntimeScopeRefV1::Instance { .. })
                     && room.source_world().is_some();
@@ -591,52 +639,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     now,
                     player_waiting_now,
                 );
-                // Native spell proposals carry the source closure's actual formula revision.
-                let formula_revisions = native
-                    .creature_profiles()
-                    .records
-                    .iter()
-                    .filter_map(|record| record.attack_definitions.as_ref())
-                    .flat_map(|definitions| &definitions.profiles)
-                    .filter(|profile| {
-                        matches!(
-                            profile.data,
-                            crate::content::ProjectV2AuthoringProfileData::Formula(_)
-                        )
-                    })
-                    .map(|profile| profile.target.revision.as_str())
-                    .collect::<std::collections::BTreeSet<_>>();
-                let formula_revision = if formula_revisions.len() == 1 {
-                    formula_revisions
-                        .iter()
-                        .next()
-                        .copied()
-                        .unwrap_or(revisions.formula())
-                } else {
-                    revisions.formula()
-                };
-                let schedule_revisions = crate::ability::RevisionSet::new(
-                    revisions.ruleset(),
-                    revisions.content(),
-                    revisions.world_policy(),
-                    formula_revision,
-                    revisions.simulation(),
-                )
-                .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-                let source_attack_abilities = native
-                    .creature_profiles()
-                    .records
-                    .iter()
-                    .filter_map(|record| record.attack_definitions.as_ref())
-                    .flat_map(|definitions| &definitions.profiles)
-                    .filter(|profile| {
-                        matches!(
-                            profile.data,
-                            crate::content::ProjectV2AuthoringProfileData::Ability(_)
-                        )
-                    })
-                    .map(|profile| &profile.target)
-                    .collect::<std::collections::BTreeSet<_>>();
                 let summons = &mut states.monster_summons;
                 let waves = &mut states.rotten_waves;
                 if !pending.ai_known() { table
@@ -644,7 +646,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         runtime,
                         batch,
                         &root,
-                        &schedule_revisions,
+                        schedule_revisions,
                         candidates,
                         &mut reader,
                         |runtime, table, actor, report, reader| {
@@ -713,22 +715,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     pending.finish_heals();
                 }
                 if !pending.fields_known() {
-                owner
-                    .tick_creature_fields(&mut map, runtime, states, native, now, native_health_names)
-                    .await?;
-                pending.finish_fields();
+                    let actors = pending.field_batch(runtime).map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    owner.tick_creature_fields(&mut map, runtime, states, native,
+                        super::creature_field::CreatureFieldBatch { observed_at: now, actors: &actors }, native_health_names).await?;
+                    // tick_creature_fields validates before synchronous publication.
+                    // Advance the retained cursor in the same turn, with no fallible await.
+                    pending.finish_field_batch(&actors).map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    if !pending.fields_known() {
+                        drop(map);
+                        tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                        return Ok((Some(now), Vec::new(), Vec::new(), false));
+                    }
                 }
                 if !map.validate_transaction(runtime).await {
                     return Err(crate::durability::DurabilityError::Unavailable);
                 }
                 drop(map);
-                let needs_reference_parties = native.creature_profiles().records.iter().any(|record| {
-                    matches!(&record.profile.data, crate::content::ProjectV2AuthoringProfileData::Creature(creature)
-                        if creature.details.as_ref().is_some_and(|details| details.reference_level_overrides.iter()
-                            .any(|area| area.party_mode == crate::content::ProjectV2ReferenceLevelPartyMode::LowestMember)))
-                });
                 let parties = physical_spell::read_reference_parties(
-                    &mut tx, &authority, owner.root, runtime, states, needs_reference_parties,
+                    &mut tx, &authority, owner.root, runtime, states, *needs_reference_parties,
                 )
                 .await;
                 let mut map =
@@ -747,7 +751,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Preserve the native scheduler's proposal order across ordinary
                 // attacks and source callbacks. Delayed work also runs on idle turns.
                 let callback_result: Result<(), ()> = async {
-                    while !pending.items_ready() {
+                    for _ in 0..1 {
+                        if pending.items_ready() { break; }
                         if !retained::resume_one_due(owner,runtime,states,attack,room,native,
                             &mut map,&parties,now,execution_now,native_health_names).await? {
                             return Err(());
@@ -756,6 +761,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Ok(())
                 }.await;
                 callback_result.map_err(|()| crate::durability::DurabilityError::Unavailable)?;
+                // Keep the exact cursor, but return the sole holder between bounded batches of consumers.
+                if !pending.items_ready() {
+                    drop(map);
+                    tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    return Ok((Some(now), Vec::new(), Vec::new(), false));
+                }
+
 
                 drop(map);
                 let next_due = next_due.into_iter()

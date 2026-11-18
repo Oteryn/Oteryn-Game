@@ -14,11 +14,11 @@ mod provision;
 #[test]
 fn qualification_fixture_accepts_native_admission_logout_and_relog() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("qualification-relog", || {
-        scenario("qualification_relog", false)
+        scenario("qualification_relog", false, false)
     })
 }
 
-fn scenario(tag: &str, provision_before_relog: bool) -> TestResult {
+fn scenario(tag: &str, provision_before_relog: bool, busy_familiar: bool) -> TestResult {
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, tag, false, false).await?;
@@ -156,6 +156,18 @@ fn scenario(tag: &str, provision_before_relog: bool) -> TestResult {
                 Some(crate::spell::owned_cast_facts::OwnedFactsError::UnavailablePremium));
             drop(states);
             drop(runtime);
+            if busy_familiar {
+                let held = h.root.try_acquire_ready().map_err(debug)?;
+                let mut initializing = Box::pin(owner.initialize_familiar_login(actor, session, &relog_request, native, &access,
+                    native.familiar_config().ok_or("source familiar configuration")?));
+                let first = std::future::poll_fn(|context| std::task::Poll::Ready(std::future::Future::poll(initializing.as_mut(), context))).await;
+                drop(held);
+                let result = match first {
+                    std::task::Poll::Ready(result) => result,
+                    std::task::Poll::Pending => tokio::time::timeout(std::time::Duration::from_secs(5), initializing).await?,
+                };
+                assert!(matches!(result, Ok(None)), "a transient busy read must not refuse an empty-familiar login: {result:?}");
+            }
             let stored = h.root.read_character_familiar_state(&authority, character).await.map_err(debug)?;
             assert!(stored.state().familiar_definition.is_none());
             assert!(stored.state().cooldowns.is_empty());
@@ -258,6 +270,13 @@ fn scenario(tag: &str, provision_before_relog: bool) -> TestResult {
 #[test]
 fn qualification_fixture_familiar_login_without_platform_is_playable() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("qualification-familiar-login", || {
-        scenario("qualification_familiar_login", true)
+        scenario("qualification_familiar_login", true, false)
+    })
+}
+
+#[test]
+fn qualification_fixture_empty_familiar_login_survives_holder_contention() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("qualification-familiar-busy", || {
+        scenario("qualification_familiar_busy", true, true)
     })
 }

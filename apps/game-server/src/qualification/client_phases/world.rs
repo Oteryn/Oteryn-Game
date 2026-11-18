@@ -2883,6 +2883,10 @@ fn parse_fixture_spawn(wire: String) -> Result<FixtureSpawn, String> {
 /// `spawn <session> <key>` through `provision.py --spawn`; Err carries the rejected token.
 /// Shared by `creature_sweep` and MP09 (both reach it through `use super::*`).
 async fn request_spawn(session: String, key: String) -> Result<FixtureSpawn, String> {
+    parse_fixture_spawn(request_spawn_control(session, key).await?)
+}
+
+async fn request_spawn_control(session: String, key: String) -> Result<String, String> {
     let socket = required("NODE_BOOT_CONTROL_SOCKET").map_err(|error| error.to_string())?;
     let mut command = fixture_command();
     command.args(["--socket", &socket, "--session", &session, "--spawn", &key]);
@@ -2891,7 +2895,7 @@ async fn request_spawn(session: String, key: String) -> Result<FixtureSpawn, Str
         .map_err(|error| error.to_string())?
         .map_err(|error| error.to_string())?;
     if output.status.success() {
-        return parse_fixture_spawn(String::from_utf8_lossy(&output.stdout).trim().to_owned());
+        return Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned());
     }
     let stderr = String::from_utf8_lossy(&output.stderr);
     Err(match stderr.split_once("reason=") {
@@ -6325,6 +6329,14 @@ pub(super) async fn connect_character(
     index: usize,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     wait_character_released(clients, index).await?;
+    admit_character(clients, tag, index).await
+}
+
+pub(super) async fn admit_character(
+    clients: &SeamClients<'_>,
+    tag: u8,
+    index: usize,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
     verdict::Harness::global().progress("admission");
     let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;
     let (nonce, attempt) = fresh_grant_material(tag)?;

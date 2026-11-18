@@ -6,11 +6,12 @@ use crate::qualification_spell_character as qualification_build;
 #[cfg(any(test, feature = "qualification-spawn"))]
 use crate::qualification_wild_spawn as wild_spawn;
 
-fn fixture_level(profile: &str) -> u32 {
-    if matches!(profile, "atelier" | "sweep") {
-        1000
-    } else {
-        100
+fn profile_build(profile: &str) -> (&str, u32) {
+    match profile {
+        "atelier" | "sweep" => ("knight", SWEEP_LEVEL),
+        "explorer" => ("knight", 100),
+        "victim" => (crate::durability::character_build::NO_VOCATION, 100),
+        other => (other, 100),
     }
 }
 
@@ -72,6 +73,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
             | "rune-training"
             | "sweep"
             | "atelier"
+            | "victim"
     )
     .then_some((session, profile))
 }
@@ -214,6 +216,17 @@ async fn observe_carry_capacity(
 pub(super) struct SpawnOwners<'a> {
     pub(super) runtime: &'a Mutex<ChannelRuntimeV1>,
     pub(super) room: &'a crate::content::QualifiedNativeEntryRoom,
+    #[cfg(any(test, feature = "qualification-spawn"))]
+    pub(super) specimens: &'a Mutex<Vec<QualificationSpecimen>>,
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+pub(super) struct QualificationSpecimen {
+    session: [u8; 16],
+    character: [u8; 16],
+    actor: crate::foundation::ExactActorRef,
+    key: String,
+    content: [u8; 32],
 }
 
 /// `spawn <session> <creature key>`: only a node in the qualification fixture mode serves it.
@@ -295,13 +308,36 @@ async fn spawn_placed(
     key: &str,
     refuse: impl Fn(&'static str, Option<&str>) -> String,
 ) -> String {
+    if key == "cleanup" {
+        let mut specimens = owners.specimens.lock().await;
+        let mut runtime = owners.runtime.lock().await;
+        return match cleanup_specimens(&mut runtime, &mut specimens, |specimen| {
+            specimen.session == session
+        }) {
+            Ok(()) => "cleaned".into(),
+            Err(error) => refuse(error.token(), error.detail()),
+        };
+    }
+    let mut published = None;
     let placed = tokio::time::timeout(
         Duration::from_secs(10),
-        place(root, authority, proof, native, owners, session, key),
+        place(
+            root,
+            authority,
+            proof,
+            native,
+            owners,
+            SpawnRequest { session, key },
+            &mut published,
+        ),
     )
     .await;
-    match placed {
-        Ok(Ok(creature)) => {
+    let outcome = match placed {
+        Ok(outcome) => outcome,
+        Err(_) => Err(wild_spawn::SpawnRefusal::Deadline),
+    };
+    match classify_spawn_publication(published, outcome) {
+        Ok(creature) => {
             let identity = creature
                 .actor
                 .placement_identity()
@@ -314,8 +350,7 @@ async fn spawn_placed(
                 creature.actor.actor_local_id()
             )
         }
-        Ok(Err(refusal)) => refuse(refusal.token(), refusal.detail()),
-        Err(_) => refuse("deadline", None),
+        Err(refusal) => refuse(refusal.token(), refusal.detail()),
     }
 }
 
@@ -336,49 +371,187 @@ async fn spawn_placed(
 }
 
 #[cfg(any(test, feature = "qualification-spawn"))]
+struct SpawnRequest<'a> {
+    session: [u8; 16],
+    key: &'a str,
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
 async fn place(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     proof: &NodeIncarnationProof,
     native: &NativeGameplayState,
     owners: SpawnOwners<'_>,
-    session: [u8; 16],
-    key: &str,
+    request: SpawnRequest<'_>,
+    published: &mut Option<crate::foundation::CompanionSnapshot>,
 ) -> Result<crate::foundation::CompanionSnapshot, wild_spawn::SpawnRefusal> {
+    let SpawnRequest { session, key } = request;
     let fence = wild_spawn::SpawnRefusal::Fence;
     let session = crate::foundation::GameSessionId::decode(&session)
         .map_err(|_| wild_spawn::SpawnRefusal::SessionUnknown)?;
-    let source = wild_spawn::next_command_source()?;
-    let permit = wild_spawn::acquire_qualification_scope_lane(owners.runtime).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
-    let mut holder = qualification_build::retry_holder(
-        Some(root),
-        deadline,
-        |error| matches!(error, DurabilityError::RootUnavailable),
-        async || root.try_acquire_ready(),
-    )
-    .await
-    .map_err(|error| fence(format!("qualification spawn holder: {error:?}")))?;
-    let tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(
-        &mut holder,
-        deadline.into_std(),
-    )
-    .await
-    .map_err(|error| fence(format!("qualification spawn transaction: {error:?}")))?;
-    wild_spawn::realize_creature_in_transaction(
-        tx,
-        permit,
-        root,
-        authority,
-        proof,
-        owners.room,
-        native,
+    let mut specimens = owners.specimens.lock().await;
+    retry_publication(
         owners.runtime,
-        key,
-        session,
-        source,
+        deadline,
+        async || {
+            let ((plan, character), (permit, mut holder)) = prepare_and_checkout(
+                owners.runtime,
+                |mut runtime| {
+                    let (actor, _) = runtime
+                        .positioned_player_for_session(session)
+                        .map_err(|error| fence(format!("spawn player: {error:?}")))?
+                        .ok_or(wild_spawn::SpawnRefusal::SessionUnknown)?;
+                    let lease = runtime
+                        .bound_attacker_lease(actor, session)
+                        .map_err(|error| fence(format!("spawn lease: {error:?}")))?;
+                    let character = *lease.character_id().as_bytes();
+                    cleanup_specimens(&mut runtime, &mut specimens, |specimen| {
+                        specimen.character == character
+                    })?;
+                    Ok((
+                        wild_spawn::prepare_placement_adjacent(
+                            owners.room,
+                            native,
+                            &mut runtime,
+                            key,
+                            session,
+                        )?,
+                        character,
+                    ))
+                },
+                async |(plan, _)| {
+                    let permit =
+                        crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_scope(
+                            plan.scope,
+                        )
+                        .await
+                        .map_err(|error| fence(format!("spawn lane: {error:?}")))?;
+                    let holder = qualification_build::retry_holder(
+                        Some(root),
+                        deadline,
+                        |error| matches!(error, DurabilityError::RootUnavailable),
+                        async || root.try_acquire_ready(),
+                    )
+                    .await
+                    .map_err(|error| fence(format!("spawn holder: {error:?}")))?;
+                    Ok((permit, holder))
+                },
+            )
+            .await?;
+            let mut tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(
+                &mut holder,
+                deadline.into_std(),
+            )
+            .await
+            .map_err(|error| fence(format!("qualification spawn transaction: {error:?}")))?;
+            let eligible =
+                wild_spawn::validate_placement(&mut tx, root, authority, proof, &permit, &plan)
+                    .await?;
+            if tokio::time::Instant::now() >= deadline {
+                return Err(wild_spawn::SpawnRefusal::Deadline);
+            }
+            // Busy returns from this attempt, dropping SQL and the holder before the retry waits.
+            let Ok(runtime) = owners.runtime.try_lock() else {
+                return Ok(None);
+            };
+            // Release the authoritative tile read only after it commits; no actor can
+            // become visible on a failed verification or transaction.
+            drop(runtime);
+            tx.commit().await.map_err(|error| {
+                fence(format!("qualification spawn transaction commit: {error:?}"))
+            })?;
+            let Ok(mut runtime) = owners.runtime.try_lock() else {
+                return Ok(None);
+            };
+            let creature = wild_spawn::publish_placement(&mut runtime, key, &plan, &eligible)?;
+            specimens.push(QualificationSpecimen {
+                session: *session.as_bytes(),
+                character,
+                actor: creature.actor,
+                key: key.to_owned(),
+                content: runtime.content_pin().server_artifact_digest(),
+            });
+            *published = Some(creature.clone());
+            drop(runtime);
+            Ok(Some(creature))
+        },
+        || wild_spawn::SpawnRefusal::Deadline,
     )
     .await
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+fn cleanup_specimens(
+    runtime: &mut ChannelRuntimeV1,
+    specimens: &mut Vec<QualificationSpecimen>,
+    selected: impl Fn(&QualificationSpecimen) -> bool,
+) -> Result<(), wild_spawn::SpawnRefusal> {
+    let mut index = 0;
+    while index < specimens.len() {
+        let specimen = &specimens[index];
+        if !selected(specimen) {
+            index += 1;
+            continue;
+        }
+        runtime
+            .remove_native_qualification_once(specimen.actor, &specimen.key, specimen.content)
+            .map_err(|error| {
+                wild_spawn::SpawnRefusal::Fence(format!("specimen cleanup: {error:?}"))
+            })?;
+        specimens.remove(index);
+    }
+    Ok(())
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+fn classify_spawn_publication<T>(
+    published: Option<T>,
+    outcome: Result<T, wild_spawn::SpawnRefusal>,
+) -> Result<T, wild_spawn::SpawnRefusal> {
+    match published {
+        Some(creature) => Ok(creature),
+        None => outcome.and_then(|_| {
+            Err(wild_spawn::SpawnRefusal::Fence(
+                "no publication witness".into(),
+            ))
+        }),
+    }
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+async fn retry_publication<T, R, E>(
+    runtime: &Mutex<T>,
+    deadline: tokio::time::Instant,
+    mut attempt: impl AsyncFnMut() -> Result<Option<R>, E>,
+    expired: impl Fn() -> E,
+) -> Result<R, E> {
+    loop {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(expired());
+        }
+        if let Some(published) = attempt().await? {
+            return Ok(published);
+        }
+        // The attempt owns and drops every transaction/holder before it returns Busy.
+        // Wait without either, then rebuild and revalidate the complete placement plan.
+        let available = tokio::time::timeout_at(deadline, runtime.lock())
+            .await
+            .map_err(|_| expired())?;
+        drop(available);
+    }
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+async fn prepare_and_checkout<'a, T, P, H, E>(
+    runtime: &'a Mutex<T>,
+    prepare: impl FnOnce(tokio::sync::MutexGuard<'a, T>) -> Result<P, E>,
+    checkout: impl AsyncFnOnce(&P) -> Result<H, E>,
+) -> Result<(P, H), E> {
+    let prepared = prepare(runtime.lock().await)?;
+    let holder = checkout(&prepared).await?;
+    Ok((prepared, holder))
 }
 
 /// This fixture emits only classified errors/static context, never request bytes or node proof.
@@ -418,6 +591,27 @@ fn refusal_warning(
         .field("reason", FieldValue::Owned(reason))
         .field("session", FieldValue::Owned(uuid_text(session)))
         .field("profile", FieldValue::Owned(profile.to_owned()))
+}
+
+/// Source level of the `sweep` profile; the served progression table has 2000 levels.
+const SWEEP_LEVEL: u32 = 1000;
+/// Ruthless axe (6553, attack 50, level 75, knight) joins the common items for `sweep`.
+const SWEEP_ITEM_IDS: [u32; 4] = [3276, 3003, 3457, 6553];
+
+// The Character, named profile and stage identify one retryable control workflow.
+fn fixture_occurrence(character: &[u8; 16], profile: &str, stage: u8) -> [u8; 16] {
+    use sha2::{Digest, Sha256};
+    let digest = Sha256::new()
+        .chain_update(b"oteryn:qualification-control-profile:v1")
+        .chain_update(character)
+        .chain_update([stage])
+        .chain_update(profile.as_bytes())
+        .finalize();
+    let mut occurrence = [0; 16];
+    occurrence.copy_from_slice(&digest[..16]);
+    occurrence[6] = (occurrence[6] & 0x0f) | 0x70;
+    occurrence[8] = (occurrence[8] & 0x3f) | 0x80;
+    occurrence
 }
 
 async fn prepare_build(
@@ -521,18 +715,17 @@ async fn prepare_build(
             .ok_or("qualification progression fixture has no authored spell unlock")?;
         ("sorcerer", unlock - 1)
     } else {
-        (
-            if matches!(profile, "explorer" | "sweep" | "atelier") {
-                "knight"
-            } else {
-                profile
-            },
-            fixture_level(profile),
-        )
+        profile_build(profile)
     };
     let context = policy.context.clone();
-    let (xp_occurrence, build_occurrence) =
-        qualification_build::fixture_occurrences(character, vocation, level, combat_progression);
+    let (xp_occurrence, build_occurrence) = if matches!(profile, "sweep" | "victim") {
+        (
+            fixture_occurrence(character.as_bytes(), profile, 1),
+            fixture_occurrence(character.as_bytes(), profile, 2),
+        )
+    } else {
+        qualification_build::fixture_occurrences(character, vocation, level, combat_progression)
+    };
     qualification_build::prepare_character_with_policy_until(
         root,
         authority,
@@ -552,21 +745,14 @@ async fn prepare_build(
     .await?;
     if !combat_progression {
         let tools = [3276, 3003, 3457, 3147];
-        let count = if matches!(vocation, "paladin" | "monk") {
-            4
+        let items = if profile == "sweep" {
+            SWEEP_ITEM_IDS.as_slice()
+        } else if matches!(vocation, "paladin" | "monk") {
+            tools.as_slice()
         } else {
-            3
+            &tools[..3]
         };
-        prepare_items(
-            root,
-            authority,
-            proof,
-            &current,
-            native,
-            deadline,
-            &tools[..count],
-        )
-        .await?;
+        prepare_items(root, authority, proof, &current, native, deadline, items).await?;
     }
     Ok(())
 }
@@ -845,6 +1031,156 @@ mod tests {
     }
 
     #[test]
+    fn qualification_next_round_named_profiles_have_distinct_workflows() {
+        let session = [7; 16];
+        let victim = fixture_occurrence(&session, "victim", 1);
+        let knight = fixture_occurrence(&session, "knight", 1);
+        assert_ne!(victim, knight);
+        assert_ne!(knight, fixture_occurrence(&session, "explorer", 1));
+        assert_ne!(knight, fixture_occurrence(&session, "knight", 2));
+        assert_eq!(knight, fixture_occurrence(&session, "knight", 1));
+    }
+
+    #[tokio::test]
+    async fn qualification_spawn_never_checks_out_the_holder_while_waiting_for_runtime()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use std::sync::atomic::{AtomicBool, Ordering};
+        let runtime = Mutex::new(());
+        let blocked = runtime.lock().await;
+        let checked_out = AtomicBool::new(false);
+        let mut preparing = Box::pin(prepare_and_checkout(
+            &runtime,
+            |guard| {
+                drop(guard);
+                Ok(())
+            },
+            async |_| {
+                checked_out.store(true, Ordering::SeqCst);
+                Ok::<_, String>(())
+            },
+        ));
+        let first = std::future::poll_fn(|context| {
+            std::task::Poll::Ready(std::future::Future::poll(preparing.as_mut(), context))
+        })
+        .await;
+        assert!(first.is_pending());
+        assert!(
+            !checked_out.load(Ordering::SeqCst),
+            "a blocked runtime must not reserve the sole durability holder"
+        );
+        drop(blocked);
+        preparing.await?;
+        assert!(checked_out.load(Ordering::SeqCst));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn qualification_next_round_runtime_busy_retries_without_holder()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use std::cell::Cell;
+        let runtime = Mutex::new(0u32);
+        let blocked = runtime.lock().await;
+        let holding = Cell::new(false);
+        let attempts = Cell::new(0u32);
+        let mut operation = Box::pin(retry_publication(
+            &runtime,
+            tokio::time::Instant::now() + Duration::from_secs(1),
+            async || {
+                attempts.set(attempts.get() + 1);
+                holding.set(true);
+                let result = match runtime.try_lock() {
+                    Ok(mut value) => {
+                        *value += 1;
+                        Some(*value)
+                    }
+                    Err(_) => None,
+                };
+                holding.set(false);
+                Ok::<_, String>(result)
+            },
+            || "publication deadline".to_owned(),
+        ));
+        let first = std::future::poll_fn(|cx| {
+            std::task::Poll::Ready(std::future::Future::poll(operation.as_mut(), cx))
+        })
+        .await;
+        assert!(
+            first.is_pending(),
+            "transient contention must retry, not refuse"
+        );
+        assert!(!holding.get(), "the holder must be dropped before waiting");
+        drop(blocked);
+        assert_eq!(operation.await?, 1);
+        assert_eq!(attempts.get(), 2);
+        assert_eq!(*runtime.lock().await, 1);
+        Ok(())
+    }
+
+    #[test]
+    fn qualification_next_round_production_publication_has_no_await_boundary()
+    -> Result<(), Box<dyn std::error::Error>> {
+        // Check the real production attempt, rather than just an ordering helper.
+        // A synchronous runtime acquisition and tail are required while SQL is held.
+        let source = include_str!("qualification_fixture.rs");
+        let place = source
+            .split_once("async fn place(")
+            .ok_or("place")?
+            .1
+            .split_once("fn cleanup_specimens(")
+            .ok_or("cleanup")?
+            .0;
+        assert!(
+            !place.contains("next_command_source"),
+            "one-shot placement has no source-id budget"
+        );
+        let after_validation = place
+            .split_once("wild_spawn::validate_placement(")
+            .ok_or("validation")?
+            .1
+            .split_once(".await?;")
+            .ok_or("validation await")?
+            .1;
+        let acquisition = after_validation
+            .split_once("let creature =")
+            .ok_or("publication")?
+            .0;
+        assert!(acquisition.contains("owners.runtime.try_lock()"));
+        assert!(
+            !acquisition.contains(".await"),
+            "runtime waiting must release SQL first"
+        );
+        let publication = after_validation
+            .split_once("wild_spawn::publish_placement(")
+            .ok_or("publication")?
+            .1
+            .split_once("Ok(Some(creature))")
+            .ok_or("witness")?
+            .0;
+        assert!(
+            !publication.contains(".await"),
+            "publication must have a synchronous tail"
+        );
+        assert!(publication.contains("*published = Some(creature.clone())"));
+        Ok(())
+    }
+
+    #[test]
+    fn a_published_spawn_cannot_be_reported_as_a_retryable_refusal()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let result = classify_spawn_publication(Some(7u8), Err(wild_spawn::SpawnRefusal::Deadline));
+        assert_eq!(result, Ok(7));
+        assert!(
+            classify_spawn_publication::<u8>(None, Ok(7)).is_err(),
+            "success needs an actual publication witness"
+        );
+        assert!(
+            classify_spawn_publication::<u8>(None, Err(wild_spawn::SpawnRefusal::Deadline))
+                .is_err()
+        );
+        Ok(())
+    }
+
+    #[test]
     fn fixture_disabled_has_a_classified_warning() {
         let refused = prepare_request(false, Some(()), b"untrusted request").err();
         assert_eq!(refused, Some(EarlyRefusal::FixtureDisabled));
@@ -918,6 +1254,8 @@ mod tests {
                                 "monk",
                                 "coin-converters",
                                 "sweep",
+                                "atelier",
+                                "victim",
                             ] {
                                 let script = Path::new(env!("CARGO_MANIFEST_DIR"))
                                     .join("../../tools/qualification/node_boot/provision.py");
@@ -1033,7 +1371,7 @@ mod tests {
             crate::content::qualify_native_entry_room_from_gameplay_manifest(world, &manifest)?;
         let native = crate::content::qualified_native_gameplay_test_state(room.compiled())?;
         let index = native.item_index().ok_or("Item index")?;
-        for id in [3276, 3003, 3457, 3147] {
+        for id in [3276, 3003, 3457, 3147, 6553] {
             let key = format!("oteryn:item.tibia.i{id}");
             let definition = crate::durability::item_mint::TypedDefinitionRef {
                 family: "Item".into(),
@@ -1050,6 +1388,25 @@ mod tests {
                 crate::durability::item_transfer::ItemStackClass::Unknown
             );
         }
+        // The sweep weapon's equip requirements are known to the content, so the equip owner
+        // accepts it for a level >= 75 knight (the hatchet 3276 has unknown ones).
+        use oteryn_gameplay_domain::domain::equipment_policy_abi::{
+            EquipmentBaseVocation, EquipmentPolicyLookup,
+        };
+        let key = "oteryn:item.tibia.i6553";
+        let policy = native
+            .equipment_policy(key, index.revision(key).ok_or("Item missing")?)
+            .ok_or("equipment policy")?;
+        let claims = policy
+            .claims()
+            .iter()
+            .find(|(slot, _)| *slot == 5)
+            .ok_or("weapon slot claims")?
+            .1
+            .clone()?;
+        assert_eq!(claims.level, 75);
+        assert_eq!(claims.vocations, vec![EquipmentBaseVocation::Knight]);
+        assert!(SWEEP_LEVEL >= u32::from(claims.level));
         Ok(())
     }
 
@@ -1103,10 +1460,20 @@ mod tests {
     }
 
     #[test]
+    fn qualification_victim_request_preserves_a_pvp_eligible_no_vocation_role() {
+        assert!(request(b"qualify 01890f4c-3b2a-7c01-8d11-9a321b7c0004 victim").is_some());
+        let (vocation, level) = profile_build("victim");
+        assert_eq!(vocation, crate::durability::character_build::NO_VOCATION);
+        assert_eq!(level, 100);
+        assert!(level >= oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL);
+    }
+
+    #[test]
     fn qualification_request_accepts_only_named_profiles_and_v7_sessions() {
         let id = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
         for profile in [
             "explorer", "knight", "paladin", "sorcerer", "druid", "monk", "sweep", "atelier",
+            "victim",
         ] {
             assert!(request(format!("qualify {id} {profile}\n").as_bytes()).is_some());
         }
@@ -1124,7 +1491,7 @@ mod tests {
 #[cfg(test)]
 #[test]
 fn final_review_atelier_fixture_is_within_the_native_writer_limit() {
-    assert!((100..=1000).contains(&fixture_level("atelier")));
+    assert!((100..=1000).contains(&profile_build("atelier").1));
 }
 
 #[cfg(test)]

@@ -33,7 +33,8 @@ class CoverageTests(unittest.TestCase):
     def assert_groups_once(self, shards):
         planned = [name for s in shards if s["env"].get("NODE_BOOT_E2E_ONLY", "rows") != "rows"
                    for name in s["env"]["NODE_BOOT_E2E_ONLY"].split(",")]
-        self.assertEqual(sorted(planned), sorted(g for g in self.groups if g != "rows"))
+        self.assertEqual(sorted(planned),
+                         sorted(g for g in self.groups if g != "rows"))
 
     def test_full_set_runs_every_group_row_and_mode_once(self):
         shards = matrix.plan("full")
@@ -65,7 +66,7 @@ class CoverageTests(unittest.TestCase):
         rows = [s for s in shards if s["env"].get("NODE_BOOT_E2E_ONLY") == "rows"]
         covered = [i for s in rows for i in selected_rows(s, self.indices)]
         self.assertEqual(sorted(covered), [i for i in self.indices if start <= i < start + length])
-        self.assertEqual(len(shards), 8)
+        self.assertEqual(len(shards), 4 + len(matrix.ON_DEMAND_GROUPS) + len(matrix.PR_ROW_BATCHES))
 
     def test_reference_is_one_unchanged_machine(self):
         self.assertEqual(matrix.plan("reference"), [matrix.shard(
@@ -163,6 +164,10 @@ class EvidenceTests(unittest.TestCase):
         self.assertFalse(matrix.shard_passed(result))
         self.assertFalse(matrix.shard_passed({**result, "exit_code": 0, "result": "NODE_BOOT_PASS"}))
         self.assertFalse(matrix.shard_passed({**result, "exit_code": 1, "result": "NODE_BOOT_PASS"}))
+
+    def test_on_demand_groups_stay_out_of_the_partition(self):
+        parts = matrix.group_partition(["core", "creature_sweep", "f4", "f7run", "mp", "rows"])
+        self.assertEqual(parts, [["core"], ["f4"], ["f7run"]])
 
     def test_summary_fails_on_missing_evidence_empty_world_shard_and_missing_status(self):
         shards = matrix.plan("pr")

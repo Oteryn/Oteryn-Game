@@ -95,30 +95,20 @@ pub(super) async fn check(
             },
             tick_now,
         );
-        let prepared_names = owner
-            .capture_native_health_names(&runtime)
-            .map_err(|_| "capture names")?;
-        let read_names = owner
-            .read_prepared_native_health_names(&permit, prepared_names)
-            .await;
-        let names = owner
-            .seal_native_health_names(&runtime, read_names)
-            .map_err(|_| "seal names")?;
-        let (_, reported, _) = owner
-            .drive_monster_profiles(
-                &mut runtime,
-                &mut states,
-                &mut attack,
+        let reported = super::m26_rotten_family_production::drive_report(
+            super::m26_rotten_family_production::ProfileDrive {
+                owner,
+                runtime: &mut runtime,
+                states: &mut states,
+                attack: &mut attack,
                 room,
                 native,
-                &permit,
-                &revisions,
-                &[],
-                tick_now,
-                &names,
-            )
-            .await
-            .map_err(|_| "production profile drive")?;
+                permit: &permit,
+                revisions: &revisions,
+            },
+            tick_now,
+        )
+        .await?;
         assert!(
             reported.contains(&boss),
             "the real native scheduler commits this boss think"

@@ -298,7 +298,8 @@ fn inputs_digest_is_stable_across_squash_and_pin_edits_and_moves_with_inputs() {
 /// PIN-SCOPE-1: the root `Cargo.toml` and `Cargo.lock` count only in what can reach a build of
 /// the World crates.
 #[test]
-fn inputs_digest_takes_the_cargo_inputs_of_the_world_crates_only() {
+fn inputs_digest_takes_the_cargo_inputs_of_the_world_crates_only()
+-> Result<(), Box<dyn std::error::Error>> {
     let dir = Scratch::new("cargo");
     let mut production = pin(&"0".repeat(64));
     production["production"] = json!(true);
@@ -356,23 +357,38 @@ fn inputs_digest_takes_the_cargo_inputs_of_the_world_crates_only() {
     restore();
     assert_eq!(stale(&dir), tree);
 
+    let lock = fs::read_to_string(dir.path("Cargo.lock"))?;
+    let zstd = lock
+        .split("[[package]]")
+        .find(|entry| entry.trim_start().starts_with("name = \"zstd\"\n"))
+        .ok_or("zstd lock package missing")?;
+    let field = |name: &str| -> Result<&str, Box<dyn std::error::Error>> {
+        let prefix = format!("{name} = \"");
+        zstd.lines()
+            .find_map(|line| {
+                line.strip_prefix(&prefix)
+                    .and_then(|value| value.strip_suffix('"'))
+            })
+            .ok_or_else(|| format!("zstd {name} missing").into())
+    };
+    let version = field("version")?;
+    let checksum = field("checksum")?;
+    let lock_version = format!("name = \"zstd\"\nversion = \"{version}\"");
+    let workspace_version = format!("zstd = {{ version = \"={version}\"");
+
     // The checksum or version of a package in the closure, a World workspace dependency and a
     // profile each move it.
     for (path, from, to) in [
+        ("Cargo.lock", checksum, "0".repeat(64)),
         (
             "Cargo.lock",
-            "db3ae9bf90af6e40197bef767eeefc46ad6397420fe873830bd85e5fbbfb3c70",
-            "0".repeat(64),
-        ),
-        (
-            "Cargo.lock",
-            "name = \"zstd\"\nversion = \"0.14.3\"",
-            "name = \"zstd\"\nversion = \"0.14.4\"".to_owned(),
+            &lock_version,
+            format!("name = \"zstd\"\nversion = \"{version}-pin-scope-test\""),
         ),
         (
             "Cargo.toml",
-            "zstd = { version = \"=0.14.3\"",
-            "zstd = { version = \"=0.14.4\"".to_owned(),
+            &workspace_version,
+            format!("zstd = {{ version = \"={version}-pin-scope-test\""),
         ),
         (
             "Cargo.toml",
@@ -398,6 +414,7 @@ fn inputs_digest_takes_the_cargo_inputs_of_the_world_crates_only() {
         "{}",
         stderr(&out)
     );
+    Ok(())
 }
 
 // Each run compiles the whole World twice; in a debug build that takes tens of minutes, so
