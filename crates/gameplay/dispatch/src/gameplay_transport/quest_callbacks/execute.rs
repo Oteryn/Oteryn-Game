@@ -1072,16 +1072,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return UseDisposition::Rejected;
                 };
                 let vitals = current.vitals();
-                let repaired = if (vitals.health, vitals.mana) != (vitals.max_health, vitals.max_mana) {
-                    let mut next = current.clone();
-                    next.restore_saved_vitals(vitals.max_health, vitals.max_mana);
-                    if next.advance_batch_revision().is_err() {
-                        return UseDisposition::Exhausted;
-                    }
-                    Some(next)
-                } else {
-                    None
-                };
+                let repaired =
+                    if (vitals.health, vitals.mana) != (vitals.max_health, vitals.max_mana) {
+                        let mut next = current.clone();
+                        next.restore_saved_vitals(vitals.max_health, vitals.max_mana);
+                        if next.advance_batch_revision().is_err() {
+                            return UseDisposition::Exhausted;
+                        }
+                        Some(next)
+                    } else {
+                        None
+                    };
                 (
                     context.with_vital_refill_sequence(self.states.last_positions.next_sequence()),
                     repaired,
