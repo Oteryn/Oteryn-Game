@@ -55,6 +55,20 @@ impl CallbackSpeech {
             },
         })
     }
+    pub fn oberon(
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        text: &'static str,
+    ) -> Result<Self, AttackError> {
+        Self::capture(
+            runtime,
+            actor,
+            super::oberon_think::OBERON_KEY,
+            "Grand Master Oberon",
+            text,
+            ChatSpeechMode::MonsterSay,
+        )
+    }
     pub fn gaz_heal(
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,

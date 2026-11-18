@@ -8,8 +8,9 @@ use oteryn_gameplay_entities::*;
 const MAX_PROTECTED_ACTORS: usize = 1024;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-struct DamageGates {
+pub(super) struct DamageGates {
     actors: Vec<ExactActorRef>,
+    pub(super) oberon: Vec<super::oberon::Fight>,
 }
 
 /// A source stop form cannot be killed while the shared phase owner is preparing
@@ -60,7 +61,7 @@ impl EncounterHooks for DamageGates {
         self
     }
     fn contains(&self, actor: ExactActorRef) -> bool {
-        self.actors.contains(&actor)
+        self.actors.contains(&actor) || self.oberon.iter().any(|fight| fight.blocks(actor))
     }
     #[allow(
         clippy::too_many_arguments,

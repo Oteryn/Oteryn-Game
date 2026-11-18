@@ -22,25 +22,32 @@ fn seclib1_falcon_damage_credit_raises_each_contributors_rank() -> TestResult {
         return Ok(());
     };
     drop(admin);
+    scenario(
+        "seclib1_falcon_damage_credit_raises_each_contributors_rank",
+        false,
+    )
+}
+
+pub(super) fn scenario(name: &'static str, oberon: bool) -> TestResult {
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("seclib1-falcon", || {
+    super::kill_reward_e2e::scenario_thread::run(name, move || {
         run(async |admin| {
-            let h =
-                Harness::create_with_admission_seed(admin, "seclib1_falcon", false, false).await?;
-            let result = exercise(&h).await;
+            let h = Harness::create_with_admission_seed(admin, "seclib1_encounter", false, false)
+                .await?;
+            let result = exercise(&h, oberon).await;
             let cleanup = h.cleanup().await;
             result?;
             cleanup
         })
     })?;
     eprintln!(
-        "POSTGRES_CASE_COMPLETED seclib1_falcon_damage_credit_raises_each_contributors_rank duration={:?}",
+        "POSTGRES_CASE_COMPLETED {name} duration={:?}",
         started.elapsed()
     );
     Ok(())
 }
 
-async fn exercise(h: &Harness) -> TestResult {
+async fn exercise(h: &Harness, oberon: bool) -> TestResult {
     prepare_current_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
@@ -55,10 +62,18 @@ async fn exercise(h: &Harness) -> TestResult {
     )?;
     let generation = controller.active().ok_or("generation")?;
     let native = generation.native_gameplay().ok_or("native policies")?;
-    let at = MovementLocalPosition {
-        x: 33366,
-        y: 31391,
-        floor: 7,
+    let at = if oberon {
+        MovementLocalPosition {
+            x: 33364,
+            y: 31322,
+            floor: 9,
+        }
+    } else {
+        MovementLocalPosition {
+            x: 33366,
+            y: 31391,
+            floor: 7,
+        }
     };
     let pin = ChannelContentPin::from_activation(
         deps.admitted.world_id,
@@ -151,6 +166,9 @@ async fn exercise(h: &Harness) -> TestResult {
         MovementLocalPosition { x: at.x - 1, ..at },
     )
     .await?;
+    if oberon {
+        return super::seclib1_oberon::exercise(&owner, admitted, second, at).await;
+    }
     let other_session = second.game_session_id;
     let other_fence = second.item_fence.ok_or("second fence")?;
     let queue = owner.states.attack.lock().await.kills().clone();
@@ -188,8 +206,8 @@ async fn exercise(h: &Harness) -> TestResult {
                 .map_err(debug)?;
             let command = u64::try_from(n)? + 20;
             for (source, caster, damage) in [
-                (other, other_session, u64::from(assist)),
-                (actor, session, health - u64::from(assist)),
+                (other, other_session, i64::from(assist)),
+                (actor, session, health - i64::from(assist)),
             ] {
                 if damage > 0 {
                     runtime

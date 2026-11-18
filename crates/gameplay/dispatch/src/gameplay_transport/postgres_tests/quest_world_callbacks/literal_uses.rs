@@ -312,10 +312,10 @@ fn exercise_use(
                         schema: 1,
                         quests: vec![BoundQuest {
                             quest: callback.quest.clone(),
-                            recipe_sha256: format!(
-                                "{:x}",
-                                sha2::Sha256::digest(serde_json::to_vec(&callback)?)
-                            ),
+                            recipe_sha256: sha2::Sha256::digest(serde_json::to_vec(&callback)?)
+                                .iter()
+                                .map(|byte| format!("{byte:02x}"))
+                                .collect(),
                             occurrence: None,
                             admission: None,
                             tracks: vec![Track {
