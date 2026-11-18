@@ -105,6 +105,9 @@ pub struct CallbackEffects {
     pub passages_reset_after_ms: Option<u32>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
+    /// Ordered source cues for an accepted cycle-guarded interaction.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub magic_sequence: Vec<MagicEffect>,
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teleport_effect: Option<u16>,
@@ -616,6 +619,15 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || !guard.appearances.contains(&guard.required)
             || !(1_000..=600_000).contains(&guard.interval_ms)
     }) {
+        return false;
+    }
+    if !callback.effects.magic_sequence.is_empty()
+        && (callback.effects.cycling_appearance.is_none()
+            || callback.effects.magic_sequence.len() > 4
+            || callback.effects.magic_sequence.iter().any(|cue| {
+                !(-15..=0).contains(&cue.position.floor) || !(1..=255).contains(&cue.effect)
+            }))
+    {
         return false;
     }
     if callback

@@ -1635,6 +1635,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             map.facts
                 .emit_movement_effect(tile(magic.position), magic.effect);
         }
+        if fresh_effects {
+            // Crystal actions_mission02.lua:53-57 emits each cell of the ice beam.
+            for cue in &callback.effects.magic_sequence {
+                map.facts
+                    .emit_movement_effect(tile(cue.position), cue.effect);
+            }
+        }
         if let Some(effect) = callback.effects.teleport_effect
             && let Some(destination) = callback.teleport
         {

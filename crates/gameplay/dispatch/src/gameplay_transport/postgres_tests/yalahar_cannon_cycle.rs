@@ -32,6 +32,9 @@ fn yalahar_world_cycle_changes_which_cannon_use_can_make_the_core_safe() -> Test
 
 fn catalogue() -> TestResult<QuestStateCatalogue> {
     let stages: Vec<_> = [9133, 9137].into_iter().enumerate().map(|(index, required)| {
+        let beam: Vec<_> = (1..=4).filter(|_| index == 0).map(|north| {
+            json!({"position": {"x": CANNON.0, "y": CANNON.1 - north, "floor": CANNON.2}, "effect": 44})
+        }).collect();
         json!({
             "key": format!("oteryn:quest-stage/fixture-yalahar/cannon-{required}"),
             "completes": false,
@@ -39,7 +42,7 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
                 "key": format!("oteryn:quest-callback/fixture-yalahar/cannon-{required}"),
                 "quest": QUEST, "trigger": "use", "reversible": false,
                 "selector": {"position": {"x": CANNON.0, "y": CANNON.1, "floor": CANNON.2}, "ordinal": 1},
-                "effects": {"cycling_appearance": {
+                "effects": {"magic_sequence": beam, "cycling_appearance": {
                     "position": {"x": COLUMN.0, "y": COLUMN.1, "floor": COLUMN.2},
                     "ordinal": 1, "appearances": [9133, 9137], "interval_ms": 10_000, "required": required
                 }},
@@ -166,6 +169,21 @@ async fn exercise(admin: &str) -> TestResult {
             .await
             .map_err(debug)?;
         assert_eq!(state.tracks().get(CORE_SAFE), Some(&expected));
+        let beam: Vec<_> = map
+            .facts
+            .movement_effects_since(0)
+            .into_iter()
+            .filter_map(|(_, at, effect)| (effect == 44).then_some(at))
+            .collect();
+        assert_eq!(
+            beam,
+            (1..=4)
+                .map(|north| crate::map::overlay::TilePos {
+                    y: cannon.y - north,
+                    ..cannon
+                })
+                .collect::<Vec<_>>()
+        );
     }
     drop(owner);
     drop(authority);
