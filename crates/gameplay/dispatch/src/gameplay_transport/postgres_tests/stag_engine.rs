@@ -16,6 +16,9 @@ use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, decode_use_result,
     encode_item_use_intent, encode_use_intent,
 };
+use oteryn_protocol_oteryn::world_spatial::{
+    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, encode_step_intent,
+};
 
 pub(super) const CATHEDRAL: &str = "stag-engine-cathedral";
 pub(super) const COURT: &str = "order-of-the-stag-court-warlock";
@@ -257,15 +260,58 @@ pub(super) async fn exercise_cathedral(
         use_fixed(owner, admitted, cathedral::SOURCE, 0).await?,
         UseDisposition::Committed
     );
+    let evidence = super::house_transfer::RecoverySource::start(h).await?;
+    let resident_session =
+        super::activity_deadline_paging::admit_member(h, &evidence.evidence, 1).await?;
+    let arrival = local(cathedral::DESTINATION);
+    let resident = {
+        let map = owner.bundle_map().ok_or("map")?;
+        let mut runtime = owner.runtime.lock().await;
+        let expected = runtime.read_actor_position(actor).map_err(debug)?;
+        assert_eq!(expected.position(), arrival);
+        let doors = crate::map::floor::BundleDoors(&map.facts);
+        let return_to_entrance = crate::map::floor::prepare_quest_callback_teleport(
+            &runtime,
+            owner.movement_cells(),
+            actor,
+            admitted.game_session_id,
+            expected,
+            local(start(CATHEDRAL)),
+            false,
+            &doors,
+        )
+        .map_err(debug)?;
+        runtime
+            .commit_source_step(return_to_entrance)
+            .map_err(debug)?;
+
+        // Another admitted player is still on the shared landing when the step arrives.
+        let reservation = runtime
+            .reserve_fresh_session(resident_session)
+            .map_err(debug)?;
+        let resident = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(resident, arrival)
+            .map_err(debug)?;
+        resident
+    };
+    pace(owner)?;
+    wire(
+        owner,
+        admitted,
+        admitted.continuity.next_command_id,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        encode_step_intent(StepDirection::North),
+    )
+    .await?;
     {
         let runtime = owner.runtime.lock().await;
-        assert_eq!(
-            runtime
-                .read_actor_position(actor)
-                .map_err(debug)?
-                .position(),
-            local(cathedral::DESTINATION)
-        );
+        for player in [actor, resident] {
+            assert_eq!(
+                runtime.read_actor_position(player).map_err(debug)?.position(),
+                arrival
+            );
+        }
         let warlocks = runtime
             .current_live_creature_census()
             .map_err(debug)?

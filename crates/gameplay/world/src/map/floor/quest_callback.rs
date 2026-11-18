@@ -71,8 +71,8 @@ pub fn prepare_quest_callback_teleport_facing<'a>(
     Ok(proof)
 }
 
-/// Dynamic portals use the ordinary landing proof, with the Cathedral's exact
-/// captured marker exception scoped to the donor's scripted entrance pair.
+/// The Cathedral's scripted entrance shares its landing among players and
+/// bypasses the captured marker on that exact tile.
 #[allow(clippy::too_many_arguments)]
 pub fn prepare_quest_portal_teleport<'a>(
     runtime: &ChannelRuntimeV1,
@@ -85,7 +85,11 @@ pub fn prepare_quest_portal_teleport<'a>(
     pz_blocked: bool,
     closed: &'a dyn CellBlocker,
 ) -> Result<impl crate::foundation::SourceStepCommitProof + 'a, MovementError> {
-    let cathedral = oteryn_gameplay_quests::quest::stag_cathedral::SOURCE;
+    use oteryn_gameplay_quests::quest::stag_cathedral::{DESTINATION, SOURCE};
+    let cathedral_descent = (source.x, source.y, source.floor)
+        == (SOURCE.x, SOURCE.y, SOURCE.floor)
+        && (destination.x, destination.y, destination.floor)
+            == (DESTINATION.x, DESTINATION.y, DESTINATION.floor);
     let proof = CallbackTeleport {
         cells,
         actor,
@@ -99,10 +103,9 @@ pub fn prepare_quest_portal_teleport<'a>(
         pz_blocked,
         closed,
         facing: None,
-        player_stack: false,
+        player_stack: cathedral_descent,
         forced: false,
-        cathedral_descent: (source.x, source.y, source.floor)
-            == (cathedral.x, cathedral.y, cathedral.floor),
+        cathedral_descent,
     };
     proof.check(runtime)?;
     Ok(proof)
