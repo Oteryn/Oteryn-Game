@@ -339,6 +339,8 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
     }
     extended.npc_legacy = catalogue.npc_legacy;
     extended.predecessors = catalogue.predecessors;
+    // The entitlement adds an effect to an existing track. Keep the full
+    // pre-entitlement definition and its original absent-track semantics.
     let mut prior_dragon_transitions: BTreeMap<_, _> = extended
         .transitions
         .iter()
@@ -402,6 +404,15 @@ mod tests {
             .transition(counter.transition)
             .ok_or("selected transition")?;
         assert!(transition.completes);
+        let old_hash = [
+            0xa4, 0xef, 0x0e, 0x5a, 0x69, 0xd1, 0xe2, 0xb4, 0x0a, 0xe7, 0x8d, 0xc4, 0x2b, 0xd1,
+            0xc9, 0x3f, 0x4d, 0xe8, 0xe8, 0xc3, 0xb7, 0x29, 0x61, 0xcc, 0x59, 0x05, 0x58, 0xee,
+            0x47, 0xc7, 0xb2, 0x02,
+        ];
+        assert!(
+            super::super::npc_rules::legacy_defaults(catalogue, counter.quest, &old_hash)
+                .is_some_and(BTreeMap::is_empty)
+        );
         let mut stored = BTreeMap::new();
         for value in [0, 1] {
             stored.insert(counter.gate.into(), value);
@@ -416,7 +427,9 @@ mod tests {
                 .evaluate(transition, &stored, 0)
                 .map_err(|error| format!("{error:?}"))?;
             assert_eq!(
-                changes.iter().find(|change| change.track == FIRST_DRAGON_FEATHERS)
+                changes
+                    .iter()
+                    .find(|change| change.track == FIRST_DRAGON_FEATHERS)
                     .map(|change| change.after),
                 Some(expected)
             );
