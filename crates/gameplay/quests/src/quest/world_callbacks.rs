@@ -45,6 +45,7 @@ mod clear_area;
 pub use clear_area::ClearArea;
 mod clock;
 mod completed_quests;
+pub mod conditional_entrance;
 mod counter_initials;
 #[cfg(test)]
 mod counter_initials_tests;
@@ -971,6 +972,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                 .iter()
                 .any(|r| r.ground.is_some())
                 && !callback.has_personal_state())
+            || !conditional_entrance::valid(callback)
             || !effects::valid(callback)
             || !state_operations::valid(callback)
             || !solid_repairs::valid(callback)
@@ -1054,6 +1056,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                         && !per_use_reward::admitted(callback))
                     || callback.effects.outfit_reward.is_some()
                     || callback.effects.mount_reward.is_some()))
+            || !conditional_entrance::valid(callback)
             || !effects::valid(callback)
             || callback
                 .facing

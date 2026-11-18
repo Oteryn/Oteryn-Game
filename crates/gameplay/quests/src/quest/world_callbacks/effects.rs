@@ -54,6 +54,8 @@ pub struct CallbackEffects {
     /// Current native occupants must be absent before a previously started stage commits.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub clear_area: Option<ClearArea>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub conditional_entrance: Option<conditional_entrance::Entrance>,
     /// Finish this quest only through its bound, irreversible native trial.
     #[serde(default, skip_serializing_if = "is_false")]
     pub completes_quest: bool,

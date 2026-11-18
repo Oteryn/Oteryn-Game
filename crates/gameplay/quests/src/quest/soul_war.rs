@@ -5,7 +5,9 @@ pub const MINIMUM_LEVEL: u32 = 250;
 pub const TAINT_DURATION_SECONDS: i64 = 14 * 24 * 60 * 60;
 pub const ALL_MINI_BOSSES: u8 = 0b1_1111;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
+)]
 pub enum SoulWarBoss {
     Malice,
     Hatred,

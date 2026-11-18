@@ -9,6 +9,7 @@ mod conditional_cells;
 use admission::{character_fence_required, stateless_observation_required};
 mod clear_area;
 mod committed_copy;
+mod conditional_entrance;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
 mod dreamer_carrot;
@@ -1182,6 +1183,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
+            let entrance = self.observe_conditional_entrance(
+                &permit, actor, command.game_session_id, map, callback, None,
+            ).await;
             if !self.prepare_scene_items(&permit, actor, command, map, callback, resolved.placement_key, target.expected_revision, fence).await {
                 return UseDisposition::Rejected;
             }
@@ -1203,6 +1207,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .is_ok_and(|mut g| g.admit(actor, self.clock_origin.elapsed()))
             {
                 return UseDisposition::Exhausted;
+            }
+            if let Err(refusal) = entrance.check(&runtime, &states, actor, command.game_session_id, self.owner_now(), expected) {
+                if matches(map, callback, resolved.placement_key)
+                    && map.facts.object_revision(resolved.placement_key) == target.expected_revision
+                {
+                    self.refuse_conditional_entrance(
+                        &mut runtime, &mut states, actor, command.game_session_id, map,
+                        expected, None, resolved.pos, optional_pvp, refusal,
+                    );
+                }
+                return UseDisposition::Rejected;
             }
             let Ok(id) = CommandId::new(command.command_id) else {
                 return UseDisposition::Rejected;
@@ -1499,11 +1514,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Some(entered),
                 )
                 .await;
+            let entrance = self
+                .observe_conditional_entrance(permit, actor, session, map, callback, Some(entered))
+                .await;
             let optional_pvp = self.special_movement_policy(permit, actor, session).await;
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             if runtime.read_actor_position(actor) != Ok(entered) {
                 return entered;
+            }
+            if let Err(refusal) =
+                entrance.check(&runtime, &states, actor, session, self.owner_now(), entered)
+            {
+                if map.facts.object_revision(*key) == revision
+                    && matches(map, callback, *key)
+                    && let Some(source) = native(entered.position())
+                {
+                    self.refuse_conditional_entrance(
+                        &mut runtime,
+                        &mut states,
+                        actor,
+                        session,
+                        map,
+                        entered,
+                        Some(origin),
+                        source,
+                        optional_pvp,
+                        refusal,
+                    );
+                }
+                return runtime.read_actor_position(actor).unwrap_or(entered);
             }
             let result = match observation {
                 Ok(observation) => {
@@ -1559,6 +1599,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         match tokio::time::timeout(std::time::Duration::from_secs(10), operation).await {
             Ok(snapshot) => snapshot,
+            Err(_)
+                if callback.effects.conditional_entrance.is_some()
+                    && !callback.requires_durable_commit() =>
+            {
+                let policy = self.special_movement_policy(permit, actor, session).await;
+                let mut runtime = self.runtime.lock().await;
+                let mut states = self.states.spell_states.lock().await;
+                if runtime.read_actor_position(actor) == Ok(entered)
+                    && let Some(source) = native(entered.position())
+                {
+                    self.refuse_conditional_entrance(
+                        &mut runtime,
+                        &mut states,
+                        actor,
+                        session,
+                        map,
+                        entered,
+                        Some(origin),
+                        source,
+                        policy,
+                        conditional_entrance::Unavailable.into(),
+                    );
+                }
+                runtime.read_actor_position(actor).unwrap_or(entered)
+            }
             Err(_) if callback.is_read_only() => {
                 // This path cannot have a durable commit to reconcile. A cancelled
                 // read returns to the step origin rather than reserving a write.
@@ -1705,6 +1770,15 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
         if !self.callbacks.iter().any(|c| {
             oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key)
                 .is_some_and(|b| tile(b.position) == at)
+                || c.effects
+                    .conditional_entrance
+                    .as_ref()
+                    .is_some_and(|gate| gate.intercept_teleport)
+                    && c.selector.matches_position(Position {
+                        x: at.x,
+                        y: at.y,
+                        floor: at.floor,
+                    })
         }) {
             return false;
         }
@@ -1733,10 +1807,19 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
             }
         }
         selected.is_some_and(|(c, key)| {
-            oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key).is_some_and(|b| {
-                map.facts
-                    .quest_callback_native_teleport(key, b.appearance, tile(b.raw_destination))
-            })
+            c.effects
+                .conditional_entrance
+                .as_ref()
+                .is_some_and(|gate| gate.intercept_teleport)
+                || oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key).is_some_and(
+                    |b| {
+                        map.facts.quest_callback_native_teleport(
+                            key,
+                            b.appearance,
+                            tile(b.raw_destination),
+                        )
+                    },
+                )
         })
     }
 }
