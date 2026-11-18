@@ -1,7 +1,7 @@
-"""Source-bounded Rookie Guard multi-output grant; no journey completion claim.
+"""Source-bounded Rookie Guard mission 11 rewards.
 
 Vascalir's mission 11 acceptance, Crystal 9f5a72c, grants both Items after the
-second yes. The separate map mark remains outside this item participant.
+second yes. The brass shield is a separate confirmation after hand-in.
 """
 import argparse
 import json
@@ -28,6 +28,22 @@ def outputs():
         'reply': [('Alright. Here is the empty flask to use on a dead wasp. '
                'Be careful and wear your silver amulet for poison protection!')],
         'sources': [SOURCE, 'docs/reference/content-prep/qmech-m09/reward-sources.md']}
+    shield = {
+        'key': 'oteryn:quest-reward/rookie-guard-mission11-brass-shield',
+        'quest': callback['quest'], 'npc': callback['npc'],
+        'topic': 0, 'next_topic': 0, 'keywords': ['yes'],
+        'storage': [{'track': TRACK+'mission11', 'minimum': 4, 'maximum': 4, 'set': 5}],
+        'take': [],
+        'give': {'item': 'oteryn:item.tibia.i3411', 'count': 1, 'contents': []},
+        'outfit': None, 'achievement': None,
+        'reply': [("This brass shield is actually brand-new. It's never been used! "
+                   "I hope it will serve you well.")],
+        'sources': [
+            'https://tibia.fandom.com/?curid=53932&oldid=891815',
+            ('https://github.com/zimbadev/crystalserver/blob/'
+             '201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/vascalir.lua#L835-L845'),
+        ],
+    }
     offer = {'npc': 'oteryn:npc.vascalir', 'keywords': ['yes'], 'topic': 0,
                  'next_topic': 91, 'storage': [dict(s, preserve=True, set=0) for s in storage],
                  'reply': [('I can give you a silver amulet and a flask to collect wasp '
@@ -54,7 +70,7 @@ def outputs():
                                           'count': count, 'contents': []}}})
     return {
         'content/quests/npc-callbacks/m09-rookie.json':
-            {'schema': 1, 'callbacks': [callback]},
+            {'schema': 1, 'callbacks': [callback, shield]},
         'content/quests/npc-offers/m09-rookie.json': {'schema': 1, 'offers': [offer]},
         'content/quests/world-callbacks/m09-treasure.json':
             {'schema': 1, 'callbacks': chests},
