@@ -480,20 +480,39 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         } else {
             None
         };
-        if matches!(route, Some(NativeScenario::CompletionGate)) {
+        if let Some(route @ (NativeScenario::Buddel | NativeScenario::Iskan)) = route {
+            btest2_npc::exercise(owner, &deps, &harness, route).await?;
+            return harness.cleanup().await;
+        }
+        let gate_case = matches!(route, Some(NativeScenario::CompletionGate));
+        if gate_case {
             let before = deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?;
+            let stepped = crate::gameplay_transport::connection::regression_routed_step(
+                &owner,
+                admitted,
+                deps.actor,
+                oteryn_protocol_oteryn::world_spatial::StepDirection::West,
+            ).await?;
+            assert_eq!(stepped.disposition, oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved);
+            let after = deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?;
+            assert_eq!(after.position(), before.position(), "unfinished Barbarian Test must return the player to the entrance origin");
+            assert_eq!(command(&owner, &mut admitted, A::Enter).await?.disposition, D::WrongState);
+        }
+        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,8,2)")
+            .bind(id(41).as_slice())
+            .bind(oteryn_gameplay_quests::quest::barbarian_mead::TRACKS[0])
+            .bind(oteryn_gameplay_quests::quest::barbarian_mead::QUEST)
+            .execute(&harness.pool)
+            .await?;
+        if gate_case {
             crate::gameplay_transport::connection::regression_routed_step(
                 &owner,
                 admitted,
                 deps.actor,
                 oteryn_protocol_oteryn::world_spatial::StepDirection::West,
             ).await?;
-            let after = deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?;
-            assert_eq!(after.position(), before.position(), "unfinished Barbarian Test must return the player to the entrance origin");
-        }
-        if let Some(route @ (NativeScenario::Buddel | NativeScenario::Iskan)) = route {
-            btest2_npc::exercise(owner, &deps, &harness, route).await?;
-            return harness.cleanup().await;
+            let position = deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position();
+            assert_eq!((position.x, position.y, position.floor), (32250, 31098, 6));
         }
         let entry_id = admitted.continuity.next_command_id;
         let entered = command(&owner, &mut admitted, A::Enter).await?;
@@ -517,6 +536,9 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                 .fetch_one(&harness.pool)
                 .await?;
         assert_eq!(fee_count, 1);
+        if gate_case {
+            return harness.cleanup().await;
+        }
         let fee: i64 = sqlx::query_scalar(
             "SELECT fee_gold_units FROM game_item_fee_burns WHERE cause_kind=17",
         )

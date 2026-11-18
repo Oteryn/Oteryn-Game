@@ -1267,6 +1267,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         origin: MovementPositionSnapshot,
         entered: MovementPositionSnapshot,
     ) -> MovementPositionSnapshot {
+        if let Some(refused) = self.gate_arena_entrance_step(actor, session, origin, entered).await {
+            return refused;
+        }
         let entered = if origin.position() != entered.position() {
             self.step_quest_trigger(permit, actor, session, origin, entered, Trigger::StepOut)
                 .await
