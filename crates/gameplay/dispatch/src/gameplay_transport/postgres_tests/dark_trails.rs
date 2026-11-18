@@ -21,19 +21,21 @@ const VOTES: &str = "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_poi
 
 #[test]
 fn dark_trails_marvin_spends_one_oramond_vote_and_credits_archives() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    assert!(!admin.is_empty(), "routed PostgreSQL needs an admin URL");
     super::kill_reward_e2e::scenario_thread::run("dark-trails-marvin", || {
         scenario(
-            Some((
-                "oteryn:npc.marvin",
-                "mission07",
-                2,
-                "mission08",
-                &["funding", "archives", "1", "yes", "yes"],
-                1,
-            )),
+            Some(VoteScenario {
+                npc: "oteryn:npc.marvin",
+                prerequisite: "mission07",
+                votes: 2,
+                target: "mission08",
+                words: &["funding", "archives", "1", "yes", "yes"],
+                expected_votes: 1,
+                expected_credit: 1,
+            }),
             false,
         )
     })
@@ -41,30 +43,33 @@ fn dark_trails_marvin_spends_one_oramond_vote_and_credits_archives() -> TestResu
 
 #[test]
 fn dark_trails_sholley_requires_fifty_available_votes_without_spending_them() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    assert!(!admin.is_empty(), "routed PostgreSQL needs an admin URL");
     super::kill_reward_e2e::scenario_thread::run("dark-trails-sholley", || {
         scenario(
-            Some((
-                "oteryn:npc.sholley",
-                "mission12",
-                49,
-                "mission13",
-                &["friend"],
-                49,
-            )),
+            Some(VoteScenario {
+                npc: "oteryn:npc.sholley",
+                prerequisite: "mission12",
+                votes: 49,
+                target: "mission13",
+                words: &["friend"],
+                expected_votes: 49,
+                expected_credit: 0,
+            }),
             false,
         )?;
         scenario(
-            Some((
-                "oteryn:npc.sholley",
-                "mission12",
-                50,
-                "mission13",
-                &["friend"],
-                50,
-            )),
+            Some(VoteScenario {
+                npc: "oteryn:npc.sholley",
+                prerequisite: "mission12",
+                votes: 50,
+                target: "mission13",
+                words: &["friend"],
+                expected_votes: 50,
+                expected_credit: 1,
+            }),
             false,
         )
     })
@@ -72,20 +77,22 @@ fn dark_trails_sholley_requires_fifty_available_votes_without_spending_them() ->
 
 #[test]
 fn dark_trails_barnabas_refuses_unavailable_self_harvest_credit() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    assert!(!admin.is_empty(), "routed PostgreSQL needs an admin URL");
     super::kill_reward_e2e::scenario_thread::run("dark-trails-barnabas", || scenario(None, true))
 }
 
-type VoteScenario = (
-    &'static str,
-    &'static str,
-    i64,
-    &'static str,
-    &'static [&'static str],
-    i64,
-);
+struct VoteScenario {
+    npc: &'static str,
+    prerequisite: &'static str,
+    votes: i64,
+    target: &'static str,
+    words: &'static [&'static str],
+    expected_votes: i64,
+    expected_credit: i64,
+}
 
 fn scenario(vote_case: Option<VoteScenario>, check_self_harvest: bool) -> TestResult {
     let trigger = Position {
@@ -210,7 +217,9 @@ fn scenario(vote_case: Option<VoteScenario>, check_self_harvest: bool) -> TestRe
             .map_err(debug)?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
-        if let Some((npc, prerequisite, votes, target, words, expected_votes)) = vote_case {
+        if let Some(VoteScenario {
+            npc, prerequisite, votes, target, words, expected_votes, expected_credit,
+        }) = vote_case {
             let mut seed = h.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica")
                 .execute(&mut *seed)
@@ -240,11 +249,24 @@ fn scenario(vote_case: Option<VoteScenario>, check_self_harvest: bool) -> TestRe
                 &format!("{}{target}", quest::TRACK_PREFIX),
             )
             .await?;
-            assert_eq!(credit, i64::from(votes != 49), "{target} credit");
+            assert_eq!(credit, expected_credit, "{target} credit");
             assert_eq!(
                 progress(&owner, &admitted, &authority, VOTES).await?,
                 expected_votes
             );
+            if target == "mission08" {
+                let receipts: Vec<(Vec<i64>, Vec<i64>)> = sqlx::query_as(
+                    "SELECT p.values_before, p.values_after
+                     FROM game_quest_reward_participants p
+                     JOIN game_character_quest_receipts r USING
+                       (character_id, cause_id, cause_ordinal, transition_key, committed_character_revision)
+                     WHERE p.transition_key = $1 AND p.quest_key = 'oteryn:quest.oramond_quest'",
+                )
+                .bind("oteryn:quest-reward/dark-trails/archive-vote")
+                .fetch_all(&h.pool)
+                .await?;
+                assert_eq!(receipts, [(vec![votes], vec![expected_votes])]);
+            }
             return Ok(());
         }
         owner.admit_quest_session(&admitted).await;
