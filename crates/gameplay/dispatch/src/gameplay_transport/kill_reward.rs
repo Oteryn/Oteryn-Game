@@ -415,7 +415,7 @@ pub(super) fn is_forge_exit(callback: &str) -> bool {
 #[derive(Debug, Default)]
 struct ForgeCredit {
     scope: Option<(crate::foundation::RuntimeScopeRefV1, u64)>,
-    deaths: [Option<CreatureDeathOccurrenceKey>; 7],
+    deaths: [Option<(u64, CreatureDeathOccurrenceKey)>; 7],
     windows: [Option<u64>; 6],
     brothers_waiting: bool,
 }
@@ -441,10 +441,10 @@ impl ForgeCredit {
             };
         }
 
-        if self.deaths[index] == Some(death) {
+        if self.deaths[index].is_some_and(|(at, previous)| previous == death || at > now_ms) {
             return;
         }
-        self.deaths[index] = Some(death);
+        self.deaths[index] = Some((now_ms, death));
         let active = self.windows[room].is_some_and(|deadline| now_ms < deadline);
         if room == 3 {
             if active {
@@ -2118,7 +2118,7 @@ pub fn record_creature_kill(
         sink.queue
             .state()
             .forge_credit
-            .record(&creature, facts.death, now_ms);
+            .record(&creature, facts.death, facts.death_at_ms);
     }
     if !top.is_gone()
         && let Some(states) = sink.prey

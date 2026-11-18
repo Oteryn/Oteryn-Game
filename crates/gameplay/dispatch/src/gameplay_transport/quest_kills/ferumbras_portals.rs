@@ -83,6 +83,13 @@ pub(super) async fn open(
         || runtime.owner_fence().is_err()
         || runtime.binding().runtime_scope() != entry.facts.death.runtime_scope()
         || map.overlay.runtime_scope() != entry.facts.death.runtime_scope()
+        || !runtime
+            .companion_snapshot_including_dead(entry.target)
+            .is_ok_and(|body| {
+                body.state.master.is_none()
+                    && !body.state.policy.is_familiar
+                    && body.state.policy.definition_key == entry.creature
+            })
     {
         return;
     }
