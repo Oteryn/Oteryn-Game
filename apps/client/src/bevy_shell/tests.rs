@@ -461,3 +461,93 @@ fn proficiency_shortcut_requests_catalogue_only_outside_blocked_input() -> TestR
     );
     Ok(())
 }
+
+fn poll_host_until(host: &mut HostOwner, done: impl Fn(&HostOwner) -> bool) -> TestResult {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    loop {
+        host.poll([800, 600]);
+        if done(host) {
+            return Ok(());
+        }
+        if std::time::Instant::now() >= deadline {
+            return Err(format!("Host did not reach the expected state: {}", host.status).into());
+        }
+        std::thread::yield_now();
+    }
+}
+
+#[test]
+fn failed_channel_entry_discards_pending_arrival() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| exercise_failed_channel_entry().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "native Channel entry test thread panicked")?
+        .map_err(Into::into)
+}
+
+fn exercise_failed_channel_entry() -> TestResult {
+    use crate::native_entry::test_support::{Stack, channel_node};
+    let stack = Stack::start_two_channels()?;
+    let channel = channel_node::uuid(channel_node::CHANNEL_B).ok_or("Channel B")?;
+    let mut host = HostOwner::new(None)?;
+    let mut entry = crate::reentry::Reentry::new(
+        crate::ClientBootstrap::new()?.with_native_login(stack.config()),
+    );
+    assert!(entry.request());
+    host.entry = Some(entry);
+    poll_host_until(&mut host, |host| host.phase == Phase::Playing)?;
+
+    let switch = |host: &mut HostOwner| -> TestResult {
+        poll_host_until(host, |host| {
+            host.play
+                .as_ref()
+                .is_some_and(|play| play.link.channel_switch_panel().selected)
+        })?;
+        host.play
+            .as_ref()
+            .ok_or("playing")?
+            .link
+            .channel_switch_open();
+        poll_host_until(host, |host| {
+            host.play.as_ref().is_some_and(|play| {
+                let panel = play.link.channel_switch_panel();
+                !panel.pending && panel.status.is_some()
+            })
+        })?;
+        let link = &host.play.as_ref().ok_or("playing")?.link;
+        link.channel_switch_select(channel);
+        assert!(link.channel_switch_confirm());
+        poll_host_until(host, |host| host.phase == Phase::Entering)
+    };
+    stack.node.refuse_destination.store(true, Ordering::SeqCst);
+    switch(&mut host)?;
+    assert_eq!(host.arrival.as_ref().map(|row| row.channel), Some(channel));
+    poll_host_until(&mut host, |host| host.phase == Phase::Offline)?;
+    assert!(host.status.contains("This channel is full."));
+    assert!(host.arrival.is_none());
+
+    assert!(host.entry.as_mut().ok_or("entry")?.request());
+    poll_host_until(&mut host, |host| host.phase == Phase::Playing)?;
+    let play = host.play.as_ref().ok_or("successful login")?;
+    assert!(!play.view.notification_text(false).contains("Second"));
+
+    stack.node.refuse_destination.store(false, Ordering::SeqCst);
+    stack.node.switches.store(0, Ordering::SeqCst);
+    switch(&mut host)?;
+    let expected = oteryn_client_ui::channel_switch::arrival_text(
+        host.arrival.as_ref().ok_or("pending arrival")?,
+    );
+    poll_host_until(&mut host, |host| host.phase == Phase::Playing)?;
+    let play = host.play.as_ref().ok_or("successful switch")?;
+    assert_eq!(
+        play.view
+            .notification_text(false)
+            .matches(&expected)
+            .count(),
+        1
+    );
+    host.close();
+    stack.finish();
+    Ok(())
+}

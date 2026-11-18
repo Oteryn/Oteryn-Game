@@ -143,7 +143,7 @@ impl VipPresenceRuntime {
         plan: ReadPlan,
         rows: Option<Vec<VipPresenceRow>>,
         now: Instant,
-    ) -> Option<PresenceBatch> {
+    ) -> Option<(PresenceBatch, Vec<u64>)> {
         let mut sessions = self.sessions.lock().ok()?;
         let watcher = sessions.get_mut(&session)?;
         if watcher.generation != plan.generation || watcher.serial != plan.serial || !watcher.ready
@@ -152,10 +152,11 @@ impl VipPresenceRuntime {
         }
         let Some(rows) = rows.filter(|rows| rows.len() <= wire::MAX_ENTRIES) else {
             watcher.due = now + CONFIRM;
-            return Some(unconfirm(watcher));
+            return Some((unconfirm(watcher), Vec::new()));
         };
         let previous = std::mem::take(&mut watcher.known);
         let mut entries = Vec::with_capacity(rows.len());
+        let mut channel_moves = Vec::new();
         for row in rows {
             let prior = previous
                 .get(&row.entry)
@@ -163,18 +164,32 @@ impl VipPresenceRuntime {
             // Crystal player_vip.cpp:48-66; accepted VIP0 section 8.2 additionally requires
             // an authoritative read confirming the hinted transition. Initial snapshots,
             // consent/privacy changes, stale hints and periodic correction never announce.
-            let announce = row.notify
+            let moved = row.notify
                 && row.visible
+                && row.status == Status::Online
                 && prior.is_some_and(|old| {
                     old.visible
-                        && matches!(
-                            (old.value.status, row.status),
-                            (Status::Offline, Status::Online) | (Status::Online, Status::Offline)
-                        )
-                        && plan.hints.get(row.target.as_bytes())
-                            == Some(&(row.status == Status::Online))
+                        && old.value.status == Status::Online
+                        && matches!((old.value.channel, row.channel), (Some(a), Some(b)) if a != b)
                 });
+            if moved {
+                channel_moves.push(row.entry);
+            }
+            let announce = moved
+                || row.notify
+                    && row.visible
+                    && prior.is_some_and(|old| {
+                        old.visible
+                            && matches!(
+                                (old.value.status, row.status),
+                                (Status::Offline, Status::Online)
+                                    | (Status::Online, Status::Offline)
+                            )
+                            && plan.hints.get(row.target.as_bytes())
+                                == Some(&(row.status == Status::Online))
+                    });
             let value = PresenceEntry {
+                channel: row.channel.filter(|_| row.status == Status::Online),
                 entry: row.entry,
                 name: row.name,
                 status: row.status,
@@ -201,7 +216,7 @@ impl VipPresenceRuntime {
             } else {
                 RECONCILE
             };
-        Some(PresenceBatch { entries })
+        Some((PresenceBatch { entries }, channel_moves))
     }
 }
 
@@ -212,6 +227,7 @@ fn unconfirm(watcher: &mut Watcher) -> PresenceBatch {
         .map(|known| {
             if known.value.status == Status::Online {
                 known.value.status = Status::Unconfirmed;
+                known.value.channel = None;
             }
             known.value.announce = false;
             known.value.confirmed_for_ms = 0;
@@ -278,8 +294,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ready,
             Instant::now(),
         )?;
-        let batch = match refresh {
-            Refresh::Send(batch) => batch,
+        let (batch, channel_moves) = match refresh {
+            Refresh::Send(batch) => (batch, Vec::new()),
             Refresh::Read(plan) => {
                 let rows = self
                     .root
@@ -294,6 +310,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .is_some_and(super::chat_relay::ChatRelay::is_ready)
                     .then_some(rows)
                     .flatten();
+                // chsw: the target's Channel is negotiated by capability 513.
+                let social = selected
+                    .contains(oteryn_protocol_oteryn::channel_switch::CAPABILITY_SOCIAL_CHANNEL_V1);
+                let rows = rows.map(|mut rows| {
+                    if !social {
+                        rows.iter_mut().for_each(|row| row.channel = None);
+                    }
+                    rows
+                });
                 self.states.chat.vip.complete(
                     admitted.game_session_id,
                     plan,
@@ -302,7 +327,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )?
             }
         };
-        for entry in batch.entries.iter().filter(|entry| entry.announce) {
+        for entry in batch
+            .entries
+            .iter()
+            .filter(|entry| entry.announce && !channel_moves.contains(&entry.entry))
+        {
             let verb = if entry.status == Status::Online {
                 "in"
             } else {
