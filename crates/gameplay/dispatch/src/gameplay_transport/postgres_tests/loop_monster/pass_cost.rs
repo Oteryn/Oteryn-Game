@@ -516,7 +516,7 @@ fn spread_dependencies_with_capacity(
     let mut deps = Dependencies::new()?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
     let entry = pin.qualified_room();
-    let world = crate::map::spell_tiles::tests::movement_arena::rectangle((0, 0), (i32::try_from(count)? * 16 - 1, 2), -7);
+    let world = crate::map::spell_tiles::tests::movement_arena::rectangle((0, 0), (u16::try_from(count * 16 - 1)?, 2), -7);
     let cells = world
         .movement_cells(entry.movement_cells())
         .map_err(debug)?;
