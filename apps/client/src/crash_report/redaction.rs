@@ -20,7 +20,7 @@ const SECRET_SUFFIXES: [&str; 11] = [
     "credential",
     "credentials",
 ];
-/// Keys that are secret in a query string (`?code=` / `&code=`) but ordinary words elsewhere.
+/// Query keys whose assignments can carry secrets.
 const QUERY_SECRETS: [&str; 7] = [
     "code",
     "key",
@@ -30,34 +30,100 @@ const QUERY_SECRETS: [&str; 7] = [
     "code_verifier",
     "assertion",
 ];
-const VALUE_END: &[u8] = b" \t\r\n\"'&#,;)]}<>";
+const VALUE_END: &[u8] = b" \t\r\n\x0b\x0c\"'&#,;)]}<>";
 
 /// Returns `text` with every secret value replaced by `[redacted]`.
 pub fn redact(text: &str) -> String {
-    // Read structured values before URL masking can change their JSON syntax.
-    let text = redact_pairs(text);
-    let text = redact_urls(&text);
+    // An encoded authority can otherwise disappear into a key/value match.
+    let text = redact_encoded(redact_urls(text), redact_urls);
+    let text = redact_pairs(&text);
+    redact_encoded(redact_bearer(&text), redact_plain)
+}
+
+fn redact_encoded(text: String, redact: fn(&str) -> String) -> String {
+    if !text.contains(['%', '\\']) {
+        return text;
+    }
+    let mut out = String::with_capacity(text.len());
+    for line in text.split_inclusive('\n') {
+        if line.contains(['%', '\\']) && encoded_secret(line, redact) {
+            out.push_str(MASK);
+            if line.ends_with('\n') {
+                out.push('\n');
+            }
+        } else {
+            out.push_str(line);
+        }
+    }
+    out
+}
+
+fn encoded_secret(line: &str, redact: fn(&str) -> String) -> bool {
+    let mut next = decode_escapes(line);
+    // Inspect the decoded form without emitting it. If the nesting is too
+    // deep to inspect, remove the entire line.
+    for _ in 0..8 {
+        let Some(decoded) = next else {
+            return false;
+        };
+        if redact(&decoded) != decoded {
+            return true;
+        }
+        next = decode_escapes(&decoded);
+    }
+    next.is_some()
+}
+
+fn redact_plain(text: &str) -> String {
+    let text = redact_urls(text);
+    let text = redact_pairs(&text);
     redact_bearer(&text)
+}
+
+fn escaped_ascii(bytes: &[u8]) -> Option<(u8, usize)> {
+    let (digits, length) = match bytes {
+        [b'\\', b'"' | b'\'' | b'/' | b'\\', ..] => return Some((bytes[1], 2)),
+        [b'\\', b'n', ..] => return Some((b'\n', 2)),
+        [b'\\', b'r', ..] => return Some((b'\r', 2)),
+        [b'\\', b't', ..] => return Some((b'\t', 2)),
+        [b'\\', b'u', a, b, c, d, ..] => ([*a, *b, *c, *d], 6),
+        [b'%', a, b, ..] => ([b'0', b'0', *a, *b], 3),
+        _ => return None,
+    };
+    let decoded = u8::from_str_radix(std::str::from_utf8(&digits).ok()?, 16).ok()?;
+    decoded.is_ascii().then_some((decoded, length))
+}
+
+fn decode_escapes(text: &str) -> Option<String> {
+    let bytes = text.as_bytes();
+    let mut out = String::with_capacity(text.len());
+    let mut copied = 0;
+    let mut index = 0;
+    while index < bytes.len() {
+        if let Some((decoded, length)) = escaped_ascii(&bytes[index..]) {
+            out.push_str(&text[copied..index]);
+            out.push(char::from(decoded));
+            index += length;
+            copied = index;
+        } else {
+            index += 1;
+        }
+    }
+    if copied == 0 {
+        return None;
+    }
+    out.push_str(&text[copied..]);
+    Some(out)
 }
 
 fn identifier(byte: u8) -> bool {
     byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'-'
 }
 
-fn skip_horizontal_space(bytes: &[u8], mut start: usize) -> usize {
+fn skip_space(bytes: &[u8], mut start: usize) -> usize {
     while bytes
         .get(start)
-        .is_some_and(|byte| matches!(byte, b' ' | b'\t'))
-    {
-        start += 1;
-    }
-    start
-}
-
-fn skip_json_space(bytes: &[u8], mut start: usize) -> usize {
-    while bytes
-        .get(start)
-        .is_some_and(|byte| matches!(byte, b' ' | b'\t' | b'\r' | b'\n'))
+        .is_some_and(|byte| b" \t\r\n\x0b\x0c".contains(byte))
     {
         start += 1;
     }
@@ -110,10 +176,14 @@ fn redact_urls(text: &str) -> String {
         }
         let terminates_url = |byte: &u8| byte.is_ascii_whitespace() || b"\"<>".contains(byte);
         if scheme.starts_with("postgres") {
-            let end = bytes[authority..]
-                .iter()
-                .position(terminates_url)
-                .map_or(bytes.len(), |offset| authority + offset);
+            let mut end = authority;
+            while let Some(byte) = bytes.get(end).filter(|byte| !terminates_url(byte)) {
+                end += if *byte == b'\\' && matches!(bytes.get(end + 1), Some(b'"' | b'\\')) {
+                    2
+                } else {
+                    1
+                };
+            }
             out.push_str(&text[copied..authority]);
             out.push_str(MASK);
             copied = end;
@@ -130,7 +200,7 @@ fn redact_urls(text: &str) -> String {
                 copied = authority + at;
             }
             // Continue scanning the path and surrounding text for another URL scheme.
-            search = authority;
+            search = authority.max(copied);
         }
     }
     out.push_str(&text[copied..]);
@@ -141,7 +211,7 @@ fn redact_urls(text: &str) -> String {
 fn json_key(text: &str, start: usize) -> Option<(String, usize)> {
     let bytes = text.as_bytes();
     let end = quoted_end(bytes, start + 1, b'"');
-    if bytes.get(skip_json_space(bytes, end + 1)) != Some(&b':') {
+    if bytes.get(skip_space(bytes, end + 1)) != Some(&b':') {
         return None;
     }
     let key: String = serde_json::from_str(&text[start..=end]).ok()?;
@@ -179,10 +249,10 @@ fn redact_pairs(text: &str) -> String {
             }
             text[key_start..index].to_ascii_lowercase()
         };
+        let query_key = QUERY_SECRETS.contains(&key.as_str());
+        let secret = SECRET_SUFFIXES.iter().any(|suffix| key.ends_with(suffix));
         let in_query = key_start > 0 && matches!(bytes[key_start - 1], b'?' | b'&');
-        let secret = SECRET_SUFFIXES.iter().any(|suffix| key.ends_with(suffix))
-            || (in_query && QUERY_SECRETS.contains(&key.as_str()));
-        if !secret {
+        if !secret && !query_key {
             index += usize::from(bytes[key_start] == b'"');
             continue;
         }
@@ -190,27 +260,24 @@ fn redact_pairs(text: &str) -> String {
         let quoted_key = bytes
             .get(cursor)
             .is_some_and(|byte| matches!(byte, b'"' | b'\''));
-        if quoted_key {
-            cursor += 1;
-        }
-        if quoted_key {
-            cursor = skip_json_space(bytes, cursor);
-        } else {
-            cursor = skip_horizontal_space(bytes, cursor);
-        }
+        cursor = skip_space(bytes, cursor + usize::from(quoted_key));
         if cursor >= bytes.len() || !matches!(bytes[cursor], b'=' | b':') {
             continue;
         }
+        if !secret && bytes[cursor] != b'=' && !in_query {
+            continue;
+        }
         let header = bytes[cursor] == b':' && !quoted_key;
-        cursor = if quoted_key {
-            skip_json_space(bytes, cursor + 1)
-        } else {
-            skip_horizontal_space(bytes, cursor + 1)
-        };
-        if quoted_key
-            && matches!(bytes.get(cursor), Some(b'[' | b'{'))
-            && let Some(end) = json_container_end(text, cursor)
-        {
+        cursor = skip_space(bytes, cursor + 1);
+        while matches!(bytes.get(cursor), Some(b'=' | b':')) {
+            cursor = skip_space(bytes, cursor + 1);
+        }
+        if text[cursor..].starts_with(MASK) {
+            index = cursor + MASK.len();
+            continue;
+        }
+        if matches!(bytes.get(cursor), Some(b'[' | b'{')) {
+            let end = json_container_end(text, cursor).unwrap_or(bytes.len());
             out.push_str(&text[copied..cursor]);
             out.push('"');
             out.push_str(MASK);
@@ -219,31 +286,20 @@ fn redact_pairs(text: &str) -> String {
             index = end;
             continue;
         }
-        let end = if header && key.ends_with("cookie") {
-            line_end(bytes, cursor)
-        } else if let Some(&quote @ (b'"' | b'\'')) = bytes.get(cursor) {
-            cursor += 1;
-            quoted_end(bytes, cursor, quote)
+        let (cursor, end) = if header && key.ends_with("cookie") {
+            (cursor, line_end(bytes, cursor))
         } else {
-            let end = value_end(bytes, cursor);
-            let word = text[cursor..end].to_ascii_lowercase();
-            if matches!(word.as_str(), "bearer" | "basic" | "token" | "digest")
-                && bytes
-                    .get(end)
-                    .is_some_and(|byte| matches!(byte, b' ' | b'\t'))
-            {
-                cursor = skip_horizontal_space(bytes, end);
+            let word_end = value_end(bytes, cursor);
+            let word = text[cursor..word_end].to_ascii_lowercase();
+            let next = skip_space(bytes, word_end);
+            if matches!(word.as_str(), "bearer" | "basic" | "token" | "digest") && next > word_end {
                 if header {
-                    line_end(bytes, cursor)
-                } else if text[cursor..].starts_with(MASK) {
-                    cursor + MASK.len()
+                    (next, line_end(bytes, next))
                 } else {
-                    value_end(bytes, cursor)
+                    credential_span(text, next)
                 }
-            } else if text[cursor..].starts_with(MASK) {
-                cursor + MASK.len()
             } else {
-                end
+                credential_span(text, cursor)
             }
         };
         if end == cursor {
@@ -259,6 +315,20 @@ fn redact_pairs(text: &str) -> String {
     out
 }
 
+fn credential_span(text: &str, start: usize) -> (usize, usize) {
+    let bytes = text.as_bytes();
+    if text[start..].starts_with(MASK) {
+        (start, start + MASK.len())
+    } else if let Some(&quote @ (b'"' | b'\'')) = bytes.get(start) {
+        (start + 1, quoted_end(bytes, start + 1, quote))
+    } else if escaped_ascii(&bytes[start..]).is_some() {
+        // Encoded delimiters can wrap a credential with raw spaces.
+        (start, line_end(bytes, start))
+    } else {
+        (start, value_end(bytes, start))
+    }
+}
+
 /// A bare `Bearer <credential>` anywhere in the text.
 fn redact_bearer(text: &str) -> String {
     let lower = text.to_ascii_lowercase();
@@ -269,7 +339,7 @@ fn redact_bearer(text: &str) -> String {
     while let Some(found) = lower[search..].find("bearer") {
         let start = search + found;
         let after_scheme = start + "bearer".len();
-        let value = skip_horizontal_space(bytes, after_scheme);
+        let value = skip_space(bytes, after_scheme);
         if value == after_scheme || (start > 0 && identifier(bytes[start - 1])) {
             search = after_scheme;
             continue;
@@ -278,7 +348,7 @@ fn redact_bearer(text: &str) -> String {
             search = value + MASK.len();
             continue;
         }
-        let end = value_end(bytes, value);
+        let (value, end) = credential_span(text, value);
         if end > value {
             out.push_str(&text[copied..value]);
             out.push_str(MASK);

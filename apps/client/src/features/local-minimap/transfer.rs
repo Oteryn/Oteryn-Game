@@ -1,7 +1,7 @@
 //! Portable exploration is bound to the same world and content generation as the active cache.
 use super::*;
 use std::{
-    io::{BufWriter, Write},
+    io::{BufWriter, Read, Write},
     path::Path,
 };
 
@@ -35,23 +35,93 @@ impl Saved {
     }
 
     pub(super) fn write_to(&self, path: &Path) -> io::Result<()> {
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-        let temporary = path.with_extension("tmp");
-        let result = (|| {
-            let mut file = BufWriter::new(std::fs::File::create(&temporary)?);
-            serde_json::to_writer(&mut file, self).map_err(io::Error::other)?;
-            file.flush()?;
-            file.get_ref().sync_all()?;
-            drop(file);
-            std::fs::rename(&temporary, path)
-        })();
-        if result.is_err() && temporary.is_file() {
-            let _ = std::fs::remove_file(temporary);
-        }
-        result
+        write_atomic(path, self)
     }
+
+    // Teardown cannot wait for another client. Publish the delta separately so
+    // the next lock holder can fold it into the latest cache after this view is gone.
+    pub(super) fn stage_changes(path: &Path, changes: &CellChanges) -> io::Result<()> {
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let sequence = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let staged = path.with_extension("pending").join(format!(
+            "{}-{}-{sequence}.json",
+            std::process::id(),
+            observation_time(),
+        ));
+        write_atomic(&staged, &changes.iter().collect::<Vec<_>>())
+    }
+
+    pub(super) fn staged_names(path: &Path) -> io::Result<BTreeSet<String>> {
+        let entries = match std::fs::read_dir(path.with_extension("pending")) {
+            Ok(entries) => entries,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(BTreeSet::new()),
+            Err(error) => return Err(error),
+        };
+        let mut names = BTreeSet::new();
+        for entry in entries {
+            if let Ok(name) = entry?.file_name().into_string()
+                && name.ends_with(".json")
+            {
+                names.insert(name);
+            }
+        }
+        Ok(names)
+    }
+
+    pub(super) fn staged_changes<'a>(
+        path: &Path,
+        names: impl Iterator<Item = &'a String>,
+    ) -> io::Result<CellChanges> {
+        let pending = path.with_extension("pending");
+        let mut changes: CellChanges = BTreeMap::new();
+        for name in names {
+            let staged: Vec<(CellPosition, CellObservation)> =
+                read_json(std::fs::File::open(pending.join(name))?)?;
+            for (key @ (floor, x, y), change) in staged {
+                if !cache_position(i32::from(floor), x, y) {
+                    return Err(io::Error::other(tr!("Invalid minimap file")));
+                }
+                if changes
+                    .get(&key)
+                    .is_none_or(|current| current.0 <= change.0)
+                {
+                    changes.insert(key, change);
+                }
+            }
+        }
+        Ok(changes)
+    }
+}
+
+pub(super) fn read_json<T: serde::de::DeserializeOwned>(file: std::fs::File) -> io::Result<T> {
+    if file.metadata()?.len() > MAX_BYTES {
+        return Err(io::Error::other(tr!("Minimap file is too large")));
+    }
+    let mut bytes = Vec::new();
+    file.take(MAX_BYTES + 1).read_to_end(&mut bytes)?;
+    if bytes.len() as u64 > MAX_BYTES {
+        return Err(io::Error::other(tr!("Minimap file is too large")));
+    }
+    serde_json::from_slice(&bytes).map_err(io::Error::other)
+}
+
+fn write_atomic(path: &Path, value: &impl Serialize) -> io::Result<()> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let temporary = path.with_extension("tmp");
+    let result = (|| {
+        let mut file = BufWriter::new(std::fs::File::create(&temporary)?);
+        serde_json::to_writer(&mut file, value).map_err(io::Error::other)?;
+        file.flush()?;
+        file.get_ref().sync_all()?;
+        drop(file);
+        std::fs::rename(&temporary, path)
+    })();
+    if result.is_err() && temporary.is_file() {
+        let _ = std::fs::remove_file(temporary);
+    }
+    result
 }
 
 impl Minimap {
@@ -64,13 +134,13 @@ impl Minimap {
             .binding
             .ok_or_else(|| io::Error::other(tr!("Wait for the server map before exporting")))?;
         let saved = Saved {
-            version: 1,
             cells: self
                 .cells
                 .iter()
                 .map(|(&(floor, x, y), &color)| [i32::from(floor), x, y, i32::from(color)])
                 .collect(),
             markers: self.markers.clone(),
+            ..Saved::default()
         };
         saved.validate()?;
         let mut file = BufWriter::new(
@@ -101,14 +171,7 @@ impl Minimap {
         let active = self.path().ok_or_else(|| {
             io::Error::other(tr!("Join a world with minimap storage before importing"))
         })?;
-        let mut bytes = Vec::new();
-        std::fs::File::open(path)?
-            .take(MAX_BYTES + 1)
-            .read_to_end(&mut bytes)?;
-        if bytes.len() as u64 > MAX_BYTES {
-            return Err(io::Error::other(tr!("Minimap file is too large")));
-        }
-        let portable: Portable = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+        let mut portable: Portable = read_json(std::fs::File::open(path)?)?;
         if self.world.as_ref() != Some(&portable.world) || self.binding != Some(portable.binding) {
             return Err(io::Error::other(tr!(
                 "This minimap belongs to a different world or content generation"
@@ -116,6 +179,9 @@ impl Minimap {
         }
         portable.saved.validate()?;
         let _lock = Saved::lock_cache(&active)?;
+        portable.saved.observed_at.clear();
+        portable.saved.applied_journals.clear();
+        portable.saved.imported_at = observation_time();
         portable.saved.write_to(&active)?;
         self.cells = saved_cells(portable.saved.cells);
         self.markers = portable.saved.markers;
@@ -130,6 +196,7 @@ impl Saved {
     pub(super) fn validate(&self) -> io::Result<()> {
         if self.version != 1
             || self.cells.len() > MAX_CELLS
+            || (!self.observed_at.is_empty() && self.observed_at.len() != self.cells.len())
             || self.markers.len() > MAX_MARKERS
             || self
                 .cells

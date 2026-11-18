@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 mod transfer;
 use std::{
     collections::{BTreeMap, BTreeSet},
-    io::{self, Read},
+    io,
     path::PathBuf,
-    time::{Duration, Instant},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 pub type SharedMinimap = std::sync::Arc<std::sync::Mutex<Minimap>>;
 pub fn lock(shared: &SharedMinimap) -> std::sync::MutexGuard<'_, Minimap> {
@@ -73,12 +73,25 @@ impl Drop for EditorOwner {
 }
 type CellPosition = (i16, i32, i32);
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 enum CellChange {
     Discover,
     Set(u8),
     Clear,
 }
+
+// Clients sharing a cache run on the same host. Record when the tile was observed
+// so a change held by a stale view is ordered by observation, even if saved later.
+fn observation_time() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |elapsed| {
+            u64::try_from(elapsed.as_nanos()).unwrap_or(u64::MAX)
+        })
+}
+
+type CellObservation = (u64, CellChange);
+type CellChanges = BTreeMap<CellPosition, CellObservation>;
 
 type Binding = ([u8; 32], [u8; 32], u64);
 const MAX_CELLS: usize = 1_048_576;
@@ -103,8 +116,21 @@ pub struct Marker {
 struct Saved {
     version: u8,
     cells: Vec<[i32; 4]>,
+    // Parallel to cells. Older caches and portable exports have no observation times.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    observed_at: Vec<u64>,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    imported_at: u64,
+    // Keep receipts in the same atomic write as the cells, so a restart
+    // between replacing the cache and removing a journal cannot replay it.
+    #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
+    applied_journals: BTreeSet<String>,
     markers: Vec<Marker>,
 }
+fn is_zero(value: &u64) -> bool {
+    *value == 0
+}
+
 #[derive(Debug)]
 pub struct Minimap {
     pub cells: BTreeMap<CellPosition, u8>,
@@ -127,7 +153,7 @@ pub struct Minimap {
     root: Option<PathBuf>,
     world: Option<String>,
     binding: Option<Binding>,
-    cell_changes: BTreeMap<CellPosition, CellChange>,
+    cell_changes: CellChanges,
     load_failed: bool,
     saved_at: Instant,
 }
@@ -199,7 +225,7 @@ impl Minimap {
         if !(1..=36).contains(&world.len())
             || !world.bytes().all(|c| c.is_ascii_hexdigit() || c == b'-')
         {
-            if let Err(error) = self.save() {
+            if let Err(error) = self.flush_binding() {
                 self.feedback =
                     format!("Could not save minimap before refusing world binding: {error}");
             } else {
@@ -215,7 +241,7 @@ impl Minimap {
             self.zoom = 1;
             self.quest_marks = Default::default();
         } else if self.world.as_deref() != Some(world) {
-            if let Err(error) = self.save() {
+            if let Err(error) = self.flush_binding() {
                 self.feedback = error.to_string();
             }
             self.quest_markers.clear();
@@ -265,7 +291,7 @@ impl Minimap {
         );
         if self.binding != Some(binding) {
             self.pending_edit = None;
-            if let Err(error) = self.save() {
+            if let Err(error) = self.flush_binding() {
                 self.feedback = error.to_string();
             }
             self.cells.clear();
@@ -284,6 +310,8 @@ impl Minimap {
             VIEW_HEIGHT, VIEW_LEFT, VIEW_TOP, VIEW_WIDTH, floors_in_view, in_window,
         };
         let origin = map.header.origin;
+        let now = observation_time();
+        let has_cache = self.world.is_some() && self.root.is_some();
         let observed: BTreeSet<_> = map
             .tiles
             .iter()
@@ -315,8 +343,11 @@ impl Minimap {
                             continue;
                         };
                         let key = (floor, x, y);
-                        if !observed.contains(&key) && self.cells.remove(&key).is_some() {
-                            self.cell_changes.insert(key, CellChange::Clear);
+                        if !observed.contains(&key) && cache_position(i32::from(floor), x, y) {
+                            let removed = self.cells.remove(&key).is_some();
+                            if removed || has_cache {
+                                self.cell_changes.insert(key, (now, CellChange::Clear));
+                            }
                         }
                     }
                 }
@@ -330,12 +361,12 @@ impl Minimap {
             }
             if let std::collections::btree_map::Entry::Vacant(entry) = self.cells.entry(key) {
                 entry.insert(55);
-                self.cell_changes.insert(key, CellChange::Discover);
+                self.cell_changes.insert(key, (now, CellChange::Discover));
             }
             if let Some(&colour) = colours.get(&key)
                 && let Some(&current) = self.cells.get(&key)
                 && (current != colour
-                    || matches!(self.cell_changes.get(&key), Some(CellChange::Discover)))
+                    || matches!(self.cell_changes.get(&key), Some((_, CellChange::Discover))))
             {
                 self.set_cell_colour(key, colour);
             }
@@ -348,7 +379,8 @@ impl Minimap {
     }
     fn set_cell_colour(&mut self, key: CellPosition, colour: u8) {
         self.cells.insert(key, colour);
-        self.cell_changes.insert(key, CellChange::Set(colour));
+        self.cell_changes
+            .insert(key, (observation_time(), CellChange::Set(colour)));
     }
 
     pub fn follow(&mut self, x: i32, y: i32, floor: i16) {
@@ -489,6 +521,16 @@ impl Minimap {
         Ok(())
     }
 
+    fn flush_binding(&mut self) -> io::Result<()> {
+        match self.save() {
+            Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
+                let path = self.path().ok_or(error)?;
+                Saved::stage_changes(&path, &self.cell_changes)
+            }
+            result => result,
+        }
+    }
+
     fn update_cache(
         &mut self,
         change: impl FnOnce(&mut Vec<Marker>) -> io::Result<bool>,
@@ -505,39 +547,95 @@ impl Minimap {
         let _lock = Saved::lock_cache(&path)?;
         // Apply only local changes to the latest cache. The view may have loaded
         // before another client explored, cleared a cell, or edited a marker.
-        let (cells, mut markers) = Saved::read_from(&path)?
-            .map(|saved| (saved.cells, saved.markers))
-            .unwrap_or_default();
-        if !change(&mut markers)? {
-            self.markers = markers;
+        let Saved {
+            cells,
+            observed_at,
+            imported_at,
+            applied_journals,
+            markers,
+            ..
+        } = Saved::read_from(&path)?.unwrap_or_default();
+        let mut next_markers = markers.clone();
+        if !change(&mut next_markers)? {
+            self.markers = next_markers;
             return Ok(false);
         }
-        let mut cells = saved_cells(cells);
-        for (&key, change) in &self.cell_changes {
-            match *change {
-                CellChange::Discover => {
-                    cells.entry(key).or_insert(55);
-                }
-                CellChange::Set(colour) => {
-                    cells.insert(key, colour);
-                }
-                CellChange::Clear => {
-                    cells.remove(&key);
-                }
+        let journals = Saved::staged_names(&path)?;
+        let mut unapplied = journals.difference(&applied_journals);
+        let mut changes = Saved::staged_changes(&path, unapplied.clone())?;
+        for (&key, &change) in &self.cell_changes {
+            if changes
+                .get(&key)
+                .is_none_or(|current| current.0 <= change.0)
+            {
+                changes.insert(key, change);
             }
         }
-        let saved = Saved {
-            version: 1,
-            cells: cells
-                .iter()
-                .map(|(&(f, x, y), &c)| [i32::from(f), x, y, i32::from(c)])
-                .collect(),
-            markers,
-        };
-        saved.validate()?;
-        saved.write_to(&path)?;
-        self.cells = cells;
-        self.markers = saved.markers;
+        let mut cells: BTreeMap<_, _> = cells
+            .into_iter()
+            .zip(observed_at.into_iter().chain(std::iter::repeat(0)))
+            .map(|([f, x, y, c], time)| ((f as i16, x, y), (c as u8, time)))
+            .collect();
+        let mut dirty = next_markers != markers || unapplied.next().is_some();
+        // Clear first so an eligible deletion can make room for a discovery.
+        for (&key, &(time, change)) in &changes {
+            if matches!(change, CellChange::Clear)
+                && time >= imported_at
+                && cells.get(&key).is_some_and(|&(_, saved)| saved <= time)
+            {
+                cells.remove(&key);
+                dirty = true;
+            }
+        }
+        let mut limit_reached = false;
+        for (key, (time, change)) in changes {
+            if time < imported_at || matches!(change, CellChange::Clear) {
+                continue;
+            }
+            let current = cells.get(&key).copied();
+            if current.is_some_and(|(_, saved)| saved > time) {
+                continue;
+            }
+            if current.is_none() && cells.len() >= MAX_CELLS {
+                limit_reached = true;
+                continue;
+            }
+            let colour = match change {
+                CellChange::Set(colour) => colour,
+                _ => current.map_or(55, |(colour, _)| colour),
+            };
+            cells.insert(key, (colour, time));
+            dirty = true;
+        }
+        if dirty {
+            let mut saved = Saved {
+                cells: Vec::with_capacity(cells.len()),
+                observed_at: Vec::with_capacity(cells.len()),
+                imported_at,
+                applied_journals: journals.clone(),
+                markers: next_markers,
+                ..Saved::default()
+            };
+            for (&(f, x, y), &(colour, time)) in &cells {
+                saved.cells.push([i32::from(f), x, y, i32::from(colour)]);
+                saved.observed_at.push(time);
+            }
+            saved.validate()?;
+            saved.write_to(&path)?;
+            next_markers = saved.markers;
+        }
+        for journal in journals {
+            let _ = std::fs::remove_file(path.with_extension("pending").join(journal));
+        }
+        if limit_reached {
+            self.feedback =
+                tr!("Local exploration limit reached; existing exploration is retained").into();
+        }
+        self.cells = cells
+            .into_iter()
+            .map(|(key, (colour, _))| (key, colour))
+            .collect();
+        self.markers = next_markers;
         self.cell_changes.clear();
         self.saved_at = Instant::now();
         Ok(true)
@@ -547,6 +645,13 @@ impl Minimap {
         let Some(path) = self.path() else {
             return Ok(());
         };
+        if !Saved::staged_names(&path)?.is_empty() {
+            match self.update_cache(|_| Ok(true)) {
+                Ok(_) => return Ok(()),
+                Err(error) if error.kind() == io::ErrorKind::WouldBlock => {}
+                Err(error) => return Err(error),
+            }
+        }
         let Some(saved) = Saved::read_from(&path)? else {
             return Ok(());
         };
@@ -565,6 +670,19 @@ fn saved_cells(cells: Vec<[i32; 4]>) -> BTreeMap<CellPosition, u8> {
         .collect()
 }
 
+impl Default for Saved {
+    fn default() -> Self {
+        Self {
+            version: 1,
+            cells: Vec::new(),
+            observed_at: Vec::new(),
+            imported_at: 0,
+            applied_journals: BTreeSet::new(),
+            markers: Vec::new(),
+        }
+    }
+}
+
 impl Saved {
     fn read_from(path: &std::path::Path) -> io::Result<Option<Self>> {
         let file = match std::fs::File::open(path) {
@@ -572,22 +690,14 @@ impl Saved {
             Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
             Err(error) => return Err(error),
         };
-        if file.metadata()?.len() > MAX_BYTES {
-            return Err(io::Error::other(tr!("Minimap file is too large")));
-        }
-        let mut bytes = Vec::new();
-        file.take(MAX_BYTES + 1).read_to_end(&mut bytes)?;
-        if bytes.len() as u64 > MAX_BYTES {
-            return Err(io::Error::other(tr!("Minimap file is too large")));
-        }
-        let saved: Saved = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+        let saved: Saved = transfer::read_json(file)?;
         saved.validate()?;
         Ok(Some(saved))
     }
 }
 impl Drop for Minimap {
     fn drop(&mut self) {
-        let _ = self.save();
+        let _ = self.flush_binding();
     }
 }
 #[cfg(test)]

@@ -485,3 +485,153 @@ fn review_busy_cache_returns_from_live_map_and_marker_creation()
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
+
+fn review_snapshot(x: i32, ground: bool) -> WorldMapViewSnapshot {
+    let position = ActorPosition {
+        x,
+        y: 200,
+        floor: -7,
+    };
+    WorldMapViewSnapshot {
+        header: MapViewHeader {
+            origin: position,
+            first_visible_floor: -7,
+            content_generation: [1; 32],
+            bundle_digest: [2; 32],
+            reset_epoch: 1,
+        },
+        tiles: ground
+            .then_some(MapTile {
+                position,
+                ground_speed: 100,
+                more: false,
+                items: vec![],
+            })
+            .into_iter()
+            .collect(),
+    }
+}
+
+fn review_view(root: &std::path::Path) -> Result<PlayView, oteryn_renderer::BatchError> {
+    let mut view = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+    lock(&view.minimap).root = Some(root.to_path_buf());
+    view.bind_minimap_world("11111111-1111-4111-8111-111111111111");
+    view.set_live_map(&review_snapshot(900, false))?;
+    Ok(view)
+}
+
+#[test]
+fn review_busy_teardown_preserves_old_binding() -> Result<(), Box<dyn std::error::Error>> {
+    for switch_binding in [false, true] {
+        let root = std::env::temp_dir().join(format!(
+            "minimap-teardown-{}-{switch_binding}",
+            std::process::id()
+        ));
+        let mut view = review_view(&root)?;
+        view.set_live_map(&review_snapshot(100, true))?;
+        let path = lock(&view.minimap).path().ok_or("missing cache path")?;
+        let held = Saved::lock_cache(&path)?;
+        let (send, receive) = std::sync::mpsc::channel();
+        let worker = std::thread::spawn(move || -> Result<(), String> {
+            if switch_binding {
+                let mut next = review_snapshot(300, true);
+                next.header.reset_epoch = 2;
+                view.set_live_map(&next)
+                    .map_err(|error| error.to_string())?;
+            }
+            drop(view);
+            send.send(()).map_err(|error| error.to_string())
+        });
+        let closed = receive.recv_timeout(Duration::from_secs(2));
+        drop(held);
+        worker.join().map_err(|_| "teardown worker panicked")??;
+        closed?;
+        let reopened = review_view(&root)?;
+        assert!(
+            lock(&reopened.minimap).cells.contains_key(&(-7, 100, 200)),
+            "binding switch: {switch_binding}"
+        );
+        drop(reopened);
+        std::fs::remove_dir_all(root)?;
+    }
+    Ok(())
+}
+
+#[test]
+fn review_stale_clear_preserves_newer_restoration() -> Result<(), Box<dyn std::error::Error>> {
+    let root = std::env::temp_dir().join(format!("minimap-stale-clear-{}", std::process::id()));
+    let mut first = review_view(&root)?;
+    first.set_live_map(&review_snapshot(100, true))?;
+    lock(&first.minimap).save()?;
+    let mut second = review_view(&root)?;
+    let empty = review_snapshot(100, false);
+    first.set_live_map(&empty)?;
+    second.set_live_map(&empty)?;
+    second.set_live_map(&review_snapshot(200, true))?;
+    lock(&first.minimap).save()?;
+    first.set_live_map(&review_snapshot(100, true))?;
+    lock(&first.minimap).save()?;
+    assert!(lock(&second.minimap).create_mark_at((200, 200, -7))?);
+    let reopened = review_view(&root)?;
+    let map = lock(&reopened.minimap);
+    assert_eq!(map.cells.get(&(-7, 100, 200)), Some(&55));
+    assert_eq!(map.cells.get(&(-7, 200, 200)), Some(&55));
+    drop(map);
+    drop((first, second, reopened));
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+
+#[test]
+fn review_visible_clear_removes_older_unseen_cache_cell() -> Result<(), Box<dyn std::error::Error>>
+{
+    let root = std::env::temp_dir().join(format!("minimap-unseen-clear-{}", std::process::id()));
+    let mut first = review_view(&root)?;
+    let mut second = review_view(&root)?;
+    first.set_live_map(&review_snapshot(100, true))?;
+    lock(&first.minimap).save()?;
+    second.set_live_map(&review_snapshot(100, false))?;
+    assert!(lock(&second.minimap).create_mark_at((100, 200, -7))?);
+    assert!(!lock(&second.minimap).cells.contains_key(&(-7, 100, 200)));
+    let reopened = review_view(&root)?;
+    assert!(!lock(&reopened.minimap).cells.contains_key(&(-7, 100, 200)));
+    drop((first, second, reopened));
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+
+#[test]
+fn review_concurrent_exploration_limit_allows_marker_writes()
+-> Result<(), Box<dyn std::error::Error>> {
+    let root = std::env::temp_dir().join(format!("minimap-merge-limit-{}", std::process::id()));
+    let bootstrap = review_view(&root)?;
+    let path = lock(&bootstrap.minimap)
+        .path()
+        .ok_or("missing cache path")?;
+    let cells = (0..i32::try_from(MAX_CELLS - 1)?)
+        .map(|index| [-15, index / 65536, index % 65536, 55])
+        .collect();
+    drop(bootstrap);
+    Saved {
+        cells,
+        ..Saved::default()
+    }
+    .write_to(&path)?;
+    let mut first = review_view(&root)?;
+    let mut second = review_view(&root)?;
+    first.set_live_map(&review_snapshot(100, true))?;
+    lock(&second.minimap).saved_at = Instant::now();
+    second.set_live_map(&review_snapshot(200, true))?;
+    lock(&first.minimap).save()?;
+    assert!(lock(&second.minimap).create_mark_at((200, 200, -7))?);
+    lock(&second.minimap).edit_marker(200, 200, -7, "Gate".into(), 1)?;
+    let reopened = review_view(&root)?;
+    let map = lock(&reopened.minimap);
+    assert_eq!(map.cells.len(), MAX_CELLS);
+    assert!(map.cells.contains_key(&(-7, 100, 200)));
+    assert_eq!(map.markers[0].label, "Gate");
+    drop(map);
+    drop((first, second, reopened));
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
