@@ -267,6 +267,20 @@ QUALIFIED.update({FALCON_PREFIX + suffix:
     for suffix in FALCON_SOURCES})
 
 
+QUALIFIED.update({
+    "oteryn:reward-claim.kv.powerring1": "quest_catalogue_chests_qchk7_power_ring_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.rookgaard05_brown_mushrooms": "quest_catalogue_chests_qchk7_unlinked_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.scalearmor": "quest_catalogue_chests_qchk7_scale_armor_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.shamantreasure": "quest_catalogue_chests_qchk7_shaman_treasure_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.shortswordbook": "quest_catalogue_chests_qchk7_short_sword_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.silverbrooch": "quest_catalogue_chests_qchk7_silver_brooch_use_replay_and_refusal",
+    "oteryn:reward-claim.kv.witch_house_quest": "quest_catalogue_chests_qchk7_unlinked_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_3.serpentine_tower.white_pearl": "quest_catalogue_chests_qchk7_serpentine_tower_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_8.oriental_outfits.coral_comb": "quest_catalogue_chests_qchk7_oriental_outfits_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_1.what_afoolish_quest.bag_book_knife": "quest_catalogue_chests_qchk7_what_a_foolish_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_1.what_afoolish_quest.magical_watch": "quest_catalogue_chests_qchk7_what_a_foolish_use_replay_and_refusal",
+})
+
 def falcon_supported(definition):
     key = definition["identity"]["key"]
     expected = FALCON_SOURCES.get(key.removeprefix(FALCON_PREFIX)) if key.startswith(FALCON_PREFIX) else None
