@@ -797,7 +797,7 @@ jobs:
           set -euo pipefail
           python3 tools/qualification/node_boot/matrix.py plan --set pr > "$RUNNER_TEMP/shards.json"
           # Every shard boots against the reviewed Platform producer.
-          test "$(python3 -c 'import json,sys; print(" ".join(sorted({s["platform_ref"] for s in json.load(open(sys.argv[1]))})))' "$RUNNER_TEMP/shards.json")" = 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
+          test "$(python3 -c 'import json,sys; print(" ".join(sorted({s["platform_ref"] for s in json.load(open(sys.argv[1]))})))' "$RUNNER_TEMP/shards.json")" = 6d04b52a16145723eedb0c56640ad052dbd26e94
           printf 'shards=%s\n' "$(cat "$RUNNER_TEMP/shards.json")" >> "$GITHUB_OUTPUT"
 
   node_boot_shard:
