@@ -15,6 +15,7 @@ const QUEST: &str = "oteryn:quest.elemental_spheres_quest";
 const TRACK: &str = "oteryn:quest-progress/elemental_spheres/ashes-sampling";
 const KEY: &str = "oteryn:quest-reward/qespike/ashes-sample";
 const TOOL: &str = "oteryn:item.tibia.i5908";
+const SAMPLE: &str = "oteryn:item.tibia.i5878";
 const CREATURE: &str = "oteryn:creature.minotaur";
 
 #[test]
@@ -46,7 +47,7 @@ fn catalogue(revision: &str, minimum_age_ms: u32) -> TestResult<Arc<QuestStateCa
             "maximum_age_ms":60000,"reusable_tool":true,"speech":"You got Neutral matter."},
         "take":[],"per_occurrence_mint":true,
         "storage":[{"track":TRACK,"minimum":-1,"maximum":1,"set":1}],
-        "give":{"item":"oteryn:item.tibia.i5878","count":1},
+        "give":{"item":SAMPLE,"count":1},
         "reply":["You got Neutral matter."],
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/skinning.lua:259-268"]
     }))?;
@@ -110,8 +111,9 @@ pub(super) async fn exercise(
     let mut last = None;
     for (offset, earliest, hotkey, expected) in [
         (0, 30_000, false, UseDisposition::Rejected),
-        (1, 0, false, UseDisposition::Committed),
-        (2, 0, true, UseDisposition::Committed),
+        (1, 30_000, true, UseDisposition::Rejected),
+        (2, 0, false, UseDisposition::Committed),
+        (3, 0, true, UseDisposition::Committed),
     ] {
         owner.quest_catalogue = Some(catalogue(&content, earliest)?);
         owner.refresh_quest_session(session, false).await;
@@ -145,17 +147,32 @@ pub(super) async fn exercise(
     }
     let (command, intent) = last.ok_or("committed command")?;
     let replay = owner
-        .use_quest_tool(actor, command, intent, None, None)
+        .use_quest_tool(actor, command, intent.clone(), None, None)
         .await
         .map_err(debug)?
         .ok_or("reusable replay")?;
     assert_eq!(replay.disposition, UseDisposition::Committed);
-    let snapshot: (i64, i64, i64, i64) = sqlx::query_as(
+    let changed_target = UseIntent {
+        use_with_map_item: Some(MapUseTarget::Item(NonZeroU64::MAX)),
+        ..intent
+    };
+    let conflicting_replay = owner
+        .use_quest_tool(actor, command, changed_target, None, None)
+        .await
+        .map_err(debug)?
+        .ok_or("conflicting hotkey replay")?;
+    assert_eq!(conflicting_replay.disposition, UseDisposition::Rejected);
+    let snapshot: (i64, i64, i64, i64, i64, i64) = sqlx::query_as(
         "SELECT (SELECT count(*) FROM game_quest_corpse_samples WHERE transition_key=$1),
          (SELECT count(*) FROM game_quest_callback_consumptions WHERE transition_key=$1),
          (SELECT state_revision::bigint FROM game_item_instances WHERE item_instance_id=encode($2,'hex')::uuid),
-         (SELECT value FROM game_character_quest_tracks WHERE track_key=$3)",
-    ).bind(KEY).bind(corpse.as_slice()).bind(TRACK).fetch_one(&harness.pool).await?;
-    assert_eq!(snapshot, (2, 0, 1, 1));
+         (SELECT value FROM game_character_quest_tracks WHERE track_key=$3),
+         (SELECT i.quantity FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id)
+          WHERE i.item_instance_id=encode($4,'hex')::uuid AND i.lifecycle=1 AND e.character_id=encode($5,'hex')::uuid),
+         (SELECT coalesce(sum(i.quantity),0)::bigint FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id)
+          WHERE i.definition_production_key=$6 AND i.lifecycle=1 AND e.character_id=encode($5,'hex')::uuid)",
+    ).bind(KEY).bind(corpse.as_slice()).bind(TRACK).bind(id(71).as_slice()).bind(id(41).as_slice()).bind(SAMPLE)
+    .fetch_one(&harness.pool).await?;
+    assert_eq!(snapshot, (2, 0, 1, 1, 1, 2));
     Ok(())
 }
