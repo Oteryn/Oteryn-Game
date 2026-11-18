@@ -71,7 +71,7 @@ async fn exercise(h: &Harness) -> TestResult {
             .catalogue()
             .clone(),
     ));
-    let mut admitted = deps.admitted.clone();
+    let mut admitted = deps.admitted;
     owner
         .refresh_quest_session(admitted.game_session_id, true)
         .await;

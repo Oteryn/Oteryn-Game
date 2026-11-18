@@ -3,6 +3,8 @@ import hashlib
 import json
 QUEST='oteryn:quest.feaster_of_souls_quest'
 TRACK='oteryn:quest-progress/questpc7/feaster/programme'
+NORBERT = 'oteryn:npc.para_norbert'
+MISSION_TOPIC = 1
 PHASE_ROUTE_KEYS = frozenset({
     'oteryn:quest-callback/questpc7-feaster-entry',
     'oteryn:quest-callback/questpc7-feaster-purification-entry',
@@ -19,6 +21,13 @@ def state(key,lo,hi,value,preserve=False,add=None):
     if add is not None:r['add']=add
     return r
 DATA={'bells': [{'name': 'carlin', 'position': [32408, 31788, -7], 'appearance': 436, 'arrival': [32407, 31788, -7], 'path': 'content/world/placements/region-z07-x126-y124.b3', 'sha256': '71d0f001114257d94cc70fc7bf7405d0e7dc5f05266e71eb87cfab37ba0d43f6'}, {'name': 'ghostlands', 'position': [32177, 31836, -8], 'appearance': 3114, 'arrival': [32176, 31836, -8], 'path': 'content/world/placements/region-z08-x125-y124.b3', 'sha256': 'c470089dbd8903d3be04a5c95ce9bcba46df5eda62ea1401452af54789c09828'}, {'name': 'cathedral', 'position': [32629, 32417, -9], 'appearance': 409, 'arrival': [32628, 32417, -9], 'path': 'content/world/placements/region-z09-x127-y126.b3', 'sha256': 'e3c91c61d2da1374ab7e55826f36bb1bdd140171ec1ace1603b1fa8901181671'}], 'entry': {'position': [32627, 32076, -7], 'appearance': 231}, 'potion': {'position': [32625, 32076, -7], 'appearance': 231}, 'samples_return': {'position': [31915, 32354, -8], 'appearance': 1020}, 'souls_return': {'position': [31917, 32354, -8], 'appearance': 1020}, 'norbert': [32628, 32076, -7], 'norbert_approach': [32627, 32076, -7]}
+def mission_offer():
+    return dict(
+        npc=NORBERT, keywords=['mission'], topic=0, next_topic=MISSION_TOPIC,
+        storage=[state(TRACK, -1, -1, -1, True)], minimum_level=250,
+        reply=['Will you help me investigate what is happening in the Brain Grounds?'],
+    )
+
 def build(root):
     import questpc7_props
     props={r['name']:r for r in questpc7_props.SITES}
@@ -63,7 +72,15 @@ def build(root):
             [*sources, 'https://tibia.fandom.com/?curid=89657&oldid=1153851']
             if name == 'mission' else sources
         )
-        callbacks.append(dict(key='oteryn:quest-reward/questpc7-feaster-'+name,quest=QUEST,npc='oteryn:npc.para_norbert',keywords=[word],topic=0,next_topic=0,storage=[state(TRACK,before,before,after,before==after)]+extra,take=take,give=None if give is None else reward(name,give,1),outfit=None,achievement=None,reply=[reply],requirements=dict(requirements),sources=callback_sources))
+        callbacks.append(dict(
+            key='oteryn:quest-reward/questpc7-feaster-' + name,
+            quest=QUEST, npc=NORBERT, keywords=[word],
+            topic=MISSION_TOPIC if name == 'mission' else 0, next_topic=0,
+            storage=[state(TRACK, before, before, after, before == after)] + extra,
+            take=take, give=None if give is None else reward(name, give, 1),
+            outfit=None, achievement=None, reply=[reply],
+            requirements=dict(requirements), sources=callback_sources,
+        ))
     for row in worlds:
         if row['key'] in PHASE_ROUTE_KEYS:
             if row['requirements'] != requirements:

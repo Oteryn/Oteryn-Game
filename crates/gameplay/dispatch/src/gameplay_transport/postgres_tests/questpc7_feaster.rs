@@ -230,6 +230,22 @@ async fn word(
         super::grizzly_npc::wire::talk_refused(owner, a, npc, &commands).await
     }
 }
+async fn norbert_confirmation(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    a: &mut AdmittedSession,
+    npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+    accepted: bool,
+) -> TestResult {
+    let greeting = a.continuity.next_command_id;
+    let mission = greeting.checked_add(1).ok_or("command exhaustion")?;
+    let yes = mission.checked_add(1).ok_or("command exhaustion")?;
+    let commands = [(greeting, "hi"), (mission, "mission"), (yes, "yes")];
+    if accepted {
+        super::grizzly_npc::wire::talk(owner, a, npc, &commands).await
+    } else {
+        super::grizzly_npc::wire::talk_refused(owner, a, npc, &commands).await
+    }
+}
 pub(super) async fn begin(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     a: &mut AdmittedSession,
@@ -267,12 +283,17 @@ pub(super) async fn begin(
     assert_eq!(carried(h, 32582).await?, 0);
     let premium = owner.premium_coordinator;
     owner.premium_coordinator = None;
-    // TibiaWiki /Spoiler, curid 89657, oldid 1153851.
-    word(owner, a, npc, "yes", false).await?;
+    norbert_confirmation(owner, a, npc, false).await?;
     assert_eq!(value(owner, a, TRACK).await?, -1);
     assert_eq!(carried(h, 32582).await?, 0);
     owner.premium_coordinator = premium;
     word(owner, a, npc, "yes", true).await?;
+    assert_eq!(value(owner, a, TRACK).await?, -1, "unsolicited yes");
+    assert_eq!(carried(h, 32582).await?, 0);
+    word(owner, a, npc, "mission", true).await?;
+    assert_eq!(value(owner, a, TRACK).await?, -1, "unconfirmed offer");
+    assert_eq!(carried(h, 32582).await?, 0);
+    norbert_confirmation(owner, a, npc, true).await?;
     assert_eq!(value(owner, a, TRACK).await?, 0);
     assert_eq!(carried(h, 32582).await?, 1);
     Ok((rows,npc))
