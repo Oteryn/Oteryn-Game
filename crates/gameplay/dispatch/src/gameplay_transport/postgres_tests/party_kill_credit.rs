@@ -170,6 +170,9 @@ fn window_callback(at: MovementLocalPosition, case: Case) -> TestResult<Callback
     if case == Case::WindowVisual {
         callback["failure_teleport"] = json!({"x":x+4,"y":y,"floor":floor});
         callback["effects"]["death_window"]["open_appearance"] = json!(22761);
+        // Crystal creaturescripts_bosses_kill.lua:130 names CONST_ME_THUNDER.
+        // content/presentations/bindings/client-ids.json maps it to client ID 73.
+        callback["effects"]["death_window"]["open_effect"] = json!(73);
     }
     Ok(serde_json::from_value(callback)?)
 }
@@ -586,6 +589,19 @@ async fn exercise_window(
     if case == Case::WindowVisual {
         // The same decay owner runs on the live source cycle.
         let map = owner.bundle_map().ok_or("seal bundle map")?;
+        assert_eq!(
+            map.facts
+                .movement_effects_since(0)
+                .into_iter()
+                .filter(|(_, pos, effect)| {
+                    i32::from(pos.x) == portal.x
+                        && i32::from(pos.y) == portal.y
+                        && -i32::from(pos.floor) == i32::from(portal.floor)
+                        && *effect == 73
+                })
+                .count(),
+            1
+        );
         assert_eq!(portal_appearance(owner, portal)?, 22761);
         assert_eq!(map.facts.expire_movement_items(259_999_999), 0);
         assert_eq!(map.facts.expire_movement_items(260_000_000), 1);

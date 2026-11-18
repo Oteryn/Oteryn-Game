@@ -192,19 +192,14 @@ impl Exit {
 
 // Crystal 201189f8 Ferumbras creaturescripts_bosses_kill.lua:126-134.
 fn project_appearance(map: &BundleMap, callback: &Callback, now_ms: u64, due_ms: u64) -> bool {
-    let Some((position, closed, open)) = callback
-        .selector
-        .position
-        .zip(callback.selector.appearance)
-        .zip(
-            callback
-                .effects
-                .death_window
-                .as_ref()
-                .and_then(|window| window.open_appearance),
-        )
-        .map(|((position, closed), open)| (position, closed, open))
-    else {
+    let (Some(position), Some(closed), Some(window)) = (
+        callback.selector.position,
+        callback.selector.appearance,
+        callback.effects.death_window.as_ref(),
+    ) else {
+        return false;
+    };
+    let Some(open) = window.open_appearance else {
         return false;
     };
     let pos = crate::map::overlay::TilePos {
@@ -247,7 +242,7 @@ fn project_appearance(map: &BundleMap, callback: &Callback, now_ms: u64, due_ms:
     if before.appearance_id != closed || before.pickupable || after.pickupable {
         return false;
     }
-    map.facts.apply_quest_callback(
+    let changed = map.facts.apply_quest_callback(
         key,
         map.facts.object_revision(key),
         after,
@@ -260,5 +255,9 @@ fn project_appearance(map: &BundleMap, callback: &Callback, now_ms: u64, due_ms:
                 restore: before,
             },
         ),
-    )
+    );
+    if changed && let Some(effect) = window.open_effect {
+        map.facts.emit_movement_effect(pos, effect);
+    }
+    changed
 }

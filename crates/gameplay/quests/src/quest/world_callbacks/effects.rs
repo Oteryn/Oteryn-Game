@@ -165,6 +165,8 @@ pub struct DeathWindow {
     pub duration_ms: u32,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub open_appearance: Option<u16>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub open_effect: Option<u16>,
     /// Crystal 201189f8 movements_teleport_main.lua:191-196 consumes
     /// the shared boss state only when a player advances EnterTeleport.
     #[serde(default, skip_serializing_if = "is_false")]
@@ -194,6 +196,9 @@ impl DeathWindow {
             && (1..=8).contains(&self.required_deaths)
             && (1..=3_600_000).contains(&self.duration_ms)
             && self.open_appearance != Some(0)
+            && self
+                .open_effect
+                .is_none_or(|effect| self.open_appearance.is_some() && (1..=255).contains(&effect))
             && self.area.is_none_or(|area| area.valid())
             && self.creatures.iter().enumerate().all(|(index, key)| {
                 key.starts_with("oteryn:creature.")
