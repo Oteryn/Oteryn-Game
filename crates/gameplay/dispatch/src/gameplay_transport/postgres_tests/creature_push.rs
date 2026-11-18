@@ -190,9 +190,18 @@ fn creature_push_real_dispatch_moves_and_refuses_on_postgres() -> TestResult {
         .map_err(Into::into)
 }
 
-pub(super) fn scenario(seed: &'static str, unpushable: bool, trap: Option<u16>) -> Result<(), String> {
+pub(super) fn scenario(
+    seed: &'static str,
+    unpushable: bool,
+    trap: Option<u16>,
+) -> Result<(), String> {
     run(async |admin| {
-        let h = Harness::create_with_admission_seed(admin, seed, true, false).await?;
+        let merchant_loot = seed == "rottin_merchant_loot";
+        let h = if merchant_loot {
+            Harness::create_quest_reward(admin, seed, false).await?
+        } else {
+            Harness::create_with_admission_seed(admin, seed, true, false).await?
+        };
         prepare_current_session(&h).await?;
         // The pushed player is a second durable session (character 101, session 110).
         h.seed_pvp_target().await?;
@@ -247,12 +256,19 @@ pub(super) fn scenario(seed: &'static str, unpushable: bool, trap: Option<u16>) 
         let cells = world
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
-        let combat_room = deps.room.bundle_view(
-            cells.clone(),
-            pin.frame_binding().digest(),
-            world.map_revision_digest(),
-            crate::content::NativeEntryStart { x: 2, y: 2, floor: 7 },
-        ).ok_or("push combat room")?;
+        let combat_room = deps
+            .room
+            .bundle_view(
+                cells.clone(),
+                pin.frame_binding().digest(),
+                world.map_revision_digest(),
+                crate::content::NativeEntryStart {
+                    x: 2,
+                    y: 2,
+                    floor: 7,
+                },
+            )
+            .ok_or("push combat room")?;
         let channel_pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -279,17 +295,29 @@ pub(super) fn scenario(seed: &'static str, unpushable: bool, trap: Option<u16>) 
             .reserve_fresh_session(deps.admitted.game_session_id)
             .map_err(debug)?;
         deps.actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
-        let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
-            .current_session_at(deps.admitted.game_session_id).await?.0;
-        runtime.bind_attacker_lease(
-            deps.actor, deps.admitted.game_session_id, current.current_character_lease(),
-        ).map_err(debug)?;
+        let current =
+            crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
+                .current_session_at(deps.admitted.game_session_id)
+                .await?
+                .0;
+        runtime
+            .bind_attacker_lease(
+                deps.actor,
+                deps.admitted.game_session_id,
+                current.current_character_lease(),
+            )
+            .map_err(debug)?;
         runtime
             .initialize_pinned_test_position(deps.actor, at(2, 2))
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
+        if merchant_loot {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                super::rottin_bushwhacking::loot_catalogue()?,
+            ));
+        }
         owner.movement_cells = (&cells).into();
         owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&combat_room));
         let mut admitted = deps.admitted;
@@ -305,7 +333,13 @@ pub(super) fn scenario(seed: &'static str, unpushable: bool, trap: Option<u16>) 
         let (mut server, mut client) = tokio::io::duplex(1 << 20);
         let client_flow = async {
             let result = if trap == Some(12187) {
-                super::rottin_bushwhacking::exercise(&mut client, &owner, admitted).await
+                super::rottin_bushwhacking::exercise(
+                    &mut client,
+                    &owner,
+                    admitted,
+                    merchant_loot.then_some(&h),
+                )
+                .await
             } else if let Some(trap) = trap {
                 relocation_tiles_scenario(&mut client, &owner, admitted, trap).await
             } else if unpushable {
