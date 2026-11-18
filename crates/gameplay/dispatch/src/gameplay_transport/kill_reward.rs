@@ -16,6 +16,10 @@
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, MutexGuard, OnceLock};
 
+use oteryn_gameplay_encounters::bosses::boreth::native_death::{
+    BorethCarrierExt, BorethDeathLedger,
+};
+
 #[cfg(test)]
 use tokio::sync::Mutex as AsyncMutex;
 
@@ -391,6 +395,7 @@ struct RefusedSourceDrop {
 
 #[derive(Debug, Default)]
 struct KillQueueState {
+    boreth_deaths: BorethDeathLedger,
     /// Advisory deduplication follows the already bounded, exact corpse projections.
     analyser: Vec<(ExactActorRef, Arc<Mutex<super::analyser::DeathReceipts>>)>,
     boss_contributions: boss_reward_contribution::BossContributions,
@@ -1960,6 +1965,15 @@ pub fn record_creature_kill(
         .is_err()
     {
         return;
+    }
+    if runtime
+        .borrow_combat_death()
+        .creature_target_identity(target)
+        .is_ok_and(|identity| identity == b"oteryn:creature.boreth")
+        && let Err(error) =
+            runtime.commit_boreth_death(&mut sink.queue.state().boreth_deaths, target)
+    {
+        operator_event(&format!("boreth_death_cleanup_failed error={error:?}"));
     }
     if let Some(states) = sink.prey {
         states
