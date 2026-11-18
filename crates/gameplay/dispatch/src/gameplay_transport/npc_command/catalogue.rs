@@ -668,6 +668,12 @@ pub(super) async fn apply(
         Step::Held => return unknown(),
         Step::Commit(c) => *c,
     };
+    // The NPC ambush needs the local Channel turn through publication. A
+    // teleport hands that turn off to the departure owner, which cannot
+    // publish a local encounter as part of the transition.
+    if teleport.is_some() && spawn.is_some() {
+        return rejected();
+    }
     let (Some(item_fence), Some(catalogue)) =
         (command.item_fence, admission.quest_catalogue.as_ref())
     else {

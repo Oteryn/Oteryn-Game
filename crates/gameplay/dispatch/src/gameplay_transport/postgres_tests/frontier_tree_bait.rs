@@ -78,6 +78,13 @@ pub(super) async fn exercise(
         "sources":["synthetic target-item spawn engine fixture"],
         "tracks":[{"key":TRACK,"initial":0,"minimum":0,"maximum":1}],
         "stages":[{"key":"mark","completes":false,"trigger":{"kind":"map_use","callback":callback}}]}]});
+    // The tree stays in place in every donor branch. Reject a conflicting
+    // target mutation rather than committing storage and silently skipping it.
+    for (field, value) in [("target_remove", json!(true)), ("target_replacement", json!(2118))] {
+        let mut invalid = document.clone();
+        invalid["quests"][0]["stages"][0]["trigger"]["callback"]["item_on_target"][field] = value;
+        assert!(Bindings::parse(&serde_json::to_vec(&invalid)?).is_err(), "{field}");
+    }
     let bindings = Bindings::parse(&serde_json::to_vec(&document)?)?;
     let base = QuestStateCatalogue::empty("content-1").ok_or("revision")?;
     owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));

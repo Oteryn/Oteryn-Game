@@ -783,10 +783,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || callback.actor_kind != ActorKind::Player
             || callback.trigger != Trigger::Use
             || callback.selector.position.is_none()
-            || callback
-                .item_on_target
-                .as_ref()
-                .is_none_or(|tool| !tool.selected_instance)
+            || callback.item_on_target.as_ref().is_none_or(|tool| {
+                !tool.selected_instance || tool.target_remove || tool.target_replacement.is_some()
+            })
             || callback.lever.is_some()
             || callback.reversible
             || callback.teleport.is_some()

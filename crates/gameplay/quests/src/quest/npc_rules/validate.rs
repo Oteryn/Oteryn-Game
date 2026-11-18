@@ -348,6 +348,7 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                         rule.trigger == NpcRuleTrigger::Greet
                             && !rule.continue_matching
                             && !rule.completes
+                            && !rule.effects.iter().any(|effect| matches!(effect, NpcRuleEffect::Teleport { .. }))
                             && super::super::world_callbacks::valid_creature_spawn(creatures)
                             && rule.effects.iter().filter(|effect| matches!(effect, NpcRuleEffect::SpawnCreatures { .. })).count() == 1
                             && rule.effects.iter().any(|effect| matches!(effect, NpcRuleEffect::Set { track, value }

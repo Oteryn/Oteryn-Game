@@ -55,6 +55,12 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
         "key":"oteryn:quest-npc/avin-fixture/greet","quest":QUEST,"npc":GAMEL,"trigger":"greet",
         "effects":[],"reply":["Keep your voice down."],"sources":[SOURCE]
     }]});
+    let mut invalid = program.clone();
+    invalid["rules"][0]["effects"]
+        .as_array_mut()
+        .ok_or("ambush effects")?
+        .push(json!({"kind":"teleport","position":AT}));
+    assert!(NpcRuleCatalog::from_json_documents(&[&invalid.to_string()]).is_err());
     let source = NpcRuleCatalog::from_json_documents(&[&program.to_string()]).map_err(debug)?;
     let digest: String = source.programs()[0]
         .digest
