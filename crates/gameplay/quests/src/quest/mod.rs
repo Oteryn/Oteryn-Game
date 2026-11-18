@@ -430,6 +430,8 @@ pub struct QuestStateCatalogue {
     authored_bindings: Option<std::sync::Arc<authored_bindings::RuntimeBindings>>,
     npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
     predecessors: BTreeMap<String, Vec<NpcDefinitionPredecessor>>,
+    #[cfg(feature = "test-support")]
+    fixture_npc_rules: Option<npc_rules::NpcRuleCatalog>,
     native_recipe_evidence: Option<std::sync::Arc<authored_bindings::embedded::RecipeEvidence>>,
 }
 
@@ -620,8 +622,16 @@ impl QuestStateCatalogue {
             npc_legacy: BTreeMap::new(),
             predecessors: BTreeMap::new(),
             authored_bindings: None,
+            #[cfg(feature = "test-support")]
+            fixture_npc_rules: None,
             native_recipe_evidence: None,
         })
+    }
+
+    #[cfg(feature = "test-support")]
+    pub fn with_fixture_npc_rules(mut self, rules: npc_rules::NpcRuleCatalog) -> Self {
+        self.fixture_npc_rules = Some(rules);
+        self
     }
 
     /// This catalogue with one more code-built quest's tracks and transitions, every rule and

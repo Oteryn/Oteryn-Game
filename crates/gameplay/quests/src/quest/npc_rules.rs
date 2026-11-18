@@ -203,6 +203,13 @@ pub enum NpcRuleEffect {
         track: String,
         value: i64,
     },
+    /// Inclusive random storage assignment. The fenced NPC writer persists the draw.
+    /// Crystal 201189f8, data-global/npc/ongulf.lua:181-195.
+    SetRandom {
+        track: String,
+        minimum: i16,
+        maximum: i16,
+    },
     SetNowPlus {
         track: String,
         value: i64,
@@ -336,13 +343,13 @@ fn npc_false(value: &bool) -> bool {
     !*value
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcRuleProgram {
     pub document: NpcRuleDocument,
     pub digest: [u8; 32],
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct NpcRuleCatalog {
     programs: Vec<NpcRuleProgram>,
 }
@@ -547,7 +554,8 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.hero_of_rathleton_quest"
                                 | "oteryn:quest.hot_cuisine_quest"
                                 | "oteryn:quest.in_service_of_yalahar_quest"
-                                | "oteryn:quest.the_paradox_tower_quest"
+                                | "oteryn:quest.the_new_frontier_quest"
+                        | "oteryn:quest.the_paradox_tower_quest"
                                 | "oteryn:quest.marlin_trophy_quest"
                                 | "oteryn:quest.the_djinn_war_efreet_faction"
                                 | "oteryn:quest.the_djinn_war_marid_faction"
@@ -579,6 +587,16 @@ impl NpcRuleCatalog {
             })
             .as_ref()
             .map_err(Clone::clone)
+    }
+
+    /// Use a catalogue-local fixture when dispatch exercises an authored program in tests.
+    pub fn for_catalogue(native: &super::QuestStateCatalogue) -> Result<&Self, NpcRuleError> {
+        #[cfg(feature = "test-support")]
+        if let Some(source) = &native.fixture_npc_rules {
+            return Ok(source);
+        }
+        let _ = native;
+        Self::runtime()
     }
 
     #[must_use]

@@ -41,6 +41,7 @@ impl NpcRuleCatalog {
                 match effect {
                     NpcRuleEffect::Set { .. }
                     | NpcRuleEffect::SetNowPlus { .. }
+                    | NpcRuleEffect::SetRandom { .. }
                     | NpcRuleEffect::Add { .. }
                     | NpcRuleEffect::SetTopic { .. }
                     | NpcRuleEffect::EndConversation { .. }

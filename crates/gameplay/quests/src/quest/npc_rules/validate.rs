@@ -334,6 +334,12 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                         })
                     }
                     NpcRuleEffect::Add { track, .. } => tracks.contains_key(track),
+                    NpcRuleEffect::SetRandom { track, minimum, maximum } => {
+                        minimum <= maximum && tracks.get(track).is_some_and(|definition| {
+                            definition.min <= i64::from(*minimum)
+                                && definition.max >= i64::from(*maximum)
+                        })
+                    }
                     NpcRuleEffect::SetNowPlus { track, value } => {
                         tracks.contains_key(track) && *value >= 0
                     }

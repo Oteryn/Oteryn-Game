@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::hash::{BuildHasher, RandomState};
 
 use super::{
     MAX_NPC_EFFECTS, MAX_NPC_TRACK_CHANGES, NpcInventorySnapshot, NpcItemKey, NpcKeywordMode,
@@ -157,6 +158,25 @@ impl<'a> Staged<'a> {
                     .checked_add(*value)
                     .ok_or_else(|| NpcRuleError::Arithmetic(track.to_owned()))?;
                 self.set_track(track, result)?;
+            }
+            NpcRuleEffect::SetRandom {
+                track,
+                minimum,
+                maximum,
+            } => {
+                let minimum = i64::from(*minimum);
+                let width = u64::try_from(i64::from(*maximum) - minimum + 1)
+                    .ok()
+                    .filter(|width| *width > 0)
+                    .ok_or_else(|| NpcRuleError::Invalid("random assignment range".into()))?;
+                let random = RandomState::new();
+                let offset = (0_u64..8)
+                    .map(|attempt| random.hash_one(attempt))
+                    .find(|roll| *roll >= width.wrapping_neg() % width)
+                    .ok_or(NpcRuleError::LimitExceeded)?
+                    % width;
+                let value = i64::try_from(offset).map_err(|_| NpcRuleError::LimitExceeded)?;
+                self.set_track(track, minimum + value)?;
             }
             NpcRuleEffect::SetNowPlus { track, value } => {
                 let result = now
@@ -398,6 +418,7 @@ fn plan_with_teleport(
                             | NpcRuleEffect::Set { .. }
                             | NpcRuleEffect::Add { .. }
                             | NpcRuleEffect::SetNowPlus { .. }
+                            | NpcRuleEffect::SetRandom { .. }
                             | NpcRuleEffect::SetTopic { .. }
                             | NpcRuleEffect::EndConversation { .. }
                             | NpcRuleEffect::Experience { .. }

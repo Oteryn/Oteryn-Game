@@ -326,6 +326,7 @@ fn scenario_case(
                 | "authored-colours-opening"
                 | "catalogue-npc-father"
                 | "fathers-burden-handins"
+                | super::super::frontier_negotiation_keywords::NAME
                 | "catalogue-npc-hero"
                 | "catalogue-npc-legacy"
                 | "catalogue-npc-scoped"
@@ -2469,6 +2470,8 @@ fn scenario_case(
                 &h,
             ))
             .await?;
+        } else if name == super::super::frontier_negotiation_keywords::NAME {
+            Box::pin(super::super::frontier_negotiation_keywords::exercise(&mut owner, &admitted)).await?;
         } else if name == "engnpc-m04" {
             Box::pin(super::super::engnpc_m04_completion::exercise(
                 &mut owner,
