@@ -6,7 +6,7 @@ use super::{
 };
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::foundation::{ChannelRuntimeV1, CharacterId, CharacterLease};
-use crate::map::overlay::TilePos;
+use crate::map::{boot::BundleCollisionIndexExt, overlay::TilePos};
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
@@ -246,6 +246,23 @@ fn scenario() -> TestResult {
                     .map_err(debug)?;
                     origin = runtime.commit_source_step(approach).map_err(debug)?;
                 }
+                let portals = crate::gameplay_transport::quest_callbacks::CallbackPortals {
+                    inner: &closed,
+                    map: Some(map),
+                    callbacks: owner.callback_content(),
+                };
+                let guarded = crate::map::floor::prepare_bundle_step(
+                    &runtime,
+                    owner.movement_cells(),
+                    actor,
+                    session,
+                    origin,
+                    crate::movement::CardinalStep::North,
+                    false,
+                    &portals,
+                )
+                .map_err(debug)?;
+                assert_eq!(guarded.destination(), local(trigger));
                 let raw_portal = crate::map::floor::prepare_bundle_step(
                     &runtime,
                     owner.movement_cells(),
