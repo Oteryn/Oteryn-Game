@@ -13,6 +13,29 @@ use std::sync::Arc;
 pub(in crate::gameplay_transport) mod teleport;
 
 type Context = (u64, u64, String);
+
+/// Move the exact current source topic into the paid travel owner.
+pub(in crate::gameplay_transport) fn retire_source_travel_topic<T>(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+    actor: ExactActorRef,
+    npc: EntityRef,
+    context: &Context,
+    select: impl FnOnce(i32) -> Option<T>,
+) -> Option<T> {
+    let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
+    let state = sessions.get_mut(&session)?;
+    let Some(Pending::Topic(current)) = &state.catalogue else {
+        return None;
+    };
+    if &current.context != context || current.actor != actor || current.npc != npc {
+        return None;
+    }
+    let chosen = select(current.topic)?;
+    state.catalogue = None;
+    Some(chosen)
+}
+
 #[derive(Clone, PartialEq, Eq)]
 pub(super) struct Conversation {
     context: Context,

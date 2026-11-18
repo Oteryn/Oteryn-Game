@@ -90,6 +90,23 @@ pub struct ConditionalTravel {
     pub offer_reply: String,
     #[serde(default)]
     pub unavailable_reply: Option<String>,
+    /// Crystal buddel.lua:62-67 opens a paid offer after the ring is declined.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub declined_exchange: Option<DeclinedExchange>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cancel_reply: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct DeclinedExchange {
+    pub topic: i32,
+    pub reply: String,
+    pub progress: Vec<ProgressWindow>,
+}
+
+fn valid_reply(reply: &str) -> bool {
+    !reply.is_empty() && reply.len() <= 256 && !reply.contains(['\0', '\n', '\r'])
 }
 
 impl ConditionalTravel {
@@ -97,11 +114,14 @@ impl ConditionalTravel {
         (1..=8).contains(&self.progress.len())
             && self.progress.iter().all(ProgressWindow::valid)
             && self.diversion.valid()
-            && [&self.offer_reply]
-                .into_iter()
-                .chain(&self.unavailable_reply)
-                .all(|reply| {
-                    !reply.is_empty() && reply.len() <= 256 && !reply.contains(['\0', '\n', '\r'])
-                })
+            && valid_reply(&self.offer_reply)
+            && self.unavailable_reply.as_deref().is_none_or(valid_reply)
+            && self.cancel_reply.as_deref().is_none_or(valid_reply)
+            && self.declined_exchange.as_ref().is_none_or(|offer| {
+                offer.topic > 0
+                    && valid_reply(&offer.reply)
+                    && offer.progress.len() <= 8
+                    && offer.progress.iter().all(ProgressWindow::valid)
+            })
     }
 }

@@ -142,6 +142,7 @@ pub(super) async fn request(
         revision_ref: "definition-r1".into(),
     };
     Ok(PaidTravelRequest {
+        declined_exchange: false,
         command: CommandRef::new(session, CommandId::new(command).map_err(debug)?),
         arrival: crate::durability::npc_travel::PendingArrival {
             occurrence,

@@ -16,6 +16,7 @@ pub(super) struct Prompt {
     opened: u64,
     route: TravelRoute,
     fare: u64,
+    declined_exchange: bool,
 }
 
 fn refusal(intent: &NpcTalkIntent, cause: TravelRefusal) -> npc_command::NpcTalkOutcome {
@@ -135,7 +136,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(mut prompts) => prompts.remove(&session),
             Err(_) => return ordinary,
         };
-        let prompt = if text == "yes" {
+        let contains = |word: &str| {
+            text.split(|c: char| !c.is_alphanumeric())
+                .any(|token| token == word)
+        };
+        if contains("no")
+            && let Some(prompt) = &previous
+            && prompt.matches_confirmation(intent.npc_actor, &context, fence, now)
+            && let Some(reply) = prompt
+                .route
+                .conditional
+                .as_ref()
+                .and_then(|policy| policy.cancel_reply.as_ref())
+        {
+            return npc_command::NpcConversations::bank_reply(intent, reply.clone());
+        }
+        let prompt = if text == "yes"
+            || (contains("yes")
+                && previous
+                    .as_ref()
+                    .is_some_and(|prompt| prompt.route.conditional.is_some()))
+        {
             let Some(prompt) = previous else {
                 return ordinary;
             };
@@ -145,10 +166,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             prompt
         } else {
             // Match the complete authored destination, including spaces and apostrophes.
-            let Some(route) = routes
-                .into_iter()
-                .find(|route| text == route.keyword || text == route.route.key.replace('_', " "))
-            else {
+            let declined = if contains("no") && previous.is_none() {
+                npc_command::catalogue::retire_source_travel_topic(
+                    self,
+                    session,
+                    actor,
+                    intent.npc_actor,
+                    &context,
+                    |topic| {
+                        let mut matching = routes.iter().filter(|route| {
+                            route
+                                .conditional
+                                .as_ref()
+                                .and_then(|policy| policy.declined_exchange.as_ref())
+                                .is_some_and(|offer| offer.topic == topic)
+                        });
+                        let route = matching.next()?;
+                        matching.next().is_none().then(|| route.clone())
+                    },
+                )
+            } else {
+                None
+            };
+            let declined_exchange = declined.is_some();
+            let Some(route) = declined.or_else(|| {
+                routes.into_iter().find(|route| {
+                    text == route.keyword || text == route.route.key.replace('_', " ")
+                })
+            }) else {
                 return ordinary;
             };
             let Ok(Some(current)) = self.current_quest_fence(session).await else {
@@ -159,12 +204,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let fare = match self
                 .root
-                .quote_npc_travel(
+                .quote_npc_travel_offer(
                     self.character,
                     self.holder,
                     current,
                     route.clone(),
                     &self.premium_coordinator,
+                    declined_exchange,
                 )
                 .await
             {
@@ -194,7 +240,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         route.keyword
                     )
                 },
-                |policy| policy.offer_reply.clone(),
+                |policy| {
+                    policy
+                        .declined_exchange
+                        .as_ref()
+                        .filter(|_| declined_exchange)
+                        .map_or_else(|| policy.offer_reply.clone(), |offer| offer.reply.clone())
+                },
             );
             if let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock() {
                 prompts.insert(
@@ -206,6 +258,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         opened: now,
                         route,
                         fare,
+                        declined_exchange,
                     },
                 );
             }
@@ -416,6 +469,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let occurrence = TravelOccurrence::from_bytes(derive(0)).ok()?;
         Some(PaidTravelRequest {
+            declined_exchange: prompt.declined_exchange,
             command: crate::foundation::CommandRef::new(
                 command.game_session_id,
                 crate::foundation::CommandId::new(command.command_id).ok()?,

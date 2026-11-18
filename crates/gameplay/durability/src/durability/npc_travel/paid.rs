@@ -50,12 +50,14 @@ pub struct PaidTravelRequest {
     pub arrival: PendingArrival,
     pub route: TravelRoute,
     pub fee: FeeBurnRequest,
+    pub declined_exchange: bool,
 }
 
 async fn quote(
     tx: &mut Type2Transaction<'_>,
     fence: CurrentCharacterGameplayFence,
     route: &TravelRoute,
+    declined_exchange: bool,
 ) -> Result<Result<u64, TravelRefusal>, DurabilityError> {
     if route.held
         || route.route.price > 1_000_000
@@ -63,11 +65,20 @@ async fn quote(
     {
         return Ok(Err(TravelRefusal::UnavailableRoute));
     }
+    if declined_exchange && route.conditional.as_ref()
+        .is_none_or(|policy| policy.declined_exchange.is_none()) {
+        return Ok(Err(TravelRefusal::UnavailableRoute));
+    }
     if let Some(conditional) = &route.conditional {
         if !conditional.valid() {
             return Ok(Err(TravelRefusal::UnavailableRoute));
         }
-        for guard in &conditional.progress {
+        let guards = if declined_exchange {
+            &conditional.declined_exchange.as_ref().ok_or(DurabilityError::InvalidStoredState)?.progress
+        } else {
+            &conditional.progress
+        };
+        for guard in guards {
             let value: Option<i64> = sqlx::query_scalar(
                 "SELECT value FROM game_character_quest_tracks
                  WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
@@ -172,6 +183,18 @@ impl DurabilityRoot {
         route: TravelRoute,
         gate: &G,
     ) -> Result<Result<u64, TravelRefusal>, CharacterProgressionError> {
+        self.quote_npc_travel_offer(authority, node, fence, route, gate, false).await
+    }
+
+    pub async fn quote_npc_travel_offer<G: NpcTravelGate>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        route: TravelRoute,
+        gate: &G,
+        declined_exchange: bool,
+    ) -> Result<Result<u64, TravelRefusal>, CharacterProgressionError> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
@@ -190,7 +213,7 @@ impl DurabilityRoot {
                     if !permitted {
                         return Ok(Ok(Err(TravelRefusal::PremiumRequired)));
                     }
-                    let result = quote(&mut tx, fence, &route).await?;
+                    let result = quote(&mut tx, fence, &route, declined_exchange).await?;
                     tx.commit(deadline).await?;
                     Ok(Ok(result))
                 })
@@ -246,6 +269,7 @@ impl DurabilityRoot {
                 hash.update(b"conditional-npc-travel:v1");
                 hash.update((bytes.len() as u64).to_be_bytes());
                 hash.update(bytes);
+                if request.declined_exchange { hash.update(b"declined-exchange"); }
             }
             for text in [&route.service, &route.route.key, &route.keyword, &route.route.destination.coordinate_frame] {
                 hash.update((text.len() as u64).to_be_bytes());
@@ -285,7 +309,7 @@ impl DurabilityRoot {
                 return Ok(Ok(Ok(pending.filter(|row| row.occurrence==arrival.occurrence))));
             }
             if !permitted {return Ok(Ok(Err(TravelRefusal::PremiumRequired)));}
-            let fare = match quote(&mut tx, fence, route).await? {Ok(fare)=>fare,Err(refusal)=>return Ok(Ok(Err(refusal)))};
+            let fare = match quote(&mut tx, fence, route, request.declined_exchange).await? {Ok(fare)=>fare,Err(refusal)=>return Ok(Ok(Err(refusal)))};
             if fare!=request.fee.fee_gold_units {return Ok(Ok(Err(TravelRefusal::StaleQuote)));}
             if fare>0 {
                 match burn_fee_in_transaction(&mut tx,&fence,&request.fee).await {

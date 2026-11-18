@@ -126,6 +126,8 @@ pub(super) async fn exercise(
             diversion: diversion.clone(),
             offer_reply: denied.into(),
             unavailable_reply: Some(denied.into()),
+            declined_exchange: None,
+            cancel_reply: None,
         }),
     });
     owner

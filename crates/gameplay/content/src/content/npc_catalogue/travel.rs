@@ -13,7 +13,7 @@ pub use return_policy::TravelReturnRequirement;
 
 #[path = "travel_conditional.rs"]
 mod conditional;
-pub use conditional::{ConditionalTravel, Diversion, ProgressWindow, TravelCell};
+pub use conditional::{ConditionalTravel, DeclinedExchange, Diversion, ProgressWindow, TravelCell};
 include!(concat!(env!("OUT_DIR"), "/conditional_npc_travel.rs"));
 
 /// A paid ticket's purchase time is a Quest-owned Unix-second track.
