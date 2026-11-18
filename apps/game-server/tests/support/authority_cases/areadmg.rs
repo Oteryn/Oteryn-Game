@@ -22,8 +22,7 @@ use oteryn_protocol_oteryn::{
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-#[path = "engnpc2_paint_transport/world.rs"]
-mod world;
+use crate::engnpc2_paint_transport::world;
 type TestResult<T = ()> = fixture::TestResult<T>;
 
 #[derive(Clone, Copy, Debug)]
@@ -113,7 +112,7 @@ fn make_world(
     channel: ChannelId,
     case: Case,
 ) -> TestResult<oteryn_gameplay_world::map::boot::BundleWorld> {
-    use self::world::{ExpectedTeleport, ExpectedTile, NativeCrop};
+    use world::{ExpectedTeleport, ExpectedTile, NativeCrop};
     if matches!(case, Case::PitsMatching | Case::PitsOther) {
         return world::native_scene_with(
             native,
