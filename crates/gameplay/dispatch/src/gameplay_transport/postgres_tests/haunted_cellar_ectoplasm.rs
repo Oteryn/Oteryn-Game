@@ -52,9 +52,13 @@ pub(super) fn binding() -> TestResult<Callback> {
             "reusable":true,"selected_instance":true
         },
         "storage":[{"track":STARTED,"minimum":1,"maximum":6,"set":1,"preserve":true}],
-        "effects":{"transform":233,"roll_tool":{"outcomes":11,"minimum_success":5,"rearm_step_ms":60000,
+        "effects":{"transform":233,"roll_tool":{"outcomes":11,"minimum_success":5,
+            "rearm_step_ms":60000,"rearm_minimum_ms":100,
             "success_effect":21,"failure_effect":3,"stages":[stage]}},
-        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_dream_courts/actions_strange_bucket.lua:16-59"]
+        "sources":[
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_dream_courts/actions_strange_bucket.lua:16-59",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/lua/functions/core/game/global_functions.cpp:710"
+        ]
     }))?)
 }
 
@@ -197,7 +201,7 @@ pub(super) async fn exercise(
         .revision();
     let first = admitted.continuity.next_command_id;
     let roll = callback.effects.roll_tool.as_ref().ok_or("roll tool")?;
-    let (command, draw) = (first..first + 64)
+    let (command, draw) = (first..first + 128)
         .map(|ordinal| {
             let draw = roll.draw(
                 USE,
@@ -208,7 +212,7 @@ pub(super) async fn exercise(
             );
             (ordinal, draw)
         })
-        .find(|&(_, draw)| draw > 0 && (draw >= u64::from(roll.minimum_success)) == won)
+        .find(|&(_, draw)| if won { draw >= 5 } else { draw == 0 })
         .ok_or("fixture roll occurrence")?;
     let mut submitted = owner.owner_now().get();
     for ordinal in first..=command {
@@ -258,7 +262,7 @@ pub(super) async fn exercise(
     .await?;
     assert_eq!(proofs, (i64::from(won), i64::from(!won)));
     let due = map.facts.next_movement_decay_time().ok_or("egg rearm")?;
-    let rearm = draw * 60_000_000;
+    let rearm = (draw * 60_000_000).max(100_000);
     assert!((submitted + rearm..=owner.owner_now().get() + rearm).contains(&due));
     assert_eq!(map.facts.expire_movement_items(due - 1), 0);
     assert_eq!(map.facts.expire_movement_items(due), 1);

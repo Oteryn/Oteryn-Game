@@ -1215,16 +1215,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let QuestCause::Use(command) = cause else {
                     return UseDisposition::Rejected;
                 };
-                Some(
-                    u64::from(tool.rearm_step_ms)
-                        * tool.draw(
-                            &callback.key,
-                            command.game_session_id().as_bytes(),
-                            command.command_id().get(),
-                            &context.actor_placement,
-                            context.movement_revision,
-                        ),
-                )
+                let draw = tool.draw(
+                    &callback.key,
+                    command.game_session_id().as_bytes(),
+                    command.command_id().get(),
+                    &context.actor_placement,
+                    context.movement_revision,
+                );
+                Some(tool.rearm_delay_ms(draw))
             } else {
                 None
             };

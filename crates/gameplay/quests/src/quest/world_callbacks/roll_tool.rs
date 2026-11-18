@@ -17,6 +17,8 @@ pub struct RollTool {
     pub outcomes: u8,
     pub minimum_success: u8,
     pub rearm_step_ms: u32,
+    /// Crystal src/lua/functions/core/game/global_functions.cpp:710 clamps addEvent.
+    pub rearm_minimum_ms: u32,
     pub success_effect: u16,
     pub failure_effect: u16,
     pub stages: Vec<RollToolStage>,
@@ -43,6 +45,7 @@ impl RollTool {
         (2..=100).contains(&self.outcomes)
             && (1..self.outcomes).contains(&self.minimum_success)
             && self.rearm_step_ms > 0
+            && (1..=self.rearm_step_ms).contains(&self.rearm_minimum_ms)
             && u64::from(self.outcomes - 1) * u64::from(self.rearm_step_ms) <= 3_600_000
             && (1..=255).contains(&self.success_effect)
             && (1..=255).contains(&self.failure_effect)
@@ -121,5 +124,9 @@ impl RollTool {
 
     pub fn stage(&self, source: &str) -> Option<&RollToolStage> {
         self.stages.iter().find(|stage| stage.source == source)
+    }
+
+    pub fn rearm_delay_ms(&self, draw: u64) -> u64 {
+        (draw * u64::from(self.rearm_step_ms)).max(u64::from(self.rearm_minimum_ms))
     }
 }
