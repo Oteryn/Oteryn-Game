@@ -2729,7 +2729,7 @@ impl ChannelSpellStates {
                     refused: false,
                 } => {
                     if !tick.provenance.is_unattributed()
-                        && !super::spell_periodic::is_environment_damage(&tick.provenance)
+                        && !spell_periodic::is_environment_damage(&tick.provenance)
                         && (tick.provenance.source_kind != ConditionSourceKind::Creature
                             || !tick
                                 .provenance

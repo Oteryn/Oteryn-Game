@@ -112,8 +112,8 @@ fn combine_elements(
 pub(super) fn is_environment_damage(
     provenance: &oteryn_gameplay_foundation::foundation::condition::ConditionProvenance<String>,
 ) -> bool {
-    super::paced_movement::underwater_drown::is_environment_drown(provenance)
-        || super::npc_command::is_npc_fire_damage(provenance)
+    crate::gameplay_transport::paced_movement::underwater_drown::is_environment_drown(provenance)
+        || crate::gameplay_transport::npc_command::is_npc_fire_damage(provenance)
 }
 
 impl ChannelSpellStates {
