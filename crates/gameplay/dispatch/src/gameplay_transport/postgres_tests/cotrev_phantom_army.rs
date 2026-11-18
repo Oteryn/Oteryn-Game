@@ -93,6 +93,8 @@ fn scenario(admin: String) -> TestResult {
             &[(open, compact(open)?)],
         );
         let mut data = oteryn_world_bundle::bundle::read(&template)?;
+        // The spell-tile projection requires a source appearance for every entry.
+        data.manifest.palette[0].key = "oteryn:terrain.tibia.i293".into();
         data.manifest.world.min_x = 33240;
         data.manifest.world.min_y = 31070;
         data.manifest.world.max_x = 33355;
@@ -211,15 +213,6 @@ fn scenario(admin: String) -> TestResult {
             content_pin,
         )
         .map_err(debug)?;
-        runtime
-            .install_companion_policies(native.policies().clone())
-            .map_err(debug)?;
-        for species in [
-            "oteryn:creature.eternal_guardian",
-            "oteryn:creature.lizard_chosen",
-        ] {
-            runtime.companion_policy(species).map_err(debug)?;
-        }
         let reservation = runtime
             .reserve_fresh_session(deps.admitted.game_session_id)
             .map_err(debug)?;
