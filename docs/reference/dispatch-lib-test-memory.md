@@ -2,9 +2,10 @@
 
 The dispatch lib-test crate hits the 16 GiB memory limit during rustc
 codegen. A package-only test profile builds and links all 4,339 tests
-at 15.58 GiB with one Cargo job. Two concurrent codegen workers still
-exhaust the budget at 256 codegen units. Splitting the generated PostgreSQL mount is
-the tested structural alternative with more memory headroom. Its
+at 15.58 GiB with one Cargo job. Both two-job trials exhausted the
+budget. The serial workflow proposal applies the measured job limit
+to the CI archive and library steps that still use Cargo defaults.
+Splitting the generated PostgreSQL mount offers more headroom. Its
 two scratch executables cover the complete test registry and peak at
 14.52 GiB per process.
 
@@ -31,6 +32,7 @@ durability checks passed. The focused case used that retained cluster.
 | Dispatch lib test with the combined package profile, dependencies cached | 1 | 16,340,144 | 1296.471 | Linked and listed 4,339 tests (4,341 output lines) |
 | Dispatch LLD replay with the combined package profile | — | 4,846,628 | 40.141 | Linked |
 | Dispatch lib test with the combined package profile, dependencies cached | 2 | 16,393,060 | 1005.117 | rustc SIGKILL with two LLVM workers |
+| Dispatch lib test with 512 units, dependencies cached | 2 | ≥16,393,384 | 647.152 | OOM counter increased before Cargo was stopped |
 | Dispatch lib test, 32 codegen units, dependencies cached | 1 | 16,551,756 | 622.273 | rustc SIGKILL before link |
 | Dispatch MIR-only replay, incremental retained | 1 | 16,660,920 | 688.945 | emitted MIR, then OOM-killed |
 | Dispatch lib test, incremental off | 2 | 16,581,872 | 306.471 | rustc SIGKILL before link |
@@ -232,10 +234,12 @@ contains 4,341 lines and lists all 4,339 tests. This is the first
 package-only trial to produce the complete dispatch executable.
 At two Cargo jobs, the checked-in profile with 256 units reached
 16,393,060 KiB and was OOM-killed in 1,005.117 s. The last sample
-showed concurrent optimization workers for two codegen units. A
-512-unit trial tests whether smaller units fit at two jobs. The
-hosted-runner margin remains unverified. Focused formatting and
-locked Cargo metadata checks passed.
+showed concurrent optimization workers for two codegen units. At 512
+units with two jobs, dispatch rustc reached a sampled high-water mark
+of 16,393,384 KiB and the cgroup OOM-kill counter increased again. Cargo
+was stopped at 647.152 s under the owner's environment rule, so the
+sampled compiler RSS is a lower bound. The checked-in profile keeps
+256 units, the configuration with a complete executable at one job.
 
 The linked dispatch test executable is 1,259,914,408 bytes. The final
 link received 241 rlibs (1,487,495,302 bytes) and 258 objects
@@ -282,6 +286,23 @@ library jobs had different outcomes: `lib-rest` completed successfully
 while `lib-content` reached 55 minutes with its test step open. These CI
 statuses establish where the jobs stopped. The local cgroup counter and
 process measurements establish the reproduced OOM.
+
+## Validation and remaining checks
+
+| Check | Result |
+| --- | --- |
+| Dispatch formatting and locked workspace metadata | Passed before the environment rule took effect |
+| Dispatch lib build and inventory, one Cargo job | Passed, 4,339 tests and 4,341 output lines |
+| Retained offline-death retry against PostgreSQL 18.6 | Passed in 76.76 s |
+| Default and tuned dispatch lib builds, two Cargo jobs | Hit the cgroup OOM limit |
+| Clippy and game-server lib with the checked-in profile | Pending on the owner's PC |
+| Hosted archive with the serial workflow proposal | Pending |
+
+The game-server baseline listed 861 tests in 863 output lines. The PC
+can check the profile with the dispatch and game-server lib builds and
+their `--list` output at one Cargo job, then run the exact retained
+offline-death case through dispatch and Clippy for
+`oteryn-gameplay-dispatch`.
 
 ## Workflow proposal for the serial profile
 
