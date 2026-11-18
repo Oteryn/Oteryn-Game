@@ -376,13 +376,17 @@ pub(super) async fn exercise_mission(
 }
 
 pub(super) async fn use_quest_tool(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     pos: TilePos,
     ordinal: u8,
     command_id: u64,
     source: u8,
 ) -> TestResult<UseDisposition> {
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_millis(250))
+        .ok_or("world action clock")?;
     let actor = admitted.runtime_actor.ok_or("tool user")?;
     let map = owner.bundle_map().ok_or("map")?;
     let key = crate::map::view::placement_key(pos, ordinal).ok_or("tool target site")?;

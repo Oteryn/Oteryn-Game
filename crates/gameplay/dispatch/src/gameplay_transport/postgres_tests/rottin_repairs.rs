@@ -131,8 +131,6 @@ pub(super) async fn exercise(
     h: &Harness,
     handyman: bool,
 ) -> TestResult {
-    let [npc] = install(owner, &admitted, [ROTTIN]).await?;
-    talk(owner, &admitted, npc, 1601, "hi").await?;
     let before_xp = experience(h).await?;
     let wall = TilePos {
         x: 3,
@@ -185,8 +183,10 @@ pub(super) async fn exercise(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!((fixed, retained), (6, 2));
+    let [npc] = install(owner, &admitted, [ROTTIN]).await?;
+    talk(owner, &admitted, npc, 1605, "hi").await?;
     assert_eq!(
-        talk(owner, &admitted, npc, 1605, "yes").await?,
+        talk(owner, &admitted, npc, 1606, "yes").await?,
         ["You repaired the walls."]
     );
     assert_eq!(experience(h).await?, before_xp + 500);
