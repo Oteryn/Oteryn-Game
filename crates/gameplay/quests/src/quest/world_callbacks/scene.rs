@@ -3,6 +3,67 @@ use super::*;
 
 pub const MAX_SCENE_EDITS: usize = 32;
 
+pub const EARTH_TREE: Position = Position {
+    x: 32737,
+    y: 32116,
+    floor: -10,
+};
+pub const EARTH_TREE_PORTAL: Position = Position {
+    x: 32736,
+    y: 32117,
+    floor: -10,
+};
+pub const EARTH_TREE_CHAMBER: Position = Position {
+    x: 32720,
+    y: 32927,
+    floor: -14,
+};
+pub const EARTH_TREE_RETURN: Position = Position {
+    x: 32737,
+    y: 32117,
+    floor: -10,
+};
+pub const EARTH_TREE_REQUIREMENTS: [(&str, i64); 2] = [
+    (
+        "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/bird_counter",
+        3,
+    ),
+    (
+        "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/plant_counter",
+        5,
+    ),
+];
+
+/// The Crystal world-tree action borrows a phial and shares one one-minute scene.
+pub fn earth_tree_scene(callback: &Callback) -> bool {
+    callback.quest == "oteryn:quest.forgotten_knowledge_quest"
+        && callback.selector.position == Some(EARTH_TREE)
+        && callback.selector.appearance == Some(6180)
+        && callback.lever.is_none()
+        && !callback.reversible
+        && callback.item_on_target.as_ref().is_some_and(|tool| {
+            tool.item == "oteryn:item.tibia.i23810"
+                && tool.alternatives.is_empty()
+                && tool.count == 1
+                && tool.reusable
+                && tool.selected_instance
+                && tool.ingredients.is_empty()
+                && tool.replacement.is_none()
+                && tool.target_replacement.is_none()
+                && !tool.target_remove
+        })
+        && callback.storage.len() == EARTH_TREE_REQUIREMENTS.len()
+        && callback.operation_count() == 0
+        && EARTH_TREE_REQUIREMENTS.iter().all(|(key, minimum)| {
+            callback.storage.iter().any(|state| {
+                state.track == *key
+                    && state.minimum == *minimum
+                    && state.maximum == i64::from(i32::MAX)
+                    && state.preserve
+            })
+        })
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct SceneEdit {
@@ -51,15 +112,34 @@ pub struct SceneEdits {
 }
 
 pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
+    let timed_tree = earth_tree_scene(callback);
     let valid = |edits: &[SceneEdit]| {
-        edits.len() <= MAX_SCENE_EDITS
-            && edits
-                .iter()
-                .map(|edit| (edit.position, edit.remove))
-                .collect::<BTreeSet<_>>()
-                .len()
-                == edits.len()
+        let limit = if timed_tree { 512 } else { MAX_SCENE_EDITS };
+        edits.len() <= limit
+            && (timed_tree
+                || edits
+                    .iter()
+                    .map(|edit| (edit.position, edit.remove))
+                    .collect::<BTreeSet<_>>()
+                    .len()
+                    == edits.len())
             && edits.iter().all(|edit| {
+                if timed_tree {
+                    let at = edit.position;
+                    if !(at.floor == -11
+                        && (32731..=32745).contains(&at.x)
+                        && (32108..=32121).contains(&at.y))
+                        && at != EARTH_TREE_PORTAL
+                        && at
+                            != (Position {
+                                x: 32737,
+                                y: 32114,
+                                floor: -10,
+                            })
+                    {
+                        return false;
+                    }
+                }
                 (-15..=0).contains(&edit.position.floor)
                     && callback.selector.position != Some(edit.position)
                     && (edit.remove.is_some() || edit.create.is_some())
@@ -103,11 +183,11 @@ pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
                 })
         });
     callback.trigger == Trigger::Use
-        && callback.lever.is_some()
+        && (callback.lever.is_some() || timed_tree)
         && callback.passages.is_empty()
         && callback.teleport.is_none()
         && callback.offerings.is_empty()
-        && callback.item_on_target.is_none()
+        && (callback.item_on_target.is_none() || timed_tree)
         && callback.native_rule.is_none()
         && callback.experience.is_none()
         && callback.monk_reward.is_none()
@@ -121,6 +201,7 @@ pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
         && (!scene.open.is_empty() || scene.remove_self)
         && (!scene.remove_self || (!callback.reversible && scene.close.is_empty()))
         && (!callback.reversible || !scene.close.is_empty())
+        && (!timed_tree || (scene.close.is_empty() && !scene.remove_self))
         && relocation_valid
         && (scene.relocations.is_empty()
             || (scene.evacuate_open.is_empty() && scene.evacuate_close.is_empty()))

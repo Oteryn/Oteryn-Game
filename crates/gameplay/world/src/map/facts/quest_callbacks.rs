@@ -61,6 +61,9 @@ struct MovementDecay {
     overlay: Option<(bool, Option<bool>)>,
 }
 
+#[path = "quest_world_tree.rs"]
+mod world_tree;
+
 #[derive(Clone, Debug)]
 struct DynamicPortal {
     owner: u64,
@@ -96,6 +99,13 @@ pub enum QuestCallbackProjection {
         after: EntryFacts,
         restore: EntryFacts,
         due: u64,
+    },
+    /// Publish a bounded scene and temporary entrance under one source revision.
+    TimedScene {
+        due: u64,
+        mutations: Vec<QuestSceneMutation>,
+        originals: BTreeMap<u64, EntryFacts>,
+        portal: (TilePos, TilePos, EntryFacts),
     },
     /// Restore a bounded remote group independently of the source lever deadline.
     TimedPassages {
@@ -157,6 +167,7 @@ pub(super) struct CallbackStates {
     pub(super) creature_visuals: std::collections::VecDeque<(u64, CreatureVisualKind)>,
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
+    scene_decays: BTreeMap<(u64, u64), world_tree::SceneDecay>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
     batch_blockers: BTreeSet<TilePos>,
@@ -451,11 +462,21 @@ impl CallbackStates {
                     self.presences.insert(owner, (*position, entry));
                 }
             }
+            QuestCallbackProjection::TimedScene {
+                due,
+                mutations,
+                originals,
+                portal,
+            } => {
+                if close || !self.project_timed_scene(owner, *due, mutations, originals, *portal) {
+                    return false;
+                }
+            }
             QuestCallbackProjection::Scene {
                 mutations,
                 remove_self,
             } => {
-                if !project_scene(self, owner, mutations, *remove_self) {
+                if !project_scene(self, owner, mutations, *remove_self, 32) {
                     return false;
                 }
             }
@@ -530,6 +551,11 @@ impl CallbackStates {
             + self.actions.len()
             + self.hidden.len()
             + self.movement_decays.len()
+            + self
+                .scene_decays
+                .values()
+                .map(world_tree::SceneDecay::footprint)
+                .sum::<usize>()
             + self.movement_effects.len()
             + self.creature_visuals.len()
             + self.movement_speech.len()
@@ -836,6 +862,7 @@ impl BundleFacts {
             .map(|((due, _), _)| *due)
             .into_iter()
             .chain(states.portals.values().filter_map(|p| p.expires))
+            .chain(states.scene_decays.keys().map(|(due, _)| *due))
             .min()
     }
 
@@ -846,7 +873,7 @@ impl BundleFacts {
             return 0;
         };
         let states = Arc::make_mut(&mut states);
-        let mut changed = 0;
+        let mut changed = states.expire_timed_scenes(now);
         let expired: BTreeSet<_> = states
             .portals
             .values()
@@ -1702,6 +1729,9 @@ impl BundleFacts {
             Some(QuestCallbackProjection::Scene { mutations, .. }) => {
                 mutations.len().saturating_mul(3).saturating_add(1)
             }
+            Some(QuestCallbackProjection::TimedScene { mutations, .. }) => {
+                mutations.len().saturating_mul(5).saturating_add(4)
+            }
             _ => usize::from(projection.is_some()) * 8,
         };
         if states
@@ -1735,7 +1765,13 @@ impl BundleFacts {
                 QuestCallbackProjection::TimedEntrance { position, .. } => {
                     states.position_reserved(*position)
                 }
-                QuestCallbackProjection::Scene { mutations, .. } => {
+                QuestCallbackProjection::TimedScene { portal, .. }
+                    if states.position_reserved(portal.0) =>
+                {
+                    true
+                }
+                QuestCallbackProjection::Scene { mutations, .. }
+                | QuestCallbackProjection::TimedScene { mutations, .. } => {
                     mutations.iter().any(|mutation| match mutation {
                         QuestSceneMutation::Restore { key, .. }
                         | QuestSceneMutation::Remove { key, .. }
@@ -2066,8 +2102,9 @@ fn project_scene(
     owner: u64,
     edits: &[QuestSceneMutation],
     remove_self: bool,
+    limit: usize,
 ) -> bool {
-    if edits.len() > 32 {
+    if edits.len() > limit {
         return false;
     }
     for edit in edits {

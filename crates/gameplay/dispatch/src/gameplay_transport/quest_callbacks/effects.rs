@@ -156,13 +156,52 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let earth_tree = if pos == tile(world_callbacks::EARTH_TREE_PORTAL)
+            && map
+                .facts
+                .quest_portal_destination(pos, self.owner_now().get())
+                == Some(tile(world_callbacks::EARTH_TREE_CHAMBER))
+        {
+            let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+                return entered;
+            };
+            let Ok(progress) = self
+                .root
+                .read_character_quest_state(self.character, fence.character_id)
+                .await
+            else {
+                return entered;
+            };
+            Some(
+                world_callbacks::EARTH_TREE_REQUIREMENTS
+                    .iter()
+                    .all(|(track, minimum)| {
+                        progress
+                            .tracks()
+                            .get(*track)
+                            .is_some_and(|value| value >= minimum)
+                    }),
+            )
+        } else {
+            None
+        };
         let destination = || {
+            let projected = map
+                .facts
+                .quest_portal_destination(pos, self.owner_now().get());
             if let Some(access) = replica {
-                replica_portal_destination(access)
-            } else {
-                map.facts
-                    .quest_portal_destination(pos, self.owner_now().get())
+                return if projected == Some(REPLICA_CHAMBER) {
+                    replica_portal_destination(access)
+                } else {
+                    None
+                };
             }
+            if earth_tree == Some(false)
+                && projected == Some(tile(world_callbacks::EARTH_TREE_CHAMBER))
+            {
+                return Some(tile(world_callbacks::EARTH_TREE_RETURN));
+            }
+            projected
         };
         let Some(to) = destination() else {
             return entered;
@@ -203,7 +242,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::super::pvp_live::pz_blocked(&states, actor, session, self.owner_now());
-        let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+        let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport_facing(
             &runtime,
             &self.movement_cells,
             actor,
@@ -216,6 +255,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }),
             blocked,
             &closed,
+            (earth_tree == Some(false)).then_some(crate::foundation::MovementFacing::South),
         ) else {
             return entered;
         };
@@ -224,6 +264,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if let Some(access) = replica {
             self.announce_replica_portal(map, session, access, to);
+        }
+        if let Some(qualified) = earth_tree {
+            if qualified {
+                map.facts.emit_movement_effect(to, 45);
+            } else {
+                map.facts.emit_movement_effect(pos, 11);
+                map.facts.emit_movement_effect(to, 11);
+                self.states.chat.push_quest_feedback(
+                    session,
+                    "Grow five birches and free three parrots to enter.",
+                );
+            }
         }
         if pos == tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::SOURCE)
             && to == tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::DESTINATION)

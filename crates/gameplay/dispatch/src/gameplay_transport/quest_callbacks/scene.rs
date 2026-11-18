@@ -24,6 +24,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }) {
             return Err(UseDisposition::Rejected);
         }
+        let timed_tree = world_callbacks::earth_tree_scene(callback);
+        let mut selected = std::collections::BTreeSet::new();
+        let mut originals = std::collections::BTreeMap::new();
         let mut mutations = Vec::new();
         for edit in edits {
             let at = tile(edit.position);
@@ -46,20 +49,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         let ordinal = u8::try_from(ordinal).ok()?;
                         let key = placement_key(at, ordinal)?;
                         let facts = map.facts.base_entry(at, ordinal, *id)?;
-                        (facts.appearance_id == appearance && !map.facts.base_hidden(key))
-                            .then_some((key, map.facts.object_revision(key)))
+                        (facts.appearance_id == appearance
+                            && !map.facts.base_hidden(key)
+                            && (!timed_tree || !selected.contains(&key)))
+                        .then_some((key, map.facts.object_revision(key), facts))
                     });
                 let first = candidates.next();
-                if candidates.next().is_some() {
+                if !timed_tree && candidates.next().is_some() {
                     return Err(UseDisposition::Rejected);
                 }
-                if first.is_none() {
+                if let Some((key, _, facts)) = first {
+                    selected.insert(key);
+                    if timed_tree {
+                        originals.insert(key, facts);
+                    }
+                } else {
                     if edit.allow_missing {
                         continue;
                     }
                     return Err(UseDisposition::Rejected);
                 }
-                first
+                first.map(|(key, revision, _)| (key, revision))
             } else {
                 None
             };
@@ -74,7 +84,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .transpose()?;
             // Restoring a removed source object retains its placement identity and
             // revision; it does not manufacture another overlay object on every toggle.
-            if source.is_none()
+            if !timed_tree
+                && source.is_none()
                 && edit.remove.is_none()
                 && let (Some(facts), Some(passable)) = (created, edit.passable)
             {
@@ -122,6 +133,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
                 _ => return Err(UseDisposition::Rejected),
             });
+        }
+        if timed_tree {
+            let at = tile(world_callbacks::EARTH_TREE_PORTAL);
+            let to = tile(world_callbacks::EARTH_TREE_CHAMBER);
+            if [at, to].into_iter().any(|position| {
+                map.facts.house_tile(position)
+                    || map
+                        .overlay
+                        .base()
+                        .tile(position.x, position.y, position.floor)
+                        .is_none()
+            }) {
+                return Err(UseDisposition::Rejected);
+            }
+            if map
+                .facts
+                .quest_portal_destination(at, self.owner_now().get())
+                .is_some()
+            {
+                return Err(UseDisposition::Occupied);
+            }
+            let portal = map
+                .facts
+                .movement_item_facts(775)
+                .filter(|facts| !facts.pickupable)
+                .ok_or(UseDisposition::Rejected)?;
+            let due = self
+                .owner_now()
+                .get()
+                .checked_add(60_000_000)
+                .ok_or(UseDisposition::Exhausted)?;
+            return Ok(Some(QuestCallbackProjection::TimedScene {
+                due,
+                mutations,
+                originals,
+                portal: (at, to, portal),
+            }));
         }
         Ok(Some(QuestCallbackProjection::Scene {
             mutations,
