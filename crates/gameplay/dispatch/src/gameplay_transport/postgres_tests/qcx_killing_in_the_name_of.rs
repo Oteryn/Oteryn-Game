@@ -3,7 +3,12 @@ use super::TestResult;
 use super::fixture::Harness;
 use super::grizzly_npc::{holy_icon, scenario, seed, value, wire::talk};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
+use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef, GameSessionId};
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
+use oteryn_gameplay_entities::carrier::soul_war_player_source::{
+    CurrentSoulWarPlayerSourceProof, SoulWarPlayerSourceFacts, SoulWarPlayerSourceOrigin,
+    source_proof_seal,
+};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::grizzly_adams as quest;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
@@ -80,6 +85,73 @@ async fn experience(h: &Harness) -> TestResult<i64> {
     .await?)
 }
 
+// The fixture room is outside Soul War. The ordinary combat commit still needs
+// the current player facts for Infernal Demon's lethal Fourth Taint callback.
+struct OutsideSoulWarSource {
+    actor: ExactActorRef,
+    command: CommandRef,
+    now: u64,
+    facts: SoulWarPlayerSourceFacts,
+}
+
+impl source_proof_seal::Sealed for OutsideSoulWarSource {}
+
+impl CurrentSoulWarPlayerSourceProof for OutsideSoulWarSource {
+    fn current_facts(
+        &self,
+        _: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command: Option<CommandRef>,
+        now: u64,
+    ) -> Option<SoulWarPlayerSourceFacts> {
+        (actor == self.actor
+            && session == self.command.game_session_id()
+            && command == Some(self.command)
+            && now == self.now)
+            .then_some(self.facts)
+    }
+}
+
+async fn prepare_infernal_demon_killer(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    command: u64,
+) -> TestResult {
+    use super::fixture::debug;
+
+    let actor = admitted.runtime_actor.ok_or("hunter")?;
+    let session = admitted.game_session_id;
+    let command = CommandRef::new(session, CommandId::new(command).map_err(debug)?);
+    let now = owner.owner_now().get();
+    owner.states.test_owner_time.store(
+        now.checked_add(1).ok_or("fixture owner time")?,
+        std::sync::atomic::Ordering::Relaxed,
+    );
+
+    let mut runtime = owner.runtime.lock().await;
+    let states = owner.states.spell_states.lock().await;
+    let state = states
+        .get(&runtime, actor, session)
+        .ok_or("hunter casting state")?;
+    let proof = OutsideSoulWarSource {
+        actor,
+        command,
+        now,
+        facts: SoulWarPlayerSourceFacts {
+            vocation: state.facts.vocation,
+            taints: 0,
+            realm: None,
+            before_revision: state.revision(),
+            origin: SoulWarPlayerSourceOrigin::Combat,
+        },
+    };
+    runtime
+        .install_current_soul_war_player_source(actor, session, Some(command), now, &proof)
+        .map_err(|error| format!("Infernal Demon lethal source: {error:?}"))?;
+    Ok(())
+}
+
 // TibiaWiki Spoiler, curid 36696, oldid 1206121, ranked task tables.
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn exercise(
@@ -107,12 +179,14 @@ pub(super) async fn exercise(
         native
             .install_companion_policies(&mut *owner.runtime.lock().await)
             .map_err(super::fixture::debug)?;
+        let attack_command = 100;
+        prepare_infernal_demon_killer(owner, admitted, attack_command).await?;
         super::grizzly_npc::questpc8_campaign::hunt(
             owner,
             admitted,
             "oteryn:creature.infernal_demon",
             1,
-            100,
+            attack_command,
         )
         .await?;
         assert_eq!(
