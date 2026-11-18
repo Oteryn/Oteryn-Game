@@ -1764,14 +1764,11 @@ fn scenario_case(
             || name.ends_with("-expiry")
             || name == "triangle-tower-lever"
         {
-            assert!(
-                owner
-                    .states
-                    .quest_callbacks
-                    .fixture
-                    .set(vec![callback.clone()])
-                    .is_ok()
-            );
+            let mut fixture = vec![callback.clone()];
+            if earth_birch {
+                fixture.push(super::super::fknow_earth::watering()?);
+            }
+            assert!(owner.states.quest_callbacks.fixture.set(fixture).is_ok());
         }
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;

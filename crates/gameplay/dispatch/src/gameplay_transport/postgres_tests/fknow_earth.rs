@@ -11,6 +11,7 @@ const AT: Position = Position {
     y: 32116,
     floor: -10,
 };
+const PLANTING_SOIL: u16 = 23814;
 const SEEDLING: u16 = 23816;
 const BIRCH: u16 = 23815;
 const SOIL: u16 = 26482;
@@ -27,23 +28,31 @@ fn fknow_earth_birch_expires_to_soil_after_use() -> TestResult {
 }
 
 pub(super) fn callback() -> TestResult<Callback> {
+    stage("plant-birch", PLANTING_SOIL, SEEDLING, "415-426")
+}
+
+pub(super) fn watering() -> TestResult<Callback> {
+    stage("grow-birch", SEEDLING, BIRCH, "425-431")
+}
+
+fn stage(name: &str, from: u16, to: u16, lines: &str) -> TestResult<Callback> {
     Ok(serde_json::from_value(serde_json::json!({
-        "key": "oteryn:quest-callback/forgotten-knowledge/grow-birch",
+        "key": format!("oteryn:quest-callback/forgotten-knowledge/{name}"),
         "quest": "oteryn:quest.forgotten_knowledge_quest",
         "trigger": "use",
-        "selector": { "position": AT, "appearance": SEEDLING },
+        "selector": { "position": AT, "appearance": from },
         "reversible": false,
         "passages": [],
-        "effects": { "transform": BIRCH, "reset_after_ms": 600000, "reset_appearance": SOIL },
+        "effects": { "transform": to, "reset_after_ms": 600000, "reset_appearance": SOIL },
         "storage": [],
         "offerings": [],
         "return_on_failure": false,
-        "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/forgotten_knowledge/actions_plant.lua:425-431"]
+        "sources": [format!("crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/forgotten_knowledge/actions_plant.lua:{lines}")]
     }))?)
 }
 
 pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
-    quest_world_callbacks::world_with_objects(callback, AT, &[], &[BIRCH, SOIL])
+    quest_world_callbacks::world_with_objects(callback, AT, &[], &[BIRCH, SEEDLING, SOIL])
 }
 
 pub(super) async fn exercise(
@@ -73,22 +82,38 @@ pub(super) async fn exercise(
             .ok_or("birch facts")?
             .appearance_id)
     };
-    assert_eq!(appearance()?, SEEDLING);
+    assert_eq!(appearance()?, PLANTING_SOIL);
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
-    let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget {
-        placement,
-        expected_revision: 0,
-    })
-    .map_err(debug)?;
-    let command = admitted.continuity.next_command_id;
-    let reply = quest_world_callbacks::wire(owner, admitted, command, 2, payload).await?;
-    assert_eq!(
-        oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
-        UseDisposition::Committed
-    );
-    assert_eq!(appearance()?, BIRCH);
+    for (revision, placed, now) in [(0, SEEDLING, 5_000_000), (1, BIRCH, 6_000_000)] {
+        owner
+            .states
+            .test_owner_time
+            .store(now + 1, std::sync::atomic::Ordering::Relaxed);
+        super::m44_source_lifecycle::wait_for_world_action(owner, admitted).await?;
+        let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget {
+            placement: placement.clone(),
+            expected_revision: revision,
+        })
+        .map_err(debug)?;
+        let command = admitted.continuity.next_command_id;
+        let reply = quest_world_callbacks::wire(owner, admitted, command, 2, payload).await?;
+        assert_eq!(
+            oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
+            UseDisposition::Committed
+        );
+        assert_eq!(appearance()?, placed);
+    }
+    let planting_due = map
+        .facts
+        .next_movement_decay_time()
+        .ok_or("planting timer")?;
+    assert_eq!(planting_due, 605_000_000);
+    assert_eq!(map.facts.expire_movement_items(planting_due), 0);
+    assert_eq!(appearance()?, BIRCH, "the first timer cannot undo watering");
+
     let due = map.facts.next_movement_decay_time().ok_or("birch timer")?;
+    assert_eq!(due, 606_000_000);
     assert_eq!(map.facts.expire_movement_items(due - 1), 0);
     assert_eq!(map.facts.expire_movement_items(due), 1);
     assert_eq!(appearance()?, SOIL);
