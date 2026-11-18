@@ -46,6 +46,18 @@ pub fn protect(
     })
 }
 
+/// Clear an existing source gate for this exact native actor.
+pub fn release(runtime: &mut ChannelRuntimeV1, actor: ExactActorRef) -> Result<(), CarrierError> {
+    runtime.owner_fence()?;
+    if !runtime.contains_live_creature(actor) {
+        return Err(CarrierError::CreatureTargetMismatch);
+    }
+    runtime.with_encounter_hooks::<DamageGates, _, CarrierError>(|_, gates| {
+        gates.actors.retain(|current| *current != actor);
+        Ok(())
+    })
+}
+
 impl EncounterHooks for DamageGates {
     fn clone_hooks(&self) -> Box<dyn EncounterHooks> {
         Box::new(self.clone())

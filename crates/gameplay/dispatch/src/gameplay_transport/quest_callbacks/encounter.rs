@@ -19,6 +19,7 @@ pub(super) struct EncounterVisit {
     creatures: Vec<ExactActorRef>,
     expires: Option<VisitExpiry>,
     arrival_due: Option<u64>,
+    threshold: Option<super::super::encounter_phases::threshold::Threshold>,
     owner_scope: (
         crate::foundation::RuntimeScopeRefV1,
         crate::foundation::ScopeOwnershipGeneration,
@@ -58,6 +59,62 @@ impl EncounterVisit {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) fn tick_quest_encounter_thresholds(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+    ) {
+        let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
+            return;
+        };
+        let now = self.owner_now().get();
+        let scope = runtime.encounter_owner_scope();
+        for visit in visits.iter_mut().filter(|visit| {
+            visit.owner_scope == scope
+                && visit
+                    .expires
+                    .as_ref()
+                    .is_some_and(|expiry| expiry.due > now)
+        }) {
+            if let Some(phase) = &mut visit.threshold
+                && let Ok(actors) = phase.tick(runtime)
+            {
+                visit.creatures.extend(actors);
+            }
+        }
+    }
+
+    pub(super) fn release_quest_encounter(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        source: &str,
+        at: MovementLocalPosition,
+    ) -> UseDisposition {
+        let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
+            return UseDisposition::Rejected;
+        };
+        let scope = runtime.encounter_owner_scope();
+        let now = self.owner_now().get();
+        if visits.iter_mut().any(|visit| {
+            visit.owner_scope == scope
+                && visit
+                    .expires
+                    .as_ref()
+                    .is_some_and(|expiry| expiry.due > now)
+                && visit.participants.contains(&(actor, session))
+                && room_contains(&visit.room, at)
+                && visit
+                    .threshold
+                    .as_mut()
+                    .is_some_and(|phase| phase.release(runtime, source).is_ok())
+        }) {
+            UseDisposition::Committed
+        } else {
+            UseDisposition::NothingToUse
+        }
+    }
+
     pub(in crate::gameplay_transport) fn encounter_blocks_channel_switch(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -395,6 +452,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if encounter.phase
                     == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults)
                     || encounter.linked_arrival.is_some()
+                    || callback.effects.threshold_rearm.is_some()
                 {
                     continue;
                 }
@@ -497,7 +555,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .linked_arrival
                     .as_ref()
                     .map(|link| (link.exit, link.time_limit_ms))
+            })
+            .or_else(|| {
+                callback
+                    .effects
+                    .threshold_rearm
+                    .as_ref()
+                    .map(|phase| (phase.exit, phase.time_limit_ms))
             });
+        if callback
+            .effects
+            .threshold_rearm
+            .as_ref()
+            .is_some_and(|phase| {
+                phase
+                    .summons
+                    .iter()
+                    .any(|key| runtime.companion_policy(key).is_err())
+            })
+        {
+            return UseDisposition::Rejected;
+        }
         let expiration = if let Some((exit, time_limit_ms)) = visit_lifetime {
             let Some(due) = self
                 .owner_now()
@@ -668,10 +746,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 creatures: actors.clone(),
                 expires: expiration,
                 arrival_due,
+                threshold: callback
+                    .effects
+                    .threshold_rearm
+                    .as_ref()
+                    .zip(actors.first().copied())
+                    .map(|(spec, boss)| {
+                        super::super::encounter_phases::threshold::Threshold::bind(
+                            &callback.key,
+                            spec,
+                            boss,
+                        )
+                    }),
                 owner_scope: runtime.encounter_owner_scope(),
             });
         }
-        if encounter.solo_expiry.is_some() || arrival_due.is_some() {
+        if encounter.solo_expiry.is_some()
+            || arrival_due.is_some()
+            || callback.effects.threshold_rearm.is_some()
+        {
             states.owner_wake.notify_one();
         }
         drop(visits);

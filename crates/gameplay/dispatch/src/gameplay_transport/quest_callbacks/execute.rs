@@ -221,6 +221,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if close && callback.lever.is_some() && !callback.reversible {
             return UseDisposition::NothingToUse;
         }
+        if let Some(source) = &callback.effects.release_encounter {
+            let Ok(current) = runtime.read_actor_position(actor) else {
+                return UseDisposition::Rejected;
+            };
+            return self.release_quest_encounter(
+                runtime,
+                actor,
+                session,
+                source,
+                current.position(),
+            );
+        }
         if let Some(roll) = &callback.effects.roll_reward
             && !map
                 .facts

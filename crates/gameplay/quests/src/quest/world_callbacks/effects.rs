@@ -56,6 +56,11 @@ pub struct CallbackEffects {
     pub roll_reward: Option<RollReward>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub roll_tool: Option<RollTool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub threshold_rearm: Option<ThresholdRearm>,
+    /// A shared switch's qualified STEP releases the damage gate of one room.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub release_encounter: Option<String>,
     /// Distinct carried definitions consumed atomically by the Quest receipt owner.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
@@ -429,6 +434,17 @@ pub struct SoloEncounterExpiry {
     pub cooldown_seconds: u64,
 }
 
+/// Crystal 201189f the_dream_courts/creaturescripts_faceless_bane.lua:11-28.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ThresholdRearm {
+    pub health_percent: u8,
+    pub restores: u8,
+    pub summons: Vec<String>,
+    pub exit: Position,
+    pub time_limit_ms: u32,
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub enum EncounterPhase {
     #[serde(rename = "cults_boss_phase_closures")]
@@ -517,6 +533,26 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
     let effects = &callback.effects;
+    if effects.release_encounter.as_deref().is_some_and(|key| {
+        !key.starts_with("oteryn:quest-callback/")
+            || !super::super::valid_quest_key(key)
+            || key == callback.key
+            || callback.trigger != Trigger::StepIn
+            || callback.actor_kind != ActorKind::Player
+            || callback.selector.native.is_none()
+            || callback.requires_durable_commit()
+            || callback.teleport.is_some()
+            || !callback.passages.is_empty()
+            || callback.lever.is_some()
+            || *effects
+                != CallbackEffects {
+                    release_encounter: Some(key.into()),
+                    ..Default::default()
+                }
+    }) || (effects.threshold_rearm.is_some() && effects.encounter.is_none())
+    {
+        return false;
+    }
     if effects
         .roll_reward
         .as_ref()
@@ -1059,8 +1095,33 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_from: BTreeSet<_> = encounter.players.iter().map(|p| p.from).collect();
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
-        let source_party =
-            encounter.phase == Some(EncounterPhase::Cults) || encounter.linked_arrival.is_some();
+        let source_party = encounter.phase == Some(EncounterPhase::Cults)
+            || encounter.linked_arrival.is_some()
+            || effects.threshold_rearm.is_some();
+        if effects.threshold_rearm.as_ref().is_some_and(|phase| {
+            callback.trigger != Trigger::Use
+                || callback.actor_kind != ActorKind::Player
+                || callback.selector.native.is_none()
+                || callback.lever.is_some()
+                || encounter.solo_expiry.is_some()
+                || encounter.linked_arrival.is_some()
+                || encounter.timing.is_some()
+                || encounter.phase.is_some()
+                || encounter.monsters.len() != 1
+                || !(1..=99).contains(&phase.health_percent)
+                || !(1..=8).contains(&phase.restores)
+                || !(1..=8).contains(&phase.summons.len())
+                || phase.summons.iter().any(|creature| {
+                    !creature.starts_with("oteryn:creature.")
+                        || !super::super::valid_quest_key(creature)
+                        || creature == &encounter.monsters[0].creature
+                })
+                || !pos(phase.exit)
+                || in_room(phase.exit)
+                || !(1..=3_600_000).contains(&phase.time_limit_ms)
+        }) {
+            return false;
+        }
         if encounter.linked_arrival.as_ref().is_some_and(|link| {
             callback.trigger != Trigger::Use
                 || callback.actor_kind != ActorKind::Player

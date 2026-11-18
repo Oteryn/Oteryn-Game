@@ -377,6 +377,18 @@ impl ChannelRuntimeV1 {
         monsters: &[(&str, i64, MovementLocalPosition)],
         project: impl FnOnce() -> bool,
     ) -> Result<Vec<ExactActorRef>, CarrierError> {
+        self.commit_quest_creature_spawn_with_owner(monsters, |_, _| {
+            project().then_some(()).ok_or(CarrierError::PlanConflict)
+        })
+        .map(|(actors, ())| actors)
+    }
+
+    /// Stage encounter summons and their source phase in one carrier commit.
+    pub fn commit_quest_creature_spawn_with_owner<T>(
+        &mut self,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        bind: impl FnOnce(&mut Self, &[ExactActorRef]) -> Result<T, CarrierError>,
+    ) -> Result<(Vec<ExactActorRef>, T), CarrierError> {
         if monsters.is_empty() || monsters.len() > 8 {
             return Err(CarrierError::PlanConflict);
         }
@@ -391,10 +403,8 @@ impl ChannelRuntimeV1 {
                 self.install_creature_policy(actor, key)?;
                 actors.push(actor);
             }
-            if !project() {
-                return Err(CarrierError::PlanConflict);
-            }
-            Ok(actors)
+            let phase = bind(self, &actors)?;
+            Ok((actors, phase))
         })();
         if result.is_err() {
             self.carrier = before;
