@@ -304,8 +304,7 @@ impl ActivityHandoffOwner {
         self.enter_inner(authority, node, request, EntryMode::Boss { window_ms: None }, premium).await
     }
 
-    /// Admit one entrant to a boss activity window, opening the room on the
-    /// first admission. The room catalogue sets the capacity.
+    /// Admit one entrant to a Warzone window. The room catalogue sets the capacity.
     pub async fn enter_boss_admission_window(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -313,6 +312,16 @@ impl ActivityHandoffOwner {
         request: ActivityEnterRequest,
         window_ms: std::num::NonZeroU32,
     ) -> Result<ActivityEnterOutcome> {
+        if window_ms.get() != 8_000
+            || !matches!(
+                request.activity_key.as_str(),
+                "oteryn:boss.the_baron_from_below"
+                    | "oteryn:boss.the_count_of_the_core"
+                    | "oteryn:boss.the_duke_of_the_depths"
+            )
+        {
+            return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::InvalidInput));
+        }
         self.enter_inner(
             authority, node, request, EntryMode::Boss { window_ms: Some(window_ms) },
             &super::quest_state::grizzly::NoGrizzlyPremium,

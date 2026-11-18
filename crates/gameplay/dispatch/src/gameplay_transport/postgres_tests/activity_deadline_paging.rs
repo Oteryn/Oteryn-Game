@@ -26,6 +26,7 @@ use crate::gameplay_transport::item_fence_of;
 // Isolated fixture data still passes the existing cooldown owner's ProductionKey
 // validation, which rejects fixture/test markers. This does not activate content.
 const BOSS: &str = "oteryn:boss.activity_deadline_paging";
+const WARZONE_BOSS: &str = "oteryn:boss.the_baron_from_below";
 
 #[test]
 fn activity_deadline_paging_postgres_blocked_and_foreign_first_page() -> TestResult {
@@ -74,10 +75,10 @@ fn window_scenario(admin: String) -> TestResult {
 
 async fn window_case(h: &Harness) -> TestResult {
     let (evidence, mut first) = prepare_activity_fixture(h).await?;
-    first.activity_key = BOSS.into();
+    first.activity_key = WARZONE_BOSS.into();
     first.time_limit_ms = 9_000;
     let world = first.destination_scope.world_id();
-    install_pager_room(h, &first, 2, 36_000, 9).await?;
+    install_pager_room(h, &first, 3, 36_000, 9).await?;
     let owner = ActivityHandoffOwner::new(h.root.clone());
     let store = FreshAdmissionStore::from_root(h.root.clone());
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -91,6 +92,17 @@ async fn window_case(h: &Harness) -> TestResult {
     member.destination_transport =
         Some(AuthenticatedTransportRefV1::decode(&[91; 16]).map_err(debug)?);
     second.initiating_character_id =
+        CharacterId::decode(member.source.character_id.as_bytes()).map_err(debug)?;
+
+    let late_session = admit_member(h, &evidence.evidence, 2).await?;
+    let mut late = second.clone();
+    let member = &mut late.participants[0];
+    member.source = item_fence_of(store.current_session_at(late_session).await?.0)
+        .ok_or("late source fence")?;
+    member.destination_game_session_id = GameSessionId::decode(&id(94)).map_err(debug)?;
+    member.destination_transport =
+        Some(AuthenticatedTransportRefV1::decode(&[94; 16]).map_err(debug)?);
+    late.initiating_character_id =
         CharacterId::decode(member.source.character_id.as_bytes()).map_err(debug)?;
 
     let mut competing = second.clone();
@@ -107,8 +119,19 @@ async fn window_case(h: &Harness) -> TestResult {
     ).fetch_one(&h.pool).await?;
     h.root.set_test_quest_clock(clock)?;
     let window = std::num::NonZeroU32::new(8_000).ok_or("nonzero enrollment window")?;
+    let wrong_duration = std::num::NonZeroU32::new(7_000).ok_or("nonzero enrollment window")?;
+    assert_eq!(
+        owner.enter_boss_admission_window(&authority, &h.node, first.clone(), wrong_duration).await?,
+        ActivityEnterOutcome::Refused(ActivityRefusal::InvalidInput)
+    );
+    let mut other_activity = first.clone();
+    other_activity.activity_key = BOSS.into();
+    assert_eq!(
+        owner.enter_boss_admission_window(&authority, &h.node, other_activity, window).await?,
+        ActivityEnterOutcome::Refused(ActivityRefusal::InvalidInput)
+    );
     let second_source = second.participants[0].source;
-    assert!(owner.open_portal_room(&authority, &h.node, second_source, BOSS).await?.is_none());
+    assert!(owner.open_portal_room(&authority, &h.node, second_source, WARZONE_BOSS).await?.is_none());
     for request in [&first, &second] {
         let account: String = sqlx::query_scalar(
             "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
@@ -116,7 +139,7 @@ async fn window_case(h: &Harness) -> TestResult {
         evidence.evidence.refresh_account(&h.root, &h.node, &account).await.map_err(debug)?;
         if request.initiating_character_id == second.initiating_character_id {
             let (handoff, allocation) = owner
-                .open_portal_room(&authority, &h.node, second_source, BOSS)
+                .open_portal_room(&authority, &h.node, second_source, WARZONE_BOSS)
                 .await?
                 .ok_or("second entrant could not discover the occupied portal room")?;
             assert_eq!(handoff, first.handoff_id);
@@ -157,6 +180,20 @@ async fn window_case(h: &Harness) -> TestResult {
     ).bind(first.handoff_id.as_slice()).fetch_all(&h.pool).await?;
     assert_eq!(cooldowns, vec![(clock + 36_000) * 1_000; 2]);
 
+    let account: String = sqlx::query_scalar(
+        "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
+    ).bind(late.initiating_character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    evidence.evidence.refresh_account(&h.root, &h.node, &account).await.map_err(debug)?;
+    sqlx::query(
+        "SELECT pg_sleep(greatest(0, extract(epoch FROM admission_closes_at - clock_timestamp())))
+         FROM game_activity_handoff_groups WHERE handoff_id=encode($1,'hex')::uuid"
+    ).bind(first.handoff_id.as_slice()).fetch_one(&h.pool).await?;
+    assert!(owner.open_portal_room(&authority, &h.node, late.participants[0].source, WARZONE_BOSS).await?.is_none());
+    assert_eq!(
+        owner.enter_boss_admission_window(&authority, &h.node, late, window).await?,
+        ActivityEnterOutcome::Refused(ActivityRefusal::NoCapacity)
+    );
+
     h.root.advance_test_quest_clock(9)?;
     for (tag, request) in [(240, &first), (241, &second)] {
         let member = &request.participants[0];
@@ -182,6 +219,11 @@ async fn window_case(h: &Harness) -> TestResult {
             .ok_or("returned Channel fence")?;
         assert_eq!(returned.runtime_scope, member.source.runtime_scope);
     }
+    let active: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_boss_room_participants
+         WHERE admission=encode($1,'hex')::uuid AND returned_at IS NULL"
+    ).bind(first.handoff_id.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(active, 0);
     assert!(owner.due_boss_rooms(&authority, &h.node, world).await?.is_empty());
     Ok(())
 }
@@ -222,7 +264,7 @@ async fn install_pager_room(
     let pin = template.destination_content;
     let cell = |x, y| serde_json::json!({"x":x,"y":y,"floor":7});
     sqlx::query("INSERT INTO game_boss_room_catalogue(boss_key,content_revision,boss_creature_key,minimum_players,maximum_players,minimum_level,cooldown_seconds,time_limit_seconds,lever_positions,room_template_key,reward_key,enabled,template_revision,entry_positions,exit_position,boss_position,after_kill_seconds) VALUES($1,'content-1','fixture:pager_boss',1,$7,0,$8,$9,$2,'fixture:pager_room','fixture:pager_reward',true,$3,$4,$5,$6,1)")
-        .bind(BOSS).bind(serde_json::json!([cell(100,101)]))
+        .bind(&template.activity_key).bind(serde_json::json!([cell(100,101)]))
         .bind(&template.template_revision).bind(serde_json::json!([cell(200,201)]))
         .bind(cell(102,103)).bind(cell(201,201)).bind(capacity).bind(cooldown_seconds).bind(time_limit_seconds).execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'activity-pager-fixture',$2,$3,$4,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),'2026-10')")
