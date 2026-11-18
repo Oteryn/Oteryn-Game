@@ -49,3 +49,7 @@ The active packet also omits the donor and spoiler success feedback for the alta
 The PostgreSQL case reproduces the bare two-object stack at the Bloodgong coordinates. It seeds the anointed track through the quest store, sends a normal USE command for the statue through the dispatch connection, and checks the committed result and durable tolled track. Seeding isolates the statue binding from the missing four-stone tincture path.
 
 - PG via shard (pgsplit build files applied on `a30bdead6`), baseline runtime binding. One case failed in 28.76 s with `NothingToUse` in place of `Committed`.
+- PG via shard (pgsplit build files applied on `0f9fb38d3a5a8d2bd16823378a8e040b182bb65b`). The case passed in 24.43 s and passed again in 20.49 s with exit status 0. The final fixture records the World activation required for a durable commit after selector resolution.
+- The same filter without `OTERYN_TEST_POSTGRES_ADMIN_URL` returned `Ok(())` in 0.00 s. The run exercised the no-database guard.
+- Quest authoring passed all 44 checks. The pinned batch-2 callback generator reported no drift. World pin refresh reproduced the existing digest, and pin-check passed for `oteryn`.
+- Workspace formatting, the auto-mounted test's explicit formatting check and dispatch library Clippy with `-D warnings` passed.
