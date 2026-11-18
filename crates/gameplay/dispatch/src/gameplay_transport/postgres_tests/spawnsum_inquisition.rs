@@ -1,7 +1,9 @@
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult};
+use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::foundation::{
-    ChannelContentPin, ChannelRuntimeV1, CharacterId, CharacterLease, MovementLocalPosition, NodeId,
+    ChannelContentPin, ChannelRuntimeV1, CharacterId, CharacterLease, CommandId, CommandRef,
+    MovementLocalPosition, NodeId,
 };
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::map::{
@@ -9,6 +11,9 @@ use crate::map::{
     view::{EntrySource, MapFacts, compose_tile, placement_key},
 };
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+use oteryn_gameplay_quests::quest::{
+    QuestComparison, QuestEffect, QuestEffectKind, QuestTransition,
+};
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
 };
@@ -152,26 +157,14 @@ fn run_case(admin: String, case: &'static str, scene: Scene) -> TestResult {
 async fn exercise(h: &Harness, scene: Scene) -> TestResult {
     super::prepare_current_session(h).await?;
     super::item_look::seed_main_backpack(h, &[(WATER, 1)]).await?;
-    if let Some(stage) = scene.stage() {
-        let mut tx = h.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role = replica")
-            .execute(&mut *tx)
-            .await?;
-        for advance in [
-            "UPDATE game_character_roots SET character_revision=2 WHERE character_id=encode($1,'hex')::uuid AND character_revision=1",
-            "UPDATE game_character_progression_state SET character_revision=2 WHERE character_id=encode($1,'hex')::uuid AND character_revision=1",
-        ] {
-            sqlx::query(advance)
-                .bind(id(41).as_slice())
-                .execute(&mut *tx)
-                .await?;
-        }
-        let seeded = sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND character_revision=2")
-            .bind(id(41).as_slice()).bind(TRACK).bind(QUEST).bind(stage)
-            .execute(&mut *tx).await?;
-        assert_eq!(seeded.rows_affected(), 1);
-        tx.commit().await?;
-    }
+    sqlx::query(
+        "INSERT INTO game_character_progression_state VALUES \
+         (encode($1,'hex')::uuid,1,1,0,'profile-1','ruleset-1','content-1',\
+          'simulation-1','evidence-1','declaration-1','policy-1','reward-1')",
+    )
+    .bind(id(41).as_slice())
+    .execute(&h.pool)
+    .await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
@@ -246,6 +239,57 @@ async fn exercise(h: &Harness, scene: Scene) -> TestResult {
     ));
     owner.movement_cells = (&cells).into();
     deps.initialize(&owner).await;
+
+    if let Some(stage) = scene.stage() {
+        const SETUP: &str = "oteryn:quest-transition/spawnsum-inquisition-fixture-predecessor";
+        let catalogue = std::sync::Arc::new(
+            owner
+                .quest_catalogue
+                .as_ref()
+                .ok_or("quest catalogue")?
+                .with_fixture_transition(QuestTransition {
+                    world_change: None,
+                    key: SETUP.into(),
+                    quest: QUEST.into(),
+                    effects: vec![QuestEffect {
+                        track: TRACK.into(),
+                        from: QuestComparison::Any,
+                        effect: QuestEffectKind::Set(stage),
+                    }],
+                    completes: false,
+                    experience: None,
+                })
+                .map_err(debug)?,
+        );
+        let fence = owner
+            .current_quest_fence(session)
+            .await
+            .map_err(debug)?
+            .ok_or("predecessor fence")?;
+        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+        let result = slot
+            .commit_quest_transition(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                QuestTransitionRequest {
+                    transition_key: SETUP.into(),
+                    cause: QuestCause::Command(CommandRef::new(
+                        session,
+                        CommandId::new(9000).map_err(debug)?,
+                    )),
+                },
+                catalogue.clone(),
+            )
+            .await
+            .map_err(debug)?;
+        assert!(
+            matches!(result, QuestTransitionOutcome::Committed(_)),
+            "{result:?}"
+        );
+        owner.quest_catalogue = Some(catalogue);
+    }
 
     let map = owner.bundle_map().ok_or("bundle")?;
     let key = placement_key(target, ordinal).ok_or("source placement")?;
