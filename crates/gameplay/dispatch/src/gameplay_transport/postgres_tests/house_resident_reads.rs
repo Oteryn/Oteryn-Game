@@ -54,6 +54,7 @@ pub(super) enum ClockCase {
     Logout,
     Grace,
     Writer,
+    Unequip,
 }
 
 #[test]
@@ -74,6 +75,11 @@ fn house_resident_ring_expires_in_reconnect_grace_postgres() -> TestResult {
 #[test]
 fn house_resident_ring_tick_yields_to_registration_writer_postgres() -> TestResult {
     run_case(Case::ResidentTimedEquip(ClockCase::Writer))
+}
+
+#[test]
+fn house_resident_ring_unequip_settles_elapsed_postgres() -> TestResult {
+    run_case(Case::ResidentTimedEquip(ClockCase::Unequip))
 }
 
 #[test]
@@ -867,6 +873,7 @@ async fn check_ring_clock(
                 ),
             );
         }
+        ClockCase::Unequip => unequip_ring(owner, admitted).await?,
         _ => return Err("unexpected energy ring clock case".into()),
     }
     let remaining = budget().await?;
@@ -892,4 +899,87 @@ async fn mana_after_hit(
         crate::spell::actor_conditions::stage_creature_hit(state, 5, owner.owner_now().get())
             .map_err(debug)?;
     Ok::<_, Box<dyn std::error::Error>>((state.vitals().mana, hit.vitals().mana))
+}
+
+async fn unequip_ring(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let serve = async {
+        serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+    };
+    let drive = async {
+        let mut handle = None;
+        loop {
+            let bytes = read_frame(&mut client).await?;
+            let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
+            match envelope.message_type() {
+                MessageType::SnapshotChunk => {
+                    let (_, domains) =
+                        oteryn_protocol_oteryn::decode_snapshot_chunk(envelope.payload())
+                            .map_err(debug)?;
+                    for domain in domains {
+                        if domain.domain_id == item_view::STATE_DOMAIN_CHARACTER_INVENTORY {
+                            let inventory = item_view::decode_character_inventory_with_equip_drop(
+                                domain.payload,
+                                true,
+                            )
+                            .map_err(debug)?;
+                            handle = inventory
+                                .equipment
+                                .into_iter()
+                                .find(|entry| entry.slot == item_view::EquipmentSlot::Ring)
+                                .map(|entry| entry.item.handle);
+                        }
+                    }
+                }
+                MessageType::SnapshotCommit => break,
+                _ => (),
+            }
+        }
+        let request = item_view::encode_item_move_intent_with_equip_drop(
+            &item_view::ItemMoveIntent {
+                source: handle.ok_or("ring handle in current snapshot")?,
+                destination: item_view::ItemMoveDestination::MainBackpack,
+            },
+            true,
+        )
+        .map_err(debug)?;
+        let command_id = admitted.continuity.next_command_id;
+        let frame = encode_client_command(
+            admitted.continuity.connection_generation,
+            &ClientCommandValue {
+                command_id,
+                command_type: item_view::COMMAND_TYPE_ITEM_MOVE_INTENT,
+                payload: &request,
+            },
+        )
+        .map_err(debug)?;
+        write_frame(&mut client, &frame).await?;
+        loop {
+            let bytes = read_frame(&mut client).await?;
+            let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
+            if envelope.message_type() == MessageType::CommandResult {
+                let reply = decode_command_result(envelope.payload()).map_err(debug)?;
+                assert_eq!(reply.command_id, command_id);
+                assert_eq!(reply.status, CommandStatus::Accepted);
+                assert_eq!(
+                    item_view::decode_item_move_result_with_equip_drop(reply.payload, true)
+                        .map_err(debug)?,
+                    item_view::ItemMoveOutcome::Moved,
+                );
+                break;
+            }
+        }
+        client.shutdown().await?;
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    let (_, result) = tokio::time::timeout(
+        std::time::Duration::from_secs(12),
+        super::fixture::join_two(serve, drive),
+    )
+    .await?;
+    result
 }
