@@ -123,18 +123,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(at) = tile(entered.position()) else {
             return;
         };
+        if map.facts.house_tile(at) {
+            return;
+        }
         let Some(base) = map.overlay.base().tile(at.x, at.y, at.floor) else {
             return;
         };
         let count = base.depths().iter().filter(|&&depth| depth == 0).count();
         let on_field = (0..count)
             .filter_map(|ordinal| placement_key(at, u8::try_from(ordinal).ok()?))
-            .any(|key| {
-                !map.facts.base_hidden(key)
-                    && map
-                        .facts
-                        .quest_callback_matches(key, None, Some(40004), None)
-            });
+            .any(|key| !map.facts.base_hidden(key) && map.facts.action_at(key) == Some(40004));
         if !on_field || self.runtime.lock().await.read_actor_position(actor) != Ok(entered) {
             return;
         }
