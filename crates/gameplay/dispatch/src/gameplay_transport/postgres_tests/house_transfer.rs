@@ -1258,6 +1258,14 @@ impl RecoverySource {
     /// producer. The native fresh-admission verifier/publication/commit remain
     /// unchanged; a recovery credential cannot be reused as a fresh grant.
     pub(super) fn fresh_token(nonce: u8) -> TestResult<String> {
+        Self::fresh_token_for(nonce, id(40), id(41))
+    }
+
+    pub(super) fn fresh_token_for(
+        nonce: u8,
+        account: [u8; 16],
+        character: [u8; 16],
+    ) -> TestResult<String> {
         use base64::Engine;
         use ed25519_dalek::Signer;
         let now = std::time::SystemTime::now()
@@ -1272,8 +1280,8 @@ impl RecoverySource {
             "jti":base64::engine::general_purpose::URL_SAFE_NO_PAD.encode([nonce;32]),
             "profile":"oteryn-pre-admission-v1", "purpose":"fresh_entry",
             "attempt_ref":crate::gameplay_transport::canonical_uuid(&id(nonce)),
-            "account_id":"28020304-0506-7008-800a-0b0c0d0e0f28",
-            "character_id":"29020304-0506-7008-800a-0b0c0d0e0f29",
+            "account_id":crate::gameplay_transport::canonical_uuid(&account),
+            "character_id":crate::gameplay_transport::canonical_uuid(&character),
             "world_id":"2a020304-0506-7008-800a-0b0c0d0e0f2a",
             "channel_id":"2b020304-0506-7008-800a-0b0c0d0e0f2b",
             "account_security_generation":"1", "route_revision":"route-1",

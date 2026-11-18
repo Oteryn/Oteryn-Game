@@ -25,7 +25,7 @@ pub enum LogoutReply {
 }
 
 pub(super) struct LogoutZones {
-    no_logout: bool,
+    pub(super) no_logout: bool,
     pub(super) protection_zone: Option<bool>,
 }
 
@@ -97,13 +97,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// them is settled by the release's own saves, as for a closed client whose deadline just
     /// ended.
     pub(super) async fn logout_session(&self, admitted: AdmittedSession) -> LogoutReply {
+        self.logout_session_as(admitted, false)
+            .await
+            .unwrap_or(LogoutReply::Result(LogoutResult::Busy))
+    }
+
+    /// `channel_switch`: the release is the safe exit of a voluntary Channel switch (chsw) and
+    /// keeps the Party membership for the fresh admission into the target Channel.
+    pub(super) async fn logout_session_as(
+        &self,
+        admitted: AdmittedSession,
+        channel_switch: bool,
+    ) -> Result<LogoutReply, oteryn_protocol_oteryn::channel_switch::SwitchLock> {
+        let _trade_hold = channel_switch
+            .then(|| {
+                self.states
+                    .player_trades
+                    .hold_for_switch(admitted.game_session_id)
+            })
+            .transpose()?;
         let Ok(_foreground) = self.root.foreground_demand() else {
             operator_event("event=logout_busy stage=foreground_demand");
-            return LogoutReply::Result(LogoutResult::Busy);
+            return Ok(LogoutReply::Result(LogoutResult::Busy));
         };
         let (actor, controller) = match self.logout_preflight(admitted).await {
             Ok(proven) => proven,
-            Err(reply) => return reply,
+            Err(reply) => return Ok(reply),
         };
         // Every activity participant must return through its durable owner
         // before the ordinary terminal release. No caller may orphan a room.
@@ -112,9 +131,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             crate::foundation::RuntimeScopeRefV1::Instance { .. }
         ) {
             operator_event("event=logout_busy stage=activity_scope");
-            return LogoutReply::Result(LogoutResult::Busy);
+            return Ok(LogoutReply::Result(LogoutResult::Busy));
         }
-        self.release_logout(admitted, actor, controller).await
+        self.release_logout(admitted, actor, controller, channel_switch)
+            .await
     }
 
     pub(super) async fn logout_preflight(
@@ -262,7 +282,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// actor is not held, as at a closed client's release (`held_step`). The PvE deadline
     /// and the PvP block do not hold an actor standing in a protection zone
     /// (`in_fight_logout_retry`).
-    async fn logout_in_fight(
+    pub(super) async fn logout_in_fight(
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
@@ -284,14 +304,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         actor: ExactActorRef,
         controller: ControllerBinding,
-    ) -> LogoutReply {
+        channel_switch: bool,
+    ) -> Result<LogoutReply, oteryn_protocol_oteryn::channel_switch::SwitchLock> {
         let session = admitted.game_session_id;
         let store = FreshAdmissionStore::from_root(self.root.clone());
+        let store = if channel_switch {
+            store.with_channel_switch()
+        } else {
+            store
+        };
         let release = TerminalRelease::Logout(controller.transport);
         // Nothing is fenced yet when no transition id can be minted.
-        let Ok(token) = release.fence(&mut *self.runtime.lock().await) else {
-            operator_event("event=logout_busy stage=release_fence");
-            return LogoutReply::Result(LogoutResult::Busy);
+        let token = {
+            let mut runtime = self.runtime.lock().await;
+            if channel_switch
+                && let Some(lock) = self.switch_encounter_lock(&runtime, actor, session)
+            {
+                return Err(lock);
+            }
+            let Ok(token) = release.fence(&mut runtime) else {
+                operator_event("event=logout_busy stage=release_fence");
+                return Ok(LogoutReply::Result(LogoutResult::Busy));
+            };
+            token
         };
         let mut hold = FenceHold::new(session, token);
         let mut settled_death = None;
@@ -306,7 +341,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &mut kills,
             )
             .await;
-        match step {
+        Ok(match step {
             ReleaseAttempt::Done(GraceExpiryResult::Released) => {
                 LogoutReply::Result(LogoutResult::Accepted)
             }
@@ -349,7 +384,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 operator_event("event=logout_unknown stage=release_attempt kind=unknown");
                 LogoutReply::Unknown
             }
-        }
+        })
     }
     /// §1.6: a session whose current row is TERMINAL when its transport loss is committed ended
     /// in a release whose acknowledgement was lost. Its actor is retired: Premium release, the

@@ -49,7 +49,7 @@ Never publish ordinary work through ad-hoc low-level Git Data reconstruction, an
 
 ### Stable head and Merge Queue freshness
 
-Protected `main` moving is first a read-only reconciliation event. Keep a published head when accepted requirements do not need source reconciliation, and let the Merge Queue qualify the `merge_group` against current `main`. Merge up (normal, non-force) only for a real source/contract conflict, a dependency whose bytes must exist in the candidate before its validation, or a repository without Merge Queue that has a strict-base requirement. Never merge up just to refresh a base, retrigger CI or manufacture newer evidence.
+Protected `main` moving is first a read-only reconciliation event. Keep a published head when accepted requirements do not need source reconciliation, and let the Merge Queue qualify the `merge_group` against current `main`. Merge up (normal, non-force) only on a conflict, or once on the otherwise-ready head when the failing test also fails on `main` at the merge base and the fix is already on `main`, named by its SHA (`.claude/skills/oteryn-dev/references/ci-merge.md`, *Before every push*). Never merge up just to refresh a base, retrigger CI, manufacture newer evidence, for STALE or before labelling.
 
 Derived content (`content/world`, the content tree and registry, and the Rust package pins) is merged and regenerated only by the content integrator (content-tree Amendment 01 §5, #1390). Authors change sources only; they do not merge `main` into a content candidate or regenerate the tree. The integrator runs `python3 tools/content-migration/regenerate_content.py --resolve` after its merge: it resolves derived conflicts, regenerates and runs the content checks. It stops and lists any other conflicted path, including `imports/**` and `content/interactions/index.json`, which hold hand-maintained rows; that path needs a person. Hand-written count pins may still need a manual edit after a clean merge.
 
@@ -162,7 +162,7 @@ These cut reading, writing and waiting; they change no authority, review or inte
 ## Review and Merge Queue rules (owner decisions 2026-09-30)
 
 - **Review split (D245).** Codex is the default exact-head reviewer, under `OWNER_FUNDED_AI_POLICY.md`, for every frozen candidate that needs review, docs-only architecture decisions included.
-  - Codex's part: after the live de-duplication check above, start one read-only Codex Cloud review (`gpt-6.2-sol`, effort high) under the owner's per-PR rule in `OWNER_FUNDED_AI_POLICY.md` (once after the first push over the whole diff; a second only after a material logic change, over the new diff; never a third). `@codex review` comments are not used.
+  - Codex's part: after the live de-duplication check above, start one read-only Codex Cloud review (`gpt-6.2-astra`, effort high) under the owner's per-PR rule in `OWNER_FUNDED_AI_POLICY.md` (once after the first push over the whole diff; a second only after a material logic change, over the new diff; never a third). `@codex review` comments are not used.
   - Your part is a light qualification, with no local full-suite run:
     - `merge-tree` against current `main`;
     - changed paths against the allocation and owned paths;

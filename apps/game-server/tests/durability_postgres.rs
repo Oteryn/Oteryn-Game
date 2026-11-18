@@ -863,6 +863,12 @@ fn fresh_commit_persists_complete_operation_and_reconciles_original_decision()
             assert_eq!(store.commit(&request).await?, FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority);
             assert_eq!(store.reconcile(request.operation()).await?, FreshReconciliation::Absent);
             guards.publish(&publication).await?;
+            sqlx::query("INSERT INTO game_channel_switch_guards(character_id,world_id,last_channel_id,last_game_session_id,switched_at,switch_count) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,game_character_uuid_v7(),game_character_uuid_v7(),game_channel_switch_now_ms(),1)")
+                .bind(source.current.character_id.as_bytes().as_slice()).bind(source.current.world_id.as_bytes().as_slice()).execute(&pool).await?;
+            assert!(matches!(store.commit(&request).await?, FreshAdmissionDurableOutcomeV1::RejectedChannelSwitch(status)
+                if status.lock == oteryn_protocol_oteryn::channel_switch::SwitchLock::Cooldown && status.cooldown_left_ms > 0));
+            assert_eq!(store.reconcile(request.operation()).await?, FreshReconciliation::Absent);
+            sqlx::query("DELETE FROM game_channel_switch_guards").execute(&pool).await?;
             let FreshAdmissionDurableOutcomeV1::Committed(receipt) = store.commit(&request).await? else { return Err("fresh commit did not commit".into()); };
             assert_eq!(receipt.operation(), request.operation());
             assert!(receipt.decided_at() >= now);

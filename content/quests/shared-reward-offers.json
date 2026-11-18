@@ -4988,6 +4988,27 @@
       ]
     },
     {
+      "npc": "oteryn:npc.para_norbert",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/feaster/programme",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "minimum_level": 250,
+      "reply": [
+        "Will you help me investigate what is happening in the Brain Grounds?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.percybald",
       "keywords": [
         "outfit",
