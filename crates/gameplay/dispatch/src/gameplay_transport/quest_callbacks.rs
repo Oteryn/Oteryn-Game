@@ -75,6 +75,10 @@ struct Pending {
     flame_effect_sent: bool,
     /// The exact carried tool bound into the durable World context, if any.
     selected_tool: Option<([u8; 16], Vec<u8>)>,
+    claim_vitals: Option<(
+        u64,
+        crate::durability::character_last_position::FinalLastPosition,
+    )>,
 }
 
 struct ReadOnlyGate {
@@ -118,6 +122,14 @@ pub(super) struct PendingCallbacks {
 }
 
 impl PendingCallbacks {
+    pub(super) fn has_pending_claim_vitals(&self, session: GameSessionId) -> bool {
+        self.records.lock().map_or(true, |records| {
+            records
+                .get(&session)
+                .is_some_and(|pending| pending.claim_vitals.is_some())
+        })
+    }
+
     pub(super) fn complete_native_quest(
         &self,
         runtime: &mut ChannelRuntimeV1,
@@ -516,6 +528,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
                 None => context.into(),
             };
+            let context = match pending.claim_vitals {
+                Some((_, save)) => context.with_claim_vitals(save),
+                None => context,
+            };
             let Ok(Some(fence)) = self.current_quest_fence(pending.session).await else {
                 return false;
             };
@@ -529,7 +545,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .callback_content()
                 .iter()
                 .find(|c| c.key == pending.callback)
-                .filter(|c| c.item_reward().is_some())
+                .filter(|c| c.needs_item_reward_admission())
                 .and_then(|_| native.zip(weights.as_ref()))
                 .map(|(native, weights)| {
                     crate::durability::reward_claim_mint::QuestRewardAdmission {
@@ -1598,6 +1614,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         projection_target: None,
                         flame_effect_sent: false,
                         selected_tool: None,
+                        claim_vitals: None,
                     });
                     pending.origin = Some(origin);
                 }

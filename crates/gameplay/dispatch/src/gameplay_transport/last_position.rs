@@ -712,7 +712,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let runtime = self.runtime.lock().await;
         // A retained build may have committed its refill before live installation. Keep
         // the transaction's projection until the actor has the committed pools too.
-        if self.states.dawnport_departures.held(session)
+        if self
+            .states
+            .quest_callbacks
+            .has_pending_claim_vitals(session)
+            || self.states.dawnport_departures.held(session)
             || self
                 .states
                 .npc_conversations

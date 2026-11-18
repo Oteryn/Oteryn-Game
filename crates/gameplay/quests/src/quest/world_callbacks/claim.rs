@@ -42,7 +42,7 @@ pub struct ClaimEligibility {
 
 impl ClaimReset {
     fn valid(&self, callback: &Callback) -> bool {
-        let exact_write = |track: &str, minimum, maximum, set| {
+        let exact_write = |track: &str, minimum, maximum: Option<i64>, set| {
             callback.storage.iter().any(|storage| {
                 storage.track == track
                     && storage.minimum == minimum
@@ -110,6 +110,7 @@ impl Claim {
             && !callback.opening_only
             && callback.native_rule.is_none()
             && callback.item_reward().is_none()
+            && (callback.effects.transform.is_none() || callback.selector.appearance.is_some())
             && self.reset.valid(callback)
             && self.eligibility.as_ref().is_none_or(|gate| {
                 !gate.message.is_empty()
@@ -143,7 +144,8 @@ impl Claim {
                 })
             })
             && self.rewards.iter().all(|reward| {
-                valid_item_reward(&reward.give)
+                !reward.give.premium
+                    && valid_item_reward(&reward.give)
                     && reward.exclude_owned_mount.as_ref().is_none_or(|mount| {
                         valid_quest_key(mount) && mount.starts_with("oteryn:content.mount.")
                     })

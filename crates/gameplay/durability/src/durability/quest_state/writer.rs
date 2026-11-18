@@ -2058,9 +2058,9 @@ impl DurabilityRoot {
                         }
                     }
                     if let Some(save) = claim_vitals {
-                        use super::super::character_last_position::{LastPositionKey, LastPositionWrite, upsert_last_position};
-                        if save.record.world_id != fence.runtime_scope.world_id()
-                            || save.write_sequence == 0 || save.record.vitals.is_none()
+                        use super::super::character_last_position::{LastPositionKey, LastPositionWrite, upsert_last_position, validate_fence};
+                        if save.write_sequence == 0 || save.record.vitals.is_none()
+                            || validate_fence(&fence, &save.record).is_err()
                         {
                             return Ok(Err(CharacterProgressionError::InvalidInput));
                         }

@@ -152,6 +152,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::StaleState;
             }
         }
+        // Crystal actions_lions_rock.lua:115-118 only accepts the live fountain,
+        // even when the original placement still qualifies its callback.
+        if callback.effects.claim.is_some()
+            && callback.effects.transform.is_some()
+            && callback.selector.appearance != Some(after.appearance_id)
+        {
+            return UseDisposition::NothingToUse;
+        }
         if goblin_elevator::owns(&callback.key) {
             if callback.selector.appearance != Some(after.appearance_id) {
                 return UseDisposition::NothingToUse;
@@ -597,6 +605,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     flame_effect_sent: false,
                     projection_target: None,
                     selected_tool: None,
+                    claim_vitals: None,
                 });
                 pending.context.get_or_insert(context).clone()
             } else {
@@ -746,6 +755,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     flame_effect_sent: false,
                     projection_target: None,
                     selected_tool: None,
+                    claim_vitals: None,
                 });
                 pending.context.get_or_insert(context).clone()
             } else {
@@ -1044,6 +1054,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     flame_effect_sent: false,
                     projection_target: None,
                     selected_tool: None,
+                    claim_vitals: None,
                 });
                 record.projection_target = projection_target;
                 // The tool is bound with the first durable context. A replay keeps
@@ -1090,7 +1101,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let mut save = self.placed_record(runtime, player.position());
                 save.record.vitals = LastVitals::new(after.vitals().health, after.vitals().mana);
                 save.record.rest = Some(after.bed_rest_snapshot(self.owner_now().get()));
-                (context.with_claim_vitals(save), Some(after))
+                let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
+                    return UseDisposition::Rejected;
+                };
+                let Some(record) = records.get_mut(&session) else {
+                    return UseDisposition::Rejected;
+                };
+                let replay_can_restore = record
+                    .claim_vitals
+                    .is_some_and(|(revision, _)| current.revision() == revision);
+                let (_, save) = *record
+                    .claim_vitals
+                    .get_or_insert((current.revision(), save));
+                (
+                    context.with_claim_vitals(save),
+                    Some((after, replay_can_restore)),
+                )
             } else {
                 (context, None)
             };
@@ -1246,7 +1272,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | QuestTransitionOutcome::AlreadyCommitted(ref committed),
                 ) => {
                     fresh_effects = fresh;
-                    if let Some(after) = restored
+                    if let Some((after, replay_can_restore)) = restored
+                        && (fresh || replay_can_restore)
                         && let Some(live) = states.get_mut(runtime, actor, session)
                     {
                         *live = after;
@@ -1474,7 +1501,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // A per-character gift does not consume or revise its shared source object.
             // Real scene changes and shared-world progress still publish their original CAS,
             // including the revision consumed by the post-publication removal below.
-            let personal_gift_preserves_object = callback.item_reward().is_some()
+            let personal_gift_preserves_object = (callback.needs_item_reward_admission()
+                || callback.effects.claim.is_some())
                 && callback.effects.item_reward_cycle.is_none()
                 && !callback.effects.item_reward_per_use
                 && callback.world_change.is_none()
