@@ -143,12 +143,7 @@ pub fn validate_for_catalogue(
     world_context: bool,
 ) -> Result<(), String> {
     let global = registry()?;
-    if global.owners.contains_key(&transition.key)
-        || transition
-            .effects
-            .iter()
-            .any(|effect| global.protected_tracks.contains(&effect.track))
-    {
+    if global.owners.contains_key(&transition.key) {
         return validate(transition, world_context);
     }
     let mut protected = BTreeSet::new();
@@ -168,7 +163,20 @@ pub fn validate_for_catalogue(
                         super::authored_bindings::Trigger::MapUse { .. }
                             | super::authored_bindings::Trigger::StepIn { .. }
                     );
-                    return if world == world_context && transition == &expected {
+                    let published_reads_allowed = transition.effects.iter().all(|effect| {
+                        !global.protected_tracks.contains(&effect.track)
+                            || (!changes(effect.effect)
+                                && matches!(&stage.trigger,
+                                super::authored_bindings::Trigger::MapUse { callback }
+                                    if callback.selected_carried_tool().is_some()
+                                        && callback.storage.iter().any(|gate| {
+                                            gate.track == effect.track && gate.preserve
+                                        })))
+                    });
+                    return if world == world_context
+                        && transition == &expected
+                        && published_reads_allowed
+                    {
                         Ok(())
                     } else {
                         Err("authored operation or physical context mismatch".into())

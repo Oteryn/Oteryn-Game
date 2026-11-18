@@ -9,10 +9,9 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
     callback.actor_kind == ActorKind::Player
         && callback.trigger == Trigger::Use
         && !ice_seal_paint::historical_only(&callback.key)
-        && callback.item_on_target.as_ref().is_some_and(|tool| {
-            (tool.selected_instance && callback.requires_world_admission)
-                || matches!(callback.native_rule, Some(NativeRule::IceSealPaint { .. }))
-        })
+        && (callback.selected_carried_tool().is_some()
+            || (callback.item_on_target.is_some()
+                && matches!(callback.native_rule, Some(NativeRule::IceSealPaint { .. }))))
 }
 
 pub(in crate::gameplay_transport) fn accepts_definition(

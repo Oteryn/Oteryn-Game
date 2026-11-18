@@ -1866,6 +1866,19 @@ impl DurabilityRoot {
 
                     // A native death reads its mission gate; it must not move that mission epoch.
                     if native.is_some() {changes.retain(|change|change.before!=change.after);}
+                    // Authored selected tools may read published progression gates.
+                    // The sorted locked snapshot above evaluated those guards. Do not turn
+                    // a preserved prerequisite into a track write or a new quest epoch.
+                    if let Some(world) = &callback
+                        && world.selected_carried_tool().is_some()
+                        && catalogue.authored_bindings().is_some_and(|bindings| {
+                            bindings.world_callbacks().any(|authored| authored.key == world.key)
+                        })
+                    {
+                        changes.retain(|change| !world.storage.iter().any(|gate| {
+                            gate.preserve && gate.track == change.track
+                        }));
+                    }
                     if !super::rotten_blood_access::validate_access_changes(
                         &request.transition_key,&changes,state.try_get("level")?,
                     )? {

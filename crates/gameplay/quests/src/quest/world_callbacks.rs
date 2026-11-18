@@ -564,6 +564,16 @@ impl Callback {
             .any(|state| !state.preserve && !state.read_only)
             || self.operations().any(state_operations::mutates)
     }
+    /// A framed USE that carries an exact Item instance into the World writer.
+    pub fn selected_carried_tool(&self) -> Option<&ItemOnTarget> {
+        self.item_on_target.as_ref().filter(|tool| {
+            self.actor_kind == ActorKind::Player
+                && self.trigger == Trigger::Use
+                && self.requires_world_admission
+                && tool.selected_instance
+        })
+    }
+
     /// Each accepted use has its own ordinary MINT occurrence, guarded by an
     /// elapsed-time predicate and timestamp write in that same transaction.
     pub fn has_repeating_clock(&self) -> bool {

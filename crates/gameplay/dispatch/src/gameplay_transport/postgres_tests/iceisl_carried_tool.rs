@@ -217,5 +217,12 @@ pub(super) async fn exercise(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(proof, (expected_tool, 1));
+    let changed_tracks: Vec<String> = sqlx::query_scalar(
+        "SELECT track_keys FROM game_character_quest_receipts WHERE quest_key=$1",
+    )
+    .bind(QUEST)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(changed_tracks, [MARK], "questline was a guard, not a write");
     Ok(())
 }
