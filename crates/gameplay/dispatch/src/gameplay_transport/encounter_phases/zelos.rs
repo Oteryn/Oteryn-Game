@@ -1,6 +1,6 @@
 use super::ChannelSpellStates;
 use crate::foundation::{ChannelRuntimeV1, owner_timer::SemanticTimeMicros};
-use crate::player_lethal::{PlayerHitKind, PlayerLethalVitals};
+use crate::player_lethal::PlayerHitKind;
 use oteryn_gameplay_encounters::bosses::phase_controller::zelos::MagnorBurst;
 use oteryn_protocol_oteryn::analyser::AnalyserDamageSource;
 use sha2::{Digest, Sha256};
