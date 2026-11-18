@@ -38,7 +38,7 @@ pub(super) fn callback(spend: bool) -> TestResult<Callback> {
         row["requires_world_admission"] = true.into();
         row["storage"] = serde_json::json!([
             {"track":TRACK,"minimum":0,"maximum":21,"set":22},
-            {"track":MISSION,"minimum":0,"maximum":2,"set":2}
+            {"track":MISSION,"minimum":0,"maximum":5,"set":2}
         ]);
         row["item_on_target"] = serde_json::json!({"item":WATER,"count":1,"selected_instance":true});
         row["effects"] = serde_json::json!({
@@ -128,7 +128,7 @@ pub(super) async fn exercise(
     repeat.key = "oteryn:quest-callback/nexus-repeat-fixture".into();
     repeat.storage.retain(|storage| storage.track == TRACK);
     repeat.storage[0].minimum = 22;
-    repeat.storage[0].maximum = 22;
+    repeat.storage[0].maximum = 25;
 
     owner.quest_catalogue = Some(Arc::new(
         catalogue.with_world_callback_fixtures(vec![callback(false)?, callback(true)?, repeat])?,
@@ -140,9 +140,11 @@ pub(super) async fn exercise(
     ).bind(id(41).as_slice()).bind(QUEST).bind(digest.as_slice()).execute(&h.pool).await?;
     sqlx::query(
         "INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision)
-         SELECT character_id,$2,quest_key,21,committed_character_revision FROM game_character_quest_states
-         WHERE character_id=encode($1,'hex')::uuid AND quest_key=$3",
-    ).bind(id(41).as_slice()).bind(TRACK).bind(QUEST).execute(&h.pool).await?;
+         SELECT s.character_id,v.track,s.quest_key,v.stage,s.committed_character_revision
+         FROM game_character_quest_states s
+         CROSS JOIN (VALUES ($2::text,21::bigint),($3::text,4::bigint)) AS v(track,stage)
+         WHERE s.character_id=encode($1,'hex')::uuid AND s.quest_key=$4",
+    ).bind(id(41).as_slice()).bind(TRACK).bind(MISSION).bind(QUEST).execute(&h.pool).await?;
     give_water(owner,admitted,975).await?;
     assert_eq!(appearance(owner)?, 7925);
     for (burning, ready) in [(7926,7927),(7928,7929),(7930,7931)] {
@@ -162,8 +164,12 @@ pub(super) async fn exercise(
     ).bind(CHARGE).execute(&h.pool).await?;
     for attempt in 0..capacity {
         if attempt == 1 {
-            sqlx::query("UPDATE game_character_quest_tracks SET value=1 WHERE track_key=$1")
-                .bind(MISSION).execute(&h.pool).await?;
+            // Crystal actions_holy_water.lua:122-132 rewrites questline even above 22,
+            // while later characters keep their existing Mission07.
+            sqlx::query(
+                "UPDATE game_character_quest_tracks SET value=CASE WHEN track_key=$1 THEN 25 ELSE 1 END
+                 WHERE character_id=encode($2,'hex')::uuid AND track_key IN ($1,$3)",
+            ).bind(TRACK).bind(id(41).as_slice()).bind(MISSION).execute(&h.pool).await?;
         }
         if attempt > 0 {
             give_water(owner,admitted,976+u64::try_from(attempt)?).await?;
@@ -178,9 +184,11 @@ pub(super) async fn exercise(
             lights.sort_unstable();
             assert_eq!(lights, [99, 101, 102]);
         }
-        let mission: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
-            .bind(MISSION).fetch_one(&h.pool).await?;
-        assert_eq!(mission, if attempt == 0 { 2 } else { 1 });
+        let (stage, mission): (i64, i64) = sqlx::query_as(
+            "SELECT (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),
+                    (SELECT value FROM game_character_quest_tracks WHERE track_key=$2)",
+        ).bind(TRACK).bind(MISSION).fetch_one(&h.pool).await?;
+        assert_eq!((stage, mission), (22, if attempt == 0 { 2 } else { 1 }));
 
         advance(owner,1).await?;
     }

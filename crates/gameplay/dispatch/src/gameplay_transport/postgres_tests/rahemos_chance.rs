@@ -9,6 +9,8 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 pub(super) const NAME: &str = "qengine-rewards-rahemos-hat";
 const TARGET: Position = Position { x: 101, y: 100, floor: -7 };
 pub(super) const DOOR: Position = Position { x: 103, ..TARGET };
+const SUCCESS: &str = "You found the carrot! The door is open!";
+const FAILURE: &str = "You guessed wrong! Take this! Carrot changed now the Hat!";
 
 #[test]
 fn rahemos_lever_roll_leaves_hat_closed_on_damage_and_opens_on_success() -> TestResult {
@@ -27,10 +29,11 @@ pub(super) fn callback(at: Position) -> TestResult<Callback> {
         "selector":{"position":at,"ordinal":1,"appearance":2772},
         "lever":[2772,2773],"reversible":false,"passages":[{"position":DOOR,"appearance":1662,"replacement":1663,"if_present":true}],"storage":[],"offerings":[],
         "return_on_failure":false,
+        "success_message":SUCCESS,
         "effects":{"reset_after_ms":4000,"magic":{"position":DOOR,"effect":15},"use_chance":{
             "faces":3,"winning_faces":1,"pickup":{"appearance":3595,"dx":-1,"dy":0},"success_cue":{"dx":-1,"dy":0,"effect":15},
             "failure_hit":{"kind":"physical","amount":200,"effect":3},
-            "failure_message":"You guessed wrong! Take this! Carrot changed now the Hat!"
+            "failure_message":FAILURE
         }},
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_oasis_lever_door.lua:22-45"]
     }))?)
@@ -39,11 +42,13 @@ pub(super) fn callback(at: Position) -> TestResult<Callback> {
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
+    h: &Harness,
 ) -> TestResult {
     let row = callback(TARGET)?;
     assert!(owner.states.quest_callbacks.fixture.set(vec![row.clone()]).is_ok());
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let session = admitted.game_session_id;
+    owner.states.chat.admit(session, "Rahemos", owner.owner_now());
     let key = oteryn_world_bundle::bundle::placement_key(TARGET.floor, TARGET.x, TARGET.y, 1)
         .ok_or("source key")?;
     let (loss, win) = {
@@ -78,7 +83,10 @@ pub(super) async fn exercise(
         Ok(map.facts.base_entry(tile,1,id).ok_or("entry")?.appearance_id)
     };
     let before = super::underwater_drowning::health(owner, actor, session).await?;
-    for (command_id, expected, door) in [(loss,2772,1662),(win,2773,1663)] {
+    for (command_id, expected, door, feedback) in [
+        (loss,2772,1662,FAILURE),
+        (win,2773,1663,SUCCESS),
+    ] {
         owner.clock_origin=owner.clock_origin.checked_sub(std::time::Duration::from_secs(2))
             .ok_or("clock")?;
         let map = owner.bundle_map().ok_or("map")?;
@@ -92,6 +100,8 @@ pub(super) async fn exercise(
         assert_eq!(result.disposition, UseDisposition::Committed);
         assert_eq!(appearance(owner, TARGET)?, expected);
         assert_eq!(appearance(owner, DOOR)?, door);
+        assert!(owner.states.chat.drain(session).iter().any(|line|
+            matches!(line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == feedback)));
         let remaining = super::underwater_drowning::health(owner, actor, session).await?;
         assert!((1..=10).contains(&before.saturating_sub(remaining)));
     }
