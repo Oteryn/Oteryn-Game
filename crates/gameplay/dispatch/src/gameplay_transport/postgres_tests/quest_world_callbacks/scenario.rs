@@ -77,6 +77,7 @@ fn scenario_case(
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
+    let wrath_keeper = name == super::super::wrathm1_keeper::NAME;
     let wrath_prison = name == super::super::wrathm1_prison_release::NAME;
     let wrath_relay = name == super::super::wrathm1_relay::NAME;
     let wrath_trapdoors = name == super::super::wrathm1_trapdoors::NAME;
@@ -363,7 +364,9 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if m03_use {
+    let mut callback = if wrath_keeper {
+        super::super::wrathm1_keeper::callback()?
+    } else if m03_use {
         super::super::qengine_m03_use::callback()?
     } else if qd_world {
         super::super::qd_world::callback(name)?
@@ -659,7 +662,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if name == "authored-wrath-crystals" {
+    let world = if wrath_keeper {
+        super::super::wrathm1_keeper::world(&callback)?
+    } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::world()?
     } else if name == "nx6-wayfarer" {
         super::super::questpc8_wrath_source_dragon::world()?
@@ -2707,6 +2712,8 @@ fn scenario_case(
                 trigger,
             ))
             .await?;
+        } else if wrath_keeper {
+            Box::pin(super::super::wrathm1_keeper::exercise(&mut owner, &mut admitted, &deps, &h)).await?;
         } else if qengine_reward || shared_rewards {
             Box::pin(super::super::qengine_rewards::exercise(
                 &mut owner,

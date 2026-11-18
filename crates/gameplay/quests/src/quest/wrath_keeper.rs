@@ -56,6 +56,23 @@ pub(crate) fn poison_callback() -> Result<super::world_callbacks::Callback, Stri
         .ok_or_else(|| "missing Keeper poison callback".into())
 }
 
+/// The sixth use spends the selected flask without advancing this player's mission.
+pub(super) fn poison_debits_only(callback: &super::world_callbacks::Callback) -> bool {
+    callback.key == POISON_USE
+        && callback.quest == QUEST
+        && callback.trigger == super::world_callbacks::Trigger::Use
+        && callback.selector.action == Some(8026)
+        && callback.storage.len() == 1
+        && callback.storage[0].track == MISSION
+        && callback.storage[0].preserve
+        && callback.item_on_target.as_ref().is_some_and(|item| {
+            item.item == "oteryn:item.tibia.i11364"
+                && item.selected_instance
+                && item.count == 1
+                && !item.reusable
+        })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
