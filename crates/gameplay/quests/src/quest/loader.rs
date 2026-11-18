@@ -281,6 +281,7 @@ pub(super) fn lower_embedded_quest_state(
         super::threatened_dreams::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::classic_dialogue::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue = super::armenius::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::liquid_black::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
