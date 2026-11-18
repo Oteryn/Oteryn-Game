@@ -63,7 +63,7 @@ fn document() -> serde_json::Value {
         {"key":"oteryn:quest-callback/rookie-guard-web-sample", "quest":QUEST, "trigger":"use",
          "selector":{"position":WEB,"appearance":100},"requires_world_admission":true,
          "passages":[],"offerings":[],"reversible":false,"return_on_failure":false,
-         "storage":[{"track":TRACK,"minimum":2,"maximum":4,"set":3}],
+         "storage":[{"track":TRACK,"minimum":4,"maximum":4,"set":3}],
          "sources":[SAMPLE]}
     ]})
 }
