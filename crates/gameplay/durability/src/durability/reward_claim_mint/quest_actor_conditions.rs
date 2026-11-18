@@ -15,6 +15,7 @@ pub struct QuestActorConditionProof {
     fence: CurrentCharacterGameplayFence,
     cause: QuestCause,
     item_disguise: Option<(String, String)>,
+    temporary_look: Option<u32>,
     callback: String,
     generation: [u8; 32],
     active: BTreeSet<ActorConditionRequirement>,
@@ -63,6 +64,7 @@ impl QuestActorConditionProof {
             fence,
             cause: QuestCause::Command(command),
             item_disguise: None,
+            temporary_look: None,
             callback: callback.into(),
             generation: native.source_digest(),
             active,
@@ -97,6 +99,7 @@ impl QuestActorConditionProof {
             now,
         )?;
         proof.cause = cause;
+        proof.temporary_look = spell_conditions.outfit_at(now);
         if let Some(
             oteryn_gameplay_foundation::foundation::condition::TemporaryDisplayedAppearance::Item(
                 item,
@@ -133,6 +136,16 @@ impl QuestActorConditionProof {
                 .is_some_and(|(item, condition)| {
                     item == &required.item && condition == &required.condition
                 })
+    }
+
+    pub(crate) fn permits_temporary_look(
+        &self,
+        fence: CurrentCharacterGameplayFence,
+        request: &QuestTransitionRequest,
+        generation: [u8; 32],
+        look: u32,
+    ) -> bool {
+        self.permits(fence, request, generation, &[]) && self.temporary_look == Some(look)
     }
 
     pub(super) fn permits(

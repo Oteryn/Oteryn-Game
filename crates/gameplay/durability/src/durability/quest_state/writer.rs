@@ -1042,13 +1042,14 @@ impl DurabilityRoot {
         let world_reward = callback.as_ref().and_then(|c| c.item_reward().as_ref());
         let world_disguise = callback
             .as_ref()
-            .and_then(|c| c.effects.requires_item_disguise.as_ref());
+            .is_some_and(|c| c.effects.requires_item_disguise.is_some()
+                || c.effects.requires_temporary_look.is_some());
         let step_world_reward = callback
             .as_ref()
             .is_some_and(|c| c.has_fenced_step_reward());
-        if (reward_callback.is_some() || world_reward.is_some() || world_disguise.is_some())
+        if (reward_callback.is_some() || world_reward.is_some() || world_disguise)
             != reward_admission.is_some()
-            || (world_disguise.is_some() && !matches!(request.cause, QuestCause::Step(_)))
+            || (world_disguise && !matches!(request.cause, QuestCause::Step(_)))
             || (reward_callback.is_some()
                 && !matches!(request.cause, QuestCause::Command(_))
                 && !native_claim)
@@ -1123,6 +1124,7 @@ impl DurabilityRoot {
                             || callback.effects.outfit_reward.is_some()
                             || callback.effects.scene.is_some()
                             || callback.effects.requires_item_disguise.is_some()
+                            || callback.effects.requires_temporary_look.is_some()
                             || callback.effects.restore_disguise)
                 }))
         {
@@ -1922,6 +1924,19 @@ impl DurabilityRoot {
                     if let Some(required) = callback.as_ref().and_then(|world| world.effects.requires_item_disguise.as_ref()) {
                         let valid = reward_admission.as_ref().is_some_and(|admission| {
                             admission.actor_conditions.is_some_and(|proof| proof.permits_world(fence, &request, admission.native.source_digest(), required))
+                                && admission.weights.generation_digest() == admission.native.source_digest()
+                        });
+                        if !valid {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
+                    // Crystal movements_slime_looktype.lua:10-18 compares the
+                    // current native look. An expired Outfit is no admission proof.
+                    if let Some(look) = callback.as_ref().and_then(|world| world.effects.requires_temporary_look) {
+                        let valid = reward_admission.as_ref().is_some_and(|admission| {
+                            admission.actor_conditions.is_some_and(|proof|
+                                proof.permits_temporary_look(fence, &request, admission.native.source_digest(), look))
                                 && admission.weights.generation_digest() == admission.native.source_digest()
                         });
                         if !valid {

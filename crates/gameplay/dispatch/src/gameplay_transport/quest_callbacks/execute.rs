@@ -213,7 +213,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::NothingToUse;
         }
         if let Some(roll) = &callback.effects.roll_reward
-            && !map.facts.quest_callback_action_ready(key, roll.source_action)
+            && !map
+                .facts
+                .quest_callback_action_ready(key, roll.source_action)
         {
             if let Some(message) = &callback.failure_message {
                 self.states.chat.push_quest_feedback(session, message);
@@ -1186,11 +1188,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let (context, selected_tool) = context;
             let roll = if let Some(roll) = &callback.effects.roll_reward {
-                let QuestCause::Use(command) = cause else { return UseDisposition::Rejected; };
-                let won = roll.succeeds(&callback.key, command.game_session_id().as_bytes(),
-                    command.command_id().get(), &context.actor_placement, context.movement_revision);
+                let QuestCause::Use(command) = cause else {
+                    return UseDisposition::Rejected;
+                };
+                let won = roll.succeeds(
+                    &callback.key,
+                    command.game_session_id().as_bytes(),
+                    command.command_id().get(),
+                    &context.actor_placement,
+                    context.movement_revision,
+                );
                 if !won {
-                    roll_spawn = match self.prepare_roll_failure(runtime,map,pos,&roll.failure_creature) {
+                    roll_spawn = match self.prepare_roll_failure(
+                        runtime,
+                        map,
+                        pos,
+                        &roll.failure_creature,
+                    ) {
                         Ok(spawn) => spawn,
                         Err(result) => return result,
                     };
@@ -1215,7 +1229,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     crate::gameplay_transport::item_ref_admission::NativeItemWeights(native)
                         .with_wheel(self.premium_coordinator)
                 });
-            let condition_proof = if callback.effects.requires_item_disguise.is_some() {
+            let disguise_gate = callback.effects.requires_item_disguise.is_some()
+                || callback.effects.requires_temporary_look.is_some();
+            let condition_proof = if disguise_gate {
                 let Some(native) = self.active_generation.and_then(|g| g.native_gameplay()) else {
                     return UseDisposition::Rejected;
                 };
@@ -1229,8 +1245,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
-            let reward_admission = if callback.item_reward().is_some()
-                || callback.effects.requires_item_disguise.is_some()
+            let reward_admission = if callback.item_reward().is_some() || disguise_gate
             {
                 self.active_generation
                     .and_then(|g| g.native_gameplay())
@@ -1661,7 +1676,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             } else if !callback.is_read_only() && !personal_gift_preserves_object {
                 if let Some(spawn) = roll_spawn {
-                    if runtime.commit_quest_creature_spawn_with_projection(&[spawn], apply_scene).is_err() {
+                    if runtime
+                        .commit_quest_creature_spawn_with_projection(&[spawn], apply_scene)
+                        .is_err()
+                    {
                         return UseDisposition::Rejected;
                     }
                 } else if !apply_scene() {

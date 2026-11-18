@@ -1520,7 +1520,10 @@ impl BundleFacts {
     /// Bare native counterparts start ready. A timed removal of their action
     /// remains authoritative until the existing callback deadline restores it.
     pub fn quest_callback_action_ready(&self, key: u64, action: u16) -> bool {
-        let dynamic = self.callbacks.lock().ok()
+        let dynamic = self
+            .callbacks
+            .lock()
+            .ok()
             .map(|state| state.actions.get(&key).copied());
         match dynamic {
             Some(Some(current)) => current == Some(action),

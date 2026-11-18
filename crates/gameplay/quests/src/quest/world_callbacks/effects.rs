@@ -70,6 +70,9 @@ pub struct CallbackEffects {
     pub completes_quest: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub requires_item_disguise: Option<ItemDisguiseRequirement>,
+    /// A native monster look sampled from the live, unexpired Outfit condition.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub requires_temporary_look: Option<u32>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub restore_disguise: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -512,7 +515,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
     let effects = &callback.effects;
-    if effects.roll_reward.as_ref().is_some_and(|roll| !roll.valid(callback)) {
+    if effects
+        .roll_reward
+        .as_ref()
+        .is_some_and(|roll| !roll.valid(callback))
+    {
         return false;
     }
     if effects
@@ -678,6 +685,15 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || callback.actor_kind != ActorKind::Player
                 || callback.teleport.is_none()
                 || !callback.has_personal_state()
+        })
+        || effects.requires_temporary_look.is_some_and(|look| {
+            look == 0 || look > u32::from(u16::MAX)
+                || effects.requires_item_disguise.is_some()
+                || callback.trigger != Trigger::StepIn
+                || callback.actor_kind != ActorKind::Player
+                || callback.teleport.is_none()
+                || !callback.requires_world_admission
+                || !callback.has_state_writes()
         })
         || (effects.restore_disguise
             && (callback.trigger != Trigger::StepIn
