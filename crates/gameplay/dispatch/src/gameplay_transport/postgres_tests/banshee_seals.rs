@@ -892,14 +892,15 @@ async fn exercise_queen(
             .any(|line| line.contains("prepared to receive my kiss"))
     );
     let actor = admitted.runtime_actor.ok_or("actor")?;
-    {
+    let before_kiss = {
         let runtime = owner.runtime.lock().await;
         let spells = owner.states.spell_states.lock().await;
         let character = spells
             .get(&runtime, actor, session)
             .ok_or("live character")?;
         assert!(character.character_facts().level < KISS_LEVEL);
-    }
+        runtime.read_actor_position(actor).map_err(debug)?
+    };
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
@@ -922,6 +923,16 @@ async fn exercise_queen(
     assert_eq!(
         low_level.conversation.ok_or("level refusal")?.lines,
         ["Sorry, not possible."],
+    );
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?,
+        before_kiss,
+        "level refusal must leave the actor at the Queen"
     );
     // Extend the historical fixture's level 50/51 table through the kiss threshold.
     // Award XP through the sequencer so the later quest write sees a valid receipt chain.
