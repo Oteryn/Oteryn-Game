@@ -212,7 +212,8 @@ pub(super) fn scenario(
     run(async |admin| {
         let merchant_loot = seed == "rottin_merchant_loot";
         let merchant_wave = seed == "rottin_merchant_wave";
-        let weighted_reward = seed == "rottin_weighted_reward";
+        let repeat_reward = seed == "rottin_weighted_repeat";
+        let weighted_reward = seed == "rottin_weighted_reward" || repeat_reward;
         let h = if merchant_loot || merchant_wave || weighted_reward {
             Harness::create_quest_reward(admin, seed, false).await?
         } else {
@@ -374,7 +375,7 @@ pub(super) fn scenario(
         if weighted_reward || merchant_loot || merchant_wave {
             if weighted_reward {
                 owner.quest_catalogue =
-                    Some(std::sync::Arc::new(super::rottin_rewards::catalogue()?));
+                    Some(std::sync::Arc::new(super::rottin_rewards::catalogue(repeat_reward)?));
             }
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
@@ -384,7 +385,8 @@ pub(super) fn scenario(
             } else if merchant_loot {
                 super::rottin_bushwhacking::exercise(None, &owner, admitted, Some(&h)).await?;
             } else {
-                super::rottin_rewards::exercise(&mut owner, &mut admitted, &h).await?;
+                super::rottin_rewards::exercise(&mut owner, &mut admitted, &h, repeat_reward)
+                    .await?;
             }
             drop(owner);
             drop(authority);

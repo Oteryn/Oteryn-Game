@@ -34,13 +34,49 @@ fn rottin_lucky_loop_talk_mints_one_weighted_bundle_postgres() -> TestResult {
         .map_err(Into::into)
 }
 
-pub(super) fn catalogue() -> TestResult<QuestStateCatalogue> {
+#[test]
+fn rottin_lucky_loop_talk_mints_after_cooldown_postgres() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| scenario("rottin_weighted_repeat", false, None))?
+        .join()
+        .map_err(|_| "Rottin repeat reward PostgreSQL thread panicked")?
+        .map_err(Into::into)
+}
+
+fn payout_key(repeat: bool) -> &'static str {
+    if repeat {
+        "oteryn:quest-reward/rottin-wood/lucky-loop-repeat"
+    } else {
+        PAYOUT
+    }
+}
+
+pub(super) fn catalogue(repeat: bool) -> TestResult<QuestStateCatalogue> {
     // This transaction fixture exercises the two gold bundles with admitted
     // output definitions. The quest unit case also checks the horn interval.
     let digest = Sha256::digest(DONOR.as_bytes())
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect::<String>();
+    // First completion grants the account achievement. Later completions can
+    // reuse the item-only occurrence owner after the quest's daily cooldown.
+    let (prior_stamp, cooldown, achievement) = if repeat {
+        (
+            1,
+            json!({"kind": "elapsed_at_least", "seconds": 72000}),
+            None,
+        )
+    } else {
+        (
+            0,
+            json!({"kind": "between", "minimum": 0, "maximum": 0}),
+            Some(ACHIEVEMENT),
+        )
+    };
     let bindings = Bindings::parse(&serde_json::to_vec(&json!({
         "schema": 1,
         "quests": [{
@@ -49,7 +85,7 @@ pub(super) fn catalogue() -> TestResult<QuestStateCatalogue> {
             "sources": [DONOR],
             "tracks": [
                 {"key": TRACK, "initial": 1, "minimum": 1, "maximum": 2},
-                {"key": COOLDOWN, "initial": 0, "minimum": 0, "maximum": 9223372036854775807_i64}
+                {"key": COOLDOWN, "initial": prior_stamp, "minimum": 0, "maximum": 9223372036854775807_i64}
             ],
             "stages": [{
                 "key": "lucky-loop",
@@ -57,12 +93,12 @@ pub(super) fn catalogue() -> TestResult<QuestStateCatalogue> {
                 "trigger": {
                     "kind": "npc_dialogue",
                     "callback": {
-                        "key": PAYOUT, "quest": QUEST, "npc": ROTTIN,
+                        "key": payout_key(repeat), "quest": QUEST, "npc": ROTTIN,
                         "keywords": ["yes"], "topic": 0, "next_topic": 0,
                         "storage": [{"track": TRACK, "minimum": 1, "maximum": 1, "set": 2}],
                         "state_ops": [{
                             "track": COOLDOWN,
-                            "from": {"kind": "any"},
+                            "from": cooldown,
                             "effect": {"kind": "set_now"}
                         }],
                         "take": [{"item": CHARM, "count": 7}],
@@ -71,7 +107,8 @@ pub(super) fn catalogue() -> TestResult<QuestStateCatalogue> {
                             "item": PLATINUM, "count": 3,
                             "additional": [{"item": RING, "count": 1}]
                         }}],
-                        "outfit": null, "achievement": ACHIEVEMENT, "experience": 100,
+                        "outfit": null, "achievement": achievement, "experience": 100,
+                        "per_occurrence_mint": repeat,
                         "reply": ["Good hunt."], "sources": [DONOR]
                     }
                 }
@@ -90,6 +127,7 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    repeat: bool,
 ) -> TestResult {
     owner
         .refresh_quest_session(admitted.game_session_id, false)
@@ -106,7 +144,7 @@ pub(super) async fn exercise(
          (SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$2 AND lifecycle=1),
          (SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$3 AND lifecycle=1),
          (SELECT count(*) FROM game_quest_reward_sources WHERE transition_key=$4 AND mint_transaction_id IS NOT NULL)"
-    ).bind(CHARM).bind(PLATINUM).bind(RING).bind(PAYOUT).fetch_one(&h.pool).await?;
+    ).bind(CHARM).bind(PLATINUM).bind(RING).bind(payout_key(repeat)).fetch_one(&h.pool).await?;
     assert!(matches!(actual, (0, 5, 0, 1) | (0, 3, 1, 1)), "{actual:?}");
     let stage: i64 =
         sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
@@ -116,13 +154,14 @@ pub(super) async fn exercise(
     assert_eq!(stage, 2);
     let (stamped, awarded): (bool, bool) = sqlx::query_as(
         "SELECT
-         EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE track_key=$1 AND value > 0),
+         EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE track_key=$1 AND value > 1),
          EXISTS(SELECT 1 FROM game_account_achievements WHERE achievement_key=$2)",
     )
     .bind(COOLDOWN)
     .bind(ACHIEVEMENT)
     .fetch_one(&h.pool)
     .await?;
-    assert!(stamped && awarded);
+    assert!(stamped);
+    assert_eq!(awarded, !repeat);
     Ok(())
 }
