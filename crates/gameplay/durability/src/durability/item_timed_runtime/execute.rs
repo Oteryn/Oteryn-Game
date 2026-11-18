@@ -5,6 +5,7 @@ pub(super) async fn apply(
     tx: &mut crate::durability::item_mint_audit::Type2Transaction<'_>,
     fence: &CurrentCharacterGameplayFence,
     request: &TimedRequest,
+    house_origin: Option<[u8; 16]>,
 ) -> Result<TimedItemResult> {
     if let TimedOperation::Repair(coins) = &request.operation {
         return repair::apply(tx, fence, request, coins).await;
@@ -109,7 +110,7 @@ pub(super) async fn apply(
             };
             timed::validate_expiry(&expiry)?;
             let tuple = tx.tuple();
-            timed::write_expiry(tx, fence, &expiry, tuple).await?;
+            timed::write_expiry_in_scope(tx, fence, &expiry, tuple, house_origin).await?;
             result.retired = request.target.is_none();
             result.revision += u64::from(!result.retired);
             result.charges = request

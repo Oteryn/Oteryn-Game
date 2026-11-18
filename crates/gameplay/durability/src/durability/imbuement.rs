@@ -204,6 +204,18 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: ImbuementCheckpoint,
     ) -> Result<(), DurabilityError> {
+        self.checkpoint_imbuements_in_scope(recovery, node, fence, request, None)
+            .await
+    }
+
+    pub async fn checkpoint_imbuements_in_scope(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: ImbuementCheckpoint,
+        house_origin: Option<[u8; 16]>,
+    ) -> Result<(), DurabilityError> {
         if request.changes.is_empty() || request.changes.len() > 30 {
             return Err(DurabilityError::InvalidStoredState);
         }
@@ -214,7 +226,15 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = super::db::begin_type2_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &record).await?;
-            if assert_item_only_fence(&mut tx, &fence.item_fence(), &node).await?.is_err() {
+            let authorized = if let Some(origin) = house_origin {
+                super::db::lock_admission_relations(&mut tx).await?;
+                super::house_hireling::fence::assert_house_inventory_fence(
+                    &mut tx, &node, &fence.item_fence(), origin,
+                ).await?
+            } else {
+                assert_item_only_fence(&mut tx, &fence.item_fence(), &node).await?.is_ok()
+            };
+            if !authorized {
                 return Err(DurabilityError::Unavailable);
             }
             let changes = serde_json::to_value(&request.changes).map_err(|_| DurabilityError::InvalidStoredState)?;
