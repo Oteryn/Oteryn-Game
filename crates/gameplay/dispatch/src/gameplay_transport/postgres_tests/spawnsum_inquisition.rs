@@ -159,9 +159,11 @@ async fn exercise(h: &Harness) -> TestResult {
         )
     };
     let appearance = || {
-        map.facts
-            .base_entry(NEXUS, 3, 3)
-            .map(|entry| entry.appearance_id)
+        compose_tile(&map.overlay, &map.facts, NEXUS).ok().flatten()?.entries
+            .into_iter().find_map(|entry| {
+                matches!(entry.source, EntrySource::Base { placement_key, .. } if placement_key == key)
+                    .then_some(entry.facts.appearance_id)
+            })
     };
     owner.states.test_owner_time.store(100, Ordering::Relaxed);
     assert_eq!(
