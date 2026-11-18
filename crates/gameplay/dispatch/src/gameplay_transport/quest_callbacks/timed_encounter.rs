@@ -16,6 +16,7 @@ pub(super) struct TimedEncounter {
     scope: (RuntimeScopeRefV1, ScopeOwnershipGeneration),
     participant: Option<(ExactActorRef, GameSessionId)>,
     roster: Vec<(ExactActorRef, GameSessionId)>,
+    switches: Vec<(u64, u64, EntryFacts)>,
     spawn_at: u64,
     reset_at: u64,
     attempted_spawn: bool,
@@ -30,7 +31,7 @@ impl TimedEncounter {
         now: u64,
         roster: Vec<(ExactActorRef, GameSessionId)>,
     ) -> Option<Self> {
-        let transfer = callback.effects.timed_group_transfer?;
+        let transfer = callback.effects.timed_group_transfer.as_ref()?;
         Some(Self {
             callback: callback.clone(),
             key: source.0,
@@ -40,11 +41,16 @@ impl TimedEncounter {
             scope: runtime.encounter_owner_scope(),
             participant: None,
             roster,
+            switches: Vec::new(),
             spawn_at: now,
             reset_at: now.checked_add(u64::from(transfer.after_ms) * 1_000)?,
             attempted_spawn: true,
             spawned: Vec::new(),
         })
+    }
+
+    pub(super) fn bind_switches(&mut self, switches: Vec<(u64, u64, EntryFacts)>) {
+        self.switches = switches;
     }
 
     pub(super) fn bind_spawns(&mut self, spawned: Vec<ExactActorRef>) {
@@ -177,6 +183,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             scope: runtime.encounter_owner_scope(),
             participant: personal.then_some((actor, session)),
             roster: Vec::new(),
+            switches: Vec::new(),
             spawn_at,
             reset_at,
             attempted_spawn: false,
@@ -226,7 +233,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 pending.remove(index);
                 continue;
             };
-            if let Some(transfer) = memo.callback.effects.timed_group_transfer {
+            if let Some(transfer) = &memo.callback.effects.timed_group_transfer {
                 if self.expire_group(&mut runtime, &mut states, map, memo, transfer.destination) {
                     pending.remove(index);
                 } else {
@@ -379,8 +386,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             proofs.push(proof);
         }
         let Ok(landed) = runtime.commit_quest_relocation(proofs, || {
-            map.facts
-                .apply_quest_callback(memo.key, memo.revision, restore, &[], &[], true, None)
+            if memo.switches.is_empty() {
+                map.facts.apply_quest_callback(
+                    memo.key,
+                    memo.revision,
+                    restore,
+                    &[],
+                    &[],
+                    true,
+                    None,
+                )
+            } else {
+                map.facts.reset_quest_switch_walls(&memo.switches)
+            }
         }) else {
             return false;
         };

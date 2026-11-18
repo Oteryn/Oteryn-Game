@@ -178,6 +178,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 after,
             );
         }
+        if callback
+            .effects
+            .timed_group_transfer
+            .as_ref()
+            .is_some_and(|window| !window.switches.is_empty())
+        {
+            return self.activate_coordinated_switch(
+                runtime,
+                states,
+                actor,
+                session,
+                map,
+                callback,
+                (key, expected_revision),
+                after,
+            );
+        }
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };

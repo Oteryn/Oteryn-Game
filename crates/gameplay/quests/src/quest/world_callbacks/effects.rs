@@ -340,11 +340,80 @@ pub struct TimedDisplay {
     pub after_ms: u32,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct TimedGroupTransfer {
     pub after_ms: u32,
     pub destination: Position,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub switches: Vec<GroupSwitch>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct GroupSwitch {
+    pub lever: Position,
+    pub station: Position,
+    pub wall_from: Position,
+    pub wall_to: Position,
+    pub wall_appearance: u16,
+}
+
+impl GroupSwitch {
+    pub fn wall_positions(&self) -> impl Iterator<Item = Position> + '_ {
+        (self.wall_from.x..=self.wall_to.x).flat_map(move |x| {
+            (self.wall_from.y..=self.wall_to.y).map(move |y| Position {
+                x,
+                y,
+                floor: self.wall_from.floor,
+            })
+        })
+    }
+}
+
+fn valid_group_switches(callback: &Callback, room: &Encounter, switches: &[GroupSwitch]) -> bool {
+    let in_room = |p: Position| {
+        p.floor == room.room_min.floor
+            && (room.room_min.x..=room.room_max.x).contains(&p.x)
+            && (room.room_min.y..=room.room_max.y).contains(&p.y)
+    };
+    let levers: BTreeSet<_> = switches.iter().map(|s| s.lever).collect();
+    let stations: BTreeSet<_> = switches.iter().map(|s| s.station).collect();
+    if !(2..=8).contains(&switches.len())
+        || levers.len() != switches.len()
+        || stations.len() != switches.len()
+        || !levers.is_disjoint(&stations)
+        || !callback
+            .selector
+            .position
+            .is_some_and(|position| levers.contains(&position))
+        || !room.players.is_empty()
+        || !callback.passages.is_empty()
+        || callback.effects.scene.is_some()
+    {
+        return false;
+    }
+    let mut walls = BTreeSet::new();
+    switches.iter().all(|switch| {
+        let (from, to) = (switch.wall_from, switch.wall_to);
+        in_room(switch.lever)
+            && in_room(switch.station)
+            && switch.lever.x.abs_diff(switch.station.x) <= 1
+            && switch.lever.y.abs_diff(switch.station.y) <= 1
+            && in_room(from)
+            && in_room(to)
+            && from.x <= to.x
+            && from.y <= to.y
+            && (from.x == to.x || from.y == to.y)
+            && from.x.abs_diff(to.x) + from.y.abs_diff(to.y) < 8
+            && switch.wall_appearance != 0
+            && switch.wall_positions().all(|at| {
+                !levers.contains(&at)
+                    && !stations.contains(&at)
+                    && !room.monsters.iter().any(|monster| monster.position == at)
+                    && walls.insert(at)
+            })
+    })
 }
 
 /// A source rite transports the exact players on bounded stations. The initiator
@@ -877,15 +946,18 @@ pub(super) fn valid(callback: &Callback) -> bool {
     {
         return false;
     }
-    if let Some(transfer) = effects.timed_group_transfer
+    if let Some(transfer) = &effects.timed_group_transfer
         && (!pos(transfer.destination)
             || !(1..=3_600_000).contains(&transfer.after_ms)
             || callback.trigger != Trigger::Use
             || callback.lever.is_none()
             || callback.has_personal_state()
             || effects.encounter.as_ref().is_none_or(|encounter| {
-                encounter.players.is_empty()
-                    || encounter.timing.is_some()
+                (if transfer.switches.is_empty() {
+                    encounter.players.is_empty()
+                } else {
+                    !valid_group_switches(callback, encounter, &transfer.switches)
+                }) || encounter.timing.is_some()
                     || encounter.phase.is_some()
                     || (transfer.destination.floor == encounter.room_min.floor
                         && (encounter.room_min.x..=encounter.room_max.x)
@@ -906,6 +978,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
+        let coordinated = effects
+            .timed_group_transfer
+            .as_ref()
+            .is_some_and(|group| !group.switches.is_empty());
         if (encounter.minimum_level == 0 && !source_party)
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
@@ -924,8 +1000,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         * (u64::from(encounter.room_max.y.saturating_sub(encounter.room_min.y)) + 1)
                         > 4096
             } else {
-                !(1..=if encounter.phase.is_some() { 16 } else { 8 })
-                    .contains(&encounter.players.len())
+                !coordinated
+                    && !(1..=if encounter.phase.is_some() { 16 } else { 8 })
+                        .contains(&encounter.players.len())
             }
             || !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                 .contains(&encounter.monsters.len())

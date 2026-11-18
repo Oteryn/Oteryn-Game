@@ -6,6 +6,7 @@ use super::{
 };
 mod admission;
 mod conditional_cells;
+mod coordinated_switches;
 use admission::{character_fence_required, stateless_observation_required};
 mod clear_area;
 mod committed_copy;

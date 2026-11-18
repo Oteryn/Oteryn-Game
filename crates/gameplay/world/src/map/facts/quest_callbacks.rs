@@ -73,7 +73,10 @@ struct DynamicPortal {
 /// Already qualified facts for one atomic, Channel-local callback projection.
 pub enum QuestCallbackProjection {
     /// Restore exactly this revision at an original source deadline.
-    TimedTransform { due: u64, restore: EntryFacts },
+    TimedTransform {
+        due: u64,
+        restore: EntryFacts,
+    },
     /// A source glyph and its native portal share one revision-fenced deadline.
     TimedEntrance {
         due: u64,
@@ -111,6 +114,9 @@ pub enum QuestCallbackProjection {
     Portals {
         endpoints: [(TilePos, TilePos, EntryFacts); 2],
         expires: Option<u64>,
+    },
+    SwitchWalls {
+        walls: Vec<(TilePos, EntryFacts)>,
     },
     TimedDisplay {
         position: TilePos,
@@ -163,6 +169,7 @@ pub(super) struct CallbackStates {
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
     timed_displays: BTreeMap<(u64, u64), (TilePos, EntryId)>,
+    switch_walls: BTreeMap<u64, Vec<(TilePos, EntryId)>>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
     batch_blockers: BTreeSet<TilePos>,
@@ -418,6 +425,39 @@ impl CallbackStates {
                     );
                 }
             }
+            QuestCallbackProjection::SwitchWalls { walls } => {
+                if close
+                    || walls.is_empty()
+                    || walls.len() > 8
+                    || self.switch_walls.contains_key(&owner)
+                    || walls
+                        .iter()
+                        .any(|(pos, _)| self.phase_has_dynamic_blocker(*pos))
+                {
+                    return false;
+                }
+                let mut entries = Vec::with_capacity(walls.len());
+                let mut edits = Vec::with_capacity(walls.len());
+                for ((pos, facts), offset) in walls.iter().zip(1_u64..) {
+                    let Some(id) = self
+                        .movement_sequence
+                        .checked_add(offset)
+                        .and_then(EntryId::callback)
+                    else {
+                        return false;
+                    };
+                    entries.push((*pos, id));
+                    edits.push(QuestSceneMutation::Create {
+                        position: *pos,
+                        facts: *facts,
+                        passable: false,
+                    });
+                }
+                if !project_scene(self, owner, &edits, false) {
+                    return false;
+                }
+                self.switch_walls.insert(owner, entries);
+            }
             QuestCallbackProjection::TimedDisplay {
                 position,
                 entry: facts,
@@ -563,6 +603,7 @@ impl CallbackStates {
             + self.hidden.len()
             + self.movement_decays.len()
             + self.timed_displays.len()
+            + self.switch_walls.len()
             + self.movement_effects.len()
             + self.creature_visuals.len()
             + self.movement_speech.len()
@@ -1681,6 +1722,7 @@ impl BundleFacts {
             Some(QuestCallbackProjection::Scene { mutations, .. }) => {
                 mutations.len().saturating_mul(3).saturating_add(1)
             }
+            Some(QuestCallbackProjection::SwitchWalls { walls }) => walls.len() * 2 + 2,
             _ => usize::from(projection.is_some()) * 8,
         };
         if states
@@ -1725,6 +1767,9 @@ impl BundleFacts {
                         }
                     })
                 }
+                QuestCallbackProjection::SwitchWalls { walls } => walls
+                    .iter()
+                    .any(|(position, _)| states.position_reserved(*position)),
                 QuestCallbackProjection::TimedTransform { .. } => false,
             })
             || expected == u64::MAX
@@ -1771,6 +1816,52 @@ impl BundleFacts {
             states.passable.insert(entry, passable);
         }
         states.changed.insert(key, (expected + 1, after));
+        true
+    }
+
+    pub fn quest_switch_walls_current(&self, key: u64, revision: u64) -> bool {
+        self.callbacks.lock().is_ok_and(|states| {
+            states.switch_walls.contains_key(&key)
+                && states
+                    .changed
+                    .get(&key)
+                    .is_some_and(|(current, _)| *current == revision)
+        })
+    }
+
+    /// The winning switch owns the whole circuit reset. Validate all placements
+    /// before removing any exact walls or rolling any lever revision forward.
+    pub fn reset_quest_switch_walls(&self, switches: &[(u64, u64, EntryFacts)]) -> bool {
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        if switches.iter().any(|(key, expected, _)| {
+            *expected == u64::MAX
+                || states.key_reserved(*key)
+                || !states.changed.get(key).is_some_and(|(r, _)| r == expected)
+                || states.switch_walls.get(key).is_none_or(|walls| {
+                    walls
+                        .iter()
+                        .any(|(position, _)| states.position_reserved(*position))
+                })
+        }) {
+            return false;
+        }
+        let states = Arc::make_mut(&mut states);
+        for &(key, expected, restore) in switches {
+            if let Some(walls) = states.switch_walls.remove(&key) {
+                for (position, id) in walls {
+                    states.solid_items.remove(&position);
+                    if let Some(entries) = states.movement_items.get_mut(&position) {
+                        entries.retain(|entry| entry.source != view::EntrySource::Added(id));
+                        if entries.is_empty() {
+                            states.movement_items.remove(&position);
+                        }
+                    }
+                }
+            }
+            states.changed.insert(key, (expected + 1, restore));
+        }
         true
     }
 
