@@ -9,7 +9,7 @@ use crate::foundation::{
 use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 mod drume;
 
@@ -243,7 +243,7 @@ pub(super) fn bind(
     players: &[(ExactActorRef, GameSessionId)],
     credits: Vec<grizzly_kills::EncounterCredit>,
     cells: crate::content::NativeEntryMovementCells,
-    chat: &Arc<ChatRuntime>,
+    chat: &ChatRuntime,
     now_us: u64,
 ) -> Result<ActivePhase, CarrierError> {
     let encounter = callback
@@ -265,7 +265,7 @@ pub(super) fn bind(
                 players,
                 actors,
                 battlefield,
-                Arc::downgrade(chat),
+                chat.quest_feedback(),
                 now_us,
             )?),
             room: encounter.clone(),

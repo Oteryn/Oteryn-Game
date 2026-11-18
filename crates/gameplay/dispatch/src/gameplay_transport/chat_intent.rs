@@ -17,7 +17,7 @@ mod source_speech;
 use std::collections::{BTreeMap, HashMap};
 use std::num::NonZeroU64;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock, Weak};
 
 use oteryn_protocol_oteryn::chat::{
     ChatDisposition, ChatIntent, ChatIntentResult, ChatLine, ChatRoom, ChatSpeaker, ChatSpeechMode,
@@ -85,11 +85,36 @@ struct ChatSession {
     echoes: std::collections::VecDeque<oteryn_protocol_oteryn::chat::line_extended::PrivateEcho>,
 }
 
+type ChatSessions = Mutex<HashMap<GameSessionId, ChatSession>>;
+
+/// A phase can publish to current chat sessions while the Channel owns them.
+#[derive(Debug)]
+pub(super) struct QuestFeedback(Weak<ChatSessions>);
+
+impl QuestFeedback {
+    pub(super) fn push(&self, session: GameSessionId, text: &str) {
+        if let Some(sessions) = self.0.upgrade() {
+            push_game_feedback(&sessions, session, text);
+        }
+    }
+}
+
+fn push_game_feedback(sessions: &ChatSessions, session: GameSessionId, text: &str) {
+    if let Ok(mut sessions) = sessions.lock()
+        && let Some(entry) = sessions.get_mut(&session)
+    {
+        entry.egress.push(ChatLine::Private {
+            speaker_name: "Game".into(),
+            text: text.into(),
+        });
+    }
+}
+
 /// The chat state of the admitted sessions of one Channel. The lock is never held across an
 /// await and is always taken after the runtime and spell-state locks.
 #[derive(Default)]
 pub struct ChatRuntime {
-    sessions: Mutex<HashMap<GameSessionId, ChatSession>>,
+    sessions: Arc<ChatSessions>,
     pub(super) guild: super::guild_chat::GuildChatRuntime,
     pub(super) party: super::guild_chat::GuildChatRuntime,
     pub(super) typing: super::player_typing::TypingRuntime,
@@ -226,14 +251,11 @@ impl ChatRuntime {
 
     /// A local Game feedback line, subject to the ordinary CHAT egress bound.
     pub(super) fn push_party_spell_feedback(&self, session: GameSessionId, text: &str) {
-        if let Ok(mut sessions) = self.sessions.lock()
-            && let Some(entry) = sessions.get_mut(&session)
-        {
-            entry.egress.push(ChatLine::Private {
-                speaker_name: "Game".into(),
-                text: text.into(),
-            });
-        }
+        push_game_feedback(&self.sessions, session, text);
+    }
+
+    pub(super) fn quest_feedback(&self) -> QuestFeedback {
+        QuestFeedback(Arc::downgrade(&self.sessions))
     }
 
     pub(super) fn push_quest_feedback(&self, session: GameSessionId, text: &str) {

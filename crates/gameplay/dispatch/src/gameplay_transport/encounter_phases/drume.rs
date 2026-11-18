@@ -1,8 +1,8 @@
 //! Crystal 201189f8, the_order_of_lion_quest/creaturescripts_commander_kills.lua:1-50.
 use super::*;
+use crate::gameplay_transport::chat_intent::QuestFeedback;
 use oteryn_gameplay_encounters::bosses::phase_controller::{NativePhaseOwner, Plan, Role};
 use oteryn_gameplay_quests::quest::world_callbacks::{Battlefield, Encounter};
-use std::sync::Weak;
 
 const LION: &str = "oteryn:creature.lion_commander";
 const USURPER: &str = "oteryn:creature.usurper_commander";
@@ -53,7 +53,7 @@ const ROLES: &[Role] = &[
 pub(super) struct Skirmish {
     pub(super) phase: NativePhaseOwner,
     battlefield: Battlefield,
-    chat: Weak<ChatRuntime>,
+    feedback: QuestFeedback,
     pub(super) ejected: bool,
     deadline: u64,
 }
@@ -64,7 +64,7 @@ impl Skirmish {
         participants: &[(ExactActorRef, GameSessionId)],
         actors: &[ExactActorRef],
         battlefield: Battlefield,
-        chat: Weak<ChatRuntime>,
+        feedback: QuestFeedback,
         now_us: u64,
     ) -> Result<Self, CarrierError> {
         let mut phase = NativePhaseOwner::bind(
@@ -94,7 +94,7 @@ impl Skirmish {
         Ok(Self {
             phase,
             battlefield,
-            chat,
+            feedback,
             ejected: false,
             deadline: now_us
                 .checked_add(u64::from(battlefield.timeout_ms) * 1000)
@@ -193,15 +193,13 @@ impl Skirmish {
         }
         // The successful move consumes this player's room presence. If cleanup
         // retries after a creature-removal error, these sessions are already outside.
-        if let Some(chat) = self.chat.upgrade() {
-            // Crystal commander_kills.lua:19 and action_drume.lua:31.
-            let notice = match reason {
-                Ejection::Defeat => "You lost the skirmish.",
-                Ejection::Timeout => "Your time is over.",
-            };
-            for session in recipients {
-                chat.push_quest_feedback(session, notice);
-            }
+        // Crystal commander_kills.lua:19 and action_drume.lua:31.
+        let notice = match reason {
+            Ejection::Defeat => "You lost the skirmish.",
+            Ejection::Timeout => "Your time is over.",
+        };
+        for session in recipients {
+            self.feedback.push(session, notice);
         }
         // Crystal commander_kills.lua:14-19 preserves monsters with a master.
         // The timeout in action_drume.lua:23-32 removes every monster in the room.
