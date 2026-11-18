@@ -134,6 +134,10 @@ fn scenario() -> TestResult {
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx)
             .await?;
+        sqlx::query("UPDATE game_character_roots SET sex=2 WHERE character_id=encode($1,'hex')::uuid AND sex IS NULL")
+            .bind(id(41).as_slice())
+            .execute(&mut *tx)
+            .await?;
         sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
             "{}{}{}",
             crate::durability::item_fee_burn::test_support::item(
@@ -249,7 +253,7 @@ fn scenario() -> TestResult {
             .root
             .read_current_character_appearance_state(&authority, &h.node, fence, Vec::new())
             .await
-            .map_err(debug)?;
+            .map_err(|error| format!("read rented appearance: {error:?}"))?;
         let mount = appearance.rental_mount.ok_or("rental entitlement")?;
         let (context, cosmetics) = owner.appearance_context().ok_or("native cosmetics")?;
         let (look, _, _) = cosmetics
@@ -302,7 +306,7 @@ fn scenario() -> TestResult {
             .root
             .read_current_character_appearance_state(&authority, &h.node, fence, Vec::new())
             .await
-            .map_err(debug)?;
+            .map_err(|error| format!("read expired appearance: {error:?}"))?;
         let catalogue = crate::gameplay_transport::appearance_change::catalogue::catalogue(
             &cosmetics,
             &expired,
