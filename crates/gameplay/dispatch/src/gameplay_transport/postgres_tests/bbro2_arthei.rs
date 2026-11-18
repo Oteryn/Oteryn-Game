@@ -4,12 +4,15 @@ use super::fixture::debug;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::durability::item_mint::TypedDefinitionRef;
-use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
+use crate::durability::item_transfer::{ItemWeightLookup, ItemWeightRefused};
+use crate::durability::reward_claim_mint::RewardClaimMintRequest;
+use crate::foundation::{CommandId, CommandRef};
+use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, generation_item_facts};
 use crate::map::{boot::BundleMap, overlay::TilePos, view::MapFacts};
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
     authored_bindings::Bindings,
-    world_callbacks::{Offering, Position},
+    world_callbacks::Position,
 };
 use oteryn_protocol_oteryn::world_object::*;
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
@@ -118,6 +121,33 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
     )
 }
 
+// Crystal data/items/items.xml:23374-23376, ghost's tear weight in centi-oz.
+const TEAR_WEIGHT: u32 = 1_000;
+
+fn tear_definition() -> TypedDefinitionRef {
+    TypedDefinitionRef {
+        family: "Item".into(),
+        production_key: TEAR.into(),
+        revision_ref: "definition-r1".into(),
+    }
+}
+
+struct TearFixtureWeights<'a>(NativeItemWeights<'a>);
+
+impl ItemWeightLookup for TearFixtureWeights<'_> {
+    fn generation_digest(&self) -> [u8; 32] {
+        self.0.generation_digest()
+    }
+
+    fn weight_of(&self, definition: &TypedDefinitionRef) -> Result<u32, ItemWeightRefused> {
+        if definition == &tear_definition() {
+            Ok(TEAR_WEIGHT)
+        } else {
+            self.0.weight_of(definition)
+        }
+    }
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     members: &mut [AdmittedSession],
@@ -158,18 +188,61 @@ pub(super) async fn exercise(
         )
         .await
         .map_err(debug)?;
-    super::quest_world_callbacks::input_item(
-        owner,
-        fence.item_fence(),
-        &Offering {
-            position: START,
-            item: TEAR.into(),
-            count: 1,
+    // The canonical Item index has the tear, but the active item policy does not
+    // yet materialize it. Seed custody with the exact source facts for this test.
+    let weights = TearFixtureWeights(NativeItemWeights(native));
+    let backpack = generation_item_facts(
+        native,
+        &TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: "oteryn:item.tibia.i2854".into(),
+            revision_ref: "definition-r1".into(),
         },
-        951,
-        true,
     )
-    .await?;
+    .map_err(debug)?;
+    let mint = RewardClaimMintRequest {
+        backpack_outputs: false,
+        root_charges_remaining: None,
+        root_fluid_subtype: None,
+        command: CommandRef::new(first.game_session_id, CommandId::new(951).map_err(debug)?),
+        claim: TypedDefinitionRef {
+            family: "RewardClaim".into(),
+            production_key: "fixture:reward.bbro2-arthei-tear".into(),
+            revision_ref: "definition-r1".into(),
+        },
+        source_placement: "fixture:placement.bbro2-arthei-tear".into(),
+        item: crate::domain::item_definition::ItemDefinitionFacts {
+            definition: tear_definition(),
+            stack: crate::domain::item_definition::ItemStackClass::NonStackable,
+            weight: Some(TEAR_WEIGHT),
+            container_capacity: None,
+            container_slot_equip_pattern: false,
+        },
+        quantity: 1,
+        contents: Vec::new(),
+        additional_items: Vec::new(),
+        root_text: None,
+        backpack,
+        content_revision: format!(
+            "sha256:{}",
+            native.source_digest().iter().map(|byte| format!("{byte:02x}")).collect::<String>()
+        ),
+        ruleset_revision: "ruleset-1".into(),
+        sim_revision: "sim-1".into(),
+        achievement: None,
+        quest_transition: None,
+        key_number: None,
+    };
+    let mut frozen = owner
+        .root
+        .freeze_reward_claim_mint_weighted(owner.character, owner.holder, fence.item_fence(), mint, &weights)
+        .await
+        .map_err(debug)?;
+    owner
+        .root
+        .commit_reward_claim_mint_weighted_noticed(owner.character, owner.holder, fence.item_fence(), &mut frozen, None, &weights)
+        .await
+        .map_err(debug)?;
     owner.admit_quest_session(first).await;
     owner.admit_quest_session(other).await;
     use crate::gameplay_transport::connection::FreshAdmissionAuthority;
