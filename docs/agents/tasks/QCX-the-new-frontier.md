@@ -63,3 +63,18 @@ The scalar kill counter, lease-expiry callbacks, and imported Tirecz encounter o
 The sharded PostgreSQL cases use the actual NPC talk owner and the native alias binding followed by wire USE. The finale fixture arranges prior arena victory and wardrobe claim, then drives Chrak and Ongulf. Entry cases exercise both story choices. The carpet assertion checks the durable permission flag.
 
 Baseline PG on `91e10b53790e5498eb25e47c78cccc57b062e8a7` with the updated test fixture and local pgsplit build files executed six cases in 221.11 s. The three untagged chest bindings and both New Land choices reproduced the missing behavior. New Horizons stopped on a fixture progression-context mismatch before Chrak's handoff. The candidate fixture initializes progression through the active content policy.
+
+PG via shard (pgsplit build files applied on `aac98b7b504a44cadc2d9b03aa759709d7e92e56`) passed all 6 cases in 323.57 s.
+
+| Case | Duration |
+| --- | ---: |
+| Gold ingot chest | 43.67 s |
+| Piggy bank chest | 46.30 s |
+| Potion chest | 65.50 s |
+| Chrak report and New Horizons turn-in | 49.31 s |
+| New Land, long dialogue | 64.06 s |
+| New Land, short dialogue | 54.61 s |
+
+Without the admin URL, the same 6 tests returned `Ok(())` in 0.01 s. Those calls did not exercise PostgreSQL. Quest authoring passed 44 checks, formatting passed, and the World pin check passed for `oteryn` with digest `61c115a6de9f45cca0b797a025de51b4ce644d8d84be9e1d2da105540039a3a8`.
+
+Dispatch library Clippy passed with all features and `-D warnings`.
