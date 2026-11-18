@@ -28,6 +28,24 @@ const RETREAT: Position = Position {
     y: 32318,
     floor: -13,
 };
+const SEAL: Position = Position {
+    x: 33199,
+    y: 31439,
+    floor: -13,
+};
+const SEAL_WEST: Position = Position { x: 33198, ..SEAL };
+const SEAL_RETREAT: Position = Position {
+    x: 33197,
+    y: 31438,
+    ..SEAL
+};
+const SEAL_ENTRY: Position = Position {
+    x: 33230,
+    y: 31493,
+    ..SEAL
+};
+const DEATH_TIME: i64 = 1_800_000_000;
+
 const CREATURE: &str = "oteryn:creature.plagirath";
 const CREDIT: &str = "oteryn:quest-progress/ferumbras-ascension/defeated-at/plagirath";
 
@@ -54,8 +72,18 @@ pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleW
     super::quest_world_callbacks::world_with_native_teleport(
         callback,
         PORTAL,
-        &[WEST, BOSS, EXIT, RETREAT, WAIT],
+        &[
+            WEST,
+            BOSS,
+            EXIT,
+            RETREAT,
+            WAIT,
+            SEAL_WEST,
+            SEAL_RETREAT,
+            SEAL_ENTRY,
+        ],
         WAIT,
+        &[(SEAL, 1949)],
     )
 }
 
@@ -66,6 +94,7 @@ pub(super) async fn exercise(
     harness: &Harness,
 ) -> TestResult {
     use super::quest_world_callbacks::local;
+    owner.root.set_test_quest_clock(DEATH_TIME).map_err(debug)?;
     super::questpc7_native_deaths::prepare_native_hunter(owner, first).await?;
     let (actor, mut second) =
         super::grizzly_boss::vacancy::second_player(owner, deps, harness, local(WAIT)).await?;
@@ -109,7 +138,10 @@ pub(super) async fn exercise(
     super::questpc7_native_deaths::lethal_creature(owner, first, target, 31_601, CREATURE).await?;
     let first_session = first.game_session_id;
     for player in [&mut *first, &mut second] {
-        assert!(super::questpc7_ferumbras::value(owner, player, CREDIT).await? > 0);
+        assert_eq!(
+            super::questpc7_ferumbras::value(owner, player, CREDIT).await?,
+            DEATH_TIME
+        );
         let actor = player.runtime_actor.ok_or("player actor")?;
         super::grizzly_boss::vacancy::teleport(owner, actor, player.game_session_id, local(WEST))
             .await?;
@@ -179,6 +211,44 @@ pub(super) async fn exercise(
             local(parking),
         )
         .await?;
+    }
+    owner
+        .root
+        .advance_test_quest_clock(44 * 3600 - 1)
+        .map_err(debug)?;
+    for (elapsed, expected) in [(0, SEAL_RETREAT), (1, SEAL_ENTRY)] {
+        owner
+            .root
+            .advance_test_quest_clock(elapsed)
+            .map_err(debug)?;
+        for (player, parking) in [(&mut *first, BOSS), (&mut second, WAIT)] {
+            let actor = player.runtime_actor.ok_or("player actor")?;
+            super::grizzly_boss::vacancy::teleport(
+                owner,
+                actor,
+                player.game_session_id,
+                local(SEAL_WEST),
+            )
+            .await?;
+            super::questpc7_ferumbras::step(owner, player, StepDirection::East).await?;
+            assert_eq!(
+                owner
+                    .runtime
+                    .lock()
+                    .await
+                    .read_actor_position(actor)
+                    .map_err(debug)?
+                    .position(),
+                local(expected)
+            );
+            super::grizzly_boss::vacancy::teleport(
+                owner,
+                actor,
+                player.game_session_id,
+                local(parking),
+            )
+            .await?;
+        }
     }
     Ok(())
 }

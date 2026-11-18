@@ -11,6 +11,7 @@ impl DurabilityRoot {
     ) -> Result<bool> {
         let recovery = authority.record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        #[cfg(any(test, feature = "test-support"))]
         let test_clock = self.quest_test_clock_handle();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
@@ -20,6 +21,7 @@ impl DurabilityRoot {
             )
             .bind(character.as_bytes().as_slice()).bind(track)
             .fetch_one(&mut *tx).await?;
+            #[cfg(any(test, feature = "test-support"))]
             let now = test_clock.and_then(|clock| {
                 let value = clock.load(std::sync::atomic::Ordering::Acquire);
                 (value >= 0).then_some(value)

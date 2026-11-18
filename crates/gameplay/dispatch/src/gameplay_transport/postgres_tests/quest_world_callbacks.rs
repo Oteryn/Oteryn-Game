@@ -358,6 +358,7 @@ pub(super) fn world_with_native_teleport(
     trigger: Position,
     cells: &[Position],
     destination: Position,
+    objects: &[(Position, u16)],
 ) -> TestResult<crate::map::boot::BundleWorld> {
     world_cells(
         callback, trigger, 1949, 1, &[], &[], None, cells, Some(destination),

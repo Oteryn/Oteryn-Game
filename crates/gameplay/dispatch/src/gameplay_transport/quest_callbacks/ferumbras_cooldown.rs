@@ -7,16 +7,18 @@ pub(super) struct Seal {
     source: Location,
     appearance: u16,
     retreat: Location,
+    entrance: Option<Location>,
     track: &'static str,
     hours: i64,
 }
 
 macro_rules! seal {
-    ($source:expr, $item:expr, $retreat:expr, $boss:literal, $hours:expr) => {
+    ($source:expr, $item:expr, $retreat:expr, $entrance:expr, $boss:literal, $hours:expr) => {
         Seal {
             source: $source,
             appearance: $item,
             retreat: $retreat,
+            entrance: $entrance,
             track: concat!(
                 "oteryn:quest-progress/ferumbras-ascension/defeated-at/",
                 $boss
@@ -27,12 +29,27 @@ macro_rules! seal {
 }
 
 const SEALS: [Seal; 8] = [
-    seal!((33482, 32775, -12), 1949, (33484, 32775, -12), "tarbaz", 44),
-    seal!((33432, 32332, -14), 1949, (33432, 32330, -14), "ragiaz", 44),
+    seal!(
+        (33482, 32775, -12),
+        1949,
+        (33484, 32775, -12),
+        Some((33419, 32841, -11)),
+        "tarbaz",
+        44
+    ),
+    seal!(
+        (33432, 32332, -14),
+        1949,
+        (33432, 32330, -14),
+        Some((33452, 32356, -13)),
+        "ragiaz",
+        44
+    ),
     seal!(
         (33199, 31439, -13),
         1949,
         (33197, 31438, -13),
+        Some((33230, 31493, -13)),
         "plagirath",
         44
     ),
@@ -40,6 +57,7 @@ const SEALS: [Seal; 8] = [
         (33402, 32406, -15),
         1949,
         (33399, 32402, -15),
+        Some((33380, 32454, -14)),
         "razzagorn",
         44
     ),
@@ -47,6 +65,7 @@ const SEALS: [Seal; 8] = [
         (33662, 32682, -10),
         1949,
         (33664, 32682, -10),
+        Some((33680, 32736, -11)),
         "zamulosh",
         44
     ),
@@ -54,6 +73,7 @@ const SEALS: [Seal; 8] = [
         (33677, 32689, -13),
         1949,
         (33675, 32690, -13),
+        None,
         "mazoran",
         44
     ),
@@ -61,6 +81,7 @@ const SEALS: [Seal; 8] = [
         (33477, 32698, -14),
         8280,
         (33477, 32701, -14),
+        None,
         "shulgrax",
         44
     ),
@@ -68,6 +89,7 @@ const SEALS: [Seal; 8] = [
         (33324, 31372, -14),
         1949,
         (33324, 31374, -14),
+        Some((33270, 31474, -14)),
         "ferumbras_mortal_shell",
         332
     ),
@@ -130,7 +152,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let destination = if cooling {
             position(seal.retreat)
         } else {
-            let Some(destination) = map.floors.teleport(at) else {
+            let Some(destination) = seal
+                .entrance
+                .map(position)
+                .or_else(|| map.floors.teleport(at))
+            else {
                 return entered;
             };
             destination
