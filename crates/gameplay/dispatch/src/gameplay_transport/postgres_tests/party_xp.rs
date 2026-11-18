@@ -1645,7 +1645,7 @@ async fn scenario(
         use oteryn_simulation_determinism::SemanticTimeMicros;
         for (index, (actor, session)) in players.iter().copied().enumerate() {
             owner.tick_spell_periodic(actor, session).await;
-            let (first_pulse, expected) = {
+            let (started_at, health_interval_ms, mana_interval_ms) = {
                 let runtime = owner.runtime.lock().await;
                 let mut states = owner.states.spell_states.lock().await;
                 let state = states
@@ -1679,38 +1679,40 @@ async fn scenario(
                     (health_interval_ms, mana_interval_ms),
                     if index == 0 { (7_000, 4_000) } else { (6_000, 6_000) }
                 );
-                let interval = health_interval_ms.min(mana_interval_ms);
-                let due = effect.started_at() + u64::from(interval) * 1_000;
-                let expected = (
-                    u32::from(health_interval_ms == interval),
-                    u32::from(mana_interval_ms == interval),
-                );
+                let started_at = effect.started_at();
                 state.restore_saved_vitals(1, 0);
-                (due, expected)
+                (started_at, health_interval_ms, mana_interval_ms)
             };
-            owner
-                .tick_spell_periodic_at(
-                    actor,
-                    session,
-                    SemanticTimeMicros::from_micros(first_pulse - 1),
-                )
-                .await;
-            let before = {
-                let runtime = owner.runtime.lock().await;
-                let states = owner.states.spell_states.lock().await;
-                states
-                    .get(&runtime, actor, session)
-                    .ok_or("cake player state")?
-                    .vitals()
-            };
-            let (_, after) = owner
-                .tick_spell_periodic_at(actor, session, SemanticTimeMicros::from_micros(first_pulse))
-                .await
-                .ok_or("Cake regeneration pulse did not publish vitals")?;
-            assert_eq!(
-                (after.health - before.health, after.mana - before.mana),
-                expected
-            );
+            let mut intervals = [health_interval_ms, mana_interval_ms];
+            intervals.sort_unstable();
+            for (index, interval) in intervals.into_iter().enumerate() {
+                if index == 1 && interval == intervals[0] {
+                    break;
+                }
+                let due = started_at + u64::from(interval) * 1_000;
+                owner
+                    .tick_spell_periodic_at(actor, session, SemanticTimeMicros::from_micros(due - 1))
+                    .await;
+                let before = {
+                    let runtime = owner.runtime.lock().await;
+                    let states = owner.states.spell_states.lock().await;
+                    states
+                        .get(&runtime, actor, session)
+                        .ok_or("cake player state")?
+                        .vitals()
+                };
+                let (_, after) = owner
+                    .tick_spell_periodic_at(actor, session, SemanticTimeMicros::from_micros(due))
+                    .await
+                    .ok_or("Cake regeneration pulse did not publish vitals")?;
+                assert_eq!(
+                    (after.health - before.health, after.mana - before.mana),
+                    (
+                        u32::from(interval.is_multiple_of(health_interval_ms)),
+                        u32::from(interval.is_multiple_of(mana_interval_ms)),
+                    )
+                );
+            }
         }
     }
     let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_party_kill_xp_receipts")
