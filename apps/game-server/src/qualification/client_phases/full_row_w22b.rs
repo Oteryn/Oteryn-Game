@@ -9,11 +9,11 @@
 //! 4. Query Bestiary/charms, send the Gut unlock and assignment intents, then kill the assigned
 //!    race; accept only committed state deltas and creature-product loot.  A locked/underfunded
 //!    assignment is the refusal path and must leave the queried charm state unchanged.
-//! 5. Perform another genuine kill while Wealth Duplex is active (obtained only through ordinary
-//!    item acquisition/use), and require the corpse to expose the independently minted second
+//! 5. Establish Wealth Duplex custody through the fenced fixture, then require real player USE
+//!    and a genuine kill while the effect is active. Require the corpse's independently minted second
 //!    roll rather than treating a source query as evidence.
 //! 6. Read native stamina, perform a genuine kill at <=840 minutes, and require an empty corpse;
-//!    stamina above the threshold is an observed prerequisite failure, never an executed block.
+//!    the explicit fenced fixture establishes exhaustion before the real kill, never its result.
 //! 7. Logout, make a fresh admission, and re-query Prey, charms, stamina, and modifier status;
 //!    require the committed selections/timers and prior loot custody to survive the new session.
 
@@ -314,6 +314,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let step5 = async {
         if wealth_seconds(&mut client).await? == 0 {
             let reference = provisioning::item_reference(&provisioning::item_index()?, 36727)?;
+            if !client.inventory().is_some_and(|view| view.entries.iter().any(|item| item.item_definition_ref == reference)) {
+                full_e2ef5::apply_fixture(&mut client, "w22b-wealth").await?;
+                release(&mut client).await?;
+                client = connect_character(clients, 0xd4, 1).await?;
+            }
             let handle = client
                 .inventory()
                 .and_then(|view| {
@@ -323,7 +328,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 })
                 .map(|item| item.handle)
                 .ok_or(
-                    "Wealth Duplex needs an ordinarily acquired concoction in carried custody",
+                    "Wealth Duplex setup did not produce concoction custody",
                 )?;
             let used = client.use_item(handle).await?;
             if used.status != CommandStatus::Accepted
@@ -351,7 +356,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     .await;
     row.observed(5, step5);
-    let step6 = prove_modifier(
+    let step6 = async {
+        if oteryn_gameplay_characters::stamina::hunting_loot_allowed(stamina(&mut client).await?) {
+            full_e2ef5::apply_fixture(&mut client, "w22b-stamina").await?;
+            release(&mut client).await?;
+            client = connect_character(clients, 0xd5, 1).await?;
+        }
+        prove_modifier(
         &mut client,
         world,
         &metadata.spawns,
@@ -359,7 +370,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         "oteryn:creature.rat",
         Modifier::Stamina,
     )
-    .await;
+    .await
+    }.await;
     row.observed(6, step6);
 
     let step7 = async { let prey_before = prey_request(&mut client, &prey::Request::Query).await?; let charm_before = charm_request(&mut client, charm::CharmProgressionAction::Query).await?; let stamina_before = stamina(&mut client).await?; release(&mut client).await?; client = connect_character(clients, 0xd3, 1).await?; let prey_after = prey_request(&mut client, &prey::Request::Query).await?; let charm_after = charm_request(&mut client, charm::CharmProgressionAction::Query).await?; let stamina_after = stamina(&mut client).await?; if prey_before != prey_after || charm_before != charm_after || stamina_before != stamina_after { return Err(format!("fresh admission durable delta mismatch: prey={} charm={} stamina={stamina_before}->{stamina_after}", prey_before != prey_after, charm_before != charm_after).into()); } Ok(()) }.await;

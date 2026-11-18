@@ -98,6 +98,64 @@ class ProvisionTests(unittest.TestCase):
                     child.stdout.close()
                     child.stderr.close()
 
+    def test_r3_remote_writer_cleans_completed_and_expired_state_but_keeps_recent_fences(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            expired = root/'oteryn-c17-intent-expired'; expired.mkdir(); (expired/'cancelled').touch()
+            (expired/'expires').write_text(str(int(provision.writer_clock())-1))
+            recent = root/'oteryn-c17-intent-recent'; recent.mkdir(); (recent/'cancelled').touch()
+            (recent/'expires').write_text(str(int(provision.writer_clock())+30))
+            op = str(uuid.uuid4())
+            result = subprocess.run(['sh', '-c', provision.REMOTE_INTENT.replace('/tmp', str(root)), 'test-intent', op, str(int(provision.writer_clock())+30), 'sh', '-c', 'true'], capture_output=True, timeout=3)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse(expired.exists())
+            self.assertTrue((recent/'cancelled').exists(), 'recent delayed-start fence was removed')
+            self.assertFalse((root/('oteryn-c17-intent-'+op)).exists())
+
+    def test_r3_delayed_remote_start_expires_even_when_cancellation_is_unavailable(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); marker = root/'committed'; php = root/'php'
+            php.write_text('#!' + sys.executable + "\nimport pathlib\npathlib.Path(" + repr(str(marker)) + ").touch()\n")
+            php.chmod(0o755)
+            writer = provision.PlatformIntentWriter('container', str(uuid.uuid4()))
+            writer.expires = int(provision.writer_clock()) + 1
+            def delayed(command, stage, timeout):
+                remote = [arg.replace('/tmp/oteryn-c17-intent-', str(root/'lease-')) for arg in command[5:]]
+                def start():
+                    time.sleep(2)
+                    return subprocess.run(remote, env=dict(os.environ, PATH=str(root) + os.pathsep + os.environ['PATH']), capture_output=True, timeout=4)
+                work.append(executor.submit(start))
+                raise RuntimeError('Docker writer acknowledgement timed out')
+            work = []
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                with patch.object(provision, 'run_capture', side_effect=delayed), patch.object(writer, 'cancel', side_effect=RuntimeError('Docker cancellation unavailable')):
+                    with self.assertRaisesRegex(RuntimeError, 'writer acknowledgement timed out'):
+                        writer.run('unused', {})
+                self.assertEqual(work[0].result(timeout=5).returncode, 124)
+            self.assertFalse(marker.exists(), 'delayed remote exec issued an intent after expiry')
+            self.assertIsNone(provision.REMOTE_WRITER)
+
+    def test_r3_unknown_replies_have_bounded_backoff(self):
+        with patch.object(PROVISION, "_request", side_effect=[b"unavailable\n"] * 3 + [b"qualified\n"]), patch.object(PROVISION.time, "sleep") as sleep:
+            PROVISION.provision("socket", SESSION, "c17a")
+        self.assertEqual(sleep.call_count, 3)
+        self.assertTrue(all(call.args[0] >= 0.1 for call in sleep.call_args_list))
+
+    def test_r3_failed_cancel_retains_the_writer_and_original_error(self):
+        writer = provision.PlatformIntentWriter('container', '01934f10-7c04-7001-805b-3b1122334401')
+        calls = []
+        def cancel():
+            calls.append(provision.REMOTE_WRITER)
+            if len(calls) == 1:
+                raise RuntimeError('cancel failed')
+            writer.quiesced.set()
+        with patch.object(provision, 'run_capture', side_effect=RuntimeError('original intent failure')), patch.object(writer, 'cancel', side_effect=cancel):
+            with self.assertRaisesRegex(RuntimeError, 'original intent failure'):
+                writer.run('php', {})
+        self.assertGreaterEqual(len(calls), 2)
+        self.assertTrue(all(value is writer for value in calls))
+        self.assertIsNone(provision.REMOTE_WRITER)
+
     def test_r2_timeout_leaves_time_to_reconcile_the_same_build(self):
         now = [0.0]
         calls = []

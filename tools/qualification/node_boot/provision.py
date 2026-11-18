@@ -14,7 +14,7 @@ import threading
 import uuid
 
 
-PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk", "c17a", "c17c", "c04")
+PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk", "c17a", "c17c", "c04", "w22b-wealth", "w22b-stamina")
 CONTROL_EXCHANGE_SECONDS = 30
 FIXTURE_RECONCILE_SECONDS = 2 * CONTROL_EXCHANGE_SECONDS
 
@@ -129,9 +129,10 @@ def provision(socket_path, session, profile, node_log=None):
     identifier = uuid.UUID(session)
     if identifier.version != 7 or str(identifier) != session or profile not in PROFILES:
         raise ValueError("invalid qualification request")
-    reconcile = profile in ("c17a", "c17c", "c04")
+    reconcile = profile in ("c17a", "c17c", "c04", "w22b-wealth", "w22b-stamina")
     line = f"qualify {session} {profile}{'-reconcile' if reconcile else ''}\n"
     deadline = time.monotonic() + FIXTURE_RECONCILE_SECONDS
+    attempts = 0
     while True:
         try:
             answer = (_request(socket_path, line, 64, timeout=max(0.001, min(CONTROL_EXCHANGE_SECONDS, deadline - time.monotonic())))
@@ -142,10 +143,14 @@ def provision(socket_path, session, profile, node_log=None):
             answer = b""
         if answer == b"qualified\n":
             return
-        report_node_failures(node_log, offset)
+        if attempts == 0:
+            report_node_failures(node_log, offset)
         if reconcile and (not answer or b"unavailable\n".startswith(bytes(answer)) or b"qualified\n".startswith(bytes(answer))):
             if time.monotonic() < deadline:
-                print("C17 fixture acknowledgement unknown; reconciling the same build", file=sys.stderr)
+                if attempts == 0:
+                    print("C17 fixture acknowledgement unknown; reconciling the same build", file=sys.stderr)
+                attempts += 1
+                time.sleep(min(0.25, max(0, deadline - time.monotonic())))
                 continue
             raise RuntimeError("qualification build reconciliation deadline exceeded; outcome=unknown")
         raise RuntimeError(
@@ -180,20 +185,36 @@ def spawn(socket_path, session, creature_key):
 # Container exec is outside the helper's process group. A per-operation lease
 # fences delayed starts and lets cancellation kill and observe the actual PHP
 # writer, rather than merely killing the local Docker client.
+def writer_clock():
+    # Docker shares the host kernel's boot clock; wall-clock corrections cannot
+    # extend a writer lease or remove a still-live cancellation fence.
+    return time.clock_gettime(time.CLOCK_BOOTTIME)
+
+
 PARENT_CANCELLED = threading.Event()
 WRITER_LOCK = threading.Lock()
 REMOTE_WRITER = None
 
-REMOTE_INTENT = r'''op=$1; shift
+REMOTE_INTENT = r'''op=$1; expires=$2; shift 2
+[ $(cut -d. -f1 /proc/uptime) -lt "$expires" ] || exit 124
+for old in /tmp/oteryn-c17-intent-*; do
+  [ -f "$old/expires" ] || continue
+  old_expiry=$(cat "$old/expires")
+  case "$old_expiry" in ''|*[!0-9]*) continue ;; esac
+  [ "$old_expiry" -ge "$(cut -d. -f1 /proc/uptime)" ] || rm -rf -- "$old"
+done
 lease=/tmp/oteryn-c17-intent-$op
 mkdir -p "$lease"
+printf "%s\n" "$expires" > "$lease/expires"
 [ ! -f "$lease/cancelled" ] || exit 124
-sh -c 'lease=$1; op=$2; shift 2
+sh -c 'lease=$1; op=$2; expires=$3; shift 3
 printf "%s\n" "$$" > "$lease/pid"
 [ ! -f "$lease/cancelled" ] || exit 124
-exec "$@"' c17-writer "$lease" "$op" "$@" &
+[ $(cut -d. -f1 /proc/uptime) -lt "$expires" ] || exit 124
+exec "$@"' c17-writer "$lease" "$op" "$expires" "$@" &
 writer=$!
-( sleep 30
+( remaining=$((expires - $(cut -d. -f1 /proc/uptime)))
+  [ "$remaining" -le 0 ] || sleep "$remaining"
   if tr "\000" " " < "/proc/$writer/cmdline" 2>/dev/null | grep -Fq -- "$op"; then
     kill -KILL "$writer" 2>/dev/null || true
   fi
@@ -202,12 +223,14 @@ watchdog=$!
 wait "$writer"; result=$?
 kill "$watchdog" 2>/dev/null || true
 wait "$watchdog" 2>/dev/null || true
+[ -f "$lease/cancelled" ] || rm -rf -- "$lease"
 exit "$result"
 '''
 
-CANCEL_INTENT = r'''op=$1
+CANCEL_INTENT = r'''op=$1; expires=$2
 lease=/tmp/oteryn-c17-intent-$op
 mkdir -p "$lease"
+printf "%s\n" "$expires" > "$lease/expires"
 : > "$lease/cancelled"
 [ -f "$lease/pid" ] || exit 0
 writer=$(cat "$lease/pid")
@@ -227,14 +250,35 @@ class PlatformIntentWriter:
         self.container = container
         self.operation = str(operation)
         self.quiesced = threading.Event()
+        self.expires = int(writer_clock()) + 30
+        self.cancel_lock = threading.Lock()
 
     def cancel(self):
         result = subprocess.run(["docker", "exec", "--user", "www-data", self.container,
-            "sh", "-c", CANCEL_INTENT, "c17-cancel", self.operation],
+            "sh", "-c", CANCEL_INTENT, "c17-cancel", self.operation, str(self.expires)],
             capture_output=True, timeout=5)
         if result.returncode:
             raise RuntimeError("C17 Platform writer cancellation was not acknowledged")
         self.quiesced.set()
+
+    def quiesce(self):
+        warned = False
+        while not self.quiesced.is_set():
+            with self.cancel_lock:
+                if self.quiesced.is_set():
+                    return
+                try:
+                    self.cancel()
+                except (OSError, subprocess.TimeoutExpired, RuntimeError):
+                    if not warned:
+                        print("C17 cancellation awaiting remote acknowledgement or absolute writer expiry", file=sys.stderr)
+                        warned = True
+                    if writer_clock() > self.expires + 1:
+                        # Remote shell and PHP both reject this absolute expiry;
+                        # delayed Docker exec starts cannot issue a new intent.
+                        self.quiesced.set()
+                    else:
+                        time.sleep(0.1)
 
     def run(self, php, request):
         global REMOTE_WRITER
@@ -244,21 +288,21 @@ class PlatformIntentWriter:
             REMOTE_WRITER = self
         try:
             result = run_capture(["docker", "exec", "--user", "www-data", self.container,
-                "sh", "-c", REMOTE_INTENT, "c17-intent", self.operation,
-                "php", "-r", php, json.dumps(request)], "Platform bootstrap intent", timeout=35)
+                "sh", "-c", REMOTE_INTENT, "c17-intent", self.operation, str(self.expires),
+                "php", "-r", php, json.dumps(dict(request, writer_deadline=self.expires))], "Platform bootstrap intent", timeout=35)
             self.quiesced.set()  # The remote wrapper waited for PHP and reaped its watchdog.
             if PARENT_CANCELLED.is_set():
                 raise RuntimeError("C17 parent cancelled during intent issuance")
             return result
         except Exception:
             if not self.quiesced.is_set():
-                self.cancel()
+                self.quiesce()
             if PARENT_CANCELLED.is_set():
                 raise SystemExit(124) from None
             raise
         finally:
             with WRITER_LOCK:
-                if REMOTE_WRITER is self:
+                if REMOTE_WRITER is self and self.quiesced.is_set():
                     REMOTE_WRITER = None
 
 
@@ -281,6 +325,9 @@ $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 $r=json_decode($argv[1],true,512,JSON_THROW_ON_ERROR);
 $id=Illuminate\Support\Facades\DB::table("identities")->where("account_id",$r["account"])->value("id");
 if (!$id) { fwrite(STDERR,"C17 bootstrap: no Platform identity for requested AccountId\n"); exit(1); }
+$clock=file_get_contents("/proc/uptime");
+if (!is_string($clock) || !preg_match('/^([0-9]+(?:\.[0-9]+)?) /',$clock,$clockMatch)) { fwrite(STDERR,"qualification writer clock unavailable\n"); exit(124); }
+if ((float)$clockMatch[1] >= $r["writer_deadline"]) { exit(124); }
 $code=Illuminate\Support\Facades\Artisan::call("game-auth:character-bootstrap-intent:issue",[
 "--identity-id"=>(string)$id,"--operation-id"=>$r["operation"],
 "--target-world-id"=>$r["world"],"--requested-name"=>$r["name"],"--requested-sex"=>"Female",
@@ -355,11 +402,7 @@ def watch_parent_stdin():
         if writer is not None:
             # Do not report cancellation complete while the remote writer can
             # still issue the intent. Its own 30s watchdog also bounds PHP.
-            while not writer.quiesced.is_set():
-                try:
-                    writer.cancel()
-                except (OSError, subprocess.TimeoutExpired, RuntimeError):
-                    print("C17 cancellation awaiting Platform writer quiescence", file=sys.stderr)
+            writer.quiesce()
         os._exit(124)
     threading.Thread(target=stopped, daemon=True).start()
 

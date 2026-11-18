@@ -89,28 +89,34 @@ pub(super) async fn spell_characters(clients: &SeamClients<'_>) -> TestResult<[[
 
 // Own the child until it is reaped. Dropping a row deadline kills the complete
 // helper process group, including sudo/Python, before it can submit another request.
-struct ProvisionChild(std::process::Child, bool);
+struct ProvisionChild(Option<std::process::Child>, bool);
+impl ProvisionChild {
+    fn child(&mut self) -> std::io::Result<&mut std::process::Child> {
+        self.0.as_mut().ok_or_else(|| std::io::Error::other("provisioning child already transferred to its reaper"))
+    }
+}
 impl Drop for ProvisionChild {
     fn drop(&mut self) {
-        drop(self.0.stdin.take());
-        let deadline = std::time::Instant::now() + Duration::from_secs(40);
-        while self.1
-            && self.0.try_wait().ok().flatten().is_none()
-            && std::time::Instant::now() < deadline
-        {
-            std::thread::sleep(Duration::from_millis(10));
-            // Helpers observe EOF and quiesce the remote writer; plain test
-            // commands have no cooperative protocol and use the fallback.
-        }
-        if self.0.try_wait().ok().flatten().is_none() {
-            let _ = std::process::Command::new("kill")
-                .args(["-KILL", "--", &format!("-{}", self.0.id())])
-                .stdout(std::process::Stdio::null())
-                .stderr(std::process::Stdio::null())
-                .status();
-            let _ = self.0.kill();
-            let _ = self.0.wait();
-        }
+        let Some(mut child) = self.0.take() else { return; };
+        drop(child.stdin.take());
+        let cooperative = self.1;
+        // The owned reaper is independent of Tokio: cancellation never blocks
+        // a runtime worker or makes runtime teardown wait for remote shutdown.
+        std::thread::spawn(move || {
+            let deadline = std::time::Instant::now() + Duration::from_secs(40);
+            while cooperative && child.try_wait().ok().flatten().is_none()
+                && std::time::Instant::now() < deadline {
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            if child.try_wait().ok().flatten().is_none() {
+                let _ = std::process::Command::new("kill")
+                    .args(["-KILL", "--", &format!("-{}", child.id())])
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null()).status();
+                let _ = child.kill();
+                let _ = child.wait();
+            }
+        });
     }
 }
 
@@ -125,7 +131,7 @@ async fn c17_output(mut command: std::process::Command) -> TestResult<std::proce
     let cooperative = command
         .get_args()
         .any(|argument| argument == "--watch-parent-stdin");
-    let mut child = ProvisionChild(command.spawn()?, cooperative);
+    let mut child = ProvisionChild(Some(command.spawn()?), cooperative);
     let read = |mut stream: Box<dyn Read + Send>| {
         std::thread::spawn(move || -> std::io::Result<Vec<u8>> {
             let mut tail = Vec::new();
@@ -143,13 +149,13 @@ async fn c17_output(mut command: std::process::Command) -> TestResult<std::proce
         })
     };
     let stdout = read(Box::new(
-        child.0.stdout.take().ok_or("provision stdout missing")?,
+        child.child()?.stdout.take().ok_or("provision stdout missing")?,
     ));
     let stderr = read(Box::new(
-        child.0.stderr.take().ok_or("provision stderr missing")?,
+        child.child()?.stderr.take().ok_or("provision stderr missing")?,
     ));
     let status = loop {
-        if let Some(status) = child.0.try_wait()? {
+        if let Some(status) = child.child()?.try_wait()? {
             break status;
         }
         tokio::time::sleep(Duration::from_millis(20)).await;
@@ -215,18 +221,13 @@ fn c17_subprocess_failure(stage: &str, output: &std::process::Output) -> String 
     )
 }
 
-pub(super) async fn provision_c17(
-    clients: &SeamClients<'_>,
-    profile: &'static str,
-    tag: u8,
-) -> TestResult<DevClientSession> {
-    let mut client = connect_world(clients, tag).await?;
+pub(super) async fn apply_fixture(client: &mut DevClientSession, profile: &'static str) -> TestResult {
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
     let node_log = std::env::var("NODE_BOOT_NODE_LOG").ok();
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
-    let output = c17_output({
+    let work = c17_output({
         let mut command = std::process::Command::new("sudo");
         command
             .args(["-n", "python3"])
@@ -244,11 +245,30 @@ pub(super) async fn provision_c17(
             profile,
         ]);
         command
-    })
-    .await?;
+    });
+    tokio::pin!(work);
+    let output = loop {
+        tokio::select! {
+            result = &mut work => break result?,
+            _ = tokio::time::sleep(Duration::from_millis(200)) => {
+                client.service_liveness(Duration::from_millis(1)).await?;
+                client.take_events();
+            }
+        }
+    };
     if !output.status.success() {
-        return Err(c17_subprocess_failure("one-shot spell fixture", &output).into());
+        return Err(c17_subprocess_failure(profile, &output).into());
     }
+    Ok(())
+}
+
+pub(super) async fn provision_c17(
+    clients: &SeamClients<'_>,
+    profile: &'static str,
+    tag: u8,
+) -> TestResult<DevClientSession> {
+    let mut client = connect_world(clients, tag).await?;
+    apply_fixture(&mut client, profile).await?;
     logout(&mut client).await?;
     drop(client);
     let mut client = connect_world(clients, tag).await?;
@@ -1112,6 +1132,19 @@ async fn haste(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn r3_cooperative_child_cancellation_does_not_block_the_async_thread() -> TestResult {
+        tokio::runtime::Builder::new_current_thread().enable_time().build()?.block_on(async {
+            let mut command = std::process::Command::new("python3");
+            command.args(["-c", "import sys,time; sys.stdin.buffer.read(); time.sleep(0.25)", "--watch-parent-stdin"]);
+            let started = std::time::Instant::now();
+            assert!(tokio::time::timeout(Duration::from_millis(60), c17_output(command)).await.is_err());
+            assert!(started.elapsed() < Duration::from_millis(150), "helper shutdown blocked the async deadline");
+            tokio::time::sleep(Duration::from_millis(350)).await;
+        });
+        Ok(())
+    }
+
     #[test]
     fn review_c17_success_is_never_a_missing_server_route() {
         assert_eq!(c17_success_status(), "PASS");

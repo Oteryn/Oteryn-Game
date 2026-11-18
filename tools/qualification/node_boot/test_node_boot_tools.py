@@ -220,6 +220,7 @@ class KnownFailureGateTests(unittest.TestCase):
             base = 'SEAM_EVIDENCE e2e_all scenario=C17c.full status=FAIL cause=assertion root=C17c/cast-rat evidence=expected-failure'
             for lines, expected in [
                 ([base], 'C17c.full'),
+                ([base.replace(' evidence=expected-failure', '')], ''),
                 ([base.replace('cause=assertion', 'cause=transport')], ''),
                 ([base.replace('cast-rat', 'admission')], ''),
                 ([base.replace('expected-failure', 'different-failure')], ''),
@@ -517,6 +518,18 @@ class TimelineTests(unittest.TestCase):
                                     capture_output=True, text=True, check=True)
             self.assertIn('NODE_BOOT_TIMELINE events=5', result.stdout)
             self.assertEqual(len(json.loads(out.read_text())['traceEvents']), 5)
+
+
+
+class EmptyEvidenceGateTests(unittest.TestCase):
+    def test_r3_empty_evidence_never_waives_a_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); known, log = root/'known', root/'log'
+            known.write_text('C01.full assertion at C01.full/admission\n')
+            log.write_text('SEAM_EVIDENCE e2e_all scenario=C01.full status=FAIL cause=assertion root=C01.full/admission\n')
+            result = bash(function('matching_known_rows') + f'\nmatching_known_rows {log} {known}\n')
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.strip(), '')
 
 
 if __name__ == '__main__':

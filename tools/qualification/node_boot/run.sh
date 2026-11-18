@@ -889,7 +889,7 @@ path = Path(sys.argv[2])
 if path.exists():
     for line in path.read_text().splitlines():
         match = re.fullmatch(r'([A-Za-z0-9_.-]+) ([a-z-]+) at ([^; ]+)(?:; (.*))?', line)
-        if match:
+        if match and match[4]:
             known[match[1]] = (match[2], match[3], match[4] or '')
 observed = {}
 with Path(sys.argv[1]).open(errors='replace') as log:
@@ -899,7 +899,7 @@ with Path(sys.argv[1]).open(errors='replace') as log:
             fields = dict(re.findall(r'\b(cause|root|evidence)=(\S+)', match[2]))
             observed.setdefault(match[1], []).append(tuple(fields.get(key, '') for key in ('cause', 'root', 'evidence')))
 for row, failures in sorted(observed.items()):
-    if row in known and all(failure == known[row] for failure in failures):
+    if row in known and known[row][2] and all(failure == known[row] for failure in failures):
         print(row)
 PY_KNOWN_FAILURE
 }
