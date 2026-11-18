@@ -8,7 +8,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::BoardPortal;
 
 type Ground = super::super::loop_move::LoopGroundOverlay;
 
-fn base_slot(map: &BundleMap, at: TilePos, accepted: &[u16]) -> Option<(u64, EntryFacts)> {
+pub(super) fn base_slot(map: &BundleMap, at: TilePos, accepted: &[u16]) -> Option<(u64, EntryFacts)> {
     if map.facts.house_tile(at) {
         return None;
     }

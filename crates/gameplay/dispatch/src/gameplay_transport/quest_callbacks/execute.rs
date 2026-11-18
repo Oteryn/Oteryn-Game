@@ -237,6 +237,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return result;
             }
         };
+        // The scene can open only after every source-ordered input committed.
+        let offering_projection = if !close && let Some(portal) = &callback.effects.offering_portal {
+            match super::offering_portal::prepare(map, portal) {
+                Ok(projection) => projection,
+                Err(result) => return result,
+            }
+        } else {
+            None
+        };
         // Both lifecycle deadlines belong to this operation, even when preparing
         // its remote object read set takes time.
         let lifecycle_now = self.owner_now().get();
@@ -425,10 +434,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let ordinal = u8::try_from(o).ok()?;
                     let k = placement_key(p, ordinal)?;
                     let f = map.facts.base_entry(p, ordinal, *id)?;
-                    ((f.appearance_id == passage.appearance
+                    let expected_offering_face = if close { passage.replacement } else { Some(passage.appearance) };
+                    ((if callback.effects.offering_portal.is_some() {
+                        expected_offering_face == Some(f.appearance_id)
+                    } else {
+                        f.appearance_id == passage.appearance
                         || (callback.effects.portal_reset_passable.is_none()
                             && passage.replacement == Some(f.appearance_id))
-                        || passage.create_on_close == Some(f.appearance_id))
+                        || passage.create_on_close == Some(f.appearance_id)
+                    })
                         && !map.facts.house_tile(p)
                         && (callback.effects.portal_reset_passable.is_none() || !f.pickupable)
                         && (!passage.if_present || !map.facts.base_hidden(k)))
@@ -778,6 +792,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 } else {
                     callback.passages.len()
                         + usize::from(callback.effects.portal_reset_passable.is_some())
+                        + usize::from(offering_projection.is_some())
                 },
             )
         {
@@ -1316,6 +1331,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | QuestTransitionOutcome::AlreadyCommitted(ref committed),
                 ) => {
                     fresh_effects = fresh;
+                    if callback.effects.offering_portal.is_some() {
+                        let QuestCause::Use(command) = cause else { return UseDisposition::Rejected; };
+                        let Ok(count) = self.root.read_quest_offering_count(
+                            self.character, fence.character_id, command, callback.key.clone(),
+                        ).await else {
+                            return UseDisposition::Rejected;
+                        };
+                        if usize::try_from(count) == Ok(callback.offerings.len()) {
+                            projection = offering_projection;
+                        }
+                    }
                     if fresh {
                         success_message = callback.committed_message(&committed.changes).map(str::to_owned);
                         // Crystal action_mead.lua:8-11 says both lines on the winning sip.

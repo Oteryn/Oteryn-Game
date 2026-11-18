@@ -22,6 +22,7 @@ mod goblin_elevator;
 mod ground_stack;
 mod mead;
 pub(super) mod monsters;
+mod offering_portal;
 mod party_transfer;
 mod personal_encounter;
 mod personal_trial;
