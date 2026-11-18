@@ -143,7 +143,7 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     let source = callback.selector.position.ok_or("source tile")?;
-    let refused = name.ends_with(LOW_LEVEL) || name == COOLDOWN;
+    let refused = name.ends_with(LOW_LEVEL) || name == COOLDOWN || name.ends_with(TARGETED_USE);
     if matches!(name, COOLDOWN | COOLDOWN_EXPIRES_NOW) {
         const EPOCH: i64 = 1_700_000_000;
         h.root.set_test_quest_clock(EPOCH)?;
@@ -165,8 +165,6 @@ pub(super) async fn exercise(
         start
     } else if name == SATCHEL {
         at(32396, 32520, -7)
-    } else if name.ends_with(TARGETED_USE) {
-        start
     } else if name == COOLDOWN_EXPIRES_NOW {
         ROUTES[5].2
     } else {
