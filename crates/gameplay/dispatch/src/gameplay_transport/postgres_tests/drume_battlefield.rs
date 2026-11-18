@@ -197,6 +197,17 @@ pub(super) async fn exercise(
         assert!(owner.runtime.lock().await.contains_live_creature(summoned));
     }
     assert!(owner.runtime.lock().await.contains_live_creature(master));
+    let exit_effects = owner
+        .bundle_map()
+        .ok_or("battlefield map")?
+        .facts
+        .movement_effects_since(0)
+        .into_iter()
+        .filter(|(_, at, effect)| {
+            (at.x, at.y, at.floor) == (EXIT.x, EXIT.y, EXIT.floor) && *effect == 11
+        })
+        .count();
+    assert_eq!(exit_effects, usize::from(!spawn_boss));
     Ok(())
 }
 

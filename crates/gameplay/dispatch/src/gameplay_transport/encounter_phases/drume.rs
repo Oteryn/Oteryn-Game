@@ -10,6 +10,7 @@ const KESAR: &str = "oteryn:creature.kesar";
 const ALL_LIONS: u64 = 0b000_0111;
 const ALL_USURPERS: u64 = 0b011_1000;
 const DRUME: usize = 6;
+const TELEPORT_EFFECT: u16 = 11;
 
 #[derive(Clone, Copy)]
 enum Ejection<'a> {
@@ -108,6 +109,9 @@ impl Skirmish {
         room: &Encounter,
         cells: &crate::content::NativeEntryMovementCells,
     ) -> Result<(), CarrierError> {
+        if self.ejected {
+            return Ok(());
+        }
         if self.phase.dead_roles() & ALL_LIONS == ALL_LIONS {
             self.eject(runtime, room, cells, Ejection::Defeat)?;
             self.ejected = true;
@@ -212,6 +216,17 @@ impl Skirmish {
                 continue;
             }
             runtime.remove_encounter_actor(actor)?;
+        }
+        // Crystal commander_kills.lua:21 emits a single effect at the exit.
+        if matches!(reason, Ejection::Defeat) {
+            map.facts.emit_movement_effect(
+                crate::map::overlay::TilePos {
+                    x: self.battlefield.exit.x,
+                    y: self.battlefield.exit.y,
+                    floor: self.battlefield.exit.floor,
+                },
+                TELEPORT_EFFECT,
+            );
         }
         Ok(())
     }
