@@ -1164,6 +1164,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                             || callback.remote_teleport.is_some()
                             || *callback.effects != CallbackEffects {
                                 magic: callback.effects.magic.clone(),
+                                switch_cues: callback.effects.switch_cues.clone(),
                                 ..Default::default()
                             }
                     } else {

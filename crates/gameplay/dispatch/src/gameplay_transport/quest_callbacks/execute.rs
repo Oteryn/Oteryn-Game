@@ -194,19 +194,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || callback
                 .lever
                 .is_some_and(|pair| after.appearance_id == pair[1]);
-        if !close
-            && (!world_requirements_match(map, callback)
-                || !self.ground_requirements_match(runtime, map, callback)
-                || !super::clear_area::area_is_clear(runtime, callback))
-        {
-            if !world_requirements_match(map, callback)
-                && self.ground_requirements_match(runtime, map, callback)
-                && super::clear_area::area_is_clear(runtime, callback)
-                && super::timed_passages::lion_is_busy(map, callback)
-            {
-                return UseDisposition::NothingToUse;
+        let read_only_current = !callback.is_read_only()
+            || read_only_gate.is_some_and(|gate| {
+                gate.actor == actor
+                    && gate.session == session
+                    && gate.callback == callback.key
+                    && runtime.read_actor_position(actor) == Ok(gate.expected)
+            });
+        if !close {
+            let world_ready = world_requirements_match(map, callback);
+            let others_ready = self.ground_requirements_match(runtime, map, callback)
+                && super::clear_area::area_is_clear(runtime, callback);
+            if !world_ready || !others_ready {
+                if !world_ready && others_ready {
+                    // Crystal 201189f8 action-3-third_seal_lever.lua:18-38.
+                    if read_only_current
+                        && let Some(cue) = callback
+                            .effects
+                            .switch_cues
+                            .as_ref()
+                            .and_then(|cues| cues.wrong_order.as_ref())
+                    {
+                        map.facts
+                            .emit_movement_effect(tile(cue.position), cue.effect);
+                    }
+                    if super::timed_passages::lion_is_busy(map, callback) {
+                        return UseDisposition::NothingToUse;
+                    }
+                }
+                return UseDisposition::Rejected;
             }
-            return UseDisposition::Rejected;
         }
         if close && callback.lever.is_some() && !callback.reversible {
             return UseDisposition::NothingToUse;
@@ -886,14 +903,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::StaleState;
             }
         }
-        if callback.is_read_only()
-            && !read_only_gate.is_some_and(|gate| {
-                gate.actor == actor
-                    && gate.session == session
-                    && gate.callback == callback.key
-                    && runtime.read_actor_position(actor) == Ok(gate.expected)
-            })
-        {
+        if !read_only_current {
             return UseDisposition::Rejected;
         }
         let party = if let Some(party) = &callback.effects.party_transfer {
@@ -1631,6 +1641,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(magic) = &callback.effects.magic {
             map.facts
                 .emit_movement_effect(tile(magic.position), magic.effect);
+        }
+        if fresh_effects && let Some(cues) = &callback.effects.switch_cues {
+            for cue in &cues.success {
+                map.facts
+                    .emit_movement_effect(tile(cue.position), cue.effect);
+            }
         }
         if let Some(effect) = callback.effects.teleport_effect
             && let Some(destination) = callback.teleport

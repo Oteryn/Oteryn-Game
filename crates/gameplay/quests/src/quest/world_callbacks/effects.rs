@@ -104,6 +104,9 @@ pub struct CallbackEffects {
     pub close_passages_after_ms: Option<u32>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
+    /// A shared switch's ordered cues and its wrong-order response.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub switch_cues: Option<SwitchCues>,
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teleport_effect: Option<u16>,
@@ -258,6 +261,14 @@ impl Serialize for CallbackEffectSet {
 pub struct MagicEffect {
     pub position: Position,
     pub effect: u16,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct SwitchCues {
+    pub success: Vec<MagicEffect>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub wrong_order: Option<MagicEffect>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -1056,6 +1067,22 @@ pub(super) fn valid(callback: &Callback) -> bool {
                             .contains(&transfer.destination.x)
                         && (encounter.room_min.y..=encounter.room_max.y)
                             .contains(&transfer.destination.y))
+            }))
+    {
+        return false;
+    }
+    if let Some(cues) = &effects.switch_cues
+        && (!callback.is_character_guarded_switch()
+            || cues.success.len() > 8
+            || (cues.success.is_empty() && cues.wrong_order.is_none())
+            || cues
+                .success
+                .iter()
+                .any(|cue| !pos(cue.position) || !(1..=255).contains(&cue.effect))
+            || cues.wrong_order.as_ref().is_some_and(|cue| {
+                callback.world_requirements.is_empty()
+                    || callback.selector.position != Some(cue.position)
+                    || !(1..=255).contains(&cue.effect)
             }))
     {
         return false;
