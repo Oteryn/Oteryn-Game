@@ -314,9 +314,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Some(D::WrongState);
         }
-        let rank = before.completed + 1;
-        let mut after = before.clone();
-        let mut change = None;
         let backpack = if paying {
             self.root
                 .read_character_backpack(self.character, fence.character_id)
@@ -325,7 +322,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        {
+        let (after, change) = {
             let runtime = self.runtime.lock().await;
             if runtime.owner_fence().is_err()
                 || runtime.binding().runtime_scope() != fence.runtime_scope
@@ -354,7 +351,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let Some(paid) = before.with_halvar_payment() else {
                         return Some(D::WrongState);
                     };
-                    change = Some(super::super::charm_progression::fee_change(
+                    let change = super::super::charm_progression::fee_change(
                         self,
                         &runtime,
                         backpack.as_ref(),
@@ -362,10 +359,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             durable::identity(command, b"change-platinum"),
                             durable::identity(command, b"change-gold"),
                         ],
-                    )?);
-                    after = paid;
+                    )?;
+                    (paid, Some(change))
                 }
                 Contact::Entrance(snapshot, source) => {
+                    let rank = before.completed + 1;
                     let map = self.bundle_map()?;
                     if before.paid_rank != rank
                         || runtime.read_actor_position(actor) != Ok(*snapshot)
@@ -380,7 +378,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if !self.arena_pit_ready(&runtime, rank, 1, session) {
                         return Some(D::Busy);
                     }
-                    after = MatchState {
+                    let active = MatchState {
                         completed: before.completed,
                         entry_revision: fence.expected_character_revision.get(),
                         paid_rank: 0,
@@ -392,9 +390,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         scope_generation: fence.scope_ownership_generation.get(),
                         run: durable::identity(command, b"run"),
                     };
+                    (active, None)
                 }
             }
-        }
+        };
         let bytes = slot
             .commit_arena_match(
                 self.root,
