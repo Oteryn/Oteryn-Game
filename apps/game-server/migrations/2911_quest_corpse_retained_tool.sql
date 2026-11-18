@@ -76,3 +76,68 @@ DO $migration$
 BEGIN
  EXECUTE format('ALTER FUNCTION game_quest_corpse_sample_complete() SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $migration$;
+
+-- Crystal 201189f8 movements_herald_red_floors.lua:42–56. The Ground owner
+-- burns only current, field-minted items inside the authored StepIn sweep.
+CREATE FUNCTION game_quest_dynamic_field_placement(i game_item_instances,g game_item_ground_locations)
+RETURNS BOOLEAN LANGUAGE sql STABLE AS $$
+ SELECT coalesce(i.item_instance_id=g.item_instance_id AND i.world_id=g.world_id
+ AND EXISTS(
+  SELECT 1 FROM game_spell_item_lines l
+  WHERE l.item_instance_id=i.item_instance_id AND l.transaction_id=i.minted_transaction_id
+   AND l.operation_kind=1 AND l.world_id=g.world_id AND l.channel_id=g.channel_id
+   AND l.spatial_position=g.spatial_position AND l.map_revision=g.map_revision
+   AND l.content_revision=g.content_revision AND l.placement_context=g.native_room_placement_context
+   AND (l.expires_at_unix_ms IS NOT NULL OR EXISTS(
+    SELECT 1 FROM game_spell_field_temporal_schedules t
+    WHERE t.item_instance_id=i.item_instance_id AND t.source_transaction_id=l.transaction_id))
+ ),false)
+$$;
+
+CREATE FUNCTION game_quest_field_sweep_matches(
+ r game_quest_callback_consumptions,i game_item_instances,g game_item_ground_locations)
+RETURNS BOOLEAN LANGUAGE plpgsql STABLE AS $$
+DECLARE p JSONB; area JSONB;
+BEGIN
+ IF r.location_kind<>'ground' OR r.cause_ordinal<1 OR r.quantity<>1 OR r.replacement IS NOT NULL
+  OR NOT game_quest_dynamic_field_placement(i,g)
+ THEN RETURN false; END IF;
+ p:=convert_from(r.proof,'UTF8')::jsonb;
+ IF p->>'schema' IS DISTINCT FROM 'OTERYN_QUEST_FIELD_SWEEP/v1' THEN RETURN false; END IF;
+ area:=p#>'{callback,effects,sweep_fields}';
+ RETURN coalesce(
+  p#>>'{callback,key}'=r.transition_key AND p#>>'{callback,trigger}'='step_in'
+  AND i.item_instance_id=r.item_instance_id AND i.lifecycle=1 AND i.quantity=1
+  AND i.definition_family='Item' AND to_jsonb(i)=r.before_item AND to_jsonb(g)=r.before_ground
+  AND EXISTS(SELECT 1 FROM jsonb_array_elements_text(area->'appearances') appearance(id)
+   WHERE i.definition_production_key='oteryn:item.tibia.i'||appearance.id)
+  AND octet_length(g.spatial_position)=10
+  AND substring(g.spatial_position from 9 for 2)=int2send((-(area#>>'{minimum,floor}')::integer)::smallint)
+  AND area#>>'{maximum,floor}'=area#>>'{minimum,floor}'
+  AND substring(g.spatial_position from 1 for 4)
+    BETWEEN int4send((area#>>'{minimum,x}')::integer) AND int4send((area#>>'{maximum,x}')::integer)
+  AND substring(g.spatial_position from 5 for 4)
+    BETWEEN int4send((area#>>'{minimum,y}')::integer) AND int4send((area#>>'{maximum,y}')::integer)
+  AND g.map_revision=p#>>'{context,map_revision}' AND g.content_revision=p#>>'{context,content_revision}'
+  AND EXISTS(
+   SELECT 1 FROM game_durability_reconnect_sessions s
+    JOIN game_durability_admission_character_guards a ON a.character_id=s.character_id
+   WHERE s.game_session_id=r.cause_id AND s.character_id=r.character_id AND s.session_state=2
+    AND a.eligible AND a.holder_game_session_id=s.game_session_id
+    AND a.lease_generation=s.character_lease_generation
+    AND s.runtime_scope_kind=1 AND s.runtime_scope_world_id=g.world_id AND s.runtime_scope_channel_id=g.channel_id
+    AND s.scope_ownership_generation=g.runtime_scope_ownership_generation
+  ),false);
+END $$;
+
+DO $migration$
+DECLARE body TEXT; needle TEXT:='game_remorse_source_step_input_matches(NEW,i,g)';
+BEGIN
+ EXECUTE format('ALTER FUNCTION game_quest_dynamic_field_placement(game_item_instances,game_item_ground_locations) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+ EXECUTE format('ALTER FUNCTION game_quest_field_sweep_matches(game_quest_callback_consumptions,game_item_instances,game_item_ground_locations) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+ body:=pg_get_functiondef('game_quest_callback_admit()'::regprocedure);
+ IF (length(body)-length(replace(body,needle,'')))/length(needle)<>1 THEN
+  RAISE EXCEPTION 'unexpected current quest Ground admit predicate';
+ END IF;
+ EXECUTE replace(body,needle,'('||needle||' OR game_quest_field_sweep_matches(NEW,i,g))');
+END $migration$;

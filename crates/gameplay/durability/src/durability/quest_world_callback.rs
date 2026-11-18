@@ -4,6 +4,7 @@ pub(super) mod carrot;
 pub(crate) mod character_requirements;
 mod completed_quests;
 pub(super) mod completion;
+mod field_sweep;
 mod ground_read;
 pub(crate) mod ground_stack;
 #[path = "quest_world_callback_npc_input.rs"]
@@ -609,6 +610,9 @@ pub(super) async fn consume(
         && callback.item_on_target.is_none()
         && callback.effects.carried_inputs.is_empty()
     {
+        if callback.effects.sweep_fields.is_some() {
+            return field_sweep::consume(tx, permit, fence, request, callback, context).await;
+        }
         return Ok(true);
     }
     consume_inputs(

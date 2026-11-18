@@ -57,6 +57,9 @@ pub struct CallbackEffects {
     /// Remove a bounded room's current monsters while preserving its boss.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sweep_creatures: Option<CreatureSweep>,
+    /// Retire native dynamic fields alongside the admitted room sweep.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sweep_fields: Option<FieldSweep>,
     /// Finish this quest only through its bound, irreversible native trial.
     #[serde(default, skip_serializing_if = "is_false")]
     pub completes_quest: bool,
@@ -344,14 +347,21 @@ impl CreatureSweep {
                 .position
                 .is_some_and(|position| self.contains(position))
             && !callback.world_requirements.is_empty()
-            && !callback.has_state()
-            && !callback.requires_world_admission
+            && (if callback.effects.sweep_fields.is_some() {
+                callback.requires_world_admission
+                    && callback.has_personal_state()
+                    && !callback.is_read_only()
+                    && !callback.has_state_writes()
+            } else {
+                !callback.requires_world_admission && !callback.has_state()
+            })
             && callback.teleport.is_none()
             && callback.remote_teleport.is_none()
             && callback.lever.is_none()
             && !callback.reversible
             && callback.item_on_target.is_none()
             && callback.offerings.is_empty()
+            && callback.effects.carried_inputs.is_empty()
             && callback.effects.encounter.is_none()
             && callback.effects.scene.is_none()
             && callback.effects.portals.is_none()
@@ -365,6 +375,34 @@ impl CreatureSweep {
             && self.maximum.y - self.minimum.y < 32
             && self.except.starts_with("oteryn:creature.")
             && super::super::valid_quest_key(&self.except)
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct FieldSweep {
+    pub minimum: Position,
+    pub maximum: Position,
+    pub appearances: Vec<u16>,
+}
+
+impl FieldSweep {
+    fn valid(&self, callback: &Callback) -> bool {
+        callback
+            .effects
+            .sweep_creatures
+            .as_ref()
+            .is_some_and(|creatures| {
+                creatures.contains(self.minimum)
+                    && creatures.contains(self.maximum)
+                    && self.minimum.floor == self.maximum.floor
+                    && self.minimum.x <= self.maximum.x
+                    && self.minimum.y <= self.maximum.y
+                    && (1..=8).contains(&self.appearances.len())
+                    && self.appearances.iter().all(|id| *id != 0)
+                    && self.appearances.iter().collect::<BTreeSet<_>>().len()
+                        == self.appearances.len()
+            })
     }
 }
 
@@ -500,6 +538,13 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects
+        .sweep_fields
+        .as_ref()
+        .is_some_and(|sweep| !sweep.valid(callback))
+    {
+        return false;
+    }
     if effects
         .sweep_creatures
         .as_ref()
