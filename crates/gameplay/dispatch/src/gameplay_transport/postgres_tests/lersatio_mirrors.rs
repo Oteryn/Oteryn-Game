@@ -106,14 +106,9 @@ pub(super) async fn exercise(
         world_callbacks::with_fixture_callbacks(base.clone(), &fixture)?,
     ));
     let actor = admitted.runtime_actor.ok_or("player actor")?;
-    let (peer, peer_session) = super::arthei_ghost_tear::admit_peer(
-        owner,
-        admitted,
-        h,
-        authority,
-        Position { x: 32966, ..MIRROR },
-    )
-    .await?;
+    let peer_start = Position { x: 32966, ..MIRROR };
+    let (peer, peer_session) =
+        super::arthei_ghost_tear::admit_peer(owner, admitted, h, authority, peer_start).await?;
     let start = owner
         .runtime
         .lock()
@@ -137,7 +132,7 @@ pub(super) async fn exercise(
         );
         assert_eq!(
             runtime.read_actor_position(peer).map_err(debug)?.position(),
-            peer_start
+            super::quest_world_callbacks::local(peer_start)
         );
         assert!(runtime.visible_entities().creatures.is_empty());
     }
