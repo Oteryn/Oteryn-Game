@@ -63,6 +63,7 @@ use crate::domain::progression::FiniteProgressionPolicy;
 use crate::domain::{CharacterId, CharacterRevision};
 use crate::foundation::{CommandId, CommandRef, GameSessionId, RuntimeScopeRefV1};
 
+pub(super) mod bank_deposit;
 mod counter_alias;
 mod map_marks;
 pub use map_marks::{PersonalQuestMapMark, QuestMapMarksSnapshot};

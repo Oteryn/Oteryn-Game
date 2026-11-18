@@ -1069,6 +1069,18 @@ pub(super) async fn npc_bank_talk(
         else {
             return rejected();
         };
+        let bonus = if matches!(&request, crate::durability::bank::BankRequest::Deposit(_))
+            && let Some(catalogue) = admission.quest_catalogue.as_deref()
+        {
+            match oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::bank_deposit_bonus(
+                &npc_key, catalogue,
+            ) {
+                Ok(bonus) => bonus,
+                Err(_) => return rejected(),
+            }
+        } else {
+            None
+        };
         let source = BankNpcSource {
             command: reference,
             npc_identity: intent.npc_actor.identity,
@@ -1083,12 +1095,13 @@ pub(super) async fn npc_bank_talk(
         // No std::sync conversation/session mutex is held across this await.
         match admission
             .root
-            .enqueue_npc_bank(
+            .enqueue_npc_bank_with_quest(
                 admission.character,
                 admission.holder,
                 fence,
                 source,
                 request,
+                bonus,
             )
             .await
         {
@@ -1111,6 +1124,7 @@ pub(super) async fn npc_bank_talk(
                     &completion.request,
                     &completion.outcome,
                     completion.recipient_name,
+                    completion.bonus_reply,
                 )
                 .await
             }
@@ -1298,6 +1312,7 @@ pub(super) async fn resume_bank_talk(
                     &completion.request,
                     &completion.outcome,
                     completion.recipient_name,
+                    completion.bonus_reply,
                 )
                 .await,
             )
@@ -1434,10 +1449,14 @@ async fn completed_bank_talk(
     request: &crate::durability::bank::BankRequest,
     outcome: &crate::durability::bank::BankOperationOutcome,
     name: Option<crate::domain::character_name::CharacterName>,
+    bonus_reply: Option<String>,
 ) -> NpcTalkOutcome {
+    if bonus_reply.is_some() {
+        admission.refresh_quest_session(session, false).await;
+    }
     let runtime = admission.runtime.lock().await;
-    let mut reply =
-        NpcConversations::bank_reply(intent, bank_completion_reply(request, outcome, name));
+    let line = bonus_reply.unwrap_or_else(|| bank_completion_reply(request, outcome, name));
+    let mut reply = NpcConversations::bank_reply(intent, line);
     let record = match outcome {
         crate::durability::bank::BankOperationOutcome::Committed(record)
         | crate::durability::bank::BankOperationOutcome::Replayed(record) => record,

@@ -51,6 +51,7 @@ use crate::domain::currency::{
     BACKPACK_ENTRIES_MAX, COIN_DEFINITION_FAMILY, Coin, CoinStack, FeePlanError, plan_fee_within,
 };
 use crate::foundation::{ChannelId, CommandRef, RuntimeScopeRefV1, WorldId};
+use oteryn_gameplay_quests::quest::npc_rules::BoundBankDepositBonus;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 use sqlx::postgres::PgConnection;
@@ -307,6 +308,7 @@ pub struct BankNpcSource {
 }
 
 pub struct BankNpcCompletion {
+    pub bonus_reply: Option<String>,
     pub request: BankRequest,
     pub outcome: BankOperationOutcome,
     pub recipient_name: Option<CharacterName>,
@@ -340,6 +342,8 @@ struct FrozenNpcBankRequest {
     coins: Option<FrozenNpcBankCoins>,
     recipient: Option<[u8; 16]>,
     recipient_name_key: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    quest_bonus: Option<BoundBankDepositBonus>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -355,7 +359,7 @@ struct FrozenNpcBankCoins {
     container_slot_equip_pattern: bool,
 }
 
-fn freeze_npc_bank(request: &BankRequest) -> Result<Vec<u8>> {
+fn freeze_npc_bank(request: &BankRequest, quest_bonus: Option<BoundBankDepositBonus>) -> Result<Vec<u8>> {
     let identity = request.identity();
     let def = |d: &TypedDefinitionRef| {
         [
@@ -406,6 +410,7 @@ fn freeze_npc_bank(request: &BankRequest) -> Result<Vec<u8>> {
         coins,
         recipient,
         recipient_name_key,
+        quest_bonus,
     };
     serde_json::to_vec(&frozen)
         .map_err(|_| BankError::InvalidInput)
@@ -418,7 +423,7 @@ fn freeze_npc_bank(request: &BankRequest) -> Result<Vec<u8>> {
         })
 }
 
-fn thaw_npc_bank(bytes: &[u8]) -> Result<BankRequest> {
+fn thaw_npc_bank(bytes: &[u8]) -> Result<(BankRequest, Option<BoundBankDepositBonus>)> {
     if bytes.len() > 8192 {
         return Err(DurabilityError::InvalidStoredState.into());
     }
@@ -465,7 +470,7 @@ fn thaw_npc_bank(bytes: &[u8]) -> Result<BankRequest> {
         })
         .transpose()?;
     let invalid = || BankError::Unavailable(DurabilityError::InvalidStoredState);
-    match r.kind {
+    let request = match r.kind {
         1 if r.recipient.is_none() && r.recipient_name_key.is_none() && r.slots[0].is_none() => {
             Ok(BankRequest::Deposit(BankDepositRequest {
                 identity,
@@ -499,7 +504,8 @@ fn thaw_npc_bank(bytes: &[u8]) -> Result<BankRequest> {
             }))
         }
         _ => Err(invalid()),
-    }
+    }?;
+    Ok((request, r.quest_bonus))
 }
 
 impl DurabilityRoot {
@@ -514,7 +520,27 @@ impl DurabilityRoot {
         source: BankNpcSource,
         request: BankRequest,
     ) -> Result<()> {
+        self.enqueue_npc_bank_with_quest(authority, node, fence, source, request, None).await
+    }
+
+    pub async fn enqueue_npc_bank_with_quest(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        source: BankNpcSource,
+        request: BankRequest,
+        bonus: Option<BoundBankDepositBonus>,
+    ) -> Result<()> {
         validate_request_shape(&request)?;
+        if bonus.as_ref().is_some_and(|bonus| {
+            !matches!(&request, BankRequest::Deposit(_))
+                || bonus.rule.npc != source.npc_key
+                || !bonus.rule.valid()
+                || bonus.definition_hashes.is_empty()
+        }) {
+            return Err(BankError::InvalidInput);
+        }
         if source.command.game_session_id() != fence.game_session_id
             || source.npc_generation == 0
             || source.catalogue_revision == 0
@@ -529,7 +555,7 @@ impl DurabilityRoot {
             (BankRequest::Deposit(_) | BankRequest::Withdraw(_), None) => {}
             _ => return Err(BankError::InvalidInput),
         }
-        let frozen = freeze_npc_bank(&request)?;
+        let frozen = freeze_npc_bank(&request, bonus)?;
         let binding = request_binding(&fence, &request);
         let recovery = authority
             .record_for(self)
@@ -588,14 +614,22 @@ impl DurabilityRoot {
             lock_admission_relations(&mut tx).await?;
             lock_npc_bank_command(&mut tx, command).await?;
             let Some(stored) = read_npc_bank_command(&mut tx, &fence, command).await? else { return Ok(Ok(None)); };
-            let request = match thaw_npc_bank(&stored.bytes) { Ok(request) => request, Err(error) => return nested_bank_error(error) };
-            let outcome = match bank_operation_with_npc(&mut tx, &node, &fence, &request,Some(&stored.npc_key)).await {
+            let (request, bonus) = match thaw_npc_bank(&stored.bytes) { Ok(request) => request, Err(error) => return nested_bank_error(error) };
+            let outcome = match bank_operation_with_npc(&mut tx, &node, &fence, &request, Some(&stored.npc_key), bonus.as_ref().map(|bonus| (command, bonus))).await {
                 Ok(outcome) => outcome, Err(error) => return nested_bank_error(error),
             };
             sqlx::query("UPDATE game_npc_bank_confirmations SET completed = TRUE WHERE game_session_id = encode($1,'hex')::uuid AND command_id = $2::text::numeric AND NOT completed")
                 .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).execute(&mut *tx).await?;
+            let bonus_reply = if let Some(bonus) = bonus {
+                let paid: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_account_bank_entries WHERE quest_deposit_transaction_id=encode($1,'hex')::uuid)")
+                    .bind(request.identity().transaction_id.as_slice()).fetch_one(&mut *tx).await?;
+                paid.then(|| bonus.rule.reply.replace("{amount}", &request.amount().to_string())
+                    .replace("{bonus}", &bonus.rule.gold.to_string()))
+            } else {
+                None
+            };
             commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(Some(BankNpcCompletion { request, outcome, recipient_name: stored.recipient_name,
+            Ok(Ok(Some(BankNpcCompletion { request, outcome, bonus_reply, recipient_name: stored.recipient_name,
                         npc_identity: stored.npc_identity, npc_generation: stored.npc_generation })))
         })).await?
     }
@@ -959,7 +993,7 @@ pub async fn bank_operation_in_transaction(
     fence: &CurrentCharacterItemFence,
     request: &BankRequest,
 ) -> Result<BankOperationOutcome> {
-    bank_operation_with_npc(tx, node, fence, request, None).await
+    bank_operation_with_npc(tx, node, fence, request, None, None).await
 }
 
 async fn bank_operation_with_npc(
@@ -968,6 +1002,7 @@ async fn bank_operation_with_npc(
     fence: &CurrentCharacterItemFence,
     request: &BankRequest,
     npc_key: Option<&str>,
+    bonus: Option<(CommandRef, &BoundBankDepositBonus)>,
 ) -> Result<BankOperationOutcome> {
     if npc_key.is_some() {
         validate_request_shape(request)?
@@ -990,7 +1025,7 @@ async fn bank_operation_with_npc(
         return Err(BankError::AuthorityRejected);
     };
     let record = match request {
-        BankRequest::Deposit(request) => deposit(tx, &acting, request, &binding).await?,
+        BankRequest::Deposit(request) => deposit(tx, &acting, request, &binding, bonus).await?,
         BankRequest::Withdraw(request) => withdraw(tx, &acting, request, &binding).await?,
         BankRequest::Transfer(request) => transfer(tx, &acting, request, &binding).await?,
     };
@@ -1856,6 +1891,7 @@ async fn deposit(
     acting: &Acting,
     deposit: &BankDepositRequest,
     binding: &[u8],
+    bonus: Option<(CommandRef, &BoundBankDepositBonus)>,
 ) -> Result<BankOperationRecord> {
     let request = BankRequest::Deposit(deposit.clone());
     lock_acting_root(tx, acting).await?;
@@ -1892,20 +1928,30 @@ async fn deposit(
         return refuse(tx, acting, &request, binding, BankResult::NoRoom).await;
     };
 
+    let bonus = if let Some((command, binding)) = bonus {
+        super::quest_state::bank_deposit::prepare(tx, acting.character_id, command, binding).await?
+    } else {
+        None
+    };
     let [balance] = lock_balances(tx, acting.world_id, &[acting.account_id]).await?[..] else {
         return Err(DurabilityError::InvalidStoredState.into());
     };
-    let Some(after) = super::bank_credit_headroom::credit_in_transaction(
+    let bonus_gold = bonus.as_ref().map_or(0, |bonus| bonus.gold());
+    let Some(combined) = deposit.amount.checked_add(bonus_gold) else {
+        return refuse(tx, acting, &request, binding, BankResult::BalanceLimit).await;
+    };
+    let Some(final_balance) = super::bank_credit_headroom::credit_in_transaction(
         tx,
         &acting.account_id,
         acting.world_id,
         balance.balance,
-        deposit.amount,
+        combined,
     )
     .await?
     else {
         return refuse(tx, acting, &request, binding, BankResult::BalanceLimit).await;
     };
+    let after = final_balance - bonus_gold;
 
     let mut lines: Vec<BankCoinLine> = plan
         .lines
@@ -1988,6 +2034,23 @@ async fn deposit(
         &envelope,
     )
     .await?;
+    if let Some(bonus) = bonus {
+        bonus.commit(tx).await?;
+        let bonus_entry = new_entry_id(tx).await?;
+        sqlx::query("INSERT INTO game_account_bank_entries(entry_id,quest_deposit_transaction_id,account_id,world_id,amount,balance_before,balance_after,previous_entry_id,acting_character_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6,$7,encode($8,'hex')::uuid,encode($9,'hex')::uuid)")
+            .bind(bonus_entry.as_slice()).bind(deposit.identity.transaction_id.as_slice())
+            .bind(acting.account_id.as_slice()).bind(acting.world_id.as_bytes().as_slice())
+            .bind(to_i64(bonus_gold)?).bind(to_i64(entry.balance_after)?).bind(to_i64(final_balance)?)
+            .bind(entry.entry_id.as_slice()).bind(acting.character_id.as_bytes().as_slice())
+            .execute(&mut **tx).await?;
+        let moved = sqlx::query("UPDATE game_account_bank_balances SET balance=$3,last_entry_id=encode($4,'hex')::uuid WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND last_entry_id=encode($5,'hex')::uuid")
+            .bind(acting.account_id.as_slice()).bind(acting.world_id.as_bytes().as_slice())
+            .bind(to_i64(final_balance)?).bind(bonus_entry.as_slice()).bind(entry.entry_id.as_slice())
+            .execute(&mut **tx).await?;
+        if moved.rows_affected() != 1 {
+            return Err(DurabilityError::InvalidStoredState.into());
+        }
+    }
     Ok(committed(&request, vec![entry], lines))
 }
 
