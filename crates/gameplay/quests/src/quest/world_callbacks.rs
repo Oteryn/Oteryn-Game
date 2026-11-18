@@ -784,6 +784,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     native_callbacks.extend(super::ice_seal_paint::callbacks()?);
     native_callbacks.push(super::source_world_objects::uneasy_crystal());
     native_callbacks.extend(super::rotten_blood::flames::callbacks());
+    native_callbacks.extend(super::rottin_walls::callbacks());
     native_callbacks.extend(super::source_world_objects::lions_amphora());
     native_callbacks.extend(super::source_world_objects::lions_flowers());
     if callbacks.len() > MAX_RUNTIME_CALLBACKS.saturating_sub(native_callbacks.len()) {
