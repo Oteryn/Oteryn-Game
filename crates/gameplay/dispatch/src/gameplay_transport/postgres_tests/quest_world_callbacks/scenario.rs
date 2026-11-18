@@ -1374,6 +1374,7 @@ fn scenario_case(
             "catalogue-npc-calendar" | "catalogue-npc-scoped" => Some(35),
             "questpc7-eligibility-high" => Some(1000),
             "qengine-rewards-feaster-prefix" | "qengine-rewards-feaster-thaian" => Some(250),
+            super::super::gerimor_reports::NAME => Some(20),
             "questpc7-ferumbras" | "qengine-rewards-heart-story" => Some(150),
             "questpc7-grave" => Some(250),
             "questpc7-outfits-formal" => Some(20),

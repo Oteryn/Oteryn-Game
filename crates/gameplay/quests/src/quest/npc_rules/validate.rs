@@ -92,6 +92,7 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
         }
         if document.quest == super::questpc2_gerimor_source::QUEST
             && !super::questpc2_gerimor_source::custody(document)
+            && !super::questpc2_gerimor_source::reports_custody(document)
         {
             return Err(invalid("Gerimor source custody"));
         }

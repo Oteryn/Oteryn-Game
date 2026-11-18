@@ -528,6 +528,7 @@ impl NpcRuleCatalog {
                         || p.document.program_key.as_deref() == Some(questpc2_oldrak_source::PROGRAM)
                         || p.document.program_key.as_deref() == Some(questpc2_albinius_source::PROGRAM)
                         || p.document.program_key.as_deref() == Some(questpc2_gerimor_source::PROGRAM)
+                        || p.document.program_key.as_deref() == Some(questpc2_gerimor_source::REPORT_PROGRAM)
                         || p.document.program_key.as_deref() == Some(questpc2_gnomus_source::PROGRAM)
                         || p.document.program_key.as_deref() == Some(questpc2_henricus_source::PROGRAM)
                         || p.document.program_key.as_deref()
@@ -598,8 +599,25 @@ impl NpcRuleCatalog {
         self,
         catalogue: &super::QuestStateCatalogue,
     ) -> Result<super::QuestStateCatalogue, String> {
-        let mut active = extend_with_source(catalogue.clone(), &BTreeMap::new(), &self)?;
-        active.npc_fixture = Some(self);
+        let mut active = if self
+            .programs
+            .iter()
+            .all(|p| questpc2_gerimor_source::reports(&p.document))
+        {
+            catalogue.clone()
+        } else {
+            extend_with_source(catalogue.clone(), &BTreeMap::new(), &self)?
+        };
+        questpc2_gerimor_source::extend(&mut active, &self)?;
+        let mut source = self;
+        source.programs.extend(
+            Self::runtime()
+                .map_err(|e| e.to_string())?
+                .programs
+                .iter()
+                .cloned(),
+        );
+        active.npc_fixture = Some(source);
         Ok(active)
     }
 
@@ -790,7 +808,11 @@ fn extend_with_source(
 ) -> Result<super::QuestStateCatalogue, String> {
     let mut legacy = catalogue.npc_legacy.clone();
     let predecessors = catalogue.predecessors.clone();
-    for program in source.programs() {
+    for program in source
+        .programs()
+        .iter()
+        .filter(|p| !questpc2_gerimor_source::reports(&p.document))
+    {
         let quest = &program.document.quest;
         if program.document.schema == 1
             && !matches!(
@@ -821,7 +843,11 @@ fn extend_with_source(
     }
     let mut tracks = catalogue.tracks.clone();
     let mut transitions = catalogue.transitions.clone();
-    for program in source.programs() {
+    for program in source
+        .programs()
+        .iter()
+        .filter(|p| !questpc2_gerimor_source::reports(&p.document))
+    {
         let writes = bounds::literal_write_bounds(program);
         for track in &program.document.tracks {
             if let Some(native) = tracks.get_mut(&track.key) {
@@ -894,6 +920,15 @@ fn extend_with_source(
     active.predecessors = predecessors;
     completion_predecessors::register(&mut active, source)?;
     Ok(active)
+}
+
+pub(super) fn attach_gerimor_reports(
+    catalogue: &mut super::QuestStateCatalogue,
+) -> Result<(), String> {
+    questpc2_gerimor_source::extend(
+        catalogue,
+        NpcRuleCatalog::runtime().map_err(|e| e.to_string())?,
+    )
 }
 
 /// Only an exact registered predecessor retains its old absent-track values.
