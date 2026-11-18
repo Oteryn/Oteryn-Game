@@ -42,6 +42,10 @@ const PLATE: TilePos = TilePos {
     y: 31838,
     ..START
 };
+const EAST_PLATE: TilePos = TilePos {
+    x: PLATE.x + 1,
+    ..PLATE
+};
 const SWITCHES: [TilePos; 5] = [
     TilePos {
         x: 32220,
@@ -69,13 +73,49 @@ const SWITCHES: [TilePos; 5] = [
         ..START
     },
 ];
-// One remote ENERGYHIT per switch from the donor's effectPosition table.
-const SWITCH_CUES: [(u16, u16); 5] = [
-    (32217, 31845),
-    (32217, 31844),
-    (32217, 31842),
-    (32217, 31845),
-    (32219, 31841),
+// Crystal data-global/lib/quests/the_queen_of_the_banshees.lua:33-80.
+const SWITCH_CUES: [&[(u16, u16)]; 5] = [
+    &[
+        (32217, 31845),
+        (32218, 31845),
+        (32219, 31845),
+        (32220, 31845),
+        (32217, 31843),
+        (32218, 31842),
+        (32219, 31841),
+    ],
+    &[
+        (32217, 31844),
+        (32218, 31844),
+        (32219, 31843),
+        (32220, 31845),
+        (32219, 31845),
+    ],
+    &[
+        (32217, 31842),
+        (32219, 31843),
+        (32219, 31845),
+        (32218, 31844),
+        (32217, 31844),
+        (32217, 31845),
+    ],
+    &[
+        (32217, 31845),
+        (32218, 31846),
+        (32218, 31844),
+        (32219, 31845),
+        (32220, 31846),
+    ],
+    &[
+        (32219, 31841),
+        (32219, 31842),
+        (32219, 31846),
+        (32217, 31843),
+        (32217, 31844),
+        (32217, 31845),
+        (32218, 31843),
+        (32218, 31845),
+    ],
 ];
 const BASINS: [TilePos; 3] = [
     TilePos {
@@ -145,6 +185,10 @@ fn bindings() -> TestResult<Bindings> {
                 })
             })
             .collect();
+        let switch_magic: Vec<_> = SWITCH_CUES[index]
+            .iter()
+            .map(|&(x, y)| serde_json::json!({"position":position(TilePos {x,y,floor:-14}),"effect":12}))
+            .collect();
         let callback = serde_json::json!({
             "key":format!("oteryn:quest-callback/banshee/demonrage-switch-{index}"),
             "quest":QUEST,"trigger":"use","selector":{"position":position(at),"unique":30013+index},
@@ -155,7 +199,7 @@ fn bindings() -> TestResult<Bindings> {
             "effects":{"visual_passages":last,"requirement_failure_magic":12,
                 "sequence_prime":"oteryn:switch-sequence/demonrage",
                 "magic":{"position":position(at),"effect":13},
-                "switch_magic":[{"position":{"x":SWITCH_CUES[index].0,"y":SWITCH_CUES[index].1,"floor":-14},"effect":12}]},
+                "switch_magic":switch_magic},
             "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/action-3-third_seal_lever.lua:3-39"]
         });
         stages.push(serde_json::json!({
@@ -186,7 +230,7 @@ fn bindings() -> TestResult<Bindings> {
     });
     let plate = serde_json::json!({
         "key":"oteryn:quest-callback/banshee/demonrage-warlocks","quest":QUEST,
-        "trigger":"step_in","selector":{"position":position(PLATE),"action":25023,"appearance":431},
+        "trigger":"step_in","selector":{"position":position(PLATE),"position_aliases":[position(EAST_PLATE)],"action":25023,"appearance":431},
         "requires_world_admission":true,"reversible":false,"return_on_failure":false,"offerings":[],"passages":[],
         "storage":[{"track":WARLOCKS,"minimum":-1,"maximum":0,"set":1}],
         "effects":{"magic":{"position":position(PLATE),"effect":14},"encounter":{
@@ -244,6 +288,7 @@ fn scenario() -> TestResult {
             (FLAME, Some((4, Some(35015)))),
             (DESTINATION, None),
             (PLATE, Some((6, None))),
+            (EAST_PLATE, Some((6, None))),
         ];
         tiles.extend(
             SWITCHES
@@ -270,7 +315,7 @@ fn scenario() -> TestResult {
                 (431, true),
             ],
             &tiles,
-            &[(PLATE, 25023, None)],
+            &[(PLATE, 25023, None), (EAST_PLATE, 25023, None)],
         )?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
@@ -452,7 +497,6 @@ fn scenario() -> TestResult {
                 .into_iter()
                 .map(|(_, at, effect)| (at, effect))
                 .collect();
-            let (x, y) = SWITCH_CUES[index];
             match attempt {
                 0 => assert!(cues.is_empty(), "priming emits no effect"),
                 1 => assert_eq!(
@@ -460,7 +504,16 @@ fn scenario() -> TestResult {
                     [(at, 12)],
                     "out-of-order press emits only the refusal"
                 ),
-                _ => assert_eq!(cues, [(at, 13), (TilePos { x, y, floor: -14 }, 12)]),
+                _ => {
+                    let expected: Vec<_> = std::iter::once((at, 13))
+                        .chain(
+                            SWITCH_CUES[index]
+                                .iter()
+                                .map(|&(x, y)| (TilePos { x, y, floor: -14 }, 12)),
+                        )
+                        .collect();
+                    assert_eq!(cues, expected);
+                }
             }
         }
         for basin in BASINS {
@@ -489,14 +542,14 @@ fn scenario() -> TestResult {
             assert_eq!(item(at)?.1, 2114);
         }
 
-        for _ in 0..2 {
-            let (origin, entered) = step_onto(PLATE).await?;
+        for plate in [PLATE, EAST_PLATE] {
+            let (origin, entered) = step_onto(plate).await?;
             assert_eq!(
                 owner
                     .step_quest_callback(&permit, actor, session, origin, entered)
                     .await
                     .position(),
-                local(PLATE)
+                local(plate)
             );
             let runtime = owner.runtime.lock().await;
             let mut positions = runtime
