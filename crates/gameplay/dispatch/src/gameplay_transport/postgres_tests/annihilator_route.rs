@@ -27,6 +27,7 @@ enum Route {
     Entry,
     TimedSourceRepair,
     BloodBrothersMirror,
+    BloodBrothersVial,
     Combat,
     Complete,
     ObjectiveAtomicity,
@@ -69,10 +70,17 @@ pub(super) fn blood_brothers_mirror() -> TestResult {
     run(Route::BloodBrothersMirror)
 }
 
+pub(super) fn blood_brothers_vial() -> TestResult {
+    run(Route::BloodBrothersVial)
+}
+
 fn run(route: Route) -> TestResult {
+    let vial = route == Route::BloodBrothersVial;
     let mirror = route == Route::BloodBrothersMirror;
-    let combat = !mirror && !matches!(route, Route::Entry | Route::TimedSourceRepair);
-    let start = if mirror {
+    let combat = !mirror && !vial && !matches!(route, Route::Entry | Route::TimedSourceRepair);
+    let start = if vial {
+        super::bbro2_marziel::STARTS[0]
+    } else if mirror {
         super::bbro2_lersatio_source::START
     } else if matches!(
         route,
@@ -124,7 +132,9 @@ fn run(route: Route) -> TestResult {
             "content-1",
         )?;
         let generation = controller.active().ok_or("active generation")?;
-        let world = if mirror {
+        let world = if vial {
+            super::bbro2_marziel::world(generation.native_gameplay().ok_or("native gameplay")?)?
+        } else if mirror {
             super::bbro2_lersatio_source::world(
                 generation.native_gameplay().ok_or("native gameplay")?,
             )?
@@ -144,9 +154,16 @@ fn run(route: Route) -> TestResult {
                 .await?;
         let mut currents = Vec::new();
         let mut operations = Vec::new();
-        for index in 0..if mirror { 2_u8 } else { 4_u8 } {
+        let member_count = if vial {
+            3
+        } else if mirror {
+            2
+        } else {
+            4
+        };
+        for index in 0..member_count {
             let (current, operation) =
-                crate::world_party_runtime_postgres_cases::committed_fresh_player_with_operation(
+                crate::world_party_runtime_postgres_cases::committed_fresh_player_with_sex(
                     &crate::world_party_runtime_postgres_cases::FreshPlayerOwners {
                         root: h.root.clone(),
                         node: h.node.clone(),
@@ -156,6 +173,12 @@ fn run(route: Route) -> TestResult {
                     80 + index,
                     70 + index,
                     now,
+                    None,
+                    if vial && index != 0 {
+                        crate::domain::appearance::Sex::Female
+                    } else {
+                        crate::domain::appearance::Sex::Male
+                    },
                 )
                 .await?;
             currents.push(current);
@@ -266,7 +289,11 @@ fn run(route: Route) -> TestResult {
             runtime
                 .bind_attacker_lease(actor, session, current.current_character_lease())
                 .map_err(debug)?;
-            let at = start;
+            let at = if vial {
+                super::bbro2_marziel::STARTS[index]
+            } else {
+                start
+            };
             runtime
                 .initialize_pinned_test_position(actor, local(at))
                 .map_err(debug)?;
@@ -299,7 +326,9 @@ fn run(route: Route) -> TestResult {
             crate::gameplay_transport::quest_log::QuestLogLines::new(journal.content)
                 .ok_or("journal line bounds")?,
         );
-        owner.quest_catalogue = Some(std::sync::Arc::new(if mirror {
+        owner.quest_catalogue = Some(std::sync::Arc::new(if vial {
+            super::bbro2_marziel::catalogue(lowered.catalogue().content_revision())?
+        } else if mirror {
             super::bbro2_lersatio_source::catalogue(lowered.catalogue().content_revision())?
         } else {
             lowered.catalogue().clone()
@@ -382,7 +411,7 @@ fn run(route: Route) -> TestResult {
                 _ => return Err("durable cast facts unavailable".into()),
             };
             assert_eq!(facts.level, source_level);
-            if combat {
+            if combat || vial {
                 let native = generation.native_gameplay().ok_or("native")?;
                 owner
                     .root
@@ -472,6 +501,15 @@ fn run(route: Route) -> TestResult {
             return Err("native bundle collision index".into());
         };
         let map = index.map();
+        if vial {
+            let result =
+                super::bbro2_marziel::exercise(&mut owner, &mut admitted, map, &h.pool).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
+        }
         if mirror {
             let result =
                 super::bbro2_lersatio_source::exercise(&mut owner, &mut admitted, map).await;

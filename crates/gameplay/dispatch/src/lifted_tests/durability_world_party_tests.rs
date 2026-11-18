@@ -879,7 +879,15 @@ async fn bootstrap_owned_character(
     account: u8,
     now: i64,
 ) -> TestResult<crate::domain::CharacterId> {
-    bootstrap_owned_character_from_source(h, character, account, now, None).await
+    bootstrap_owned_character_from_source(
+        h,
+        character,
+        account,
+        now,
+        None,
+        crate::domain::appearance::Sex::Male,
+    )
+    .await
 }
 async fn bootstrap_owned_character_from_source(
     h: &FreshPlayerOwners<'_>,
@@ -887,6 +895,7 @@ async fn bootstrap_owned_character_from_source(
     account: u8,
     now: i64,
     existing_source: Option<&str>,
+    sex: crate::domain::appearance::Sex,
 ) -> TestResult<crate::domain::CharacterId> {
     // The independent producer fixture supplies a bounded authenticated decision. Only the
     // real bootstrap writer creates the root, issuer floor, operation receipt and audit data.
@@ -962,7 +971,10 @@ async fn bootstrap_owned_character_from_source(
         "operation_id": fresh_source::uuid_text(&id(character)),
         "operation": "INITIAL_CHARACTER_BOOTSTRAP", "account_id": account_text,
         "target_world_id": fresh_source::uuid_text(&id(WORLD)),
-        "requested_sex":"Male","requested_name": format!("Party Player {}{}", char::from(b'A' + character / 26), char::from(b'a' + character % 26)),
+        "requested_sex":match sex {
+            crate::domain::appearance::Sex::Female => "Female",
+            crate::domain::appearance::Sex::Male => "Male",
+        },"requested_name": format!("Party Player {}{}", char::from(b'A' + character / 26), char::from(b'a' + character % 26)),
         "interpretation_context": {"profile_revision":"profile-1", "ruleset_revision":"ruleset-1",
             "content_revision":"content-1", "starter_template_revision":"starter-1"},
         "issued_at_source": (now - 1).to_string(), "expires_at_source": (now + 120).to_string(),
@@ -1050,12 +1062,37 @@ pub(crate) async fn committed_fresh_player_from_source_owned(
     crate::foundation::GameSessionAuthoritySnapshot<crate::foundation::AuthenticatedTransportRefV1>,
     crate::foundation::fresh_admission_durability::FreshAdmissionOperationV1,
 )> {
+    committed_fresh_player_with_sex(
+        h,
+        character,
+        account,
+        session,
+        now,
+        existing_source,
+        crate::domain::appearance::Sex::Male,
+    )
+    .await
+}
+
+pub(crate) async fn committed_fresh_player_with_sex(
+    h: &FreshPlayerOwners<'_>,
+    character: u8,
+    account: u8,
+    session: u8,
+    now: i64,
+    existing_source: Option<&str>,
+    sex: crate::domain::appearance::Sex,
+) -> TestResult<(
+    crate::foundation::GameSessionAuthoritySnapshot<crate::foundation::AuthenticatedTransportRefV1>,
+    crate::foundation::fresh_admission_durability::FreshAdmissionOperationV1,
+)> {
     use crate::durability::admission_authority_guards::AdmissionGuardStore;
     use crate::durability::fresh_admission::FreshAdmissionStore;
     use crate::foundation::admission_authority_publication::AdmissionAuthorityPublicationV1;
     use crate::foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1;
     let character_id =
-        bootstrap_owned_character_from_source(h, character, account, now, existing_source).await?;
+        bootstrap_owned_character_from_source(h, character, account, now, existing_source, sex)
+            .await?;
     let mut source = fresh_source::Source::new(now, *character_id.as_bytes(), account, session)?;
     if let Some(authority) = existing_source {
         use crate::foundation::admission_authority_publication::{
