@@ -1442,6 +1442,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 *due = deadline;
             }
+            if let Some(crate::map::facts::QuestCallbackProjection::TimedScene { due, .. }) =
+                &mut projection
+            {
+                let Some(deadline) = self
+                    .owner_now()
+                    .get()
+                    .checked_add(world_callbacks::EARTH_TREE_LIFETIME_US)
+                else {
+                    return UseDisposition::Exhausted;
+                };
+                *due = deadline;
+            }
             // A per-character gift does not consume or revise its shared source object.
             // Real scene changes and shared-world progress still publish their original CAS,
             // including the revision consumed by the post-publication removal below.
@@ -1518,6 +1530,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 crate::map::facts::QuestCallbackProjection::TimedTransform { .. }
                     | crate::map::facts::QuestCallbackProjection::TimedRemoteTransform { .. }
                     | crate::map::facts::QuestCallbackProjection::TimedEntrance { .. }
+                    | crate::map::facts::QuestCallbackProjection::TimedScene { .. }
             )
         ) || callback.effects.reset_after_ms.is_some()
             || callback.effects.passages_reset_after_ms.is_some()

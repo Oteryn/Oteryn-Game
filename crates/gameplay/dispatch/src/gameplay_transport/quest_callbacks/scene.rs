@@ -162,7 +162,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let due = self
                 .owner_now()
                 .get()
-                .checked_add(60_000_000)
+                .checked_add(world_callbacks::EARTH_TREE_LIFETIME_US)
                 .ok_or(UseDisposition::Exhausted)?;
             return Ok(Some(QuestCallbackProjection::TimedScene {
                 due,

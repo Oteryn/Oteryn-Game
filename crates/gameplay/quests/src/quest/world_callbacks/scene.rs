@@ -2,6 +2,7 @@
 use super::*;
 
 pub const MAX_SCENE_EDITS: usize = 32;
+pub const EARTH_TREE_LIFETIME_US: u64 = 60_000_000;
 
 pub const EARTH_TREE: Position = Position {
     x: 32737,
