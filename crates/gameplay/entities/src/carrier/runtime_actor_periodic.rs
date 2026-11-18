@@ -228,7 +228,10 @@ impl ChannelRuntimeV1 {
         let mut total = 0i64;
         let mut had_damage = false;
         let mut health_after = before.health;
-        let mut health_events = PeriodicHealthEvents::new(self, actor, stamp, observations)?;
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let original_slot = self.carrier.slots[index].clone();
+        let mut health_events =
+            PeriodicHealthEvents::new(self, actor, stamp, observations, &original_slot)?;
         let mut current_type = before.clone();
         for (tick_index, tick) in ticks.iter().enumerate() {
             match tick.kind {
@@ -483,19 +486,15 @@ impl ChannelRuntimeV1 {
                 }
             }
         }
-        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
-        let Slot::CreatureOccupied { committed, .. } = &self.carrier.slots[index] else {
-            return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::NotCreature);
-        };
-        let original_slot = self.carrier.slots[index].clone();
-        let ordinal = committed.next_ordinal;
         let Slot::CreatureOccupied {
+            committed,
             damage_contributors,
             ..
         } = &original_slot
         else {
             return Err(CarrierError::NotCreature);
         };
+        let ordinal = committed.next_ordinal;
         let mut damage_contributors = damage_contributors.clone();
         // Attribution is prepared with the same HP/store successor. No new
         // input command is consumed by a condition tick; the existing source
@@ -650,6 +649,7 @@ impl ChannelRuntimeV1 {
         if let Some(observation) = &prepared.health_events.native {
             self.validate_native_health_change_observation(observation)?;
         }
+        prepared.health_events.validate_recovery(self)?;
         if let Some(master) = prepared.before.state.master {
             self.carrier
                 .player_slot_index(&self.continuity, master.actor.0, master.session)?;

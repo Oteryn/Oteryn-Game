@@ -18,6 +18,15 @@ pub(super) struct PeriodicHealthEvents {
     hatred_defense: Option<u32>,
     stamp: RuntimeWorkStamp,
     pub(super) blood: Vec<super::super::soul_war_native_health_events::CommittedCloakBloodEvent>,
+    recovery: Option<RecoveryObservation>,
+}
+
+#[derive(Debug)]
+struct RecoveryObservation {
+    rule: super::super::encounter_access::QuestDamageRecovery,
+    position: VersionedPosition,
+    vacant: bool,
+    cues: u64,
 }
 impl PeriodicHealthEvents {
     pub(super) fn new(
@@ -25,6 +34,7 @@ impl PeriodicHealthEvents {
         actor: ExactActorRef,
         stamp: RuntimeWorkStamp,
         observations: &[super::super::native_health_change::NativeHealthChangeObservation],
+        original_slot: &Slot,
     ) -> Result<Self, CarrierError> {
         let mut matching = observations
             .iter()
@@ -33,6 +43,21 @@ impl PeriodicHealthEvents {
         if matching.next().is_some() {
             return Err(CarrierError::PlanConflict);
         }
+        let recovery = match original_slot {
+            Slot::CreatureOccupied {
+                spell_combat,
+                position: Some(position),
+                ..
+            } => spell_combat
+                .quest_damage_recovery
+                .map(|rule| RecoveryObservation {
+                    rule,
+                    position: *position,
+                    vacant: rule.observe(&runtime.carrier, *position),
+                    cues: 0,
+                }),
+            _ => None,
+        };
         Ok(Self {
             native,
             callback: runtime
@@ -44,7 +69,20 @@ impl PeriodicHealthEvents {
             hatred_defense: None,
             stamp,
             blood: Vec::new(),
+            recovery,
         })
+    }
+
+    pub(super) fn validate_recovery(&self, runtime: &ChannelRuntimeV1) -> Result<(), CarrierError> {
+        if self.recovery.as_ref().is_some_and(|observation| {
+            observation
+                .rule
+                .observe(&runtime.carrier, observation.position)
+                != observation.vacant
+        }) {
+            return Err(CarrierError::PlanConflict);
+        }
+        Ok(())
     }
     #[allow(
         clippy::too_many_arguments,
@@ -64,6 +102,14 @@ impl PeriodicHealthEvents {
     ) -> Result<i64, CarrierError> {
         if damage <= 0 {
             return Ok(damage);
+        }
+        if let Some(observation) = &mut self.recovery
+            && observation.vacant
+            && *health > 0
+            && *health < maximum
+        {
+            *health = observation.rule.heal(*health, maximum);
+            observation.cues = observation.cues.saturating_add(1);
         }
         // ConditionDamage invokes HEALTHCHANGE with ORIGIN_CONDITION. Transform
         // its original signed primary after target mitigation, once, before HP.
@@ -297,6 +343,11 @@ impl PeriodicHealthEvents {
         }
         if let Some(delta) = self.hatred_defense {
             spell_combat.soul_war_defense_delta = delta;
+        }
+        if let Some(observation) = self.recovery
+            && let Some(rule) = &mut spell_combat.quest_damage_recovery
+        {
+            rule.pending_cues = rule.pending_cues.saturating_add(observation.cues);
         }
         self.blood
     }
