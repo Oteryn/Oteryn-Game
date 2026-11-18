@@ -1,0 +1,41 @@
+[
+  {
+    "key": "oteryn:service.travel.brodrosch/cormaya",
+    "keyword": "cormaya",
+    "price": 160,
+    "premium": false,
+    "x": 33311,
+    "y": 31989,
+    "floor": 15,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.captain_bluebear/carlin",
+    "keyword": "carlin",
+    "price": 110,
+    "premium": false,
+    "x": 32387,
+    "y": 31820,
+    "floor": 6,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.captain_seahorse/venore",
+    "keyword": "venore",
+    "price": 40,
+    "premium": true,
+    "x": 32954,
+    "y": 32022,
+    "floor": 6,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  }
+]

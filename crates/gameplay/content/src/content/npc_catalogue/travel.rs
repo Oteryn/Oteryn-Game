@@ -72,8 +72,8 @@ pub fn revision_material() -> &'static str {
     include_str!("travel_routes.json")
 }
 
-/// Crystal 201189f8 data-global/npc/brodrosch.lua:125-129.
-pub const POSTMAN_ROUTE_REVISION: &str = include_str!("travel_postman_cormaya.json");
+/// Postman passages backed by the arrival receipt hook.
+pub const POSTMAN_ROUTE_REVISION: &str = include_str!("travel_postman.json");
 
 pub fn resolve(
     model: &NpcServiceModel,
@@ -86,6 +86,7 @@ pub fn resolve(
             serde_json::from_str(revision_material()).unwrap_or_default();
         let postman: Vec<Correction> =
             serde_json::from_str(POSTMAN_ROUTE_REVISION).unwrap_or_default();
+        routes.retain(|base| !postman.iter().any(|route| route.key == base.key));
         routes.extend(postman);
         routes
     });
