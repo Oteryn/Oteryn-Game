@@ -41,7 +41,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .flatten()
                 .is_some_and(|tile| {
                     tile.entries.iter().any(|entry| {
-                        entry.facts.definition == crate::map::view::MapDefinition::Item(scripture)
+                        entry.facts.definition
+                            == oteryn_protocol_oteryn::world_map::MapDefinition::Item(scripture)
                             && matches!(entry.source, EntrySource::Ground(_))
                     })
                 })
