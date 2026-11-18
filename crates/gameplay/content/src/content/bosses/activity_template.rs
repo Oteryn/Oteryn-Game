@@ -24,6 +24,7 @@ mod soul_war_entry_gate;
 #[path = "activity_template/soul_war_spawns.rs"]
 mod soul_war_spawns;
 pub use soul_war_spawns::QualifiedAmbientXmlSpawns;
+mod warzone;
 
 pub const CRYSTAL_REVISION: &str = "201189f871d23597b82caf88fd611454a2ddefb8";
 pub use crate::content::project::native_spell_world::PinnedActivitySourceRoom;
@@ -217,6 +218,10 @@ impl QualifiedActivityRoomTemplate {
     pub fn maximum_players(&self) -> usize {
         if self.boss_key == "oteryn:boss.bakragore" {
             5
+        } else if warzone::is_warzone_creature(&self.creature_key) {
+            // The shared activity carrier bounds all participant rosters to 15.
+            // These entrants share one landing cell and enter one at a time.
+            15
         } else {
             self.entries.len()
         }
@@ -279,6 +284,7 @@ pub fn captured_boss_levers() -> Result<Vec<BossLeverCandidate>, ActivityTemplat
     }
     let mut records = document.records;
     records.push(first_dragon::candidate()?);
+    records.extend(warzone::candidates()?);
     records.sort_by(|left, right| left.path.cmp(&right.path));
     Ok(records)
 }
@@ -633,9 +639,11 @@ impl ContentActivationController {
         let boss = project(boss)?;
         let exit = project(exit)?;
         let galthen = galthen::exact_closure(candidate);
+        let warzone = warzone::is_warzone_creature(creature);
         if (candidate.source_callback_closure.is_some()
             || candidate.source_exit_teleporter.is_some())
             && !galthen
+            && !warzone
         {
             return Err(R::SourceHookUnavailable);
         }
@@ -682,20 +690,21 @@ impl ContentActivationController {
         if !inside(boss) || entries.iter().any(|p| !inside(*p)) {
             return Err(R::IncompleteLayout);
         }
-        for position in levers
-            .iter()
-            .chain(entries.iter())
-            .copied()
-            .chain([boss, exit])
-        {
-            if room
-                .movement_cells()
-                .index()
-                .lookup(room.movement_cells().scope(), position)
-                .ok()
+        let cells = room.movement_cells();
+        for position in entries.iter().copied().chain([boss, exit]) {
+            if cells.index().lookup(cells.scope(), position).ok()
                 != Some(crate::content::CollisionClass::Walkable)
             {
                 return Err(R::UnknownPlacement);
+            }
+        }
+        for position in &levers {
+            match cells.index().lookup(cells.scope(), *position) {
+                Ok(crate::content::CollisionClass::Walkable) => {}
+                // Crystal's portal replaces a solid stalagmite at this cell.
+                // STEP still requires the current matched portal at run time.
+                Ok(crate::content::CollisionClass::Blocked) if warzone => {}
+                _ => return Err(R::UnknownPlacement),
             }
         }
         let native = active
@@ -728,6 +737,7 @@ impl ContentActivationController {
                     && spite
                         .as_ref()
                         .is_none_or(|closure| !closure.implements(hook))
+                    && !warzone::implements(native, candidate, hook)
             })
         {
             return Err(R::SourceHookUnavailable);

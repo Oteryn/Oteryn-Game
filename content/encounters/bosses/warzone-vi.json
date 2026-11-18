@@ -1,0 +1,95 @@
+{
+  "schema": "OTERYN_CRYSTAL_WARZONE_ACTIVITY/v1",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "sources": [
+    {
+      "path": "data-global/scripts/quests/dangerous_depth/actions_using_crystals.lua",
+      "sha256": "ce4bf507f6e84b108edc8196887158ebc61e1a554604f8bde2d64b87290874d3"
+    },
+    {
+      "path": "data-global/scripts/quests/dangerous_depth/creaturescripts_bosses_mission_depths.lua",
+      "sha256": "6f4b1af04775b46536143729eeafc870e960e3cc9f3b048bd30155aaf7e18d49"
+    },
+    {
+      "path": "data-global/scripts/quests/dangerous_depth/creaturescripts_fiery_heart.lua",
+      "sha256": "0e216bfe168cefdfa1b41ce3241d0734e2eb73a88467c2b70bbb6b84da9fbcc6"
+    },
+    {
+      "path": "data-global/scripts/quests/dangerous_depth/creaturescripts_snail_slime_kill.lua",
+      "sha256": "2c5a474dcf269fc845d78dd117c6d9a221d5b4b64bda53562b62188a179e168e"
+    },
+    {
+      "path": "data-global/scripts/quests/dangerous_depth/movements_boss_entrance.lua",
+      "sha256": "25b0efc67d1544d737fb98cb4090f5d41e9ecba7b35a05d3cee92356adbaa5b9"
+    }
+  ],
+  "timeout_exit": [
+    33275,
+    32318,
+    15
+  ],
+  "reward_destination": [
+    33691,
+    32301,
+    15
+  ],
+  "candidate": {
+    "path": "content/encounters/bosses/warzone-vi.json",
+    "line": 518,
+    "boss_name": "The Duke of the Depths",
+    "creature_key": "oteryn:creature.the_duke_of_the_depths",
+    "boss_position": [
+      33712,
+      32303,
+      15
+    ],
+    "lever_positions": [
+      [
+        33275,
+        32316,
+        15
+      ]
+    ],
+    "entry_positions": [
+      [
+        33717,
+        32302,
+        15
+      ]
+    ],
+    "zone_from": [
+      33684,
+      32293,
+      15
+    ],
+    "zone_to": [
+      33724,
+      32314,
+      15
+    ],
+    "exit_position": [
+      33275,
+      32318,
+      15
+    ],
+    "source_exit_teleporter": [
+      33719,
+      32302,
+      15
+    ],
+    "blockers": [],
+    "required_callbacks": [
+      "DepthWarzoneBossDeath",
+      "FieryHeartThink"
+    ],
+    "callbacks_known": true,
+    "native_profile_sha256": "87cfc6970eec4e3a6a3151af937a0675de13f21bc1287e038345a81a128dfd3d",
+    "complete_literal_layout": true,
+    "minimum_players": 1,
+    "minimum_level": 1,
+    "cooldown_seconds": 36000,
+    "time_limit_seconds": 1800,
+    "after_kill_seconds": 1200,
+    "sha256": "0194781160e02d633634f7071d1a1f5b0c37da34c4658aeca45e8ca3fba2081a"
+  }
+}
