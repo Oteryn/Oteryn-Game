@@ -234,7 +234,9 @@ pub(super) fn scenario(case: u8) -> TestResult {
             if case == 5 {
                 5
             } else if case == 7 {
-                3
+                // Player, NPC and Crocodile occupy three slots. Activation
+                // must leave floor(capacity / 2) slots free for later admissions.
+                5
             } else {
                 2
             },
