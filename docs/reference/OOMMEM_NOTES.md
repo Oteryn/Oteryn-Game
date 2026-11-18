@@ -105,10 +105,19 @@ The two-job scratch replay uses the baseline test compiler invocation and
 retains all generated PG mounts. In a disk-backed copy of dispatch, it
 disables the test registrations outside the generated directory while
 retaining their fixture definitions. This measures isolating the generated
-mounts without rewriting any assertions. The source files in the checked-out
+mounts with the original assertions. The source files in the checked-out
 branch stay intact. At LLVM coordinator startup the replay was approximately
 12.7 million KiB RSS, compared with the baseline's approximately 15.1 million
 KiB high-water mark at that phase.
+
+The replay built in 714.308 s at 14,623,808 KiB peak RSS (13.95 GiB),
+11.9% below the fresh full build, with the same two-job limit and cached
+dependencies. The 1,121,028,728-byte executable listed 2,455 tests
+(2,457 lines). All 2,238 generated PG test names matched the base exactly.
+The executable also carried 217 non-mount tests retained by the scratch
+control. No names were added relative to the base. The link used
+241 rlibs (1,487,365,036 bytes) and 258 objects (1,162,448,280 bytes).
+Its measured peak was 4,134,660 KiB over 13.190 s.
 
 ## Full suite with 256 codegen units and incremental off
 
@@ -157,44 +166,33 @@ process measurements establish the reproduced OOM.
 
 ## Proposed structural fix
 
-Keep the remaining library unit tests in dispatch. Extract the shared
-fixtures imported across mount boundaries and mount the same PostgreSQL
-cases into three integration targets in the dispatch package,
-`dispatch-pg-1`, `dispatch-pg-2`, and `dispatch-pg-3`. Keep one owner
-per case, preserve assertions and use the production dispatch boundary.
-Assign the offline-death retry case to `dispatch-pg-1`.
+Move the 2,238 cases from the generated mount into a single
+`dispatch-pg` integration target. Keep the remaining 2,101 cases in the
+dispatch lib target. Extract the shared fixtures imported across that
+boundary, keeping the same cases, assertions and production dispatch
+calls. The offline-death retry belongs to the generated mount. Retain
+the current test namespace so the exact-name filter keeps selecting it.
 
-The measured half's complement needs 646 module roots before fixture
-extraction, including 278 shared with the measured half. Balancing by
-source lines yields three nominal groups of 245 roots and approximately
-657, 769 and 744 lexical test attributes. Before fixture extraction their
-dependency closures expand to 463, 472 and 466 roots. The shared fixture
-split is required to realize those savings. Interpolating between the
-11.10 GiB fixture-only control and 15.08 GiB half-mount build gives
-planning peaks of about 13.4, 13.8 and 13.7 GiB, respectively. The
-estimate includes the cost of the remaining library test code and is
-unverified for independent targets.
+The isolated PG control provides a planning peak of about 14 GiB for
+the new target. The fixture-preserving control for the existing lib
+target peaked at 11.10 GiB. Both are scratch measurements. Measure both
+real targets independently after fixture extraction and compare the
+combined sorted names with the 4,339-entry baseline registry.
 
-Compile the targets serially into the existing archive. The PostgreSQL
-planner already enumerates distinct binary IDs and assigns each listed
-case once. The PR unit jobs include the three targets when dispatch is
-selected and retain their exhaustive `hash:<shard>` partition. The
-Merge Queue integration-test planner discovers the new targets through
-Cargo metadata. The PG archive selects them explicitly for execution
-with PostgreSQL. Before landing, compare the sorted test-name multisets
-from the full base binary and the union of the four proposed targets,
-then measure each target and run the affected PostgreSQL cases.
+Compile the two targets serially in the existing archive. The PG
+planner lists both binary IDs and assigns each test once. The PR unit
+shards include the new target when dispatch is selected and keep their
+existing hash partition. The Merge Queue integration planner discovers
+it through Cargo metadata.
 
-The proposed patch selects the targets after they exist and updates the
+The proposed patch selects the target after it exists and updates the
 merge-authority workflow pin and command assertion. It passes
-`git apply --check` against the pinned build tree. The revised YAML parses
-and the five modified run steps pass `bash -n`. The corresponding
-command assertions in the repository validators also require approved
-updates. Test
-durations keyed by current binary ID need the new IDs to retain the
-existing scheduling estimates. The proposed split was too large to
-implement and verify as a package-only change. The branch contains the
-investigation report only.
+`git apply --check` against the pinned build tree. The revised YAML
+parses and all five modified run steps pass `bash -n`. The corresponding
+command assertions in protected repository validators require approved
+updates. The duration keys also need the new binary ID to retain
+existing scheduling estimates. The branch contains the investigation
+and proposed workflow diff.
 
 ### Proposed workflow diff
 
@@ -208,7 +206,7 @@ investigation report only.
 +          pg_targets=()
 +          for package in "${packages[@]}"; do
 +            if [[ "$package" == oteryn-gameplay-dispatch ]]; then
-+              pg_targets=(--test dispatch-pg-1 --test dispatch-pg-2 --test dispatch-pg-3)
++              pg_targets=(--test dispatch-pg)
 +            fi
 +          done
 +          CARGO_BUILD_JOBS=1 cargo +1.100.0 nextest archive --locked "${args[@]}" --lib "${pg_targets[@]}" \
@@ -222,7 +220,7 @@ investigation report only.
 -          cargo +1.100.0 nextest run --locked "${package_args[@]}" --lib --bins \
 +          pg_targets=()
 +          if grep -Fxq -e '--workspace' -e 'oteryn-gameplay-dispatch' "$RUNNER_TEMP/rust-fast-package-args.txt"; then
-+            pg_targets=(--test dispatch-pg-1 --test dispatch-pg-2 --test dispatch-pg-3)
++            pg_targets=(--test dispatch-pg)
 +          fi
 +          cargo +1.100.0 nextest run --locked "${package_args[@]}" --lib --bins "${pg_targets[@]}" \
              --config-file "$RUNNER_TEMP/nextest.toml" --profile rust-fast -E "$expression" \
@@ -233,7 +231,7 @@ investigation report only.
          run: |
            set -euo pipefail
 -          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
-+          CARGO_BUILD_JOBS=1 cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --test dispatch-pg-1 --test dispatch-pg-2 --test dispatch-pg-3 --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
++          CARGO_BUILD_JOBS=1 cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --test dispatch-pg --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
 
        - name: Record archive digests and candidate
 --- a/.github/workflows/integration-regressions.yml
@@ -242,7 +240,7 @@ investigation report only.
            set -euo pipefail
            test -n "$OTERYN_TEST_POSTGRES_ADMIN_URL"
 -          cargo +1.100.0 test --locked -p oteryn-gameplay-dispatch --lib \
-+          CARGO_BUILD_JOBS=1 cargo +1.100.0 test --locked -p oteryn-gameplay-dispatch --test dispatch-pg-1 \
++          CARGO_BUILD_JOBS=1 cargo +1.100.0 test --locked -p oteryn-gameplay-dispatch --test dispatch-pg \
              'gameplay_transport::monk_save::postgres_tests::boss_activity::boss_activity_postgres_offline_native_death_deadline_retry_keeps_retained_trigger' \
              -- --exact --nocapture 2>&1 | tee "$RUNNER_TEMP/offline-death-retry-postgres.log"
 --- a/.github/workflows/merge-authority-audit.yml
@@ -251,14 +249,14 @@ investigation report only.
        EXPECTED_MERGE_GROUP_GATE_BLOB: "67e38c236b1964e03f47f5180540168e39456c71"
        EXPECTED_AGENT_GOVERNANCE_BLOB: "42d84c9089cdef928c6cb17268269156c87c0abb"
 -      EXPECTED_MERGE_GATE_BLOB: "0f72c838a4a374f2b18da314c0b72ac74038a0f0"
-+      EXPECTED_MERGE_GATE_BLOB: "62502c301f39a4ad58cffe141d0722988e948beb"
++      EXPECTED_MERGE_GATE_BLOB: "e6b733cc088e4242d527872eaacd67769cf8de31"
      steps:
        - name: Validate control-plane candidate as inert data
 @@ -296,5 +296,5 @@
                '              archived_targets+=(--test "$name")\n',
                '          cargo +1.100.0 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"\n',
 -              '          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"\n',
-+              '          CARGO_BUILD_JOBS=1 cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --test dispatch-pg-1 --test dispatch-pg-2 --test dispatch-pg-3 --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"\n',
++              '          CARGO_BUILD_JOBS=1 cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --test dispatch-pg --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"\n',
                '          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" \\\n'
                '            --workspace-remap "$GITHUB_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \\\n'
 ```
