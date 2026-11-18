@@ -25,7 +25,7 @@ pub(super) fn binding() -> TestResult<Callback> {
     Ok(serde_json::from_value(serde_json::json!({
         "key":"oteryn:quest-callback/feaster-of-souls-zarganash-linked-boss",
         "quest":"oteryn:quest.feaster_of_souls_quest","trigger":"use",
-        "selector":{"position":LEVER,"native":{"position":LEVER,"ordinal":1,"appearance":2772}},
+        "selector":{"position":LEVER,"native":{"position":LEVER,"ordinal":2,"appearance":8911}},
         "reversible":false,"return_on_failure":false,"storage":[],"passages":[],"offerings":[],
         "effects":{"encounter":{"minimum_level":250,"players":players,
             "room_min":at(33699,31529),"room_max":at(33719,31546),
@@ -42,7 +42,7 @@ pub(super) fn binding() -> TestResult<Callback> {
 }
 
 pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
-    world_cells(callback, LEVER, 2772, 1, &[], &[], None, &[at(33705,31539),at(33711,31539),EXIT])
+    world_cells(callback, LEVER, 8911, 2, &[], &[], None, &[at(33705,31539),at(33711,31539),EXIT])
 }
 
 #[test]
@@ -78,7 +78,7 @@ pub(super) async fn exercise(
         states.initialize(&runtime, second, second_session, facts, (0, 0), owner.owner_now()).ok_or("second player")?;
         second
     };
-    let key = crate::map::view::placement_key(crate::map::overlay::TilePos {x:LEVER.x,y:LEVER.y,floor:LEVER.floor},1)
+    let key = crate::map::view::placement_key(crate::map::overlay::TilePos {x:LEVER.x,y:LEVER.y,floor:LEVER.floor},2)
         .ok_or("lever key")?;
     let mut placement = owner.bundle_map().ok_or("map")?.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
