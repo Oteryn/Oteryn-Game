@@ -97,6 +97,15 @@ def document():
     # source-position Pits entrance and its live Character requirements here.
     rows.extend(row for row in qmech_m03_entry_bindings.callbacks(ROOT)
                 if row['quest'] != 'oteryn:quest.25_years_of_tibia_quest')
+    targuna = 'data-global/scripts/quests/targuna/'
+    for name, source, origin, destination in [
+        ('matilda', 'movements_aragonia.lua:36-56', (33478, 32729, 7), (31925, 31907, 7)),
+        ('temple', 'movements_temple_teleport.lua:2-21', (31941, 31928, 9), (31935, 31861, 7)),
+    ]:
+        row = callback('targuna-' + name + '-return', 'targuna_quest', 'step_in',
+                       targuna + source, at=position(*origin), teleport=position(*destination))
+        row['sources'].append('https://tibia.fandom.com/?curid=110238&oldid=1208547')
+        rows.append(row)
     return dict(schema=1, callbacks=sorted(rows, key=lambda row: row['key']))
 
 
