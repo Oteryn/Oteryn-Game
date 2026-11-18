@@ -36,6 +36,20 @@ fn rottin_lucky_loop_talk_mints_one_weighted_bundle_postgres() -> TestResult {
 }
 
 #[test]
+fn rottin_lucky_loop_talk_refuses_six_charms_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| scenario("rottin_weighted_short", false, None))?
+        .join()
+        .map_err(|_| "Rottin reward PostgreSQL thread panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
 fn rottin_lucky_loop_talk_mints_after_cooldown_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -121,8 +135,41 @@ pub(super) fn catalogue(repeat: bool) -> TestResult<QuestStateCatalogue> {
     Ok(bindings.attach(&base)?)
 }
 
-pub(super) async fn seed_inventory(h: &Harness) -> TestResult {
-    super::item_look::seed_main_backpack(h, &[(CHARM, 1); 7]).await
+pub(super) async fn seed_inventory(h: &Harness, count: usize) -> TestResult {
+    super::item_look::seed_main_backpack(h, &vec![(CHARM, 1); count]).await
+}
+
+pub(super) async fn refuse_short_hand_in(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    let [npc] = install(owner, admitted, [ROTTIN]).await?;
+    talk(owner, admitted, npc, 1701, "hi").await?;
+    let before_xp = experience(h).await?;
+    assert_ne!(
+        talk(owner, admitted, npc, 1702, "yes").await?,
+        ["Good hunt."]
+    );
+    assert_eq!(experience(h).await?, before_xp);
+    let actual: (i64, i64, i64) = sqlx::query_as(
+        "SELECT
+         (SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1),
+         (SELECT count(*) FROM game_quest_reward_sources WHERE transition_key=$2),
+         (SELECT count(*) FROM game_character_quest_tracks
+          WHERE (track_key=$3 AND value<>1) OR (track_key=$4 AND value<>0))",
+    )
+    .bind(CHARM)
+    .bind(PAYOUT)
+    .bind(TRACK)
+    .bind(COOLDOWN)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(actual, (6, 0, 0));
+    Ok(())
 }
 
 pub(super) async fn exercise(

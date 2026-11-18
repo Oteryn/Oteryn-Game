@@ -216,14 +216,15 @@ pub(super) fn scenario(
         let blocked_merchant_spawn = seed == "rottin_merchant_wave_blocked";
         let merchant_wave = seed == "rottin_merchant_wave" || blocked_merchant_spawn;
         let repeat_reward = seed == "rottin_weighted_repeat";
-        let weighted_reward = seed == "rottin_weighted_reward" || repeat_reward;
+        let short_reward = seed == "rottin_weighted_short";
+        let weighted_reward = seed == "rottin_weighted_reward" || repeat_reward || short_reward;
         let h = if merchant_loot || merchant_wave || weighted_reward {
             Harness::create_quest_reward(admin, seed, false).await?
         } else {
             Harness::create_with_admission_seed(admin, seed, true, false).await?
         };
         if weighted_reward {
-            super::rottin_rewards::seed_inventory(&h).await?;
+            super::rottin_rewards::seed_inventory(&h, if short_reward { 6 } else { 7 }).await?;
         } else if merchant_wave {
             super::item_look::seed_main_backpack(&h, &[("oteryn:item.tibia.i12186", 1); 2]).await?;
         } else if merchant_loot {
@@ -390,6 +391,8 @@ pub(super) fn scenario(
                 ).await?;
             } else if merchant_loot {
                 super::rottin_bushwhacking::exercise_mission(&mut owner, admitted, &h).await?;
+            } else if short_reward {
+                super::rottin_rewards::refuse_short_hand_in(&owner, &admitted, &h).await?;
             } else {
                 super::rottin_rewards::exercise(&mut owner, &mut admitted, &h, repeat_reward)
                     .await?;
