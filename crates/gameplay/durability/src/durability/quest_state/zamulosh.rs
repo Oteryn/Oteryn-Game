@@ -130,3 +130,73 @@ impl DurabilityRoot {
         .await
     }
 }
+
+/// A habitat timer refers to the exact durable USE that reached seven habitats.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct HabitatReset {
+    command: CommandRef,
+    callback: &'static str,
+}
+
+impl HabitatReset {
+    pub fn from_use(command: CommandRef, callback: &str) -> Option<Self> {
+        let habitat = zamulosh::HABITATS.iter().find(|habitat| habitat.key == callback)?;
+        Some(Self { command, callback: habitat.key })
+    }
+
+    pub fn session(self) -> GameSessionId {
+        self.command.game_session_id()
+    }
+
+    pub(super) fn request(self, fence: &CurrentCharacterGameplayFence) -> Result<QuestTransitionRequest> {
+        if self.session() != fence.game_session_id {
+            return Err(CharacterProgressionError::AuthorityRejected);
+        }
+        let digest = Sha256::new()
+            .chain_update(b"oteryn:zamulosh-habitat-reset:v1")
+            .chain_update(self.session().as_bytes())
+            .chain_update(self.command.command_id().get().to_be_bytes())
+            .chain_update(self.callback.as_bytes())
+            .finalize().into();
+        Ok(QuestTransitionRequest {
+            transition_key: zamulosh::HABITAT_RESET.into(),
+            cause: QuestCause::SourceStep(SourceStepOccurrence::from_binding_digest(digest)),
+        })
+    }
+
+    pub(super) async fn validate_receipt(
+        self, tx: &mut sqlx::Transaction<'_, sqlx::Postgres>, character: CharacterId, now: i64,
+    ) -> StoredResult<bool> {
+        let valid = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_character_quest_receipts
+              WHERE character_id=encode($1,'hex')::uuid AND cause_kind='use'
+                AND cause_id=encode($2,'hex')::uuid AND cause_ordinal=$3::text::numeric
+                AND transition_key=$4
+                AND values_after[array_position(track_keys, $5)] >= 7
+                AND committed_at / 1000 <= $6)",
+        ).bind(character.as_bytes().as_slice()).bind(self.session().as_bytes().as_slice())
+            .bind(self.command.command_id().get().to_string()).bind(self.callback)
+            .bind(zamulosh::HABITAT_COUNT)
+            .bind(now.saturating_sub(zamulosh::HABITAT_RESET_SECONDS as i64))
+            .fetch_one(&mut **tx).await?;
+        Ok(valid)
+    }
+}
+
+impl DurabilityRoot {
+    pub async fn commit_zamulosh_habitat_reset(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        input: HabitatReset,
+        catalogue: Arc<QuestStateCatalogue>,
+    ) -> Result<QuestTransitionOutcome> {
+        let request = input.request(&fence)?;
+        self.commit_quest_inner::<_, 0>(
+            authority, node, fence, request, catalogue, None, None, None, None,
+            &grizzly::NoGrizzlyPremium, None, None, None, None, None, None, None,
+            Some(super::QuestSourceAction::HabitatReset(input)),
+        ).await
+    }
+}

@@ -924,6 +924,10 @@ impl DurabilityRoot {
             &source_action,
             Some(super::QuestSourceAction::RottenArea(_))
         );
+        let habitat_reset = matches!(&source_action, Some(super::QuestSourceAction::HabitatReset(_)));
+        if (request.transition_key == oteryn_gameplay_quests::quest::zamulosh::HABITAT_RESET) != habitat_reset {
+            return Err(CharacterProgressionError::AuthorityRejected);
+        }
         let lovely_step = matches!(&source_action, Some(super::QuestSourceAction::Zamulosh(_)));
         let lovely_key =
             request.transition_key == oteryn_gameplay_quests::quest::zamulosh::TRANSITION;
@@ -938,7 +942,7 @@ impl DurabilityRoot {
                 Some(super::QuestSourceAction::SoulWar(input))
                     if matches!(input.as_ref(), super::soul_war_source::SoulWarSourceAction::Step(_))
             ) && !soul_step
-            || matches!(request.cause, QuestCause::SourceStep(_)) != (soul_step || lovely_step)
+            || matches!(request.cause, QuestCause::SourceStep(_)) != (soul_step || lovely_step || habitat_reset)
             || matches!(request.cause, QuestCause::SourceThink(_)) && !area_input
             || source_action.is_some()
                 && ((context.is_some() && !soul_step)
@@ -1788,6 +1792,10 @@ impl DurabilityRoot {
                     if let Some(super::QuestSourceAction::SoulWar(input))=&source_action
                         && let super::soul_war_source::SoulWarSourceAction::Step(step)=input.as_ref() {
                         step.observe_spite_clock(stored.get(oteryn_gameplay_quests::quest::soul_war::source_items::SPITE_FIRE).copied().unwrap_or(0),now);
+                    }
+                    if let Some(super::QuestSourceAction::HabitatReset(input)) = &source_action
+                        && !input.validate_receipt(&mut tx, fence.character_id, now).await? {
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
                     // M47: historical receipts returned above. Draw only in this fenced
                     // transaction; the resulting complete snapshot is persisted in its

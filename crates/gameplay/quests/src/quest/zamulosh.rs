@@ -97,6 +97,8 @@ pub struct Habitat {
     pub counterpart_x: u16,
     pub creature: &'static str,
     pub spawn: (u16, u16),
+    pub basin: (u16, u16),
+    pub track: &'static str,
 }
 
 pub const HABITATS: [Habitat; 8] = [
@@ -106,6 +108,8 @@ pub const HABITATS: [Habitat; 8] = [
         counterpart_x: 33634,
         creature: "oteryn:creature.lovely_yielothax",
         spawn: (33619, 32722),
+        basin: (33628, 32721),
+        track: "oteryn:quest-progress/ferumbras-ascension/habitat/corrupted",
     },
     Habitat {
         key: "oteryn:quest-callback/zamulosh-habitat-desert",
@@ -113,6 +117,8 @@ pub const HABITATS: [Habitat; 8] = [
         counterpart_x: 33611,
         creature: "oteryn:creature.lovely_rotworm",
         spawn: (33641, 32684),
+        basin: (33631, 32685),
+        track: "oteryn:quest-progress/ferumbras-ascension/habitat/desert",
     },
     Habitat {
         key: "oteryn:quest-callback/zamulosh-habitat-dimension",
@@ -120,6 +126,8 @@ pub const HABITATS: [Habitat; 8] = [
         counterpart_x: 33611,
         creature: "oteryn:creature.lovely_souleater",
         spawn: (33642, 32722),
+        basin: (33631, 32721),
+        track: "oteryn:quest-progress/ferumbras-ascension/habitat/dimension",
     },
     Habitat {
         key: "oteryn:quest-callback/zamulosh-habitat-grass",
@@ -127,6 +135,8 @@ pub const HABITATS: [Habitat; 8] = [
         counterpart_x: 33611,
         creature: "oteryn:creature.lovely_frazzlemaw",
         spawn: (33642, 32666),
+        basin: (33631, 32667),
+        track: "oteryn:quest-progress/ferumbras-ascension/habitat/grass",
     },
     Habitat {
         key: "oteryn:quest-callback/zamulosh-habitat-ice",
@@ -134,6 +144,8 @@ pub const HABITATS: [Habitat; 8] = [
         counterpart_x: 33611,
         creature: "oteryn:creature.lovely_snake",
         spawn: (33642, 32702),
+        basin: (33631, 32703),
+        track: "oteryn:quest-progress/ferumbras-ascension/habitat/ice",
     },
     Habitat {
         key: "oteryn:quest-callback/zamulosh-habitat-mushroom",
@@ -141,6 +153,8 @@ pub const HABITATS: [Habitat; 8] = [
         counterpart_x: 33634,
         creature: "oteryn:creature.lovely_scorpion",
         spawn: (33617, 32684),
+        basin: (33628, 32685),
+        track: "oteryn:quest-progress/ferumbras-ascension/habitat/mushroom",
     },
     Habitat {
         key: "oteryn:quest-callback/zamulosh-habitat-roshamuul",
@@ -148,6 +162,8 @@ pub const HABITATS: [Habitat; 8] = [
         counterpart_x: 33634,
         creature: "oteryn:creature.lovely_deer",
         spawn: (33619, 32666),
+        basin: (33628, 32667),
+        track: "oteryn:quest-progress/ferumbras-ascension/habitat/roshamuul",
     },
     Habitat {
         key: "oteryn:quest-callback/zamulosh-habitat-venom",
@@ -155,5 +171,29 @@ pub const HABITATS: [Habitat; 8] = [
         counterpart_x: 33634,
         creature: "oteryn:creature.lovely_polar_bear",
         spawn: (33617, 32702),
+        basin: (33628, 32703),
+        track: "oteryn:quest-progress/ferumbras-ascension/habitat/venom",
     },
 ];
+
+pub const HABITAT_COUNT: &str = "oteryn:quest-progress/ferumbras-ascension/habitats";
+pub const HABITAT_RESET: &str = "oteryn:quest-transition/ferumbras-ascension/reset-habitats";
+pub const HABITAT_RESET_SECONDS: u64 = 3600;
+
+pub(super) fn habitat_reset() -> QuestTransition {
+    QuestTransition {
+        key: HABITAT_RESET.into(),
+        quest: QUEST.into(),
+        effects: std::iter::once(HABITAT_COUNT)
+            .chain(HABITATS.iter().map(|habitat| habitat.track))
+            .map(|track| QuestEffect {
+                track: track.into(),
+                from: QuestComparison::Any,
+                effect: QuestEffectKind::Set(0),
+            })
+            .collect(),
+        completes: false,
+        experience: None,
+        world_change: None,
+    }
+}

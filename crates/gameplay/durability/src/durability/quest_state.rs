@@ -779,6 +779,7 @@ pub(super) enum QuestSourceAction {
     SoulWar(Box<soul_war_source::SoulWarSourceAction>),
     RottenArea(rotten_area::QualifiedRottenAreaThink),
     Zamulosh(zamulosh::QualifiedLovelyStep),
+    HabitatReset(zamulosh::HabitatReset),
 }
 impl QuestSourceAction {
     fn request(&self, fence: &CurrentCharacterGameplayFence) -> Result<QuestTransitionRequest> {
@@ -786,6 +787,7 @@ impl QuestSourceAction {
             Self::SoulWar(x) => x.request(fence),
             Self::RottenArea(x) => x.request(fence),
             Self::Zamulosh(x) => x.request(fence),
+            Self::HabitatReset(x) => x.request(fence),
         }
     }
     fn binding(&self, character: CharacterId, request: &QuestTransitionRequest) -> [u8; 33] {
@@ -793,6 +795,7 @@ impl QuestSourceAction {
             Self::SoulWar(x) => x.binding(character, request),
             Self::RottenArea(x) => x.binding(character, request),
             Self::Zamulosh(x) => x.binding(character, request),
+            Self::HabitatReset(_) => request_binding(character, request),
         }
     }
 }

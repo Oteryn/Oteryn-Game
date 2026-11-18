@@ -267,6 +267,8 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
     }
     let track = super::zamulosh::track();
     let transition = super::zamulosh::transition();
+    let habitat = super::zamulosh::habitat_reset();
+    transitions.insert(habitat.key.clone(), habitat);
     tracks.insert(track.key.clone(), track);
     transitions.insert(transition.key.clone(), transition);
     QuestStateCatalogue::new(
