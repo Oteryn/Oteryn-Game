@@ -181,6 +181,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };
+        // Crystal action_drume.lua:35-38 requires the lever user on the first staging tile.
+        if callback.effects.battlefield.is_some()
+            && !encounter.players.first().is_some_and(|first| {
+                census.iter().any(|(who, position, occupant_session)| {
+                    *who == actor
+                        && *occupant_session == Some(session)
+                        && position.position() == local(first.from)
+                })
+            })
+        {
+            return UseDisposition::Rejected;
+        }
         let personal_entry = callback.personal_room_entry().map(local);
         if census.iter().any(|(who, pos, occupant_session)| {
             occupant_session.is_some()

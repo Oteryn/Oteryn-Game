@@ -268,7 +268,7 @@ pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResu
                 member.item_fence = None;
                 owner.admit_quest_session(&member).await;
                 assert!(owner.refresh_source_party_presence(actor, session).await);
-                Some(actor)
+                Some((actor, session))
             } else {
                 None
             };
@@ -317,6 +317,32 @@ pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResu
                 oteryn_world_bundle::bundle::placement_key(-7, 100, 100, 1).ok_or("lever key")?;
             let mut placement = world.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
+            if let Some((actor, session)) = second {
+                let fence = owner
+                    .current_quest_fence(session)
+                    .await
+                    .map_err(|()| "second player fence")?
+                    .ok_or("second player fence")?;
+                let outcome = owner
+                    .use_object(
+                        actor,
+                        UseCommand {
+                            game_session_id: session,
+                            command_id: 1,
+                            item_fence: Some(fence.item_fence()),
+                        },
+                        WorldObjectTarget {
+                            placement: placement.clone(),
+                            expected_revision: 0,
+                        },
+                    )
+                    .await;
+                assert_eq!(
+                    outcome.disposition,
+                    UseDisposition::Rejected,
+                    "the second staging tile cannot operate the lever"
+                );
+            }
             let outcome = owner
                 .use_object(
                     deps.actor,
@@ -353,7 +379,7 @@ pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResu
                 super::drume_battlefield::exercise(
                     &owner,
                     &admitted,
-                    second.ok_or("second player")?,
+                    second.ok_or("second player")?.0,
                     spawn_boss,
                 )
                 .await?;
