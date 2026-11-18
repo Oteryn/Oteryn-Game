@@ -32,6 +32,26 @@ pub(super) fn native_scene(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
 ) -> TestResult<map::boot::BundleWorld> {
+    native_scene_with(
+        native,
+        specs,
+        teleports,
+        appearances,
+        world,
+        channel,
+        |_| {},
+    )
+}
+
+pub(super) fn native_scene_with(
+    native: &NativeGameplayState,
+    specs: Vec<NativeCrop>,
+    teleports: &[ExpectedTeleport],
+    appearances: &[u16],
+    world: crate::foundation::WorldId,
+    channel: crate::foundation::ChannelId,
+    select: impl Fn(&mut sector::Tile),
+) -> TestResult<map::boot::BundleWorld> {
     let first = specs.first().ok_or("native crop set")?;
     let start = (first.start.0, first.start.1, -i8::try_from(first.region.0)?);
     let min_x = specs.iter().map(|s| s.bounds.0).min().ok_or("minimumx")?;
@@ -148,6 +168,7 @@ pub(super) fn native_scene(
                     seen.insert((floor, tile.x, tile.y)),
                     "native crops do not overlap"
                 );
+                select(&mut tile);
                 for (ordinal, item) in tile.items.iter_mut().enumerate() {
                     if let Some(destination) = item.attrs.teleport {
                         assert!(

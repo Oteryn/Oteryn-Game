@@ -26,8 +26,6 @@ fn scenario_case(
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
     let engenc_asura = name.starts_with("engenc-asura-native-");
-    let areadmg_oak = name.starts_with("areadmg-oak-");
-    let areadmg_pits = name.starts_with("areadmg-pits-");
     let carrot = name.starts_with("m07-carrot-");
     let ring_offering =
         name == "m07-ring-offering" || name == super::super::m07_dreamer_ring_lost_ack::NAME;
@@ -79,8 +77,7 @@ fn scenario_case(
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
-    let native_crop = areadmg_oak
-        || m03_use
+    let native_crop = m03_use
         || qd_world
         || engenc_asura
         || m49
@@ -116,9 +113,7 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if areadmg_oak {
-        super::super::areadmg_demon_oak::START
-    } else if name == "qengine-rewards-smith-story" {
+    let start = if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
             y: 32254,
@@ -361,18 +356,6 @@ fn scenario_case(
         super::super::qd_world::callback(name)?
     } else if engenc_asura {
         super::super::engenc_asura_dispatch::callback(name)?
-    } else if areadmg_oak {
-        callback("qm03/pits")?
-    } else if areadmg_pits {
-        let mut fixture = callback("qm03/pits")?;
-        fixture.selector.unique = None;
-        fixture.selector.appearance = Some(353);
-        fixture.selector.action = Some(if name.ends_with("matching") {
-            2069
-        } else {
-            2045
-        });
-        fixture
     } else if m03_pits {
         callback("qm03/pits")?
     } else if nomads_window {
@@ -1042,11 +1025,7 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if areadmg_oak {
-            super::super::areadmg_demon_oak::world(
-                generation.native_gameplay().ok_or("Demon Oak policies")?,
-            )?
-        } else if m03_use {
+        let world = if m03_use {
             super::super::qengine_m03_use::world(
                 generation
                     .native_gameplay()
@@ -1561,7 +1540,7 @@ fn scenario_case(
                 5
             } else if monk {
                 4
-            } else if areadmg_oak || callback.effects.encounter.is_some() {
+            } else if callback.effects.encounter.is_some() {
                 16
             } else {
                 2
@@ -1853,33 +1832,7 @@ fn scenario_case(
             .await
             .map_err(|e| format!("callback starter items: {e:?}"))?;
         owner.admit_progression_session(&mut admitted).await;
-        if areadmg_oak || areadmg_pits {
-            let runtime = owner.runtime.lock().await;
-            owner
-                .states
-                .spell_states
-                .lock()
-                .await
-                .initialize(
-                    &runtime,
-                    deps.actor,
-                    admitted.game_session_id,
-                    crate::spell::cast::CharacterCastFacts {
-                        vocation: if areadmg_pits {
-                            crate::spell::Vocation::ExaltedMonk
-                        } else {
-                            crate::spell::Vocation::Monk
-                        },
-                        max_health: 10_000,
-                        ..crate::gameplay_transport::actor_spell::tests::FACTS
-                    },
-                    (0, 0),
-                    owner.owner_now(),
-                )
-                .ok_or("Five Ways vitals")?;
-        } else {
-            deps.initialize(&owner).await;
-        }
+        deps.initialize(&owner).await;
         if let Some(initial_level) = initial_level {
             // Initialization uses common cast fixtures; project the actually seeded
             // durable level before evaluating source NPC eligibility.
@@ -1936,21 +1889,6 @@ fn scenario_case(
                 &mut admitted,
                 &h,
                 name,
-            ))
-            .await?;
-        } else if areadmg_oak {
-            Box::pin(super::super::areadmg_demon_oak::exercise(
-                &mut owner,
-                &mut admitted,
-                &h,
-                name,
-            ))
-            .await?;
-        } else if areadmg_pits {
-            Box::pin(super::super::areadmg_pits::exercise(
-                &mut owner,
-                &mut admitted,
-                name.ends_with("matching"),
             ))
             .await?;
         } else if m03_pits {

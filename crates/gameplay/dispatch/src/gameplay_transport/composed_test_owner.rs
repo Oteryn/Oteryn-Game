@@ -117,6 +117,45 @@ pub async fn load_quests(
         .ok_or("terminal quest session".into())
 }
 
+/// Set up a positioned actor's vitals and worn protection for real movement and use dispatch.
+pub async fn prepare_area_damage_player(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+    facts: crate::spell::cast::CharacterCastFacts,
+    protections: &[(
+        crate::content::ReferenceResistanceKind,
+        crate::content::ReferenceRationalPercent,
+    )],
+) -> Result<(), String> {
+    let runtime = owner.runtime.lock().await;
+    let mut states = owner.states.spell_states.lock().await;
+    states
+        .initialize(&runtime, actor, session, facts, (0, 0), owner.owner_now())
+        .ok_or("player initialization")?;
+    let state = states
+        .get_mut(&runtime, actor, session)
+        .ok_or("player vitals")?;
+    for &(element, protection) in protections {
+        state.install_equipped_element_protection(element, Some(protection));
+    }
+    Ok(())
+}
+
+pub async fn area_damage_player_health(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+) -> Result<u32, String> {
+    let runtime = owner.runtime.lock().await;
+    let states = owner.states.spell_states.lock().await;
+    Ok(states
+        .get(&runtime, actor, session)
+        .ok_or("player vitals")?
+        .vitals()
+        .health)
+}
+
 // Retain the existing typed admission fixture inside its owning crate, where
 // its canonical UUID binding helper is available without widening production API.
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
