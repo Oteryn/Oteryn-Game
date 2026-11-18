@@ -12,6 +12,21 @@ pub(in crate::gameplay_transport) fn room_contains(
         && (i32::from(encounter.room_min.y)..=i32::from(encounter.room_max.y)).contains(&at.y)
 }
 
+fn reset_contains(encounter: &world_callbacks::Encounter, at: MovementLocalPosition) -> bool {
+    encounter
+        .solo_timeout
+        .and_then(|timeout| timeout.reset_radius)
+        .zip(encounter.monsters.first())
+        .map_or_else(
+            || room_contains(encounter, at),
+            |(radius, boss)| {
+                let center = local(boss.position);
+                at.floor == center.floor
+                    && at.x.abs_diff(center.x).max(at.y.abs_diff(center.y)) <= u32::from(radius)
+            },
+        )
+}
+
 pub(super) struct EncounterVisit {
     room: oteryn_gameplay_quests::quest::world_callbacks::Encounter,
     participants: Vec<(ExactActorRef, GameSessionId)>,
@@ -88,7 +103,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return false;
         };
         if census.iter().any(|(who, position, session)| {
-            session.is_some() && *who != entrant && room_contains(room, position.position())
+            session.is_some() && *who != entrant && reset_contains(room, position.position())
         }) {
             return true;
         }
@@ -97,6 +112,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let scope = runtime.encounter_owner_scope();
         let map = map.overlay.base().digest();
+        let narrow_reset = room
+            .solo_timeout
+            .is_some_and(|timeout| timeout.reset_radius.is_some());
+        if narrow_reset && let Some(boss) = room.monsters.first() {
+            for (actor, position, session) in &census {
+                if session.is_none()
+                    && reset_contains(room, position.position())
+                    && runtime.matches_live_creature_identity(*actor, boss.creature.as_bytes())
+                    && runtime.remove_encounter_actor(*actor).is_err()
+                {
+                    return false;
+                }
+            }
+        }
         visits.retain_mut(|visit| {
             let Some(deadline) = &visit.timeout else {
                 return true;
@@ -105,6 +134,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return false;
             }
             if visit.room.room_min != room.room_min || visit.room.room_max != room.room_max {
+                return true;
+            }
+            // Crystal Defiances spawns a replacement in the reset area while
+            // each earlier challenger's full-room teleport timer stays active.
+            if narrow_reset {
+                visit
+                    .creatures
+                    .retain(|actor| runtime.contains_live_creature(*actor));
                 return true;
             }
             super::personal_trial::cleanup(runtime, &mut visit.creatures);
@@ -328,7 +365,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let personal_entry = callback.personal_room_entry().map(local);
         if census.iter().any(|(who, pos, occupant_session)| {
             occupant_session.is_some()
-                && room_contains(encounter, pos.position())
+                && reset_contains(encounter, pos.position())
                 && !(Some(pos.position()) == personal_entry
                     && *who == actor
                     && *occupant_session == Some(session))

@@ -485,6 +485,9 @@ pub struct SoloRoomTimeout {
     /// Crystal Wanted portals:101-106 eject all players currently in the room.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub eject_room: bool,
+    /// Crystal Defiances movements_teleportTo.lua:75-90 checks around the boss spawn.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reset_radius: Option<u8>,
     /// Use the existing Character boss clock for the sole authored monster.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub boss_cooldown_seconds: Option<u32>,
@@ -1115,6 +1118,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     || !(1..=3_600_000).contains(&timeout.after_ms)
                     || !pos(timeout.exit)
                     || in_room(timeout.exit)
+                    || timeout
+                        .reset_radius
+                        .is_some_and(|radius| timeout.eject_room || !(1..=32).contains(&radius))
                     || timeout.boss_cooldown_seconds.is_some_and(|seconds| {
                         !(1..=30 * 24 * 60 * 60).contains(&seconds)
                             || !encounter.monsters[0]
