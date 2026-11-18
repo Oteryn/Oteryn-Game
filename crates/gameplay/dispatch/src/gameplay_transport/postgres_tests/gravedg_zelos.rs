@@ -406,6 +406,42 @@ pub(super) async fn exercise(
             "Rewar room starts Fetter waves"
         );
     }
+    let fetter = "oteryn:creature.fetter";
+    let fetters = {
+        let runtime = owner.runtime.lock().await;
+        runtime
+            .current_live_creature_census()
+            .map_err(debug)?
+            .into_iter()
+            .filter(|&actor| runtime.matches_live_creature_identity(actor, fetter.as_bytes()))
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(fetters.len(), 2);
+    let unlock = owner.owner_now().get() + 200_000;
+    for (command, fetter_actor) in (201..).zip(fetters) {
+        super::engenc2_cults::kill(owner, admitted, fetter_actor, fetter, command).await?;
+    }
+    assert_eq!(
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .encounter_phases
+            .next_due_us(),
+        Some(unlock),
+        "Fetter deaths schedule Rewar's vulnerability check"
+    );
+    tick_at(owner, unlock - 2).await;
+    {
+        let runtime = owner.runtime.lock().await;
+        assert!(find(&runtime, "oteryn:creature.rewar_the_bloody_inv")?.is_some());
+    }
+    tick_at(owner, unlock - 1).await;
+    {
+        let runtime = owner.runtime.lock().await;
+        assert!(find(&runtime, KNIGHTS[2])?.is_some());
+    }
     tick_at(owner, now + 29_999_999).await;
     {
         let runtime = owner.runtime.lock().await;
