@@ -19,30 +19,44 @@ use std::sync::Arc;
 const QUEST: &str = "oteryn:quest.fixture_yalahar_folio";
 const COUNT: &str = "oteryn:quest-progress/fixture-yalahar/read-count";
 const CLOCK: &str = "oteryn:quest-progress/fixture-yalahar/headache";
+const GROUP: &str = "oteryn:quest-random-use/fixture-yalahar/folio";
+const BOOKWORM: &str = "oteryn:creature.enraged_bookworm";
 const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission09.lua:7-49";
 const FOLIO: Position = Position {
-    x: 32867,
-    y: 31257,
-    floor: -11,
+    x: 32797,
+    y: 31197,
+    floor: -9,
 };
-const LANDING: Position = Position { floor: -6, ..FOLIO };
+const LANDING: Position = Position {
+    x: 33324,
+    y: 32173,
+    floor: -6,
+};
 const START: Position = Position {
     x: FOLIO.x - 1,
     ..FOLIO
 };
 
 #[test]
-fn folio_use_commits_the_reset_and_only_the_selected_random_world_outcome() -> TestResult {
+fn folio_use_relocates_and_resets_success_without_starting_a_headache() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(exercise)
+    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(admin, false).await)
+}
+
+#[test]
+fn folio_use_starts_a_headache_and_spawns_one_active_bookworm() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty());
+    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(admin, true).await)
 }
 
 fn catalogue() -> TestResult<QuestStateCatalogue> {
-    // The two independently authored branches use equal fixture weights, so
-    // either matched effect proves the real selection and receipt path.
+    // Equal fixture weights let both wire cases select an occurrence in a short bounded scan.
     let routes: Vec<_> = [true, false].into_iter().map(|relocation| {
         let suffix = if relocation { "relocate" } else { "headache" };
         json!({
@@ -52,8 +66,8 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
                 "quest": QUEST, "trigger": "use", "reversible": false,
                 "selector": {"position": FOLIO, "ordinal": 1},
                 "effects": {"random_use": {
-                    "group": "oteryn:quest-random-use/fixture-yalahar/folio",
-                    "weight": 1, "spawn_at_user": (!relocation).then_some("oteryn:creature.enraged_bookworm"),
+                    "group": GROUP,
+                    "weight": 1, "spawn_at_user": (!relocation).then_some(BOOKWORM),
                     "user_effect": if relocation { 11 } else { 32 }
                 }},
                 "teleport": relocation.then_some(LANDING),
@@ -80,7 +94,7 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
     Ok(Bindings::parse(&serde_json::to_vec(&data)?)?.attach(&base)?)
 }
 
-async fn exercise(admin: String) -> TestResult {
+async fn exercise(admin: String, expect_headache: bool) -> TestResult {
     let h =
         Harness::create_with_admission_seed(admin, "yalahar_folio_outcomes", true, false).await?;
     prepare_current_session(&h).await?;
@@ -99,7 +113,7 @@ async fn exercise(admin: String) -> TestResult {
     let world = super::quest_callbacks::source_world_spatial(
         (FOLIO.x, FOLIO.y, FOLIO.floor),
         &[
-            (FOLIO.x, FOLIO.y, FOLIO.floor, 0, 1948),
+            (FOLIO.x, FOLIO.y, FOLIO.floor, 0, 9193),
             (LANDING.x, LANDING.y, LANDING.floor, 0, 1948),
         ],
     )?;
@@ -145,10 +159,27 @@ async fn exercise(admin: String) -> TestResult {
         expected_revision: map.facts.object_revision(key),
     })
     .map_err(debug)?;
+    // Choose the first admitted wire occurrence for this branch. The durable
+    // USE and spawn owners still select and apply the outcome themselves.
+    let command = (1u64..=128)
+        .find(|number| {
+            let digest = Sha256::new()
+                .chain_update(b"oteryn:quest-random-use-v1")
+                .chain_update(admitted.game_session_id.as_bytes())
+                .chain_update(deps.actor.placement_identity())
+                .chain_update(number.to_be_bytes())
+                .chain_update(key.to_be_bytes())
+                .chain_update(GROUP.as_bytes())
+                .finalize();
+            // Headache sorts first. The second slot is the relocation.
+            (digest[7] % 2 == 0) == expect_headache
+        })
+        .ok_or("folio branch occurrence")?;
+    admitted.continuity.next_command_id = command;
     let first = wire(
         &owner,
         &mut admitted,
-        1,
+        command,
         COMMAND_TYPE_USE_INTENT,
         req.clone(),
     )
@@ -163,35 +194,43 @@ async fn exercise(admin: String) -> TestResult {
         .await
         .map_err(debug)?;
     assert_eq!(snapshot.tracks().get(COUNT), Some(&0));
-    let headache = snapshot.tracks().get(CLOCK).is_some_and(|clock| *clock > 0);
-    let state = {
+    if expect_headache {
+        assert!(snapshot.tracks().get(CLOCK).is_some_and(|clock| *clock > 0));
+    } else {
+        assert_eq!(snapshot.tracks().get(CLOCK).copied().unwrap_or(-1), -1);
+    }
+    assert_eq!(
+        wire(&owner, &mut admitted, command, COMMAND_TYPE_USE_INTENT, req).await?,
+        first
+    );
+    {
         let runtime = owner.runtime.lock().await;
         let at = runtime
             .read_actor_position(deps.actor)
             .map_err(debug)?
             .position();
-        let spawned = runtime
+        let spawned: Vec<_> = runtime
             .current_live_creature_census()
             .map_err(debug)?
             .into_iter()
-            .filter(|actor| {
-                runtime.matches_live_creature_identity(*actor, b"oteryn:creature.enraged_bookworm")
-            })
-            .count();
-        (at, spawned)
-    };
-    assert_eq!(
-        state,
-        if headache {
-            (local(START), 1)
+            .filter(|actor| runtime.matches_live_creature_identity(*actor, BOOKWORM.as_bytes()))
+            .collect();
+        if expect_headache {
+            assert_eq!(at, local(START));
+            assert_eq!(
+                spawned.len(),
+                1,
+                "replaying USE cannot spawn another bookworm"
+            );
+            let creature = runtime.companion_snapshot(spawned[0]).map_err(debug)?;
+            assert_eq!(creature.position, at);
+            assert_eq!(creature.state.policy.definition_key, BOOKWORM);
+            assert_eq!(creature.health, creature.maximum_health);
         } else {
-            (local(LANDING), 0)
+            assert_eq!(at, local(LANDING));
+            assert!(spawned.is_empty());
         }
-    );
-    assert_eq!(
-        wire(&owner, &mut admitted, 1, COMMAND_TYPE_USE_INTENT, req).await?,
-        first
-    );
+    }
     let receipts: i64 =
         sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1")
             .bind(QUEST)

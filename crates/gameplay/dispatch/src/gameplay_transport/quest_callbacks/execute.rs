@@ -1618,8 +1618,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, snapshot.position()),
             );
         }
-        if let Some((creature, health)) = spawn {
-            let _ = runtime.admit_encounter_actor(creature, health, expected.position());
+        // Crystal actions_mission09.lua:42-48 creates an ordinary, fully active monster.
+        if let Some((creature, health)) = spawn
+            && runtime
+                .commit_quest_creature_spawn(&[(creature, health, expected.position())])
+                .is_ok()
+        {
+            states.owner_wake.notify_one();
         }
         if let Some(effect) = callback
             .effects
