@@ -149,26 +149,32 @@ fn scenario() -> TestResult {
         let quest = "oteryn:quest.roshamuul_quest";
         let character = fence.character_id.as_bytes();
         let mut tx = h.pool.begin().await?;
-        let revision: String = sqlx::query_scalar(
-            "SELECT character_revision::text FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid",
-        )
-        .bind(character.as_slice())
-        .fetch_one(&mut *tx)
-        .await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx)
             .await?;
+        // Historical quest writes follow character creation at revision 1.
+        for advance in [
+            "UPDATE game_character_roots SET character_revision=2 WHERE character_id=encode($1,'hex')::uuid AND character_revision=1",
+            "UPDATE game_character_progression_state SET character_revision=2 WHERE character_id=encode($1,'hex')::uuid AND character_revision=1",
+        ] {
+            let advanced = sqlx::query(advance)
+                .bind(character.as_slice())
+                .execute(&mut *tx)
+                .await?;
+            assert_eq!(advanced.rows_affected(), 1);
+        }
+        let revision = "2";
         // Seed historical repairs, with one contribution still left after two purchases.
         sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5::text::numeric,$5::text::numeric)")
             .bind(character.as_slice()).bind(quest).bind(quest_catalogue.content_revision())
             .bind(quest_catalogue.definition_hash(quest).ok_or("quest hash")?.as_slice())
-            .bind(&revision).execute(&mut *tx).await?;
+            .bind(revision).execute(&mut *tx).await?;
         for (key, value) in [
             ("oteryn:quest-progress/roshamuul/mortar", 2_i64),
             ("oteryn:quest-progress/roshamuul/silencers", 1),
         ] {
             sqlx::query("INSERT INTO game_character_quest_tracks(character_id,quest_key,track_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5::text::numeric)")
-                .bind(character.as_slice()).bind(quest).bind(key).bind(value).bind(&revision)
+                .bind(character.as_slice()).bind(quest).bind(key).bind(value).bind(revision)
                 .execute(&mut *tx).await?;
         }
         sqlx::raw_sql(sqlx::AssertSqlSafe(
