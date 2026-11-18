@@ -152,6 +152,13 @@ pub(super) fn capture(
     };
     let principal = entry.facts.principal;
     let (scope, generation) = runtime.encounter_owner_scope();
+    let position = |actor| {
+        runtime.read_actor_position(actor).ok().map(|facts| {
+            let at = facts.position();
+            [at.x, at.y, i32::from(at.floor)]
+        })
+    };
+    let origin = position(entry.target);
     let mut recipients = Vec::new();
     for run in runs {
         if !run.roster.defenders().contains(&entry.target) {
@@ -185,7 +192,12 @@ pub(super) fn capture(
                     || counter.encounter_source.as_deref() != Some(run.source.as_str())
                     || counter.definition_hash != Some(run.definition_hash)
                     || (counter.require_damage && !damaged)
-                    || (!counter.require_damage && !admitted_principal)
+                    || (!counter.require_damage && !counter.pale_worm_reward && !admitted_principal)
+                    || counter.death_area.is_some_and(|area| {
+                        !origin.is_some_and(|at| area.contains(at))
+                            || (counter.pale_worm_reward
+                                && !position(participant.actor).is_some_and(|at| area.contains(at)))
+                    })
                 {
                     continue;
                 }

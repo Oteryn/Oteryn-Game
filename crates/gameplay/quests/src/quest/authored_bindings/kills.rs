@@ -50,6 +50,9 @@ pub struct KillCounter {
     /// Credit only admitted players whose exact lease contributed to the defender death.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub require_damage: bool,
+    /// The Pale Worm's death awards the base outfit and Beyonder to admitted players in the room.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub pale_worm_reward: bool,
 }
 
 impl KillCounter {
@@ -62,6 +65,12 @@ impl KillCounter {
             || !super::super::valid_quest_key(&self.creature)
             || !self.creature.starts_with("oteryn:creature.")
             || (self.require_damage && self.encounter_source.is_none())
+            || (self.pale_worm_reward
+                && (self.creature != "oteryn:creature.the_pale_worm"
+                    || self.encounter_source.is_none()
+                    || self.death_area.is_none()
+                    || self.maximum != 1
+                    || self.require_damage))
             || self.track == self.gate
             || self.minimum >= self.maximum
             || self.death_area.is_some_and(|area| !area.valid())
@@ -154,6 +163,7 @@ impl KillCounter {
             death_area: self.death_area,
             encounter_source: self.encounter_source.as_deref(),
             require_damage: self.require_damage,
+            pale_worm_reward: self.pale_worm_reward,
         }
     }
 }

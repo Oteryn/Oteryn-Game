@@ -2046,6 +2046,20 @@ impl DurabilityRoot {
                         let keys: Vec<_> = world.achievements.iter().map(String::as_str).collect();
                         super::super::account_achievement::grant_missing(&mut tx, fence.character_id, &keys, "oteryn:quest-world-reward", &occurrence).await?;
                     }
+                    if matches!(native.as_ref(), Some(super::native_observation::NativeQuestObservation::Death(death))
+                        if matches!(death.source, super::native_kills::NativeDeathSource::Encounter(_)))
+                        && oteryn_gameplay_quests::quest::native_kills::counter_for(&catalogue, &request.transition_key)
+                            .is_some_and(|counter| counter.pale_worm_reward)
+                    {
+                        let (cause, ordinal) = request.cause.key();
+                        let event = serde_json::to_vec(&(cause, ordinal, &request.transition_key))
+                            .map_err(|_| DurabilityError::InvalidStoredState)?;
+                        let occurrence = sha2::Sha256::digest(event);
+                        use super::super::character_appearance::{QuestOutfitGrant, grant_quest_outfit};
+                        grant_quest_outfit(&mut tx, fence.character_id, &occurrence, QuestOutfitGrant::Poltergeist).await?;
+                        super::super::account_achievement::grant_missing(&mut tx, fence.character_id,
+                            &["oteryn:achievement/beyonder"], "oteryn:quest-native-death", &occurrence).await?;
+                    }
                     let completes = catalogue.completes_after_claim_sets(transition, &stored, &changes);
                     if completes {
                         use oteryn_gameplay_quests::quest::shared_world_progress as shared;

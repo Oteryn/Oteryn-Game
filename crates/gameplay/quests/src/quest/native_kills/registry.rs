@@ -16,6 +16,7 @@ pub struct CounterRef<'a> {
     pub death_area: Option<crate::quest::authored_bindings::kills::DeathArea>,
     pub encounter_source: Option<&'a str>,
     pub require_damage: bool,
+    pub pale_worm_reward: bool,
 }
 
 impl Counter {
@@ -32,6 +33,7 @@ impl Counter {
             death_area: None,
             encounter_source: None,
             require_damage: false,
+            pale_worm_reward: false,
         }
     }
 }
