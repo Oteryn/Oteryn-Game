@@ -288,8 +288,16 @@ async fn claim_hoard_gems(
     use oteryn_protocol_oteryn::world_object::{decode_use_result, encode_use_intent};
 
     let payload = encode_use_intent(&claim_target(owner)?).map_err(debug)?;
-    let reply = super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload).await?;
-    assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Committed);
+    assert_hoard_mint_rollback(owner, admitted, h, before, &payload).await?;
+    let session = admitted.game_session_id;
+    if owner.has_pending_quest_callback(session) {
+        assert!(owner.reconcile_quest_callbacks(session).await);
+        assert!(!owner.has_pending_quest_callback(session));
+    } else {
+        advance_interaction(owner)?;
+        let reply = super::quest_world_callbacks::wire(owner, admitted, 2, 2, payload).await?;
+        assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Committed);
+    }
     assert_hoard_delivery(owner, admitted, h, before, choices).await?;
     assert_eq!(receipts(h).await?, 1);
     assert_eq!(track_value(h, LEDGER).await?, 0);
@@ -314,6 +322,67 @@ async fn claim_hoard_gems(
          WHERE q.transition_key=$1 ORDER BY i.definition_production_key",
     ).bind(CLAIM).fetch_all(&h.pool).await?;
     assert_eq!(items, [3029, 3030, 3032].map(|id| (format!("oteryn:item.tibia.i{id}"), 1, true)));
+    Ok(())
+}
+
+async fn assert_hoard_mint_rollback(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    before: &[(u16, i64)],
+    payload: &[u8],
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::decode_use_result;
+
+    let track_sql = "SELECT track_key, value FROM game_character_quest_tracks \
+                     WHERE track_key IN ($1, $2) ORDER BY track_key";
+    let tracks: Vec<(String, i64)> = sqlx::query_as(track_sql)
+        .bind(CHOICE).bind(COUNT).fetch_all(&h.pool).await?;
+    sqlx::raw_sql(r#"
+        CREATE SEQUENCE fixture_hoard_earlier_gems_staged;
+        GRANT USAGE, SELECT ON SEQUENCE fixture_hoard_earlier_gems_staged TO oteryn_game_runtime;
+        CREATE FUNCTION fixture_fail_last_hoard_gem() RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN
+            IF NEW.definition_production_key = 'oteryn:item.tibia.i3030' AND (
+                SELECT count(DISTINCT i.definition_production_key)
+                FROM game_item_instances i
+                JOIN game_item_container_entries e ON e.item_instance_id=i.item_instance_id
+                WHERE i.definition_production_key IN ('oteryn:item.tibia.i3029', 'oteryn:item.tibia.i3032')
+                  AND i.xmin = pg_current_xact_id()::xid AND e.xmin = pg_current_xact_id()::xid
+            ) = 2 THEN
+                PERFORM nextval('public.fixture_hoard_earlier_gems_staged');
+                RAISE EXCEPTION 'fixture rejects the ruby after sapphire and emerald placement';
+            END IF;
+            RETURN NEW;
+        END $$;
+        CREATE TRIGGER fixture_fail_last_hoard_gem
+        BEFORE INSERT ON game_item_instances
+        FOR EACH ROW EXECUTE FUNCTION fixture_fail_last_hoard_gem();
+    "#).execute(&h.pool).await?;
+
+    let session = admitted.game_session_id;
+    match super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload.to_vec()).await {
+        Ok(reply) => assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Rejected),
+        Err(error) => assert!(owner.has_pending_quest_callback(session), "unexpected wire error: {error}"),
+    }
+    let staged: bool = sqlx::query_scalar("SELECT is_called FROM fixture_hoard_earlier_gems_staged")
+        .fetch_one(&h.pool).await?;
+    assert!(staged, "the fault must follow both earlier inventory placements");
+    assert_eq!(hoard_inventory(h).await?.as_slice(), before);
+    assert_eq!(track_value(h, LEDGER).await?, HOARD_GOAL);
+    let after: Vec<(String, i64)> = sqlx::query_as(track_sql)
+        .bind(CHOICE).bind(COUNT).fetch_all(&h.pool).await?;
+    assert_eq!(after, tracks);
+    assert_eq!(achievements(h, HOARD_ACHIEVEMENT).await?, 0);
+    assert_eq!(receipts(h).await?, 0);
+    let mints: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_reward_claim_mint_receipts \
+         WHERE game_session_id=encode($1,'hex')::uuid AND command_id=1",
+    ).bind(session.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(mints, 0);
+
+    sqlx::query("DROP TRIGGER fixture_fail_last_hoard_gem ON game_item_instances")
+        .execute(&h.pool).await?;
     Ok(())
 }
 
