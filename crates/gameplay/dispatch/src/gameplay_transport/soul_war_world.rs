@@ -13,11 +13,22 @@ pub(super) async fn committed_step(
     origin: Option<MovementPositionSnapshot>,
     committed: MovementPositionSnapshot,
     _now: u64,
-) {
-    let Some(origin) = origin else { return };
-    if hunt_entry(owner, actor, session, origin, committed).await {
-        return;
+) -> Option<MovementPositionSnapshot> {
+    let origin = origin?;
+    if let Some(arrival) = quest_portal(owner, actor, session, origin, committed).await {
+        return Some(arrival);
     }
+    committed_raid_step(owner, actor, session, origin, committed).await;
+    None
+}
+
+async fn committed_raid_step(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    origin: MovementPositionSnapshot,
+    committed: MovementPositionSnapshot,
+) {
     let Some(room) = owner.effective_rooms().gate_monster_ai() else {
         return;
     };
@@ -119,53 +130,61 @@ pub(super) async fn committed_step(
     }
 }
 
-/// Crystal 201189f moveevent-soul_war_entrances.lua:1-49. These are
-/// position registrations in the published World, independent of boss rooms.
-async fn hunt_entry(
+#[derive(Clone, Copy)]
+enum QuestPortal {
+    Hunt([i32; 3]),
+    RewardRoom,
+}
+
+impl QuestPortal {
+    fn at(position: [i32; 3]) -> Option<Self> {
+        // Crystal 201189f moveevent-soul_war_entrances.lua:1-49 and
+        // moveevent-teleport_entrance_reward.lua:9-22.
+        Some(match position {
+            [33615, 31422, 10] => Self::Hunt([34009, 31014, 9]),
+            [33618, 31422, 10] => Self::Hunt([33972, 31041, 11]),
+            [33621, 31416, 10] => Self::RewardRoom,
+            [33621, 31422, 10] => Self::Hunt([33894, 31019, 8]),
+            [33624, 31422, 10] => Self::Hunt([33858, 31831, 3]),
+            [33627, 31422, 10] => Self::Hunt([33887, 31188, 10]),
+            _ => return None,
+        })
+    }
+}
+
+/// The donor position registrations run in the published World.
+async fn quest_portal(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     session: GameSessionId,
     origin: MovementPositionSnapshot,
     committed: MovementPositionSnapshot,
-) -> bool {
-    let Some(room) = owner.rooms().gate_monster_ai() else {
-        return false;
-    };
-    let Some(active) = owner.active_generation else {
-        return false;
-    };
+) -> Option<MovementPositionSnapshot> {
+    let room = owner.rooms().gate_monster_ai()?;
+    let active = owner.active_generation?;
     let runtime = owner.runtime.lock().await;
-    let Some(context) = active.qualify_published_world_context(room, runtime.content_pin()) else {
-        return false;
-    };
+    let context = active.qualify_published_world_context(room, runtime.content_pin())?;
     if !matches!(
         runtime.binding().runtime_scope(),
         crate::foundation::RuntimeScopeRefV1::Channel { .. }
     ) || runtime.read_actor_position(actor) != Ok(committed)
         || runtime.player_control_facts(actor, session).is_err()
     {
-        return false;
+        return None;
     }
     let at = committed.position();
     let frame = context.source_frame();
-    let destination = match frame.source_position((at.x, at.y, at.floor)) {
-        Some([33615, 31422, 10]) => [34009, 31014, 9],
-        Some([33618, 31422, 10]) => [33972, 31041, 11],
-        Some([33621, 31422, 10]) => [33894, 31019, 8],
-        Some([33624, 31422, 10]) => [33858, 31831, 3],
-        Some([33627, 31422, 10]) => [33887, 31188, 10],
-        _ => return false,
-    };
+    let portal = QuestPortal::at(frame.source_position((at.x, at.y, at.floor))?)?;
     drop(runtime);
     let Ok(Some(fence)) = owner.current_quest_fence(session).await else {
-        return true;
+        return Some(committed);
     };
     let Ok(state) = owner
         .root
         .read_soul_war_state(owner.character, owner.holder, fence)
         .await
     else {
-        return true;
+        return Some(committed);
     };
     let mut runtime = owner.runtime.lock().await;
     let states = owner.states.spell_states.lock().await;
@@ -183,28 +202,39 @@ async fn hunt_entry(
             })
         || states.is_dead(actor)
     {
-        return true;
+        return Some(committed);
     }
     let Some(player) = states.get(&runtime, actor, session) else {
-        return true;
+        return Some(committed);
     };
-    let message = if player.character_facts().level < 250 {
-        Some("You need level 250 to enter here.")
-    } else if !state.access() {
-        Some("Your soul does not yet resonate with the frequency required to enter here.")
-    } else {
-        None
+    let (destination, message) = match portal {
+        QuestPortal::Hunt(destination) => {
+            let message = if player.character_facts().level < 250 {
+                Some("You need level 250 to enter here.")
+            } else if !state.access() {
+                Some("Your soul does not yet resonate with the frequency required to enter here.")
+            } else {
+                None
+            };
+            (destination, message)
+        }
+        QuestPortal::RewardRoom => (
+            [33621, 31411, 10],
+            (!state.completed()).then_some(
+                "Only warriors who defeated Goshnar's Megalomania can access this area.",
+            ),
+        ),
     };
     let destination = if message.is_some() {
         origin.position()
     } else {
         let Some((x, y, floor)) = frame.physical_position(destination) else {
-            return true;
+            return Some(committed);
         };
         crate::foundation::MovementLocalPosition { x, y, floor }
     };
     let Some(map) = owner.bundle_map() else {
-        return true;
+        return Some(committed);
     };
     let closed = crate::map::floor::BundleDoors(&map.facts);
     let blocked = super::pvp_live::pz_blocked(&states, actor, session, owner.owner_now());
@@ -220,11 +250,11 @@ async fn hunt_entry(
         committed.facing(),
         true,
     ) else {
-        return true;
+        return Some(committed);
     };
-    if runtime.commit_source_step(proof).is_err() {
-        return true;
-    }
+    let Ok(arrival) = runtime.commit_source_step(proof) else {
+        return Some(committed);
+    };
     if let Some(message) = message {
         owner.states.server_messages.send_current(
             session,
@@ -241,9 +271,13 @@ async fn hunt_entry(
                 .emit_movement_effect(crate::map::overlay::TilePos { x, y, floor }, 11);
         }
     };
-    if message.is_none() {
-        effect(origin.position());
+    if matches!(portal, QuestPortal::Hunt(_)) {
+        if message.is_none() {
+            effect(origin.position());
+        }
+        effect(destination);
+    } else if message.is_none() {
+        effect(destination);
     }
-    effect(destination);
-    true
+    Some(arrival)
 }

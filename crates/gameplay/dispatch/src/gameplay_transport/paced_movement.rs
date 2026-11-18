@@ -381,8 +381,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 let _ = self.resolve_cloak_blood_steps(&permit).await;
                 self.resolve_rotten_movement_callbacks(&permit).await;
-                super::soul_war_world::committed_step(self, actor, session, origin, snapshot, now)
-                    .await;
+                let soul_war_arrival = super::soul_war_world::committed_step(
+                    self, actor, session, origin, snapshot, now,
+                )
+                .await;
                 super::primal_callbacks::step_in(self, &permit, actor, session, snapshot, now)
                     .await;
                 super::rotten_blood_callbacks::step_in(
@@ -430,6 +432,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     None => snapshot,
                 };
+                let snapshot = soul_war_arrival.unwrap_or(snapshot);
                 self.cyclopedia_step(actor, session, snapshot).await;
                 self.refresh_cyclopedia_speed(actor, session).await;
                 let runtime = self.runtime.lock().await;
