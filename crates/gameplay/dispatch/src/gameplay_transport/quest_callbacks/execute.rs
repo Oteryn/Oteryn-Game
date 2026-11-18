@@ -1629,7 +1629,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             const FIRE_AREA: u16 = 7;
             for x in pos.x.saturating_sub(1)..=pos.x.saturating_add(1) {
                 for y in pos.y.saturating_sub(1)..=pos.y.saturating_add(1) {
-                    if map.overlay.base().contains(x, y, pos.floor) {
+                    if map.overlay.base().tile(x, y, pos.floor).is_some() {
                         map.facts.emit_movement_effect(
                             crate::map::overlay::TilePos {
                                 x,
