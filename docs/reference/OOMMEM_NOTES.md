@@ -250,9 +250,9 @@ library targets through `tools/ci/select_postgres_packages.py`. On the
 pinned base, that job installs mold and enables 8 GiB of swap. The unit
 shards enable 16 GiB of swap and set `CARGO_BUILD_JOBS=1`. The PR #3287
 commit message describes serializing the PR PostgreSQL archive. Its actual
-workflow delta sets one job in the PR unit shard and Merge Queue lib
-archive. The PR lib archive command on the pinned base still uses the
-default Cargo job count. The one-job dispatch
+workflow delta sets one job in the PR unit shard. The Merge Queue
+workflow diff updates a Platform revision in the node-boot step. Both
+lib archive commands on the pinned base use Cargo's default job count. The one-job dispatch
 measurement still reaches the local memory limit before linking. Serial
 Cargo scheduling limits overlapping dependency builds while one large
 dispatch compiler process can still exhaust the available RAM.
