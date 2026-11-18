@@ -22,6 +22,11 @@ authorised; this file only says how the flow behaves.
   the label to a **finished** mechanic PR or to one batch PR that merges
   several finished ones, never to a work-in-progress head: each labelled push
   re-runs about an hour of runner time.
+- The PR node boot shards (`PR heavy / Node boot ...`) run only on a PR
+  labelled `node-boot` (owner 2026-11-18). Node boot is informational, so
+  `heavy-gate` does not wait for it. Add the label to a PR that changes node
+  startup, the dispatch runtime or the Game-Platform seam, or dispatch the
+  `Node boot physical qualification` workflow on the branch.
 - Runner routing variables (`OTERYN_SELF_HOSTED_PG`,
   `OTERYN_SELF_HOSTED_RUST`) are read when a run is **created**. After a
   variable changes, runs already queued keep the old routing: cancel them and
