@@ -307,6 +307,15 @@ impl ChannelRuntimeV1 {
         Ok(())
     }
 
+    /// Retire the exact projected view following a committed source consumption.
+    pub fn remove_consumed_corpse_item(&mut self, item: [u8; 16]) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        self.carrier
+            .corpse_item_bindings
+            .retain(|bound| bound.item.item_instance_id != item);
+        Ok(())
+    }
+
     /// MAP-ITEM-REF-1 Part B: the bound corpse whose [`ExactActorRef::corpse_identity`] is
     /// `identity`, as [`Self::visible_corpses`] shows it. Read-only.
     pub fn bound_corpse(&self, identity: [u8; 16]) -> Option<VisibleRuntimeCorpse> {

@@ -1335,6 +1335,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.use_item_definition(actor, command, definition).await
     }
 
+    async fn use_count_remains(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: item_view::ItemKey,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.dispatch_count_remains(actor, command, &intent, source)
+            .await
+    }
+
     async fn use_soul_war_source_items(
         &self,
         actor: ExactActorRef,

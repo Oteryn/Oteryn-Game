@@ -87,6 +87,7 @@ enum ActionContext<'a> {
     Carried,
     CakeBaker(&'a CakeBakerContext),
     Ground(&'a GroundActionContext),
+    CountRemains(&'a GroundActionContext),
     DispenserTarget(&'a GroundActionContext),
     DispenserHouseTarget(&'a HouseActionContext),
 }
@@ -255,7 +256,7 @@ async fn write<C: ItemLoopContent>(
     ground: ActionContext<'_>,
     ground_fences: &ActionGroundFences<'_>,
 ) -> Result<ConsumeTransformResult, DurabilityError> {
-    if let ActionContext::Ground(context) = ground {
+    if let ActionContext::Ground(context) | ActionContext::CountRemains(context) = ground {
         return ground::write(
             ground_fences.permit,
             tx,
@@ -266,6 +267,7 @@ async fn write<C: ItemLoopContent>(
             context,
             premium,
             ground_fences,
+            matches!(ground, ActionContext::CountRemains(_)),
         )
         .await;
     }

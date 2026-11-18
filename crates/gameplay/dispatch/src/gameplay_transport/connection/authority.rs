@@ -849,6 +849,16 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    fn use_count_remains(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: ItemKey,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
+    }
+
     fn use_soul_war_source_items(
         &self,
         _actor: ExactActorRef,

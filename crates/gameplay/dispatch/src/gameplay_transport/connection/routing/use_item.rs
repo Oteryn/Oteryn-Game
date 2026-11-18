@@ -119,19 +119,27 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         && intent.use_with.is_none()
         && intent.use_with_map_item.is_none()
         && intent.use_with_position.is_none()
-        && matches!(intent.target, UseTarget::Item(_) | UseTarget::WorldObject(_))
-        && admitted.continuity.selected_capabilities.contains(
-            oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
+        && matches!(
+            intent.target,
+            UseTarget::Item(_) | UseTarget::WorldObject(_)
         )
-        && admitted.continuity.selected_capabilities.contains(
-            oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
-        )
+        && admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1)
+        && admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1)
     {
         let resolved = match intent.target {
             UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
             _ => None,
         };
-        if let Some(outcome) = authority.server_modal_offer_bed(*admitted, intent.target.clone(), resolved).await {
+        if let Some(outcome) = authority
+            .server_modal_offer_bed(*admitted, intent.target.clone(), resolved)
+            .await
+        {
             return Some(Dispatch::Use(outcome));
         }
     }
@@ -162,6 +170,30 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             ),
         )
         .await
+        .ok()?
+    {
+        return Some(Dispatch::Use(outcome));
+    }
+    if let Ok(intent) = &decoded
+        && intent.use_with.is_some()
+        && let UseTarget::Item(handle) = intent.target
+        && let Some(source @ ItemKey::Entity(_)) =
+            item_view.as_ref().and_then(|view| view.resolve(handle))
+        && let Some(outcome) = tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            authority.use_count_remains(
+                actor,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                },
+                intent.clone(),
+                source,
+            ),
+        )
+        .await
+        .ok()?
         .ok()?
     {
         return Some(Dispatch::Use(outcome));

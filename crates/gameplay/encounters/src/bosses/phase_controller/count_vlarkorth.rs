@@ -21,6 +21,7 @@ pub struct CountVlarkorthEncounter {
     lost: i64,
     raise_at: Option<u64>,
     drop_at: Option<u64>,
+    shield_remaining: usize,
     heal_at: Option<u64>,
     expires: u64,
     darks: Vec<(ExactActorRef, &'static str)>,
@@ -60,6 +61,7 @@ impl CountVlarkorthEncounter {
             lost: 0,
             raise_at: None,
             drop_at: None,
+            shield_remaining: 0,
             heal_at: None,
             expires: now.saturating_add(LIMIT_US),
             darks: Vec::new(),
@@ -114,6 +116,38 @@ impl CountVlarkorthEncounter {
         Ok(())
     }
 
+    pub fn accepts_remains(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        corpse: [u8; 16],
+        dark: &str,
+        now: u64,
+    ) -> bool {
+        self.count == target
+            && self.is_current(runtime)
+            && self.shield_remaining > 0
+            && self.drop_at.is_some_and(|due| now < due)
+            && self.darks.iter().any(|&(actor, key)| {
+                key == dark
+                    && actor.corpse_identity() == corpse
+                    && !runtime.contains_live_creature(actor)
+            })
+    }
+
+    pub fn consume_remains(&mut self, runtime: &mut ChannelRuntimeV1) -> Result<(), CarrierError> {
+        self.owner.current(runtime)?;
+        if self.shield_remaining == 0 {
+            return Err(CarrierError::PlanConflict);
+        }
+        if self.shield_remaining == 1 {
+            gates::unprotect(runtime, self.count)?;
+            self.drop_at = None;
+        }
+        self.shield_remaining -= 1;
+        Ok(())
+    }
+
     pub fn advance(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -135,6 +169,7 @@ impl CountVlarkorthEncounter {
         if self.drop_at.is_some_and(|due| now >= due) {
             gates::unprotect(runtime, self.count)?;
             self.drop_at = None;
+            self.shield_remaining = 0;
         }
         if self.drop_at.is_none() && self.raise_at.is_none() {
             self.lost = self.lost.saturating_add(damage);
@@ -184,6 +219,7 @@ impl CountVlarkorthEncounter {
                     });
                 match result {
                     Ok(actors) => {
+                        self.shield_remaining = actors.len();
                         self.darks
                             .retain(|&(actor, _)| runtime.contains_live_creature(actor));
                         self.darks.extend(

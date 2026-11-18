@@ -481,12 +481,118 @@ pub(super) async fn exercise_count(
     );
     tick_at(owner, now + 2_000_000).await;
     assert!((300..=545).contains(&(read_health().await? - wounded)));
+    use_count_remains(owner, admitted, partner, boss).await?;
     tick_at(owner, now + 120_100_001).await;
     hit_by_amount(owner, admitted, boss, COUNT, 103, 1).await?;
     tick_at(owner, now + 20 * 60 * 1_000_000).await;
     for actor in [player, peer] {
         assert_position(owner, actor, 103, 100).await?;
     }
+    Ok(())
+}
+
+async fn use_count_remains(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    partner: &AdmittedSession,
+    boss: ExactActorRef,
+) -> TestResult {
+    use crate::gameplay_transport::connection::UseCommand;
+    use crate::gameplay_transport::item_view::ItemKey;
+    use oteryn_protocol_oteryn::item_view::ItemHandle;
+    use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget};
+    use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+
+    const DARK: &str = "oteryn:creature.dark_knight";
+    let player = admitted.runtime_actor.ok_or("admitted player")?;
+    let dark = {
+        let runtime = owner.runtime.lock().await;
+        runtime
+            .current_live_creature_census()
+            .map_err(debug)?
+            .into_iter()
+            .find(|&actor| runtime.matches_live_creature_identity(actor, DARK.as_bytes()))
+            .ok_or("Dark Knight")?
+    };
+    super::engenc2_cults::kill(owner, admitted, dark, DARK, 110).await?;
+    assert_eq!(
+        owner.drain_kill_rewards(admitted.game_session_id).await,
+        crate::gameplay_transport::kill_reward::DrainOutcome::Drained
+    );
+    let (intent, source) = {
+        let mut runtime = owner.runtime.lock().await;
+        let source = ItemKey::Entity(dark.corpse_identity());
+        let corpse = runtime
+            .bound_corpse(dark.corpse_identity())
+            .ok_or("bound Dark Knight remains")?;
+        let map = owner.bundle_map().ok_or("admitted map")?;
+        let closed = crate::map::floor::BundleDoors(&map.facts);
+        let before = runtime.read_actor_position(player).map_err(debug)?;
+        let proof = crate::map::floor::prepare_quest_encounter_admission(
+            &runtime,
+            owner.movement_cells(),
+            player,
+            admitted.game_session_id,
+            before,
+            corpse.position,
+            false,
+            &closed,
+            false,
+        )
+        .map_err(debug)?;
+        runtime.commit_source_step(proof).map_err(debug)?;
+        let visible = runtime.visible_entities();
+        let target = visible
+            .creatures
+            .iter()
+            .find(|entry| entry.actor == boss)
+            .ok_or("visible Count")?;
+        let intent = UseIntent {
+            target: UseTarget::Item(ItemHandle::new(1).ok_or("remains handle")?),
+            use_with: Some(EntityRef {
+                identity: boss.placement_identity(),
+                generation: target.generation,
+            }),
+            use_with_map_item: None,
+            use_with_position: None,
+        };
+        (intent, source)
+    };
+    for (member, expected, id) in [
+        (partner, UseDisposition::RequirementNotMet, 111),
+        (admitted, UseDisposition::Committed, 112),
+    ] {
+        let command = UseCommand {
+            game_session_id: member.game_session_id,
+            command_id: id,
+            item_fence: member.item_fence,
+        };
+        let outcome = owner
+            .dispatch_count_remains(
+                member.runtime_actor.ok_or("actor")?,
+                command,
+                &intent,
+                source,
+            )
+            .await
+            .map_err(|()| "native remains use")?
+            .ok_or("selected remains use")?;
+        assert_eq!(outcome.disposition, expected);
+    }
+    assert!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .bound_corpse(dark.corpse_identity())
+            .is_none()
+    );
+    assert!(
+        hit_by_amount(owner, admitted, boss, COUNT, 113, 1)
+            .await
+            .is_err(),
+        "one matched remains leaves the other shield charge active"
+    );
     Ok(())
 }
 

@@ -29,7 +29,9 @@ impl GroundActionSource {
     }
     /// Read-only operand for the quest participant, which rereads custody and
     /// corpse provenance inside its own fenced transaction before any mutation.
-    pub fn quest_corpse_operand(&self) -> crate::durability::reward_claim_mint::quest_creature::QuestCorpseOperand {
+    pub fn quest_corpse_operand(
+        &self,
+    ) -> crate::durability::reward_claim_mint::quest_creature::QuestCorpseOperand {
         crate::durability::reward_claim_mint::quest_creature::QuestCorpseOperand {
             item: self.item,
             ground: crate::durability::spell_items_abi::SpellGroundTarget {
@@ -122,7 +124,11 @@ impl GroundActionContext {
             }
             Err(_) => return Err("ground action House membership unavailable"),
         };
-        Ok(Self { source, house, actor_position: at })
+        Ok(Self {
+            source,
+            house,
+            actor_position: at,
+        })
     }
     pub(super) async fn dispenser_row(
         &self,
@@ -148,7 +154,11 @@ impl GroundActionContext {
         self.house.is_some()
     }
     pub fn actor_position(&self) -> GroundEffect {
-        GroundEffect { x: self.actor_position.x, y: self.actor_position.y, floor: self.actor_position.floor }
+        GroundEffect {
+            x: self.actor_position.x,
+            y: self.actor_position.y,
+            floor: self.actor_position.floor,
+        }
     }
     pub fn effect_position(&self) -> GroundEffect {
         GroundEffect {
@@ -262,6 +272,33 @@ impl DurabilityRoot {
     }
 
     #[allow(clippy::too_many_arguments)]
+    pub async fn consume_count_remains<C: ItemLoopContent>(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: ConsumeTransformRequest,
+        native: &NativeGameplayState,
+        content: &C,
+        source: &GroundActionContext,
+    ) -> Result<Option<ConsumeTransformResult>, DurabilityError> {
+        self.consume_transform_inner(
+            permit,
+            recovery,
+            node,
+            fence,
+            request,
+            native,
+            content,
+            false,
+            None,
+            ActionContext::CountRemains(source),
+        )
+        .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
     pub async fn consume_transform_on_ground_with_cosmetic_premium<C: ItemLoopContent>(
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
@@ -301,6 +338,7 @@ pub(super) async fn write<C: ItemLoopContent>(
     context: &GroundActionContext,
     premium: Option<&dyn crate::durability::consume_transform_cosmetics::ItemCosmeticPremium>,
     ground_fences: &ActionGroundFences<'_>,
+    count_remains: bool,
 ) -> Result<ConsumeTransformResult, DurabilityError> {
     permit.check_scope(fence.runtime_scope)?;
     let source = &context.source;
@@ -345,7 +383,34 @@ pub(super) async fn write<C: ItemLoopContent>(
         return write_reward(tx, fence, request, native, content, context, ground_fences).await;
     }
     use crate::durability::consume_transform_cosmetics::{self as cosmetics, Preparation};
-    let plan = if request.target.is_some() {
+    let plan = if count_remains {
+        if request.target.is_some()
+            || !matches!(
+                source.definition.production_key.as_str(),
+                "oteryn:item.tibia.i31203"
+                    | "oteryn:item.tibia.i31204"
+                    | "oteryn:item.tibia.i31205"
+                    | "oteryn:item.tibia.i31206"
+                    | "oteryn:item.tibia.i50311"
+            )
+            || source.before.get("quantity").and_then(Value::as_i64) != Some(1)
+        {
+            return Ok(ConsumeTransformResult::refused(UseDisposition::Rejected));
+        }
+        let empty_corpse: bool = sqlx::query_scalar("SELECT NOT EXISTS(SELECT 1 FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)")
+            .bind(request.source.as_slice()).fetch_one(&mut ***tx).await?;
+        if !empty_corpse {
+            return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
+        }
+        ActionPlan {
+            recipe: "oteryn:grave-danger.count-remains".into(),
+            outputs: Vec::new(),
+            consume_source: true,
+            source_count: 1,
+            effects: json!({}),
+            extra_inputs: Vec::new(),
+        }
+    } else if request.target.is_some() {
         let Some(plan) = super::planting::prepare_ground(
             tx,
             fence,

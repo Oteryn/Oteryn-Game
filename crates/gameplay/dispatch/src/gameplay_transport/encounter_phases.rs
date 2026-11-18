@@ -282,6 +282,35 @@ impl Registry {
         })
     }
 
+    fn count_accepts_remains(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        identity: [u8; 16],
+        dark: &str,
+        now: u64,
+    ) -> bool {
+        self.active.lock().is_ok_and(|active| active.iter().any(|phase|
+            matches!(&phase.fight, Fight::CountVlarkorth(fight) if fight.accepts_remains(runtime, target, identity, dark, now))
+        ))
+    }
+
+    fn count_consume_remains(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+    ) -> Result<(), CarrierError> {
+        let mut active = self.active.lock().map_err(|_| CarrierError::PlanConflict)?;
+        let fight = active
+            .iter_mut()
+            .find_map(|phase| match &mut phase.fight {
+                Fight::CountVlarkorth(fight) if fight.contains(target) => Some(fight),
+                _ => None,
+            })
+            .ok_or(CarrierError::PlanConflict)?;
+        fight.consume_remains(runtime)
+    }
+
     pub(super) fn azaram_reflects_death(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -1070,6 +1099,169 @@ fn push_osam_adjacent(
 }
 
 impl super::ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn dispatch_count_remains(
+        &self,
+        actor: ExactActorRef,
+        command: super::connection::UseCommand,
+        intent: &oteryn_protocol_oteryn::world_object::UseIntent,
+        source: super::item_view::ItemKey,
+    ) -> Result<Option<super::connection::UseOutcome>, ()> {
+        use super::{
+            connection::UseOutcome, item_ref_admission::NativeItemWeights, item_view::ItemKey,
+        };
+        use crate::durability::consume_transform::{ConsumeTransformRequest, GroundActionContext};
+        use crate::foundation::{CommandId, CommandRef};
+        use oteryn_gameplay_spell::spell::Vocation as V;
+        use oteryn_protocol_oteryn::world_object::{UseDisposition, encode_item_use_intent};
+
+        let (ItemKey::Entity(identity), Some(wanted)) = (source, intent.use_with) else {
+            return Ok(None);
+        };
+        let Some(permit) = self.spell_lane_permit().await else {
+            return Err(());
+        };
+        let mut runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        let Some(corpse) = runtime.bound_corpse(identity) else {
+            return Ok(None);
+        };
+        let (dark, matching_vocation) = match corpse.item.production_key.as_str() {
+            "oteryn:item.tibia.i31203" => {
+                ("oteryn:creature.dark_knight", [V::Knight, V::EliteKnight])
+            }
+            "oteryn:item.tibia.i31204" => (
+                "oteryn:creature.dark_paladin",
+                [V::Paladin, V::RoyalPaladin],
+            ),
+            "oteryn:item.tibia.i31205" => ("oteryn:creature.dark_druid", [V::Druid, V::ElderDruid]),
+            "oteryn:item.tibia.i31206" => (
+                "oteryn:creature.dark_sorcerer",
+                [V::Sorcerer, V::MasterSorcerer],
+            ),
+            "oteryn:item.tibia.i50311" => {
+                ("oteryn:creature.dark_merudri", [V::Monk, V::ExaltedMonk])
+            }
+            _ => return Ok(None),
+        };
+        let outcome = |disposition| {
+            Ok(Some(UseOutcome {
+                disposition,
+                ..UseOutcome::rejected()
+            }))
+        };
+        let Some(fence) = command.item_fence else {
+            return outcome(UseDisposition::Rejected);
+        };
+        let session = command.game_session_id;
+        let Some(state) = states.get(&runtime, actor, session) else {
+            return outcome(UseDisposition::Rejected);
+        };
+        if states.is_dead(actor)
+            || !matching_vocation.contains(&state.character_facts().vocation)
+            || !states.spell_idle(&runtime, actor, session)
+            || !self
+                .states
+                .player_trades
+                .physical(session, Some(corpse.item.item_instance_id))
+        {
+            return outcome(UseDisposition::RequirementNotMet);
+        }
+        let visible = runtime.visible_entities();
+        let from = runtime
+            .read_actor_position(actor)
+            .map_err(|_| ())?
+            .position();
+        let Some(target) = visible.creatures.iter().find(|entry| {
+            entry.actor.placement_identity() == wanted.identity
+                && entry.generation == wanted.generation
+        }) else {
+            return outcome(UseDisposition::NoTarget);
+        };
+        let at = runtime
+            .read_actor_position(target.actor)
+            .map_err(|_| ())?
+            .position();
+        if !oteryn_gameplay_items::reach::within_reach(
+            (from.x, from.y, i32::from(from.floor)),
+            (at.x, at.y, i32::from(at.floor)),
+        ) {
+            return outcome(UseDisposition::TooFar);
+        }
+        let now = self.owner_now().get();
+        if !states.encounter_phases.count_accepts_remains(
+            &runtime,
+            target.actor,
+            identity,
+            dark,
+            now,
+        ) {
+            return outcome(UseDisposition::NotPossible);
+        }
+        let Some(native) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+        else {
+            return outcome(UseDisposition::Rejected);
+        };
+        let Some(room) = self.rooms().gate_ground_item_action() else {
+            return outcome(UseDisposition::Rejected);
+        };
+        let Some(source) = self
+            .root
+            .read_ground_action_source(self.character, fence, corpse.item.item_instance_id)
+            .await
+            .map_err(|_| ())?
+        else {
+            return outcome(UseDisposition::StaleState);
+        };
+        if source.position() != corpse.position
+            || source.definition().production_key != corpse.item.production_key
+        {
+            return outcome(UseDisposition::StaleState);
+        }
+        let Ok(context) =
+            GroundActionContext::from_native_owner(room, &runtime, actor, session, source)
+        else {
+            return outcome(UseDisposition::TooFar);
+        };
+        let mut binding = encode_item_use_intent(intent).map_err(|_| ())?;
+        binding.extend_from_slice(&identity);
+        binding.extend_from_slice(&target.actor.placement_identity());
+        let request = ConsumeTransformRequest {
+            command: CommandRef::new(session, CommandId::new(command.command_id).map_err(|_| ())?),
+            source: corpse.item.item_instance_id,
+            target: None,
+            intent: binding,
+        };
+        let Some(receipt) = self
+            .root
+            .consume_count_remains(
+                &permit,
+                self.character,
+                self.holder,
+                fence,
+                request,
+                native,
+                &NativeItemWeights(native),
+                &context,
+            )
+            .await
+            .map_err(|_| ())?
+        else {
+            return Err(());
+        };
+        if receipt.disposition == UseDisposition::Committed && receipt.fresh {
+            states
+                .encounter_phases
+                .count_consume_remains(&mut runtime, target.actor)
+                .map_err(|_| ())?;
+            runtime
+                .remove_consumed_corpse_item(corpse.item.item_instance_id)
+                .map_err(|_| ())?;
+        }
+        outcome(receipt.disposition)
+    }
+
     /// Crystal 201189f grave_danger_king_zelos.lua:309–374.
     pub(super) async fn step_zelos_vortex(
         &self,
