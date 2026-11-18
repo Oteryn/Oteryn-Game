@@ -15,7 +15,9 @@ use std::{sync::Arc, time::Duration};
 
 pub(super) const NAME: &str = "qespike-tracker";
 pub(super) const REPEAT_NAME: &str = "qespike-tracker-repeat";
+pub(super) const FINAL_NAME: &str = "qespike-tracker-final";
 const KEY: &str = "oteryn:quest-reward/qespike/ghost-detector-0";
+const FINAL_KEY: &str = "oteryn:quest-reward/qespike/ghost-detector-2";
 const QUEST: &str = "oteryn:quest.spike_task";
 const TRACK: &str = "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_track_main";
 const CYCLE: &str = "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_track_daily";
@@ -30,7 +32,7 @@ fn spike_detector_reuses_personal_target_and_advances_without_spending_first_use
     };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(NAME, || {
-        super::quest_world_callbacks::scenario(NAME, discovery_edge(false)?, false)
+        super::quest_world_callbacks::scenario(NAME, discovery_edge(NAME)?, false)
     })
 }
 
@@ -41,35 +43,58 @@ fn spike_detector_resamples_after_gnomilly_records_a_new_daily_cooldown() -> Tes
     };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(REPEAT_NAME, || {
-        super::quest_world_callbacks::scenario(REPEAT_NAME, discovery_edge(true)?, false)
+        super::quest_world_callbacks::scenario(REPEAT_NAME, discovery_edge(REPEAT_NAME)?, false)
     })
 }
 
-fn callback(repeat: bool) -> TestResult<RewardCallback> {
+#[test]
+fn spike_detector_final_floor_advances_progress_and_consumes_the_detector() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(FINAL_NAME, || {
+        super::quest_world_callbacks::scenario(FINAL_NAME, discovery_edge(FINAL_NAME)?, false)
+    })
+}
+
+fn callback(name: &str) -> TestResult<RewardCallback> {
+    let final_floor = name == FINAL_NAME;
+    let progress = if final_floor { 2 } else { 0 };
     Ok(serde_json::from_value(json!({
-        "key":KEY,"quest":QUEST, "npc":"oteryn:npc.gnomilly", "keywords":["track"],
+        "key":if final_floor { FINAL_KEY } else { KEY },"quest":QUEST, "npc":"oteryn:npc.gnomilly", "keywords":["track"],
         "topic":0,"next_topic":0,"carried_item":TOOL,
-        "storage":[{"track":TRACK,"minimum":0,"maximum":0,"set":1}],
-        "carried_tracker":{"area":{"minimum":[32171,32512,8],"maximum":[32352,32671,10]},
+        "storage":[{"track":TRACK,"minimum":progress,"maximum":progress,"set":progress+1}],
+        "carried_tracker":{"area":{"minimum":[32171,32512,if final_floor { 10 } else { 8 }],"maximum":[32352,32671,10]},
             "radius":4,"heading_prefix":"The detector points ",
-            "cycle_track":repeat.then_some(CYCLE),
-            "ground_search":{"attempts":50,"appearances":[[19271,19302],[19550,19557]]}},
-        "take":[],
-        "reply":["You found a malignant presence, the glowing detector signals another presence nearby."],
+            "cycle_track":(name != NAME).then_some(CYCLE),
+            "ground_search":(!final_floor).then(|| json!({"attempts":50,"appearances":[[19271,19302],[19550,19557]]}))},
+        "take":if final_floor { json!([{"item":TOOL,"count":1}]) } else { json!([]) },
+        "reply":if final_floor {
+            vec!["Report the task to Gnomilly.", "You found a malignant presence, the glowing detector signals that it does not need any further data."]
+        } else { vec!["You found a malignant presence, the glowing detector signals another presence nearby."] },
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spike_tasks/actions_ghost_detector.lua:74-103",
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/position.lua:148-161",
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:119-121"]
     }))?)
 }
 
-fn discovery_edge(repeat: bool) -> TestResult<Position> {
-    let tracker = callback(repeat)?.carried_tracker.ok_or("tracker")?;
+fn discovery_edge(name: &str) -> TestResult<Position> {
+    let callback = callback(name)?;
+    let tracker = callback.carried_tracker.ok_or("tracker")?;
     // The fixture terrain has no grey sand. Crystal returns the final draw.
-    let cycle = repeat.then_some(REPORTED);
-    let [x, y, z] = tracker.target_at(KEY, &id(42), &id(41), 0, cycle, 49);
-    let other = tracker.target_at(KEY, &id(42), &id(43), 0, cycle, 49);
+    let cycle = tracker
+        .cycle_track
+        .as_ref()
+        .map(|_| if name == REPEAT_NAME { REPORTED } else { -1 });
+    let probe = tracker
+        .ground_search
+        .as_ref()
+        .map_or(0, |search| search.attempts - 1);
+    let [x, y, z] = tracker.target_at(&callback.key, &id(42), &id(41), 0, cycle, probe);
+    let other = tracker.target_at(&callback.key, &id(42), &id(43), 0, cycle, probe);
     assert_ne!([x, y, z], other, "players have independent targets");
-    if repeat {
+    if name == REPEAT_NAME {
         let previous = tracker.target_at(KEY, &id(42), &id(41), 0, Some(-1), 49);
         assert!(!tracker.reached([x - 4, y, z], previous));
         assert!(!tracker.reached([x - 5, y, z], previous));
@@ -85,13 +110,16 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     harness: &Harness,
-    repeat: bool,
+    name: &str,
 ) -> TestResult {
     let revision = owner
         .quest_catalogue
         .as_ref()
         .ok_or("quest catalogue")?
         .content_revision();
+    let callback = callback(name)?;
+    let key = callback.key.clone();
+    let initial = callback.storage[0].minimum;
     owner.quest_catalogue = Some(Arc::new(
         QuestStateCatalogue::new(
             revision,
@@ -99,7 +127,7 @@ pub(super) async fn exercise(
                 QuestTrack {
                     key: TRACK.into(),
                     quest: QUEST.into(),
-                    initial: 0,
+                    initial,
                     min: -1,
                     max: 3,
                 },
@@ -114,7 +142,7 @@ pub(super) async fn exercise(
             Vec::new(),
         )
         .map_err(debug)?
-        .with_reward_callback_fixture(callback(repeat)?)?,
+        .with_reward_callback_fixture(callback)?,
     ));
     owner
         .refresh_quest_session(admitted.game_session_id, false)
@@ -124,7 +152,7 @@ pub(super) async fn exercise(
         .await
         .map_err(|()| "tracker fence")?
         .ok_or("tracker fence")?;
-    let edge = discovery_edge(repeat)?;
+    let edge = discovery_edge(name)?;
     super::quest_world_callbacks::input_item(
         owner,
         fence.item_fence(),
@@ -153,13 +181,14 @@ pub(super) async fn exercise(
         use_with_position: None,
     })
     .map_err(debug)?;
-    async fn snapshot(harness: &Harness) -> TestResult<(i64, i64)> {
+    async fn snapshot(harness: &Harness, key: &str, initial: i64) -> TestResult<(i64, i64)> {
         Ok(sqlx::query_as(
-            "SELECT coalesce((SELECT value FROM game_character_quest_tracks WHERE track_key=$1),0),
+            "SELECT coalesce((SELECT value FROM game_character_quest_tracks WHERE track_key=$1),$3),
             (SELECT count(*) FROM game_quest_callback_consumptions WHERE transition_key=$2)",
         )
         .bind(TRACK)
-        .bind(KEY)
+        .bind(key)
+        .bind(initial)
         .fetch_one(&harness.pool)
         .await?)
     }
@@ -173,7 +202,7 @@ pub(super) async fn exercise(
     .await?;
     *admitted = next;
     assert_eq!(result, UseDisposition::Committed);
-    assert_eq!(snapshot(harness).await?, (0, 0));
+    assert_eq!(snapshot(harness, &key, initial).await?, (initial, 0));
     owner.clock_origin -= Duration::from_secs(2);
     let command = admitted.continuity.next_command_id;
     super::quest_world_callbacks::wire(
@@ -184,7 +213,7 @@ pub(super) async fn exercise(
         encode_step_intent(StepDirection::East),
     )
     .await?;
-    if repeat {
+    if name == REPEAT_NAME {
         let (next, result, _) = super::item_craft::exchange(
             owner,
             *admitted,
@@ -195,7 +224,7 @@ pub(super) async fn exercise(
         .await?;
         *admitted = next;
         assert_eq!(result, UseDisposition::Committed);
-        assert_eq!(snapshot(harness).await?, (0, 0));
+        assert_eq!(snapshot(harness, &key, initial).await?, (initial, 0));
 
         // Seed the predecessor written by Gnomilly's completed report. All
         // detector uses and the successor receipt still go through dispatch.
@@ -221,8 +250,11 @@ pub(super) async fn exercise(
     .await?;
     *admitted = next;
     assert_eq!(result, UseDisposition::Committed);
-    assert_eq!(snapshot(harness).await?, (1, 0));
-    if repeat {
+    assert_eq!(
+        snapshot(harness, &key, initial).await?,
+        (initial + 1, i64::from(name == FINAL_NAME))
+    );
+    if name == REPEAT_NAME {
         let recorded: i64 = sqlx::query_scalar(
             "SELECT (plan #>> '{carried_observation,tracking_cycle}')::bigint
              FROM game_quest_reward_sources WHERE transition_key=$1",

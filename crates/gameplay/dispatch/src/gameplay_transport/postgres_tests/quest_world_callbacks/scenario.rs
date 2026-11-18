@@ -2502,8 +2502,13 @@ fn scenario_case(
                 name == super::super::qespike_mound::OCCUPIED,
             ))
             .await?;
-        } else if matches!(name, super::super::qespike_tracker::NAME | super::super::qespike_tracker::REPEAT_NAME) {
-            Box::pin(super::super::qespike_tracker::exercise(&mut owner, &mut admitted, &h, name == super::super::qespike_tracker::REPEAT_NAME)).await?;
+        } else if matches!(
+            name,
+            super::super::qespike_tracker::FINAL_NAME
+                | super::super::qespike_tracker::NAME
+                | super::super::qespike_tracker::REPEAT_NAME
+        ) {
+            Box::pin(super::super::qespike_tracker::exercise(&mut owner, &mut admitted, &h, name)).await?;
         } else if name == super::super::qespike_hotspot::NAME {
             Box::pin(super::super::qespike_hotspot::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == super::super::qespike_geomantic_step::NAME {
