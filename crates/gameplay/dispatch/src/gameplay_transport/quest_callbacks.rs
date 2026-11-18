@@ -26,6 +26,7 @@ mod personal_encounter;
 mod personal_trial;
 mod phase;
 mod rafzane_elevator;
+mod random_use;
 mod reward_door;
 mod rewards;
 mod rotten_flame;
@@ -1045,6 +1046,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .is_some_and(|value| (state.minimum..=state.maximum).contains(&value))
                 })
             });
+        }
+        if selected.len() > 1
+            && let Some(picked) =
+                random_use::select(&selected, actor, command, resolved.placement_key)
+        {
+            selected.retain(|callback| callback.key == picked.key);
         }
         let mut selection_permit = None;
         let mut selection_deadline = None;

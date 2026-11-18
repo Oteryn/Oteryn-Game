@@ -491,6 +491,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
+        let spawn = match super::random_use::qualify_spawn(self, runtime, callback) {
+            Ok(spawn) => spawn,
+            Err(()) => return UseDisposition::Rejected,
+        };
         let mut destination = callback.teleport;
         if let Some(remote) = &callback.remote_teleport {
             let p = tile(remote.position);
@@ -1613,6 +1617,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, expected.position()),
                 underwater(map, snapshot.position()),
             );
+        }
+        if let Some((creature, health)) = spawn {
+            let _ = runtime.admit_encounter_actor(creature, health, expected.position());
+        }
+        if let Some(effect) = callback
+            .effects
+            .random_use
+            .as_ref()
+            .and_then(|branch| branch.user_effect)
+            && let Ok(position) = runtime.read_actor_position(actor)
+            && let Some(at) = native(position.position())
+        {
+            map.facts.emit_movement_effect(at, effect);
         }
         if let Some(magic) = &callback.effects.magic {
             map.facts

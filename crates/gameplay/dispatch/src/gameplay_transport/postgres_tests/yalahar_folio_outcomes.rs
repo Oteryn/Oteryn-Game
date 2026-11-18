@@ -1,0 +1,205 @@
+//! Crystal 201189f8 actions_mission09.lua:7-49.
+use super::fixture::{Harness, debug, id};
+use super::quest_world_callbacks::{local, wire};
+use super::{Dependencies, TestResult, prepare_current_session};
+use crate::gameplay_transport::capabilities::SelectedCapabilities;
+use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
+use crate::map::view::MapFacts;
+use oteryn_gameplay_quests::quest::{
+    QuestStateCatalogue, authored_bindings::Bindings, world_callbacks::Position,
+};
+use oteryn_protocol_oteryn::world_object::{
+    COMMAND_TYPE_USE_INTENT, UseDisposition, WorldObjectTarget, decode_use_result,
+    encode_use_intent,
+};
+use serde_json::json;
+use sha2::{Digest, Sha256};
+use std::sync::Arc;
+
+const QUEST: &str = "oteryn:quest.fixture_yalahar_folio";
+const COUNT: &str = "oteryn:quest-progress/fixture-yalahar/read-count";
+const CLOCK: &str = "oteryn:quest-progress/fixture-yalahar/headache";
+const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission09.lua:7-49";
+const FOLIO: Position = Position {
+    x: 32867,
+    y: 31257,
+    floor: -11,
+};
+const LANDING: Position = Position { floor: -6, ..FOLIO };
+const START: Position = Position {
+    x: FOLIO.x - 1,
+    ..FOLIO
+};
+
+#[test]
+fn folio_use_commits_the_reset_and_only_the_selected_random_world_outcome() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty());
+    super::kill_reward_e2e::scenario_thread::run_async(exercise)
+}
+
+fn catalogue() -> TestResult<QuestStateCatalogue> {
+    // The two independently authored branches use equal fixture weights, so
+    // either matched effect proves the real selection and receipt path.
+    let routes: Vec<_> = [true, false].into_iter().map(|relocation| {
+        let suffix = if relocation { "relocate" } else { "headache" };
+        json!({
+            "key": format!("oteryn:quest-stage/fixture-yalahar/folio-{suffix}"), "completes": false,
+            "trigger": {"kind": "map_use", "callback": {
+                "key": format!("oteryn:quest-callback/fixture-yalahar/folio-{suffix}"),
+                "quest": QUEST, "trigger": "use", "reversible": false,
+                "selector": {"position": FOLIO, "ordinal": 1},
+                "effects": {"random_use": {
+                    "group": "oteryn:quest-random-use/fixture-yalahar/folio",
+                    "weight": 1, "spawn_at_user": (!relocation).then_some("oteryn:creature.enraged_bookworm"),
+                    "user_effect": if relocation { 11 } else { 34 }
+                }},
+                "teleport": relocation.then_some(LANDING),
+                "storage": [{"track": COUNT, "minimum": 0, "maximum": 7, "set": 0}],
+                "state_operations": [{
+                    "track": CLOCK, "from": {"kind": "elapsed_at_least", "seconds": 60},
+                    "effect": if relocation { json!({"kind": "add", "value": 0}) } else { json!({"kind": "set_now"}) }
+                }],
+                "requires_world_admission": true, "passages": [], "offerings": [], "return_on_failure": false,
+                "sources": [SOURCE]
+            }}
+        })
+    }).collect();
+    let data = json!({"schema": 1, "quests": [{
+        "quest": QUEST, "recipe_sha256": Sha256::digest(SOURCE).iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
+        "sources": [SOURCE],
+        "tracks": [
+            {"key": COUNT, "initial": 4, "minimum": 0, "maximum": 8},
+            {"key": CLOCK, "initial": -1, "minimum": -1, "maximum": i64::MAX}
+        ],
+        "stages": routes
+    }]});
+    let base = QuestStateCatalogue::empty("content-1").ok_or("fixture catalogue")?;
+    Ok(Bindings::parse(&serde_json::to_vec(&data)?)?.attach(&base)?)
+}
+
+async fn exercise(admin: String) -> TestResult {
+    let h =
+        Harness::create_with_admission_seed(admin, "yalahar_folio_outcomes", true, false).await?;
+    prepare_current_session(&h).await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let mut deps = Dependencies::new()?;
+    let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
+        deps.admitted.world_id,
+        "content-1",
+    )?;
+    let generation = controller.active().ok_or("content generation")?;
+    let world = super::quest_callbacks::source_world_spatial(
+        (FOLIO.x, FOLIO.y, FOLIO.floor),
+        &[
+            (FOLIO.x, FOLIO.y, FOLIO.floor, 0, 1948),
+            (LANDING.x, LANDING.y, LANDING.floor, 0, 1948),
+        ],
+    )?;
+    super::arena_match::fixture::runtime_at(&mut deps, generation, &pin, &world, local(START))?;
+    let cells = world
+        .movement_cells(deps.room.movement_cells())
+        .map_err(debug)?;
+    let mut owner = deps.owner(&h, &authority);
+    owner.active_generation = Some(generation);
+    owner.movement_cells = (&cells).into();
+    owner.quest_catalogue = Some(Arc::new(catalogue()?));
+    deps.initialize(&owner).await;
+    let mut admitted = deps.admitted;
+    admitted.first_entry = FirstEntryOutcome::Positioned;
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
+            .ok_or("map USE capabilities")?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "quest fence")?
+        .ok_or("quest session")?;
+    admitted.item_fence = Some(fence.item_fence());
+    sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
+        .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
+    sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
+        .bind(id(42).as_slice()).bind(id(43).as_slice())
+        .bind(generation.identity().server_artifact_digest().as_slice())
+        .bind(generation.identity().client_artifact_digest().as_slice())
+        .bind(world.frame_binding_digest(admitted.world_id).as_slice()).execute(&h.pool).await?;
+    owner.admit_quest_session(&admitted).await;
+    let map = owner.bundle_map().ok_or("map")?;
+    let tile = crate::map::overlay::TilePos {
+        x: FOLIO.x,
+        y: FOLIO.y,
+        floor: FOLIO.floor,
+    };
+    let key = crate::map::view::placement_key(tile, 1).ok_or("folio")?;
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let req = encode_use_intent(&WorldObjectTarget {
+        placement,
+        expected_revision: map.facts.object_revision(key),
+    })
+    .map_err(debug)?;
+    let first = wire(
+        &owner,
+        &mut admitted,
+        1,
+        COMMAND_TYPE_USE_INTENT,
+        req.clone(),
+    )
+    .await?;
+    assert_eq!(
+        decode_use_result(&first).map_err(debug)?,
+        UseDisposition::Committed
+    );
+    let snapshot = h
+        .root
+        .read_character_quest_state(&authority, fence.character_id)
+        .await
+        .map_err(debug)?;
+    assert_eq!(snapshot.tracks().get(COUNT), Some(&0));
+    let headache = snapshot.tracks().get(CLOCK).is_some_and(|clock| *clock > 0);
+    let state = {
+        let runtime = owner.runtime.lock().await;
+        let at = runtime
+            .read_actor_position(deps.actor)
+            .map_err(debug)?
+            .position();
+        let spawned = runtime
+            .current_live_creature_census()
+            .map_err(debug)?
+            .into_iter()
+            .filter(|actor| {
+                runtime.matches_live_creature_identity(*actor, b"oteryn:creature.enraged_bookworm")
+            })
+            .count();
+        (at, spawned)
+    };
+    assert_eq!(
+        state,
+        if headache {
+            (local(START), 1)
+        } else {
+            (local(LANDING), 0)
+        }
+    );
+    assert_eq!(
+        wire(&owner, &mut admitted, 1, COMMAND_TYPE_USE_INTENT, req).await?,
+        first
+    );
+    let receipts: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1")
+            .bind(QUEST)
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(receipts, 1);
+    drop(owner);
+    drop(authority);
+    drop(seal);
+    h.cleanup().await
+}

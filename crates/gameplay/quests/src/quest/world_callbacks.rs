@@ -85,7 +85,7 @@ pub use effects::{
     CallbackEffectSet, CallbackEffects, CyclingAppearanceGuard, Encounter, EncounterMonster,
     EncounterPhase, EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement,
     ItemPresence, MagicEffect, MountReward, PartyStation, PartyTransfer, Portal, PortalPair,
-    QuestCompletion, RewardDoor, TargetTransform,
+    QuestCompletion, RandomUse, RewardDoor, TargetTransform,
 };
 pub use ground_stack::{
     GroundStackEntry, GroundStackFact, ground_stack_matches, ground_stack_matches_at,
@@ -628,6 +628,29 @@ pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)>
 }
 
 impl Callback {
+    /// Random siblings share their ingress predicates. Only the selected branch
+    /// owns the receipt, so mutations and projections may differ.
+    pub fn random_use_sibling(&self, other: &Self) -> bool {
+        self.effects
+            .random_use
+            .as_ref()
+            .zip(other.effects.random_use.as_ref())
+            .is_some_and(|(a, b)| a.group == b.group)
+            && self.quest == other.quest
+            && self.selector == other.selector
+            && self.storage.len() == other.storage.len()
+            && self.storage.iter().zip(&other.storage).all(|(a, b)| {
+                a.track == b.track && a.minimum == b.minimum && a.maximum == b.maximum
+            })
+            && self.operation_count() == other.operation_count()
+            && self
+                .operations()
+                .zip(other.operations())
+                .all(|(a, b)| a.track == b.track && a.from == b.from)
+            && self.activation == other.activation
+            && self.world_requirements == other.world_requirements
+    }
+
     /// A carried tool activates an exact target and remains in the same custody.
     /// Crystal register_actions.lua:1035-1067 uses this shape for the Library scythe.
     pub fn is_retained_tool_route(&self) -> bool {
@@ -878,6 +901,7 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
                 !phase::exclusive(peer, callback)
                     && !phase::disjoint(peer, callback)
                     && !guarded_routes::disjoint(callback, peer)
+                    && !callback.random_use_sibling(peer)
                     && !callback
                         .effects
                         .cycling_appearance

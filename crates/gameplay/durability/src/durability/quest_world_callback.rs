@@ -706,6 +706,32 @@ async fn consume_inputs(
         let accepted: Vec<&str> = std::iter::once(required.item.as_str())
             .chain(required.alternatives.iter().map(String::as_str))
             .collect();
+        let random_item = if callback.effects.random_step_item {
+            // Crystal 6-mind-travel.lua:124-136 selects among represented item
+            // types, so duplicate stacks cannot weight the draw. The held
+            // Character and custody fences also cover the final selected lock.
+            let selected: Option<String> = sqlx::query_scalar(
+                "SELECT production_key FROM (
+                    SELECT DISTINCT i.definition_production_key AS production_key
+                    FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c
+                    JOIN game_item_instances i ON i.item_instance_id=c.item
+                    WHERE i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1
+                      AND i.definition_family='Item' AND i.quantity >= 1
+                      AND i.definition_production_key=ANY($3::text[])
+                 ) owned_types ORDER BY random() LIMIT 1",
+            )
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(world_id.as_bytes().as_slice())
+            .bind(&accepted)
+            .fetch_optional(&mut **tx)
+            .await?;
+            let Some(selected) = selected else {
+                return Ok(false);
+            };
+            Some(selected)
+        } else {
+            None
+        };
         let row = sqlx::query(
             "SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item, \
              c.location,c.kind,i.quantity FROM \
@@ -713,13 +739,16 @@ async fn consume_inputs(
              JOIN game_item_instances i ON i.item_instance_id=c.item \
              WHERE i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 \
              AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) \
-             AND i.quantity >= $4 AND ($5::bytea IS NULL OR i.item_instance_id=encode($5,'hex')::uuid) ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i",
+             AND i.quantity >= $4 AND ($5::bytea IS NULL OR i.item_instance_id=encode($5,'hex')::uuid) \
+             AND ($6::text IS NULL OR i.definition_production_key=$6) \
+             ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i",
         )
         .bind(fence.character_id.as_bytes().as_slice())
         .bind(world_id.as_bytes().as_slice())
         .bind(&accepted)
         .bind(i64::from(required.count))
         .bind(context.selected_tool.as_ref().map(|tool| tool.source.to_vec()))
+        .bind(random_item.as_deref())
         .fetch_optional(&mut **tx)
         .await?;
         let Some(row) = row else { return Ok(false) };

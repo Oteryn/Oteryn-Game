@@ -87,6 +87,13 @@ pub struct CallbackEffects {
     /// Source-authored public player MONSTER_SAY, emitted only after commit.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub player_speech: Option<String>,
+    /// Select uniformly from the distinct authored input types currently carried.
+    /// Only an automatic, single-item STEP debit may use this selection.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub random_step_item: bool,
+    /// A single authored outcome in a set of weighted USE branches.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub random_use: Option<RandomUse>,
     pub transform: Option<u16>,
     /// Restore the exact pre-transform source revision after this delay.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -271,6 +278,17 @@ impl CyclingAppearanceGuard {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
+pub struct RandomUse {
+    pub group: String,
+    pub weight: u16,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spawn_at_user: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub user_effect: Option<u16>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct MagicEffect {
     pub position: Position,
     pub effect: u16,
@@ -430,6 +448,46 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 }
 
 pub(super) fn valid(callback: &Callback) -> bool {
+    if callback.effects.random_use.as_ref().is_some_and(|branch| {
+        !super::super::valid_quest_key(&branch.group)
+            || !(1..=10_000).contains(&branch.weight)
+            || callback.trigger != Trigger::Use
+            || callback.actor_kind != ActorKind::Player
+            || !callback.requires_world_admission
+            || !callback.has_state_writes()
+            || callback.reversible
+            || callback.lever.is_some()
+            || !callback.passages.is_empty()
+            || !callback.offerings.is_empty()
+            || callback.item_on_target.is_some()
+            || callback.effects.cycling_appearance.is_some()
+            || callback.effects.encounter.is_some()
+            || callback.effects.scene.is_some()
+            || branch.spawn_at_user.as_ref().is_some_and(|creature| {
+                !super::super::valid_quest_key(creature)
+                    || !creature.starts_with("oteryn:creature.")
+                    || callback.teleport.is_some()
+            })
+            || branch
+                .user_effect
+                .is_some_and(|effect| !(1..=255).contains(&effect))
+    }) {
+        return false;
+    }
+
+    if callback.effects.random_step_item
+        && !callback.item_on_target.as_ref().is_some_and(|input| {
+            input.on_step
+                && input.count == 1
+                && !input.alternatives.is_empty()
+                && input.ingredients.is_empty()
+                && !input.selected_instance
+                && !input.target_remove
+        })
+    {
+        return false;
+    }
+
     if callback.effects.cycling_appearance.is_some_and(|guard| {
         callback.trigger != Trigger::Use
             || callback.actor_kind != ActorKind::Player
