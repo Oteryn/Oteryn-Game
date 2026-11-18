@@ -179,14 +179,13 @@ async fn paced_entry_and_exit(
     let instance = super::activity_runtime::allocate_ready_instance(harness, 237).await?;
     open_captured_test_entrance(&owner)?;
 
-    let entry_clock: i64 = sqlx::query_scalar(
-        "SELECT floor(extract(epoch FROM clock_timestamp()))::bigint",
-    )
-    .fetch_one(&harness.pool)
-    .await?;
-    harness.root.set_test_quest_clock(entry_clock)?;
+    let entry_clock: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&harness.pool)
+            .await?;
     let mut entrants = Vec::new();
-    for source in [first, second] {
+    for (source, arrival) in [(first, entry_clock), (second, entry_clock + 1)] {
+        harness.root.set_test_quest_clock(arrival)?;
         let actor = source.runtime_actor.ok_or("current Channel actor")?;
         let (outcome, _) = owner
             .paced_step(actor, source.game_session_id, StepDirection::West)
@@ -216,12 +215,19 @@ async fn paced_entry_and_exit(
         "SELECT c.available_at FROM game_character_boss_cooldowns c
          JOIN game_boss_room_participants p
            ON p.admission = c.admission AND p.character_id = c.character_id
-         WHERE c.boss_key = $1 ORDER BY c.character_id",
+         WHERE c.boss_key = $1 ORDER BY c.available_at",
     )
     .bind(template.boss_key())
     .fetch_all(&harness.pool)
     .await?;
-    assert_eq!(cooldowns, vec![(entry_clock + 36_000) * 1_000; 2]);
+    assert_eq!(
+        cooldowns,
+        vec![
+            (entry_clock + 36_000) * 1_000,
+            (entry_clock + 36_001) * 1_000
+        ],
+        "sharing the encounter preserves each character's own entry clock"
+    );
 
     let entry_fence = entrants[0].item_fence.ok_or("first Instance fence")?;
     let registered = owner
