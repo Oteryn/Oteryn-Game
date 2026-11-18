@@ -37,7 +37,7 @@ fn repeatable_use_mints_one_bundle_and_grants_the_tenth_claim_achievement_postgr
         y: 32351,
         floor: -6,
     };
-    super::kill_reward_e2e::scenario_thread::run(SCENARIO, || {
+    super::kill_reward_e2e::scenario_thread::run(SCENARIO, move || {
         super::quest_world_callbacks::scenario(SCENARIO, source, false)
     })
 }
