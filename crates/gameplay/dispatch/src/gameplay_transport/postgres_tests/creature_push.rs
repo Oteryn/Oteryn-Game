@@ -256,10 +256,14 @@ pub(super) fn scenario(
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
-            deps.admitted.world_id,
-            "content-1",
-        )?;
+        let (controller, pin) = if repair {
+            super::rottin_repairs::generation(deps.admitted.world_id)?
+        } else {
+            super::death_ml_loss_composed::production_generation_with_pin(
+                deps.admitted.world_id,
+                "content-1",
+            )?
+        };
         let active = controller.active().ok_or("active")?;
         deps.room = pin.qualified_room().clone();
         let (bytes, pins) = bundle_for(trap, repair)?;

@@ -20,6 +20,69 @@ const DISREPAIR: &str = "oteryn:quest-reward/rottin-wood/disrepair";
 const HANDYMAN: &str = "oteryn:quest-reward/rottin-wood/handyman";
 const COOLDOWN: &str = "oteryn:quest-progress/crystalserver/kv/handyman-task";
 
+pub(super) fn generation(
+    world: crate::foundation::WorldId,
+) -> TestResult<(
+    crate::content::ContentActivationController,
+    crate::content::NativeEntryContentPin,
+)> {
+    use serde_json::Value;
+    use std::{fs::File, io::BufReader, path::Path};
+
+    let mut input = super::death_ml_loss_composed::production_input_with_source("content-1", None)?;
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let imported: Value = serde_json::from_reader(BufReader::new(File::open(
+        root.join("imports/crystalserver/bindings/items.json"),
+    )?))?;
+    let binding = imported["bindings"]
+        .as_array()
+        .and_then(|rows| rows.iter().find(|row| row["target"]["key"] == HAMMER))
+        .ok_or("Crystal hammer binding")?;
+    let definitions: Value = serde_json::from_reader(BufReader::new(File::open(
+        root.join("content/items/definitions/items-21000-21499.json"),
+    )?))?;
+    let definition = definitions["records"]
+        .as_array()
+        .and_then(|rows| {
+            rows.iter()
+                .map(|row| &row["definition"])
+                .find(|row| row["identity"]["key"] == HAMMER)
+        })
+        .ok_or("canonical hammer definition")?;
+
+    // The Content session owns the production admission. Exercise the mint's
+    // real carrying-capacity check with the imported hammer still in custody.
+    let pin = input.item_profiles.as_mut().ok_or("item profiles")?;
+    let mut profiles: Value = serde_json::from_slice(&pin.bytes)?;
+    profiles["records"]
+        .as_array_mut()
+        .ok_or("item profile rows")?
+        .push(json!({
+            "authoring": {"item": binding["target"]},
+            "semantics": definition["semantics"],
+            "attributes": {},
+            "admission": {
+                "materializable": true,
+                "stack_class": "NonStackable",
+                "legal_destinations": ["CharacterInventory", "Ground"]
+            },
+            "production_definition": {
+                "family": "Item",
+                "production_key": HAMMER,
+                "revision_ref": binding["target"]["revision"]
+            },
+            "production_binding": binding
+        }));
+    pin.bytes = serde_json::to_vec(&profiles)?;
+    pin.sha256 = Sha256::digest(&pin.bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    crate::content::native_gameplay::test_support::try_activate_input(world, &input)
+        .map_err(super::fixture::debug)
+        .map_err(Into::into)
+}
+
 #[test]
 fn rottin_hammer_use_satisfies_disrepair_turn_in_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
