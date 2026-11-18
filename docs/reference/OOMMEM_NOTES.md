@@ -63,3 +63,10 @@ after 313.443 s. Both early half-mount measurements were confounded by
 failures are not representative of a runner with disk-backed scratch.
 The saved objects and binary were moved off tmpfs and the two-job
 measurement was restarted.
+
+The clean two-job half-mount run built and linked. It peaked at
+15,813,712 KiB (15.08 GiB) after 683.603 s. The executable listed
+3,281 tests (3,283 lines). Comparing names with the fixture-only
+control found 1,179 additions and zero missing names. The executable
+was 1,344,527,264 bytes. LLD received 241 rlibs (1,487,365,036 bytes)
+and 263 objects (1,538,117,592 bytes).
