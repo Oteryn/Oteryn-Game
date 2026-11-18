@@ -36,6 +36,7 @@ const LANDING: Position = Position { x: 32792, ..GATE };
 const GROVE_OCCUPANT: Position = Position { y: GATE.y + 1, ..LANDING };
 const SEASONAL_RETURN: Position = Position { y: 32332, ..GATE };
 const HOLY_TIBLE: &str = "oteryn:item.tibia.i2836";
+pub(super) const MEGALOMANIA_PORTAL_FIXTURE: &str = "oteryn:quest-callback/qgate-megalomania";
 const ISLE_REFUSAL: &str = "You better talk to Rapanaio before leave the safety of the ship!";
 const ISLE_ADMITTED: &str = "You hear evil laughter from afar.";
 const SCOUT_POINTS: &str = "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/points";
@@ -225,7 +226,11 @@ impl Case {
             });
         }
         if self == Self::Flags {
-            row["teleport"] = serde_json::Value::Null;
+            // The donor returns true on admission, allowing the authored
+            // native transition at (33611, 31430, 10) to (33683, 31634, 14).
+            // The conditional callback owns that transition once intercepted.
+            row["key"] = json!(MEGALOMANIA_PORTAL_FIXTURE);
+            row["effects"]["conditional_entrance"]["intercept_teleport"] = json!(true);
             row["sources"] = json!(["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/soul_war/moveevent-soul_war_entrances.lua:60-88"]);
             row["effects"]["conditional_entrance"]["guards"]
                 .as_array_mut()
@@ -528,7 +533,7 @@ impl Case {
                 .await?;
             assert_eq!(before, after, "admitted Bounac travel creates no Quest receipt");
         }
-        let landing = if matches!(self, Self::Door | Self::Flags | Self::Isle { .. }) {
+        let landing = if matches!(self, Self::Door | Self::Isle { .. }) {
             GATE
         } else {
             LANDING
@@ -709,7 +714,7 @@ impl Case {
                 .read_actor_position(actor)
                 .map_err(debug)?
                 .position();
-            let destination = if matches!(self, Self::Flags | Self::Isle { .. }) { GATE } else { LANDING };
+            let destination = if matches!(self, Self::Isle { .. }) { GATE } else { LANDING };
             Ok(position == local(destination))
         }
     }

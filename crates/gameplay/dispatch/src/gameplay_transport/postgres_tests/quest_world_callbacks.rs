@@ -663,6 +663,11 @@ fn world_cells(
                 } else {
                     callback.selector.action
                 },
+                teleport: if callback.key == super::conditional_entrance::MEGALOMANIA_PORTAL_FIXTURE {
+                    callback.teleport.map(|at| (at.x, at.y, at.floor as u8))
+                } else {
+                    None
+                },
                 ..Default::default()
             },
         });
