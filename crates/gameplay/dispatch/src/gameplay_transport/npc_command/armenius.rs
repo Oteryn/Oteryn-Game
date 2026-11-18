@@ -3,8 +3,29 @@ use super::super::{ComposedFreshAdmission, connection::UseCommand};
 use super::*;
 
 use oteryn_gameplay_quests::quest::armenius::{
-    FINAL_TOPIC, MISSION, NPC, Outcome, RESOLVE, RESOLVED_MISSION, outcome,
+    CONFRONTATION_ROUTE, FINAL_TOPIC, MISSION, NPC, Outcome, RATS_ROUTE, RESOLVE, RESOLVED_MISSION,
+    outcome,
 };
+
+pub(super) enum Step {
+    Dialogue(Box<quest_dialogue::Step>),
+    Teleport(catalogue::Step),
+}
+
+pub(super) async fn apply(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: NpcTalkIntent,
+    step: Step,
+) -> NpcTalkOutcome {
+    match step {
+        Step::Dialogue(step) => {
+            quest_dialogue::apply(admission, actor, command, intent, *step).await
+        }
+        Step::Teleport(step) => catalogue::apply(admission, actor, command, intent, step).await,
+    }
+}
 
 pub(super) fn prepare(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
@@ -12,8 +33,9 @@ pub(super) fn prepare(
     command: UseCommand,
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
-) -> Option<quest_dialogue::Step> {
-    quest_dialogue::prepare(
+) -> Option<Step> {
+    let mut teleport = None;
+    let dialogue = quest_dialogue::prepare(
         admission,
         actor,
         command,
@@ -30,10 +52,16 @@ pub(super) fn prepare(
                 return None;
             }
             if topic.number == FINAL_TOPIC {
-                if final_outcome(runtime, command.game_session_id, command.command_id)?
-                    != Outcome::Dismissed
-                {
-                    return None;
+                match final_outcome(runtime, command.game_session_id, command.command_id)? {
+                    Outcome::Rats { destination } => {
+                        teleport = Some((context.clone(), RATS_ROUTE, destination));
+                        return None;
+                    }
+                    Outcome::Confrontation { destination, .. } => {
+                        teleport = Some((context.clone(), CONFRONTATION_ROUTE, destination));
+                        return None;
+                    }
+                    Outcome::Dismissed => {}
                 }
                 return Some(quest_dialogue::Choice {
                     transition: Some(RESOLVE.into()),
@@ -57,7 +85,20 @@ pub(super) fn prepare(
                 reply: vec![reply.into()],
             })
         },
-    )
+    );
+    if let Some((context, route, destination)) = teleport {
+        return catalogue::armenius_teleport(
+            admission,
+            actor,
+            command,
+            intent,
+            context,
+            route,
+            destination,
+        )
+        .map(Step::Teleport);
+    }
+    dialogue.map(|step| Step::Dialogue(Box::new(step)))
 }
 
 pub(in crate::gameplay_transport) fn final_outcome(

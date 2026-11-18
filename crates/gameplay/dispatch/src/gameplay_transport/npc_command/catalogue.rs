@@ -570,6 +570,53 @@ fn install_success(
     true
 }
 
+pub(super) fn armenius_teleport(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+    context: Context,
+    route: &str,
+    destination: oteryn_gameplay_quests::quest::npc_rules::NpcRulePosition,
+) -> Option<Step> {
+    let sessions = admission.states.npc_conversations.sessions.lock().ok()?;
+    let state = sessions.get(&command.game_session_id)?;
+    let previous = match &state.catalogue {
+        Some(Pending::Commit { .. }) => return Some(Step::Held),
+        Some(Pending::Topic(topic)) => Some(topic.clone()),
+        None => None,
+    };
+    let topic = i32::from(oteryn_gameplay_quests::quest::armenius::FINAL_TOPIC);
+    let request = NpcProgramRequest {
+        command: CommandRef::new(
+            command.game_session_id,
+            CommandId::new(command.command_id).ok()?,
+        ),
+        npc: context.2.clone(),
+        trigger: NpcRuleTrigger::Say,
+        message: intent.text.clone(),
+        topic,
+        transition_key: route.into(),
+    };
+    let next = Conversation {
+        context: context.clone(),
+        actor,
+        npc: intent.npc_actor,
+        npc_actor: admission.states.chat.engaged(command.game_session_id)?,
+        topic,
+    };
+    Some(Step::Commit(Box::new(CommitStep {
+        context,
+        previous,
+        next,
+        request,
+        fallback_lines: Vec::new(),
+        teleport: Some(destination),
+        magic: 1,
+        supersedes_topic: true,
+    })))
+}
+
 pub(super) async fn apply(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
