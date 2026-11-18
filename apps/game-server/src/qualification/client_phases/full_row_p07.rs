@@ -238,8 +238,8 @@ fn wallet_carried(total: u64, eligible: u64) -> Option<u64> {
     total.checked_sub(eligible)
 }
 
-fn wheel_profile_required(vocation: &str, level: u32) -> bool {
-    oteryn_gameplay_progression::wheel::base_vocation(&vocation.replace(' ', "_")).is_none() || level < 1050
+fn wheel_profile_required(vocation: &str) -> bool {
+    oteryn_gameplay_progression::wheel::base_vocation(&vocation.replace(' ', "_")).is_none()
 }
 
 fn socket_revision_evidence(receipt: u64, wheel: u64, atelier: u64, workshop: u64) -> String {
@@ -281,10 +281,9 @@ async fn wheel_setup(client: &mut DevClientSession, clients: &SeamClients<'_>) -
     use super::full_row_p20 as promotion;
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
     let (vocation, promoted) = wheel_build(&mut database, clients).await?;
-    let level = super::full_row_q01::level(client).await?;
-    if wheel_profile_required(&vocation, level) {
+    if wheel_profile_required(&vocation) {
         let level = super::full_row_q01::provision(clients, client, 0xa9, 1, "atelier", "P07").await?;
-        if level < 1050 || wheel_build(&mut database, clients).await?.0 != "knight" {
+        if !(100..=1000).contains(&level) || wheel_build(&mut database, clients).await?.0 != "knight" {
             return Err(format!("step=wheel-setup observed=level:{level};needed=Atelier-profile").into());
         }
     }
@@ -313,7 +312,7 @@ async fn wheel_setup(client: &mut DevClientSession, clients: &SeamClients<'_>) -
     if answer != ["You are now promoted."] || !purchased {
         return Err(format!("step=wheel-setup observed=promotion:{answer:?} committed-receipt:{purchased}").into());
     }
-    logout(client).await?;
+    super::full_row_p01::logout_for_fixture(client).await?;
     *client = connect_world(clients, 0xaa).await?;
     if !wheel_build(&mut database, clients).await?.1 {
         return Err("step=wheel-setup observed=promotion-lost-on-fresh-admission".into());
@@ -344,6 +343,16 @@ async fn vessel_state(client: &mut DevClientSession) -> TestResult<atelier::v2::
         return Err(format!("step=socket observed=vessel-state:{view:?} status:{:?}", response.status).into());
     }
     Ok(view)
+}
+
+async fn with_socket_baseline<T>(
+    wheel: u64, atelier_wheel: u64, observed_nodes: &[u8], nodes: &[u8],
+    present: impl AsyncFnOnce() -> TestResult<T>,
+) -> TestResult<T> {
+    if wheel != atelier_wheel || observed_nodes != nodes {
+        return Err(format!("step=socket observed=wheel-and-atelier-baselines-disagree wheel_revision={wheel} atelier_wheel_revision={atelier_wheel} observed_nodes={observed_nodes:?} expected_nodes={nodes:?}").into());
+    }
+    present().await
 }
 
 async fn presentation(
@@ -512,7 +521,8 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
             revision = reply.revision;
             seen.pass("4-grade");
         }
-        observed => seen.fail("4-grade", (&response.status, observed)),
+        observed => seen.fail("4-grade", (grade_quote.gold, (eligible_before, eligible_after),
+            dismantled.1, graded.1, &response.status, observed)),
     }
 
     let reveal = atelier::MutateRequest {
@@ -634,10 +644,13 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
     let expected = vessel_rules::place(&stored, destination, Some(gem)).ok_or("step=socket observed=invalid-destination")?;
     let expected_cells = vessel_rules::legacy_cells(&expected);
     let rules = WheelGemData::embedded()?.wheel_ruleset()?;
-    let view = presentation(&mut client, wheel_state.revision, wheel_state.points, before_socket.revision, before_cells).await?;
-    let nodes = vessel_rules::node_slots(&rules, &view.vocation);
-    if before_socket.wheel_revision != wheel_state.revision || before_socket.vessel_nodes != nodes {
-        return Err("step=socket observed=wheel-and-atelier-baselines-disagree".into());
+    let (vocation, _) = wheel_build(&mut database, clients).await?;
+    let nodes = vessel_rules::node_slots(&rules, &vocation);
+    let view = with_socket_baseline(wheel_state.revision, before_socket.wheel_revision, &before_socket.vessel_nodes, &nodes,
+        async || presentation(&mut client, wheel_state.revision, wheel_state.points, before_socket.revision, before_cells).await,
+    ).await?;
+    if vessel_rules::node_slots(&rules, &view.vocation) != nodes {
+        return Err(format!("step=socket observed=presentation-vocation:{:?};needed={vocation}", view.vocation).into());
     }
     let points = socket_points(&rules, wheel_state.points, &nodes, destination + 1, view.available, view.unlock_points)
         .ok_or("step=socket needed=wheel-budget-for-vacant-compatible-vessel")?;
@@ -857,9 +870,8 @@ mod eligibility_review {
 
     #[test]
     fn ordinary_admission_requests_a_wheel_capable_build() {
-        assert!(wheel_profile_required("none", 8));
-        assert!(wheel_profile_required("knight", 100));
-        assert!(!wheel_profile_required("knight", 1050));
+        assert!(wheel_profile_required("none"));
+        assert!(!wheel_profile_required("knight"));
     }
     #[test]
     fn carried_pouch_is_not_funds_for_the_grade_fee() {
@@ -875,4 +887,31 @@ mod eligibility_review {
         assert!(diagnostic.contains("live_wheel=10") && diagnostic.contains("live_atelier=13") && diagnostic.contains("workshop=12"));
     }
 
+}
+
+#[cfg(test)]
+mod final_review {
+    use super::*;
+    #[test]
+    fn established_wheel_character_keeps_its_existing_build() -> TestResult {
+        assert!(!wheel_profile_required("knight"));
+        let rules = WheelGemData::embedded()?.wheel_ruleset()?;
+        let budget = oteryn_gameplay_progression::wheel::available_points(100);
+        let nodes = vessel_rules::node_slots(&rules, "knight");
+        let points = socket_points(&rules, [0; 36], &nodes, 1, budget, budget)
+            .ok_or("level-100 Knight cannot open the first vessel")?;
+        let allocation = WheelSlots::new(points).map_err(|error| format!("{error:?}"))?;
+        assert_eq!(vessel_rules::open_slots_for(&rules, &allocation, "knight", 100, true), 1);
+        Ok(())
+    }
+    #[tokio::test]
+    async fn socket_baseline_failure_names_both_revisions() {
+        let mut sent = false;
+        let error = with_socket_baseline(11, 12, &[1], &[1], async || {
+            sent = true;
+            Ok(())
+        }).await.err().map(|error| error.to_string()).unwrap_or_default();
+        assert!(!sent);
+        assert!(error.contains("wheel_revision=11") && error.contains("atelier_wheel_revision=12"));
+    }
 }

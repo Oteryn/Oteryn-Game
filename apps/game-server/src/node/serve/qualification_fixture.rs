@@ -6,6 +6,10 @@ use crate::qualification_spell_character as qualification_build;
 #[cfg(any(test, feature = "qualification-spawn"))]
 use crate::qualification_wild_spawn as wild_spawn;
 
+fn fixture_level(profile: &str) -> u32 {
+    if profile == "atelier" { 1000 } else { 100 }
+}
+
 fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let text = std::str::from_utf8(bytes).ok()?.trim_end_matches('\n');
     let (session, profile) = text.strip_prefix("qualify ")?.split_once(' ')?;
@@ -354,7 +358,7 @@ async fn prepare_build(
             } else {
                 profile
             },
-            level: if profile == "atelier" { 1050 } else { 100 },
+            level: fixture_level(profile),
             context,
             xp_occurrence: uuid_v7()?,
             build_occurrence: uuid_v7()?,
@@ -733,7 +737,9 @@ mod tests {
     #[test]
     fn qualification_request_accepts_only_named_profiles_and_v7_sessions() {
         let id = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
-        for profile in ["explorer", "knight", "paladin", "sorcerer", "druid", "monk", "atelier"] {
+        for profile in [
+            "explorer", "knight", "paladin", "sorcerer", "druid", "monk", "atelier",
+        ] {
             assert!(request(format!("qualify {id} {profile}\n").as_bytes()).is_some());
         }
         for text in [
@@ -745,4 +751,10 @@ mod tests {
             assert!(request(text.as_bytes()).is_none());
         }
     }
+}
+
+#[cfg(test)]
+#[test]
+fn final_review_atelier_fixture_is_within_the_native_writer_limit() {
+    assert!((100..=1000).contains(&fixture_level("atelier")));
 }

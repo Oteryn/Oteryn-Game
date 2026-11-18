@@ -245,37 +245,41 @@ fn stop_reply_consistent(ticked: wire::TrainingResult, stopped: wire::TrainingRe
         && (stopped.charges == ticked.charges || stopped.revision > ticked.revision)
 }
 
-fn settlement_clock_matches(full: u32, remaining: u32, started_ms: i64, settled_ms: i64) -> bool {
-    settled_ms.checked_sub(started_ms).filter(|elapsed| *elapsed >= 0).is_some_and(|elapsed| {
-        // SQL rounds both observations down to milliseconds. START dispatch cannot be
-        // earlier than this cut, and delivery time is absent from the receipt's clock.
-        full.checked_sub(remaining).is_some_and(|spent| i64::from(spent) <= elapsed / 2000)
-    })
-}
-
-async fn db_clock(database: &mut sqlx::PgConnection) -> TestResult<i64> {
-    Ok(sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(database).await?)
+fn owner_clock_matches(full: u32, remaining: u32, timing: crate::durability::exercise_training::ExerciseTiming) -> bool {
+    full.checked_sub(remaining).is_some_and(|spent| timing.admits(spent))
 }
 
 async fn durable_exercise_matches(
     database: &mut sqlx::PgConnection, session: crate::foundation::GameSessionId,
-    full: u32, started_ms: i64, stopped: wire::TrainingResult,
+    full: u32, start_revision: u64, stopped: wire::TrainingResult,
 ) -> TestResult<bool> {
-    let rows: Vec<(Vec<u8>, i32, i32, i64)> = sqlx::query_as(
-        "SELECT uuid_send(e.item_instance_id),e.charges_before,e.charges_after,b.committed_at
+    let rows: Vec<(Vec<u8>, i32, i32, Vec<u8>)> = sqlx::query_as(
+        "SELECT uuid_send(e.item_instance_id),e.charges_before,e.charges_after,b.command_binding
            FROM game_character_exercise_receipts e JOIN game_character_build_receipts b USING(build_occurrence_id)
-          WHERE e.game_session_id=encode($1,'hex')::uuid AND b.committed_at >= $2
+          WHERE e.game_session_id=encode($1,'hex')::uuid AND e.committed_character_revision > $2::text::numeric
             AND e.committed_character_revision <= $3::text::numeric
           ORDER BY e.committed_character_revision",
-    ).bind(session.as_bytes().as_slice()).bind(started_ms).bind(stopped.revision.to_string()).fetch_all(database).await?;
+    ).bind(session.as_bytes().as_slice()).bind(start_revision.to_string()).bind(stopped.revision.to_string()).fetch_all(database).await?;
     let mut remaining = full;
     let mut weapon = None;
-    for (item, before, after, settled) in rows {
+    let mut started = None;
+    let mut previous_sample = None;
+    for (item, before, after, binding) in rows {
+        let Some(timing) = crate::durability::exercise_training::ExerciseTiming::from_build_binding(&binding) else {
+            return Ok(false);
+        };
+        if started.is_some_and(|start| start != timing.started_us)
+            || previous_sample.is_some_and(|sample| sample > timing.sampled_us)
+        {
+            return Ok(false);
+        }
+        started = Some(timing.started_us);
+        previous_sample = Some(timing.sampled_us);
         if weapon.as_ref().is_some_and(|weapon| *weapon != item) || i32::try_from(remaining)? != before {
             return Ok(false);
         }
         remaining = u32::try_from(after)?;
-        if !settlement_clock_matches(full, remaining, started_ms, settled) {
+        if !owner_clock_matches(full, remaining, timing) {
             return Ok(false);
         }
         weapon = Some(item);
@@ -341,7 +345,6 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
     let dummy = visible_dummy(&mut client)?;
     use sqlx::Connection;
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
-    let started_ms = db_clock(&mut database).await?;
     let running = command(&mut client, wire::ExerciseIntent::Start { weapon, dummy }).await?;
     if running.disposition != 1 || running.charges != full || running.revision == 0 {
         return Err(format!("START reply={running:?}; need=running charges={full}").into());
@@ -356,7 +359,7 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
     verdict.pass(4, ticked);
 
     let stopped = command(&mut client, wire::ExerciseIntent::Stop).await?;
-    if !stop_reply_consistent(ticked, stopped) || !durable_exercise_matches(&mut database, client.join_snapshot().game_session_id, full, started_ms, stopped).await?
+    if !stop_reply_consistent(ticked, stopped) || !durable_exercise_matches(&mut database, client.join_snapshot().game_session_id, full, running.revision, stopped).await?
     {
         return Err(format!(
             "STOP reply={stopped:?}; before={ticked:?}; need=receipt-backed-settled durable charge/revision"
@@ -423,12 +426,12 @@ mod tests {
         let ticked = training_result(1, 9, 3);
         assert!(stop_reply_consistent(ticked, training_result(2, 8, 4)));
         assert!(!stop_reply_consistent(ticked, training_result(2, 8, 3)));
-        assert!(settlement_clock_matches(10, 8, 1000, 5000));
+        assert!(owner_clock_matches(10, 8, crate::durability::exercise_training::ExerciseTiming { started_us: 1000 * 1000, sampled_us: 5000 * 1000 }));
     }
 
     #[test]
     fn stop_rejects_unearned_charge_loss() {
-        assert!(!settlement_clock_matches(10, 1, 1000, 5000));
+        assert!(!owner_clock_matches(10, 1, crate::durability::exercise_training::ExerciseTiming { started_us: 1000 * 1000, sampled_us: 5000 * 1000 }));
     }
 
     #[test]
@@ -452,8 +455,21 @@ mod eligibility_review {
 
     #[test]
     fn start_and_checkpoint_clocks_admit_overdue_but_reject_delivery_based_charge_loss() {
-        assert!(settlement_clock_matches(10, 7, 10_000, 16_000));
-        assert!(!settlement_clock_matches(10, 7, 10_000, 12_100));
+        assert!(owner_clock_matches(10, 7, crate::durability::exercise_training::ExerciseTiming { started_us: 10_000 * 1000, sampled_us: 16_000 * 1000 }));
+        assert!(!owner_clock_matches(10, 7, crate::durability::exercise_training::ExerciseTiming { started_us: 10_000 * 1000, sampled_us: 12_100 * 1000 }));
     }
 
+}
+
+#[cfg(test)]
+mod final_review {
+    use super::*;
+    #[test]
+    fn start_and_write_queueing_do_not_make_an_early_second_tick_due() {
+        use crate::durability::exercise_training::ExerciseTiming;
+        let one_due = ExerciseTiming { started_us: 12_000_000, sampled_us: 14_000_000 };
+        let two_due = ExerciseTiming { sampled_us: 16_000_000, ..one_due };
+        assert!(!owner_clock_matches(10, 8, one_due));
+        assert!(owner_clock_matches(10, 8, two_due));
+    }
 }

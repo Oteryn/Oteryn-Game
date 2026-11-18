@@ -361,11 +361,38 @@ fn authored_bestiary() -> TestResult<Vec<(crate::domain::bestiary::BestiaryRace,
     Ok(races)
 }
 
-async fn logout_for_fixture(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err("step=currency-setup observed=logout-refused".into());
+pub(super) async fn logout_for_fixture(client: &mut DevClientSession) -> TestResult {
+    fixture_logout(client, async |client| Ok(client.session_mut().logout().await?.result), async |client, duration| {
+        let deadline = tokio::time::Instant::now() + duration;
+        verdict::Harness::global().bounded_wait(deadline, "fixture-logout-combat-lock");
+        while let Some(remaining) = deadline.checked_duration_since(tokio::time::Instant::now()).filter(|time| !time.is_zero()) {
+            client.service_liveness(remaining.min(Duration::from_millis(250))).await?;
+            client.take_events();
+        }
+        Ok(())
+    }).await
+}
+
+async fn fixture_logout<S>(
+    session: &mut S,
+    mut send: impl AsyncFnMut(&mut S) -> TestResult<Option<oteryn_protocol_oteryn::logout::LogoutResult>>,
+    mut wait: impl AsyncFnMut(&mut S, Duration) -> TestResult,
+) -> TestResult {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+    loop {
+        let result = tokio::time::timeout_at(deadline, send(session)).await??;
+        let delay = match result {
+            Some(LogoutResult::Accepted) => return Ok(()),
+            Some(LogoutResult::InFight { retry_after_ms }) => Duration::from_millis(u64::from(retry_after_ms).max(1)),
+            Some(LogoutResult::Busy) => Duration::from_millis(250),
+            _ => return Err(format!("step=fixture-logout observed={result:?}").into()),
+        };
+        if delay >= deadline.saturating_duration_since(tokio::time::Instant::now()) {
+            return Err(format!("step=fixture-logout observed={result:?};retry-exceeds-deadline").into());
+        }
+        tokio::time::timeout_at(deadline, wait(session, delay)).await??;
     }
-    Ok(())
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
@@ -452,6 +479,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let seconds = u32::try_from(budget.as_secs())?;
     let balance = current.charms.charm_points_available.saturating_add(if rat_left == 0 { 0 } else { races[rat_index].1 });
     let plan = seconds.checked_sub(rat_seconds).and_then(|remaining| deadline_plan(balance, cost, &hunts, remaining));
+    let used_prefix = plan.is_none();
     let plan = if let Some(plan) = plan {
         plan
     } else {
@@ -500,7 +528,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             sources: vec![metadata.spawns.sources[source].clone()],
         };
         while !race_complete(&current, id) {
-            hunt_once(&mut client, world, &cluster, authored.key(), &name).await?;
+            let spawns = if used_prefix { &metadata.spawns } else { &cluster };
+            hunt_once(&mut client, world, spawns, authored.key(), &name).await?;
             let next = query(&mut client).await?;
             let next_count = count(&next, id);
             let award = if next_count == authored.final_kill_threshold() { *points } else { 0 };
@@ -594,11 +623,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     row.at("logout-fresh-admission");
     let old_session = client.join_snapshot().game_session_id;
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("LOGOUT refused after charm combat".into());
-    }
+    logout_for_fixture(&mut client).await?;
     drop(client);
     let mut fresh = connect_world(clients, 0xa3).await?;
     if fresh.join_snapshot().game_session_id == old_session {
@@ -685,4 +710,21 @@ mod eligibility_review {
         assert_eq!(completion_fixture_prefix(1, 250, true), 0);
     }
 
+}
+
+#[cfg(test)]
+mod final_review {
+    use super::*;
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    #[tokio::test]
+    async fn fixture_logout_waits_through_fight_then_confirms_release() -> TestResult {
+        let fight = LogoutResult::InFight { retry_after_ms: 2000 };
+        let mut replies = [fight, LogoutResult::Accepted].into_iter();
+        let mut waits = Vec::new();
+        fixture_logout(&mut replies, async |replies| Ok(replies.next()),
+            async |_, delay| { waits.push(delay); Ok(()) }).await?;
+        assert_eq!(replies.next(), None);
+        assert_eq!(waits, [Duration::from_secs(2)]);
+        Ok(())
+    }
 }
