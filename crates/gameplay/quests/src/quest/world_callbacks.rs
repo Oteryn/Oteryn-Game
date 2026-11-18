@@ -669,6 +669,7 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String
 
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
+    secret_library::bind_ghulosh_exit(&mut callbacks);
     callbacks.extend(parse(
         &serde_json::json!({"schema":1,"callbacks":[secret_library::scorpion()?,secret_library::ghulosh()?]}).to_string(),
     )?);

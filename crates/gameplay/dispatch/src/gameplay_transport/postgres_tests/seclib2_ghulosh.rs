@@ -12,10 +12,11 @@ const ENTRY: MovementLocalPosition = MovementLocalPosition { x: 32757, y: 32727,
 const BOSS: &str = "oteryn:creature.ghulosh";
 const DEATHGAZE: &str = "oteryn:creature.ghulosh_deathgaze";
 const BOOK: &str = "oteryn:creature.the_book_of_death";
+const EXIT: MovementLocalPosition = MovementLocalPosition { x: 32664, y: 32711, floor: 13 };
 const DEATH: &str = "oteryn:creature.concentrated_death";
 
 #[test]
-fn seclib2_ghulosh_use_transforms_and_respawns_book_postgres() -> TestResult {
+fn seclib2_ghulosh_party_use_transforms_respawns_book_and_exits_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -57,7 +58,23 @@ fn seclib2_ghulosh_use_transforms_and_respawns_book_postgres() -> TestResult {
                     region: (10, 127, 127),
                     bounds: (32748, 32713, 32763, 32729),
                     start: (32757, 32727),
-                    expected: vec![],
+                    expected: vec![ExpectedTile {
+                        position: (32755,32729),
+                        ids: vec![28285,1949],
+                        counted_entry: None,
+                    }],
+                },
+                NativeCrop {
+                    bytes: include_bytes!(concat!(
+                        env!("CARGO_MANIFEST_DIR"),
+                        "/../../../content/world/placements/region-z13-x127-y127.b3"
+                    )),
+                    region: (13, 127, 127),
+                    bounds: (32664, 32711, 32665, 32712),
+                    start: (32664, 32711),
+                    expected: vec![ExpectedTile {
+                        position: (32664,32711), ids: vec![11421], counted_entry: None,
+                    }],
                 },
             ], &[])?;
             let cells = world.movement_cells(activated.qualified_room().movement_cells()).map_err(debug)?;
@@ -112,18 +129,49 @@ fn seclib2_ghulosh_use_transforms_and_respawns_book_postgres() -> TestResult {
                 ).map_err(debug)?,
             ).map_err(debug)?;
             owner.admit_progression_session(&mut admitted).await;
-            {
-                let runtime = deps.runtime.lock().await;
+            h.seed_pvp_target().await?;
+            super::appearance_change_postgres::observer_visibility_tests::admit(&h).await?;
+            let peer_session = crate::foundation::GameSessionId::decode(&id(110)).map_err(debug)?;
+            let peer_fence = owner.current_quest_fence(peer_session).await
+                .map_err(debug)?.ok_or("peer quest fence")?;
+            let peer = {
+                let mut runtime = deps.runtime.lock().await;
+                let slot = runtime.reserve_fresh_session(peer_session).map_err(debug)?;
+                let peer = runtime.commit_fresh_session(slot).map_err(debug)?;
+                runtime.initialize_pinned_test_position(peer, MovementLocalPosition {
+                    x: START.x + 1, ..START
+                }).map_err(debug)?;
+                runtime.bind_attacker_lease(
+                    peer, peer_session, crate::foundation::CharacterLease::new(
+                        crate::foundation::CharacterId::decode(peer_fence.character_id.as_bytes()).map_err(debug)?,
+                        peer_fence.character_lease_generation,
+                    ).map_err(debug)?,
+                ).map_err(debug)?;
                 let mut spells = owner.states.spell_states.lock().await;
-                assert!(spells.initialize(&runtime, deps.actor, session,
-                    crate::spell::cast::CharacterCastFacts {
-                        level: 250,
-                        ..crate::gameplay_transport::actor_spell::tests::FACTS
-                    }, (0, 0), owner.owner_now()).is_some());
-            }
+                for (actor, session) in [(deps.actor, session), (peer, peer_session)] {
+                    assert!(spells.initialize(&runtime, actor, session,
+                        crate::spell::cast::CharacterCastFacts {
+                            level: 250,
+                            ..crate::gameplay_transport::actor_spell::tests::FACTS
+                        }, (0, 0), owner.owner_now()).is_some());
+                }
+                peer
+            };
+            let mut peer_admission = super::AdmittedSession {
+                game_session_id: peer_session,
+                runtime_actor: Some(peer),
+                first_entry: FirstEntryOutcome::Positioned,
+                controller: None,
+                continuity: crate::gameplay_transport::connection::SessionContinuity::FRESH,
+                item_fence: Some(peer_fence.item_fence()),
+                ..admitted
+            };
+            owner.admit_progression_session(&mut peer_admission).await;
+            owner.admit_quest_session(&peer_admission).await;
             owner.admit_quest_session(&admitted).await;
 
             assert!(owner.refresh_source_party_presence(deps.actor, session).await);
+            assert!(owner.refresh_source_party_presence(peer, peer_session).await);
             let placement = crate::map::view::placement_key(
                 crate::map::overlay::TilePos { x: 32746, y: 32773, floor: -10 }, 2,
             ).ok_or("bookstand placement")?;
@@ -136,7 +184,9 @@ fn seclib2_ghulosh_use_transforms_and_respawns_book_postgres() -> TestResult {
                 },
             ).await;
             assert_eq!(outcome.disposition, UseDisposition::Committed);
-            assert_eq!(owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position(), ENTRY);
+            for actor in [deps.actor, peer] {
+                assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), ENTRY);
+            }
             {
                 let mut runtime = owner.runtime.lock().await;
                 let spells = owner.states.spell_states.lock().await;
@@ -159,6 +209,25 @@ fn seclib2_ghulosh_use_transforms_and_respawns_book_postgres() -> TestResult {
                 }
                 crate::gameplay_transport::encounter_phases::tick(&mut runtime, &spells, 15000);
                 exact(&runtime, BOOK)?;
+            }
+            for (actor, session) in [(deps.actor, session), (peer, peer_session)] {
+                {
+                    let mut runtime = owner.runtime.lock().await;
+                    let at = runtime.read_actor_position(actor).map_err(debug)?;
+                    let map = owner.bundle_map().ok_or("map")?;
+                    let closed = crate::map::floor::BundleDoors(&map.facts);
+                    let proof = crate::map::floor::prepare_quest_callback_teleport(
+                        &runtime, &owner.movement_cells, actor, session, at,
+                        MovementLocalPosition { x: 32755, y: 32728, floor: 10 }, false, &closed,
+                    ).map_err(debug)?;
+                    runtime.commit_source_step(proof).map_err(debug)?;
+                }
+                let (step, _) = owner.ordinary_paced_step(
+                    actor, session, oteryn_protocol_oteryn::world_spatial::StepDirection::South,
+                    None, None,
+                ).await;
+                assert_eq!(step.disposition, oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved);
+                assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), EXIT);
             }
             drop(owner);
             drop(authority);

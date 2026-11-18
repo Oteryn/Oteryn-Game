@@ -83,3 +83,22 @@ pub(super) fn ghulosh() -> Result<super::Callback, String> {
     }))
     .map_err(|error| error.to_string())
 }
+
+/// The shipped exit preserves the Crystal position and base teleporter but
+/// lacks the startup action id carried by the donor map.
+pub(super) fn bind_ghulosh_exit(callbacks: &mut [super::Callback]) {
+    if let Some(exit) = callbacks
+        .iter_mut()
+        .find(|callback| callback.key == "oteryn:quest-callback/secret-library-ghulosh-exit")
+    {
+        exit.selector.native = Some(super::NativeSelector {
+            position: super::Position {
+                x: 32755,
+                y: 32729,
+                floor: -10,
+            },
+            ordinal: 1,
+            appearance: 1949,
+        });
+    }
+}
