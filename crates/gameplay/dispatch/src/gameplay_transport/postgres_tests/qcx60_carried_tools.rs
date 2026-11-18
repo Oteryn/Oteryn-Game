@@ -15,6 +15,8 @@ use serde_json::json;
 pub(super) const NAME: &str = "qcx60-anthill-carried-tool";
 pub(super) const CURE_NAME: &str = "qcx60-geyser-carried-tool";
 pub(super) const RETALIATION_NAME: &str = "qcx60-ice-charm-carried-tool";
+const MAST_WITH_JUG: &str = "qcx60-mast-with-empty-jug";
+const MAST_WITHOUT_JUG: &str = "qcx60-mast-without-empty-jug";
 const QUEST: &str = "oteryn:quest.the_ice_islands_quest";
 const QUESTLINE: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline";
 const MISSION: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission03";
@@ -23,7 +25,18 @@ const OBELISK: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/obelisk0
 const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/actions_anthill.lua:3-11";
 const CURE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/actions_cure.lua:2-10";
 const CHARM: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/actions_charm.lua:3-23";
-const TARGET: Position = Position {
+const RELEASE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/actions_anthill.lua:13-20";
+const ANTHILL_TARGET: Position = Position {
+    x: 32604,
+    y: 32850,
+    floor: -7,
+};
+const GEYSER_TARGET: Position = Position {
+    x: 32231,
+    y: 31391,
+    floor: -7,
+};
+const MAST_TARGET: Position = Position {
     x: 32360,
     y: 31365,
     floor: -7,
@@ -34,6 +47,13 @@ const CHARM_TARGET: Position = Position {
     floor: -14,
 };
 
+pub(super) fn matches_name(name: &str) -> bool {
+    matches!(
+        name,
+        NAME | CURE_NAME | RETALIATION_NAME | MAST_WITH_JUG | MAST_WITHOUT_JUG
+    )
+}
+
 #[test]
 fn ice_islands_anthill_requires_the_carried_jug_and_transforms_one() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
@@ -41,7 +61,7 @@ fn ice_islands_anthill_requires_the_carried_jug_and_transforms_one() -> TestResu
     };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(NAME, || {
-        super::quest_world_callbacks::scenario(NAME, TARGET, false)
+        super::quest_world_callbacks::scenario(NAME, ANTHILL_TARGET, false)
     })
 }
 
@@ -52,7 +72,7 @@ fn ice_islands_geyser_transforms_the_vial_without_advancing_the_quest() -> TestR
     };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(CURE_NAME, || {
-        super::quest_world_callbacks::scenario(CURE_NAME, TARGET, false)
+        super::quest_world_callbacks::scenario(CURE_NAME, GEYSER_TARGET, false)
     })
 }
 
@@ -67,17 +87,51 @@ fn ice_islands_frost_charm_requires_the_carried_tool_and_marks_an_obelisk_once()
     })
 }
 
+#[test]
+fn ice_islands_mast_keeps_the_selected_filled_jug_and_debits_an_empty_jug_if_present() -> TestResult
+{
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(MAST_WITH_JUG, || {
+        for name in [MAST_WITH_JUG, MAST_WITHOUT_JUG] {
+            super::quest_world_callbacks::scenario(name, MAST_TARGET, false)?;
+        }
+        Ok(())
+    })
+}
+
 pub(super) fn callback(name: &str) -> TestResult<Callback> {
     let cure = name == CURE_NAME;
     let retaliation = name == RETALIATION_NAME;
-    let (appearance, item, replacement, sources) = if retaliation {
-        (1841, "oteryn:item.tibia.i7289", None, CHARM)
+    let mast = matches!(name, MAST_WITH_JUG | MAST_WITHOUT_JUG);
+    let (appearance, item, replacement, sources, position, ordinal) = if retaliation {
+        (
+            1841,
+            "oteryn:item.tibia.i7289",
+            None,
+            CHARM,
+            CHARM_TARGET,
+            2,
+        )
     } else if cure {
         (
             7106,
             "oteryn:item.tibia.i7286",
             Some("oteryn:item.tibia.i7246"),
             CURE,
+            GEYSER_TARGET,
+            2,
+        )
+    } else if mast {
+        (
+            4940,
+            "oteryn:item.tibia.i7244",
+            None,
+            RELEASE,
+            MAST_TARGET,
+            1,
         )
     } else {
         (
@@ -85,6 +139,8 @@ pub(super) fn callback(name: &str) -> TestResult<Callback> {
             "oteryn:item.tibia.i7243",
             Some("oteryn:item.tibia.i7244"),
             SOURCE,
+            ANTHILL_TARGET,
+            1,
         )
     };
     let storage = if retaliation {
@@ -95,11 +151,24 @@ pub(super) fn callback(name: &str) -> TestResult<Callback> {
         ])
     } else if cure {
         json!([{"track": QUESTLINE, "minimum": 21, "maximum": 44, "set": 21, "preserve": true}])
+    } else if mast {
+        json!([
+            {"track": QUESTLINE, "minimum": 6, "maximum": 6, "set": 7},
+            {"track": MISSION, "minimum": 2, "maximum": 2, "set": 3}
+        ])
     } else {
         json!([
             {"track": QUESTLINE, "minimum": 6, "maximum": 6, "set": 6, "preserve": true},
             {"track": MISSION, "minimum": 1, "maximum": 2, "set": 2}
         ])
+    };
+    let effects = if mast {
+        json!({
+            "optional_carried_inputs": [{"item": "oteryn:item.tibia.i7243", "count": 1}],
+            "magic": {"position": MAST_TARGET, "effect": 10}
+        })
+    } else {
+        json!({})
     };
     Ok(serde_json::from_value(json!({
         "key": format!("oteryn:quest-callback/qcx60/{name}"),
@@ -107,7 +176,7 @@ pub(super) fn callback(name: &str) -> TestResult<Callback> {
         "trigger": "use",
         "selector": {
             "appearance": appearance,
-            "native": { "position": if retaliation { CHARM_TARGET } else { TARGET }, "ordinal": if retaliation { 2 } else { 1 }, "appearance": appearance }
+            "native": { "position": position, "ordinal": ordinal, "appearance": appearance }
         },
         "reversible": false,
         "requires_world_admission": true,
@@ -117,10 +186,11 @@ pub(super) fn callback(name: &str) -> TestResult<Callback> {
             "item": item,
             "count": 1,
             "replacement": replacement,
-            "reusable": retaliation,
+            "reusable": retaliation || mast,
             "selected_instance": true
         },
         "offerings": [],
+        "effects": effects,
         "return_on_failure": false,
         "sources": [sources]
     }))?)
@@ -141,7 +211,11 @@ pub(super) fn catalogue(callback: &Callback, name: &str) -> TestResult<QuestStat
         )
     } else {
         (
-            SOURCE,
+            if matches!(name, MAST_WITH_JUG | MAST_WITHOUT_JUG) {
+                RELEASE
+            } else {
+                SOURCE
+            },
             "8bd1d2778fbf439ce4e03d8621ed5e979ed294182769f5f73fdeb0b446448738",
             6,
         )
@@ -153,7 +227,7 @@ pub(super) fn catalogue(callback: &Callback, name: &str) -> TestResult<QuestStat
             "recipe_sha256": digest,
             "tracks": [
                 {"key": QUESTLINE, "initial": initial, "minimum": -1, "maximum": 44},
-                {"key": MISSION, "initial": 1, "minimum": 1, "maximum": 3},
+                {"key": MISSION, "initial": if matches!(name, MAST_WITH_JUG | MAST_WITHOUT_JUG) { 2 } else { 1 }, "minimum": 1, "maximum": 3},
                 {"key": OBELISK, "initial": 0, "minimum": 0, "maximum": 5},
                 {"key": RETALIATION, "initial": 1, "minimum": 0, "maximum": i32::MAX}
             ],
@@ -182,16 +256,23 @@ pub(super) async fn exercise(
         .ok_or("fence")?;
     let retaliation = name == RETALIATION_NAME;
     let cure = name == CURE_NAME;
+    let mast = matches!(name, MAST_WITH_JUG | MAST_WITHOUT_JUG);
     let native = callback.selector.native.ok_or("native placement")?;
     let (tool, wrong_tool, transformed) = if retaliation {
         (7289, 7243, 7289)
     } else if cure {
         (7286, 7243, 7246)
+    } else if mast {
+        (7244, 7286, 7244)
     } else {
         (7243, 7286, 7244)
     };
     let item_key = |id| format!("oteryn:item.tibia.i{id}");
-    for (nonce, id) in [(951, tool), (952, tool), (953, wrong_tool)] {
+    let inputs = [(951, tool), (952, tool), (953, wrong_tool)];
+    for (nonce, id) in inputs
+        .into_iter()
+        .chain((name == MAST_WITH_JUG).then_some((954, 7243)))
+    {
         super::quest_world_callbacks::input_item(
             owner,
             fence.item_fence(),
@@ -277,11 +358,15 @@ pub(super) async fn exercise(
 
     let mut expected = [item_key(tool), item_key(transformed), item_key(wrong_tool)];
     expected.sort_unstable();
+    let mut definitions = expected.to_vec();
+    if mast {
+        definitions.push(item_key(7243));
+    }
     let inventory: Vec<String> = sqlx::query_scalar(
         "SELECT definition_production_key FROM game_item_instances WHERE lifecycle=1 \
          AND definition_production_key=ANY($1::text[]) ORDER BY definition_production_key",
     )
-    .bind(expected.as_slice())
+    .bind(definitions.as_slice())
     .fetch_all(&harness.pool)
     .await?;
     assert_eq!(inventory, expected);
@@ -296,6 +381,9 @@ pub(super) async fn exercise(
     } else if cure {
         assert_eq!(state.tracks().get(QUESTLINE), Some(&21));
         assert!(!state.tracks().contains_key(MISSION));
+    } else if mast {
+        assert_eq!(state.tracks().get(QUESTLINE), Some(&7));
+        assert_eq!(state.tracks().get(MISSION), Some(&3));
     } else {
         assert_eq!(state.tracks().get(MISSION), Some(&2));
     }

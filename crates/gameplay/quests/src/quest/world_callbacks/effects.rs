@@ -48,6 +48,10 @@ pub struct CallbackEffects {
     /// Distinct carried definitions consumed atomically by the Quest receipt owner.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
+    /// Consume the full count when carried. An insufficient count leaves the inventory intact.
+    /// Crystal 201189f8 actions_anthill.lua:13-20 ignores the empty jug removal result.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub optional_carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
     /// Opt in to source-script displacement onto a present blocked pad.
     #[serde(default, skip_serializing_if = "is_false")]
     pub scripted_teleport: bool,
@@ -453,11 +457,15 @@ pub(super) fn valid(callback: &Callback) -> bool {
     {
         return false;
     }
-    let inputs = &effects.carried_inputs;
-    let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
-    if inputs.len() > 8
-        || unique.len() != inputs.len()
-        || inputs.iter().any(|input| {
+    let inputs = effects
+        .carried_inputs
+        .iter()
+        .chain(&effects.optional_carried_inputs);
+    let count = effects.carried_inputs.len() + effects.optional_carried_inputs.len();
+    let unique: BTreeSet<_> = inputs.clone().map(|input| &input.item).collect();
+    if count > 8
+        || unique.len() != count
+        || inputs.clone().any(|input| {
             input.count == 0
                 || input.count > 100
                 || !super::super::valid_quest_key(&input.item)
@@ -466,7 +474,17 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     .as_ref()
                     .is_some_and(|target| target.item == input.item)
         })
-        || (!inputs.is_empty()
+        || effects.optional_carried_inputs.iter().any(|input| {
+            input.fluid_subtype.is_some()
+                || callback.item_on_target.as_ref().is_some_and(|target| {
+                    target.alternatives.contains(&input.item)
+                        || target
+                            .ingredients
+                            .iter()
+                            .any(|ingredient| ingredient.item == input.item)
+                })
+        })
+        || (count != 0
             && (callback.trigger != Trigger::Use
                 || !callback.has_state()
                 || callback.is_read_only()

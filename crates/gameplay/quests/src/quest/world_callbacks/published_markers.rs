@@ -20,6 +20,7 @@ pub(super) fn needs_marker(callback: &Callback, published: &BTreeSet<String>) ->
         || !callback.present.is_empty()
         || !callback.required_travel.is_empty()
         || !callback.effects.carried_inputs.is_empty()
+        || !callback.effects.optional_carried_inputs.is_empty()
         || callback.effects.scene.is_some()
         || callback
             .effects

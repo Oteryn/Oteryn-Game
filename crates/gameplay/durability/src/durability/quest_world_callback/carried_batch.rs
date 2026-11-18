@@ -6,14 +6,14 @@ pub(super) async fn resolve(
     fence: CurrentCharacterGameplayFence,
     required: &oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount,
 ) -> Result<Option<Vec<Input>>, DurabilityError> {
-    let rows = sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.quantity>0 AND i.definition_family='Item' AND i.definition_production_key=$3 ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
+    // Each matched row contributes at least one unit. The requested quantity
+    // bounds the number of objects needed to distinguish success from absence.
+    let rows = sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.quantity>0 AND i.definition_family='Item' AND i.definition_production_key=$3 ORDER BY i.item_instance_id LIMIT $4 FOR UPDATE OF i")
         .bind(fence.character_id.as_bytes().as_slice())
         .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
         .bind(&required.item)
+        .bind(i64::from(required.count))
         .fetch_all(&mut **tx).await?;
-    if rows.len() > 500 {
-        return Ok(None);
-    }
     let mut remaining = required.count;
     let mut inputs = Vec::new();
     for row in rows {

@@ -58,12 +58,7 @@ fn scenario_case(
     let nomads_window = name.starts_with(super::super::qengine_m02_use::NAME);
     let m01b_explore = name.starts_with("m01b/");
     let ice_chakoya = name == super::super::qcx60_chakoya::NAME;
-    let ice_tools = matches!(
-        name,
-        super::super::qcx60_carried_tools::CURE_NAME
-            | super::super::qcx60_carried_tools::NAME
-            | super::super::qcx60_carried_tools::RETALIATION_NAME
-    );
+    let ice_tools = super::super::qcx60_carried_tools::matches_name(name);
     let ice_iskan = name == super::super::qcx62_iskan::NAME;
     let barbarian_sven = name == super::super::qcx62_sven::NAME;
     let qready_craft = name == super::super::qready1_crafting::NAME;

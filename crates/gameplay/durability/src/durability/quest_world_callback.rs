@@ -608,6 +608,7 @@ pub(super) async fn consume(
     if callback.offerings.is_empty()
         && callback.item_on_target.is_none()
         && callback.effects.carried_inputs.is_empty()
+        && callback.effects.optional_carried_inputs.is_empty()
     {
         return Ok(true);
     }
@@ -838,10 +839,25 @@ async fn consume_inputs(
     }
     // Distinct definitions prevent one instance satisfying multiple requirements.
     // Resolve every carried input before the shared BURN loop changes any item.
-    let mut carried = callback.effects.carried_inputs.iter().collect::<Vec<_>>();
-    carried.sort_by(|left, right| left.item.cmp(&right.item));
-    for required in carried {
+    let mut carried = callback
+        .effects
+        .carried_inputs
+        .iter()
+        .map(|input| (input, false))
+        .chain(
+            callback
+                .effects
+                .optional_carried_inputs
+                .iter()
+                .map(|input| (input, true)),
+        )
+        .collect::<Vec<_>>();
+    carried.sort_by(|(left, _), (right, _)| left.item.cmp(&right.item));
+    for (required, optional) in carried {
         let Some(resolved) = carried_batch::resolve(tx, fence, required).await? else {
+            if optional {
+                continue;
+            }
             return Ok(false);
         };
         for input in &resolved {

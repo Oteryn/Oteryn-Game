@@ -14,12 +14,7 @@ fn callback(name: &str) -> TestResult<Callback> {
     if name == super::qcx60_chakoya::NAME {
         return super::qcx60_chakoya::callback();
     }
-    if matches!(
-        name,
-        super::qcx60_carried_tools::NAME
-            | super::qcx60_carried_tools::CURE_NAME
-            | super::qcx60_carried_tools::RETALIATION_NAME
-    ) {
+    if super::qcx60_carried_tools::matches_name(name) {
         return super::qcx60_carried_tools::callback(name);
     }
     // The Stampede entry is an authored binding of the content catalogue.
