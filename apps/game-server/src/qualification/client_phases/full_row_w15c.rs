@@ -576,19 +576,24 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
     let check_leg = |name, from: TilePos, path: Vec<StepDirection>| -> TestResult<TilePos> {
         assert!(!path.is_empty(), "{name} must walk");
         let mut at = from;
+        let mut max_offset = (0, 0);
         for &direction in &path {
             at = destination(&world, at, direction).ok_or("leg has an invalid landing")?;
-            assert!(at.x.abs_diff(from.x) <= 160 && at.y.abs_diff(from.y) <= 160);
+            max_offset.0 = max_offset.0.max(at.x.abs_diff(from.x));
+            max_offset.1 = max_offset.1.max(at.y.abs_diff(from.y));
             assert!(
                 !world.facts().doors().blocks(at),
                 "{name} crossed a closed door at {at:?}"
             );
         }
+        assert!(max_offset.0 <= 160 && max_offset.1 <= 160);
         eprintln!(
-            "{name}: {from:?} -> {at:?}, {} steps, span {}x{}",
+            "{name}: {from:?} -> {at:?}, {} steps, span {}x{}, max offset {}x{}",
             path.len(),
             at.x.abs_diff(from.x),
-            at.y.abs_diff(from.y)
+            at.y.abs_diff(from.y),
+            max_offset.0,
+            max_offset.1
         );
         Ok(at)
     };
@@ -607,19 +612,21 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
     )?;
     assert_eq!(ramp, RAMP_FOOT);
     let approach = from_ramp(&world, grizzly)?;
-    let reached = check_leg(
-        "Ramp foot to Grizzly Adams, including replay",
-        ramp,
-        approach,
-    )?;
+    let reached = check_leg("Ramp foot to Grizzly Adams", ramp, approach)?;
     assert!(near(reached, grizzly));
+    let replay_start = check_leg(
+        "Grizzly Adams to replay logout tile",
+        reached,
+        route(&world, reached, |at| at == RAMP_FOOT).ok_or("logout ramp foot unreachable")?,
+    )?;
+    assert_eq!(replay_start, RAMP_FOOT);
     assert_eq!(
         check_leg(
-            "Grizzly Adams to replay logout tile",
-            reached,
-            route(&world, reached, |at| at == RAMP_FOOT).ok_or("logout ramp foot unreachable")?
+            "Fresh-admission approach to Grizzly Adams",
+            replay_start,
+            from_ramp(&world, grizzly)?
         )?,
-        RAMP_FOOT
+        reached
     );
     boarding_ladder_target(&world)?;
     check_leg(
