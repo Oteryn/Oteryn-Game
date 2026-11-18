@@ -371,15 +371,18 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
         let mut peer = if chest {
             let (_, peer) = super::super::grizzly_boss::vacancy::second_player(&owner, &deps, &h, origin).await?;
             let peer_fence = peer.item_fence.ok_or("second player's item fence")?;
-            h.root.initialize_admission_equipment(
-                &authority, &h.node, &peer_fence,
-                generation.identity().server_artifact_digest(), fresh.operation(),
-            ).await.map_err(debug)?;
             h.root.grant_starter_items(
                 &authority, &h.node, &peer_fence,
                 &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native),
                 &template,
             ).await.map_err(debug)?;
+            let has_backpack: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid)",
+            )
+            .bind(peer_fence.character_id.as_bytes().as_slice())
+            .fetch_one(&h.pool)
+            .await?;
+            assert!(has_backpack, "peer must have room to receive a chest reward");
             Some(peer)
         } else {
             None
