@@ -100,7 +100,7 @@ The table records the named local qualification steps.
 |---|---|
 | Quest-authoring checks | Passed on final inputs: full checks runner |
 | Quest-authoring unit-tests | Passed on final inputs: all 182 modules, 1464 tests, 8 existing skips |
-| Quest item-profile unit tests | All 24 passed in 535.43 seconds |
+| Quest item-profile unit tests | All 24 passed in 534.89 seconds |
 | Regenerated provider and NPC model | One new profile, no existing-profile changes/removals; NPC service-count test target passed |
 | Content-tree validation | Passed on final inputs: 19 domains, 39 systems, 100 nodes |
 | Fmt | Passed: cargo fmt --all after the final implementation |
@@ -108,14 +108,15 @@ The table records the named local qualification steps.
 | Clippy, durability | Passed: final all-target check with warnings denied after the custody fix |
 | Clippy, dispatch | Passed: final all-target/all-feature check with warnings denied; cross-mount error formatter fixed without allowances |
 | Clippy, server | Passed: final all-target check with warnings denied; one shared World fixture module, no lint allowances |
-| Full World regeneration | Passed with all default checks; second full regeneration left no diff; World pin unchanged |
+| Full World regeneration | Passed after merging main: all artifacts regenerated with every default check; main World pin unchanged |
 | No-URL guards and public schema | Passed on final source: 6 filtered tests in 0.11 seconds without the admin URL |
 | Full focused PG suite | Passed on final source: 6 tests, including 5 real PG cases, in 181.12 seconds; all requested assertions plus east control and whole stacks |
-| Quest source-cohort loader | Passed: focused owner-scope test in 9.66 seconds |
+| Quest source-cohort loader | Passed: focused owner-scope test in 7.86 seconds |
 | Pin verification | Passed: source-fresh release compiler `pin-check`; World digest `0676b1568f55a55fbe994f344a8e0c60debf766751d12849f56c19f60c93aae5`; command exit status 0 |
 
-Post-merge qualification is in progress: unit, item-profile and Clippy reruns
-remain active; PG, pin-check, authoring checks, content tree and fmt passed.
+Post-merge qualification is in progress: remaining Clippy reruns are active;
+PG, pin-check, authoring checks, all 1464 unit tests, all 24 item-profile tests,
+content tree, focused quest-loader test and fmt passed.
 No PR was created. Migration 2889 is used; capability
 542 and command/mechanic ordinal 6277 are unnecessary because the existing USE
 command and custody owner carry the new effect.
