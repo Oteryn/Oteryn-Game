@@ -36,6 +36,21 @@ fn countdown_capture_requires_the_first_valid_notice() {
     assert!(countdown_observed(0, Some((0, 1, 9, 5))));
 }
 
+fn countdown_verdict(warning_due: bool, observed: bool) -> &'static str {
+    match (warning_due, observed) {
+        (_, true) => "CAPTURED",
+        (true, false) => "FAIL",
+        (false, false) => "UNAVAILABLE",
+    }
+}
+
+#[test]
+fn countdown_absence_is_unavailable_only_outside_the_warning_window() {
+    assert_eq!(countdown_verdict(false, false), "UNAVAILABLE");
+    assert_eq!(countdown_verdict(true, false), "FAIL");
+    assert_eq!(countdown_verdict(true, true), "CAPTURED");
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0xfe).await?;
     if !client
@@ -83,6 +98,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "W05a_CHECK step=player-reset-boundary observed=local-ownership-refusal wire_submission=false command-and-sequence=unchanged countdown-and-position=unchanged",
     );
 
+    let root = crate::durability::DurabilityRoot::connect_test_runtime(clients.url)?;
+    let planned = root
+        .planned_world_reset(WorldId::decode(&clients.world)?)
+        .await?;
+    let warning_due = planned.is_some_and(|reset| {
+        let remaining = reset
+            .reset_at_unix_ms
+            .saturating_sub(reset.database_now_unix_ms);
+        (1..=345_000).contains(&remaining)
+    });
     let deadline = tokio::time::Instant::now() + Duration::from_secs(45);
     verdict::Harness::global().bounded_wait(deadline, "reset-countdown");
     let notice = tokio::time::timeout_at(deadline, async {
@@ -100,8 +125,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             client.service_liveness(Duration::from_secs(7)).await?;
         }
     })
-    .await
-    .map_err(|_| "step=countdown no domain-40 notice within 45s")??;
+    .await;
+    let notice = match notice {
+        Ok(result) => result?,
+        Err(elapsed) if countdown_verdict(warning_due, false) == "FAIL" => {
+            return Err(elapsed.into());
+        }
+        Err(_) => {
+            let expected = format!(
+                "snapshot_revision={}\ncountdown=absent\n",
+                snapshot.revision
+            );
+            capture("w05a-snapshot.bin", &snapshot.payload);
+            capture("w05a-expected.txt", expected.as_bytes());
+            return Ok("snapshot=validated;countdown=unavailable-outside-warning-window".into());
+        }
+    };
     if !countdown_observed(
         snapshot.revision,
         Some((

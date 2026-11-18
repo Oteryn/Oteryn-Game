@@ -678,6 +678,7 @@ fn every_core_rejection_maps_to_the_section_3_disposition() {
         ),
         (CastRejection::WeaponRequired, D::Rejected),
         (CastRejection::NoChainTarget, D::Rejected),
+        (CastRejection::NoPartyMembers, D::TargetRequired),
     ];
     for (rejection, expected) in cases {
         assert_eq!(disposition(&rejection), expected, "{rejection:?}");

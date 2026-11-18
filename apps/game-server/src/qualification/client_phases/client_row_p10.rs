@@ -38,6 +38,23 @@ fn resting_projection_requires_an_enabled_bonus_inside_the_area() {
     assert!(resting_projection_observed(true, 2, true));
 }
 
+fn resting_mana_observed(
+    food_ms: i32,
+    equipment_free: bool,
+    before: u32,
+    after: u32,
+    max: u32,
+) -> bool {
+    food_ms == 0 && equipment_free && after > before && after <= max
+}
+
+#[test]
+fn resting_mana_probe_excludes_food_and_equipment_credits() {
+    assert!(!resting_mana_observed(120_000, true, 10, 11, 100));
+    assert!(!resting_mana_observed(0, false, 10, 11, 100));
+    assert!(resting_mana_observed(0, true, 10, 11, 100));
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     use oteryn_protocol_oteryn::{
         actor_spell as spell, actor_spell_catalog as catalogue, rest_status,
@@ -117,6 +134,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
                 .is_some_and(|spell| !spell.aggressive && !spell.takes_target())
     });
     let use_soul = soul_spell.is_some();
+    let equipment_free = client
+        .inventory()
+        .is_some_and(|inventory| inventory.equipment.is_empty());
+    if !use_soul && (status.food_remaining_ms != 0 || !equipment_free) {
+        return Err(format!("step=resting mana probe requires a hungry character without equipped regeneration: {status:?}").into());
+    }
     let learned = soul_spell
         .or_else(|| {
             spells.iter().find(|entry| {
@@ -155,7 +178,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
                     && if use_soul {
                         resting_soul_observed(spent.soul, delta.value.soul)
                     } else {
-                        delta.value.mana > spent.mana && delta.value.mana <= spent.max_mana
+                        resting_mana_observed(
+                            status.food_remaining_ms,
+                            equipment_free,
+                            spent.mana,
+                            delta.value.mana,
+                            spent.max_mana,
+                        )
                     }
                 {
                     return Ok::<_, oteryn_dev_client::DevClientError>(delta.value);
@@ -164,13 +193,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             client.service_liveness(Duration::from_millis(100)).await?;
         }
     })
-    .await
-    .map_err(|_| {
-        format!(
-            "step=resting no {stat} credit after debit; streak={}",
-            wall.streak
-        )
-    })??;
+    .await??;
     for (name, vitals) in [("p10-spent.bin", spent), ("p10-restored.bin", restored)] {
         capture(
             name,

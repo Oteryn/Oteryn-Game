@@ -71,6 +71,51 @@ fn exiva_restoration_requires_receipt_and_original_list() {
     assert!(settings_restored(&[1], true));
 }
 
+fn exiva_membership_changes(current: &[[u8; 16]], desired: &[[u8; 16]]) -> Vec<(u8, [u8; 16])> {
+    current
+        .iter()
+        .filter(|id| !desired.contains(id))
+        .map(|id| (2, *id))
+        .chain(
+            desired
+                .iter()
+                .filter(|id| !current.contains(id))
+                .map(|id| (1, *id)),
+        )
+        .collect()
+}
+
+#[test]
+fn exiva_nonempty_fixture_can_be_cleared_and_restored() {
+    let initial = [[1; 16], [2; 16]];
+    assert_eq!(
+        exiva_membership_changes(&initial, &[]),
+        [(2, initial[0]), (2, initial[1])]
+    );
+    assert_eq!(
+        exiva_membership_changes(&[[3; 16]], &initial),
+        [(2, [3; 16]), (1, initial[0]), (1, initial[1])]
+    );
+}
+
+async fn replace_members(
+    client: &mut DevClientSession,
+    current: &PlayerList,
+    desired: &PlayerList,
+) -> TestResult {
+    let ids = |list: &PlayerList| list.players.iter().map(|(id, _)| *id).collect::<Vec<_>>();
+    for (operation, id) in exiva_membership_changes(&ids(current), &ids(desired)) {
+        let mut payload = vec![operation];
+        payload.extend(id);
+        if accepted(client, &payload).await? != [1] {
+            return Err(
+                format!("Exiva membership mutation lacked receipt: {operation} {id:?}").into(),
+            );
+        }
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut caster = connect_character(clients, 0x43, 1).await?;
     let caster_name = own_name(&caster)?;
@@ -78,63 +123,103 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     drop(caster);
     let mut target = connect_character(clients, 0x42, 0).await?;
     let (_, initial) = list(&mut target).await?;
+    let mut probe = (clients.characters[1], caster_name);
+    if initial.players.len() == 100 && !initial.players.iter().any(|(id, _)| *id == probe.0) {
+        use sqlx::Connection as _;
+        let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+        let ids: Vec<Vec<u8>> = initial.players.iter().map(|(id, _)| id.to_vec()).collect();
+        let active: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(character_id) FROM game_character_roots WHERE world_id=encode($1,'hex')::uuid AND lifecycle=1 AND uuid_send(character_id)=ANY($2::bytea[]) ORDER BY character_id LIMIT 1")
+            .bind(clients.world.as_slice()).bind(&ids).fetch_one(&mut connection).await?;
+        probe = initial
+            .players
+            .iter()
+            .find(|(id, _)| id.as_slice() == active)
+            .cloned()
+            .ok_or("active whitelist member absent")?;
+    }
+    let mut baseline = initial.clone();
+    baseline.players.retain(|(id, _)| *id != probe.0);
+    let observed = tokio::time::timeout(
+        Duration::from_secs(90),
+        observe_settings(&mut target, &initial, &baseline, &probe),
+    )
+    .await;
+    // Attempt to restore the mode even if reading or repairing the list fails.
+    let receipt = accepted(&mut target, &[0, initial.modes]).await?;
+    let (_, current) = list(&mut target).await?;
+    replace_members(&mut target, &current, &initial).await?;
+    let (_, restored) = list(&mut target).await?;
+    if !settings_restored(&receipt, restored == initial) {
+        return Err(format!("Exiva restoration unconfirmed: initial={initial:?}; restored={restored:?}; receipt={receipt:?}").into());
+    }
+    let expected = observed??;
+    capture("p17-expected.txt", expected.as_bytes());
+    let _ = target.session_mut().logout().await?;
+    Ok(expected.replace('\n', ";").replace(' ', "_"))
+}
 
-    if accepted(&mut target, &[0, 0]).await? != [1] {
+async fn observe_settings(
+    target: &mut DevClientSession,
+    initial: &PlayerList,
+    baseline: &PlayerList,
+    (probe_id, probe_name): &([u8; 16], String),
+) -> TestResult<String> {
+    replace_members(target, initial, baseline).await?;
+
+    if accepted(target, &[0, 0]).await? != [1] {
         return Err("SetModes(0) lacked the accepted receipt".into());
     }
-    let (denied_bytes, denied) = list(&mut target).await?;
-    if denied.modes != 0 || !denied.players.is_empty() {
+    let (denied_bytes, denied) = list(target).await?;
+    if denied.modes != 0 || denied.players != baseline.players {
         return Err(format!("deny-all List mismatch: {denied:?}").into());
     }
     capture("p17-denied.bin", &denied_bytes);
 
     let mut add = vec![6];
-    add.extend(caster_name.as_bytes());
-    if accepted(&mut target, &add).await? != [1] {
+    add.extend(probe_name.as_bytes());
+    if accepted(target, &add).await? != [1] {
         return Err("AddName lacked the accepted receipt".into());
     }
-    let (allowed_bytes, allowed) = list(&mut target).await?;
-    let [(caster_id, listed_name)] = allowed.players.as_slice() else {
-        return Err(format!("allow List mismatch: {allowed:?}").into());
-    };
-    if allowed.modes != 2 || listed_name != &caster_name {
+    if accepted(target, &[0, 2]).await? != [1] {
+        return Err("SetModes(player whitelist) lacked the accepted receipt".into());
+    }
+    let (allowed_bytes, allowed) = list(target).await?;
+    if allowed.modes != 2
+        || !allowed.players.contains(&(*probe_id, probe_name.clone()))
+        || allowed
+            .players
+            .iter()
+            .filter(|(id, _)| id != probe_id)
+            .ne(baseline.players.iter())
+    {
         return Err(format!("allow List mismatch: {allowed:?}").into());
     }
     capture("p17-allowed.bin", &allowed_bytes);
 
-    let (status, refused) = settings(&mut target, &[0, 32]).await?;
+    let (status, refused) = settings(target, &[0, 32]).await?;
     if status != CommandStatus::Rejected || !refused.is_empty() {
         return Err(format!("malformed SetModes: status={status:?} payload={refused:?}").into());
     }
-    let (after_bytes, _) = list(&mut target).await?;
+    let (after_bytes, _) = list(target).await?;
     if after_bytes != allowed_bytes {
         return Err("malformed SetModes changed the allow list".into());
     }
 
     let mut remove = vec![2];
-    remove.extend(caster_id);
-    if accepted(&mut target, &remove).await? != [1] {
+    remove.extend(probe_id);
+    if accepted(target, &remove).await? != [1] {
         return Err("RemovePlayer lacked the accepted receipt".into());
     }
-    let (removed_bytes, removed) = list(&mut target).await?;
-    if removed.modes != 2 || !removed.players.is_empty() {
+    let (removed_bytes, removed) = list(target).await?;
+    if removed.modes != 2 || removed.players != baseline.players {
         return Err(format!("removal List mismatch: {removed:?}").into());
     }
     capture("p17-removed.bin", &removed_bytes);
-    // Leave the target's permissions as found.
-    let receipt = accepted(&mut target, &[0, initial.modes]).await?;
-    let (_, restored) = list(&mut target).await?;
-    if !settings_restored(&receipt, restored == initial) {
-        return Err(format!("Exiva restoration unconfirmed: initial={initial:?}; restored={restored:?}; receipt={receipt:?}").into());
-    }
-    let id_hex: String = caster_id.iter().map(|byte| format!("{byte:02x}")).collect();
-    let expected = format!(
-        "denied_modes={}\nallowed_modes={}\nplayer={id_hex} {caster_name}\nremoved_modes={}\nrefused_status=Rejected\n",
-        denied.modes, allowed.modes, removed.modes
-    );
-    capture("p17-expected.txt", expected.as_bytes());
-    let _ = target.session_mut().logout().await?;
-    Ok(expected.replace('\n', ";").replace(' ', "_"))
+    let id_hex: String = probe_id.iter().map(|byte| format!("{byte:02x}")).collect();
+    Ok(format!(
+        "denied_modes={}\nallowed_modes={}\nplayer={id_hex} {probe_name}\nremoved_modes={}\nrefused_status=Rejected\n",
+        denied.modes, allowed.modes, removed.modes,
+    ))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {

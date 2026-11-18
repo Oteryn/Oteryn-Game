@@ -18,15 +18,26 @@ fn capture(name: &str, bytes: &[u8]) {
     }
 }
 
-fn level_refusal(refused: bool, level: bool) -> bool {
-    refused && level
+fn remote_refusal(status: CommandStatus, reply: &wire::BossActivityReply) -> bool {
+    status == CommandStatus::Rejected
+        && *reply == wire::BossActivityReply::Refused(wire::BossActivityRefusal::Position)
 }
 
 #[test]
-fn underlevel_boss_lever_requires_level_refusal() {
-    assert!(!level_refusal(false, false));
-    assert!(!level_refusal(true, false));
-    assert!(level_refusal(true, true));
+fn remote_soul_war_lever_is_checked_before_level() {
+    use wire::{BossActivityRefusal as Refusal, BossActivityReply::Refused};
+    assert!(!remote_refusal(
+        CommandStatus::Accepted,
+        &Refused(Refusal::Position)
+    ));
+    assert!(!remote_refusal(
+        CommandStatus::Rejected,
+        &Refused(Refusal::Level)
+    ));
+    assert!(remote_refusal(
+        CommandStatus::Rejected,
+        &Refused(Refusal::Position)
+    ));
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -51,12 +62,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .await?;
     let reply = wire::decode_boss_activity_reply(&lever.payload)
         .map_err(|error| format!("lever reply malformed: {error:?} status={:?}", lever.status))?;
-    if !level_refusal(
-        lever.status == CommandStatus::Rejected,
-        reply == wire::BossActivityReply::Refused(wire::BossActivityRefusal::Level),
-    ) {
+    if !remote_refusal(lever.status, &reply) {
         return Err(format!(
-            "lever did not return the expected Level refusal: status={:?} reply={reply:?}",
+            "lever did not return the expected remote Position refusal: status={:?} reply={reply:?}",
             lever.status
         )
         .into());

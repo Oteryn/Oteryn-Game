@@ -88,14 +88,39 @@ fn party_mana_paid(before: u32, after: u32, expected: u32) -> bool {
     before.checked_sub(expected) == Some(after)
 }
 
-fn solo_gate_proven(gate_refusal: bool, cast: bool, unchanged: bool) -> bool {
-    gate_refusal && !cast && unchanged
+fn solo_gate_proven(
+    disposition: casts::SpellCastDisposition,
+    status: CommandStatus,
+    unchanged: bool,
+) -> bool {
+    disposition == casts::SpellCastDisposition::TargetRequired
+        && status == CommandStatus::Accepted
+        && unchanged
 }
 
 #[test]
 fn solo_gate_rejects_cooldown_and_unrelated_refusals() {
-    assert!(!solo_gate_proven(false, false, true));
-    assert!(solo_gate_proven(true, false, true));
+    use casts::SpellCastDisposition as D;
+    assert!(!solo_gate_proven(
+        D::CoolingDown,
+        CommandStatus::Accepted,
+        true
+    ));
+    assert!(!solo_gate_proven(
+        D::Rejected,
+        CommandStatus::Rejected,
+        true
+    ));
+    assert!(!solo_gate_proven(
+        D::TargetRequired,
+        CommandStatus::Accepted,
+        false
+    ));
+    assert!(solo_gate_proven(
+        D::TargetRequired,
+        CommandStatus::Accepted,
+        true
+    ));
 }
 
 #[test]
@@ -273,9 +298,8 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
     // The party gate: the same spell cast while solo must not be cast.
     let (vitals, solo) = cast_through_cooldown(&mut caster, &mut peer, index).await?;
     if !solo_gate_proven(
-        solo.disposition == casts::SpellCastDisposition::Rejected
-            && solo.status == CommandStatus::Rejected,
-        solo.disposition == casts::SpellCastDisposition::Cast,
+        solo.disposition,
+        solo.status,
         caster.actor_vitals().copied() == Some(vitals),
     ) {
         return Err(format!(

@@ -121,19 +121,22 @@ fn settled_target(
     kills: usize,
     matching_xp: bool,
     matching_loot: bool,
+    exact_death: bool,
 ) -> bool {
-    target_removed && kills == 1 && matching_xp && matching_loot
+    target_removed && exact_death && kills == 1 && matching_xp && matching_loot
 }
 
 #[test]
 fn analyser_settlement_requires_target_death_xp_and_loot() {
-    assert!(!settled_target(false, 1, true, true));
-    assert!(!settled_target(true, 1, false, true));
-    assert!(!settled_target(true, 1, true, false));
-    assert!(settled_target(true, 1, true, true));
+    assert!(!settled_target(false, 1, true, true, true));
+    assert!(!settled_target(true, 1, false, true, true));
+    assert!(!settled_target(true, 1, true, false, true));
+    assert!(!settled_target(true, 1, true, true, false));
+    assert!(settled_target(true, 1, true, true, true));
 }
 
 async fn fight(
+    clients: &SeamClients<'_>,
     client: &mut DevClientSession,
     selected: bool,
     race_id: std::num::NonZeroU32,
@@ -160,6 +163,7 @@ async fn fight(
         .copied()
         .ok_or("no adjacent creature after travel")?;
     client.take_events();
+    let mut death = super::client_row_w22a::DeathProbe::start(clients).await?;
     let attack = client
         .session_mut()
         .attack_target(Some(&target.entity))
@@ -210,11 +214,15 @@ async fn fight(
             AnalyserFact::KillLoot { race, corpse_items, .. }
             if Some(*race) == kill && !corpse_items.is_empty())
         });
+        let exact_death = target_removed
+            && matching_loot
+            && death.corpse_identity(target.entity, true).await?.is_some();
         if settled_target(
             target_removed,
             usize::from(kill.is_some()),
             matching_xp,
             matching_loot,
+            exact_death,
         ) {
             return Ok((facts, events));
         }
@@ -262,7 +270,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let attribution_selected = client
         .selected_capabilities()
         .contains(&oteryn_protocol_oteryn::analyser::CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1);
-    let (facts, events) = fight(&mut client, attribution_selected, race_id).await?;
+    let (facts, events) = fight(clients, &mut client, attribution_selected, race_id).await?;
     let kills = facts
         .iter()
         .filter(|fact| matches!(fact, AnalyserFact::Kill { .. }))

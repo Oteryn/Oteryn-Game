@@ -19,16 +19,22 @@ fn capture(name: &str, bytes: &[u8]) {
     }
 }
 
-fn spider_damage(before: u32, after: u32, matching_hit: Option<u32>) -> bool {
-    after > 0 && after < before && before.checked_sub(after) == matching_hit
+fn spider_damage(
+    before: u32,
+    after: u32,
+    matching_hit: Option<u32>,
+    competing_damage: bool,
+) -> bool {
+    !competing_damage && after > 0 && after < before && before.checked_sub(after) == matching_hit
 }
 
 #[test]
 fn spider_vitals_require_the_attributed_health_debit() {
-    assert!(!spider_damage(30, 25, None));
-    assert!(!spider_damage(30, 25, Some(3)));
-    assert!(!spider_damage(30, 0, Some(30)));
-    assert!(spider_damage(30, 25, Some(5)));
+    assert!(!spider_damage(30, 25, None, false));
+    assert!(!spider_damage(30, 25, Some(3), false));
+    assert!(!spider_damage(30, 0, Some(30), false));
+    assert!(spider_damage(30, 25, Some(5), false));
+    assert!(!spider_damage(30, 25, Some(5), true));
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -85,35 +91,46 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .ok_or("vitals after attack cancel absent")?;
     let mut debit = None;
     let mut hit = None;
+    let mut competing_damage = false;
     let damaged = 'wait: loop {
         client.service_liveness(Duration::from_millis(50)).await?;
         for event in client.take_events() {
             match event {
                 SessionEvent::ActorVitals(delta) => {
                     if delta.value.health < previous.health {
-                        debit = Some((tokio::time::Instant::now(), previous.health, delta.value));
+                        competing_damage |= debit.is_some();
+                        debit = Some((previous.health, delta.value));
                     }
                     previous = delta.value;
                 }
                 SessionEvent::AnalyserAttributedFacts(delta) => {
                     for attributed in delta.value {
                         if let AnalyserFact::DamageInput { value, element, .. } = attributed.fact {
-                            hit = (attributed.attacker == Some(spider)
-                                && element == DamageElement::Physical)
-                                .then_some((tokio::time::Instant::now(), value.get()));
+                            if attributed.attacker == Some(spider)
+                                && element == DamageElement::Physical
+                            {
+                                competing_damage |= hit.replace(value.get()).is_some();
+                            } else {
+                                competing_damage = true;
+                            }
+                        } else if matches!(attributed.fact, AnalyserFact::Dropped(_)) {
+                            competing_damage = true;
                         }
                     }
                 }
                 _ => {}
             }
-            if let (Some((debit_at, health, vitals)), Some((hit_at, amount))) = (debit, hit)
-                && debit_at.max(hit_at).duration_since(debit_at.min(hit_at))
-                    <= Duration::from_secs(1)
-                && spider_damage(health, vitals.health, Some(amount))
-                && vitals.health < before.health
-            {
-                break 'wait vitals;
-            }
+        }
+        if competing_damage {
+            return Err("step=spider competing damage or ambiguous vitals in observation".into());
+        }
+        // DamageInput is emitted from the committed hit. Compare the entire
+        // observation drain and reject an ambiguous second hit or debit.
+        if let (Some((health, vitals)), Some(amount)) = (debit, hit)
+            && spider_damage(health, vitals.health, Some(amount), competing_damage)
+            && vitals.health < before.health
+        {
+            break 'wait vitals;
         }
         if tokio::time::Instant::now() >= deadline {
             return Err("W01c client capture: no attributed spider damage delta in 45s".into());

@@ -44,9 +44,92 @@ fn hazard_select_must_change_to_the_requested_level() {
     assert!(selected_hazard(&[2, 2], &[2, 1], 1));
 }
 
+fn needs_second_hazard_level(state: &[u8]) -> bool {
+    state == [1, 1]
+}
+
+#[test]
+fn isolated_hazard_fixture_requires_its_own_second_level() {
+    assert!(needs_second_hazard_level(&[1, 1]));
+    assert!(!needs_second_hazard_level(&[2, 1]));
+    assert!(!needs_second_hazard_level(&[]));
+}
+
+// Use the disposable node-boot database and the same checked revision chain as
+// the PostgreSQL Hazard fixture. The selection itself still uses the native wire.
+async fn seed_second_level(url: &str, character: &[u8]) -> TestResult {
+    use sqlx::{Connection as _, PgConnection};
+    let mut connection = PgConnection::connect(url).await?;
+    let mut tx = connection.begin().await?;
+    sqlx::query(
+        "SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE",
+    )
+    .bind(character)
+    .fetch_one(&mut *tx)
+    .await?;
+    sqlx::query("INSERT INTO game_character_hazard_receipts(character_id,command_session_id,connection_generation,command_id,selected_requested,result,original_character_revision,committed_character_revision,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision) SELECT character_id,game_character_uuid_v7(),1,1,1,decode('0201','hex'),character_revision,character_revision+1,level,level,total_experience,total_experience,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
+        .bind(character).execute(&mut *tx).await?;
+    for statement in [
+        "UPDATE game_character_roots SET character_revision=character_revision+1 WHERE character_id=encode($1,'hex')::uuid",
+        "UPDATE game_character_progression_state SET character_revision=character_revision+1 WHERE character_id=encode($1,'hex')::uuid",
+        "UPDATE game_character_hazard SET unlocked=2 WHERE character_id=encode($1,'hex')::uuid AND unlocked=1 AND selected=1",
+    ] {
+        if sqlx::query(statement)
+            .bind(character)
+            .execute(&mut *tx)
+            .await?
+            .rows_affected()
+            != 1
+        {
+            return Err("Hazard fixture predecessor changed".into());
+        }
+    }
+    tx.commit().await?;
+    Ok(())
+}
+
+#[test]
+fn isolated_hazard_fixture_commits_through_the_revision_chain() -> TestResult {
+    use crate::bestiary_postgres_harness::{Harness, configured_admin, id, runtime};
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async {
+        let h = Harness::create(admin, "qhazardseed", true).await?;
+        let probe = async {
+            let character = id(41);
+            sqlx::query("INSERT INTO game_character_hazard(character_id) VALUES(encode($1,'hex')::uuid)")
+                .bind(character.as_slice()).execute(&h.pool).await?;
+            seed_second_level(&h.database.url, &character).await?;
+            let state: (i16, i16, String) = sqlx::query_as("SELECT unlocked,selected,character_revision::text FROM game_character_hazard JOIN game_character_roots USING(character_id) WHERE character_id=encode($1,'hex')::uuid")
+                .bind(character.as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(state, (2, 1, "2".into()));
+            Ok::<_, Box<dyn std::error::Error>>(())
+        }.await;
+        h.cleanup().await?;
+        probe
+    })
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0x05).await?;
     let mut query = hazard(&mut client, &[]).await?;
+    if query.status == CommandStatus::Accepted && needs_second_hazard_level(&query.payload) {
+        let logout = client.session_mut().logout().await?;
+        if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("Hazard fixture setup logout: {logout:?}").into());
+        }
+        drop(client);
+        seed_second_level(clients.url, clients.characters[1].as_slice()).await?;
+        client = connect_world(clients, 0x06).await?;
+        query = hazard(&mut client, &[]).await?;
+        if query.status != CommandStatus::Accepted || query.payload != [2, 1] {
+            return Err(format!(
+                "Hazard fixture reload did not expose the seeded level: {query:?}"
+            )
+            .into());
+        }
+    }
     let [unlocked, current] = query.payload.as_slice() else {
         return Err(format!("hazard query malformed: {query:?}").into());
     };

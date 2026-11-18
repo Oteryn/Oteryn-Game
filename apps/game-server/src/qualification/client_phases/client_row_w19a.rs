@@ -73,6 +73,18 @@ fn surprise_bag_use_requires_exact_source_and_allowed_reward_count() {
     assert!(exact_bag_outcome(true, 2, 1, 2));
 }
 
+fn only_plain_use_committed(refused_receipt: bool, plain_receipt: bool) -> bool {
+    !refused_receipt && plain_receipt
+}
+
+#[test]
+fn bag_custody_must_be_bound_to_the_plain_use_command() {
+    assert!(!only_plain_use_committed(true, false));
+    assert!(!only_plain_use_committed(true, true));
+    assert!(!only_plain_use_committed(false, false));
+    assert!(only_plain_use_committed(false, true));
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_character(clients, 0x8f, 1).await?;
     let index = provisioning::item_index()?;
@@ -119,6 +131,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     })
     .map_err(|error| format!("use-with encode: {error:?}"))?;
     client.take_events();
+    let refused_id = client.next_command_id();
     let refused = client.session_mut().world_context_use(&payload).await?;
     let (detail, _) =
         oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(&refused.payload)
@@ -142,6 +155,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .into());
     }
 
+    let plain_id = client.next_command_id();
     let reply = client.use_item(bag.handle).await?;
     if reply.status != CommandStatus::Accepted
         || reply.disposition != use_wire::UseDisposition::Committed
@@ -149,6 +163,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("step=use reply={reply:?}").into());
     }
     let after = wait_inventory(&mut client, reply.result_server_sequence, &before).await?;
+    use sqlx::Connection as _;
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let receipts: Vec<String> = sqlx::query_scalar(
+        "SELECT command_id::text FROM game_item_craft_records          WHERE game_session_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid          AND command_id IN ($3::text::numeric, $4::text::numeric) AND recipe LIKE 'oteryn:event-container.%'",
+    )
+    .bind(client.join_snapshot().game_session_id.as_bytes().as_slice())
+    .bind(clients.characters[1].as_slice())
+    .bind(refused_id.to_string())
+    .bind(plain_id.to_string())
+    .fetch_all(&mut connection)
+    .await?;
+    if !only_plain_use_committed(
+        receipts.contains(&refused_id.to_string()),
+        receipts.contains(&plain_id.to_string()),
+    ) {
+        return Err(format!("step=use durable receipt mismatch: refused={refused_id}, plain={plain_id}, receipts={receipts:?}").into());
+    }
     let held_after = units(&after);
     let changed: Vec<u32> = held_before
         .keys()

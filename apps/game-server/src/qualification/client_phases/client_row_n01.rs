@@ -115,18 +115,61 @@ fn house_bid_and_acl_require_authoritative_rereads() {
     assert!(acl_visible(2, 2, true));
 }
 
+fn separate_house_authorities(bid_house: &str, acl_house: &str, owns_acl: bool) -> bool {
+    owns_acl && bid_house != acl_house
+}
+
+#[test]
+fn auction_bid_does_not_supply_acl_ownership() {
+    assert!(!separate_house_authorities("auction", "auction", false));
+    assert!(!separate_house_authorities("auction", "other", false));
+    assert!(separate_house_authorities("auction", "owned", true));
+}
+
+async fn seed_acl_owner(
+    clients: &SeamClients<'_>,
+    visible: &[String],
+    bid_house: &str,
+) -> TestResult<String> {
+    use sqlx::{Connection as _, PgConnection};
+    let world = clients.world.as_slice();
+    let owner = clients.characters[1].as_slice();
+    let mut connection = PgConnection::connect(clients.url).await?;
+    let mut tx = connection.begin().await?;
+    let (key, owned): (String, bool) = sqlx::query_as(
+        "SELECT house_key, COALESCE(owner_character_id=encode($2,'hex')::uuid,false) AS owned          FROM game_house_properties WHERE world_id=encode($1,'hex')::uuid          AND house_key<>$3 AND house_key=ANY($4::text[]) AND kind='private_house'          AND (owner_character_id=encode($2,'hex')::uuid OR (state=1 AND owner_character_id IS NULL))          ORDER BY owned DESC, house_key LIMIT 1 FOR UPDATE",
+    )
+    .bind(world).bind(owner).bind(bid_house).bind(visible).fetch_one(&mut *tx).await?;
+    if !owned {
+        sqlx::query("WITH property AS (UPDATE game_house_properties p SET state=3,owner_character_id=r.character_id,owner_account_id=r.account_id,revision=p.revision+1,ownership_generation=p.ownership_generation+1,acquisition_receipt_ref=game_character_uuid_v7(),paid_until=statement_timestamp()+interval '30 days' FROM game_character_roots r WHERE p.world_id=encode($1,'hex')::uuid AND p.house_key=$2 AND p.state=1 AND r.character_id=encode($3,'hex')::uuid AND r.world_id=p.world_id RETURNING p.*), slot AS (INSERT INTO game_account_housing_slots(account_id,world_id,house_key) SELECT owner_account_id,world_id,house_key FROM property) UPDATE game_house_ownership a SET owner_character_id=p.owner_character_id,ownership_revision=p.ownership_generation,acquisition_receipt_ref=p.acquisition_receipt_ref FROM property p WHERE a.world_id=p.world_id AND a.house_key=p.house_key")
+            .bind(world).bind(&key).bind(owner).execute(&mut *tx).await?;
+    }
+    let owns: bool = sqlx::query_scalar("SELECT owner_character_id=encode($3,'hex')::uuid FROM game_house_properties WHERE world_id=encode($1,'hex')::uuid AND house_key=$2")
+        .bind(world).bind(&key).bind(owner).fetch_one(&mut *tx).await?;
+    if !separate_house_authorities(bid_house, &key, owns) {
+        return Err("auction and owner ACL fixtures are not distinct".into());
+    }
+    tx.commit().await?;
+    Ok(key)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world_id = WorldId::decode(&clients.world)?;
     let world = load_world(bytes, &pin, world_id, ChannelId::decode(&clients.channel)?)?;
     let world_bytes = *world_id.as_bytes();
-    // Character 0 owns the house; S05 uses character 1 and the first private house of the page.
+    // Separate Accounts bid and own so the ACL probe never depends on settlement.
     let mut client = connect_character(clients, 0xab, 0).await?;
     let (initial, _) = first_page(&mut client, world_bytes).await?;
     let from = tile(client.world_spatial().actor_position)?;
     let mut chosen = None;
-    for row in initial.rows.iter().rev().filter(|row| row.kind == 1) {
+    for row in initial
+        .rows
+        .iter()
+        .rev()
+        .filter(|row| row.kind == 1 && matches!(row.state, 1 | 2) && !row.owned)
+    {
         let at = entrance(&row.house)?;
         if let Some(path) = route(world, from, |candidate| candidate == at) {
             chosen = Some((row.clone(), path));
@@ -163,7 +206,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .into());
     }
 
-    let (page, page_bytes) = first_page(&mut client, world_bytes).await?;
+    let (page, _) = first_page(&mut client, world_bytes).await?;
     let current = page
         .rows
         .iter()
@@ -175,8 +218,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         )
         .into());
     }
-    let guest = clients.characters[1];
-    let previous_guests = read_guests(&mut client, world_bytes, &private.house).await?;
+    let visible: Vec<_> = page.rows.iter().map(|row| row.house.clone()).collect();
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("bidder logout refused: {logout:?}").into());
+    }
+    drop(client);
+    let acl_house = seed_acl_owner(clients, &visible, &private.house).await?;
+    let mut client = connect_character(clients, 0xac, 1).await?;
+    let (page, page_bytes) = first_page(&mut client, world_bytes).await?;
+    let current = page
+        .rows
+        .iter()
+        .find(|row| row.house == acl_house && row.owned)
+        .ok_or("owner ACL house missing from the first page")?;
+    let guest = clients.characters[0];
+    let previous_guests = read_guests(&mut client, world_bytes, &acl_house).await?;
     if previous_guests.revision != current.acl_revision || previous_guests.members == [guest] {
         return Err(
             format!("guest ACL fixture cannot demonstrate a write: {previous_guests:?}").into(),
@@ -184,7 +241,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let acl = house::mutation(
         world_bytes,
-        &private.house,
+        &acl_house,
         current.acl_revision,
         &house::Action::Guests(vec![guest]),
     )
@@ -206,7 +263,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("stale reply d={stale_disposition}").into());
     }
 
-    let guests = read_guests(&mut client, world_bytes, &private.house).await?;
+    let guests = read_guests(&mut client, world_bytes, &acl_house).await?;
     if !acl_visible(acl_revision, guests.revision, guests.members == [guest]) {
         return Err(format!("guest ACL write not visible: {guests:?}").into());
     }
@@ -214,7 +271,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "world={}\nhouse={}\nmember={}\npage_acl_revision={}\nacl_disposition={acl_disposition}\n\
          acl_revision={acl_revision}\nstale_disposition={stale_disposition}\n",
         hex(&world_bytes),
-        private.house,
+        acl_house,
         hex(&guest),
         current.acl_revision,
     );
@@ -226,7 +283,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let _ = client.session_mut().logout().await;
     Ok(format!(
         "house={}|acl_revision={}->{acl_revision}|stale={stale_disposition}",
-        private.house, current.acl_revision
+        acl_house, current.acl_revision
     ))
 }
 

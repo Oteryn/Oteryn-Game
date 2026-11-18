@@ -3,6 +3,7 @@
 //! `crates/client-ui/src/features/0152-item-forge`.
 use super::*;
 use oteryn_dev_client::DevClientSession;
+use oteryn_gameplay_domain::domain::forge_dust::{DustLimit, ForgeDustError};
 use oteryn_protocol_oteryn::item_forge::{
     CAPABILITY_ITEM_FORGE_V1, COMMAND_TYPE_ITEM_FORGE, Operation, Request,
 };
@@ -81,12 +82,19 @@ fn forge_outcome(operation: &str, succeeded: bool, applied: bool, reason: &str) 
         (operation, succeeded, applied, reason),
         ("fusion", false, false, "WRONG_ITEMS")
             | ("dust_to_slivers", false, false, "INSUFFICIENT_DUST")
-            | ("dust_limit", true, true, "")
+            | ("dust_limit", false, false, "INSUFFICIENT_DUST")
     )
 }
 
 #[test]
 fn forge_requires_the_named_business_outcome() {
+    assert!(forge_outcome(
+        "dust_limit",
+        false,
+        false,
+        "INSUFFICIENT_DUST"
+    ));
+    assert!(!forge_outcome("dust_limit", true, true, ""));
     assert!(!forge_outcome("fusion", true, true, ""));
     assert!(!forge_outcome(
         "dust_to_slivers",
@@ -102,10 +110,22 @@ fn forge_requires_the_named_business_outcome() {
     ));
 }
 
+async fn dust(
+    connection: &mut sqlx::PgConnection,
+    clients: &SeamClients<'_>,
+) -> TestResult<(u32, u16)> {
+    let row: Option<(i64, i16)> = sqlx::query_as("SELECT balance, dust_limit FROM game_character_forge_dust WHERE character_id=encode($1,'hex')::uuid")
+        .bind(clients.characters[1].as_slice()).fetch_optional(connection).await?;
+    let (balance, limit) = row.unwrap_or((0, 100));
+    Ok((u32::try_from(balance)?, u16::try_from(limit)?))
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0x44).await?;
     let session = client.join_snapshot().game_session_id;
     let pair = carried_pair(&client)?;
+    use sqlx::Connection as _;
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
     let mut expected = String::new();
     let (history_bytes, history) =
         forge(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
@@ -122,6 +142,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     .into_iter()
     .enumerate()
     {
+        let before = dust(&mut connection, clients).await?;
         let pair = operation.requires_pair().then_some(pair);
         let (bytes, body) = forge(
             &mut client,
@@ -134,10 +155,31 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         let succeeded = body["succeeded"].as_bool().ok_or("reply lacks succeeded")?;
         let applied = body["applied"].as_bool().unwrap_or(succeeded);
         let reason = body["reason"].as_str().unwrap_or("");
-        if body["operation"].as_str() != Some(name)
-            || !forge_outcome(name, succeeded, applied, reason)
-        {
-            return Err(format!("{name} unexpected forge outcome: {body}").into());
+        let after = dust(&mut connection, clients).await?;
+        let matches_expected = if operation == Operation::DustLimit {
+            let limit =
+                DustLimit::new(before.1).map_err(|error| format!("dust limit: {error:?}"))?;
+            match limit.next_upgrade() {
+                Ok((cost, next)) if before.0 >= cost => {
+                    succeeded
+                        && applied
+                        && reason.is_empty()
+                        && after == (before.0 - cost, next.get())
+                }
+                Ok(_) => forge_outcome(name, succeeded, applied, reason) && after == before,
+                Err(ForgeDustError::MaximumLimitReached) => {
+                    !succeeded && !applied && reason == "MAXIMUM_LIMIT" && after == before
+                }
+                Err(error) => return Err(format!("dust limit plan: {error:?}").into()),
+            }
+        } else {
+            forge_outcome(name, succeeded, applied, reason) && after == before
+        };
+        if body["operation"].as_str() != Some(name) || !matches_expected {
+            return Err(format!(
+                "{name} unexpected forge outcome dust={before:?}->{after:?}: {body}"
+            )
+            .into());
         }
         capture(&format!("p18-{}.bin", name.replace('_', "-")), &bytes);
         expected.push_str(&format!(

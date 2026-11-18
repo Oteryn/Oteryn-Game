@@ -24,8 +24,8 @@ pub struct CastContext<'a> {
     pub draw: &'a mut dyn FnMut(i64, i64) -> i64,
 }
 
-/// The §3 mapping from a core rejection to the wire disposition. A rejection the table does not
-/// name (weapon, shield, chain or party facts) cannot occur for the V1 book and fails closed.
+/// Maps core refusal reasons to the existing cast dispositions. A party cast
+/// without an eligible member is missing a target; authority failures remain rejected.
 pub const fn disposition(rejection: &CastRejection) -> SpellCastDisposition {
     match rejection {
         CastRejection::GroupCooling { .. } | CastRejection::SpellCooling { .. } => {
@@ -38,7 +38,9 @@ pub const fn disposition(rejection: &CastRejection) -> SpellCastDisposition {
         CastRejection::NotLearned
         | CastRejection::VocationCannotUse
         | CastRejection::PremiumRequired => SpellCastDisposition::NotAvailable,
-        CastRejection::TargetRequired => SpellCastDisposition::TargetRequired,
+        CastRejection::TargetRequired | CastRejection::NoPartyMembers => {
+            SpellCastDisposition::TargetRequired
+        }
         CastRejection::TargetNotAllowed => SpellCastDisposition::TargetIllegal,
         _ => SpellCastDisposition::Rejected,
     }

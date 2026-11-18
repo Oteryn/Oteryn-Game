@@ -17,7 +17,7 @@ fn capture(name: &str, bytes: &[u8]) {
     }
 }
 
-async fn send(client: &mut DevClientSession, action: u8, name: &str) -> TestResult<Reply> {
+async fn send(client: &mut DevClientSession, action: u8, name: &str) -> TestResult<(u64, Reply)> {
     let payload = encode_request(&Request {
         action,
         selection: 0,
@@ -36,7 +36,9 @@ async fn send(client: &mut DevClientSession, action: u8, name: &str) -> TestResu
         return Err(format!("task-board action={action} status={:?}", result.status).into());
     }
     capture(name, &result.payload);
-    decode_reply(&result.payload).map_err(|error| format!("reply decode: {error:?}").into())
+    let outcome =
+        decode_reply(&result.payload).map_err(|error| format!("reply decode: {error:?}"))?;
+    Ok((result.command_id, outcome))
 }
 
 fn talisman_minted(before: u64, after: u64, refusal: u8) -> bool {
@@ -75,15 +77,38 @@ pub(super) async fn gold(
         .bind(clients.characters[0].as_slice()).bind(&clients.accounts[0]).bind(clients.world.as_slice()).fetch_one(connection).await?)
 }
 
+fn second_purchase_matches(
+    first_id: u64,
+    second_id: u64,
+    gold: (i64, i64),
+    items: (u64, u64),
+    refusal: u8,
+) -> bool {
+    first_id.checked_add(1) == Some(second_id)
+        && if gold.0 >= 5_000 {
+            gold.0.checked_sub(5_000) == Some(gold.1) && talisman_minted(items.0, items.1, refusal)
+        } else {
+            matches!(refusal, 4 | 14)
+                && repeat_unchanged(refusal, gold.0 == gold.1, items.0 == items.1, true)
+        }
+}
+
+#[test]
+fn fresh_funded_purchase_is_not_a_replay() {
+    assert!(second_purchase_matches(8, 9, (6000, 1000), (1, 2), 0));
+    assert!(!second_purchase_matches(8, 8, (6000, 1000), (1, 2), 0));
+    assert!(!second_purchase_matches(8, 9, (6000, 6000), (1, 1), 1));
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_character(clients, 0x27, 0).await?;
-    let before = send(&mut client, 4, "p05-query.bin").await?;
+    let (_, before) = send(&mut client, 4, "p05-query.bin").await?;
     use sqlx::Connection as _;
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
     let reference = provisioning::item_reference(&provisioning::item_index()?, 51_978)?;
     let items_before = talisman_count(&client, reference)?;
     let gold_before = gold(&mut connection, clients).await?;
-    let bought = send(&mut client, 17, "p05-buy.bin").await?;
+    let (first_id, bought) = send(&mut client, 17, "p05-buy.bin").await?;
     if bought.refusal != 0 {
         return Err(format!("Talisman purchase refused: {bought:?}").into());
     }
@@ -103,8 +128,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             client.take_events();
         }
     })
-    .await
-    .map_err(|_| "purchase did not grant exactly one talisman")??;
+    .await??;
     let gold_after = gold(&mut connection, clients).await?;
     if gold_before.checked_sub(5_000) != Some(gold_after) {
         return Err(format!(
@@ -112,14 +136,33 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         )
         .into());
     }
-    let repeated = send(&mut client, 17, "p05-repeat.bin").await?;
-    if !repeat_unchanged(
+    let (second_id, repeated) = send(&mut client, 17, "p05-repeat.bin").await?;
+    let second_gold = gold(&mut connection, clients).await?;
+    let second_items = if gold_after >= 5_000 {
+        tokio::time::timeout(Duration::from_secs(5), async {
+            loop {
+                let count = talisman_count(&client, reference)?;
+                if count != items_after {
+                    return Ok::<_, Box<dyn std::error::Error>>(count);
+                }
+                client.service_liveness(Duration::from_millis(50)).await?;
+                client.take_events();
+            }
+        })
+        .await??
+    } else {
+        talisman_count(&client, reference)?
+    };
+    if !second_purchase_matches(
+        first_id,
+        second_id,
+        (gold_after, second_gold),
+        (items_after, second_items),
         repeated.refusal,
-        gold(&mut connection, clients).await? == gold_after,
-        talisman_count(&client, reference)? == items_after,
-        repeated.talisman == bought.talisman && repeated.bounty_points == bought.bounty_points,
-    ) {
-        return Err(format!("repeat purchase was not refused unchanged: {repeated:?}").into());
+    ) || repeated.talisman != bought.talisman
+        || repeated.bounty_points != bought.bounty_points
+    {
+        return Err(format!("second purchase id={second_id} gold={gold_after}->{second_gold} items={items_after}->{second_items}: {repeated:?}").into());
     }
     let level = |reply: &Reply| {
         reply

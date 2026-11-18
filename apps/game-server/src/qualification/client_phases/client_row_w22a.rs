@@ -48,19 +48,96 @@ fn listed(entries: &[ItemEntry]) -> String {
         .join(";")
 }
 
-fn target_corpse(target_removed: bool, already_visible: bool, at_last_position: bool) -> bool {
-    target_removed && !already_visible && at_last_position
+fn target_corpse(
+    target_removed: bool,
+    already_visible: bool,
+    at_last_position: bool,
+    exact_death: bool,
+) -> bool {
+    target_removed && !already_visible && at_last_position && exact_death
 }
 
 #[test]
 fn corpse_must_be_new_and_follow_target_removal() {
-    assert!(!target_corpse(false, false, true));
-    assert!(!target_corpse(true, true, true));
-    assert!(!target_corpse(true, false, false));
-    assert!(target_corpse(true, false, true));
+    assert!(!target_corpse(false, false, true, true));
+    assert!(!target_corpse(true, true, true, true));
+    assert!(!target_corpse(true, false, false, true));
+    assert!(!target_corpse(true, false, true, false));
+    assert!(target_corpse(true, false, true, true));
 }
 
-async fn kill_and_open(client: &mut DevClientSession) -> TestResult<OpenContainer> {
+pub(super) struct DeathProbe<'a> {
+    clients: &'a SeamClients<'a>,
+    connection: sqlx::PgConnection,
+    since: i64,
+}
+
+impl<'a> DeathProbe<'a> {
+    pub(super) async fn start(clients: &'a SeamClients<'a>) -> TestResult<Self> {
+        use sqlx::Connection as _;
+        let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+        let since = sqlx::query_scalar(
+            "SELECT floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint",
+        )
+        .fetch_one(&mut connection)
+        .await?;
+        Ok(Self {
+            clients,
+            connection,
+            since,
+        })
+    }
+
+    pub(super) async fn corpse_identity(
+        &mut self,
+        target: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+        exclusive: bool,
+    ) -> TestResult<Option<[u8; 16]>> {
+        use sha2::{Digest, Sha256};
+        let clients = self.clients;
+        let deaths: Vec<(i64, String)> = sqlx::query_as(
+            "SELECT death_actor_local_id, death_actor_local_generation::text              FROM game_item_mint_receipts WHERE death_world_id=encode($1,'hex')::uuid              AND death_channel_id=encode($2,'hex')::uuid              AND death_scope_ownership_generation=$3::text::numeric              AND corpse_top_damage_character_id=encode($4,'hex')::uuid              AND materialized_at >= $5 AND loot_purpose_key='CORPSE_MATERIALIZATION'              ORDER BY materialized_at LIMIT 32",
+        )
+        .bind(clients.world.as_slice())
+        .bind(clients.channel.as_slice())
+        .bind(clients.scope_generation.to_string())
+        .bind(clients.characters[1].as_slice())
+        .bind(self.since)
+        .fetch_all(&mut self.connection)
+        .await?;
+        if exclusive && deaths.len() > 1 {
+            return Err("multiple actor-specific corpse receipts during the analyser fight".into());
+        }
+        for (id, generation) in deaths {
+            let id = u32::try_from(id)?;
+            let generation: u64 = generation.parse()?;
+            let hash = |domain: &[u8]| -> [u8; 16] {
+                let digest = Sha256::new()
+                    .chain_update(domain)
+                    .chain_update(clients.world)
+                    .chain_update(clients.channel)
+                    .chain_update(clients.scope_generation.to_be_bytes())
+                    .chain_update(id.to_be_bytes())
+                    .chain_update(generation.to_be_bytes())
+                    .finalize();
+                let mut identity = [0; 16];
+                identity.copy_from_slice(&digest[..16]);
+                identity
+            };
+            if generation == target.generation
+                && hash(b"oteryn:runtime-player-placement:v1") == target.identity
+            {
+                return Ok(Some(hash(b"oteryn:runtime-corpse-placement:v1")));
+            }
+        }
+        Ok(None)
+    }
+}
+
+async fn kill_and_open(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+) -> TestResult<OpenContainer> {
     let position = client.world_spatial().actor_position;
     let target = client
         .world_entities()
@@ -90,6 +167,7 @@ async fn kill_and_open(client: &mut DevClientSession) -> TestResult<OpenContaine
         .map(|entry| entry.entity)
         .collect();
     client.take_events();
+    let mut death = DeathProbe::start(clients).await?;
     let reply = client
         .session_mut()
         .attack_target(Some(&target.entity))
@@ -101,6 +179,7 @@ async fn kill_and_open(client: &mut DevClientSession) -> TestResult<OpenContaine
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut last_position = target.position;
     let mut target_removed = false;
+    let mut exact = None;
     let corpse = loop {
         client.service_liveness(Duration::from_millis(100)).await?;
         for event in client.take_events() {
@@ -126,6 +205,9 @@ async fn kill_and_open(client: &mut DevClientSession) -> TestResult<OpenContaine
                 }
             }
         }
+        if target_removed && exact.is_none() {
+            exact = death.corpse_identity(target.entity, false).await?;
+        }
         if let Some(corpse) = client.world_entities().and_then(|entities| {
             entities.iter().find(|entry| {
                 entry.kind == EntityKind::Corpse
@@ -133,6 +215,7 @@ async fn kill_and_open(client: &mut DevClientSession) -> TestResult<OpenContaine
                         target_removed,
                         existing_corpses.contains(&entry.entity),
                         entry.position == last_position,
+                        exact == Some(entry.entity.identity),
                     )
             })
         }) {
@@ -201,7 +284,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     let mut before = OpenContainer::default();
     for _attempt in 0..4 {
         travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-        before = kill_and_open(&mut client).await?;
+        before = kill_and_open(&mut client, clients).await?;
         if !before.entries.is_empty() {
             break;
         }

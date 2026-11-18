@@ -166,14 +166,15 @@ fn creature_at(client: &DevClientSession, at: TilePos) -> Option<WorldSpatialEnt
     })
 }
 
-fn new_corpse(previously_visible: bool, at_last_position: bool) -> bool {
-    !previously_visible && at_last_position
+fn new_corpse(previously_visible: bool, at_last_position: bool, exact_death: bool) -> bool {
+    !previously_visible && at_last_position && exact_death
 }
 
 #[test]
 fn existing_corpse_does_not_prove_rat_death() {
-    assert!(!new_corpse(true, true));
-    assert!(new_corpse(false, true));
+    assert!(!new_corpse(true, true, true));
+    assert!(!new_corpse(false, true, false));
+    assert!(new_corpse(false, true, true));
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -242,6 +243,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .filter(|entry| entry.kind == oteryn_dev_client::EntityKind::Corpse)
         .map(|entry| entry.entity)
         .collect();
+    let mut death = super::client_row_w22a::DeathProbe::start(clients).await?;
     let mut kill = Segment::begin(&client, "kill", target.entity)?;
     let attack = client
         .session_mut()
@@ -254,6 +256,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut last = target.position;
     let mut target_removed = false;
+    let mut exact = None;
     let corpse = loop {
         client.service_liveness(Duration::from_millis(100)).await?;
         let events = client.take_events();
@@ -281,6 +284,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             }
         }
         kill.record(events)?;
+        if target_removed && exact.is_none() {
+            exact = death.corpse_identity(target.entity, false).await?;
+        }
         if let Some(corpse) = client.world_entities().and_then(|entities| {
             entities
                 .iter()
@@ -289,6 +295,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
                         && new_corpse(
                             existing_corpses.contains(&entity.entity),
                             entity.position == last,
+                            exact == Some(entity.entity.identity),
                         )
                 })
                 .copied()

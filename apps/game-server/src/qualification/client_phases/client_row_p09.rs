@@ -18,15 +18,31 @@ fn capture(name: &str, bytes: &[u8]) {
     }
 }
 
-fn shrine_claim_refused(disposition: u8, has_transaction: bool) -> bool {
-    disposition == 4 && !has_transaction
+fn shrine_claim_refused(
+    disposition: u8,
+    has_transaction: bool,
+    wall_unchanged: bool,
+    custody_unchanged: bool,
+) -> bool {
+    disposition == 4 && !has_transaction && wall_unchanged && custody_unchanged
 }
 
 #[test]
 fn unopened_shrine_rejects_grants_and_other_refusals() {
-    assert!(!shrine_claim_refused(1, true));
-    assert!(!shrine_claim_refused(5, false));
-    assert!(shrine_claim_refused(4, false));
+    assert!(!shrine_claim_refused(1, true, true, true));
+    assert!(!shrine_claim_refused(5, false, true, true));
+    assert!(shrine_claim_refused(4, false, true, true));
+    assert!(!shrine_claim_refused(4, false, false, true));
+    assert!(!shrine_claim_refused(4, false, true, false));
+}
+
+async fn daily_claims(
+    connection: &mut sqlx::PgConnection,
+    clients: &SeamClients<'_>,
+) -> TestResult<i64> {
+    Ok(sqlx::query_scalar("SELECT count(*) FROM game_character_daily_reward_claims WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
+        .bind(clients.characters[0].as_slice()).bind(clients.world.as_slice())
+        .fetch_one(connection).await?)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -51,6 +67,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if wall.claimed || wall.claim_enabled {
         return Err(format!("unopened shrine fixture requires an unclaimed day: {wall:?}").into());
     }
+    use sqlx::Connection as _;
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let claims_before = daily_claims(&mut connection, clients).await?;
+    let inventory_before = client
+        .inventory()
+        .ok_or("initial inventory missing")?
+        .clone();
     let claim = client
         .session_mut()
         .gated_command(
@@ -67,8 +90,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     else {
         return Err("claim did not decode as a result".into());
     };
+    let reread = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_DAILY_REWARD_V2,
+            wire::COMMAND_TYPE_DAILY_REWARD_QUERY,
+            &[],
+        )
+        .await?;
+    let wall_unchanged =
+        reread.status == CommandStatus::Accepted && reread.payload == query.payload;
+    let custody_unchanged = client.inventory() == Some(&inventory_before)
+        && daily_claims(&mut connection, clients).await? == claims_before;
     if claim.status != CommandStatus::Rejected
-        || !shrine_claim_refused(result.disposition, result.transaction_id.is_some())
+        || !shrine_claim_refused(
+            result.disposition,
+            result.transaction_id.is_some(),
+            wall_unchanged,
+            custody_unchanged,
+        )
     {
         return Err(format!("unopened shrine claim result={result:?}").into());
     }
