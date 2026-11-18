@@ -233,7 +233,7 @@ pub(super) fn overlord_recipients(
 }
 
 /// The XP owner holds all captured Character slots and the native Channel turn.
-/// Only the exact original damage principal may consume a captured objective.
+/// Ordinary objectives require the original principal; Overlords require sealed physical damage.
 pub(super) async fn apply_in_transaction(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,

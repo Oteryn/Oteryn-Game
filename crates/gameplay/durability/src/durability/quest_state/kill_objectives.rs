@@ -2,7 +2,7 @@
 use super::*;
 use oteryn_gameplay_quests::quest::kill_objectives::KillObjective;
 
-/// Captured only from a committed native death and its coherent Character quest copy.
+/// Captured from a committed native death and a sealed objective or damage witness.
 /// No wire command can construct the sealed death identity.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NativeObjectiveDeath {
@@ -47,11 +47,28 @@ impl NativeObjectiveDeath {
     ) -> Option<Self> {
         let lease = runtime.bound_attacker_lease(actor, session).ok()?;
         let character = CharacterId::from_bytes(*lease.character_id().as_bytes()).ok()?;
-        if !runtime.all_source_player_damage_shares(target).ok()?.iter().any(|share|
-            share.actor == actor && share.character.as_bytes() == character.as_bytes() && share.total > 0) { return None; }
+        if !runtime
+            .all_source_player_damage_shares(target)
+            .ok()?
+            .iter()
+            .any(|share| {
+                share.actor == actor
+                    && share.character.as_bytes() == character.as_bytes()
+                    && share.total > 0
+            })
+        {
+            return None;
+        }
         let (death, at) = runtime.borrow_combat_death().projected_death(target).ok()?;
-        Some(Self { death: super::super::party_kill_xp::encode_death_key(death), character,
-            position: (at.x, at.y, at.floor), observed_revision: 0, phase: 0, spawn_origin: None, overlord: true })
+        Some(Self {
+            death: super::super::party_kill_xp::encode_death_key(death),
+            character,
+            position: (at.x, at.y, at.floor),
+            observed_revision: 0,
+            phase: 0,
+            spawn_origin: None,
+            overlord: true,
+        })
     }
 
     /// Exact-origin goals additionally bind the immutable native spawn cell.
@@ -104,7 +121,10 @@ impl NativeObjectiveDeath {
             binding[1..].copy_from_slice(&hash);
         }
         if self.overlord {
-            let hash = Sha256::new().chain_update(*binding).chain_update(b"oteryn:overlord-damager:v1").finalize();
+            let hash = Sha256::new()
+                .chain_update(*binding)
+                .chain_update(b"oteryn:overlord-damager:v1")
+                .finalize();
             binding[1..].copy_from_slice(&hash);
         }
         Ok(())
@@ -120,7 +140,8 @@ enum Binding {
 impl Binding {
     fn resolve(key: &str) -> Result<Self> {
         if let Some(rule) = oteryn_gameplay_quests::quest::source_deaths::rule(key)
-            && oteryn_gameplay_quests::quest::source_deaths::overlord(&rule.creature).is_some() {
+            && oteryn_gameplay_quests::quest::source_deaths::overlord(&rule.creature).is_some()
+        {
             return Ok(Self::Overlord(rule));
         }
         if let Some(rule) = oteryn_gameplay_quests::quest::kill_objectives::binding(key) {
@@ -295,14 +316,36 @@ pub async fn apply_batch_in_transaction(
         .bind(fence.character_id.as_bytes().as_slice()).bind(rule.quest()).fetch_optional(&mut **tx).await.map_err(DurabilityError::from)?;
     let state_exists = state.is_some();
     let (hash, pin) = if let Some(state) = state {
-        let hash: [u8; 32] = state.try_get::<Vec<u8>, _>("definition_hash").map_err(DurabilityError::from)?.try_into().map_err(|_| DurabilityError::InvalidStoredState)?;
-        if catalogue.definition_hash(rule.quest()) != Some(hash) && !state.try_get::<bool, _>("completed").map_err(DurabilityError::from)? {
+        let hash: [u8; 32] = state
+            .try_get::<Vec<u8>, _>("definition_hash")
+            .map_err(DurabilityError::from)?
+            .try_into()
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        if catalogue.definition_hash(rule.quest()) != Some(hash)
+            && !state
+                .try_get::<bool, _>("completed")
+                .map_err(DurabilityError::from)?
+        {
             return Err(CharacterProgressionError::ProgressionContextMismatch);
         }
-        (hash, state.try_get::<String, _>("pinned_content_revision").map_err(DurabilityError::from)?)
+        (
+            hash,
+            state
+                .try_get::<String, _>("pinned_content_revision")
+                .map_err(DurabilityError::from)?,
+        )
     } else {
-        if !matches!(rule, Binding::Overlord(_)) || !capacity::new_state_fits(tx, fence.character_id).await? { return Err(CharacterProgressionError::InvalidInput); }
-        (catalogue.definition_hash(rule.quest()).ok_or(CharacterProgressionError::InvalidInput)?, catalogue.content_revision().to_owned())
+        if !matches!(rule, Binding::Overlord(_))
+            || !capacity::new_state_fits(tx, fence.character_id).await?
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        (
+            catalogue
+                .definition_hash(rule.quest())
+                .ok_or(CharacterProgressionError::InvalidInput)?,
+            catalogue.content_revision().to_owned(),
+        )
     };
     let transition = *transitions
         .first()
