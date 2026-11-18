@@ -28,6 +28,8 @@ const PLANT: &str = "oteryn:creature.angry_plant";
 const UNBEATABLE: &str = "oteryn:creature.unbeatable_dragon";
 const SOMEWHAT: &str = "oteryn:creature.somewhat_beatable";
 const FLAME: &str = "oteryn:item.tibia.i775";
+const LEGACY_PORTAL_APPEARANCE: u16 = 1949;
+const LEGACY_PORTAL_DELAY_MS: u32 = 30_000;
 const FLOWER_BOWL: &str = "oteryn:item.tibia.i2983";
 const PLANT_TILE: Position = at(33625, 31022);
 const BOWL_APPROACH: Position = at(33625, 31021);
@@ -243,7 +245,10 @@ pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
                 "room_min": at(33566, 31006), "room_max": at(33626, 31032),
                 "death_phases": {
                     "terminal": SPIRIT, "replacements": [],
-                    "corpse_portal": {"defeated": CHALLENGER, "item": FLAME, "destination": FINALE}
+                    "corpse_portal": {
+                        "defeated": CHALLENGER, "item": FLAME, "destination": FINALE,
+                        "cleanup": {"appearance": LEGACY_PORTAL_APPEARANCE, "delay_ms": LEGACY_PORTAL_DELAY_MS}
+                    }
                 }
             }},
             "sources": [
@@ -404,6 +409,15 @@ pub(super) fn world(
         VICTORY => vec![at(33617, 31023), at(33622, 31023), REWARD_ROOM],
         _ => Vec::new(),
     };
+    if name == FALLEN {
+        return super::quest_world_callbacks::world_with_scene_cells(
+            callback,
+            lever,
+            &CHALLENGERS.map(|at| (at, LEGACY_PORTAL_APPEARANCE)),
+            &[],
+            &extra,
+        );
+    }
     super::quest_world_callbacks::world_with_cells(callback, lever, &extra)
 }
 
@@ -526,6 +540,10 @@ async fn fallen_portals(
 ) -> TestResult {
     use super::quest_world_callbacks::local;
     use crate::gameplay_transport::kill_reward::DrainOutcome;
+    use crate::map::{
+        overlay::TilePos,
+        view::{MapFacts, placement_key},
+    };
     use oteryn_protocol_oteryn::world_spatial::StepDisposition;
 
     let primary = admitted.runtime_actor.ok_or("player")?;
@@ -548,12 +566,41 @@ async fn fallen_portals(
             .ok_or("peer session")?
     };
 
+    let map = owner.bundle_map().ok_or("finale map")?;
+    let [first, second] = CHALLENGERS.map(|at| {
+        placement_key(
+            TilePos {
+                x: at.x,
+                y: at.y,
+                floor: at.floor,
+            },
+            1,
+        )
+        .ok_or("legacy portal placement")
+    });
+    let legacy = [first?, second?];
+    assert!(legacy.iter().all(|key| !map.facts.base_hidden(*key)));
+    let before_deaths = owner.owner_now().get();
     let challengers = live(owner, CHALLENGER).await?;
     assert_eq!(challengers.len(), 2);
     for (index, challenger) in challengers.into_iter().enumerate() {
         super::engenc2_cults::kill(owner, admitted, challenger, CHALLENGER, 101 + index as u64)
             .await?;
     }
+    let first_due = map
+        .facts
+        .next_movement_decay_time()
+        .ok_or("portal cleanup deadline")?;
+    let delay_us = u64::from(LEGACY_PORTAL_DELAY_MS) * 1_000;
+    assert!((before_deaths + delay_us..=owner.owner_now().get() + delay_us).contains(&first_due));
+    assert_eq!(map.facts.expire_movement_items(first_due - 1), 0);
+    assert!(legacy.iter().all(|key| !map.facts.base_hidden(*key)));
+    assert!(map.facts.expire_movement_items(first_due) > 0);
+    if let Some(second_due) = map.facts.next_movement_decay_time() {
+        assert!(second_due > first_due);
+        assert_eq!(map.facts.expire_movement_items(second_due), 1);
+    }
+    assert!(legacy.iter().all(|key| map.facts.base_hidden(*key)));
     {
         let runtime = owner.runtime.lock().await;
         for at in CHALLENGERS {

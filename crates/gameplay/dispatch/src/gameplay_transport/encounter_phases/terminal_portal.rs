@@ -119,16 +119,17 @@ pub(super) fn schedule_cleanup(
         .find_map(|(ordinal, (id, _))| {
             let ordinal = u8::try_from(ordinal).ok()?;
             let key = placement_key(at, ordinal)?;
+            let revision = map.facts.object_revision(key);
             let entry = map.facts.base_entry(at, ordinal, *id)?;
             (entry.appearance_id == cleanup.appearance
                 && !entry.pickupable
                 && !map.facts.base_hidden(key))
             .then_some((key, entry))
         });
-    if let Some((key, entry)) = source {
+    if let Some((key, revision, entry)) = source {
         map.facts.apply_quest_callback(
             key,
-            map.facts.object_revision(key),
+            revision,
             entry,
             &[],
             &[],
