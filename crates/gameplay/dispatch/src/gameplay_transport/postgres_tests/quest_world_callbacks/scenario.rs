@@ -25,6 +25,7 @@ fn scenario_case(
 ) -> TestResult {
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
+    let earth_birch = name == super::super::fknow_earth::NAME;
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
     let ring_offering =
@@ -403,6 +404,8 @@ fn scenario_case(
         callback("questpc7-formal-display")?
     } else if outfit_world {
         callback(name)?
+    } else if earth_birch {
+        super::super::fknow_earth::callback()?
     } else if classic_npc {
         callback("behemoth")?
     } else if rotten_purchase {
@@ -926,6 +929,8 @@ fn scenario_case(
                 require_state: false,
             });
         world(&physical, trigger)?
+    } else if earth_birch {
+        super::super::fknow_earth::world(&callback)?
     } else {
         world(&callback, trigger)?
     };
@@ -1752,6 +1757,7 @@ fn scenario_case(
         }
         if name.starts_with("qengine-rewards-questpc4-admission-")
             || name.starts_with("qengine-rewards-questpc4-puzzle-predicate")
+            || earth_birch
             || lever_fixture
             || target_swap
             || failure_landing
@@ -3076,6 +3082,8 @@ fn scenario_case(
                 &authority,
             )
             .await?;
+        } else if earth_birch {
+            super::super::fknow_earth::exercise(&mut owner, &mut admitted).await?;
         } else if name.starts_with("questpc2-albinius-portals-") {
             super::super::questpc2_albinius_portals::exercise(
                 &mut owner,
