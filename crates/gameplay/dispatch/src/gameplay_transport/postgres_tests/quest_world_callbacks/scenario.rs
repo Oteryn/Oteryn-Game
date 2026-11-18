@@ -387,7 +387,7 @@ fn scenario_case(
     use super::super::dreamers_stone_exit;
     let stone_exit = name == dreamers_stone_exit::NAME;
     use super::super::zarganash_linked_boss;
-    let zarganash = name == zarganash_linked_boss::NAME;
+    let zarganash = matches!(name, zarganash_linked_boss::NAME | zarganash_linked_boss::OCCUPIED_ARRIVAL);
     let mut callback = if zarganash {
         zarganash_linked_boss::binding()?
     } else if izcandar {
@@ -1490,7 +1490,7 @@ fn scenario_case(
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
             dream_scar_izcandar_forms::NAME | faceless_bane_phase::NAME | feaster_solo_rooms::IRGIX
             | feaster_solo_rooms::IRGIX_RETURN | feaster_solo_rooms::UNAZ | feaster_solo_rooms::VOK
-            | zarganash_linked_boss::NAME => Some(250),
+            | zarganash_linked_boss::NAME | zarganash_linked_boss::OCCUPIED_ARRIVAL => Some(250),
             _ => None,
         };
         if let Some(initial_level) = initial_level {
@@ -3070,7 +3070,7 @@ fn scenario_case(
             )
             .await?;
         } else if zarganash {
-            Box::pin(zarganash_linked_boss::exercise(&mut owner, &mut admitted)).await?;
+            Box::pin(zarganash_linked_boss::exercise(&mut owner, &mut admitted, name == zarganash_linked_boss::OCCUPIED_ARRIVAL)).await?;
         } else if izcandar {
             Box::pin(dream_scar_izcandar_forms::exercise(&mut owner, &mut admitted)).await?;
         } else if faceless_bane {

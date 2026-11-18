@@ -14,8 +14,10 @@ use oteryn_protocol_oteryn::world_object::{
 use std::time::Duration;
 
 pub(super) const NAME: &str = "zarganash-linked-boss";
+pub(super) const OCCUPIED_ARRIVAL: &str = "zarganash-linked-boss-occupied-arrival";
 const UNWELCOME: &str = "oteryn:creature.the_unwelcome";
 const BROTHER: &str = "oteryn:creature.brother_worm";
+const ARRIVAL: Position = at(33705, 31539);
 const LEVER: Position = at(33735, 31537);
 const ENTRY: Position = at(33707, 31545);
 const EXIT: Position = Position {
@@ -40,7 +42,7 @@ pub(super) fn binding() -> TestResult<Callback> {
         "effects":{"encounter":{"minimum_level":250,"players":players,
             "room_min":at(33699,31529),"room_max":at(33719,31546),
             "monsters":[{"position":at(33708,31539),"creature":UNWELCOME}],
-            "linked_arrival":{"monster":{"position":at(33705,31539),"creature":BROTHER},
+            "linked_arrival":{"monster":{"position":ARRIVAL,"creature":BROTHER},
                 "after_ms":20000,"radius":30,"arrival_effect":11,"death_effect":18,
                 "exit":EXIT,"time_limit_ms":1200000}}},
         "sources":[
@@ -60,7 +62,7 @@ pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleW
         &[],
         &[],
         None,
-        &[at(33705, 31539), at(33711, 31539), EXIT],
+        &[ARRIVAL, at(33711, 31539), EXIT],
     )
 }
 
@@ -77,6 +79,7 @@ fn zarganash_two_players_enter_and_exit_as_brother_worm_finishes_only_its_linked
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
+    occupied_arrival: bool,
 ) -> TestResult {
     let player = admitted.runtime_actor.ok_or("actor")?;
     let second_session = GameSessionId::decode(&id(110)).map_err(debug)?;
@@ -173,6 +176,23 @@ pub(super) async fn exercise(
             local(ENTRY)
         );
     }
+    if occupied_arrival {
+        let mut runtime = owner.runtime.lock().await;
+        let map = owner.bundle_map().ok_or("map")?;
+        let expected = runtime.read_actor_position(second).map_err(debug)?;
+        let move_to_arrival = crate::map::floor::prepare_quest_callback_teleport(
+            &runtime,
+            owner.movement_cells(),
+            second,
+            second_session,
+            expected,
+            local(ARRIVAL),
+            false,
+            &crate::map::floor::BundleDoors(&map.facts),
+        )
+        .map_err(debug)?;
+        runtime.commit_source_step(move_to_arrival).map_err(debug)?;
+    }
     let unrelated = {
         let mut runtime = owner.runtime.lock().await;
         let hp = runtime
@@ -191,6 +211,33 @@ pub(super) async fn exercise(
         .await?
         .try_into()
         .map_err(|_| "delayed boss")?;
+    {
+        let runtime = owner.runtime.lock().await;
+        let spawned = runtime
+            .read_actor_position(brother)
+            .map_err(debug)?
+            .position();
+        let arrival = local(ARRIVAL);
+        if occupied_arrival {
+            assert_eq!(spawned.floor, arrival.floor);
+            assert_eq!(
+                spawned
+                    .x
+                    .abs_diff(arrival.x)
+                    .max(spawned.y.abs_diff(arrival.y)),
+                1
+            );
+            assert_eq!(
+                runtime
+                    .read_actor_position(second)
+                    .map_err(debug)?
+                    .position(),
+                arrival
+            );
+        } else {
+            assert_eq!(spawned, arrival);
+        }
+    }
     {
         let queue = owner.states.attack.lock().await.kills().clone();
         let now = owner.owner_now();
@@ -257,6 +304,18 @@ pub(super) async fn exercise(
     }
     assert_eq!(live(owner, UNWELCOME).await?, vec![unrelated]);
     Ok(())
+}
+
+#[test]
+fn zarganash_brother_worm_arrives_adjacent_to_the_occupied_spawn_and_ejects_both_players()
+-> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(OCCUPIED_ARRIVAL, || {
+        scenario(OCCUPIED_ARRIVAL, LEVER, false)
+    })
 }
 
 fn at_position(x: u16) -> Position {
