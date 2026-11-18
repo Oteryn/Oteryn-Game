@@ -719,6 +719,8 @@ async fn mint_frozen_in_transaction(
             }),
             reward_claim: Some(definition(&frozen.request.claim)),
         }),
+        ground: None,
+        ground_connection_generation: 0,
         inbox: Some(RewardClaimInboxMintV1 {
             character_id: plan.character_id.as_bytes().to_vec(),
             world_id: plan.world_id.as_bytes().to_vec(),

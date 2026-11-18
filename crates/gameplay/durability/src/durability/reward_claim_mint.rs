@@ -116,6 +116,7 @@ use sqlx::Row;
 
 mod additional;
 mod arena;
+pub use arena::ArenaTrophyStep;
 mod backpack_outputs;
 pub mod boss_reward;
 mod charges;
@@ -1197,6 +1198,8 @@ fn claim_message(
             boss_reward: None,
         }),
         before_semantically_absent: true,
+        ground: None,
+        ground_connection_generation: 0,
         inbox: None,
     }
 }

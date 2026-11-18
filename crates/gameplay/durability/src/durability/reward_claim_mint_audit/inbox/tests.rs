@@ -43,6 +43,8 @@ fn batch(count: usize) -> OneItemRewardClaimMintV1 {
             }),
             reward_claim: Some(definition()),
         }),
+        ground: None,
+        ground_connection_generation: 0,
         inbox: Some(RewardClaimInboxMintV1 {
             character_id: id(1),
             world_id: id(2),

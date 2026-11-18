@@ -73,6 +73,10 @@ pub struct OneItemRewardClaimMintV1 {
     /// legacy `after`/backpack destination. The existing operation remains tag 4.
     #[prost(message, optional, tag = "5")]
     pub inbox: Option<RewardClaimInboxMintV1>,
+    #[prost(message, optional, tag = "6")]
+    pub ground: Option<mint::OneItemGroundV1>,
+    #[prost(uint64, tag = "7")]
+    pub ground_connection_generation: u64,
 }
 
 /// One fresh ItemInstance, one new backpack entry line, one participant
@@ -91,6 +95,43 @@ pub const REWARD_CLAIM_MINT_USAGE: TransactionResourceUsage = TransactionResourc
 
 /// The closed legacy CHEST-1 or additive Inbox shape and its source-specific bounds.
 pub fn check_reward_claim_mint(value: &OneItemRewardClaimMintV1) -> Result<(), AuditError> {
+    if let Some(ground) = &value.ground {
+        let after = value.after.as_ref().ok_or(AuditError::InvalidInput)?;
+        let source = value.source.as_ref().ok_or(AuditError::InvalidInput)?;
+        let command = source.command_ref.as_ref().ok_or(AuditError::InvalidInput)?;
+        let claim = source.reward_claim.as_ref().ok_or(AuditError::InvalidInput)?;
+        let item = after.definition.as_ref().ok_or(AuditError::InvalidInput)?;
+        check_definition(Some(item))?;
+        check_definition(Some(claim))?;
+        for id in [&after.item_instance_id, &after.world_id, &ground.channel_id, &command.game_session_id] {
+            check_uuid_v7(id)?;
+        }
+        check_content_key(&source.content_revision)?;
+        check_content_key(&source.ruleset_revision)?;
+        check_content_key(&source.sim_revision)?;
+        check_content_key(&ground.map_revision)?;
+        if value.inbox.is_some() || value.destination.is_some() || source.boss_reward.is_some()
+            || !value.before_semantically_absent || value.ground_connection_generation == 0
+            || command.command_id == 0 || ground.instance_id.is_some()
+            || ground.world_id != after.world_id || ground.runtime_scope_ownership_generation == 0
+            || ground.content_revision != source.content_revision
+            || ground.spatial_position.len() != 10 || ground.native_room_placement_context.len() != 32
+            || ground.corpse_ref != b"arena-trophy-v1"
+            || after.quantity != 1 || after.lifecycle != ITEM_LIFECYCLE_LIVE || after.key_number != 0
+            || source.typed_cause != REWARD_CLAIM_MINT_TYPED_CAUSE
+            || claim.family != "RewardClaim" || item.family != "Item"
+            || !matches!((claim.production_key.as_str(), item.production_key.as_str()),
+                ("oteryn:reward.svargrond-arena.1.4", "oteryn:item.tibia.i5807")
+                | ("oteryn:reward.svargrond-arena.2.4", "oteryn:item.tibia.i5806")
+                | ("oteryn:reward.svargrond-arena.3.4", "oteryn:item.tibia.i5805"))
+        {
+            return Err(AuditError::InvalidInput);
+        }
+        return REWARD_CLAIM_MINT_USAGE.check();
+    }
+    if value.ground_connection_generation != 0 {
+        return Err(AuditError::InvalidInput);
+    }
     if value.inbox.is_some() {
         return inbox::check_inbox(value);
     }
@@ -194,7 +235,8 @@ pub fn decode_reward_claim_mint_envelope(
             command_id: command.command_id,
         })),
     };
-    if value.world_id.as_deref() != Some(world_id)
+    if minted.ground.as_ref().is_some_and(|g| value.channel_id.as_ref() != Some(&g.channel_id))
+        || value.world_id.as_deref() != Some(world_id)
         || value.game_session_id.as_deref() != Some(command.game_session_id.as_slice())
         || value.command_id != Some(command.command_id)
         || value.connection_generation != Some(expected_generation)
@@ -206,7 +248,9 @@ pub fn decode_reward_claim_mint_envelope(
 }
 
 fn reward_scope(value: &OneItemRewardClaimMintV1) -> Result<(&[u8], u64), AuditError> {
-    if let Some(inbox) = &value.inbox {
+    if let Some(ground) = &value.ground {
+        Ok((&ground.world_id, value.ground_connection_generation))
+    } else if let Some(inbox) = &value.inbox {
         Ok((&inbox.world_id, inbox.expected_session_generation))
     } else {
         let after = value.after.as_ref().ok_or(AuditError::InvalidInput)?;
@@ -411,6 +455,8 @@ mod tests {
                 boss_reward: None,
             }),
             before_semantically_absent: true,
+            ground: None,
+            ground_connection_generation: 0,
             inbox: None,
         }
     }

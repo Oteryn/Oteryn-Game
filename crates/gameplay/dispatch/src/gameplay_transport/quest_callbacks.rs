@@ -5,6 +5,7 @@ use super::{
     connection::{UseCommand, UseOutcome},
 };
 mod admission;
+mod arena_trophy;
 mod conditional_cells;
 use admission::{character_fence_required, stateless_observation_required};
 mod clear_area;
@@ -1280,6 +1281,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let entered = self
             .step_dynamic_quest_portal(permit, actor, session, entered)
             .await;
+        if origin.position() != entered.position() {
+            self.step_arena_trophy(permit, actor, session, entered)
+                .await;
+        }
         self.step_quest_trigger(permit, actor, session, origin, entered, Trigger::StepIn)
             .await
     }

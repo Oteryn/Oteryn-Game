@@ -227,6 +227,8 @@ async fn mint_one(
                 }),
             }),
             before_semantically_absent: true,
+            ground: None,
+            ground_connection_generation: 0,
             inbox: None,
         },
         tx.tuple().tuple(),

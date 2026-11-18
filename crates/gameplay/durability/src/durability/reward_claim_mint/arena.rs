@@ -20,17 +20,19 @@ impl DurabilityRoot {
                 let mut tx = begin_type2_transaction(holder, deadline).await?;
                 assert_recovery_fence(&mut tx, &recovery).await?;
                 let text = sqlx::query_scalar(
-                    "SELECT r.root_text FROM game_item_instances i
-                     JOIN game_reward_claim_mint_receipts r
+                    "SELECT COALESCE(t.inscription,r.root_text) FROM game_item_instances i
+                     LEFT JOIN game_arena_trophy_mints t
+                       ON t.item_instance_id=i.item_instance_id AND t.transaction_id=i.minted_transaction_id
+                     LEFT JOIN game_reward_claim_mint_receipts r
                        ON r.item_instance_id=i.item_instance_id AND r.transaction_id=i.minted_transaction_id
                      WHERE i.item_instance_id=encode($1,'hex')::uuid
                        AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1
-                       AND r.claim_family='RewardClaim' AND r.root_text IS NOT NULL
+                       AND (t.item_instance_id IS NOT NULL OR (r.claim_family='RewardClaim' AND r.root_text IS NOT NULL
                        AND (i.definition_production_key, r.claim_production_key) IN (
                            ('oteryn:item.tibia.i5807', 'oteryn:reward.svargrond-arena.1.4'),
                            ('oteryn:item.tibia.i5806', 'oteryn:reward.svargrond-arena.2.4'),
                            ('oteryn:item.tibia.i5805', 'oteryn:reward.svargrond-arena.3.4')
-                       )",
+                       )))",
                 )
                 .bind(item.as_slice())
                 .bind(world.as_slice())
@@ -126,16 +128,7 @@ impl DurabilityRoot {
                 .bind(fence.character_id.as_bytes().as_slice())
                 .fetch_one(&mut **tx)
                 .await?;
-                // Crystal 201189f svargrond_arena.lua:175-190.
-                let (difficulty, punctuation) = match rank {
-                    1 => ("greenhorn", ""),
-                    2 => ("scrapper", "."),
-                    3 => ("warlord", "."),
-                    _ => return Err(DurabilityError::InvalidStoredState),
-                };
-                request.root_text = Some(format!(
-                    "For victory in the Barbarian Arena at {difficulty} difficulty. Awarded to {name}{punctuation}"
-                ));
+                request.root_text = Some(trophy_inscription(rank, &name)?);
                 validate_request(&request).map_err(|_| DurabilityError::InvalidStoredState)?;
             }
             let binding = intent_binding(&request, fence.character_id)
@@ -171,3 +164,20 @@ async fn finish(
     arena::save(tx, fence, request.command, payload, state, state, &bytes).await?;
     Ok(bytes)
 }
+
+fn trophy_inscription(rank: u8, name: &str) -> std::result::Result<String, DurabilityError> {
+    // Crystal 201189f svargrond_arena.lua:175-190.
+    let (difficulty, punctuation) = match rank {
+        1 => ("greenhorn", ""),
+        2 => ("scrapper", "."),
+        3 => ("warlord", "."),
+        _ => return Err(DurabilityError::InvalidStoredState),
+    };
+    Ok(format!(
+        "For victory in the Barbarian Arena at {difficulty} difficulty. Awarded to {name}{punctuation}"
+    ))
+}
+
+#[path = "arena_ground.rs"]
+mod ground;
+pub use ground::ArenaTrophyStep;
