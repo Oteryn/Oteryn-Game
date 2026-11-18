@@ -14,7 +14,7 @@ pub enum NpcReplyNumber {
     RedemptionLimit { track: String, unit_cost: u32 },
 }
 
-pub(super) fn valid(rule: &NpcRule, owns_track: impl Fn(&str) -> bool) -> bool {
+pub(super) fn valid(rule: &NpcRule, owns_track: impl Fn(&String) -> bool) -> bool {
     let numbers = &rule.reply_numbers;
     if numbers.is_empty() {
         return true;
