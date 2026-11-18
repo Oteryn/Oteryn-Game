@@ -226,9 +226,8 @@ fn seal_bindings(
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect::<String>();
-    let tracks = tracks.map(|key| {
-        serde_json::json!({ "key": key, "initial": -1, "minimum": -1, "maximum": 1 })
-    });
+    let tracks = tracks
+        .map(|key| serde_json::json!({ "key": key, "initial": -1, "minimum": -1, "maximum": 1 }));
     let bindings: Bindings = serde_json::from_value(serde_json::json!({
         "schema": 1,
         "quests": [{
@@ -289,9 +288,8 @@ async fn exercise_logic(
     const SEAL: &str = "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/sixth_seal";
     const DOOR: &str = "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/sixth_seal_door";
     const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-6-sixth_seal_flame.lua:3";
-    let storage = [SEAL, DOOR].map(|track| {
-        serde_json::json!({ "track": track, "minimum": -1, "maximum": 0, "set": 1 })
-    });
+    let storage = [SEAL, DOOR]
+        .map(|track| serde_json::json!({ "track": track, "minimum": -1, "maximum": 0, "set": 1 }));
     let flame = serde_json::json!({
         "key": "oteryn:quest-callback/banshees-logic-flame",
         "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
@@ -425,9 +423,8 @@ async fn exercise_sacrifice(
         "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/fourth_seal_door";
     const KEY: &str = "oteryn:quest-callback/banshees-fourth-seal";
     const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-4-fourth_seal_flame.lua:3";
-    let storage = [TRACK, DOOR].map(|track| {
-        serde_json::json!({ "track": track, "minimum": -1, "maximum": 0, "set": 1 })
-    });
+    let storage = [TRACK, DOOR]
+        .map(|track| serde_json::json!({ "track": track, "minimum": -1, "maximum": 0, "set": 1 }));
     let callback = serde_json::json!({
         "key": KEY,
         "quest": QUEST,
@@ -446,7 +443,10 @@ async fn exercise_sacrifice(
         "sources": [SOURCE]
     });
     owner.quest_catalogue = Some(std::sync::Arc::new(seal_bindings(
-        callback, "sacrifice-flame", [TRACK, DOOR], SOURCE,
+        callback,
+        "sacrifice-flame",
+        [TRACK, DOOR],
+        SOURCE,
     )?));
     owner.admit_quest_session(&admitted).await;
     let actor = admitted.runtime_actor.ok_or("actor")?;
