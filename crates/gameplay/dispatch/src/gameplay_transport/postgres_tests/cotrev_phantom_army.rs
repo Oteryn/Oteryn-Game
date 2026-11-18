@@ -395,7 +395,8 @@ fn scenario(admin: String) -> TestResult {
             0
         );
         time(started + 30_000_000);
-        owner.tick_timed_items().await;
+        // Match the source-item cycle: expire map projections before draining encounters.
+        assert_eq!(map.facts().expire_movement_items(started + 30_000_000), 1);
         owner.drain_quest_encounter_deadlines().await;
         assert_eq!(appearance()?, 1897);
         assert_eq!(
