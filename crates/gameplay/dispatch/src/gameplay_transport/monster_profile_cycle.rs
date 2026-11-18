@@ -600,55 +600,56 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     now,
                     player_waiting_now,
                 );
-                // Native spell proposals carry the source closure's actual formula revision.
-                let formula_revisions = native
-                    .creature_profiles()
-                    .records
-                    .iter()
-                    .filter_map(|record| record.attack_definitions.as_ref())
-                    .flat_map(|definitions| &definitions.profiles)
-                    .filter(|profile| {
-                        matches!(
-                            profile.data,
-                            crate::content::ProjectV2AuthoringProfileData::Formula(_)
-                        )
-                    })
-                    .map(|profile| profile.target.revision.as_str())
-                    .collect::<std::collections::BTreeSet<_>>();
-                let formula_revision = if formula_revisions.len() == 1 {
-                    formula_revisions
+                if run_thinks {
+                    // Native spell proposals carry the source closure's actual formula revision.
+                    let formula_revisions = native
+                        .creature_profiles()
+                        .records
                         .iter()
-                        .next()
-                        .copied()
-                        .unwrap_or(revisions.formula())
-                } else {
-                    revisions.formula()
-                };
-                let schedule_revisions = crate::ability::RevisionSet::new(
-                    revisions.ruleset(),
-                    revisions.content(),
-                    revisions.world_policy(),
-                    formula_revision,
-                    revisions.simulation(),
-                )
-                .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-                let source_attack_abilities = native
-                    .creature_profiles()
-                    .records
-                    .iter()
-                    .filter_map(|record| record.attack_definitions.as_ref())
-                    .flat_map(|definitions| &definitions.profiles)
-                    .filter(|profile| {
-                        matches!(
-                            profile.data,
-                            crate::content::ProjectV2AuthoringProfileData::Ability(_)
-                        )
-                    })
-                    .map(|profile| &profile.target)
-                    .collect::<std::collections::BTreeSet<_>>();
-                let summons = &mut states.monster_summons;
-                let waves = &mut states.rotten_waves;
-                if run_thinks { table
+                        .filter_map(|record| record.attack_definitions.as_ref())
+                        .flat_map(|definitions| &definitions.profiles)
+                        .filter(|profile| {
+                            matches!(
+                                profile.data,
+                                crate::content::ProjectV2AuthoringProfileData::Formula(_)
+                            )
+                        })
+                        .map(|profile| profile.target.revision.as_str())
+                        .collect::<std::collections::BTreeSet<_>>();
+                    let formula_revision = if formula_revisions.len() == 1 {
+                        formula_revisions
+                            .iter()
+                            .next()
+                            .copied()
+                            .unwrap_or(revisions.formula())
+                    } else {
+                        revisions.formula()
+                    };
+                    let schedule_revisions = crate::ability::RevisionSet::new(
+                        revisions.ruleset(),
+                        revisions.content(),
+                        revisions.world_policy(),
+                        formula_revision,
+                        revisions.simulation(),
+                    )
+                    .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    let source_attack_abilities = native
+                        .creature_profiles()
+                        .records
+                        .iter()
+                        .filter_map(|record| record.attack_definitions.as_ref())
+                        .flat_map(|definitions| &definitions.profiles)
+                        .filter(|profile| {
+                            matches!(
+                                profile.data,
+                                crate::content::ProjectV2AuthoringProfileData::Ability(_)
+                            )
+                        })
+                        .map(|profile| &profile.target)
+                        .collect::<std::collections::BTreeSet<_>>();
+                    let summons = &mut states.monster_summons;
+                    let waves = &mut states.rotten_waves;
+                    table
                     .run_reserved_current_think_slice(
                         runtime,
                         batch,
