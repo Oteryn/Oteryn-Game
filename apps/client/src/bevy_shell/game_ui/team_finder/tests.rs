@@ -31,6 +31,10 @@ fn fixture_with_layout(selected: bool, layout: bool) -> Result<Fixture> {
         super::super::pointer_layout::install(&mut app, UVec2::new(1200, 900));
         app.add_message::<bevy::window::Ime>().add_plugins((
             bevy::input::InputPlugin,
+            bevy::input_focus::InputFocusPlugin,
+            bevy::input_focus::InputDispatchPlugin,
+            bevy::input_focus::pointer_focus::PointerFocusPlugin,
+            bevy::input_focus::tab_navigation::TabNavigationPlugin,
             bevy::mesh::MeshPlugin,
             bevy::camera::visibility::VisibilityPlugin,
             bevy::picking::PickingPlugin,
@@ -886,8 +890,18 @@ fn regression_close_survives_browse_reply_during_ime_composition() -> Result {
     let (mut app, name) = browsing_reply_during_preedit()?;
     app.update();
     assert_idle_composition(&app, name)?;
-    click(&mut app, Kind::Close)?;
-    app.update();
+    let close = app
+        .world_mut()
+        .query::<(Entity, &Control)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| (control.kind == Kind::Close).then_some(entity))
+        .ok_or("close button")?;
+    let location = press_close(&mut app, close)?;
+    assert_eq!(app.world().resource::<InputFocus>().get(), Some(close));
+    for _ in 0..4 {
+        app.update();
+    }
+    release_close(&mut app, location);
     assert!(app.world().resource::<State>().root.is_none());
     assert_eq!(app.world().resource::<InputFocus>().get(), None);
     Ok(())
@@ -895,13 +909,6 @@ fn regression_close_survives_browse_reply_during_ime_composition() -> Result {
 
 #[test]
 fn regression_selection_has_pickable_controls_in_the_same_frame() -> Result {
-    use super::super::pointer_layout;
-    use bevy::{
-        camera::RenderTarget,
-        picking::pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput},
-        window::PrimaryWindow,
-    };
-
     let (mut app, mut rx, outbox) = fixture_with_layout(true, true)?;
     click(&mut app, Kind::Browse(false))?;
     command(&mut rx)?;
@@ -930,6 +937,20 @@ fn regression_selection_has_pickable_controls_in_the_same_frame() -> Result {
     );
     assert!(visibility.get(), "replacement close button is hidden");
 
+    let location = press_close(&mut app, close)?;
+    release_close(&mut app, location);
+    assert!(app.world().resource::<State>().root.is_none());
+    Ok(())
+}
+
+fn press_close(app: &mut App, close: Entity) -> Result<bevy::picking::pointer::Location> {
+    use super::super::pointer_layout;
+    use bevy::{
+        camera::RenderTarget,
+        picking::pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput},
+        window::PrimaryWindow,
+    };
+
     let primary = app
         .world_mut()
         .query_filtered::<Entity, With<PrimaryWindow>>()
@@ -938,7 +959,7 @@ fn regression_selection_has_pickable_controls_in_the_same_frame() -> Result {
         target: RenderTarget::default()
             .normalize(Some(primary))
             .ok_or("primary target")?,
-        position: pointer_layout::center(&app, close)?,
+        position: pointer_layout::center(app, close)?,
     };
     for action in [
         PointerAction::Move { delta: Vec2::ZERO },
@@ -952,12 +973,16 @@ fn regression_selection_has_pickable_controls_in_the_same_frame() -> Result {
     }
     app.update();
     assert!(app.world().get::<bevy::ui::Pressed>(close).is_some());
+    Ok(location)
+}
+
+fn release_close(app: &mut App, location: bevy::picking::pointer::Location) {
+    use bevy::picking::pointer::{PointerAction, PointerButton, PointerId, PointerInput};
+
     app.world_mut().write_message(PointerInput::new(
         PointerId::Mouse,
         location,
         PointerAction::Release(PointerButton::Primary),
     ));
     app.update();
-    assert!(app.world().resource::<State>().root.is_none());
-    Ok(())
 }

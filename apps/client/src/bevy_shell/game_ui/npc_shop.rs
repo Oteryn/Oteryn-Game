@@ -36,7 +36,13 @@ enum Kind {
     OnlyOwned,
     OpenBackpack,
 }
-type RenderedOffers = (LiveShop, Option<NpcTradeSide>, String, Option<Quote>);
+struct RenderedOffers {
+    shop: LiveShop,
+    side: Option<NpcTradeSide>,
+    query: String,
+    selection: Option<Quote>,
+    rows: Vec<Quote>,
+}
 
 #[derive(Resource, Default)]
 struct State {
@@ -177,14 +183,21 @@ fn activate(
         }
     }
 }
+#[cfg(test)]
+std::thread_local! {
+    static CATALOGUE_PASSES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+fn catalogue_rows(shop: &LiveShop, side: Option<NpcTradeSide>, query: &str) -> Vec<Quote> {
+    #[cfg(test)]
+    CATALOGUE_PASSES.with(|passes| passes.set(passes.get() + 1));
+    shop.filtered_quotes(side, query)
+}
+
 // Carried counts affect captions, search results and the only-owned filter.
-fn same_offer_inventory(
-    previous: &mut LiveShop,
-    current: &LiveShop,
-    side: Option<NpcTradeSide>,
-    query: &str,
-) -> bool {
+fn inventory_changed_rows(previous: &mut RenderedOffers, current: &LiveShop) -> Option<Vec<Quote>> {
     let before = previous
+        .shop
         .inventory
         .as_ref()
         .map(|inventory| &inventory.entries);
@@ -193,25 +206,28 @@ fn same_offer_inventory(
         .as_ref()
         .map(|inventory| &inventory.entries);
     if before == after {
-        return true;
+        return None;
     }
-    let same_count =
-        |item| before.is_some() == after.is_some() && previous.owned(item) == current.owned(item);
-    let unchanged = current
+    let same_count = |item| {
+        before.is_some() == after.is_some() && previous.shop.owned(item) == current.owned(item)
+    };
+    if !current
         .window
         .offers
         .iter()
-        .filter(|offer| side.is_none_or(|side| offer.side == side))
+        .filter(|offer| previous.side.is_none_or(|side| offer.side == side))
         .all(|offer| same_count(offer.item_definition_ref))
-        || (!query.trim().is_empty() && {
-            let rows = current.filtered_quotes(side, query);
-            rows.iter().all(|row| same_count(row.item))
-                && rows == previous.filtered_quotes(side, query)
-        });
-    if unchanged {
-        previous.inventory.clone_from(&current.inventory);
+    {
+        let rows = catalogue_rows(current, previous.side, &previous.query);
+        if previous.query.trim().is_empty()
+            || rows != previous.rows
+            || !rows.iter().all(|row| same_count(row.item))
+        {
+            return Some(rows);
+        }
     }
-    unchanged
+    previous.shop.inventory.clone_from(&current.inventory);
+    None
 }
 
 // One retained model, its fields and source widget entities compose this floating panel.
@@ -300,27 +316,24 @@ fn project(
         selection,
         ..
     } = &mut *state;
-    let changed_rows =
-        if !rendered
-            .as_mut()
-            .is_some_and(|(shop, shown_side, shown_query, shown_selection)| {
-                shop.window == panel.live.window
-                    && (*side == Some(NpcTradeSide::Buy)
-                        || shop.options.only_owned == panel.live.options.only_owned)
-                    && shown_side == side
-                    && shown_query == query
-                    && shown_selection == selection
-                    && same_offer_inventory(shop, &panel.live, *side, query)
-            })
+    let changed_rows = match rendered.as_mut() {
+        Some(shown)
+            if shown.shop.window == panel.live.window
+                && (*side == Some(NpcTradeSide::Buy)
+                    || shown.shop.options.only_owned == panel.live.options.only_owned)
+                && shown.side == *side
+                && shown.query == *query
+                && shown.selection == *selection =>
         {
-            let rows = panel.live.filtered_quotes(state.side, &state.query);
-            if state.selection.is_some_and(|quote| !rows.contains(&quote)) {
-                state.selection = None;
-            }
-            Some(rows)
-        } else {
-            None
-        };
+            inventory_changed_rows(shown, &panel.live)
+        }
+        _ => Some(catalogue_rows(&panel.live, *side, query)),
+    };
+    if let Some(rows) = &changed_rows
+        && state.selection.is_some_and(|quote| !rows.contains(&quote))
+    {
+        state.selection = None;
+    }
     for (caption, mut text) in &mut options {
         let checked = match caption.0 {
             Kind::IgnoreCapacity => panel.live.options.ignore_capacity,
@@ -377,12 +390,13 @@ fn project(
             &panel.live,
             state.selection,
         );
-        state.rendered = Some((
-            panel.live.clone(),
-            state.side,
-            state.query.clone(),
-            state.selection,
-        ));
+        state.rendered = Some(RenderedOffers {
+            shop: panel.live.clone(),
+            side: state.side,
+            query: state.query.clone(),
+            selection: state.selection,
+            rows,
+        });
     }
     let status = if !play.link.npc_shop_is_open() {
         String::new()

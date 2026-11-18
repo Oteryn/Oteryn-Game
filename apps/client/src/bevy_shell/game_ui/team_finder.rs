@@ -64,6 +64,8 @@ pub(super) fn install(app: &mut App) {
             finish_edit.after(bevy::text::EditableTextSystems),
         );
 }
+// Projection reads editor and pointer state before replacing the dialog.
+#[allow(clippy::too_many_arguments)]
 fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
@@ -72,6 +74,7 @@ fn project(
     mut focus: ResMut<InputFocus>,
     parents: Query<&ChildOf>,
     fields: Query<(&Field, &EditableText)>,
+    pressed: Query<&Control, With<bevy::ui::Pressed>>,
 ) {
     let panel = owner
         .play
@@ -88,7 +91,10 @@ fn project(
             .as_ref()
             .is_some_and(|(_, _, leader)| !leader.pending);
     if (state.snapshot == snapshot && !submission_finished)
-        || (same_session && fields.iter().any(|(_, text)| editing(text)))
+        // Focus can leave the editor on press, before Close activates on release.
+        || (same_session
+            && (fields.iter().any(|(_, text)| editing(text))
+                || pressed.iter().any(|control| control.kind == Kind::Close)))
     {
         return;
     }

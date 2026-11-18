@@ -51,20 +51,29 @@ fn publish(outbox: &crate::play::Outbox, revision: u64, price: u32) {
 }
 #[test]
 fn idle_shop_frame_skips_catalogue_formatting() -> Result {
-    test_large_buy_catalogue(None, "")
+    test_large_buy_catalogue(None, "", 1024)
 }
 
 #[test]
 fn regression_unrelated_inventory_delta_keeps_buy_offer_entities() -> Result {
-    test_large_buy_catalogue(Some(1025), "")
+    test_large_buy_catalogue(Some(1025), "", 1024)
 }
 
 #[test]
 fn regression_hidden_offer_inventory_delta_keeps_search_results() -> Result {
-    test_large_buy_catalogue(Some(1), "item #1024")
+    test_large_buy_catalogue(Some(1), "item #1024", 1)
 }
 
-fn test_large_buy_catalogue(inventory_item: Option<u32>, query: &str) -> Result {
+#[test]
+fn regression_carried_search_rebuild_filters_catalogue_once() -> Result {
+    test_large_buy_catalogue(Some(1), "carried 0", 1024)
+}
+
+fn test_large_buy_catalogue(
+    inventory_item: Option<u32>,
+    query: &str,
+    initial_rows: usize,
+) -> Result {
     use std::{hint::black_box, time::Instant};
     let (host, _, outbox) = fixture()?;
     let mut window = host
@@ -151,7 +160,7 @@ fn test_large_buy_catalogue(inventory_item: Option<u32>, query: &str) -> Result 
             editor.editor_mut().set_text(query);
             app.update();
             let filtered = offers(&mut app);
-            assert_eq!(filtered.len(), 1);
+            assert_eq!(filtered.len(), initial_rows);
             filtered
         };
         outbox.push(vec![SessionEvent::Inventory(AppliedDelta {
@@ -170,7 +179,22 @@ fn test_large_buy_catalogue(inventory_item: Option<u32>, query: &str) -> Result 
                 equipment: vec![],
             },
         })]);
+        CATALOGUE_PASSES.with(|passes| passes.set(0));
         app.update();
+        if query == "carried 0" {
+            let rows = app
+                .world_mut()
+                .query::<&Action>()
+                .iter(app.world())
+                .filter_map(|action| match action.kind {
+                    Kind::Select(quote) => Some(quote.item),
+                    _ => None,
+                })
+                .collect::<std::collections::BTreeSet<_>>();
+            assert_eq!(rows, (2..=1024).collect());
+            assert_eq!(CATALOGUE_PASSES.with(std::cell::Cell::get), 1);
+            return Ok(());
+        }
         assert!(
             offers(&mut app) == before,
             "inventory delta rebuilt offer rows"
