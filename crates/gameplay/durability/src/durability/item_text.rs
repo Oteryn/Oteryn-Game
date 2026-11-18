@@ -291,6 +291,34 @@ fn next_revision(last: u64, previous: Option<&str>, next: &str) -> Result<(u64, 
 }
 
 impl DurabilityRoot {
+    /// Read source-authored text after the caller has observed the exact visible instance.
+    pub async fn read_authored_item_text(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        world: WorldId,
+        item: [u8; 16],
+        definition: &TypedDefinitionRef,
+    ) -> std::result::Result<Option<String>, DurabilityError> {
+        let recovery = authority.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let mut definition = definition;
+        self.try_issue_semantic_pass()?.run_with_context(&mut definition, move |holder, deadline, definition| {
+            Box::pin(async move {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                assert_recovery_fence(&mut tx, &recovery).await?;
+                let text = sqlx::query_scalar("SELECT t.text FROM game_item_texts t
+                    JOIN game_item_instances i USING(item_instance_id)
+                    WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid
+                    AND i.lifecycle=1 AND i.definition_family=$3 AND i.definition_production_key=$4
+                    AND i.definition_revision_ref=$5 AND t.writer_character_id IS NULL AND t.text_revision=1")
+                    .bind(item.as_slice()).bind(world.as_bytes().as_slice())
+                    .bind(&definition.family).bind(&definition.production_key).bind(&definition.revision_ref)
+                    .fetch_optional(&mut *tx).await?;
+                commit_semantic_transaction(tx, deadline).await?;
+                Ok(text)
+            })
+        }).await
+    }
+
     /// Read only the historical outcome of the exact original TEXT request.
     /// A current actor, item, Content pin or session fence is not a prerequisite
     /// for history: its refusal cannot resolve a previous uncertain COMMIT.
