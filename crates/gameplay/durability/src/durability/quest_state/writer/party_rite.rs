@@ -51,12 +51,19 @@ pub(super) async fn apply(
             return Ok(false);
         }
         if entry.before != 1 {
+            // Crystal items.xml:22924-22930. A charged crystal already due for
+            // decay cannot qualify during the Item owner's next-pass window.
             let crystal: Option<String> = sqlx::query_scalar(
                 "SELECT i.item_instance_id::text
                  FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c
                  JOIN game_item_instances i ON i.item_instance_id=c.item
                  WHERE i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND i.quantity>0
                    AND i.definition_family='Item' AND i.definition_production_key=$3
+                   AND NOT EXISTS(SELECT 1 FROM game_spell_item_temporal_schedules timer
+                      WHERE timer.item_instance_id=i.item_instance_id
+                        AND timer.definition_production_key=i.definition_production_key
+                        AND timer.definition_revision=i.definition_revision_ref
+                        AND timer.expires_at_unix_ms<=floor(extract(epoch FROM statement_timestamp())*1000))
                  ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i",
             ).bind(id).bind(initiator.runtime_scope.world_id().as_bytes().as_slice())
                 .bind(&rite.admission_item).fetch_optional(&mut **tx).await?;
