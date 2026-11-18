@@ -27,7 +27,7 @@ admission. The `quests` profile adds the following regions.
 | `(129,123)`, `(129,124)` | Edron quest chests with uniques 6028, 6032 and 6033 |
 | `(129,126)`, `(129,127)`, `(130,126)` | Koshei coffin, boss, rewards and parts |
 | `(132,125)` | Isle of Ada landing and death binding |
-| `(133,124)`, `(128,126)` | Rotten Blood Blood Vestibule walk-in |
+| `(133,123)`, `(133,124)`, `(128,126)` | Rotten Blood Blood Vestibule walk-in (landing `(34101,31679,-13)` is in `(133,123)`) |
 
 Both profiles use the production compiler's `compile-regions` equivalence
 proof and pass the generated qualification digest to the shipped `serve`
