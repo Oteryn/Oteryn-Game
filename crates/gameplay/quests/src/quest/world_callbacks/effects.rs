@@ -646,7 +646,8 @@ fn valid_death_phases(
     let mut defeated = BTreeSet::new();
     for rule in &plan.replacements {
         if rule.defeated == plan.terminal
-            || !known.contains(rule.defeated.as_str())
+            || (!known.contains(rule.defeated.as_str())
+                && (rule.retire_siblings_in.is_none() || !creature(&rule.defeated)))
             || !defeated.insert(rule.defeated.as_str())
             || rule
                 .retire_siblings_in

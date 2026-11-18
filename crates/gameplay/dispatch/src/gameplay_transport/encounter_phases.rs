@@ -167,11 +167,34 @@ impl Registry {
         &self,
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
+        creature: Option<&str>,
         now_us: u64,
     ) {
         let Ok(mut active) = self.active.lock() else {
             return;
         };
+        if !active.iter().any(|phase| phase.fight.contains(actor))
+            && let Some(creature) = creature
+            && let Ok((_, at)) = runtime.borrow_combat_death().projected_death(actor)
+        {
+            // Crystal's Essence callback applies to creatures summoned after entry.
+            // An exact admitted actor wins over a region; overlapping regions never guess.
+            let mut regional = active
+                .iter_mut()
+                .filter_map(|phase| match &mut phase.fight {
+                    Fight::Replacements(fight)
+                        if fight.accepts_regional_death(runtime, creature, at) =>
+                    {
+                        Some(fight)
+                    }
+                    _ => None,
+                });
+            if let Some(fight) = regional.next()
+                && regional.next().is_none()
+            {
+                let _ = fight.record_regional_member(actor, creature);
+            }
+        }
         for phase in active.iter_mut().filter(|p| p.fight.contains(actor)) {
             if phase
                 .fight

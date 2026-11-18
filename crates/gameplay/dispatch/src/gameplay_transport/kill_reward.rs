@@ -1965,6 +1965,7 @@ pub fn record_creature_kill(
         states.encounter_phases.note_projected_death(
             runtime,
             target,
+            creature.as_deref().ok(),
             observed_at.map_or(now_ms.saturating_mul(1000), |at| at.get()),
         );
     }

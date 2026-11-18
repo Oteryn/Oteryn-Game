@@ -4,8 +4,11 @@ use super::{CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, Moveme
 use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
 use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
 use oteryn_gameplay_entities::carrier::QuestCorpseStep;
-use oteryn_gameplay_quests::quest::world_callbacks::{DeathPhases, Encounter};
+use oteryn_gameplay_quests::quest::world_callbacks::{
+    DeathPhases, DeathRetirementArea, Encounter, Position,
+};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
+use std::collections::BTreeSet;
 
 use super::terminal_portal::Portal;
 use super::terminal_transfer::{Movement, Transfer};
@@ -22,6 +25,7 @@ pub(super) struct Replacements {
     plan: DeathPhases,
     participants: Vec<(ExactActorRef, GameSessionId)>,
     members: Vec<Member>,
+    completed_sweeps: BTreeSet<String>,
     scope: (RuntimeScopeRefV1, ScopeOwnershipGeneration),
     activation: u64,
     finished: bool,
@@ -63,6 +67,7 @@ impl Replacements {
                     death_at: None,
                 })
                 .collect(),
+            completed_sweeps: BTreeSet::new(),
             scope: runtime.encounter_owner_scope(),
             activation: runtime.content_pin().activation_sequence(),
             finished: false,
@@ -79,6 +84,39 @@ impl Replacements {
 
     pub(super) fn contains(&self, actor: ExactActorRef) -> bool {
         self.members.iter().any(|member| member.actor == actor)
+    }
+
+    pub(super) fn accepts_regional_death(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        creature: &str,
+        at: MovementLocalPosition,
+    ) -> bool {
+        !self.finished
+            && self.is_current(runtime)
+            && !self.completed_sweeps.contains(creature)
+            && self.plan.replacements.iter().any(|rule| {
+                rule.defeated == creature
+                    && rule
+                        .retire_siblings_in
+                        .is_some_and(|area| in_retirement_area(area, at))
+            })
+    }
+
+    pub(super) fn record_regional_member(
+        &mut self,
+        actor: ExactActorRef,
+        creature: &str,
+    ) -> Result<(), CarrierError> {
+        self.members
+            .try_reserve(1)
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        self.members.push(Member {
+            actor,
+            creature: creature.to_owned(),
+            death_at: None,
+        });
+        Ok(())
     }
 
     pub(super) fn projected_death(
@@ -268,17 +306,7 @@ impl Replacements {
                         runtime.matches_live_creature_identity(*actor, defeated.as_bytes())
                             && runtime
                                 .read_actor_position(*actor)
-                                .ok()
-                                .is_some_and(|position| {
-                                    super::super::quest_callbacks::native(position.position())
-                                        .is_some_and(|at| {
-                                            area.contains(
-                                        oteryn_gameplay_quests::quest::world_callbacks::Position {
-                                            x: at.x, y: at.y, floor: at.floor,
-                                        }
-                                    )
-                                        })
-                                })
+                                .is_ok_and(|position| in_retirement_area(area, position.position()))
                     })
                     .collect()
             } else {
@@ -311,6 +339,9 @@ impl Replacements {
                 .map_err(|_| CarrierError::AllocationFailed)?;
             let next = runtime.commit_quest_creature_replacement(&retire, &spawn, || true)?;
             self.members.swap_remove(index);
+            if rule.retire_siblings_in.is_some() {
+                self.completed_sweeps.insert(rule.defeated.clone());
+            }
             if rule.retire_siblings {
                 self.members
                     .retain(|member| member.creature != rule.defeated);
@@ -337,4 +368,14 @@ impl Replacements {
         }
         Ok(self.finished.then_some(self.participants.as_slice()))
     }
+}
+
+fn in_retirement_area(area: DeathRetirementArea, position: MovementLocalPosition) -> bool {
+    super::super::quest_callbacks::native(position).is_some_and(|at| {
+        area.contains(Position {
+            x: at.x,
+            y: at.y,
+            floor: at.floor,
+        })
+    })
 }

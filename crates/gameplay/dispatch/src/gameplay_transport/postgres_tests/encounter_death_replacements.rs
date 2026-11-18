@@ -151,7 +151,7 @@ fn first_dragon_death_sends_two_room_spectators_to_the_reward_landing() -> TestR
 }
 
 #[test]
-fn dragon_essence_death_retires_nearby_essences_and_summons_one_first_dragon() -> TestResult {
+fn later_dragon_essence_death_retires_nearby_essences_and_summons_one_first_dragon() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -817,7 +817,7 @@ pub(super) async fn exercise(
     } else {
         let cohort = live(owner, DRAGON_ESSENCE).await?;
         assert_eq!(cohort.len(), 6);
-        let late_outside = if name == ESSENCE {
+        let (defeated, outside) = if name == ESSENCE {
             let mut runtime = owner.runtime.lock().await;
             let health = runtime
                 .companion_policy(DRAGON_ESSENCE)
@@ -836,14 +836,14 @@ pub(super) async fn exercise(
                 .try_into()
                 .map_err(|_| "two late Essences")?;
             assert!(runtime.contains_live_creature(inside));
-            Some(outside)
+            (inside, Some(outside))
         } else {
-            None
+            (cohort[0], None)
         };
-        super::engenc2_cults::kill(owner, admitted, cohort[0], DRAGON_ESSENCE, 101).await?;
+        super::engenc2_cults::kill(owner, admitted, defeated, DRAGON_ESSENCE, 101).await?;
         assert_eq!(
             live(owner, DRAGON_ESSENCE).await?,
-            late_outside.into_iter().collect::<Vec<_>>()
+            outside.into_iter().collect::<Vec<_>>()
         );
         assert_eq!(live(owner, DRAGON).await?.len(), 1);
         if name == VICTORY {
