@@ -962,6 +962,7 @@ pub(super) fn configure_five(callback: &mut Callback, azaram: bool) -> TestResul
     } else {
         configure_count(callback)?;
     }
+    callback.quest = QUEST.into();
     let encounter = callback.effects.encounter.as_mut().ok_or("encounter")?;
     encounter.players = (0..5)
         .map(
