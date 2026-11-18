@@ -1013,9 +1013,10 @@ impl<'ast> Visit<'ast> for Constructions<'ast> {
 /// owners in `mod.rs`, its one production construction in `serve.rs`, the shared test
 /// constructor and explicit fixture room overrides.
 const CONSTRUCTIONS: &[(&str, usize)] = &[
-    ("gameplay_transport/postgres_tests/m25_ahau_exit.rs", 1),
-    ("gameplay_transport/postgres_tests/engenc2_nomads_use.rs", 1),
+    ("gameplay_transport/postgres_tests/cwarlock.rs", 1),
     ("gameplay_transport/postgres_tests/engenc2_cults.rs", 1),
+    ("gameplay_transport/postgres_tests/engenc2_nomads_use.rs", 1),
+    ("gameplay_transport/postgres_tests/m25_ahau_exit.rs", 1),
     // Qualified activity content inherits the origin gate, checked below.
     ("gameplay_transport/activity_content.rs", 3),
     // Scoped activity assets explicitly withhold qualification, checked below.

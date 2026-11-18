@@ -200,9 +200,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
                 // Cults collects whoever stands on the five source staging tiles.
-                if encounter.phase
-                    == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults)
-                {
+                if encounter.phase.is_some() {
                     continue;
                 }
                 return UseDisposition::Rejected;
@@ -249,7 +247,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let blocked =
                 super::super::pvp_live::pz_blocked(states, who, member_session, self.owner_now());
-            let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+            // Preserve voluntary-entry control and protection-zone admission checks.
+            // The runtime remains locked through the shared landing commit below.
+            if crate::map::floor::prepare_quest_callback_teleport(
                 runtime,
                 &self.movement_cells,
                 who,
@@ -257,6 +257,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 expected,
                 local(member.to),
                 blocked,
+                &closed,
+            )
+            .is_err()
+            {
+                return UseDisposition::NotPossible;
+            }
+            // Court Warlock and Cults gather the staged party on one centre tile.
+            let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
+                runtime,
+                &self.movement_cells,
+                who,
+                member_session,
+                expected,
+                local(member.to),
                 &closed,
             ) else {
                 return UseDisposition::NotPossible;
@@ -296,10 +310,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
         }
         if preflight {
-            return if runtime
-                .preflight_quest_encounter_entry(proofs, &monsters)
-                .is_ok()
-            {
+            let result = if encounter.phase.is_some() {
+                runtime.preflight_quest_encounter_with_phase(proofs, &monsters)
+            } else {
+                runtime.preflight_quest_encounter_entry(proofs, &monsters)
+            };
+            return if result.is_ok() {
                 UseDisposition::Committed
             } else {
                 UseDisposition::Occupied
@@ -394,6 +410,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             &party,
                             credits,
                             self.movement_cells().clone(),
+                            self.owner_now().get(),
                         )
                     })
                     .transpose().map(|phase| (phase, actors.to_vec(), roster))
