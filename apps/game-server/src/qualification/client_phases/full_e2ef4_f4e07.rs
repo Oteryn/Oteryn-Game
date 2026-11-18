@@ -405,6 +405,19 @@ async fn depot_instances(clients: &SeamClients<'_>, town: u16) -> TestResult<Dep
     }).await?
 }
 
+fn backpack_custody_matches(before: &[(&[u8], u32, u32)], after: &[(&[u8], u32, u32)]) -> bool {
+    before.iter().collect::<BTreeSet<_>>() == after.iter().collect()
+}
+
+fn deposited_instances_match(
+    before: &DepotInstances,
+    mut after: DepotInstances,
+    ordinal: u64,
+    offered: &[u8],
+) -> bool {
+    after.remove(&ordinal).as_deref() == Some(offered) && *before == after
+}
+
 fn depot_custody_matches(
     before: &[oteryn_protocol_oteryn::depot::DepotEntry],
     after: &[oteryn_protocol_oteryn::depot::DepotEntry],
@@ -605,8 +618,8 @@ async fn storage_journey(
         if !depot_custody_matches(&initial, &other_entries) {
             return Err("depot deposit changed unrelated locker custody".into());
         }
-        let mut deposited = depot_instances(clients, town).await?;
-        if deposited.remove(&ordinal).as_ref() != Some(original) || deposited != initial_instances {
+        let deposited = depot_instances(clients, town).await?;
+        if !deposited_instances_match(&initial_instances, deposited, ordinal, original) {
             return Err("depot deposit changed the offered or unrelated instance identity".into());
         }
         let moved = depot_call(client, Some(town), depot::DepotAction::Withdraw(ordinal)).await?;
@@ -615,8 +628,27 @@ async fn storage_journey(
         }
         settle(client, "depot-withdraw", |now| *now == whole).await?;
         let restored = backpack_instances(clients, 1, client).await?;
-        if restored.iter().collect::<BTreeSet<_>>() != originals.iter().collect() {
-            return Err("depot withdrawal returned a different backpack instance set".into());
+        let before_custody: Vec<_> = originals
+            .iter()
+            .zip(&lots)
+            .map(|(id, lot)| (id.as_slice(), lot.definition, lot.count))
+            .collect();
+        let restored_inventory = client.inventory().ok_or("restored inventory absent")?;
+        let after_custody: Vec<_> = restored
+            .iter()
+            .zip(&restored_inventory.entries)
+            .map(|(id, entry)| {
+                (
+                    id.as_slice(),
+                    entry.item_definition_ref.get(),
+                    entry.count.get(),
+                )
+            })
+            .collect();
+        if !backpack_custody_matches(&before_custody, &after_custody) {
+            return Err(
+                "depot withdrawal changed a backpack instance or its assigned quantity".into(),
+            );
         }
         let after = depot_entries(client, town).await?;
         if !depot_custody_matches(&initial, &after)
@@ -868,4 +900,35 @@ fn full_duplicate_lots_are_valid_for_depot_probe() {
         has_children: false,
     };
     assert_eq!(depot_probe_index(&[lot(), lot()]), Some(0));
+}
+
+#[test]
+fn depot_rejects_swapped_quantities_for_preserved_instances() {
+    let small = &[1; 16][..];
+    let full = &[2; 16][..];
+    let before = [(small, 10, 30), (full, 10, 100)];
+    assert!(backpack_custody_matches(
+        &before,
+        &[(full, 10, 100), (small, 10, 30)]
+    ));
+    assert!(!backpack_custody_matches(
+        &before,
+        &[(small, 10, 100), (full, 10, 30)]
+    ));
+}
+
+#[test]
+fn depot_rejects_unrelated_uuid_substitution_on_existing_ordinal() {
+    let before = DepotInstances::from([(7, vec![1; 16])]);
+    let offered = vec![2; 16];
+    let mut after = before.clone();
+    after.insert(8, offered.clone());
+    assert!(deposited_instances_match(
+        &before,
+        after.clone(),
+        8,
+        &offered
+    ));
+    after.insert(7, vec![3; 16]);
+    assert!(!deposited_instances_match(&before, after, 8, &offered));
 }

@@ -1088,13 +1088,14 @@ async fn rune_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
             let arena_clients = arena.as_ref().map(|arena| arena.pair(clients));
             let clients = arena_clients.as_ref().unwrap_or(clients);
             let mut client = connect_character(clients, tag, SUPPORT_CHARACTER).await?;
+            let mut peer = None;
             let mut peer_cancelled = false;
             let mut completed = false;
             let deadline = format!("{id} 240s journey deadline; remaining actions unproven");
             let result = watch
                 .bound(Duration::from_secs(240), deadline, async {
                     let result = if id == "C16b" {
-                        paralyze(&mut row, &mut client, clients, world, &mut peer_cancelled).await
+                        paralyze(&mut row, &mut client, clients, world, &mut peer, &mut peer_cancelled).await
                     } else {
                         barriers(&mut row, &mut client, clients, world).await
                     };
@@ -1102,20 +1103,98 @@ async fn rune_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
                     result
                 })
                 .await;
-            if !completed || peer_cancelled {
-                return result;
-            }
-            // Also close this admission on prerequisite failures and assertion errors.
-            let cleanup = rune_cleanup(&mut client, world).await;
-            if let Err(error) = &cleanup {
-                evidence(&format!("E2EF5_GAP {id} cleanup: {error}"));
-            }
-            result?;
-            cleanup
+            finish_rune_admissions(
+                result, !completed || peer_cancelled, client, peer,
+                async |caster, peer| {
+                    tokio::time::timeout(Duration::from_secs(120), async {
+                        let target = if let Some(peer) = peer {
+                            with_observer_liveness(caster, rune_cleanup(peer, world)).await
+                        } else {
+                            Ok(())
+                        };
+                        let caster = rune_cleanup(caster, world).await;
+                        target.and(caster)
+                    }).await.map_err(|_| "rune return and logout deadline")?
+                },
+                async || {
+                    if id == "C16b" {
+                        let (caster, target) = tokio::join!(
+                            wait_character_released(clients, SUPPORT_CHARACTER),
+                            wait_character_released(clients, 1),
+                        );
+                        caster.and(target)
+                    } else {
+                        wait_character_released(clients, SUPPORT_CHARACTER).await
+                    }
+                },
+            ).await
         }
         .await;
         row.finish(result);
     }
+}
+
+async fn finish_rune_admissions<T>(
+    result: TestResult,
+    interrupted: bool,
+    mut caster: T,
+    mut peer: Option<T>,
+    graceful: impl AsyncFnOnce(&mut T, Option<&mut T>) -> TestResult,
+    release: impl AsyncFnOnce() -> TestResult,
+) -> TestResult {
+    // A cancelled exchange may have partially read or written a frame.
+    // Close the transports before waiting for the server to release them.
+    let cleanup = if interrupted {
+        Ok(())
+    } else {
+        graceful(&mut caster, peer.as_mut()).await
+    };
+    drop(peer);
+    drop(caster);
+    let release = release().await;
+    for error in [&cleanup, &release].into_iter().filter_map(|result| result.as_ref().err()) {
+        evidence(&format!("E2EF5_GAP rune admission cleanup: {error}"));
+    }
+    result?;
+    cleanup?;
+    release
+}
+
+#[test]
+fn rune_timeout_releases_both_admissions_before_returning() -> TestResult {
+    use std::cell::Cell;
+
+    struct Transport<'a>(&'a Cell<u8>);
+    impl Drop for Transport<'_> {
+        fn drop(&mut self) {
+            self.0.set(self.0.get() + 1);
+        }
+    }
+
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        let closed = Cell::new(0);
+        let released = Cell::new(false);
+        let attempted_logout = Cell::new(false);
+        let result = tokio::time::timeout(Duration::from_millis(1), std::future::pending::<TestResult>())
+            .await.map_err(|_| "target reprovision deadline".into()).and_then(|result| result);
+        let outcome = finish_rune_admissions(
+            result, true, Transport(&closed), Some(Transport(&closed)),
+            async |_, _| {
+                attempted_logout.set(true);
+                Ok(())
+            },
+            async || {
+                assert_eq!(closed.get(), 2);
+                tokio::task::yield_now().await;
+                released.set(true);
+                Ok(())
+            },
+        ).await;
+        assert!(released.get());
+        assert!(!attempted_logout.get());
+        assert!(outcome.is_err_and(|error| error.to_string() == "target reprovision deadline"));
+        Ok(())
+    })
 }
 
 pub(super) async fn rune_cleanup(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
@@ -1591,6 +1670,7 @@ async fn paralyze(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
+    admitted_peer: &mut Option<DevClientSession>,
     peer_cancelled: &mut bool,
 ) -> TestResult {
     let book = native_spell_book()?;
@@ -1610,17 +1690,21 @@ async fn paralyze(
         "illegal-floor-no-cost",
         illegal_floor(client, reference).await?,
     );
-    let mut peer = with_observer_liveness(client, connect_character(clients, 0xb1, 1)).await?;
-    let result: TestResult = tokio::time::timeout(Duration::from_secs(140), async {
-        if with_observer_liveness(client, level(&mut peer)).await? < 8 {
-            with_observer_liveness(client, provision_rune_fixture(&mut peer, clients, "knight", 1)).await?;
+    with_observer_liveness(client, async {
+        *admitted_peer = Some(connect_character(clients, 0xb1, 1).await?);
+        Ok(())
+    }).await?;
+    let peer = admitted_peer.as_mut().ok_or("C16b target admission absent")?;
+    tokio::time::timeout(Duration::from_secs(140), async {
+        if with_observer_liveness(client, level(peer)).await? < 8 {
+            with_observer_liveness(client, provision_rune_fixture(peer, clients, "knight", 1)).await?;
         }
-        if with_observer_liveness(client, level(&mut peer)).await? < 8 {
+        if with_observer_liveness(client, level(peer)).await? < 8 {
             return Err("C16b fixture did not publish the target protection level".into());
         }
         let path = route(world, tile(peer.world_spatial().actor_position)?, |at| rune_corridor(world, at).is_some())
             .ok_or("C16b no reachable non-PZ equal-ground target corridor")?;
-        with_observer_liveness(client, walk(&mut peer, world, &path)).await?;
+        with_observer_liveness(client, walk(peer, world, &path)).await?;
         let cells = rune_corridor(world, tile(peer.world_spatial().actor_position)?)
             .ok_or("C16b target corridor vanished")?;
         let caster_path = route(world, tile(client.world_spatial().actor_position)?, |at|
@@ -1628,16 +1712,16 @@ async fn paralyze(
                 && at.x.abs_diff(cells[0].x).max(at.y.abs_diff(cells[0].y)) <= 3
                 && world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone()))
             .ok_or("C16b caster cannot approach the independent target")?;
-        with_observer_liveness(&mut peer, walk(client, world, &caster_path)).await?;
-        let target_level = level(&mut peer).await?;
+        with_observer_liveness(peer, walk(client, world, &caster_path)).await?;
+        let target_level = level(peer).await?;
         let ground = world.ground_speed(cells[0]);
-        let baseline = with_observer_liveness(client, cadence_leg(&mut peer, &cells)).await?;
+        let baseline = with_observer_liveness(client, cadence_leg(peer, &cells)).await?;
         if !same_cadence(baseline, expected_cadence(None, target_level, ground)?) {
             return Err("C16b target baseline does not match production movement speed".into());
         }
         let back = route(world, tile(peer.world_spatial().actor_position)?, |at| at == cells[0])
             .ok_or("C16b target cannot return to speed trial start")?;
-        with_observer_liveness(client, walk(&mut peer, world, &back)).await?;
+        with_observer_liveness(client, walk(peer, world, &back)).await?;
         row.pass("target-baseline", peer.last_server_sequence());
         client.service_liveness(Duration::from_millis(50)).await?;
         let target = peer.world_entities().and_then(|entities|
@@ -1646,13 +1730,13 @@ async fn paralyze(
         if client.world_entities().is_none_or(|entities| !entities.iter().any(|entity| entity.entity == target)) {
             return Err("C16b independent target generation is not visible to caster".into());
         }
-        with_observer_liveness(&mut peer, super::full_e2ef6::set_open_pvp_aggression(client)).await?;
+        with_observer_liveness(peer, super::full_e2ef6::set_open_pvp_aggression(client)).await?;
         let vitals = client.actor_vitals().copied().ok_or("C16b caster vitals absent")?;
         let started = tokio::time::Instant::now();
         let (_, remaining) = cast_rune(client, spell, reference, Some(target), None).await?;
         // This is the server's automatic walking path. Both intermediate own
         // position deltas are required; elapsed client sleeps are not evidence.
-        let slowed = with_observer_liveness(client, cadence_leg(&mut peer, &cells)).await?;
+        let slowed = with_observer_liveness(client, cadence_leg(peer, &cells)).await?;
         let expected = oteryn_gameplay_characters::speed::StepSpeedTable::embedded()
             .and_then(|table| table.step_duration(40, ground)).ok_or("C16b speed-40 table duration absent")?;
         if tokio::time::Instant::now() >= started + Duration::from_secs(6)
@@ -1667,24 +1751,17 @@ async fn paralyze(
             client.service_liveness(Duration::from_millis(25)).await?;
         }
         let reverse: Vec<_> = cells.iter().rev().copied().collect();
-        if !same_cadence(with_observer_liveness(client, cadence_leg(&mut peer, &reverse)).await?, baseline) {
+        if !same_cadence(with_observer_liveness(client, cadence_leg(peer, &reverse)).await?, baseline) {
             return Err("C16b paralysis failed to expire to the original target speed".into());
         }
         row.pass("target-expiry", peer.last_server_sequence());
-        row.pass("fresh-admission-rune-custody", with_observer_liveness(&mut peer,
+        row.pass("fresh-admission-rune-custody", with_observer_liveness(peer,
             rune_rejoin(client, clients, 0xb2, SUPPORT_CHARACTER, &[(reference, remaining)])).await?);
         Ok(())
-    }).await.map_err(|_| {
+    }).await.unwrap_or_else(|_| {
         *peer_cancelled = true;
-        "C16b independent-target journey exceeded 140s"
-    })?;
-    // The second character is restored/closed even when a positive cast fails.
-    let cleanup = with_observer_liveness(client, rune_cleanup(&mut peer, world)).await;
-    if let Err(error) = &cleanup {
-        evidence(&format!("E2EF5_GAP C16b peer cleanup: {error}"));
-    }
-    result?;
-    cleanup
+        Err("C16b independent-target journey exceeded 140s".into())
+    })
 }
 
 fn barrier_parameters(spell: &crate::spell::SpellDefinition) -> TestResult<(u64, u64, [u32; 2])> {

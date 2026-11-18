@@ -2736,25 +2736,32 @@ pub(super) async fn set_open_pvp_aggression(client: &mut DevClientSession) -> Te
     {
         return Err(format!("PvP expert controls unavailable/refused: {reply:?}").into());
     }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
-        let delta = client
-            .session_mut()
-            .read_gated_delta(wire::STATE_DOMAIN_EXPERT_FIGHT_MODES, 1)
+        let now = tokio::time::Instant::now();
+        if now >= deadline {
+            return Err("PvP expert mode confirmation deadline".into());
+        }
+        for event in client.take_events() {
+            if let SessionEvent::ExpertFightModes(delta) = event
+                && delta.server_sequence > reply.server_sequence
+            {
+                if delta.value != modes {
+                    return Err(format!(
+                        "PvP world prerequisite blocked: RedFist/secure-off not served: {:?}",
+                        delta.value
+                    )
+                    .into());
+                }
+                return Ok(());
+            }
+        }
+        // The expert refresh can miss the holder and arrive after combat state.
+        // Dispatch both through the session's normal revision-checked event path.
+        client
+            .service_liveness((deadline - now).min(Duration::from_millis(50)))
             .await?;
-        if delta.server_sequence <= reply.server_sequence {
-            continue;
-        }
-        let actual = wire::decode_expert_fight_modes(&delta.payload)
-            .map_err(|error| format!("expert frame: {error:?}"))?;
-        if actual != modes {
-            return Err(format!(
-                "PvP world prerequisite blocked: RedFist/secure-off not served: {actual:?}"
-            )
-            .into());
-        }
-        break;
     }
-    Ok(())
 }
 
 async fn observed_pvp_death(
