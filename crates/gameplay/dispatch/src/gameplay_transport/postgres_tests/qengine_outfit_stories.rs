@@ -417,6 +417,16 @@ pub(super) async fn earn_level(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     carrying_level: u32,
 ) -> TestResult {
+    earn_level_with_occurrence(owner, admitted, authority, carrying_level, 105).await
+}
+
+pub(super) async fn earn_level_with_occurrence(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    carrying_level: u32,
+    occurrence: u8,
+) -> TestResult {
     use crate::durability::character_progression::{
         ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
     };
@@ -452,7 +462,7 @@ pub(super) async fn earn_level(
             owner.holder,
             fence,
             ExperienceAwardRequest {
-                occurrence: ExperienceRewardOccurrence::from_bytes(super::fixture::id(105))
+                occurrence: ExperienceRewardOccurrence::from_bytes(super::fixture::id(occurrence))
                     .map_err(debug)?,
                 amount: oteryn_simulation_determinism::ExactI64::new(
                     target

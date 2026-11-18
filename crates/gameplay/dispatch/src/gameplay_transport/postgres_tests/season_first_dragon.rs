@@ -636,7 +636,7 @@ async fn prepare_peer(
     };
     owner.admit_premium(fixture::id(120), session);
     owner.admit_progression_session(&mut peer).await;
-    super::qengine_outfit_stories::earn_level(owner, &peer, authority, 40).await?;
+    super::qengine_outfit_stories::earn_level_with_occurrence(owner, &peer, authority, 40, 106).await?;
     let CastFactsLoad::Ready { facts, .. } =
         load_character_cast_facts(&h.root, authority, fence.character_id).await
     else { return Err("owned First Dragon peer facts unavailable".into()); };
