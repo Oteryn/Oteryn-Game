@@ -7,7 +7,9 @@ use crate::foundation::{
 };
 use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink, record_creature_kill};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
-use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
+use oteryn_gameplay_quests::quest::{
+    QuestStateCatalogue, authored_bindings::Bindings, world_callbacks::Callback,
+};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
@@ -16,12 +18,15 @@ const RAT: &str = "oteryn:creature.rat";
 const CAVE_RAT: &str = "oteryn:creature.cave_rat";
 const TRACK: &str = "oteryn:quest-progress/qcredit-fixture/kills";
 const PHASE: &str = "oteryn:quest-progress/qcredit-fixture/phase";
+const QUEST: &str = "oteryn:quest.authored.draccoon_herald_outfits_quest";
+const EXIT: &str = "oteryn:quest-progress/qcredit-fixture/exit";
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Case {
     All,
     Top,
     Time,
+    Window,
     Area,
     Summon,
     Ordered,
@@ -75,6 +80,39 @@ fn higher_boss_rank_advances_once_and_later_lower_rank_cannot_regress_it() -> Te
     run(admin, Case::Ordered)
 }
 
+#[test]
+fn two_players_share_the_timed_boss_exit_and_return_on_expiry() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::Window)
+}
+
+fn window_callback(at: MovementLocalPosition) -> TestResult<Callback> {
+    let x = u16::try_from(at.x)?;
+    let y = u16::try_from(at.y)?;
+    let floor = i8::try_from(-at.floor)?;
+    Ok(serde_json::from_value(json!({
+        "key":"oteryn:quest-callback/qcredit-fixture/timed-exit",
+        "quest":QUEST,
+        "trigger":"step_in",
+        "selector":{"position":{"x":x+1,"y":y,"floor":floor},"appearance":1949},
+        "reversible":false,
+        "passages":[],
+        "teleport":{"x":x+3,"y":y,"floor":floor},
+        "effects":{"death_window":{
+            "creatures":[RAT,CAVE_RAT],
+            "area":{"minimum":[x+2,y,at.floor],"maximum":[x+2,y,at.floor]},
+            "required_deaths":2,
+            "duration_ms":600_000
+        }},
+        "storage":[{"track":EXIT, "minimum":0,"maximum":1,"set":1}],
+        "offerings":[],
+        "return_on_failure":true,
+        "sources":["Crystal201189f creaturescripts_inquisition_boss.lua:19-29"]
+    }))?)
+}
+
 fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCatalogue> {
     let mut counter = json!({
         "key": "oteryn:quest-transition/native-kills/qcredit-fixture-rat",
@@ -100,6 +138,7 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
             counter["damage_credit"]["recent_damage_ms"] = json!(60_000);
             "Crystal201189f the_inquisition_quest/creaturescripts_inquisition_ungreez.lua:2-10"
         }
+        Case::Window => "Crystal201189f creaturescripts_inquisition_boss.lua:19-29",
         Case::Time => {
             counter["damage_credit"]["recent_damage_ms"] = json!(60_000);
             "Crystal201189f creature.lua:219-240, config.lua.dist:40"
@@ -128,14 +167,21 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
         counter["maximum"] = json!(3);
         stages.push(stage("cave-rat", &counter));
     }
+    if case == Case::Window {
+        stages.push(json!({
+            "key":"timed-exit", "completes":false,
+            "trigger":{"kind":"step_in","callback":window_callback(at)?}
+        }));
+    }
     let fixture_digest = format!("{:x}", Sha256::digest(serde_json::to_vec(&stages)?));
     let definition = json!({"schema":1, "quests":[{
-        "quest":"oteryn:quest.authored.draccoon_herald_outfits_quest",
+        "quest":QUEST,
         "recipe_sha256": fixture_digest,
         "sources":[source],
         "tracks":[
             {"key":PHASE, "initial":1, "minimum":0, "maximum":1},
-            {"key":TRACK, "initial":0, "minimum":0, "maximum":5}
+            {"key":TRACK, "initial":0, "minimum":0, "maximum":5},
+            {"key":EXIT, "initial":0, "minimum":0, "maximum":1}
         ],
         "stages":stages
     }]});
@@ -169,6 +215,36 @@ fn run(admin: String, case: Case) -> TestResult {
             y: start.y,
             floor: start.floor,
         };
+        let world = if case == Case::Window {
+            let callback = window_callback(at)?;
+            Some(super::quest_world_callbacks::world(
+                &callback,
+                callback.selector.position.ok_or("exit tile")?,
+            )?)
+        } else {
+            None
+        };
+        let cells = world
+            .as_ref()
+            .map(|world| {
+                world
+                    .movement_cells(pin.qualified_room().movement_cells())
+                    .map_err(debug)
+            })
+            .transpose()?;
+        let channel_pin = if let Some(world) = &world {
+            crate::foundation::ChannelContentPin::from_activation(
+                deps.admitted.world_id,
+                1,
+                generation.identity().server_artifact_digest(),
+                generation.identity().client_artifact_digest(),
+                world.frame_binding_digest(deps.admitted.world_id),
+                world.map_revision_digest(),
+                (at.x, at.y, at.floor),
+            )
+        } else {
+            pin.into_channel_pin()
+        };
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             deps.admitted.world_id,
             deps.admitted.channel_id,
@@ -178,7 +254,7 @@ fn run(admin: String, case: Case) -> TestResult {
             1,
             "runtime-scope-assignment:1",
             16,
-            pin.into_channel_pin(),
+            channel_pin,
         )
         .map_err(debug)?;
         native
@@ -189,7 +265,7 @@ fn run(admin: String, case: Case) -> TestResult {
                 .fetch_one(&h.pool)
                 .await?;
         let mut players = Vec::new();
-        for index in 0..3 {
+        for index in 0..if case == Case::Window { 2 } else { 3 } {
             let (current, _) =
                 crate::world_party_runtime_postgres_cases::committed_fresh_player_with_operation(
                     &crate::world_party_runtime_postgres_cases::FreshPlayerOwners {
@@ -209,8 +285,17 @@ fn run(admin: String, case: Case) -> TestResult {
             runtime
                 .bind_attacker_lease(actor, session, current.current_character_lease())
                 .map_err(debug)?;
+            let initial = if case == Case::Window && index == 1 {
+                MovementLocalPosition {
+                    x: at.x + 1,
+                    y: at.y - 1,
+                    ..at
+                }
+            } else {
+                at
+            };
             runtime
-                .initialize_pinned_test_position(actor, at)
+                .initialize_pinned_test_position(actor, initial)
                 .map_err(debug)?;
             players.push(Player { actor, session });
         }
@@ -226,6 +311,15 @@ fn run(admin: String, case: Case) -> TestResult {
         owner.quest_catalogue = Some(Arc::new(catalogue(case, at)?));
         for player in &players {
             owner.refresh_quest_session(player.session, true).await;
+        }
+
+        if let Some(cells) = &cells {
+            owner.movement_cells = cells.into();
+            exercise_window(&owner, &players, at, &h.pool).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
         }
 
         if case == Case::Area {
@@ -311,6 +405,7 @@ fn run(admin: String, case: Case) -> TestResult {
             Case::Top => [1, 1, 0],
             Case::Time | Case::Summon => [1, 2, 0],
             Case::Ordered => [3, 3, 0],
+            Case::Window => return Err("timed exit requires bundle cells".into()),
         };
         assert_tracks(&h.pool, expected).await?;
         drop(owner);
@@ -318,6 +413,104 @@ fn run(admin: String, case: Case) -> TestResult {
         drop(seal);
         h.cleanup().await
     })
+}
+
+async fn exercise_window(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    players: &[Player],
+    at: MovementLocalPosition,
+    pool: &sqlx::PgPool,
+) -> TestResult {
+    let portal = MovementLocalPosition { x: at.x + 1, ..at };
+    let ward = MovementLocalPosition { x: at.x + 2, ..at };
+    let landing = MovementLocalPosition { x: at.x + 3, ..at };
+    let original = [
+        at,
+        MovementLocalPosition {
+            y: at.y - 1,
+            ..portal
+        },
+    ];
+    let set_clock = |ms: u64| {
+        owner
+            .states
+            .test_owner_time
+            .store(ms * 1_000 + 1, std::sync::atomic::Ordering::Relaxed);
+    };
+    for (player, origin) in players.iter().zip(original) {
+        assert_eq!(enter_exit(owner, *player, portal).await?, origin);
+    }
+    set_clock(200_000);
+    death(owner, players, RAT, ward, Case::Window, 100).await?;
+    assert_eq!(enter_exit(owner, players[0], portal).await?, original[0]);
+    set_clock(201_000);
+    death(owner, players, CAVE_RAT, ward, Case::Window, 101).await?;
+    set_clock(202_000);
+    for (player, origin) in players.iter().zip(original) {
+        assert_eq!(enter_exit(owner, *player, portal).await?, landing);
+        move_to(owner, *player, origin).await?;
+    }
+    let passed: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_tracks WHERE track_key=$1 AND value=1",
+    )
+    .bind(EXIT)
+    .fetch_one(pool)
+    .await?;
+    assert_eq!(passed, 2);
+    set_clock(801_000);
+    for (player, origin) in players.iter().zip(original) {
+        assert_eq!(enter_exit(owner, *player, portal).await?, origin);
+    }
+    Ok(())
+}
+
+async fn enter_exit(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    player: Player,
+    portal: MovementLocalPosition,
+) -> TestResult<MovementLocalPosition> {
+    let permit = owner.spell_lane_permit().await.ok_or("step lane")?;
+    let (origin, entered) = move_with_revision(owner, player, portal).await?;
+    Ok(owner
+        .step_quest_callback(&permit, player.actor, player.session, origin, entered)
+        .await
+        .position())
+}
+
+async fn move_to(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    player: Player,
+    position: MovementLocalPosition,
+) -> TestResult {
+    move_with_revision(owner, player, position).await?;
+    Ok(())
+}
+
+async fn move_with_revision(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    player: Player,
+    destination: MovementLocalPosition,
+) -> TestResult<(
+    crate::foundation::MovementPositionSnapshot,
+    crate::foundation::MovementPositionSnapshot,
+)> {
+    let mut runtime = owner.runtime.lock().await;
+    let origin = runtime.read_actor_position(player.actor).map_err(debug)?;
+    let map = owner.bundle_map().ok_or("bundle map for timed exit")?;
+    let doors = crate::map::floor::BundleDoors(&map.facts);
+    let proof = crate::map::floor::prepare_quest_callback_teleport(
+        &runtime,
+        owner.movement_cells(),
+        player.actor,
+        player.session,
+        origin,
+        destination,
+        false,
+        &doors,
+    )
+    .map_err(debug)?;
+    let entered = runtime.commit_source_step(proof).map_err(debug)?;
+    Ok((origin, entered))
 }
 
 async fn assert_tracks(pool: &sqlx::PgPool, expected: [i64; 3]) -> TestResult {
