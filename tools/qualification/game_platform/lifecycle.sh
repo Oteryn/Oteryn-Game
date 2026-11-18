@@ -125,6 +125,7 @@ game_platform_start() {
   cp "$PORTAL_E2E_OUT/certs/clients/native-evidence.key" "$WP5_PKI/client.key"
   WP5_PORT="$PORTAL_E2E_INTERNAL_PORT"
   WP5_SERVER_NAME=localhost
+  WP5_SOURCE_AUTHORITY=oteryn-platform-e2e
   evidence "platform_roles=migrate,serve,worker,gateway platform_pg=18.6 game_pg=18.6 separate_database_roles=1 clients=16"
 }
 game_platform_config() {

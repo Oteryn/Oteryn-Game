@@ -69,7 +69,6 @@ mod wild_spawn;
 #[path = "spell_book_sweep_tests.rs"]
 mod spell_book_sweep_tests;
 
-const SOURCE_AUTHORITY: &str = "platform";
 const PLATFORM_SOURCE: &str = "3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05";
 /// Interpretation requested by the Platform intents that `run.sh` issues.
 /// Its content revision is also the served `readiness.content_revision`: the quest and Task Board
@@ -85,6 +84,11 @@ const SERVED_CONTENT_REVISION: &str = INTERPRETATION[2];
 const RUNTIME_AUTHORITY: &str = "game:wp5-seam-runtime";
 /// First readiness publication of the served Channel.
 const RUNTIME_OBSERVATION: &str = "runtime-1";
+
+/// The Platform harness answers under its own authority; the legacy WP5 server under `platform`.
+fn source_authority() -> String {
+    env::var("WP5_S3A_SOURCE_AUTHORITY").unwrap_or_else(|_| "platform".into())
+}
 
 fn required(name: &str) -> Result<String, io::Error> {
     env::var(name).map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, name))
@@ -369,7 +373,7 @@ async fn fetch_real(
         native_admission_source::http1_mtls::exchange(descriptor, operation, &encoded, &mut permit)
             .await
             .map_err(|error| format!("S1 exchange: {error:?}"))?;
-    let Ok(Response::Observed(observation)) = decode_response(&request, SOURCE_AUTHORITY, &raw)
+    let Ok(Response::Observed(observation)) = decode_response(&request, &source_authority(), &raw)
     else {
         return Err("Platform did not return an authoritative observation".into());
     };
@@ -432,7 +436,7 @@ async fn ingest(
         root.accept_native_source_observation(
             custody,
             SourceObservation {
-                source_authority: SOURCE_AUTHORITY.into(),
+                source_authority: source_authority(),
                 operation,
                 subject,
                 source_revision: observation.source_revision,
@@ -1342,7 +1346,7 @@ fn node_boot_spells_against_running_node() -> TestResult {
             .await?;
             database.close().await?;
             let descriptor = producer_descriptor(
-                SOURCE_AUTHORITY,
+                &source_authority(),
                 "WP5_S3A_CLIENT_CERT",
                 "WP5_S3A_CLIENT_KEY",
             )?;
@@ -1526,7 +1530,7 @@ fn node_boot_seam_against_running_node() -> TestResult {
                 channel,
                 scope_generation: scope_generation.parse()?,
                 descriptor: &producer_descriptor(
-                    SOURCE_AUTHORITY,
+                    &source_authority(),
                     "WP5_S3A_CLIENT_CERT",
                     "WP5_S3A_CLIENT_KEY",
                 )?,
@@ -1607,7 +1611,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         })
         .transpose()?;
     let descriptor = producer_descriptor(
-        SOURCE_AUTHORITY,
+        &source_authority(),
         "WP5_S3A_CLIENT_CERT",
         "WP5_S3A_CLIENT_KEY",
     )?;
@@ -1633,7 +1637,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     let provenance = FreshStoreProvenance {
         namespace: "wp5-seam".into(),
         authorization: "seam-disposable-topology".into(),
-        source_authority: SOURCE_AUTHORITY.into(),
+        source_authority: source_authority(),
         initialized_at: now,
     };
     let descriptor_registration = DescriptorRegistration {
@@ -1643,7 +1647,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     };
     if !control
         .record_native_source_descriptor_issuance(
-            SOURCE_AUTHORITY,
+            &source_authority(),
             descriptor_registration.clone(),
             Some(provenance.clone()),
         )
@@ -1921,7 +1925,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     // D4: let every pre-seeded observation age past the five-second bound, so
     // an admission can only succeed on evidence fetched for that attempt.
     let fresh_evidence = crate::FreshEvidenceSource::new(producer_descriptor(
-        SOURCE_AUTHORITY,
+        &source_authority(),
         "WP5_S3A_CLIENT_CERT",
         "WP5_S3A_CLIENT_KEY",
     )?);
