@@ -39,7 +39,12 @@ pub(super) async fn read_with_budget<T>(
         .map_err(|_| ())
 }
 
+#[track_caller]
 fn owner_read<T>(read: Result<T, DurabilityError>) -> Result<Option<T>, ()> {
+    #[cfg(test)]
+    if let Err(error) = &read {
+        eprintln!("MAINFIX_SOULPIT owner read at {}: {error:?}", std::panic::Location::caller());
+    }
     match read {
         Ok(value) => Ok(Some(value)),
         // These two callers only read current Soulpit bindings/members. A bounded

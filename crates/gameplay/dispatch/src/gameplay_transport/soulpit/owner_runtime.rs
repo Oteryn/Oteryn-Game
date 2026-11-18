@@ -527,6 +527,8 @@ pub(super) async fn drive_registered<'a, 'f, 's>(
         now,
         visible: Vec::new(),
     };
+    #[cfg(test)]
+    eprintln!("MAINFIX_SOULPIT drive global={global_tick} now={now}");
     let mut stored = owner.read_encounter().await?;
     if !stored.encounter.snapshot().phase.is_terminal() {
         owner.refresh_survivors().await?;
