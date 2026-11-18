@@ -354,7 +354,9 @@ fn scenario_case(
     let draconia_escape = name.starts_with("draconia-escape-");
     let death_replacement = matches!(name, super::super::encounter_death_replacements::BOWL | super::super::encounter_death_replacements::EARTH | super::super::encounter_death_replacements::ENERGY | super::super::encounter_death_replacements::ESSENCE | super::super::encounter_death_replacements::FALLEN | super::super::encounter_death_replacements::LORE | super::super::encounter_death_replacements::VICTORY);
     let monster_step = matches!(name, super::super::zamulosh_monster_step::CASE | super::super::zamulosh_monster_step::BLOSSOM);
-    let mut callback = if name == super::super::shulgrax_flower_pattern::CASE {
+    let mut callback = if name == super::super::shulgrax_flower_pattern::CYCLE {
+        super::super::shulgrax_flower_pattern::cycle_callback()?
+    } else if name == super::super::shulgrax_flower_pattern::CASE {
         super::super::shulgrax_flower_pattern::callback()?
     } else if name == super::super::warzone_portal_cooldown::VICTORY {
         super::super::warzone_portal_cooldown::terminal_callback()?
@@ -664,7 +666,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if name == super::super::shulgrax_flower_pattern::CASE {
+    let world = if name == super::super::shulgrax_flower_pattern::CYCLE {
+        super::super::shulgrax_flower_pattern::cycle_world(&callback)?
+    } else if name == super::super::shulgrax_flower_pattern::CASE {
         super::super::shulgrax_flower_pattern::world(&callback)?
     } else if name == super::super::warzone_portal_cooldown::VICTORY {
         super::super::warzone_portal_cooldown::portal_world(&callback)?
@@ -1900,7 +1904,9 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if name == super::super::shulgrax_flower_pattern::CASE {
+        if name == super::super::shulgrax_flower_pattern::CYCLE {
+            Box::pin(super::super::shulgrax_flower_pattern::exercise_cycle(&owner, &mut admitted, callback.clone())).await?;
+        } else if name == super::super::shulgrax_flower_pattern::CASE {
             Box::pin(super::super::shulgrax_flower_pattern::exercise(&owner, &mut admitted, callback.clone())).await?;
         } else if name == super::super::warzone_portal_cooldown::VICTORY {
             Box::pin(super::super::warzone_portal_cooldown::exercise_victory(&owner, &mut admitted, callback.clone())).await?;

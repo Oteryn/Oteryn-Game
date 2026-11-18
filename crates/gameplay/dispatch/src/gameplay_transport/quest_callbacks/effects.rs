@@ -96,7 +96,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return Ok(Some(QuestCallbackProjection::ItemLayout {
                 positions,
-                clear_appearances: cycle.clear_appearances.clone(),
                 native_removals,
                 create,
             }));

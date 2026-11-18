@@ -122,7 +122,6 @@ pub enum QuestCallbackProjection {
     },
     ItemLayout {
         positions: Vec<TilePos>,
-        clear_appearances: Vec<u16>,
         native_removals: Vec<QuestSceneMutation>,
         create: Option<(TilePos, EntryFacts)>,
     },
@@ -422,39 +421,16 @@ impl CallbackStates {
                 position,
                 entry: facts,
             } => {
-                if let Some((pos, id)) = self.presences.get(&owner).copied() {
+                if let Some((pos, _)) = self.presences.get(&owner).copied() {
                     if pos != *position {
                         return false;
                     }
                     if !close {
                         return true;
                     }
-                    if let Some(entries) = self.movement_items.get_mut(&pos) {
-                        entries.retain(|entry| entry.source != view::EntrySource::Added(id));
-                        if entries.is_empty() {
-                            self.movement_items.remove(&pos);
-                        }
-                    }
-                    self.presences.remove(&owner);
-                } else if !close {
-                    if facts.pickupable || self.presences.values().any(|(pos, _)| pos == position) {
-                        return false;
-                    }
-                    let Some(sequence) = self.movement_sequence.checked_add(1) else {
-                        return false;
-                    };
-                    let Some(entry) = EntryId::callback(sequence) else {
-                        return false;
-                    };
-                    self.movement_sequence = sequence;
-                    self.movement_items
-                        .entry(*position)
-                        .or_default()
-                        .push(view::ComposedEntry {
-                            source: view::EntrySource::Added(entry),
-                            facts: *facts,
-                        });
-                    self.presences.insert(owner, (*position, entry));
+                    self.remove_presence(owner);
+                } else if !close && !self.create_presence(owner, *position, *facts) {
+                    return false;
                 }
             }
             QuestCallbackProjection::Scene {
@@ -467,37 +443,20 @@ impl CallbackStates {
             }
             QuestCallbackProjection::ItemLayout {
                 positions,
-                clear_appearances,
                 native_removals,
                 create,
             } => {
-                if !project_scene(self, owner, native_removals, false) {
+                if self
+                    .presences
+                    .get(&owner)
+                    .is_some_and(|(position, _)| !positions.contains(position))
+                    || !project_scene(self, owner, native_removals, false)
+                {
                     return false;
                 }
-                for position in positions {
-                    if let Some(entries) = self.movement_items.get_mut(position) {
-                        entries.retain(|entry| {
-                            entry.facts.pickupable
-                                || !clear_appearances.contains(&entry.facts.appearance_id)
-                                || !matches!(entry.source, view::EntrySource::Added(id)
-                                    if !self.presences.values().any(|(_, protected)| *protected == id))
-                        });
-                        if entries.is_empty() {
-                            self.movement_items.remove(position);
-                        }
-                    }
-                }
+                self.remove_presence(owner);
                 if let Some((position, facts)) = create
-                    && !project_scene(
-                        self,
-                        owner,
-                        &[QuestSceneMutation::Create {
-                            position: *position,
-                            facts: *facts,
-                            passable: true,
-                        }],
-                        false,
-                    )
+                    && !self.create_presence(owner, *position, *facts)
                 {
                     return false;
                 }
@@ -531,6 +490,39 @@ impl CallbackStates {
         }
         true
     }
+    fn remove_presence(&mut self, owner: u64) {
+        if let Some((position, id)) = self.presences.remove(&owner)
+            && let Some(entries) = self.movement_items.get_mut(&position)
+        {
+            entries.retain(|entry| entry.source != view::EntrySource::Added(id));
+            if entries.is_empty() {
+                self.movement_items.remove(&position);
+            }
+        }
+    }
+
+    fn create_presence(&mut self, owner: u64, position: TilePos, facts: EntryFacts) -> bool {
+        if facts.pickupable || self.presences.values().any(|(at, _)| *at == position) {
+            return false;
+        }
+        let Some(sequence) = self.movement_sequence.checked_add(1) else {
+            return false;
+        };
+        let Some(entry) = EntryId::callback(sequence) else {
+            return false;
+        };
+        self.movement_sequence = sequence;
+        self.movement_items
+            .entry(position)
+            .or_default()
+            .push(view::ComposedEntry {
+                source: view::EntrySource::Added(entry),
+                facts,
+            });
+        self.presences.insert(owner, (position, entry));
+        true
+    }
+
     pub(super) fn movement_item(
         &self,
         id: u64,
@@ -1676,7 +1668,7 @@ impl BundleFacts {
             }
             Some(QuestCallbackProjection::ItemLayout {
                 native_removals, ..
-            }) => native_removals.len().saturating_add(2),
+            }) => native_removals.len().saturating_add(3),
             _ => usize::from(projection.is_some()) * 8,
         };
         if states
