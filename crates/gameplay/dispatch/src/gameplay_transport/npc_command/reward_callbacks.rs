@@ -85,6 +85,25 @@ pub(super) fn prepare(
         command.game_session_id,
         intent,
     )?;
+    let source = oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::for_catalogue(catalogue)
+        .ok()
+        .and_then(|source| {
+            source
+                .admitted_for_npc(&context.2, catalogue)
+                .ok()
+                .flatten()
+        });
+    let unshadowed = |key: &str| {
+        source.as_ref().is_none_or(|catalogue| {
+            catalogue.programs().iter().all(|program| {
+                !program
+                    .document
+                    .supersedes_reward_callbacks
+                    .iter()
+                    .any(|callback| callback == key)
+            })
+        })
+    };
     let text = intent.text.trim().to_ascii_lowercase();
     if text == "no"
         || (phase == Phase::Offers
@@ -135,6 +154,7 @@ pub(super) fn prepare(
                 let matching_stage = callbacks.iter().filter(|c| {
                     c.carried_item.is_none()
                         && c.npc == context.2
+                        && unshadowed(&c.key)
                         && c.topic == topic.number
                         && c.keywords.contains(&text)
                         && eligible(&c.storage)
@@ -201,17 +221,7 @@ pub(super) fn prepare(
             // Earlier stages may share the terminal reward's keyword. Grizzly's
             // dedicated native dialogue and admitted programmes retain those stages;
             // the locked reward writer still proves every source predicate.
-            if context.2 == oteryn_gameplay_quests::quest::grizzly_adams::NPC
-                || oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime()
-                    .ok()
-                    .and_then(|source| {
-                        source
-                            .admitted_for_npc(&context.2, catalogue)
-                            .ok()
-                            .flatten()
-                    })
-                    .is_some()
-            {
+            if context.2 == oteryn_gameplay_quests::quest::grizzly_adams::NPC || source.is_some() {
                 return None;
             }
             // A source-owned offer may explain why a mission prerequisite is

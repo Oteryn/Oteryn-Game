@@ -14,15 +14,24 @@ use serde_json::json;
 
 pub(super) const NAME: &str = "qcx60-anthill-carried-tool";
 pub(super) const CURE_NAME: &str = "qcx60-geyser-carried-tool";
+pub(super) const RETALIATION_NAME: &str = "qcx60-ice-charm-carried-tool";
 const QUEST: &str = "oteryn:quest.the_ice_islands_quest";
 const QUESTLINE: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline";
 const MISSION: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission03";
+const RETALIATION: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission12";
+const OBELISK: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/obelisk01";
 const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/actions_anthill.lua:3-11";
 const CURE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/actions_cure.lua:2-10";
+const CHARM: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/actions_charm.lua:3-23";
 const TARGET: Position = Position {
     x: 32360,
     y: 31365,
     floor: -7,
+};
+const CHARM_TARGET: Position = Position {
+    x: 32138,
+    y: 31113,
+    floor: -14,
 };
 
 #[test]
@@ -47,23 +56,44 @@ fn ice_islands_geyser_transforms_the_vial_without_advancing_the_quest() -> TestR
     })
 }
 
-pub(super) fn callback(cure: bool) -> TestResult<Callback> {
-    let (appearance, item, replacement, sources) = if cure {
+#[test]
+fn ice_islands_frost_charm_requires_the_carried_tool_and_marks_an_obelisk_once() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(RETALIATION_NAME, || {
+        super::quest_world_callbacks::scenario(RETALIATION_NAME, CHARM_TARGET, false)
+    })
+}
+
+pub(super) fn callback(name: &str) -> TestResult<Callback> {
+    let cure = name == CURE_NAME;
+    let retaliation = name == RETALIATION_NAME;
+    let (appearance, item, replacement, sources) = if retaliation {
+        (1841, "oteryn:item.tibia.i7289", None, CHARM)
+    } else if cure {
         (
             7106,
             "oteryn:item.tibia.i7286",
-            "oteryn:item.tibia.i7246",
+            Some("oteryn:item.tibia.i7246"),
             CURE,
         )
     } else {
         (
             1079,
             "oteryn:item.tibia.i7243",
-            "oteryn:item.tibia.i7244",
+            Some("oteryn:item.tibia.i7244"),
             SOURCE,
         )
     };
-    let storage = if cure {
+    let storage = if retaliation {
+        json!([
+            {"track": QUESTLINE, "minimum": 39, "maximum": 39, "set": 39, "preserve": true},
+            {"track": OBELISK, "minimum": 0, "maximum": 4, "set": 5},
+            {"track": RETALIATION, "minimum": 0, "maximum": i32::MAX - 1, "set": 1, "increment": true}
+        ])
+    } else if cure {
         json!([{"track": QUESTLINE, "minimum": 21, "maximum": 44, "set": 21, "preserve": true}])
     } else {
         json!([
@@ -72,12 +102,12 @@ pub(super) fn callback(cure: bool) -> TestResult<Callback> {
         ])
     };
     Ok(serde_json::from_value(json!({
-        "key": if cure { "oteryn:quest-callback/qcx60/geyser-fixture" } else { "oteryn:quest-callback/qcx60/anthill-fixture" },
+        "key": format!("oteryn:quest-callback/qcx60/{name}"),
         "quest": QUEST,
         "trigger": "use",
         "selector": {
             "appearance": appearance,
-            "native": { "position": TARGET, "ordinal": 1, "appearance": appearance }
+            "native": { "position": if retaliation { CHARM_TARGET } else { TARGET }, "ordinal": if retaliation { 2 } else { 1 }, "appearance": appearance }
         },
         "reversible": false,
         "requires_world_admission": true,
@@ -87,6 +117,7 @@ pub(super) fn callback(cure: bool) -> TestResult<Callback> {
             "item": item,
             "count": 1,
             "replacement": replacement,
+            "reusable": retaliation,
             "selected_instance": true
         },
         "offerings": [],
@@ -95,8 +126,14 @@ pub(super) fn callback(cure: bool) -> TestResult<Callback> {
     }))?)
 }
 
-pub(super) fn catalogue(callback: &Callback, cure: bool) -> TestResult<QuestStateCatalogue> {
-    let (source, digest, initial) = if cure {
+pub(super) fn catalogue(callback: &Callback, name: &str) -> TestResult<QuestStateCatalogue> {
+    let (source, digest, initial) = if name == RETALIATION_NAME {
+        (
+            CHARM,
+            "5c82f124d02cdb7d2db6a971b586f68cdfacd008b406e02a3409943475982316",
+            39,
+        )
+    } else if name == CURE_NAME {
         (
             CURE,
             "29edaa2a436dd2a59444df3bacc77205f8e5804a0dc4b46a29c3e96f3c63618f",
@@ -116,7 +153,9 @@ pub(super) fn catalogue(callback: &Callback, cure: bool) -> TestResult<QuestStat
             "recipe_sha256": digest,
             "tracks": [
                 {"key": QUESTLINE, "initial": initial, "minimum": -1, "maximum": 44},
-                {"key": MISSION, "initial": 1, "minimum": 1, "maximum": 3}
+                {"key": MISSION, "initial": 1, "minimum": 1, "maximum": 3},
+                {"key": OBELISK, "initial": 0, "minimum": 0, "maximum": 5},
+                {"key": RETALIATION, "initial": 1, "minimum": 0, "maximum": i32::MAX}
             ],
             "stages": [{
                 "key": "fill-tool",
@@ -133,14 +172,20 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     harness: &Harness,
-    cure: bool,
+    name: &str,
+    callback: &Callback,
 ) -> TestResult {
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
         .map_err(|()| "fence")?
         .ok_or("fence")?;
-    let (tool, wrong_tool, transformed) = if cure {
+    let retaliation = name == RETALIATION_NAME;
+    let cure = name == CURE_NAME;
+    let native = callback.selector.native.ok_or("native placement")?;
+    let (tool, wrong_tool, transformed) = if retaliation {
+        (7289, 7243, 7289)
+    } else if cure {
         (7286, 7243, 7246)
     } else {
         (7243, 7286, 7244)
@@ -151,7 +196,7 @@ pub(super) async fn exercise(
             owner,
             fence.item_fence(),
             &Offering {
-                position: TARGET,
+                position: native.position,
                 item: item_key(id),
                 count: 1,
             },
@@ -166,8 +211,9 @@ pub(super) async fn exercise(
             &[4, 6, 11, 15, 18],
         )
         .ok_or("capabilities")?;
-    let key = oteryn_world_bundle::bundle::placement_key(TARGET.floor, TARGET.x, TARGET.y, 1)
-        .ok_or("anthill placement")?;
+    let at = native.position;
+    let key = oteryn_world_bundle::bundle::placement_key(at.floor, at.x, at.y, native.ordinal)
+        .ok_or("carried-tool placement")?;
     let map = owner.bundle_map().ok_or("map")?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
@@ -214,6 +260,20 @@ pub(super) async fn exercise(
     .await?;
     *admitted = next;
     assert_eq!(accepted, UseDisposition::Committed);
+    if retaliation {
+        owner.clock_origin -= std::time::Duration::from_secs(2);
+        let (next, repeated, _) = super::item_craft::exchange_selected(
+            owner,
+            *admitted,
+            admitted.continuity.next_command_id,
+            &payload,
+            Some(item(&item_key(tool))?),
+            1,
+        )
+        .await?;
+        *admitted = next;
+        assert_ne!(repeated, UseDisposition::Committed);
+    }
 
     let mut expected = [item_key(tool), item_key(transformed), item_key(wrong_tool)];
     expected.sort_unstable();
@@ -230,7 +290,10 @@ pub(super) async fn exercise(
         .read_character_quest_state(owner.character, fence.character_id)
         .await
         .map_err(debug)?;
-    if cure {
+    if retaliation {
+        assert_eq!(state.tracks().get(OBELISK), Some(&5));
+        assert_eq!(state.tracks().get(RETALIATION), Some(&2));
+    } else if cure {
         assert_eq!(state.tracks().get(QUESTLINE), Some(&21));
         assert!(!state.tracks().contains_key(MISSION));
     } else {

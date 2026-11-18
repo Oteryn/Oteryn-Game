@@ -118,6 +118,28 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
         {
             return Err(invalid("invalid NPC program schema, identity or size"));
         }
+        if document.supersedes_reward_callbacks.len() > 32
+            || document
+                .supersedes_reward_callbacks
+                .iter()
+                .any(|key| !key.starts_with("oteryn:quest-reward/") || !valid_quest_key(key))
+            || document
+                .supersedes_reward_callbacks
+                .iter()
+                .collect::<BTreeSet<_>>()
+                .len()
+                != document.supersedes_reward_callbacks.len()
+            || (!document.supersedes_reward_callbacks.is_empty()
+                && document
+                    .rules
+                    .iter()
+                    .map(|rule| &rule.npc)
+                    .collect::<BTreeSet<_>>()
+                    .len()
+                    != 1)
+        {
+            return Err(invalid("invalid superseded NPC reward callbacks"));
+        }
         if document.quest == "oteryn:quest.marlin_trophy_quest"
             && (document.source_files.len() != 1
                 || document.source_files.iter().any(|file| {

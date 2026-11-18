@@ -326,6 +326,9 @@ pub struct NpcRuleDocument {
     /// Live account authority is rechecked by the durable NPC writer.
     #[serde(default, skip_serializing_if = "npc_false")]
     pub premium_required: bool,
+    /// Retained reward callbacks for the same NPC that this bound source replaces.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub supersedes_reward_callbacks: Vec<String>,
     pub tracks: Vec<NpcTrackDefinition>,
     pub rules: Vec<NpcRule>,
     #[serde(default)]
@@ -429,7 +432,13 @@ impl NpcRuleCatalog {
         self,
         catalogue: super::QuestStateCatalogue,
     ) -> Result<super::QuestStateCatalogue, String> {
+        let authored = catalogue.authored_bindings.clone();
+        let evidence = catalogue.native_recipe_evidence.clone();
+        let completion_sets = catalogue.completion_sets.clone();
         let mut bound = extend_from(catalogue, &BTreeMap::new(), &self)?;
+        bound.authored_bindings = authored;
+        bound.native_recipe_evidence = evidence;
+        bound.completion_sets = completion_sets;
         bound.npc_fixture = Some(std::sync::Arc::new(self));
         Ok(bound)
     }
@@ -543,6 +552,8 @@ impl NpcRuleCatalog {
                 validate::catalogue(&catalogue)?;
                 catalogue.programs.retain(|p| {
                     p.document.program_key.as_deref() == Some(hidden_threats::PROGRAM)
+                        || (p.document.quest == "oteryn:quest.the_ice_islands_quest"
+                            && p.document.program_key.as_deref() == Some("oteryn:quest-npc-program.barbarian-test-sven"))
                         || (p.document.quest == "oteryn:quest.the_ice_islands_quest"
                             && p.document.program_key.as_deref() == Some("oteryn:quest-npc-program.ice-islands-iskan"))
                         || p.document.program_key.as_deref() == Some(questpc2_oldrak_source::PROGRAM)
@@ -772,6 +783,10 @@ fn additive_legacy_owner(program: &NpcRuleProgram) -> bool {
                 | (
                     "oteryn:quest.outfit_and_addon_quests",
                     Some("oteryn:quest-npc-program.citizen-source-sagas")
+                )
+                | (
+                    "oteryn:quest.the_ice_islands_quest",
+                    Some("oteryn:quest-npc-program.barbarian-test-sven")
                 )
                 | (
                     "oteryn:quest.the_ice_islands_quest",
