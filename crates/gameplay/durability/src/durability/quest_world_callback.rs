@@ -1049,7 +1049,7 @@ pub(super) async fn retire_carried_item(
 async fn remove_input_location(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     item: &str,
-    query: &str,
+    query: &'static str,
 ) -> Result<(), DurabilityError> {
     let removed = sqlx::query(query).bind(item).execute(&mut **tx).await?;
     if removed.rows_affected() != 1 {
