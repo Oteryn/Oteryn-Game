@@ -1323,6 +1323,49 @@ mod read_only_pin_tests {
     use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack};
 
     #[test]
+    fn phantom_army_passage_accepts_only_the_exact_main_era_predecessor() -> Result<(), String> {
+        let quest = "oteryn:quest.children_of_the_revolution_quest";
+        let catalogue = QuestStateCatalogue::new(
+            "content-current",
+            vec![QuestTrack {
+                key: "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/teleport_access"
+                    .into(),
+                quest: quest.into(),
+                initial: 0,
+                min: 0,
+                max: 1,
+            }],
+            vec![],
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let mut stored = super::super::quest_state::QuestStateRecord {
+            pinned_content_revision: "content-main-era".into(),
+            // The loaded definition at 4740f9a8, before the Zalamon changes.
+            definition_hash: [
+                0xe9, 0x1b, 0x65, 0xcb, 0x6e, 0x0a, 0x69, 0xe9, 0xb4, 0x47, 0x3b, 0xb8, 0x3d, 0xb9,
+                0x70, 0xa1, 0x15, 0xbd, 0x63, 0x1a, 0xcb, 0xfa, 0xe3, 0x4b, 0x7a, 0x7e, 0x5f, 0x8d,
+                0x74, 0x0e, 0x52, 0xc2,
+            ],
+            completed: false,
+        };
+        assert_ne!(
+            catalogue.definition_hash(quest),
+            Some(stored.definition_hash)
+        );
+        assert!(
+            read_only_pin_allows(&stored, &catalogue, quest)
+                .map_err(|error| format!("{error:?}"))?,
+            "the deployed Phantom Army pin must retain passage access"
+        );
+        stored.definition_hash[0] ^= 1;
+        assert!(
+            !read_only_pin_allows(&stored, &catalogue, quest)
+                .map_err(|error| format!("{error:?}"))?
+        );
+        Ok(())
+    }
+
+    #[test]
     fn read_only_callback_accepts_registered_main_era_save() -> Result<(), String> {
         let quest = "oteryn:quest.grave_danger_quest";
         let loaded =
