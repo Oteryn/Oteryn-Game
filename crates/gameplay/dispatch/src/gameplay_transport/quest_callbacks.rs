@@ -109,6 +109,8 @@ pub(super) struct PendingCallbacks {
     soul_rewards:
         std::sync::Mutex<std::collections::HashMap<GameSessionId, soul_war_reward::Pending>>,
     #[cfg(test)]
+    pub(super) coal_basins_fixture: OnceLock<Vec<world_callbacks::coal_basins::CoalBasin>>,
+    #[cfg(test)]
     pub(super) fixture: OnceLock<Vec<Callback>>,
     #[cfg(test)]
     pub(super) reward_claims_fixture: OnceLock<Vec<String>>,

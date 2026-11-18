@@ -14,6 +14,7 @@
 //! - **Containers (capability 14).** [`observe_container`] reads carried containers and proven
 //!   Ground container trees within one tile on the actor's floor, under the Channel lane.
 
+mod coal_basin;
 mod dreamer_ring;
 pub(super) mod elemental_arrival;
 mod floor_assembly;
@@ -753,7 +754,8 @@ pub(super) async fn committed_loop_move(
         .ok()?;
     // A committed Dreamer offering whose acknowledgement was lost publishes before the replay.
     if replay == LoopMoveReplay::Moved
-        && !dreamer_ring::reconcile(admission, fence.character_id, command).await
+        && (!dreamer_ring::reconcile(admission, fence.character_id, command).await
+            || !coal_basin::reconcile(admission, fence.character_id, command).await)
     {
         return None;
     }
@@ -977,6 +979,15 @@ pub(super) async fn move_loop_item_with_house_capacity(
         destination,
     };
     let command_ref = CommandRef::new(command.game_session_id, command_id);
+    let basin = if let LoopTarget::Ground(to) = request.target {
+        match coal_basin::prepare(admission, to).await {
+            Ok(target) => target,
+            Err(result) => return result,
+        }
+    } else {
+        None
+    };
+    let at_basin = basin.is_some();
     let seed_target = if seed_target.is_some() {
         match admission
             .root
@@ -1000,18 +1011,37 @@ pub(super) async fn move_loop_item_with_house_capacity(
     } else {
         None
     };
-    let elemental_result = admission
-        .commit_elemental_arrival(
-            &mut permit,
-            actor,
-            command,
-            native,
-            &loop_request,
-            ground.as_deref(),
-        )
-        .await;
+    let arrival_result = match basin {
+        Some(target) => Some(
+            admission
+                .root
+                .commit_item_loop_coal_basin(
+                    &permit,
+                    admission.character,
+                    admission.holder,
+                    fence,
+                    command_ref,
+                    &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                    loop_request.clone(),
+                    target,
+                )
+                .await,
+        ),
+        None => {
+            admission
+                .commit_elemental_arrival(
+                    &mut permit,
+                    actor,
+                    command,
+                    native,
+                    &loop_request,
+                    ground.as_deref(),
+                )
+                .await
+        }
+    };
     let mut ring_opened = false;
-    let ring_result = match (elemental_result.is_none(), ring_target.as_ref()) {
+    let ring_result = match (arrival_result.is_none(), ring_target.as_ref()) {
         (true, Some(prepared)) => {
             admission
                 .root
@@ -1029,7 +1059,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
         }
         _ => Ok(None),
     };
-    let seed_result = match elemental_result {
+    let seed_result = match arrival_result {
         Some(result) => result.map(Some),
         None => match ring_result {
             Ok(Some(Ok((receipt, opened)))) => {
@@ -1141,6 +1171,12 @@ pub(super) async fn move_loop_item_with_house_capacity(
         admission.states.loop_ground.invalidate();
     }
     drop(permit);
+    if at_basin
+        && matches!(committed, Ok(Ok(_)))
+        && !coal_basin::reconcile(admission, fence.character_id, command_ref).await
+    {
+        return LoopMoveResult::Unknown;
+    }
     if touches_ground && matches!(committed, Ok(Ok(_))) {
         admission.refresh_terrain_tools().await;
     }
