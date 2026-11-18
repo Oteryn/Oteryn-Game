@@ -344,6 +344,16 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                         tracks.contains_key(track) && *value >= 0
                     }
                     NpcRuleEffect::SetTopic { value } => *value >= 0,
+                    NpcRuleEffect::SpawnCreatures { creatures } => {
+                        rule.trigger == NpcRuleTrigger::Greet
+                            && !rule.continue_matching
+                            && !rule.completes
+                            && super::super::world_callbacks::valid_creature_spawn(creatures)
+                            && rule.effects.iter().filter(|effect| matches!(effect, NpcRuleEffect::SpawnCreatures { .. })).count() == 1
+                            && rule.effects.iter().any(|effect| matches!(effect, NpcRuleEffect::Set { track, value }
+                                if rule.guards.iter().any(|guard| matches!(guard, NpcRuleGuard::Storage { track: gate, op: NpcComparison::Eq, value: before, .. }
+                                    if track == gate && value != before))))
+                    }
                     NpcRuleEffect::TakeItem { item, count, .. }
                     | NpcRuleEffect::GiveItem { item, count, .. } => {
                         valid_quest_key(item) && *count > 0

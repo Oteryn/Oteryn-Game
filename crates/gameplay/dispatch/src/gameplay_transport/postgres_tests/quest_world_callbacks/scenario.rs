@@ -343,6 +343,7 @@ fn scenario_case(
                 | "questpc2-albinius-portals-exact"
                 | "questpc2-albinius-portals-combined"
                 | "classic-rottin-disrepair"
+                | super::super::secret_service_avin_ambush::NAME
                 | "threatened-dreams-npc"
                 | "conditional-quest-greetings"
         );
@@ -2472,6 +2473,8 @@ fn scenario_case(
                 &h,
             ))
             .await?;
+        } else if name == super::super::secret_service_avin_ambush::NAME {
+            Box::pin(super::super::secret_service_avin_ambush::exercise(&mut owner, &admitted, &h)).await?;
         } else if name == super::super::frontier_negotiation_keywords::NAME {
             Box::pin(super::super::frontier_negotiation_keywords::exercise(&mut owner, &admitted)).await?;
         } else if name == "engnpc-m04" {

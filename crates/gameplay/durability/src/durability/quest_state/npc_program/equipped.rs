@@ -69,6 +69,7 @@ impl DurabilityRoot {
             &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
             source,
             None,
+            None,
         )
         .await
     }

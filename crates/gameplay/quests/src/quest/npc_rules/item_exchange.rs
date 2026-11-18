@@ -47,7 +47,9 @@ impl NpcRuleCatalog {
                     | NpcRuleEffect::EndConversation { .. }
                     | NpcRuleEffect::Experience { .. }
                     | NpcRuleEffect::Achievement { .. } => {}
-                    NpcRuleEffect::Outfit { .. } | NpcRuleEffect::OutfitAddon { .. } => {
+                    NpcRuleEffect::Outfit { .. }
+                    | NpcRuleEffect::OutfitAddon { .. }
+                    | NpcRuleEffect::SpawnCreatures { .. } => {
                         items = true;
                     }
                     NpcRuleEffect::TakeItem {

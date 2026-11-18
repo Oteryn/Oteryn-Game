@@ -217,6 +217,11 @@ pub enum NpcRuleEffect {
     SetTopic {
         value: i32,
     },
+    /// The current NPC actor anchors a complete, immediate spawn.
+    /// Crystal 201189f8, data-global/npc/gamel.lua:59-69.
+    SpawnCreatures {
+        creatures: Vec<super::world_callbacks::CreatureSpawn>,
+    },
     TakeItem {
         item: String,
         count: u32,
@@ -418,6 +423,15 @@ pub struct NpcRulePlan {
     pub inventory_failure_reply: Vec<String>,
 }
 
+impl NpcRulePlan {
+    pub fn creature_spawn(&self) -> Option<&[super::world_callbacks::CreatureSpawn]> {
+        self.effects.iter().find_map(|effect| match effect {
+            NpcRuleEffect::SpawnCreatures { creatures } => Some(creatures.as_slice()),
+            _ => None,
+        })
+    }
+}
+
 impl NpcRuleCatalog {
     /// Resolve only programmes explicitly bound into this catalogue for this NPC.
     pub fn admitted_for_npc(
@@ -554,13 +568,14 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.hero_of_rathleton_quest"
                                 | "oteryn:quest.hot_cuisine_quest"
                                 | "oteryn:quest.in_service_of_yalahar_quest"
-                                | "oteryn:quest.the_new_frontier_quest"
                         | "oteryn:quest.the_paradox_tower_quest"
                                 | "oteryn:quest.marlin_trophy_quest"
+                                | "oteryn:quest.secret_service_quest"
                                 | "oteryn:quest.the_djinn_war_efreet_faction"
                                 | "oteryn:quest.the_djinn_war_marid_faction"
                                 | "oteryn:quest.the_white_raven_monastery_quest"
                                 | "oteryn:quest.the_dream_courts_quest"
+                                | "oteryn:quest.the_new_frontier_quest"
                                 | "oteryn:quest.the_hidden_city_of_beregar_quest"
                                 | "oteryn:quest.the_order_of_the_stag_quest"
                                 | "oteryn:quest.tower_defence_quest"

@@ -245,6 +245,7 @@ impl<'a> Staged<'a> {
             }
             NpcRuleEffect::Experience { .. }
             | NpcRuleEffect::Achievement { .. }
+            | NpcRuleEffect::SpawnCreatures { .. }
             | NpcRuleEffect::Teleport { .. }
             | NpcRuleEffect::MagicEffect { .. }
             | NpcRuleEffect::MapMark { .. }

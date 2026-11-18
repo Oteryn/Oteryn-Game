@@ -67,6 +67,7 @@ impl DurabilityRoot {
             premium,
             NpcRuleCatalog::runtime().map_err(|_| CharacterProgressionError::InvalidInput)?,
             Some(admission),
+            None,
         )
         .await
     }

@@ -347,6 +347,27 @@ impl DurabilityRoot {
         items: &C,
         premium: &G,
     ) -> Result<NpcProgramCommit> {
+        self.commit_character_npc_program_with_spawn(
+            authority, node, permit, fence, request, catalogue, items, premium, None,
+        ).await
+    }
+
+    #[allow(clippy::too_many_arguments, reason = "the NPC writer rechecks the prepared native spawn with all other participants")]
+    pub async fn commit_character_npc_program_with_spawn<
+        C: super::super::item_loop_move::ItemLoopContent,
+        G: super::grizzly::GrizzlyPremiumGate,
+    >(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        fence: CurrentCharacterGameplayFence,
+        request: NpcProgramRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        items: &C,
+        premium: &G,
+        spawn: Option<&[oteryn_gameplay_quests::quest::world_callbacks::CreatureSpawn]>,
+    ) -> Result<NpcProgramCommit> {
         let source = NpcRuleCatalog::for_catalogue(&catalogue)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         self.commit_npc_program_source(
@@ -360,6 +381,7 @@ impl DurabilityRoot {
             premium,
             source,
             None,
+            spawn,
         )
         .await
     }
@@ -383,6 +405,7 @@ impl DurabilityRoot {
         premium: &G,
         source: &NpcRuleCatalog,
         teleport: Option<teleport::NpcTeleportAdmission>,
+        spawn: Option<&[oteryn_gameplay_quests::quest::world_callbacks::CreatureSpawn]>,
     ) -> Result<NpcProgramCommit> {
         if request.command.game_session_id() != fence.game_session_id
             || request.message.len() > 255
@@ -405,6 +428,7 @@ impl DurabilityRoot {
             .admitted_for_npc(&request.npc, &catalogue)
             .map_err(|_| CharacterProgressionError::InvalidInput)?
             .ok_or(CharacterProgressionError::InvalidInput)?;
+        let spawn = spawn.map(<[_]>::to_vec);
         let mut participants = (items, premium);
         self.try_issue_semantic_pass()?.run_with_context(&mut participants, move |holder,deadline,participants| Box::pin(async move {
             let (content, premium) = participants;
@@ -554,6 +578,9 @@ impl DurabilityRoot {
                 Ok(Some(plan)) if plan.selected_rule_keys.first()==Some(&request.transition_key) && (!plan.track_changes.is_empty() || plan.completes)=>plan,
                 _=>return Ok(Ok(refused(QuestRefusal::StageMismatch))),
             };
+            if plan.creature_spawn() != spawn.as_deref() {
+                return Ok(Err(CharacterProgressionError::InvalidInput));
+            }
             if source.programs().iter().any(|program| {
                 program.document.quest == plan.quest && program.document.premium_required
             }) {

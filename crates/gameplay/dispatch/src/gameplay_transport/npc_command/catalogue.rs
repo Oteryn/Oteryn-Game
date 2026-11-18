@@ -1,4 +1,5 @@
 //! Ordered source NPC storage branches on the established talk and receipt owners.
+use super::super::quest_callbacks::spawn_creatures::{self, PreparedSpawn};
 use super::super::{ComposedFreshAdmission, connection::UseCommand};
 use super::*;
 use crate::domain::CharacterId;
@@ -6,8 +7,9 @@ use crate::durability::quest_state::{
     QuestTransitionOutcome,
     npc_program::{self, NpcProgramRequest},
 };
-use crate::foundation::{CommandId, CommandRef};
+use crate::foundation::{CommandId, CommandRef, MovementLocalPosition};
 use oteryn_gameplay_quests::quest::npc_rules::{NpcRuleCatalog, NpcRuleEffect, NpcRuleTrigger};
+use oteryn_gameplay_quests::quest::world_callbacks::CreatureSpawn;
 use std::sync::Arc;
 
 pub(in crate::gameplay_transport) mod teleport;
@@ -31,9 +33,16 @@ pub(super) enum Pending {
         next: Conversation,
         fallback_lines: Vec<String>,
         teleport: bool,
+        spawn: Option<PendingSpawn>,
         supersedes_topic: bool,
     },
 }
+#[derive(Clone)]
+pub(super) struct PendingSpawn {
+    position: MovementLocalPosition,
+    creatures: Vec<CreatureSpawn>,
+}
+
 pub(super) struct ReplyStep {
     lines: Vec<String>,
     end: bool,
@@ -56,6 +65,7 @@ pub(super) struct CommitStep {
     fallback_lines: Vec<String>,
     teleport: Option<oteryn_gameplay_quests::quest::npc_rules::NpcRulePosition>,
     magic: usize,
+    spawn: Option<Vec<CreatureSpawn>>,
     supersedes_topic: bool,
 }
 
@@ -462,6 +472,7 @@ pub(super) fn prepare(
     } else {
         Vec::new()
     };
+    let spawn = plan.creature_spawn().map(<[_]>::to_vec);
     Some(Step::Commit(Box::new(CommitStep {
         context,
         previous,
@@ -470,6 +481,7 @@ pub(super) fn prepare(
         fallback_lines,
         supersedes_topic,
         magic: teleport.as_ref().map_or(0, |p| p.magic.len()),
+        spawn,
         teleport: teleport.map(|p| p.destination),
     })))
 }
@@ -590,6 +602,7 @@ pub(super) async fn apply(
         fallback_lines,
         teleport,
         magic,
+        spawn,
         supersedes_topic,
     } = match step {
         Step::Reply(step) => {
@@ -674,30 +687,52 @@ pub(super) async fn apply(
     if fence.item_fence() != item_fence {
         return rejected();
     }
+    let runtime = admission.runtime.lock().await;
+    let Ok(states) = admission.states.spell_states.try_lock() else {
+        return rejected();
+    };
+    if states.is_dead(actor)
+        || !states.spell_idle(&runtime, actor, command.game_session_id)
+        || admission.states.npc_conversations.current_npc(
+            &admission.states.chat,
+            &runtime,
+            actor,
+            command.game_session_id,
+            &intent,
+        ) != Some(context)
+        || !runtime
+            .bound_attacker_lease(actor, command.game_session_id)
+            .is_ok_and(|lease| {
+                lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                    && lease.generation() == fence.character_lease_generation
+            })
     {
-        let runtime = admission.runtime.lock().await;
-        let Ok(states) = admission.states.spell_states.try_lock() else {
+        return rejected();
+    }
+    drop(states);
+    let mut spawn_turn = spawn.is_some().then_some(runtime);
+    let spawn_plan = if let (Some(runtime), Some(creatures)) = (&mut spawn_turn, spawn) {
+        let Some(map) = admission.bundle_map() else {
             return rejected();
         };
-        if states.is_dead(actor)
-            || !states.spell_idle(&runtime, actor, command.game_session_id)
-            || admission.states.npc_conversations.current_npc(
-                &admission.states.chat,
-                &runtime,
-                actor,
-                command.game_session_id,
-                &intent,
-            ) != Some(context)
-            || !runtime
-                .bound_attacker_lease(actor, command.game_session_id)
-                .is_ok_and(|lease| {
-                    lease.character_id().as_bytes() == fence.character_id.as_bytes()
-                        && lease.generation() == fence.character_lease_generation
-                })
-        {
+        let Ok(position) = runtime.read_movement_actor_position(next.npc_actor) else {
             return rejected();
-        }
-    }
+        };
+        let position = position.position();
+        let Ok(plan) = spawn_creatures::prepare(admission, runtime, map, position, &creatures)
+        else {
+            return rejected();
+        };
+        Some((
+            PendingSpawn {
+                position,
+                creatures,
+            },
+            plan,
+        ))
+    } else {
+        None
+    };
     {
         let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() else {
             return rejected();
@@ -724,6 +759,7 @@ pub(super) async fn apply(
             next: next.clone(),
             fallback_lines: fallback_lines.clone(),
             teleport: teleport.is_some(),
+            spawn: spawn_plan.as_ref().map(|(pending, _)| pending.clone()),
             supersedes_topic,
         });
     }
@@ -759,13 +795,13 @@ pub(super) async fn apply(
             && (request.transition_key.ends_with("-deliver")
                 || request.transition_key.ends_with("/mission-complete"));
     let outcome = slot
-        .commit_npc_program(
+        .commit_npc_program_with_spawn(
             admission.root,
             admission.character,
             admission.holder,
             &item_permit,
             fence,
-            request,
+            request.clone(),
             Arc::clone(catalogue),
             &super::super::item_ref_admission::NativeItemWeights(
                 match admission
@@ -781,8 +817,22 @@ pub(super) async fn apply(
             )
             .with_wheel(admission.premium_coordinator),
             &admission.premium_coordinator,
+            spawn_plan
+                .as_ref()
+                .map(|(pending, _)| pending.creatures.as_slice()),
         )
         .await;
+    if let (Some(runtime), Some((_, prepared)), Ok(commit)) =
+        (&mut spawn_turn, spawn_plan, &outcome)
+        && matches!(
+            commit.transition,
+            QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)
+        )
+        && !publish_spawn(admission, runtime, request.command, &prepared)
+    {
+        return unknown();
+    }
+    drop(spawn_turn);
     drop(slot);
     drop(item_permit);
     match outcome {
@@ -865,6 +915,35 @@ pub(super) async fn apply(
     }
 }
 
+/// One command owns this publication through lost acknowledgements. The Channel
+/// turn serializes creature placement and the pending conversation retires the spawn once.
+fn publish_spawn(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &mut ChannelRuntimeV1,
+    command: CommandRef,
+    prepared: &PreparedSpawn,
+) -> bool {
+    let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() else {
+        return false;
+    };
+    let Some(Pending::Commit { request, spawn, .. }) = sessions
+        .get_mut(&command.game_session_id())
+        .and_then(|state| state.catalogue.as_mut())
+    else {
+        return false;
+    };
+    if request.command != command {
+        return false;
+    }
+    if spawn.is_some() {
+        if !prepared.publish(runtime) {
+            return false;
+        }
+        *spawn = None;
+    }
+    true
+}
+
 pub(in crate::gameplay_transport) async fn resume(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     command: UseCommand,
@@ -885,6 +964,7 @@ pub(in crate::gameplay_transport) async fn resume(
         next,
         fallback_lines,
         teleport,
+        spawn,
         supersedes_topic,
     } = pending
     else {
@@ -932,10 +1012,34 @@ pub(in crate::gameplay_transport) async fn resume(
     Some(
         match admission
             .root
-            .reconcile_npc_program(admission.character, character, request)
+            .reconcile_npc_program(admission.character, character, request.clone())
             .await
         {
             Ok(Some(commit)) => {
+                if let Some(spawn) = spawn {
+                    let mut runtime = admission.runtime.lock().await;
+                    let recovered = admission
+                        .bundle_map()
+                        .and_then(|map| {
+                            spawn_creatures::prepare(
+                                admission,
+                                &mut runtime,
+                                map,
+                                spawn.position,
+                                &spawn.creatures,
+                            )
+                            .ok()
+                        })
+                        .is_some_and(|prepared| {
+                            publish_spawn(admission, &mut runtime, request.command, &prepared)
+                        });
+                    if !recovered {
+                        return Some(NpcTalkOutcome {
+                            unknown: true,
+                            ..NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
+                        });
+                    }
+                }
                 let engaged = !teleport
                     || admission.states.chat.engaged(command.game_session_id)
                         == Some(next.npc_actor);
