@@ -23,6 +23,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let brainout = name.starts_with(super::super::brainout::NAME);
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
     let engenc_asura = name.starts_with("engenc-asura-native-");
@@ -78,7 +79,8 @@ fn scenario_case(
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
     let cursed_stairs = name.starts_with("crystal-stairs-");
-    let native_crop = cursed_stairs
+    let native_crop = brainout
+        || cursed_stairs
         || m03_use
         || qd_world
         || engenc_asura
@@ -115,7 +117,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "qengine-rewards-smith-story" {
+    let start = if brainout {
+        super::super::brainout::START
+    } else if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
             y: 32254,
@@ -354,6 +358,8 @@ fn scenario_case(
     let draconia_escape = name.starts_with("draconia-escape-");
     let mut callback = if name.starts_with("actmark-") {
         super::super::actmark::callback()?
+    } else if brainout {
+        super::super::brainout::callback(name)?
     } else if m03_use {
         super::super::qengine_m03_use::callback()?
     } else if qd_world {
@@ -1255,7 +1261,9 @@ fn scenario_case(
         } else {
             world
         };
-        let world = if elvenbane {
+        let world = if brainout {
+            super::super::brainout::world(generation.native_gameplay().ok_or("brain policies")?)?
+        } else if elvenbane {
             super::super::source_world_crop::compiled_region(
                 crate::map::overlay::TilePos {
                     x: 32584,
@@ -1700,6 +1708,13 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
+        if brainout {
+            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::brainout::catalogue(
+                owner.quest_catalogue.as_ref().ok_or("catalogue")?,
+                &callback,
+                name.ends_with("-wrong"),
+            )?));
+        }
         if draconia_escape {
             owner.quest_catalogue =
                 Some(super::super::draconia_escape::catalogue(&callback, name)?);
@@ -1844,6 +1859,17 @@ fn scenario_case(
             .map_err(|e| format!("callback starter items: {e:?}"))?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
+        if brainout {
+            return Box::pin(super::super::brainout::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence,
+                &callback,
+                name,
+            ))
+            .await;
+        }
         if let Some(initial_level) = initial_level {
             // Initialization uses common cast fixtures; project the actually seeded
             // durable level before evaluating source NPC eligibility.

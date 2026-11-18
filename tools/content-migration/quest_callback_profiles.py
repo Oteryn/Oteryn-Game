@@ -202,13 +202,15 @@ def _requested_inputs(root, extra_keys=()):
     authored_callbacks = []
     # Executable authored callbacks use the same exact canonical/native Item
     # qualification as source chests. Include every output, never a partial bag.
-    for relative in ('authored-world-callbacks.json', 'chosen-reward-callbacks.json'):
+    for relative in ('authored-world-callbacks.json', 'chosen-reward-callbacks.json',
+                     'world-callbacks/gravedigger-brain.json'):
         path = root / 'content/quests' / relative
         if not path.is_file():
             continue
         for callback in json.loads(path.read_bytes())['callbacks']:
             authored_callbacks.append(callback)
-            reward = callback.get('give') or callback.get('effects', {}).get('item_reward')
+            reward = (callback.get('give') or callback.get('effects', {}).get('item_reward')
+                      or callback.get('effects', {}).get('ground_output'))
             if reward:
                 authored_keys.add(reward['item'])
                 authored_keys.update(child['item'] for field in ('contents', 'backpack_outputs')

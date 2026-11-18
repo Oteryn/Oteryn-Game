@@ -77,7 +77,10 @@ impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
 }
 
 // The dedicated PG target uses the same caller and constructor as in-crate tests.
-pub use super::connection::{FreshAdmissionAuthority, UseCommand};
+pub use super::connection::{
+    AdmittedSession, ConnectionEnd, ControllerBinding, FirstEntryOutcome, FreshAdmissionAuthority,
+    IDLE_LIVENESS, SessionContinuity, UseCommand, serve_admitted,
+};
 pub use super::item_view::ItemKey;
 
 pub fn empty_capabilities(
@@ -196,4 +199,11 @@ pub fn world_tool_callbacks(
         })
         .map(|c| c.key.clone())
         .collect())
+}
+
+/// The production native custody adapter, exposed only with test support.
+pub fn native_item_weights(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> impl crate::durability::item_loop_move::ItemLoopContent + '_ {
+    super::item_ref_admission::NativeItemWeights(native)
 }

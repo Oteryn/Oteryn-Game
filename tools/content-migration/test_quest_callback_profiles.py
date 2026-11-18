@@ -120,6 +120,20 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.assertIn(reward['item'], rows)
         self.assertIn('CharacterInventory', rows[reward['item']]['admission']['legal_destinations'])
 
+    def test_brain_ground_output_closes_native_item_provider(self):
+        relative = 'content/quests/world-callbacks/gravedigger-brain.json'
+        path = self.root / relative
+        path.parent.mkdir(parents=True)
+        path.write_bytes((ROOT / relative).read_bytes())
+        self.admit()
+        row = self.generated_record('oteryn:item.tibia.i19078')
+        self.assertEqual(row['admission'], {
+            'materializable': True, 'stack_class': 'NonStackable',
+            'legal_destinations': ['CharacterInventory', 'Ground'],
+        })
+        self.assertEqual(row['semantics']['physical']['value']['weight'],
+                         {'state': 'KNOWN', 'value': 1500})
+
     def test_authored_unknown_stack_reward_gets_custody_without_canonical_mutation(self):
         key = 'oteryn:item.tibia.i3208'
         path = ROOT / 'content/items/definitions/items-19000-19499.json'
