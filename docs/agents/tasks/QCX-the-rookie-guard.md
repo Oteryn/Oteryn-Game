@@ -96,3 +96,19 @@ PG via shard (pgsplit build files applied on
 real Vascalir NPC dispatch path with Mission11=4. The confirmation returned
 success without advancing to 5, so the regression assertion failed. One
 failed case in 123.13 s.
+
+PG via shard (pgsplit build files applied on
+`bccb35d466135c82544b0c21a66e6f9226299605`). The same case passed in 58.86 s
+with one durable Brass Shield (3411) and Mission11=5. Its fixture also exercises
+the existing silver amulet and flask grant, replay, and once-ledger refusal.
+
+The quest-authoring suite passed all 44 checks, including 269 schema cases.
+The M09 authoring tests passed all six cases. The freshly built World compiler
+passed `pin-check . <temporary-output-directory>` for one pin.
+`pin-refresh` reproduced the committed digest and generated no repository diff.
+
+Formatting and dispatch library Clippy with `-D warnings` passed. The same
+PG shard binary and filter returned Ok with the admin URL unset, one route-less
+case in 0.00 s. That invocation confirms the route-less branch. Cargo began
+rebuilding dependencies after Clippy for the repeat, so the repeat used the
+already built test binary.
