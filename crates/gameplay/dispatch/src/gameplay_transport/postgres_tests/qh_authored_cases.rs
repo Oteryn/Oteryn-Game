@@ -46,7 +46,7 @@ const TUNNEL: Position = Position { floor: -9, ..DIRT };
 const DIG_CALLBACK: &str = "oteryn:quest-callback/authored-top-of-the-city-dig";
 const CITY_STAGE: &str = "oteryn:quest-progress/authored/top-of-the-city/stage";
 const PICK: &str = "oteryn:item.tibia.i3456";
-const SHOVEL: &str = "oteryn:item.tibia.i3457";
+const OBSIDIAN_KNIFE: &str = "oteryn:item.tibia.i5908";
 
 pub(super) fn is_city(name: &str) -> bool {
     name == TOP_OF_THE_CITY || is_dig(name)
@@ -277,8 +277,8 @@ async fn dig(
         .map_err(|()| "dig fence")?
         .ok_or("dig fence")?
         .item_fence();
-    for (index, item) in [(1, PICK), (2, SHOVEL)] {
-        if (item == PICK && name != NO_PICK) || (item == SHOVEL && name == WRONG_TOOL) {
+    for (index, item) in [(1, PICK), (2, OBSIDIAN_KNIFE)] {
+        if (item == PICK && name != NO_PICK) || (item == OBSIDIAN_KNIFE && name == WRONG_TOOL) {
             quest_world_callbacks::input_item(
                 owner,
                 fence,
@@ -305,7 +305,11 @@ async fn dig(
     let result = if name == BARE {
         use_target(owner, admitted, command, &dirt).await?
     } else {
-        let tool = if name == WRONG_TOOL { SHOVEL } else { PICK };
+        let tool = if name == WRONG_TOOL {
+            OBSIDIAN_KNIFE
+        } else {
+            PICK
+        };
         let reference = owner
             .active_generation
             .and_then(|g| g.native_gameplay())
