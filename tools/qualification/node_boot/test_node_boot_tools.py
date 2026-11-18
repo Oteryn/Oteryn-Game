@@ -246,11 +246,9 @@ class SeamPassThroughTests(unittest.TestCase):
         self.assertIn('OTERYN_TEST_POSTGRES_ADMIN_URL="$ADMIN_URL"', seam)
         self.assertIn('qualification_spawn_transaction_returns_pool_and_bounds_backend', seam)
 
-    def test_seam_rejects_an_exact_filter_that_matches_zero_tests(self):
+    def test_seam_rejects_a_missing_postgres_proof(self):
         with tempfile.TemporaryDirectory() as temp:
             fake = Path(temp, 'cargo')
-            fake.write_text("#!/bin/sh\necho 'test result: ok. 0 passed; 0 failed; 0 ignored;'\n")
-            fake.chmod(0o755)
             script = """
                 set -Eeuo pipefail
                 ADMIN_URL=fixture
@@ -261,14 +259,23 @@ class SeamPassThroughTests(unittest.TestCase):
                 RECOVERY_KEY_ID=r; RECOVERY_SEED_HEX=t
                 sleep() { :; }
             """ + function('seam_stages') + '\nseam_stages\n'
-            result = bash(script, env={'PATH': f'{temp}:{os.environ["PATH"]}'})
-        self.assertEqual(result.returncode, 1)
-        self.assertIn('did not execute exactly one passing test', result.stderr)
+            for passed in (0, 1):
+                with self.subTest(passed=passed):
+                    fake.write_text(f"#!/bin/sh\necho 'test result: ok. {passed} passed; 0 failed; 0 ignored;'\n")
+                    fake.chmod(0o755)
+                    result = bash(script, env={'PATH': f'{temp}:{os.environ["PATH"]}'})
+                    self.assertEqual(result.returncode, 1)
+                    self.assertIn('did not execute exactly one passing test', result.stderr)
 
     def test_seam_stage_passes_harness_knobs_only_when_set(self):
         with tempfile.TemporaryDirectory() as temp:
             fake = Path(temp, 'cargo')
-            fake.write_text('#!/bin/sh\ncase "$*" in *qualification_spawn_transaction*) echo "test result: ok. 1 passed; 0 failed; 0 ignored;"; exit 0;; esac\nenv | grep -E "^NODE_BOOT_(E2E_ONLY|NO_FAILFAST|NO_PROGRESS_S)=" | sort\n')
+            fake.write_text(
+                '#!/bin/sh\ncase "$*" in *qualification_spawn_transaction*)\n'
+                'echo "POSTGRES_CASE_COMPLETED qualification_spawn_transaction"\n'
+                'echo "test result: ok. 1 passed; 0 failed; 0 ignored;"; exit 0;; esac\n'
+                'env | grep -E "^NODE_BOOT_(E2E_ONLY|NO_FAILFAST|NO_PROGRESS_S)=" | sort\n'
+            )
             fake.chmod(0o755)
             script = textwrap.dedent(f'''\
                 set -Eeuo pipefail
@@ -281,8 +288,13 @@ class SeamPassThroughTests(unittest.TestCase):
                 NODE_BOOT_E2E_ONLY=f6,core; NODE_BOOT_NO_PROGRESS_S=75
                 ''') + function('seam_stages') + '\nseam_stages\n'
             result = bash(script)
-            self.assertEqual(result.stdout, 'test result: ok. 1 passed; 0 failed; 0 ignored;\nNODE_BOOT_E2E_ONLY=f6,core\nNODE_BOOT_NO_PROGRESS_S=75\n',
-                             result.stderr)
+            self.assertEqual(
+                result.stdout,
+                'POSTGRES_CASE_COMPLETED qualification_spawn_transaction\n'
+                'test result: ok. 1 passed; 0 failed; 0 ignored;\n'
+                'NODE_BOOT_E2E_ONLY=f6,core\nNODE_BOOT_NO_PROGRESS_S=75\n',
+                result.stderr,
+            )
 
 
 class StageDumpTests(unittest.TestCase):

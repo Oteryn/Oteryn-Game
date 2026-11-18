@@ -1183,15 +1183,16 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   local spawn_proof
   spawn_proof="$(OTERYN_TEST_POSTGRES_ADMIN_URL="$ADMIN_URL" \
     cargo +1.100.0 test --locked -p oteryn-game-server --lib "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}" \
-    node::serve::qualification_fixture::tests::qualification_spawn_transaction_returns_pool_and_bounds_backend -- --exact)" || {
+    node::serve::qualification_fixture::tests::qualification_spawn_transaction_returns_pool_and_bounds_backend -- --exact --nocapture)" || {
     printf '%s\n' "$spawn_proof"
     return 1
   }
   printf '%s\n' "$spawn_proof"
-  grep -q '^test result: ok\. 1 passed; 0 failed; 0 ignored;' <<< "$spawn_proof" || {
+  if ! grep -q '^test result: ok\. 1 passed; 0 failed; 0 ignored;' <<< "$spawn_proof" ||
+    ! grep -Fq 'POSTGRES_CASE_COMPLETED qualification_spawn_transaction' <<< "$spawn_proof"; then
     printf '%s\n' 'Spawn PostgreSQL proof did not execute exactly one passing test' >&2
     return 1
-  }
+  fi
   # The bootstrap evidence ages past five seconds, so each admission fetches its own.
   sleep 6
   local qualification=node_boot_seam_against_running_node

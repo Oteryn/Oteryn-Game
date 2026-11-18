@@ -1005,17 +1005,17 @@ mod tests {
     #[tokio::test]
     async fn qualification_spawn_transaction_returns_pool_and_bounds_backend()
     -> Result<(), Box<dyn std::error::Error>> {
+        let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+            return Ok(());
+        };
         use sqlx::Connection as _;
-        let url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL").map_err(
-            |_| "OTERYN_TEST_POSTGRES_ADMIN_URL is required for the spawn transaction regression",
-        )?;
         tokio::time::timeout(Duration::from_secs(12), async {
             let pool = sqlx::postgres::PgPoolOptions::new()
                 .max_connections(1)
-                .connect(&url)
+                .connect(&admin)
                 .await?;
             let mut holder = pool.acquire().await?;
-            let mut writer = sqlx::PgConnection::connect(&url).await?;
+            let mut writer = sqlx::PgConnection::connect(&admin).await?;
             let start = tokio::time::Instant::now();
             let budget = SpawnBudget::new(start);
             let probe = spawn_transaction(&mut holder, budget, true, async |tx| {
@@ -1156,7 +1156,7 @@ mod tests {
                             Ok(true)
                         }
                     })
-                }).connect(&url).await?;
+                }).connect(&admin).await?;
             let holder = stalled_pool.acquire().await?;
             let start = tokio::time::Instant::now();
             let budget = SpawnBudget {
@@ -1196,6 +1196,7 @@ mod tests {
             ).await;
             assert!(matches!(outcome, Err(error) if error.detail()
                 == Some("qualification spawn pool return: no_evidence")));
+            println!("POSTGRES_CASE_COMPLETED qualification_spawn_transaction");
             Ok(())
         })
         .await?
