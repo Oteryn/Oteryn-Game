@@ -501,7 +501,9 @@ impl QuestStateCatalogue {
                     || transition
                         .key
                         .starts_with(world_callbacks::GROUND_CLEANUP_PREFIX)
-                    || transition.key.starts_with(world_callbacks::SOLO_ROOM_PREFIX))
+                    || transition
+                        .key
+                        .starts_with(world_callbacks::SOLO_ROOM_PREFIX))
                     && transition.experience.is_none())
             {
                 return Err(E::InvalidEffect(transition.key));

@@ -558,7 +558,11 @@ impl Callback {
             && self.key.starts_with(SOLO_ROOM_PREFIX)
             && self.requires_world_admission
             && self.selector.native.is_some()
-            && self.effects.encounter.as_ref().is_some_and(|room| room.solo_expiry.is_some())
+            && self
+                .effects
+                .encounter
+                .as_ref()
+                .is_some_and(|room| room.solo_expiry.is_some())
     }
 
     pub fn uses_empty_world_transition(&self) -> bool {

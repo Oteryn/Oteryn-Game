@@ -494,7 +494,10 @@ pub(super) async fn consume(
     {
         return Ok(false);
     }
-    let solo_minimum = callback.effects.encounter.as_ref()
+    let solo_minimum = callback
+        .effects
+        .encounter
+        .as_ref()
         .filter(|room| room.solo_expiry.is_some() && room.minimum_level != 0)
         .map(|room| room.minimum_level);
     if let Some(minimum) = callback.minimum_level.into_iter().chain(solo_minimum).max() {
