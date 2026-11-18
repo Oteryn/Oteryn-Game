@@ -11,6 +11,7 @@ pub struct ScriptedTeleport<'a> {
     expected: MovementPositionSnapshot,
     destination: MovementLocalPosition,
     facing: Option<MovementFacing>,
+    allow_control_lost: bool,
     landing_checks: Option<LandingChecks<'a>>,
 }
 
@@ -43,6 +44,7 @@ pub fn prepare_scripted_quest_teleport_facing<'a>(
         expected,
         destination,
         facing,
+        allow_control_lost: false,
         landing_checks: Some(LandingChecks {
             pz_blocked,
             closed,
@@ -64,6 +66,35 @@ pub fn prepare_quest_teleport_to_present_tile<'a>(
     destination: MovementLocalPosition,
     facing: Option<MovementFacing>,
 ) -> Result<ScriptedTeleport<'a>, MovementError> {
+    let proof = present_tile(cells, actor, session, expected, destination, facing, false);
+    proof.check(runtime)?;
+    Ok(proof)
+}
+
+/// Wanted and Defiances timeout scripts can move positioned challengers after
+/// control loss. Crystal spectators.lua:113-132 calls Creature:teleportTo.
+pub fn prepare_quest_timeout_ejection<'a>(
+    runtime: &ChannelRuntimeV1,
+    cells: &'a NativeEntryMovementCells,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    expected: MovementPositionSnapshot,
+    destination: MovementLocalPosition,
+) -> Result<ScriptedTeleport<'a>, MovementError> {
+    let proof = present_tile(cells, actor, session, expected, destination, None, true);
+    proof.check(runtime)?;
+    Ok(proof)
+}
+
+fn present_tile(
+    cells: &NativeEntryMovementCells,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    expected: MovementPositionSnapshot,
+    destination: MovementLocalPosition,
+    facing: Option<MovementFacing>,
+    allow_control_lost: bool,
+) -> ScriptedTeleport<'_> {
     // creature_functions.cpp:895-906 makes horizontal displacement take priority.
     let origin = expected.position();
     let facing = facing.unwrap_or_else(|| match destination.x.cmp(&origin.x) {
@@ -72,17 +103,16 @@ pub fn prepare_quest_teleport_to_present_tile<'a>(
         std::cmp::Ordering::Equal if destination.y > origin.y => MovementFacing::South,
         std::cmp::Ordering::Equal => MovementFacing::North,
     });
-    let proof = ScriptedTeleport {
+    ScriptedTeleport {
         cells,
         actor,
         session,
         expected,
         destination,
         facing: Some(facing),
+        allow_control_lost,
         landing_checks: None,
-    };
-    proof.check(runtime)?;
-    Ok(proof)
+    }
 }
 
 impl ScriptedTeleport<'_> {
@@ -103,13 +133,14 @@ impl ScriptedTeleport<'_> {
             )
             .map(|_| ());
         }
-        qualify_origin(
+        qualify_origin_control(
             runtime,
             self.cells,
             self.actor,
             self.session,
             self.expected,
             None,
+            self.allow_control_lost,
         )?;
         let to = self.destination;
         let cell = (to.x, to.y, i32::from(to.floor));

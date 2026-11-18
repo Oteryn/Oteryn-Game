@@ -102,7 +102,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let scope = runtime.encounter_owner_scope();
         let digest = map.overlay.base().digest();
-        let closed = crate::map::floor::BundleDoors(&map.facts);
         visits.retain_mut(|visit| {
             let Some(timeout) = &visit.timeout else {
                 return visit.active(runtime);
@@ -134,14 +133,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if !room_contains(&visit.room, expected.position()) {
                     continue;
                 }
-                let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
+                let Ok(proof) = crate::map::floor::prepare_quest_timeout_ejection(
                     runtime,
                     &self.movement_cells,
                     actor,
                     session,
                     expected,
                     local(timeout.exit),
-                    &closed,
                 ) else {
                     return true;
                 };
@@ -166,7 +164,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     underwater(map, expected.position()),
                     underwater(map, moved.position()),
                 );
-                map.facts.emit_movement_effect(tile(timeout.exit), 11);
+                // Crystal spectators.lua:113-132 and movements_teleportTo.lua:108-115
+                // eject the player without a teleport effect.
             }
             // The donor deadline ejects players. Living monsters remain
             // until the next admitted challenger resets the room.
