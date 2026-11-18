@@ -22,9 +22,10 @@ const ACHIEVEMENT: &str = "oteryn:achievement/talented_dancer";
 #[test]
 fn unnatural_dance_postgres_full_wire_route_achievement_replay_stale_and_native_gate() -> TestResult
 {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
+    drop(admin);
     let started = std::time::Instant::now();
     let result = super::super::kill_reward_e2e::scenario_thread::run("unnatural-dance", || {
         super::scenario(

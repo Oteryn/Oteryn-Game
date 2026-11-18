@@ -13,11 +13,15 @@ use oteryn_protocol_oteryn::world_spatial::{
 #[path = "m40_native_dance/rollout.rs"]
 mod rollout;
 
+const RESET_SPEECH: &str = "You did it wrong. now you have to start again.";
+const START_SPEECH: &str = "Dance for the mighty Krunus!";
+
 #[test]
 fn m40_native_diagonal_dance_full_sequence_and_replay() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
+    drop(admin);
     if rollout::receipt_process(concat!(
         module_path!(),
         "::m40_native_diagonal_dance_full_sequence_and_replay"
@@ -133,8 +137,7 @@ pub(super) async fn exercise(
     assert_eq!(stage(h, dance::DANCE_STATUS_TRACK).await?, Some(1));
     if plant_hints {
         super::quest_progress_magic::assert_hint(owner, &mut magic_cursor, Some(5))?;
-        super::quest_progress_magic::assert_speech(owner, admitted,
-            Some("You did it wrong. now you have to start again."))?;
+        super::quest_progress_magic::assert_speech(owner, admitted, Some(RESET_SPEECH))?;
     }
     assert_eq!(
         step(owner, admitted, Dir::West).await?.0.disposition,
@@ -142,8 +145,21 @@ pub(super) async fn exercise(
     );
     if plant_hints {
         super::quest_progress_magic::assert_hint(owner, &mut magic_cursor, Some(5))?;
-        super::quest_progress_magic::assert_speech(owner, admitted,
-            Some("You did it wrong. now you have to start again."))?;
+        super::quest_progress_magic::assert_speech(owner, admitted, Some(RESET_SPEECH))?;
+
+        assert_eq!(step(owner, admitted, Dir::SouthEast).await?.0.disposition, D::Moved);
+        assert_eq!(stage(h, dance::DANCE_STATUS_TRACK).await?, Some(2));
+        super::quest_progress_magic::assert_hint(owner, &mut magic_cursor, Some(7))?;
+        super::quest_progress_magic::assert_speech(owner, admitted, Some(START_SPEECH))?;
+
+        let (reset, command, payload) = step(owner, admitted, Dir::NorthWest).await?;
+        assert_eq!(reset.disposition, D::Moved);
+        assert_eq!(stage(h, dance::DANCE_STATUS_TRACK).await?, Some(1));
+        super::quest_progress_magic::assert_hint(owner, &mut magic_cursor, Some(5))?;
+        super::quest_progress_magic::assert_speech(owner, admitted, Some(RESET_SPEECH))?;
+        wire(owner, admitted, command, 1, payload).await?;
+        super::quest_progress_magic::assert_hint(owner, &mut magic_cursor, None)?;
+        super::quest_progress_magic::assert_speech(owner, admitted, None)?;
     }
     let mut at = dance::TILES[0];
     let mut diagonals = std::collections::BTreeSet::new();
@@ -183,7 +199,7 @@ pub(super) async fn exercise(
                 dance::SEQUENCE.get(index + 1).copied(),
             )?;
             let speech = match index {
-                0 => Some("Dance for the mighty Krunus!"),
+                0 => Some(START_SPEECH),
                 15 => Some("Krunus should be pleased."),
                 _ => None,
             };
