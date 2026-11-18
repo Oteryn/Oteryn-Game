@@ -81,7 +81,7 @@ pub(super) async fn return_in_transaction(
     let character = foundation_character(r.source)?;
     let row = sqlx::query("SELECT uuid_send(p.origin_channel_id) AS origin, p.account_id::text, g.content_revision,g.ownership_generation::text AS generation, \
         e.deadline,e.holder_node_id::text AS original_node,e.holder_registration_revision::text AS original_registration, \
-        q.exit_x,q.exit_y,q.exit_floor,q.exit_coordinate_frame_digest,q.exit_map_revision_digest,q.exit_server_artifact_digest,q.saved_health,q.saved_mana,q.saved_rest \
+        q.exit_x,q.exit_y,q.exit_floor,q.exit_coordinate_frame_digest,q.exit_map_revision_digest,q.exit_server_artifact_digest,q.saved_health,q.saved_mana,q.saved_rest,q.use_exit_cell \
         FROM game_activity_handoff_groups g JOIN game_activity_handoff_participants p USING(handoff_id) \
         JOIN game_activity_runtime_entries e USING(handoff_id) JOIN game_activity_runtime_placements q USING(handoff_id,character_id) \
         WHERE g.handoff_id=encode($1,'hex')::uuid AND p.character_id=encode($2,'hex')::uuid AND p.destination_game_session_id=encode($3,'hex')::uuid \
@@ -285,6 +285,12 @@ pub(super) async fn return_in_transaction(
         vitals: r.current_vitals,
         rest: r.current_rest,
     };
+    if r.command_id.is_some()
+        && r.reason == ActivityReturnReason::Exit
+        && let Some(cell) = manual_exit_cell(&row)?
+    {
+        exit.cell = cell;
+    }
     if recovering {
         exit.vitals = match (
             row.try_get::<Option<i32>, _>("saved_health")?,
@@ -535,7 +541,17 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         source: CurrentCharacterItemFence,
     ) -> Result<Option<ActivityReturnPlacement>> {
-        self.read_return_placement_inner(authority, node, source, None)
+        self.read_return_placement_inner(authority, node, source, None, false)
+            .await
+    }
+
+    pub async fn read_use_return_placement(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        source: CurrentCharacterItemFence,
+    ) -> Result<Option<ActivityReturnPlacement>> {
+        self.read_return_placement_inner(authority, node, source, None, true)
             .await
     }
 
@@ -549,7 +565,7 @@ impl ActivityHandoffOwner {
         if !uuid_v7(&occurrence) {
             return Ok(None);
         }
-        self.read_return_placement_inner(authority, node, source, Some(occurrence))
+        self.read_return_placement_inner(authority, node, source, Some(occurrence), false)
             .await
     }
 
@@ -559,6 +575,7 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         source: CurrentCharacterItemFence,
         death: Option<[u8; 16]>,
+        use_exit: bool,
     ) -> Result<Option<ActivityReturnPlacement>> {
         let RuntimeScopeRefV1::Instance {
             world_id,
@@ -577,7 +594,7 @@ impl ActivityHandoffOwner {
             assert_recovery_fence(&mut tx,&recovery).await?;lock_admission_relations(&mut tx).await?;
             if retained_participant(&mut tx,&root,source).await?.is_none() || assert_item_only_fence(&mut tx,&source,&node).await?.is_err(){return Ok(None);}
             let row=sqlx::query("SELECT uuid_send(g.handoff_id) AS handoff,uuid_send(p.account_id) AS account,uuid_send(p.origin_channel_id) AS origin,a.ownership_generation::text AS generation, \
-                q.exit_x,q.exit_y,q.exit_floor,q.exit_coordinate_frame_digest,q.exit_map_revision_digest,q.exit_server_artifact_digest, \
+                q.exit_x,q.exit_y,q.exit_floor,q.exit_coordinate_frame_digest,q.exit_map_revision_digest,q.exit_server_artifact_digest,q.use_exit_cell, \
                 EXISTS(SELECT 1 FROM game_boss_room_activities b WHERE b.admission=g.handoff_id) AS boss_room \
                 FROM game_activity_handoff_groups g JOIN game_activity_handoff_participants p USING(handoff_id) JOIN game_activity_runtime_placements q USING(handoff_id,character_id) \
                 JOIN game_runtime_scope_assignments a ON a.scope_key='\\x01'::bytea || uuid_send(p.world_id) || uuid_send(p.origin_channel_id) \
@@ -600,10 +617,26 @@ impl ActivityHandoffOwner {
                 let Some(cell)=death_return_cell(&mut tx,source,occurrence).await? else{return Ok(None);};
                 result.exit_position.cell=cell;
                 result.boss_room=false;
+            } else if use_exit && let Some(cell) = manual_exit_cell(&row)? {
+                result.exit_position.cell = cell;
             }
             commit_semantic_transaction(tx,deadline).await?;Ok(Some(result))
         })).await
     }
+}
+
+fn manual_exit_cell(row: &sqlx::postgres::PgRow) -> Result<Option<LastPositionCell>> {
+    let Some(cell) = row.try_get::<Option<Vec<i32>>, _>("use_exit_cell")? else {
+        return Ok(None);
+    };
+    let [x, y, floor] = cell.as_slice() else {
+        return Err(DurabilityError::InvalidStoredState);
+    };
+    Ok(Some(LastPositionCell {
+        x: *x,
+        y: *y,
+        floor: i16::try_from(*floor).map_err(|_| DurabilityError::InvalidStoredState)?,
+    }))
 }
 
 /// The existing death receipt and pending row own this placement; the return

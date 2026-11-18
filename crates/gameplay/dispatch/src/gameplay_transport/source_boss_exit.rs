@@ -2,11 +2,72 @@
 //! Player-only STEP exit is a shared Instance return, never a Channel teleport.
 use super::ComposedFreshAdmission;
 use super::connection::AdmittedSession;
+use super::connection::{UseCommand, UseOutcome};
 use super::native_activity::NativeActivityOutcome;
-use crate::content::bosses::activity_template::QualifiedBossExitTeleporter;
+use crate::content::bosses::activity_template::{QualifiedBossExitTeleporter, vanguard_use_exit};
 use crate::durability::activity_handoff::ActivityNativeStepExit;
-use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeScopeRefV1};
+use crate::foundation::{
+    ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
+    MovementPositionSnapshot, RuntimeScopeRefV1,
+};
+use crate::map::overlay::TilePos;
 use oteryn_gameplay_entities::carrier::native_translation_events::CommittedMovementOccurrence;
+use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct SourceBossUseExit {
+    exit: QualifiedBossExitTeleporter,
+    target: WorldObjectTarget,
+    position: MovementPositionSnapshot,
+}
+
+fn native_position(position: MovementLocalPosition) -> Option<TilePos> {
+    Some(TilePos {
+        x: position.x.try_into().ok()?,
+        y: position.y.try_into().ok()?,
+        floor: position.floor.checked_neg()?.try_into().ok()?,
+    })
+}
+
+impl SourceBossUseExit {
+    pub(super) fn destination(&self) -> crate::content::LogicalCell {
+        self.exit.destination()
+    }
+
+    pub(super) fn matches(
+        &self,
+        owner: &ComposedFreshAdmission<'_, '_, '_>,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+    ) -> bool {
+        runtime.read_actor_position(actor) == Ok(self.position)
+            && Self::trigger_matches(owner, self.exit, &self.target)
+    }
+
+    fn trigger_matches(
+        owner: &ComposedFreshAdmission<'_, '_, '_>,
+        exit: QualifiedBossExitTeleporter,
+        target: &WorldObjectTarget,
+    ) -> bool {
+        let (Some(map), Some(active)) = (owner.bundle_map(), owner.active_generation) else {
+            return false;
+        };
+        let source = super::world_map::MapViewSource {
+            overlay: &map.overlay,
+            facts: &map.facts,
+            content_generation: active.identity().client_artifact_digest(),
+            reset_epoch: owner.reset_epoch,
+        };
+        super::world_map::resolve_map_target(&source, target, |_| None::<()>).is_ok_and(
+            |resolved| {
+                let trigger = exit.trigger();
+                i32::from(resolved.pos.x) == trigger.x
+                    && i32::from(resolved.pos.y) == trigger.y
+                    && -i32::from(resolved.pos.floor) == trigger.z
+            },
+        )
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct SourceBossExitProof {
@@ -67,6 +128,108 @@ impl SourceBossExitProof {
     }
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Crystal's manual arena exit returns the clicking participant through
+    /// the same Instance handoff as the encounter's timeout.
+    pub(in crate::gameplay_transport) async fn use_vanguard_exit(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        target: &WorldObjectTarget,
+    ) -> Option<UseOutcome> {
+        let fence = command.item_fence?;
+        let registered = self
+            .activity_runtimes
+            .get(fence.runtime_scope, fence.scope_ownership_generation.get())?;
+        let template = registered.template.as_ref()?;
+        let template = self
+            .activity_runtimes
+            .template(&template.key, &template.revision)?;
+        let exit = vanguard_use_exit(template.boss_key(), template.template_revision())?;
+        if !SourceBossUseExit::trigger_matches(self, exit, target) {
+            return None;
+        }
+        let refused = Some(UseOutcome::rejected());
+        let Some(admitted) = self.activity_runtimes.connection(command.game_session_id) else {
+            return refused;
+        };
+        if admitted.item_fence != Some(fence) || admitted.runtime_actor != Some(actor) {
+            return refused;
+        }
+        let Some(permit) = self.spell_lane_permit().await else {
+            return refused;
+        };
+        let proof = {
+            let runtime = self.runtime.lock().await;
+            let spells = self.states.spell_states.lock().await;
+            let Ok(position) = runtime.read_actor_position(actor) else {
+                return refused;
+            };
+            let Some(at) = native_position(position.position()) else {
+                return refused;
+            };
+            let trigger = exit.trigger();
+            let floor = -i32::from(at.floor);
+            if i32::from(at.x).abs_diff(trigger.x) > 1
+                || i32::from(at.y).abs_diff(trigger.y) > 1
+                || floor != trigger.z
+            {
+                return Some(UseOutcome {
+                    disposition: UseDisposition::TooFar,
+                    ..UseOutcome::rejected()
+                });
+            }
+            let pin = runtime.content_pin();
+            if runtime.owner_fence().is_err()
+                || !std::ptr::eq(&*self.runtime, &*registered.runtime)
+                || template.room().frame_binding().digest() != pin.frame_binding_digest()
+                || template.room().map_revision_digest() != pin.map_revision_digest()
+                || template.room().compiled().server_digest() != pin.server_artifact_digest()
+                || template.room().compiled().client_digest() != pin.client_artifact_digest()
+                || !runtime
+                    .player_control_facts(actor, command.game_session_id)
+                    .is_ok_and(|control| control.control_loss.is_none())
+                || spells.is_dead(actor)
+                || !spells.spell_idle(&runtime, actor, command.game_session_id)
+            {
+                return refused;
+            }
+            if !self
+                .states
+                .world_gate
+                .lock()
+                .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()))
+            {
+                return Some(UseOutcome {
+                    disposition: UseDisposition::Exhausted,
+                    ..UseOutcome::rejected()
+                });
+            }
+            SourceBossUseExit {
+                exit,
+                target: target.clone(),
+                position,
+            }
+        };
+        drop(permit);
+        let at = native_position(proof.position.position());
+        let Ok(NativeActivityOutcome::Committed(commit)) = self
+            .return_source_boss_use_exit(admitted, command.command_id, proof)
+            .await
+        else {
+            return refused;
+        };
+        if self.publish_activity_commit(&commit).is_err() {
+            super::operator_event("source_boss_use_exit_projection_retry");
+        }
+        if let (Some(map), Some(at)) = (self.bundle_map(), at) {
+            let _ = map.facts.emit_movement_effect(at, 11);
+        }
+        Some(UseOutcome {
+            disposition: UseDisposition::Committed,
+            ..UseOutcome::rejected()
+        })
+    }
+
     /// Flush the existing position owner's immutable receipt only after the
     /// caller finished its pace bookkeeping and released its movement guards.
     pub(super) async fn source_boss_exit_after_movement(
