@@ -1184,6 +1184,28 @@ async fn exercise_rabbit(
         .bind(fence.character_id.as_bytes().as_slice())
         .bind("oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission01")
         .execute(&mut *tx).await?;
+    tx.commit().await?;
+
+    let corpse = mint_corpse(owner, h, native, 6017, Some(race.clone()), 901).await?;
+    advance_rabbit_decay(owner, h, corpse, 11_000).await?;
+    let closed = UseCommand {
+        command_id: command_id + 2,
+        ..command
+    };
+    assert_eq!(
+        attempt(corpse, closed, obsidian_knife)
+            .await
+            .ok_or("rabbit refusal after Lucky Charms")?
+            .disposition,
+        UseDisposition::NothingToUse,
+    );
+    assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4301");
+    assert_eq!(feet_count().await?, feet);
+
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
     sqlx::query("INSERT INTO game_character_quest_tracks VALUES(encode($1,'hex')::uuid,$2,$3,1,2)")
         .bind(fence.character_id.as_bytes().as_slice())
         .bind(
@@ -1194,9 +1216,6 @@ async fn exercise_rabbit(
         .await?;
     tx.commit().await?;
 
-    let corpse = mint_corpse(owner, h, native, 6017, Some(race.clone()), 901).await?;
-    advance_rabbit_decay(owner, h, corpse, 11_000).await?;
-    assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4301");
     let failure = UseCommand {
         command_id: draw_command(
             native,
@@ -1204,7 +1223,7 @@ async fn exercise_rabbit(
             corpse,
             350_000_000,
             1_000_000_000,
-            command_id + 2,
+            closed.command_id + 1,
         )?,
         ..command
     };
