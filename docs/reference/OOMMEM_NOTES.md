@@ -194,6 +194,16 @@ measurement still reaches the local memory limit before linking. Serial
 Cargo scheduling limits overlapping dependency builds while one large
 dispatch compiler process can still exhaust the available RAM.
 
+On [PR #3281](https://github.com/Oteryn/Oteryn-Game/pull/3281), the
+[hosted PostgreSQL lib build](https://github.com/Oteryn/Oteryn-Game/actions/runs/44220523121/job/134552950881)
+lost communication with GitHub at 52:00 elapsed while the library
+archive step was in progress. The runner annotation lists CPU, memory
+and connectivity as possible causes. The
+[fourth PR unit shard](https://github.com/Oteryn/Oteryn-Game/actions/runs/44220523256/job/134530329590)
+was cancelled at 55:00 elapsed and its annotation reports the
+45-minute execution limit. Local rustc and cgroup measurements locate
+the memory failure inside the dispatch test compilation.
+
 On the pinned main push
 ([run 44254498335](https://github.com/Oteryn/Oteryn-Game/actions/runs/44254498335)),
 the Merge Queue PostgreSQL build completed its registered E2E archive.
