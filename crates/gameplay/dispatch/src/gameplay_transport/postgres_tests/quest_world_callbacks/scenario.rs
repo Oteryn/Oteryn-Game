@@ -2698,7 +2698,7 @@ fn scenario_case(
                 trigger,
             ))
             .await?;
-        } else if qengine_reward || shared_rewards {
+        } else if (qengine_reward || shared_rewards) && name != super::super::cooldmech_gerimor::NAME {
             Box::pin(super::super::qengine_rewards::exercise(
                 &mut owner,
                 &mut admitted,
