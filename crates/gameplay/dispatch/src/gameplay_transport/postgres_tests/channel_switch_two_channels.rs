@@ -345,7 +345,7 @@ fn configured_channel_full_refuses_before_the_runtime_admission_queue() -> TestR
         AdmissionRefusal, FreshAdmissionAttempt, FreshAdmissionAuthority,
     };
 
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "channel_admission_full", true, false)
             .await?;
         let result: TestResult = async {

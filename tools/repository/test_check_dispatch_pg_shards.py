@@ -3,7 +3,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
-from check_dispatch_pg_shards import inventory, verify_partition
+from check_dispatch_pg_shards import DISPATCH, check, inventory, verify_partition
 
 
 class CheckDispatchPgShardsTests(unittest.TestCase):
@@ -30,3 +30,22 @@ class CheckDispatchPgShardsTests(unittest.TestCase):
         for observed in (["first"], ["first", "first", "second"], ["first", "other"]):
             with self.subTest(observed=observed), self.assertRaises(ValueError):
                 verify_partition(expected, [Counter(observed)], "tests")
+
+    def test_inventory_counts_macro_generated_cases(self):
+        postgres = DISPATCH / "src/gameplay_transport/postgres_tests"
+        for module, count in (
+            ("all_charms_outgoing", 37),  # 9 literal tests and 14 pairs
+            ("source_quest_rewards", 28),
+            ("srvenc_source_deaths", 14),
+        ):
+            with self.subTest(module=module):
+                _, cases = inventory([postgres / f"{module}.rs"], True)
+                self.assertEqual(sum(cases.values()), count)
+                self.assertTrue(all(multiplicity == 1 for multiplicity in cases.values()))
+
+    def test_repository_shards_cover_the_unsharded_inventory(self):
+        check(3)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,3 +1,4 @@
+use super::build_mechanics::emit_cargo_directive;
 use std::error::Error;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -5,13 +6,13 @@ use std::path::{Path, PathBuf};
 const SHARD_ENV: &str = "OTERYN_DISPATCH_PG_SHARD";
 
 pub fn configure(root: &Path, out: &Path) -> Result<(), Box<dyn Error>> {
-    println!("cargo:rerun-if-env-changed={SHARD_ENV}");
-    println!("cargo:rustc-check-cfg=cfg(oteryn_pg_shard_primary)");
-    println!("cargo:rustc-check-cfg=cfg(oteryn_pg_shard_secondary)");
+    emit_cargo_directive("rerun-if-env-changed", SHARD_ENV);
+    emit_cargo_directive("rustc-check-cfg", "cfg(oteryn_pg_shard_primary)");
+    emit_cargo_directive("rustc-check-cfg", "cfg(oteryn_pg_shard_secondary)");
 
     let (shard, count) = match std::env::var(SHARD_ENV) {
         Err(std::env::VarError::NotPresent) => {
-            println!("cargo:rustc-cfg=oteryn_pg_shard_primary");
+            emit_cargo_directive("rustc-cfg", "oteryn_pg_shard_primary");
             return Ok(());
         }
         value => {
@@ -23,13 +24,13 @@ pub fn configure(root: &Path, out: &Path) -> Result<(), Box<dyn Error>> {
         }
     };
     if shard == 1 {
-        println!("cargo:rustc-cfg=oteryn_pg_shard_primary");
+        emit_cargo_directive("rustc-cfg", "oteryn_pg_shard_primary");
     } else {
-        println!("cargo:rustc-cfg=oteryn_pg_shard_secondary");
+        emit_cargo_directive("rustc-cfg", "oteryn_pg_shard_secondary");
     }
 
     let static_owner = root.join("src/gameplay_transport/monk_save_postgres_tests.rs");
-    println!("cargo:rerun-if-changed={}", static_owner.display());
+    emit_cargo_directive("rerun-if-changed", static_owner.display());
     let mounts = out.join("postgres_tests_mounts.rs");
     let source = fs::read_to_string(&mounts)?;
     let mut entries = Vec::new();

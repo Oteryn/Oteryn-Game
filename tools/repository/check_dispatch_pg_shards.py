@@ -19,13 +19,22 @@ INCLUDE = re.compile(r'^include!\("([^"]+)"\);$')
 PRIMARY = "#[cfg(oteryn_pg_shard_primary)]"
 TEST = re.compile(r"#\[(?:\w+::)?test(?:\([^\]]*\))?\]\s*(?:#\[[^\]]*\]\s*)*"
                   r"(?:pub(?:\([^)]*\))?\s+)?(?:async\s+)?fn\s+(\w+)")
+SINGLE_CASE = re.compile(r"^\s*(?:quest_case|native_case)!\(\s*(\w+)\s*,", re.M)
+DAMAGE_CASES = re.compile(r"^\s*damage_cases!\((.*?)^\s*\);", re.M | re.S)
+DAMAGE_PAIR = re.compile(r'\(\s*(\w+)\s*,\s*(\w+)\s*,\s*"(?:[^"\\]|\\.)*"\s*,?\s*\)')
+
 
 
 def scan(path, primary, prefix=()):
     """Yield named tests and their specific module/include paths."""
     source = path.read_text(encoding="utf-8")
-    names = (match[1] for match in TEST.finditer(source)
-             if primary or not source[:match.start()].rstrip().endswith(PRIMARY))
+    names = [match[1] for match in TEST.finditer(source)
+             if primary or not source[:match.start()].rstrip().endswith(PRIMARY)]
+    # These macro calls name the tests they generate. A damage tuple generates two cases.
+    names.extend(SINGLE_CASE.findall(source))
+    for invocation in DAMAGE_CASES.finditer(source):
+        for ordinary, native in DAMAGE_PAIR.findall(invocation[1]):
+            names.extend((ordinary, native))
     yield path, tuple((*prefix, name) for name in names)
     override = None
     primary_only = False

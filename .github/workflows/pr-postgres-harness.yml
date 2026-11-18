@@ -134,6 +134,10 @@ jobs:
         run: |
           python3 tools/ci/select_postgres_packages.py --base "$BASE_REF"
 
+      - name: Verify the dispatch PostgreSQL shard inventory
+        if: steps.scope.outputs.empty != 'true' && matrix.archive == 'lib' && contains(fromJSON(steps.scope.outputs.lib_packages), 'oteryn-gameplay-dispatch')
+        run: python3 tools/repository/check_dispatch_pg_shards.py 3
+
       - name: Restore trimmed Cargo cache from protected main
         if: steps.scope.outputs.empty != 'true'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9

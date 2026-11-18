@@ -1,5 +1,3 @@
-#![allow(clippy::expect_used)]
-
 // Assertions inspect native Inbox custody and durable state, not an in-memory substitute.
 #![allow(clippy::expect_used)] // Test fixture invariants use the neighbouring Store harness style.
 use tokio::io::AsyncReadExt;
