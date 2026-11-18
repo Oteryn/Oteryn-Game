@@ -523,9 +523,18 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
                 let state: CounterState = serde_json::from_value(state)?;
                 assert_eq!(state.stage, 2);
                 assert!(state.condition, "ramp commit records the stage-three condition");
-                let parameters = crate::durability::world_event::changes::counters::bindings()?.parameters;
-                let saved = state.at_save(CounterKind::Deeplings, 2, false, &parameters, 1).map_err(debug)?;
-                assert_eq!(saved.stage, 3);
+                let world = admitted.world_id;
+                let mut save = h.pool.begin().await?;
+                // Supply the next active save as fixture input. The production World
+                // owner must derive its counter state from the fenced ramp credit.
+                sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) SELECT world_id,2,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at + interval '1 day',reset_month FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=1")
+                    .bind(world.as_bytes().as_slice()).execute(&mut *save).await?;
+                let advanced = sqlx::query("UPDATE game_world_reset_active SET reset_epoch=2 WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=1")
+                    .bind(world.as_bytes().as_slice()).execute(&mut *save).await?;
+                assert_eq!(advanced.rows_affected(), 1);
+                save.commit().await?;
+                let saved = h.root.world_changes(world, 2).await?.ok_or("next Deeplings save")?;
+                assert_eq!(saved.counter_stages[CounterKind::Deeplings.index()], 3);
             }
         } else {
             assert_eq!(receipts, receipts_before);
