@@ -45,6 +45,8 @@ pub struct ItemDisguiseRequirement {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub board_portal: Option<BoardPortal>,
     /// Distinct carried definitions consumed atomically by the Quest receipt owner.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
@@ -475,6 +477,9 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 }
 
 pub(super) fn valid(callback: &Callback) -> bool {
+    if callback.effects.board_portal.as_ref().is_some_and(|board| !board.valid(callback)) {
+        return false;
+    }
     let effects = &callback.effects;
     if effects
         .color_grid

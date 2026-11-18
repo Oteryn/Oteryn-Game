@@ -44,6 +44,8 @@ pub use character_requirements::CharacterRequirements;
 mod clear_area;
 pub use clear_area::ClearArea;
 mod clock;
+mod board_portal;
+pub use board_portal::{BoardPortal, BoardToken};
 mod color_grid;
 pub use color_grid::{ColorGrid, GridAxis, GridGroup};
 mod completed_quests;

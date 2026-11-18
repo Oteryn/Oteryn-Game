@@ -7,6 +7,7 @@ use super::{
 mod admission;
 mod conditional_cells;
 use admission::{character_fence_required, stateless_observation_required};
+mod board_portal;
 mod clear_area;
 mod color_grid;
 mod committed_copy;
@@ -1200,6 +1201,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if !self.prepare_scene_items(&permit, actor, command, map, callback, resolved.placement_key, target.expected_revision, fence).await {
                 return UseDisposition::Rejected;
             }
+            let board_ground = if callback.effects.board_portal.is_some() {
+                super::loop_move::loop_ground(
+                    self,
+                    map.overlay.base(),
+                    self.active_generation
+                        .and_then(|active| active.native_gameplay())
+                        .and_then(|native| native.item_index()).map(std::sync::Arc::as_ref),
+                ).await
+            } else {
+                None
+            };
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             let Ok(expected) = runtime.read_actor_position(actor) else {
@@ -1247,7 +1259,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 optional_pvp,
                 read_only_gate.as_ref(),
                 selected_tool.as_ref(),
-                None,
+                board_ground.as_deref(),
             ))
             .await;
             drop(states);

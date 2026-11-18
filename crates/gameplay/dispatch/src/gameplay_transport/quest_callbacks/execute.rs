@@ -22,7 +22,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         optional_pvp: Option<bool>,
         read_only_gate: Option<&ReadOnlyGate>,
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
-        grid_ground: Option<&super::super::loop_move::LoopGroundOverlay>,
+        live_ground: Option<&super::super::loop_move::LoopGroundOverlay>,
     ) -> UseDisposition {
         if callback.effects.encounter.is_none()
             && let Some(catalogue) = self.quest_catalogue.as_deref()
@@ -262,6 +262,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 destination: tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::DESTINATION),
             });
         }
+        if let Some(board) = &callback.effects.board_portal {
+            let Some(ground) = live_ground else {
+                return UseDisposition::Rejected;
+            };
+            projection = match super::board_portal::prepare(
+                map, ground, runtime, actor, board, after.appearance_id,
+            ) {
+                Ok(projection) => Some(projection),
+                Err(disposition) => return disposition,
+            };
+        }
         if let Some(grid) = &callback.effects.color_grid {
             let QuestCause::Step(command) = cause else {
                 return UseDisposition::Rejected;
@@ -269,7 +280,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if projection.is_some() {
                 return UseDisposition::Rejected;
             }
-            let Some(ground) = grid_ground else {
+            let Some(ground) = live_ground else {
                 return UseDisposition::Rejected;
             };
             projection = match super::color_grid::prepare(map, ground, pos, grid, command) {
@@ -360,7 +371,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             if !passable
                 && runtime
-                    .position_occupied_by_other(actor, expected.position())
+                    .position_occupied_by_other(actor, local(Position {
+                        x: pos.x,
+                        y: pos.y,
+                        floor: pos.floor,
+                    }))
                     .unwrap_or(true)
             {
                 return UseDisposition::Occupied;

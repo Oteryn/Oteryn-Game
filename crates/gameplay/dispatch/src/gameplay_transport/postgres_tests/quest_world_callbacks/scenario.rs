@@ -359,11 +359,15 @@ fn scenario_case(
     let lucifuga = name == lucifuga_bait_spawn::NAME;
     use super::super::kroazur_solo_room;
     let kroazur = name == kroazur_solo_room::NAME;
+    use super::super::dreamers_board_portal;
+    let board_portal = matches!(name, dreamers_board_portal::READY | dreamers_board_portal::MISSING);
     use super::super::dreamers_color_grid;
     let color_grid = dreamers_color_grid::matches(name);
     use super::super::dreamers_stone_exit;
     let stone_exit = name == dreamers_stone_exit::NAME;
-    let mut callback = if color_grid {
+    let mut callback = if board_portal {
+        dreamers_board_portal::binding()?
+    } else if color_grid {
         dreamers_color_grid::binding(name)?
     } else if stone_exit {
         dreamers_stone_exit::binding()?
@@ -671,7 +675,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if color_grid {
+    let world = if board_portal {
+        dreamers_board_portal::world(&callback, name == dreamers_board_portal::READY)?
+    } else if color_grid {
         dreamers_color_grid::world(&callback, name)?
     } else if stone_exit {
         dreamers_stone_exit::world(&callback)?
@@ -1734,7 +1740,7 @@ fn scenario_case(
                 name,
             )?);
         }
-        if stone_exit {
+        if board_portal || stone_exit {
             let binding = serde_json::json!({"schema":1,"callbacks":[&callback]}).to_string();
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 oteryn_gameplay_quests::quest::world_callbacks::with_fixture_world_document(
@@ -2941,6 +2947,12 @@ fn scenario_case(
                 trigger,
             )
             .await?;
+        } else if board_portal {
+            Box::pin(dreamers_board_portal::exercise(
+                &mut owner,
+                &mut admitted,
+                name == dreamers_board_portal::READY,
+            )).await?;
         } else if color_grid {
             Box::pin(dreamers_color_grid::exercise(&owner, &mut admitted, name)).await?;
         } else if stone_exit {

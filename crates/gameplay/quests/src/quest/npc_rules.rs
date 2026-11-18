@@ -925,9 +925,11 @@ pub(super) fn retain_myzzi_predecessor(catalogue: &mut super::QuestStateCatalogu
     let Ok(source) = NpcRuleCatalog::runtime() else {
         return;
     };
-    if let Some(program) = source.programs().iter().find(|program| {
-        program.document.program_key.as_deref() == Some(MYZZI_PROGRAM)
-    }) {
+    if let Some(program) = source
+        .programs()
+        .iter()
+        .find(|program| program.document.program_key.as_deref() == Some(MYZZI_PROGRAM))
+    {
         let key = admission::binding_key(program);
         let Some(marker) = catalogue.transition(&key) else {
             return;
