@@ -30,13 +30,13 @@ The wiki specifies one charge per Sudden Death Rune. The imported reward grants 
 | Section | Difference from the captured Global route |
 | --- | --- |
 | Definition and quest log | The level 80, Premium and quest log flag agree. The imported kind is reward-only despite the quest log flag. The inactive approximation lists Rope and Shovel, omitting Pick, Holy Tible, blood, oil, Key 3700, Destroy Field Rune and the five vocation paths. Its five stages omit the route puzzles, forms and individual throne gates, place the hub unlock after the thrones and choose Avenger in the reward intent. |
-| Goshnar and shrine | The donor blood action moves players on the tile south of the grave. The repository has a PoI pick route, plus chosen level-80/Premium approach callbacks. The wiki requires blood at Goshnar, then Premium and a carried Holy Tible at the shrine, then a level-30 expertise door to the east. The donor shrine checks item 2836 without consuming it and registers UIDs 2000 and 2001. The chosen native callback at (32791, 32331, 10) is on a donor destination, so it cannot substitute for those triggers. |
+| Goshnar and shrine | The donor blood action moves players on the tile south of the grave. The repository has a PoI pick route, plus chosen level-80/Premium approach callbacks. The wiki requires blood at Goshnar, then Premium and a carried Holy Tible at the shrine, then a level-30 expertise door to the east. Crystal maps action 1030 to appearance 5129 at (32795, 32327, 10), found without that action in the committed placement. The donor shrine checks item 2836 without consuming it and registers UIDs 2000 and 2001. The chosen native callback at (32791, 32331, 10) is on a donor destination, so it cannot substitute for those triggers. |
 | Dragon Lair | The oil lever, shared bridge reset and Pick-to-cool-lava puzzle lack active PoI callbacks. Crystal supplies a ten-minute oil reset. The spoiler gives no bridge reset duration. |
 | Five Ways | No active PoI vocation damage or firewall sequence. Crystal has 30 fire action IDs with six damage tiers per vocation. Global describes 11 fields on the original paths and 13 on the Monk path, mixed damage on wrong paths and distinct final-field Stone Skin Amulet behavior. The five end switches do not require killing their room creatures. |
 | Fifteen levers and spa | Missing ordered switch cycle, final switch, 15-minute rock reset, emergency exit and lever shortcut, and party-triggered spa ladder. The later fifteen riddle levers are decoys. |
 | Maze | No active PoI teleport maze, pick exit, timed rock lever or ladder reset. The donor teleport table lists AIDs 28810–28834. Those tags were absent from the corresponding project regions. |
-| Hub shortcut and Inquisition | Global grants shortcut access on first **entry** to any throne room and Demon Forge access after one spirit absorption. Crystal writes shortcut markers via AIDs 8816–8817 and also grants hub access on throne absorption. The imported definition lists both donor gates as source references. Neither route has matching active PoI progress writers/gates in the audited content. Crystal startup door records are at `data-global/startup/tables/door_quest.lua:665–674`. |
-| Thrones and reward room | Missing spirit credit/repeat ejection, seven energy barriers, level-80 reward approach, trap corridor and Key 3700 door binding. Crystal uses UIDs 2080–2086 and 2090–2096. These tags were absent from the throne regions scanned. The donor Key 3700 door is item 1628 at (32827, 32246, 10), confirmed as a native untagged door without a startup binding at `data-global/startup/tables/door_key.lua:115–117`. The seven named bosses are rare encounters, with throne credit tied to stepping rather than kills. |
+| Hub shortcut and Inquisition | Global grants shortcut access on first **entry** to any throne room and Demon Forge access after one spirit absorption. Crystal writes shortcut markers via AIDs 8816–8817 and also grants hub access on throne absorption. The imported definition lists both donor gates as source references. Neither route has matching active PoI progress writers/gates in the audited content. Crystal startup door records are at `data-global/startup/tables/door_quest.lua:665–674`. The floor 10 expertise door bindings are at `data-global/startup/tables/door_level.lua:27–51` and `data-global/startup/tables/door_level.lua:160–169`. |
+| Thrones and reward room | Missing spirit credit/repeat ejection, seven energy barriers, level-80 reward approach, trap corridor and Key 3700 door binding. Crystal maps the level-80 action 1080 to appearance 5102 at (32834, 32280, 10), found without that action in the committed placement. Crystal uses UIDs 2080–2086 and 2090–2096 for the thrones and barriers. These tags were absent from the throne regions scanned. The donor Key 3700 door is item 1628 at (32827, 32246, 10), confirmed as a native untagged door without a startup binding at `data-global/startup/tables/door_key.lua:115–117`. The seven named bosses are rare encounters, with throne credit tied to stepping rather than kills. |
 | Pumin and Sage | The four bureaucrat dialogues retain basic presentation, with no active form chain. The captured sequence is 356 request → 145 request → 411 request → permission for 287 → 287 → 411 → 145 → 356 → access. The Sage imported dialogue has the help prompt and no branch, and lacks the yes teleport to the Slime Cave. No PoI quest NPC callback/offer records were found. Crystal places the Sage and Demonguard at `data-global/world/world-npc.xml:2864–2871` and the four bureaucrats at lines 3305–3315. The Sage travel branch is `data-global/npc/a_ghostly_sage.lua:53–55`. The spoiler also describes a burn response from Demonguard. |
 | Bazir | Missing maze lever branches, post-maze tile teleports, tapestry and mirror transfer, and carpet exit. |
 | Achievements | Ruthless is listed as a quest reward. The optional Well of Life heals once and grants Fountain of Life. Neither is granted by an active PoI interaction. |
@@ -47,7 +47,7 @@ There were no PoI-specific active or held files in the two world-callback direct
 
 Donor paths below are at Crystal 201189f8.
 
-- BLOCKER Shrine of Wonders shared STEP predicate for non-consuming carried item and source crossing data-global/scripts/quests/the_pits_of_inferno_quest/movements_holy_tible_tile.lua:14
+- BLOCKER Shrine of Wonders shared STEP admission combining a non-consuming carried item, live Premium and return to origin data-global/scripts/quests/the_pits_of_inferno_quest/movements_holy_tible_tile.lua:14
 - BLOCKER Goshnar shared blood-on-target party-tile relocation with PvP stack rules data-global/scripts/actions/other/fluids.lua:157
 - BLOCKER Hall of the Five Ways shared per-vocation mixed-combat STEP admission and final-field equipment semantics data-global/scripts/quests/the_pits_of_inferno_quest/movements_fire_tile.lua:47
 - BLOCKER optional Well of Life atomic once-only full heal and achievement on use data-global/scripts/quests/the_pits_of_inferno_quest/actions_fountain.lua:3
@@ -65,3 +65,22 @@ Entry item retrieval and treasure placement binding are the implemented slice. T
 
 - PG via shard (pgsplit build files applied on `a17ef1e6f631cc8eb9724e79794b631fdcca24ed`). The pre-fix case initialized PostgreSQL and failed at the production binder assertion for the first untagged source placement. The filtered run finished in 23.80 s with 1 failure.
 - The test reuses the production reward dispatch and custody fixture with the exact untagged ordinal-1 occurrence for each selected placement. The four committed region digests and source tile ordinals were checked separately.
+
+- PG via shard (pgsplit build files applied on `659d11c506a440d85d1b93f1e3c6bd92ddb247d9`). 1 passed and 0 failed. All 11 placement scenarios ran. Total duration 173.46 s.
+- Quest authoring passed all 44 check commands and formatting passed. Pin refresh reproduced the committed World digest.
+
+| PostgreSQL placement case | Duration |
+| --- | ---: |
+| Frozen Starlight | 17.55 s |
+| Platinum Coins | 13.09 s |
+| Soft Boots | 13.55 s |
+| Arcane Staff | 12.99 s |
+| Avenger | 14.26 s |
+| Arbalest | 13.72 s |
+| Stuffed Dragon | 15.22 s |
+| Key 3700 | 14.40 s |
+| Holy Tible | 13.44 s |
+| Pirate Backpack | 13.89 s |
+| Backpack of Holding | 12.60 s |
+
+The same filter without `OTERYN_TEST_POSTGRES_ADMIN_URL` returned `Ok(())` with 1 passed, 0 failed and 0.00 s elapsed. The database evidence is the routed run above. Dispatch Clippy passed with `--all-features --lib -- -D warnings`. World pin-check passed with a temporary output directory, which the CLI requires.
