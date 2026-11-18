@@ -13,6 +13,7 @@ pub(super) struct Origin {
     definition: [u8; 32],
     quest: String,
     revision: u64,
+    ambush: bool,
 }
 
 impl Origin {
@@ -29,7 +30,13 @@ impl Origin {
             definition,
             quest: quest.into(),
             revision,
+            ambush: false,
         }
+    }
+
+    pub(super) fn for_ambush(mut self, ambush: bool) -> Self {
+        self.ambush = ambush;
+        self
     }
 }
 
@@ -118,10 +125,11 @@ impl Cohorts {
                             .iter()
                             .any(|actor| runtime.contains_live_creature(*actor))))
         });
-        if cohorts
-            .iter()
-            .any(|cohort| cohort.scope == scope && cohort.callback == callback)
-        {
+        if cohorts.iter().any(|cohort| {
+            cohort.scope == scope
+                && cohort.callback == callback
+                && (!origin.ambush || cohort.origin.character == origin.character)
+        }) {
             return Err(UseDisposition::Occupied);
         }
         if cohorts.len() >= MAX_PERSONAL_ENCOUNTERS {

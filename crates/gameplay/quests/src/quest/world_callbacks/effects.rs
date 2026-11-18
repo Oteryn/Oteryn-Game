@@ -320,6 +320,8 @@ pub struct Encounter {
 pub enum EncounterPhase {
     #[serde(rename = "cults_boss_phase_closures")]
     Cults,
+    #[serde(rename = "personal_ambush")]
+    Ambush,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -619,7 +621,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     .passages
                     .iter()
                     .any(|passage| passage.create_on_close.is_some())
-                || *effects
+                || effects.shared
                     != (CallbackEffects {
                         passages_close_after_ms: Some(delay),
                         ..CallbackEffects::default()
@@ -796,7 +798,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && !callback.reversible
             && callback.offerings.is_empty()
             && callback.item_on_target.is_none()
-            && encounter.players.len() == 1
+            && (encounter.players.len() == 1
+                || (encounter.phase == Some(EncounterPhase::Ambush)
+                    && encounter.players.is_empty()))
             && encounter.timing.is_none()
             && effects.item_reward.is_none()
             && effects.outfit_reward.is_none()
@@ -865,6 +869,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
+        let ambush = encounter.phase == Some(EncounterPhase::Ambush);
         if (encounter.minimum_level == 0 && !source_party)
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
@@ -882,12 +887,23 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     || (u64::from(encounter.room_max.x.saturating_sub(encounter.room_min.x)) + 1)
                         * (u64::from(encounter.room_max.y.saturating_sub(encounter.room_min.y)) + 1)
                         > 4096
+            } else if ambush {
+                !personal_encounter
+                    || callback.trigger != Trigger::StepIn
+                    || !callback.storage.iter().any(|guard| {
+                        !guard.preserve && !guard.read_only && guard.set > guard.maximum
+                    })
+                    || !callback.passages.is_empty()
+                    || callback.teleport.is_some()
+                    || encounter.players.len() > 1
+                    || encounter.players.first().is_some_and(|player| {
+                        callback.selector.position != Some(player.from)
+                            || !callback.selector.position_aliases.is_empty()
+                    })
             } else {
-                !(1..=if encounter.phase.is_some() { 16 } else { 8 })
-                    .contains(&encounter.players.len())
+                !(1..=if source_party { 16 } else { 8 }).contains(&encounter.players.len())
             }
-            || !(1..=if encounter.phase.is_some() { 16 } else { 8 })
-                .contains(&encounter.monsters.len())
+            || !(1..=if source_party { 16 } else { 8 }).contains(&encounter.monsters.len())
             || (encounter.phase.is_some() && encounter.timing.is_some())
             || (callback.reversible && !source_party)
             || unique_from.len() != encounter.players.len()
@@ -902,8 +918,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || encounter.players.iter().any(|p| {
                 !pos(p.from)
                     || !pos(p.to)
-                    || !in_room(p.to)
-                    || (in_room(p.from) && callback.personal_room_entry() != Some(p.from))
+                    || (!ambush
+                        && (!in_room(p.to)
+                            || (in_room(p.from) && callback.personal_room_entry() != Some(p.from))))
             })
             || encounter.monsters.iter().any(|m| {
                 !pos(m.position)

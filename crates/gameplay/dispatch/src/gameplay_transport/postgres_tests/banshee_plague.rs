@@ -5,7 +5,7 @@ use super::{
     prepare_current_session,
 };
 use crate::content::channel_content_pin::ChannelContentPin;
-use crate::foundation::{ChannelRuntimeV1, CharacterId, CharacterLease, GameSessionId};
+use crate::foundation::{ChannelRuntimeV1, CharacterId, CharacterLease};
 use crate::map::overlay::TilePos;
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
 use sha2::{Digest, Sha256};
@@ -240,7 +240,7 @@ fn scenario() -> TestResult {
             track_count, 0,
             "the endpoint charges admission without changing seal progress"
         );
-        let consumption_counts: Vec<i16> = sqlx::query_scalar("SELECT quantity FROM game_quest_callback_consumptions WHERE transition_key='oteryn:quest-callback/banshee/plague-entrance' ORDER BY item_instance_id")
+        let consumption_counts: Vec<i32> = sqlx::query_scalar("SELECT quantity FROM game_quest_callback_consumptions WHERE transition_key='oteryn:quest-callback/banshee/plague-entrance' ORDER BY item_instance_id")
             .fetch_all(&h.pool).await?;
         assert_eq!(consumption_counts, [1, 1]);
         Ok(())

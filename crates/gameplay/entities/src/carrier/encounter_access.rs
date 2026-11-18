@@ -370,12 +370,30 @@ impl ChannelRuntimeV1 {
         self.commit_quest_creature_spawn_with_projection(monsters, || true)
     }
 
+    /// Check the same bounded spawn transaction without changing visible actors.
+    pub fn preflight_quest_creature_spawn(
+        &mut self,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+    ) -> Result<(), CarrierError> {
+        self.quest_creature_spawn(monsters, || true, false)
+            .map(|_| ())
+    }
+
     /// Publish a bounded spawn and its already observed world readset together.
     /// A stale or refused map projection restores every staged actor and policy.
     pub fn commit_quest_creature_spawn_with_projection(
         &mut self,
         monsters: &[(&str, i64, MovementLocalPosition)],
         project: impl FnOnce() -> bool,
+    ) -> Result<Vec<ExactActorRef>, CarrierError> {
+        self.quest_creature_spawn(monsters, project, true)
+    }
+
+    fn quest_creature_spawn(
+        &mut self,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        project: impl FnOnce() -> bool,
+        publish: bool,
     ) -> Result<Vec<ExactActorRef>, CarrierError> {
         if monsters.is_empty() || monsters.len() > 8 {
             return Err(CarrierError::PlanConflict);
@@ -396,7 +414,7 @@ impl ChannelRuntimeV1 {
             }
             Ok(actors)
         })();
-        if result.is_err() {
+        if !publish || result.is_err() {
             self.carrier = before;
         }
         result

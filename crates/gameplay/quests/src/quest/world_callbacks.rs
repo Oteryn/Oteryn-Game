@@ -971,7 +971,13 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || callback
                 .effects
                 .teleport_effect
-                .is_some_and(|effect| effect == 0 || effect > 255 || callback.teleport.is_none())
+                .is_some_and(|effect| effect == 0
+                    || effect > 255
+                    || (callback.teleport.is_none()
+                        && !callback.effects.encounter.as_ref().is_some_and(|encounter| {
+                            encounter.phase == Some(effects::EncounterPhase::Ambush)
+                                && encounter.players.len() == 1
+                        })))
             || (callback.actor_kind == ActorKind::Monster
                 && (callback.selector.position.is_none()
                     || callback.trigger == Trigger::Use

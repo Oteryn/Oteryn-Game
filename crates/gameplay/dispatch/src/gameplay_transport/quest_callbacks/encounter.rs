@@ -88,6 +88,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
         };
+        use oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase;
+        let ambush = encounter.phase == Some(EncounterPhase::Ambush);
+        let source_party = encounter.phase == Some(EncounterPhase::Cults);
         if preflight && callback.has_personal_state() {
             if !callback.requires_world_admission {
                 return UseDisposition::Rejected;
@@ -136,13 +139,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .contains(&at.y)
         };
         let personal_entry = callback.personal_room_entry().map(local);
-        if census.iter().any(|(who, pos, occupant_session)| {
-            occupant_session.is_some()
-                && in_room(pos.position())
-                && !(Some(pos.position()) == personal_entry
-                    && *who == actor
-                    && *occupant_session == Some(session))
-        }) {
+        if !ambush
+            && census.iter().any(|(who, pos, occupant_session)| {
+                occupant_session.is_some()
+                    && in_room(pos.position())
+                    && !(Some(pos.position()) == personal_entry
+                        && *who == actor
+                        && *occupant_session == Some(session))
+            })
+        {
             return UseDisposition::Occupied;
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
@@ -154,9 +159,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
                 // Cults collects whoever stands on the five source staging tiles.
-                if encounter.phase
-                    == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults)
-                {
+                if source_party {
                     continue;
                 }
                 return UseDisposition::Rejected;
@@ -218,9 +221,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             players.push((who, member_session, expected));
             proofs.push(proof);
         }
-        if !players
-            .iter()
-            .any(|(who, s, _)| *who == actor && *s == session)
+        let spawn_only = ambush && encounter.players.is_empty();
+        if !(spawn_only
+            || players
+                .iter()
+                .any(|(who, s, _)| *who == actor && *s == session))
         {
             return UseDisposition::Rejected;
         }
@@ -240,7 +245,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     tile(monster.position),
                     false,
                 )
-                || census.iter().any(|(_, pos, _)| pos.position() == at)
+                || (!ambush && census.iter().any(|(_, pos, _)| pos.position() == at))
             {
                 return UseDisposition::Occupied;
             }
@@ -250,14 +255,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
         }
         if preflight {
-            return if runtime
-                .preflight_quest_encounter_entry(proofs, &monsters)
-                .is_ok()
-            {
+            let ready = if spawn_only {
+                runtime.preflight_quest_creature_spawn(&monsters)
+            } else {
+                runtime.preflight_quest_encounter_entry(proofs, &monsters)
+            };
+            return if ready.is_ok() {
                 UseDisposition::Committed
             } else {
                 UseDisposition::Occupied
             };
+        }
+        if spawn_only {
+            let Ok(actors) = runtime.commit_quest_creature_spawn_with_projection(&monsters, || {
+                map.facts
+                    .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
+            }) else {
+                return UseDisposition::Rejected;
+            };
+            let Some(reservation) = reservation else {
+                return UseDisposition::Rejected;
+            };
+            if let Err(disposition) = reservation.publish(runtime, actors) {
+                return disposition;
+            }
+            if let Some(magic) = &callback.effects.magic {
+                map.facts
+                    .emit_movement_effect(tile(magic.position), magic.effect);
+            }
+            return UseDisposition::Committed;
         }
         let party: Vec<_> = players
             .iter()
@@ -297,7 +323,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let credits = if encounter.phase.is_some() {
+        let credits = if source_party {
             let Ok(credits) =
                 super::super::grizzly_kills::capture_encounter_admission(self, runtime, &party)
             else {
@@ -307,7 +333,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let mut phases = if encounter.phase.is_some() {
+        let mut phases = if source_party {
             let Ok(active) = states.encounter_phases.reserve(runtime, key) else {
                 return UseDisposition::Occupied;
             };
@@ -378,7 +404,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, snapshot.position()),
             );
             if let Some(pos) = native(snapshot.position()) {
-                map.facts.emit_movement_effect(pos, 11);
+                map.facts
+                    .emit_movement_effect(pos, callback.effects.teleport_effect.unwrap_or(11));
             }
         }
         UseDisposition::Committed
