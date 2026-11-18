@@ -45,7 +45,7 @@ pub(super) fn callback() -> TestResult<Callback> {
         "requires_world_admission":true,
         "storage":[{"track":NEST,"minimum":0,"maximum":7,"set":0,"preserve":true},
             {"track":CHARGE,"minimum":1,"maximum":1,"set":2}],
-        "effects":{"timed_outfit":{"look_type":307,"duration_ms":120000}},
+        "effects":{"timed_outfit":{"look_type":307,"duration_ms":120000,"effect":11},"step_effect":12},
         "success_message":"You have charged your body with geomantic energy and can report about it.",
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_geomantic_charges.lua:1-45"]
     }))?)
@@ -120,6 +120,18 @@ pub(super) async fn exercise(
     }
 
     let command = admitted.continuity.next_command_id;
+    let movement_effects = |admission: &ComposedFreshAdmission<'_, '_, '_>| {
+        admission.bundle_map().map(|map| {
+            map.facts
+                .movement_effects_since(0)
+                .into_iter()
+                .filter_map(|(_, position, effect)| {
+                    (position.x == CELL.x && position.y == CELL.y && position.floor == CELL.floor)
+                        .then_some(effect)
+                })
+                .collect::<Vec<_>>()
+        })
+    };
     super::quest_world_callbacks::wire(
         owner,
         admitted,
@@ -129,6 +141,7 @@ pub(super) async fn exercise(
     )
     .await?;
     assert_eq!(charge(harness).await?, 1);
+    assert_eq!(movement_effects(owner), Some(Vec::new()));
     assert_eq!(
         owner
             .runtime
@@ -151,6 +164,7 @@ pub(super) async fn exercise(
     )
     .await?;
     assert_eq!(charge(harness).await?, 2);
+    assert_eq!(movement_effects(owner), Some(vec![11, 12]));
     let runtime = owner.runtime.lock().await;
     assert_eq!(
         runtime

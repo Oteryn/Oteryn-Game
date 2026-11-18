@@ -497,7 +497,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let step_outfit = if let Some(outfit) = callback.effects.timed_outfit {
             use crate::domain::condition::ConflictKey;
             let now = self.owner_now().get();
-            let (Some(current), Ok(world_conditions)) = (
+            let (Some(fence), Some(current), Ok(world_conditions)) = (
+                fence,
                 states.get(runtime, actor, session),
                 runtime.actor_conditions_at(actor, Some(session), now),
             ) else {
@@ -513,6 +514,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return UseDisposition::NotPossible;
             }
+            match self
+                .has_selected_outfit_look(fence, u32::from(outfit.look_type))
+                .await
+            {
+                Ok(false) => {}
+                Ok(true) => return UseDisposition::NotPossible,
+                Err(_) => return UseDisposition::Rejected,
+            }
             let Ok(next) = crate::spell::actor_conditions::stage_item_costume(
                 current,
                 u32::from(outfit.look_type),
@@ -521,7 +530,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ) else {
                 return UseDisposition::Rejected;
             };
-            Some(next)
+            Some((next, outfit.effect))
         } else {
             None
         };
@@ -1609,11 +1618,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     captured_name: None,
                 });
         }
-        if let Some(next) = step_outfit {
+        if let Some((next, effect)) = step_outfit {
             if !states.commit(runtime, actor, session, next) {
                 return UseDisposition::Rejected;
             }
             states.owner_wake.notify_one();
+            if let Some(effect) = effect {
+                map.facts
+                    .emit_movement_effect(native(expected.position()).unwrap_or(pos), effect);
+            }
         }
         if callback.effects.restore_disguise {
             let Some(current) = states.get(runtime, actor, session) else {
@@ -1674,6 +1687,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(magic) = &callback.effects.magic {
             map.facts
                 .emit_movement_effect(tile(magic.position), magic.effect);
+        }
+        if let Some(effect) = callback.effects.step_effect {
+            map.facts
+                .emit_movement_effect(native(expected.position()).unwrap_or(pos), effect);
         }
         if let Some(effect) = callback.effects.teleport_effect
             && let Some(destination) = destination

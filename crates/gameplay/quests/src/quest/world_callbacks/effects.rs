@@ -47,6 +47,8 @@ pub struct ItemDisguiseRequirement {
 pub struct TimedOutfit {
     pub look_type: u16,
     pub duration_ms: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub effect: Option<u16>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
@@ -108,6 +110,9 @@ pub struct CallbackEffects {
     pub passages_reset_after_ms: Option<u32>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
+    /// Emit at the player's cell when a fenced STEP commits in place.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub step_effect: Option<u16>,
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teleport_effect: Option<u16>,
@@ -584,6 +589,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
     }
     if effects.timed_outfit.is_some_and(|outfit| {
         outfit.look_type == 0
+            || outfit.effect == Some(0)
             || !(1..=3_600_000).contains(&outfit.duration_ms)
             || callback.trigger != Trigger::StepIn
             || callback.actor_kind != ActorKind::Player
@@ -594,6 +600,17 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || callback.teleport.is_some()
             || effects.restore_disguise
             || effects.requires_item_disguise.is_some()
+    }) {
+        return false;
+    }
+    if effects.step_effect.is_some_and(|effect| {
+        effect == 0
+            || callback.trigger != Trigger::StepIn
+            || callback.actor_kind != ActorKind::Player
+            || !callback.requires_world_admission
+            || callback.teleport.is_some()
+            || callback.remote_teleport.is_some()
+            || !effects.vocation_teleports.is_empty()
     }) {
         return false;
     }

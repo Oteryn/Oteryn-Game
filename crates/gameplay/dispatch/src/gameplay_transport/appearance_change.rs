@@ -50,6 +50,34 @@ impl AppearanceCommands {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn has_selected_outfit_look(
+        &self,
+        fence: CurrentCharacterGameplayFence,
+        look: u32,
+    ) -> Result<bool, AppearanceWriteError> {
+        let Some((_, content)) = self.appearance_context() else {
+            return Ok(false);
+        };
+        if !content.outfit_keys().any(|key| {
+            [Sex::Male, Sex::Female]
+                .into_iter()
+                .any(|sex| content.look_type(key, sex) == Some(look))
+        }) {
+            return Ok(false);
+        }
+        let state = self
+            .root
+            .read_current_character_appearance_state(
+                self.character,
+                self.holder,
+                fence,
+                content.earned_grant_keys(),
+            )
+            .await?;
+        let (base, _) = catalogue::base(&content, &state);
+        Ok(content.look_type(&base.outfit_key, state.sex) == Some(look))
+    }
+
     pub(super) async fn current_mount(
         &self,
         actor: ExactActorRef,
