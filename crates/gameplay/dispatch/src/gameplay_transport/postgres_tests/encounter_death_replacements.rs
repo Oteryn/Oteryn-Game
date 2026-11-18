@@ -10,6 +10,7 @@ use oteryn_protocol_oteryn::world_spatial::StepDirection;
 use serde_json::json;
 
 pub(super) const EARTH: &str = "forgotten-knowledge-thorn-death-phases";
+pub(super) const ENERGY: &str = "forgotten-knowledge-prism-death-relocation";
 pub(super) const ESSENCE: &str = "first-dragon-essence-death-phase";
 pub(super) const LORE: &str = "forgotten-knowledge-lore-keeper-death-phase";
 pub(super) const VICTORY: &str = "first-dragon-reward-room-transfer";
@@ -21,6 +22,18 @@ const DRAGON_ESSENCE: &str = "oteryn:creature.dragon_essence";
 const DRAGON: &str = "oteryn:creature.the_first_dragon";
 const GLYPH: &str = "oteryn:creature.an_astral_glyph";
 const KEEPER: &str = "oteryn:creature.the_last_lore_keeper";
+const LLOYD: &str = "oteryn:creature.lloyd";
+const PRISM_A: &str = "oteryn:creature.cosmic_energy_prism_a";
+const PRISM_B: &str = "oteryn:creature.cosmic_energy_prism_b";
+const PRISMS: [(&str, Position); 4] = [
+    (PRISM_A, at(32801, 32827)),
+    (PRISM_B, at(32798, 32827)),
+    ("oteryn:creature.cosmic_energy_prism_c", at(32803, 32826)),
+    ("oteryn:creature.cosmic_energy_prism_d", at(32796, 32826)),
+];
+const LLOYD_SPAWN: Position = at(32799, 32827);
+const LLOYD_REBIRTH: Position = at(32799, 32826);
+const LLOYD_RETURN: Position = at(32799, 32829);
 const REWARD_ROOM: Position = Position {
     x: 33617,
     y: 31020,
@@ -53,6 +66,17 @@ fn thorn_knight_deaths_spawn_the_shielded_knight_and_steed_then_enraged_knight()
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(EARTH, || {
         super::quest_world_callbacks::scenario(EARTH, at(32657, 32876), false)
+    })
+}
+
+#[test]
+fn energy_prism_death_returns_lloyd_only_from_the_rebirth_tile() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(ENERGY, || {
+        super::quest_world_callbacks::scenario(ENERGY, at(32759, 32867), false)
     })
 }
 
@@ -92,6 +116,9 @@ fn dragon_essence_death_retires_the_five_siblings_and_summons_one_first_dragon()
 pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
     if name == LORE {
         return lore_callback(lever);
+    }
+    if name == ENERGY {
+        return energy_callback(lever);
     }
     let (quest, source, from, arrival, min, max, monsters, mut death_phases) = if name == EARTH {
         (
@@ -177,12 +204,48 @@ fn lore_callback(lever: Position) -> TestResult<Callback> {
     Ok(callback)
 }
 
+fn energy_callback(lever: Position) -> TestResult<Callback> {
+    let players: Vec<_> = (32868..=32872)
+        .map(|y| json!({"from":at(32759,y), "to":at(32800,32831)}))
+        .collect();
+    let mut monsters: Vec<_> = PRISMS
+        .iter()
+        .map(|(creature, position)| json!({"creature":creature,"position":position}))
+        .collect();
+    monsters.push(json!({"creature":LLOYD,"position":LLOYD_SPAWN}));
+    let replacements = PRISMS.map(|(creature, _)| {
+        json!({
+            "defeated":creature,"spawn":[],
+            "relocate":{"creature":LLOYD,"from":LLOYD_REBIRTH,"to":LLOYD_RETURN}
+        })
+    });
+    let data = json!({"schema":1,"callbacks":[{
+        "key":format!("oteryn:quest-callback/{ENERGY}"),"quest":"oteryn:quest.forgotten_knowledge_quest",
+        "trigger":"use","selector":{"position":lever,"appearance":8911},
+        "reversible":false,"passages":[],"storage":[],"offerings":[],"return_on_failure":false,
+        "effects":{"encounter":{
+            "minimum_level":0,"players":players,"monsters":monsters,
+            "room_min":at(32785,32814),"room_max":at(32812,32838),"shared_staging":true,
+            "death_phases":{"terminal":LLOYD,"replacements":replacements}
+        }},
+        "sources":[
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/forgotten_knowledge/actions_lloyd.lua:1-12,47-74",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/forgotten_knowledge/creaturescripts_energy_prism_death.lua:2-13"
+        ]
+    }]});
+    let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&data.to_string())?
+        .try_into()
+        .map_err(|_| "one Energy callback")?;
+    Ok(callback)
+}
+
 pub(super) fn world(
     callback: &Callback,
     lever: Position,
     name: &str,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     let extra = match name {
+        ENERGY => vec![LLOYD_REBIRTH, LLOYD_RETURN],
         ESSENCE => vec![at(33617, 31023)],
         VICTORY => vec![at(33617, 31023), at(33622, 31023), REWARD_ROOM],
         _ => Vec::new(),
@@ -239,6 +302,46 @@ pub(super) async fn exercise(
         super::engenc2_cults::kill(owner, admitted, shielded, SHIELDED, 102).await?;
         assert_eq!(live(owner, ENRAGED).await?.len(), 1);
         assert_eq!(live(owner, STEED).await?.len(), 1);
+    } else if name == ENERGY {
+        let [lloyd] = live(owner, LLOYD)
+            .await?
+            .try_into()
+            .map_err(|_| "one Lloyd")?;
+        let [prism] = live(owner, PRISM_B)
+            .await?
+            .try_into()
+            .map_err(|_| "one prism B")?;
+        super::engenc2_cults::kill(owner, admitted, prism, PRISM_B, 101).await?;
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let spawn = runtime.read_actor_position(lloyd).map_err(debug)?;
+            assert_eq!(
+                spawn.position(),
+                super::quest_world_callbacks::local(LLOYD_SPAWN)
+            );
+            // Arrange the source rebirth position for the second prism death.
+            runtime
+                .borrow_movement_position()
+                .commit_creature_relocation(
+                    lloyd,
+                    spawn,
+                    super::quest_world_callbacks::local(LLOYD_REBIRTH),
+                )
+                .map_err(debug)?;
+        }
+        let [prism] = live(owner, PRISM_A)
+            .await?
+            .try_into()
+            .map_err(|_| "one prism A")?;
+        super::engenc2_cults::kill(owner, admitted, prism, PRISM_A, 102).await?;
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(
+            runtime
+                .read_actor_position(lloyd)
+                .map_err(debug)?
+                .position(),
+            super::quest_world_callbacks::local(LLOYD_RETURN)
+        );
     } else if name == LORE {
         let runtime = owner.runtime.lock().await;
         let census = runtime.current_live_creature_census().map_err(debug)?;

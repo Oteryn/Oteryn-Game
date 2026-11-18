@@ -352,7 +352,7 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let death_replacement = matches!(name, super::super::encounter_death_replacements::EARTH | super::super::encounter_death_replacements::ESSENCE | super::super::encounter_death_replacements::LORE | super::super::encounter_death_replacements::VICTORY);
+    let death_replacement = matches!(name, super::super::encounter_death_replacements::EARTH | super::super::encounter_death_replacements::ENERGY | super::super::encounter_death_replacements::ESSENCE | super::super::encounter_death_replacements::LORE | super::super::encounter_death_replacements::VICTORY);
     let mut callback = if name == super::super::zamulosh_monster_step::CASE {
         super::super::zamulosh_monster_step::callback()?
     } else if name == super::super::warzone_portal_cooldown::CASE {

@@ -145,6 +145,33 @@ impl Replacements {
                 self.members.swap_remove(index);
                 continue;
             };
+            if let Some(relocate) = &rule.relocate {
+                // Crystal 201189f8, forgotten_knowledge/creaturescripts_energy_prism_death.lua:4-11.
+                let from = super::super::quest_callbacks::local(relocate.from);
+                let to = super::super::quest_callbacks::local(relocate.to);
+                let guarded_actor = self
+                    .members
+                    .iter()
+                    .filter(|member| {
+                        member.creature == relocate.creature && member.death_at.is_none()
+                    })
+                    .find_map(|member| {
+                        let expected = runtime.read_actor_position(member.actor).ok()?;
+                        (expected.position() == from
+                            && runtime.contains_live_creature(member.actor))
+                        .then_some((member.actor, expected))
+                    });
+                if let Some((actor, expected)) = guarded_actor {
+                    if !map_admits(runtime, to) {
+                        return Err(CarrierError::PlanConflict);
+                    }
+                    runtime
+                        .borrow_movement_position()
+                        .commit_creature_relocation(actor, expected, to)?;
+                }
+                self.members.swap_remove(index);
+                continue;
+            }
             let retire: Vec<_> = self
                 .members
                 .iter()

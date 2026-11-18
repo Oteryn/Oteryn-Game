@@ -425,6 +425,17 @@ pub struct DeathReplacement {
     #[serde(default, skip_serializing_if = "is_false")]
     pub retire_siblings: bool,
     pub spawn: Vec<ReplacementActor>,
+    /// Move an existing encounter member only if it still occupies the source tile.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub relocate: Option<DeathRelocation>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DeathRelocation {
+    pub creature: String,
+    pub from: Position,
+    pub to: Position,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -474,7 +485,17 @@ fn valid_death_phases(
         if rule.defeated == plan.terminal
             || !known.contains(rule.defeated.as_str())
             || !defeated.insert(rule.defeated.as_str())
-            || !(1..=8).contains(&rule.spawn.len())
+            || if let Some(relocate) = &rule.relocate {
+                !rule.spawn.is_empty()
+                    || rule.retire_siblings
+                    || !known.contains(relocate.creature.as_str())
+                    || relocate.creature == rule.defeated
+                    || !in_room(relocate.from)
+                    || !in_room(relocate.to)
+                    || relocate.from == relocate.to
+            } else {
+                !(1..=8).contains(&rule.spawn.len())
+            }
         {
             return false;
         }
