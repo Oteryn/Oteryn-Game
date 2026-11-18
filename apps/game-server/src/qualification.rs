@@ -69,7 +69,7 @@ mod wild_spawn;
 #[path = "spell_book_sweep_tests.rs"]
 mod spell_book_sweep_tests;
 
-const PLATFORM_SOURCE: &str = "3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05";
+const PLATFORM_SOURCE: &str = "6d04b52a16145723eedb0c56640ad052dbd26e94";
 /// Interpretation requested by the Platform intents that `run.sh` issues.
 /// Its content revision is also the served `readiness.content_revision`: the quest and Task Board
 /// owners refuse a Character whose stored progression content differs from the served one.
@@ -1919,6 +1919,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             .await
             .map_err(|e| format!("intent read {tag}: {e:?}"))?;
         drop(permit);
+        assert_eq!(intent.requested_vocation(), "Sorcerer");
         let record = root
             .bootstrap_character(&authority, &holder, &intent)
             .await
@@ -3102,6 +3103,21 @@ impl<'a> OwnedGrant<'a> {
             attempt: self.inner.attempt,
         }
     }
+}
+
+#[test]
+fn seam_qualification_uses_the_node_boot_platform_pin() {
+    let expected = format!("readonly PLATFORM_SHA={PLATFORM_SOURCE}");
+    assert!(
+        include_str!("../../../tools/qualification/node_boot/run.sh")
+            .lines()
+            .any(|line| line == expected)
+    );
+    assert!(
+        include_str!("../../../tools/qualification/wp5_s3b/run.sh")
+            .lines()
+            .any(|line| line == expected)
+    );
 }
 
 #[test]

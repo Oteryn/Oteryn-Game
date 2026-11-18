@@ -904,6 +904,7 @@ fn closure_publisher_is_independent_of_pending_list_and_quarantines_conflicts() 
 fn retained_create_refusal_alarms_and_does_not_block_later_receipts() {
     struct Retained {
         reads: usize,
+        valid_first: bool,
     }
 
     impl Decider for Retained {
@@ -916,13 +917,13 @@ fn retained_create_refusal_alarms_and_does_not_block_later_receipts() {
             after: Option<&str>,
         ) -> Result<Option<RetainedCreateReceipt>, SourceError> {
             self.reads += 1;
-            if self.reads > 5 {
+            if self.reads > 4 + usize::from(self.valid_first) {
                 return std::future::pending().await;
             }
             Ok(match after {
                 None => Some(RetainedCreateReceipt {
                     operation_id: op(1),
-                    body: Some(b"receipt-a".to_vec()),
+                    body: self.valid_first.then(|| b"receipt-a".to_vec()),
                 }),
                 Some(id) if id == OP1 => Some(RetainedCreateReceipt {
                     operation_id: op(2),
@@ -938,24 +939,40 @@ fn retained_create_refusal_alarms_and_does_not_block_later_receipts() {
     }
 
     let ack = br#"{"contract_version":1,"result":"accepted"}"#.to_vec();
-    for refusal in [
-        Err(Failure::Conflict),
-        Err(Failure::NotFound),
-        Ok(b"invalid acknowledgement".to_vec()),
+    for (refusal, label) in [
+        (Some(Err(Failure::Conflict)), "conflict"),
+        (Some(Err(Failure::NotFound)), "not_found"),
+        (
+            Some(Ok(b"invalid acknowledgement".to_vec())),
+            "invalid_response",
+        ),
+        (None, "invalid_stored_state"),
     ] {
         LOG.with_borrow_mut(Vec::clear);
         let sent = Arc::new(Mutex::new(Vec::new()));
+        let operation = Operation::PublishCharacterCommandReceiptV1;
+        let valid_first = refusal.is_some();
+        let mut script = VecDeque::new();
+        let mut expected: Vec<(Operation, String)> = Vec::new();
+        if let Some(refusal) = refusal {
+            script.extend([Err(Failure::Unavailable), refusal]);
+            expected.extend([
+                (operation, "receipt-a".into()),
+                (operation, "receipt-a".into()),
+            ]);
+        }
+        script.push_back(Ok(ack.clone()));
+        expected.push((operation, "receipt-b".into()));
         let publisher = run_account_closure_publications(
             Clock::default(),
             Source {
-                script: Arc::new(Mutex::new(VecDeque::from([
-                    Err(Failure::Unavailable),
-                    refusal,
-                    Ok(ack.clone()),
-                ]))),
+                script: Arc::new(Mutex::new(script)),
                 sent: sent.clone(),
             },
-            Retained { reads: 0 },
+            Retained {
+                reads: 0,
+                valid_first,
+            },
             |event| LOG.with_borrow_mut(|log| log.push(event.into())),
         );
         let mut run = pin!(publisher);
@@ -963,18 +980,10 @@ fn retained_create_refusal_alarms_and_does_not_block_later_receipts() {
             run.as_mut().poll(&mut Context::from_waker(Waker::noop())),
             Poll::Pending
         ));
-        let operation = Operation::PublishCharacterCommandReceiptV1;
-        assert_eq!(
-            *sent.lock().unwrap(),
-            [
-                (operation, "receipt-a".into()),
-                (operation, "receipt-a".into()),
-                (operation, "receipt-b".into()),
-            ]
-        );
+        assert_eq!(*sent.lock().unwrap(), expected);
         LOG.with_borrow(|log| {
             assert_eq!(log.len(), 1);
-            assert!(log[0].contains("alarm=receipt_refused"));
+            assert!(log[0].contains(&format!("receipt={label} alarm=receipt_refused")));
         });
     }
 }
