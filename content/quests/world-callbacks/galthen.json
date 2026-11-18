@@ -96,7 +96,7 @@
       "storage": [],
       "offerings": [],
       "item_on_target": null,
-      "return_on_failure": false,
+      "return_on_failure": true,
       "failure_message": "You need at least level 150 to enter.",
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/adventures_of_galthen/actions_iksupan_entrance.lua:2"
@@ -262,7 +262,7 @@
       "storage": [],
       "offerings": [],
       "item_on_target": null,
-      "return_on_failure": false,
+      "return_on_failure": true,
       "failure_message": "This root seems to thicken and wreathe the moment you try to grab it.",
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/adventures_of_galthen/actions_yselda_shortcut.lua:2"
@@ -296,7 +296,7 @@
       "storage": [],
       "offerings": [],
       "item_on_target": null,
-      "return_on_failure": false,
+      "return_on_failure": true,
       "failure_message": "This root seems to thicken and wreathe the moment you try to grab it.",
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/adventures_of_galthen/actions_yselda_shortcut.lua:3"

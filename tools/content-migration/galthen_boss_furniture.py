@@ -1,4 +1,4 @@
-"""Complete existing Galthen static Items from pinned Crystal loader facts."""
+"""Complete Galthen furniture and travel Items from pinned Crystal loader facts."""
 import argparse
 import copy
 import hashlib
@@ -11,7 +11,11 @@ ROOT = base.ROOT
 PATH = 'tools/content-schema/native-gameplay/galthen-boss-furniture.json'
 PIN_PATH = 'tools/content-schema/native-gameplay/galthen-boss-furniture-pin.json'
 RUST_PIN = 'crates/gameplay/content/src/content/native_gameplay/galthen_furniture_pin.rs'
-IDS = (21287, 31483)
+FURNITURE = (21287, 31483)
+# The Forest portal and the jungle grass on the Iksupan landing are passable.
+JUNGLE_GRASS = (1054, 1059)
+TRAVEL_ITEMS = (775, *JUNGLE_GRASS)
+IDS = FURNITURE + TRAVEL_ITEMS
 KEYS = tuple(f'oteryn:item.tibia.i{item}' for item in IDS)
 
 
@@ -39,8 +43,13 @@ def capture(cache, root=ROOT):
         if (row['admission'] != {'materializable': True, 'stack_class': 'NonStackable',
                                  'legal_destinations': ['Ground']}
                 or physics['block_solid'] or physics['block_projectile']
-                or physics['movable'] or physics['pickupable'] or physics['dynamic_kind'] is not None):
-            raise ValueError('M25_THRONE_STATIC_SOURCE')
+                or physics['movable'] or physics['pickupable']
+                or physics['dynamic_kind'] != ('teleport' if item == 775 else None)):
+            raise ValueError('GALTHEN_PASSABLE_GROUND_ITEM_SOURCE')
+        if item in JUNGLE_GRASS:
+            if {'key': 'primarytype', 'value': 'grass'} not in physics['xml_attributes']:
+                raise ValueError('GALTHEN_JUNGLE_GRASS_SOURCE')
+            row['authoring']['taxonomy'] = {'primary': 'Grass'}
         records.append(row)
     return {'source_revision': base.PIN,
             'sources': [{'path': path, 'sha256': sha} for path, sha in base.SOURCE_HASHES.items()],
@@ -87,7 +96,7 @@ def main():
                 raise ValueError('M25_THRONE_GENERATED_DRIFT:' + path)
         else:
             (ROOT / path).write_bytes(value)
-    print('PASS M25 existing throne source policy')
+    print('PASS Galthen furniture and travel source policies')
 
 
 if __name__ == '__main__':

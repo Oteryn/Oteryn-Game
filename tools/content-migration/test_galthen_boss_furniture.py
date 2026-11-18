@@ -55,6 +55,34 @@ class GalthenFurnitureTests(unittest.TestCase):
         self.assertIn(31483, [item['server_item_id'] for item in boss['items']])
         self.assertIs(boss['semantics']['flags']['block_solid'], False)
 
+    def test_actual_satchel_and_artefact_box_keep_crystal_container_admission(self):
+        native = json.loads((ROOT / 'content/items/definitions/spell-native-profiles.json').read_bytes())
+        for item, weight in [(36810, 5000), (36813, 1000)]:
+            key = f'oteryn:item.tibia.i{item}'
+            with self.subTest(item=item):
+                records = [row for row in native['records'] if row['production_definition']['production_key'] == key]
+                self.assertEqual(len(records), 1)
+                (record,) = records
+                self.assertEqual(record['admission'], {
+                    'materializable': True, 'stack_class': 'NonStackable',
+                    'legal_destinations': ['CharacterInventory', 'Ground']})
+                self.assertEqual(record['semantics']['container'], producer.base.source.K({
+                    'capacity': producer.base.source.K(32)}))
+                self.assertEqual(record['semantics']['physical']['value']['weight'], producer.base.source.K(weight))
+
+    def test_qualified_travel_items_keep_known_passable_physics(self):
+        source = json.loads((ROOT / producer.PATH).read_bytes())['records']
+        native = json.loads((ROOT / 'content/items/definitions/spell-native-profiles.json').read_bytes())
+        for item in producer.TRAVEL_ITEMS:
+            key = f'oteryn:item.tibia.i{item}'
+            with self.subTest(item=item):
+                expected = [row for row in source if row['production_definition']['production_key'] == key]
+                published = [row for row in native['records'] if row['production_definition']['production_key'] == key]
+                self.assertEqual(len(expected), 1)
+                self.assertEqual(published, expected)
+                self.assertIs(expected[0]['attributes']['blocks_movement'], False)
+                self.assertIs(expected[0]['attributes']['blocks_projectile'], False)
+
 
 if __name__ == '__main__':
     unittest.main()

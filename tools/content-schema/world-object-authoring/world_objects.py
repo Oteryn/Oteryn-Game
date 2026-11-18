@@ -639,6 +639,11 @@ def validate_record(record):
 
         if record != qm50_ground.record():
             errors.append("M50 ground differs from its qualified source")
+    if record["provenance"]["source_item_id"] == 31730:
+        import galthen_forest_ground
+
+        if record != galthen_forest_ground.record():
+            errors.append("Lost Queen Forest ground differs from its qualified source")
     for field in known_fields(record):
         if field not in record["provenance"]["fields"]:
             errors.append(f"provenance/fields: no source for KNOWN {field}")

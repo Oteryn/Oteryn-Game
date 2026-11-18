@@ -22,7 +22,7 @@
         32732,
         8
       ],
-      "connected_tiles": 62,
+      "connected_tiles": 66,
       "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:2"
     },
@@ -638,7 +638,7 @@
         32300,
         10
       ],
-      "connected_tiles": 63,
+      "connected_tiles": 66,
       "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:310"
     },
@@ -666,7 +666,7 @@
     }
   ],
   "inputs_sha256": {
-    "content/items/definitions/spell-native-profiles.json": "87331000d49bd608b96a4984b5b06afa5b3561f5c4311671a4a461978b8fbabe",
+    "content/items/definitions/spell-native-profiles.json": "fa327534be65c3c6a29d66905d37b08e48bdad7656e939f9fb843878260c2088",
     "content/quests/killing-in-the-name-of.json": "954cd1b9feba72e3c01f03ed97d68ff08fcd78ab0bf8f1ae779c6abff9ce8309",
     "content/world/objects/objects-00000-00499.json": "76b4489d66b2affaa0929dc449e9a5f21c7f454d2fb66453e3a6757861f8fd9f",
     "content/world/objects/objects-00500-00999.json": "2ebd31bd6ba0bb6cd3f1561258b61893954891e9b907ef918444ddbb4206c1fb",
@@ -756,6 +756,7 @@
     "content/world/terrain/terrain-08693-08693.json": "9a1acf62162cfebf939e5d4146199be0733642279701c94b4b5bb41e4b0b2f00",
     "content/world/terrain/terrain-08748-08748.json": "34b262af1c1cc7e0379152c1ed2b8110bb5390613930018ebe284f3f086fd4dd",
     "content/world/terrain/terrain-08749-08749.json": "32cd0b4c3a4195516fecfe567bbd384352973e24c9fdedb63ecd0211b5c08da3",
-    "content/world/terrain/terrain-08750-08750.json": "590d200b3bb126cf08b68b83de6f37f440e904ff8049419c75ce9f48011b2a0c"
+    "content/world/terrain/terrain-08750-08750.json": "590d200b3bb126cf08b68b83de6f37f440e904ff8049419c75ce9f48011b2a0c",
+    "content/world/terrain/terrain-08751-08751.json": "177113e7293437c43df79c83f78bef69aeeb1145483b1b28fea499877d29fd3c"
   }
 }

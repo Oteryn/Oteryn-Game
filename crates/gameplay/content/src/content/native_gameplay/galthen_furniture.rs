@@ -1,4 +1,4 @@
-//! Ahau's existing throne identity keeps its pinned, passable Ground-only policy.
+//! Exact Crystal policies for Galthen furniture and travel Items.
 use super::*;
 #[path = "galthen_furniture_pin.rs"]
 mod pin;
@@ -19,13 +19,13 @@ fn qualify(raw: &[u8]) -> Result<Vec<ItemProfileRecord>, ContentError> {
         serde_json::from_slice(raw).map_err(|_| invalid("M25 throne source policy"))?;
     let records: Vec<ItemProfileRecord> = serde_json::from_value(document["records"].clone())
         .map_err(|_| invalid("M25 throne complete policy"))?;
-    if records.len() != 2
+    if records.len() != 5
         || records
             .iter()
             .map(|record| record.production_binding.external_id.as_str())
-            .ne(["21287", "31483"])
+            .ne(["21287", "31483", "775", "1054", "1059"])
     {
-        return Err(invalid("M25 throne exact policy set"));
+        return Err(invalid("Galthen exact Item policy set"));
     }
     Ok(records)
 }

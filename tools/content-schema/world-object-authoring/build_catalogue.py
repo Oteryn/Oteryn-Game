@@ -483,6 +483,10 @@ def outputs(
         index_path = "content/world/terrain/index.json"
         index = json.loads(files[index_path])
         index["notes"] += engnpc2_ram_world.NOTE
+        import galthen_forest_ground
+
+        files[galthen_forest_ground.SHARD] = galthen_forest_ground.output()
+        index["notes"] += galthen_forest_ground.NOTE
         index["notes"] = activity_static.compose_terrain_notes(index["notes"])
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
