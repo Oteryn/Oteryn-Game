@@ -16,8 +16,8 @@ use std::sync::{Arc, Mutex, MutexGuard, OnceLock, PoisonError};
 
 #[path = "indexed_verdict.rs"]
 mod indexed;
-pub(super) use indexed::indexed;
 pub(crate) use indexed::indexed_evidence;
+pub(super) use indexed::{indexed, indexed_checked};
 #[path = "indexed_result.rs"]
 mod indexed_result;
 pub(crate) use indexed_result::{
@@ -233,8 +233,8 @@ fn session_cause(text: &str, context: Option<(&'static str, String)>) -> Cause {
 /// A precondition a row declares before it runs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) enum Need {
-    /// Fixture character `i` is terminally released and can be admitted.
-    Fixture(usize),
+    /// Fixture (World, Character) is terminally released and can be admitted.
+    Fixture([u8; 16], [u8; 16]),
     /// An earlier row produced the state this row starts from.
     Row(&'static str),
 }
@@ -508,23 +508,25 @@ impl Harness {
     }
 
     /// Fail at once when an earlier wait for this fixture already timed out.
-    pub(super) fn fixture_gate(&self, index: usize) -> TestResult {
-        match self.blocked(&[Need::Fixture(index)]) {
+    pub(super) fn fixture_gate(&self, need: Need) -> TestResult {
+        match self.blocked(&[need]) {
             Some(root) => Err(HarnessError::boxed(
                 Cause::BlockedBy { root: root.clone() },
-                format!("fixture {index} release blocked by {root}"),
+                format!("fixture release blocked by {root}"),
             )),
             None => Ok(()),
         }
     }
 
     /// The running row becomes the root of every later row needing this fixture.
-    pub(super) fn fixture_failed(&self, index: usize, error: &dyn Error) -> Box<dyn Error> {
+    pub(super) fn fixture_failed(
+        &self,
+        need: Need,
+        index: usize,
+        error: &dyn Error,
+    ) -> Box<dyn Error> {
         let name = format!("fixture{index}-released");
-        self.fail(
-            Need::Fixture(index),
-            format!("{}/{name}", self.running_row()),
-        );
+        self.fail(need, format!("{}/{name}", self.running_row()));
         HarnessError::boxed(Cause::Precondition { name }, error.to_string())
     }
 }
@@ -1089,13 +1091,17 @@ mod verdict_tests {
     fn a_failed_fixture_blocks_later_rows_without_running_them() -> TestResult {
         let harness = harness(true, None);
         paused()?.block_on(async {
-            let root_row =
-                Row::with_harness("E2EF6", "S16a", &["a"], harness).needs(&[Need::Fixture(1)]);
+            let root_row = Row::with_harness("E2EF6", "S16a", &["a"], harness)
+                .needs(&[Need::Fixture([0; 16], [1; 16])]);
             let watch = root_row.watch();
             let result: TestResult = watch
                 .bound(Duration::from_secs(160), "deadline", async {
                     let timeout: Box<dyn Error> = "not terminally released".into();
-                    Err(harness.fixture_failed(1, timeout.as_ref()))
+                    Err(harness.fixture_failed(
+                        Need::Fixture([0; 16], [1; 16]),
+                        1,
+                        timeout.as_ref(),
+                    ))
                 })
                 .await;
             assert_eq!(
@@ -1107,11 +1113,19 @@ mod verdict_tests {
                     "S16a/fixture1-released".into()
                 )
             );
-            assert!(harness.fixture_gate(1).is_err());
-            assert!(harness.fixture_gate(0).is_ok());
+            assert!(
+                harness
+                    .fixture_gate(Need::Fixture([0; 16], [1; 16]))
+                    .is_err()
+            );
+            assert!(
+                harness
+                    .fixture_gate(Need::Fixture([0; 16], [0; 16]))
+                    .is_ok()
+            );
 
-            let blocked =
-                Row::with_harness("E2EF6", "C20a", &["a", "b"], harness).needs(&[Need::Fixture(1)]);
+            let blocked = Row::with_harness("E2EF6", "C20a", &["a", "b"], harness)
+                .needs(&[Need::Fixture([0; 16], [1; 16])]);
             let mut ran = false;
             let result: TestResult = blocked
                 .watch()
@@ -1135,7 +1149,7 @@ mod verdict_tests {
         harness.fail(Need::Row("S16a"), "S16a/fixture1-released".into());
         assert_eq!(
             harness
-                .blocked(&[Need::Fixture(0), Need::Row("S16a")])
+                .blocked(&[Need::Fixture([0; 16], [0; 16]), Need::Row("S16a")])
                 .as_deref(),
             Some("S16a/fixture1-released")
         );
@@ -1150,9 +1164,12 @@ mod verdict_tests {
     fn no_failfast_runs_every_row_and_disables_the_watchdog() -> TestResult {
         let off = Harness::from_env(Some("1"), Some("5"))?;
         assert!(!off.failfast && off.no_progress.is_none());
-        off.fail(Need::Fixture(1), "S16a/fixture1-released".into());
-        assert!(off.fixture_gate(1).is_ok());
-        assert_eq!(off.blocked(&[Need::Fixture(1)]), None);
+        off.fail(
+            Need::Fixture([0; 16], [1; 16]),
+            "S16a/fixture1-released".into(),
+        );
+        assert!(off.fixture_gate(Need::Fixture([0; 16], [1; 16])).is_ok());
+        assert_eq!(off.blocked(&[Need::Fixture([0; 16], [1; 16])]), None);
         let on = Harness::from_env(None, None)?;
         assert_eq!(
             (on.failfast, on.no_progress),

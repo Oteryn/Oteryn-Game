@@ -1,29 +1,25 @@
+fn fixture_need(world: [u8; 16], character: [u8; 16]) -> verdict::Need {
+    verdict::Need::Fixture(world, character)
+}
+
 // A journey can lose its socket before logout, or be cancelled by its deadline.
 // Fresh admission must observe the owning server's terminal release, including
 // control-loss detection and grace; qualification never edits session state.
 // The first timeout per fixture is the root; later waits on it fail at once.
 pub(super) async fn wait_character_released(clients: &SeamClients<'_>, index: usize) -> TestResult {
     wait_reported_release(
-        verdict::Harness::global(), index, clients.uses_core_release_gate, wait_fixture_released(clients, index),
+        verdict::Harness::global(), index, fixture_need(clients.world, clients.characters[index]), wait_fixture_released(clients, index),
     ).await
 }
 
 async fn wait_reported_release(
     harness: &verdict::Harness,
     index: usize,
-    uses_core_release_gate: bool,
+    need: verdict::Need,
     release: impl std::future::Future<Output = TestResult>,
 ) -> TestResult {
-    if !uses_core_release_gate {
-        return release.await.map_err(|error| {
-            verdict::HarnessError::boxed(
-                verdict::Cause::Precondition { name: format!("arena-fixture{index}-released") },
-                error.to_string(),
-            )
-        });
-    }
-    harness.fixture_gate(index)?;
-    release.await.map_err(|error| harness.fixture_failed(index, error.as_ref()))
+    harness.fixture_gate(need)?;
+    release.await.map_err(|error| harness.fixture_failed(need, index, error.as_ref()))
 }
 
 async fn wait_fixture_released(clients: &SeamClients<'_>, index: usize) -> TestResult {
@@ -126,20 +122,30 @@ mod character_release_tests {
     use super::*;
 
     #[test]
+    fn release_failures_distinguish_fixtures_at_the_same_pair_index() {
+        let core = fixture_need([1; 16], [2; 16]);
+        let packets = fixture_need([1; 16], [3; 16]);
+        let open_pvp = fixture_need([4; 16], [2; 16]);
+        assert_ne!(core, packets);
+        assert_ne!(core, open_pvp);
+        assert_eq!(core, fixture_need([1; 16], [2; 16]));
+    }
+
+    #[test]
     fn arena_release_failure_keeps_core_fixture_available() -> TestResult {
         tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
             for index in [0, 1] {
                 let harness = verdict::Harness::new(true, None);
-                let arena = wait_reported_release(&harness, index, false, async {
+                let arena = wait_reported_release(&harness, index, fixture_need([1; 16], [index as u8; 16]), async {
                     Err("arena release expired".into())
                 }).await;
                 assert!(arena.is_err_and(|error| error.to_string().contains("arena release expired")));
-                wait_reported_release(&harness, index, true, async { Ok(()) }).await?;
-                assert!(wait_reported_release(&harness, index, true, async {
+                wait_reported_release(&harness, index, fixture_need([2; 16], [index as u8; 16]), async { Ok(()) }).await?;
+                assert!(wait_reported_release(&harness, index, fixture_need([2; 16], [index as u8; 16]), async {
                     Err("core release expired".into())
                 }).await.is_err());
-                assert!(harness.fixture_gate(index).is_err());
-                wait_reported_release(&harness, index, false, async { Ok(()) }).await?;
+                assert!(harness.fixture_gate(fixture_need([2; 16], [index as u8; 16])).is_err());
+                wait_reported_release(&harness, index, fixture_need([3; 16], [index as u8; 16]), async { Ok(()) }).await?;
             }
             Ok(())
         })

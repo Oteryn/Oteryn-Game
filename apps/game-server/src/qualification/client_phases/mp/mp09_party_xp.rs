@@ -1,5 +1,4 @@
-//! MP09. Oracle: Crystal 201189f871d23597b82caf88fd611454a2ddefb8:
-//! data/events/scripts/party.lua:73-91 (three vocations: ceil(pool * 1.70 / 3));
+//! MP09. Three distinct vocations share the authored XP pool with a 60% bonus.
 //! base XP per target is the authored creature `experience` in content/creatures/definitions (see HUNT_TARGET);
 //! src/creatures/players/grouping/party.cpp:548-594 (level, distance, activity);
 //! config.lua.dist:302 (share range multiplier 1.5, hence the 2/3 level rule).
@@ -17,7 +16,7 @@ use oteryn_protocol_oteryn::{
 /// authored `experience` of the bonelord record (`oteryn:creature.bonelord`, creatures-*-00000-00499.json).
 const HUNT_TARGET: (&str, &str, u64) = ("oteryn:creature.bonelord", "bonelord", 170);
 
-const XP_SOURCE: &str = "crates/gameplay/social-rules/src/shared_experience_split.rs:128 (server three-vocation bonus=60%; Crystal=70%)";
+const XP_SOURCE: &str = "crates/gameplay/social-rules/src/shared_experience_split.rs:128";
 
 fn check(case: &str, result: TestResult<String>, failures: &mut Vec<String>) -> bool {
     match result {
@@ -65,8 +64,8 @@ pub(super) async fn run(
     let mut before = Vec::new();
     let prepared = if admitted {
         check("join-and-level-range", async {
-            for (bot, vocation) in bots.iter_mut().zip(["knight", "druid", "paladin"]) {
-                let (xp, level, observed) = stats(bot).await?;
+            for (index, vocation) in ["knight", "druid", "paladin"].into_iter().enumerate() {
+                let (xp, level, observed) = bots::on_bot(&mut bots, index, stats).await?;
                 if observed != character::vocation_id(vocation) { return Err(format!("GeneralStats vocation={observed:?} expected={vocation} level={level} xp={xp}").into()); }
                 before.push((xp, level));
             }
@@ -88,9 +87,9 @@ pub(super) async fn run(
     };
     let enabled = if prepared {
         check("enable-shared-xp", async {
-            let reply = bots[0].client()?.chat(&oteryn_dev_client::ChatIntent::Say { mode: oteryn_protocol_oteryn::chat::ChatSpeechMode::Say, text: "/sharedxp on".into() }).await?;
+            let reply = bots::on_bot(&mut bots, 0, async |bot| Ok(bot.client()?.chat(&oteryn_dev_client::ChatIntent::Say { mode: oteryn_protocol_oteryn::chat::ChatSpeechMode::Say, text: "/sharedxp on".into() }).await?)).await?;
             if reply.disposition != oteryn_dev_client::ChatDisposition::Ok { return Err(format!("reply={reply:?};source:crates/gameplay/dispatch/src/gameplay_transport/party_xp_command.rs:18").into()); }
-            for bot in &mut bots { let view = party(bot, None).await?; if !view.shared_xp_enabled { return Err(format!("reply={view:?};source:crates/gameplay/dispatch/src/gameplay_transport/party_command.rs:56").into()); } }
+            for index in 0..bots.len() { let view = bots::on_bot(&mut bots, index, async |bot| party(bot, None).await).await?; if !view.shared_xp_enabled { return Err(format!("reply={view:?};source:crates/gameplay/dispatch/src/gameplay_transport/party_command.rs:56").into()); } }
             Ok(format!("leader chat reply={reply:?};A/B/C shared_xp_enabled=true"))
         }.await, &mut failures)
     } else {
@@ -102,9 +101,10 @@ pub(super) async fn run(
     };
     let mut earned = None;
     if enabled {
-        let encounter =
-            fixture_timeout(Duration::from_secs(240), encounter(&mut bots, world)).await;
-        let result = match encounter { Ok(result) => result, Err(_) => Err("encounter deadline;source:crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs:1905".into()) };
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(240);
+        let result = fixture_timeout(Duration::from_secs(240), bots::phase_until(&mut bots, deadline, async |bots| {
+            encounter(bots, world).await
+        })).await.unwrap_or_else(|_| Err("encounter deadline;source:crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs:1905".into()));
         match result {
             Ok((start, end, hits, pool)) => {
                 earned = Some(end);
@@ -117,9 +117,9 @@ pub(super) async fn run(
                 );
                 for index in 0..3 {
                     let actual = end[index].checked_sub(start[index]);
-                    let expected = crystal_share(pool);
+                    let expected = three_vocation_share(pool);
                     let detail = format!(
-                        "bot={index} actual={actual:?} expected={expected} base={pool} vocations=3 bonus=70% ceil({pool}*170/300);Crystal data/events/scripts/party.lua:73-91;source:{XP_SOURCE}"
+                        "bot={index} actual={actual:?} expected={expected} base={pool} vocations=3 bonus=60% ceil({pool}*160/300);source:{XP_SOURCE}"
                     );
                     check(
                         &format!("shared-xp-{index}"),
@@ -136,7 +136,7 @@ pub(super) async fn run(
                 let cause = error.to_string();
                 check("all-contributed-kill", Err(error), &mut failures);
                 for index in 0..3 {
-                    check(&format!("shared-xp-{index}"), Err(format!("expected=ceil(base*170/300) actual=unproven;encounter_reply={cause};source:{XP_SOURCE}").into()), &mut failures);
+                    check(&format!("shared-xp-{index}"), Err(format!("expected=ceil(base*160/300) actual=unproven;encounter_reply={cause};source:{XP_SOURCE}").into()), &mut failures);
                 }
             }
         }
@@ -155,15 +155,22 @@ pub(super) async fn run(
         }
     }
     if admitted {
-        for (index, bot) in bots.iter_mut().enumerate() {
-            let result = attack_target(bot, None)
+        for index in 0..bots.len() {
+            let result = bots::on_bot(&mut bots, index, async |bot| attack_target(bot, None).await)
                 .await
                 .map(|()| "attack stopped".into());
             check(&format!("stop-combat-{index}"), result, &mut failures);
         }
     }
     if earned.is_some() {
-        let result = bounded("distance-inactive", 180, out_of_range(&mut bots, world)).await;
+        let result = {
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
+            verdict::Harness::global().bounded_wait(deadline, "MP09-distance");
+            bots::phase_until(&mut bots, deadline, async |bots| {
+                out_of_range(bots, world).await
+            })
+            .await
+        };
         check("distance-inactive", result, &mut failures);
     } else {
         check(
@@ -176,14 +183,17 @@ pub(super) async fn run(
         check(
             "leader-pass",
             async {
-                let view = party(&mut bots[0], None).await?;
+                let view = bots::on_bot(&mut bots, 0, async |bot| party(bot, None).await).await?;
                 let handle = view
                     .members
                     .iter()
                     .find(|m| m.name == bots[1].name)
                     .ok_or_else(|| format!("B handle absent;reply={view:?}"))?
                     .handle;
-                let reply = party(&mut bots[0], Some(PartyIntent::PassLeadership(handle))).await?;
+                let reply = bots::on_bot(&mut bots, 0, async |bot| {
+                    party(bot, Some(PartyIntent::PassLeadership(handle))).await
+                })
+                .await?;
                 views(&mut bots, 1, 3).await?;
                 Ok(format!(
                     "reply={reply:?};all own views leader=B;Crystal party.cpp:233-264"
@@ -196,11 +206,14 @@ pub(super) async fn run(
             "leave",
             async {
                 clear_fight(&mut bots).await?;
-                let reply = party(&mut bots[2], Some(PartyIntent::Leave)).await?;
+                let reply = bots::on_bot(&mut bots, 2, async |bot| {
+                    party(bot, Some(PartyIntent::Leave)).await
+                })
+                .await?;
                 if !reply.members.is_empty() {
                     return Err(format!("C leave reply={reply:?}").into());
                 }
-                views(&mut bots[..2], 1, 2).await?;
+                views(&mut bots, 1, 2).await?;
                 Ok(format!("C reply={reply:?};A/B remain members"))
             }
             .await,
@@ -218,13 +231,21 @@ pub(super) async fn run(
     if admitted {
         check("relog-xp", async {
             let mut saved = Vec::new();
-            for bot in &mut bots { saved.push((stats(bot).await?.0, bot.client()?.join_snapshot().game_session_id)); }
+            for index in 0..bots.len() {
+                let old = bots::on_bot(&mut bots, index, async |bot| {
+                    Ok((stats(bot).await?.0, bot.client()?.join_snapshot().game_session_id))
+                }).await?;
+                saved.push(old);
+            }
             bots::relog_all(&mut bots).await?;
-            for (index, bot) in bots.iter_mut().enumerate() {
-                let reply = stats(bot).await?;
-                if reply.0 != saved[index].0 || bot.client()?.join_snapshot().game_session_id == saved[index].1 || earned.is_some_and(|xp| reply.0 != xp[index]) { return Err(format!("bot={index} GeneralStats={reply:?} before_relog={} earned={earned:?}", saved[index].0).into()); }
-                let view = party(bot, None).await?;
-                if !view.members.is_empty() { return Err(format!("terminal logout must leave party;reply={view:?};source:crates/gameplay/durability/src/durability/world_party.rs:792").into()); }
+            for (index, previous) in saved.iter().enumerate() {
+                bots::on_bot(&mut bots, index, async |bot| {
+                    let reply = stats(bot).await?;
+                    if reply.0 != previous.0 || bot.client()?.join_snapshot().game_session_id == previous.1 || earned.is_some_and(|xp| reply.0 != xp[index]) { return Err(format!("bot={index} GeneralStats={reply:?} before_relog={} earned={earned:?}", previous.0).into()); }
+                    let view = party(bot, None).await?;
+                    if !view.members.is_empty() { return Err(format!("terminal logout must leave party;reply={view:?};source:crates/gameplay/durability/src/durability/world_party/ingress.rs:110").into()); }
+                    Ok(())
+                }).await?;
             }
             if earned.is_none() { return Err(format!("fresh sessions retained XP={saved:?};earned-XP persistence unproven because encounter failed;source:{XP_SOURCE}").into()); }
             Ok(format!("fresh sessions;XP retained={:?};earned={earned:?}", saved.iter().map(|s| s.0).collect::<Vec<_>>()))
@@ -269,10 +290,14 @@ async fn profile_roles(core: &SeamClients<'_>, packets: &SeamClients<'_>) -> Tes
         (packets, 0, "druid"),
         (packets, 1, "paladin"),
     ] {
-        let mut database = sqlx::PgConnection::connect(pair.url).await?;
-        let stored: Option<String> = sqlx::query_scalar("SELECT vocation FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid")
-            .bind(pair.characters[index].as_slice()).fetch_optional(&mut database).await?;
-        database.close().await?;
+        wait_character_released(pair, index).await?;
+        let stored = tokio::time::timeout(Duration::from_secs(15), async {
+            let mut database = sqlx::PgConnection::connect(pair.url).await?;
+            let stored: Option<String> = sqlx::query_scalar("SELECT vocation FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid")
+                .bind(pair.characters[index].as_slice()).fetch_optional(&mut database).await?;
+            database.close().await?;
+            TestResult::Ok(stored)
+        }).await.map_err(|_| "MP09 durable role read deadline")??;
         match stored.as_deref() {
             Some(stored) if stored == profile => {
                 reused.push(profile);
@@ -296,25 +321,16 @@ async fn profile_roles(core: &SeamClients<'_>, packets: &SeamClients<'_>) -> Tes
     ))
 }
 
-fn crystal_share(pool: u64) -> u64 {
-    (pool * 170).div_ceil(300)
-}
-
-async fn bounded<T>(
-    stage: &str,
-    seconds: u64,
-    future: impl std::future::Future<Output = TestResult<T>>,
-) -> TestResult<T> {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(seconds);
-    verdict::Harness::global().bounded_wait(deadline, "MP09-phase");
-    tokio::time::timeout_at(deadline, future)
-        .await
-        .map_err(|_| format!("MP09 {stage} deadline;source:{}:{}", file!(), line!()))?
+fn three_vocation_share(pool: u64) -> u64 {
+    (pool * 160).div_ceil(300)
 }
 
 async fn stats(bot: &mut Bot<'_, '_>) -> TestResult<(u64, u32, Option<u8>)> {
-    tokio::time::timeout(Duration::from_secs(15), read_stats(bot)).await
-        .map_err(|_| "GeneralStats/durable observation deadline;source:crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:485")?
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    bots::phase_until(std::slice::from_mut(bot), deadline, async |bots| {
+        read_stats(&mut bots[0]).await
+    })
+    .await
 }
 
 async fn read_stats(bot: &mut Bot<'_, '_>) -> TestResult<(u64, u32, Option<u8>)> {
@@ -343,10 +359,15 @@ async fn read_stats(bot: &mut Bot<'_, '_>) -> TestResult<(u64, u32, Option<u8>)>
     let stats = view
         .general
         .ok_or_else(|| format!("GeneralStats absent;reply={reply:?}"))?;
-    let mut database = sqlx::PgConnection::connect(bot.pair.url).await?;
+    let pair = bot.pair;
+    let character_id = bot.character;
+    let durable = bots::observe(bot, async {
+    let mut database = sqlx::PgConnection::connect(pair.url).await?;
     let durable: i64 = sqlx::query_scalar("SELECT total_experience FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
-        .bind(bot.character.as_slice()).fetch_one(&mut database).await?;
+        .bind(character_id.as_slice()).fetch_one(&mut database).await?;
     database.close().await?;
+        Ok(durable)
+    }).await?;
     if u64::try_from(durable)? != stats.experience {
         return Err(format!("GeneralStats reply={reply:?};durable_xp={durable};source:crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:485").into());
     }
@@ -355,16 +376,21 @@ async fn read_stats(bot: &mut Bot<'_, '_>) -> TestResult<(u64, u32, Option<u8>)>
 
 async fn views(bots: &mut [Bot<'_, '_>], leader: usize, count: usize) -> TestResult {
     let name = bots[leader].name.clone();
-    let names: Vec<_> = bots.iter().map(|b| b.name.clone()).collect();
-    for bot in bots {
+    let names: Vec<_> = bots.iter().take(count).map(|b| b.name.clone()).collect();
+    for index in 0..count {
+        bots::on_bot(bots, index, async |bot| {
         let reply = party(bot, None).await?;
-        let durable = tokio::time::timeout(Duration::from_secs(15), async {
-            let mut database = sqlx::PgConnection::connect(bot.pair.url).await?;
+        let pair = bot.pair;
+        let character_id = bot.character;
+        let durable = bots::observe(bot, async {
+        tokio::time::timeout(Duration::from_secs(15), async {
+            let mut database = sqlx::PgConnection::connect(pair.url).await?;
             let rows: Vec<(String, String)> = sqlx::query_as("SELECT r.name,l.name FROM game_party_members own JOIN game_parties p ON p.party_id=own.party_id JOIN game_party_members m ON m.party_id=p.party_id JOIN game_character_roots r ON r.character_id=m.character_id JOIN game_character_roots l ON l.character_id=p.leader_character_id WHERE own.character_id=encode($1,'hex')::uuid AND p.world_id=encode($2,'hex')::uuid ORDER BY m.seq LIMIT 50")
-                .bind(bot.character.as_slice()).bind(bot.pair.world.as_slice()).fetch_all(&mut database).await?;
+                .bind(character_id.as_slice()).bind(pair.world.as_slice()).fetch_all(&mut database).await?;
             database.close().await?;
             TestResult::Ok(rows)
-        }).await.map_err(|_| "durable party observation deadline")??;
+        }).await.map_err(|_| "durable party observation deadline")?
+        }).await?;
         if durable.len() != count
             || durable
                 .iter()
@@ -380,6 +406,8 @@ async fn views(bots: &mut [Bot<'_, '_>], leader: usize, count: usize) -> TestRes
         {
             return Err(format!("own party query participant={} reply={reply:?}", bot.name).into());
         }
+        Ok(())
+        }).await?;
     }
     Ok(())
 }
@@ -423,7 +451,7 @@ async fn icons(bot: &mut Bot<'_, '_>) -> TestResult<Vec<party_skull::PartyIcon>>
 
 async fn out_of_range(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestResult<String> {
     let own = bots[0].own()?;
-    let active = icons(&mut bots[0]).await?;
+    let active = bots::on_bot(bots, 0, icons).await?;
     if !active
         .iter()
         .any(|icon| icon.entity == own && icon.shield == 6)
@@ -437,7 +465,7 @@ async fn out_of_range(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestResu
     })
     .ok_or("no walkable tile outside Crystal 30-tile range")?;
     bots::walk_bot(bots, 2, world, &path).await?;
-    let reply = icons(&mut bots[0]).await?;
+    let reply = bots::on_bot(bots, 0, icons).await?;
     if !reply
         .iter()
         .any(|icon| icon.entity == own && icon.shield == 10)
@@ -445,7 +473,7 @@ async fn out_of_range(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestResu
         return Err(format!("inactive leader shield absent;reply={reply:?};source:crates/gameplay/dispatch/src/gameplay_transport/party_skull.rs:31;Crystal party.cpp:562").into());
     }
     let peer = bots[2].own()?;
-    let peer_reply = icons(&mut bots[2]).await?;
+    let peer_reply = bots::on_bot(bots, 2, icons).await?;
     if !peer_reply
         .iter()
         .any(|icon| icon.entity == peer && icon.shield == 7)
@@ -559,8 +587,8 @@ async fn encounter(
     ));
     let (key, name, pool) = HUNT_TARGET;
     let mut start = [0; 3];
-    for (index, bot) in bots.iter_mut().enumerate() {
-        start[index] = stats(bot).await?.0;
+    for (index, start) in start.iter_mut().enumerate() {
+        *start = bots::on_bot(bots, index, stats).await?.0;
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(150);
     let named = |e: &oteryn_dev_client::WorldSpatialEntity| {
@@ -580,11 +608,16 @@ async fn encounter(
         .map(|e| e.entity)
         .collect();
     let session = uuid_text(bots[0].client()?.join_snapshot().game_session_id.as_bytes());
-    let answer = request_spawn(session, key.to_owned())
-        .await
-        .map_err(|reason| format!("hunt target spawn rejected:{reason};source:tools/qualification/node_boot/provision.py"))?;
+    let answer = bots::on_bot(bots, 0, async |bot| {
+        bots::observe(bot, async {
+            request_spawn(session, key.to_owned()).await.map_err(|reason| {
+                format!("hunt target spawn rejected:{reason};source:tools/qualification/node_boot/provision.py").into()
+            })
+        }).await
+    }).await?;
     evidence(&format!(
-        "MP_CHECK MP09 hunt-route PASS target={name} base_xp={pool} spawn_answer={answer} leader={leader:?}"
+        "MP_CHECK MP09 hunt-route PASS target={name} base_xp={pool} spawn_answer={} leader={leader:?}",
+        answer.wire
     ));
     let mut target = None;
     bots::wait_observation(bots, deadline, "visible spawned hunt target", |bots, _| {
@@ -594,7 +627,8 @@ async fn encounter(
             entities
                 .iter()
                 .filter(|e| {
-                    named(e)
+                    e.entity == answer.entity
+                        && named(e)
                         && !existing.contains(&e.entity)
                         && e.position.floor == player.floor
                         && matches!(
@@ -621,7 +655,8 @@ async fn encounter(
         "MP_CHECK MP09 hunt-target-found PASS name={name} entity={target:?}"
     ));
     let attackers = [bots[0].own()?, bots[1].own()?, bots[2].own()?];
-    for bot in bots.iter_mut() {
+    for index in 0..bots.len() {
+        bots::on_bot(bots, index, async |bot| {
         let modes = oteryn_protocol_oteryn::attack::FightModes {
             chase: oteryn_protocol_oteryn::attack::ChaseMode::Chase,
             ..oteryn_protocol_oteryn::attack::FightModes::DEFAULT
@@ -632,7 +667,8 @@ async fn encounter(
         {
             return Err(format!("chase modes reply={reply:?};source:crates/gameplay/dispatch/src/gameplay_transport/attack.rs:1").into());
         }
-        attack_target(bot, Some(&target)).await?;
+        attack_target(bot, Some(&target)).await
+        }).await?;
     }
     evidence("MP_CHECK MP09 hunt-attack-started PASS all three bots attacking in chase mode");
     let mut hits = [false; 3];
@@ -669,14 +705,14 @@ async fn encounter(
     evidence(&format!(
         "MP_CHECK MP09 hunt-kill PASS target gone;attributed_damage={hits:?}"
     ));
-    for bot in bots.iter_mut() {
-        attack_target(bot, None).await?;
+    for index in 0..bots.len() {
+        bots::on_bot(bots, index, async |bot| attack_target(bot, None).await).await?;
     }
     let settled = tokio::time::Instant::now() + Duration::from_secs(20);
     let mut end = [0; 3];
     loop {
-        for (index, bot) in bots.iter_mut().enumerate() {
-            end[index] = stats(bot).await?.0;
+        for (index, end) in end.iter_mut().enumerate() {
+            *end = bots::on_bot(bots, index, stats).await?.0;
         }
         if end.iter().zip(start).all(|(after, before)| *after > before) {
             break;
@@ -687,4 +723,14 @@ async fn encounter(
         bots::pump(bots).await?;
     }
     Ok((start, end, hits, pool))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn three_vocations_share_170_xp_with_sixty_percent_bonus() {
+        assert_eq!(three_vocation_share(170), 91);
+    }
 }

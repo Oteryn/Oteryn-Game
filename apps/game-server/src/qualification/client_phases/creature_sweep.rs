@@ -10,22 +10,31 @@
 //! (`sudo -n python3`, as `provision.rs` runs the fixture), answered by the node's uid-0 `spawn`
 //! control route (`qualification_wild_spawn.rs`, feature `qualification-spawn`).
 //!
-//! The sweep heals between fights and drops the session after a failed species. Each kill requires
-//! wire damage, an explicit removal, and a corpse bound to the exact actor generation.
+//! One provisioned Character serves the whole sweep. It heals through native gameplay and
+//! re-admits after transport loss. A creature that cannot be killed within the bound
+//! gets `kill FAIL cause=deadline`; the sweep releases the target and moves on.
+//! Physical loot must come from the corpse bound to the exact actor generation.
 //!
 //! Rows per species: `CS.<key>.spawn|kill|xp|corpse|loot|full`. `spawn` carries the node answer, or
 //! the rejected token with cause=precondition. A FAIL row makes `run` return Err, which `journeys`
 //! propagates with `?`, so the node-boot stage exits non-zero.
 //! XP oracle: the authored `experience` through the server's own
 //! `crates/gameplay/characters/src/hunting_experience.rs:13 hunting_experience` (called from
-//! `crates/gameplay/durability/src/durability/party_kill_xp.rs:369`), with no prey, no boost, full
-//! stamina and no premium for a solo level-100 kill (`animus_mastery_experience` adds nothing without
-//! mastery, `crates/gameplay/combat/src/combat/death_reward.rs:939`).
-//! Loot oracle: the authored loot table. `crates/gameplay/items/src/loot_plan.rs:370 roll_entries`
-//! draws each entry independently with a 95..105% chance factor (`loot_factor_percent`), so an empty
-//! corpse is possible for any table and every item count lies in its entry's min..max.
+//! `crates/gameplay/durability/src/durability/party_kill_xp.rs:369`), with the sampled stamina
+//! and event rate, no prey, no boost and no premium for a solo level-100 kill. The fixture has no
+//! Animus Masteries (`crates/gameplay/combat/src/combat/death_reward.rs:939`).
+//! Loot oracle: recompute the deterministic plan for the spawned actor from the pinned table
+//! and compare that plan with the contents returned by the wire corpse view.
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityKind, client_ui::cyclopedia_character as panel};
+use crate::content::creature_reward::{CreatureRewardRow, CreatureRewardTable, NoSettlementReason};
+use oteryn_dev_client::{
+    DevClientSession, EntityDetail, EntityKind, SessionEvent,
+    client_ui::cyclopedia_character as panel,
+};
+use oteryn_gameplay_items::loot_plan::{
+    LootPlanDeathKey, LootSelectionAlgorithm, LootTableDefinition, apply_scheduled_loot_rate,
+    partition_daily_boss_bonus_entries, plan_creature_loot,
+};
 use oteryn_protocol_oteryn::{
     attack, cyclopedia_character as character, logout::LogoutResult, target_move,
 };
@@ -192,7 +201,7 @@ struct LootEntry {
 enum LootBinding {
     /// The definition binds no loot table: the corpse is minted empty.
     None,
-    Table(Vec<LootEntry>),
+    Table(String, Vec<LootEntry>),
     Missing(String),
 }
 
@@ -201,6 +210,9 @@ struct Species {
     definition: Option<Definition>,
     key: String,
     loot: LootBinding,
+    private_reward: bool,
+    daily_boss_equipment: BTreeSet<String>,
+    reward: Result<std::sync::Arc<CreatureRewardRow>, NoSettlementReason>,
 }
 
 fn read_shards(directory: &Path, prefix: &str) -> TestResult<Vec<serde_json::Value>> {
@@ -296,7 +308,7 @@ fn item_ref(
 pub(super) async fn run(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
-    _spawns: &oteryn_world_bundle::spawn::Table,
+    rewards: &CreatureRewardTable,
 ) -> TestResult {
     if !std::env::var("NODE_BOOT_E2E_ONLY").is_ok_and(|list| !list.trim().is_empty()) {
         evidence("e2e_groups creature_sweep=skipped reason=opt_in_with_NODE_BOOT_E2E_ONLY");
@@ -347,6 +359,7 @@ pub(super) async fn run(
                 || LootBinding::Missing(table.clone()),
                 |entries| {
                     LootBinding::Table(
+                        table.clone(),
                         entries
                             .iter()
                             .map(|entry| LootEntry {
@@ -359,6 +372,15 @@ pub(super) async fn run(
                 },
             ),
         };
+        let reward = rewards.row(key);
+        let daily_boss_equipment = reward
+            .as_ref()
+            .ok()
+            .into_iter()
+            .flat_map(|row| &row.loot_table.entries)
+            .filter(|entry| rewards.is_daily_boss_equipment(&entry.item.production_key))
+            .map(|entry| entry.item.production_key.clone())
+            .collect();
         let species = Species {
             short: token(key.strip_prefix("oteryn:creature.").unwrap_or(key)),
             definition: Some(Definition {
@@ -367,12 +389,15 @@ pub(super) async fn run(
             }),
             key: (*key).clone(),
             loot,
+            private_reward: rewards.reward_boss_corpse(key).is_some(),
+            daily_boss_equipment,
+            reward,
         };
         let scenario: &'static str =
             Box::leak(format!("CS.{}.full", species.short).into_boxed_str());
         let started = std::time::Instant::now();
-        let failures_before = tally.fail;
-        let passed = verdict::indexed(
+        let mut rows = Rows::new(&species.short);
+        let outcome = verdict::indexed_checked(
             scenario,
             Box::pin(sweep_species(
                 clients,
@@ -380,25 +405,42 @@ pub(super) async fn run(
                 &items,
                 &species,
                 &mut session,
-                &mut tally,
+                &mut rows,
             )),
         )
         .await;
-        if !passed && tally.fail == failures_before {
-            tally.fail += 1;
-            // Cancellation can interrupt an in-flight frame. The next hunt must reconnect.
+        if !reuse_hunt_session(outcome.is_ok()) {
+            rows.block_rest("full");
+            if rows.counts.fail == 0 {
+                tally.fail += 1; // The full verdict failed after all actions reported.
+            }
+            // A failed exchange may have consumed an ID or read part of a frame.
             session = None;
         }
-        seconds.push(started.elapsed().as_secs_f64());
-    }
-    if let Some(mut client) = session.take()
-        && let Err(error) = release(&mut client).await
-    {
-        tally.fail += 1;
+        let elapsed = started.elapsed().as_secs_f64();
         evidence(&format!(
-            "creature_sweep release_failed error={}",
-            token(&error.to_string())
+            "creature_sweep species={} seconds={elapsed:.3} rows_pass={} rows_fail={} rows_skipped={}",
+            species.short, rows.counts.pass, rows.counts.fail, rows.counts.skipped
         ));
+        tally.pass += rows.counts.pass;
+        tally.fail += rows.counts.fail;
+        tally.skipped += rows.counts.skipped;
+        seconds.push(elapsed);
+    }
+    for (stage, result) in finish_sweep(
+        session.take(),
+        async |mut client| release(&mut client).await,
+        wait_fixture_released(clients, CORE_CHARACTER),
+    )
+    .await
+    {
+        if let Err(error) = result {
+            tally.fail += 1;
+            evidence(&format!(
+                "creature_sweep release_failed stage={stage} error={}",
+                token(&error.to_string())
+            ));
+        }
     }
     let mean = seconds.iter().sum::<f64>() / seconds.len().max(1) as f64;
     evidence(&format!(
@@ -418,35 +460,32 @@ pub(super) async fn run(
     Ok(())
 }
 
+async fn finish_sweep<T, F: std::future::Future<Output = TestResult>>(
+    session: Option<T>,
+    logout: impl FnOnce(T) -> F,
+    terminal_release: impl std::future::Future<Output = TestResult>,
+) -> [(&'static str, TestResult); 2] {
+    let logout = match session {
+        Some(client) => logout(client).await,
+        None => Ok(()),
+    };
+    [("logout", logout), ("terminal", terminal_release.await)]
+}
+
 async fn sweep_species(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     items: &crate::content::item_ref::ItemDefinitionIndex,
     species: &Species,
     session: &mut Option<DevClientSession>,
-    tally: &mut Tally,
+    rows: &mut Rows<'_>,
 ) -> TestResult {
-    let started = std::time::Instant::now();
-    let mut rows = Rows::new(&species.short);
-    if let Err(stop) = Box::pin(hunt(clients, world, items, species, session, &mut rows)).await {
+    let started = tokio::time::Instant::now();
+    if let Err(stop) = Box::pin(hunt(clients, world, items, species, session, rows)).await {
         rows.fail(stop.step, stop.cause, &stop.detail);
         rows.block_rest(stop.step);
     }
-    let failed = rows.counts.fail > 0;
-    // The indexed watch holds the final verdict until this journey returns.
-    evidence(&format!(
-        "creature_sweep species={} seconds={:.3} rows_pass={} rows_fail={} rows_skipped={}",
-        species.short,
-        started.elapsed().as_secs_f64(),
-        rows.counts.pass,
-        rows.counts.fail,
-        rows.counts.skipped
-    ));
-    tally.pass += rows.counts.pass;
-    tally.fail += rows.counts.fail;
-    tally.skipped += rows.counts.skipped;
-    if !reuse_hunt_session(!failed) {
-        *session = None;
+    if rows.counts.fail > 0 {
         return Err(format!("creature {} has FAIL rows", species.short).into());
     }
     evidence(&format!(
@@ -457,43 +496,69 @@ async fn sweep_species(
     Ok(())
 }
 
-/// Admit and provision once. Restore health through ordinary healing before the next hunt.
-async fn restore_health(client: &mut DevClientSession) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
-    client_readmission::within_retry_budget(deadline, async {
-        loop {
-            let vitals = client
-                .actor_vitals()
-                .ok_or("creature sweep has no vitals")?;
-            if vitals.health.saturating_mul(2) >= vitals.max_health {
-                return Ok(());
-            }
-            client_spell_journey::say(client, "exura").await?;
-            client.service_liveness(Duration::from_secs(1)).await?;
-            client.take_events();
-        }
-    })
-    .await
-}
-
+/// Provision only the pristine starter. Heal a classed Character using native spells.
 async fn ready(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     session: &mut Option<DevClientSession>,
 ) -> TestResult {
     if session.is_none() {
+        wait_character_released(clients, CORE_CHARACTER).await?;
         *session = Some(connect_character(clients, 0x80, CORE_CHARACTER).await?);
     }
-    prepare_player(clients, session).await?;
-    let low = session
-        .as_ref()
-        .and_then(|client| client.actor_vitals())
-        .is_some_and(|vitals| vitals.health.saturating_mul(2) < vitals.max_health);
-    if low {
-        restore_health(session.as_mut().ok_or("session absent")?).await?;
-    }
     let client = session.as_mut().ok_or("session absent")?;
-    leave_protection_zone(client, world).await
+    let (_, level, vocation) = read_stats(client).await?;
+    let vocation = vocation.ok_or("sweep GeneralStats vocation missing")?;
+    let low = needs_healing(client)?;
+    match preparation(level, Some(vocation) == character::vocation_id("none"), low)? {
+        Preparation::Provision => {
+            let fresh = session.take().ok_or("session absent")?;
+            *session = Some(provisioning::provision_fixture(fresh, clients, CORE_CHARACTER).await?);
+        }
+        Preparation::Heal => recover_health(client, world, vocation).await?,
+        Preparation::Hunt => {}
+    }
+    leave_protection_zone(session.as_mut().ok_or("session absent")?, world).await
+}
+
+fn needs_healing(client: &DevClientSession) -> TestResult<bool> {
+    let vitals = client
+        .actor_vitals()
+        .ok_or("sweep Character vitals absent")?;
+    Ok(vitals.health.saturating_mul(2) < vitals.max_health)
+}
+
+async fn recover_health(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    vocation: u8,
+) -> TestResult {
+    use oteryn_dev_client::{ChatIntent, ChatSpeechMode};
+
+    let words = if Some(vocation) == character::vocation_id("knight") {
+        "exura infir ico"
+    } else {
+        "exura infir"
+    };
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(240);
+    verdict::Harness::global().bounded_wait(deadline, "creature-sweep-healing");
+    tokio::time::timeout_at(deadline, async {
+        return_to_protection_zone(client, world).await?;
+        while needs_healing(client)? {
+            client
+                .chat(&ChatIntent::Say {
+                    mode: ChatSpeechMode::Say,
+                    text: words.into(),
+                })
+                .await?;
+            client.take_events();
+            client.service_liveness(Duration::from_secs(2)).await?;
+            client.take_events();
+        }
+        Ok(())
+    })
+    .await
+    .map_err(|_| "sweep Character did not recover half health within 240s")?
 }
 
 /// The spawn needs free non-PZ cells next to the player: walk once to open ground.
@@ -551,7 +616,7 @@ async fn hunt(
     let client = session
         .as_mut()
         .ok_or_else(|| failure("spawn", "precondition", "session absent after setup"))?;
-    let (xp_before, level) = read_stats(client)
+    let (xp_before, level, _) = read_stats(client)
         .await
         .map_err(|error| failure("spawn", "precondition", format!("stats:{error}")))?;
 
@@ -565,36 +630,46 @@ async fn hunt(
                     .is_ok_and(|shown| shown.eq_ignore_ascii_case(name))
             })
     };
+    // Leftovers of an earlier species never count as this species' spawn.
+    let existing: BTreeSet<_> = client
+        .world_entities()
+        .into_iter()
+        .flat_map(|entities| entities.iter())
+        .filter(|entry| named(entry))
+        .map(|entry| entry.entity)
+        .collect();
     let session_id = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let answer = request_spawn(session_id, species.key.clone())
-        .await
-        .map_err(|reason| failure("spawn", "precondition", format!("rejected:{reason}")))?;
-    let mut fields = answer.split_whitespace();
-    let (Some("spawned"), Some(identity), Some(generation), None) =
-        (fields.next(), fields.next(), fields.next(), fields.next())
-    else {
-        return Err(failure("spawn", "protocol", "invalid spawn response"));
-    };
-    let exact = oteryn_dev_client::EntityRef {
-        identity: u128::from_str_radix(identity, 16)
-            .map_err(|error| failure("spawn", "protocol", error))?
-            .to_be_bytes(),
-        generation: generation
-            .parse()
-            .map_err(|error| failure("spawn", "protocol", error))?,
-    };
+    let answer = with_peer_service(request_spawn(session_id, species.key.clone()), async || {
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+        Ok(())
+    })
+    .await
+    .map_err(|error| failure("spawn", "protocol", error))?
+    .map_err(|reason| failure("spawn", "precondition", format!("rejected:{reason}")))?;
+    let corpse_identity = answer
+        .corpse_identity(clients)
+        .map_err(|error| failure("spawn", "precondition", error))?;
     let visible_deadline = tokio::time::Instant::now() + Duration::from_secs(VISIBLE_SECONDS);
     let target = loop {
         client
             .service_liveness(Duration::from_millis(100))
             .await
             .map_err(|error| failure("spawn", "protocol", error))?;
+        verdict::Harness::global().progress("creature-sweep-visible");
         client.take_events();
-        let found = client
-            .world_entities()
-            .and_then(|entities| entities.get(&exact))
-            .filter(|entry| named(entry))
-            .copied();
+        let player = client.world_spatial().actor_position;
+        let found = client.world_entities().and_then(|entities| {
+            entities
+                .iter()
+                .find(|entry| {
+                    entry.entity == answer.entity
+                        && entry.position.floor == player.floor
+                        && named(entry)
+                        && !existing.contains(&entry.entity)
+                })
+                .copied()
+        });
         if let Some(found) = found {
             break found;
         }
@@ -602,7 +677,10 @@ async fn hunt(
             return Err(failure(
                 "spawn",
                 "absent",
-                format!("{answer};no {name} visible within {VISIBLE_SECONDS}s"),
+                format!(
+                    "{};no {name} visible within {VISIBLE_SECONDS}s",
+                    answer.wire
+                ),
             ));
         }
     };
@@ -610,7 +688,7 @@ async fn hunt(
         .map_err(|error| failure("spawn", "protocol", error))?;
     rows.pass(
         "spawn",
-        &format!("answer:{answer};name:{name};player:{}", at(here)),
+        &format!("answer:{};name:{name};player:{}", answer.wire, at(here)),
     );
 
     // Kill: attack in chase mode until that exact entity is gone, with damage observed.
@@ -641,29 +719,191 @@ async fn hunt(
                 "target left visibility before the attack",
             )
         })?;
+    let corpses_before: BTreeSet<_> = client
+        .world_entities()
+        .into_iter()
+        .flat_map(|entities| entities.iter())
+        .filter(|entry| entry.kind == EntityKind::Corpse)
+        .map(|entry| entry.entity)
+        .collect();
+    let mut last_position = target.position;
+    let mut last_health = match target.detail {
+        EntityDetail::Actor { health_percent, .. }
+        | EntityDetail::ActorWithIcons { health_percent, .. } => health_percent,
+        EntityDetail::Object { .. } | EntityDetail::ObjectWithAppearance { .. } => 100,
+    };
+    let mut damaged = false;
+    client.take_events();
+    let attacked = client
+        .session_mut()
+        .attack_target(Some(&target.entity))
+        .await
+        .map_err(|error| failure("kill", "unkillable", format!("attack:{error}")))?;
+    if attacked.status != CommandStatus::Accepted
+        || attacked.disposition != attack::AttackIntentDisposition::Ok
+    {
+        return Err(failure(
+            "kill",
+            "unkillable",
+            format!("attack refused:{attacked:?}"),
+        ));
+    }
     let combat_started = tokio::time::Instant::now();
-    let handle = client_hunt::kill(
-        client,
-        target,
-        clients.url,
-        Duration::from_secs(KILL_SECONDS),
-    )
-    .await
-    .map_err(|error| failure("kill", "observation", error))?;
+    let kill_deadline = combat_started + Duration::from_secs(KILL_SECONDS);
+    let gone = loop {
+        client
+            .service_liveness(Duration::from_millis(50))
+            .await
+            .map_err(|error| failure("kill", "unkillable", format!("liveness:{error}")))?;
+        verdict::Harness::global().progress("creature-sweep-combat");
+        client.take_events();
+        match client
+            .world_entities()
+            .and_then(|entities| entities.get(&target.entity))
+        {
+            None => break true,
+            Some(now) => {
+                last_position = now.position;
+                if let EntityDetail::Actor { health_percent, .. }
+                | EntityDetail::ActorWithIcons { health_percent, .. } = now.detail
+                {
+                    damaged |= health_percent < last_health;
+                    last_health = health_percent;
+                }
+            }
+        }
+        if tokio::time::Instant::now() >= kill_deadline {
+            break false;
+        }
+    };
+    let player = client.world_spatial().actor_position;
+    let death_distance = last_position
+        .x
+        .abs_diff(player.x)
+        .max(last_position.y.abs_diff(player.y));
+    if !gone {
+        let _ = client.session_mut().attack_target(None).await;
+        return Err(failure(
+            "kill",
+            "deadline",
+            format!(
+                "no death within {KILL_SECONDS}s;damage_observed={damaged};health_percent={last_health};last_position={last_position:?};player={player:?};vitals={:?}",
+                client.actor_vitals()
+            ),
+        ));
+    }
+    if death_distance > 2 {
+        return Err(failure(
+            "kill",
+            "vanished",
+            format!(
+                "target left view far from the player;damage_observed={damaged};distance={death_distance};last_position={last_position:?}"
+            ),
+        ));
+    }
+    let _ = client.session_mut().attack_target(None).await;
+
+    // Corpse: a new corpse appears at the death tile.
+    let matches_corpse =
+        |entry: &oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntity| {
+            entry.kind == EntityKind::Corpse
+                && entry.entity.identity == corpse_identity
+                && !corpses_before.contains(&entry.entity)
+        };
+    let mut corpse_observed = false;
+    let corpse_deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+    let corpse = loop {
+        corpse_observed |= observe_sweep_corpse(client, matches_corpse);
+        let found = client.world_entities().and_then(|entities| {
+            entities
+                .iter()
+                .find(|entry| matches_corpse(entry) && entry.position == last_position)
+                .copied()
+        });
+        if found.is_some() || tokio::time::Instant::now() >= corpse_deadline {
+            break found;
+        }
+        client
+            .service_liveness(Duration::from_millis(50))
+            .await
+            .map_err(|error| failure("corpse", "protocol", error))?;
+        verdict::Harness::global().progress("creature-sweep-corpse");
+    };
+
+    let expects_corpse = species
+        .reward
+        .as_ref()
+        .map_err(|reason| failure("corpse", "content", reason.as_str()))?
+        .corpse_item
+        .is_some();
+    let death: String = clients
+        .world
+        .into_iter()
+        .chain(clients.channel)
+        .chain(clients.scope_generation.to_be_bytes())
+        .chain(answer.actor_local_id.to_be_bytes())
+        .chain(answer.entity.generation.to_be_bytes())
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    let death_committed = !expects_corpse
+        && primary_node_witness("creature_death_witness", &[("death", &death)])
+            .map_err(|error| failure("kill", "evidence", error))?
+            .is_some();
+    if !damaged && !death_committed && corpse.is_none() {
+        return Err(failure(
+            "kill",
+            "observation",
+            "no damage or confirmed death evidence",
+        ));
+    }
+    if let Err(reason) = confirm_death(expects_corpse, corpse.is_some(), death_committed) {
+        rows.fail("kill", "death_unconfirmed", reason);
+        rows.fail("corpse", "contract_mismatch", reason);
+        rows.block_rest("corpse");
+        return Ok(());
+    }
     rows.pass(
         "kill",
         &format!(
-            "seconds:{:.1};damage-removal-corpse-correlated",
+            "seconds:{:.1};damage_observed:{damaged};death_tile:{last_position:?}",
             combat_started.elapsed().as_secs_f64()
         ),
     );
 
+    // The native reward owner publishes the sampled modifiers when settlement finishes.
+    let inputs_deadline = tokio::time::Instant::now() + Duration::from_secs(20);
+    let inputs = loop {
+        if tokio::time::Instant::now() >= inputs_deadline {
+            return Err(failure(
+                "xp",
+                "evidence",
+                "missing reward inputs for the spawned death",
+            ));
+        }
+        corpse_observed |= observe_sweep_corpse(client, matches_corpse);
+        if let Some(inputs) =
+            physical_loot_inputs(&death).map_err(|error| failure("xp", "evidence", error))?
+        {
+            break inputs;
+        }
+        tokio::time::timeout_at(
+            inputs_deadline,
+            client.service_liveness(Duration::from_millis(250)),
+        )
+        .await
+        .map_err(|_| failure("xp", "evidence", "reward input deadline elapsed"))?
+        .map_err(|error| failure("xp", "protocol", error))?;
+        verdict::Harness::global().progress("creature-sweep-reward-inputs");
+    };
+    let base_xp = inputs
+        .expected_base_xp(definition.experience)
+        .map_err(|error| failure("xp", "content", error))?;
     // XP: the gain equals the server's value for the authored experience.
     let expected = oteryn_gameplay_characters::hunting_experience::hunting_experience(
-        i64::try_from(definition.experience).map_err(|error| failure("xp", "content", error))?,
+        i64::try_from(base_xp).map_err(|error| failure("xp", "content", error))?,
         0,
         0,
-        FULL_STAMINA_MINUTES,
+        inputs.stamina.map_or(FULL_STAMINA_MINUTES, i32::from),
         false,
         level,
     )
@@ -677,9 +917,10 @@ async fn hunt(
     let expected = u64::try_from(expected).map_err(|error| failure("xp", "content", error))?;
     let xp_deadline = tokio::time::Instant::now() + Duration::from_secs(20);
     let gained = loop {
-        let (xp, _) = read_stats(client)
+        let (xp, _, _) = read_stats(client)
             .await
             .map_err(|error| failure("xp", "protocol", error))?;
+        corpse_observed |= observe_sweep_corpse(client, matches_corpse);
         let gained = xp.saturating_sub(xp_before);
         let settled = if expected == 0 {
             tokio::time::Instant::now() >= xp_deadline - Duration::from_secs(17)
@@ -693,7 +934,8 @@ async fn hunt(
             .service_liveness(Duration::from_millis(250))
             .await
             .map_err(|error| failure("xp", "protocol", error))?;
-        client.take_events();
+        verdict::Harness::global().progress("creature-sweep-xp");
+        corpse_observed |= observe_sweep_corpse(client, matches_corpse);
     };
     let xp_detail = format!(
         "authored:{};expected:{expected};gained:{gained};level:{level}",
@@ -705,6 +947,36 @@ async fn hunt(
         rows.fail("xp", "xp_mismatch", &xp_detail);
     }
 
+    let Some(corpse) = corpse else {
+        if let Err(reason) = confirm_corpse_free_settlement(corpse_observed, &inputs) {
+            rows.fail("corpse", "contract_mismatch", reason);
+            rows.fail(
+                "loot",
+                "corpse_contract",
+                inputs.loot_error.as_deref().unwrap_or(reason),
+            );
+            return Ok(());
+        }
+        rows.pass(
+            "corpse",
+            "committed death has no physical corpse in the pinned contract",
+        );
+        rows.pass("loot", "no physical loot container in the pinned contract");
+        return Ok(());
+    };
+    if let Some(error) = &inputs.loot_error {
+        rows.fail("loot", "settlement", error);
+        return Ok(());
+    }
+    let Some(handle) = corpse_handle(corpse.detail) else {
+        rows.fail(
+            "loot",
+            "protocol",
+            "the corpse has no server-issued item handle",
+        );
+        return Ok(());
+    };
+
     rows.pass(
         "corpse",
         &format!("handle:{handle};exact-actor-death-bound"),
@@ -713,108 +985,247 @@ async fn hunt(
     // Loot: open the corpse through the real protocol and compare it with the loot table.
     match open_corpse(client, handle).await {
         Err(error) => rows.fail("loot", "protocol", &error.to_string()),
-        Ok(got) => judge_loot(rows, items, &species.loot, &got),
+        Ok(got) => {
+            let seed = LootPlanDeathKey::new(
+                clients.world,
+                clients.channel,
+                clients.scope_generation,
+                answer.actor_local_id,
+                answer.entity.generation,
+            );
+            judge_loot(rows, items, species, seed, &inputs, &got);
+        }
     }
     Ok(())
+}
+
+fn confirm_death(
+    expects_corpse: bool,
+    has_corpse: bool,
+    death_committed: bool,
+) -> Result<(), &'static str> {
+    match (expects_corpse, has_corpse, death_committed) {
+        (true, true, _) | (false, false, true) => Ok(()),
+        (true, false, _) => Err("spawned creature disappeared without its required corpse"),
+        (false, true, _) => {
+            Err("spawned creature produced a corpse contrary to its pinned contract")
+        }
+        (false, false, false) => Err("corpse-free creature disappeared without a committed death"),
+    }
+}
+
+fn observe_sweep_corpse(
+    client: &mut DevClientSession,
+    matches: impl Fn(&oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntity) -> bool,
+) -> bool {
+    let visible = client
+        .world_entities()
+        .is_some_and(|entities| entities.iter().any(&matches));
+    client.take_events().iter().any(|event| match event {
+        SessionEvent::WorldSpatialEntities(delta) => delta
+            .value
+            .enter
+            .iter()
+            .chain(&delta.value.update)
+            .any(&matches),
+        _ => false,
+    }) || visible
+}
+
+#[derive(PartialEq, Eq)]
+enum CorpseSettlement {
+    Absent,
+    Present,
+    Failed,
+}
+
+struct RewardInputs {
+    stamina: Option<u16>,
+    loot_rate: u32,
+    xp_rate: u32,
+    corpse: CorpseSettlement,
+    loot_error: Option<String>,
+    boosted_creature: bool,
+    boosted_boss: bool,
+    daily_loot_rolls: u8,
+}
+
+fn confirm_corpse_free_settlement(
+    observed: bool,
+    inputs: &RewardInputs,
+) -> Result<(), &'static str> {
+    if observed || inputs.corpse != CorpseSettlement::Absent {
+        return Err(
+            "corpse-free death requires a successful absent settlement and no observed corpse",
+        );
+    }
+    Ok(())
+}
+
+impl RewardInputs {
+    fn expected_base_xp(&self, authored: u64) -> TestResult<u64> {
+        let boosted = authored
+            .checked_mul(if self.boosted_creature { 2 } else { 1 })
+            .ok_or("daily-boosted experience overflow")?;
+        Ok(oteryn_gameplay_foundation::scheduled_events::scale_gain(
+            boosted,
+            self.xp_rate,
+        ))
+    }
+
+    fn apply_daily_loot(&self, table: &mut LootTableDefinition, equipment: &BTreeSet<String>) {
+        if self.daily_loot_rolls == 0
+            || table.algorithm != LootSelectionAlgorithm::IndependentBernoulliPpm
+        {
+            return;
+        }
+        let boosted_entries = if self.boosted_boss {
+            partition_daily_boss_bonus_entries(&mut table.entries, |key| equipment.contains(key))
+        } else {
+            table.entries.len()
+        };
+        table.algorithm = LootSelectionAlgorithm::DailyBoosted {
+            extra_rolls: self.daily_loot_rolls,
+            boosted_entries,
+        };
+    }
+}
+
+fn physical_loot_inputs(death: &str) -> TestResult<Option<RewardInputs>> {
+    primary_node_witness("physical_loot_inputs", &[("death", death)])?
+        .as_deref()
+        .map(parse_reward_inputs)
+        .transpose()
+}
+
+fn parse_reward_inputs(line: &str) -> TestResult<RewardInputs> {
+    let field = |key| {
+        line.split_ascii_whitespace()
+            .filter_map(|part| part.split_once('='))
+            .find_map(|(name, value)| (name == key).then_some(value))
+            .ok_or("incomplete physical loot inputs")
+    };
+    let stamina = match field("stamina")? {
+        "none" => None,
+        value => Some(value.parse()?),
+    };
+    let corpse = match field("corpse_settlement")? {
+        "absent" => CorpseSettlement::Absent,
+        "present" => CorpseSettlement::Present,
+        "failed" => CorpseSettlement::Failed,
+        _ => return Err("unknown corpse settlement".into()),
+    };
+    let loot_error = field("loot_error")?;
+    Ok(RewardInputs {
+        stamina,
+        loot_rate: field("loot_rate")?.parse()?,
+        xp_rate: field("xp_rate")?.parse()?,
+        corpse,
+        loot_error: (loot_error != "none").then(|| loot_error.to_owned()),
+        boosted_creature: field("boosted_creature")?.parse()?,
+        boosted_boss: field("boosted_boss")?.parse()?,
+        daily_loot_rolls: field("daily_loot_rolls")?.parse()?,
+    })
 }
 
 fn judge_loot(
     rows: &mut Rows<'_>,
     items: &crate::content::item_ref::ItemDefinitionIndex,
-    binding: &LootBinding,
-    got: &BTreeMap<std::num::NonZeroU32, u64>,
+    species: &Species,
+    seed: LootPlanDeathKey,
+    inputs: &RewardInputs,
+    observed: &BTreeMap<std::num::NonZeroU32, u64>,
 ) {
-    let entries = match binding {
-        LootBinding::Missing(table) => {
-            rows.fail(
+    match expected_loot(items, species, seed, inputs) {
+        Err(error) => rows.fail("loot", "content", &error.to_string()),
+        Ok(expected) if observed_loot_matches_plan(&expected, observed) => {
+            rows.pass(
                 "loot",
-                "content",
-                &format!("the definition binds loot table {table} but content has none"),
-            );
-            return;
-        }
-        LootBinding::None => {
-            if got.is_empty() {
-                rows.pass("loot", "no-loot-table;corpse-empty-verified");
-            } else {
-                rows.fail(
-                    "loot",
-                    "unexpected_item",
-                    &format!("no loot table but the corpse holds {got:?}"),
-                );
-            }
-            return;
-        }
-        LootBinding::Table(entries) => entries,
-    };
-    if entries.is_empty() {
-        if got.is_empty() {
-            rows.pass("loot", "empty-loot-table;corpse-empty-verified");
-        } else {
-            rows.fail(
-                "loot",
-                "unexpected_item",
-                &format!("empty loot table but the corpse holds {got:?}"),
+                &format!("deterministic-plan:{expected:?};corpse-items:{observed:?}"),
             );
         }
-        return;
-    }
-    // Per item: at least one success (its smallest min) up to every entry succeeding (sum of max).
-    let mut allowed: BTreeMap<std::num::NonZeroU32, (u64, u64)> = BTreeMap::new();
-    let mut unmapped = 0_usize;
-    for entry in entries {
-        let Some(reference) = item_ref(items, &entry.item) else {
-            unmapped += 1;
-            continue;
-        };
-        let range = allowed.entry(reference).or_insert((entry.min, 0));
-        range.0 = range.0.min(entry.min);
-        range.1 += entry.max;
-    }
-    if !resolved_loot_entries(unmapped) {
-        rows.fail(
+        Ok(expected) => rows.fail(
             "loot",
-            "content",
-            &format!("{unmapped} authored loot definitions could not be resolved"),
-        );
-        return;
+            "plan_mismatch",
+            &format!("expected {expected:?} from the pinned death roll, observed {observed:?}"),
+        ),
     }
-    for (reference, count) in got {
-        match allowed.get(reference) {
-            None => {
-                rows.fail(
-                    "loot",
-                    "unexpected_item",
-                    &format!("item_definition_ref {reference} is not in the loot table"),
-                );
-                return;
-            }
-            Some((low, high)) if count < low || count > high => {
-                rows.fail(
-                    "loot",
-                    "count_out_of_range",
-                    &format!(
-                        "item_definition_ref {reference} count {count} outside {low}..={high}"
-                    ),
-                );
-                return;
-            }
-            Some(_) => {}
+}
+
+fn expected_loot(
+    items: &crate::content::item_ref::ItemDefinitionIndex,
+    species: &Species,
+    seed: LootPlanDeathKey,
+    inputs: &RewardInputs,
+) -> TestResult<BTreeMap<std::num::NonZeroU32, u64>> {
+    let (table, entries) = match &species.loot {
+        LootBinding::Missing(table) => {
+            return Err(format!("authored loot table {table} missing").into());
+        }
+        LootBinding::None => return Ok(BTreeMap::new()),
+        LootBinding::Table(table, entries) => (table, entries),
+    };
+    let row = species.reward.as_ref().map_err(|reason| {
+        format!(
+            "pinned reward {} unavailable: {}",
+            species.key,
+            reason.as_str()
+        )
+    })?;
+    let reference = row
+        .loot_table_ref
+        .as_ref()
+        .filter(|reference| &reference.production_key == table)
+        .ok_or("authored and pinned loot table bindings differ")?;
+    for entry in entries {
+        if entry.min > entry.max
+            || !resolved_loot_entries(usize::from(item_ref(items, &entry.item).is_none()))
+        {
+            return Err(format!("invalid or unmapped authored loot item {}", entry.item).into());
         }
     }
-    rows.pass(
-        "loot",
-        &format!(
-            "table_entries:{};unmapped_entries:{unmapped};corpse_items:{};{}",
-            entries.len(),
-            got.len(),
-            if got.is_empty() {
-                "empty-corpse-allowed-by-95pct-chance-factor"
-            } else {
-                "all-items-in-table-within-min-max"
-            }
-        ),
+    let mut table = row.loot_table.clone();
+    if !species.private_reward {
+        inputs.apply_daily_loot(&mut table, &species.daily_boss_equipment);
+    }
+    configure_physical_loot(
+        &mut table,
+        species.private_reward,
+        inputs.stamina,
+        inputs.loot_rate,
     );
+    let plan = plan_creature_loot(seed, reference, &table)
+        .map_err(|error| format!("pinned loot plan {}: {error:?}", species.key))?;
+    let mut expected = BTreeMap::new();
+    for entry in plan
+        .entries
+        .into_iter()
+        .filter(|entry| entry.parent.is_none())
+    {
+        let reference = items
+            .definition_ref("Item", &entry.item.production_key, &entry.item.revision_ref)
+            .ok_or_else(|| format!("unmapped pinned loot item {}", entry.item.production_key))?;
+        *expected.entry(reference).or_default() += u64::from(entry.quantity);
+    }
+    Ok(expected)
+}
+
+fn configure_physical_loot(
+    table: &mut oteryn_gameplay_items::loot_plan::LootTableDefinition,
+    private_reward: bool,
+    stamina: Option<u16>,
+    rate: u32,
+) {
+    if private_reward
+        || stamina.is_some_and(|minutes| {
+            !oteryn_gameplay_characters::stamina::hunting_loot_allowed(minutes)
+        })
+    {
+        table.entries.clear();
+        table.algorithm = LootSelectionAlgorithm::IndependentBernoulliPpm;
+    } else {
+        apply_scheduled_loot_rate(table, rate);
+    }
 }
 
 async fn open_corpse(
@@ -849,23 +1260,8 @@ async fn open_corpse(
     Ok(got)
 }
 
-/// Provision the level-100 axe build once (the fenced fixture command), then reuse it.
-async fn prepare_player(
-    clients: &SeamClients<'_>,
-    session: &mut Option<DevClientSession>,
-) -> TestResult {
-    let client = session.as_mut().ok_or("session absent")?;
-    let (_, level) = read_stats(client).await?;
-    if level >= SWEEP_LEVEL {
-        return Ok(());
-    }
-    let fresh = session.take().ok_or("session absent")?;
-    *session = Some(provisioning::provision_fixture(fresh, clients, CORE_CHARACTER).await?);
-    Ok(())
-}
-
 /// Experience and level from the Cyclopedia GeneralStats tab (the same panel MP09 reads).
-async fn read_stats(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
+async fn read_stats(client: &mut DevClientSession) -> TestResult<(u64, u32, Option<u8>)> {
     let mut view = panel::CyclopediaCharacterPanel {
         selected: true,
         limit: 50,
@@ -890,7 +1286,7 @@ async fn read_stats(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
     let stats = view
         .general
         .ok_or_else(|| format!("GeneralStats absent;reply={reply:?}"))?;
-    Ok((stats.experience, stats.level))
+    Ok((stats.experience, stats.level, view.vocation_id))
 }
 
 /// Logout with the combat lock honoured: wait it out with keep-alive Turns, never clear it.
@@ -931,6 +1327,244 @@ async fn release(client: &mut DevClientSession) -> TestResult {
                 .into());
             }
         }
+    }
+}
+
+fn corpse_handle(detail: EntityDetail) -> Option<oteryn_protocol_oteryn::item_view::ItemHandle> {
+    match detail {
+        EntityDetail::Object { item_handle, .. }
+        | EntityDetail::ObjectWithAppearance { item_handle, .. } => item_handle,
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod corpse_tests {
+    use super::*;
+
+    #[test]
+    fn corpse_free_contract_requires_exact_death_evidence() {
+        assert!(confirm_death(false, false, true).is_ok());
+        assert!(confirm_death(false, false, false).is_err());
+        assert!(confirm_death(false, true, true).is_err());
+        assert!(confirm_death(true, false, true).is_err());
+        assert!(confirm_death(true, true, false).is_ok());
+    }
+
+    #[test]
+    fn corpse_free_requires_terminal_absence() -> TestResult {
+        let witness = "stamina=2520 loot_rate=100 xp_rate=100 boosted_creature=false boosted_boss=false daily_loot_rolls=0 loot_error=none";
+        let absent = parse_reward_inputs(&format!("{witness} corpse_settlement=absent"))?;
+        let present = parse_reward_inputs(&format!("{witness} corpse_settlement=present"))?;
+        assert!(confirm_corpse_free_settlement(false, &absent).is_ok());
+        assert!(confirm_corpse_free_settlement(true, &absent).is_err());
+        assert!(confirm_corpse_free_settlement(false, &present).is_err());
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn terminal_release_runs_without_a_socket_and_after_failed_logout() {
+        for session in [None, Some(())] {
+            let mut observed = false;
+            let mut logout_attempted = false;
+            let [(_, logout), (_, terminal)] = finish_sweep(
+                session,
+                |()| {
+                    logout_attempted = true;
+                    std::future::ready(Err("failed logout".into()))
+                },
+                async {
+                    observed = true;
+                    Err("lease still held".into())
+                },
+            )
+            .await;
+            assert!(observed);
+            assert_eq!(logout_attempted, session.is_some());
+            assert_eq!(logout.is_err(), session.is_some());
+            assert!(terminal.is_err());
+        }
+    }
+
+    #[test]
+    fn native_corpse_keeps_its_server_item_handle() -> TestResult {
+        let handle = std::num::NonZeroU64::new(101).ok_or("zero item handle")?;
+        let appearance_id = std::num::NonZeroU16::new(42).ok_or("zero appearance")?;
+        let corpse = EntityDetail::ObjectWithAppearance {
+            item_definition_ref: 12,
+            quantity: 1,
+            item_handle: Some(handle),
+            appearance_id,
+        };
+        assert_eq!(corpse_handle(corpse), Some(handle));
+        Ok(())
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum Preparation {
+    Provision,
+    Heal,
+    Hunt,
+}
+
+fn preparation(level: u32, unclassed: bool, low: bool) -> TestResult<Preparation> {
+    if level == 1 && unclassed {
+        Ok(Preparation::Provision)
+    } else if level < SWEEP_LEVEL || unclassed {
+        Err("sweep requires a classed level-100 fixture".into())
+    } else if low {
+        Ok(Preparation::Heal)
+    } else {
+        Ok(Preparation::Hunt)
+    }
+}
+
+#[cfg(test)]
+mod recovery_tests {
+    use super::*;
+
+    #[test]
+    fn injured_provisioned_character_recovers_without_fresh_only_provisioning() -> TestResult {
+        assert_eq!(preparation(1, true, false)?, Preparation::Provision);
+        assert_eq!(preparation(100, false, true)?, Preparation::Heal);
+        assert_eq!(preparation(100, false, false)?, Preparation::Hunt);
+        assert!(preparation(99, false, true).is_err());
+        Ok(())
+    }
+}
+
+fn observed_loot_matches_plan(
+    expected: &BTreeMap<std::num::NonZeroU32, u64>,
+    observed: &BTreeMap<std::num::NonZeroU32, u64>,
+) -> bool {
+    expected == observed
+}
+
+#[cfg(test)]
+mod loot_tests {
+    use super::*;
+
+    #[test]
+    fn physical_loot_plan_models_private_rewards_stamina_and_double_loot() -> TestResult {
+        use oteryn_gameplay_items::loot_plan::{
+            LootDefinitionRef, LootSelectionAlgorithm, LootTableDefinition, LootTableEntry,
+        };
+        let reference = LootDefinitionRef {
+            family: "LootTable".into(),
+            production_key: "fixture:loot".to_owned(),
+            revision_ref: "v1".to_owned(),
+        };
+        let authored = LootTableDefinition {
+            algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
+            entries: vec![LootTableEntry {
+                item: LootDefinitionRef {
+                    family: "Item".into(),
+                    production_key: "fixture:item".to_owned(),
+                    revision_ref: "v1".to_owned(),
+                },
+                min_count: 1,
+                max_count: 1,
+                probability_ppm: Some(1_000_000),
+                details: Default::default(),
+            }],
+        };
+        let seed = LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1);
+        for (private, stamina, rate, expected) in [
+            (false, Some(2520), 100, 1),
+            (true, Some(2520), 200, 0),
+            (false, Some(0), 200, 0),
+            (false, Some(2520), 200, 2),
+        ] {
+            let mut table = authored.clone();
+            configure_physical_loot(&mut table, private, stamina, rate);
+            let loot = plan_creature_loot(seed, &reference, &table)
+                .map_err(|error| format!("test loot roll: {error:?}"))?;
+            assert_eq!(loot.entries.len(), expected, "{private} {stamina:?} {rate}");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn daily_boost_applies_to_both_expectations() -> TestResult {
+        use oteryn_gameplay_items::loot_plan::{LootDefinitionRef, LootTableEntry};
+        let entry = |name: &str, unique| {
+            let mut entry = LootTableEntry {
+                item: LootDefinitionRef {
+                    family: "Item".into(),
+                    production_key: name.into(),
+                    revision_ref: "v1".into(),
+                },
+                min_count: 1,
+                max_count: 1,
+                probability_ppm: Some(1_000_000),
+                details: Default::default(),
+            };
+            entry.details.unique = unique;
+            entry.details.stackable = true;
+            entry
+        };
+        let base = LootTableDefinition {
+            algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
+            entries: vec![
+                entry("gold", false),
+                entry("sword", false),
+                entry("shield", true),
+            ],
+        };
+        let seed = LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1);
+        let reference = LootDefinitionRef {
+            family: "LootTable".into(),
+            production_key: "fixture:loot".into(),
+            revision_ref: "v1".into(),
+        };
+        let equipment = BTreeSet::from(["sword".to_owned(), "shield".to_owned()]);
+        let witness =
+            "stamina=2520 loot_rate=100 xp_rate=150 corpse_settlement=present loot_error=none";
+        for (choice, xp, expected) in [
+            (
+                "boosted_creature=true boosted_boss=false daily_loot_rolls=1",
+                51,
+                vec!["gold", "sword", "shield", "gold", "sword", "shield"],
+            ),
+            (
+                "boosted_creature=false boosted_boss=true daily_loot_rolls=2",
+                25,
+                vec!["sword", "gold", "shield", "sword", "sword"],
+            ),
+        ] {
+            let inputs = parse_reward_inputs(&format!("{witness} {choice}"))?;
+            assert_eq!(inputs.expected_base_xp(17)?, xp);
+            let mut table = base.clone();
+            inputs.apply_daily_loot(&mut table, &equipment);
+            configure_physical_loot(&mut table, false, inputs.stamina, inputs.loot_rate);
+            let plan = plan_creature_loot(seed, &reference, &table)
+                .map_err(|error| format!("test loot roll: {error:?}"))?;
+            assert_eq!(
+                plan.entries
+                    .iter()
+                    .map(|entry| entry.item.production_key.as_str())
+                    .collect::<Vec<_>>(),
+                expected
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn loot_oracle_rejects_empty_output_and_impossible_duplicate_totals() {
+        let item = std::num::NonZeroU32::MIN;
+        let plan = BTreeMap::from([(item, 6)]);
+        assert!(!observed_loot_matches_plan(&plan, &BTreeMap::new()));
+        assert!(!observed_loot_matches_plan(
+            &plan,
+            &BTreeMap::from([(item, 4)])
+        ));
+        assert!(observed_loot_matches_plan(&plan, &plan));
+        assert!(observed_loot_matches_plan(
+            &BTreeMap::new(),
+            &BTreeMap::new()
+        ));
     }
 }
 

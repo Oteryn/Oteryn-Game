@@ -97,6 +97,53 @@ impl Watch {
     }
 }
 
+fn indexed_completion(
+    scenario: &str,
+    result: TestResult,
+    has_verdict: bool,
+    report_success: bool,
+    seconds: f64,
+) -> (TestResult, Option<String>) {
+    let line = if result.is_err() && !has_verdict {
+        Some(format!(
+            "e2e_all scenario={scenario} status=FAIL seconds=0.000 evidence=watch-aborted-before-verdict"
+        ))
+    } else if result.is_ok() && !has_verdict && report_success {
+        Some(format!(
+            "e2e_all scenario={scenario} status=PASS seconds={seconds:.3}"
+        ))
+    } else {
+        None
+    };
+    (result, line)
+}
+
+#[cfg(test)]
+mod completion_tests {
+    use super::*;
+
+    #[test]
+    fn indexed_watchdog_failure_reaches_the_journey_caller() {
+        let (result, line) =
+            indexed_completion("CS.rat.full", Err("watchdog".into()), false, true, 0.0);
+        assert!(line.is_some_and(|line| line.contains("status=FAIL")));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn completed_species_gets_its_full_pass_verdict() {
+        let scenario = "CS.rat.full";
+        let (result, line) = indexed_completion(scenario, Ok(()), false, true, 1.0);
+        assert!(result.is_ok());
+        assert_eq!(
+            line.as_deref(),
+            Some("e2e_all scenario=CS.rat.full status=PASS seconds=1.000")
+        );
+        let (_, duplicate) = indexed_completion(scenario, Ok(()), true, true, 1.0);
+        assert!(duplicate.is_none());
+    }
+}
+
 fn is_capture_write_error(line: &str) -> bool {
     line.split_whitespace().any(|field| {
         field == "evidence=CAPTURE-WRITE-ERROR"
@@ -134,32 +181,78 @@ pub(crate) fn indexed(
     scenario: &'static str,
     journey: impl Future<Output = TestResult>,
 ) -> impl Future<Output = bool> {
-    // Each row owns its future on the heap; hundreds of inline row temporaries
-    // otherwise accumulate in journeys' debug-build poll frame.
-    Box::pin(crate::qualification::client_world::FIXTURE_WORKERS.scope(Default::default(), async move {
-        let mut watch = Watch::new(scenario, Harness::global());
-        watch.scenario = Some(scenario);
-        let result = watch.run_indexed(journey).await;
-        if let Err(error) = result {
-            watch.remember(error.as_ref());
-            watch.state().failed_exit = true;
-            // The cancelled reporter did not get to serialize its typed failure.
-            if watch.state().pending.is_empty() {
-                watch.state().pending.push(format!(
-                "e2e_all scenario={scenario} status=FAIL seconds=0.000 evidence=watch-aborted-before-verdict"
-            ));
+    Box::pin(async move { indexed_run(scenario, journey, false).await.is_ok() })
+}
+
+/// A checked row reports completion to its caller as well as to evidence consumers.
+pub(crate) fn indexed_checked(
+    scenario: &'static str,
+    journey: impl Future<Output = TestResult>,
+) -> impl Future<Output = TestResult> {
+    indexed_run(scenario, journey, true)
+}
+
+fn indexed_run(
+    scenario: &'static str,
+    journey: impl Future<Output = TestResult>,
+    report_success: bool,
+) -> impl Future<Output = TestResult> {
+    // Keep the row on the heap to limit the parent journey's debug-build poll frame.
+    Box::pin(crate::qualification::client_world::FIXTURE_WORKERS.scope(
+        Default::default(),
+        async move {
+            let started = std::time::Instant::now();
+            let mut watch = Watch::new(scenario, Harness::global());
+            watch.scenario = Some(scenario);
+            let mut result = watch.run_indexed(journey).await;
+            if report_success && result.is_ok() {
+                let state = watch.state();
+                let cause = state.stall.clone().or_else(|| {
+                    state
+                        .pending
+                        .iter()
+                        .any(|line| line.contains(" status=FAIL "))
+                        .then_some(Cause::Assertion)
+                });
+                if let Some(cause) = cause {
+                    result = Err(HarnessError::boxed(
+                        cause,
+                        format!("{scenario} reported failure"),
+                    ));
+                }
             }
-        }
-        watch.ensure_failure_verdict();
-        // `run` restored the previous active Watch, so flushing cannot recapture itself.
-        let lines = watch.take_verdicts();
-        let passed = lines.iter().all(|line| line.contains(" status=PASS "));
-        for line in lines {
-            evidence(&line);
-        }
-        crate::qualification::client_world::await_fixture_workers().await;
-        passed
-    }))
+            if let Err(error) = &result {
+                watch.remember(error.as_ref());
+                watch.state().failed_exit = true;
+            }
+            let has_verdict = !watch.state().pending.is_empty();
+            let (result, missing) = indexed_completion(
+                scenario,
+                result,
+                has_verdict,
+                report_success,
+                started.elapsed().as_secs_f64(),
+            );
+            if let Some(line) = missing {
+                watch.state().pending.push(line);
+            }
+            watch.ensure_failure_verdict();
+            // `run` restored the previous active Watch, so flushing cannot recapture itself.
+            let lines = watch.take_verdicts();
+            let all_passed = lines.iter().all(|line| line.contains(" status=PASS "));
+            for line in lines {
+                evidence(&line);
+            }
+            crate::qualification::client_world::await_fixture_workers().await;
+            if !report_success && result.is_ok() && !all_passed {
+                return Err(HarnessError::boxed(
+                    Cause::Assertion,
+                    format!("{scenario} reported failure"),
+                ));
+            }
+            result
+        },
+    ))
 }
 
 /// Called after legacy line normalization, before output. Buffer only this
@@ -371,7 +464,7 @@ mod tests {
             let harness = Box::leak(Box::new(Harness::new(true, None)));
             let watch = new_watch(harness);
             let active = watch.enter();
-            let first = harness.fixture_failed(1, &std::io::Error::other("release expired"));
+            let first = harness.fixture_failed(Need::Fixture([0; 16], [1; 16]), 1, &std::io::Error::other("release expired"));
             watch.remember(first.as_ref());
             watch.remember(&std::io::Error::other("cleanup transport closed"));
             let (cause, root) = watch.failure();
@@ -393,7 +486,7 @@ mod tests {
             assert_eq!(lines, vec!["e2e_all scenario=C03.full status=FAIL seconds=1 cause=precondition root=C03.full/fixture1-released"]);
             drop(active);
             let second = new_watch(harness);
-            let blocked = harness.fixture_gate(1);
+            let blocked = harness.fixture_gate(Need::Fixture([0; 16], [1; 16]));
             let error = blocked.as_ref().err().ok_or("expected fixture block")?;
             second.remember(error.as_ref());
             assert_eq!(second.failure().0, Cause::BlockedBy { root });
@@ -629,7 +722,11 @@ mod tests {
                     // The bounded diagnostic after release expiry may finish before
                     // fixture_failed records health and its originating row.
                     tokio::time::sleep(Duration::from_secs(2)).await;
-                    Err(harness.fixture_failed(0, &std::io::Error::other("release expired")))
+                    Err(harness.fixture_failed(
+                        Need::Fixture([0; 16], [0; 16]),
+                        0,
+                        &std::io::Error::other("release expired"),
+                    ))
                 })
                 .await;
             assert_eq!(started.elapsed(), Duration::from_secs(162));
@@ -637,7 +734,11 @@ mod tests {
                 error.as_ref().err().map(|error| classify(error.as_ref())),
                 Some(Cause::Precondition { .. })
             ));
-            assert!(harness.fixture_gate(0).is_err());
+            assert!(
+                harness
+                    .fixture_gate(Need::Fixture([0; 16], [0; 16]))
+                    .is_err()
+            );
             let idle = new_watch(harness);
             let error = idle
                 .run(None, "no wall bound", std::future::pending::<TestResult>())

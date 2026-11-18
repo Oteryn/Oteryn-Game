@@ -2212,10 +2212,24 @@ pub(crate) fn load_world(
     world: WorldId,
     channel: ChannelId,
 ) -> TestResult<&'static BundleWorld> {
-    static LOADED: std::sync::OnceLock<(WorldId, ChannelId, BundleWorld)> =
+    Ok(&load_qualification_world(data, pin, world, channel)?.world)
+}
+
+struct QualificationWorld {
+    world: BundleWorld,
+    rewards: std::sync::Arc<crate::content::creature_reward::CreatureRewardTable>,
+}
+
+fn load_qualification_world(
+    data: Vec<u8>,
+    pin: &serde_json::Value,
+    world: WorldId,
+    channel: ChannelId,
+) -> TestResult<&'static QualificationWorld> {
+    static LOADED: std::sync::OnceLock<(WorldId, ChannelId, QualificationWorld)> =
         std::sync::OnceLock::new();
     if LOADED.get().is_none() {
-        let booted = boot_world(data, pin, world, channel)?;
+        let booted = boot_qualification_world(data, pin, world, channel)?;
         let _ = LOADED.set((world, channel, booted));
     }
     match LOADED.get() {
@@ -2235,6 +2249,15 @@ fn boot_world(
     world: WorldId,
     channel: ChannelId,
 ) -> TestResult<BundleWorld> {
+    Ok(boot_qualification_world(data, pin, world, channel)?.world)
+}
+
+fn boot_qualification_world(
+    data: Vec<u8>,
+    pin: &serde_json::Value,
+    world: WorldId,
+    channel: ChannelId,
+) -> TestResult<QualificationWorld> {
     let digest = hex32(pin["digest"].as_str().ok_or("World digest")?)?;
     let checked = crate::map::boot::check(
         data,
@@ -2289,15 +2312,12 @@ fn boot_world(
     if rat.loot_table.entries.is_empty() {
         return Err("town hunt has no production loot table".into());
     }
-    crate::node::serve::boot_bundle_world(
-        checked,
-        world,
-        channel,
-        controller
-            .active()
-            .and_then(|active| active.native_gameplay()),
-    )
-    .map_err(|error| format!("production world loader: {error:?}").into())
+    let bundle = crate::node::serve::boot_bundle_world(checked, world, channel, Some(native))
+        .map_err(|error| format!("production world loader: {error:?}"))?;
+    Ok(QualificationWorld {
+        world: bundle,
+        rewards: std::sync::Arc::clone(native.reward_table()),
+    })
 }
 
 fn tile(position: ActorPosition) -> TestResult<TilePos> {
@@ -2811,9 +2831,58 @@ fn town_route_retry_delay(
         .then_some(Duration::from_millis(500))
 }
 
+struct FixtureSpawn {
+    wire: String,
+    entity: oteryn_dev_client::EntityRef,
+    actor_local_id: u32,
+}
+
+impl FixtureSpawn {
+    fn corpse_identity(&self, clients: &SeamClients<'_>) -> TestResult<[u8; 16]> {
+        use crate::foundation::{
+            ActorLocalGeneration, ActorLocalId, ActorRef, ExactActorRef, ScopeOwnershipGeneration,
+        };
+        let actor = ExactActorRef(ActorRef::from_owner_parts(
+            WorldId::decode(&clients.world)?,
+            ChannelId::decode(&clients.channel)?,
+            ScopeOwnershipGeneration::new(clients.scope_generation)
+                .map_err(|error| format!("invalid scope generation: {error:?}"))?,
+            ActorLocalId(self.actor_local_id),
+            ActorLocalGeneration(self.entity.generation),
+        ));
+        if actor.placement_identity() != self.entity.identity {
+            return Err("spawn receipt has inconsistent placement identity".into());
+        }
+        Ok(actor.corpse_identity())
+    }
+}
+
+fn parse_fixture_spawn(wire: String) -> Result<FixtureSpawn, String> {
+    let fields: Vec<_> = wire.split_ascii_whitespace().collect();
+    let ["spawned", identity, generation, local] = fields.as_slice() else {
+        return Err("invalid spawn receipt fields".into());
+    };
+    let identity = crate::node::operator_files::hex_bytes::<16>(identity)
+        .map_err(|_| "invalid spawn receipt identity")?;
+    let generation = generation
+        .parse()
+        .map_err(|_| "invalid spawn receipt generation")?;
+    let actor_local_id = local
+        .parse()
+        .map_err(|_| "invalid spawn receipt actor local id")?;
+    Ok(FixtureSpawn {
+        wire,
+        entity: oteryn_dev_client::EntityRef {
+            identity,
+            generation,
+        },
+        actor_local_id,
+    })
+}
+
 /// `spawn <session> <key>` through `provision.py --spawn`; Err carries the rejected token.
 /// Shared by `creature_sweep` and MP09 (both reach it through `use super::*`).
-async fn request_spawn(session: String, key: String) -> Result<String, String> {
+async fn request_spawn(session: String, key: String) -> Result<FixtureSpawn, String> {
     let socket = required("NODE_BOOT_CONTROL_SOCKET").map_err(|error| error.to_string())?;
     let mut command = fixture_command();
     command.args(["--socket", &socket, "--session", &session, "--spawn", &key]);
@@ -2822,7 +2891,7 @@ async fn request_spawn(session: String, key: String) -> Result<String, String> {
         .map_err(|error| error.to_string())?
         .map_err(|error| error.to_string())?;
     if output.status.success() {
-        return Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned());
+        return parse_fixture_spawn(String::from_utf8_lossy(&output.stdout).trim().to_owned());
     }
     let stderr = String::from_utf8_lossy(&output.stderr);
     Err(match stderr.split_once("reason=") {
@@ -3243,18 +3312,21 @@ pub(super) async fn logout_trade_character(
 pub(super) async fn journeys(
     clients: &SeamClients<'_>,
     packet_clients: &SeamClients<'_>,
+    mp_clients: &[SeamClients<'_>; 2],
+    sweep_clients: &SeamClients<'_>,
     path: &Path,
 ) -> TestResult {
     let started = std::time::Instant::now();
     let bytes = std::fs::read(path)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(
+    let qualified = load_qualification_world(
         bytes.clone(),
         &pin,
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
+    let world = &qualified.world;
     evidence(&format!(
         "world_loader state=booted duration_ms={} start={TOWN:?}",
         started.elapsed().as_millis()
@@ -5598,22 +5670,34 @@ pub(super) async fn journeys(
             clients.accounts.len()
         ));
     }
-    if groups.runs("creature_sweep") {
+    let sweep_result = if groups.runs("creature_sweep") {
         let before = journey_verdicts();
-        creature_sweep::run(clients, world, &metadata.spawns).await?;
+        let result = creature_sweep::run(sweep_clients, world, &qualified.rewards).await;
         if groups.explicitly_selected() {
             journey_group_completed("creature_sweep", before);
         }
-    }
-    if groups.runs("mp") {
+        result
+    } else {
+        Ok(())
+    };
+    let multiplayer_result = if groups.runs("mp") {
         let before = journey_verdicts();
-        mp::run(clients, packet_clients, world, &metadata.manifest.subareas).await;
+        let result = mp::run(
+            &mp_clients[0],
+            &mp_clients[1],
+            world,
+            &metadata.manifest.subareas,
+        )
+        .await;
         journey_group_completed("mp", before);
-    }
+        result
+    } else {
+        Ok(())
+    };
     // The core/profile pair has not inherited packet movement, loot or death.
     if !groups.runs("core") {
         evidence("e2e_groups core=skipped");
-        return Ok(());
+        return sweep_result.and(multiplayer_result);
     }
     let before = journey_verdicts();
     let profile_result = profile_journey(clients, world, &bytes, &metadata.spawns).await;
@@ -5802,7 +5886,7 @@ pub(super) async fn journeys(
     )
     .await?;
     journey_group_completed("core", before);
-    Ok(())
+    sweep_result.and(multiplayer_result)
 }
 
 fn session_unexpected_eof(error: &(dyn std::error::Error + 'static)) -> bool {
@@ -7671,6 +7755,128 @@ fn flr2_catalogue_admission() -> TestResult {
         "catalogue blocking stone must block movement"
     );
     Ok(())
+}
+
+#[test]
+fn qualification_mutating_groups_use_dedicated_fixtures() -> TestResult {
+    let (source, _) = include_str!("world.rs")
+        .split_once("fn qualification_mutating_groups")
+        .ok_or("fixture test marker missing")?;
+    let compact: String = source
+        .chars()
+        .filter(|character| !character.is_whitespace())
+        .collect();
+    assert!(compact.contains("creature_sweep::run(sweep_clients,"));
+    assert!(compact.contains("mp::run(&mp_clients[0],&mp_clients[1],"));
+    assert!(compact.contains("profile_journey(clients,"));
+    Ok(())
+}
+
+pub(super) async fn with_peer_service<T>(
+    step: impl std::future::Future<Output = T>,
+    mut service: impl AsyncFnMut() -> TestResult,
+) -> TestResult<T> {
+    use std::future::poll_fn;
+    use std::task::Poll;
+    let mut step = std::pin::pin!(step);
+    loop {
+        let mut tick = std::pin::pin!(service());
+        let mut outcome = None;
+        poll_fn(|context| {
+            if outcome.is_none()
+                && let Poll::Ready(result) = step.as_mut().poll(context)
+            {
+                outcome = Some(result);
+            }
+            // Complete the current read even if the other operation just completed.
+            tick.as_mut().poll(context)
+        })
+        .await?;
+        if let Some(outcome) = outcome {
+            return Ok(outcome);
+        }
+    }
+}
+
+#[test]
+fn qualification_peer_answers_probes_during_a_pending_observation() {
+    use std::future::{Future, poll_fn};
+    use std::task::{Context, Poll, Waker};
+
+    let serviced = std::cell::Cell::new(false);
+    let observation = poll_fn(|_| {
+        if serviced.get() {
+            Poll::Ready(91)
+        } else {
+            Poll::Pending
+        }
+    });
+    let task = with_peer_service(observation, async || {
+        serviced.set(true);
+        Ok(())
+    });
+    let mut task = std::pin::pin!(task);
+    let mut cx = Context::from_waker(Waker::noop());
+    assert!(matches!(task.as_mut().poll(&mut cx), Poll::Ready(Ok(91))));
+    assert!(serviced.get());
+}
+
+pub(super) fn primary_node_witness(
+    event: &str,
+    identifiers: &[(&str, &str)],
+) -> TestResult<Option<String>> {
+    use std::io::{Read, Seek};
+    const MAX_TAIL: u64 = 1024 * 1024;
+    let mut log = std::fs::File::open(required("NODE_BOOT_PRIMARY_LOG")?)?;
+    let offset = log.metadata()?.len().saturating_sub(MAX_TAIL);
+    log.seek(std::io::SeekFrom::Start(offset))?;
+    let mut tail = Vec::new();
+    log.take(MAX_TAIL).read_to_end(&mut tail)?;
+    let complete_end = tail
+        .iter()
+        .rposition(|byte| *byte == b'\n')
+        .map_or(0, |end| end + 1);
+    let text = String::from_utf8_lossy(&tail[..complete_end]);
+    let complete = if offset == 0 {
+        &text
+    } else {
+        text.split_once('\n').map_or("", |(_, remaining)| remaining)
+    };
+    Ok(complete
+        .lines()
+        .rfind(|line| witness_matches(line, event, identifiers))
+        .map(str::to_owned))
+}
+
+fn witness_matches(line: &str, event: &str, identifiers: &[(&str, &str)]) -> bool {
+    let has = |key, value| {
+        line.split_ascii_whitespace()
+            .any(|field| field.split_once('=') == Some((key, value)))
+    };
+    line.starts_with("oteryn-game-server ")
+        && has("module", "gameplay_transport")
+        && has("event", event)
+        && identifiers.iter().all(|(key, value)| has(key, value))
+}
+
+#[test]
+fn witness_matches_only_the_exact_live_occurrence() {
+    let pvp = "oteryn-game-server ts=1 level=warn module=gameplay_transport event=attack_world_refusal_witness session=session-a command_id=7";
+    let is_attack = |session, command| {
+        witness_matches(
+            pvp,
+            "attack_world_refusal_witness",
+            &[("session", session), ("command_id", command)],
+        )
+    };
+    assert!(is_attack("session-a", "7"));
+    assert!(!is_attack("session-b", "7"));
+    assert!(!is_attack("session-a", "70"));
+    assert!(!witness_matches(
+        pvp,
+        "creature_death_witness",
+        &[("death", "session-a")],
+    ));
 }
 
 #[cfg(test)]

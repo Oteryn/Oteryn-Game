@@ -14,7 +14,7 @@ import uuid
 PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk", "combat-progression", "private-channel", "coin-converters", "rune-training", "sweep", "atelier")
 CREATURE_KEY = re.compile(r"[A-Za-z0-9:._/-]{1,128}")
 CAPACITY = re.compile(rb"capacity [1-9][0-9]* [1-9][0-9]*\n")
-SPAWNED = re.compile(rb"spawned [0-9a-f]{32} [0-9]+\n")
+SPAWNED = re.compile(rb"spawned [0-9a-f]{32} [0-9]+ [0-9]+\n")
 
 
 # The server bounds each accepted control request at 30 seconds.
@@ -72,7 +72,7 @@ def provision(socket_path, session, profile, cancel=None):
 def spawn(socket_path, session, creature_key):
     """Places one creature next to the session's actor; only a qualification-mode node serves it.
 
-    Returns the node answer `spawned <entity identity hex> <generation>`; a refusal raises with
+    Returns the node answer `spawned <entity identity hex> <generation> <actor local id>`; a refusal raises with
     the exact `rejected reason=<token>` answer.
     """
     identifier = uuid.UUID(session)

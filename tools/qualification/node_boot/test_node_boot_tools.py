@@ -295,6 +295,7 @@ class SeamPassThroughTests(unittest.TestCase):
                 sleep() {{ :; }}
                 NODE_BOOT_SPELLS=0; NODE_BOOT_WORLD=1; NODE_BOOT_LIFECYCLE=game_platform
                 NODE_GAMEPLAY_ENV=(); NODE_CLOCK_FEATURES=(); NODE_SPAWN_FEATURES=()
+                node_log={temp}/node.log; EXTRA_WORLD_ACCOUNTS=(party-one sweep-one)
                 BASE=/srv/x; WP5_PKI=/x; ADMIN_URL=u; WORLD_ID=w; CHANNEL_ID=c; WP5_PORT=1
                 ACCOUNT_ID=a; SECOND_ACCOUNT_ID=b; PACKET_ACCOUNT_ID=p; SECOND_PACKET_ACCOUNT_ID=q
                 FRESH_KEY_ID=f; FRESH_SEED_HEX=s; RECOVERY_KEY_ID=r; RECOVERY_SEED_HEX=t; MAP_REVISION=m
@@ -316,6 +317,7 @@ class SeamPassThroughTests(unittest.TestCase):
                 sleep() {{ :; }}
                 NODE_BOOT_SPELLS=0; NODE_BOOT_WORLD=1; NODE_BOOT_LIFECYCLE=game_platform
                 NODE_GAMEPLAY_ENV=(); NODE_CLOCK_FEATURES=(); NODE_SPAWN_FEATURES=()
+                node_log={temp}/node.log; EXTRA_WORLD_ACCOUNTS=(party-one sweep-one)
                 BASE=/srv/x; WP5_PKI=/x; ADMIN_URL=u; WORLD_ID=w; CHANNEL_ID=c; WP5_PORT=1
                 ACCOUNT_ID=a; SECOND_ACCOUNT_ID=b; PACKET_ACCOUNT_ID=p; SECOND_PACKET_ACCOUNT_ID=q
                 FRESH_KEY_ID=f; FRESH_SEED_HEX=s; RECOVERY_KEY_ID=r; RECOVERY_SEED_HEX=t; MAP_REVISION=m

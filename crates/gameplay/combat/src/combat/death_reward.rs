@@ -280,6 +280,9 @@ impl CapturedRewardPrincipal {
 pub struct ProjectedCreatureDeathFacts {
     /// Captured daily selection on the lethal turn; retries preserve this multiplier.
     pub boosted_boss: bool,
+    pub boosted_creature: bool,
+    /// Additional daily loot rolls captured before other loot modifiers.
+    pub daily_loot_rolls: u8,
     /// Server wall clock captured by the lethal producer for durable slot history.
     pub died_at_unix_ms: u64,
     pub death: CreatureDeathOccurrenceKey,
@@ -320,6 +323,8 @@ pub fn capture_projected_death_facts(
     let (occurrence, _) = owner.reward_occurrence(actor, *principal.character.as_bytes())?;
     Ok(ProjectedCreatureDeathFacts {
         boosted_boss: false,
+        boosted_creature: false,
+        daily_loot_rolls: 0,
         died_at_unix_ms: 0,
         death,
         corpse,
