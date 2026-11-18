@@ -244,6 +244,7 @@ fn scenario(circuit: Circuit) -> TestResult {
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(1))
                 .ok_or("advance action clock")?;
+            let before_use = owner.owner_now().get();
             let outcome = owner
                 .use_world_object(actor, command(revision + 1), target(revision))
                 .await;
@@ -267,6 +268,7 @@ fn scenario(circuit: Circuit) -> TestResult {
                         .facts
                         .next_movement_decay_time()
                         .ok_or("second wall reset")?;
+                    assert!((before_use..=owner.owner_now().get()).contains(&(due - 100_000_000)));
                     assert_eq!(map.facts.expire_movement_items(due - 1), 0);
                     assert_eq!(map.facts.expire_movement_items(due), 1);
                     assert!(!map.facts.base_hidden(wall));
@@ -327,6 +329,7 @@ fn scenario(circuit: Circuit) -> TestResult {
                 let entered = runtime.commit_source_step(proof).map_err(debug)?;
                 (origin, entered)
             };
+            let before_step = owner.owner_now().get();
             assert_eq!(
                 owner
                     .step_quest_callback(&permit, actor, session, origin, entered)
@@ -337,6 +340,7 @@ fn scenario(circuit: Circuit) -> TestResult {
                 .facts
                 .next_movement_decay_time()
                 .ok_or("pressure plate reset")?;
+            assert!((before_step..=owner.owner_now().get()).contains(&(due - 3_000_000)));
             assert_eq!(map.facts.expire_movement_items(due - 1), 0);
             assert_eq!(appearance(circuit.passage)?, 369);
             assert_eq!(map.facts.expire_movement_items(due), 2);
