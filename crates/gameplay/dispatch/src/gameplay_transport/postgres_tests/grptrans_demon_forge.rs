@@ -27,7 +27,7 @@ fn grptrans_demon_forge_step_accepts_any_exact_throne_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("grptrans-demon-forge", move || {
         run(async move |_| {
             let h =
-                Harness::create_with_admission_seed(&admin, "grptrans_forge", false, false).await?;
+                Harness::create_with_admission_seed(admin, "grptrans_forge", false, false).await?;
             let result = exercise(&h).await;
             h.cleanup().await?;
             result
