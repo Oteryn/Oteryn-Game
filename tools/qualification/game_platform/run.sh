@@ -14,7 +14,8 @@ mkdir -m 700 "$NODE_BOOT_FAILURE_LOG_DIR"
 cleanup() {
   local code=$?
   trap - EXIT
-  if [[ ! -f "$GAME_PLATFORM_RESULT_FILE" ]]; then
+  if [[ ! -f "$GAME_PLATFORM_RESULT_FILE" ]] ||
+    { (( code != 0 )) && [[ "$(<"$GAME_PLATFORM_RESULT_FILE")" == GAME_PLATFORM_RESULT=PASS ]]; }; then
     printf 'GAME_PLATFORM_RESULT=FAIL flow=lifecycle reason=node_boot_exit_%s\n' "$code" > "$GAME_PLATFORM_RESULT_FILE"
   fi
   cat "$GAME_PLATFORM_RESULT_FILE"

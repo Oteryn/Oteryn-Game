@@ -2563,6 +2563,7 @@ pub(super) async fn journeys(
             matches
         };
         if groups.runs("rows") {
+            let before = journey_verdicts();
             release_row_characters(clients).await?;
             if e2e_row_selected(1) {
                 verdict::indexed("C03.full", async {
@@ -4152,21 +4153,27 @@ pub(super) async fn journeys(
                 })
                 .await;
             }
+            journey_group_completed("rows_early", before);
         }
         if groups.runs("f5") {
+            let before = journey_verdicts();
             full_e2ef5::run(clients, world).await;
+            journey_group_completed("f5", before);
         }
         for index in 0..clients.accounts.len() {
             wait_character_released(clients, index).await?;
         }
         if groups.runs("f4") {
+            let before = journey_verdicts();
             include!("full_e2ef4_mount.rs");
+            journey_group_completed("f4", before);
         }
         // F4 can drop its socket; require terminal release before the next journey.
         for index in 0..clients.accounts.len() {
             wait_character_released(clients, index).await?;
         }
         if groups.runs("rows") {
+            let before = journey_verdicts();
             if e2e_row_selected(233) {
                 verdict::indexed("G01.full", async {
                     full_row_g01::run_packet(clients).await;
@@ -4797,6 +4804,7 @@ pub(super) async fn journeys(
                 })
                 .await;
             }
+            journey_group_completed("rows_late", before);
         }
         if let Some((start, len)) = batch
             && !selected
@@ -4812,18 +4820,25 @@ pub(super) async fn journeys(
         ));
     }
     if groups.runs("creature_sweep") {
+        let before = journey_verdicts();
         creature_sweep::run(clients, world, &metadata.spawns).await?;
+        if groups.explicitly_selected() {
+            journey_group_completed("creature_sweep", before);
+        }
     }
     if groups.runs("mp") {
         #[path = "mp/mount.rs"]
         mod mp;
+        let before = journey_verdicts();
         mp::run(clients, packet_clients, world, &metadata.manifest.subareas).await;
+        journey_group_completed("mp", before);
     }
     // The core/profile pair has not inherited packet movement, loot or death.
     if !groups.runs("core") {
         evidence("e2e_groups core=skipped");
         return Ok(());
     }
+    let before = journey_verdicts();
     let profile_result = profile_journey(clients, world, &bytes, &metadata.spawns).await;
     if let Err(error) = &profile_result {
         evidence(&format!("world_profile state=failed error={error}"));
@@ -5009,7 +5024,9 @@ pub(super) async fn journeys(
             .and(logout_result),
         wait_character_released(clients, 1),
     )
-    .await
+    .await?;
+    journey_group_completed("core", before);
+    Ok(())
 }
 
 fn session_unexpected_eof(error: &(dyn std::error::Error + 'static)) -> bool {

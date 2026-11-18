@@ -2926,11 +2926,21 @@ async fn control_loop(
             continue;
         };
         // The peer is checked before any byte is read.
-        if !stream
-            .peer_cred()
-            .is_ok_and(|credentials| credentials.uid() == 0)
-        {
-            continue;
+        match stream.peer_cred() {
+            Ok(credentials) if credentials.uid() == 0 => {}
+            Ok(credentials) => {
+                if cfg!(feature = "qualification-spawn")
+                    && config.qualification_fixture
+                    && let Some(pid) = credentials.pid()
+                {
+                    event(&format!(
+                        "event=control_peer_rejected peer_pid={pid} peer_uid={}",
+                        credentials.uid()
+                    ));
+                }
+                continue;
+            }
+            Err(_) => continue,
         }
         // One trace per accepted connection, minted here and never read from the peer.
         let connection = uuid_v7().ok().map(|bytes| uuid_text(&bytes));
