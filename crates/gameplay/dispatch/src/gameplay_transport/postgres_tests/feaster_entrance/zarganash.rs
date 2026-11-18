@@ -55,8 +55,12 @@ fn catalogue(
         "oteryn:quest-progress/feaster-fixture/gate",
         "oteryn:quest-progress/feaster-fixture/count",
     ];
+    let recipe_sha256: String = <sha2::Sha256 as sha2::Digest>::digest(SOURCE)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
     let mut input = serde_json::json!({"schema":1,"quests":[{
-        "quest":QUEST,"recipe_sha256":format!("{:x}", <sha2::Sha256 as sha2::Digest>::digest(SOURCE)),
+        "quest":QUEST,"recipe_sha256":recipe_sha256,
         "sources":["Crystal Feaster death qualification"],
         "tracks":[
             {"key":tracks[0],"initial":1,"minimum":0,"maximum":1},
