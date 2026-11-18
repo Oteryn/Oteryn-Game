@@ -23,3 +23,12 @@ BLOCKER Drume battlefield commander-owned squad teardown, defeat ejection and ph
 OPEN-FACTS. Exact numeric reward IDs and loot rates, quest XP or outfit awards, Drume cooldown and deadline, and the engine coordinates and imported placements for the Wiki map links. The wiki names no fixed item delivery. Nearby B3 slices decoded during this pass did not expose the donor action and unique IDs, so placement binding remains open.
 
 PARTIAL. Outbound boat, held stairs, Evrard and documents, resident hand-ins and kill credits, guard, Kesar timing and negotiation, Drume encounter and credit, depot and trading access. Treat the castle correction as a callback-level fix. Its PostgreSQL fixture uses local geometry and seeded resident history.
+
+## Verification
+
+- PG via shard (pgsplit build files applied on `33c87ba5ab33b33b97537b5e5bf0a7e07ac00d28`). With the baseline callback registry embedded, the real STEP case failed in 51.38 s because the four-credit character reached (32397, 32480, 4).
+- Startup's SQL identity equality check reported a one-second timestamp difference. The authenticated backend's parent PID matched the retained data-directory postmaster, and the SQL and durability settings checks passed against that cluster.
+- World pin-refresh and pin-check succeeded for `0676b1568f55a55fbe994f344a8e0c60debf766751d12849f56c19f60c93aae5`. The installed pin-check CLI requires an output directory.
+- Quest authoring ran 44 check commands and failed at the final quest tree comparison. The regenerated preview would change the shared `source_change_provenance.sha256` field in 28 other quest records and their derived index. Those records are outside this lane.
+- PG via shard on the same SHA passed the fixed registry in 95.31 s, one case covering both entry tiles and both trust values. The route-less invocation passed one case in 0.00 s and did not exercise PostgreSQL.
+- Workspace formatting and dispatch all-features library Clippy with `-D warnings` passed. The two shard build files were removed after testing.
