@@ -28,7 +28,7 @@ use oteryn_simulation_determinism::SemanticTimeMicros;
 use super::actor_spell::ChannelSpellStates;
 use super::chat_relay::ChatRelay;
 use super::npc_talk::{NpcTalkBook, TalkNpc, talk};
-use super::{ComposedFreshAdmission, FreshAdmissionStore};
+use super::ComposedFreshAdmission;
 use crate::chat::relay::{RelayDestination, RelayLine};
 use crate::chat::{
     ChatEgress, ChatLimiter, ChatPosition, ChatRefusal, ChatText, SpeechMode, YellGate, local_line,
@@ -1035,21 +1035,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         use crate::durability::character_authority::CharacterAuthorityError;
         use crate::durability::character_progression::CharacterProgressionError;
 
-        let store = FreshAdmissionStore::from_root(self.root.clone());
-        let (current, _) = retry
+        // Entity visibility also uses this name. Resolve its session from an
+        // observation snapshot so a reconnect writer cannot stall that tick.
+        let fence = retry
             .retry_unavailable(async || {
-                store
-                    .current_session_at(session)
+                self.root
+                    .observe_current_gameplay_fence(self.character, session, true)
                     .await
                     .map_err(|error| match error {
-                        DurabilityError::RootUnavailable => AdmissionRefusal::Unavailable,
+                        CharacterAuthorityError::Unavailable(DurabilityError::RootUnavailable) => {
+                            AdmissionRefusal::Unavailable
+                        }
                         _ => AdmissionRefusal::Rejected,
                     })
             })
             .await
-            .ok()?;
-        let character = *current.commit().character_id().as_bytes();
-        let character_id = domain::CharacterId::from_bytes(character).ok()?;
+            .ok()??;
+        let character_id = fence.character_id;
+        let character = *character_id.as_bytes();
         let name = retry
             .retry_unavailable(async || {
                 self.root
