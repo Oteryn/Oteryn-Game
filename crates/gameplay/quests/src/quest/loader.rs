@@ -247,8 +247,6 @@ fn admit_native_bindings(
         super::completion_sets::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
-    super::source_deaths::retain_overlord_predecessor(&mut lowered.catalogue)
-        .map_err(QuestLoadError::Json)?;
     Ok(lowered)
 }
 
@@ -377,6 +375,10 @@ pub(super) fn lower_embedded_quest_state(
             }
         }
     }
+    // The additive death callback owns this predecessor independently of
+    // whether native bindings are imported by the caller.
+    super::source_deaths::retain_overlord_predecessor(&mut lowered.catalogue)
+        .map_err(QuestLoadError::Json)?;
     restrict_runtime_scope(lowered, content_revision)
 }
 
