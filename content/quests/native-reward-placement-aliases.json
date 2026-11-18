@@ -14,6 +14,138 @@
       ]
     },
     {
+      "claim": "oteryn:reward-claim.quest.key.id3700",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 5024,
+      "project_position": { "x": 32842, "y": 32225, "z": 8 },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L556",
+        "content/world/placements/region-z08-x128-y125.b3: (32842, 32225, 8), ordinal 1, appearance 2472, no unique tag on the tile."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.chest_tible",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6202,
+      "project_position": { "x": 32828, "y": 32340, "z": 7 },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2171",
+        "content/world/placements/region-z07-x128-y126.b3: (32828, 32340, 7), ordinal 1, appearance 2472, no unique tag on the tile."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.corpse_pirate_bp",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6204,
+      "project_position": { "x": 32832, "y": 32277, "z": 10 },
+      "appearance": 5972,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2185",
+        "content/world/placements/region-z10-x128-y126.b3: (32832, 32277, 10), ordinal 1, appearance 5972, no unique tag on the tile."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_bp",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6205,
+      "project_position": { "x": 32826, "y": 32232, "z": 11 },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2193",
+        "content/world/placements/region-z11-x128-y125.b3: (32826, 32232, 11), ordinal 1, appearance 2472, no unique tag on the tile."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_frozen_starlight",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6207,
+      "project_position": { "x": 32819, "y": 32232, "z": 11 },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2208",
+        "content/world/placements/region-z11-x128-y125.b3: (32819, 32232, 11), ordinal 1, appearance 2472, no unique tag on the tile."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_platinum_coins",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6206,
+      "project_position": { "x": 32824, "y": 32232, "z": 11 },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2201",
+        "content/world/placements/region-z11-x128-y125.b3: (32824, 32232, 11), ordinal 1, appearance 2472, no unique tag on the tile."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_soft_boots",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6209,
+      "project_position": { "x": 32812, "y": 32232, "z": 11 },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2222",
+        "content/world/placements/region-z11-x128-y125.b3: (32812, 32232, 11), ordinal 1, appearance 2472, no unique tag on the tile."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_staff_avenger_arbalest",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6210,
+      "project_position": { "x": 32804, "y": 32229, "z": 11 },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2229",
+        "content/world/placements/region-z11-x128-y125.b3: (32804, 32229, 11), ordinal 1, appearance 2472, no unique tag on the tile."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_staff_avenger_arbalest",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6211,
+      "project_position": { "x": 32806, "y": 32229, "z": 11 },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2236",
+        "content/world/placements/region-z11-x128-y125.b3: (32806, 32229, 11), ordinal 1, appearance 2472, no unique tag on the tile."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_staff_avenger_arbalest",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6212,
+      "project_position": { "x": 32808, "y": 32229, "z": 11 },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2243",
+        "content/world/placements/region-z11-x128-y125.b3: (32808, 32229, 11), ordinal 1, appearance 2472, no unique tag on the tile."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_stuffed",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6208,
+      "project_position": { "x": 32814, "y": 32232, "z": 11 },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2215",
+        "content/world/placements/region-z11-x128-y125.b3: (32814, 32232, 11), ordinal 1, appearance 2472, no unique tag on the tile."
+      ]
+    },
+    {
       "claim": "oteryn:reward-claim.quest.u8_2.the_inquisition_quest.witches_grimoire",
       "expected_revision": "reward-claim-r1",
       "expected_source_uid": 6270,
