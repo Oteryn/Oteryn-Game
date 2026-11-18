@@ -77,14 +77,14 @@ impl DurabilityRoot {
                     WHERE world_id=encode($1,'hex')::uuid AND kills=5
                       AND expires_at > statement_timestamp()),
                    EXISTS (SELECT 1 FROM game_character_boss_cooldowns
-                    WHERE character_id=encode($2,'hex')::uuid AND boss_key=$3
+                    WHERE character_id=encode($2,'hex')::uuid
+                      AND boss_key IN ('oteryn:boss.lloyd','oteryn:creature.lloyd')
                       AND available_at > floor(extract(epoch FROM statement_timestamp())*1000)::bigint),
                    (SELECT count(*) = 2 FROM game_character_quest_tracks
-                    WHERE character_id=encode($2,'hex')::uuid AND track_key IN ($4,$5) AND value >= 5)",
+                    WHERE character_id=encode($2,'hex')::uuid AND track_key IN ($3,$4) AND value >= 5)",
             )
             .bind(world_id.as_bytes().as_slice())
             .bind(fence.character_id.as_bytes().as_slice())
-            .bind("oteryn:creature.lloyd")
             .bind("oteryn:quest-progress/quest/u11_02/forgotten_knowledge/diamond_servant_counter")
             .bind("oteryn:quest-progress/quest/u11_02/forgotten_knowledge/golden_servant_counter")
             .fetch_one(&mut **tx).await?;
