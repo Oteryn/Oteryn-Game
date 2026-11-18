@@ -386,6 +386,15 @@ async fn exercise(h: &Harness) -> TestResult {
     assert!(!owner.has_pending_quest_callback(session));
     assert!(owner.reconcile_quest_callbacks(session).await);
     assert_eq!(gems(h).await?, 3, "reconciliation cannot debit twice");
+    let debits: Vec<(Vec<i64>, Vec<i64>)> = sqlx::query_as(
+        "SELECT values_before, values_after FROM game_character_quest_receipts
+         WHERE character_id=encode($1,'hex')::uuid
+           AND transition_key='oteryn:quest-callback/elemental-spheres/right-enter'",
+    )
+    .bind(id(41).as_slice())
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(debits, [(vec![23], vec![3])]);
     assert_eq!(
         (
             machine_appearance(&owner, left)?,
