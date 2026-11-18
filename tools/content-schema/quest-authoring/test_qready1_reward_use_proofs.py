@@ -89,6 +89,21 @@ class Qready1RewardUseProofTest(unittest.TestCase):
             with self.subTest(summary=summary), self.assertRaises(ValueError):
                 lane.generate(ROOT, self.log.replace("17 passed; 0 failed;", summary))
 
+    def test_combined_pg_run_requires_complete_test_headers(self):
+        prefix = "test gameplay_transport::postgres_tests::"
+        headers = [
+            f"{prefix}qready1_reward_claims::{marker}_exact_reward_once ... "
+            for marker in self.markers
+        ]
+        headers.append(f"{prefix}m35_claim_sets::m35_alawar ... ")
+        log = "\n".join(headers) + "\n" + self.log.replace("17 passed", "18 passed")
+        self.assertEqual(lane.generate(ROOT, log), lane.generate(ROOT, self.log))
+        for bad_log in (log.replace(headers[0], headers[1]),
+                        log.replace(headers[0], f"{prefix}another_module::{self.markers[0]} ... "),
+                        log.replace("0 failed", "1 failed")):
+            with self.subTest(log=bad_log), self.assertRaises(ValueError):
+                lane.generate(ROOT, bad_log)
+
     def test_focused_refresh_preserves_unselected_evidence(self):
         previous = lane.generate(ROOT, self.log)
         selected = "qready1_circle_room_quest_exact_reward_once"

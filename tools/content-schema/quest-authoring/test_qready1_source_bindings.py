@@ -1,11 +1,15 @@
 """QREADY1 enables only exact canonical selectors from the pinned startup table."""
 import hashlib
 import json
+import sys
 import tarfile
 import unittest
 from pathlib import Path
 
 import lua_tables
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'reward-claim-authoring'))
+import global_corrections  # noqa: E402
 
 
 class Qready1SourceBindingsTest(unittest.TestCase):
@@ -62,4 +66,5 @@ class Qready1SourceBindingsTest(unittest.TestCase):
             self.assertEqual(dict(zip('xyz', row['position'])), setting['itemPos'])
             reward = [[int(i['item']['key'].rsplit('.i', 1)[1]), i['count']]
                       for i in placement['reward']['items']]
-            self.assertEqual(reward, setting['reward'])
+            self.assertEqual(reward, global_corrections.source_reward(
+                row['unique'], setting['itemPos'], setting['reward']))

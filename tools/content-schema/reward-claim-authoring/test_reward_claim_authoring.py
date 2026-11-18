@@ -505,6 +505,24 @@ def test_poison_daggers_target_correction_bounds() -> None:
     assert result.wasSuccessful(), result.errors + result.failures
 
 
+
+def test_committed_content_carries_tibia_global_corrections() -> None:
+    """Wiki revs cited in global_corrections.py; donor facts stay in the pilot."""
+    records = {r["definition"]["identity"]["key"]: r["definition"]
+               for p in json.loads((rca.ROOT / rca.INDEX_PATH).read_text())["shards"]
+               for r in json.loads((rca.ROOT / p).read_text())["records"]}
+
+    def pairs(key):
+        [placement] = records["oteryn:reward-claim." + key]["placements"]
+        return [[int(q["item"]["key"].rsplit(".i", 1)[1]), q["count"]]
+                for q in placement["reward"]["items"]]
+
+    assert pairs("kv.captain_iglues") == [[3579, 2]]
+    assert pairs("kv.powerring1") == [[3050, 1]]
+    assert pairs("kv.fireaxe1") == [[3098, 1], [3085, 1], [3028, 7]]
+    assert pairs("kv.fireaxe2") == [[3320, 1]]
+    assert pairs("quest.key.id4502") == [[2970, 1], [3031, 33], [3147, 1], [3298, 4], [3384, 1]]
+
 if __name__ == "__main__":
     for name, test in sorted(globals().items()):
         if name.startswith("test_") and callable(test):

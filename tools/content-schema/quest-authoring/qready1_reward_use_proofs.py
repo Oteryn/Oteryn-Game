@@ -36,7 +36,17 @@ def generate(root, text, *, selected=None, previous=None):
             raise ValueError("Retained test evidence changed; rerun all qready1 cases")
         functions = [(name, body) for name, body in functions if name in selected]
     if summaries != [("ok", str(len(functions)), "0")]:
-        raise ValueError(f"Expected one complete passing {len(functions)}-case qready1 PostgreSQL run")
+        # A mixed libtest run has one aggregate summary. Require its test
+        # headers to account for every passing case, including the full selection.
+        headers = re.findall(r"^test ([\w:]+) \.\.\. ", text, re.MULTILINE)
+        qualified_names = {
+            name.rsplit("::", 1)[-1] for name in headers
+            if "::postgres_tests::qready1_reward_claims::" in name
+        }
+        if (len(headers) <= len(functions) or len(headers) != len(set(headers))
+                or summaries != [("ok", str(len(headers)), "0")]
+                or qualified_names != {name for name, _ in functions}):
+            raise ValueError(f"Expected one complete passing {len(functions)}-case qready1 PostgreSQL run")
     claims = load_reward_claims(root)
     matrix = json.loads(
         (
