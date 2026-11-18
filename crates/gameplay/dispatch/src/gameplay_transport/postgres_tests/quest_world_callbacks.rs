@@ -31,6 +31,9 @@ fn callback(name: &str) -> TestResult<Callback> {
         )
         .map_err(Into::into);
     }
+    if name == super::iceisl_carried_tool::NAME {
+        return super::iceisl_carried_tool::callback();
+    }
     if name == "engitem-targuna-selected-tool" {
         return oteryn_gameplay_quests::quest::targuna_ram::callback().map_err(Into::into);
     }

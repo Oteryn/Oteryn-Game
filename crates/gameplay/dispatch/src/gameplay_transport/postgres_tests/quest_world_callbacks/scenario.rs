@@ -77,7 +77,8 @@ fn scenario_case(
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
-    let native_crop = m03_use
+    let native_crop = name == super::super::iceisl_carried_tool::NAME
+        || m03_use
         || qd_world
         || engenc_asura
         || m49
@@ -939,6 +940,7 @@ fn scenario_case(
             || name == "srv7-reliable-ram"
             || name.starts_with("m09-treasure-")
             || name.starts_with("engoutfit-")
+            || name == super::super::iceisl_carried_tool::NAME
             || name == "engitem-targuna-selected-tool"
             || name == "engitem-native-seal-paint"
             || name == super::super::engitem_seal_paint_lost_ack::NAME
@@ -1116,6 +1118,10 @@ fn scenario_case(
         } else if m44 {
             super::super::m44_source_lifecycle::world(
                 generation.native_gameplay().ok_or("source policies")?,
+            )?
+        } else if name == super::super::iceisl_carried_tool::NAME {
+            super::super::iceisl_carried_tool::world(
+                generation.native_gameplay().ok_or("obelisk policies")?,
             )?
         } else if qm48 {
             super::super::qm48_mammoth::world(
@@ -1689,6 +1695,11 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
+        if name == super::super::iceisl_carried_tool::NAME {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                super::super::iceisl_carried_tool::catalogue(&callback)?,
+            ));
+        }
         if draconia_escape {
             owner.quest_catalogue =
                 Some(super::super::draconia_escape::catalogue(&callback, name)?);
@@ -2555,6 +2566,8 @@ fn scenario_case(
                 &callback,
             ))
             .await?;
+        } else if name == super::super::iceisl_carried_tool::NAME {
+            Box::pin(super::super::iceisl_carried_tool::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if name == "engitem-targuna-selected-tool" {
             Box::pin(super::super::srv7_reliable_ram::exercise_selected(
                 &mut owner,

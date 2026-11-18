@@ -56,9 +56,9 @@ pub(super) fn source_appearances(
 
 #[test]
 fn engitem_native_seal_paint_preserves_tool_counts_occurrences_and_resets() -> TestResult {
-    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
     let started = std::time::Instant::now();
     let result = super::kill_reward_e2e::scenario_thread::run("engitem_seal_paint", || {
         super::quest_world_callbacks::scenario(
@@ -287,10 +287,10 @@ pub(super) async fn exercise(
             )
             .await?;
             *admitted = next;
-            assert_ne!(
+            assert_eq!(
                 refused,
-                UseDisposition::Committed,
-                "the already painted occurrence cannot pay twice"
+                UseDisposition::NothingToUse,
+                "a current revision of an already painted seal fails the World readiness check"
             );
             let after = owner
                 .root
