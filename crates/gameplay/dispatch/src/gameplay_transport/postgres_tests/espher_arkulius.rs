@@ -196,7 +196,7 @@ async fn accept_with_eleven_item_identities(
         .and_then(|rule| rule["guards"].as_array_mut())
         .ok_or("Arkulius acceptance guards")?;
     guards.extend(
-        [677, 940, 941, 942, 944, 945, 946, 947, 948, 51259].map(|id| {
+        [940, 941, 942, 943, 944, 945, 946, 947, 948, 51259].map(|id| {
             serde_json::json!({
                 "kind": "item", "item": format!("oteryn:item.tibia.i{id}"), "op": "lt", "count": 1
             })
