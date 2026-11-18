@@ -11,7 +11,7 @@
 //! No player text, writer name or text-derived diagnostic enters value audit.
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
-use super::character_progression::numeric_u64;
+use super::character_progression::{assert_session_fence, numeric_u64};
 use super::db::{
     begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
     lock_admission_relations,
@@ -291,22 +291,28 @@ fn next_revision(last: u64, previous: Option<&str>, next: &str) -> Result<(u64, 
 }
 
 impl DurabilityRoot {
-    /// Read source-authored text after the caller has observed the exact visible instance.
+    /// Read source-authored text under the observing session's current generation.
     pub async fn read_authored_item_text(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
-        world: WorldId,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
         item: [u8; 16],
         definition: &TypedDefinitionRef,
     ) -> std::result::Result<Option<String>, DurabilityError> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
-        let mut definition = definition;
-        self.try_issue_semantic_pass()?.run_with_context(&mut definition, move |holder, deadline, definition| {
+        let world = fence.runtime_scope.world_id();
+        let mut context = (node, definition);
+        self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, (node, definition)| {
             Box::pin(async move {
                 let mut tx = begin_semantic_transaction(holder, deadline).await?;
                 assert_recovery_fence(&mut tx, &recovery).await?;
+                lock_admission_relations(&mut tx).await?;
+                if assert_session_fence(&mut tx, &fence, node).await?.is_err() {
+                    return Err(DurabilityError::Unavailable);
+                }
                 let text = sqlx::query_scalar("SELECT t.text FROM game_item_texts t
                     JOIN game_item_instances i USING(item_instance_id)
                     WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid

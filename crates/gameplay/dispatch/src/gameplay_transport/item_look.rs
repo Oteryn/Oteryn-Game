@@ -466,6 +466,13 @@ async fn observe_look_item(
             _ => None,
         }
     {
+        let item_fence = fence
+            .filter(|fence| {
+                fence.game_session_id == session
+                    && fence.runtime_scope == runtime.binding().runtime_scope()
+                    && fence.scope_ownership_generation == runtime.binding().scope_generation()
+            })
+            .ok_or(unavailable)?;
         if !runtime
             .player_control_facts(actor, session)
             .is_ok_and(|facts| facts.control_loss.is_none())
@@ -478,7 +485,8 @@ async fn observe_look_item(
             .root
             .read_authored_item_text(
                 admission.character,
-                admission.world_id,
+                admission.holder,
+                item_fence,
                 instance,
                 &definition,
             )
