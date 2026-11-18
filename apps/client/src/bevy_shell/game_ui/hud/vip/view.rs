@@ -146,6 +146,8 @@ pub(super) fn project(
     mut messages: Query<&mut Text, With<Message>>,
     mut controls: Query<(Entity, &mut Control)>,
     mut entered: Local<Option<u64>>,
+    time: Res<Time<Real>>,
+    mut hover: Local<Option<(Entity, std::time::Duration)>>,
     metadata: Query<(Entity, &VipMetadata, &Text), (Without<VipNameLabel>, Without<Message>)>,
     guard: ModalGuard,
 ) {
@@ -319,6 +321,20 @@ pub(super) fn project(
             commands.entity(list).add_child(row);
         }
     }
+    let target = rows.iter().find(|(entity, _, over, _, _)| {
+        over.get()
+            && owner.settings.preferences.tooltips_enabled
+            && !owner.modal_active()
+            && guard.allows(*entity)
+    });
+    let now = time.elapsed();
+    if hover.map(|(entity, _)| entity) != target.map(|(entity, ..)| entity) {
+        *hover = target.map(|(entity, ..)| (entity, now));
+    }
+    let ready = hover.is_some_and(|(_, since)| {
+        now.saturating_sub(since)
+            >= std::time::Duration::from_millis(owner.settings.preferences.tooltip_delay_ms.into())
+    });
     for (entity, role, text) in &metadata {
         let entry = entries
             .iter()
@@ -338,14 +354,8 @@ pub(super) fn project(
             commands.entity(entity).insert(Text::new(value));
         }
         if role.description {
-            let at = rows
-                .iter()
-                .find(|(entity, row, interaction, _, _)| {
-                    row.entry == role.entry
-                        && interaction.get()
-                        && guard.allows(*entity)
-                        && !owner.modal_active()
-                })
+            let at = target
+                .filter(|(_, row, ..)| ready && row.entry == role.entry)
                 .map(|(_, _, _, node, transform)| {
                     (transform.translation + node.size() * Vec2::new(-0.5, 0.5))
                         * node.inverse_scale_factor

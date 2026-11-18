@@ -1,6 +1,6 @@
 //! Compact blessing ownership over the retained 0199 self-only query.
 use super::*;
-use bevy::{picking::hover::Hovered, ui::Pressed, window::PrimaryWindow};
+use bevy::{picking::hover::Hovered, ui_widgets::Activate, window::PrimaryWindow};
 use std::time::Duration;
 
 // Storage keys and names from rulesets/character/blessings/catalogue.json.
@@ -38,12 +38,7 @@ pub(super) fn spawn(app: &mut App) {
         .init_resource::<UiScale>()
         .add_systems(Startup, setup.after(super::setup))
         .add_systems(Update, project_details.after(super::project))
-        .add_systems(
-            Update,
-            (toggle_details, hover, project)
-                .chain()
-                .after(super::project),
-        );
+        .add_systems(Update, (hover, project).chain().after(super::project));
 }
 fn setup(mut commands: Commands, regions: Res<super::super::GameRegions>, skins: Res<Skins>) {
     let icons = commands
@@ -85,6 +80,8 @@ fn setup(mut commands: Commands, regions: Res<super::super::GameRegions>, skins:
                 source::font(skins.font.clone(), false),
             ),
         ))
+        .insert(bevy::picking::Pickable::default())
+        .observe(toggle_details)
         .id();
     let details = commands
         .spawn((
@@ -123,21 +120,24 @@ fn setup(mut commands: Commands, regions: Res<super::super::GameRegions>, skins:
         .insert(TextLayout::default());
 }
 fn toggle_details(
-    mut commands: Commands,
-    buttons: Query<Entity, (With<ToggleDetails>, Added<Pressed>)>,
+    event: On<Activate>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
-    details: Query<(Entity, &Node), With<Details>>,
+    details: Query<Entity, With<Details>>,
+    mut commands: Commands,
 ) {
-    if !owner.modal_active() && buttons.iter().any(|entity| guard.allows(entity)) {
-        for (entity, current) in &details {
-            let mut node = current.clone();
-            node.display = if node.display == Display::None {
-                Display::Flex
-            } else {
-                Display::None
-            };
-            commands.entity(entity).insert(node);
+    if !owner.modal_active() && guard.allows(event.entity) {
+        for entity in &details {
+            commands
+                .entity(entity)
+                .entry::<Node>()
+                .and_modify(|mut node| {
+                    node.display = if node.display == Display::None {
+                        Display::Flex
+                    } else {
+                        Display::None
+                    };
+                });
         }
     }
 }

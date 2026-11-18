@@ -123,6 +123,7 @@ fn choose(
         let value = match field.0 {
             1 => choice.definition.to_string(),
             4 => choice.sub_type.to_string(),
+            5 => String::new(),
             _ => continue,
         };
         text.pending_edits.clear();

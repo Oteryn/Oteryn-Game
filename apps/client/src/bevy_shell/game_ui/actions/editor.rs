@@ -150,6 +150,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         "Text",
         "Keyboard chord",
         "Item subtype (blank: any)",
+        "Equip upgrade tier (0–10 on tiered worlds, otherwise blank)",
     ]
     .into_iter()
     .enumerate()
@@ -287,12 +288,39 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     commands.entity(panel).add_children(&[actions, feedback]);
 }
 
+fn slot_binding(slot: usize) -> Option<crate::play::PreferenceBinding> {
+    let id = format!("local-spell-action-bar-spell-{}", slot + 1);
+    crate::play::preference_bindings()
+        .ok()?
+        .into_iter()
+        .find(|binding| binding.id == id)
+}
+
+pub(super) fn slot_chord<'a>(
+    prefs: &'a crate::play::ReferencePreferences,
+    binding: &'a crate::play::PreferenceBinding,
+    slot: usize,
+    chat_on: bool,
+) -> &'a str {
+    if binding.is_extra_action_bar_slot() {
+        return prefs.binding_chord(binding);
+    }
+    if let Some(chord) = prefs.legacy_action_chord(slot, chat_on) {
+        return chord;
+    }
+    prefs
+        .binding_maps(chat_on)
+        .ok()
+        .and_then(|(primary, _)| primary.get(binding.id))
+        .map_or(binding.default_chord, String::as_str)
+}
+
 fn activate(
     event: On<Activate>,
     guard: ModalGuard,
     edits: Query<&Edit>,
     fields: Query<(Entity, &Field, &EditableText)>,
-    owner: NonSend<HostOwner>,
+    mut owner: NonSendMut<HostOwner>,
     mut state: ResMut<EditorState>,
     mut focus: ResMut<InputFocus>,
 ) {
@@ -352,13 +380,13 @@ fn activate(
         });
         return;
     }
-    let mut values: [String; 5] = Default::default();
+    let mut values: [String; 6] = Default::default();
     for (_, field, text) in &fields {
         if let Some(value) = values.get_mut(field.0) {
             *value = text.value().to_string();
         }
     }
-    let message = apply(&play.link, slot, *action, &values, &mut state.multi);
+    let message = apply(&mut owner, slot, *action, &values, &mut state.multi);
     state.message = message;
 }
 
@@ -396,15 +424,15 @@ pub(super) fn project(
     if state.rendered != state.selected {
         state.pending = None;
         if let Some((slot, _)) = state.selected {
-            let mut values: [String; 5] = Default::default();
-            values[3] = owner
-                .settings
-                .preferences
-                .action_keys
-                .0
-                .get(&slot)
-                .cloned()
-                .unwrap_or_default();
+            let mut values: [String; 6] = Default::default();
+            if let Some(binding) = slot_binding(slot) {
+                let chat_on = owner
+                    .play
+                    .as_ref()
+                    .is_some_and(|play| play.link.preference_chat_open());
+                values[3] =
+                    slot_chord(&owner.settings.preferences, &binding, slot, chat_on).to_owned();
+            }
             match owner.settings.preferences.bar_actions.0.get(&slot) {
                 Some(BarAction::Text { text, .. }) => values[2].clone_from(text),
                 Some(BarAction::Use {
@@ -415,7 +443,20 @@ pub(super) fn project(
                     values[1] = definition.to_string();
                     values[4] = sub_type.map_or_else(String::new, |value| value.to_string());
                 }
-                Some(BarAction::Equip { definition, .. }) => values[1] = definition.to_string(),
+                Some(BarAction::Equip {
+                    definition,
+                    upgrade_tier,
+                }) => {
+                    values[1] = definition.to_string();
+                    if *upgrade_tier != 0
+                        || owner
+                            .play
+                            .as_ref()
+                            .is_some_and(|play| play.link.hotkey_equip_panel().tiered)
+                    {
+                        values[5] = upgrade_tier.to_string();
+                    }
+                }
                 _ => {}
             }
             for (entity, field, mut text) in &mut fields {
@@ -475,7 +516,7 @@ fn keyboard(
     }
 }
 fn finish(
-    owner: NonSend<HostOwner>,
+    mut owner: NonSendMut<HostOwner>,
     guard: ModalGuard,
     mut state: ResMut<EditorState>,
     fields: Query<(&Field, &EditableText)>,
@@ -502,7 +543,7 @@ fn finish(
     {
         return;
     }
-    let mut values: [String; 5] = Default::default();
+    let mut values: [String; 6] = Default::default();
     let mut waiting = false;
     for &(entity, index) in &pending.fields {
         let Ok((field, text)) = fields.get(entity) else {
@@ -521,7 +562,7 @@ fn finish(
         return;
     }
     let message = apply(
-        &play.link,
+        &mut owner,
         pending.selected.0,
         pending.action,
         &values,

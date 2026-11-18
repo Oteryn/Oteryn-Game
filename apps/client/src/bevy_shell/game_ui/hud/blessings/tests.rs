@@ -3,7 +3,7 @@ use crate::{
     combat_input::{CombatCommand, CombatReport},
     play::Stepper,
 };
-use bevy::ui::Pressed;
+use bevy::ui_widgets::Activate;
 use oteryn_client_runtime::{
     cyclopedia_character::{StoreSummary, TabView},
     raw_feature::FeatureCommand,
@@ -164,9 +164,56 @@ fn check_state(app: &mut App, active: bool) -> TestResult {
     );
     Ok(())
 }
+fn pick_ankh(app: &mut App, button: Entity) -> TestResult {
+    use bevy::picking::{
+        backend::{HitData, PointerHits},
+        pointer::{
+            Location, PointerAction, PointerButton, PointerId, PointerInput, PointerLocation,
+        },
+    };
+    let window = app.world_mut().spawn(Window::default()).id();
+    let location = Location {
+        target: bevy::camera::NormalizedRenderTarget::Window(
+            bevy::window::WindowRef::Entity(window)
+                .normalize(None)
+                .ok_or("pointer window")?,
+        ),
+        position: Vec2::ONE,
+    };
+    let pointer = app
+        .world_mut()
+        .spawn((PointerId::Mouse, PointerLocation::new(location.clone())))
+        .id();
+    for action in [
+        PointerAction::Press(PointerButton::Primary),
+        PointerAction::Release(PointerButton::Primary),
+    ] {
+        // Supply the backend hit and let Bevy apply Pickable, track the press, and emit the click.
+        app.world_mut().write_message(PointerHits::new(
+            PointerId::Mouse,
+            vec![(button, HitData::new(window, 0., None, None))],
+            0.,
+        ));
+        app.world_mut().write_message(PointerInput::new(
+            PointerId::Mouse,
+            location.clone(),
+            action,
+        ));
+        app.update();
+    }
+    app.world_mut().despawn(pointer);
+    app.world_mut().despawn(window);
+    Ok(())
+}
+
 #[test]
 fn ankh_opens_ownership_and_penalty_details() -> TestResult {
     run(|app| {
+        app.add_plugins((
+            bevy::picking::PickingPlugin,
+            bevy::picking::InteractionPlugin,
+            bevy::ui_widgets::ButtonPlugin,
+        ));
         let button = app
             .world_mut()
             .query::<(Entity, &super::ToggleDetails)>()
@@ -174,7 +221,7 @@ fn ankh_opens_ownership_and_penalty_details() -> TestResult {
             .next()
             .map(|(entity, _)| entity)
             .ok_or("ankh button")?;
-        app.world_mut().entity_mut(button).insert(Pressed);
+        pick_ankh(app, button)?;
         app.update();
         let (text, node) = app
             .world_mut()
@@ -184,9 +231,8 @@ fn ankh_opens_ownership_and_penalty_details() -> TestResult {
         assert!(text.0.contains("The Spiritual Shielding: missing"));
         assert!(text.0.contains("red or black skulls"));
         assert!(text.0.contains("Exact next-death losses"));
-        app.world_mut().entity_mut(button).remove::<Pressed>();
         app.update();
-        app.world_mut().entity_mut(button).insert(Pressed);
+        app.world_mut().trigger(Activate { entity: button });
         app.update();
         assert_eq!(
             app.world_mut()

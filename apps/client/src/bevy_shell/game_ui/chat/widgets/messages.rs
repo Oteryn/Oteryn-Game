@@ -218,7 +218,6 @@ pub(super) fn message_action(
     guard: ModalGuard,
     mut commands: Commands,
     mut state: ResMut<ChatState>,
-    mut clipboard: ResMut<bevy::clipboard::Clipboard>,
 ) {
     if owner.modal_active() || !guard.allows(event.entity) {
         return;
@@ -230,19 +229,10 @@ pub(super) fn message_action(
     if control.message.generation != owner.generation() {
         return;
     }
-    if control
-        .message
-        .row
-        .line
-        .as_ref()
-        .is_some_and(|line| !play.link.chat_panel().lines.contains(line))
-    {
-        return;
-    }
     let name = control.message.row.target();
     match control.action {
         MessageAction::Copy => {
-            let _ = clipboard.set_text(control.message.row.text.clone());
+            commands.trigger(super::CopyText(control.message.row.text.clone()));
         }
         MessageAction::Private => {
             if let Some(name) = name {

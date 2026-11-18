@@ -31,11 +31,22 @@ fn captioned(app: &mut App, caption: &str) -> Result<Entity, Box<dyn std::error:
 #[test]
 fn assignment_buttons_reach_real_local_owner_and_reserved_key_validation() -> TestResult {
     let (mut app, mut commands) = super::super::tests::fixture()?;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .settings
+        .preferences
+        .rebind("local-spell-action-bar-spell-1", "CTRL+F1")?;
     let generation = app.world().non_send::<HostOwner>().generation();
     app.world_mut()
         .resource_mut::<EditorState>()
         .open(0, generation);
     app.update();
+    assert!(
+        app.world_mut()
+            .query::<(&Field, &EditableText)>()
+            .iter(app.world())
+            .any(|(field, text)| field.0 == 3 && text.value() == "CTRL+F1")
+    );
     set(&mut app, 2, "A real saved greeting");
     let save = control(&mut app, |edit| matches!(edit, Edit::Text))?;
     app.world_mut().trigger(Activate { entity: save });
@@ -71,6 +82,16 @@ fn assignment_buttons_reach_real_local_owner_and_reserved_key_validation() -> Te
     assert_eq!(
         app.world().resource::<EditorState>().message,
         "Saved action assignment"
+    );
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .settings
+            .preferences
+            .keybindings
+            .get("local-spell-action-bar-spell-1")
+            .map(String::as_str),
+        Some("SUPER+ALT+F12")
     );
     let clear = control(&mut app, |edit| matches!(edit, Edit::Clear))?;
     app.world_mut().trigger(Activate { entity: clear });
@@ -690,5 +711,492 @@ fn ninth_row_slot_accepts_an_assignment_through_the_editor() -> TestResult {
             .contains("Ninth row greeting")
     );
     assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn equip_editor_preserves_carried_assignment_tier() -> TestResult {
+    let (mut app, _) = super::super::tests::fixture()?;
+    let (link, _commands, outbox) = crate::play::play_channel();
+    outbox.bevy_hotkey_equip_items(vec![256]);
+    outbox.bevy_equip_capabilities(true);
+    let expected = BarAction::Equip {
+        definition: 256u32.try_into()?,
+        upgrade_tier: 3,
+    };
+    assert!(link.assign_bar_action(0, expected.clone()));
+    let generation = {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.settings.sync_bar_actions(&link);
+        owner.play.as_mut().ok_or("play")?.link = link;
+        owner.generation()
+    };
+    app.world_mut()
+        .resource_mut::<EditorState>()
+        .open(0, generation);
+    app.update();
+    let equip = control(&mut app, |edit| matches!(edit, Edit::Equip))?;
+    app.world_mut().trigger(Activate { entity: equip });
+    let owner = &mut *app.world_mut().non_send_mut::<HostOwner>();
+    owner
+        .settings
+        .sync_bar_actions(&owner.play.as_ref().ok_or("play")?.link);
+    assert_eq!(
+        owner.settings.preferences.bar_actions.0.get(&0),
+        Some(&expected)
+    );
+    let multi = control(&mut app, |edit| matches!(edit, Edit::Multi))?;
+    app.world_mut().trigger(Activate { entity: multi });
+    app.world_mut().trigger(Activate { entity: equip });
+    app.world_mut().trigger(Activate { entity: multi });
+    let owner = &mut *app.world_mut().non_send_mut::<HostOwner>();
+    owner
+        .settings
+        .sync_bar_actions(&owner.play.as_ref().ok_or("play")?.link);
+    assert_eq!(
+        owner.settings.preferences.bar_actions.0.get(&0),
+        Some(&BarAction::Multi {
+            actions: vec![expected]
+        })
+    );
+    Ok(())
+}
+
+#[test]
+fn unchanged_editor_binding_preserves_legacy_action_keys() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let code = KeyCode::new(69)?;
+    let events =
+        [ButtonState::Pressed, ButtonState::Released].map(|state| NormalizedInputEvent::Key {
+            code,
+            state,
+            modifiers: Modifiers::one(Modifier::Super).with(Modifier::Alt),
+            repeat: false,
+        });
+    for slot in 0..4 {
+        let (mut app, mut commands) = super::super::tests::fixture()?;
+        let generation = {
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            owner
+                .settings
+                .preferences
+                .action_keys
+                .0
+                .insert(slot, "SUPER+ALT+F12".into());
+            assert!(owner.play.as_ref().ok_or("play")?.link.spell_bar_bind(&[
+                "71".into(),
+                "72".into(),
+                "73".into(),
+                "74".into()
+            ]));
+            owner.generation()
+        };
+        app.world_mut()
+            .resource_mut::<EditorState>()
+            .open(slot, generation);
+        app.update();
+        assert!(
+            app.world_mut()
+                .query::<(&Field, &EditableText)>()
+                .iter(app.world())
+                .any(|(field, text)| field.0 == 3 && text.value() == "SUPER+ALT+F12")
+        );
+        let key = control(&mut app, |edit| matches!(edit, Edit::Key))?;
+        app.world_mut().trigger(Activate { entity: key });
+        assert_eq!(
+            app.world()
+                .non_send::<HostOwner>()
+                .settings
+                .preferences
+                .action_keys
+                .0
+                .get(&slot)
+                .map(String::as_str),
+            Some("SUPER+ALT+F12")
+        );
+        let close = control(&mut app, |edit| matches!(edit, Edit::Close))?;
+        app.world_mut().trigger(Activate { entity: close });
+        app.update();
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.route_input(&events, false);
+        let play = owner.play.as_mut().ok_or("play")?;
+        assert_eq!(play.view.tick(&play.link), Ok(()));
+        assert!(
+            matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(
+            crate::combat_input::CombatCommand::Cast(id)
+        ) if id.get() == 71 + u32::try_from(slot)?)
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn edited_chord_labels_and_executes_the_same_slot() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (mut app, mut commands) = super::super::tests::fixture()?;
+    let generation = {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner
+            .settings
+            .preferences
+            .rebind("local-spell-action-bar-spell-1", "CTRL+F1")?;
+        owner.settings.preferences.select_hotkey_context(true)?;
+        owner
+            .settings
+            .preferences
+            .rebind("local-spell-action-bar-spell-1", "ALT+F1")?;
+        assert!(
+            !owner
+                .play
+                .as_ref()
+                .ok_or("play")?
+                .link
+                .preference_chat_open()
+        );
+        owner.generation()
+    };
+    app.world_mut()
+        .resource_mut::<EditorState>()
+        .open(0, generation);
+    app.update();
+    set(&mut app, 3, "SUPER+ALT+F12");
+    let key = control(&mut app, |edit| matches!(edit, Edit::Key))?;
+    app.world_mut().trigger(Activate { entity: key });
+    let close = control(&mut app, |edit| matches!(edit, Edit::Close))?;
+    app.world_mut().trigger(Activate { entity: close });
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<(&super::super::SlotHotkey, &Text)>()
+            .iter(app.world())
+            .any(|(slot, text)| slot.0 == 0 && text.0 == "M+A+F12")
+    );
+    {
+        let prefs = &app.world().non_send::<HostOwner>().settings.preferences;
+        assert!(prefs.hotkey_contexts.chat_on);
+        assert_eq!(
+            prefs.binding_chord(&slot_binding(0).ok_or("binding")?),
+            "ALT+F1"
+        );
+    }
+    for (key, modifiers, casts) in [
+        (58, Modifiers::one(Modifier::Control), false),
+        (
+            69,
+            Modifiers::one(Modifier::Super).with(Modifier::Alt),
+            true,
+        ),
+    ] {
+        let code = KeyCode::new(key)?;
+        let events =
+            [ButtonState::Pressed, ButtonState::Released].map(|state| NormalizedInputEvent::Key {
+                code,
+                state,
+                modifiers,
+                repeat: false,
+            });
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.route_input(&events, false);
+        let play = owner.play.as_mut().ok_or("play")?;
+        assert_eq!(play.view.tick(&play.link), Ok(()));
+        assert_eq!(commands.try_recv().ok().is_some_and(|command| matches!(command, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get()==71)), casts);
+        assert!(commands.try_recv().is_err());
+    }
+    Ok(())
+}
+
+#[test]
+fn equip_editor_does_not_assume_tier_zero_on_tiered_worlds() -> TestResult {
+    check_equip_tier(true, "", "3")
+}
+
+#[test]
+fn equip_editor_rejects_explicit_tiers_on_legacy_worlds() -> TestResult {
+    check_equip_tier(false, "3", "")
+}
+
+#[test]
+fn equip_editor_keeps_out_of_range_tiers_out_of_multiaction_drafts() -> TestResult {
+    check_equip_tier(true, "11", "3")
+}
+
+fn check_equip_tier(tiered: bool, bad_tier: &str, good_tier: &str) -> TestResult {
+    let (mut app, _) = super::super::tests::fixture()?;
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    crate::play::PlayLink::bevy_items_fixture(
+        &outbox,
+        Some(oteryn_session::CharacterInventory {
+            entries: vec![oteryn_session::ItemEntry {
+                appearance_id: 0,
+                handle: 9.try_into()?,
+                item_definition_ref: 256.try_into()?,
+                count: 1.try_into()?,
+                sub_type: 0,
+            }],
+            ..Default::default()
+        }),
+        Some(Default::default()),
+        true,
+        true,
+    );
+    outbox.bevy_hotkey_equip_items(vec![256]);
+    outbox.bevy_equip_capabilities(tiered);
+    let generation = {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.play.as_mut().ok_or("play")?.link = link;
+        owner.generation()
+    };
+    app.world_mut()
+        .resource_mut::<EditorState>()
+        .open(0, generation);
+    app.update();
+    let object = captioned(&mut app, "Object 256")?;
+    let equip = control(&mut app, |edit| matches!(edit, Edit::Equip))?;
+    let multi = control(&mut app, |edit| matches!(edit, Edit::Multi))?;
+    let use_item = control(&mut app, |edit| matches!(edit, Edit::Use))?;
+    app.world_mut().trigger(Activate { entity: object });
+    set(&mut app, 5, bad_tier);
+    app.world_mut().trigger(Activate { entity: equip });
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .spell_slot_labels()[0]
+            .contains("Equip"),
+        "tier {bad_tier:?}, tiered {tiered}"
+    );
+    app.world_mut().trigger(Activate { entity: multi });
+    app.world_mut().trigger(Activate { entity: use_item });
+    app.world_mut().trigger(Activate { entity: equip });
+    assert_eq!(
+        app.world()
+            .resource::<EditorState>()
+            .multi
+            .as_ref()
+            .map(Vec::len),
+        Some(1)
+    );
+    set(&mut app, 5, good_tier);
+    app.world_mut().trigger(Activate { entity: equip });
+    app.world_mut().trigger(Activate { entity: multi });
+    assert_eq!(
+        app.world().resource::<EditorState>().message,
+        "Multiaction saved"
+    );
+    {
+        let owner = &mut *app.world_mut().non_send_mut::<HostOwner>();
+        owner
+            .settings
+            .sync_bar_actions(&owner.play.as_ref().ok_or("play")?.link);
+    }
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .settings
+            .preferences
+            .bar_actions
+            .0
+            .get(&0),
+        Some(&BarAction::Multi {
+            actions: vec![
+                BarAction::Use {
+                    definition: 256u32.try_into()?,
+                    sub_type: Some(0),
+                    mode: ItemUseMode::Use,
+                },
+                BarAction::Equip {
+                    definition: 256u32.try_into()?,
+                    upgrade_tier: if tiered { 3 } else { 0 },
+                },
+            ],
+        })
+    );
+    app.world_mut().trigger(Activate { entity: equip });
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .cast_spell_slot(std::num::NonZeroU32::MIN);
+    let mut payload = vec![0, 0, 1, 0];
+    if tiered {
+        payload.push(3);
+    }
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::ServerMechanic(cmd)
+            if cmd.command_type == 348 && cmd.payload == payload)
+    );
+    Ok(())
+}
+
+#[test]
+fn saved_equip_does_not_send_a_legacy_request_after_reconnect() -> TestResult {
+    check_saved_equip_on_legacy_world(LegacyEquipCase::Single)
+}
+
+#[test]
+fn saved_multiaction_equip_does_not_send_a_legacy_request_after_reconnect() -> TestResult {
+    check_saved_equip_on_legacy_world(LegacyEquipCase::Multi)
+}
+
+#[test]
+fn reopened_multiaction_with_unsupported_equip_tier_cannot_be_saved() -> TestResult {
+    check_saved_equip_on_legacy_world(LegacyEquipCase::ReopenMulti)
+}
+
+#[test]
+fn saved_multiaction_dispatches_ready_equip_after_unsupported_tier_on_reconnect() -> TestResult {
+    check_saved_equip_on_legacy_world(LegacyEquipCase::MultiWithFallback)
+}
+
+enum LegacyEquipCase {
+    Single,
+    Multi,
+    MultiWithFallback,
+    ReopenMulti,
+}
+
+fn check_saved_equip_on_legacy_world(case: LegacyEquipCase) -> TestResult {
+    let (mut app, _) = super::super::tests::fixture()?;
+    let (tiered, _, tiered_outbox) = crate::play::play_channel();
+    tiered_outbox.bevy_equip_capabilities(true);
+    tiered_outbox.bevy_hotkey_equip_items(vec![256, 257]);
+    let equip = BarAction::Equip {
+        definition: 256u32.try_into()?,
+        upgrade_tier: 3,
+    };
+    let action = match case {
+        LegacyEquipCase::Single => equip,
+        LegacyEquipCase::Multi | LegacyEquipCase::ReopenMulti => BarAction::Multi {
+            actions: vec![equip],
+        },
+        LegacyEquipCase::MultiWithFallback => BarAction::Multi {
+            actions: vec![
+                equip,
+                BarAction::Equip {
+                    definition: 257u32.try_into()?,
+                    upgrade_tier: 0,
+                },
+            ],
+        },
+    };
+    assert!(tiered.assign_bar_action(0, action.clone()));
+    let (legacy, mut commands, legacy_outbox) = crate::play::play_channel();
+    legacy_outbox.bevy_equip_capabilities(false);
+    legacy_outbox.bevy_hotkey_equip_items(vec![256, 257]);
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.settings.sync_bar_actions(&tiered);
+        assert_eq!(
+            owner.settings.preferences.bar_actions.0.get(&0),
+            Some(&action)
+        );
+        owner.settings.sync_bar_actions(&legacy);
+        owner.play.as_mut().ok_or("play")?.link = legacy;
+    }
+    let slot = super::super::tests::slot(&mut app, 0)?;
+    if matches!(case, LegacyEquipCase::ReopenMulti) {
+        let generation = app.world().non_send::<HostOwner>().generation();
+        app.world_mut()
+            .resource_mut::<EditorState>()
+            .open(0, generation);
+        app.update();
+        let toggle = control(&mut app, |edit| matches!(edit, Edit::Multi))?;
+        app.world_mut().trigger(Activate { entity: toggle });
+        app.world_mut().trigger(Activate { entity: toggle });
+        let editor = app.world().resource::<EditorState>();
+        assert_ne!(editor.message, "Multiaction saved");
+        assert!(editor.multi.is_some(), "refused save must keep the draft");
+    } else {
+        app.world_mut().trigger(Activate { entity: slot });
+        if matches!(case, LegacyEquipCase::MultiWithFallback) {
+            assert!(
+                matches!(commands.try_recv()?, crate::combat_input::PlayCommand::ServerMechanic(cmd)
+                    if cmd.command_type == 348 && cmd.payload == [0, 0, 1, 1])
+            );
+        }
+        assert!(
+            commands.try_recv().is_err(),
+            "unexpected legacy Equip sent from {action:?}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn unchanged_chat_on_binding_preserves_chat_off_shortcut() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+
+    let (mut app, mut commands) = super::super::tests::fixture()?;
+    let generation = {
+        let owner = &mut *app.world_mut().non_send_mut::<HostOwner>();
+        let prefs = &mut owner.settings.preferences;
+        prefs.select_hotkey_context(true)?;
+        prefs.rebind("local-spell-action-bar-spell-1", "ALT+F1")?;
+        prefs.action_keys.0.insert(0, "SHIFT+K".into());
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        owner.settings.sync_bar_actions(link);
+        link.chat_set_mode(oteryn_client_ui::chat::ComposerMode::On);
+        link.open_chat();
+        assert!(link.preference_chat_open());
+        owner.generation()
+    };
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<(&super::super::SlotHotkey, &Text)>()
+            .iter(app.world())
+            .any(|(slot, text)| slot.0 == 0 && text.0 == "A+F1")
+    );
+    app.world_mut()
+        .resource_mut::<EditorState>()
+        .open(0, generation);
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<(&Field, &EditableText)>()
+            .iter(app.world())
+            .any(|(field, text)| field.0 == 3 && text.value() == "ALT+F1")
+    );
+    let bind = captioned(&mut app, "Bind key")?;
+    app.world_mut().trigger(Activate { entity: bind });
+    assert_eq!(
+        app.world().resource::<EditorState>().message,
+        "Saved action assignment"
+    );
+    let close = control(&mut app, |edit| matches!(edit, Edit::Close))?;
+    app.world_mut().trigger(Activate { entity: close });
+    app.update();
+
+    use oteryn_client_ui::chat::ComposerMode::{Off, On};
+    for (mode, key, modifier, casts) in [
+        (On, 14, Modifier::Shift, false),
+        (On, 58, Modifier::Alt, true),
+        (Off, 14, Modifier::Shift, true),
+    ] {
+        let code = KeyCode::new(key)?;
+        let events =
+            [ButtonState::Pressed, ButtonState::Released].map(|state| NormalizedInputEvent::Key {
+                code,
+                state,
+                modifiers: Modifiers::one(modifier),
+                repeat: false,
+            });
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.play.as_ref().ok_or("play")?.link.chat_set_mode(mode);
+        owner.route_input(&events, false);
+        let play = owner.play.as_mut().ok_or("play")?;
+        assert_eq!(play.view.tick(&play.link), Ok(()));
+        if casts {
+            assert!(matches!(commands.try_recv()?,
+                crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id))
+                    if id.get() == 71));
+        }
+        assert!(commands.try_recv().is_err());
+    }
     Ok(())
 }

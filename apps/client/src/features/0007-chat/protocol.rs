@@ -18,3 +18,11 @@ pub(crate) fn bevy_chat_fixture(
     outbox.chat_initialize(true);
     outbox.chat_public_state(rooms, lines);
 }
+
+#[cfg(all(test, bevy_shell))]
+pub(crate) fn edit_chat_fixture(
+    link: &crate::play::PlayLink,
+    edit: impl FnOnce(&mut oteryn_client_ui::chat::ChatPanel),
+) {
+    edit(&mut lock(&link.mailbox).chat);
+}

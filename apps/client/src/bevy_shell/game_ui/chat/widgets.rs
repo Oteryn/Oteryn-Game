@@ -30,7 +30,17 @@ use bevy::input_focus::tab_navigation::{TabGroup, TabIndex};
 use bevy::text::TextCursorStyle;
 use bevy::ui_widgets::{ScrollArea, TextInput};
 
+#[derive(Event)]
+pub(super) struct CopyText(pub(super) String);
+
 pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Res<Skins>) {
+    commands.add_observer(
+        |request: On<CopyText>, clipboard: Option<ResMut<bevy::clipboard::Clipboard>>| {
+            if let Some(mut clipboard) = clipboard {
+                let _ = clipboard.set_text(request.0.clone());
+            }
+        },
+    );
     let root = commands
         .spawn((
             ChatRoot,

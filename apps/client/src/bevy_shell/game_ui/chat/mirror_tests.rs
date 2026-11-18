@@ -18,7 +18,7 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 fn console_app(
     rooms: ChatRoomSet,
     lines: Vec<ChatLine>,
-) -> Result<App, Box<dyn std::error::Error>> {
+) -> Result<(App, crate::play::Outbox), Box<dyn std::error::Error>> {
     let (link, _, outbox) = play_channel();
     crate::play::feature_0007_chat::protocol::bevy_chat_fixture(&outbox, rooms, lines);
     let mut owner = HostOwner::new(None)?;
@@ -44,7 +44,7 @@ fn console_app(
         .single_mut(app.world_mut())?
         .display = Display::Flex;
     app.update();
-    Ok(app)
+    Ok((app, outbox))
 }
 fn with_link(app: &mut App, action: impl FnOnce(&crate::play::PlayLink)) -> TestResult {
     {
@@ -57,6 +57,11 @@ fn with_link(app: &mut App, action: impl FnOnce(&crate::play::PlayLink)) -> Test
 }
 /// Right-clicks the transcript row holding `message` and picks `label` from its menu.
 fn menu(app: &mut App, message: &str, label: &str) -> TestResult {
+    open_menu(app, message)?;
+    choose(app, label)
+}
+
+fn open_menu(app: &mut App, message: &str) -> TestResult {
     let row = app
         .world_mut()
         .query::<(Entity, &EditableText, &TextReadWriteMode)>()
@@ -84,6 +89,10 @@ fn menu(app: &mut App, message: &str, label: &str) -> TestResult {
         count: 1,
     });
     app.update();
+    Ok(())
+}
+
+fn choose(app: &mut App, label: &str) -> TestResult {
     let entity = app
         .world_mut()
         .query::<(&Text, &ChildOf)>()
@@ -118,7 +127,7 @@ fn panes(app: &mut App) -> Result<(Display, String, Val), Box<dyn std::error::Er
 
 #[test]
 fn mirrored_conversation_keeps_its_partner_shares_the_console_and_closes_with_it() -> TestResult {
-    let mut app = console_app(
+    let (mut app, _) = console_app(
         ChatRoomSet::default(),
         vec![
             ChatLine::Private {
@@ -170,7 +179,7 @@ fn mirrored_conversation_keeps_its_partner_shares_the_console_and_closes_with_it
 fn mirrored_public_channel_shows_its_own_messages() -> TestResult {
     let mut rooms = ChatRoomSet::default();
     rooms.insert(ChatRoom::Help);
-    let mut app = console_app(
+    let (mut app, _) = console_app(
         rooms,
         vec![
             ChatLine::Room {
@@ -208,37 +217,32 @@ fn mirrored_public_channel_shows_its_own_messages() -> TestResult {
 
 #[test]
 fn outgoing_message_menu_opens_recipient_and_copies_one_multiline_notice() -> TestResult {
-    use bevy::ecs::system::RunSystemOnce;
-    use oteryn_client_ui::chat::{ChannelTab, ChatPanel, NoticeClass};
+    use crate::play::feature_0007_chat::protocol::edit_chat_fixture;
+    use oteryn_client_ui::chat::{ChannelTab, NoticeClass};
     let line = ChatLine::Private {
         speaker_name: "Alice".into(),
         text: "outgoing hello".into(),
     };
-    let mut app = console_app(ChatRoomSet::default(), vec![line.clone()])?;
-    let mut panel = ChatPanel {
-        lines: vec![line],
-        recipients: vec![Some("Bob".into())],
-        ..default()
-    };
-    let mut rows = widgets::transcript_rows(&panel);
-    panel.console.current = Some(ChannelTab::Loot);
-    panel.console.display.time = false;
-    panel
-        .console
-        .notices
-        .push(NoticeClass::Loot, "gold\n[Loot] still gold", 0);
-    panel.console.notices.push(NoticeClass::Loot, "silver", 1);
-    rows.extend(widgets::transcript_rows(&panel));
-    app.world_mut()
-        .run_system_once(
-            move |mut commands: Commands, skins: Res<Skins>, owner: NonSend<HostOwner>| {
-                for row in &rows {
-                    widgets::message_row(&mut commands, &skins, owner.generation(), row);
-                }
-            },
-        )
-        .map_err(|error| error.to_string())?;
-    menu(&mut app, "To Bob", "Message to Bob")?;
+    let (mut app, _) = console_app(ChatRoomSet::default(), vec![line])?;
+    with_link(&mut app, |link| {
+        edit_chat_fixture(link, |panel| {
+            panel.recipients = vec![Some("Bob".into())];
+            panel.console.display.time = false;
+            panel
+                .console
+                .notices
+                .push(NoticeClass::Loot, "gold\n[Loot] still gold", 0);
+            panel.console.notices.push(NoticeClass::Loot, "silver", 1);
+        })
+    })?;
+    open_menu(&mut app, "To Bob")?;
+    with_link(&mut app, |link| {
+        edit_chat_fixture(link, |panel| {
+            panel.lines.clear();
+            panel.recipients.clear();
+        })
+    })?;
+    choose(&mut app, "Message to Bob")?;
     let owner = app.world().non_send::<HostOwner>();
     assert_eq!(
         owner
@@ -251,16 +255,58 @@ fn outgoing_message_menu_opens_recipient_and_copies_one_multiline_notice() -> Te
             .current,
         Some(ChannelTab::Conversation("Bob".into()))
     );
-    app.world_mut()
-        .resource_mut::<bevy::clipboard::Clipboard>()
-        .set_text("before Copy Message")?;
+    with_link(&mut app, |link| {
+        edit_chat_fixture(link, |panel| {
+            panel.console.current = Some(ChannelTab::Loot);
+        })
+    })?;
+    capture_copy(&mut app);
     menu(&mut app, "still gold", "Copy Message")?;
-    let copied = app
+    assert_eq!(
+        app.world().resource::<Copied>().0,
+        "[Loot] gold\n[Loot] still gold\n"
+    );
+    Ok(())
+}
+
+#[derive(Resource)]
+struct Copied(String);
+
+fn capture_copy(app: &mut App) {
+    app.world_mut()
+        .remove_resource::<bevy::clipboard::Clipboard>();
+    app.insert_resource(Copied("before Copy Message".into()))
+        .add_observer(
+            |request: On<widgets::CopyText>, mut copied: ResMut<Copied>| {
+                copied.0.clone_from(&request.0);
+            },
+        );
+}
+
+#[test]
+fn copy_speech_after_history_evicts_its_source() -> TestResult {
+    let speech = |index| ChatLine::Private {
+        speaker_name: "Alice".into(),
+        text: format!("message {index}."),
+    };
+    let (mut app, outbox) = console_app(ChatRoomSet::default(), (0..64).map(speech).collect())?;
+    capture_copy(&mut app);
+    let displayed = app
         .world_mut()
-        .resource_mut::<bevy::clipboard::Clipboard>()
-        .fetch_text()
-        .poll_result()
-        .ok_or("clipboard pending")??;
-    assert_eq!(copied, "[Loot] gold\n[Loot] still gold\n");
+        .query::<&EditableText>()
+        .iter(app.world())
+        .map(|row| row.value().to_string())
+        .find(|text| text.contains("message 0."))
+        .ok_or("first speech row")?;
+    open_menu(&mut app, "message 0.")?;
+    crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+        &outbox,
+        ChatRoomSet::default(),
+        (1..=64).map(speech).collect(),
+    );
+    app.update();
+    choose(&mut app, "Copy Message")?;
+    assert_eq!(app.world().resource::<Copied>().0, displayed);
+    assert!(app.world().resource::<ChatState>().menu.is_none());
     Ok(())
 }
