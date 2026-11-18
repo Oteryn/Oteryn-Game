@@ -1,6 +1,8 @@
 //! Crystal 201189f8 data-global/scripts/quests/elemental_spheres/actions_machine1.lua:2-37.
-use super::fixture::{Harness, debug};
+use super::fixture::{Harness, debug, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use crate::foundation::{ExactActorRef, GameSessionId};
+use crate::gameplay_transport::connection::UseCommand;
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
@@ -142,6 +144,75 @@ fn catalogue(revision: &str, funded: &Callback, initial: i64) -> TestResult<Ques
     Ok(authored.attach(&base)?)
 }
 
+async fn other_operator(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    funded: &Callback,
+) -> TestResult<(ExactActorRef, GameSessionId)> {
+    let mut callbacks = owner
+        .quest_catalogue
+        .as_ref()
+        .and_then(|catalogue| catalogue.authored_world_callbacks())
+        .ok_or("sphere bindings")?
+        .to_vec();
+    let mut right = funded.clone();
+    right.selector.position = Some(RIGHT);
+    right.requires_world_admission = false;
+    right.storage.clear();
+    right.effects.vocation_teleports.clear();
+    right.effects.teleport_effect = None;
+    right.effects.teleport_effect_repetitions = None;
+    right.passages[0].position = LEFT;
+    // This player operates the right half without a debit or destination.
+    for (before, after, left_before, left_after) in [(843, 847, 842, 846), (847, 843, 846, 842)] {
+        right.key = format!("oteryn:quest-callback/qespike/sphere-machine-right-{before}");
+        right.selector.appearance = Some(before);
+        right.effects.transform = Some(after);
+        right.passages[0].appearance = left_before;
+        right.passages[0].replacement = Some(left_after);
+        callbacks.push(right.clone());
+    }
+    owner
+        .states
+        .quest_callbacks
+        .fixture
+        .set(callbacks)
+        .map_err(|_| "sphere map bindings")?;
+    let session = GameSessionId::decode(&id(51)).map_err(debug)?;
+    let mut runtime = owner.runtime.lock().await;
+    let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+    let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+    runtime
+        .initialize_pinned_test_position(actor, super::quest_world_callbacks::local(RIGHT))
+        .map_err(debug)?;
+    Ok((actor, session))
+}
+
+async fn use_right_half(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    (actor, session): (ExactActorRef, GameSessionId),
+    command_id: u64,
+    key: u64,
+) -> TestResult<UseDisposition> {
+    let map = owner.bundle_map().ok_or("sphere map")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let outcome = owner
+        .use_world_object(
+            actor,
+            UseCommand {
+                game_session_id: session,
+                command_id,
+                item_fence: None,
+            },
+            WorldObjectTarget {
+                placement,
+                expected_revision: map.facts.object_revision(key),
+            },
+        )
+        .await;
+    Ok(outcome.disposition)
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -158,6 +229,11 @@ pub(super) async fn exercise(
     let lost_ack = scenario == LOST_ACK;
     let initial = if funded { 24 } else { 19 };
     owner.quest_catalogue = Some(Arc::new(catalogue(revision, callback, initial)?));
+    let other = if lost_ack {
+        Some(other_operator(owner, callback).await?)
+    } else {
+        None
+    };
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
@@ -219,7 +295,7 @@ pub(super) async fn exercise(
         .map_err(debug)?
         .position();
     let command = admitted.continuity.next_command_id;
-    if lost_ack {
+    if let Some(other) = other {
         owner
             .states
             .quest_callbacks
@@ -239,6 +315,11 @@ pub(super) async fn exercise(
         assert_eq!(balance(h).await?, Some(4));
         assert_eq!(object(LEFT, 842)?, left);
         assert_eq!(object(RIGHT, 843)?, right);
+        assert_eq!(
+            use_right_half(owner, other, 1, right).await?,
+            UseDisposition::Exhausted,
+            "the uncertain debit reserves both halves for its original command"
+        );
         assert_eq!(
             owner
                 .runtime
@@ -317,6 +398,17 @@ pub(super) async fn exercise(
         assert_eq!(balance, Some(4));
     } else {
         assert_eq!(balance.unwrap_or(initial), 19);
+    }
+    if let Some(other) = other {
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_millis(201))
+            .ok_or("clock")?;
+        assert_eq!(
+            use_right_half(owner, other, 2, right).await?,
+            UseDisposition::Committed,
+            "reconciliation releases the opposite half"
+        );
     }
     Ok(())
 }

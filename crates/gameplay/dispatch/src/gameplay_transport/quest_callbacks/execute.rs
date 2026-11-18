@@ -483,6 +483,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 entries.first().map(|entry| entry.key)
             }
+            // Crystal actions_machine1.lua:19-27 transforms the other half
+            // in the same USE. Reserve it until any committed debit publishes.
+            None if callback.effects.transform_requires_current => match replacements.as_slice() {
+                [(key, _, _)] => Some(*key),
+                _ => None,
+            },
             _ => None,
         };
         if let Some(target) = projection_target
