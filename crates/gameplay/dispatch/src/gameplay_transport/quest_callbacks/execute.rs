@@ -905,10 +905,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             match self.prepare_party_transfer(runtime, states, &closed, callback, session) {
                 Ok(plan) => Some(plan),
                 Err(refusal)
-                    if party
-                        .stations
-                        .iter()
-                        .any(|station| station.carried_item.is_some()) =>
+                    if party.vacant_room.is_some()
+                        || party.initiator_at.is_some()
+                        || party
+                            .stations
+                            .iter()
+                            .any(|station| station.carried_item.is_some()) =>
                 {
                     return refusal;
                 }

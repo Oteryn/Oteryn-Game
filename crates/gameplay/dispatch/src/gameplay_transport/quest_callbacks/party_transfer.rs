@@ -35,6 +35,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let census = runtime
             .positioned_melee_census()
             .map_err(|_| UseDisposition::Rejected)?;
+        if let Some(at) = party.initiator_at
+            && !census.iter().any(|(_, position, session)| {
+                *session == Some(initiator) && position.position() == local(at)
+            })
+        {
+            return Err(UseDisposition::NotPossible);
+        }
+        if let Some([min, max]) = party.vacant_room {
+            let (min, max) = (local(min), local(max));
+            if census.iter().any(|(_, snapshot, session)| {
+                let at = snapshot.position();
+                session.is_some()
+                    && at.floor == min.floor
+                    && (min.x..=max.x).contains(&at.x)
+                    && (min.y..=max.y).contains(&at.y)
+            }) {
+                return Err(UseDisposition::Occupied);
+            }
+        }
         let mut members = Vec::new();
         let mut proofs = Vec::new();
         for station in &party.stations {

@@ -334,6 +334,12 @@ pub struct PartyTransfer {
     /// Run the rite only after the lever changes to this source appearance.
     pub activation_appearance: u16,
     pub stations: Vec<PartyStation>,
+    /// Admission is exclusive while any player occupies these room bounds.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vacant_room: Option<[Position; 2]>,
+    /// Exact starting tile of the player using the admission lever.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub initiator_at: Option<Position>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -377,6 +383,24 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
         && callback.effects.transform.is_none()
         && callback.effects.facing.is_none()
         && callback.effects.magic.is_none()
+        && party
+            .initiator_at
+            .is_none_or(|at| party.stations.iter().any(|station| station.from == at))
+        && party.vacant_room.is_none_or(|[min, max]| {
+            pos(min)
+                && pos(max)
+                && min.floor == max.floor
+                && min.x <= max.x
+                && min.y <= max.y
+                && party.stations.iter().all(|station| {
+                    let inside = |p: Position| {
+                        p.floor == min.floor
+                            && (min.x..=max.x).contains(&p.x)
+                            && (min.y..=max.y).contains(&p.y)
+                    };
+                    inside(station.to) && !inside(station.from)
+                })
+        })
         && (1..=8).contains(&party.stations.len())
         && unique(party.stations.iter().map(|s| s.from).collect())
         && unique(party.stations.iter().map(|s| s.to).collect())
@@ -399,7 +423,9 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
                                 .count()
                                 == 1
                     }
-                    (None, Some(item)) => item.starts_with("oteryn:item."),
+                    (None, Some(item)) => {
+                        item.starts_with("oteryn:item.") && super::super::valid_quest_key(item)
+                    }
                     _ => false,
                 }
         })
@@ -951,6 +977,30 @@ mod reward_door_tests {
 #[cfg(test)]
 mod party_transfer_tests {
     use super::*;
+
+    #[test]
+    fn party_transfer_room_admission_requires_valid_bounds_and_station() -> Result<(), String> {
+        let mut callback = super::super::load()?
+            .into_iter()
+            .find(|row| row.key.ends_with("desert-dungeon-party-rite"))
+            .ok_or("source rite")?;
+        let party = callback.effects.party_transfer.as_mut().ok_or("party")?;
+        let station = &party.stations[0];
+        let departure = station.from;
+        let destination = station.to;
+        party.initiator_at = Some(departure);
+        assert!(valid(&callback));
+
+        let party = callback.effects.party_transfer.as_mut().ok_or("party")?;
+        party.initiator_at = Some(destination);
+        assert!(!valid(&callback));
+
+        let party = callback.effects.party_transfer.as_mut().ok_or("party")?;
+        party.initiator_at = Some(departure);
+        party.vacant_room = Some([destination; 2]);
+        assert!(!valid(&callback), "remaining landings lie outside the room");
+        Ok(())
+    }
 
     #[test]
     fn party_transfer_carried_stations_replace_ground_offerings() -> Result<(), String> {
