@@ -43,7 +43,7 @@ fn spawnsum_shulgrax_use_checks_flowers_and_grants_individual_timed_access() -> 
                 h.cleanup().await?;
                 result
             })
-            .map_err(debug)
+            .map_err(|error| error.to_string())
         })?
         .join()
         .map_err(|_| "Shulgrax PG test panicked")?;
@@ -106,7 +106,6 @@ async fn exercise(h: &Harness) -> TestResult {
         deps.admitted.world_id,
         deps.admitted.channel_id,
         NodeId::decode(&id(1)).map_err(debug)?,
-        1,
         1,
         1,
         1,
