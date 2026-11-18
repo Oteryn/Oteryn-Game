@@ -97,9 +97,9 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         else {
             return;
         };
-        let Ok(wire::BossActivityReply::Refused(reason)) = wire::decode_boss_activity_reply(&reply)
-        else {
-            return;
+        let reason = match wire::decode_boss_activity_reply(&reply) {
+            Ok(wire::BossActivityReply::Refused(reason)) => reason,
+            _ => wire::BossActivityRefusal::AuthorityRejected,
         };
         // A refusal sends the exact mover back to the cell they entered from.
         let Some(_permit) = self.spell_lane_permit().await else {
@@ -455,9 +455,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     continue;
                 }
 
-                let mut occupants = census.iter().filter(|(_, position, session)| {
+                let mut occupants = census.iter().filter(|(member, position, session)| {
                     let cell = position.position();
-                    session.is_some()
+                    (!source_step || *member == actor)
+                        && session.is_some()
                         && (cell.x, cell.y, cell.floor)
                             == (lever_cell.x, lever_cell.y, lever_cell.floor)
                 });
