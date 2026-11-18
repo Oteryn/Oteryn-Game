@@ -13,7 +13,7 @@ use crate::map::{
     view::{MapFacts, placement_key},
 };
 use oteryn_gameplay_quests::quest::{
-    isle_of_evil,
+    QuestStateCatalogue, QuestTrack, isle_of_evil,
     world_callbacks::{Callback, Offering, Position},
 };
 use oteryn_protocol_oteryn::{
@@ -37,6 +37,15 @@ const LANDING: Position = Position { x: 32792, ..GATE };
 const HOLY_TIBLE: &str = "oteryn:item.tibia.i2836";
 const ISLE_REFUSAL: &str = "You better talk to Rapanaio before leave the safety of the ship!";
 const ISLE_ADMITTED: &str = "You hear evil laughter from afar.";
+const SCOUT_POINTS: &str = "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/points";
+const DANGEROUS_DEPTHS: &str = "oteryn:quest.dangerous_depths_quest";
+const WARZONE_ACCESS: [&str; 3] = [
+    "oteryn:quest-progress/quest/u9_60/bigfoots_burden/warzone1_access",
+    "oteryn:quest-progress/quest/u9_60/bigfoots_burden/warzone2_access",
+    "oteryn:quest-progress/quest/u9_60/bigfoots_burden/warzone3_access",
+];
+const NEW_FRONTIER_08: &str = "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08";
+const WRATH_11: &str = "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission11";
 const VISITOR: &str = "oteryn:quest-progress/quest/u9_4/liquid_black_quest/visitor";
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -47,6 +56,8 @@ pub(super) enum Case {
     Carried,
     Door,
     Isle { travel: bool },
+    Warzone { access: bool },
+    Bounac,
     Level,
     Premium,
     Occupied,
@@ -58,15 +69,31 @@ pub(super) enum Case {
 
 impl Case {
     fn is_use(self) -> bool {
-        matches!(self, Self::CalendarUse | Self::PvpLock | Self::Door)
+        matches!(self, Self::CalendarUse | Self::PvpLock | Self::Door | Self::Bounac)
     }
 
     pub(super) fn callback(self, source: Position) -> TestResult<Callback> {
         let predicate = match self {
             // Inquisition movements_entrance.lua:1-32, any exact throne value.
-            Self::Storage | Self::Door => json!({"kind":"any","predicates":[
+            Self::Storage => json!({"kind":"any","predicates":[
                 {"kind":"storage","range":{"source":{"kind":"track","track":VISITOR},"minimum":1,"maximum":1}},
                 {"kind":"storage","range":{"source":{"kind":"track","track":VISITOR},"minimum":10,"maximum":10}}
+            ]}),
+            // Zalamon actions_zalamon_door.lua:5-17 reads both owning quests.
+            Self::Door => json!({"kind":"all","predicates":[
+                storage_range(NEW_FRONTIER_08, 2, i64::MAX),
+                storage_range(WRATH_11, i64::MIN, 1)
+            ]}),
+            // Dangerous Depths movements_energy_entrance.lua:18-29 lowers the
+            // Scouts threshold to exactly ten with all three access flags.
+            Self::Warzone { .. } => json!({"kind":"any","predicates":[
+                storage_range(SCOUT_POINTS, 15, i64::MAX),
+                {"kind":"all","predicates":[
+                    storage_range(SCOUT_POINTS, 10, i64::MAX),
+                    storage_range(WARZONE_ACCESS[0], 1, 1),
+                    storage_range(WARZONE_ACCESS[1], 1, 1),
+                    storage_range(WARZONE_ACCESS[2], 1, 1)
+                ]}
             ]}),
             // Isle of Evil movements_isle_enter.lua:18-24. Either native writer
             // is sufficient, and admission leaves the player on the gangway.
@@ -89,7 +116,8 @@ impl Case {
             // Pits of Inferno movements_holy_tible_tile.lua:14-20.
             Self::Carried => json!({"kind":"carried","item":HOLY_TIBLE,"count":1}),
             // Feaster of Souls actions_entrances.lua:17-33.
-            Self::Level => json!({"kind":"level","minimum":250}),
+            // Bounac action-bounac_entrance.lua:2-10 uses the same threshold on USE.
+            Self::Level | Self::Bounac => json!({"kind":"level","minimum":250}),
             // Spike movements_spike_teleport.lua:35-46.
             Self::Premium => json!({"kind":"premium"}),
             // Demon Oak movements_entrance.lua:21-44, only players count.
@@ -117,18 +145,38 @@ impl Case {
             "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_holy_tible_tile.lua:14-20"]
         });
         if self == Self::Stair {
+            row["selector"]["position"] = serde_json::Value::Null;
             row["selector"]["appearance"] = json!(293);
+            row["selector"]["native"] = json!({
+                "position": source, "ordinal": 1, "appearance": 293
+            });
             row["effects"]["conditional_entrance"] = json!({
                 "guards":[], "intercept_teleport":true
             });
         }
         if self == Self::Door {
             // Zalamon actions_zalamon_door.lua:5-17, exact UID and transform.
+            row["sources"] = json!(["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/actions_zalamon_door.lua:5-17"]);
             row["selector"]["appearance"] = json!(9874);
             row["selector"]["unique"] = json!(3170);
             row["teleport"] = serde_json::Value::Null;
             row["effects"]["transform"] = json!(9875);
             row["effects"]["conditional_entrance"]["teleport_to_source"] = json!(true);
+        }
+        if self == Self::Bounac {
+            row["quest"] = json!("oteryn:quest.the_order_of_the_lion_quest");
+            row["selector"]["action"] = json!(59602);
+            row["sources"] = json!(["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action-bounac_entrance.lua:2-10"]);
+            row["effects"]["conditional_entrance"]["guards"][0]["refusal"] =
+                json!({"message":"You need at least level 250.","message_kind":"status","effect":3,"effect_at":"source"});
+        }
+        if matches!(self, Self::Warzone { .. }) {
+            row["quest"] = json!(DANGEROUS_DEPTHS);
+            row["sources"] = json!(["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_energy_entrance.lua:18-29"]);
+            row["effects"]["conditional_entrance"]["guards"][0]["refusal"]["message"] =
+                json!("You can not use this portal yet.");
+            row["effects"]["conditional_entrance"]["guards"][0]["refusal"]["push_back"] =
+                json!({"kind":"from","dx":0,"dy":1});
         }
         if matches!(self, Self::Isle { .. }) {
             row["quest"] = json!(isle_of_evil::QUEST);
@@ -166,6 +214,34 @@ impl Case {
         if self == Self::Stair {
             assert!(self.attempt(owner, admitted, callback, 1).await?);
             return Ok(());
+        }
+        if let Self::Warzone { access } = self {
+            let current = owner.quest_catalogue.as_deref().ok_or("quest catalogue")?;
+            let mut tracks = WARZONE_ACCESS
+                .iter()
+                .map(|key| current.track(key).cloned().ok_or("native Warzone track"))
+                .collect::<Result<Vec<_>, _>>()?;
+            tracks.push(QuestTrack {
+                key: SCOUT_POINTS.into(),
+                quest: DANGEROUS_DEPTHS.into(),
+                initial: -1,
+                min: -1,
+                max: i64::from(i32::MAX),
+            });
+            owner.quest_catalogue = Some(std::sync::Arc::new(QuestStateCatalogue::new(
+                current.content_revision().to_owned(),
+                tracks,
+                Vec::new(),
+            ).map_err(debug)?));
+            for flag in &WARZONE_ACCESS[..2] {
+                set_fixture_track(owner, h, fence, flag, 1).await?;
+            }
+            // Fourteen is insufficient without all three flags. Nine remains
+            // insufficient with all three and then succeeds at ten.
+            if access {
+                set_fixture_track(owner, h, fence, WARZONE_ACCESS[2], 1).await?;
+            }
+            set_fixture_track(owner, h, fence, SCOUT_POINTS, if access { 9 } else { 14 }).await?;
         }
         let occupant = if self == Self::Occupied {
             let mut runtime = owner.runtime.lock().await;
@@ -213,6 +289,16 @@ impl Case {
 
         let attempted = self.attempt(owner, admitted, callback, 1).await?;
         assert!(!attempted);
+        let warzone = matches!(self, Self::Warzone { .. });
+        let refusal_position = if warzone {
+            local(Position {
+                x: GATE.x - 1,
+                y: GATE.y + 1,
+                ..GATE
+            })
+        } else {
+            origin
+        };
         assert_eq!(
             owner
                 .runtime
@@ -221,7 +307,7 @@ impl Case {
                 .read_actor_position(actor)
                 .map_err(debug)?
                 .position(),
-            origin
+            refusal_position
         );
         let after: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
             .fetch_one(&h.pool)
@@ -232,7 +318,7 @@ impl Case {
         );
 
         match self {
-            Self::Storage | Self::Door => {
+            Self::Storage => {
                 let catalogue = owner.quest_catalogue.clone().ok_or("quest catalogue")?;
                 let seeded = owner.revision_sequencer.acquire(fence.character_id).await
                     .commit_quest_transition(owner.root, owner.character, owner.holder, fence, QuestTransitionRequest {
@@ -241,21 +327,26 @@ impl Case {
                     }, catalogue).await.map_err(debug)?;
                 assert!(matches!(seeded, QuestTransitionOutcome::Committed(_)));
             }
+            Self::Door => {
+                set_fixture_track(owner, h, fence, NEW_FRONTIER_08, 2).await?;
+                set_fixture_track(owner, h, fence, WRATH_11, 2).await?;
+                assert!(!self.attempt(owner, admitted, callback, 2).await?);
+                set_fixture_track(owner, h, fence, WRATH_11, 1).await?;
+            }
             Self::Isle { travel } => {
-                let track = isle_exit_track(travel);
-                let catalogue = owner.quest_catalogue.as_deref().ok_or("quest catalogue")?;
-                assert!(catalogue.track(&track).is_some(), "native Isle track {track}");
-                sqlx::query(
-                    "INSERT INTO game_character_quest_tracks
-                        (character_id,track_key,quest_key,value,committed_character_revision)
-                     SELECT character_id,$2,$3,1,character_revision FROM game_character_roots
-                     WHERE character_id=encode($1,'hex')::uuid",
-                )
-                .bind(fence.character_id.as_bytes().as_slice())
-                .bind(track)
-                .bind(isle_of_evil::QUEST)
-                .execute(&h.pool)
-                .await?;
+                set_fixture_track(owner, h, fence, &isle_exit_track(travel), 1).await?;
+            }
+            Self::Warzone { access } => {
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(std::time::Duration::from_secs(2))
+                    .ok_or("clock")?;
+                let reply = wire(
+                    owner, admitted, 2, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+                    encode_step_intent(StepDirection::North),
+                ).await?;
+                assert_eq!(decode_step_result(&reply).map_err(debug)?, StepDisposition::Moved);
+                set_fixture_track(owner, h, fence, SCOUT_POINTS, if access { 10 } else { 15 }).await?;
             }
             Self::Completion => {
                 sqlx::query("INSERT INTO game_character_soul_war(character_id,megalomania_completed) VALUES(encode($1,'hex')::uuid,true)")
@@ -279,7 +370,7 @@ impl Case {
                 )
                 .await?;
             }
-            Self::Level => {
+            Self::Level | Self::Bounac => {
                 super::qengine_outfit_stories::earn_level(owner, admitted, authority, 250).await?;
                 owner.states.level_refresh.mark([fence.character_id]);
                 owner.refresh_level_up_vitals(actor, session).await;
@@ -311,7 +402,14 @@ impl Case {
             }
         }
 
-        assert!(self.attempt(owner, admitted, callback, 2).await?);
+        let next_command = if self == Self::Door || warzone { 3 } else { 2 };
+        assert!(self.attempt(owner, admitted, callback, next_command).await?);
+        if self == Self::Bounac {
+            let after: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
+                .fetch_one(&h.pool)
+                .await?;
+            assert_eq!(before, after, "admitted Bounac travel creates no Quest receipt");
+        }
         let landing = if matches!(self, Self::Door | Self::Isle { .. }) {
             GATE
         } else {
@@ -435,6 +533,37 @@ impl Case {
     }
 }
 
+fn storage_range(track: &str, minimum: i64, maximum: i64) -> serde_json::Value {
+    json!({"kind":"storage","range":{"source":{"kind":"track","track":track},"minimum":minimum,"maximum":maximum}})
+}
+
+async fn set_fixture_track(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    fence: CurrentCharacterGameplayFence,
+    track: &str,
+    value: i64,
+) -> TestResult {
+    let track = owner.quest_catalogue.as_deref()
+        .and_then(|catalogue| catalogue.track(track))
+        .ok_or_else(|| format!("native gate fixture track {track}"))?;
+    sqlx::query(
+        "INSERT INTO game_character_quest_tracks
+            (character_id,track_key,quest_key,value,committed_character_revision)
+         SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots
+         WHERE character_id=encode($1,'hex')::uuid
+         ON CONFLICT(character_id,track_key) DO UPDATE
+         SET value=EXCLUDED.value,committed_character_revision=EXCLUDED.committed_character_revision",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(&track.key)
+    .bind(&track.quest)
+    .bind(value)
+    .execute(&h.pool)
+    .await?;
+    Ok(())
+}
+
 fn isle_exit_track(travel: bool) -> String {
     if travel {
         format!("{}rapanaio-travel", isle_of_evil::KV_PREFIX)
@@ -541,6 +670,15 @@ fn conditional_step_keeps_the_original_down_stair_selector() -> TestResult {
 }
 
 #[test]
+fn conditional_use_checks_bounac_level_without_writing_quest_progress() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    scenario(Case::Bounac)
+}
+
+#[test]
 fn conditional_use_moves_through_and_transforms_the_exact_door() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -557,4 +695,14 @@ fn conditional_step_accepts_either_native_isle_ship_exit_track() -> TestResult {
     drop(admin);
     scenario(Case::Isle { travel: false })?;
     scenario(Case::Isle { travel: true })
+}
+
+#[test]
+fn conditional_step_requires_ten_with_all_warzone_flags_and_fifteen_otherwise() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    scenario(Case::Warzone { access: false })?;
+    scenario(Case::Warzone { access: true })
 }

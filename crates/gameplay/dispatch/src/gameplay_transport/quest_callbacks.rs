@@ -1783,16 +1783,22 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
 
     fn stops_at_step_callback(&self, cell: crate::content::LogicalCell) -> bool {
         self.entry(cell, |callback, at| {
+            let position = Position {
+                x: at.x,
+                y: at.y,
+                floor: at.floor,
+            };
+            let selector = &callback.selector;
             callback
                 .effects
                 .conditional_entrance
                 .as_ref()
                 .is_some_and(|gate| gate.intercept_teleport)
-                && callback.selector.matches_position(Position {
-                    x: at.x,
-                    y: at.y,
-                    floor: at.floor,
-                })
+                && (selector.position.is_some() && selector.matches_position(position)
+                    || selector
+                        .native
+                        .as_ref()
+                        .is_some_and(|native| native.position == position))
         })
         .is_some_and(|(_, callback, _)| {
             callback

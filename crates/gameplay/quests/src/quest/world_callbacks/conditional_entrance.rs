@@ -273,7 +273,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
     let mut remaining = 32;
     callback.actor_kind == ActorKind::Player
         && (is_step || callback.trigger == Trigger::Use)
-        && (!gate.intercept_teleport || is_step && callback.selector.position.is_some())
+        && (!gate.intercept_teleport
+            || is_step
+                && (callback.selector.position.is_some() || callback.selector.native.is_some()))
         && gate.on_admit_speech.as_ref().is_none_or(|speech| {
             is_step
                 && speech.message_kind.monster_talk_type().is_some()
