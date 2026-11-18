@@ -8,9 +8,26 @@ const LORE_KEEPER_LIMIT_MS: u64 = 30 * 60 * 1000;
 
 pub(super) fn matches_source_cooldown(definition: &BossRoomDefinition) -> bool {
     if definition.boss_creature_key == LORE_KEEPER {
-        return matches_lore_keeper(&definition.policy);
+        return matches_lore_keeper(&definition.policy)
+            && definition
+                .entry_positions
+                .iter()
+                .all(|cell| (cell.x, cell.y, cell.floor) == (31985, 32851, 14))
+            && (
+                definition.exit_position.x,
+                definition.exit_position.y,
+                definition.exit_position.floor,
+            ) == (32035, 32859, 14);
     }
     matches(&definition.boss_creature_key, definition.policy.cooldown_ms)
+}
+
+pub(super) fn matches_source_initiator(
+    definition: &BossRoomDefinition,
+    position: crate::foundation::MovementLocalPosition,
+) -> bool {
+    definition.boss_creature_key != LORE_KEEPER
+        || (position.x, position.y, position.floor) == (32019, 32844, 14)
 }
 
 /// Crystal 201189f, actions_the_last_lore_keeper.lua:31-82.

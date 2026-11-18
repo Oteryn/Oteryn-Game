@@ -331,8 +331,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         {
             let runtime = self.runtime.lock().await;
             let census = runtime.positioned_actor_census().ok()?;
+            let cell = runtime.read_actor_position(actor).ok()?.position();
+            if !super::endgame_room_policy::matches_source_initiator(&definition, cell) {
+                return refusal(ActivityRefusal::Position);
+            }
             let partition = if definition.boss_key == "oteryn:boss.bakragore" {
-                let cell = runtime.read_actor_position(actor).ok()?.position();
                 let ordinal = definition
                     .lever_positions
                     .iter()
