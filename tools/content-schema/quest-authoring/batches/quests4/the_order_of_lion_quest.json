@@ -217,10 +217,10 @@
       },
       "storage": [
         {
-          "track": "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/access_eastern_side",
-          "minimum": 1,
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/bounac_trust",
+          "minimum": 5,
           "maximum": 2147483647,
-          "set": 1,
+          "set": 5,
           "preserve": true
         }
       ],
@@ -260,10 +260,10 @@
       },
       "storage": [
         {
-          "track": "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/access_eastern_side",
-          "minimum": 1,
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/bounac_trust",
+          "minimum": 5,
           "maximum": 2147483647,
-          "set": 1,
+          "set": 5,
           "preserve": true
         }
       ],
