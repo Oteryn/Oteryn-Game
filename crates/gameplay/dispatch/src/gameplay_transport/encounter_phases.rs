@@ -169,6 +169,7 @@ impl Registry {
         actor: ExactActorRef,
         creature: Option<&str>,
         now_us: u64,
+        owner_wake: &tokio::sync::Notify,
     ) {
         let Ok(mut active) = self.active.lock() else {
             return;
@@ -205,6 +206,16 @@ impl Registry {
                 let _ = fight.advance(runtime, cells);
                 if let Fight::Replacements(fight) = fight {
                     fight.project_portal(cells, now_us);
+                    if let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(
+                        index,
+                    ) = cells.index()
+                        && crate::map::boot::BundleCollisionIndexExt::map(index)
+                            .facts
+                            .next_movement_decay_time()
+                            .is_some()
+                    {
+                        owner_wake.notify_one();
+                    }
                 }
             }
         }

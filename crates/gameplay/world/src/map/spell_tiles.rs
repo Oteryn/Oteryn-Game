@@ -53,6 +53,7 @@ use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
 
 mod immovable;
+pub use immovable::source_item_type_movable;
 
 pub use crate::content::bundle_spell_tiles::BundleSpellTiles;
 use crate::content::bundle_spell_tiles::UNKNOWN;

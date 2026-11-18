@@ -1967,6 +1967,7 @@ pub fn record_creature_kill(
             target,
             creature.as_deref().ok(),
             observed_at.map_or(now_ms.saturating_mul(1000), |at| at.get()),
+            &states.owner_wake,
         );
     }
     let Ok(creature) = creature else {

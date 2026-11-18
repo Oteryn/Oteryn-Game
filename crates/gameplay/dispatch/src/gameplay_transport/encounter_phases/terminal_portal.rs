@@ -94,6 +94,37 @@ pub(super) fn schedule_cleanup(
     cleanup: CorpsePortalCleanup,
     now_us: u64,
 ) {
+    schedule_tile_removals(cells, position, cleanup.delay_ms, now_us, 1, |entry| {
+        entry.appearance_id == cleanup.appearance && !entry.pickupable
+    });
+}
+
+/// Crystal 201189f8, forgotten_knowledge/creaturescripts_thorn_knight_death.lua:1-9,12-22.
+/// The callback tests the item's type, so placement action and unique IDs do not qualify it.
+pub(super) fn schedule_fixed_item_cleanup(
+    cells: &NativeEntryMovementCells,
+    position: crate::foundation::MovementLocalPosition,
+    delay_ms: u32,
+    now_us: u64,
+) {
+    use crate::map::spell_tiles::source_item_type_movable;
+    use oteryn_world_bundle::bundle::TerrainKind;
+
+    schedule_tile_removals(cells, position, delay_ms, now_us, usize::MAX, |entry| {
+        entry.terrain_kind != Some(TerrainKind::Ground)
+            && !entry.pickupable
+            && source_item_type_movable(entry.appearance_id) == Some(false)
+    });
+}
+
+fn schedule_tile_removals(
+    cells: &NativeEntryMovementCells,
+    position: crate::foundation::MovementLocalPosition,
+    delay_ms: u32,
+    now_us: u64,
+    limit: usize,
+    matches: impl Fn(crate::map::view::EntryFacts) -> bool,
+) {
     let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
         return;
     };
@@ -107,7 +138,7 @@ pub(super) fn schedule_cleanup(
     if map.facts.house_tile(at) {
         return;
     }
-    let Some(due) = now_us.checked_add(u64::from(cleanup.delay_ms) * 1_000) else {
+    let Some(due) = now_us.checked_add(u64::from(delay_ms) * 1_000) else {
         return;
     };
     let source = base
@@ -116,17 +147,15 @@ pub(super) fn schedule_cleanup(
         .zip(base.depths())
         .filter(|(_, depth)| **depth == 0)
         .enumerate()
-        .find_map(|(ordinal, (id, _))| {
+        .filter_map(|(ordinal, (id, _))| {
             let ordinal = u8::try_from(ordinal).ok()?;
             let key = placement_key(at, ordinal)?;
             let revision = map.facts.object_revision(key);
             let entry = map.facts.base_entry(at, ordinal, *id)?;
-            (entry.appearance_id == cleanup.appearance
-                && !entry.pickupable
-                && !map.facts.base_hidden(key))
-            .then_some((key, revision, entry))
-        });
-    if let Some((key, revision, entry)) = source {
+            (matches(entry) && !map.facts.base_hidden(key)).then_some((key, revision, entry))
+        })
+        .take(limit);
+    for (key, revision, entry) in source {
         map.facts.apply_quest_callback(
             key,
             revision,

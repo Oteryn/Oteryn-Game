@@ -17,7 +17,7 @@ use super::terminal_transfer::{Movement, Transfer};
 struct Member {
     actor: ExactActorRef,
     creature: String,
-    death_at: Option<MovementLocalPosition>,
+    death_at: Option<(MovementLocalPosition, u64)>,
 }
 
 #[derive(Debug)]
@@ -174,7 +174,7 @@ impl Replacements {
                 .terminal_portal
                 .and_then(|plan| Portal::open(plan, now_us));
         }
-        member.death_at = Some(at);
+        member.death_at = Some((at, now_us));
         self.finished = finished;
         Ok(true)
     }
@@ -240,7 +240,7 @@ impl Replacements {
             return Err(CarrierError::ContentPinWorldMismatch);
         }
         while !self.finished {
-            let Some((index, at)) = self
+            let Some((index, (at, death_us))) = self
                 .members
                 .iter()
                 .enumerate()
@@ -338,6 +338,9 @@ impl Replacements {
                 .try_reserve(spawn.len())
                 .map_err(|_| CarrierError::AllocationFailed)?;
             let next = runtime.commit_quest_creature_replacement(&retire, &spawn, || true)?;
+            if let Some(delay) = rule.clear_fixed_items_after_ms {
+                super::terminal_portal::schedule_fixed_item_cleanup(cells, at, delay, death_us);
+            }
             if let Some(announcement) = &rule.announcement
                 && let NativeMovementCollisionIndex::Bundle(map) = cells.index()
                 && let Some(position) = super::super::quest_callbacks::native(

@@ -545,6 +545,9 @@ pub struct DeathReplacement {
     /// The defeated creature speaks only after its replacement has been published.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub announcement: Option<DeathAnnouncement>,
+    /// Delay before clearing the tile's fixed source items after a replacement.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub clear_fixed_items_after_ms: Option<u32>,
     pub spawn: Vec<ReplacementActor>,
     /// Move an existing encounter member only if it still occupies the source tile.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -669,9 +672,13 @@ fn valid_death_phases(
                     || speech.text.chars().any(char::is_control)
                     || speech.position.is_some_and(|position| !in_room(position))
             })
+            || rule
+                .clear_fixed_items_after_ms
+                .is_some_and(|delay| !(1..=3_600_000).contains(&delay))
             || if let Some(relocate) = &rule.relocate {
                 !rule.spawn.is_empty()
                     || rule.announcement.is_some()
+                    || rule.clear_fixed_items_after_ms.is_some()
                     || rule.retire_siblings
                     || !known.contains(relocate.creature.as_str())
                     || relocate.creature == rule.defeated
