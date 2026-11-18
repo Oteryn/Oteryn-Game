@@ -98,6 +98,27 @@ fn engenc_counter_source_is_owned_species_bounded_and_preserves_phase_revision()
 }
 
 #[test]
+fn feaster_damage_credit_requires_an_exact_encounter_source() -> Result<(), String> {
+    let mut value = fixture()?;
+    value["quests"][0]["stages"][1]["trigger"]["counter"]["require_damage"] = json!(true);
+    let base = QuestStateCatalogue::empty("feaster-damage-credit").ok_or("base")?;
+    let catalogue = parse(&value)?.attach(&base)?;
+    let counter = &mut value["quests"][0]["stages"][1]["trigger"]["counter"];
+    let key = counter["key"].as_str().ok_or("key")?;
+    assert!(
+        super::super::native_kills::counter_for(&catalogue, key)
+            .ok_or("counter")?
+            .require_damage
+    );
+    counter
+        .as_object_mut()
+        .ok_or("counter")?
+        .remove("encounter_source");
+    assert!(parse(&value).is_err());
+    Ok(())
+}
+
+#[test]
 fn engenc_source_threshold_changes_phase_only_at_the_goal() -> Result<(), String> {
     let mut value = fixture()?;
     value["quests"][0]["stages"][1]["trigger"]["counter"]["advance_gate_to"] = json!(5);
