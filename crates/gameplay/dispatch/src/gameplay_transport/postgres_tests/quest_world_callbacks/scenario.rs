@@ -1775,7 +1775,7 @@ fn scenario_case(
                 name,
             )?);
         }
-        if board_portal || stone_exit || zarganash {
+        if board_portal || dreamers_wall || stone_exit || zarganash {
             let binding = serde_json::json!({"schema":1,"callbacks":[&callback]}).to_string();
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 oteryn_gameplay_quests::quest::world_callbacks::with_fixture_world_document(
@@ -1869,7 +1869,6 @@ fn scenario_case(
         if name.starts_with("qengine-rewards-questpc4-admission-")
             || name.starts_with("qengine-rewards-questpc4-puzzle-predicate")
             || lever_fixture
-            || dreamers_wall
             || target_swap
             || failure_landing
             || name.ends_with("-expiry")
