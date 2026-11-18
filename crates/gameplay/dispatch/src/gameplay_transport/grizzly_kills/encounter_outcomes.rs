@@ -47,6 +47,14 @@ impl Run {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(in crate::gameplay_transport) enum ExitState {
+    Unavailable,
+    Running,
+    WrongOutcome,
+    Open,
+}
+
 impl Outcomes {
     pub(in crate::gameplay_transport) fn can_start(
         &mut self,
@@ -212,15 +220,26 @@ impl Outcomes {
         }
     }
 
-    pub(in crate::gameplay_transport) fn permits_exit(
-        &self,
-        runtime: &ChannelRuntimeV1,
-        required: &OutcomeRequirement,
-    ) -> bool {
-        runtime.owner_fence().is_ok()
-            && self.0.get(&required.group).is_some_and(|run| {
-                run.current(runtime) && &run.result == required && run.death.is_some()
-            })
+    fn exit_state(&self, runtime: &ChannelRuntimeV1, required: &OutcomeRequirement) -> ExitState {
+        let Some(run) = self
+            .0
+            .get(&required.group)
+            .filter(|run| runtime.owner_fence().is_ok() && run.current(runtime))
+        else {
+            return ExitState::Unavailable;
+        };
+        if run.death.is_none() {
+            return if runtime.contains_live_creature(run.target) {
+                ExitState::Running
+            } else {
+                ExitState::Unavailable
+            };
+        }
+        if &run.result == required {
+            ExitState::Open
+        } else {
+            ExitState::WrongOutcome
+        }
     }
 
     pub(super) fn for_death(&self, death: CreatureDeathOccurrenceKey) -> Option<Run> {
@@ -232,6 +251,26 @@ impl Outcomes {
 }
 
 impl super::super::ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) fn encounter_exit_state(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        required: &OutcomeRequirement,
+    ) -> ExitState {
+        self.states
+            .attack
+            .try_lock()
+            .ok()
+            .and_then(|attack| {
+                attack
+                    .kills()
+                    .1
+                    .lock()
+                    .ok()
+                    .map(|cache| cache.outcomes.exit_state(runtime, required))
+            })
+            .unwrap_or(ExitState::Unavailable)
+    }
+
     pub(in crate::gameplay_transport) fn tick_encounter_outcomes(
         &self,
         runtime: &mut ChannelRuntimeV1,

@@ -24,13 +24,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
     ) -> UseDisposition {
         if let Some(required) = &callback.effects.require_encounter_outcome
-            && !self.states.attack.try_lock().is_ok_and(|attack| {
-                attack
-                    .kills()
-                    .1
-                    .lock()
-                    .is_ok_and(|cache| cache.outcomes.permits_exit(runtime, required))
-            })
+            && self.encounter_exit_state(runtime, required)
+                != super::super::grizzly_kills::encounter_outcomes::ExitState::Open
         {
             return UseDisposition::Rejected;
         }

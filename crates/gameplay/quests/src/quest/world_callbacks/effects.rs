@@ -61,6 +61,9 @@ pub struct CallbackEffects {
     pub encounter_outcome: Option<EncounterOutcome>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub require_encounter_outcome: Option<OutcomeRequirement>,
+    /// StepIn feedback for distinguishable refusals of an encounter outcome gate.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub encounter_outcome_feedback: Option<EncounterOutcomeFeedback>,
     /// Finish this quest only through its bound, irreversible native trial.
     #[serde(default, skip_serializing_if = "is_false")]
     pub completes_quest: bool,
@@ -446,6 +449,15 @@ impl OutcomeRequirement {
     }
 }
 
+/// Crystal 201189f8 forge_teleport.lua:17-34. The callback's ordinary
+/// failure and success messages cover an absent encounter and a legal exit.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct EncounterOutcomeFeedback {
+    pub running: String,
+    pub wrong_outcome: String,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct EncounterOutcome {
@@ -699,6 +711,18 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || effects.encounter.is_some()
                 || effects.death_window.is_some()
         })
+    {
+        return false;
+    }
+    if let Some(feedback) = &effects.encounter_outcome_feedback
+        && (effects.require_encounter_outcome.is_none()
+            || [&feedback.running, &feedback.wrong_outcome]
+                .into_iter()
+                .any(|message| {
+                    message.trim().is_empty()
+                        || message.len() > 256
+                        || message.contains(['\n', '\r', '\0'])
+                }))
     {
         return false;
     }

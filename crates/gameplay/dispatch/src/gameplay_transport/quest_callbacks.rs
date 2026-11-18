@@ -1634,6 +1634,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !callback.return_on_failure {
             return;
         }
+        let mut feedback = callback.failure_message.as_deref();
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
         if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport_facing(
@@ -1674,8 +1675,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 let _ = map.facts.emit_movement_effect(at, effect);
             }
+            if let (Some(required), Some(messages)) = (
+                &callback.effects.require_encounter_outcome,
+                &callback.effects.encounter_outcome_feedback,
+            ) {
+                use super::grizzly_kills::encounter_outcomes::ExitState;
+                match self.encounter_exit_state(runtime, required) {
+                    ExitState::Running => feedback = Some(&messages.running),
+                    ExitState::WrongOutcome => feedback = Some(&messages.wrong_outcome),
+                    ExitState::Unavailable | ExitState::Open => {}
+                }
+            }
         }
-        if let Some(message) = &callback.failure_message {
+        if let Some(message) = feedback {
             self.states.chat.push_quest_feedback(session, message);
         }
     }
