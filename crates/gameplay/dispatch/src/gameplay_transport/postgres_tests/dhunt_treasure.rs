@@ -139,7 +139,7 @@ pub(super) async fn exercise(
     placement.extend_from_slice(&key.to_be_bytes());
 
     let mut before = quantities(h).await?;
-    for (claim, command) in [(9, 400), (10, 410), (11, 420)] {
+    for (claim, command) in [(9, 1), (10, 3), (11, 5)] {
         let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget {
             placement: placement.clone(),
             expected_revision: claim - 9,
@@ -209,7 +209,7 @@ pub(super) async fn exercise(
         );
         assert_eq!(quantities(h).await?, before);
         if claim < 11 {
-            super::qengine_kill_stories::death(owner, admitted, "oteryn:creature.rat", command + 2)
+            super::qengine_kill_stories::death(owner, admitted, "oteryn:creature.rat", command + 100)
                 .await?;
         }
     }

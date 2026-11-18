@@ -31,7 +31,7 @@ pub(super) fn install(owner: &mut ComposedFreshAdmission<'_, '_, '_>) -> TestRes
         {"minimum": [1, 11, 6], "maximum": [1, 11, 6]},
         {"minimum": [1, 11, 7], "maximum": [1, 11, 7]}
     ]);
-    let catalogue = QuestStateCatalogue::empty("dhunt-death-areas").ok_or("catalogue")?;
+    let catalogue = QuestStateCatalogue::empty("content-1").ok_or("catalogue")?;
     owner.quest_catalogue = Some(Arc::new(
         Bindings::parse(&serde_json::to_vec(&bindings)?)?.attach(&catalogue)?,
     ));
