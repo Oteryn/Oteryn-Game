@@ -189,6 +189,26 @@ fn freeze_at(
                     death_position.is_some_and(|position| area.contains(position))
                 })
             {
+                // Crystal 201189f8 spike_tasks/creaturescripts_lower_spike_kill.lua:1-13.
+                // Preserve the victim's lethal cell through the fenced writer.
+                use crate::durability::quest_state::native_kills::NativeDeathSource;
+                let source = if counter.death_area.is_some() {
+                    let Some((x, y, floor)) = death_position.and_then(|[x, y, z]| {
+                        Some((
+                            u16::try_from(x).ok()?,
+                            u16::try_from(y).ok()?,
+                            i8::try_from(-z).ok()?,
+                        ))
+                    }) else {
+                        continue;
+                    };
+                    NativeDeathSource::PositionedParty {
+                        source: Arc::clone(&native_source),
+                        position: (x, y, floor),
+                    }
+                } else {
+                    NativeDeathSource::Party(Arc::clone(&native_source))
+                };
                 native.push(super::quest_kills::Recipient {
                     actor: snapshot.actor,
                     session: snapshot.session,
@@ -199,10 +219,7 @@ fn freeze_at(
                         definition_hash: counter.definition_hash,
                         creature: creature.into(),
                         observed_revision: snapshot.observed_revision,
-                        source:
-                            crate::durability::quest_state::native_kills::NativeDeathSource::Party(
-                                Arc::clone(&native_source),
-                            ),
+                        source,
                     },
                 });
             }
