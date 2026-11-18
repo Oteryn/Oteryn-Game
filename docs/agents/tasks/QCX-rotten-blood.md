@@ -34,8 +34,9 @@ The corrections use the existing quest-specific runtime. The generated quest rec
 
 - Quest authoring `run_checks.py --part checks` passed all 44 checks.
 - World bundle `pin-check . /tmp/qcx46-world-pin` passed for one world. The checked Oteryn artifact digest was `0676b1568f55a55fbe994f344a8e0c60debf766751d12849f56c19f60c93aae5`.
-- `cargo fmt --all -- --check` passed on `e2ba5081165a38fc6e4f019357c5ab173005502a`.
+- `cargo fmt --all -- --check` passed on `f487a52ecbdf0cf7513758858490372c4a78ef7c`.
 - PG via shard (pgsplit build files applied on `ab221f9768b9ff6a211d24c58abeaa5893be958f`). Bakragore failed in 58.23 s with the persisted 1,200,000 ms deadline. Passive charges failed in 669.31 s with no second charge within 25 s of the first. Torkada failed in 430.21 s with the blessing track absent after the expedition dialogue. All three cases exercised the pre-fix runtime and failed on the expected differences.
 - PG via shard (pgsplit build files applied on `e2ba5081165a38fc6e4f019357c5ab173005502a`). Bakragore passed in 42.35 s and Torkada passed in 433.51 s. The charge case first failed at fixture setup due to the local World artifact filename. With the path corrected, it ran for 451.18 s and PostgreSQL rejected the 20-second receipt under the old 30-second constraint. Migration `2897_rotten_blood_charge_cadence.sql` corrects the two quest-specific predicates in a forward migration.
-- The migration-aware Cargo shard run on `5fa3b6b8f8ec8ea25f8874f5eec85614201d8819` returned `Ok(())` for all three cases with `OTERYN_TEST_POSTGRES_ADMIN_URL` unset (0.01 s total).
+- PG via shard (pgsplit build files applied on `f487a52ecbdf0cf7513758858490372c4a78ef7c`). Passive charges passed in 315.74 s. The new migration allowed the receipt through the real writer. Driving native Think at each probe near the boundary removed a one-second scheduling delay from the fixture and kept the exact 20-second assertion.
+- The same Cargo shard returned `Ok(())` for all three cases with `OTERYN_TEST_POSTGRES_ADMIN_URL` unset (0.00 s total).
 - Dispatch Clippy with `--all-features --lib -- -D warnings` passed on the migration commit.
