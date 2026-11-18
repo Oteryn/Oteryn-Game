@@ -38,8 +38,8 @@ fn grizzly_catalogue_has_all_tasks_bosses_and_unique_ordinary_creatures()
     assert_eq!(data.bosses.len(), 30);
     assert_eq!(task(1).ok_or(GrizzlyRefusal::InvalidTask)?.required, 300);
     assert_eq!(task(42).ok_or(GrizzlyRefusal::InvalidTask)?.required, 6666);
-    assert_eq!(task(11).ok_or(GrizzlyRefusal::InvalidTask)?.points, None);
-    assert_eq!(task(27).ok_or(GrizzlyRefusal::InvalidTask)?.points, None);
+    assert_eq!(task(11).ok_or(GrizzlyRefusal::InvalidTask)?.points, Some(2));
+    assert_eq!(task(27).ok_or(GrizzlyRefusal::InvalidTask)?.points, Some(4));
     let mut seen = std::collections::BTreeSet::new();
     for task in &data.tasks {
         for creature in &task.creatures {

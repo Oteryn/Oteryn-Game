@@ -1627,7 +1627,7 @@
     },
     "oteryn:creature.hellfire_fighter": {
       "kills_per_hour_micros": 47721623,
-      "loot_per_kill_micros": 538895475,
+      "loot_per_kill_micros": 519895475,
       "tier": 3
     },
     "oteryn:creature.hellflayer": {
@@ -3886,7 +3886,7 @@
       "tier": 2
     }
   },
-  "model_input_sha256": "a40564017adb05f6515f6dd3ef457ee53c24067271d306eeecc52297e491473b",
+  "model_input_sha256": "bf48fafdc0e49afcfc6511ae6ee046d7ca845a4c3528511cec7b948b00a7ca53",
   "npc_price_policy": "maximum_catalogue_offer",
   "npc_sell_prices": {
     "oteryn:item.tibia.i10196": 150,
@@ -4981,7 +4981,6 @@
     "oteryn:item.tibia.i50274": 700,
     "oteryn:item.tibia.i5080": 30000,
     "oteryn:item.tibia.i51119": 10,
-    "oteryn:item.tibia.i51259": 5000,
     "oteryn:item.tibia.i51419": 480,
     "oteryn:item.tibia.i51420": 800,
     "oteryn:item.tibia.i51421": 110000,
@@ -5260,14 +5259,6 @@
     "oteryn:item.tibia.i9303": 3000,
     "oteryn:item.tibia.i9304": 3000,
     "oteryn:item.tibia.i9392": 15000,
-    "oteryn:item.tibia.i940": 2000,
-    "oteryn:item.tibia.i941": 2000,
-    "oteryn:item.tibia.i942": 5000,
-    "oteryn:item.tibia.i944": 2000,
-    "oteryn:item.tibia.i945": 2000,
-    "oteryn:item.tibia.i946": 5000,
-    "oteryn:item.tibia.i947": 5000,
-    "oteryn:item.tibia.i948": 5000,
     "oteryn:item.tibia.i953": 10,
     "oteryn:item.tibia.i954": 5000,
     "oteryn:item.tibia.i9606": 15000,
