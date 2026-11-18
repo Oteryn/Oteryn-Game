@@ -862,18 +862,57 @@ async fn exercise_queen(
         low_level.conversation.ok_or("level refusal")?.lines,
         ["Sorry, not possible."],
     );
-    // Raise the persisted fixture to the authored threshold. This fixture has no vocation
-    // build, so project the persisted level into the live fact used by dialogue preview.
-    let mut tx = h.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role = replica")
-        .execute(&mut *tx)
-        .await?;
-    sqlx::query("UPDATE game_character_progression_state SET level=$1 WHERE character_id=encode($2,'hex')::uuid")
-        .bind(i64::from(KISS_LEVEL))
-        .bind(fence.character_id.as_bytes().as_slice())
-        .execute(&mut *tx)
-        .await?;
-    tx.commit().await?;
+    // Extend the historical fixture's level 50/51 table through the kiss threshold.
+    // Award XP through the sequencer so the later quest write sees a valid receipt chain.
+    use crate::domain::progression::{FiniteProgressionPolicy, LevelThreshold};
+    use crate::durability::character_progression::{
+        ExperienceAwardRequest, ExperienceCommitOutcome,
+    };
+    use oteryn_simulation_determinism::ExactI64;
+    let fixture = super::fixture::xp_request(103)?;
+    let [first, second] = fixture.policy.thresholds;
+    let step = second.minimum_experience.get() - first.minimum_experience.get();
+    let thresholds: [_; 11] = std::array::from_fn(|offset| LevelThreshold {
+        level: first.level + offset as u32,
+        minimum_experience: ExactI64::new(first.minimum_experience.get() + step * offset as i64),
+    });
+    let minimum = thresholds[10].minimum_experience.get();
+    let award = ExperienceAwardRequest {
+        occurrence: fixture.occurrence,
+        amount: ExactI64::new(minimum - first.minimum_experience.get()),
+        context: fixture.context,
+        policy_revision: fixture.policy_revision,
+        reward_revision: fixture.reward_revision,
+        policy: FiniteProgressionPolicy {
+            context: fixture.policy.context,
+            policy_revision: fixture.policy.policy_revision,
+            reward_revision: fixture.policy.reward_revision,
+            death_policy_revision: fixture.policy.death_policy_revision,
+            declared_difference_revision: fixture.policy.declared_difference_revision,
+            thresholds,
+            terminal_exclusive_experience: ExactI64::new(minimum + step),
+            death_loss_numerator: fixture.policy.death_loss_numerator,
+            death_loss_denominator: fixture.policy.death_loss_denominator,
+            death_loss_rounding: fixture.policy.death_loss_rounding,
+        },
+    };
+    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+    let award = slot
+        .commit_experience(
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence,
+            award,
+            None,
+        )
+        .await
+        .map_err(debug)?;
+    let ExperienceCommitOutcome::Committed(award) = award else {
+        return Err("Queen level award did not commit".into());
+    };
+    assert_eq!(award.level_after, KISS_LEVEL);
+    drop(slot);
     let progression = h
         .root
         .read_character_progression(owner.character, fence.character_id)
