@@ -329,6 +329,10 @@ impl Bindings {
                     || !transitions.insert(key)
                     || (storage.is_empty()
                         && !stage.is_native_encounter()
+                        // Crystal actions_exterminator_flask.lua:23-36 exchanges
+                        // the selected flask against a corpse without setting storage.
+                        && !matches!(&stage.trigger, Trigger::CarriedUse { callback }
+                            if callback.corpse_target.is_some() && callback.repeatable && !stage.completes)
                         && !matches!(&stage.trigger,
                             Trigger::MapUse { callback } | Trigger::StepIn { callback }
                             if callback.operation_count() > 0))
