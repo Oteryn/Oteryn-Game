@@ -1882,7 +1882,7 @@ fn scenario_case(
         owner.admit_quest_session(&admitted).await;
         if monster_tile {
             super::super::first_dragon_portal::exercise_monster_tile(
-                &owner, trigger, name == super::super::first_dragon_portal::FLOWER,
+                &owner, &admitted, trigger, name == super::super::first_dragon_portal::FLOWER,
             ).await?;
         } else if name == super::super::first_dragon_portal::NAME {
             Box::pin(super::super::first_dragon_portal::exercise(

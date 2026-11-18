@@ -73,6 +73,7 @@ fn first_dragon_native_monster_tiles_transform_source_creatures_postgres() -> Te
 
 pub(super) async fn exercise_monster_tile(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
     target: Position,
     consume: bool,
 ) -> TestResult {
@@ -107,5 +108,62 @@ pub(super) async fn exercise_monster_tile(
     }));
     let key = oteryn_world_bundle::bundle::placement_key(target.floor, target.x, target.y, 1).ok_or("blossom placement")?;
     assert_eq!(map.facts.base_hidden(key), consume);
+    if consume {
+        let plant = runtime.visible_entities().creatures.into_iter().find(|creature| {
+            runtime.companion_snapshot(creature.actor).is_ok_and(|snapshot| {
+                snapshot.state.policy.definition_key == "oteryn:creature.angry_plant"
+            })
+        }).ok_or("transformed plant")?.actor;
+        let actor = admitted.runtime_actor.ok_or("plant attacker")?;
+        let session = admitted.game_session_id;
+        let lease = runtime.bound_attacker_lease(actor, session).map_err(debug)?;
+        let now = owner.owner_now();
+        let health = runtime.companion_snapshot(plant).map_err(debug)?.health;
+        runtime.borrow_exact_actor_commit_at(now.get() / 1000).commit_damage_for_bound_attacker(
+            plant, actor, crate::foundation::CommandRef::new(session, crate::foundation::CommandId::new(39).map_err(debug)?),
+            0, crate::foundation::OwnerDamageCommand {
+                target: b"oteryn:creature.angry_plant",
+                occurrence: session.as_bytes(),
+                binding: b"first-dragon-angry-plant-death",
+                damage: health,
+            },
+        ).map_err(debug)?;
+        let queue = owner.states.attack.lock().await.kills().clone();
+        crate::gameplay_transport::kill_reward::record_creature_kill(
+            &mut runtime,
+            crate::gameplay_transport::kill_reward::KillSink {
+                prey: Some(&states), activity: &[], queue: &queue,
+                rewards: native.reward_table(), charms: None,
+            },
+            plant,
+            crate::combat::CapturedRewardPrincipal {
+                character: lease.character_id(), lease_generation: lease.generation(),
+                session, actor,
+            },
+            now.get() / 1000,
+            Some(now),
+        );
+        drop(states);
+        drop(runtime);
+        assert_eq!(owner.drain_kill_rewards(session).await, crate::gameplay_transport::kill_reward::DrainOutcome::Drained);
+        let mut runtime = owner.runtime.lock().await;
+        assert_eq!(runtime.bound_corpse(plant.corpse_identity()).ok_or("bound plant corpse")?.item.production_key, "oteryn:item.tibia.i2983");
+        let dragon = "oteryn:creature.unbeatable_dragon";
+        let health = runtime.companion_policy(dragon).map_err(debug)?.maximum_health;
+        let dragon = runtime.commit_quest_creature_spawn(&[(dragon, health, from)]).map_err(debug)?[0];
+        runtime.commit_quest_platform_displacement(from, tile, |_, _, _| true, || {
+            map.facts.record_monster_step(crate::map::facts::MonsterStep { actor: dragon, from, to: tile })
+        }).map_err(debug)?;
+        let states = owner.states.spell_states.lock().await;
+        crate::gameplay_transport::paced_movement::monster_trap::apply_monster_trap_steps(
+            &mut runtime, &states, map, 1_001_000,
+        );
+        assert!(!runtime.contains_live_creature(dragon));
+        assert!(runtime.visible_entities().creatures.iter().any(|creature| {
+            runtime.companion_snapshot(creature.actor).is_ok_and(|snapshot| {
+                snapshot.state.policy.definition_key == "oteryn:creature.somewhat_beatable"
+            })
+        }));
+    }
     Ok(())
 }
