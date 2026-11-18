@@ -5,7 +5,9 @@ use crate::content::NativeEntryStart;
 use crate::durability::activity_handoff::ActivityHandoffOwner;
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::{ChannelContentPin, CharacterId, CharacterLease, MovementLocalPosition};
-use crate::gameplay_transport::capabilities::SelectedCapabilities;
+use crate::gameplay_transport::capabilities::{
+    BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
+};
 use crate::gameplay_transport::connection::{
     AdmittedSession, ControllerBinding, FirstEntryOutcome,
 };
@@ -126,7 +128,7 @@ fn scenario() -> TestResult {
         leader.item_fence = Some(leader_fence);
         leader.first_entry = FirstEntryOutcome::Positioned;
         leader.continuity.selected_capabilities = SelectedCapabilities::select(
-            owner.offered_capabilities(),
+            BUNDLE_WORLD_OFFERED_CAPABILITIES,
             &[wire::CAPABILITY_BOSS_ENCOUNTER_V1],
         )
         .ok_or("boss capability")?;
