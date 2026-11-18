@@ -1,11 +1,12 @@
 //! The Edron chamber's actual switches use the PostgreSQL-backed game command owner.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
+use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
 use crate::foundation::ChannelRuntimeV1;
 use crate::gameplay_transport::connection::{
     FirstEntryOutcome, FreshAdmissionAuthority, UseCommand,
 };
-use crate::map::{overlay::TilePos, view::MapFacts};
+use crate::map::{boot::BundleCollisionIndexExt, overlay::TilePos, view::MapFacts};
 use oteryn_gameplay_quests::quest::world_callbacks;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
@@ -200,7 +201,10 @@ fn chamber(case: ChamberCase) -> TestResult {
                 return entry::exercise(&h, &mut owner, admitted, &callback).await;
             }
             deps.initialize(&owner).await;
-            let map = owner.bundle_map().ok_or("map")?;
+            let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
+                return Err("chamber collision index".into());
+            };
+            let map = index.map();
             let at = world_tile(station.lever);
             let key = source_lever(map, at)?;
             let mut placement = world.base().digest().to_vec();
@@ -300,7 +304,7 @@ fn chamber(case: ChamberCase) -> TestResult {
                         .chat
                         .admit(member, "Chamber witness", owner.owner_now());
                 }
-                for (actor, session, fence, station, command_id) in [
+                for (index, (actor, session, fence, station, command_id)) in [
                     (
                         peer_actor,
                         peer,
@@ -322,7 +326,10 @@ fn chamber(case: ChamberCase) -> TestResult {
                         &group.stations[3],
                         2,
                     ),
-                ] {
+                ]
+                .into_iter()
+                .enumerate()
+                {
                     let closed = crate::map::floor::BundleDoors(&map.facts);
                     let mut runtime = owner.runtime.lock().await;
                     let before = runtime.read_actor_position(actor).map_err(debug)?;
@@ -343,8 +350,11 @@ fn chamber(case: ChamberCase) -> TestResult {
                     let key = source_lever(map, world_tile(station.lever))?;
                     let mut placement = world.base().digest().to_vec();
                     placement.extend_from_slice(&key.to_be_bytes());
-                    // The ordinary USE gate measures the real Channel clock.
-                    tokio::time::sleep(std::time::Duration::from_millis(210)).await;
+                    // Advance the production USE gate's clock without a wall-clock sleep.
+                    owner.clock_origin = owner
+                        .clock_origin
+                        .checked_sub(std::time::Duration::from_secs(1))
+                        .ok_or("USE gate clock")?;
                     let outcome = owner
                         .use_object(
                             actor,
@@ -365,6 +375,13 @@ fn chamber(case: ChamberCase) -> TestResult {
                         "switch {:?}",
                         station.lever
                     );
+                    if index < 2 {
+                        assert_eq!(
+                            owner.states.quest_callbacks.next_encounter_due_us(),
+                            None,
+                            "a partial switch group must leave the encounter unscheduled"
+                        );
+                    }
                 }
                 assert_chamber_warning(&owner, [session, peer], "10 minutes");
                 assert!(
