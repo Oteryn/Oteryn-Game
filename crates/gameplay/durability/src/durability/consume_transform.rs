@@ -86,6 +86,9 @@ enum ActionContext<'a> {
     #[default]
     Carried,
     CakeBaker(&'a CakeBakerContext),
+    CellarEgg {
+        roll: u32,
+    },
     Ground(&'a GroundActionContext),
     DispenserTarget(&'a GroundActionContext),
     DispenserHouseTarget(&'a HouseActionContext),
@@ -98,6 +101,9 @@ struct ActionGroundFences<'a> {
     recovery: &'a crate::character_recovery_fence::CharacterRecoveryFenceV1,
     node: &'a NodeIncarnationProof,
 }
+
+#[path = "consume_transform_cellar.rs"]
+mod cellar;
 
 impl DurabilityRoot {
     /// Compatibility surface for existing rust, lottery and reward callers.
@@ -403,21 +409,19 @@ async fn write<C: ItemLoopContent>(
         )
         .is_ok_and(|intent| intent.use_with.is_some())
     {
-        let questline = sqlx::query_scalar::<_, i64>(
-            "SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
-        )
-        .bind(fence.character_id.as_bytes().as_slice())
-        .bind(oteryn_gameplay_items::haunted_cellar::QUESTLINE)
-        .fetch_optional(&mut ***tx)
-        .await?;
-        if questline.unwrap_or(-1) < 1 {
+        if cellar::questline(tx, fence).await? < 1 {
             return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
         }
         oteryn_gameplay_items::novelty_items::haunted_cellar_disguise(native, &definition)
     } else {
         None
     };
-    let mut conversion = if let Some(planting) = planting_plan {
+    let mut conversion = if let ActionContext::CellarEgg { roll } = ground {
+        let Some(plan) = cellar::prepare(tx, fence, native, &definition, roll).await? else {
+            return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
+        };
+        plan
+    } else if let Some(planting) = planting_plan {
         planting
     } else if let Some(conversion) = conversion {
         let effects = if conversion.recipe == "oteryn:planting.ice-flower" {

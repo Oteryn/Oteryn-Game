@@ -91,6 +91,7 @@ mod grizzly_rewards;
 mod guild_bank;
 mod guild_chat;
 mod guild_war;
+mod haunted_cellar;
 mod highscores;
 mod hive_shared_kills;
 mod house_base_decorations;
