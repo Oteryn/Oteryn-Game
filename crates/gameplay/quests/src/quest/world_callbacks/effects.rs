@@ -747,10 +747,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || callback.native_rule.is_some()
                 || callback.passages.is_empty()
                 || *effects
-                    != CallbackEffects {
+                    != CallbackEffectSet::from_shared(CallbackEffects {
                         close_passages_after_ms: Some(delay),
                         ..Default::default()
-                    }
+                    })
         })
         || effects.passages_reset_after_ms.is_some_and(|delay| {
             !(1..=3_600_000).contains(&delay)

@@ -3,13 +3,17 @@ use super::TestResult;
 
 #[test]
 fn timed_encounter_moves_the_admitted_group_at_expiry_and_resets_the_lever() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     super::annihilator_route::timed_group_transfer(admin)
 }
 
 #[test]
 fn ashmunrah_step_counts_only_the_stepping_characters_durable_switches() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     super::annihilator_route::personal_switch_threshold(admin)
 }
 
@@ -18,9 +22,19 @@ pub(super) async fn ashmunrah(
     admitted: &mut [super::AdmittedSession],
     pool: &sqlx::PgPool,
 ) -> TestResult {
-    use super::{annihilator_route::{step, use_target}, fixture::debug, l6_shared_gate_native::relocate};
-    use crate::map::{overlay::TilePos, view::{MapFacts, placement_key}};
-    use oteryn_protocol_oteryn::{world_object::{UseDisposition, WorldObjectTarget}, world_spatial::StepDirection};
+    use super::{
+        annihilator_route::{step, use_target},
+        fixture::debug,
+        l6_shared_gate_native::relocate,
+    };
+    use crate::map::{
+        overlay::TilePos,
+        view::{MapFacts, placement_key},
+    };
+    use oteryn_protocol_oteryn::{
+        world_object::{UseDisposition, WorldObjectTarget},
+        world_spatial::StepDirection,
+    };
 
     // Crystal 201189f8 actions_active_teleport_switches.lua:18-21,39-50
     // and movements_enter_ashmunrah_teleport_switche_done.lua:9-16.
@@ -45,28 +59,48 @@ pub(super) async fn ashmunrah(
             placement,
             expected_revision: map.facts.object_revision(key),
         };
-        assert_eq!(use_target(owner, member, &target).await?, UseDisposition::Committed);
+        assert_eq!(
+            use_target(owner, member, &target).await?,
+            UseDisposition::Committed
+        );
         if index >= 4 {
             let member = &mut admitted[0];
             let actor = member.runtime_actor.ok_or("stepping actor")?;
             relocate(owner, actor, member.game_session_id, origin).await?;
             step(owner, member, StepDirection::East).await?;
-            let at = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position();
-            assert_eq!((at.x, at.y, at.floor), if index == 4 { (33181, 32884, 11) } else { (33198, 32885, 11) });
+            let at = owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position();
+            assert_eq!(
+                (at.x, at.y, at.floor),
+                if index == 4 {
+                    (33181, 32884, 11)
+                } else {
+                    (33198, 32885, 11)
+                }
+            );
         }
     }
     let per_character: Vec<i64> = sqlx::query_scalar(
         "SELECT count(*) AS switches FROM game_shared_switch_leases
          WHERE recipe='oteryn:quest-callback/ancient-tombs-ashmunrah-switch'
          GROUP BY character_id ORDER BY switches",
-    ).fetch_all(pool).await?;
+    )
+    .fetch_all(pool)
+    .await?;
     assert_eq!(per_character, [1, 5]);
     Ok(())
 }
 
 #[test]
 fn reversible_switch_expires_and_an_old_deadline_cannot_close_a_reopened_window() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     super::annihilator_route::timed_passage(admin)
 }
 
@@ -75,12 +109,13 @@ pub(super) async fn reversible_passage(
     member: &mut super::AdmittedSession,
     map: &crate::map::boot::BundleMap,
 ) -> TestResult {
-    use super::annihilator_route::{target, use_target};
+    use super::annihilator_route::{step, target, use_target};
     use crate::map::view::MapFacts;
-    use oteryn_protocol_oteryn::world_object::UseDisposition;
+    use oteryn_protocol_oteryn::{world_object::UseDisposition, world_spatial::StepDirection};
     use std::sync::atomic::Ordering;
 
-    let binding = oteryn_gameplay_quests::quest::world_callbacks::load()?.into_iter()
+    let binding = oteryn_gameplay_quests::quest::world_callbacks::load()?
+        .into_iter()
         .find(|callback| callback.key.ends_with("/annihilator-entry"))
         .ok_or("fixture lever")?;
     let mut authored = serde_json::to_value(binding)?;
@@ -91,29 +126,93 @@ pub(super) async fn reversible_passage(
     authored["passages"] = serde_json::json!([{
         "position": {"x": 33225, "y": 31659, "floor": -13}, "appearance": 5113
     }]);
+    let mut close = authored.clone();
+    close["key"] = "oteryn:quest-callback/fixture-trapdoor-step".into();
+    close["trigger"] = "step_in".into();
+    close["selector"] = serde_json::json!({"position": {"x":33224,"y":31671,"floor":-13}});
+    close["lever"] = serde_json::Value::Null;
+    close["reversible"] = false.into();
+    close["effects"] = serde_json::json!({"close_passages_after_ms": 3_000});
     let callback = serde_json::from_value(authored)?;
-    assert!(owner.states.quest_callbacks.fixture.set(vec![callback]).is_ok());
+    let step_close = serde_json::from_value(close)?;
+    assert!(
+        owner
+            .states
+            .quest_callbacks
+            .fixture
+            .set(vec![callback, step_close])
+            .is_ok()
+    );
     let wall = target(map, 33225, 31659)?;
     let wall_key = u64::from_be_bytes(wall.placement[32..].try_into()?);
-    owner.states.test_owner_time.store(100_000_001, Ordering::Relaxed);
-    assert_eq!(use_target(owner, member, &target(map, 33226, 31671)?).await?, UseDisposition::Committed);
+    owner
+        .states
+        .test_owner_time
+        .store(100_000_001, Ordering::Relaxed);
+    assert_eq!(
+        use_target(owner, member, &target(map, 33226, 31671)?).await?,
+        UseDisposition::Committed
+    );
     assert!(map.facts.base_hidden(wall_key));
     assert_eq!(map.facts.next_movement_decay_time(), Some(200_000_000));
 
-    owner.states.test_owner_time.store(110_000_001, Ordering::Relaxed);
-    assert_eq!(use_target(owner, member, &target(map, 33226, 31671)?).await?, UseDisposition::Committed);
+    owner
+        .states
+        .test_owner_time
+        .store(110_000_001, Ordering::Relaxed);
+    assert_eq!(
+        use_target(owner, member, &target(map, 33226, 31671)?).await?,
+        UseDisposition::Committed
+    );
     assert!(!map.facts.base_hidden(wall_key));
 
-    owner.states.test_owner_time.store(120_000_001, Ordering::Relaxed);
-    assert_eq!(use_target(owner, member, &target(map, 33226, 31671)?).await?, UseDisposition::Committed);
+    owner
+        .states
+        .test_owner_time
+        .store(120_000_001, Ordering::Relaxed);
+    assert_eq!(
+        use_target(owner, member, &target(map, 33226, 31671)?).await?,
+        UseDisposition::Committed
+    );
     assert!(map.facts.base_hidden(wall_key));
     map.facts.expire_movement_items(200_000_000);
-    assert!(map.facts.base_hidden(wall_key), "old window cannot close the reopened wall");
+    assert!(
+        map.facts.base_hidden(wall_key),
+        "old window cannot close the reopened wall"
+    );
     map.facts.expire_movement_items(219_999_999);
     assert!(map.facts.base_hidden(wall_key));
     map.facts.expire_movement_items(220_000_000);
     assert!(!map.facts.base_hidden(wall_key));
     assert_eq!(map.facts.next_movement_decay_time(), None);
+
+    // Crystal 201189f8 movement-1-first_seal_close_mw.lua:60-72.
+    owner
+        .states
+        .test_owner_time
+        .store(230_000_001, Ordering::Relaxed);
+    assert_eq!(
+        use_target(owner, member, &target(map, 33226, 31671)?).await?,
+        UseDisposition::Committed
+    );
+    owner
+        .states
+        .test_owner_time
+        .store(240_000_001, Ordering::Relaxed);
+    assert_eq!(
+        use_target(owner, member, &target(map, 33226, 31671)?).await?,
+        UseDisposition::Committed
+    );
+    owner
+        .states
+        .test_owner_time
+        .store(241_000_001, Ordering::Relaxed);
+    step(owner, member, StepDirection::West).await?;
+    assert_eq!(map.facts.next_movement_decay_time(), Some(244_000_000));
+    map.facts.expire_movement_items(243_999_999);
+    assert!(map.facts.base_hidden(wall_key));
+    map.facts.expire_movement_items(244_000_000);
+    assert!(!map.facts.base_hidden(wall_key));
     Ok(())
 }
 
@@ -128,7 +227,9 @@ const fn at(x: u16, y: u16, floor: i8) -> Position {
 
 #[test]
 fn lord_chamber_last_switch_starts_the_window_and_expiry_resets_the_entire_circuit() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     super::annihilator_route::lord_switches(admin)
 }
 
@@ -138,24 +239,55 @@ pub(super) async fn lord(
     map: &crate::map::boot::BundleMap,
 ) -> TestResult {
     use super::{annihilator_route::use_target, fixture::debug, quest_world_callbacks::local};
-    use crate::map::{floor::BundleDoors, overlay::TilePos, view::{MapFacts, placement_key}};
+    use crate::map::{
+        floor::BundleDoors,
+        overlay::TilePos,
+        view::{MapFacts, placement_key},
+    };
     use oteryn_gameplay_quests::quest::world_callbacks::Callback;
     use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
     use std::sync::atomic::Ordering;
 
     // Crystal 201189f8 actions_lord_of_elements_lever.lua:1-30,63-99,143-188.
     let switches = [
-        (at(33273,31840,-12), at(33272,31840,-12), at(33275,31834,-12), at(33275,31838,-12), 5072),
-        (at(33262,31840,-12), at(33263,31840,-12), at(33266,31843,-12), at(33270,31843,-12), 5071),
-        (at(33262,31831,-12), LORD_START, at(33260,31834,-12), at(33260,31838,-12), 5072),
-        (at(33273,31831,-12), at(33272,31831,-12), at(33266,31828,-12), at(33270,31828,-12), 5071),
+        (
+            at(33273, 31840, -12),
+            at(33272, 31840, -12),
+            at(33275, 31834, -12),
+            at(33275, 31838, -12),
+            5072,
+        ),
+        (
+            at(33262, 31840, -12),
+            at(33263, 31840, -12),
+            at(33266, 31843, -12),
+            at(33270, 31843, -12),
+            5071,
+        ),
+        (
+            at(33262, 31831, -12),
+            LORD_START,
+            at(33260, 31834, -12),
+            at(33260, 31838, -12),
+            5072,
+        ),
+        (
+            at(33273, 31831, -12),
+            at(33272, 31831, -12),
+            at(33266, 31828, -12),
+            at(33270, 31828, -12),
+            5071,
+        ),
     ];
-    let window: Vec<_> = switches.iter().map(|&(lever, station, from, to, appearance)| {
-        serde_json::json!({
-            "lever": lever, "station": station, "wall_from": from, "wall_to": to,
-            "wall_appearance": appearance
+    let window: Vec<_> = switches
+        .iter()
+        .map(|&(lever, station, from, to, appearance)| {
+            serde_json::json!({
+                "lever": lever, "station": station, "wall_from": from, "wall_to": to,
+                "wall_appearance": appearance
+            })
         })
-    }).collect();
+        .collect();
     let mut callbacks = Vec::new();
     for (index, &(lever, _, _, _, _)) in switches.iter().enumerate() {
         callbacks.push(serde_json::from_value::<Callback>(serde_json::json!({
@@ -183,22 +315,43 @@ pub(super) async fn lord(
     assert!(owner.states.quest_callbacks.fixture.set(callbacks).is_ok());
 
     let target_for = |lever: Position| -> TestResult<WorldObjectTarget> {
-        let tile = TilePos { x: lever.x, y: lever.y, floor: lever.floor };
-        let base = map.overlay.base().tile(tile.x, tile.y, tile.floor).ok_or("lever tile")?;
-        let found = base.ids().iter().zip(base.depths()).filter(|(_, depth)| **depth == 0)
-            .enumerate().find_map(|(ordinal, (id, _))| {
+        let tile = TilePos {
+            x: lever.x,
+            y: lever.y,
+            floor: lever.floor,
+        };
+        let base = map
+            .overlay
+            .base()
+            .tile(tile.x, tile.y, tile.floor)
+            .ok_or("lever tile")?;
+        let found = base
+            .ids()
+            .iter()
+            .zip(base.depths())
+            .filter(|(_, depth)| **depth == 0)
+            .enumerate()
+            .find_map(|(ordinal, (id, _))| {
                 let ordinal = u8::try_from(ordinal).ok()?;
                 let facts = map.facts.base_entry(tile, ordinal, *id)?;
-                [2772, 2773].contains(&facts.appearance_id)
-                    .then(|| placement_key(tile, ordinal)).flatten()
-            }).ok_or("source lever")?;
+                [2772, 2773]
+                    .contains(&facts.appearance_id)
+                    .then(|| placement_key(tile, ordinal))
+                    .flatten()
+            })
+            .ok_or("source lever")?;
         let mut placement = map.overlay.base().digest().to_vec();
         placement.extend_from_slice(&found.to_be_bytes());
-        Ok(WorldObjectTarget { placement, expected_revision: map.facts.object_revision(found) })
+        Ok(WorldObjectTarget {
+            placement,
+            expected_revision: map.facts.object_revision(found),
+        })
     };
 
     // The east switch is deliberately used last. Only that use starts the 10-minute timer.
-    for (turn, (which_switch, which_member)) in [(2, 0), (3, 1), (1, 1), (0, 0)].into_iter().enumerate() {
+    for (turn, (which_switch, which_member)) in
+        [(2, 0), (3, 1), (1, 1), (0, 0)].into_iter().enumerate()
+    {
         let (lever, station, wall, _, _) = switches[which_switch];
         let member = &mut members[which_member];
         {
@@ -208,32 +361,79 @@ pub(super) async fn lord(
             if expected.position() != local(station) {
                 let doors = BundleDoors(&map.facts);
                 let proof = crate::map::floor::prepare_quest_encounter_ejection(
-                    &runtime, owner.movement_cells(), actor, member.game_session_id, expected,
-                    local(station), &doors,
-                ).map_err(debug)?;
+                    &runtime,
+                    owner.movement_cells(),
+                    actor,
+                    member.game_session_id,
+                    expected,
+                    local(station),
+                    &doors,
+                )
+                .map_err(debug)?;
                 runtime.commit_source_step(proof).map_err(debug)?;
             }
         }
-        owner.states.test_owner_time.store(100_000_001 + u64::try_from(turn)? * 1_000_000, Ordering::Relaxed);
-        assert_eq!(use_target(owner, member, &target_for(lever)?).await?, UseDisposition::Committed);
-        let wall = TilePos { x: wall.x, y: wall.y, floor: wall.floor };
-        assert!(map.facts.quest_callback_blocked(map.overlay.base(), wall, false));
-        assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), (turn == 3).then_some(703_000_000));
+        owner.states.test_owner_time.store(
+            100_000_001 + u64::try_from(turn)? * 1_000_000,
+            Ordering::Relaxed,
+        );
+        assert_eq!(
+            use_target(owner, member, &target_for(lever)?).await?,
+            UseDisposition::Committed
+        );
+        let wall = TilePos {
+            x: wall.x,
+            y: wall.y,
+            floor: wall.floor,
+        };
+        assert!(
+            map.facts
+                .quest_callback_blocked(map.overlay.base(), wall, false)
+        );
+        assert_eq!(
+            owner.states.quest_callbacks.next_encounter_due_us(),
+            (turn == 3).then_some(703_000_000)
+        );
     }
-    assert_eq!(owner.runtime.lock().await.visible_entities().creatures.len(), 1);
-    owner.states.test_owner_time.store(703_000_001, Ordering::Relaxed);
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .visible_entities()
+            .creatures
+            .len(),
+        1
+    );
+    owner
+        .states
+        .test_owner_time
+        .store(703_000_001, Ordering::Relaxed);
     owner.drain_quest_encounter_deadlines().await;
     let runtime = owner.runtime.lock().await;
     for member in members {
         let actor = member.runtime_actor.ok_or("actor")?;
-        assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(), local(LORD_EXIT));
+        assert_eq!(
+            runtime
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            local(LORD_EXIT)
+        );
     }
     assert!(runtime.visible_entities().creatures.is_empty());
     assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), None);
     for (lever, _, wall, _, _) in switches {
         assert_eq!(target_for(lever)?.expected_revision, 2);
-        let wall = TilePos { x: wall.x, y: wall.y, floor: wall.floor };
-        assert!(!map.facts.quest_callback_blocked(map.overlay.base(), wall, false));
+        let wall = TilePos {
+            x: wall.x,
+            y: wall.y,
+            floor: wall.floor,
+        };
+        assert!(
+            !map.facts
+                .quest_callback_blocked(map.overlay.base(), wall, false)
+        );
     }
     Ok(())
 }
