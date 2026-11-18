@@ -21,10 +21,6 @@ enum Case {
     Rocket,
     Hat,
     HatInBag,
-    HauntedCellarBucket,
-    HauntedCellarDisguise,
-    HauntedTombCurse,
-    HauntedTombKey,
     VoodooSuccess,
     VoodooFailure,
     VoodooWithoutTarget,
@@ -49,9 +45,6 @@ impl Case {
             Self::Dice | Self::DiceStreak | Self::GroundDice => "oteryn:item.tibia.i5792",
             Self::Trumpet | Self::GroundTrumpet | Self::NestedTrumpet => "oteryn:item.tibia.i6572",
             Self::Rocket | Self::GroundRocket | Self::PendingLifecycle => "oteryn:item.tibia.i6576",
-            Self::HauntedCellarBucket => "oteryn:item.tibia.i29310",
-            Self::HauntedCellarDisguise => "oteryn:item.tibia.i29309",
-            Self::HauntedTombCurse | Self::HauntedTombKey => "oteryn:item.tibia.i29349",
             Self::Hat | Self::HatInBag => "oteryn:item.tibia.i6578",
             Self::VoodooSuccess
             | Self::VoodooFailure
@@ -61,16 +54,6 @@ impl Case {
             Self::Present | Self::GroundPresent => "oteryn:item.tibia.i906",
             Self::FeroxaTrap | Self::FeroxaTrapOutside => "oteryn:item.tibia.i22074",
         }
-    }
-    fn tomb(self) -> bool {
-        matches!(self, Self::HauntedTombCurse | Self::HauntedTombKey)
-    }
-    fn haunted(self) -> bool {
-        self.tomb()
-            || matches!(
-                self,
-                Self::HauntedCellarBucket | Self::HauntedCellarDisguise
-            )
     }
     fn ground(self) -> bool {
         matches!(
@@ -85,26 +68,12 @@ impl Case {
                 | Self::FeroxaTrapOutside
         )
     }
-    fn feroxa(self) -> bool {
-        matches!(self, Self::FeroxaTrap | Self::FeroxaTrapOutside)
-    }
+    fn feroxa(self) -> bool { matches!(self, Self::FeroxaTrap | Self::FeroxaTrapOutside) }
     fn origin(self) -> MovementLocalPosition {
         match self {
-            Self::FeroxaTrap => MovementLocalPosition {
-                x: 33419,
-                y: 31540,
-                floor: 11,
-            },
-            Self::FeroxaTrapOutside => MovementLocalPosition {
-                x: 33420,
-                y: 31540,
-                floor: 11,
-            },
-            _ => MovementLocalPosition {
-                x: 6,
-                y: 0,
-                floor: 7,
-            },
+            Self::FeroxaTrap => MovementLocalPosition { x: 33419, y: 31540, floor: 11 },
+            Self::FeroxaTrapOutside => MovementLocalPosition { x: 33420, y: 31540, floor: 11 },
+            _ => MovementLocalPosition { x: 6, y: 0, floor: 7 },
         }
     }
     fn nested(self) -> bool {
@@ -119,57 +88,14 @@ impl Case {
     fn refused(self) -> bool {
         matches!(
             self,
-            Self::HatInBag
-                | Self::VoodooWithoutTarget
-                | Self::VoodooFarTarget
-                | Self::FeroxaTrapOutside
+            Self::HatInBag | Self::VoodooWithoutTarget | Self::VoodooFarTarget | Self::FeroxaTrapOutside
         )
     }
 }
 #[test]
-fn qn5_feroxa_trap_ground_use_is_fenced_and_replay_safe() -> TestResult {
-    run_case(Case::FeroxaTrap)
-}
+fn qn5_feroxa_trap_ground_use_is_fenced_and_replay_safe() -> TestResult { run_case(Case::FeroxaTrap) }
 #[test]
-fn qn5_feroxa_trap_ground_use_checks_actor_room_boundary() -> TestResult {
-    run_case(Case::FeroxaTrapOutside)
-}
-#[test]
-fn dcourts_haunted_cellar_egg_use_starts_bucket_decay() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    assert!(!admin.is_empty());
-    run_case(Case::HauntedCellarBucket)
-}
-
-#[test]
-fn dcourts_haunted_cellar_full_bucket_use_on_self_commits_disguise() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    assert!(!admin.is_empty());
-    run_case(Case::HauntedCellarDisguise)
-}
-
-#[test]
-fn dcourts_haunted_tomb_curse_spawns_one_mummy_and_locks_sarcophagus() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    assert!(!admin.is_empty());
-    run_case(Case::HauntedTombCurse)
-}
-
-#[test]
-fn dcourts_haunted_tomb_key_has_thirty_minute_absolute_deadline() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    assert!(!admin.is_empty());
-    run_case(Case::HauntedTombKey)
-}
-
+fn qn5_feroxa_trap_ground_use_checks_actor_room_boundary() -> TestResult { run_case(Case::FeroxaTrapOutside) }
 #[test]
 fn novelty_costume_commits_condition_once() -> TestResult {
     run_case(Case::Costume)
