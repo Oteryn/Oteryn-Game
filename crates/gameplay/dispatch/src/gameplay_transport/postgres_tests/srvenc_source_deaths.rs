@@ -351,14 +351,14 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
     // A second native actor deals damage without becoming the reward principal.
     let lesser_contributor = if renegade_orc {
         use crate::world_party_runtime_postgres_cases::{
-            FreshPlayerOwners, committed_fresh_player_from_source_owned,
+            FreshPlayerOwners, committed_fresh_player_with_operation,
         };
         let now = sqlx::query_scalar::<_, i64>(
             "SELECT floor(extract(epoch FROM clock_timestamp()))::bigint",
         )
         .fetch_one(&h.pool)
         .await?;
-        let (current, operation) = committed_fresh_player_from_source_owned(
+        let (current, operation) = committed_fresh_player_with_operation(
             &FreshPlayerOwners {
                 root: h.root.clone(),
                 node: h.node.clone(),
@@ -368,7 +368,6 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
             63,
             171,
             now,
-            Some("platform-test"),
         )
         .await?;
         let session = current.current_game_session_id();
