@@ -68,6 +68,16 @@ pub(super) async fn publish(
         return;
     }
     if let Some(fire) = &effects.fire_damage {
+        #[cfg(test)]
+        if let Some((arrived, proceed)) = admission
+            .states
+            .npc_conversations
+            .fixture_reaction_pause
+            .get()
+        {
+            arrived.notify_one();
+            proceed.notified().await;
+        }
         apply_fire(admission, runtime, actor, command, fire).await;
     }
     // Crystal 201189f8 data-global/npc/the_orc_king.lua:48-59 births eight public creatures.

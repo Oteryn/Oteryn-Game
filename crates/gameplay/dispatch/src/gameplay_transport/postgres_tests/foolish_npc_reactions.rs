@@ -38,7 +38,7 @@ fn kazzan_greeting_requires_the_current_mummy_look() -> TestResult {
         return Ok(());
     };
     super::kill_reward_e2e::scenario_thread::run("kazzan-mummy", move || {
-        scenario(admin, KAZZAN_NPC)
+        scenario(admin, KAZZAN_NPC, false)
     })
 }
 
@@ -47,7 +47,19 @@ fn wyda_cookie_hand_in_consumes_cookie_and_applies_delayed_soulfire() -> TestRes
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("wyda-soulfire", move || scenario(admin, WYDA_NPC))
+    super::kill_reward_e2e::scenario_thread::run("wyda-soulfire", move || {
+        scenario(admin, WYDA_NPC, false)
+    })
+}
+
+#[test]
+fn wyda_soulfire_survives_interrupted_dialogue_and_busy_spell_state() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("wyda-soulfire-recovery", move || {
+        scenario(admin, WYDA_NPC, true)
+    })
 }
 
 #[test]
@@ -56,11 +68,11 @@ fn the_orc_king_first_greeting_spawns_public_guards_once() -> TestResult {
         return Ok(());
     };
     super::kill_reward_e2e::scenario_thread::run("orc-king-guards", move || {
-        scenario(admin, ORC_NPC)
+        scenario(admin, ORC_NPC, false)
     })
 }
 
-fn scenario(admin: String, npc: &'static str) -> TestResult {
+fn scenario(admin: String, npc: &'static str, contend_on_recovery: bool) -> TestResult {
     let at = Position {
         x: 32588,
         y: 31644,
@@ -284,7 +296,11 @@ fn scenario(admin: String, npc: &'static str) -> TestResult {
             } else if npc == WYDA_NPC {
                 let offer = talk(owner, admitted, fence, entity, 2, "cookie").await?;
                 assert_eq!(offer.lines, [COOKIE_PROMPT]);
-                let delivered = talk(owner, admitted, fence, entity, 3, "yes").await?;
+                let delivered = if contend_on_recovery {
+                    recover_soulfire(owner, admitted, fence, entity).await?
+                } else {
+                    talk(owner, admitted, fence, entity, 3, "yes").await?
+                };
                 assert_eq!(delivered.lines, [reply]);
                 assert!(delivered.inventory_changed);
                 let actor = admitted.runtime_actor.ok_or("actor")?;
@@ -359,6 +375,75 @@ fn scenario(admin: String, npc: &'static str) -> TestResult {
 pub(super) struct TalkResult {
     pub(super) lines: Vec<String>,
     pub(super) inventory_changed: bool,
+}
+
+async fn recover_soulfire(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    fence: CurrentCharacterGameplayFence,
+    npc: EntityRef,
+) -> TestResult<TalkResult> {
+    use std::{future::poll_fn, task::Poll, time::Duration};
+    use tokio::sync::Notify;
+
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let command = UseCommand {
+        game_session_id: admitted.game_session_id,
+        command_id: 3,
+        item_fence: Some(fence.item_fence()),
+    };
+    owner
+        .states
+        .test_owner_time
+        .store(6_000_000, Ordering::Relaxed);
+    let conversations = &owner.states.npc_conversations;
+    conversations.fixture_interrupt_quest_dialogue_commit(admitted.game_session_id, 3)?;
+    let lost = owner
+        .npc_talk(
+            actor,
+            command,
+            NpcTalkIntent {
+                npc_actor: npc,
+                text: "yes".into(),
+            },
+        )
+        .await;
+    assert!(
+        lost.unknown,
+        "the cookie hand-in loses its post-commit acknowledgement"
+    );
+
+    let (arrived, proceed) = conversations
+        .fixture_reaction_pause
+        .get_or_init(|| (Notify::new(), Notify::new()));
+    let mut recovered = std::pin::pin!(owner.resume_npc_bank(actor, command));
+    tokio::time::timeout(Duration::from_secs(15), async {
+        tokio::select! {
+            _ = arrived.notified() => Ok(()),
+            _ = &mut recovered => Err("receipt recovery returned before projecting Soulfire"),
+        }
+    })
+    .await??;
+
+    // Hold only spell state, as a Channel reader can. The receipt has already
+    // been reconciled and its runtime turn is at the reaction publication.
+    let gate = owner.states.spell_states.lock().await;
+    proceed.notify_one();
+    let publication = poll_fn(|context| Poll::Ready(recovered.as_mut().poll(context))).await;
+    assert!(
+        publication.is_pending(),
+        "the committed reaction must wait for spell state"
+    );
+    drop(gate);
+
+    let outcome = recovered.await.ok_or("recovered Wyda response")?;
+    assert_eq!(outcome.disposition, NpcIntentDisposition::Ok);
+    assert!(!outcome.unknown);
+    assert!(owner.resume_npc_bank(actor, command).await.is_none());
+    Ok(TalkResult {
+        lines: outcome.conversation.ok_or("recovered Wyda dialogue")?.lines,
+        inventory_changed: outcome.inventory_changed,
+    })
 }
 
 pub(super) async fn talk(

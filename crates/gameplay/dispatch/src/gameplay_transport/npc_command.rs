@@ -140,6 +140,9 @@ pub struct NpcConversations {
     #[cfg(test)]
     fixture_offer_rows: std::sync::OnceLock<Vec<reward_callbacks::Offer>>,
     #[cfg(test)]
+    pub(super) fixture_reaction_pause:
+        std::sync::OnceLock<(tokio::sync::Notify, tokio::sync::Notify)>,
+    #[cfg(test)]
     pub(super) fixture_healers:
         std::sync::OnceLock<crate::content::npc_catalogue::healing::Catalogue>,
 }
