@@ -106,7 +106,12 @@ fn anatomy_book_is_delivered_once() -> TestResult {
 
 #[test]
 fn colourful_mushroom_is_delivered_once() -> TestResult {
-    pickup_case("dream-courts-colourful-mushroom", (33663, 32192, -7), 1, 30009)
+    pickup_case(
+        "dream-courts-colourful-mushroom",
+        (33663, 32192, -7),
+        1,
+        30009,
+    )
 }
 
 fn pickup_case(name: &'static str, chest: (u16, u16, i8), ordinal: u8, item: u16) -> TestResult {
@@ -114,10 +119,13 @@ fn pickup_case(name: &'static str, chest: (u16, u16, i8), ordinal: u8, item: u16
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
-        pickup(chest, ordinal, item)
-    });
-    eprintln!("POSTGRES_CASE_COMPLETED {name} duration={:?} success={}", started.elapsed(), result.is_ok());
+    let result =
+        super::kill_reward_e2e::scenario_thread::run(name, move || pickup(chest, ordinal, item));
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED {name} duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
     result
 }
 
@@ -242,14 +250,16 @@ fn pickup(chest: (u16, u16, i8), ordinal: u8, item: u16) -> TestResult {
             owner.admit_quest_session(&admitted).await;
             deps.initialize(&owner).await;
             let results = super::quest_callbacks::wire_uses(&owner, admitted, &[1, 2], &target).await?;
-            assert_eq!(results[0], UseDisposition::Committed, "source pickup USE");
-            assert_ne!(results[1], UseDisposition::Committed, "a second USE must not mint again");
+            if results[0] != UseDisposition::Committed {
+                return Err(format!("source pickup USE returned {:?}", results[0]).into());
+            }
+            assert_eq!(results[1], UseDisposition::Rejected, "a second USE must not mint again");
             let bag = harness.root.read_character_backpack(&authority, fence.character_id)
                 .await.map_err(debug)?.ok_or("backpack")?;
             assert_eq!(bag.entries.len(), 1);
             assert_eq!(bag.entries[0].item.quantity, 1);
             assert_eq!(bag.entries[0].item.definition.production_key, format!("oteryn:item.tibia.i{item}"));
-            let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources WHERE plan->>'quest' = 'oteryn:quest.the_dream_courts_quest'")
+            let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources WHERE transition_key LIKE 'oteryn:quest-callback/dream-courts/%'")
                 .fetch_one(&harness.pool).await?;
             assert_eq!(receipts, 1);
             Ok(())
