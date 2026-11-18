@@ -5,7 +5,9 @@ use super::quest_world_callbacks::{input_item, local, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult};
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
+use crate::durability::item_loop_move::{LoopDestination, LoopMoveRequest};
 use crate::foundation::ExactActorRef;
+use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
 use crate::map::overlay::TilePos;
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::{
@@ -19,6 +21,7 @@ use oteryn_protocol_oteryn::world_object::{
 use oteryn_protocol_oteryn::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, encode_step_intent,
 };
+use std::sync::atomic::Ordering;
 
 pub(super) const CATHEDRAL: &str = "stag-engine-cathedral";
 pub(super) const COURT: &str = "order-of-the-stag-court-warlock";
@@ -265,6 +268,60 @@ pub(super) async fn exercise_cathedral(
         .ok_or("renewed opening deadline")?;
     assert!(due > first_due);
     assert_eq!(map.facts.expire_movement_items(first_due), 0);
+    // The stand gates the pick, but taking the item back must leave the shared opening live.
+    let stand_cell = crate::durability::map_item_mint_audit::map_item_spatial_position(
+        cathedral::STAND.x,
+        cathedral::STAND.y,
+        cathedral::STAND.floor,
+    );
+    let starlight: Vec<u8> = sqlx::query_scalar(
+        "SELECT decode(replace(i.item_instance_id::text,'-',''),'hex')
+         FROM game_item_instances i JOIN game_item_ground_locations g USING (item_instance_id)
+         WHERE i.definition_production_key=$1 AND i.lifecycle=1 AND g.spatial_position=$2",
+    )
+    .bind(cathedral::STARLIGHT)
+    .bind(&stand_cell)
+    .fetch_one(&h.pool)
+    .await?;
+    let starlight = starlight.try_into().map_err(|_| "Frozen Starlight identity")?;
+    {
+        let native = owner
+            .active_generation
+            .and_then(|generation| generation.native_gameplay())
+            .ok_or("native content")?;
+        let permit = owner.spell_lane_permit().await.ok_or("item lane")?;
+        let result = owner
+            .root
+            .commit_item_loop_move(
+                &permit,
+                owner.character,
+                owner.holder,
+                &fence.item_fence(),
+                crate::foundation::CommandRef::new(
+                    admitted.game_session_id,
+                    crate::foundation::CommandId::new(1630).map_err(debug)?,
+                ),
+                &NativeItemWeights(native),
+                LoopMoveRequest {
+                    item: starlight,
+                    count: None,
+                    pickup_cell: Some(stand_cell),
+                    destination: LoopDestination::MainBackpack,
+                },
+            )
+            .await?;
+        assert!(result.is_ok(), "take back Frozen Starlight: {result:?}");
+    }
+    owner.states.loop_ground.invalidate();
+    assert_eq!(use_pick(owner, admitted).await?, UseDisposition::Rejected);
+    assert_eq!(
+        owner
+            .bundle_map()
+            .ok_or("map")?
+            .facts
+            .next_movement_decay_time(),
+        Some(due)
+    );
     assert_eq!(
         use_fixed(owner, admitted, cathedral::SOURCE, 0).await?,
         UseDisposition::Committed
@@ -367,7 +424,7 @@ pub(super) async fn exercise_cathedral(
     )
     .fetch_all(&h.pool)
     .await?;
-    assert_eq!(quantities, vec![(1, false), (1, true)]);
+    assert_eq!(quantities, vec![(1, false), (1, false)]);
     Ok(())
 }
 
@@ -448,8 +505,8 @@ pub(super) async fn exercise_court(
         use_fixed(owner, admitted, court::LEVER, 1).await?,
         UseDisposition::Committed
     );
-    {
-        let mut runtime = owner.runtime.lock().await;
+    let due = {
+        let runtime = owner.runtime.lock().await;
         let states = owner.states.spell_states.lock().await;
         let phases = &states.encounter_phases;
         let due = phases.court_warlock_due_us().ok_or("first wave deadline")?;
@@ -462,14 +519,23 @@ pub(super) async fn exercise_court(
                 local(court::CENTER)
             );
         }
-        phases.tick_court_warlock(&mut runtime, due - 1);
+        due
+    };
+    owner.states.test_owner_time.store(due, Ordering::Relaxed);
+    owner.drain_quest_encounter_deadlines().await;
+    {
+        let runtime = owner.runtime.lock().await;
         assert!(
             runtime
                 .current_live_creature_census()
                 .map_err(debug)?
                 .is_empty()
         );
-        phases.tick_court_warlock(&mut runtime, due);
+    }
+    owner.states.test_owner_time.store(due + 1, Ordering::Relaxed);
+    owner.drain_quest_encounter_deadlines().await;
+    let exit_at = {
+        let runtime = owner.runtime.lock().await;
         let creatures = runtime.current_live_creature_census().map_err(debug)?;
         assert_eq!(creatures.len(), court::RAUBRITTERS_PER_WAVE);
         assert!(creatures.iter().all(|actor| {
@@ -477,8 +543,23 @@ pub(super) async fn exercise_court(
                 .iter()
                 .any(|kind| runtime.matches_live_creature_identity(*actor, kind.as_bytes()))
         }));
-        let exit_at = phases.court_warlock_due_us().ok_or("encounter timeout")?;
-        phases.tick_court_warlock(&mut runtime, exit_at);
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .encounter_phases
+            .court_warlock_due_us()
+            .ok_or("encounter timeout")?
+    };
+    assert_eq!(exit_at - due, court::TIMEOUT_US - court::INITIAL_WAVE_US);
+    owner
+        .states
+        .test_owner_time
+        .store(exit_at + 1, Ordering::Relaxed);
+    owner.drain_quest_encounter_deadlines().await;
+    {
+        let runtime = owner.runtime.lock().await;
         for actor in [deps.actor, second_actor] {
             assert_eq!(
                 runtime
@@ -494,7 +575,16 @@ pub(super) async fn exercise_court(
                 .map_err(debug)?
                 .is_empty()
         );
-        assert_eq!(phases.court_warlock_due_us(), None);
+        assert_eq!(
+            owner
+                .states
+                .spell_states
+                .lock()
+                .await
+                .encounter_phases
+                .court_warlock_due_us(),
+            None
+        );
     }
     let (stages, receipts): (Vec<i64>, i64) = sqlx::query_as(
         "SELECT ARRAY(SELECT value FROM game_character_quest_tracks WHERE track_key=$1 ORDER BY character_id),
