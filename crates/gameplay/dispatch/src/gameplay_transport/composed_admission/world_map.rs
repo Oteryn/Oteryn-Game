@@ -137,6 +137,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .get(&runtime, entry.actor, (*session)?)?
                         .soul_war_torment_icon_count()
                 }),
+                census.as_ref().and_then(|members| {
+                    use oteryn_gameplay_quests::quest::rotten_blood::putrefactory;
+
+                    let position = entry.position;
+                    if !putrefactory::shows_charge_icon(position.x, position.y, position.floor) {
+                        return None;
+                    }
+                    let (_, _, session) =
+                        members.iter().find(|(actor, _, _)| *actor == entry.actor)?;
+                    let sessions = self.states.quest_sessions.try_lock().ok()?;
+                    let charge = sessions
+                        .get(&(*session)?)?
+                        .copy
+                        .as_ref()?
+                        .tracks()
+                        .get(putrefactory::CHARGE_TRACK)
+                        .copied()?;
+                    u16::try_from(charge.min(100))
+                        .ok()
+                        .filter(|count| *count > 0)
+                }),
             ),
             display_name: None,
             health_percent: runtime
@@ -240,6 +261,7 @@ fn source_icons(
     kind: world_spatial::VisibleKind,
     actor: ExactActorRef,
     torment: Option<u16>,
+    putrefactory: Option<u16>,
 ) -> oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons {
     use oteryn_protocol_oteryn::world_spatial_entities::{
         NativeCreatureIcon, NativeCreatureIcons, SoulpitCreatureIcon,
@@ -253,6 +275,10 @@ fn source_icons(
                     .find(|(candidate, _, _)| *candidate == actor)?;
                 oteryn_gameplay_combat::hazard::effective_level(runtime, actor, (*session)?)
             });
+            // This key is separate from the roaming area's own White Cross.
+            let keys = keys
+                .into_iter()
+                .chain([putrefactory.map(|count| ("putrefactory-task-x", 0, 2, count))]);
             project_player_source_icons(keys, hazard, torment)
         }
         world_spatial::VisibleKind::Creature => runtime
@@ -272,7 +298,7 @@ fn source_icons(
 
 // All source keys must be combined before Creature's three-icon wire bound.
 fn project_player_source_icons(
-    keys: [Option<(&'static str, u8, u8, u16)>; 4],
+    keys: impl IntoIterator<Item = Option<(&'static str, u8, u8, u16)>>,
     hazard: Option<u16>,
     torment: Option<u16>,
 ) -> Vec<oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcon> {

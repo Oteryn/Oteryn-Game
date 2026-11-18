@@ -2,6 +2,8 @@
 use super::fixture::{Harness, debug};
 use super::quest_world_callbacks::{scenario, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use crate::foundation::ExactActorRef;
+use oteryn_gameplay_quests::quest::rotten_blood::putrefactory::CHARGE_TRACK as CHARGE;
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
     authored_bindings::Bindings,
@@ -16,8 +18,6 @@ use std::sync::Arc;
 pub(super) const LEGACY: &str = "putrefactory-reservoir-legacy";
 pub(super) const CAP: &str = "putrefactory-reservoir-cap";
 const QUEST: &str = "oteryn:quest/rotten-blood";
-const CHARGE: &str =
-    "oteryn:quest-progress/crystalserver/quest/u13_20/rotten_blood/putrefactory_task";
 const CLOCK: &str = "oteryn:quest-progress/rotten-blood/putrefactory/reservoir-1-used-at";
 const STARTED_AT: i64 = 1_800_000_000;
 // Crystal creaturescripts_putrefactory-x.lua:195-199.
@@ -71,6 +71,7 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    actor: ExactActorRef,
     cap: bool,
 ) -> TestResult {
     let mut reservoir = serde_json::to_value(callback()?)?;
@@ -100,6 +101,7 @@ pub(super) async fn exercise(
     owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
     h.root.set_test_quest_clock(STARTED_AT).map_err(debug)?;
     let session = admitted.game_session_id;
+    owner.refresh_quest_session(session, true).await;
     owner.states.chat.admit(session, "Reservoir fixture", owner.owner_now());
     let key = oteryn_world_bundle::bundle::placement_key(AT.floor, AT.x, AT.y, 1)
         .ok_or("reservoir placement")?;
@@ -125,6 +127,15 @@ pub(super) async fn exercise(
     assert_eq!(values[0], (CHARGE.to_owned(), if cap { 100 } else { 20 }));
     assert_eq!(values[1].0, CLOCK);
     assert_eq!(values[1].1, STARTED_AT);
+    let view = owner.observe_channel_entities(actor).await.ok_or("entity view")?;
+    let entry = view
+        .entities
+        .iter()
+        .find(|entry| entry.identity == actor.placement_identity())
+        .ok_or("player entity")?;
+    assert!(entry.source_icons.iter().any(|icon| {
+        icon.category == 0 && icon.id == 2 && icon.count == if cap { 100 } else { 20 }
+    }));
 
     assert_eq!(wire(owner, admitted, 1, 2, payload.clone()).await?, reply);
     h.root.advance_test_quest_clock(19).map_err(debug)?;

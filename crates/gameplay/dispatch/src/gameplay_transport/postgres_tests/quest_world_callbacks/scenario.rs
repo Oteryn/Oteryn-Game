@@ -2056,7 +2056,7 @@ fn scenario_case(
             )
             .await?;
         } else if reservoir {
-            Box::pin(super::super::putrefactory_reservoir::exercise(&mut owner, &mut admitted, &h, name == super::super::putrefactory_reservoir::CAP)).await?;
+            Box::pin(super::super::putrefactory_reservoir::exercise(&mut owner, &mut admitted, &h, deps.actor, name == super::super::putrefactory_reservoir::CAP)).await?;
         } else if name == super::super::step_health_loss::NAME {
             Box::pin(super::super::step_health_loss::exercise(&mut owner, &mut admitted, deps.actor)).await?;
         } else if failure_landing {

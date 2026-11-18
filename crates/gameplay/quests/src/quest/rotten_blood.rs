@@ -8,6 +8,7 @@
 
 pub mod area_icons;
 pub mod flames;
+pub mod putrefactory;
 
 use serde::{Deserialize, Serialize};
 
