@@ -933,9 +933,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .find(|splash| splash.placement == placement)
             .map(|splash| splash.splash_item_id)
-            .or(base_target_item)?;
+            .or(base_target_item);
         let before = inventory.fluids.get(&source).copied().unwrap_or(0);
-        if fluid_source_subtype(target_item).is_none()
+        if target_item.and_then(fluid_source_subtype).is_none()
             && let Some(map) = self.bundle_map()
             && let Some(callback) = self.callback_content().iter().find(|callback| {
                 callback
@@ -974,6 +974,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ..UseOutcome::rejected()
             });
         }
+        let target_item = target_item?;
         let (after, splash) = if before == 0 {
             (fluid_source_subtype(target_item)?, None)
         } else {

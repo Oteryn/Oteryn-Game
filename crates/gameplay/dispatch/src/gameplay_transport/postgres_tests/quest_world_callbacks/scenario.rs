@@ -113,7 +113,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "qengine-rewards-smith-story" {
+    let start = if name == super::super::goshnar_fluid::NAME {
+        super::super::goshnar_fluid::STAGING
+    } else if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
             y: 32254,
@@ -402,6 +404,8 @@ fn scenario_case(
         callback("questpc7-formal-display")?
     } else if outfit_world {
         callback(name)?
+    } else if name == super::super::goshnar_fluid::NAME {
+        super::super::goshnar_fluid::callback(trigger)?
     } else if name == super::super::haunted_ruin::NAME {
         super::super::haunted_ruin::callback(trigger)?
     } else if name == super::super::rahemos_chance::NAME {
