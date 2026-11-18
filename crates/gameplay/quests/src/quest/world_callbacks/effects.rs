@@ -318,6 +318,8 @@ pub struct Encounter {
 pub enum EncounterPhase {
     #[serde(rename = "cults_boss_phase_closures")]
     Cults,
+    #[serde(rename = "unwelcome_brother_worm")]
+    Unwelcome,
 }
 
 impl Encounter {
@@ -869,6 +871,22 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
+        let common_landing = source_party || encounter.phase == Some(EncounterPhase::Unwelcome);
+        if encounter.phase == Some(EncounterPhase::Unwelcome)
+            && (callback.trigger != super::Trigger::Use
+                || encounter.minimum_level != 250
+                || encounter.players.len() > 5
+                || !encounter
+                    .monsters
+                    .iter()
+                    .map(|monster| monster.creature.as_str())
+                    .eq([
+                        "oteryn:creature.the_unwelcome",
+                        "oteryn:creature.brother_worm",
+                    ]))
+        {
+            return false;
+        }
         if let Some(room) = timed_room {
             let allowed_effects = CallbackEffectSet::from_shared(CallbackEffects {
                 encounter: Some(encounter.clone()),
@@ -928,7 +946,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || (encounter.phase.is_some() && encounter.timing.is_some())
             || (callback.reversible && !source_party)
             || unique_from.len() != encounter.players.len()
-            || (unique_to.len() != encounter.players.len() && !source_party)
+            || (unique_to.len() != encounter.players.len() && !common_landing)
             || unique_monsters.len() != encounter.monsters.len()
             || !unique_to.is_disjoint(&unique_monsters)
             || !pos(encounter.room_min)

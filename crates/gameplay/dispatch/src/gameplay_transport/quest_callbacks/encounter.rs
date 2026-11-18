@@ -146,6 +146,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Occupied;
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
+        use oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase;
+        let unwelcome = encounter.phase == Some(EncounterPhase::Unwelcome);
         let mut players = Vec::new();
         let mut proofs = Vec::new();
         for member in &encounter.players {
@@ -154,9 +156,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
                 // Cults collects whoever stands on the five source staging tiles.
-                if encounter.phase
-                    == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults)
-                {
+                if unwelcome || encounter.phase == Some(EncounterPhase::Cults) {
                     continue;
                 }
                 return UseDisposition::Rejected;
@@ -247,7 +247,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(policy) = runtime.companion_policy(&monster.creature) else {
                 return UseDisposition::Rejected;
             };
-            monsters.push((monster.creature.as_str(), policy.maximum_health, at));
+            if !unwelcome
+                || monster.creature
+                    != oteryn_gameplay_encounters::bosses::phase_controller::unwelcome::BROTHER_WORM
+            {
+                monsters.push((monster.creature.as_str(), policy.maximum_health, at));
+            }
         }
         if preflight {
             return if runtime
@@ -297,7 +302,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let credits = if encounter.phase.is_some() {
+        let credits = if unwelcome {
+            Some(Vec::new())
+        } else if encounter.phase.is_some() {
             let Ok(credits) =
                 super::super::grizzly_kills::capture_encounter_admission(self, runtime, &party)
             else {
@@ -307,8 +314,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let now_us = self.owner_now().get();
         let mut phases = if encounter.phase.is_some() {
-            let Ok(active) = states.encounter_phases.reserve(runtime, key) else {
+            let Ok(active) = states.encounter_phases.reserve(runtime, key, now_us) else {
                 return UseDisposition::Occupied;
             };
             Some(active)
@@ -334,6 +342,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             &party,
                             credits,
                             self.movement_cells().clone(),
+                            now_us,
                         )
                     })
                     .transpose().map(|phase| (phase, actors.to_vec(), roster))

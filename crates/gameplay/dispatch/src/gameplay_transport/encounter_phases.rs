@@ -4,6 +4,7 @@ use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
 use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
+use oteryn_gameplay_encounters::bosses::phase_controller::unwelcome::UnwelcomeEncounter;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
@@ -13,10 +14,58 @@ const MAX_ENCOUNTERS: usize = 64;
 #[derive(Debug)]
 pub(super) struct ActivePhase {
     key: u64,
-    fight: CultsEncounter,
+    fight: Fight,
     credits: Vec<grizzly_kills::EncounterCredit>,
     frozen: Option<(ExactActorRef, Vec<super::quest_kills::Recipient>)>,
     cells: crate::content::NativeEntryMovementCells,
+}
+
+#[derive(Debug)]
+enum Fight {
+    Cults(Box<CultsEncounter>),
+    Unwelcome(UnwelcomeEncounter),
+}
+
+impl Fight {
+    fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
+        match self {
+            Self::Cults(fight) => fight.is_current(runtime),
+            Self::Unwelcome(fight) => fight.is_current(runtime),
+        }
+    }
+
+    fn victors(
+        &self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Result<Option<&[(ExactActorRef, GameSessionId)]>, CarrierError> {
+        match self {
+            Self::Cults(fight) => fight.victors(runtime),
+            Self::Unwelcome(fight) => fight.victors(runtime),
+        }
+    }
+
+    fn contains(&self, actor: ExactActorRef) -> bool {
+        match self {
+            Self::Cults(fight) => fight.contains(actor),
+            Self::Unwelcome(fight) => fight.contains(actor),
+        }
+    }
+
+    fn contains_terminal(&self, actor: ExactActorRef) -> bool {
+        matches!(self, Self::Cults(fight) if fight.contains_terminal(actor))
+    }
+
+    fn advance(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        now_us: u64,
+        map_admits: impl Fn(&ChannelRuntimeV1, MovementLocalPosition) -> bool,
+    ) -> Result<(), CarrierError> {
+        match self {
+            Self::Cults(fight) => fight.advance(runtime, map_admits),
+            Self::Unwelcome(fight) => fight.advance(runtime, now_us, map_admits),
+        }
+    }
 }
 
 #[derive(Default, Debug)]
@@ -29,6 +78,7 @@ impl Registry {
         &'a self,
         runtime: &mut ChannelRuntimeV1,
         key: u64,
+        now_us: u64,
     ) -> Result<std::sync::MutexGuard<'a, Vec<ActivePhase>>, CarrierError> {
         let mut active = self.active.lock().map_err(|_| CarrierError::PlanConflict)?;
         active.retain_mut(|phase| {
@@ -41,7 +91,7 @@ impl Registry {
                     // only after exact terminal decorations retire; tick retries failures.
                     let ActivePhase { fight, cells, .. } = phase;
                     fight
-                        .advance(runtime, |runtime, at| placement(cells, runtime, at))
+                        .advance(runtime, now_us, |runtime, at| placement(cells, runtime, at))
                         .is_err()
                 }
                 Ok(None) => phase
@@ -64,19 +114,28 @@ impl Registry {
         &self,
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
-    ) {
-        let Ok(mut active) = self.active.lock() else {
-            return;
-        };
-        for phase in active.iter_mut().filter(|p| p.fight.contains(actor)) {
-            if phase.fight.projected_death(runtime, actor).is_ok() {
-                let ActivePhase { fight, cells, .. } = phase;
-                let _ = fight.advance(runtime, |runtime, at| placement(cells, runtime, at));
+        now_ms: u64,
+    ) -> Option<ExactActorRef> {
+        let mut active = self.active.lock().ok()?;
+        let phase = active.iter_mut().find(|p| p.fight.contains(actor))?;
+        let ActivePhase { fight, cells, .. } = phase;
+        match fight {
+            Fight::Cults(fight) => {
+                if fight.projected_death(runtime, actor).is_ok() {
+                    let _ = fight.advance(runtime, |runtime, at| placement(cells, runtime, at));
+                }
+                None
             }
+            Fight::Unwelcome(fight) => match fight.projected_death(runtime, actor, now_ms) {
+                Ok(peer) => peer,
+                Err(error) => {
+                    super::operator_event(&format!(
+                        "encounter_linked_death_failed reason={error:?}"
+                    ));
+                    None
+                }
+            },
         }
-        // Keep terminal admission credit until the same lethal turn captures it.
-        // The next reservation releases a completed lever key independently of
-        // corpse lifetime, after this synchronous death publication finishes.
     }
 
     pub(super) fn has_terminal(&self, runtime: &ChannelRuntimeV1, actor: ExactActorRef) -> bool {
@@ -125,6 +184,10 @@ impl Registry {
     }
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "exact source and owner clock bound one room"
+)]
 pub(super) fn bind(
     runtime: &mut ChannelRuntimeV1,
     callback: &Callback,
@@ -133,12 +196,36 @@ pub(super) fn bind(
     players: &[(ExactActorRef, GameSessionId)],
     credits: Vec<grizzly_kills::EncounterCredit>,
     cells: crate::content::NativeEntryMovementCells,
+    now_us: u64,
 ) -> Result<ActivePhase, CarrierError> {
     let encounter = callback
         .effects
         .encounter
         .as_ref()
         .ok_or(CarrierError::PlanConflict)?;
+    if encounter.phase == Some(EncounterPhase::Unwelcome) {
+        let [boss] = actors else {
+            return Err(CarrierError::PlanConflict);
+        };
+        let [_, brother] = encounter.monsters.as_slice() else {
+            return Err(CarrierError::PlanConflict);
+        };
+        let position = brother.position;
+        let brother_at = MovementLocalPosition {
+            x: position.x.into(),
+            y: position.y.into(),
+            floor: -i16::from(position.floor),
+        };
+        return Ok(ActivePhase {
+            key,
+            fight: Fight::Unwelcome(UnwelcomeEncounter::bind(
+                runtime, players, *boss, brother_at, now_us,
+            )?),
+            credits,
+            frozen: None,
+            cells,
+        });
+    }
     if encounter.phase != Some(EncounterPhase::Cults) || actors.len() != 10 {
         return Err(CarrierError::PlanConflict);
     }
@@ -188,7 +275,9 @@ pub(super) fn bind(
     }
     Ok(ActivePhase {
         key,
-        fight: CultsEncounter::bind(runtime, players, pillars, stops, centre)?,
+        fight: Fight::Cults(Box::new(CultsEncounter::bind(
+            runtime, players, pillars, stops, centre,
+        )?)),
         credits,
         frozen: None,
         cells,
@@ -233,7 +322,7 @@ fn placement(
         )
 }
 
-pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates) {
+pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, now_us: u64) {
     let Ok(mut active) = states.encounter_phases.active.lock() else {
         return;
     };
@@ -242,7 +331,9 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates) 
         let ActivePhase {
             key, fight, cells, ..
         } = phase;
-        if let Err(error) = fight.advance(runtime, |runtime, at| placement(cells, runtime, at)) {
+        if let Err(error) =
+            fight.advance(runtime, now_us, |runtime, at| placement(cells, runtime, at))
+        {
             super::operator_event(&format!(
                 "encounter_phase_deferred key={key} reason={error:?}"
             ));

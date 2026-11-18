@@ -10,6 +10,7 @@ pub mod cults;
 pub mod gates;
 #[cfg(test)]
 mod tests;
+pub mod unwelcome;
 
 pub const MAX_ROLES: usize = 64;
 
