@@ -795,9 +795,21 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && effects.item_reward.is_none()
             && effects.outfit_reward.is_none()
     });
+    let fixed_rotation_lever = effects.encounter.as_ref().is_some_and(|encounter| {
+        encounter.weekday_monsters.is_some()
+            && callback.trigger == Trigger::Use
+            && callback.actor_kind == ActorKind::Player
+            && callback.selector.position.is_some()
+            && callback.selector.appearance.is_some()
+            && callback.lever.is_none()
+            && !callback.reversible
+            && !callback.has_state()
+            && effects.transform.is_none()
+    });
     if operations > 1
         || (operations > 0
             && ((!personal_encounter
+                && !fixed_rotation_lever
                 && !super::personal_trial::admitted(callback)
                 && (!lever
                     || (effects.scene.is_none()
@@ -1160,15 +1172,18 @@ mod weekday_encounter_tests {
     fn dream_scar_roster_uses_startup_weekday_and_repeats_source_days() -> Result<(), String> {
         let mut callback = super::super::load()?
             .into_iter()
-            .find(|row| {
-                row.effects.encounter.as_ref().is_some_and(|encounter| {
-                    encounter.phase.is_none()
-                        && encounter.timing.is_none()
-                        && encounter.players.len() <= 5
-                })
-            })
+            .find(|row| row.key == "oteryn:quest-callback/engenc2/cults-essence")
             .ok_or("party encounter callback")?;
+        callback.selector.position = Some(Position {
+            x: 32208,
+            y: 32020,
+            floor: -13,
+        });
+        callback.reversible = false;
+        callback.lever = None;
         let encounter = callback.effects.encounter.as_mut().ok_or("encounter")?;
+        encounter.phase = None;
+        encounter.minimum_level = 250;
         let position = encounter
             .monsters
             .first()
@@ -1204,6 +1219,9 @@ mod weekday_encounter_tests {
             encounter.monsters_at_startup(-1)[0].creature,
             "oteryn:creature.malofur_mangrinder"
         );
+        super::super::validate_callbacks(std::slice::from_ref(&callback))?;
+        callback.selector.position = None;
+        assert!(super::super::validate_callbacks(&[callback]).is_err());
         Ok(())
     }
 }
