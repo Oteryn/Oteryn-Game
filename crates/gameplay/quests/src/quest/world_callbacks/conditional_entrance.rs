@@ -258,7 +258,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 && callback.teleport.is_none()
                 && callback.selector.appearance.is_some()
                 && (callback.selector.unique.is_some() || callback.selector.native.is_some())
-                && callback.effects.transform.is_some())
+                && callback.effects.transform.is_some()
+                && !callback.requires_durable_commit()
+                && callback.passages.is_empty()
+                && callback.effects.scene.is_none())
         && callback.native_rule.is_none()
         && callback.lever.is_none()
         && !callback.return_on_failure
@@ -272,7 +275,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         .is_none_or(|message| valid_text(message, 255))
                         && failure.effect != Some(0)
                         && (failure.effect_at.is_default() || failure.effect.is_some())
-                        && (!failure.message.is_none() || failure.message_kind.is_default())
+                        && (failure.message.is_some() || failure.message_kind.is_default())
                         && match failure.push_back {
                             Some(PushBack::From { dx, dy }) => {
                                 is_step && dx.abs_diff(0) <= 1 && dy.abs_diff(0) <= 1

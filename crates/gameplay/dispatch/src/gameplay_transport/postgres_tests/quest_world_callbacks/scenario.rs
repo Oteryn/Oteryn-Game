@@ -656,7 +656,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if name == "authored-wrath-crystals" {
+    let world = if conditional_entrance == Some(super::super::conditional_entrance::Case::Stair) {
+        world_with_cells(&callback, trigger, &[Position { floor: trigger.floor - 1, ..trigger }])?
+    } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::world()?
     } else if name == "nx6-wayfarer" {
         super::super::questpc8_wrath_source_dragon::world()?

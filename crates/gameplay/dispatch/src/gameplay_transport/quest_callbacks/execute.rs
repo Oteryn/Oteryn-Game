@@ -498,17 +498,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
-        // Crystal actions_zalamon_door.lua:6-9 lands on the exact closed
-        // door that is transformed in this callback's source CAS.
-        let mut destination = if teleport_to_source {
-            Some(Position {
-                x: pos.x,
-                y: pos.y,
-                floor: pos.floor,
-            })
-        } else {
-            callback.teleport
-        };
+        // Crystal actions_zalamon_door.lua:6-9 moves onto the exact door
+        // and transforms that door in the same Channel turn.
+        if teleport_to_source {
+            return self.commit_conditional_door(
+                runtime,
+                states,
+                map,
+                actor,
+                session,
+                expected,
+                key,
+                expected_revision,
+                after,
+                blocked,
+                optional_pvp,
+            );
+        }
+        let mut destination = callback.teleport;
         if let Some(remote) = &callback.remote_teleport {
             let p = tile(remote.position);
             let Some(base) = map.overlay.base().tile(p.x, p.y, p.floor) else {
@@ -695,7 +702,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     blocked,
                     &closed,
                     facing.or(callback.effects.facing.map(super::effects::facing)),
-                    callback.effects.scripted_teleport || teleport_to_source,
+                    callback.effects.scripted_teleport,
                 ) {
                     Ok(proof) => Some(proof),
                     Err(_) => return UseDisposition::NotPossible,
@@ -1452,15 +1459,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // A per-character gift does not consume or revise its shared source object.
             // Real scene changes and shared-world progress still publish their original CAS,
             // including the revision consumed by the post-publication removal below.
-            let personal_gift_preserves_object = callback.item_reward().is_some()
+            let conditional_route_preserves_object =
+                callback.effects.conditional_entrance.is_some() && !durable;
+            let pure_personal_gift = callback.item_reward().is_some()
                 && callback.effects.item_reward_cycle.is_none()
                 && !callback.effects.item_reward_per_use
+                && callback.teleport.is_none()
+                && callback.remote_teleport.is_none();
+            let preserves_object = (conditional_route_preserves_object || pure_personal_gift)
                 && callback.world_change.is_none()
                 && oteryn_gameplay_quests::quest::shared_world_progress::binding(&callback.key)
                     .is_none()
                 && callback.lever.is_none()
-                && callback.teleport.is_none()
-                && callback.remote_teleport.is_none()
                 && !callback.reversible
                 && !close
                 && before == after
@@ -1514,8 +1524,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         );
                     }
                 }
-            } else if !callback.is_read_only() && !personal_gift_preserves_object && !apply_scene()
-            {
+            } else if !callback.is_read_only() && !preserves_object && !apply_scene() {
                 return UseDisposition::Rejected;
             }
         }

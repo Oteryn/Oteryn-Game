@@ -28,18 +28,19 @@ impl ReadSet {
     pub fn for_entrance(entrance: &Entrance) -> Self {
         let mut reads = Self::default();
         for guard in &entrance.guards {
-            guard.when.visit(&mut |p| match p {
-                Predicate::Storage { range } => reads.storage(&range.source),
-                Predicate::DistinctFlags { flags, .. } => {
+            guard.when.visit(&mut |p| {
+                if let Predicate::Storage { range } = p {
+                    reads.storage(&range.source);
+                }
+                if let Predicate::DistinctFlags { flags, .. } = p {
                     for flag in flags {
                         reads.storage(&flag.range.source);
                     }
                 }
-                Predicate::Carried { item, .. } => {
+                if let Predicate::Carried { item, .. } = p {
                     reads.carried.insert(item.clone());
                 }
-                Predicate::Calendar { .. } => reads.calendar = true,
-                _ => {}
+                reads.calendar |= matches!(p, Predicate::Calendar { .. });
             });
         }
         reads

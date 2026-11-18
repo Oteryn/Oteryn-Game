@@ -27,23 +27,25 @@ pub(super) enum Case {
     Completion,
     Flags,
     Carried,
+    Door,
     Level,
     Premium,
     Occupied,
     CalendarStep,
     CalendarUse,
     PvpLock,
+    Stair,
 }
 
 impl Case {
     fn is_use(self) -> bool {
-        matches!(self, Self::CalendarUse | Self::PvpLock)
+        matches!(self, Self::CalendarUse | Self::PvpLock | Self::Door)
     }
 
     pub(super) fn callback(self, source: Position) -> TestResult<Callback> {
         let predicate = match self {
             // Inquisition movements_entrance.lua:1-32, any exact throne value.
-            Self::Storage => json!({"kind":"any","predicates":[
+            Self::Storage | Self::Door => json!({"kind":"any","predicates":[
                 {"kind":"storage","range":{"source":{"kind":"track","track":VISITOR},"minimum":1,"maximum":1}},
                 {"kind":"storage","range":{"source":{"kind":"track","track":VISITOR},"minimum":10,"maximum":10}}
             ]}),
@@ -70,13 +72,16 @@ impl Case {
             Self::CalendarUse => json!({"kind":"calendar","start":[5,2],"end":[3,31]}),
             // Thieves Guild actions_climbing_vine.lua:13-18.
             Self::PvpLock => json!({"kind":"no_pvp_lock"}),
+            // Bounac action-bounac_entrance.lua:24-25 intercepts the native
+            // stairs without an actor predicate.
+            Self::Stair => serde_json::Value::Null,
         };
         let mut refusal = json!({"message":"Entrance refused by the fixture."});
         if !self.is_use() {
             refusal["push_back"] = json!({"kind":"from","dx":0,"dy":0});
         }
         let trigger = if self.is_use() { "use" } else { "step_in" };
-        let row = json!({
+        let mut row = json!({
             "key":"oteryn:quest-callback/qgate-test","quest":"oteryn:quest.the_pits_of_inferno_quest",
             "trigger":trigger,"selector":{"position":source,"appearance":100},
             "teleport":LANDING,"storage":[],"passages":[],"offerings":[],
@@ -84,6 +89,20 @@ impl Case {
             "effects":{"conditional_entrance":{"guards":[{"when":predicate,"refusal":refusal}]}},
             "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_holy_tible_tile.lua:14-20"]
         });
+        if self == Self::Stair {
+            row["selector"]["appearance"] = json!(293);
+            row["effects"]["conditional_entrance"] = json!({
+                "guards":[], "intercept_teleport":true
+            });
+        }
+        if self == Self::Door {
+            // Zalamon actions_zalamon_door.lua:5-17, exact UID and transform.
+            row["selector"]["appearance"] = json!(9874);
+            row["selector"]["unique"] = json!(3170);
+            row["teleport"] = serde_json::Value::Null;
+            row["effects"]["transform"] = json!(9875);
+            row["effects"]["conditional_entrance"]["teleport_to_source"] = json!(true);
+        }
         Ok(serde_json::from_value::<Callback>(row)?)
     }
 
@@ -100,6 +119,10 @@ impl Case {
     ) -> TestResult {
         let session = admitted.game_session_id;
         let origin = local(Position { x: GATE.x - 1, ..GATE });
+        if self == Self::Stair {
+            assert!(self.attempt(owner, admitted, callback, 1).await?);
+            return Ok(());
+        }
         let occupant = if self == Self::Occupied {
             let mut runtime = owner.runtime.lock().await;
             let visitor = GameSessionId::decode(&id(51)).map_err(debug)?;
@@ -115,7 +138,7 @@ impl Case {
                 .bind(fence.character_id.as_bytes().as_slice()).execute(&h.pool).await?;
         }
         if self == Self::PvpLock {
-            sqlx::query("INSERT INTO game_character_pvp_state (character_id,world_id,pz_block_until) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,clock_timestamp()+interval '5 minutes')")
+            sqlx::query("INSERT INTO game_character_pvp_state (character_id,world_id,pz_block_until) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,clock_timestamp()+interval '30 seconds')")
                 .bind(id(41).as_slice()).bind(id(42).as_slice()).execute(&h.pool).await?;
         }
         let before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
@@ -140,7 +163,7 @@ impl Case {
         assert_eq!(before, after, "an entrance refusal creates no Quest receipt");
 
         match self {
-            Self::Storage => {
+            Self::Storage | Self::Door => {
                 let catalogue = owner.quest_catalogue.clone().ok_or("quest catalogue")?;
                 let seeded = owner.revision_sequencer.acquire(fence.character_id).await
                     .commit_quest_transition(owner.root, owner.character, owner.holder, fence, QuestTransitionRequest {
@@ -160,7 +183,11 @@ impl Case {
             Self::Carried => {
                 input_item(owner, fence.item_fence(), &Offering { position: GATE, item: HOLY_TIBLE.into(), count: 1 }, 1, true).await?;
             }
-            Self::Level => super::qengine_outfit_stories::earn_level(owner, admitted, authority, 250).await?,
+            Self::Level => {
+                super::qengine_outfit_stories::earn_level(owner, admitted, authority, 250).await?;
+                owner.states.level_refresh.mark([fence.character_id]);
+                owner.refresh_level_up_vitals(actor, session).await;
+            }
             Self::Premium => {
                 owner.admit_premium(id(40), session);
                 assert!(owner.session_premium_gate(session).await.premium_current());
@@ -170,13 +197,32 @@ impl Case {
                 owner.runtime.lock().await.remove_terminal_session(other_session, other_actor).map_err(debug)?;
             }
             Self::PvpLock => {
+                // Expire both the durable deadline and the restored semantic deadline.
+                owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(31)).ok_or("PvP deadline")?;
                 sqlx::query("UPDATE game_character_pvp_state SET pz_block_until=NULL,revision=revision+1 WHERE character_id=encode($1,'hex')::uuid")
                     .bind(id(41).as_slice()).execute(&h.pool).await?;
             }
-            Self::CalendarStep | Self::CalendarUse => return Err("calendar handled by the complementary window cases".into()),
+            Self::CalendarStep | Self::CalendarUse | Self::Stair => return Err("calendar handled by the complementary window cases".into()),
         }
 
         assert!(self.attempt(owner, admitted, callback, 2).await?);
+        let landing = if self == Self::Door { GATE } else { LANDING };
+        if self == Self::Door {
+            let map = owner.bundle_map().ok_or("fixture map")?;
+            let key = placement_key(TilePos { x: GATE.x, y: GATE.y, floor: GATE.floor }, 1)
+                .ok_or("door placement")?;
+            assert_eq!(map.facts.object_revision(key), 1);
+            let at = TilePos { x: GATE.x, y: GATE.y, floor: GATE.floor };
+            let base_id = *map.overlay.base().tile(at.x, at.y, at.floor)
+                .and_then(|tile| tile.ids().get(1)).ok_or("door base appearance")?;
+            assert_eq!(map.facts.base_entry(at, 1, base_id).ok_or("door projection")?.appearance_id, 9875);
+
+        }
+        if self == Self::Carried {
+            let remaining: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1")
+                .bind(HOLY_TIBLE).fetch_one(&h.pool).await?;
+            assert_eq!(remaining, 1);
+        }
         assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), local(LANDING));
         Ok(())
     }
@@ -276,4 +322,19 @@ fn conditional_use_refuses_vine_while_pvp_locked() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     drop(admin);
     scenario(Case::PvpLock)
+}
+
+
+#[test]
+fn conditional_step_keeps_the_original_down_stair_selector() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    scenario(Case::Stair)
+}
+
+#[test]
+fn conditional_use_moves_through_and_transforms_the_exact_door() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    scenario(Case::Door)
 }

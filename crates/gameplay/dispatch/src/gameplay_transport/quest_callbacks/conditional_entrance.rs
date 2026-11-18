@@ -240,6 +240,100 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     #[allow(
         clippy::too_many_arguments,
+        reason = "bind the opened map entry and motion to one exact Channel CAS"
+    )]
+    pub(super) fn commit_conditional_door(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        map: &BundleMap,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        expected: MovementPositionSnapshot,
+        key: u64,
+        revision: u64,
+        after: crate::map::view::EntryFacts,
+        blocked: bool,
+        optional_pvp: Option<bool>,
+    ) -> UseDisposition {
+        let Some((at, _)) = crate::map::view::placement_of(key) else {
+            return UseDisposition::Rejected;
+        };
+        let destination = local(Position {
+            x: at.x,
+            y: at.y,
+            floor: at.floor,
+        });
+        let project = || {
+            map.facts.apply_quest_callback(
+                key,
+                revision,
+                after,
+                &[],
+                &[(key, after, true)],
+                false,
+                None,
+            )
+        };
+        let movement = if map.facts.doors().contains(key) {
+            let Ok(proof) = crate::map::floor::prepare_quest_door_opening(
+                runtime,
+                self.movement_cells(),
+                map,
+                actor,
+                session,
+                expected,
+                key,
+                blocked,
+            ) else {
+                return UseDisposition::NotPossible;
+            };
+            runtime.commit_source_step_and_project(proof, project)
+        } else {
+            let closed = crate::map::floor::BundleDoors(&map.facts);
+            let Ok(proof) = crate::map::floor::prepare_scripted_quest_teleport_facing(
+                runtime,
+                self.movement_cells(),
+                actor,
+                session,
+                expected,
+                destination,
+                blocked,
+                &closed,
+                None,
+                true,
+            ) else {
+                return UseDisposition::NotPossible;
+            };
+            runtime.commit_source_step_and_project(proof, project)
+        };
+        let Ok(snapshot) = movement else {
+            return UseDisposition::Rejected;
+        };
+        let now = self.owner_now().get();
+        states.stage_special_movement_step(
+            runtime,
+            map,
+            actor,
+            session,
+            now,
+            Some(expected.position()),
+            snapshot.position(),
+            optional_pvp,
+        );
+        states.stage_underwater_step(
+            runtime,
+            actor,
+            session,
+            now,
+            underwater(map, expected.position()),
+            underwater(map, snapshot.position()),
+        );
+        UseDisposition::Committed
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
         reason = "refusal preserves the exact actor, source, and entering snapshots"
     )]
     pub(super) fn refuse_conditional_entrance(
