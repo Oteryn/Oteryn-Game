@@ -283,14 +283,7 @@ async fn wheel_setup(client: &mut DevClientSession, clients: &SeamClients<'_>) -
     let character = &clients.characters[1];
     let promoted = match wheel_build(&mut database, character).await? {
         Some((vocation, promoted)) if !wheel_profile_required(&vocation) => promoted,
-        _ => {
-            let level = super::full_row_q01::provision(clients, client, 0xa9, 1, "atelier", "P07").await?;
-            let build = wheel_build(&mut database, character).await?;
-            match build {
-                Some((ref vocation, promoted)) if (100..=1000).contains(&level) && vocation == "knight" => promoted,
-                _ => return Err(format!("step=wheel-setup observed=level:{level} build:{build:?};needed=Atelier-profile").into()),
-            }
-        }
+        _ => return Err(Box::new(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!())))),
     };
     if promoted {
         return Ok(());

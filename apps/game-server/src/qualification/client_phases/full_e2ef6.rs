@@ -74,7 +74,10 @@ pub(super) async fn run_starter(clients: &SeamClients<'_>) {
         .bound(
             Duration::from_secs(100),
             "starter journey deadline; remaining actions unproven",
-            starter_backpack(&mut starter, clients),
+            async {
+                row_clients!(E2eMode::from_env()?, clients, "C19a.full");
+                starter_backpack(&mut starter, clients).await
+            },
         )
         .await;
     starter.finish(result);
@@ -2425,13 +2428,16 @@ async fn item_loss(
     let result: TestResult = async {
         if !blessings(&mut client).await?.is_empty() { return Err("unprotected item-loss prerequisite blocked: ordinary Character has held blessings".into()); }
         earn_death_prerequisites(&mut client, world, spawns, 9, 1).await?;
-        row.pass("earned-loss-eligible-level", progress(&mut client).await?);
+        row.pass("earned-loss-eligible-level", (progress(&mut client).await?, E2eMode::from_env()?.name()));
         let index = provisioning::item_index()?;
         // Exercise AoL first so the unprotected death can be terminal: no invented
         // replacement-backpack grant is required to fund the protected case.
         earn_death_prerequisites(&mut client, world, spawns, 9, 50_000).await?;
         let npc = approach_service(&mut client, world, npcs, "oteryn:npc.eremo").await?;
         let amulet = provisioning::item_reference(&index, 3057)?;
+        if client.inventory().is_some_and(|view| view.entries.iter().chain(view.equipment.iter().map(|entry| &entry.item)).any(|item| item.item_definition_ref == amulet)) {
+            return Err("amulet purchase requires a baseline without the amulet".into());
+        }
         buy_amulet(&mut client, npc, amulet).await?;
         let purchased = wait_inventory(&mut client, |view| view.entries.iter().any(|item| item.item_definition_ref == amulet), "purchased Amulet of Loss inventory delta absent").await?;
         let owned = purchased.entries.iter().find(|item| item.item_definition_ref == amulet).ok_or("purchased amulet disappeared")?;

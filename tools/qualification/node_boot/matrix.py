@@ -260,9 +260,9 @@ def plan(
     spells: bool = False,
     game_platform: bool = False,
     root: Path = ROOT,
-    mode: str = "journey",
+    mode: str | None = None,
 ) -> list[dict]:
-    if mode not in E2E_MODES:
+    if mode is not None and mode not in E2E_MODES:
         raise PlanError(f"invalid E2E mode {mode!r}")
     if set_name not in SETS:
         raise PlanError(f"unknown set {set_name!r}")
@@ -331,7 +331,7 @@ def plan(
         if game_platform:
             shards.append(portal_shard)
     for item in shards:
-        if mode != "journey" and item["entry"] == "node_boot" and item["world"]:
+        if mode is not None:
             item["env"]["OTERYN_E2E_MODE"] = mode
         validate_shard(item, registry)
     if not shards:
@@ -355,7 +355,7 @@ def validate_shard(item: dict, registry: list[str] | None = None) -> None:
         raise PlanError("invalid Platform ref")
     if not isinstance(item["world"], bool) or not isinstance(item["env"], dict):
         raise PlanError("invalid shard fields")
-    if item["entry"] == "game_platform" and item["env"]:
+    if item["entry"] == "game_platform" and set(item["env"]) - {"OTERYN_E2E_MODE"}:
         raise PlanError("the game_platform lane sets its own knobs")
     groups = set(registry if registry is not None else journey_groups())
     for key, value in item["env"].items():
@@ -421,7 +421,7 @@ def extract(log: Path, *, name: str, entry: str, exit_code: int, seconds: int) -
         data = log_evidence(log, pattern)
     except OSError:
         data = {"result": "NONE", "incomplete": False, "scenarios": [], "groups": [], "cases": [], "selections": [], "creature_batches": []}
-    data.setdefault("mode", "journey")
+    data.setdefault("mode", "UNKNOWN")
     return {**data, "shard": name, "entry": entry, "exit_code": exit_code, "seconds": seconds}
 
 
@@ -487,7 +487,7 @@ def qualification_problems(result: dict, env: dict | None = None, world: bool | 
         expected_cases = cases if cases in (["basic"], ["world"], ["basic", "world"], ["spells"]) else []
         expected_selection = selections if "world" in cases and len(selections) == 1 else []
     problems = []
-    if env is not None and result.get("mode", "journey") != env.get("OTERYN_E2E_MODE", "journey"):
+    if env is not None and world and result.get("mode", "UNKNOWN") != env.get("OTERYN_E2E_MODE", "journey"):
         problems.append("E2E mode evidence disagrees with the plan")
     if not expected_cases or cases != expected_cases:
         problems.append("qualification test completion mismatch")
@@ -559,7 +559,7 @@ def summarize(shards: list[dict], directory: Path, prefix: str, *, missing_fatal
             problems.append(f"{item['name']}: {counts['MISSING']} MISSING scenario(s)")
         issues = qualification_problems(result, item["env"], item["world"])
         problems.extend(f"{item['name']}: {issue}" for issue in issues)
-        mode = result.get("mode", "journey")
+        mode = result.get("mode", "UNKNOWN")
         passed = shard_passed(result, item["env"], item["world"])
         if not passed and not issues:
             problems.append(f"{item['name']}: unsuccessful shard verdict")
@@ -596,7 +596,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--groups", default="")
     p.add_argument("--rows", default="")
     p.add_argument("--batch", default="10")
-    p.add_argument("--mode", default=os.environ.get("OTERYN_E2E_MODE", "journey"), choices=E2E_MODES)
+    p.add_argument("--mode", default=os.environ.get("OTERYN_E2E_MODE"), choices=E2E_MODES)
     p.add_argument("--basic", default="")
     p.add_argument("--spells", default="")
     p.add_argument("--game-platform", default="")

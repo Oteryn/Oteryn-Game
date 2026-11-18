@@ -166,20 +166,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .ok_or("catalogue first row absent")?;
     let mut prior = entry.levels.first().and_then(|level| level.selected);
     if entry.experience == 0 {
-        let logout = client.session_mut().logout().await?;
-        if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            return Err(format!("proficiency fixture setup logout: {logout:?}").into());
-        }
-        drop(client);
-        seed_track(
-            clients.url,
-            clients.characters[1].as_slice(),
-            &entry.weapon,
-            entry.thresholds[0],
-        )
-        .await?;
-        client = connect_world(clients, 0x2b).await?;
-        prior = None;
+        return Err(Box::new(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!()))));
     }
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;

@@ -147,7 +147,7 @@ def fresh_character_name(operation):
 
 
 def valid_profile(profile):
-    return profile in PROFILES or bool(re.fullmatch(r"row-[A-Z][A-Za-z0-9]{1,15}", profile))
+    return profile in PROFILES or bool(re.fullmatch(r"row-[A-Z][A-Za-z0-9]{1,15}(?:-peer)?", profile))
 
 
 def profile_argument(profile):
@@ -374,14 +374,17 @@ def fresh_character(socket_path, project, request, node_log=None):
     """Issue a real Platform intent, then ask the existing node bootstrap owner."""
     row_account = request.get("new_account", False)
     if row_account:
-        # A live fixture hello is issued only by the qualification control owner.
-        # Check it before creating an identity or touching the Premium ledger.
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as control:
             control.settimeout(CONTROL_EXCHANGE_SECONDS)
             control.connect(socket_path)
-            control.sendall(b"!")
-            if control.recv(1) != b"!":
-                raise RuntimeError("row bootstrap refused outside qualification mode")
+            control.sendall(b"qualification-project\n")
+            control.shutdown(socket.SHUT_WR)
+            with control.makefile("rb") as reply:
+                binding = reply.readline(130)
+        if binding == b"rejected\n" or not binding:
+            raise RuntimeError("row bootstrap refused outside qualification mode")
+        if binding != project.encode("ascii") + b"\n":
+            raise RuntimeError("Platform project does not match the isolated qualification socket")
         request.update(operator_account=request["account"], account=str(uuid7()))
     operation = uuid7()
     name = fresh_character_name(operation)

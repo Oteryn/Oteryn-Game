@@ -20,6 +20,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "SEAM_EVIDENCE e2e_all scenario=C17a.client status={}",
             full_e2ef5::c17_success_status()
         )),
+        Ok(Err(error)) if error.is::<verdict::MissingServerRoute>() => evidence(&format!(
+            "e2e_all scenario=C17a.client status=MISSING-SERVER seconds=0 evidence={error}"
+        )),
         Ok(Err(error)) => evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=C17a.client status=FAIL evidence={error}"
         )),
@@ -32,6 +35,14 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xca).await?;
     let result: TestResult = async {
+        if E2eMode::from_env()? == E2eMode::Journey {
+            let (level, vocation) = provisioning::e2ef1::fixture_spell_facts(&mut client).await?;
+            let book = native_spell_book()?;
+            let strong = book.spoken("utani gran hur").ok_or("Strong Haste absent")?.spell;
+            if level < strong.level || !strong.vocations.contains(&vocation) || strong.premium {
+                return Err(Box::new(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!()))) as Box<dyn std::error::Error>);
+            }
+        }
         let (haste, haste_payload) = cast_and_query(&mut client, "utani hur").await?;
         evidence("E2EF5_CHECK row=C17a.client action=haste-cast-and-condition status=PASS");
         if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {

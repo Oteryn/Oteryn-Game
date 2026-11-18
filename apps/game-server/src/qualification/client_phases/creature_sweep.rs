@@ -2323,6 +2323,10 @@ async fn prepare_player(
     if (xp != 0 || level != 1) && !classed {
         return Err("sweep setup requires a pristine or previously classed character".into());
     }
+    if E2eMode::from_env()? == E2eMode::Journey {
+        evidence("e2e_group_gap name=creature_sweep cause=legacy-build-requires-isolated-mode");
+        return Err(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!())).into());
+    }
     let mut client = session.take().ok_or("session absent")?;
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
     let profile = std::env::var("OTERYN_E2E_SWEEP_PROFILE").unwrap_or_else(|_| "sweep".into());

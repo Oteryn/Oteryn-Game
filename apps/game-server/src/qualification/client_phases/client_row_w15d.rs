@@ -240,10 +240,6 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
         .bind(character).fetch_one(&mut connection).await?;
     let lowered = loader::load_embedded_quest_state(&content_revision)
         .map_err(|error| format!("quest catalogue: {error:?}"))?;
-    let definition_hash = lowered
-        .catalogue()
-        .definition_hash(monk_shrines::QUEST)
-        .ok_or("pilgrimage definition missing")?;
     let loaded = log::loader::load_embedded_quest_log(&lowered)?;
     let quest_index = u32::try_from(
         loaded
@@ -254,29 +250,10 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
             .position(|quest| quest.key == monk_shrines::QUEST)
             .ok_or("pilgrimage journal missing")?,
     )?;
-    let (mut level, questline, guidance) = shrine_progress(&mut connection, clients).await?;
-    if needs_guidance_level(level) {
-        client = provisioning::provision_fixture(client, clients, 0, 100).await?;
-        level = shrine_progress(&mut connection, clients).await?.0;
-    }
-    if level >= 6 && questline == 0 && guidance == 0 {
-        let logout = client.session_mut().logout().await?;
-        if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            return Err(format!("pilgrimage fixture setup logout: {logout:?}").into());
-        }
-        drop(client);
-        seed_pilgrimage(
-            &mut connection,
-            character,
-            &content_revision,
-            &definition_hash,
-        )
-        .await?;
-        client = connect_character(clients, 0x89, 0).await?;
-    }
     let (level, questline, guidance) = shrine_progress(&mut connection, clients).await?;
     if !guidance_probe_ready(level, questline, guidance) {
-        return Err(format!("step=pilgrimage shrine prerequisite unproven: level={level} questline={questline} guidance={guidance}").into());
+        evidence(&format!("W15d game gap level={level} questline={questline} guidance={guidance}"));
+        return Err(Box::new(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!()))));
     }
     let snapshot = client
         .session_mut()

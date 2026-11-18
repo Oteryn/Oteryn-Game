@@ -32,7 +32,7 @@ pub(super) async fn fresh_row_character(
         "revisions": [revisions.0, revisions.1, revisions.2, revisions.3],
     })
     .to_string();
-    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
+    let socket = required(row_fixture_socket(clients))?;
     let node_log = std::env::var("NODE_BOOT_NODE_LOG").ok();
     let project = required("NODE_BOOT_PLATFORM_PROJECT")?;
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -227,47 +227,36 @@ fn c17_subprocess_failure(stage: &str, output: &std::process::Output) -> String 
     )
 }
 
-pub(super) async fn apply_fixture(
-    client: &mut DevClientSession,
-    profile: &str,
-) -> TestResult {
+pub(super) fn row_fixture_socket(clients: &SeamClients<'_>) -> &'static str {
+    let pvp_world = std::env::var("NODE_BOOT_PVP_WORLD_ID").ok()
+        .and_then(|world| crate::node::uuid_bytes(&world));
+    if pvp_world == Some(clients.world) {
+        "NODE_BOOT_PVP_CONTROL_SOCKET"
+    } else {
+        "NODE_BOOT_CONTROL_SOCKET"
+    }
+}
+
+pub(super) async fn apply_fixture_at(client: &mut DevClientSession, profile: &str, socket_env: &str) -> TestResult {
     if !E2eMode::from_env()?.permits_profile(profile.as_ref()) {
         return Err("character profile grant is outside the active E2E row requirements".into());
     }
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
-    let node_log = std::env::var("NODE_BOOT_NODE_LOG").ok();
-    let script = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../tools/qualification/node_boot/provision.py");
-    let work = c17_output({
-        let mut command = std::process::Command::new("sudo");
-        command
-            .args(["-n", "python3"])
-            .arg(script)
-            .arg("--watch-parent-stdin");
-        if let Some(path) = node_log {
-            command.args(["--node-log", &path]);
-        }
-        command.args([
-            "--socket",
-            &socket,
-            "--session",
-            &session,
-            "--profile",
-            profile,
-        ]);
-        command
-    });
-    tokio::pin!(work);
-    let output = loop {
-        tokio::select! {
-            result = &mut work => break result?,
-            _ = tokio::time::sleep(Duration::from_millis(200)) => {
-                client.service_liveness(Duration::from_millis(1)).await?;
-                client.take_events();
-            }
-        }
-    };
+    let socket = required(socket_env)?;
+    let mut command = fixture_command();
+    command.args(["--socket", &socket, "--session", &session, "--profile", profile]);
+    if let Ok(path) = std::env::var("NODE_BOOT_NODE_LOG") {
+        command.args(["--node-log", &path]);
+    }
+    let output = wait_fixture_command(
+        async { Ok(run_fixture_command(&mut command).await?) },
+        async || {
+            client.service_liveness(Duration::from_millis(100)).await?;
+            client.take_events();
+            Ok(())
+        },
+    )
+    .await?;
     if !output.status.success() {
         return Err(c17_subprocess_failure(profile, &output).into());
     }
@@ -587,43 +576,17 @@ async fn observed_magic_level(client: &mut DevClientSession) -> TestResult<u16> 
 }
 
 async fn prepare_rune_progression(
-    client: &mut DevClientSession, clients: &SeamClients<'_>, world: &BundleWorld,
+    client: &mut DevClientSession,
+    world: &BundleWorld,
     spell: &crate::spell::SpellDefinition,
 ) -> TestResult {
     let crate::spell::Carrier::Rune { magic_level, .. } = spell.carrier else {
         return Err("rune preparation requires an authored rune".into());
     };
     prepare_spell_progression(client, world, spell).await?;
-    if u32::from(observed_magic_level(client).await?) < magic_level {
-        provision_rune_fixture(client, clients, "rune-training", SUPPORT_CHARACTER).await?;
+    if rune_magic_eligible(observed_magic_level(client).await?, magic_level).is_err() {
+        return Err(Box::new(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!()))));
     }
-    rune_magic_eligible(observed_magic_level(client).await?, magic_level)?;
-    Ok(())
-}
-
-async fn provision_rune_fixture(
-    client: &mut DevClientSession, clients: &SeamClients<'_>, profile: &'static str, character: usize,
-) -> TestResult {
-        let arena_world = std::env::var("NODE_BOOT_PVP_WORLD_ID").ok()
-            .and_then(|world| crate::node::uuid_bytes(&world));
-        let socket = required(if arena_world == Some(clients.world) {
-            "NODE_BOOT_PVP_CONTROL_SOCKET"
-        } else {
-            "NODE_BOOT_CONTROL_SOCKET"
-        })?;
-        let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-        let mut command = fixture_command();
-        command.args(["--socket", &socket, "--session", &session, "--profile", profile]);
-        if !wait_fixture_command(async { Ok(run_fixture_command(&mut command).await?.status) }, async || {
-            client.service_liveness(Duration::from_millis(100)).await?;
-            client.take_events();
-            Ok(())
-        }).await?.success() {
-            return Err("fenced rune fixture profile refused".into());
-        }
-    player_logout(client).await?;
-    wait_character_released(clients, character).await?;
-    *client = connect_character(clients, 0xba, character).await?;
     Ok(())
 }
 
@@ -1461,6 +1424,10 @@ async fn rune_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
         let result: TestResult = async {
             let deadline = format!("{id} 240s journey deadline; remaining actions unproven");
             let arena = if id == "C16b" {
+                if E2eMode::from_env()? == E2eMode::Journey {
+                    evidence("e2e_game_gap scenario=C16b.full cause=journey-character-cannot-enter-separate-pvp-world");
+                    return Err(Box::new(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!()))) as Box<dyn std::error::Error>);
+                }
                 Some(tokio::time::timeout(Duration::from_secs(15),
                     super::mp::mp01_party_pvp::pvp_world_for([
                         "NODE_BOOT_PVP_RUNE_CASTER_ACCOUNT_ID", "NODE_BOOT_PVP_RUNE_TARGET_ACCOUNT_ID",
@@ -1469,6 +1436,7 @@ async fn rune_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
             } else { None };
             let arena_clients = arena.as_ref().map(|arena| arena.pair(clients));
             let clients = arena_clients.as_ref().unwrap_or(clients);
+            row_clients!(E2eMode::from_env()?, clients, id);
             let mut client = connect_character(clients, tag, SUPPORT_CHARACTER).await?;
             let mut peer = None;
             let mut completed = false;
@@ -2077,13 +2045,7 @@ async fn paralyze(
     let spell = book
         .rune(3165)
         .ok_or("C16b Paralyze rune not in pinned spell book")?;
-    if level(client).await? < spell.level {
-        provision_rune_fixture(client, clients, "druid", SUPPORT_CHARACTER).await?;
-    }
-    if level(client).await? < spell.level {
-        return Err("C16b fixture did not publish the authored caster level".into());
-    }
-    prepare_rune_progression(client, clients, world, spell).await?;
+    prepare_rune_progression(client, world, spell).await?;
     let (reference, sequence) = acquire_rune(client, world, 3165).await?;
     row.pass("acquire-paralyze", sequence);
     row.pass(
@@ -2097,10 +2059,7 @@ async fn paralyze(
     let peer = admitted_peer.as_mut().ok_or("C16b target admission absent")?;
     tokio::time::timeout(Duration::from_secs(140), async {
         if with_observer_liveness(client, level(peer)).await? < 8 {
-            with_observer_liveness(client, provision_rune_fixture(peer, clients, "knight", 1)).await?;
-        }
-        if with_observer_liveness(client, level(peer)).await? < 8 {
-            return Err("C16b fixture did not publish the target protection level".into());
+            return Err(Box::new(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!()))) as Box<dyn std::error::Error>);
         }
         let path = route(world, tile(peer.world_spatial().actor_position)?, |at| rune_corridor(world, at).is_some())
             .ok_or("C16b no reachable non-PZ equal-ground target corridor")?;
@@ -2262,7 +2221,7 @@ async fn barriers(
         let spell = book
             .rune(id)
             .ok_or_else(|| format!("C16a rune {id} absent from pinned book"))?;
-        prepare_rune_progression(client, clients, world, spell).await?;
+        prepare_rune_progression(client, world, spell).await?;
         let (minimum, maximum, ids) = barrier_parameters(spell)?;
         let references = [
             provisioning::item_reference(&index, ids[0])?,

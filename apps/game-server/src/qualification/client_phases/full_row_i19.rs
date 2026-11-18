@@ -219,7 +219,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0xdf).await?;
     let unit_rule = rule(RUBY, 146, 1, 1).ok_or("I19 ruby altar rule absent")?;
     if client.actor_vitals().ok_or("I19 vitals absent")?.max_mana < unit_rule.mana {
-        super::full_row_q01::provision(clients, &mut client, 0xdf, 1, "sorcerer", "I19").await?;
+        return Err(Box::new(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!()))));
     }
     acquire(&mut client, world, u32::from(RUBY), 1).await?;
     let ruby = carried_item(&client, gem)?;

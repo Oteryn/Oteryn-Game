@@ -494,11 +494,25 @@ class C17BootstrapTests(unittest.TestCase):
         with patch.object(provision.socket, "socket") as socket_factory, \
                 patch.object(provision, "run_capture") as platform:
             control = socket_factory.return_value.__enter__.return_value
-            control.recv.return_value = b""
+            control.makefile.return_value.__enter__.return_value.readline.return_value = b"rejected\n"
             with self.assertRaisesRegex(RuntimeError, "outside qualification mode"):
                 provision.fresh_character("node.sock", "project", {"new_account": True})
-            control.sendall.assert_called_once_with(b"!")
+            control.sendall.assert_called_once_with(b"qualification-project\n")
             platform.assert_not_called()
+
+    def test_isolated_bootstrap_refuses_unrelated_platform_project(self):
+        request = {"new_account": True, "account": "operator"}
+        with patch.object(provision.socket, "socket") as socket_factory, \
+                patch.object(provision, "run_capture", return_value="unrelated-container") as platform, \
+                patch.object(provision.PlatformIntentWriter, "run") as writer, \
+                patch.object(provision, "commit_character_bootstrap"):
+            control = socket_factory.return_value.__enter__.return_value
+            control.recv.return_value = b"!"
+            control.makefile.return_value.__enter__.return_value.readline.return_value = b"other-project\n"
+            with self.assertRaisesRegex(RuntimeError, "does not match"):
+                provision.fresh_character("node.sock", "project", request)
+            platform.assert_not_called()
+            writer.assert_not_called()
 
     def test_isolated_bootstrap_creates_canonical_separate_account_and_passes_premium(self):
         request = {"account": "bootstrap-operator", "new_account": True, "premium": True}
@@ -506,7 +520,7 @@ class C17BootstrapTests(unittest.TestCase):
                 patch.object(provision, "run_capture", return_value="platform-container"), \
                 patch.object(provision.PlatformIntentWriter, "run") as writer, \
                 patch.object(provision, "commit_character_bootstrap"):
-            socket_factory.return_value.__enter__.return_value.recv.return_value = b"!"
+            socket_factory.return_value.__enter__.return_value.makefile.return_value.__enter__.return_value.readline.return_value = b"project\n"
             result = json.loads(provision.fresh_character("node.sock", "project", request))
         self.assertEqual(uuid.UUID(result["account"]).version, 7)
         self.assertEqual(writer.call_args.args[1]["operator_account"], "bootstrap-operator")

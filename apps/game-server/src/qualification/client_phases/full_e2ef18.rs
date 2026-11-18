@@ -49,6 +49,12 @@ impl Row {
                 error.to_string().replace(['\n', '\r'], " ")
             ));
         }
+        if let Err(error) = result
+            && let Some(gap) = error.downcast_ref::<verdict::MissingServerRoute>()
+        {
+            evidence(&format!("e2e_all scenario=C14.full status=MISSING-SERVER seconds={:.3} evidence={gap}", self.started.elapsed().as_secs_f64()));
+            return;
+        }
         let suffix = result.as_ref().err().map_or_else(String::new, |error|
             verdict::classify(error.as_ref()).suffix("C14.full/journey"));
         evidence(&format!(
@@ -387,16 +393,11 @@ fn newly_learned<'a>(
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let (world, spawns) = qualification_world(clients)?;
-    let mut client = connect_character(clients, 0xe2, 0).await?;
+    let progression_character = usize::from(E2eMode::from_env()? == E2eMode::Journey);
+    let mut client = connect_character(clients, 0xe2, progression_character).await?;
     let (_, vocation) = provisioning::e2ef1::fixture_spell_facts(&mut client).await?;
     if vocation == crate::spell::Vocation::None {
-        // Setup ends before any baseline is sampled. A live kill must cross the authored
-        // unlock threshold and publish the full award across it.
-        fixture_request(&mut client, &["--profile", "combat-progression"]).await?;
-        ordinary_logout(&mut client).await?;
-        drop(client);
-        client = connect_character(clients, 0xe4, 0).await?;
-        evidence("E2EF18_SETUP C14 fixture=combat-progression before-baseline");
+        return Err(Box::new(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!()))));
     }
     let old_session = client.join_snapshot().game_session_id;
     let baseline = progress(&mut client).await?;
@@ -555,7 +556,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     ordinary_logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_character(clients, 0xe3, 0).await?;
+    let mut fresh = connect_character(clients, 0xe3, progression_character).await?;
     let persisted = progress(&mut fresh).await?;
     let persisted_capacity = carry_capacity(&mut fresh, persisted.stats.level).await?;
     if fresh.join_snapshot().game_session_id == old_session

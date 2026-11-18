@@ -255,6 +255,11 @@ async fn destroy(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    if E2eMode::from_env()? == E2eMode::Journey {
+        evidence("e2e_game_gap scenario=I10.full cause=reachable-owned-house-and-placed-furniture-unavailable");
+        return Err(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!())).into());
+    }
+
     use super::full_row_i11::{self as fluids, OVENS, VESSEL};
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;

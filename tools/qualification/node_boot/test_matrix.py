@@ -182,7 +182,7 @@ class EvidenceTests(unittest.TestCase):
                 result = matrix.extract(log, name=s["name"], entry="node_boot", exit_code=0, seconds=600)
                 (root / f"{prefix}{s['name']}" / "result.json").write_text(json.dumps(result))
             markdown, problems = matrix.summarize(shards, root, prefix)
-        self.assertIn("| basic | journey | NODE_BOOT_PASS | 0 | 10.0 | 0 | 0 | 0 | 0 | 0 |", markdown)
+        self.assertIn("| basic | UNKNOWN | NODE_BOOT_PASS | 0 | 10.0 | 0 | 0 | 0 | 0 | 0 |", markdown)
         self.assertIn(f"- `{core}` W20a.full FAIL", markdown)
         self.assertIn(f"{core}: 1 MISSING scenario(s)", problems)
         self.assertIn("g-f4-f5-f6: World shard ran no scenario", problems)
@@ -288,7 +288,8 @@ class EvidenceTests(unittest.TestCase):
                               for scenario in sorted(scenarios))
             content += "".join(f"SEAM_EVIDENCE e2e_group name={group} verdicts={count}\n"
                                for group, count in sorted(counts.items()))
-            content += ("NODE_BOOT_EVIDENCE qualification_case=basic\n"
+            content += ("SEAM_EVIDENCE e2e_mode mode=journey\n"
+                        "NODE_BOOT_EVIDENCE qualification_case=basic\n"
                         f"NODE_BOOT_EVIDENCE world_selection groups=default batch={batch} scope=default\n"
                         "NODE_BOOT_EVIDENCE qualification_case=world\n"
                         "NODE_BOOT_RESULT=NODE_BOOT_PASS\n")
@@ -349,9 +350,22 @@ def test_e2e_requirements_cover_registered_rows():
     identifiers.update(scenario.split(".")[0] for rows in matrix.GROUP_SCENARIOS.values()
                        for scenario in rows)
     assert list(requirements) == sorted(identifiers)
-    nonempty = {"C03", "C13", "C17a", "C17c", "C17d", "C18a", "C20b", "C20c", "E03", "P10", "P16"}
+    nonempty = {"C03", "C04", "C13", "C14", "C16a", "C16b", "C16c", "C16d", "C17a", "C17c", "C17d", "C18a", "C20b", "C20c", "E03", "P10", "P16", "S08", "W22b"}
+    nonempty.update(['I19', 'N01', 'P07', 'Q01a', 'Q01b', 'Q01c', 'Q01d', 'Q01e', 'Q02', 'Q03a', 'Q03b', 'Q03c', 'Q03d', 'Q03e', 'Q03f', 'Q03g', 'Q03h', 'Q03i', 'Q03j', 'Q03k', 'W15d'])
     assert {row for row, fields in requirements.items() if fields} == nonempty
     for row in nonempty:
         for source in requirements[row]["source"].split(";"):
             file, line = source.rsplit(":", 1)
             assert 1 <= int(line) <= len((ROOT / file).read_text().splitlines())
+
+
+def test_explicit_journey_overrides_inherited_isolated_mode():
+    planned = matrix.plan("custom", rows="1:2", mode="journey")[0]
+    assert "OTERYN_E2E_MODE=journey\n" in matrix.export_env(planned)
+
+
+def test_failed_boot_without_mode_evidence_reports_unknown(tmp_path):
+    log = tmp_path / "boot.log"
+    log.write_text("")
+    result = matrix.extract(log, name="reference", entry="node_boot", exit_code=1, seconds=1)
+    assert result["mode"] == "UNKNOWN"

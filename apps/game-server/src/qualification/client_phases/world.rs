@@ -3475,6 +3475,20 @@ pub(super) async fn journeys(
     drop(client);
     {
         let clients = packet_clients;
+        if mode == E2eMode::Journey && groups.runs("rows") {
+            let mut progression = connect_world(clients, 0x70).await?;
+            full_e2ef6::earn_death_prerequisites(&mut progression, world, &metadata.spawns, 2, 0)
+                .await?;
+            let level = full_e2ef5::level(&mut progression).await?;
+            if level != 2 {
+                return Err(format!(
+                    "JOURNEY requires gameplay entry at level 2; observed {level}"
+                )
+                .into());
+            }
+            evidence("e2e_journey_start level=2 source=gameplay");
+            full_e2ef5::logout(&mut progression).await?;
+        }
         // Default runs retain the ordinary packets alongside the indexed rows.
         // Explicit groups can isolate those packets from the row batch.
         let batch = groups
@@ -6115,7 +6129,13 @@ pub(super) async fn journeys(
     }
     let sweep_result = if groups.runs("creature_sweep") {
         let before = journey_verdicts();
-        let result = creature_sweep::run(sweep_clients, world, &qualified.rewards).await;
+        evidence("e2e_group_mode name=creature_sweep mode=legacy-group");
+        let result = LEGACY_QUALIFICATION_GROUP
+            .scope(
+                (),
+                creature_sweep::run(sweep_clients, world, &qualified.rewards),
+            )
+            .await;
         if groups.explicitly_selected() {
             journey_group_completed("creature_sweep", before);
         }
@@ -6125,14 +6145,19 @@ pub(super) async fn journeys(
     };
     let multiplayer_result = if groups.runs("mp") {
         let before = journey_verdicts();
-        let result = mp::run(
-            &mp_clients[0],
-            &mp_clients[1],
-            sweep_clients,
-            world,
-            &metadata.manifest.subareas,
-        )
-        .await;
+        evidence("e2e_group_mode name=mp mode=legacy-group");
+        let result = LEGACY_QUALIFICATION_GROUP
+            .scope(
+                (),
+                mp::run(
+                    &mp_clients[0],
+                    &mp_clients[1],
+                    sweep_clients,
+                    world,
+                    &metadata.manifest.subareas,
+                ),
+            )
+            .await;
         journey_group_completed("mp", before);
         result
     } else {
@@ -6144,7 +6169,18 @@ pub(super) async fn journeys(
         return sweep_result.and(multiplayer_result);
     }
     let before = journey_verdicts();
-    let profile_result = profile_journey(clients, world, &bytes, &metadata.spawns).await;
+    evidence("e2e_group_mode name=core mode=legacy-group");
+    let profile_result = if mode == E2eMode::Isolated {
+        LEGACY_QUALIFICATION_GROUP
+            .scope(
+                (),
+                profile_journey(clients, world, &bytes, &metadata.spawns),
+            )
+            .await
+    } else {
+        evidence("e2e_group_gap name=core reason=legacy-build-requires-isolated-mode");
+        Ok(())
+    };
     if let Err(error) = &profile_result {
         evidence(&format!("world_profile state=failed error={error}"));
     }
@@ -8602,10 +8638,7 @@ fn qualification_serviced_search_and_provisioning_drain_observations() -> TestRe
             .0
             .contains("client.take_events()")
     );
-    for source in [
-        include_str!("full_row_q01.rs"),
-        include_str!("provision.rs"),
-    ] {
+    for source in [include_str!("full_e2ef5.rs"), include_str!("provision.rs")] {
         let callback = source
             .split_once("wait_fixture_command(")
             .ok_or("fixture wait")?
@@ -8694,10 +8727,9 @@ fn qualification_spawn_and_fixture_command_have_outer_process_deadlines() -> Tes
         .1;
     let spawn = spawn.split_once("async fn walk(").ok_or("spawn end")?.0;
     assert!(spawn.contains("fixture_command()"));
-    for source in [
-        include_str!("full_row_q01.rs"),
-        include_str!("provision.rs"),
-    ] {
+    assert!(!include_str!("full_row_q01.rs").contains("fixture_command()"));
+    assert!(include_str!("e2e_row_batch.rs").contains("full_e2ef5::apply_fixture_at("));
+    for source in [include_str!("full_e2ef5.rs"), include_str!("provision.rs")] {
         assert!(source.contains("fixture_command()"));
     }
     Ok(())

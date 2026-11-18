@@ -126,7 +126,10 @@ pub(super) async fn run(clients: &SeamClients<'_>) {
         .bound(
             Duration::from_secs(180),
             "ranking journey deadline; remaining actions unproven",
-            journey(&mut row, clients, &mut progress),
+            async {
+                row_clients!(E2eMode::from_env()?, clients, "S11.full");
+                journey(&mut row, clients, &mut progress).await
+            },
         )
         .await;
     progress.report(match &result {
@@ -818,6 +821,7 @@ async fn clock_packet(clients: &SeamClients<'_>) {
             qualification_deadline(3_750),
             "world-clock deadline: full cycle not observed within wall-time budget",
             async {
+                row_clients!(E2eMode::from_env()?, clients, "W20a.full");
                 Ok(tokio::time::timeout(
                     qualification_deadline(3_750),
                     clock_journey(&mut row, &mut client, clients),
@@ -1627,6 +1631,7 @@ pub(super) async fn run_light(clients: &SeamClients<'_>) {
             qualification_deadline(3_300),
             "personal-light journey exceeded wall-time deadline",
             async {
+                row_clients!(E2eMode::from_env()?, clients, "W20b.full");
                 let result = light_journey(&mut row, &mut light, clients).await;
                 completed = true;
                 result
@@ -1651,6 +1656,16 @@ pub(super) async fn run_light(clients: &SeamClients<'_>) {
 }
 
 async fn additional_rows(clients: &SeamClients<'_>) {
+    if matches!(E2eMode::from_env(), Ok(E2eMode::Isolated)) {
+        for scenario in ["S13a.full", "S13b.full"] {
+            party_spell_pair(clients, Some(scenario)).await;
+        }
+    } else {
+        party_spell_pair(clients, None).await;
+    }
+}
+
+async fn party_spell_pair(clients: &SeamClients<'_>, isolated_scenario: Option<&str>) {
     let mut gate = JourneyRow::new("S13a", PARTY_GATE_ACTIONS);
     let mut cost = JourneyRow {
         actions: verdict::Row::new("E2EF7", "S13b", PARTY_COST_ACTIONS)
@@ -1668,6 +1683,7 @@ async fn additional_rows(clients: &SeamClients<'_>) {
                     Duration::from_secs(240),
                     "party-spell journey deadline; remaining actions unproven",
                     async {
+                        row_clients!(E2eMode::from_env()?, clients, isolated_scenario.unwrap_or("S13a.full"));
                         let result =
                             party_spell_journey(&mut gate, &mut cost, &mut pair, clients, world)
                                 .await;
@@ -1719,8 +1735,12 @@ async fn additional_rows(clients: &SeamClients<'_>) {
         gate.pass("final-logout");
         cost.pass("final-logout");
     }
-    gate.finish(&result);
-    cost.finish(&result);
+    if isolated_scenario != Some("S13b.full") {
+        gate.finish(&result);
+    }
+    if isolated_scenario != Some("S13a.full") {
+        cost.finish(&result);
+    }
 }
 
 fn qualification_world(clients: &SeamClients<'_>) -> TestResult<&'static BundleWorld> {
@@ -3480,6 +3500,7 @@ async fn continuation_rows(clients: &SeamClients<'_>) {
         let mut connections = [None, None];
         let mut pvp_connections = [None, None];
         let result = async {
+            row_clients!(E2eMode::from_env()?, clients, id);
             let world = qualification_world(clients)?;
             if id == "S08" {
                 pvp_journey(
@@ -6324,6 +6345,7 @@ async fn forge_row(clients: &SeamClients<'_>) {
     let watch = row.actions.watch();
     let mut connection = None;
     let result = async {
+        row_clients!(E2eMode::from_env()?, clients, "P19.full");
         let world = qualification_world(clients)?;
         connection = Some(ForgeClient::connect(clients, 0xd1, 0).await?);
         forge_journey(

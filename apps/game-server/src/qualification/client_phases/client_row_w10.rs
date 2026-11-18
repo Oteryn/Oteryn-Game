@@ -115,20 +115,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0x05).await?;
     let mut query = hazard(&mut client, &[]).await?;
     if query.status == CommandStatus::Accepted && needs_second_hazard_level(&query.payload) {
-        let logout = client.session_mut().logout().await?;
-        if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            return Err(format!("Hazard fixture setup logout: {logout:?}").into());
-        }
-        drop(client);
-        seed_second_level(clients.url, clients.characters[1].as_slice()).await?;
-        client = connect_world(clients, 0x06).await?;
-        query = hazard(&mut client, &[]).await?;
-        if query.status != CommandStatus::Accepted || query.payload != [2, 1] {
-            return Err(format!(
-                "Hazard fixture reload did not expose the seeded level: {query:?}"
-            )
-            .into());
-        }
+        return Err(Box::new(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!()))));
     }
     let [unlocked, current] = query.payload.as_slice() else {
         return Err(format!("hazard query malformed: {query:?}").into());

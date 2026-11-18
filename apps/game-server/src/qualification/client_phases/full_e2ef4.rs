@@ -1270,32 +1270,12 @@ async fn provision_converters(
     {
         return Ok(());
     }
-    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
-    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let mut command = fixture_command();
-    command.args([
-        "--socket",
-        &socket,
-        "--session",
-        &session,
-        "--profile",
-        "coin-converters",
-    ]);
-    if !wait_fixture_command(
-        async { Ok(run_fixture_command(&mut command).await?.status) },
-        async || {
-            client.service_liveness(Duration::from_millis(100)).await?;
-            client.take_events();
-            Ok(())
-        },
-    )
-    .await?
-    .success()
-    {
-        return Err("E03 audited converter fixture refused".into());
-    }
-    relog(client, clients).await?;
-    Ok(())
+    Err(Box::new(verdict::MissingServerRoute(concat!(
+        "source:",
+        file!(),
+        ":",
+        line!()
+    ))))
 }
 
 async fn coins(

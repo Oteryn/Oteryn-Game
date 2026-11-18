@@ -53,6 +53,11 @@ impl Row {
                 "SEAM_EVIDENCE e2e_all scenario=P01.full status=PASS seconds={:.3}",
                 self.started.elapsed().as_secs_f64()
             )),
+            Err(error) if error.is::<verdict::MissingServerRoute>() => evidence(&format!(
+                "SEAM_EVIDENCE e2e_all scenario=P01.full status=MISSING-SERVER seconds={:.3} evidence={}",
+                self.started.elapsed().as_secs_f64(),
+                error
+            )),
             Err(error) => evidence(&format!(
                 "SEAM_EVIDENCE e2e_all scenario=P01.full status=FAIL seconds={:.3} evidence=step:{};observed:{};need:reachable-player-earned-charm-points-and-native-reply",
                 self.started.elapsed().as_secs_f64(),
@@ -274,77 +279,6 @@ fn hunt_seconds(kills: u32, respawns_ms: impl IntoIterator<Item = u32>) -> Optio
     u32::try_from(elapsed.div_ceil(1000)).ok()?.checked_add(30)
 }
 
-fn completion_fixture_prefix(count: u32, threshold: u32, fits: bool) -> u32 {
-    if fits { 0 } else { threshold.saturating_sub(1).saturating_sub(count) }
-}
-
-/// Qualification-only history setup, after releasing the disposable fixture's Character.
-/// Every seeded race remains incomplete so the real combat path still earns each award.
-async fn prepare_bestiary_prefix(
-    db: &mut sqlx::PgConnection, clients: &SeamClients<'_>,
-    races: &[(crate::domain::bestiary::BestiaryRace, u32)], progress: &CharmProgressionReply,
-    selected: &[NonZeroU32],
-) -> TestResult {
-    use sqlx::Connection;
-    if clients.url != required("NODE_BOOT_DATABASE_URL")? {
-        return Err("step=currency-setup needed=disposable-node-boot-database".into());
-    }
-    wait_character_released(clients, 1).await?;
-    let character = clients.characters[1].as_slice();
-    let mut tx = db.begin().await?;
-    sqlx::query("SELECT character_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
-        .bind(character).fetch_one(&mut *tx).await?;
-    // The dispatch-owned PostgreSQL Charm fixture uses the same receipt-chain shape.
-    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
-    let mut offset = 0_i64;
-    for id in selected {
-        let (race, _) = &races[usize::try_from(id.get() - 1)?];
-        let before = count(progress, *id);
-        let threshold = race.final_kill_threshold();
-        let prefix = completion_fixture_prefix(before, threshold, false);
-        if prefix == 0 { continue; }
-        let projected: i64 = sqlx::query_scalar(
-            "SELECT coalesce((SELECT kill_count FROM game_character_bestiary_progress
-                            WHERE character_id=encode($1,'hex')::uuid AND race_key=$2),0)",
-        ).bind(character).bind(race.key()).fetch_one(&mut *tx).await?;
-        if projected != i64::from(before) {
-            return Err(format!("step=currency-setup observed=changed-count race={}", race.key()).into());
-        }
-        sqlx::query(
-            "WITH receipts AS (
-                INSERT INTO game_character_bestiary_kill_receipts(
-                    bestiary_occurrence_id,command_binding,race_digest,character_id,
-                    original_character_revision,committed_character_revision,
-                    level_before,level_after,experience_before,experience_after,
-                    race_key,race_definition_revision,final_kill_threshold,kill_count_before,kill_count_after,
-                    profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,
-                    declaration_revision,policy_revision,reward_revision,committed_at)
-                SELECT game_character_uuid_v7(),convert_to('P01-fixture-prefix','UTF8'),sha256(convert_to($2,'UTF8')),
-                    s.character_id,s.character_revision+$6+k-1,s.character_revision+$6+k,
-                    s.level,s.level,s.total_experience,s.total_experience,
-                    $2,$3,$4,$5+k-1,$5+k,s.profile_revision,s.ruleset_revision,s.content_revision,
-                    s.simulation_revision,s.evidence_revision,s.declaration_revision,s.policy_revision,s.reward_revision,0
-                FROM game_character_progression_state s CROSS JOIN generate_series(1::bigint,$7::bigint) k
-                WHERE s.character_id=encode($1,'hex')::uuid
-                RETURNING character_id,race_key,kill_count_after,committed_character_revision,bestiary_occurrence_id)
-             INSERT INTO game_character_bestiary_progress(
-                character_id,race_key,kill_count,committed_character_revision,last_bestiary_occurrence_id)
-             SELECT character_id,race_key,kill_count_after,committed_character_revision,bestiary_occurrence_id
-                FROM receipts WHERE kill_count_after=$5+$7
-             ON CONFLICT(character_id,race_key) DO UPDATE SET kill_count=excluded.kill_count,
-                committed_character_revision=excluded.committed_character_revision,
-                last_bestiary_occurrence_id=excluded.last_bestiary_occurrence_id",
-        ).bind(character).bind(race.key()).bind(race.definition_revision()).bind(i64::from(threshold))
-            .bind(i64::from(before)).bind(offset).bind(i64::from(prefix)).execute(&mut *tx).await?;
-        offset += i64::from(prefix);
-    }
-    sqlx::query("UPDATE game_character_roots SET character_revision=character_revision+$2 WHERE character_id=encode($1,'hex')::uuid")
-        .bind(character).bind(offset).execute(&mut *tx).await?;
-    sqlx::query("UPDATE game_character_progression_state SET character_revision=character_revision+$2 WHERE character_id=encode($1,'hex')::uuid")
-        .bind(character).bind(offset).execute(&mut *tx).await?;
-    tx.commit().await?;
-    Ok(())
-}
 fn fastest_source(spawns: &oteryn_world_bundle::spawn::Table, creature: &str, kills: u32) -> Option<(usize, u32)> {
     let index = u32::try_from(spawns.creatures.binary_search_by(|entry| entry.key.as_str().cmp(creature)).ok()?).ok()?;
     spawns.sources.iter().enumerate().filter_map(|(source, record)| {
@@ -484,44 +418,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let seconds = u32::try_from(budget.as_secs())?;
     let balance = current.charms.charm_points_available.saturating_add(if rat_left == 0 { 0 } else { races[rat_index].1 });
     let plan = seconds.checked_sub(rat_seconds).and_then(|remaining| deadline_plan(balance, cost, &hunts, remaining));
-    let used_prefix = plan.is_none();
-    let plan = if let Some(plan) = plan {
-        plan
-    } else {
-        let mut final_hunts = Vec::new();
-        for hunt in &hunts {
-            let (authored, _) = &races[usize::try_from(hunt.race.get() - 1)?];
-            if let Some((source, seconds)) = fastest_source(&metadata.spawns, authored.key(), 1) {
-                sources.insert(hunt.race, (source, seconds));
-                final_hunts.push(CurrencyHunt { seconds, ..*hunt });
-            }
-        }
-        // Break equal-time ties toward higher-value races to minimize walks and fixture records.
-        final_hunts.sort_by_key(|hunt| std::cmp::Reverse(hunt.points));
-        let rat_final = if rat_left == 0 { 0 } else {
-            let (source, seconds) = fastest_source(&metadata.spawns, RAT, 1)
-                .ok_or("step=currency-setup needed=live-Rat-spawn")?;
-            sources.insert(race, (source, seconds));
-            seconds
-        };
-        let plan = seconds.checked_sub(rat_final).and_then(|remaining| deadline_plan(balance, cost, &final_hunts, remaining))
-            .ok_or("step=currency-setup needed=spawned-races-for-enough-live-completions")?;
-        let selected = std::iter::once(race).chain(plan.iter().copied()).collect::<Vec<_>>();
-        logout_for_fixture(&mut client).await?;
-        drop(client);
-        prepare_bestiary_prefix(&mut database, clients, &races, &current, &selected).await?;
-        client = connect_world(clients, 0xa4).await?;
-        let prepared = query(&mut client).await?;
-        if prepared.charms != current.charms || selected.iter().any(|id| {
-            let index = id.get() as usize - 1;
-            let before = count(&current, *id);
-            count(&prepared, *id) != before + completion_fixture_prefix(before, races[index].0.final_kill_threshold(), false)
-        }) {
-            return Err("step=currency-setup observed=fixture-changed-charm-state-or-wrong-prefix".into());
-        }
-        current = prepared;
-        evidence("P01_CHECK currency-setup fixture=incomplete-bestiary-receipt-prefix");
-        plan
+    let Some(plan) = plan else {
+        evidence("P01_CHECK game-gap cause=authored-hunts-cannot-earn-charm-points-within-row-budget");
+        return Err(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!())).into());
     };
     for id in std::iter::once(race).chain(plan) {
         if race_complete(&current, id) { continue; }
@@ -533,8 +432,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             sources: vec![metadata.spawns.sources[source].clone()],
         };
         while !race_complete(&current, id) {
-            let spawns = if used_prefix { &metadata.spawns } else { &cluster };
-            hunt_once(&mut client, world, spawns, authored.key(), &name).await?;
+            hunt_once(&mut client, world, &cluster, authored.key(), &name).await?;
             let next = query(&mut client).await?;
             let next_count = count(&next, id);
             let award = if next_count == authored.final_kill_threshold() { *points } else { 0 };
@@ -709,10 +607,8 @@ mod eligibility_review {
     use super::*;
 
     #[test]
-    fn zero_progress_thais_prepares_the_rat_prefix_without_completing_it() {
+    fn zero_progress_thais_rat_hunt_exceeds_the_row_budget() {
         assert!(hunt_seconds(249, [90_000; 8]).is_some_and(|seconds| seconds > DEADLINE.as_secs() as u32));
-        assert_eq!(completion_fixture_prefix(1, 250, false), 248);
-        assert_eq!(completion_fixture_prefix(1, 250, true), 0);
     }
 
 }

@@ -9,7 +9,8 @@ ROOT = Path(__file__).resolve().parent
 class PremiumFixtureTests(unittest.TestCase):
     def test_packet_caster_uses_the_platform_premium_ledger_and_snapshot(self):
         run = (ROOT / "run.sh").read_text()
-        self.assertIn("PremiumTimeLedger::class", run)
+        self.assertNotIn("PremiumTimeLedger::class", run)
+        self.assertIn("PremiumTimeLedger::class", (ROOT / "provision.py").read_text())
         self.assertIn('OTERYN_PREMIUM_SNAPSHOT_URL=https://127.0.0.1:', run)
         self.assertIn("oteryn-game-premium-fixture", run)
         overlay = (ROOT / "compose.override.yml").read_text()

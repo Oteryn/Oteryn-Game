@@ -13,7 +13,7 @@
 //!    and a genuine kill while the effect is active. Require the corpse's independently minted second
 //!    roll rather than treating a source query as evidence.
 //! 6. Read native stamina, perform a genuine kill at <=840 minutes, and require an empty corpse;
-//!    the explicit fenced fixture establishes exhaustion before the real kill, never its result.
+//!    the isolated comparison uses a separate character admitted with exhausted stamina.
 //! 7. Logout, make a fresh admission, and re-query Prey, charms, stamina, and modifier status;
 //!    require the committed selections/timers and prior loot custody to survive the new session.
 
@@ -319,7 +319,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                     .iter()
                     .any(|item| item.item_definition_ref == reference)
             }) {
-                fixture_reentry(&mut client, clients, "w22b-wealth", [0xd4, 0xd5]).await?;
+                return Err(Box::new(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!()))) as Box<dyn std::error::Error>);
             }
             let handle = client
                 .inventory()
@@ -357,8 +357,19 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     .await;
     row.observed(5, step5);
     let step6 = async {
+        if E2eMode::from_env()? == E2eMode::Isolated {
+            let accounts = [clients.accounts[1].clone(), clients.accounts[0].clone()];
+            let characters = [clients.characters[1], clients.characters[0]];
+            let peer_clients = SeamClients { accounts: &accounts, characters: &characters, ..*clients };
+            return full_e2ef5::with_observer_liveness(&mut client, async {
+                let mut peer = connect_world(&peer_clients, 0xd6).await?;
+                let result = prove_modifier(&mut peer, world, &metadata.spawns, &peer_clients,
+                    "oteryn:creature.rat", Modifier::Stamina).await;
+                result.and(release(&mut peer).await)
+            }).await;
+        }
         if oteryn_gameplay_characters::stamina::hunting_loot_allowed(stamina(&mut client).await?) {
-            fixture_reentry(&mut client, clients, "w22b-stamina", [0xd6, 0xd7]).await?;
+            return Err(Box::new(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!()))) as Box<dyn std::error::Error>);
         }
         prove_modifier(
             &mut client,
@@ -1018,38 +1029,6 @@ where
     settle(state).await?;
     apply(state).await?;
     settle(state).await
-}
-
-async fn fixture_reentry(
-    client: &mut DevClientSession,
-    clients: &SeamClients<'_>,
-    profile: &'static str,
-    tags: [u8; 2],
-) -> TestResult {
-    let mut tags = tags.into_iter();
-    settled_fixture(
-        client,
-        async |client: &mut DevClientSession| {
-            release(client).await?;
-            let tag = tags.next().ok_or("fixture exceeded its two readmissions")?;
-            *client = connect_character(clients, tag, 1).await?;
-            Ok(())
-        },
-        async |client: &mut DevClientSession| {
-            let deadline = tokio::time::Instant::now() + Duration::from_secs(65);
-            verdict::Harness::global().bounded_wait(deadline, "w22b-fixture");
-            let result = verdict::indexed_timeout(
-                Duration::from_secs(65),
-                full_e2ef5::apply_fixture(client, profile),
-            )
-            .await
-            .map_err(|_| "W22 fixture deadline")?;
-            verdict::Harness::global()
-                .bounded_wait(tokio::time::Instant::now(), "w22b-fixture-complete");
-            result
-        },
-    )
-    .await
 }
 
 async fn release(client: &mut DevClientSession) -> TestResult {

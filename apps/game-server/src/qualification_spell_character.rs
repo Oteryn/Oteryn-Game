@@ -283,6 +283,10 @@ mod qualification_next_round_profile_tests {
 
 // Fixture-only training setup. Use the current character's revision fence
 // and preserve its level, vocation, and every non-magic training family.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "fixture binds the existing training owner and its session fence"
+)]
 pub(super) async fn prepare_rune_magic(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -290,6 +294,7 @@ pub(super) async fn prepare_rune_magic(
     current: &GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
     content_revision: &str,
     occurrence: [u8; 16],
+    target: u16,
     deadline: tokio::time::Instant,
 ) -> TestResult {
     let character =
@@ -311,11 +316,11 @@ pub(super) async fn prepare_rune_magic(
     if !matches!(before.vocation(), "druid" | "elder_druid") {
         return Err("rune training fixture requires an existing druid vocation".into());
     }
-    if before.magic().0 >= 18 {
+    if before.magic().0 >= target {
         return Ok(());
     }
     let after =
-        DurableBuildState::new(before.vocation(), (18, 0), before.skills()).map_err(debug)?;
+        DurableBuildState::new(before.vocation(), (target, 0), before.skills()).map_err(debug)?;
     let formula = crate::spell::mana_training::CompiledTrainingFormula::from_profile(
         include_bytes!("../../../tools/content-schema/native-gameplay/build-training.json"),
         content_revision,

@@ -335,6 +335,11 @@ async fn recover_on_fresh_session(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    if E2eMode::from_env()? == E2eMode::Journey {
+        evidence("e2e_game_gap scenario=I10.client cause=reachable-owned-house-and-placed-furniture-unavailable");
+        return Err(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!())).into());
+    }
+
     let (mut db, mut client, world, house, entrance, mut original, item, position, acl_revision, needs_restore) =
         verdict::indexed_timeout(Duration::from_secs(250), async {
             let mut db = sqlx::PgConnection::connect(clients.url).await?;

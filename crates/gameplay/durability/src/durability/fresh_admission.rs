@@ -1821,6 +1821,36 @@ impl FreshAdmissionStore {
             .await
     }
 
+    /// Check the current admission against the Character's durable admission history.
+    pub async fn is_first_character_admission(&self, session: GameSessionId) -> Result<bool> {
+        let store = self.clone();
+        let backend = self.guards.backend.clone();
+        let issued = backend.try_issue_root()?;
+        backend
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx =
+                        super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    super::db::lock_admission_relations(&mut tx).await?;
+                    let current = store.current_session_locked(&mut tx, session).await?;
+                    let first = sqlx::query_scalar(
+                        "SELECT NOT EXISTS (
+                            SELECT 1 FROM game_durability_fresh_admission_receipts
+                             WHERE character_id=encode($1,'hex')::uuid
+                               AND game_session_id<>encode($2,'hex')::uuid
+                        )",
+                    )
+                    .bind(current.current_character_lease().character_id().as_bytes().as_slice())
+                    .bind(session.as_bytes().as_slice())
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    Ok(first)
+                })
+            })
+            .await
+    }
+
     /// The current canonical session together with the database clock sampled
     /// in the same fenced pass. Loss observations are timed on this clock: the
     /// final decision samples it again, so a faster host clock cannot refuse

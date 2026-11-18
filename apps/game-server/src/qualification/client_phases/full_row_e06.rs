@@ -269,6 +269,10 @@ async fn expire_offer(
     definition: u32,
     before: i64,
 ) -> TestResult {
+    if E2eMode::from_env()? == E2eMode::Journey {
+        evidence("e2e_game_gap scenario=E06.full cause=authored-market-expiry-exceeds-row-budget");
+        return Err(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!())).into());
+    }
     let created = command(client, request(5, definition, [0; 16], 0)).await?;
     let offer = created.offer;
     if created.code != 1

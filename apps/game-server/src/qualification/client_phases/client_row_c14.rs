@@ -17,7 +17,8 @@ fn failure_evidence(error: &str) -> String {
 
 async fn capture(clients: &SeamClients<'_>) -> TestResult {
     full_e2ef18::client_progression(clients).await?;
-    let mut client = connect_character(clients, 0xc1, 0).await?;
+    let progression_character = usize::from(E2eMode::from_env()? == E2eMode::Journey);
+    let mut client = connect_character(clients, 0xc1, progression_character).await?;
     let reply = client
         .session_mut()
         .gated_command(

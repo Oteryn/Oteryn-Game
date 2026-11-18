@@ -218,8 +218,8 @@ fn level_door_requires_locked_reply_from_below_level_character() {
     assert!(validate_level_refusal("test", DOOR_LEVEL, UseDisposition::Locked).is_err());
 }
 
-/// Below-level check first, then the fixture build (knight, level 100), logout, reconnect and
-/// the level read back. A character an earlier row already raised is used as it is.
+/// Verify the below-level door refusal on a low-level participant and the
+/// positive control on the character that meets the authored threshold.
 async fn setup(
     clients: &SeamClients<'_>,
     planner: &travel::Planner<'_>,
@@ -229,28 +229,24 @@ async fn setup(
 ) -> TestResult {
     let before = level(client).await?;
     let probed_door = if chest.quest == "noble_armor" {
-        if before >= DOOR_LEVEL {
-            return Err(format!("{label} needs a character below level {DOOR_LEVEL} for the door probe; observed {before}").into());
+        if before < DOOR_LEVEL {
+            below_level_check(client, planner, chest, label, before).await?;
+            return Err(Box::new(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!()))));
         }
-        Some(below_level_check(client, planner, chest, label, before).await?)
+        let mut peer = full_e2ef5::with_observer_liveness(client, connect_character(clients, chest.tag, 1 - chest.character)).await?;
+        let probe = full_e2ef5::with_observer_liveness(client, async {
+            let peer_level = level(&mut peer).await?;
+            below_level_check(&mut peer, planner, chest, label, peer_level).await
+        }).await;
+        let release = full_e2ef5::with_observer_liveness(client, full_e2ef5::logout(&mut peer)).await;
+        let door = probe?;
+        release?;
+        Some(door)
     } else {
         None
     };
-    if before >= DOOR_LEVEL {
-        evidence(&format!(
-            "Q01_CHECK {label} setup:fixture_level={before} (raised by an earlier row)"
-        ));
-        return Ok(());
-    }
-    let after = provision(clients, client, chest.tag, chest.character, "knight", label).await?;
-    evidence(&format!(
-        "Q01_CHECK {label} setup:fixture_level={after} profile=knight level_before={before} reload=fresh_admission"
-    ));
-    if after < DOOR_LEVEL {
-        return Err(format!(
-            "{label} fixture left the character at level {after}, below {DOOR_LEVEL}"
-        )
-        .into());
+    if before < DOOR_LEVEL {
+        return Err(Box::new(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!()))));
     }
     if let Some(door) = probed_door {
         let mut passages = travel::Passages::default();
@@ -278,7 +274,7 @@ async fn setup(
         let reply = use_door_with_cooldown(client, &placement, revision).await?;
         if reply != UseDisposition::Committed {
             return Err(format!(
-                "{label} level {after} same-door positive control returned {reply:?}"
+                "{label} level {before} same-door positive control returned {reply:?}"
             )
             .into());
         }
@@ -305,44 +301,6 @@ async fn setup(
         }
     }
     Ok(())
-}
-
-/// The node-boot fixture build for `profile` (fenced, as provision.py does it), then logout,
-/// a fresh admission and the level read back.
-pub(super) async fn provision(
-    clients: &SeamClients<'_>,
-    client: &mut oteryn_dev_client::DevClientSession,
-    tag: u8,
-    character: usize,
-    profile: &str,
-    label: &str,
-) -> TestResult<u32> {
-    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
-    let profile = profile.to_owned();
-    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let mut command = fixture_command();
-    command.args(["--socket", &socket, "--session", &session, "--profile", &profile]);
-    let status = tokio::time::timeout(Duration::from_secs(22), wait_fixture_command(
-        async { Ok(run_fixture_command(&mut command).await?) },
-        async || {
-            verdict::Harness::global().progress("fixture provisioning liveness");
-            client.service_liveness(Duration::from_millis(100)).await?;
-            client.take_events();
-            Ok(())
-        },
-    )).await??;
-    if !status.status.success() {
-        evidence(&format!("fixture provisioning failed: {}", String::from_utf8_lossy(&status.stderr)));
-        return Err(format!("{label} node-boot fenced build provisioning failed").into());
-    }
-    let (result, logout, attempts, busy_timed_out) =
-        client_world::logout_retrying_busy(client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("{label} fixture setup logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
-    }
-    // The old session is logged out; the fresh admission replaces it and is logged out by the row.
-    *client = connect_character(clients, tag, character).await?;
-    level(client).await
 }
 
 /// Evidence only: the route from town with the fixture starter rope.

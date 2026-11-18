@@ -3056,9 +3056,35 @@ async fn control_loop(
                     control_diagnose(&request).unwrap_or_else(|| "[]".to_owned()),
                     "ops_diagnose",
                 ),
+                Some(request) if request == b"qualification-project\n" => {
+                    let project =
+                        std::env::var("NODE_BOOT_PLATFORM_PROJECT")
+                            .ok()
+                            .filter(|project| {
+                                config.qualification_fixture
+                                    && qualification_fixture::isolated_mode()
+                                    && !project.is_empty()
+                                    && project.len() <= 128
+                                    && project.bytes().all(|byte| {
+                                        byte.is_ascii_lowercase()
+                                            || byte.is_ascii_digit()
+                                            || matches!(byte, b'-' | b'_')
+                                    })
+                            });
+                    (
+                        project.unwrap_or_else(|| "rejected".to_owned()),
+                        "qualification_project",
+                    )
+                }
                 Some(request) if request.starts_with(b"qualify ") => {
                     let work = qualification_fixture::prepare(
-                        root, authority, proof, config, native, &request,
+                        root,
+                        authority,
+                        proof,
+                        config,
+                        native,
+                        &request,
+                        qualification_fixture::isolated_mode(),
                     );
                     let answer = if cancellation {
                         let Some(answer) = while_control_peer_connected(&mut stream, work).await

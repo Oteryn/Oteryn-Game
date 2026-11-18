@@ -56,12 +56,16 @@ pub(super) fn item_instance(enabled: bool, bytes: &[u8]) -> String {
     )
 }
 
-fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
+pub(super) fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let text = std::str::from_utf8(bytes).ok()?.trim_end_matches('\n');
     let (session, profile) = text.strip_prefix("qualify ")?.split_once(' ')?;
     let session = parse_operation_id(session.as_bytes())?;
     if let Some(row) = profile.strip_prefix("row-") {
+        let (row, peer) = row
+            .strip_suffix("-peer")
+            .map_or((row, false), |row| (row, true));
         return crate::qualification_requirements::RowRequirements::load(row)
+            .filter(|requirements| !peer || requirements.peer_level.is_some())
             .map(|_| (session, profile));
     }
     matches!(
@@ -161,6 +165,10 @@ fn fixture_failure_reply(profile: &str, error: &(dyn std::error::Error + 'static
     }
 }
 
+pub(super) fn isolated_mode() -> bool {
+    std::env::var("OTERYN_E2E_MODE").as_deref() == Ok("isolated")
+}
+
 pub(super) async fn prepare(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -168,6 +176,7 @@ pub(super) async fn prepare(
     config: &NodeConfig,
     native: Option<&NativeGameplayState>,
     bytes: &[u8],
+    isolated: bool,
 ) -> &'static str {
     let (native, session, profile) =
         match prepare_request(config.qualification_fixture, native, bytes) {
@@ -177,6 +186,9 @@ pub(super) async fn prepare(
                 return "rejected";
             }
         };
+    if !isolated && profile != "private-channel" {
+        return "rejected";
+    }
     match prepare_build(root, authority, proof, config, native, session, profile).await {
         Ok(()) => "qualified",
         Err(error) => {
@@ -1027,6 +1039,7 @@ async fn prepare_build(
             &current,
             content_revision,
             uuid_v7()?,
+            18,
             budget,
         )
         .await;
@@ -1046,15 +1059,58 @@ async fn prepare_build(
         .await;
     }
     if let Some(row) = profile.strip_prefix("row-") {
+        let (row, peer) = row
+            .strip_suffix("-peer")
+            .map_or((row, false), |row| (row, true));
         let requirements = crate::qualification_requirements::RowRequirements::load(row)
             .ok_or("unknown qualification row")?;
-        let (vocation, level, _) = requirements.build(native.spell_book())?;
+        let first = fixture_step(root, budget, "first_admission", async || {
+            admissions.is_first_character_admission(session).await
+        })
+        .await?;
+        if !first {
+            return Err(
+                "row fixture requires the first admission of a disposable Character".into(),
+            );
+        }
+        let (vocation, level, rune_magic) = if peer {
+            (
+                "none",
+                requirements.peer_level.ok_or("row peer level absent")?,
+                0,
+            )
+        } else {
+            let (vocation, level, _) = requirements.build(native.spell_book())?;
+            (
+                vocation,
+                level,
+                requirements.rune_magic_level(native.spell_book())?,
+            )
+        };
         let items: Vec<_> = requirements
             .items
             .iter()
             .map(|(&id, &quantity)| (id, quantity))
             .chain(requirements.equipment.iter().map(|&id| (id, 1)))
+            .filter(|_| !peer)
             .collect();
+        if !items.is_empty() && level == 1 && vocation == "none" {
+            let progression = fixture_step(root, budget, "progression_read", async || {
+                root.read_character_progression(authority, character).await
+            })
+            .await?;
+            let build = fixture_step(root, budget, "build_read", async || {
+                root.read_character_build_state(authority, character).await
+            })
+            .await?;
+            if progression
+                .as_ref()
+                .is_some_and(|state| state.level != 1 || state.total_experience.get() != 0)
+                || build != crate::durability::character_build::DurableBuildState::default()
+            {
+                return Err("qualification items require an untouched disposable Character".into());
+            }
+        }
         // Resolve inventory admission before committing any progression. A
         // reference-only Item cannot turn a failed setup into a partial build.
         if !items.is_empty() {
@@ -1085,7 +1141,7 @@ async fn prepare_build(
                 qualification_build::QualificationBuildSpec {
                     vocation,
                     level,
-                    context,
+                    context: context.clone(),
                     xp_occurrence: fixture_occurrence(character.as_bytes(), profile, 1),
                     build_occurrence: fixture_occurrence(character.as_bytes(), profile, 2),
                 },
@@ -1094,6 +1150,35 @@ async fn prepare_build(
                     budget,
                     reconcile: true,
                 },
+            )
+            .await?;
+        }
+        if !peer && !requirements.quest_transitions.is_empty() {
+            prepare_row_quests(
+                root,
+                authority,
+                proof,
+                &current,
+                content_revision,
+                &requirements.quest_transitions,
+                budget,
+            )
+            .await?;
+        }
+        if peer && requirements.peer_exhausted_stamina {
+            prepare_exhausted_hunting_fixture(root, authority, proof, &current, &context, budget)
+                .await?;
+        }
+        if rune_magic > 0 {
+            qualification_build::prepare_rune_magic(
+                root,
+                authority,
+                proof,
+                &current,
+                content_revision,
+                fixture_occurrence(character.as_bytes(), profile, 3),
+                rune_magic,
+                budget,
             )
             .await?;
         }
@@ -1552,6 +1637,85 @@ impl FixtureError for crate::durability::character_progression::CharacterProgres
 
 fn fixture_error(error: impl std::fmt::Debug) -> String {
     format!("{error:?}")
+}
+
+async fn prepare_row_quests(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    current: &crate::foundation::GameSessionAuthoritySnapshot<
+        crate::foundation::AuthenticatedTransportRefV1,
+    >,
+    content_revision: &str,
+    transitions: &[String],
+    budget: tokio::time::Instant,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::durability::character_progression::CurrentCharacterGameplayFence;
+    use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
+    use crate::durability::quest_state::{
+        QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+    };
+
+    let (catalogue, _, _) = super::load_quest_catalogue(
+        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state,
+        content_revision,
+    )
+    .map_err(fixture_error)?;
+    let character = crate::domain::CharacterId::from_bytes(
+        *current.current_character_lease().character_id().as_bytes(),
+    )?;
+    let sequencer = CharacterRevisionSequencer::new();
+    let mut slot = sequencer.acquire(character).await;
+    for (ordinal, transition) in transitions.iter().enumerate() {
+        if catalogue
+            .transition(transition)
+            .is_none_or(|entry| entry.experience.is_some() || entry.world_change.is_some())
+        {
+            return Err(
+                "row quest prerequisite must be an authored storage-only transition".into(),
+            );
+        }
+        let revision = fixture_step(root, budget, "quest_revision", async || {
+            root.read_current_character(authority, character).await
+        })
+        .await?
+        .revision;
+        let fence = CurrentCharacterGameplayFence {
+            character_id: character,
+            game_session_id: current.current_game_session_id(),
+            connection_generation: current.current_connection_generation(),
+            character_lease_generation: current.current_character_lease().generation(),
+            runtime_scope: current.current_runtime_scope(),
+            scope_ownership_generation: current.current_scope_generation(),
+            expected_character_revision: revision,
+        };
+        let request = QuestTransitionRequest {
+            transition_key: transition.clone(),
+            cause: QuestCause::Command(crate::foundation::CommandRef::new(
+                current.current_game_session_id(),
+                crate::foundation::CommandId::new(u64::MAX - 1024 - ordinal as u64)?,
+            )),
+        };
+        let outcome = fixture_step(root, budget, "quest_prerequisite", async || {
+            slot.commit_quest_transition(
+                root,
+                authority,
+                proof,
+                fence,
+                request.clone(),
+                std::sync::Arc::clone(&catalogue),
+            )
+            .await
+        })
+        .await?;
+        if !matches!(
+            outcome,
+            QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)
+        ) {
+            return Err(format!("row quest prerequisite refused: {outcome:?}").into());
+        }
+    }
+    Ok(())
 }
 
 // Setup only: the row still needs a real kill and the native loot suppression.
@@ -2247,16 +2411,16 @@ pub(in crate::node::serve) mod tests {
                     let request = format!("qualify {} {setup}-reconcile\n", uuid_text(&fixture::id(fixture::SESSION)));
                     let before = h.root_revision().await?;
                     let good_world = std::mem::replace(&mut config.scope.world_id, uuid_text(&fixture::id(121)));
-                    assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes()).await, "rejected");
+                    assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes(), true).await, "rejected");
                     assert_eq!(before, h.root_revision().await?, "mismatched scope changed the Character");
                     config.scope.world_id = good_world;
-                    assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes()).await, "qualified", "native W22 fixture refused");
+                    assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes(), true).await, "qualified", "native W22 fixture refused");
                     let revision = h.root_revision().await?;
                     let work_before: i16 = if setup == "w22b-wealth" {
                         sqlx::query_scalar("SELECT work_units_used FROM game_reward_claim_mint_reservations WHERE character_id=encode($1,'hex')::uuid").bind(fixture::id(fixture::CHARACTER).as_slice()).fetch_one(&h.pool).await?
                     } else { 0 };
                     for _ in 0..8 {
-                        assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes()).await, "qualified");
+                        assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes(), true).await, "qualified");
                         if setup == "w22b-wealth" {
                             let after: i16 = sqlx::query_scalar("SELECT work_units_used FROM game_reward_claim_mint_reservations WHERE character_id=encode($1,'hex')::uuid").bind(fixture::id(fixture::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
                             assert_eq!(after, work_before, "committed setup replay charged another durable work unit");
@@ -2279,13 +2443,15 @@ pub(in crate::node::serve) mod tests {
                 if profile.starts_with("row-") {
                     let revision = h.root_revision().await?;
                     config.qualification_fixture = false;
-                    assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes()).await, "rejected");
+                    assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes(), true).await, "rejected");
                     assert_eq!(h.root_revision().await?, revision);
                     config.qualification_fixture = true;
+                    assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes(), false).await, "rejected");
+                    assert_eq!(h.root_revision().await?, revision, "JOURNEY refusal changed the Character");
                 }
                 if reconcile {
                     sqlx::raw_sql("CREATE FUNCTION c17_refuse_build() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'qualification injected build failure'; END $$; CREATE TRIGGER c17_refuse_build BEFORE INSERT OR UPDATE ON game_character_build_state FOR EACH ROW WHEN (NEW.vocation <> 'none') EXECUTE FUNCTION c17_refuse_build();").execute(&h.pool).await?;
-                    assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes()).await, "rejected");
+                    assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes(), true).await, "rejected");
                     let progressed: i64 = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid").bind(fixture::id(fixture::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
                     assert_eq!(u32::try_from(progressed)?, level, "XP did not commit before injected build refusal");
                     sqlx::raw_sql("DROP TRIGGER c17_refuse_build ON game_character_build_state; DROP FUNCTION c17_refuse_build();").execute(&h.pool).await?;
@@ -2296,7 +2462,7 @@ pub(in crate::node::serve) mod tests {
                 }
                 {
                 if reconcile { POST_COMMIT_READ_FAILURE.with(|fail| fail.set(true)); }
-                let fixture = prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes());
+                let fixture = prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes(), true);
                 tokio::pin!(fixture);
                 if busy {
                     let held = h.root.try_issue_semantic_pass().map_err(debug)?;
@@ -2309,7 +2475,7 @@ pub(in crate::node::serve) mod tests {
                 let reply = fixture.await;
                 if reconcile {
                     assert_eq!(reply, "unavailable", "post-commit read failure must preserve replay");
-                    assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes()).await, "qualified");
+                    assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes(), true).await, "qualified");
                 } else { assert_eq!(reply, "qualified", "profile={profile}"); }
                 }
                 let character = crate::domain::CharacterId::from_bytes(fixture::id(fixture::CHARACTER))?;
@@ -2335,7 +2501,7 @@ pub(in crate::node::serve) mod tests {
                     }).await.err().ok_or("lost build acknowledgement became success")?;
                     assert_eq!(fixture_failure_reply(&format!("{profile}-reconcile"), unknown.as_ref()), "unavailable");
                 }
-                assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes()).await, if reconcile || profile.starts_with("row-") { "qualified" } else { "rejected" });
+                assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes(), true).await, if reconcile || profile.starts_with("row-") { "qualified" } else { "rejected" });
                 assert_eq!(h.root_revision().await?, revision, "one-shot rejection changed the Character");
                 drop(authority);
                 drop(seal);

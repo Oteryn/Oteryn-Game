@@ -357,21 +357,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_premium_activation_latch)")
             .fetch_one(&mut connection)
             .await?;
-    if premium_delivered {
-        return Err(
-            "step=bid-fixture N01 needs a Premium-current bidder after delivery activation".into(),
-        );
+    let mode = E2eMode::from_env()?;
+    if premium_delivered && mode == E2eMode::Journey {
+        return Err(Box::new(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!()))));
     }
     let level: i64 = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
         .bind(clients.characters[0].as_slice()).fetch_one(&mut connection).await?;
     if level < 20 {
-        client = provisioning::provision_fixture(client, clients, 0, 100).await?;
+        return Err(Box::new(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!()))));
     }
 
     let (mut initial, _) = first_page(&mut client, world_bytes).await?;
     let from = tile(client.world_spatial().actor_position)?;
     let authored = houses()?;
     if initial.rows.iter().filter(|row| row.kind == 1).count() < 2 {
+        if mode == E2eMode::Journey {
+            evidence("N01_CHECK game-gap cause=reachable-house-anchors-unavailable");
+            return Err(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!())).into());
+        }
+
         let mut candidates = Vec::new();
         for record in authored
             .iter()
@@ -420,6 +424,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let (mut private, path) = chosen.ok_or("no reachable private house on the first page")?;
     if !biddable(private.state) {
+        if mode == E2eMode::Journey {
+            evidence("N01_CHECK game-gap cause=no-open-house-auction");
+            return Err(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!())).into());
+        }
+
         // An isolated catalogue can contain only vacant anchors. Install the open
         // auction fixture and require the fresh wire row before sending a bid.
         seed_open_auction(clients, &private.house).await?;
@@ -447,14 +456,30 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .bind(clients.world.as_slice()).bind(&private.house).fetch_one(&mut connection).await?;
     let funding = bid_funding_target(maximum, u64::try_from(first_rent)?)
         .ok_or("step=bid-fixture maximum plus first rent overflowed")?;
-    fund_bidder(
-        &mut connection,
-        &clients.characters[0],
-        &clients.channel,
-        clients.scope_generation,
-        i64::try_from(funding)?,
-    )
-    .await?;
+    let funding = i64::try_from(funding)?;
+    if mode == E2eMode::Journey {
+        let balance: Option<i64> = sqlx::query_scalar(
+            "SELECT b.balance FROM game_account_bank_balances b
+             JOIN game_character_roots c USING(account_id,world_id)
+             WHERE c.character_id=encode($1,'hex')::uuid",
+        )
+        .bind(clients.characters[0].as_slice())
+        .fetch_optional(&mut connection)
+        .await?;
+        if balance.unwrap_or_default() < funding {
+            evidence("N01_CHECK game-gap cause=insufficient-player-earned-bank-funds");
+            return Err(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!())).into());
+        }
+    } else {
+        fund_bidder(
+            &mut connection,
+            &clients.characters[0],
+            &clients.channel,
+            clients.scope_generation,
+            funding,
+        )
+        .await?;
+    }
     let bid = house::mutation(
         world_bytes,
         &private.house,

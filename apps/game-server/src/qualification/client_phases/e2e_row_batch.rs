@@ -82,7 +82,8 @@ impl E2eMode {
         // Channel ownership setup carries no character grant.
         profile == "private-channel"
             || (self == Self::Isolated
-                && profile.to_str().is_some_and(|profile| profile.starts_with("row-")))
+                && (LEGACY_QUALIFICATION_GROUP.try_with(|()| ()).is_ok()
+                    || profile.to_str().is_some_and(|profile| profile.starts_with("row-"))))
     }
 
     fn name(self) -> &'static str {
@@ -103,30 +104,64 @@ impl E2eMode {
     }
 }
 
-struct IsolatedRow {
+tokio::task_local! {
+    static LEGACY_QUALIFICATION_GROUP: ();
+}
+
+struct RowCharacters {
     accounts: [String; 2],
     characters: [[u8; 16]; 2],
+}
+
+fn first_actor(scenario: &str) -> bool {
+    let row = scenario.split('.').next().unwrap_or(scenario);
+    matches!(scenario, "C16a" | "C16b")
+        || matches!(row, "C17d" | "N01" | "W15d" | "Q01b" | "Q01e" | "Q03a"
+            | "Q03c" | "Q03e" | "Q03g" | "Q03i" | "Q03k")
+}
+
+fn journey_row_characters(clients: &SeamClients<'_>, scenario: &str) -> Option<RowCharacters> {
+    // Index one is the progression Character. Some row drivers take their
+    // primary actor from index zero, and still require a distinct peer.
+    let starts_at_zero = first_actor(scenario) || matches!(scenario,
+        "C05.full" | "G15.full" | "G16.full" | "G19.full" | "G27.full"
+        | "I08.client" | "I11.client" | "I11.full" | "I12.client"
+        | "P05.client" | "P05.full" | "P09.client" | "P12c.client" | "P12c.full"
+        | "P15.client" | "P15.full" | "P16.client" | "P17.full" | "P19.client"
+        | "P20.client" | "S01.client" | "S02.client" | "S02.full" | "S03.client"
+        | "S04a.client" | "S04a.full" | "S04b.client" | "S04b.full" | "S04c.full"
+        | "S09.client" | "S16a.client" | "S16b.client" | "S16b.full" | "W15b.client"
+    );
+    starts_at_zero.then(|| RowCharacters {
+        accounts: [clients.accounts[1].clone(), clients.accounts[0].clone()],
+        characters: [clients.characters[1], clients.characters[0]],
+    })
 }
 
 async fn isolated_row_characters(
     clients: &SeamClients<'_>,
     scenario: &str,
-) -> TestResult<IsolatedRow> {
+) -> TestResult<RowCharacters> {
     let row = scenario.split('.').next().ok_or("row ID absent")?;
     let requirements = crate::qualification_requirements::RowRequirements::load(row)
         .ok_or("row requirements missing")?;
-    let index = usize::from(row != "C17d");
+    let index = usize::from(!(row == "C14" || first_actor(scenario)));
     let (vocation, level, premium) = requirements.build(native_spell_book()?)?;
     let (first_account, first_character) =
         full_e2ef5::fresh_row_character(clients, 0, premium && index == 0).await?;
     let (second_account, second_character) =
         full_e2ef5::fresh_row_character(clients, 1, premium && index == 1).await?;
-    let isolated = IsolatedRow {
+    let isolated = RowCharacters {
         accounts: [first_account, second_account],
         characters: [first_character, second_character],
     };
-    if requirements.level.is_none()
+    if requirements.peer_level.is_none()
+        && requirements.level.is_none()
         && requirements.vocation.is_none()
+        && !requirements.premium
+        && !requirements.before_first_unlock
+        && requirements.quest_transitions.is_empty()
+        && requirements.runes.is_empty()
         && requirements.spells.is_empty()
         && requirements.items.is_empty()
         && requirements.equipment.is_empty()
@@ -139,13 +174,14 @@ async fn isolated_row_characters(
         characters: &isolated.characters,
         ..*clients
     };
-    if matches!(row, "C20c" | "P16") {
-        let mut peer = connect_character(&row_clients, 0x71, 0).await?;
-        full_e2ef5::apply_fixture(&mut peer, &format!("row-{row}")).await?;
+    let socket = full_e2ef5::row_fixture_socket(&row_clients);
+    if requirements.peer_level.is_some() {
+        let mut peer = connect_character(&row_clients, 0x71, 1 - index).await?;
+        full_e2ef5::apply_fixture_at(&mut peer, &format!("row-{row}-peer"), socket).await?;
         full_e2ef5::logout(&mut peer).await?;
     }
     let mut client = connect_character(&row_clients, 0x71, index).await?;
-    full_e2ef5::apply_fixture(&mut client, &format!("row-{row}")).await?;
+    full_e2ef5::apply_fixture_at(&mut client, &format!("row-{row}"), socket).await?;
     full_e2ef5::logout(&mut client).await?;
     drop(client);
     let mut client = connect_character(&row_clients, 0x71, index).await?;
@@ -187,7 +223,8 @@ macro_rules! row_clients {
     ($mode:expr, $clients:ident, $scenario:expr) => {
         let isolated = $mode
             .setup(isolated_row_characters($clients, $scenario))
-            .await?;
+            .await?
+            .or_else(|| journey_row_characters($clients, $scenario));
         let isolated_clients = isolated.as_ref().map(|row| SeamClients {
             accounts: &row.accounts,
             characters: &row.characters,

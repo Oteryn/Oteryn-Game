@@ -200,23 +200,13 @@ async fn crossed(
     }
 }
 
-/// Setup: the character must be level 250. A lower character gets the fixture `sweep` build
-/// (knight, level 1000) through the fenced fixture, then a fresh admission.
-async fn setup(clients: &SeamClients<'_>, client: &mut DevClientSession) -> TestResult<String> {
-    let before = full_row_q01::level(client).await?;
-    if before >= QUEST_LEVEL {
-        return Ok(format!("level={before}"));
+/// Require the authored access level before testing the quest route.
+async fn setup(client: &mut DevClientSession) -> TestResult<String> {
+    let level = full_row_q01::level(client).await?;
+    if level < QUEST_LEVEL {
+        return Err(Box::new(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!()))));
     }
-    let after = full_row_q01::provision(clients, client, 0xe6, 1, "sweep", "Q02").await?;
-    if after < QUEST_LEVEL {
-        return Err(format!(
-            "setup: needs level {QUEST_LEVEL}; the sweep fixture build left the character at level {after} (before {before})"
-        )
-        .into());
-    }
-    Ok(format!(
-        "level_before={before} level={after} profile=sweep reload=fresh_admission"
-    ))
+    Ok(format!("level={level}"))
 }
 
 /// Walk to Kesar and confirm his outbound mission offer.
@@ -425,7 +415,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_character(clients, 0xe6, 1).await?;
     let mut row = Row::default();
     let c = &mut client;
-    row.check("setup", setup(clients, c).await);
+    row.check("setup", setup(c).await);
     row.check(
         "boat_refusal",
         refused(

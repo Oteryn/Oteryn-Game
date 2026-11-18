@@ -238,7 +238,7 @@ def main():
         modes = set(re.findall(r"^SEAM_EVIDENCE e2e_mode mode=(journey|isolated)$", log, re.MULTILINE))
         if len(modes) > 1:
             raise ValueError("mixed E2E modes in one run")
-        mode = next(iter(modes), "journey")
+        mode = next(iter(modes), "UNKNOWN")
         extra, clients = supplemental_rows(args.supplemental_rows.read_text())
         output, complete = summary(
             matrix_rows(args.matrix.read_text()), results(log),

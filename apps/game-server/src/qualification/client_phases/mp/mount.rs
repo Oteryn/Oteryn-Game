@@ -14,6 +14,18 @@ pub(super) async fn run(
     world: &BundleWorld,
     towns: &oteryn_world_bundle::subarea::Table,
 ) -> TestResult {
+    if E2eMode::from_env()? == E2eMode::Journey {
+        for scenario in ["MP01.full", "MP09.full"] {
+            evidence(&format!(
+                "e2e_group_gap name=mp scenario={scenario} cause=legacy-build-requires-isolated-mode"
+            ));
+            verdict::indexed(scenario, async {
+                Err(verdict::MissingServerRoute(concat!("source:", file!(), ":", line!())).into())
+            })
+            .await;
+        }
+        return Ok(());
+    }
     let mp01 = verdict::indexed_checked(
         "MP01.full",
         mp01_party_pvp::run(core, packets, world, towns),

@@ -43,6 +43,7 @@ pub(crate) fn record_assertion(check: &str) {
     let watch = Harness::global().active().clone();
     if let Some(watch) = watch.filter(|watch| watch.scenario.is_some()) {
         let mut state = watch.state();
+        state.game_gap = None;
         if state.stall.is_none() {
             state.root = Some(format!("{}/{check}", watch.row));
             state.stall = Some(Cause::Assertion);

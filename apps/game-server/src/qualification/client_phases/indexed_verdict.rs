@@ -10,7 +10,14 @@ impl Watch {
     pub(super) fn remember(&self, error: &(dyn Error + 'static)) {
         let cause = classify(error);
         let mut state = self.state();
+        let gap = error
+            .downcast_ref::<MissingServerRoute>()
+            .map(|missing| missing.0);
+        if gap.is_none() {
+            state.game_gap = None;
+        }
         if state.stall.is_none() {
+            state.game_gap = gap;
             state.root = Some(match &cause {
                 Cause::BlockedBy { root } => root.clone(),
                 Cause::Precondition { name } => format!("{}/{name}", self.row),
@@ -68,6 +75,20 @@ impl Watch {
             pending.clear();
             pending.push(terminal);
         }
+        if let [line] = pending.as_slice()
+            && line.contains(" status=FAIL ")
+            && !is_capture_write_error(line)
+            && let Some(source) = self.state().game_gap
+        {
+            let scenario = self.scenario.unwrap_or(self.row);
+            let seconds = line
+                .split_whitespace()
+                .find_map(|part| part.strip_prefix("seconds="))
+                .unwrap_or("0.000");
+            return vec![format!(
+                "e2e_all scenario={scenario} status=MISSING-SERVER seconds={seconds} evidence={source}"
+            )];
+        }
         let mut lines = Vec::with_capacity(pending.len());
         for mut line in pending {
             // An error during cleanup cannot leave an earlier optimistic PASS.
@@ -75,7 +96,7 @@ impl Watch {
             let failed_exit = state.failed_exit;
             let failed_pass = state.stall.is_some() && line.contains(" status=PASS ");
             drop(state);
-            if failed_exit || failed_pass {
+            if (failed_exit && self.state().game_gap.is_none()) || failed_pass {
                 for status in ["PASS", "SKIPPED", "MISSING-SERVER", "MISSING-CLIENT"] {
                     line = line.replacen(&format!(" status={status} "), " status=FAIL ", 1);
                 }
@@ -262,9 +283,8 @@ fn indexed_run(
             // `run` restored the previous active Watch, so flushing cannot recapture itself.
             let lines = watch.take_verdicts();
             let all_passed = lines.iter().all(|line| line.contains(" status=PASS "));
-            let mode = super::E2eMode::from_env()?.name();
             for line in lines {
-                evidence(&format!("{line} mode={mode}"));
+                evidence(&line);
             }
             crate::qualification::client_world::await_fixture_workers().await;
             if !report_success && result.is_ok() && !all_passed {

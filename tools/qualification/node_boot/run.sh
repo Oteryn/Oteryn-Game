@@ -303,7 +303,7 @@ if [[ "$NODE_BOOT_REUSE_STACK" != 0 ]]; then
   # shellcheck source=/dev/null
   COMPOSE_OWNER=""
   source "$REUSE_STATE"
-  if [[ "${kept_mode:-}" != "$NODE_BOOT_WORLD/$NODE_BOOT_SPELLS/${NODE_BOOT_GAME_PORT:-17181}" ]]; then
+  if [[ "${kept_mode:-}" != "$NODE_BOOT_WORLD/$NODE_BOOT_SPELLS/${NODE_BOOT_GAME_PORT:-17181}/${OTERYN_E2E_MODE:-journey}" ]]; then
     echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_mode_mismatch'; exit 2
   fi
   if [[ ! "$COMPOSE_OWNER" =~ ^[a-f0-9]{32}$ || "${kept_base:-}" != "$BASE" || "${kept_service_user:-}" != "$SERVICE_USER" \
@@ -408,7 +408,7 @@ save_reuse_state() { # the seam stage's inputs, for NODE_BOOT_REUSE_STACK=1
       "$BASE" "$SERVICE_USER" "$WP5_PROJECT" "${NODE_BOOT_LIFECYCLE:-}" &&
     printf 'kept_base_identity=%q\nkept_boot_id=%q\n' "$identity" "$(</proc/sys/kernel/random/boot_id)" &&
     printf 'kept_pvp_port=%q\n' "$PVP_GAME_PORT" &&
-    printf 'kept_mode=%q\n' "$NODE_BOOT_WORLD/$NODE_BOOT_SPELLS/${NODE_BOOT_GAME_PORT:-17181}"
+    printf 'kept_mode=%q\n' "$NODE_BOOT_WORLD/$NODE_BOOT_SPELLS/${NODE_BOOT_GAME_PORT:-17181}/${OTERYN_E2E_MODE:-journey}"
   } > "$pending"; then
     rm -f -- "$pending"
     return 1
@@ -953,9 +953,7 @@ if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   for account in "${BOOTSTRAP_ACCOUNTS[@]:2}"; do
     run_interruptible php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $accountId="'"$account"'"; Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>"nb-".$accountId."@example.invalid","password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]);'
   done
-  # Only the disposable gameplay packet accounts receive Premium. Use the
-  # same audited Platform owner as the operator's Premium grant route.
-  run_interruptible php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $operator=App\Identity\Models\Identity::where("account_id","'"$ACCOUNT_ID"'")->firstOrFail(); $ledger=app(App\ProductsEntitlements\Premium\PremiumTimeLedger::class); foreach (["'"$PACKET_ACCOUNT_ID"'","'"$SECOND_PACKET_ACCOUNT_ID"'"] as $account) { $target=App\Identity\Models\Identity::where("account_id",$account)->firstOrFail(); $ledger->grant($operator,$target,1,"Disposable node-boot gameplay qualification",(string) Illuminate\Support\Str::uuid()); }'
+
 fi
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   for account in "${EXTRA_WORLD_ACCOUNTS[@]}"; do
@@ -1223,7 +1221,7 @@ start_node_process() { # log, configuration, then hand the supervisor directory 
     "$@" > "$directory/process"
     printf "%s\n" "$?" > "$directory/exit.tmp"
     mv -- "$directory/exit.tmp" "$directory/exit"
-  ' node-supervisor "$NODE_PROCESS_DIR" sudo -u "$SERVICE_USER" env "${NODE_GAMEPLAY_ENV[@]}" OTERYN_NODE_BOOT_WITNESSES=1 bash -c '
+  ' node-supervisor "$NODE_PROCESS_DIR" sudo -u "$SERVICE_USER" env "${NODE_GAMEPLAY_ENV[@]}" OTERYN_NODE_BOOT_WITNESSES=1 "OTERYN_E2E_MODE=${OTERYN_E2E_MODE:-journey}" "NODE_BOOT_PLATFORM_PROJECT=${WP5_PROJECT:-}-${COMPOSE_OWNER:-}" bash -c '
     IFS= read -r stat < "/proc/$$/stat" || exit 1
     read -r -a fields <<< "${stat##*) }"
     printf "%s %s\n" "$$" "${fields[19]}"
