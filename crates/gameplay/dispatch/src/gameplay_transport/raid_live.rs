@@ -214,7 +214,7 @@ fn dead_bosses(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    fn raid_bundle_digest(&self) -> Option<[u8; 32]> {
+    pub(super) fn raid_bundle_digest(&self) -> Option<[u8; 32]> {
         let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
             self.movement_cells().index()
         else {

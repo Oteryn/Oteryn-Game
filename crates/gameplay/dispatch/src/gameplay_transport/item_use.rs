@@ -11,6 +11,8 @@ pub(super) mod gourmet;
 mod rotten_essence;
 mod soul_war_source;
 
+#[path = "item_use_silencer_chamber.rs"]
+mod silencer_chamber;
 #[path = "item_use_temple_scroll.rs"]
 pub(super) mod temple_scroll;
 
@@ -130,7 +132,7 @@ impl ItemUseGate {
                 return Ok(());
             }
             // WU26-06: the Temple Teleport Scroll has no cooldown of its own.
-            ItemUseKind::TempleScroll => {
+            ItemUseKind::SilencerChamber | ItemUseKind::TempleScroll => {
                 self.in_flight_since_ms = Some(now_ms);
                 return Ok(());
             }
@@ -607,6 +609,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return self
                 .use_temple_scroll(actor, command, fence, &inventory, entry)
+                .await;
+        }
+        if entry.item.definition.production_key
+            == oteryn_gameplay_encounter_rules::raid::source_silencer_plateau::CHAMBER_KEY
+        {
+            return self
+                .use_silencer_chamber(actor, command, fence, &inventory, entry)
                 .await;
         }
         let record = record(native, &entry.item.definition);

@@ -401,6 +401,7 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
             | super::item_use::drome_cube::DROME_CUBE_CAUSE
             | super::house_hireling::LAMP_USE_CAUSE
             | super::item_use::gourmet::GOURMET_CAUSE
+            | super::item_use::silencer_chamber::CAUSE
             | super::item_use::temple_scroll::TEMPLE_SCROLL_CAUSE
     ) || command.command_id == 0
         || command.game_session_id != value.expected_game_session_id
@@ -439,6 +440,7 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
             | super::item_use::soul_war_source::SOURCE_USE_CAUSE
             | super::house_hireling::LAMP_USE_CAUSE
             | super::item_use::gourmet::GOURMET_CAUSE
+            | super::item_use::silencer_chamber::CAUSE
             | super::item_use::temple_scroll::TEMPLE_SCROLL_CAUSE,
             None,
             false,

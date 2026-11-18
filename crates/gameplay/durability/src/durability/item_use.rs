@@ -57,6 +57,7 @@ pub mod mining;
 pub mod mount_taming;
 pub mod proficiency_catalyst;
 pub mod proficiency_orb;
+pub mod silencer_chamber;
 pub mod temple_scroll;
 pub mod rotten_essence;
 pub mod soul_war_source;
@@ -101,6 +102,7 @@ pub enum ItemUseKind {
     },
     /// WU26-06: one Temple Teleport Scroll composed with its `game_temple_scroll_uses` row.
     TempleScroll,
+    SilencerChamber,
 }
 
 impl ItemUseKind {
@@ -119,6 +121,7 @@ impl ItemUseKind {
             Self::HirelingFood { .. } => gourmet::GOURMET_CAUSE,
             Self::PickRefine { .. } => mining::PICK_REFINE_CAUSE,
             Self::TempleScroll => temple_scroll::TEMPLE_SCROLL_CAUSE,
+            Self::SilencerChamber => silencer_chamber::CAUSE,
         }
     }
 }
@@ -258,7 +261,8 @@ impl ItemUseRequest {
                 | ItemUseKind::SoulWarSourceUse { .. }
                 | ItemUseKind::HirelingLamp { .. }
                 | ItemUseKind::HirelingFood { .. }
-                | ItemUseKind::TempleScroll,
+                | ItemUseKind::TempleScroll
+                | ItemUseKind::SilencerChamber,
             ) => true,
             (
                 _,
@@ -271,7 +275,8 @@ impl ItemUseRequest {
                 | ItemUseKind::SoulWarSourceUse { .. }
                 | ItemUseKind::HirelingLamp { .. }
                 | ItemUseKind::HirelingFood { .. }
-                | ItemUseKind::TempleScroll,
+                | ItemUseKind::TempleScroll
+                | ItemUseKind::SilencerChamber,
             ) => false,
             (ItemUseFlaskPlan::Missing, ItemUseKind::Potion) => true,
             (
@@ -443,6 +448,7 @@ impl DurabilityRoot {
                 | ItemUseKind::ProficiencyCatalyst
                 | ItemUseKind::ProficiencyOrb
                 | ItemUseKind::TempleScroll
+                | ItemUseKind::SilencerChamber
                 | ItemUseKind::RottenEssence
                 | ItemUseKind::SoulWarSourceUse { .. }
         ) || oteryn_gameplay_progression::condition_potions::ConditionPotion::from_key(
@@ -631,7 +637,8 @@ impl DurabilityRoot {
                                 | ItemUseKind::HirelingLamp { .. }
                                 | ItemUseKind::HirelingFood { .. }
                                 | ItemUseKind::DromeCube { .. }
-                                | ItemUseKind::TempleScroll => None,
+                                | ItemUseKind::TempleScroll
+                                | ItemUseKind::SilencerChamber => None,
                             };
                             if let Some(counted) = counted {
                                 add_progress(
