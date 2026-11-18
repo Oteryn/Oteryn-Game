@@ -267,11 +267,11 @@ pub(super) async fn begin(
     assert_eq!(carried(h, 32582).await?, 0);
     let premium = owner.premium_coordinator;
     owner.premium_coordinator = None;
-    word(owner, a, npc, "mission", false).await?;
+    word(owner, a, npc, "yes", false).await?;
     assert_eq!(value(owner, a, TRACK).await?, -1);
     assert_eq!(carried(h, 32582).await?, 0);
     owner.premium_coordinator = premium;
-    word(owner, a, npc, "mission", true).await?;
+    word(owner, a, npc, "yes", true).await?;
     assert_eq!(value(owner, a, TRACK).await?, 0);
     assert_eq!(carried(h, 32582).await?, 1);
     Ok((rows,npc))
