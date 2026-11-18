@@ -58,6 +58,11 @@ async fn exercise(admin: String) -> TestResult {
     .map_err(debug)?;
     let cells = world.movement_cells(room.movement_cells()).map_err(debug)?;
     for (level, expected_x) in [(249_i64, 1), (250, 3)] {
+        // Seed boundary levels using the same isolated transaction as the boss activity cases.
+        let mut seed = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *seed)
+            .await?;
         let changed = sqlx::query(
             "UPDATE game_character_progression_state SET level=$1,total_experience=$2 \
              WHERE character_id=encode($3,'hex')::uuid",
@@ -65,9 +70,10 @@ async fn exercise(admin: String) -> TestResult {
         .bind(level)
         .bind((level - 1) * (50 * level * level - 250 * level + 600) / 3)
         .bind(id(41).as_slice())
-        .execute(&h.pool)
+        .execute(&mut *seed)
         .await?;
         assert_eq!(changed.rows_affected(), 1);
+        seed.commit().await?;
         let pin = ChannelContentPin::from_activation(
             world_id,
             1,
