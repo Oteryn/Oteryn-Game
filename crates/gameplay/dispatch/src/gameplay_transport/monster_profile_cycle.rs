@@ -1,6 +1,6 @@
 //! Channel composition: current Item/Map reads, one native think and synchronous summons.
 use super::{ComposedFreshAdmission, actor_spell::ChannelSpellStates, attack::ChannelAttackStates};
-use crate::ai_think::summon_plan::summon_path::NativeMonsterThinkRead;
+use crate::ai_think::summon_plan::{MonsterThinkReader, summon_path::NativeMonsterThinkRead};
 use crate::content::{QualifiedNativeEntryRoom, native_gameplay::NativeGameplayState};
 use crate::foundation::ChannelRuntimeV1;
 use crate::movement::monster_map::CurrentMonsterMap;
@@ -676,6 +676,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .await; }
                 if !batch.current_for(runtime) || !reader.map.validate_transaction(runtime).await {
                     return Err(crate::durability::DurabilityError::Unavailable);
+                }
+                if reader.summon_deferred() {
+                    // Budget pressure is not an authoritative schedule refusal. Retain
+                    // the quantum/cursor and retry its unconsumed Think next window.
+                    let window = crate::movement::path_budget::PATH_WINDOW_US;
+                    let retry = execution_now.saturating_add(window - execution_now % window);
+                    drop(reader);
+                    tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    return Ok((Some(retry), Vec::new(), Vec::new(), false));
                 }
                 if let Some((offset, quantum)) = &ai_quantum
                     && !pending.finish_ai_quantum(*offset, quantum.occurrences().len())

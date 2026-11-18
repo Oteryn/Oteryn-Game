@@ -109,6 +109,8 @@ pub struct ThinkReport {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ThinkError {
+    /// Resource pressure keeps the current occurrence and all schedules unconsumed.
+    PathBudgetDeferred,
     OccurrenceSuperseded,
     Draw,
 }

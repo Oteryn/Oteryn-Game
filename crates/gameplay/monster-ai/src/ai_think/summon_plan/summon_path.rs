@@ -15,6 +15,7 @@ pub struct NativeMonsterThinkRead<'a, 'tx, 'db> {
     now: u64,
     player_waiting: bool,
     reached: Option<(ExactActorRef, ExactActorRef)>,
+    path_budget_deferred: bool,
 }
 struct SummonPath<'a, 'tx, 'db> {
     map: &'a mut CurrentMonsterMap<'tx, 'db>,
@@ -41,6 +42,10 @@ impl PathTileReader for SummonPath<'_, '_, '_> {
     }
 }
 impl MonsterThinkReader for NativeMonsterThinkRead<'_, '_, '_> {
+    fn summon_deferred(&self) -> bool {
+        self.path_budget_deferred
+    }
+
     async fn summon_facts(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -49,6 +54,7 @@ impl MonsterThinkReader for NativeMonsterThinkRead<'_, '_, '_> {
         route: Option<&[MovementLocalPosition]>,
     ) -> Option<MonsterSummonFacts> {
         self.reached = None;
+        self.path_budget_deferred = false;
         let catalog =
             NativeSummonCatalog::for_actor(runtime, self.native, occurrence.actor).ok()?;
         let Some(target) = target else {
@@ -70,6 +76,7 @@ impl MonsterThinkReader for NativeMonsterThinkRead<'_, '_, '_> {
             clear
         } else {
             if !self.budget.admits(self.now, false, self.player_waiting) {
+                self.path_budget_deferred = true;
                 return None;
             }
             let mut reader = SummonPath {
@@ -154,6 +161,7 @@ impl<'a, 'tx, 'db> NativeMonsterThinkRead<'a, 'tx, 'db> {
             now,
             player_waiting,
             reached: None,
+            path_budget_deferred: false,
         }
     }
 }

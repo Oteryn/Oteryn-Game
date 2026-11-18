@@ -182,3 +182,8 @@ fn resumed_summon_uses_current_path_budget_window() -> TestResult {
 fn checkout_paths_keep_one_window_across_sql_wait() -> TestResult {
     run_case(async |harness| summon_transaction::checkout_window(harness).await)
 }
+
+#[test]
+fn exhausted_checkout_retains_the_entire_think_until_next_window() -> TestResult {
+    run_case(async |harness| summon_transaction::exhausted_window(harness).await)
+}
