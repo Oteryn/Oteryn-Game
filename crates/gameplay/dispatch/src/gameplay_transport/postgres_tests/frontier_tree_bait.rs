@@ -229,5 +229,25 @@ pub(super) fn fixture_generation(
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect();
+    if scenario == NAME {
+        // The native corpse and loot owner reads materialization and capacity
+        // from its own pin. Preserve the donor squirrel's existing loot rolls.
+        let pin = input.loot_tables.as_mut().ok_or("loot tables input")?;
+        let mut document: serde_json::Value = serde_json::from_slice(&pin.bytes)?;
+        let items = document["items"].as_array_mut().ok_or("loot item facts")?;
+        for (key, capacity) in [("oteryn:item.tibia.i276", Some(15)), (BAIT, None)] {
+            let facts = items
+                .iter_mut()
+                .find(|facts| facts["item"]["key"] == key)
+                .ok_or("squirrel loot item facts")?;
+            facts["materializable"] = json!(true);
+            facts["container_capacity"] = json!(capacity);
+        }
+        pin.bytes = serde_json::to_vec(&document)?;
+        pin.sha256 = Sha256::digest(&pin.bytes)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
+    }
     crate::content::native_gameplay::test_support::try_activate_input(world, &input).map_err(debug)
 }
