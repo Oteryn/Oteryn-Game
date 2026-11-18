@@ -66,7 +66,7 @@ fn rottin_merchant_step_final_net_starts_scene_postgres() -> TestResult {
 
 pub(super) fn catalogue(wave: bool) -> TestResult<QuestStateCatalogue> {
     let quest = "oteryn:quest.rottin_wood_and_the_married_men_quest";
-    let source = "201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rottin_wood_and_married_men/actions_corpse.lua:3-36";
+    let source = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rottin_wood_and_married_men/actions_corpse.lua:3-36";
     let mut authored = json!({
         "schema": 1,
         "quests": [{
@@ -96,7 +96,7 @@ pub(super) fn catalogue(wave: bool) -> TestResult<QuestStateCatalogue> {
         }]
     });
     if wave {
-        let donor = "201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rottin_wood_and_married_men/actions_trap.lua:65-123";
+        let donor = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rottin_wood_and_married_men/actions_trap.lua:65-123";
         let track = json!({"key":NETS,"initial":4,"minimum":0,"maximum":5});
         authored["quests"][0]["tracks"]
             .as_array_mut()

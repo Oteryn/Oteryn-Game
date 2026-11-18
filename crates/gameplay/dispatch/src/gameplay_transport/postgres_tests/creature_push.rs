@@ -356,13 +356,9 @@ pub(super) fn scenario(
         );
         if weighted_reward {
             owner.quest_catalogue = Some(std::sync::Arc::new(super::rottin_rewards::catalogue()?));
-            owner.reset_epoch = h
-                .root
-                .active_world_reset_epoch(owner.world_id)
-                .await?
-                .ok_or("active reset epoch")?;
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
+            owner.admit_quest_session(&admitted).await;
             super::rottin_rewards::exercise(&mut owner, &mut admitted, &h).await?;
             drop(owner);
             drop(authority);
