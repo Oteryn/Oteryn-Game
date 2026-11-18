@@ -12,6 +12,8 @@ use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use oteryn_gameplay_quests::quest::reward_callbacks::{self, RewardCallback};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
+use oteryn_gameplay_quests::quest::QuestStateCatalogue;
+
 const FORGEMASTER_ACCESS: &str = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forge_master/access_door";
 // Crystal 201189f8, no_rest_for_the_wicked_rewards.lua:1-13.
 const FORGEMASTER_REWARDS: [(u16, &str); 11] = [
@@ -34,6 +36,7 @@ pub(super) fn admits_forgemaster_claim(
     map: &crate::map::boot::BundleMap,
     claim: &ServedClaim,
     bound: &BoundPlacement,
+    catalogue: Option<&QuestStateCatalogue>,
 ) -> bool {
     let matches = |placement: &BoundPlacement, uid| {
         map.facts
@@ -55,7 +58,7 @@ pub(super) fn admits_forgemaster_claim(
                     && placement.reward_callback.is_some()
             })
         })
-        && callback(claim, bound).is_some_and(|reward| {
+        && callback(catalogue, claim, bound).is_some_and(|reward| {
             reward.requires.iter().any(|requirement| {
                 requirement.track == FORGEMASTER_ACCESS
                     && requirement.minimum == 1
@@ -70,9 +73,14 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-fn callback(claim: &ServedClaim, bound: &BoundPlacement) -> Option<RewardCallback> {
+fn callback(
+    catalogue: Option<&QuestStateCatalogue>,
+    claim: &ServedClaim,
+    bound: &BoundPlacement,
+) -> Option<RewardCallback> {
     let selected = bound.reward_callback.as_deref()?;
-    let callback = reward_callbacks::load()
+    let callback = catalogue
+        .map_or_else(reward_callbacks::load, reward_callbacks::load_for)
         .ok()?
         .into_iter()
         .find(|callback| callback.key == selected)?;
@@ -127,7 +135,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         bound: &BoundPlacement,
         command: UseCommand,
     ) {
-        if callback(claim, bound).is_some_and(|callback| {
+        if callback(self.quest_catalogue.as_deref(), claim, bound).is_some_and(|callback| {
             callback.requires_premium || callback.give.is_some_and(|reward| reward.premium)
         }) {
             let _ = self.session_premium_gate(command.game_session_id).await;
@@ -147,7 +155,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         bound: &BoundPlacement,
         permit: &SpellLanePermit,
     ) -> UseOutcome {
-        let Some(callback) = callback(claim, bound) else {
+        let Some(callback) = callback(self.quest_catalogue.as_deref(), claim, bound) else {
             return outcome(UseDisposition::Rejected);
         };
         let Some(native) = self
@@ -286,7 +294,7 @@ mod tests {
             .ok_or("corpse")?;
         let bound = claim.placements.first().ok_or("placement")?;
         assert_eq!(
-            callback(&claim, bound)
+            callback(None, &claim, bound)
                 .ok_or("exact allocation")?
                 .give
                 .ok_or("items")?
@@ -295,7 +303,7 @@ mod tests {
             3
         );
         claim.authority_digest[0] ^= 1;
-        assert!(callback(&claim, &claim.placements[0]).is_none());
+        assert!(callback(None, &claim, &claim.placements[0]).is_none());
         Ok(())
     }
 }

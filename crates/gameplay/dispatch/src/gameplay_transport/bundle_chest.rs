@@ -137,7 +137,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
         .ok()?;
         let (claim, bound) = resolved.canonical?;
-        if !super::native_claim_reward::admits_forgemaster_claim(map, claim, bound) {
+        if !super::native_claim_reward::admits_forgemaster_claim(
+            map,
+            claim,
+            bound,
+            self.quest_catalogue.as_deref(),
+        ) {
             return Some(outcome(UseDisposition::NotPossible));
         }
         let mut quest_transition = bound.placement.quest_transition.clone();
