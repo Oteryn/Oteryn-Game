@@ -55,9 +55,9 @@ impl Case {
             }}),
             // Soul War moveevent-soul_war_entrances.lua:60-88.
             Self::Flags => json!({"kind":"distinct_flags","minimum":5,"flags":
-                ["Malice","Hatred","Spite","Cruelty","Greed"].map(|boss| json!({
+                (["Malice","Hatred","Spite","Cruelty","Greed"].map(|boss| json!({
                     "label":boss,"range":{"source":{"kind":"soul_war_boss","boss":boss},"minimum":1,"maximum":1}
-                }))
+                })))
             }),
             // Pits of Inferno movements_holy_tible_tile.lua:14-20.
             Self::Carried => json!({"kind":"carried","item":HOLY_TIBLE,"count":1}),
