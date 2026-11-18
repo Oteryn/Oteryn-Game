@@ -726,6 +726,7 @@ async fn level_admission_fixture(
             minimum_level: minimum,
             premium: false,
             prerequisites: Vec::new(),
+            personal_assignment: None,
         });
         let bindings = Bindings {
             schema: 1,

@@ -240,8 +240,15 @@ impl RecipeEvidence {
                 .admission
                 .as_ref()
                 .into_iter()
-                .flat_map(|gate| &gate.prerequisites)
-                .map(|required| required.requirement.clone())
+                .flat_map(|gate| {
+                    gate.prerequisites
+                        .iter()
+                        .map(|required| required.requirement.clone())
+                        .chain(
+                            gate.personal_assignment
+                                .map(|assignment| assignment.requirement().to_owned()),
+                        )
+                })
                 .collect();
             let admission_matches = recipe.prerequisites.as_ref() == Some(&declared_prerequisites)
                 && recipe.requires_premium

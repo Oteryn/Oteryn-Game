@@ -181,7 +181,7 @@ impl Bindings {
                 }
             }
             if let Some(admission) = &quest.admission {
-                admission.validate(&quest.quest)?;
+                admission.validate(quest)?;
             }
             let mut tracks = BTreeSet::new();
             for track in &quest.tracks {
