@@ -230,11 +230,27 @@ async fn exercise(h: &Harness) -> TestResult {
     let left = machine_key(&owner, LEFT, 842)?;
     let right = machine_key(&owner, RIGHT, 843)?;
     let stale_right = target(&owner, right)?;
+    let before_entry = deps
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?
+        .position();
     assert_ne!(
         charge(&mut owner, &admitted, 713, left, RUBY).await?,
         UseDisposition::Committed
     );
     assert_eq!(gems(h).await?, -1);
+    assert_eq!(
+        deps.runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        before_entry
+    );
     assert_eq!(carried(h, RUBY).await?, 1);
     assert_eq!(
         click(&mut owner, &admitted, 714, left).await?,
@@ -279,6 +295,15 @@ async fn exercise(h: &Harness) -> TestResult {
         UseDisposition::Committed
     );
     assert_eq!(gems(h).await?, 23);
+    assert_eq!(
+        deps.runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        before_entry
+    );
     assert_eq!(
         (
             machine_appearance(&owner, left)?,
