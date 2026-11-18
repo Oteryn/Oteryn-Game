@@ -673,6 +673,9 @@ mod tests {
             include_str!("../../../../../content/quests/authored-world-callbacks.json"),
             include_str!("../../../../../content/quests/questpc7-world-callbacks.json"),
             include_str!("../../../../../content/quests/world-callbacks/feaster-phase-routes.json"),
+            include_str!(
+                "../../../../../content/quests/world-callbacks/threatened-dreams-mosaic-treasure.json"
+            ),
             include_str!("../../../../../content/quests/questl2-djinn-world.json"),
         ];
         let mut expected = std::collections::BTreeSet::new();

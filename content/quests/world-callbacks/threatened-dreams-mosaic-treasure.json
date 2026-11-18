@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/threatened-dreams-mosaic-treasure",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32363,
+          "y": 32416,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25380
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission04/grumpy_stone",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/action_treasure.lua:3-20",
+        "https://tibia.fandom.com/?curid=81363&oldid=1202454#The_Last_Part"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i25698",
+          "count": 1,
+          "contents": [],
+          "additional": [
+            {
+              "item": "oteryn:item.tibia.i25737",
+              "count": 5
+            },
+            {
+              "item": "oteryn:item.tibia.i24390",
+              "count": 5
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
