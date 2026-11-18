@@ -1,4 +1,4 @@
-//! Read normal-death facts under the same session fence as settlement, without a death write.
+//! Read normal-death facts and observe the session fence in one advisory snapshot.
 use super::{adventurer, promotion};
 use crate::domain::death::{
     AMULET_OF_LOSS_BLESSINGS_EXCLUSIVE, CONTAINER_LOSS_PER_MILLE, EQUIPMENT_LOSS_PER_MILLE,
@@ -6,11 +6,11 @@ use crate::domain::death::{
 };
 use crate::durability::{
     DurabilityError, DurabilityRoot,
-    character_authority::{ReconciledCharacterAuthority, assert_recovery_fence},
+    character_authority::{ReconciledCharacterAuthority, observe_recovery_fence},
     character_progression::{
-        CharacterProgressionError, CurrentCharacterGameplayFence, assert_item_only_fence,
+        CharacterProgressionError, CurrentCharacterGameplayFence, observe_item_only_fence,
     },
-    db::{begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations},
+    db::begin_observation_transaction,
     runtime_scope_assignment::NodeIncarnationProof,
     spell_field_policy::{FieldWorldType, read_world_field_policy_in_transaction},
 };
@@ -129,9 +129,8 @@ impl DurabilityRoot {
         let node = node.clone();
         let root = self.clone();
         self.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move {
-            let mut tx=begin_semantic_transaction(holder,deadline).await?;assert_recovery_fence(&mut tx,&recovery).await?;lock_admission_relations(&mut tx).await?;
-            if assert_item_only_fence(&mut tx,&fence.item_fence(),&node).await?.is_err(){return Ok(Err(CharacterProgressionError::AuthorityRejected));}
-            // The item fence already locks the Character root and serializes its writers.
+            let mut tx=begin_observation_transaction(holder,deadline).await?;observe_recovery_fence(&mut tx,&recovery).await?;
+            if observe_item_only_fence(&mut tx,&fence.item_fence(),&node).await?.is_err(){return Ok(Err(CharacterProgressionError::AuthorityRejected));}
             let row=sqlx::query("SELECT p.level,p.total_experience,b.vocation, \
                 ARRAY(SELECT blessing_key FROM game_character_blessings WHERE character_id=p.character_id ORDER BY blessing_key LIMIT 9) AS held, \
                 EXISTS(SELECT 1 FROM game_character_pvp_state WHERE character_id=p.character_id AND skull>0 AND skull_until>clock_timestamp()) AS skulled, \
@@ -198,7 +197,7 @@ impl DurabilityRoot {
                 history,
             };
             if snapshot.encode().is_none() { return Err(DurabilityError::InvalidStoredState); }
-            commit_semantic_transaction(tx,deadline).await?;Ok(Ok(snapshot))
+            tx.rollback().await.map_err(DurabilityError::from)?;Ok(Ok(snapshot))
         })).await?
     }
 }

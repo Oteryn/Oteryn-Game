@@ -38,15 +38,30 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                         (*shown == ordinal).then_some(ItemKey::Instance(*item))
                     })
                 }),
+                DepotAction::Withdraw(ordinal) => item_view.as_ref().and_then(|view| {
+                    let (town, number) = view.open_depot?;
+                    if view.depot_withdraw_needs_browse
+                        || intent.town != Some(town)
+                        || intent.box_number != number
+                    {
+                        return None;
+                    }
+                    view.depot_items.iter().find_map(|(shown, item)| {
+                        (*shown == ordinal).then_some(ItemKey::Instance(*item))
+                    })
+                }),
                 _ => None,
             };
             // A new attempt replaces the connection's previous view, including when
             // the owner cannot complete its read. Never retain stale access on `None`.
-            if let Some(view) = item_view.as_mut() {
-                view.open_depot = None;
-                view.depot_items.clear();
-                view.depot_selection = None;
-            }
+            let previous_items = item_view
+                .as_mut()
+                .map(|view| {
+                    view.open_depot = None;
+                    view.depot_selection = None;
+                    std::mem::take(&mut view.depot_items)
+                })
+                .unwrap_or_default();
             let mut observation = authority
                 .depot_at(
                     actor,
@@ -101,6 +116,17 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                         entry.ordinal = *ordinal;
                     }
                     view.depot_selection = Some((town, reply.box_number, reply.page));
+                } else if intent.action == DepotAction::Browse {
+                    view.depot_withdraw_needs_browse = false;
+                } else {
+                    // Legacy pages expose storage ordinals, which a move can reassign.
+                    view.depot_withdraw_needs_browse |=
+                        previous_items.iter().any(|(old_ordinal, old_id)| {
+                            observation
+                                .items
+                                .iter()
+                                .any(|(ordinal, id)| ordinal == old_ordinal && id != old_id)
+                        });
                 }
                 if opened {
                     view.open_depot = Some((town, reply.box_number));

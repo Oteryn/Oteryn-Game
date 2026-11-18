@@ -1,7 +1,7 @@
 //! Bounded path requests retained in the creature's existing table entry, never a second queue.
 use super::*;
 use crate::ai::{AiProvenance, AiProvenanceInput, PathRequest, RouteStep, build_path_proposal};
-use crate::movement::path_search::{PathOccupancy, measured_route};
+use crate::movement::path_search::{PathOccupancy, measured_creature_route};
 
 impl CreatureAiTable {
     pub(super) fn drain_creature_paths(
@@ -60,7 +60,7 @@ impl CreatureAiTable {
                 }
             };
             // One charge per actual expansion; the admitted maximum is refunded automatically.
-            let (route, work) = measured_route(start, target, exact, |at| {
+            let (route, work) = measured_creature_route(start, target, exact, |at| {
                 if (!exact && at == target)
                     || !*admissible.entry((at.x, at.y, at.floor)).or_insert_with(|| {
                         crate::movement::relocate::creature_cell_admissible(cells, blocking, at)

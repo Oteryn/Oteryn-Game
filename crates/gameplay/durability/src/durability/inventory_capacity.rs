@@ -17,6 +17,7 @@ impl DurabilityRoot {
         recovery: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
+        house_origin: Option<[u8; 16]>,
         weights: &dyn ItemWeightLookup,
     ) -> Result<Option<(u64, u64)>, DurabilityError> {
         let record = recovery
@@ -30,10 +31,16 @@ impl DurabilityRoot {
                     let weights: &dyn ItemWeightLookup = *weights;
                     let mut tx = super::db::begin_observation_transaction(holder, deadline).await?;
                     observe_recovery_fence(&mut tx, &record).await?;
-                    if observe_session_fence(&mut tx, &fence, &node)
+                    let current = if let Some(origin) = house_origin {
+                        super::house_hireling::fence::observe_house_custody_fence(
+                            &mut tx, &node, &fence, origin,
+                        )
                         .await?
-                        .is_err()
-                    {
+                        .is_some()
+                    } else {
+                        observe_session_fence(&mut tx, &fence, &node).await?.is_ok()
+                    };
+                    if !current {
                         tx.rollback().await?;
                         return Ok(None);
                     }

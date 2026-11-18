@@ -33,6 +33,13 @@ pub(super) enum Extra {
 }
 
 impl Extra {
+    pub(super) fn nested_outputs(&self) -> i64 {
+        match self {
+            Self::Trade(_) => 0,
+            Self::Package(selection) => selection.children.len() as i64,
+        }
+    }
+
     pub(super) fn channel(&self) -> ChannelId {
         match self {
             Self::Trade(s) => s.origin_channel,

@@ -70,6 +70,21 @@ pub(super) async fn exercise(
     };
     assert_eq!(outcome(101, a_handle, a, None).await?, DepotOutcome::Moved);
     assert_eq!(order(pool, 17).await?, vec![text(a)]);
+    let shown = Box::pin(owner.depot_at(
+        actor,
+        command(104),
+        DepotIntent {
+            action: DepotAction::Browse,
+            ..deposit(a_handle)
+        },
+        None,
+        None,
+    ))
+    .await
+    .ok_or("displayed depot page")?;
+    assert_eq!(shown.items.len(), 1);
+    let (ordinal, expected) = shown.items[0];
+    assert_eq!(expected, a);
     // A slot past the last entry places the deposit last.
     assert_eq!(
         outcome(102, b_handle, b, Some(5)).await?,
@@ -101,6 +116,20 @@ pub(super) async fn exercise(
         outcome(103, c_handle, c, Some(0)).await?,
         DepotOutcome::Rejected
     );
+    assert_eq!(order(pool, 17).await?, vec![text(a), text(c), text(b)]);
+    let stale = Box::pin(owner.depot_at(
+        actor,
+        command(105),
+        DepotIntent {
+            action: DepotAction::Withdraw(ordinal),
+            ..deposit(a_handle)
+        },
+        None,
+        Some(ItemKey::Instance(expected)),
+    ))
+    .await
+    .ok_or("withdraw")?;
+    assert_eq!(stale.reply.outcome, DepotOutcome::Stale);
     assert_eq!(order(pool, 17).await?, vec![text(a), text(c), text(b)]);
     // The receipt triggers admit no ordinal change outside a current depot move.
     let forged = sqlx::query(

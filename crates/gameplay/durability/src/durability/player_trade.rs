@@ -40,12 +40,33 @@ pub struct TradeLeaf {
     timed: Option<Value>,
     text: Option<Value>,
     text_revision: Option<Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    attributes: Option<Value>,
 }
 
 impl TradeLeaf {
     /// Frozen descendants in breadth-first display order; their parents precede them.
     pub fn contents(&self) -> &[TradeLeaf] {
         &self.contents
+    }
+
+    /// Project the frozen item onto the trade wire using its pinned definition reference.
+    pub fn project_offer(
+        &self,
+        definition: u32,
+    ) -> Result<oteryn_protocol_oteryn::player_trade::Offer, DurabilityError> {
+        let fluid = self.attributes.as_ref().and_then(|attrs| attrs.get("fluid"));
+        let sub_type = if let Some(fluid) = fluid {
+            u32::try_from(snapshot::number(fluid, "fluid_subtype")?)
+                .map_err(|_| DurabilityError::InvalidStoredState)?
+        } else {
+            0
+        };
+        Ok(oteryn_protocol_oteryn::player_trade::Offer {
+            definition,
+            count: self.definition_and_quantity()?.1,
+            sub_type,
+        })
     }
 
     /// Resolve only an identity when a writer checks whether this offer reserves it.

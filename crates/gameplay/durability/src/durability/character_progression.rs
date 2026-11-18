@@ -620,12 +620,12 @@ pub(super) async fn assert_gameplay_fence(
     std::result::Result<FencedCharacterRoot, CharacterProgressionError>,
     DurabilityError,
 > {
-    assert_fenced_root(
+    check_fenced_root(
         tx,
         &fence.item_fence(),
         Some(fence.expected_character_revision.get()),
         node,
-        false,
+        CharacterRootLock::Update,
     )
     .await
 }
@@ -641,7 +641,7 @@ pub(super) async fn assert_item_only_fence(
     std::result::Result<FencedCharacterRoot, CharacterProgressionError>,
     DurabilityError,
 > {
-    assert_fenced_root(tx, fence, None, node, false).await
+    check_fenced_root(tx, fence, None, node, CharacterRootLock::Update).await
 }
 
 /// The identical item fence with a non-key root lock. Market updates no root
@@ -655,40 +655,56 @@ pub(super) async fn assert_market_item_fence(
     std::result::Result<FencedCharacterRoot, CharacterProgressionError>,
     DurabilityError,
 > {
-    assert_fenced_root(tx, fence, None, node, true).await
+    check_fenced_root(tx, fence, None, node, CharacterRootLock::NoKeyUpdate).await
 }
 
-async fn assert_fenced_root(
+/// Reuse the item fence predicates as of a read-only database snapshot.
+pub(super) async fn observe_item_only_fence(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: &CurrentCharacterItemFence,
-    expected_revision: Option<u64>,
     node: &NodeIncarnationProof,
-    no_key_update: bool,
 ) -> std::result::Result<
     std::result::Result<FencedCharacterRoot, CharacterProgressionError>,
     DurabilityError,
 > {
-    let account_text = match assert_session_fence(tx, fence, node).await? {
+    check_fenced_root(tx, fence, None, node, CharacterRootLock::Observe).await
+}
+
+#[derive(Clone, Copy)]
+enum CharacterRootLock {
+    Update,
+    NoKeyUpdate,
+    Observe,
+}
+
+async fn check_fenced_root(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: &CurrentCharacterItemFence,
+    expected_revision: Option<u64>,
+    node: &NodeIncarnationProof,
+    lock: CharacterRootLock,
+) -> std::result::Result<
+    std::result::Result<FencedCharacterRoot, CharacterProgressionError>,
+    DurabilityError,
+> {
+    let account_text = match check_session_fence(tx, fence, node, !matches!(lock, CharacterRootLock::Observe)).await? {
         Ok(account_text) => account_text,
         Err(error) => return Ok(Err(error)),
     };
     let world_id = fence.runtime_scope.world_id();
 
-    let root = sqlx::query(if no_key_update {
-        "SELECT account_id::text, world_id::text, character_revision::text, \
+    let sql = "SELECT account_id::text, world_id::text, character_revision::text, \
                 profile_revision, ruleset_revision, content_revision, \
                 starter_template_revision \
            FROM game_character_roots \
-          WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1 \
-          FOR NO KEY UPDATE"
-    } else {
-        "SELECT account_id::text, world_id::text, character_revision::text, \
-                profile_revision, ruleset_revision, content_revision, \
-                starter_template_revision \
-           FROM game_character_roots \
-          WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1 \
-          FOR UPDATE"
-    })
+          WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1";
+    let root_lock = match lock {
+        CharacterRootLock::Update => " FOR UPDATE",
+        CharacterRootLock::NoKeyUpdate => " FOR NO KEY UPDATE",
+        CharacterRootLock::Observe => "",
+    };
+    // Both fragments are fixed SQL, and the Character id remains a bind.
+    let root = sqlx::query(sqlx::AssertSqlSafe(format!("{sql}{root_lock}")))
     .bind(fence.character_id.as_bytes().as_slice())
     .fetch_optional(&mut **tx)
     .await?;

@@ -16,6 +16,26 @@ pub(crate) async fn assert_house_custody_fence(
     fence: &CurrentCharacterItemFence,
     origin_channel: [u8; 16],
 ) -> Result<Option<HouseId>, DurabilityError> {
+    check_house_custody_fence(tx, node, fence, origin_channel, true).await
+}
+
+/// The same named-House facts from a consistent read-only snapshot.
+pub(in crate::durability) async fn observe_house_custody_fence(
+    tx: &mut Transaction<'_, Postgres>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    origin_channel: [u8; 16],
+) -> Result<Option<HouseId>, DurabilityError> {
+    check_house_custody_fence(tx, node, fence, origin_channel, false).await
+}
+
+async fn check_house_custody_fence(
+    tx: &mut Transaction<'_, Postgres>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    origin_channel: [u8; 16],
+    lock: bool,
+) -> Result<Option<HouseId>, DurabilityError> {
     let RuntimeScopeRefV1::Instance {
         world_id,
         instance_id,
@@ -23,8 +43,7 @@ pub(crate) async fn assert_house_custody_fence(
     else {
         return Ok(None);
     };
-    let Some(row) = sqlx::query(
-        "SELECT s.runtime_scope_house_key AS house, s.account_id::text AS account, \
+    let sql = "SELECT s.runtime_scope_house_key AS house, s.account_id::text AS account, \
                 s.character_lease_generation::text AS lease, \
                 r.profile_revision, r.ruleset_revision, r.content_revision, r.starter_template_revision \
          FROM game_durability_reconnect_sessions s \
@@ -45,8 +64,9 @@ pub(crate) async fn assert_house_custody_fence(
            AND c.lease_generation=s.character_lease_generation \
            AND c.holder_game_session_id=s.game_session_id \
            AND a.presence_character_id=s.character_id AND a.holder_game_session_id=s.game_session_id \
-         FOR SHARE OF s,a,c",
-    ).bind(fence.game_session_id.as_bytes().as_slice())
+         FOR SHARE OF s,a,c";
+    let sql = if lock { sql } else { sql.trim_end_matches("FOR SHARE OF s,a,c") };
+    let Some(row) = sqlx::query(sql).bind(fence.game_session_id.as_bytes().as_slice())
      .bind(fence.character_id.as_bytes().as_slice()).bind(world_id.as_bytes().as_slice())
      .bind(instance_id.as_slice()).bind(origin_channel.as_slice())
      .bind(fence.connection_generation.get().to_string()).bind(fence.character_lease_generation.to_string())
@@ -55,29 +75,42 @@ pub(crate) async fn assert_house_custody_fence(
     let house: String = row.try_get("house")?;
     if HouseId::new(world_id, &house).is_none_or(|id| id.instance_id() != instance_id)
         || numeric_u64(&row, "lease")? != fence.character_lease_generation
-        || !prove_current_incarnation(tx, node).await?
     {
         return Ok(None);
     }
+    let incarnation_current = if lock {
+        prove_current_incarnation(tx, node).await?
+    } else {
+        super::super::runtime_scope_assignment::observe_current_incarnation(tx, node).await?
+    };
+    if !incarnation_current {
+        return Ok(None);
+    }
     let fact = node.fact();
-    let held: bool=sqlx::query_scalar(
-        "SELECT game_runtime_scope_assignment_history_valid() AND EXISTS( \
+    let history = if lock {
+        "game_runtime_scope_assignment_history_valid()"
+    } else {
+        "game_runtime_scope_assignment_observation_valid(game_house_scope_key(encode($1,'hex')::uuid,$2))"
+    };
+    let row_lock = if lock { "FOR SHARE" } else { "" };
+    let sql = format!("SELECT {history} AND EXISTS( \
          SELECT 1 FROM game_runtime_scope_assignments \
          WHERE scope_key=game_house_scope_key(encode($1,'hex')::uuid,$2) \
            AND scope_kind=2 AND world_id=encode($1,'hex')::uuid AND house_key=$2 \
            AND state=1 AND ownership_generation=$3::text::numeric \
            AND holder_node_id=encode($4,'hex')::uuid AND holder_registration_revision=$5::text::numeric \
-         FOR SHARE)",
-    ).bind(world_id.as_bytes().as_slice()).bind(&house)
+         {row_lock})");
+    // Only fixed history and row-lock clauses are interpolated.
+    let held: bool = sqlx::query_scalar(sqlx::AssertSqlSafe(sql)).bind(world_id.as_bytes().as_slice()).bind(&house)
      .bind(fence.scope_ownership_generation.get().to_string()).bind(fact.node_id().as_bytes().as_slice())
      .bind(fact.registration_revision().to_string()).fetch_one(&mut **tx).await?;
     if !held {
         return Ok(None);
     }
-    let root=sqlx::query(
-        "SELECT profile_revision,ruleset_revision,content_revision,starter_template_revision \
-         FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE",
-    ).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    let sql = "SELECT profile_revision,ruleset_revision,content_revision,starter_template_revision \
+         FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE";
+    let sql = if lock { sql } else { sql.trim_end_matches(" FOR UPDATE") };
+    let root = sqlx::query(sql).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     let current = sqlx::query(
         "SELECT profile_revision,ruleset_revision,content_revision,starter_template_revision \
          FROM game_character_interpretations ORDER BY interpretation_revision DESC LIMIT 1",

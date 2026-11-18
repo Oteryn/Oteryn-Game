@@ -292,6 +292,11 @@ async fn commit_permutation(
     Ok(())
 }
 
+const SLOT_ENTRIES_SQL: &str = "SELECT item_instance_id::text, placement_ordinal::text, placed_transaction_id::text, nested FROM ( \
+           SELECT item_instance_id,placement_ordinal,placed_transaction_id,false AS nested FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid \
+           UNION ALL SELECT item_instance_id,placement_ordinal,placed_transaction_id,true FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid \
+         ) e ORDER BY e.placement_ordinal DESC LIMIT $2";
+
 /// CONTAINER-MANUAL-SORT-1 (capability 510): the entry this move transaction placed first in
 /// `parent` takes `slot` of the view order (newest first) and the entries before that slot move
 /// up one. A slot past the last entry is last. A merge placed no entry, so nothing changes. The
@@ -308,16 +313,11 @@ pub(super) async fn place_at_slot(
 ) -> LoopResult<()> {
     // A carried tree holds at most ITEM_LOOP_TREE_ITEMS_MAX (500) items, the receipt's limit.
     let wanted = i64::from(slot).min(ITEM_LOOP_TREE_ITEMS_MAX - 1) + 1;
-    let rows = sqlx::query(
-        "SELECT item_instance_id::text, placement_ordinal::text, placed_transaction_id::text, nested FROM ( \
-           SELECT item_instance_id,placement_ordinal,placed_transaction_id,false AS nested FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid \
-           UNION ALL SELECT item_instance_id,placement_ordinal,placed_transaction_id,true FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid \
-         ) e ORDER BY placement_ordinal DESC LIMIT $2",
-    )
-    .bind(parent.as_slice())
-    .bind(wanted)
-    .fetch_all(&mut **tx)
-    .await?;
+    let rows = sqlx::query(SLOT_ENTRIES_SQL)
+        .bind(parent.as_slice())
+        .bind(wanted)
+        .fetch_all(&mut **tx)
+        .await?;
     let Some(first) = rows.first() else {
         return Ok(());
     };

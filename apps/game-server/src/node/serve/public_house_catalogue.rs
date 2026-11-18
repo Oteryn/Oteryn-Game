@@ -294,12 +294,16 @@ epoch_fence_file = "/missing/public.fence"
                     if fail_capture {
                         h.pool.execute("CREATE SEQUENCE catalogue_failure; CREATE FUNCTION catalogue_fail_once() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.ready AND nextval('catalogue_failure')=1 THEN RAISE EXCEPTION 'transient capture failure'; END IF; RETURN NEW; END $$; CREATE TRIGGER catalogue_fail_once BEFORE UPDATE ON game_public_house_catalogue_state FOR EACH ROW EXECUTE FUNCTION catalogue_fail_once() ").await?;
                     }
+                    if !fail_capture {
+                        h.pool.execute("CREATE SEQUENCE catalogue_failure; CREATE FUNCTION catalogue_fail_initial_once() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF nextval('catalogue_failure')=1 THEN RAISE EXCEPTION 'transient initial publication failure'; END IF; RETURN NEW; END $$; CREATE TRIGGER catalogue_fail_initial_once BEFORE INSERT ON game_public_house_catalogue_state FOR EACH ROW EXECUTE FUNCTION catalogue_fail_initial_once()").await?;
+                    }
                     let seal = h.recovery.seal_current().map_err(debug)?;
                     let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
                     let assignment = h.root.read_runtime_scope_assignment(scope()?).await.map_err(debug)?.ok_or("assignment")?;
                     let held = if fail_capture { None } else { Some(h.root.try_issue_semantic_pass()?) };
                     let mut worker = Box::pin(capture(&h.root, &authority, &h.node, &material, &assignment, 0, None));
-                    // Poll the real capture while the initial publication is contended.
+                    // Start under contention. The trigger counters below independently
+                    // prove the worker reached a failing SQL attempt and retried it.
                     let completed = poll_fn(|cx| Poll::Ready(worker.as_mut().poll(cx).is_ready())).await;
                     drop(held);
                     if !completed {
@@ -311,6 +315,9 @@ epoch_fence_file = "/missing/public.fence"
                     if fail_capture {
                         let attempts: i64 = sqlx::query_scalar("SELECT last_value FROM catalogue_failure").fetch_one(&h.pool).await?;
                         assert_eq!(attempts, 2);
+                    } else {
+                        let attempts: i64 = sqlx::query_scalar("SELECT last_value FROM catalogue_failure").fetch_one(&h.pool).await?;
+                        assert_eq!(attempts, 3, "failed pending, retried pending, then complete publication");
                     }
                     Ok(())
                 }.await;

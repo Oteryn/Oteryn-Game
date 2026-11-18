@@ -59,6 +59,18 @@ fn house_idle_rechecks_staff_and_account_closure() -> Result<(), String> {
                             first_entry: FirstEntryOutcome::Positioned,
                             controller: None, item_fence: None, continuity: SessionContinuity::FRESH,
                         };
+                        if staff {
+                            let mut admitted=admitted;
+                            let actor=admitted.runtime_actor.ok_or("House actor")?;
+                            let (mut state,_)=house_hireling::State::prepare(&authority,actor,&mut admitted).await.map_err(|_|"prepare")?;
+                            let ids=[500,502,511];
+                            let offers=ids.map(|id| crate::gameplay_transport::capabilities::OfferedCapability{id,requires:&[]});
+                            admitted.continuity.selected_capabilities=SelectedCapabilities::select(&offers,&ids).ok_or("House capabilities")?;
+                            for command_type in [6241,6242,6246] {
+                                let command=oteryn_protocol_oteryn::ClientCommandView {command_type,command_id:1,payload:&[]};
+                                assert!(matches!(state.route(&authority,&mut admitted,command).await,Some(Dispatch::Reply(_, _))),"House must route command {command_type} to its owner");
+                            }
+                        }
                         let (mut server, _client) = tokio::io::duplex(1 << 16);
                         let mut messages = None;
                         let mut integrity = integrity::Integrity::default();

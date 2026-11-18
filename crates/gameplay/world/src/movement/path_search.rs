@@ -59,6 +59,7 @@ struct SearchBounds {
     work: usize,
     route_steps: usize,
     distance: i32,
+    directions: usize,
 }
 
 pub const fn delta(step: CardinalStep) -> (i32, i32) {
@@ -117,6 +118,7 @@ pub fn route_next_to(
             work: PATH_SEARCH_WORK,
             route_steps: ROUTE_STEPS,
             distance,
+            directions: NEIGHBOURS.len(),
         },
         tile_cost,
     )
@@ -164,12 +166,41 @@ pub fn measured_route_with_distance(
             work: PATH_SEARCH_WORK,
             route_steps: ROUTE_STEPS,
             distance,
+            directions: NEIGHBOURS.len(),
         },
         exact,
         &mut work,
         tile_cost,
     );
     (route, work)
+}
+
+/// Creature proposals encode only cardinal steps.
+pub fn measured_creature_route(
+    start: MovementLocalPosition,
+    target: MovementLocalPosition,
+    exact: bool,
+    tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
+) -> (Option<Vec<CardinalStep>>, usize) {
+    let mut work = 0;
+    let route = measured_search(
+        start,
+        target,
+        default_search_bounds(exact, false),
+        exact,
+        &mut work,
+        tile_cost,
+    );
+    (route, work)
+}
+
+fn default_search_bounds(exact: bool, diagonals: bool) -> SearchBounds {
+    SearchBounds {
+        work: PATH_SEARCH_WORK,
+        route_steps: ROUTE_STEPS,
+        distance: if exact { 50 } else { CHASE_SEARCH_DISTANCE },
+        directions: if diagonals { NEIGHBOURS.len() } else { 4 },
+    }
 }
 
 fn measured_search(
@@ -406,6 +437,7 @@ mod tests {
             work: PATH_SEARCH_WORK,
             route_steps: 4,
             distance: i32::MAX,
+            directions: NEIGHBOURS.len(),
         };
         let route = search(at(0, 0), at(5, 0), bounds, cost).unwrap();
         assert_eq!(route, vec![CardinalStep::East; 4]);
@@ -421,6 +453,7 @@ mod tests {
             work: PATH_SEARCH_WORK,
             route_steps: usize::MAX,
             distance: i32::MAX,
+            directions: NEIGHBOURS.len(),
         };
         let route = search(at(0, 0), at(1_025, 0), bounds, corridor).map(|r| r.len());
         assert_eq!(route, Some(1_024), "1,024 expansions reach (1024, 0)");
@@ -436,6 +469,7 @@ mod tests {
             work,
             route_steps: usize::MAX,
             distance: i32::MAX,
+            directions: NEIGHBOURS.len(),
         };
         let far = |expansions: usize| at(i32::try_from(expansions + 1).unwrap(), 0);
         let route = search(

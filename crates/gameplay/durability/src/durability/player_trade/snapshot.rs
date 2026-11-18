@@ -154,8 +154,11 @@ pub(super) async fn read_leaves<const N: usize>(
     }
     // Both Character roots are already locked. Acquire every offered ItemInstance
     // in one UUID order before reading either tree's immutable snapshots.
-    sqlx::query("SELECT item_instance_id FROM game_item_instances WHERE item_instance_id IN (SELECT value::uuid FROM unnest($1::text[]) AS value) ORDER BY item_instance_id FOR UPDATE")
+    let locked: Vec<bool> = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_bindings b WHERE b.item_instance_id=i.item_instance_id) AS bound FROM game_item_instances i WHERE item_instance_id IN (SELECT value::uuid FROM unnest($1::text[]) AS value) ORDER BY item_instance_id FOR UPDATE OF i")
         .bind(identities).fetch_all(&mut **tx).await?;
+    if locked.into_iter().any(|bound| bound) {
+        return Ok(Err(Refusal::NotTradeable));
+    }
     let mut leaves: [Option<TradeLeaf>; N] = std::array::from_fn(|_| None);
     let mut order: Vec<_> = (0..N).collect();
     order.sort_by_key(|index| items[*index]);
@@ -165,7 +168,8 @@ pub(super) async fn read_leaves<const N: usize>(
                 (SELECT to_jsonb(k) FROM game_item_keys k WHERE k.item_instance_id=i.item_instance_id) AS key, \
                 (SELECT to_jsonb(t) FROM game_item_timed_states t WHERE t.item_instance_id=i.item_instance_id) AS timed, \
                 (SELECT jsonb_build_object('sha256',encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')) FROM game_item_texts t WHERE t.item_instance_id=i.item_instance_id) AS text, \
-                (SELECT to_jsonb(t) FROM game_item_text_revisions t WHERE t.item_instance_id=i.item_instance_id) AS text_revision \
+                (SELECT to_jsonb(t) FROM game_item_text_revisions t WHERE t.item_instance_id=i.item_instance_id) AS text_revision, \
+                game_player_trade_attributes(i.item_instance_id) AS attributes \
              FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id,world_id) \
              JOIN game_item_container_slots s ON s.character_id=e.character_id AND s.item_instance_id=e.parent_item_instance_id \
              WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.lifecycle=1 \
@@ -185,6 +189,7 @@ pub(super) async fn read_leaves<const N: usize>(
             timed: row.try_get("timed")?,
             text: row.try_get("text")?,
             text_revision: row.try_get("text_revision")?,
+            attributes: row.try_get("attributes")?,
         });
     }
     let leaves = leaves
@@ -207,7 +212,8 @@ async fn read_contents(
          (SELECT to_jsonb(k) FROM game_item_keys k WHERE k.item_instance_id=i.item_instance_id) AS key, \
          (SELECT to_jsonb(t) FROM game_item_timed_states t WHERE t.item_instance_id=i.item_instance_id) AS timed, \
          (SELECT jsonb_build_object('sha256',encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')) FROM game_item_texts t WHERE t.item_instance_id=i.item_instance_id) AS text, \
-         (SELECT to_jsonb(t) FROM game_item_text_revisions t WHERE t.item_instance_id=i.item_instance_id) AS text_revision \
+         (SELECT to_jsonb(t) FROM game_item_text_revisions t WHERE t.item_instance_id=i.item_instance_id) AS text_revision, \
+         game_player_trade_attributes(i.item_instance_id) AS attributes \
          FROM game_item_loop_subtree_edges(encode($1,'hex')::uuid) t \
          JOIN game_item_instances i USING(item_instance_id) \
          JOIN game_item_instances r ON r.item_instance_id=encode($1,'hex')::uuid \
@@ -242,6 +248,7 @@ async fn read_contents(
             timed: row.try_get("timed")?,
             text: row.try_get("text")?,
             text_revision: row.try_get("text_revision")?,
+            attributes: row.try_get("attributes")?,
         });
     }
     Ok(contents)

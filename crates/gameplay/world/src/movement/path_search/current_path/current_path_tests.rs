@@ -28,6 +28,7 @@ fn same_kernel_orders_sync_and_current_routes_and_charges_cancelled_work() {
             at(0),
             at(3),
             false,
+            true,
             &mut tiles,
             &mut budget
         ));
@@ -44,6 +45,7 @@ fn same_kernel_orders_sync_and_current_routes_and_charges_cancelled_work() {
             at(0),
             at(3),
             false,
+            true,
             &mut tiles,
             &mut budget
         ));

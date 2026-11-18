@@ -561,6 +561,8 @@ pub struct SessionItemView {
     pub(super) depot_items: Vec<(u64, [u8; 16])>,
     /// Capability 510: scope of the last page's opaque withdrawal ordinals.
     pub(super) depot_selection: Option<(u16, u8, u32)>,
+    /// A move reused a displayed ordinal. Only an explicit browse starts a fresh selection.
+    pub(super) depot_withdraw_needs_browse: bool,
 }
 
 impl SessionItemView {
@@ -582,6 +584,7 @@ impl SessionItemView {
             open_depot: None,
             depot_items: Vec::new(),
             depot_selection: None,
+            depot_withdraw_needs_browse: false,
         }
     }
 

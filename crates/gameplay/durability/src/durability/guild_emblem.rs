@@ -1,7 +1,7 @@
 //! GUILD-EMBLEM-1: Tibia's observer-relative guild emblem of each viewed character, from
 //! live guild membership and the World's active guild wars (state 2, as war kills use).
-use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
-use super::character_progression::assert_session_fence;
+use super::character_authority::{ReconciledCharacterAuthority, observe_recovery_fence};
+use super::character_progression::observe_session_fence;
 use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
@@ -16,6 +16,7 @@ impl DurabilityRoot {
         recovery: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
+        house_origin: Option<[u8; 16]>,
         viewed: Vec<[u8; 16]>,
     ) -> Result<Option<Vec<([u8; 16], Emblem)>>, DurabilityError> {
         let record = recovery
@@ -25,9 +26,18 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &record).await?;
-                    if assert_session_fence(&mut tx, &fence, &node).await?.is_err() {
+                    let mut tx = super::db::begin_observation_transaction(holder, deadline).await?;
+                    observe_recovery_fence(&mut tx, &record).await?;
+                    let current = if let Some(origin) = house_origin {
+                        super::house_hireling::fence::observe_house_custody_fence(
+                            &mut tx, &node, &fence, origin,
+                        )
+                        .await?
+                        .is_some()
+                    } else {
+                        observe_session_fence(&mut tx, &fence, &node).await?.is_ok()
+                    };
+                    if !current {
                         tx.rollback().await?;
                         return Ok(None);
                     }

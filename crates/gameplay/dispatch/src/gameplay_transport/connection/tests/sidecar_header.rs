@@ -49,6 +49,10 @@ impl FreshAdmissionAuthority for RelocatingAuthority {
         Err(AdmissionRefusal::Rejected)
     }
 
+    async fn house_scope_ack(&self, _: AdmittedSession) -> Result<Option<(u64, Vec<u8>)>, ()> {
+        Ok(Some((1, vec![1])))
+    }
+
     async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
         Some(at(self.x.get()))
     }
@@ -106,6 +110,7 @@ impl FreshAdmissionAuthority for RelocatingAuthority {
 /// position and the own position the client holds when it arrives.
 fn sidecar_headers(
     during: Relocating,
+    house: bool,
 ) -> Result<Vec<(ActorPosition, ActorPosition)>, Box<dyn Error>> {
     std::thread::Builder::new()
         .stack_size(64 << 20)
@@ -122,6 +127,26 @@ fn sidecar_headers(
                 let mut admitted = positioned()?;
                 admitted.continuity.selected_capabilities =
                     SelectedCapabilities::select(&offered, &ids).ok_or("capabilities")?;
+                if house {
+                    admitted.item_fence = Some(
+                        crate::durability::item_transfer::CurrentCharacterItemFence {
+                            character_id: crate::domain::CharacterId::from_bytes(CHARACTER)
+                                .map_err(|error| format!("{error:?}"))?,
+                            game_session_id: admitted.game_session_id,
+                            connection_generation: crate::foundation::ConnectionGeneration::new(1)
+                                .map_err(|error| format!("{error:?}"))?,
+                            character_lease_generation: 1,
+                            runtime_scope: crate::foundation::RuntimeScopeRefV1::instance(
+                                admitted.world_id,
+                                uuid_v7(0x66),
+                            )
+                            .map_err(|error| format!("{error:?}"))?,
+                            scope_ownership_generation:
+                                crate::foundation::ScopeOwnershipGeneration::new(1)
+                                    .map_err(|error| format!("{error:?}"))?,
+                        },
+                    );
+                }
                 let fields = EntityFields::selected(&ids);
                 let (mut server, mut client) = tokio::io::duplex(256 * 1024);
                 let serving = serve_admitted(&mut server, admitted, &authority, IDLE_LIVENESS);
@@ -179,7 +204,7 @@ fn sidecar_headers(
 }
 
 fn assert_headers_at_published_position(during: Relocating) -> Result<(), Box<dyn Error>> {
-    let headers = sidecar_headers(during)?;
+    let headers = sidecar_headers(during, false)?;
     assert_eq!(
         headers.len(),
         3,
@@ -210,4 +235,12 @@ fn guild_emblem_sidecar_keeps_the_published_position_after_a_relocation()
 fn party_icon_sidecar_keeps_the_published_position_after_a_relocation() -> Result<(), Box<dyn Error>>
 {
     assert_headers_at_published_position(Relocating::Party)
+}
+
+#[test]
+fn house_tick_sends_negotiated_capacity_and_emblem() -> Result<(), Box<dyn Error>> {
+    let headers = sidecar_headers(Relocating::Capacity, true)?;
+    assert_eq!(headers.len(), 2);
+    assert!(headers.iter().all(|(header, held)| header == held));
+    Ok(())
 }

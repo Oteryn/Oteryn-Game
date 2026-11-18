@@ -1007,6 +1007,23 @@ impl DurabilityRoot {
                         Err(NpcTradeError::Unavailable(error)) => return Err(error),
                         Err(error) => return Ok(Err(error)),
                     };
+                    // Direct slots and the carried tree are independent limits.
+                    // All planned burns are direct leaves; only whole burns free an entry.
+                    let direct_delta: i64 = plan.lines.iter().map(|line| {
+                        i64::from(line.quantity_before == 0) - i64::from(line.quantity_after == 0)
+                    }).sum();
+                    let added = direct_delta + hireling.as_ref().map_or(0, hireling::Extra::nested_outputs);
+                    if added > 0 {
+                        let carried: i64 = sqlx::query_scalar(
+                            "SELECT game_item_loop_tree_size(encode($1,'hex')::uuid)",
+                        )
+                        .bind(fence.character_id.as_bytes().as_slice())
+                        .fetch_one(&mut **tx)
+                        .await?;
+                        if carried + added > super::item_loop_move::ITEM_LOOP_TREE_ITEMS_MAX {
+                            return Ok(Err(NpcTradeError::DoesNotFit));
+                        }
+                    }
                     if let Some(source) = &hireling
                         && let Err(error) = source.package_preflight(&mut tx, &fence, &request, *weights, &plan, (entries.len(), capacity)).await {
                         return Ok(Err(error));

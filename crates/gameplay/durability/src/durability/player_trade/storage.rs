@@ -162,13 +162,13 @@ pub(super) async fn apply<C: PlayerTradeContent>(
     }
     for (index, leaf) in leaves.iter().enumerate() {
         let other = 1 - index;
-        sqlx::query("INSERT INTO game_player_trade_receipts(occurrence_id,side,item_instance_id,source_character_id,destination_character_id,source_parent,source_ordinal,destination_parent,destination_ordinal,destination_capacity,before_item,before_timed,before_text,before_text_revision,before_key,before_contents) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7::text::numeric,encode($8,'hex')::uuid,$9::text::numeric,$10,$11,$12,$13,$14,$15,$16)")
+        sqlx::query("INSERT INTO game_player_trade_receipts(occurrence_id,side,item_instance_id,source_character_id,destination_character_id,source_parent,source_ordinal,destination_parent,destination_ordinal,destination_capacity,before_item,before_timed,before_text,before_text_revision,before_key,before_contents,before_attributes) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7::text::numeric,encode($8,'hex')::uuid,$9::text::numeric,$10,$11,$12,$13,$14,$15,$16,$17)")
             .bind(request.occurrence_id.as_slice()).bind(i16::try_from(index).map_err(|_| DurabilityError::InvalidStoredState)?)
             .bind(items[index].as_slice()).bind(current[index].character_id.as_bytes().as_slice())
             .bind(current[other].character_id.as_bytes().as_slice()).bind(uuid(&leaf.entry,"parent_item_instance_id")?.as_slice())
             .bind(number(&leaf.entry,"placement_ordinal")?.to_string()).bind(uuid(&leaves[other].entry,"parent_item_instance_id")?.as_slice())
             .bind(destinations[index].0.to_string()).bind(i32::try_from(destinations[index].1).map_err(|_| DurabilityError::InvalidStoredState)?)
-            .bind(&leaf.item).bind(&leaf.timed).bind(&leaf.text).bind(&leaf.text_revision).bind(&leaf.key).bind(serde_json::to_value(&leaf.contents).map_err(|_| DurabilityError::InvalidStoredState)?).execute(&mut ***tx).await?;
+            .bind(&leaf.item).bind(&leaf.timed).bind(&leaf.text).bind(&leaf.text_revision).bind(&leaf.key).bind(serde_json::to_value(&leaf.contents).map_err(|_| DurabilityError::InvalidStoredState)?).bind(&leaf.attributes).execute(&mut ***tx).await?;
     }
     // Both receipts were admitted against their real source entries before either DELETE.
     for item in items {
