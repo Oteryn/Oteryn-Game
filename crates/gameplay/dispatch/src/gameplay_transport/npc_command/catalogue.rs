@@ -14,13 +14,14 @@ pub(in crate::gameplay_transport) mod teleport;
 
 type Context = (u64, u64, String);
 
-/// Move the exact current source topic into the paid travel owner.
-pub(in crate::gameplay_transport) fn retire_source_travel_topic<T>(
+/// Observe or transfer the exact current source topic for the paid travel owner.
+pub(in crate::gameplay_transport) fn source_travel_topic<T>(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     session: GameSessionId,
     actor: ExactActorRef,
     npc: EntityRef,
     context: &Context,
+    retire: bool,
     select: impl FnOnce(i32) -> Option<T>,
 ) -> Option<T> {
     let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
@@ -32,7 +33,9 @@ pub(in crate::gameplay_transport) fn retire_source_travel_topic<T>(
         return None;
     }
     let chosen = select(current.topic)?;
-    state.catalogue = None;
+    if retire {
+        state.catalogue = None;
+    }
     Some(chosen)
 }
 

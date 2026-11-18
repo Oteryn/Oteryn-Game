@@ -7,8 +7,8 @@ use crate::content::npc_catalogue::travel::{
 use crate::content::{ProjectV2TravelDestination, ProjectV2TravelRoute};
 use crate::gameplay_transport::{
     connection::UseCommand,
+    newhaven_travel::route_draw,
     npc_talk::{NpcTalkBook, NpcTalkEntry},
-    paid_travel::route_draw,
 };
 use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
 
@@ -67,26 +67,18 @@ fn cell(at: Position) -> TravelCell {
     }
 }
 
-pub(super) async fn exercise(
-    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &mut AdmittedSession,
-    h: &Harness,
-    at: Position,
-) -> TestResult {
-    let [buddel] = classic_quests::install(owner, admitted, [NPC]).await?;
-    let preferred = cell(ARRIVAL_CELLS[1]);
+pub(super) fn route_fixture(keyword: &str, target: Position, reply: &str) -> TravelRoute {
+    let preferred = cell(target);
     let diversion = Diversion {
         denominator: 5,
         preferred_successes: 4,
         diversion_successes: 4,
         alternatives: ARRIVAL_CELLS.map(cell).to_vec(),
     };
-    let denied = "T'at is a small island to the east.";
-    let mut entry = NpcTalkEntry::new("Buddel", None);
-    entry.travel_routes.push(TravelRoute {
+    TravelRoute {
         service: "oteryn:service.travel.buddel".into(),
         route: ProjectV2TravelRoute {
-            key: "helheim".into(),
+            key: keyword.into(),
             destination: ProjectV2TravelDestination {
                 coordinate_frame: "global-target-2026-09-27".into(),
                 x: preferred.x,
@@ -97,7 +89,7 @@ pub(super) async fn exercise(
             premium: false,
             min_level: None,
         },
-        keyword: "helheim".into(),
+        keyword: keyword.into(),
         postman: true,
         carpet: false,
         held: false,
@@ -109,27 +101,41 @@ pub(super) async fn exercise(
         return_origin: None,
         world_change: None,
         conditional: Some(ConditionalTravel {
-            progress: vec![
-                ProgressWindow {
-                    track: BARBARIAN.into(),
-                    absent: -1,
-                    minimum: 8,
-                    maximum: 8,
-                },
-                ProgressWindow {
-                    track: ICE.into(),
-                    absent: -1,
-                    minimum: 30,
-                    maximum: i64::MAX,
-                },
-            ],
-            diversion: diversion.clone(),
-            offer_reply: denied.into(),
-            unavailable_reply: Some(denied.into()),
+            progress: vec![ProgressWindow {
+                track: BARBARIAN.into(),
+                absent: -1,
+                minimum: 8,
+                maximum: 8,
+            }],
+            diversion,
+            offer_reply: reply.into(),
+            unavailable_reply: Some(reply.into()),
             declined_exchange: None,
             cancel_reply: None,
         }),
+    }
+}
+
+pub(super) async fn exercise(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    at: Position,
+) -> TestResult {
+    let [buddel] = classic_quests::install(owner, admitted, [NPC]).await?;
+    let preferred = cell(ARRIVAL_CELLS[1]);
+    let denied = "T'at is a small island to the east.";
+    let mut route = route_fixture("helheim", ARRIVAL_CELLS[1], denied);
+    let policy = route.conditional.as_mut().ok_or("Helheim policy")?;
+    policy.progress.push(ProgressWindow {
+        track: ICE.into(),
+        absent: -1,
+        minimum: 30,
+        maximum: i64::MAX,
     });
+    let diversion = policy.diversion.clone();
+    let mut entry = NpcTalkEntry::new("Buddel", None);
+    entry.travel_routes.push(route);
     owner
         .states
         .chat

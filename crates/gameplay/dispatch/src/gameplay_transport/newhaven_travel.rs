@@ -39,6 +39,8 @@ pub(super) struct NewhavenTravel {
 
 #[path = "paid_travel.rs"]
 mod paid;
+#[cfg(test)]
+pub(super) use paid::route_draw;
 
 impl NewhavenTravel {
     pub(super) fn held(&self, session: GameSessionId) -> bool {

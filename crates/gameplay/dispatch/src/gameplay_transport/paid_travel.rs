@@ -140,6 +140,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             text.split(|c: char| !c.is_alphanumeric())
                 .any(|token| token == word)
         };
+        if npc_command::catalogue::source_travel_topic(
+            self,
+            session,
+            actor,
+            intent.npc_actor,
+            &context,
+            false,
+            |topic| {
+                routes
+                    .iter()
+                    .any(|route| {
+                        text == route.keyword
+                            && route
+                                .conditional
+                                .as_ref()
+                                .and_then(|policy| policy.declined_exchange.as_ref())
+                                .is_some_and(|offer| offer.topic == topic)
+                    })
+                    .then_some(())
+            },
+        )
+        .is_some()
+        {
+            return ordinary;
+        }
         if contains("no")
             && let Some(prompt) = &previous
             && prompt.matches_confirmation(intent.npc_actor, &context, fence, now)
@@ -167,12 +192,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             // Match the complete authored destination, including spaces and apostrophes.
             let declined = if contains("no") && previous.is_none() {
-                npc_command::catalogue::retire_source_travel_topic(
+                npc_command::catalogue::source_travel_topic(
                     self,
                     session,
                     actor,
                     intent.npc_actor,
                     &context,
+                    true,
                     |topic| {
                         let mut matching = routes.iter().filter(|route| {
                             route
@@ -506,7 +532,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
-pub(super) fn route_draw(
+pub(in crate::gameplay_transport) fn route_draw(
     digest: [u8; 32],
     command: connection::UseCommand,
     npc: EntityRef,

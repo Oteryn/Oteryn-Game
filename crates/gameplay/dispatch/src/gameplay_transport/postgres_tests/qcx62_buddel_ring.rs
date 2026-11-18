@@ -1,6 +1,8 @@
 //! Crystal 201189f8 data-global/npc/buddel.lua:59-67,80-91.
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, classic_quests};
+use crate::content::npc_catalogue::travel::DeclinedExchange;
+use crate::gameplay_transport::npc_talk::{NpcTalkBook, NpcTalkEntry};
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
     npc_rules::NpcRuleCatalog,
@@ -80,6 +82,24 @@ pub(super) async fn exercise(
     at: Position,
 ) -> TestResult {
     let [buddel] = classic_quests::install(owner, admitted, [NPC]).await?;
+    let mut route = super::qcx62_buddel::route_fixture(
+        "okolnir",
+        OKOLNIR,
+        "It's nice there. Except of the ice dragons which are not very companionable.",
+    );
+    let policy = route.conditional.as_mut().ok_or("Okolnir policy")?;
+    policy.declined_exchange = Some(DeclinedExchange {
+        topic: 1,
+        reply: "Give me 50 gold and I bring you to okolnir. 'kay?".into(),
+        progress: Vec::new(),
+    });
+    policy.cancel_reply = Some("You shouldn't miss the experience.".into());
+    let mut book_entry = NpcTalkEntry::new("Buddel", None);
+    book_entry.travel_routes.push(route);
+    owner.states.chat.install_npc_talk(std::sync::Arc::new(
+        NpcTalkBook::default().with(NPC, book_entry),
+    ));
+
     classic_quests::talk(owner, admitted, buddel, 20200, "hi").await?;
     classic_quests::talk(owner, admitted, buddel, 20201, "okolnir").await?;
     classic_quests::talk(owner, admitted, buddel, 20202, "yes").await?;
@@ -106,7 +126,14 @@ pub(super) async fn exercise(
     }
     let offer = classic_quests::talk(owner, admitted, buddel, 20203, "okolnir").await?;
     assert!(offer.iter().any(|line| line.contains("nice ring")));
-    classic_quests::talk(owner, admitted, buddel, 20204, "yes").await?;
+    let paid_offer = classic_quests::talk(owner, admitted, buddel, 20204, "no").await?;
+    assert!(paid_offer.iter().any(|line| line.contains("50 gold")));
+    let cancelled = classic_quests::talk(owner, admitted, buddel, 20205, "no").await?;
+    assert!(cancelled.iter().any(|line| line.contains("shouldn't miss")));
+    assert_eq!(travel(h).await?, 0);
+    let offer = classic_quests::talk(owner, admitted, buddel, 20206, "okolnir").await?;
+    assert!(offer.iter().any(|line| line.contains("nice ring")));
+    classic_quests::talk(owner, admitted, buddel, 20207, "yes").await?;
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let landed = owner
         .runtime
