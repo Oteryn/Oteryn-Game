@@ -559,6 +559,7 @@ fn scenario_case(
             "qengine-rewards-authored-world-rewards"
                 | "qengine-rewards-authored-world-rewards-full"
                 | "qengine-rewards-authored-native-admission"
+                | "qengine-rewards-authored-achievement-routes"
         )
     {
         callback = super::super::authored_world_rewards::placeholder(trigger)?;

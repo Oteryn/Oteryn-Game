@@ -1117,6 +1117,12 @@ pub(super) async fn exercise(
         ))
         .await;
     }
+    if name == "qengine-rewards-authored-achievement-routes" {
+        return Box::pin(super::authored_world_rewards::exercise_achievement_routes(
+            owner, admitted, h,
+        ))
+        .await;
+    }
     if name == "qengine-rewards-authored-native-admission" {
         return Box::pin(super::authored_world_rewards::exercise_native_admission(
             owner, admitted, h,

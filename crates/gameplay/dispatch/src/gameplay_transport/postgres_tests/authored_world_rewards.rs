@@ -34,6 +34,77 @@ fn authored_native_boot_recipe_admission_dispatch_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-authored-native-admission")
 }
 
+#[test]
+fn ddepths_disjoint_achievement_use_routes_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("empty PostgreSQL admin URL".into());
+    }
+    super::qengine_rewards::scenario("qengine-rewards-authored-achievement-routes")
+}
+
+pub(super) async fn exercise_achievement_routes(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    const INDIVIDUAL: &str = "oteryn:achievement/buried_the_baron";
+    const COMBINED: &str = "oteryn:achievement/death_in_the_depths";
+    let mut first = placeholder(AT)?;
+    first.completes = false;
+    first.requires_world_admission = true;
+    first.achievements = vec![INDIVIDUAL.into()];
+    let mut second = first.clone();
+    second.key = format!("{STEP}-combined");
+    second.storage[0].minimum = 1;
+    second.storage[0].maximum = 1;
+    second.storage[0].set = 2;
+    second.achievements.push(COMBINED.into());
+    let document = serde_json::json!({
+        "schema": 1,
+        "quests": [{
+            "quest": QUEST,
+            "recipe_sha256": "c6bb54b0c423a165891b0ca32fb305a0963d1a06417249b0b317ec34cf65e708",
+            "sources": ["Engine fixture for disjoint achievement USE routes"],
+            "tracks": [{"key": PHASE, "initial": 0, "minimum": 0, "maximum": 2}],
+            "stages": [
+                {"key": "individual", "completes": false, "trigger": {"kind": "map_use", "callback": first}},
+                {"key": "combined", "completes": false, "trigger": {"kind": "map_use", "callback": second}}
+            ]
+        }]
+    });
+    let bindings = Bindings::parse(&serde_json::to_vec(&document)?)?;
+    let revision = owner.quest_catalogue.as_deref().ok_or("native catalogue")?.content_revision();
+    let base = QuestStateCatalogue::empty(revision).ok_or("revision")?;
+    owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
+
+    for (command, expected) in [(1, vec![INDIVIDUAL]), (2, vec![INDIVIDUAL, COMBINED])] {
+        let key = oteryn_world_bundle::bundle::placement_key(AT.floor, AT.x, AT.y, 1)
+            .ok_or("placement")?;
+        let revision = owner.bundle_map().ok_or("map")?.facts.object_revision(key);
+        let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&target(owner, revision)?)
+            .map_err(debug)?;
+        let result = super::quest_world_callbacks::wire(owner, admitted, command, 2, payload).await?;
+        assert_eq!(
+            oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?,
+            UseDisposition::Committed
+        );
+        let earned: Vec<String> = sqlx::query_scalar(
+            "SELECT achievement_key FROM game_account_achievements WHERE achievement_key IN ($1,$2) ORDER BY achievement_key DESC"
+        )
+        .bind(INDIVIDUAL)
+        .bind(COMBINED)
+        .fetch_all(&h.pool)
+        .await?;
+        let mut expected = expected;
+        expected.sort_unstable_by(|left, right| right.cmp(left));
+        assert_eq!(earned, expected);
+    }
+    Ok(())
+}
+
 /// This runs before the PG harness: it deliberately uses only already-supported fields.
 pub(super) fn placeholder(at: Position) -> TestResult<Callback> {
     let mut callback = oteryn_gameplay_quests::quest::world_callbacks::load()?
