@@ -1,20 +1,21 @@
 use super::fixture::{Harness, debug};
+use super::full_world_support::world_scenario;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink, record_creature_kill};
 use crate::map::view::MapFacts;
-use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Offering, Position};
+use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
 };
 
-pub(super) const NAME: &str = "nfront1-beaver-tree-3";
-pub(super) const TARGET: Position = Position {
+const NAME: &str = "nfront1-beaver-tree-3";
+const TARGET: Position = Position {
     x: 32458,
     y: 31997,
     floor: -7,
 };
-pub(super) const START: Position = Position { x: 32459, ..TARGET };
+const START: Position = Position { x: 32459, ..TARGET };
 const BAIT: &str = "oteryn:item.tibia.i9843";
 const QUESTLINE: &str = "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline";
 const TREE: &str = "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission02/beaver3";
@@ -28,9 +29,7 @@ fn nfront1_postgres_tree_target_steals_bait_and_squirrel_death_recovers_it() -> 
         return Err("PostgreSQL route is empty".into());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run(NAME, || {
-        super::quest_world_callbacks::scenario(NAME, TARGET, false)
-    });
+    let result = super::kill_reward_e2e::scenario_thread::run(NAME, scenario);
     eprintln!(
         "POSTGRES_CASE_COMPLETED {NAME} duration={:?} success={}",
         started.elapsed(),
@@ -39,25 +38,43 @@ fn nfront1_postgres_tree_target_steals_bait_and_squirrel_death_recovers_it() -> 
     result
 }
 
-/// Only geometry for the common fixture. The selected USE reads the production registry.
-pub(super) fn geometry() -> TestResult<Callback> {
-    let mut callback = oteryn_gameplay_quests::quest::targuna_ram::callback()?;
-    callback.selector.position = Some(TARGET);
-    callback.selector.appearance = Some(3625);
-    callback.selector.native = Some(
-        oteryn_gameplay_quests::quest::world_callbacks::NativeSelector {
-            position: TARGET,
-            ordinal: 1,
-            appearance: 3625,
-        },
-    );
-    callback.storage.clear();
-    callback.item_on_target = None;
-    callback.effects = Default::default();
-    Ok(callback)
+fn scenario() -> TestResult {
+    world_scenario!(
+        "nfront1_tree",
+        world,
+        (i32::from(START.x), i32::from(START.y)),
+        |h,
+         request,
+         seal,
+         authority,
+         world_id,
+         native,
+         world,
+         cells,
+         room,
+         pin,
+         deps,
+         actor,
+         session,
+         owner,
+         fence,
+         admitted| {
+            owner.quest_catalogue = Some(Arc::new(
+                oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                    .map_err(debug)?
+                    .catalogue()
+                    .clone(),
+            ));
+            owner.admit_quest_session(&admitted).await;
+            let result = exercise(&mut owner, &mut admitted, &h).await;
+            let cleanup = h.cleanup().await;
+            result?;
+            cleanup
+        }
+    )
 }
 
-pub(super) fn world(
+fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_scene_with_appearances};
@@ -82,7 +99,7 @@ pub(super) fn world(
     )
 }
 
-pub(super) async fn exercise(
+async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,

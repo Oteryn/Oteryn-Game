@@ -281,7 +281,7 @@ pub(super) async fn relogin_as(
 // Shared lexical fixture: the controller, authority and owner borrow each other. Keeping
 // their setup in one macro preserves those lifetimes without copying setup into each case.
 macro_rules! world_scenario {
-    ($tag:literal, |$h:ident, $request:ident, $seal:ident, $authority:ident, $world_id:ident, $native:ident, $world:ident, $cells:ident, $room:ident, $pin:ident, $deps:ident, $actor:ident, $session:ident, $owner:ident, $fence:ident, $admitted:ident| $body:block) => {{
+    ($tag:literal $(, $scene:path, $entry:expr)?, |$h:ident, $request:ident, $seal:ident, $authority:ident, $world_id:ident, $native:ident, $world:ident, $cells:ident, $room:ident, $pin:ident, $deps:ident, $actor:ident, $session:ident, $owner:ident, $fence:ident, $admitted:ident| $body:block) => {{
         use $crate::gameplay_transport::monk_save::postgres_tests::full_world_support::*;
         run(async |admin| {
         reset();
@@ -303,6 +303,7 @@ macro_rules! world_scenario {
             $crate::gameplay_transport::monk_save::postgres_tests::death_ml_loss_composed::production_generation_with_pin($world_id, "content-1")?;
         let active = controller.active().ok_or("active generation")?;
         let $native = active.native_gameplay().ok_or("native gameplay")?;
+        let entry = world_scenario!(@entry $($entry)?);
         let index = $native.item_index().ok_or("item index")?;
         let typed = |key: &str| {
             crate::gameplay_transport::item_look::typed_definition(
@@ -322,6 +323,9 @@ macro_rules! world_scenario {
                 - 1)
         };
 
+        let $world = if let Some(build) = world_scenario!(@scene $($scene)?) {
+            build($native)?
+        } else {
         // The depot bundle fixture (locker at x 6), widened with open grass for the walk, the
         // NPC and the rat, through the production writer, loader and boot.
         let (bytes, mut bundle_pins) = bundle_fixture::bundle_with_item_ids(
@@ -367,14 +371,14 @@ macro_rules! world_scenario {
             .map_err(debug)?
             .digest;
         let base = crate::map::load(&bytes, &bundle_pins).map_err(debug)?;
-        let $world = boot(
+        boot(
             &bytes,
             &BootPins {
                 map_revision: crate::map::overlay::map_revision(&base),
                 bundle: bundle_pins,
                 start: crate::map::overlay::TilePos {
-                    x: u16::try_from(ENTRY.0)?,
-                    y: u16::try_from(ENTRY.1)?,
+                    x: u16::try_from(entry.0)?,
+                    y: u16::try_from(entry.1)?,
                     floor: -7,
                 },
             },
@@ -390,7 +394,8 @@ macro_rules! world_scenario {
                 })
             },
         )
-        .map_err(debug)?;
+        .map_err(debug)?
+        };
         let $cells = $world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
@@ -401,8 +406,8 @@ macro_rules! world_scenario {
                 $world.frame_binding_digest($world_id),
                 $world.map_revision_digest(),
                 crate::content::NativeEntryStart {
-                    x: ENTRY.0,
-                    y: ENTRY.1,
+                    x: entry.0,
+                    y: entry.1,
                     floor: 7,
                 },
             )
@@ -414,7 +419,7 @@ macro_rules! world_scenario {
             active.identity().client_artifact_digest(),
             $room.frame_binding().digest(),
             $room.map_revision_digest(),
-            (ENTRY.0, ENTRY.1, 7),
+            (entry.0, entry.1, 7),
         );
         let mut $deps =
             Dependencies::with_content($pin.clone(), $room.clone(), $native.spell_book().clone())?;
@@ -517,8 +522,8 @@ macro_rules! world_scenario {
         assert_eq!(
             position(&$owner, $actor).await?,
             MovementLocalPosition {
-                x: ENTRY.0,
-                y: ENTRY.1,
+                x: entry.0,
+                y: entry.1,
                 floor: 7
             }
         );
@@ -553,7 +558,7 @@ macro_rules! world_scenario {
                         ground: GroundPlacement {
                             spatial_position:
                                 crate::durability::map_item_mint_audit::map_item_spatial_position(
-                                    u16::try_from(ENTRY.0)?, u16::try_from(ENTRY.1)?, -7,
+                                    u16::try_from(entry.0)?, u16::try_from(entry.1)?, -7,
                                 ),
                             corpse_ref: id(3).to_vec(),
                             map_revision: $world.map_revision().into(),
@@ -625,5 +630,11 @@ macro_rules! world_scenario {
             $body
         })
     }};
+    (@entry) => { ENTRY };
+    (@entry $entry:expr) => { $entry };
+    (@scene) => {
+        None::<fn(&crate::content::native_gameplay::NativeGameplayState) -> TestResult<crate::map::boot::BundleWorld>>
+    };
+    (@scene $scene:path) => { Some($scene) };
 }
 pub(super) use world_scenario;

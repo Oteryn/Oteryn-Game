@@ -77,9 +77,7 @@ fn scenario_case(
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
-    let frontier_tree = name == super::super::nfront_tree_use::NAME;
-    let native_crop = frontier_tree
-        || m03_use
+    let native_crop = m03_use
         || qd_world
         || engenc_asura
         || m49
@@ -115,9 +113,7 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if frontier_tree {
-        super::super::nfront_tree_use::START
-    } else if name == "qengine-rewards-smith-story" {
+    let start = if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
             y: 32254,
@@ -354,9 +350,7 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if frontier_tree {
-        super::super::nfront_tree_use::geometry()?
-    } else if m03_use {
+    let mut callback = if m03_use {
         super::super::qengine_m03_use::callback()?
     } else if qd_world {
         super::super::qd_world::callback(name)?
@@ -1031,9 +1025,7 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if frontier_tree {
-            super::super::nfront_tree_use::world(generation.native_gameplay().ok_or("native trees")?)?
-        } else if m03_use {
+        let world = if m03_use {
             super::super::qengine_m03_use::world(
                 generation
                     .native_gameplay()
@@ -1874,9 +1866,7 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if frontier_tree {
-            Box::pin(super::super::nfront_tree_use::exercise(&mut owner, &mut admitted, &h)).await?;
-        } else if m03_use {
+        if m03_use {
             Box::pin(super::super::qengine_m03_use::exercise(
                 &mut owner,
                 &mut admitted,
