@@ -459,6 +459,7 @@ fn world_cells(
         for player in &encounter.players {
             effect_positions.extend([player.from, player.to]);
         }
+        effect_positions.extend(encounter.personal_entry_landing);
         effect_positions.extend(encounter.monsters.iter().map(|m| m.position));
     }
     for p in effect_positions {
