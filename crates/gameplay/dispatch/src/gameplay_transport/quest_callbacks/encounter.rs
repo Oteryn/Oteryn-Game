@@ -209,12 +209,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Occupied;
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
-        let mut players = Vec::new();
-        let mut proofs = Vec::new();
+        let mut staged = Vec::new();
         for member in &encounter.players {
             let mut occupants = census
                 .iter()
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
+            if gather_players {
+                // Crystal 201189f8 actions_mission11_payback_time_lever.lua:35–40
+                // gathers every player in the rectangle, including stacked players.
+                staged.extend(occupants.filter_map(|&(who, expected, session)| {
+                    session.map(|session| (who, session, expected, member.to))
+                }));
+                continue;
+            }
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
                 // Cults collects whoever stands on the five source staging tiles.
                 if encounter.phase.is_some() {
@@ -222,8 +229,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 return UseDisposition::Rejected;
             };
-            if occupants.next().is_some()
-                || states.is_dead(who)
+            if occupants.next().is_some() {
+                return UseDisposition::Rejected;
+            }
+            staged.push((who, member_session, expected, member.to));
+        }
+        if staged.len() > 36 {
+            return UseDisposition::Occupied;
+        }
+        let mut players = Vec::new();
+        let mut proofs = Vec::new();
+        for (who, member_session, expected, destination) in staged {
+            if states.is_dead(who)
                 || !states.spell_idle(runtime, who, member_session)
                 || states
                     .get(runtime, who, member_session)
@@ -270,7 +287,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 who,
                 member_session,
                 expected,
-                local(member.to),
+                local(destination),
                 blocked,
                 &closed,
                 gather_players,

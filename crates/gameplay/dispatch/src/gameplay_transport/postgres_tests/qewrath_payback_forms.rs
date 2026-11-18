@@ -302,13 +302,11 @@ pub(super) async fn exercise(
             .is_empty()
     );
 
-    // Position the two characters for a return trip. The next real USE must
-    // clear the old room on the same turn as it admits the replacement roster.
+    // Crystal's spectator scan gathers both characters on the same source tile.
+    // The next USE must retire the old room and admit both stacked players.
     let closed = crate::map::floor::BundleDoors(&map.facts);
-    for (member, member_session, pad) in [
-        (actor, session, Position { x: 33357, ..LEVER }),
-        (partner, partner_session, TEAM_PAD),
-    ] {
+    let pad = super::quest_world_callbacks::local(Position { x: 33357, ..LEVER });
+    for (member, member_session) in [(actor, session), (partner, partner_session)] {
         let expected = runtime.read_actor_position(member).map_err(debug)?;
         let teleport = crate::map::floor::prepare_quest_encounter_ejection(
             &runtime,
@@ -316,7 +314,7 @@ pub(super) async fn exercise(
             member,
             member_session,
             expected,
-            super::quest_world_callbacks::local(pad),
+            pad,
             &closed,
         )
         .map_err(debug)?;
@@ -344,5 +342,11 @@ pub(super) async fn exercise(
     assert!(!runtime.contains_live_creature(original_boss));
     assert!(find(&runtime, FORMS[0]).is_some());
     assert!(find(&runtime, GUARD).is_some());
+    for member in [actor, partner] {
+        assert_eq!(
+            runtime.read_actor_position(member).map_err(debug)?.position(),
+            super::quest_world_callbacks::local(LANDING)
+        );
+    }
     Ok(())
 }
