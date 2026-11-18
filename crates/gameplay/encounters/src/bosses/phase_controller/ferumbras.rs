@@ -18,7 +18,7 @@ pub enum CrystalCharge {
     Lit { all_lit: bool },
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Crystals {
     charges: [u8; CRYSTALS.len()],
 }

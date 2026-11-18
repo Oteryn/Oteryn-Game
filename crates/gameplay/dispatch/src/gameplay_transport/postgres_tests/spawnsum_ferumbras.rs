@@ -66,7 +66,7 @@ async fn exercise(h: &Harness) -> TestResult {
     let native = active.native_gameplay().ok_or("native item profiles")?;
     let world = world::native_scene_with_appearances(
         native,
-        [(33269, 31476, 33271, 31481), (33385, 31466, 33398, 31480)]
+        [(33269, 31476, 33272, 31482), (33385, 31466, 33399, 31481)]
             .into_iter()
             .map(|bounds| world::NativeCrop {
                 bytes: include_bytes!(concat!(

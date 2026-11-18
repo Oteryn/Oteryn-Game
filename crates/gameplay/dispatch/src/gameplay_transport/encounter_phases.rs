@@ -8,6 +8,8 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
 
+pub(super) mod ferumbras;
+
 const MAX_ENCOUNTERS: usize = 64;
 
 #[derive(Debug)]
@@ -22,6 +24,7 @@ pub(super) struct ActivePhase {
 #[derive(Default, Debug)]
 pub(super) struct Registry {
     pub(super) active: Mutex<Vec<ActivePhase>>,
+    pub(super) ferumbras: Mutex<Option<ferumbras::Fight>>,
 }
 
 impl Registry {
@@ -65,6 +68,11 @@ impl Registry {
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
     ) {
+        if let Ok(mut fight) = self.ferumbras.lock()
+            && let Some(fight) = fight.as_mut()
+        {
+            fight.note_death(runtime, actor);
+        }
         let Ok(mut active) = self.active.lock() else {
             return;
         };

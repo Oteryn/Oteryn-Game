@@ -329,7 +329,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let Ok((snapshots, (phase, actors, roster))) = runtime.commit_quest_encounter_with_phase(
+        let mut ferumbras_fight = if ferumbras {
+            let Ok(fight) = states.encounter_phases.ferumbras.lock() else {
+                return UseDisposition::Rejected;
+            };
+            Some(fight)
+        } else {
+            None
+        };
+        let Ok((snapshots, (phase, actors, roster, fight))) = runtime.commit_quest_encounter_with_phase(
             proofs,
             &monsters,
             |runtime, actors| {
@@ -338,6 +346,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         party.iter().map(|(actor, _)| *actor).collect(), actors.to_vec(),
                     )?)
                 } else { None };
+                let fight = ferumbras.then(|| super::super::encounter_phases::ferumbras::Fight::bind(
+                    runtime, actors, self.movement_cells().clone()
+                )).transpose()?;
                 credits
                     .map(|credits| {
                         super::super::encounter_phases::bind(
@@ -350,7 +361,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             self.movement_cells().clone(),
                         )
                     })
-                    .transpose().map(|phase| (phase, actors.to_vec(), roster))
+                    .transpose().map(|phase| (phase, actors.to_vec(), roster, fight))
             },
             || {
                 map.facts
@@ -367,6 +378,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             phases.push(phase);
         }
         drop(phases);
+        if let Some(slot) = &mut ferumbras_fight {
+            **slot = fight;
+        }
+        drop(ferumbras_fight);
         if let Some(reservation) = reservation
             && let Err(disposition) = reservation.publish(runtime, actors)
         {
