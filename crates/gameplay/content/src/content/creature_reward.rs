@@ -554,7 +554,11 @@ impl CreatureRewardTable {
                         row(
                             &target.key,
                             profile,
-                            *loot,
+                            if target.key == "oteryn:creature.the_keeper" {
+                                None
+                            } else {
+                                *loot
+                            },
                             &tables,
                             &items,
                             race,
@@ -885,7 +889,21 @@ fn row(
             .details
             .as_ref()
             .is_some_and(|details| !details.system_eligibility.reward_boss);
-    if !source_plain {
+    // Crystal the_keeper.lua:23,45,69 declares this exact reward-boss body and
+    // an empty loot table. The retained Item is a plain Ground corpse with no
+    // container capacity. Its Tail is awarded by the separate corpse USE.
+    let keeper_plain = matches!(creature, "oteryn:creature.the_keeper")
+        && corpse.key == "oteryn:item.tibia.i11360"
+        && corpse.revision == "definition-r1"
+        && loot.is_none()
+        && profile
+            .details
+            .as_ref()
+            .is_some_and(|details| details.system_eligibility.reward_boss)
+        && items
+            .get(&corpse)
+            .is_some_and(|facts| facts.container_capacity.is_none());
+    if !source_plain && !keeper_plain {
         admitted(&corpse)
             .and_then(|facts| facts.container_capacity)
             .filter(|capacity| {
