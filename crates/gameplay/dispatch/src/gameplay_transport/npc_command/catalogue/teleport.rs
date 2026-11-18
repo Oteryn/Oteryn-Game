@@ -159,6 +159,14 @@ pub(in crate::gameplay_transport) async fn commit(
         .await;
     {
         let runtime = admission.runtime.lock().await;
+        if proof.request.npc == "oteryn:npc.cobra"
+            && super::super::cobra::poisoned(admission, &runtime, actor, fence.game_session_id)
+                != Some(true)
+        {
+            return Some(Err(
+                crate::durability::character_progression::CharacterProgressionError::InvalidInput,
+            ));
+        }
         let states = admission.states.spell_states.try_lock().ok()?;
         let position = runtime.read_actor_position(actor).ok()?;
         if position.context() != capture.content

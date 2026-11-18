@@ -438,6 +438,9 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
+            } else if native_quest && reference.key == "oteryn:npc.cobra" {
+                // The native greeting owner selects the poison refusal or transfer.
+                (String::new(), String::new(), None, Vec::new())
             } else if reference.key == "oteryn:npc.grizzly_adams" {
                 // W15c: the existing NPC owner opens the conversation; confirmed task
                 // choices and their stateful replies belong to native Grizzly dispatch.

@@ -131,3 +131,92 @@ fn scenario() -> TestResult {
         Ok(())
     })
 }
+
+#[test]
+fn tombs_cobra_poisoned_greeting_commits_progress_and_arrival_once() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("qengine-rewards-ancient-tombs-cobra", || {
+        super::quest_world_callbacks::scenario(
+            "qengine-rewards-ancient-tombs-cobra",
+            oteryn_gameplay_quests::quest::world_callbacks::Position {
+                x: 33396,
+                y: 32836,
+                floor: -14,
+            },
+            false,
+        )
+    })
+}
+
+pub(super) async fn exercise_poisoned(
+    owner: &mut super::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &super::AdmittedSession,
+    h: &Harness,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult {
+    use crate::domain::condition::DotElement;
+    use oteryn_gameplay_foundation::foundation::condition::{
+        ApplicationFacts, ConditionDefinition, DamageSchedule, DamageSegment,
+    };
+    let [cobra] = super::classic_quests::install(owner, admitted, ["oteryn:npc.cobra"]).await?;
+    let actor = admitted.runtime_actor.ok_or("Cobra actor")?;
+    let session = admitted.game_session_id;
+    let poison = ConditionDefinition::new_damage_schedule(
+        "tombs.cobra.poison",
+        1,
+        DotElement::Poison,
+        DamageSchedule::Fixed {
+            delayed: true,
+            segments: vec![DamageSegment {
+                count: 100,
+                interval_ms: 1000,
+                amount: 1,
+            }],
+        },
+    )
+    .ok_or("poison condition")?;
+    {
+        let runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([91; 32]);
+        let facts = ApplicationFacts {
+            now: owner.owner_now().get(),
+            base_speed: 220,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: true,
+            decision_root: &root,
+            occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes([92; 16]),
+        };
+        let next = states
+            .get(&runtime, actor, session)
+            .ok_or("Cobra vitals")?
+            .stage_owned_test_conditions(&[poison], &facts)
+            .ok_or("stage Cobra poison")?;
+        assert!(states.commit(&runtime, actor, session, next));
+    }
+    let command = 5600;
+    super::classic_quests::talk(owner, admitted, cobra, command, "hi").await?;
+    let placed = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?;
+    let position = placed.position();
+    assert_eq!((position.x, position.y, position.floor), (33396, 32836, 14));
+    assert_eq!(owner.states.chat.engaged(session), None);
+    assert_eq!(
+        super::classic_quests::progress(
+            owner, admitted, authority, "oteryn:quest-track/ancient-tombs/thalas-treasure",
+        ).await?,
+        2
+    );
+    super::classic_quests::talk(owner, admitted, cobra, command, "hi").await?;
+    assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?, placed);
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM game_quest_npc_teleport_receipts WHERE quest_changed",
+        ).fetch_one(&h.pool).await?,
+        1
+    );
+    Ok(())
+}

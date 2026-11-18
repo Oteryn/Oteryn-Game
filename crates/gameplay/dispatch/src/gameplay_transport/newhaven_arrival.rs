@@ -260,7 +260,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
             {
                 // Crystal utils_definitions.hpp:66, CONST_ME_TELEPORT; emit only at first placement.
-                for _ in 0..proof.magic {
+                let mut arrival_effects = proof.magic;
+                if proof.request.npc == "oteryn:npc.cobra" && arrival_effects >= 2 {
+                    arrival_effects -= 1;
+                    let origin = position.position();
+                    if let Some(origin) =
+                        crate::content::bundle_spell_tiles::tile_pos(crate::content::LogicalCell {
+                            x: origin.x,
+                            y: origin.y,
+                            z: i32::from(origin.floor),
+                        })
+                    {
+                        let _ = map.facts.emit_movement_effect(origin, 11);
+                    }
+                }
+                for _ in 0..arrival_effects {
                     let _ = map.facts.emit_movement_effect(tile, 11);
                 }
             }

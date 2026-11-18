@@ -257,3 +257,57 @@ fn m37_riddler_runtime_walks_seals_and_retains_keyword_precedence() -> Result<()
     assert!(trap.source.track_changes.is_empty());
     Ok(())
 }
+
+#[test]
+fn cobra_greeting_advances_thalas_once_and_always_has_a_destination() -> Result<(), NpcRuleError> {
+    const TRACK: &str = "oteryn:quest-track/ancient-tombs/thalas-treasure";
+    let catalogue = NpcRuleCatalog::runtime()?;
+    let inventory = NpcInventorySnapshot::default();
+    let outfits = BTreeMap::new();
+    for value in [None, Some(1), Some(2), Some(5)] {
+        let tracks = value
+            .into_iter()
+            .map(|value| (TRACK.to_owned(), value))
+            .collect();
+        let plan = catalogue
+            .plan_storage_teleport(&NpcRuleInput {
+                npc: "oteryn:npc.cobra",
+                trigger: NpcRuleTrigger::Greet,
+                message: "hi",
+                player_name: None,
+                topic: 0,
+                tracks: &tracks,
+                inventory: &inventory,
+                now_epoch_seconds: 1_700_000_000,
+                calendar_month: 11,
+                premium_current: false,
+                level: 100,
+                vocation: "oteryn:vocation.knight",
+                sex: 0,
+                outfits: &outfits,
+            })?
+            .ok_or_else(|| NpcRuleError::Invalid("missing Cobra greeting".into()))?;
+        assert_eq!(
+            (
+                plan.destination.x,
+                plan.destination.y,
+                plan.destination.floor
+            ),
+            (33396, 32836, -14)
+        );
+        assert_eq!(plan.magic, ["CONST_ME_TELEPORT", "CONST_ME_TELEPORT"]);
+        assert!(
+            plan.source
+                .effects
+                .iter()
+                .any(|effect| matches!(effect, NpcRuleEffect::EndConversation { .. }))
+        );
+        if value.is_none_or(|value| value <= 1) {
+            assert_eq!(plan.source.track_changes.len(), 1);
+            assert_eq!(plan.source.track_changes[0].after, 2);
+        } else {
+            assert!(plan.source.track_changes.is_empty());
+        }
+    }
+    Ok(())
+}

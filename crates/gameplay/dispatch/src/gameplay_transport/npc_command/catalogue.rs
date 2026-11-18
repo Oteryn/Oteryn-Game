@@ -189,6 +189,12 @@ pub(super) fn prepare(
         command.game_session_id,
         intent,
     )?;
+    if context.2 == "oteryn:npc.cobra"
+        && super::cobra::poisoned(admission, runtime, actor, command.game_session_id) != Some(true)
+    {
+        let _ = super::end(&admission.states.chat, command.game_session_id, intent);
+        return Some(Step::Refused);
+    }
     let catalogue = admission.quest_catalogue.as_ref()?;
     let source = NpcRuleCatalog::runtime()
         .ok()?
@@ -350,7 +356,9 @@ pub(super) fn prepare(
     if teleport.as_ref().is_some_and(|p| {
         !matches!(
             p.source.quest.as_str(),
-            "oteryn:quest.the_paradox_tower_quest" | "oteryn:quest.in_service_of_yalahar_quest"
+            "oteryn:quest.the_paradox_tower_quest"
+                | "oteryn:quest.in_service_of_yalahar_quest"
+                | "oteryn:quest.the_ancient_tombs_quest"
         )
     }) {
         return Some(Step::Refused);

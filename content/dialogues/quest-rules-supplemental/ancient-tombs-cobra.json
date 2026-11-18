@@ -1,0 +1,121 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.the_ancient_tombs_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-track/ancient-tombs/thalas-treasure",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cobra.lua:57"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/the_ancient_tombs_quest/cobra/advance",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "npc": "oteryn:npc.cobra",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-track/ancient-tombs/thalas-treasure",
+          "op": "le",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "The path of decay lies ahead."
+      ],
+      "effects": [
+        {
+          "kind": "magic_effect",
+          "effect": "CONST_ME_TELEPORT"
+        },
+        {
+          "kind": "teleport",
+          "position": {
+            "x": 33396,
+            "y": 32836,
+            "floor": -14
+          }
+        },
+        {
+          "kind": "magic_effect",
+          "effect": "CONST_ME_TELEPORT"
+        },
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-track/ancient-tombs/thalas-treasure",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cobra.lua:52",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cobra.lua:55",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cobra.lua:58"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_ancient_tombs_quest/cobra/return",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "npc": "oteryn:npc.cobra",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [],
+      "reply": [
+        "The path of decay lies ahead."
+      ],
+      "effects": [
+        {
+          "kind": "magic_effect",
+          "effect": "CONST_ME_TELEPORT"
+        },
+        {
+          "kind": "teleport",
+          "position": {
+            "x": 33396,
+            "y": 32836,
+            "floor": -14
+          }
+        },
+        {
+          "kind": "magic_effect",
+          "effect": "CONST_ME_TELEPORT"
+        },
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cobra.lua:52",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cobra.lua:55",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cobra.lua:58"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/cobra.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "8cd8398dd6676af4aaf652156a97cba0ae39cd198c738eb5ae8f390e18b9cad2"
+    }
+  ]
+}

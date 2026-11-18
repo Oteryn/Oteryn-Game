@@ -509,6 +509,7 @@ impl NpcRuleCatalog {
             .get_or_init(|| {
                 let mut catalogue = Self::load_embedded()?;
                 let supplemental = Self::from_json_documents(&[
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/ancient-tombs-cobra.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/draconia.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/m41-kilmaresh.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-albinius.json"),
@@ -547,6 +548,7 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.hero_of_rathleton_quest"
                                 | "oteryn:quest.hot_cuisine_quest"
                                 | "oteryn:quest.in_service_of_yalahar_quest"
+                                | "oteryn:quest.the_ancient_tombs_quest"
                                 | "oteryn:quest.the_paradox_tower_quest"
                                 | "oteryn:quest.marlin_trophy_quest"
                                 | "oteryn:quest.the_djinn_war_efreet_faction"
@@ -745,6 +747,7 @@ fn additive_legacy_owner(program: &NpcRuleProgram) -> bool {
                 program.document.program_key.as_deref(),
             ),
             ("oteryn:quest.elemental_spheres_quest", None)
+                | ("oteryn:quest.the_ancient_tombs_quest", None)
                 | (
                     "oteryn:quest.outfit_and_addon_quests",
                     Some("oteryn:quest-npc-program.citizen-source-sagas")

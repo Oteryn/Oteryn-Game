@@ -26,6 +26,25 @@ pub(super) fn refuse_unpoisoned_greeting(
     {
         return Some(NpcTalkOutcome::only(NpcIntentDisposition::NotInRange));
     }
+    if poisoned(admission, runtime, actor, session)? {
+        return None;
+    }
+    let _ = end(&admission.states.chat, session, intent);
+    Some(NpcTalkOutcome {
+        conversation: Some(NpcConversation {
+            open: None,
+            lines: vec!["The cobra only admits those marked by poison.".into()],
+        }),
+        ..NpcTalkOutcome::only(NpcIntentDisposition::Ok)
+    })
+}
+
+pub(super) fn poisoned(
+    admission: &super::super::ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+) -> Option<bool> {
     let now = admission.owner_now().get();
     let states = admission.states.spell_states.try_lock().ok()?;
     let spell = states.get(runtime, actor, session)?.owned_conditions();
@@ -35,18 +54,10 @@ pub(super) fn refuse_unpoisoned_greeting(
     let runtime_conditions = runtime
         .actor_conditions_at(actor, Some(session), now)
         .ok()?;
-    let poisoned = spell
-        .visible_statuses(now)
-        .chain(runtime_conditions.visible_statuses(now))
-        .any(|(kind, _)| kind == ConditionType::DamageOverTime(DotElement::Poison));
-    if poisoned {
-        return None;
-    }
-    Some(NpcTalkOutcome {
-        conversation: Some(NpcConversation {
-            open: None,
-            lines: vec!["The cobra only admits those marked by poison.".into()],
-        }),
-        ..NpcTalkOutcome::only(NpcIntentDisposition::Ok)
-    })
+    Some(
+        spell
+            .visible_statuses(now)
+            .chain(runtime_conditions.visible_statuses(now))
+            .any(|(kind, _)| kind == ConditionType::DamageOverTime(DotElement::Poison)),
+    )
 }
