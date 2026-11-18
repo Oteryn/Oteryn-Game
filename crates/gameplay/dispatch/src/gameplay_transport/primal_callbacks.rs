@@ -18,6 +18,17 @@ pub(super) fn normal_map_read_epoch_for_test() -> u64 {
     NORMAL_MAP_READ_EPOCH.load(std::sync::atomic::Ordering::Relaxed)
 }
 
+#[cfg(test)]
+type NormalMapReadGate = (
+    tokio::sync::oneshot::Sender<()>,
+    tokio::sync::oneshot::Receiver<()>,
+);
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static NORMAL_MAP_READ_GATE: std::cell::RefCell<Option<NormalMapReadGate>>;
+}
+
 mod deferred;
 mod normal;
 #[cfg(test)]
