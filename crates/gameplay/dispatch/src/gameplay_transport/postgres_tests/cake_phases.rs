@@ -107,22 +107,22 @@ fn cake_bundle(
 ) -> TestResult<crate::map::boot::BundleWorld> {
     let index = native.item_index().ok_or("native Item definition index")?;
     bundle_with_tops(native, world, channel, start, tops, |key| {
-            Some(crate::map::facts::ItemDefinition {
-                reference: index.definition_ref("Item", key, "definition-r1")?,
-                solid: native
-                    .item_policy(key, "definition-r1")?
-                    .record()
-                    .attributes
-                    .blocks_movement,
-                blocks_projectile: native
-                    .item_policy(key, "definition-r1")?
-                    .record()
-                    .attributes
-                    .blocks_projectile?,
-                pickupable: false,
-                door: false,
-            })
+        Some(crate::map::facts::ItemDefinition {
+            reference: index.definition_ref("Item", key, "definition-r1")?,
+            solid: native
+                .item_policy(key, "definition-r1")?
+                .record()
+                .attributes
+                .blocks_movement,
+            blocks_projectile: native
+                .item_policy(key, "definition-r1")?
+                .record()
+                .attributes
+                .blocks_projectile?,
+            pickupable: false,
+            door: false,
         })
+    })
 }
 
 pub(super) fn bundle_with_tops(
