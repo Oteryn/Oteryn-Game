@@ -247,6 +247,7 @@ fn admit_native_bindings(
         super::completion_sets::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    super::npc_rules::completion_predecessors::register_stag_refresh(&mut lowered.catalogue);
     Ok(lowered)
 }
 

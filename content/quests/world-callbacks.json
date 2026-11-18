@@ -7041,6 +7041,59 @@
       "success_message": "After a rough journey, you reach the shore of the Isle of Ada."
     },
     {
+      "key": "oteryn:quest-callback/order-of-the-stag-cathedral-chest",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32401,
+          "y": 32469,
+          "floor": -5
+        },
+        "appearance": 28905,
+        "unique": null,
+        "action": null
+      },
+      "requires_world_admission": true,
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The frozen chest is empty.",
+      "success_message": "You have found an ice-covered certificate of ancestry.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i52586",
+          "count": 1
+        },
+        "magic": {
+          "position": {
+            "x": 32401,
+            "y": 32469,
+            "floor": -5
+          },
+          "effect": 44
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/bounac_cathedral.lua:132-153",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/others/order_of_the_stag.lua:13-16",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/others/order_of_the_stag.lua:32-35",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/others/order_of_the_stag.lua:50-58",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/utils/utils_definitions.hpp:99"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/order-of-the-stag-crypt-exit",
       "quest": "oteryn:quest.the_order_of_the_stag_quest",
       "trigger": "use",
