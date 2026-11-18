@@ -227,7 +227,8 @@ fn scenario(boss_id: u8, unknown_expiry: bool, vacancy: Option<vacancy::Case>) -
             .await?;
             super::channel_switch_two_channels::assert_encounter_switch_lock(
                 &owner, admitted, true,
-            ).await?;
+            )
+            .await?;
             if let Some(case) = vacancy {
                 vacancy::qualify(&owner, &mut admitted, &h, &deps, boss, origin, case).await?;
                 drop(owner);
