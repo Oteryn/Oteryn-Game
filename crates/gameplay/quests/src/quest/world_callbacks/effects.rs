@@ -905,7 +905,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
             let walls: BTreeSet<_> = switches.stations.iter().flat_map(|s| s.walls).collect();
             if encounter.timing.is_none()
                 || callback.trigger != Trigger::Use
-                || !callback.opening_only
+                || callback.lever.is_none()
+                || callback.reversible
                 || !callback.passages.is_empty()
                 || !pos(switches.exit)
                 || in_room(switches.exit)

@@ -108,10 +108,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some((position, _)) = crate::map::view::placement_of(key) else {
                 return UseDisposition::Rejected;
             };
-            let Some(station) = coordinated.stations.iter().find(|station| tile(station.lever) == position) else {
+            let Some(station) = coordinated
+                .stations
+                .iter()
+                .find(|station| tile(station.lever) == position)
+            else {
                 return UseDisposition::Rejected;
             };
-            if runtime.read_actor_position(actor).ok().is_none_or(|pos| pos.position() != local(station.stand)) {
+            if runtime
+                .read_actor_position(actor)
+                .ok()
+                .is_none_or(|pos| pos.position() != local(station.stand))
+            {
                 return UseDisposition::NotPossible;
             }
             let Some(facts) = map.facts.movement_item_facts(station.appearance) else {
@@ -119,7 +127,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             for position in station.walls.map(tile) {
                 if map.facts.house_tile(position)
-                    || map.overlay.base().tile(position.x, position.y, position.floor).is_none() {
+                    || map
+                        .overlay
+                        .base()
+                        .tile(position.x, position.y, position.floor)
+                        .is_none()
+                {
                     return UseDisposition::Rejected;
                 }
                 walls.push((position, facts));
@@ -128,29 +141,45 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             participants.extend(census.into_iter().filter_map(|(actor, position, session)| {
-                coordinated.stations.iter().any(|station| position.position() == local(station.stand))
+                coordinated
+                    .stations
+                    .iter()
+                    .any(|station| position.position() == local(station.stand))
                     .then_some((actor, session?))
             }));
         }
-        let existing = coordination.and_then(|_| pending.iter_mut().find(|memo| {
-            memo.callback.effects.encounter.as_ref() == Some(encounter)
-        }));
+        let existing = coordination.and_then(|_| {
+            pending
+                .iter_mut()
+                .find(|memo| memo.callback.effects.encounter.as_ref() == Some(encounter))
+        });
         let projection = coordination.map(|_| QuestCallbackProjection::EncounterWalls {
             walls,
             clear: Vec::new(),
         });
-        let restore = callback.lever.and_then(|pair|
-            map.facts.quest_callback_replacement(key, pair[0]));
+        let restore = callback
+            .lever
+            .and_then(|pair| map.facts.quest_callback_replacement(key, pair[0]));
         if let Some(memo) = existing {
             let Some(restore) = restore else {
                 return UseDisposition::Rejected;
             };
-            if memo.switches.len() >= 4
-                || memo.switches.iter().any(|(source, _, _)| *source == key)
+            if memo.switches.len() >= 4 || memo.switches.iter().any(|(source, _, _)| {
+                    crate::map::view::placement_of(*source).map(|(tile, _)| tile)
+                        == crate::map::view::placement_of(key).map(|(tile, _)| tile)
+                })
             {
                 return UseDisposition::Committed;
             }
-            if !map.facts.apply_quest_callback(key, revision, after, &[], &[], false, projection.as_ref()) {
+            if !map.facts.apply_quest_callback(
+                key,
+                revision,
+                after,
+                &[],
+                &[],
+                false,
+                projection.as_ref(),
+            ) {
                 return UseDisposition::StaleState;
             }
             memo.switches.push((key, next_revision, restore));
@@ -176,7 +205,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             Vec::new()
         };
-        if !map.facts.apply_quest_callback(key, revision, after, &[], &[], false, projection.as_ref()) {
+        if !map.facts.apply_quest_callback(
+            key,
+            revision,
+            after,
+            &[],
+            &[],
+            false,
+            projection.as_ref(),
+        ) {
             return UseDisposition::Rejected;
         }
         pending.push(TimedEncounter {
@@ -186,8 +223,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             content: runtime.content_pin().server_artifact_digest(),
             map: map.overlay.base().digest(),
             scope: runtime.encounter_owner_scope(),
-            spawn_at: if switches.is_empty() { spawn_at } else { u64::MAX },
-            reset_at: if switches.is_empty() { reset_at } else { u64::MAX },
+            spawn_at: if switches.is_empty() {
+                spawn_at
+            } else {
+                u64::MAX
+            },
+            reset_at: if switches.is_empty() {
+                reset_at
+            } else {
+                u64::MAX
+            },
             attempted_spawn: false,
             spawned: Vec::new(),
             switches,
@@ -225,7 +270,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || memo.map != map.overlay.base().digest()
                 || memo.scope != runtime.encounter_owner_scope()
                 || map.facts.object_revision(memo.key) != memo.revision
-                || memo.switches.iter().any(|(key, revision, _)| map.facts.object_revision(*key) != *revision)
+                || memo
+                    .switches
+                    .iter()
+                    .any(|(key, revision, _)| map.facts.object_revision(*key) != *revision)
             {
                 pending.remove(index);
                 continue;
@@ -248,7 +296,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         pending.remove(index);
                         continue;
                     };
-                    let replacements: Vec<_> = memo.switches.iter().skip(1)
+                    let replacements: Vec<_> = memo
+                        .switches
+                        .iter()
+                        .skip(1)
                         .map(|(source, _, facts)| (*source, *facts, true))
                         .collect();
                     let projection = QuestCallbackProjection::EncounterWalls {
@@ -259,8 +310,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let mut moves = Vec::new();
                     let mut proofs = Vec::new();
                     for &(actor, session) in &memo.participants {
-                        let Ok(before) = runtime.read_actor_position(actor) else { continue };
-                        let Some(position) = native(before.position()) else { continue };
+                        let Ok(before) = runtime.read_actor_position(actor) else {
+                            continue;
+                        };
+                        let Some(position) = native(before.position()) else {
+                            continue;
+                        };
                         if position.floor != encounter.room_min.floor
                             || !(encounter.room_min.x..=encounter.room_max.x).contains(&position.x)
                             || !(encounter.room_min.y..=encounter.room_max.y).contains(&position.y)
@@ -268,15 +323,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             continue;
                         }
                         let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
-                            &runtime, &self.movement_cells, actor, session, before,
-                            local(coordinated.exit), &closed,
-                        ) else { continue };
+                            &runtime,
+                            &self.movement_cells,
+                            actor,
+                            session,
+                            before,
+                            local(coordinated.exit),
+                            &closed,
+                        ) else {
+                            continue;
+                        };
                         moves.push((actor, session, before));
                         proofs.push(proof);
                     }
-                    let reset = || map.facts.apply_quest_callback(
-                        memo.key, memo.revision, *restore, &[], &replacements, true, Some(&projection),
-                    );
+                    let reset = || {
+                        map.facts.apply_quest_callback(
+                            memo.key,
+                            memo.revision,
+                            *restore,
+                            &[],
+                            &replacements,
+                            true,
+                            Some(&projection),
+                        )
+                    };
                     let snapshots = if proofs.is_empty() {
                         if !reset() {
                             index += 1;
@@ -284,7 +354,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         }
                         Vec::new()
                     } else {
-                        let Ok(snapshots) = runtime.commit_source_steps_and_project(proofs, reset) else {
+                        let Ok(snapshots) = runtime.commit_source_steps_and_project(proofs, reset)
+                        else {
                             index += 1;
                             continue;
                         };
@@ -292,10 +363,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     };
                     for ((actor, session, before), after) in moves.into_iter().zip(snapshots) {
                         states.stage_special_movement_step(
-                            &runtime, map, actor, session, now, Some(before.position()), after.position(), None,
+                            &runtime,
+                            map,
+                            actor,
+                            session,
+                            now,
+                            Some(before.position()),
+                            after.position(),
+                            None,
                         );
                         states.stage_underwater_step(
-                            &runtime, map, actor, session, now, underwater(map, before.position()),
+                            &runtime,
+                            map,
+                            actor,
+                            session,
+                            now,
+                            underwater(map, before.position()),
                             underwater(map, after.position()),
                         );
                         map.facts.emit_movement_effect(tile(coordinated.exit), 11);
