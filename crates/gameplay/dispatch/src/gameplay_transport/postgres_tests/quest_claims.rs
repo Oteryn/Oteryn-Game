@@ -34,6 +34,7 @@ const STEP: &str = "qengine-rewards-qonce-step";
 const SOCKET_WINDOW: &str = "qengine-rewards-qonce-socket-window";
 const SOCKET_REPEAT: &str = "qengine-rewards-qonce-socket-repeat";
 const SOCKET_CATCHUP: &str = "qengine-rewards-qonce-socket-catchup";
+const SOCKET_OWNER_CATCHUP: &str = "qengine-rewards-qonce-socket-owner-catchup";
 const SOCKET_RECOVERY: &str = "qengine-rewards-qonce-socket-recovery";
 const QUEST: &str = "oteryn:quest.authored.draccoon_herald_outfits_quest";
 const CLAIM: &str = "oteryn:quest-callback/qonce-dispatch-claim";
@@ -139,7 +140,7 @@ pub(super) fn map_fixture(name: &str, callback: &mut Callback) {
 }
 
 fn is_socket_scenario(name: &str) -> bool {
-    matches!(name, SOCKET_WINDOW | SOCKET_REPEAT | SOCKET_CATCHUP | SOCKET_RECOVERY)
+    matches!(name, SOCKET_WINDOW | SOCKET_REPEAT | SOCKET_CATCHUP | SOCKET_OWNER_CATCHUP | SOCKET_RECOVERY)
 }
 
 pub(super) fn socket_world(name: &str, callback: &Callback) -> Option<TestResult<crate::map::boot::BundleWorld>> {
@@ -171,6 +172,13 @@ fn lions_socket_window_opens_on_elapsed_overlap_when_scheduler_catches_up_postgr
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     drop(admin);
     super::qengine_rewards::scenario(SOCKET_CATCHUP)
+}
+
+#[test]
+fn channel_owner_catches_up_paid_socket_opening_after_fields_expire_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::qengine_rewards::scenario(SOCKET_OWNER_CATCHUP)
 }
 
 #[test]
@@ -514,7 +522,8 @@ async fn socket_window(
         offered, &supported.into_iter().collect::<Vec<_>>(),
     ).ok_or("socket use capability negotiation")?;
     let repeat = name == SOCKET_REPEAT;
-    let catchup = name == SOCKET_CATCHUP;
+    let owner_catchup = name == SOCKET_OWNER_CATCHUP;
+    let catchup = name == SOCKET_CATCHUP || owner_catchup;
     let mut stages = Vec::new();
     let fence = owner.current_quest_fence(admitted.game_session_id).await
         .map_err(|()| "socket fence unavailable")?.ok_or("socket fence")?;
@@ -629,30 +638,40 @@ async fn socket_window(
         // The scheduler first runs after even the last field's visible lifetime.
         let last_expiry = expiry.last().ok_or("socket deadlines")?.0;
         owner.states.test_owner_time.store(last_expiry + 1, Ordering::Relaxed);
-        assert!(map.facts.next_movement_decay_time().is_some());
-        assert_eq!(map.facts.object_revision(centre), 0);
-        assert!(map.facts.next_presence_opening().is_none());
-        // Run the same owner cycle as the server without a client or manual deadline drain.
-        let stop = oteryn_foundation::CancellationToken::new();
-        let observe = async {
-            while map.facts.object_revision(centre) != 1 {
-                tokio::time::sleep(std::time::Duration::from_millis(25)).await;
-            }
-            stop.cancel();
-        };
-        tokio::time::timeout(
-            std::time::Duration::from_secs(15),
-            super::fixture::join_two(owner.run_source_owner_cycles(&stop), observe),
-        ).await.map_err(|_| "Channel owner did not open the paid socket room and stop")?;
+        if owner_catchup {
+            assert!(map.facts.next_movement_decay_time().is_some());
+            assert_eq!(map.facts.object_revision(centre), 0);
+            assert!(map.facts.next_presence_opening().is_none());
+            // Run the same owner cycle as the server without a client or manual deadline drain.
+            let stop = oteryn_foundation::CancellationToken::new();
+            let observe = async {
+                while map.facts.object_revision(centre) != 1 {
+                    tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+                }
+                stop.cancel();
+            };
+            tokio::time::timeout(
+                std::time::Duration::from_secs(15),
+                super::fixture::join_two(owner.run_source_owner_cycles(&stop), observe),
+            ).await.map_err(|_| "Channel owner did not open the paid socket room and stop")?;
+            assert!(map.facts.next_presence_opening().is_none());
+        } else {
+            assert_eq!(map.facts.expire_movement_items(last_expiry), count * 2);
+            assert_eq!(map.facts.object_revision(centre), 0);
+            assert!(map.facts.next_presence_opening().is_some());
+        }
         assert!(map.facts.next_movement_decay_time().is_none());
-        assert!(map.facts.next_presence_opening().is_none());
         for (_, tile) in expiry.drain(..) {
             assert!(map.facts.movement_items(tile).is_empty());
         }
-    } else {
-        owner.drain_paid_presence_opening().await;
+        if !owner_catchup {
+            owner.drain_paid_presence_opening().await;
+        }
     }
     assert_eq!(track_value(h, SOCKET_PHASE).await?, 10);
+    if !owner_catchup {
+        owner.drain_paid_presence_opening().await;
+    }
     let opened: Vec<(i64, i64)> = sqlx::query_as(
         "SELECT values_before[1],values_after[1] FROM game_character_quest_receipts WHERE transition_key LIKE 'oteryn:quest-timed-presence/%'",
     ).fetch_all(&h.pool).await?;
