@@ -123,7 +123,7 @@ pub(super) fn install(
                 "reversible":false,
                 "passages":[],"storage":[],"offerings":[],"achievements":[],
                 "return_on_failure":false,
-                "sources":callback.sources,
+                "sources":["content/quests/shared-access-callbacks.json"],
             }))?);
         }
     }

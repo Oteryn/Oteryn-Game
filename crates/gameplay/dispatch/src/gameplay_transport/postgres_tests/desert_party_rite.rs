@@ -69,7 +69,13 @@ pub(super) fn scenario_with_station_custody(
         if let Some(count) = station_custody_count {
             super::qespike_lord_admission::configure(&mut callback)?;
             if count == 2 {
-                callback.effects.party_transfer.as_mut().ok_or("party transfer")?.stations.drain(..2);
+                let party = callback
+                    .effects
+                    .party_transfer
+                    .as_mut()
+                    .ok_or("party transfer")?;
+                // Keep the initiator and the adjacent station from the map fixture.
+                party.stations = party.stations.split_off(2);
             }
         }
         let party = callback
@@ -79,7 +85,10 @@ pub(super) fn scenario_with_station_custody(
             .ok_or("party transfer")?;
         assert_eq!(party.stations.len(), station_custody_count.unwrap_or(4));
         let initiator_station = if let Some(position) = party.initiator_position {
-            party.stations.iter().position(|station| station.from == position).ok_or("initiator station")?
+            party.stations
+                .iter()
+                .position(|station| station.from == position)
+                .ok_or("initiator station")?
         } else {
             2
         };
@@ -381,7 +390,10 @@ pub(super) fn scenario_with_station_custody(
             expected_revision: revision,
         };
         if station_custody_count.is_some() {
-            let result = super::qespike_lord_admission::exercise(&owner, &mut admitted, &members, &h, key, &target(0), &callback).await;
+            let result = super::qespike_lord_admission::exercise(
+                &owner, &mut admitted, &members, &h, key, &target(0), &callback,
+            )
+            .await;
             drop(owner);
             drop(evidence);
             drop(authority);
