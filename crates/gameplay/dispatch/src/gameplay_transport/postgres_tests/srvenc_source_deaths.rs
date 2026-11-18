@@ -36,6 +36,14 @@ native_case!(srvenc_m24_postgres_morguthis_stage, "morguthis");
 native_case!(srvenc_m24_postgres_rahemos_stage, "rahemos");
 native_case!(srvenc_m24_postgres_herald_top_damage, "herald_of_fire");
 
+#[test]
+fn nrwicked_arbaziloth_death_records_first_clear() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario("nrwicked_arbaziloth_death_records_first_clear", "arbaziloth")
+}
+
 fn scenario(name: &'static str, creature: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -556,6 +564,16 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
             rule.creature,
             effect.track
         );
+    }
+    if rule.creature == "oteryn:creature.arbaziloth" {
+        let questlog: Option<i64> = sqlx::query_scalar(
+            "SELECT value FROM game_character_quest_tracks              WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+        )
+        .bind(id(41).as_slice())
+        .bind("oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/questlog")
+        .fetch_optional(&h.pool)
+        .await?;
+        assert_eq!(questlog, Some(1), "death must start the quest log");
     }
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
