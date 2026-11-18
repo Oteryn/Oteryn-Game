@@ -76,6 +76,8 @@ async fn exercise(admin: String, seal_case: Seal) -> TestResult {
         floor: -13,
     };
     let flame = (32250, 31892, -14);
+    let logic_flame = (32311, 31978, -13);
+    let logic_destination = (32261, 31856, -15);
     let (source, objects) = if matches!(seal_case, Seal::Sacrifice) {
         (
             flame,
@@ -91,7 +93,19 @@ async fn exercise(admin: String, seal_case: Seal) -> TestResult {
             vec![
                 (lever.x, lever.y, lever.floor, 30018, 2772),
                 (campfire.x, campfire.y, campfire.floor, 0, 1996),
-                (32311, 31975, -13, 0, 1998),
+                (32309, 31976, -13, 0, 1996),
+                (32311, 31975, -13, 0, 1996),
+                (32311, 31976, -13, 0, 1996),
+                (32313, 31975, -13, 0, 1998),
+                (32313, 31976, -13, 0, 1998),
+                (logic_flame.0, logic_flame.1, logic_flame.2, 35018, 1959),
+                (
+                    logic_destination.0,
+                    logic_destination.1,
+                    logic_destination.2,
+                    0,
+                    1959,
+                ),
             ],
         )
     };
@@ -178,7 +192,7 @@ async fn exercise(admin: String, seal_case: Seal) -> TestResult {
         ..deps.admitted
     };
     match seal_case {
-        Seal::Logic => exercise_logic(&owner, &world, actor, fence, lever, campfire).await?,
+        Seal::Logic => exercise_logic(&mut owner, &admitted, fence, lever, campfire).await?,
         Seal::Queen => exercise_queen(&mut owner, &h, &admitted, fence).await?,
         Seal::Sacrifice => exercise_sacrifice(&mut owner, &h, admitted, frame, start).await?,
     }
@@ -189,14 +203,14 @@ async fn exercise(admin: String, seal_case: Seal) -> TestResult {
 }
 
 async fn exercise_logic(
-    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    world: &crate::map::boot::BundleWorld,
-    actor: crate::foundation::ExactActorRef,
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &super::AdmittedSession,
     fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
     lever: Position,
     campfire: Position,
 ) -> TestResult {
-    let session = fence.game_session_id;
+    let session = admitted.game_session_id;
+    let actor = admitted.runtime_actor.ok_or("actor")?;
     let callback: Callback = serde_json::from_value(serde_json::json!({
         "key": "oteryn:quest-callback/banshees-logic-lever-30018",
         "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
@@ -215,12 +229,31 @@ async fn exercise_logic(
         "return_on_failure": false,
         "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/action-6-sixth_seal_lever.lua:3"]
     }))?;
+    let flame: Callback = serde_json::from_value(serde_json::json!({
+        "key": "oteryn:quest-callback/banshees-logic-flame",
+        "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+        "trigger": "step_in",
+        "selector": { "unique": 35018 },
+        "teleport": { "x": 32261, "y": 31856, "floor": -15 },
+        "reversible": false,
+        "storage": [],
+        "offerings": [],
+        "passages": [],
+        "return_on_failure": true,
+        "world_requirements": [32309, 32311, 32313].into_iter()
+            .flat_map(|x| [31975, 31976].map(move |y| serde_json::json!({
+                "position": { "x": x, "y": y, "floor": -13 },
+                "appearance": if x == 32313 { 1998 } else { 1996 },
+            })))
+            .collect::<Vec<_>>(),
+        "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-6-sixth_seal_flame.lua:3"]
+    }))?;
     assert!(
         owner
             .states
             .quest_callbacks
             .fixture
-            .set(vec![callback])
+            .set(vec![callback, flame])
             .is_ok()
     );
     let placement_key = |p: Position| {
@@ -228,11 +261,21 @@ async fn exercise_logic(
     };
     let campfire_key = placement_key(campfire)?;
     let lever_key = placement_key(lever)?;
-    let mut placement = world.base().digest().to_vec();
-    placement.extend_from_slice(&lever_key.to_be_bytes());
     let map = owner.bundle_map().ok_or("bundle map")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&lever_key.to_be_bytes());
     let initial = map.facts.object_revision(campfire_key);
-    for (command_id, changed) in [(1, false), (2, true)] {
+    let flame_origin = MovementLocalPosition {
+        x: 32310,
+        y: 31978,
+        floor: 13,
+    };
+    for (command_id, changed) in [(1, false), (2, true), (3, true)] {
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("use clock")?;
+        let map = owner.bundle_map().ok_or("bundle map")?;
         let outcome = owner
             .use_object(
                 actor,
@@ -249,6 +292,47 @@ async fn exercise_logic(
             .await;
         assert_eq!(outcome.disposition, UseDisposition::Committed);
         assert_eq!(map.facts.object_revision(campfire_key) != initial, changed);
+        if command_id == 1 {
+            continue;
+        }
+        move_fixture(owner, admitted, flame_origin).await?;
+        let (step, _) = owner.paced_step(actor, session, StepDirection::East).await;
+        assert_eq!(
+            step.disposition,
+            oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved
+        );
+        let after = owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?;
+        if command_id == 2 {
+            assert_eq!(
+                after.position(),
+                flame_origin,
+                "one incorrect campfire must refuse the layout"
+            );
+            move_fixture(
+                owner,
+                admitted,
+                MovementLocalPosition {
+                    x: 32307,
+                    y: 31975,
+                    floor: 13,
+                },
+            )
+            .await?;
+        } else {
+            assert_eq!(
+                after.position(),
+                MovementLocalPosition {
+                    x: 32261,
+                    y: 31856,
+                    floor: 15
+                }
+            );
+        }
     }
     Ok(())
 }

@@ -902,11 +902,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 MapDefinition::Item(reference) => {
                     let index = native.item_index()?;
                     let definition = super::item_look::typed_definition(index, reference)?;
-                    definition
+                    let item_id = definition
                         .production_key
                         .strip_prefix("oteryn:item.tibia.i")?
                         .parse::<u32>()
-                        .ok()
+                        .ok()?;
+                    Some(item_id)
                 }
                 MapDefinition::Terrain(_) => None,
             }
