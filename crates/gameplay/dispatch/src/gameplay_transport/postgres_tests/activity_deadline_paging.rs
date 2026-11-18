@@ -129,11 +129,25 @@ async fn window_case(h: &Harness) -> TestResult {
         assert_eq!(receipt.participants.len(), 1);
         assert_eq!(receipt.participants[0].character_id, request.initiating_character_id);
     }
-    let (members, cooldowns): (i64, i64) = sqlx::query_as(
-        "SELECT (SELECT count(*) FROM game_boss_room_participants WHERE admission=encode($1,'hex')::uuid),
-                (SELECT count(*) FROM game_character_boss_cooldowns WHERE admission=encode($1,'hex')::uuid)"
+    for request in [&first, &second] {
+        let outcome = owner
+            .enter_boss_admission_window(&authority, &h.node, request.clone(), window)
+            .await?;
+        let ActivityEnterOutcome::Replayed(receipt) = outcome else {
+            return Err(format!("window replay refused: {outcome:?}").into());
+        };
+        assert_eq!(receipt.handoff_id, first.handoff_id);
+        assert_eq!(receipt.participants.len(), 1);
+        assert_eq!(receipt.participants[0].character_id, request.initiating_character_id);
+    }
+    let members: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_boss_room_participants WHERE admission=encode($1,'hex')::uuid"
     ).bind(first.handoff_id.as_slice()).fetch_one(&h.pool).await?;
-    assert_eq!((members, cooldowns), (2, 2));
+    assert_eq!(members, 2);
+    let cooldowns: Vec<i64> = sqlx::query_scalar(
+        "SELECT available_at FROM game_character_boss_cooldowns WHERE admission=encode($1,'hex')::uuid"
+    ).bind(first.handoff_id.as_slice()).fetch_all(&h.pool).await?;
+    assert_eq!(cooldowns, vec![(clock + 36_000) * 1_000; 2]);
 
     h.root.advance_test_quest_clock(9)?;
     for (tag, request) in [(240, &first), (241, &second)] {
