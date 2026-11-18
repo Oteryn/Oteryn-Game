@@ -58,9 +58,9 @@ pub(super) async fn exercise_achievement_routes(
     first.achievements = vec![INDIVIDUAL.into()];
     let mut second = first.clone();
     second.key = format!("{STEP}-combined");
-    second.storage[0].minimum = 1;
-    second.storage[0].maximum = 1;
-    second.storage[0].set = 2;
+    second.storage[0].minimum = 2;
+    second.storage[0].maximum = 2;
+    second.storage[0].set = 3;
     second.achievements.push(COMBINED.into());
     let document = serde_json::json!({
         "schema": 1,
@@ -68,7 +68,7 @@ pub(super) async fn exercise_achievement_routes(
             "quest": QUEST,
             "recipe_sha256": "c6bb54b0c423a165891b0ca32fb305a0963d1a06417249b0b317ec34cf65e708",
             "sources": ["Engine fixture for disjoint achievement USE routes"],
-            "tracks": [{"key": PHASE, "initial": 0, "minimum": 0, "maximum": 2}],
+            "tracks": [{"key": PHASE, "initial": 0, "minimum": 0, "maximum": 3}],
             "stages": [
                 {"key": "individual", "completes": false, "trigger": {"kind": "map_use", "callback": first}},
                 {"key": "combined", "completes": false, "trigger": {"kind": "map_use", "callback": second}}
@@ -84,13 +84,40 @@ pub(super) async fn exercise_achievement_routes(
         let key = oteryn_world_bundle::bundle::placement_key(AT.floor, AT.x, AT.y, 1)
             .ok_or("placement")?;
         let revision = owner.bundle_map().ok_or("map")?.facts.object_revision(key);
-        let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&target(owner, revision)?)
-            .map_err(debug)?;
-        let result = super::quest_world_callbacks::wire(owner, admitted, command, 2, payload).await?;
-        assert_eq!(
-            oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?,
-            UseDisposition::Committed
-        );
+        let target = target(owner, revision)?;
+        let disposition = if command == 1 {
+            let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&target)
+                .map_err(debug)?;
+            let result = super::quest_world_callbacks::wire(owner, admitted, command, 2, payload).await?;
+            oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?
+        } else {
+            // Reproduce progress committed outside this connection's quest
+            // projection. Call the real USE owner with the same admission.
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            let changed = sqlx::query(
+                "UPDATE game_character_quest_tracks SET value=2 WHERE quest_key=$1 AND track_key=$2 AND value=1",
+            )
+            .bind(QUEST)
+            .bind(PHASE)
+            .execute(&mut *tx)
+            .await?;
+            assert_eq!(changed.rows_affected(), 1);
+            tx.commit().await?;
+            tokio::time::sleep(std::time::Duration::from_millis(210)).await;
+            owner.use_world_object(
+                admitted.runtime_actor.ok_or("actor")?,
+                crate::gameplay_transport::connection::UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command,
+                    item_fence: admitted.item_fence,
+                },
+                target,
+            ).await.disposition
+        };
+        assert_eq!(disposition, UseDisposition::Committed);
         let earned: Vec<String> = sqlx::query_scalar(
             "SELECT achievement_key FROM game_account_achievements WHERE achievement_key IN ($1,$2) ORDER BY achievement_key DESC"
         )
