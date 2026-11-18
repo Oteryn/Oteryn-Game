@@ -4,7 +4,13 @@ use super::{
     super::{owner::HostOwner, ui::Skins},
     modal::ModalGuard,
 };
-use bevy::{input_focus::InputFocus, prelude::*, text::EditableText, ui_widgets::Activate};
+use bevy::{
+    input_focus::InputFocus,
+    prelude::*,
+    text::EditableText,
+    ui::{Checked, InteractionDisabled},
+    ui_widgets::Activate,
+};
 use oteryn_client_ui::npc_shop::{LiveShop, NpcTradeSide, Quote};
 use oteryn_client_ui_bevy as source;
 mod conversation;
@@ -24,6 +30,19 @@ struct Action {
     generation: u64,
     kind: Kind,
 }
+#[derive(Component)]
+struct FixedControl;
+type FixedControlQuery<'w, 's> = Query<
+    'w,
+    's,
+    (
+        Entity,
+        &'static Action,
+        Has<InteractionDisabled>,
+        Has<Checked>,
+    ),
+    With<FixedControl>,
+>;
 #[derive(Clone, Copy)]
 enum Kind {
     Side(NpcTradeSide),
@@ -53,6 +72,7 @@ struct State {
     feedback: String,
     widgets: Option<widgets::Widgets>,
     rendered: Option<RenderedOffers>,
+    rows_disabled: bool,
     pending: Option<submission::Pending>,
     conversation: conversation::Ui,
 }
@@ -243,7 +263,8 @@ fn project(
     ancestry: Query<&ChildOf>,
     mut text: Query<&mut Text, Without<widgets::OptionCaption>>,
     mut options: Query<(&widgets::OptionCaption, &mut Text)>,
-    controls: Query<(Entity, &Action)>,
+    controls: FixedControlQuery,
+    offer_actions: Query<Entity, (With<Action>, Without<FixedControl>)>,
 ) {
     let current = owner
         .play
@@ -340,12 +361,16 @@ fn project(
             Kind::OnlyOwned => panel.live.options.only_owned,
             _ => false,
         };
-        text.0 = if checked { "[x]" } else { "[ ]" }.into();
+        let caption = if checked { "[x]" } else { "[ ]" };
+        if text.0 != caption {
+            text.0 = caption.into();
+        }
     }
-    for (entity, action) in &controls {
+    let pending = panel.pending || panel.live.pending || state.pending.is_some();
+    for (entity, action, disabled, checked) in &controls {
         let supported = match action.kind {
             Kind::Close => true,
-            _ if panel.pending || panel.live.pending || state.pending.is_some() => false,
+            _ if pending => false,
             Kind::Look => panel.selected && state.selection.is_some(),
             Kind::SellAll => {
                 panel.selected
@@ -362,42 +387,52 @@ fn project(
             }
             _ => true,
         };
-        if supported {
-            commands
-                .entity(entity)
-                .remove::<bevy::ui::InteractionDisabled>();
-        } else {
-            commands
-                .entity(entity)
-                .insert(bevy::ui::InteractionDisabled);
-        }
-        if let Kind::Side(side) = action.kind {
-            if Some(side) == state.side {
-                commands.entity(entity).insert(bevy::ui::Checked);
+        if supported == disabled {
+            if supported {
+                commands.entity(entity).remove::<InteractionDisabled>();
             } else {
-                commands.entity(entity).remove::<bevy::ui::Checked>();
+                commands.entity(entity).insert(InteractionDisabled);
+            }
+        }
+        if let Kind::Side(side) = action.kind
+            && checked != (Some(side) == state.side)
+        {
+            if checked {
+                commands.entity(entity).remove::<Checked>();
+            } else {
+                commands.entity(entity).insert(Checked);
             }
         }
     }
     if let Some(rows) = changed_rows {
         commands.entity(widgets.rows).despawn_children();
-        widgets::rows(
-            &mut commands,
-            &skins,
-            widgets.rows,
-            generation,
-            &rows,
-            &panel.live,
-            state.selection,
-        );
-        state.rendered = Some(RenderedOffers {
+        let rendered = RenderedOffers {
             shop: panel.live.clone(),
             side: state.side,
             query: state.query.clone(),
             selection: state.selection,
             rows,
-        });
+        };
+        widgets::rows(
+            &mut commands,
+            &skins,
+            widgets.rows,
+            generation,
+            &rendered,
+            pending,
+        );
+        state.rendered = Some(rendered);
+    } else if state.rows_disabled != pending {
+        // Offer rows share one availability state. Touch them only when it changes.
+        for row in &offer_actions {
+            if pending {
+                commands.entity(row).insert(InteractionDisabled);
+            } else {
+                commands.entity(row).remove::<InteractionDisabled>();
+            }
+        }
     }
+    state.rows_disabled = pending;
     let status = if !play.link.npc_shop_is_open() {
         String::new()
     } else if !state.feedback.is_empty() {
@@ -414,7 +449,7 @@ fn project(
         "Select goods, then use Look to request their details.".into()
     };
     if let Ok(mut caption) = text.get_mut(widgets.status) {
-        caption.0 = status;
+        caption.set_if_neq(Text(status));
     }
     let price = state
         .selection
@@ -431,7 +466,7 @@ fn project(
             .into()
         });
     if let Ok(mut caption) = text.get_mut(widgets.price) {
-        caption.0 = price;
+        caption.set_if_neq(Text(price));
     }
     let balance = panel
         .live
@@ -444,15 +479,17 @@ fn project(
         })
         .unwrap_or_else(|| "Unknown".into());
     if let Ok(mut caption) = text.get_mut(widgets.balance) {
-        caption.0 = balance;
+        caption.set_if_neq(Text(balance));
     }
-    if let Ok(mut caption) = text.get_mut(widgets.trade_caption) {
-        caption.0 = if state.side == Some(NpcTradeSide::Sell) {
-            "Sell"
-        } else {
-            "Buy"
-        }
-        .into();
+    let trade_caption = if state.side == Some(NpcTradeSide::Sell) {
+        "Sell"
+    } else {
+        "Buy"
+    };
+    if let Ok(mut caption) = text.get_mut(widgets.trade_caption)
+        && caption.0 != trade_caption
+    {
+        caption.0 = trade_caption.into();
     }
 }
 fn clear_focus(panel: Entity, focus: &mut InputFocus, ancestry: &Query<&ChildOf>) {

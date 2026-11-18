@@ -249,40 +249,43 @@ pub(super) fn rows(
     skin: &Skins,
     parent: Entity,
     generation: u64,
-    rows: &[Quote],
-    shop: &oteryn_client_ui::npc_shop::LiveShop,
-    selection: Option<Quote>,
+    rendered: &RenderedOffers,
+    disabled: bool,
 ) {
+    let shop = &rendered.shop;
+    let rows = &rendered.rows;
     for quote in rows {
-        let button = commands
-            .spawn((
-                Button,
-                Action {
-                    generation,
-                    kind: Kind::Select(*quote),
-                },
-                TabIndex(0),
-                Name::new("npc-shop.offer"),
-                crate::bevy_shell::ui::window_layout::Scaled {
-                    min_height: Some(35.),
-                    ..default()
-                },
-                Node {
-                    width: percent(100.),
-                    min_height: px(35.),
-                    flex_shrink: 0.,
-                    align_items: AlignItems::Center,
-                    column_gap: px(3.),
-                    ..default()
-                },
-                BackgroundColor(if selection == Some(*quote) {
-                    Color::srgb_u8(88, 88, 88)
-                } else {
-                    Color::NONE
-                }),
-            ))
-            .observe(activate)
-            .id();
+        let mut button = commands.spawn((
+            Button,
+            Action {
+                generation,
+                kind: Kind::Select(*quote),
+            },
+            TabIndex(0),
+            Name::new("npc-shop.offer"),
+            crate::bevy_shell::ui::window_layout::Scaled {
+                min_height: Some(35.),
+                ..default()
+            },
+            Node {
+                width: percent(100.),
+                min_height: px(35.),
+                flex_shrink: 0.,
+                align_items: AlignItems::Center,
+                column_gap: px(3.),
+                ..default()
+            },
+            BackgroundColor(if rendered.selection == Some(*quote) {
+                Color::srgb_u8(88, 88, 88)
+            } else {
+                Color::NONE
+            }),
+        ));
+        button.observe(activate);
+        if disabled {
+            button.insert(InteractionDisabled);
+        }
+        let button = button.id();
         commands.entity(parent).add_child(button);
         let icon = commands
             .spawn((
@@ -376,6 +379,7 @@ fn action(
         .spawn((
             source::button(skin.buttons.clone(), width),
             Action { generation, kind },
+            FixedControl,
         ))
         .insert(Node {
             width: px(width),
