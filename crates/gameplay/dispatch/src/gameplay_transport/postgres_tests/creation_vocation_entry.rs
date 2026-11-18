@@ -21,7 +21,8 @@ fn bootstrap_v4_every_vocation_first_entry_without_progression_postgres() -> Tes
     };
     super::kill_reward_e2e::scenario_thread::run("creation-vocation-entry", move || {
         tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async move {
-            for vocation in ["Knight", "Paladin", "Sorcerer", "Druid", "Monk"] {
+            // Exercise the default node-boot profile before the other creation vocations.
+            for vocation in ["Sorcerer", "Knight", "Paladin", "Druid", "Monk"] {
                 let h = Harness::create_newhaven(admin.clone(), "creation_entry").await?;
                 let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
                 let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
