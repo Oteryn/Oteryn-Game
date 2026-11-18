@@ -103,6 +103,53 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
     pub encounter: Option<Encounter>,
+    /// An immediate spawn attempt at each cell of a successful quest-tool USE.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub use_spawn: Option<UseSpawn>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct UseSpawn {
+    pub positions: Vec<Position>,
+    pub creatures: Vec<String>,
+    pub effect: u16,
+}
+
+impl UseSpawn {
+    fn valid_for(&self, callback: &Callback) -> bool {
+        let Some(source) = callback.selector.native.as_ref() else {
+            return false;
+        };
+        callback.trigger == Trigger::Use
+            && callback.requires_world_admission
+            && callback
+                .item_on_target
+                .as_ref()
+                .is_some_and(|tool| tool.selected_instance)
+            && callback.effects.encounter.is_none()
+            && callback.effects.scene.is_none()
+            && callback.effects.party_transfer.is_none()
+            && callback.item_reward().is_none()
+            && callback.lever.is_none()
+            && callback.teleport.is_none()
+            && callback.remote_teleport.is_none()
+            && callback.passages.is_empty()
+            && !callback.reversible
+            && (1..=8).contains(&self.positions.len())
+            && (1..=8).contains(&self.creatures.len())
+            && (1..=255).contains(&self.effect)
+            && self.positions.iter().collect::<BTreeSet<_>>().len() == self.positions.len()
+            && self.creatures.iter().collect::<BTreeSet<_>>().len() == self.creatures.len()
+            && self.positions.iter().all(|point| {
+                point.floor == source.position.floor
+                    && point.x.abs_diff(source.position.x) <= 32
+                    && point.y.abs_diff(source.position.y) <= 32
+            })
+            && self.creatures.iter().all(|key| {
+                key.starts_with("oteryn:creature.") && super::super::valid_quest_key(key)
+            })
+    }
 }
 
 /// The original wire shapes retain distinct owners: a child quest or the current quest.
@@ -393,6 +440,13 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects
+        .use_spawn
+        .as_ref()
+        .is_some_and(|spawn| !spawn.valid_for(callback))
+    {
+        return false;
+    }
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
     if inputs.len() > 8

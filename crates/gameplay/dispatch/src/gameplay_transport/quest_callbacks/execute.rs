@@ -166,10 +166,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 optional_pvp,
             );
         }
-        if !oteryn_gameplay_quests::quest::source_world_objects::source_is_ready(
-            callback,
-            after.appearance_id,
-        ) {
+        // Crystal register_actions.lua:716-750 only transforms a ready crack.
+        // Picking its transformed appearance still earns and spawns without
+        // restarting or invalidating the original map reset.
+        let spawn_on_transformed_source = callback.effects.use_spawn.is_some()
+            && callback.effects.reset_after_ms.is_some()
+            && callback.effects.transform == Some(after.appearance_id);
+        if !spawn_on_transformed_source
+            && !oteryn_gameplay_quests::quest::source_world_objects::source_is_ready(
+                callback,
+                after.appearance_id,
+            )
+        {
             return UseDisposition::NothingToUse;
         }
         if callback.effects.reward_door.is_some() {
@@ -220,7 +228,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(pair) = callback.lever {
             after.appearance_id = pair[usize::from(!close)];
         }
-        if let Some(appearance) = callback.effects.transform {
+        if !spawn_on_transformed_source && let Some(appearance) = callback.effects.transform {
             let Some(replacement) = map.facts.quest_callback_replacement(key, appearance) else {
                 return UseDisposition::Rejected;
             };
@@ -239,7 +247,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Both lifecycle deadlines belong to this operation, even when preparing
         // its remote object read set takes time.
         let lifecycle_now = self.owner_now().get();
-        if !close && let Some(delay) = callback.effects.reset_after_ms {
+        if !close
+            && !spawn_on_transformed_source
+            && let Some(delay) = callback.effects.reset_after_ms
+        {
             let Some(due) = lifecycle_now.checked_add(u64::from(delay) * 1_000) else {
                 return UseDisposition::Exhausted;
             };
@@ -937,6 +948,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && !callback.is_read_only()
             && !(close && callback.opening_only);
         let mut fresh_effects = !durable;
+        let mut recover_use_spawn = false;
         let mut success_message = if !durable {
             callback.success_message.clone()
         } else {
@@ -1028,6 +1040,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 party: party_context,
             };
             let context = if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
+                recover_use_spawn = callback.effects.use_spawn.is_some()
+                    && pending.get(&session).is_some_and(|record| {
+                        record.cause == cause
+                            && record.key == key
+                            && record.revision == expected_revision
+                    });
                 let record = pending.entry(session).or_insert(Pending {
                     actor,
                     session,
@@ -1496,7 +1514,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         );
                     }
                 }
-            } else if !callback.is_read_only() && !personal_gift_preserves_object && !apply_scene()
+            } else if !callback.is_read_only()
+                && !personal_gift_preserves_object
+                && !spawn_on_transformed_source
+                && !apply_scene()
             {
                 return UseDisposition::Rejected;
             }
@@ -1601,7 +1622,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, snapshot.position()),
             );
         }
-        if let Some(magic) = &callback.effects.magic {
+        if !spawn_on_transformed_source && let Some(magic) = &callback.effects.magic {
             map.facts
                 .emit_movement_effect(tile(magic.position), magic.effect);
         }
@@ -1612,6 +1633,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
             pending.remove(&session);
+        }
+        if (fresh_effects || recover_use_spawn)
+            && let Some(spawn) = &callback.effects.use_spawn
+        {
+            self.project_quest_use_spawns(runtime, map, spawn, cause);
         }
         if fresh_effects && callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE
         {

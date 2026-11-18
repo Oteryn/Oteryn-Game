@@ -11,6 +11,9 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::collections::BTreeMap;
 
 fn callback(name: &str) -> TestResult<Callback> {
+    if name == super::qcx60_chakoya::NAME {
+        return super::qcx60_chakoya::callback();
+    }
     if name == super::qcx60_carried_tools::NAME {
         return super::qcx60_carried_tools::callback();
     }
@@ -452,6 +455,9 @@ fn world_cells(
             effect_positions.extend([player.from, player.to]);
         }
         effect_positions.extend(encounter.monsters.iter().map(|m| m.position));
+    }
+    if let Some(spawn) = &callback.effects.use_spawn {
+        effect_positions.extend(&spawn.positions);
     }
     for p in effect_positions {
         for x in p.x - 1..=p.x + 1 {

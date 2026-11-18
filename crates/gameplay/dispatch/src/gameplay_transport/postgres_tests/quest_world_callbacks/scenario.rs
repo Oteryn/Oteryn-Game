@@ -57,6 +57,7 @@ fn scenario_case(
     let m03_pits = name == super::super::qengine_m03_pits::NAME;
     let nomads_window = name.starts_with(super::super::qengine_m02_use::NAME);
     let m01b_explore = name.starts_with("m01b/");
+    let ice_chakoya = name == super::super::qcx60_chakoya::NAME;
     let ice_tools = name == super::super::qcx60_carried_tools::NAME;
     let qready_craft = name == super::super::qready1_crafting::NAME;
     let qready_workbench = super::super::qready1_workbenches::matches(name);
@@ -930,7 +931,8 @@ fn scenario_case(
         world(&callback, trigger)?
     };
     run(async |admin| {
-        let h = if ice_tools
+        let h = if ice_chakoya
+            || ice_tools
             || shared_rewards
             || qengine_reward
             || outfit_world
@@ -1691,6 +1693,11 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
+        if ice_chakoya {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                super::super::qcx60_chakoya::catalogue(&callback)?,
+            ));
+        }
         if ice_tools {
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 super::super::qcx60_carried_tools::catalogue(&callback)?,
@@ -2545,6 +2552,10 @@ fn scenario_case(
                 &authority,
             ))
             .await?;
+        } else if ice_chakoya {
+            Box::pin(super::super::qcx60_chakoya::exercise(
+                &mut owner, &mut admitted, &h,
+            )).await?;
         } else if ice_tools {
             Box::pin(super::super::qcx60_carried_tools::exercise(
                 &mut owner, &mut admitted, &h,
