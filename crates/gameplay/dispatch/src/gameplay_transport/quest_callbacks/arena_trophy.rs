@@ -105,33 +105,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let pin = runtime.content_pin();
             (pin.frame_binding_digest(), pin.server_artifact_digest())
         };
-        if self
-            .root
-            .claim_arena_trophy_on_step(
-                permit,
-                self.character,
-                self.holder,
-                fence,
-                ArenaTrophyStep {
-                    command,
-                    uid,
-                    x: at.x,
-                    y: at.y,
-                    floor: at.floor,
-                    map_revision: crate::map::overlay::map_revision(map.overlay.base()),
-                    content_revision: format!(
-                        "sha256:{}",
-                        content_digest
-                            .iter()
-                            .map(|byte| format!("{byte:02x}"))
-                            .collect::<String>()
-                    ),
-                    frame,
-                    item,
-                },
-            )
-            .await?
-        {
+        let committed = {
+            let _ground_change =
+                super::super::loop_move::GroundChange(Some(&self.states.loop_ground));
+            self.root
+                .claim_arena_trophy_on_step(
+                    permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    ArenaTrophyStep {
+                        command,
+                        uid,
+                        x: at.x,
+                        y: at.y,
+                        floor: at.floor,
+                        map_revision: crate::map::overlay::map_revision(map.overlay.base()),
+                        content_revision: format!(
+                            "sha256:{}",
+                            content_digest
+                                .iter()
+                                .map(|byte| format!("{byte:02x}"))
+                                .collect::<String>()
+                        ),
+                        frame,
+                        item,
+                    },
+                )
+                .await?
+        };
+        if committed {
             map.facts.emit_movement_effect(at, 14);
         }
         Ok(())
