@@ -124,26 +124,36 @@ impl AstralEncounter {
                     .map_err(|_| CarrierError::InvalidCreatureHealth)?;
                 if u128::from(health) * 1000 < u128::from(maximum) * 55 {
                     let at = runtime.read_actor_position(source)?.position();
-                    self.swap_glyphs(runtime, true, Some((source, at)))?;
+                    if self.exposed {
+                        runtime.relocate_quest_creatures(
+                            &[(self.distorted, at)],
+                            Some(source),
+                            None,
+                        )?;
+                    } else {
+                        self.swap_glyphs(runtime, true, Some((source, at)))?;
+                    }
                     self.source = None;
+                    self.next_think = now.saturating_add(1_000_000);
+                    return Ok(());
                 }
             } else {
                 Self::heal_source(runtime, source, SOURCE)?;
             }
-        } else {
-            let health = runtime
-                .live_creature_health(self.distorted)
-                .ok_or(CarrierError::PlanConflict)?;
-            if health <= 40_000 {
-                Self::heal_source(runtime, self.distorted, DISTORTED)?;
-            } else if (health >= 55_000 || !powered) && self.exposed {
-                self.swap_glyphs(runtime, false, None)?;
-                self.next_think = now.saturating_add(1_000_000);
-                return Ok(());
-            }
-            if powered && !self.exposed {
-                self.swap_glyphs(runtime, true, None)?;
-            }
+        }
+        // The distorted source also thinks while it is parked on floor 15.
+        let health = runtime
+            .live_creature_health(self.distorted)
+            .ok_or(CarrierError::PlanConflict)?;
+        if health <= 40_000 {
+            Self::heal_source(runtime, self.distorted, DISTORTED)?;
+        } else if (health >= 55_000 || !powered) && self.exposed {
+            self.swap_glyphs(runtime, false, None)?;
+            self.next_think = now.saturating_add(1_000_000);
+            return Ok(());
+        }
+        if powered && !self.exposed {
+            self.swap_glyphs(runtime, true, None)?;
         }
         self.next_think = now.saturating_add(1_000_000);
         Ok(())
