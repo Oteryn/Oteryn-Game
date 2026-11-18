@@ -427,6 +427,7 @@ fn draw(key: &BossClockKey, ordinal: u64, purpose: &str) -> Result<u64> {
 mod activity_assignment_tests;
 
 #[path = "boss_encounter/cooldown_storage.rs"]
+mod channel_cooldown;
 pub(crate) mod cooldown_storage;
 
 #[path = "boss_encounter/cooldown_list.rs"]

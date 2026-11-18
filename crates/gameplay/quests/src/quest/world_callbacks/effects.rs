@@ -341,6 +341,7 @@ pub struct EncounterTiming {
 pub struct TimedRoomAdmission {
     pub capacity: u8,
     pub join_for_ms: u32,
+    pub cooldown_s: u32,
     pub exit: Position,
 }
 
@@ -883,6 +884,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || !pos(room.exit)
                 || in_room(room.exit)
                 || !(1..=5).contains(&room.capacity)
+                || !(1..=30 * 24 * 60 * 60).contains(&room.cooldown_s)
+                || !encounter
+                    .monsters
+                    .first()
+                    .is_some_and(|boss| boss.creature.starts_with("oteryn:creature."))
                 || (room.capacity == 1) != (room.join_for_ms == 0)
                 || encounter
                     .timing
@@ -1170,6 +1176,7 @@ mod timed_room_tests {
         let mut room = TimedRoomAdmission {
             capacity: 5,
             join_for_ms: 30_000,
+            cooldown_s: 36_000,
             exit: Position {
                 x: 31971,
                 y: 32325,

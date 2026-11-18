@@ -103,6 +103,19 @@ async fn exercise(admin: String, timed: bool) -> TestResult {
             world.map_revision_digest(),
             (1, 0, 7),
         );
+        if timed {
+            sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,$5,$2,$3,$4,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),'2026-11')")
+                .bind(world_id.as_bytes().as_slice())
+                .bind(pin.server_artifact_digest().as_slice())
+                .bind(pin.client_artifact_digest().as_slice())
+                .bind(pin.frame_binding_digest().as_slice())
+                .bind(crate::map::overlay::map_revision(&base))
+                .execute(&h.pool).await?;
+            sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0)")
+                .bind(world_id.as_bytes().as_slice())
+                .execute(&h.pool)
+                .await?;
+        }
         let deps = Dependencies::with_content_and_capacity(
             pin,
             room.clone(),
@@ -246,6 +259,12 @@ async fn exercise(admin: String, timed: bool) -> TestResult {
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(rows, (0, 0));
+    if timed {
+        let cooldowns: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_character_boss_cooldowns WHERE boss_key='oteryn:boss.brain_head'"
+        ).fetch_one(&h.pool).await?;
+        assert_eq!(cooldowns, 2);
+    }
     drop(authority);
     drop(seal);
     h.cleanup().await
@@ -278,7 +297,7 @@ fn portal(timed: bool) -> TestResult<Callback> {
             "room_max":{"x":3,"y":0,"floor":-7},
             "timing":{
                 "spawn_after_ms":50,"reset_after_ms":300_000,
-                "admission":{"capacity":5,"join_for_ms":30_000,"exit":{"x":7,"y":0,"floor":-7}}
+                "admission":{"capacity":5,"join_for_ms":30_000,"cooldown_s":36_000,"exit":{"x":7,"y":0,"floor":-7}}
             }
         });
     }

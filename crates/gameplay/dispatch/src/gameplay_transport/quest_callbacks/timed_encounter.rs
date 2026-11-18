@@ -133,7 +133,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         clippy::too_many_arguments,
         reason = "movement owner supplies the exact StepIn and source"
     )]
-    pub(super) fn admit_timed_room(
+    pub(super) async fn admit_timed_room(
         &self,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
@@ -143,6 +143,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
         entered: MovementPositionSnapshot,
+        fence: CurrentCharacterGameplayFence,
         optional_pvp: Option<bool>,
     ) -> UseDisposition {
         let Some(encounter) = &callback.effects.encounter else {
@@ -183,51 +184,54 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 *who != actor && session.is_some() && room_contains(encounter, at.position())
             })
             .count();
-        let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
-            return UseDisposition::Rejected;
-        };
-        let existing = pending.iter().position(|memo| {
-            memo.scope == runtime.encounter_owner_scope()
-                && memo.map == map.overlay.base().digest()
-                && memo.content == runtime.content_pin().server_artifact_digest()
-                && memo
-                    .callback
-                    .effects
-                    .encounter
-                    .as_ref()
-                    .is_some_and(|other| {
-                        other
-                            .timing
-                            .is_some_and(|timing| timing.admission.is_some())
-                            && other.room_min == encounter.room_min
-                            && other.room_max == encounter.room_max
-                    })
-        });
-        if existing.is_some_and(|index| {
-            pending[index].callback.effects.encounter.as_ref() != Some(encounter)
-        }) {
-            return UseDisposition::Rejected;
-        }
-        let joining = existing.is_some() && room.capacity > 1;
-        let elapsed = existing.map_or(0, |index| {
-            now.saturating_sub(pending[index].started_at) / 1_000
-        });
-        if !room.allows_join(occupants, elapsed)
-            || existing.is_some_and(|index| now >= pending[index].reset_at)
-        {
-            return UseDisposition::Occupied;
-        }
         let (Some(spawn_at), Some(reset_at)) = (
             now.checked_add(u64::from(timing.spawn_after_ms) * 1_000),
             now.checked_add(u64::from(timing.reset_after_ms) * 1_000),
         ) else {
             return UseDisposition::Exhausted;
         };
-        if existing.is_none()
-            && (pending.len() >= MAX_TIMED_ENCOUNTERS || pending.try_reserve(1).is_err())
-        {
-            return UseDisposition::Exhausted;
-        }
+        let (existing, joining) = {
+            let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
+                return UseDisposition::Rejected;
+            };
+            let existing = pending.iter().position(|memo| {
+                memo.scope == runtime.encounter_owner_scope()
+                    && memo.map == map.overlay.base().digest()
+                    && memo.content == runtime.content_pin().server_artifact_digest()
+                    && memo
+                        .callback
+                        .effects
+                        .encounter
+                        .as_ref()
+                        .is_some_and(|other| {
+                            other
+                                .timing
+                                .is_some_and(|timing| timing.admission.is_some())
+                                && other.room_min == encounter.room_min
+                                && other.room_max == encounter.room_max
+                        })
+            });
+            if existing.is_some_and(|index| {
+                pending[index].callback.effects.encounter.as_ref() != Some(encounter)
+            }) {
+                return UseDisposition::Rejected;
+            }
+            let joining = existing.is_some() && room.capacity > 1;
+            let elapsed = existing.map_or(0, |index| {
+                now.saturating_sub(pending[index].started_at) / 1_000
+            });
+            if !room.allows_join(occupants, elapsed)
+                || existing.is_some_and(|index| now >= pending[index].reset_at)
+            {
+                return UseDisposition::Occupied;
+            }
+            if existing.is_none()
+                && (pending.len() >= MAX_TIMED_ENCOUNTERS || pending.try_reserve(1).is_err())
+            {
+                return UseDisposition::Exhausted;
+            }
+            (existing, joining)
+        };
         let closed = crate::map::floor::BundleDoors(&map.facts);
         // The source room admits several players onto its common landing cell.
         let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
@@ -240,6 +244,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &closed,
         ) else {
             return UseDisposition::NotPossible;
+        };
+        let Some(boss) = encounter
+            .monsters
+            .first()
+            .and_then(|boss| boss.creature.strip_prefix("oteryn:creature."))
+        else {
+            return UseDisposition::Rejected;
+        };
+        let Some(admission) = super::super::SecureIdentifiers.game_session_id() else {
+            return UseDisposition::Rejected;
+        };
+        if !self
+            .root
+            .commit_channel_boss_cooldown(
+                self.character,
+                self.holder,
+                fence,
+                &format!("oteryn:boss.{boss}"),
+                u64::from(room.cooldown_s),
+                *admission.as_bytes(),
+                self.reset_epoch,
+                encounter.minimum_level,
+            )
+            .await
+            .is_ok_and(|committed| committed)
+        {
+            return UseDisposition::Rejected;
+        }
+        let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
+            return UseDisposition::Rejected;
         };
         let Ok(landing) = runtime.commit_source_step(proof) else {
             return UseDisposition::Rejected;

@@ -1540,6 +1540,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .and_then(|encounter| encounter.timing?.admission)
                             .is_some() =>
                 {
+                    let Some(fence) = fence else {
+                        return entered;
+                    };
                     self.admit_timed_room(
                         &mut runtime,
                         &mut states,
@@ -1549,8 +1552,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         actor,
                         session,
                         entered,
+                        fence,
                         optional_pvp,
                     )
+                    .await
                 }
                 Ok(observation) if level_allowed && level_scope_current => {
                     Box::pin(self.execute_quest_callback(
