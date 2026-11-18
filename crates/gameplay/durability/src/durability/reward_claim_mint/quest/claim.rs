@@ -88,15 +88,46 @@ mod tests {
     #[test]
     fn regrown_source_rewards_replay_one_use_but_allow_the_next_use() -> Result<(), String> {
         use crate::foundation::{CommandId, GameSessionId};
-        let id = [41,2,3,4,5,6,0x70,8,0x80,10,11,12,13,14,15,41];
+        let id = [41, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 41];
         let character = CharacterId::from_bytes(id).map_err(|e| format!("{e:?}"))?;
         let session = GameSessionId::decode(&id).map_err(|e| format!("{e:?}"))?;
-        let command = |n| CommandId::new(n).map(|id| CommandRef::new(session,id)).map_err(|e|format!("{e:?}"));
-        let first = key(character,command(1)?,"flower",QuestMintClaim::SourceUse).map_err(|e|format!("{e:?}"))?;
-        assert_eq!(first,key(character,command(1)?,"flower",QuestMintClaim::SourceUse).map_err(|e|format!("{e:?}"))?);
-        assert_ne!(first,key(character,command(2)?,"flower",QuestMintClaim::SourceUse).map_err(|e|format!("{e:?}"))?);
-        assert_ne!(first,key(character,command(1)?,"other-flower",QuestMintClaim::SourceUse).map_err(|e|format!("{e:?}"))?);
-        assert_ne!(first,key(character,command(1)?,"flower",QuestMintClaim::PaidExchange).map_err(|e|format!("{e:?}"))?);
+        let command = |n| {
+            CommandId::new(n)
+                .map(|id| CommandRef::new(session, id))
+                .map_err(|e| format!("{e:?}"))
+        };
+        let first = key(character, command(1)?, "flower", QuestMintClaim::SourceUse)
+            .map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            first,
+            key(character, command(1)?, "flower", QuestMintClaim::SourceUse)
+                .map_err(|e| format!("{e:?}"))?
+        );
+        assert_ne!(
+            first,
+            key(character, command(2)?, "flower", QuestMintClaim::SourceUse)
+                .map_err(|e| format!("{e:?}"))?
+        );
+        assert_ne!(
+            first,
+            key(
+                character,
+                command(1)?,
+                "other-flower",
+                QuestMintClaim::SourceUse
+            )
+            .map_err(|e| format!("{e:?}"))?
+        );
+        assert_ne!(
+            first,
+            key(
+                character,
+                command(1)?,
+                "flower",
+                QuestMintClaim::PaidExchange
+            )
+            .map_err(|e| format!("{e:?}"))?
+        );
         Ok(())
     }
     #[test]
@@ -140,16 +171,50 @@ mod tests {
             )?
         );
         assert!(scoped(character, 50, 1, "source", "epoch", -1).is_err());
-        let per_use=key(character,command(50,1)?,"source",QuestMintClaim::WorldUse)
-            .map_err(|e|format!("{e:?}"))?;
-        assert_eq!(per_use,key(character,command(50,1)?,"source",QuestMintClaim::WorldUse).map_err(|e|format!("{e:?}"))?);
-        for (who,session,n,source) in [
-            (character,50,2,"source"),(character,51,1,"source"),(character,50,1,"other"),
-            (CharacterId::from_bytes(id(42)).map_err(|e|format!("{e:?}"))?,50,1,"source"),
+        let per_use = key(
+            character,
+            command(50, 1)?,
+            "source",
+            QuestMintClaim::WorldUse,
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            per_use,
+            key(
+                character,
+                command(50, 1)?,
+                "source",
+                QuestMintClaim::WorldUse
+            )
+            .map_err(|e| format!("{e:?}"))?
+        );
+        for (who, session, n, source) in [
+            (character, 50, 2, "source"),
+            (character, 51, 1, "source"),
+            (character, 50, 1, "other"),
+            (
+                CharacterId::from_bytes(id(42)).map_err(|e| format!("{e:?}"))?,
+                50,
+                1,
+                "source",
+            ),
         ] {
-            assert_ne!(per_use,key(who,command(session,n)?,source,QuestMintClaim::WorldUse).map_err(|e|format!("{e:?}"))?);
+            assert_ne!(
+                per_use,
+                key(who, command(session, n)?, source, QuestMintClaim::WorldUse)
+                    .map_err(|e| format!("{e:?}"))?
+            );
         }
-        assert_ne!(per_use,key(character,command(50,1)?,"source",QuestMintClaim::PaidExchange).map_err(|e|format!("{e:?}"))?);
+        assert_ne!(
+            per_use,
+            key(
+                character,
+                command(50, 1)?,
+                "source",
+                QuestMintClaim::PaidExchange
+            )
+            .map_err(|e| format!("{e:?}"))?
+        );
         assert_eq!(
             key(character, command(50, 1)?, "source", QuestMintClaim::Once)
                 .map_err(|e| format!("{e:?}"))?,

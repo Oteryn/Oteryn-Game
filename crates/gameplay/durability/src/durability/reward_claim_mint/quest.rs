@@ -458,18 +458,17 @@ pub(crate) async fn apply(
     }
     // A historical quest receipt returns before this transaction reaches the
     // draw. A failed mint rolls back consumption, progress and the whole draw.
-    let reward = if callback.weighted_rewards.is_empty() {
-        callback.give.as_ref()
+    let (reward, percentile) = if callback.weighted_rewards.is_empty() {
+        (callback.give.as_ref(), None)
     } else {
         let draw: i16 = sqlx::query_scalar("SELECT floor(random() * 100)::smallint")
             .fetch_one(&mut **tx)
             .await?;
         let percentile = u8::try_from(draw).map_err(|_| DurabilityError::InvalidStoredState)?;
-        Some(
-            callback
-                .reward_for_percentile(percentile)
-                .ok_or(DurabilityError::InvalidStoredState)?,
-        )
+        let reward = callback
+            .reward_for_percentile(percentile)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        (Some(reward), Some(percentile))
     };
     let minted = if let Some(reward) = reward {
         let Some(transaction) =
@@ -512,12 +511,13 @@ pub(crate) async fn apply(
     }
     let mut plan = oteryn_gameplay_quests::quest::reward_callbacks::durable_plan(callback)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
-    if !callback.weighted_rewards.is_empty() {
-        // The receipt guard checks the exact minted bundle against plan.give.
-        // Retain the alternatives in the same plan for audit.
+    if let Some(percentile) = percentile {
+        // Bind the exact minted bundle, its draw and the authored alternatives
+        // in the same receipt. The receipt guard checks the bundle in plan.give.
         let selected = reward.ok_or(DurabilityError::InvalidStoredState)?;
         plan["give"] =
             serde_json::to_value(selected).map_err(|_| DurabilityError::InvalidStoredState)?;
+        plan["reward_percentile"] = percentile.into();
     }
     sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,CASE WHEN $6::bytea IS NULL THEN NULL ELSE encode($6,'hex')::uuid END,$7)")
         .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(plan).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
