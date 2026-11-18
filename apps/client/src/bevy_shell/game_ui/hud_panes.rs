@@ -591,5 +591,8 @@ fn project(
 }
 
 #[cfg(test)]
+#[path = "hud_panes_context_menu_tests.rs"]
+mod context_menu_tests;
+#[cfg(test)]
 #[path = "hud_panes_tests.rs"]
 pub(super) mod tests;

@@ -84,5 +84,7 @@ fn save_audit(image: &Image, path: &std::path::Path) -> io::Result<()> {
     result
 }
 
+#[cfg(all(test, unix))]
+mod audit_tests;
 #[cfg(test)]
 mod tests;

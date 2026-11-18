@@ -18,6 +18,8 @@ mod objects;
 use assign::REFUSED;
 use assign::{add_to_multi, apply, toggle_multi};
 #[cfg(test)]
+mod equip_tests;
+#[cfg(test)]
 mod tests;
 
 #[derive(Resource, Default)]

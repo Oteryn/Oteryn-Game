@@ -147,6 +147,7 @@ fn shared_notices_close_preserves_server_owned_history() {
     assert_eq!(link.notices_panel().save_minutes, Some(5));
 }
 
+mod house_access;
 mod text_input;
 mod text_window;
 

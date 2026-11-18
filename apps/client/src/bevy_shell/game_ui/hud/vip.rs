@@ -10,6 +10,9 @@ use bevy::{
 };
 use model::{Contact, Snapshot};
 use oteryn_client_ui::vip::Intent;
+#[cfg(test)]
+#[path = "vip/context_menu_tests.rs"]
+mod context_menu_tests;
 #[path = "vip/dialog.rs"]
 mod dialog;
 #[path = "vip/groups.rs"]

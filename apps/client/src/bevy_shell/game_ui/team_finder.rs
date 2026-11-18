@@ -1,5 +1,7 @@
 //! Join Team and Manage Team over the negotiated Team Finder member and leader streams.
 #[cfg(test)]
+mod input_tests;
+#[cfg(test)]
 mod tests;
 mod widgets;
 use super::{
