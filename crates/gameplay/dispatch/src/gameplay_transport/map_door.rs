@@ -198,7 +198,34 @@ pub(super) fn use_door(
         Err(MapTargetRefusal::Use(disposition)) => return outcome(disposition),
     };
     let doors = facts.doors();
-    if !doors.contains(resolved.placement_key) {
+    // Crystal actions_brokulLever.lua:31 binds AID 34000. The retained bundle
+    // has the lever at 33522,31464,15 without that attribute.
+    let brokul = facts.action_at(resolved.placement_key) == Some(34000)
+        || (resolved.pos
+            == (TilePos {
+                x: 33522,
+                y: 31464,
+                floor: -15,
+            })
+            && overlay
+                .base()
+                .tile(resolved.pos.x, resolved.pos.y, resolved.pos.floor)
+                .and_then(|tile| {
+                    tile.ids()
+                        .iter()
+                        .zip(tile.depths())
+                        .filter(|(_, depth)| **depth == 0)
+                        .nth(usize::from(resolved.ordinal))
+                        .and_then(|(id, _)| {
+                            facts.quest_callback_base_appearance(
+                                resolved.pos,
+                                resolved.ordinal,
+                                *id,
+                            )
+                        })
+                })
+                == Some(2772));
+    if !brokul && !doors.contains(resolved.placement_key) {
         return outcome(UseDisposition::NothingToUse);
     }
     if !reachable(actor, resolved.pos) {
@@ -210,6 +237,11 @@ pub(super) fn use_door(
             ),
             ..outcome(UseDisposition::TooFar)
         };
+    }
+    // The donor has fixed HP and an ordinary loot roll, with no idol-derived HP
+    // or guaranteed party book to dispatch.
+    if brokul {
+        return outcome(UseDisposition::NotPossible);
     }
     let occupied = occupied(resolved.pos);
     match doors.toggle(
