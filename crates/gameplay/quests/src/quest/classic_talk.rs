@@ -441,11 +441,13 @@ fn queen(text: &str, topic: Option<Topic>, tracks: &BTreeMap<String, i64>) -> Op
 fn rottin(text: &str, topic: Option<Topic>, tracks: &BTreeMap<String, i64>) -> Option<Choice> {
     // rottin_wood.lua:88-179. Only Mission 02's acceptance is state-only;
     // the neighbouring acceptances include ribbons/nets and remain deferred.
-    if contains(text, "mission") {
-        return Some(match value(tracks, ROTTIN_STATE, "questline") {
+    let stage = value(tracks, ROTTIN_STATE, "questline");
+    // TibiaWiki /Spoiler (curid 50782, oldid 928967), Mission 1 and 2 transcripts.
+    if contains(text, "mission") || (stage < 1 && contains(text, "quest")) {
+        return Some(match stage {
             stage if stage < 1 => choice(Some(Topic::Rottin(1)), "line-91", None),
             1 => choice(Some(Topic::Rottin(3)), "line-94", None),
-            2 => choice(Some(Topic::Rottin(4)), "line-98", None),
+            2 => choice(Some(Topic::Rottin(13)), "line-98", None),
             3 => choice(Some(Topic::Rottin(5)), "line-107", None),
             4 | 5 => deferred(topic),
             _ => choice(None, "line-141", None),
@@ -457,6 +459,7 @@ fn rottin(text: &str, topic: Option<Topic>, tracks: &BTreeMap<String, i64>) -> O
         };
         return Some(match number {
             1 => choice(Some(Topic::Rottin(2)), "line-149", None),
+            13 => choice(Some(Topic::Rottin(4)), "line-98-details", None),
             4 => choice(
                 None,
                 "line-175",
@@ -476,7 +479,7 @@ fn rottin(text: &str, topic: Option<Topic>, tracks: &BTreeMap<String, i64>) -> O
         return match number {
             1 => Some(choice(Some(Topic::Rottin(2)), "line-297", None)),
             3 => Some(choice(None, "line-304", None)),
-            4 => Some(choice(None, "line-307", None)),
+            4 | 13 => Some(choice(None, "line-307", None)),
             5 => Some(choice(None, "line-310", None)),
             _ => None,
         };
@@ -625,9 +628,12 @@ mod tests {
     -> Result<(), String> {
         let tracks = BTreeMap::from([(format!("{ROTTIN_STATE}questline"), 2)]);
         let offered = choose(ROTTIN, "mission", None, &tracks).ok_or("disrepair offer")?;
-        assert_eq!(offered.topic, Some(Topic::Rottin(4)));
+        // TibiaWiki /Spoiler (curid 50782, oldid 928967), Mission 2 transcript.
+        assert_eq!(offered.topic, Some(Topic::Rottin(13)));
         assert_eq!(offered.branches, ["line-98"]);
-        let accepted = choose(ROTTIN, "yes", offered.topic, &tracks).ok_or("disrepair start")?;
+        let explained = choose(ROTTIN, "yes", offered.topic, &tracks).ok_or("disrepair details")?;
+        assert!(explained.transition.is_none());
+        let accepted = choose(ROTTIN, "yes", explained.topic, &tracks).ok_or("disrepair start")?;
         assert_eq!(
             accepted.transition,
             Some("oteryn:quest-transition/classic/rottin-wood/start-disrepair")

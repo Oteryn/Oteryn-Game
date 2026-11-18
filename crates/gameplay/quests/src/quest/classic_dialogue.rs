@@ -58,7 +58,14 @@ fn parse(text: &str) -> Result<Document, String> {
 #[must_use]
 pub fn reply(npc: &str, key: &str) -> Option<&'static [String]> {
     static CONTENT: OnceLock<Option<Document>> = OnceLock::new();
-    CONTENT
+    // The global Mission 2 transcript splits the donor's combined line 98
+    // across the offer and first confirmation (curid 50782, oldid 928967).
+    let source_key = if npc == super::classic_talk::ROTTIN && key == "line-98-details" {
+        "line-98"
+    } else {
+        key
+    };
+    let lines = CONTENT
         .get_or_init(|| {
             parse(include_str!(
                 "../../../../../content/dialogues/classic-quest-branches.json"
@@ -71,8 +78,17 @@ pub fn reply(npc: &str, key: &str) -> Option<&'static [String]> {
         .find(|entry| entry.npc == npc)?
         .branches
         .iter()
-        .find(|entry| entry.key == key)
-        .map(|branch| branch.reply.as_slice())
+        .find(|entry| entry.key == source_key)?
+        .reply
+        .as_slice();
+    if npc == super::classic_talk::ROTTIN && source_key == "line-98" {
+        return if key == source_key {
+            lines.get(..1)
+        } else {
+            lines.get(1..)
+        };
+    }
+    Some(lines)
 }
 
 /// Merge source-owned overlays using the existing QuestState reader and evaluator.
