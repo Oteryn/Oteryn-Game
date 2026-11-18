@@ -171,6 +171,32 @@ pub enum QuestComparison {
     ElapsedLessThan(i64),
 }
 
+/// Availability derived from one character's persisted use record.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CharacterUseLimit {
+    Available,
+    OnceConsumed,
+    CooldownUntil(i64),
+}
+
+impl CharacterUseLimit {
+    pub fn allows_use(self, now: i64) -> bool {
+        match self {
+            Self::Available => true,
+            Self::OnceConsumed => false,
+            Self::CooldownUntil(deadline) => now >= deadline,
+        }
+    }
+
+    fn once_from_track(value: i64) -> Self {
+        if value == -1 {
+            Self::Available
+        } else {
+            Self::OnceConsumed
+        }
+    }
+}
+
 impl QuestComparison {
     fn holds(self, value: i64, now: i64) -> bool {
         match self {
@@ -774,7 +800,14 @@ impl QuestStateCatalogue {
                 .get(&effect.track)
                 .ok_or(QuestRefusal::NotSupported)?;
             let value = stored.get(&effect.track).copied().unwrap_or(track.initial);
-            if !effect.from.holds(value, now) {
+            let allowed = match (effect.from, effect.effect) {
+                (
+                    QuestComparison::Between(-1, -1),
+                    QuestEffectKind::SetNow | QuestEffectKind::SetNowWithBinding { .. },
+                ) => CharacterUseLimit::once_from_track(value).allows_use(now),
+                _ => effect.from.holds(value, now),
+            };
+            if !allowed {
                 return Err(QuestRefusal::StageMismatch);
             }
             current.push((track, value));

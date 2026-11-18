@@ -187,7 +187,10 @@ pub(crate) async fn set_boss_cooldowns_data(
                     return Err(BossRewardStateError::ConflictingAdmission);
                 }
                 replayed += 1;
-            } else if facts.now < old.available_at
+            } else if !oteryn_gameplay_quests::quest::CharacterUseLimit::CooldownUntil(
+                old.available_at,
+            )
+            .allows_use(facts.now)
                 && !(facts.boosted && old.reset_epoch < facts.reset_epoch)
             {
                 return Ok(BossCooldownChange::OnCooldown);
