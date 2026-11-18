@@ -1678,6 +1678,10 @@ impl BundleFacts {
             Some(QuestCallbackProjection::Scene { mutations, .. }) => {
                 mutations.len().saturating_mul(3).saturating_add(1)
             }
+            Some(QuestCallbackProjection::EncounterWalls { walls, .. }) => {
+                // Each wall has a visible entry and a collision record.
+                walls.len().saturating_mul(2).saturating_add(1)
+            }
             _ => usize::from(projection.is_some()) * 8,
         };
         if states
