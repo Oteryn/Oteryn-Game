@@ -64,7 +64,7 @@ pub(super) async fn exercise(
     let [halvar] = classic_quests::install(owner, admitted, ["oteryn:npc.halvar"]).await?;
     if !pit_ground_reset {
         assert_eq!(
-            use_sealed_door(owner, admitted, actor).await?,
+            use_sealed_door(owner, admitted, actor, 32233, 31098).await?,
             UseDisposition::Locked
         );
     }
@@ -108,7 +108,7 @@ pub(super) async fn exercise(
     assert_eq!(fees(h).await?, 1);
     if !pit_ground_reset {
         assert_eq!(
-            use_sealed_door(owner, admitted, actor).await?,
+            use_sealed_door(owner, admitted, actor, 32233, 31098).await?,
             UseDisposition::Committed
         );
     }
@@ -148,15 +148,17 @@ pub(super) async fn exercise(
     Ok(())
 }
 
-async fn use_sealed_door(
+pub(super) async fn use_sealed_door(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     actor: ExactActorRef,
+    x: u16,
+    y: u16,
 ) -> TestResult<UseDisposition> {
     use crate::map::view::MapFacts;
     let target = {
         let map = owner.bundle_map().ok_or("arena map")?;
-        let key = oteryn_world_bundle::bundle::placement_key(-7, 32233, 31098, 1)
+        let key = oteryn_world_bundle::bundle::placement_key(-7, x, y, 1)
             .ok_or("sealed door placement")?;
         let mut placement = map.overlay.base().digest().to_vec();
         placement.extend_from_slice(&key.to_be_bytes());
@@ -175,8 +177,8 @@ async fn use_sealed_door(
                 session,
                 current,
                 MovementLocalPosition {
-                    x: 32234,
-                    y: 31098,
+                    x: i32::from(x) + 1,
+                    y: i32::from(y),
                     floor: 7,
                 },
             )

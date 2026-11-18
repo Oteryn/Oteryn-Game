@@ -143,12 +143,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(u64::from_be_bytes(bytes))
         });
         let action = placement_key.and_then(|key| map.facts.action_at(key));
-        // Crystal storages.lua:853 and halvar.lua:100-102. Serialize the
-        // existing door toggle with Halvar payment and arena entry.
-        let (_arena_gate, arena_fence, arena_paid) = if action
-            == Some(crate::durability::arena_match::donor::PIT_DOOR_STORAGE)
-            && placement_key.is_some_and(|key| map.facts.doors().contains(key))
-        {
+        // Crystal storages.lua:853,872-874 and movements_arena_pit.lua:26-46.
+        // Use the same arena gate as payment and victory for the door toggle.
+        let arena_door = action
+            .and_then(crate::durability::arena_match::donor::ArenaDoor::from_action)
+            .filter(|_| placement_key.is_some_and(|key| map.facts.doors().contains(key)));
+        let (_arena_gate, arena_fence, arena_access) = if let Some(door) = arena_door {
             let gate = self.states.arena_matches.command.lock().await;
             let Ok(Some(fence)) = self.current_quest_fence(session).await else {
                 return UseOutcome::rejected();
@@ -156,14 +156,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if command.item_fence != Some(fence.item_fence()) {
                 return UseOutcome::rejected();
             }
-            let Ok(paid) = self
+            let Ok(permitted) = self
                 .root
-                .read_arena_paid_door(self.character, self.holder, fence)
+                .read_arena_door_access(self.character, self.holder, fence, door)
                 .await
             else {
                 return UseOutcome::rejected();
             };
-            (Some(gate), Some(fence), Some(paid))
+            (Some(gate), Some(fence), Some(permitted))
         } else {
             (None, None, None)
         };
@@ -201,7 +201,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .get(&runtime, actor, session)
             .map_or(0, |state| state.character_facts().level);
         // Other quest doors read this session's admitted quest copy.
-        let quest_storage_met = arena_paid.unwrap_or_else(|| {
+        let quest_storage_met = arena_access.unwrap_or_else(|| {
             action.is_some_and(|action| {
                 self.states
                     .quest_sessions

@@ -483,6 +483,12 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         } else {
             None
         };
+        if let Some(NativeScenario::SharedRewards { leave_before_use: true }) = route {
+            assert_eq!(
+                super::qcx61_shared_rewards::greenhorn_door(&mut owner, &mut admitted, deps.actor).await?,
+                oteryn_protocol_oteryn::world_object::UseDisposition::Locked,
+            );
+        }
         let entry_id = admitted.continuity.next_command_id;
         let entered = command(&owner, &mut admitted, A::Enter).await?;
         if !funded {

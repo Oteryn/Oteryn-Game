@@ -3,6 +3,25 @@
 pub const FEES: [u64; 3] = [1_000, 5_000, 10_000];
 /// Crystal 201189f8 data-global/lib/core/storages.lua:853 and npc/halvar.lua:100-102.
 pub const PIT_DOOR_STORAGE: u16 = 41152;
+/// Crystal 201189f8 storages.lua:872-874 and door_quest.lua:652-662.
+pub const REWARD_DOOR_STORAGES: [u16; 3] = [41171, 41172, 41173];
+
+#[derive(Clone, Copy)]
+pub enum ArenaDoor {
+    Pit,
+    Reward(u8),
+}
+
+impl ArenaDoor {
+    pub fn from_action(action: u16) -> Option<Self> {
+        if action == PIT_DOOR_STORAGE {
+            return Some(Self::Pit);
+        }
+        let rank = REWARD_DOOR_STORAGES.iter().position(|&id| id == action)?;
+        Some(Self::Reward(u8::try_from(rank + 1).ok()?))
+    }
+}
+
 pub const PIT_SECONDS: u32 = 600;
 pub const CENTERS: [(i32, i32); 10] = [
     (32210, 31098),

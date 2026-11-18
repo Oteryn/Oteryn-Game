@@ -20,6 +20,14 @@ fn arena_chest_and_command_share_the_weapon_claim() -> TestResult {
     )
 }
 
+pub(super) async fn greenhorn_door(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    actor: ExactActorRef,
+) -> TestResult<UseDisposition> {
+    super::qcx61_halvar::use_sealed_door(owner, admitted, actor, 32227, 31066).await
+}
+
 #[test]
 fn arena_chest_can_claim_an_earned_reward_after_leaving_the_reward_room() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
@@ -45,6 +53,10 @@ pub(super) async fn after_first_rank(
         assert_eq!(left.disposition, ArenaDisposition::Applied);
         assert_eq!(left.state.phase, 0);
         assert_eq!(left.state.completed_rank, 1);
+        assert_eq!(
+            greenhorn_door(owner, admitted, actor).await?,
+            UseDisposition::Committed
+        );
     }
     let session = admitted.game_session_id;
     let reward_room = {
