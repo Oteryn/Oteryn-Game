@@ -159,11 +159,11 @@ LANGUAGE plpgsql SET search_path = pg_catalog, public, pg_temp AS $$ BEGIN
         END IF;
         IF OLD.state=1 AND NEW.state=2 AND NEW.defeat_id IS NOT NULL
            AND NEW.terminal_at BETWEEN OLD.opened_at AND OLD.deadline
-           AND CASE WHEN OLD.boss_key='oteryn:boss.the_first_dragon'
+           AND (CASE WHEN OLD.boss_key='oteryn:boss.the_first_dragon'
                     THEN NEW.exit_deadline=NEW.terminal_at
                     ELSE ((OLD.after_kill_ms=0 AND NEW.exit_deadline IS NULL)
                        OR (OLD.after_kill_ms>0 AND NEW.exit_deadline=NEW.terminal_at+OLD.after_kill_ms))
-               END THEN RETURN NEW; END IF;
+               END) THEN RETURN NEW; END IF;
         IF OLD.state=1 AND NEW.state=3 AND NEW.defeat_id IS NULL
            AND NEW.terminal_at>=OLD.deadline AND NEW.exit_deadline=NEW.terminal_at THEN RETURN NEW; END IF;
         IF OLD.state IN(1,2,3) AND NEW.state=4 AND NOT EXISTS(
