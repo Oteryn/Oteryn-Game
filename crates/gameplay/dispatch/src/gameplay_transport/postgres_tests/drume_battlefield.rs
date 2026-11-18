@@ -214,39 +214,15 @@ pub(super) async fn exercise(
 
 pub(super) async fn vacate(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
-    players: [(ExactActorRef, GameSessionId); 2],
+    remaining: (ExactActorRef, GameSessionId),
 ) -> TestResult<Vec<ExactActorRef>> {
-    assert_positions(owner, players.map(|(actor, _)| actor), LANDING).await?;
     let mut original = list(owner, LION).await?;
     assert_eq!(original.len(), 3);
     original.extend(list(owner, USURPER).await?);
     assert_eq!(original.len(), 6);
+    return_to_staging(owner, remaining, 101).await?;
     {
-        let map = owner.bundle_map().ok_or("battlefield map")?;
-        let closed = crate::map::floor::BundleDoors(&map.facts);
         let mut runtime = owner.runtime.lock().await;
-        let mut proofs = Vec::new();
-        for ((actor, session), y) in players.into_iter().zip([100, 101]) {
-            proofs.push(
-                crate::map::floor::prepare_quest_encounter_ejection(
-                    &runtime,
-                    owner.movement_cells(),
-                    actor,
-                    session,
-                    runtime.read_actor_position(actor).map_err(debug)?,
-                    MovementLocalPosition {
-                        x: 100,
-                        y,
-                        floor: 7,
-                    },
-                    &closed,
-                )
-                .map_err(debug)?,
-            );
-        }
-        runtime
-            .commit_quest_relocation(proofs, || true)
-            .map_err(debug)?;
         let states = owner.states.spell_states.lock().await;
         crate::gameplay_transport::encounter_phases::tick(
             &mut runtime,
@@ -260,6 +236,24 @@ pub(super) async fn vacate(
         );
     }
     Ok(original)
+}
+
+pub(super) async fn return_to_staging(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    (actor, session): (ExactActorRef, GameSessionId),
+    y: i32,
+) -> TestResult {
+    let map = owner.bundle_map().ok_or("battlefield map")?;
+    let closed = crate::map::floor::BundleDoors(&map.facts);
+    let mut runtime = owner.runtime.lock().await;
+    let expected = runtime.read_actor_position(actor).map_err(debug)?;
+    assert_eq!(expected.position(), LANDING);
+    let proof = crate::map::floor::prepare_quest_encounter_ejection(
+        &runtime, owner.movement_cells(), actor, session, expected,
+        MovementLocalPosition { x: 100, y, floor: 7 }, &closed,
+    ).map_err(debug)?;
+    runtime.commit_quest_relocation(vec![proof], || true).map_err(debug)?;
+    Ok(())
 }
 
 pub(super) async fn assert_replaced(

@@ -425,21 +425,27 @@ pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResu
                     );
                 }
                 if reenter {
-                    let original = super::drume_battlefield::vacate(
+                    super::drume_battlefield::return_to_staging(
                         &owner,
-                        [
-                            (deps.actor, admitted.game_session_id),
-                            (second_actor, second_session),
-                        ],
+                        (deps.actor, admitted.game_session_id),
+                        100,
                     )
                     .await?;
-                    for command_id in [2, 3] {
+                    let mut original = None;
+                    for command_id in [2, 3, 4] {
+                        if command_id == 4 {
+                            original = Some(super::drume_battlefield::vacate(
+                                &owner, (second_actor, second_session),
+                            ).await?);
+                        }
                         owner.clock_origin = owner
                             .clock_origin
                             .checked_sub(std::time::Duration::from_secs(1))
                             .ok_or("lever retry clock")?;
                         let revision =
                             crate::map::view::MapFacts::object_revision(world.facts(), key);
+                        let effect_cursor = world.facts().movement_effects_since(0)
+                            .last().map_or(0, |(sequence, _, _)| *sequence);
                         let result = owner
                             .use_object(
                                 deps.actor,
@@ -454,12 +460,28 @@ pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResu
                                 },
                             )
                             .await;
-                        assert_eq!(result.disposition, UseDisposition::Committed);
+                        if command_id == 3 {
+                            assert_eq!(result.disposition, UseDisposition::Occupied);
+                            assert_eq!(
+                                crate::map::view::MapFacts::object_revision(world.facts(), key),
+                                revision,
+                            );
+                            super::drume_battlefield::assert_feedback(
+                                &owner, admitted.game_session_id, "There's someone already in the skirmish.",
+                            );
+                            assert!(owner.states.chat.drain(second_session).is_empty());
+                            let effects: Vec<_> = world.facts().movement_effects_since(effect_cursor)
+                                .into_iter().map(|(_, pos, effect)| (pos.x, pos.y, pos.floor, effect))
+                                .collect();
+                            assert_eq!(effects, vec![(trigger.x, trigger.y, trigger.floor, 3)]);
+                        } else {
+                            assert_eq!(result.disposition, UseDisposition::Committed);
+                        }
                     }
                     super::drume_battlefield::assert_replaced(
                         &owner,
                         [deps.actor, second_actor],
-                        &original,
+                        &original.ok_or("vacated skirmish")?,
                     )
                     .await?;
                 } else {

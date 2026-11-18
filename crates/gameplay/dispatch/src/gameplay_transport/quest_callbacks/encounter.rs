@@ -181,18 +181,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };
-        // Crystal action_drume.lua:35-38 requires the lever user on the first staging tile.
-        if callback.effects.battlefield.is_some()
-            && !encounter.players.first().is_some_and(|first| {
+        let battlefield = callback.effects.battlefield.is_some();
+        // Crystal action_drume.lua:39-41 requires the lever user on the first staging tile.
+        let battlefield_origin = if battlefield {
+            let Some(first) = encounter.players.first().filter(|first| {
                 census.iter().any(|(who, position, occupant_session)| {
                     *who == actor
                         && *occupant_session == Some(session)
                         && position.position() == local(first.from)
                 })
-            })
-        {
-            return UseDisposition::Rejected;
-        }
+            }) else {
+                return UseDisposition::Rejected;
+            };
+            Some(tile(first.from))
+        } else {
+            None
+        };
         let personal_entry = callback.personal_room_entry().map(local);
         if census.iter().any(|(who, pos, occupant_session)| {
             occupant_session.is_some()
@@ -201,6 +205,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && *who == actor
                     && *occupant_session == Some(session))
         }) {
+            if let Some(origin) = battlefield_origin {
+                // Crystal action_drume.lua:47-51 reports the occupied room to the lever user.
+                self.states
+                    .chat
+                    .push_quest_feedback(session, "There's someone already in the skirmish.");
+                map.facts.emit_movement_effect(origin, 3);
+            }
             return UseDisposition::Occupied;
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
@@ -265,7 +276,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Rejected;
         }
         // Crystal action_drume.lua:77-82 clears the vacated arena on entry.
-        let battlefield = callback.effects.battlefield.is_some();
         let retiring = if battlefield {
             census
                 .iter()
