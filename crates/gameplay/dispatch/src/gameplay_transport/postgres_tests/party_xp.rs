@@ -1630,7 +1630,7 @@ async fn scenario(
     if matches!(case, Case::CakeWorldBonus) {
         use oteryn_gameplay_domain::domain::condition::{ConditionValues, ConflictKey};
         use oteryn_simulation_determinism::SemanticTimeMicros;
-        for (actor, session) in players.iter().copied() {
+        for (index, (actor, session)) in players.iter().copied().enumerate() {
             let now = owner.owner_now();
             owner.tick_spell_periodic_at(actor, session, now).await;
             let (first_pulse, expected) = {
@@ -1655,6 +1655,10 @@ async fn scenario(
                     return Err("expected the Cake combat regeneration condition".into());
                 };
                 assert_eq!(effect.started_at() % 1_000, 0);
+                assert_eq!(
+                    (health_interval_ms, mana_interval_ms),
+                    if index == 0 { (8_000, 4_000) } else { (6_000, 6_000) }
+                );
                 let interval = health_interval_ms.min(mana_interval_ms);
                 let due = effect.started_at() + u64::from(interval) * 1_000;
                 let expected = (

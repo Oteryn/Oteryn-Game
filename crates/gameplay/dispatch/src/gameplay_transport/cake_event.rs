@@ -39,29 +39,38 @@ pub(super) const CAKE_REGENERATION_KEY: &str = "world.cake.regeneration";
 pub(super) struct BonusCache(tokio::sync::Mutex<Option<BonusSample>>);
 
 struct BonusSample {
-    sampled_at: std::time::Instant,
-    remaining_ms: u64,
+    checked_at: std::time::Instant,
+    expires_at: Option<std::time::Instant>,
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn cake_regeneration_remaining_ms(&self) -> Option<u32> {
-        const REFRESH_INTERVAL: std::time::Duration = std::time::Duration::from_secs(5);
+        use std::time::{Duration, Instant};
+        const REFRESH_INTERVAL: Duration = Duration::from_secs(5);
         let mut cache = self.states.cake_bonus.0.lock().await;
         if cache
             .as_ref()
-            .is_none_or(|sample| sample.sampled_at.elapsed() >= REFRESH_INTERVAL)
+            .is_none_or(|sample| sample.checked_at.elapsed() >= REFRESH_INTERVAL)
         {
-            let sampled_at = std::time::Instant::now();
-            let bonus = self.root.cake_world_bonus(self.world_id).await.ok()?;
+            let checked_at = Instant::now();
+            let expires_at = match self.root.cake_world_bonus(self.world_id).await {
+                Ok(bonus) => bonus.and_then(|bonus| {
+                    checked_at.checked_add(Duration::from_millis(bonus.remaining_ms))
+                }),
+                // A failed poll cannot extend the durable window. Rate-limit retries
+                // during a database outage so each player tick does not poll again.
+                Err(_) => cache.as_ref().and_then(|sample| sample.expires_at),
+            };
             *cache = Some(BonusSample {
-                sampled_at,
-                remaining_ms: bonus.map_or(0, |bonus| bonus.remaining_ms),
+                checked_at,
+                expires_at,
             });
         }
-        let sample = cache.as_ref()?;
-        let elapsed = u64::try_from(sample.sampled_at.elapsed().as_millis()).ok()?;
-        let remaining = sample.remaining_ms.checked_sub(elapsed)?;
-        u32::try_from(remaining)
+        let remaining = cache
+            .as_ref()?
+            .expires_at?
+            .saturating_duration_since(Instant::now());
+        u32::try_from(remaining.as_millis())
             .ok()
             .filter(|remaining| *remaining > 0)
     }
