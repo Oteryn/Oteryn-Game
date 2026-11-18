@@ -299,7 +299,9 @@ impl DurabilityRoot {
         item: [u8; 16],
         definition: &TypedDefinitionRef,
     ) -> std::result::Result<Option<String>, DurabilityError> {
-        let recovery = authority.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
         let mut definition = definition;
         self.try_issue_semantic_pass()?.run_with_context(&mut definition, move |holder, deadline, definition| {
             Box::pin(async move {
