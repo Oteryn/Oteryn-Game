@@ -234,7 +234,7 @@ def _requested_inputs(root, extra_keys=()):
     # apply the same pinned source, exact binding and portability checks below.
     keys.add('oteryn:item.tibia.i32594')
     # Crystal 201189f data-global/monster/quests/the_elemental_spheres/
-    # ice_overlord.lua:44,73-76: this reward boss always drops flawless ice
+    # ice_overlord.lua:45,69-73: this reward boss always drops flawless ice
     # crystal. Its already-admitted canonical facts must reach the native
     # inventory provider so personal reward settlement can finish the death.
     keys.add('oteryn:item.tibia.i942')
