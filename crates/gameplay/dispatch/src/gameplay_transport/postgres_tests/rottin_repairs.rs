@@ -54,10 +54,22 @@ pub(super) fn generation(
     // real carrying-capacity check with the imported hammer still in custody.
     let pin = input.item_profiles.as_mut().ok_or("item profiles")?;
     let mut profiles: Value = serde_json::from_slice(&pin.bytes)?;
-    profiles["records"]
+    let records = profiles["records"]
         .as_array_mut()
-        .ok_or("item profile rows")?
-        .push(json!({
+        .ok_or("item profile rows")?;
+    let hammer_id: u32 = binding["external_id"].as_str().ok_or("hammer source ID")?.parse()?;
+    let position = records
+        .iter()
+        .position(|record| {
+            record["production_binding"]["external_id"]
+                .as_str()
+                .and_then(|id| id.parse::<u32>().ok())
+                .is_some_and(|id| id > hammer_id)
+        })
+        .ok_or("hammer profile insertion point")?;
+    records.insert(
+        position,
+        json!({
             "authoring": {"item": binding["target"]},
             "semantics": definition["semantics"],
             "attributes": {},
@@ -72,7 +84,8 @@ pub(super) fn generation(
                 "revision_ref": binding["target"]["revision"]
             },
             "production_binding": binding
-        }));
+        }),
+    );
     pin.bytes = serde_json::to_vec(&profiles)?;
     pin.sha256 = Sha256::digest(&pin.bytes)
         .iter()
