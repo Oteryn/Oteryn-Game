@@ -221,6 +221,9 @@ pub(super) async fn exercise(
             .bind(&rope.item)
             .fetch_one(&h.pool)
             .await?;
+            let rope_instance: [u8; 16] = rope_instance
+                .try_into()
+                .map_err(|_| "Iksupan rope identity")?;
             let result = owner
                 .tame_mount(
                     actor,
@@ -235,11 +238,7 @@ pub(super) async fn exercise(
                         use_with_map_item: Some(MapUseTarget::Object(target.clone())),
                         use_with_position: None,
                     },
-                    Some(ItemKey::Instance(
-                        rope_instance
-                            .try_into()
-                            .map_err(|_| "Iksupan rope identity")?,
-                    )),
+                    Some(ItemKey::Instance(rope_instance)),
                     None,
                     false,
                 )
@@ -260,6 +259,17 @@ pub(super) async fn exercise(
                 local(start)
             );
             assert!(map.facts.movement_effects_since(effect_before).is_empty());
+            let quantity: i64 = sqlx::query_scalar(
+                "SELECT item.quantity FROM game_item_container_entries entry
+                   JOIN game_item_instances item USING (item_instance_id)
+                  WHERE entry.character_id=encode($1,'hex')::uuid
+                    AND entry.item_instance_id=encode($2,'hex')::uuid AND item.lifecycle=1",
+            )
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(rope_instance.as_slice())
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(quantity, 1, "refused Iksupan USE retains the carried item");
         }
         let outcomes =
             super::quest_callbacks::wire_use_targets_retained(owner, admitted, &[(1, &target)])
