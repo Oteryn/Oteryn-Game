@@ -747,7 +747,10 @@ pub(super) async fn exercise(
     {
         let runtime = owner.runtime.lock().await;
         let health = runtime.companion_snapshot(king).map_err(debug)?;
-        assert_eq!(health.health, health.maximum_health.div_ceil(2));
+        assert_eq!(
+            health.health,
+            health.maximum_health - health.maximum_health / 2
+        );
     }
     tick_at(owner, now + 24 * 60 * 1_000_000).await;
     let runtime = owner.runtime.lock().await;
