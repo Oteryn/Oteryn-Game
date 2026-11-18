@@ -114,6 +114,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(reject());
             }
         }
+        let (Some(corpse), Ok(actor_position)) = (
+            runtime.bound_corpse(identity),
+            runtime.read_actor_position(actor),
+        ) else {
+            return Ok(reject());
+        };
+        let position = actor_position.position();
+        if position.floor != corpse.position.floor
+            || position.x.abs_diff(corpse.position.x) > 1
+            || position.y.abs_diff(corpse.position.y) > 1
+        {
+            return Ok(Some(UseOutcome {
+                disposition: UseDisposition::TooFar,
+                ..UseOutcome::rejected()
+            }));
+        }
         let Some(proof) = QuestCreatureUseProof::read_direct_corpse(
             &runtime,
             actor,
@@ -149,10 +165,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
             .map_err(|_| ())?;
-        if matches!(result, QuestTransitionOutcome::Committed(_))
-            && let Ok(at) = runtime.read_actor_position(actor)
-        {
-            let position = at.position();
+        if matches!(result, QuestTransitionOutcome::Committed(_)) {
             let mut states = self.states.spell_states.lock().await;
             for effect in callback
                 .magic_effects
