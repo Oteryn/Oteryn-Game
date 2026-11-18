@@ -128,6 +128,14 @@ case passed against the retained PostgreSQL 18.6 service in 56.46 s.
 It emitted the offline-death deadline, native entry, scope barrier,
 and state-and-replay completion markers.
 
+The complementary scratch replay keeps the library registrations
+outside the generated mount. It preserves dependency paths and copies
+all 735 generated module roots with their test attributes disabled.
+That deliberately retains more helper code than the earlier
+fixture-preserving control. Both scratch replays use the same two
+workers and original test names, allowing their executable listings
+to be checked against the full MIR registry.
+
 ## Full suite with 256 codegen units and incremental off
 
 With the full 735-mount input restored, one Cargo job, and line tables
