@@ -14,7 +14,7 @@ fn weather_replacement_intensity_and_floors() {
     protocol::apply(&mut state, rain(3));
     assert_eq!(overlay(state, 0), Some(([65, 105, 155], 72)));
     assert_eq!(overlay(state, 8), None);
-    assert_eq!(overlay(state, 1), None);
+    assert_eq!(overlay(state, -1), None);
     protocol::apply(&mut state, WorldWeather::Unavailable);
     assert_eq!(overlay(state, 7), None);
     assert_eq!(overlay(None, 7), None);

@@ -12,9 +12,9 @@ const DIGEST_AND_KEY_BYTES: usize = 32 + KEY_BYTES;
 /// cell coordinates to the client.
 const SEMANTIC_PLACEMENTS: [(&[u8], i32, i32, i16); 1] = [(b"oteryn:cell/entry-door", 1, -1, 0)];
 
-/// The tile and floor a placement names: a known semantic cell key, or the last eight bytes as
-/// the big-endian key `x << 32 | y << 16 | (-floor) << 8 | ordinal`. Other shapes name no tile
-/// and draw no marker.
+/// The tile and Global z a placement names: a known semantic cell key, or the last eight bytes as
+/// the big-endian key `x << 32 | y << 16 | z << 8 | ordinal`. The key's floor byte is the negated
+/// map-index floor, which is already Global z. Other shapes name no tile and draw no marker.
 fn placement_tile(placement: &[u8]) -> Option<(TileCoord, i16)> {
     if let Some(&(_, x, y, floor)) = SEMANTIC_PLACEMENTS
         .iter()
@@ -28,7 +28,7 @@ fn placement_tile(placement: &[u8]) -> Option<(TileCoord, i16)> {
     let key = u64::from_be_bytes(placement[placement.len() - KEY_BYTES..].try_into().ok()?);
     let x = i32::try_from(key >> 32).ok()?;
     let y = i32::from(u16::try_from((key >> 16) & 0xffff).ok()?);
-    let floor = -i16::from(u8::try_from((key >> 8) & 0xff).ok()?);
+    let floor = i16::from(u8::try_from((key >> 8) & 0xff).ok()?);
     Some((TileCoord::new(x, y), floor))
 }
 
