@@ -12,6 +12,7 @@ use serde_json::json;
 pub(super) const EARTH: &str = "forgotten-knowledge-thorn-death-phases";
 pub(super) const ENERGY: &str = "forgotten-knowledge-prism-death-relocation";
 pub(super) const ESSENCE: &str = "first-dragon-essence-death-phase";
+pub(super) const FALLEN: &str = "first-dragon-fallen-challenger-portal";
 pub(super) const LORE: &str = "forgotten-knowledge-lore-keeper-death-phase";
 pub(super) const VICTORY: &str = "first-dragon-reward-room-transfer";
 const MOUNTED: &str = "oteryn:creature.mounted_thorn_knight";
@@ -20,6 +21,14 @@ const ENRAGED: &str = "oteryn:creature.the_enraged_thorn_knight";
 const STEED: &str = "oteryn:creature.thorn_steed";
 const DRAGON_ESSENCE: &str = "oteryn:creature.dragon_essence";
 const DRAGON: &str = "oteryn:creature.the_first_dragon";
+const CHALLENGER: &str = "oteryn:creature.fallen_challenger";
+const SPIRIT: &str = "oteryn:creature.spirit_of_fertility";
+const FLAME: &str = "oteryn:item.tibia.i775";
+const FINALE_LEVER: Position = at(33583, 30992);
+const CHALLENGERS: [Position; 2] = [at(33592, 31013), at(33574, 31013)];
+const STAGING: [Position; 2] = [at(33583, 30993), at(33582, 30993)];
+const ARRIVALS: [Position; 2] = [at(33592, 31017), at(33574, 31017)];
+const FINALE: Position = at(33621, 31023);
 const GLYPH: &str = "oteryn:creature.an_astral_glyph";
 const KEEPER: &str = "oteryn:creature.the_last_lore_keeper";
 const LLOYD: &str = "oteryn:creature.lloyd";
@@ -70,6 +79,17 @@ fn thorn_knight_deaths_spawn_the_shielded_knight_and_steed_then_enraged_knight()
 }
 
 #[test]
+fn fallen_challenger_corpses_route_two_staged_players_into_the_finale() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(FALLEN, || {
+        super::quest_world_callbacks::scenario(FALLEN, FINALE_LEVER, false)
+    })
+}
+
+#[test]
 fn energy_prism_death_returns_lloyd_only_from_the_rebirth_tile() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -114,6 +134,41 @@ fn dragon_essence_death_retires_the_five_siblings_and_summons_one_first_dragon()
 }
 
 pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
+    if name == FALLEN {
+        let data = json!({"schema": 1, "callbacks": [{
+            "key": format!("oteryn:quest-callback/{FALLEN}"),
+            "quest": "oteryn:quest.the_first_dragon_quest", "trigger": "use",
+            "selector": {"position": lever, "appearance": 8911},
+            "reversible": false, "passages": [], "storage": [], "offerings": [],
+            "return_on_failure": false,
+            "effects": {"encounter": {
+                "minimum_level": 0, "shared_staging": true,
+                "players": [
+                    {"from": STAGING[0], "to": ARRIVALS[0]},
+                    {"from": STAGING[1], "to": ARRIVALS[1]}
+                ],
+                "monsters": [
+                    {"creature": CHALLENGER, "position": CHALLENGERS[0]},
+                    {"creature": CHALLENGER, "position": CHALLENGERS[1]},
+                    {"creature": SPIRIT, "position": at(33625, 31021)}
+                ],
+                "room_min": at(33566, 31006), "room_max": at(33626, 31032),
+                "death_phases": {
+                    "terminal": SPIRIT, "replacements": [],
+                    "corpse_portal": {"defeated": CHALLENGER, "item": FLAME, "destination": FINALE}
+                }
+            }},
+            "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_lever.lua:1-51",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/creaturescripts_death_fallen.lua:10-16",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_first_dragon/bosses/fallen_challenger.lua:19"
+            ]
+        }]});
+        let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&data.to_string())?
+            .try_into()
+            .map_err(|_| "one Fallen Challenger phase callback")?;
+        return Ok(callback);
+    }
     if name == LORE {
         return lore_callback(lever);
     }
@@ -247,6 +302,16 @@ pub(super) fn world(
     let extra = match name {
         ENERGY => vec![LLOYD_REBIRTH, LLOYD_RETURN],
         ESSENCE => vec![at(33617, 31023)],
+        FALLEN => vec![
+            at(33592, 31014),
+            at(33592, 31015),
+            at(33592, 31016),
+            at(33574, 31014),
+            at(33574, 31015),
+            at(33574, 31016),
+            FINALE,
+            at(33622, 31023),
+        ],
         VICTORY => vec![at(33617, 31023), at(33622, 31023), REWARD_ROOM],
         _ => Vec::new(),
     };
@@ -266,6 +331,101 @@ async fn live(
         .collect())
 }
 
+async fn fallen_portals(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    peer: ExactActorRef,
+) -> TestResult {
+    use super::quest_world_callbacks::local;
+    use crate::gameplay_transport::kill_reward::DrainOutcome;
+    use oteryn_protocol_oteryn::world_spatial::StepDisposition;
+
+    let primary = admitted.runtime_actor.ok_or("player")?;
+    let peer_session = {
+        let runtime = owner.runtime.lock().await;
+        for (actor, arrival) in [primary, peer].into_iter().zip(ARRIVALS) {
+            assert_eq!(
+                runtime
+                    .read_actor_position(actor)
+                    .map_err(debug)?
+                    .position(),
+                local(arrival)
+            );
+        }
+        runtime
+            .positioned_melee_census()
+            .map_err(debug)?
+            .into_iter()
+            .find_map(|(actor, _, session)| (actor == peer).then_some(session).flatten())
+            .ok_or("peer session")?
+    };
+
+    let challengers = live(owner, CHALLENGER).await?;
+    assert_eq!(challengers.len(), 2);
+    for (index, challenger) in challengers.into_iter().enumerate() {
+        super::engenc2_cults::kill(owner, admitted, challenger, CHALLENGER, 101 + index as u64)
+            .await?;
+    }
+    {
+        let runtime = owner.runtime.lock().await;
+        for at in CHALLENGERS {
+            assert_eq!(
+                runtime.quest_corpse_portal_at(local(at)),
+                None,
+                "a projected death needs its committed corpse Item"
+            );
+        }
+    }
+    assert_eq!(
+        owner.drain_kill_rewards(admitted.game_session_id).await,
+        DrainOutcome::Drained
+    );
+    {
+        let runtime = owner.runtime.lock().await;
+        for at in CHALLENGERS {
+            assert_eq!(
+                runtime.quest_corpse_portal_at(local(at)).map(|(_, to)| to),
+                Some(local(FINALE))
+            );
+        }
+    }
+
+    for _ in 0..4 {
+        super::questpc7_ferumbras::step(owner, admitted, StepDirection::North).await?;
+    }
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(primary)
+            .map_err(debug)?
+            .position(),
+        local(FINALE)
+    );
+    super::questpc7_ferumbras::step(owner, admitted, StepDirection::East).await?;
+
+    for _ in 0..4 {
+        let (outcome, pace) = owner
+            .ordinary_paced_step(peer, peer_session, StepDirection::North, None, None)
+            .await;
+        assert_eq!(outcome.disposition, StepDisposition::Moved);
+        if let Some(pace) = pace {
+            tokio::time::sleep(pace).await;
+        }
+    }
+    let mut runtime = owner.runtime.lock().await;
+    assert_eq!(
+        runtime.read_actor_position(peer).map_err(debug)?.position(),
+        local(FINALE)
+    );
+    runtime.retain_live_corpse_items(&[]).map_err(debug)?;
+    for at in CHALLENGERS {
+        assert_eq!(runtime.quest_corpse_portal_at(local(at)), None);
+    }
+    Ok(())
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -275,6 +435,11 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     super::questpc7_native_deaths::prepare_native_hunter(owner, admitted).await?;
+    let peer = if name == FALLEN {
+        Some(super::ferumbras_crystal_reset::admit_peer(owner, h, STAGING[1]).await?)
+    } else {
+        None
+    };
     owner
         .states
         .quest_callbacks
@@ -287,7 +452,9 @@ pub(super) async fn exercise(
         super::questpc7_ferumbras::use_at(owner, admitted, lever, 8911).await?,
         UseDisposition::Committed
     );
-    if name == EARTH {
+    if let Some(peer) = peer {
+        fallen_portals(owner, admitted, peer).await?;
+    } else if name == EARTH {
         let [mounted] = live(owner, MOUNTED)
             .await?
             .try_into()
