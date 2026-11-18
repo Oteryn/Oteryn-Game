@@ -102,7 +102,7 @@ pub(super) async fn scenario(h: &Harness, authority: &ReconciledCharacterAuthori
     };
     let house = owner.runtime.lock().await.house_actor_state(actor, admitted.game_session_id).map_err(debug)?;
     assert_eq!(entries[0].position, Some((u16::try_from(house.position.x)?,
-        u16::try_from(house.position.y)?, -i8::try_from(house.position.floor)?)));
+        u16::try_from(house.position.y)?, i8::try_from(house.position.floor)?)));
     assert_eq!(entries[0].colors, [8, 7, 6, 5]);
     let returned = Request::ReturnToLamp { hireling };
     assert_eq!(record_manage(owner, &mut admitted, &mut management, returned).await?, Reply::Committed);
@@ -154,7 +154,7 @@ pub(super) async fn replay(h: &Harness, owner: &ComposedFreshAdmission<'_, '_, '
         };
         let bytes = owner.hireling_management(recorded.admitted, command, recorded.request)
             .await.ok_or("old management owner retry")?;
-        assert_eq!(Reply::decode(&bytes), Some(expected));
+        assert_eq!(Reply::decode_wire(&bytes), Some(expected));
         assert_returned(h, owner, admitted, saved.hireling).await?;
     }
     Ok(())
@@ -226,7 +226,7 @@ async fn manage(owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: &mut Admit
     let (status, payload) = exchange(owner, admitted, management::COMMAND_TYPE_HIRELING_MANAGEMENT,
         &request.encode()).await?;
     assert_eq!(status, CommandStatus::Accepted);
-    Reply::decode(&payload).ok_or_else(|| "bounded management reply".into())
+    Reply::decode_wire(&payload).ok_or_else(|| "bounded management reply".into())
 }
 
 async fn record_manage(owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession,

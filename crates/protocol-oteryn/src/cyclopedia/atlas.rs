@@ -1,5 +1,5 @@
 //! T079: bounded overview of admitted geometry, never movement or discovery authority.
-use super::{MapResult, MapWireError, decode_result, encode_result};
+use super::{MapResult, MapWireError, decode_result, encode_wire_result};
 pub const WIDTH: usize = 64;
 pub const HEIGHT: usize = 40;
 pub const MAX_ATLAS_BYTES: usize = 32_768;
@@ -24,7 +24,7 @@ impl Default for Query {
 }
 impl Query {
     pub fn encode(self) -> Result<Vec<u8>, MapWireError> {
-        if (self.floor != 127 && !(-15..=0).contains(&self.floor)) || self.zoom > 8 {
+        if (self.floor != 127 && !(0..=15).contains(&self.floor)) || self.zoom > 8 {
             return Err(MapWireError);
         }
         let mut b = vec![128, self.floor as u8];
@@ -82,14 +82,14 @@ impl Atlas {
             || self.areas.len() > 64
             || self.markers.len() > 64
             || self.progress.as_ref().is_some_and(|p| p.code != 0)
-            || self.floors & (1u16 << (-self.query.floor as u8)) == 0
+            || self.floors & (1u16 << (self.query.floor as u8)) == 0
         {
             return Err(MapWireError);
         }
         let progress = self
             .progress
             .as_ref()
-            .map(encode_result)
+            .map(encode_wire_result)
             .transpose()?
             .unwrap_or_default();
         let start = u32::from(self.query.page) * 64;

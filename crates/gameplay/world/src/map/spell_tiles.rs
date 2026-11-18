@@ -994,7 +994,9 @@ pub mod tests {
         let start = TilePos {
             x: u16::try_from(start["x"].as_u64().expect("x")).expect("x"),
             y: u16::try_from(start["y"].as_u64().expect("y")).expect("y"),
-            floor: i8::try_from(start["floor"].as_i64().expect("floor")).expect("floor"),
+            floor: -i8::try_from(start["floor"].as_i64().expect("floor"))
+                .expect("floor")
+                .abs(),
         };
         let pins = BootPins {
             bundle: BundlePins {

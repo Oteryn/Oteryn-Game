@@ -1,6 +1,6 @@
-# Oteryn World Bundle format (v8; the file name keeps V1)
+# Oteryn World Bundle format v9
 
-- Format ID: `OTERYN_WORLD_BUNDLE/v8` (v1 through v7 are retired and have no reader; see "Format v2", "Format v3" and "Format v4" below)
+- Format ID `OTERYN_WORLD_BUNDLE/v9`. The reader also admits pinned v8 artifacts. Versions v1 through v7 are retired.
 - Owner: `Oteryn/Oteryn-Game`, MAP-BUNDLE-1 (ADR-0021 §5)
 - Status: **CANDIDATE.** ADR-0005 §3 requires an accepted schema contract before a runtime
   treats a serializer as a permanent format. This document is accepted together with
@@ -27,6 +27,18 @@ This document fixes the byte layout, the manifest, the checksums and digest, the
 `build_class`, versioning and the reader limits. It does not decide the in-memory model, the
 loader or the overlay (MAP-LOAD-1, MAP-OVERLAY-1).
 
+## Floor convention
+
+Version 9 stores Tibia Global z as an integer from 0 through 15, with ground
+at 7. The convention applies to the manifest extent and subareas, sector rows,
+teleport destinations, epoch layers, spawn sources and NPC placements. Floor
+ordering keeps the same physical traversal as v8: deepest floor first.
+
+The v8 reader validates historical artifacts against their original digest
+domain and signed floor layout. The Rust map-index API projects both versions
+to the same signed keys for existing overlays and storage consumers. Placement
+key numeric values and storage consumers retain their existing representation.
+
 ## 2. File layout
 
 All integers are little endian unless the payload grammar (§5) says varint.
@@ -34,7 +46,7 @@ All integers are little endian unless the payload grammar (§5) says varint.
 | Offset | Size | Field | Rule |
 |---|---|---|---|
 | 0 | 4 | magic | `"OTWB"` |
-| 4 | 2 | `format_version` u16 | `8` |
+| 4 | 2 | `format_version` u16 | `9` |
 | 6 | 2 | reserved u16 | `0` |
 | 8 | 4 | `manifest_length` u32 | at most `MAP01-BUNDLE-MANIFEST-BYTES` |
 | 12 | 4 | `sector_count` u32 | at most `MAP01-BUNDLE-SECTOR-COUNT` |
@@ -60,13 +72,13 @@ reader rejects unknown fields at every level (fail closed); a new field needs a 
 |---|---|
 | `layers` | Optional compiled epoch layers (§17), covered by the bundle digest. Omitted when empty. |
 | `subareas` | Typed client-mask admission (§15), covered by the bundle digest. |
-| `format` | `"OTERYN_WORLD_BUNDLE/v8"` |
-| `min_reader_version` | lowest reader `format_version` able to read the file; `8` |
+| `format` | `"OTERYN_WORLD_BUNDLE/v9"` |
+| `min_reader_version` | lowest reader `format_version` able to read the file, `9` |
 | `projection_class` | `"server"` (ADR-0021 §4.2). A client projection is not part of v1. |
 | `compiler_version` | set by the compiler, never by its caller: `oteryn-world-bundle-compiler/<crate version> zstd/<library version>` (§6) |
 | `build_class` | `"production"` or `"non-production"`, §8 |
 | `identity` | the compiler inputs copied unchanged: `project_format_version`, `world_schema_version`, `content_revision`, `content_lock_digest`, `min_runtime_version`, `required_capabilities` (list), `ruleset_compatibility` (list), `provenance_summary` (ADR-0005 §3, DUR-04 §9) |
-| `world` | `min_x`, `min_y`, `max_x`, `max_y` (native, half-open) and `floors`: native floors strictly ascending within `-15..0` (ADR-0021 §4.3) |
+| `world` | `min_x`, `min_y`, `max_x`, `max_y` (native, half-open) and `floors`: Global z strictly descending within `0..15` (ADR-0021 §4.3) |
 | `palette` | list of `{key, family, id, terrain}` (`terrain`: Format v2); the list index is the bundle palette index used by the payloads |
 | `draft_areas` | keys of the draft areas compiled in, sorted and unique; empty in a production bundle |
 | `skipped_provisional_keys` | provisional keys skipped in this build, sorted and unique; empty in a production bundle |
@@ -84,12 +96,12 @@ two builds of the same input produce the same palette.
 
 ## 4. Sector table
 
-One 50-byte row per non-empty sector (at least one tile), strictly ascending by
-`(floor, sy, sx)`. The row's floor must be one of the manifest's `world.floors`:
+One 50-byte row per non-empty sector (at least one tile), strictly deepest floor first, then ascending by
+`(sy, sx)`. The row's floor must be one of the manifest's `world.floors`:
 
 | Offset | Size | Field |
 |---|---|---|
-| 0 | 1 | `floor` i8, native |
+| 0 | 1 | `floor` u8, Global z |
 | 1 | 1 | reserved, `0` |
 | 2 | 2 | `sx` u16, sector x = `x / 32`, below 2048 |
 | 4 | 2 | `sy` u16, sector y = `y / 32`, below 2048 |
@@ -110,7 +122,7 @@ checksum flag set, and a declared content size equal to `raw_length`. It decompr
 
 - the item palette index points into the bundle `palette` (§3), not the World Project
   `index.json`;
-- the `teleport` floor byte holds the native floor as an `i8`, not legacy `z`.
+- the `teleport` floor byte holds Global z from 0 through 15.
 
 The grammar in short (varints are LEB128): `tile_count`, then per tile ascending by `(y, x)` the
 position delta, `control = item_count << 3 | zones << 2 | house << 1 | flags`, the present
@@ -130,7 +142,7 @@ already writes canonical varints.
 
 - **Per sector.** The table row holds the SHA-256 of the stored frame. A reader checks it before
   it decompresses the frame, so a corrupt frame never reaches the decompressor.
-- **Bundle digest.** `SHA-256("OTERYN_WORLD_BUNDLE/v8" || 0x00 || file[0 .. len − 32])`, stored
+- **Bundle digest.** `SHA-256("OTERYN_WORLD_BUNDLE/v9" || 0x00 || file[0 .. len − 32])`, stored
   as the last 32 bytes. It covers the header, the manifest (including `build_class` and the
   content revision), the tables and every frame, the spawn and NPC frames included. It is the bundle identity used for pinning
   (ADR-0021 §4.2), the Ground `map_revision` (§4.4) and `MapItemMaterialization`.

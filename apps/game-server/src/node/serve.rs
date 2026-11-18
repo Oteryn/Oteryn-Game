@@ -3186,7 +3186,7 @@ fn world_bundle_gate(
         start: crate::map::overlay::TilePos {
             x: bundle.start_x,
             y: bundle.start_y,
-            floor: bundle.start_floor,
+            floor: -bundle.start_floor.abs(),
         },
     };
     let data = read(&bundle.path)?;

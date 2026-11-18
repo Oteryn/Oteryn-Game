@@ -19,7 +19,7 @@ pub(super) async fn round_trip(link: &PlayLink, exchanges: &Arc<Script>) -> Resu
             x: 100,
             end: 110,
             y: 200,
-            floor: -7,
+            floor: 7,
         }],
     };
     let (kind, bytes) = wire::request(5, 0).checked()?;
@@ -50,7 +50,7 @@ pub(super) async fn round_trip(link: &PlayLink, exchanges: &Arc<Script>) -> Resu
             x: 100,
             end: 110,
             y: 201,
-            floor: -7,
+            floor: 7,
         }],
     };
     let (kind, bytes) = wire::request(5, 128).checked()?;
@@ -97,7 +97,7 @@ fn atlas_activity_scope_clears_geometry_and_visible_exploration_points() {
         pool: 0,
         epoch: 0,
         improved: false,
-        visible: vec![(100, 200, -7)],
+        visible: vec![(100, 200, 7)],
     });
     panel.summary = "Source map".into();
     mailbox.cancel_activity_requests();

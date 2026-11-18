@@ -47,7 +47,7 @@ pub(super) async fn large_hazards_receipt(
         100,
         "source engine must produce actual100 walkable marks before receipt write"
     );
-    let proof = wire::append_drome_hazards(
+    let proof = wire::append_wire_drome_hazards(
         wire::DromeResult {
             disposition: 1,
             phase: 2,
