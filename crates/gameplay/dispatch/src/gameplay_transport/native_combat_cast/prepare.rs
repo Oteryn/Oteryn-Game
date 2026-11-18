@@ -307,6 +307,7 @@ pub async fn prepare_from_owners(
         field_policy_revision: None,
         carried_target: None,
         item_operations: Vec::new(),
+        static_field_removal: None,
         item_creations: Vec::new(),
         party,
         before: before.clone(),

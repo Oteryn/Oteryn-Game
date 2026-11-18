@@ -9,6 +9,7 @@ mod conditional_cells;
 use admission::{character_fence_required, stateless_observation_required};
 mod clear_area;
 mod committed_copy;
+mod creature_spawn;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
 mod dreamer_carrot;
@@ -100,6 +101,7 @@ struct ObservedWorldCallback {
 pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     personal: personal_encounter::Cohorts,
+    source_creature_expiry: std::sync::Mutex<Vec<creature_spawn::Expiry>>,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     encounters: std::sync::Mutex<Vec<encounter::EncounterVisit>>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
@@ -152,6 +154,13 @@ impl PendingCallbacks {
             .ok()?
             .iter()
             .map(|pending| pending.next_due_us())
+            .chain(
+                self.source_creature_expiry
+                    .lock()
+                    .ok()?
+                    .iter()
+                    .map(|expiry| expiry.due),
+            )
             .min()
     }
 }

@@ -10,6 +10,16 @@ pub enum Facing {
     West,
 }
 
+/// Immediate, masterless birth with optional removal of that exact incarnation.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct CreatureSpawn {
+    pub creature: String,
+    pub position: Position,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lifetime_ms: Option<u32>,
+}
+
 /// A once-only earned mount through the existing account appearance owner.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -45,6 +55,8 @@ pub struct ItemDisguiseRequirement {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub creature_spawn: Option<CreatureSpawn>,
     /// Distinct carried definitions consumed atomically by the Quest receipt owner.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
@@ -732,6 +744,27 @@ pub(super) fn valid(callback: &Callback) -> bool {
             .is_some_and(|m| !pos(m.position) || m.effect == 0)
         || (callback.trigger == Trigger::StepOut && callback.return_on_failure)
     {
+        return false;
+    }
+    if effects.creature_spawn.as_ref().is_some_and(|spawn| {
+        callback.actor_kind != ActorKind::Player
+            || !matches!(callback.trigger, Trigger::Use | Trigger::StepIn)
+            || !callback.requires_world_admission
+            || callback.selector.native.is_none()
+            || !callback.has_state()
+            || callback.is_read_only()
+            || callback.lever.is_some()
+            || callback.reversible
+            || effects.encounter.is_some()
+            || effects.party_transfer.is_some()
+            || effects.reward_door.is_some()
+            || !pos(spawn.position)
+            || !spawn.creature.starts_with("oteryn:creature.")
+            || !super::super::valid_quest_key(&spawn.creature)
+            || spawn
+                .lifetime_ms
+                .is_some_and(|ms| !(1..=3_600_000).contains(&ms))
+    }) {
         return false;
     }
     if effects.item_presence.as_ref().is_some_and(|presence| {

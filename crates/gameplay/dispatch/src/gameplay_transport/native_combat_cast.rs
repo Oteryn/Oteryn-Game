@@ -521,6 +521,7 @@ pub struct PreparedNativeCombatCast {
     field_policy_revision: Option<String>,
     carried_target: Option<native_world_item_cast::CarriedTargetBinding>,
     item_operations: Vec<crate::durability::spell_items_abi::SpellItemOperation>,
+    static_field_removal: Option<crate::map::facts::StaticFieldRemoval>,
     item_creations: Vec<ordinary_combat::OrdinaryItemCreation>,
     party: Option<super::super::party_spell_owner::SourcePartyWorld>,
     before: PlayerSpellState,
@@ -832,6 +833,13 @@ impl PreparedNativeCombatCast {
                 .validate_prepared(runtime, proof, &self.batch)
                 .map_err(|_| Error::SnapshotChanged)?;
         }
+        if self
+            .static_field_removal
+            .as_ref()
+            .is_some_and(|field| !field.current())
+        {
+            return Err(Error::SnapshotChanged);
+        }
         let installation = self.installation.as_ref().ok_or(Error::InvalidBatch)?;
         runtime.validate_staged_spell_batch(&installation.physical)?;
         installation
@@ -915,6 +923,9 @@ impl PreparedNativeCombatCast {
             checked.owner,
         );
         if result.applied {
+            if let Some(field) = self.static_field_removal.take() {
+                field.install();
+            }
             if let Some(charms) = &self.outgoing_charms {
                 charms.install_fatal_holds(states);
             }
@@ -1521,6 +1532,7 @@ async fn prepare_source_self_from_owners(
         field_policy_revision: None,
         carried_target: None,
         item_operations: Vec::new(),
+        static_field_removal: None,
         item_creations: Vec::new(),
         party,
         before,
@@ -2052,6 +2064,7 @@ async fn prepare_named_failure(
         field_policy_revision: None,
         carried_target: None,
         item_operations: Vec::new(),
+        static_field_removal: None,
         item_creations: Vec::new(),
         party: None,
         before: before.clone(),

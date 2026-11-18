@@ -373,6 +373,7 @@ pub(super) async fn prepare_inner(
         field_policy_revision: None,
         carried_target: None,
         item_operations: Vec::new(),
+        static_field_removal: None,
         party,
         before,
         paid,

@@ -53,6 +53,89 @@ pub use rafzane_elevator::RafzaneElevator;
 mod arena_pillars;
 pub use arena_pillars::ArenaPillarProjection;
 
+/// Retained alongside the rune charge transaction. A replay retains the same
+/// placement reservation until the owner's SQL outcome is known.
+#[derive(Debug)]
+pub struct StaticFieldRemoval {
+    states: Arc<Mutex<Arc<CallbackStates>>>,
+    key: u64,
+    revision: u64,
+    entry: EntryFacts,
+}
+
+impl StaticFieldRemoval {
+    pub fn current(&self) -> bool {
+        self.states.lock().is_ok_and(|states| {
+            states.reserved.contains(&self.key)
+                && !states.hidden.contains(&self.key)
+                && states.changed.get(&self.key).map_or(0, |(r, _)| *r) == self.revision
+        })
+    }
+
+    pub fn install(self) {
+        // The retained reservation prevents every other writer from changing this
+        // placement between the cast preflight and installation.
+        let mut states = self
+            .states
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        let states = Arc::make_mut(&mut states);
+        states.hidden.insert(self.key);
+        states
+            .changed
+            .insert(self.key, (self.revision + 1, self.entry));
+    }
+}
+
+impl Drop for StaticFieldRemoval {
+    fn drop(&mut self) {
+        let mut states = self
+            .states
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        Arc::make_mut(&mut states).reserved.remove(&self.key);
+    }
+}
+
+impl BundleFacts {
+    pub fn reserve_static_field_removal(
+        &self,
+        position: TilePos,
+        ordinal: u8,
+        palette_id: u32,
+        entry: EntryFacts,
+    ) -> Option<StaticFieldRemoval> {
+        let key = view::placement_key(position, ordinal)?;
+        if self.house_tile(position)
+            || self.doors.contains(key)
+            || entry.pickupable
+            || self.base_entry(position, ordinal, palette_id)? != entry
+        {
+            return None;
+        }
+        let mut states = self.callbacks.lock().ok()?;
+        let revision = states
+            .changed
+            .get(&key)
+            .map_or(0, |(revision, _)| *revision);
+        if revision == u64::MAX
+            || !states.has_capacity(3)
+            || states.key_reserved(key)
+            || states.hidden.contains(&key)
+            || states.phase_entry(position, ordinal).is_some()
+        {
+            return None;
+        }
+        Arc::make_mut(&mut states).reserved.insert(key);
+        Some(StaticFieldRemoval {
+            states: Arc::clone(&self.callbacks),
+            key,
+            revision,
+            entry,
+        })
+    }
+}
+
 #[derive(Clone, Debug)]
 struct MovementDecay {
     revision: u64,

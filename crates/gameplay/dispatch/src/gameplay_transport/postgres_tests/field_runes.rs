@@ -306,6 +306,7 @@ enum Scenario {
     DestroyFar,
     DestroyBlocked,
     DestroyOffScreen,
+    DestroyStatic,
     Aged,
     ProtectedTarget,
     ProtectedCaster,
@@ -716,6 +717,20 @@ const FIELD_SCENARIO_LIVENESS: LivenessPolicy = LivenessPolicy {
     missed_limit: 3,
 };
 
+pub(super) async fn static_field_case(admin: String) -> TestResult {
+    field_scenario(
+        admin,
+        3148,
+        0,
+        0,
+        true,
+        false,
+        false,
+        Scenario::DestroyStatic,
+    )
+    .await
+}
+
 async fn field_case(
     admin: String,
     rune: u32,
@@ -810,8 +825,16 @@ async fn field_scenario_inner(
     let active = controller.active().ok_or("active generation")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
     let entry_room = pin.qualified_room();
-    let map = if scenario == Scenario::DestroyBlocked {
-        field_world_inner(world, 0, true)?
+    let map = if scenario == Scenario::DestroyStatic {
+        let reference = native
+            .item_index()
+            .and_then(|items| {
+                items.definition_ref("Item", "oteryn:item.tibia.i2126", "definition-r1")
+            })
+            .ok_or("source static field definition")?;
+        field_world_inner(world, 0, false, Some(reference))?
+    } else if scenario == Scenario::DestroyBlocked {
+        field_world_inner(world, 0, true, None)?
     } else if matches!(scenario, Scenario::PzTick | Scenario::NoPvpTick) {
         field_world(world, if scenario == Scenario::PzTick { 1 } else { 4 })?
     } else if protection {
@@ -887,7 +910,9 @@ async fn field_scenario_inner(
     // runtime positions above remain physical +z, while Bundle wire uses -z.
     let wire_frame = {
         let runtime = owner.runtime.lock().await;
-        owner.wire_position_frame(&runtime).ok_or("field wire frame")?
+        owner
+            .wire_position_frame(&runtime)
+            .ok_or("field wire frame")?
     };
     let wire_start = wire_frame.project(start).ok_or("project field caster")?;
     owner.required_capabilities = BoundRequiredCapabilities::for_channel_boot(
@@ -1235,6 +1260,25 @@ async fn field_scenario_inner(
                 break;
             }
         }
+        if scenario == Scenario::DestroyStatic {
+            let map = owner.bundle_map().ok_or("field map")?;
+            let key = crate::map::view::placement_key(
+                crate::map::overlay::TilePos {
+                    x: 101,
+                    y: 100,
+                    floor: -7,
+                },
+                1,
+            )
+            .ok_or("static field key")?;
+            use crate::map::view::MapFacts;
+            assert!(
+                map.facts.base_hidden(key),
+                "successful rune USE removes the base field"
+            );
+            assert_eq!(map.facts.object_revision(key), 1);
+            return Ok(());
+        }
         if committed {
             // Map publication has its own cadence: a command result does not
             // guarantee that the client has received the field's session handle.
@@ -1364,11 +1408,13 @@ async fn field_scenario_inner(
             let removed = probes.iter().any(|(_, _, accepted)| *accepted);
             for (offset, (dx, floor, accepted)) in probes.into_iter().enumerate() {
                 let command_id = first_command + u64::try_from(offset)?;
-                let wire_target = wire_frame.project(MovementLocalPosition {
-                    x: start.x + dx,
-                    y: start.y,
-                    floor,
-                }).ok_or("project Destroy Field target")?;
+                let wire_target = wire_frame
+                    .project(MovementLocalPosition {
+                        x: start.x + dx,
+                        y: start.y,
+                        floor,
+                    })
+                    .ok_or("project Destroy Field target")?;
                 let destroy_intent = UseIntent {
                     target: UseTarget::Item(destroy.ok_or("Destroy Field handle")?),
                     use_with: None,
@@ -1732,6 +1778,12 @@ async fn field_scenario_inner(
     .await?;
     assert_eq!(receipts, i64::from(committed));
     assert_eq!(quantity, if committed { 2 } else { 3 });
+    if scenario == Scenario::DestroyStatic {
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return harness.cleanup().await;
+    }
     let locks: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_pvp_state WHERE character_id=encode($1,'hex')::uuid AND logout_block_until>clock_timestamp() AND pz_block_until>clock_timestamp() AND skull=0 AND white_skull_until IS NULL",
     )
@@ -2211,13 +2263,14 @@ fn field_world(
     world: crate::foundation::WorldId,
     zone: u32,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    field_world_inner(world, zone, false)
+    field_world_inner(world, zone, false, None)
 }
 
 fn field_world_inner(
     world: crate::foundation::WorldId,
     zone: u32,
     wall: bool,
+    static_field: Option<std::num::NonZeroU32>,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{
         sector::{Attrs, Item, Tile},
@@ -2226,7 +2279,7 @@ fn field_world_inner(
             TerrainKind,
         },
     };
-    let manifest = Manifest {
+    let mut manifest = Manifest {
         subareas: Default::default(),
         format: writer::FORMAT.into(),
         min_reader_version: writer::VERSION,
@@ -2276,20 +2329,36 @@ fn field_world_inner(
         spawns: Default::default(),
         npcs: Default::default(),
     };
+    if let Some(reference) = static_field {
+        manifest.palette.push(PaletteEntry {
+            family: Family::Item,
+            key: "oteryn:item.tibia.i2126".into(),
+            id: reference.get() - 1,
+            terrain: None,
+        });
+    }
     let mut tiles = Vec::new();
     for y in 96..112 {
         for x in 96..112 {
+            let mut items = vec![Item {
+                palette: if wall && (x, y) == (104, 100) { 1 } else { 0 },
+                depth: 0,
+                attrs: Attrs::default(),
+            }];
+            if static_field.is_some() && (x, y) == (101, 100) {
+                items.push(Item {
+                    palette: 2,
+                    depth: 0,
+                    attrs: Attrs::default(),
+                });
+            }
             tiles.push(Tile {
                 x,
                 y,
                 flags: if (x, y) == (101, 98) { zone } else { 0 },
                 house: 0,
                 zones: vec![],
-                items: vec![Item {
-                    palette: if wall && (x, y) == (104, 100) { 1 } else { 0 },
-                    depth: 0,
-                    attrs: Attrs::default(),
-                }],
+                items,
             });
         }
     }
@@ -2327,7 +2396,18 @@ fn field_world_inner(
         },
         world,
         crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
-        |_| None,
+        |key| {
+            if key != "oteryn:item.tibia.i2126" {
+                return None;
+            }
+            Some(crate::map::facts::ItemDefinition {
+                reference: static_field?,
+                solid: Some(false),
+                blocks_projectile: false,
+                pickupable: false,
+                door: false,
+            })
+        },
     )
     .map_err(debug)
 }
@@ -3098,14 +3178,16 @@ async fn drive_player_field(
             // This driver shares the nonblocking holder with the live server.
             // Reuse the existing bounded read retry; ambiguous/storage outcomes
             // still propagate, and every attempt resolves current source facts.
-            let current = crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(owner.root)?
-                .retry_durability("field_runes_current_source", async || {
-                    FreshAdmissionStore::from_root(harness.root.clone())
-                        .current_session_at(creator_session)
-                        .await
-                })
-                .await?
-                .0;
+            let current = crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(
+                owner.root,
+            )?
+            .retry_durability("field_runes_current_source", async || {
+                FreshAdmissionStore::from_root(harness.root.clone())
+                    .current_session_at(creator_session)
+                    .await
+            })
+            .await?
+            .0;
             let controller = crate::gameplay_transport::connection::ControllerBinding {
                 account_id: id(40),
                 transport: current.current_transport().ok_or("creator transport")?,

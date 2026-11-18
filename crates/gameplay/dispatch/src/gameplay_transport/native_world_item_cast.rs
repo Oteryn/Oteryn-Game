@@ -9,6 +9,7 @@ use crate::gameplay_transport::spell_presentations::{
     CueTarget, LocatedCueRequest, QualifiedCueTile,
 };
 use crate::map::boot::BundleCollisionIndexExt;
+use crate::map::view::MapFacts;
 use crate::spell::combat_batch::{OwnerCombatChange, OwnerCombatEffect};
 use crate::spell::native::CompiledNativeSpellPlanExt;
 use oteryn_gameplay_spell_rules::native_items::{
@@ -79,6 +80,85 @@ fn item_fact(
         },
         field,
     ))
+}
+
+fn first_static_field<'a>(
+    room: &'a QualifiedNativeEntryRoom,
+    content: &NativeGameplayState,
+    target: TilePosition,
+) -> Option<(
+    &'a crate::map::boot::BundleMap,
+    crate::map::overlay::TilePos,
+    u8,
+    u32,
+    crate::map::view::EntryFacts,
+    WorldItemFacts,
+)> {
+    use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+    use crate::map::view::placement_key;
+    use oteryn_protocol_oteryn::world_map::MapDefinition;
+
+    let NativeMovementCollisionIndex::Bundle(index) = room.movement_cells().index() else {
+        return None;
+    };
+    let map = index.map();
+    let position = crate::map::overlay::TilePos {
+        x: u16::try_from(target.x).ok()?,
+        y: u16::try_from(target.y).ok()?,
+        floor: i8::try_from(target.floor.checked_neg()?).ok()?,
+    };
+    let tile = map
+        .overlay
+        .base()
+        .tile(position.x, position.y, position.floor)?;
+    let facts = map.facts.pinned();
+    let items = content.item_index()?;
+    tile.ids()
+        .iter()
+        .zip(tile.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .enumerate()
+        .find_map(|(ordinal, (&id, _))| {
+            let ordinal = u8::try_from(ordinal).ok()?;
+            let key = placement_key(position, ordinal)?;
+            let entry = facts.base_entry(position, ordinal, id)?;
+            if facts.base_hidden(key) {
+                return None;
+            }
+            let MapDefinition::Item(reference) = entry.definition else {
+                return None;
+            };
+            let policy = content.item_policy_for_source_id(u32::from(entry.appearance_id))?;
+            let record = policy.record();
+            let definition = &record.production_definition;
+            if items.definition_ref("Item", &definition.production_key, &definition.revision_ref)
+                != Some(reference)
+            {
+                return None;
+            }
+            let F::Known(class) = &record.semantics.classification else {
+                return None;
+            };
+            (class.item_type == F::Known(ReferenceItemType::MagicField)).then(|| {
+                (
+                    map,
+                    position,
+                    ordinal,
+                    id,
+                    entry,
+                    WorldItemFacts {
+                        instance_key: format!("static-field-{key:016x}"),
+                        item: NativeItemRef {
+                            key: record.authoring.item.key.clone(),
+                            revision: record.authoring.item.revision.clone(),
+                        },
+                        movable: entry.pickupable,
+                        script_tagged: false,
+                        action_tagged: false,
+                    },
+                )
+            })
+        })
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -197,7 +277,9 @@ pub(super) async fn prepare(
     };
     // PKG1R2: Destroy Field reaches the caster's visible screen, with LOS below.
     // Runtime floors are the negation of the map wire's native floors.
-    if profile.spell()["execution"]["native_behavior"]["parameters"]["operation"] == "remove_field"
+    let removing_field = profile.spell()["execution"]["native_behavior"]["parameters"]["operation"]
+        == "remove_field";
+    if removing_field
         && (origin.floor != target.floor
             || !oteryn_protocol_oteryn::world_map::in_window(
                 oteryn_protocol_oteryn::world_spatial::ActorPosition {
@@ -227,7 +309,6 @@ pub(super) async fn prepare(
         let cells = room.movement_cells();
         let house = match cells.index() {
             crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) => {
-                use crate::map::view::MapFacts;
                 let pos = crate::map::overlay::TilePos {
                     x: u16::try_from(target.x).map_err(|_| SpellCastDisposition::TargetIllegal)?,
                     y: u16::try_from(target.y).map_err(|_| SpellCastDisposition::TargetIllegal)?,
@@ -325,6 +406,16 @@ pub(super) async fn prepare(
         }
         facts.tile_items.push(fact);
     }
+    // Crystal 201189f8 data/scripts/runes/destroy_field_rune.lua:14-20
+    // queries the tile's magic field, including a field placed in the base map.
+    let static_field = if removing_field && facts.first_magic_field.is_none() {
+        first_static_field(room, content, target)
+    } else {
+        None
+    };
+    if let Some((_, _, _, _, _, fact)) = &static_field {
+        facts.first_magic_field = Some(fact.clone());
+    }
     facts.top_item = facts.tile_items.first().cloned();
     let Plan::Item(plan) = profile
         .plan(Facts::Item(&facts), draw)
@@ -334,6 +425,7 @@ pub(super) async fn prepare(
     };
     let mut operations = Vec::new();
     let mut effects = Vec::new();
+    let mut static_field_removal = None;
     match &plan.operation {
         ItemOperation::Disintegrate {
             remove_instances, ..
@@ -363,27 +455,38 @@ pub(super) async fn prepare(
             }
         }
         ItemOperation::RemoveField { remove_instance } => {
-            let row = current
-                .items
-                .iter()
-                .find(|r| {
-                    r.item_instance_id
-                        .iter()
-                        .map(|b| format!("{b:02x}"))
-                        .collect::<String>()
-                        == *remove_instance
-                })
-                .ok_or(SpellCastDisposition::Rejected)?;
-            operations.push(SpellItemOperation::RemoveGround(
-                item_tx::prepare_ground_removal_in_transaction(
-                    tx,
-                    authority,
-                    &address,
-                    row.item_instance_id,
-                )
-                .await
-                .map_err(|_| SpellCastDisposition::Rejected)?,
-            ));
+            if let Some((map, position, ordinal, palette, entry, fact)) = static_field {
+                if fact.instance_key != *remove_instance {
+                    return reject();
+                }
+                static_field_removal = Some(
+                    map.facts
+                        .reserve_static_field_removal(position, ordinal, palette, entry)
+                        .ok_or(SpellCastDisposition::TargetIllegal)?,
+                );
+            } else {
+                let row = current
+                    .items
+                    .iter()
+                    .find(|r| {
+                        r.item_instance_id
+                            .iter()
+                            .map(|b| format!("{b:02x}"))
+                            .collect::<String>()
+                            == *remove_instance
+                    })
+                    .ok_or(SpellCastDisposition::Rejected)?;
+                operations.push(SpellItemOperation::RemoveGround(
+                    item_tx::prepare_ground_removal_in_transaction(
+                        tx,
+                        authority,
+                        &address,
+                        row.item_instance_id,
+                    )
+                    .await
+                    .map_err(|_| SpellCastDisposition::Rejected)?,
+                ));
+            }
         }
         ItemOperation::MimicItem {
             item, duration_ms, ..
@@ -510,6 +613,7 @@ pub(super) async fn prepare(
         field_policy_revision: None,
         carried_target: None,
         item_operations: operations,
+        static_field_removal,
         item_creations: Vec::new(),
         party: None,
         before,
@@ -859,6 +963,7 @@ async fn prepare_barrier(
         field_policy_revision: Some(world_revision),
         carried_target: None,
         item_operations: operations,
+        static_field_removal: None,
         item_creations: Vec::new(),
         party: None,
         before,
@@ -1148,6 +1253,7 @@ async fn prepare_carried(
         field_policy_revision: None,
         carried_target: Some(CarriedTargetBinding::from_current(&carried)),
         item_operations: Vec::new(),
+        static_field_removal: None,
         item_creations: Vec::new(),
         party: None,
         before,

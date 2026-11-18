@@ -1515,6 +1515,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             }
         }
+        if let Some(spawn) = &callback.effects.creature_spawn {
+            self.spawn_quest_creature(runtime, states, map, spawn);
+        }
         if matches!(
             projection,
             Some(

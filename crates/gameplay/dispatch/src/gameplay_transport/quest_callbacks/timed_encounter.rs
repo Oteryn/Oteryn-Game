@@ -170,10 +170,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        let now = self.owner_now().get();
+        self.expire_quest_creatures(&mut runtime, now);
         let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
             return;
         };
-        let now = self.owner_now().get();
         let mut index = 0;
         while index < pending.len() {
             let memo = &mut pending[index];
