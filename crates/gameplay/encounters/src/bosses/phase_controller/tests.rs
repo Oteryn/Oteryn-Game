@@ -495,14 +495,31 @@ fn arbaziloth_replacement_retries_refused_placement() {
         ])
         .unwrap();
     let (boss, forgemaster) = (actors[0], actors[1]);
-    let mut encounter =
-        arbaziloth::ArbazilothEncounter::bind(&runtime, &[(player, session)], boss, forgemaster)
-            .unwrap();
+    let mut encounter = arbaziloth::ArbazilothEncounter::bind(
+        &mut runtime,
+        &[(player, session)],
+        boss,
+        forgemaster,
+    )
+    .unwrap();
     assert!(encounter.is_current(&runtime));
-    assert!(encounter.shields_for(forgemaster).is_none());
-    let shields = encounter.shields_for(boss).unwrap();
-    for health in [100, 80, 60, 40] {
-        assert_eq!(shields.limit_damage(health, 100, health), 20);
+    assert!(runtime.arbaziloth_shields(forgemaster).is_none());
+    for (phase, health) in [100, 80, 60, 40].into_iter().enumerate() {
+        let occurrence = format!("arbaziloth-phase-{phase}");
+        let result = runtime
+            .borrow_exact_actor_commit()
+            .commit_damage(
+                boss,
+                oteryn_gameplay_entities::OwnerDamageCommand {
+                    target: boss_key.as_bytes(),
+                    occurrence: occurrence.as_bytes(),
+                    binding: occurrence.as_bytes(),
+                    damage: health,
+                },
+            )
+            .unwrap();
+        assert_eq!(result.health_after, health - 20);
+        let shields = runtime.arbaziloth_shields_mut(boss).unwrap();
         assert!(shields.step_on_fire());
         assert!(shields.use_rod(100, 100));
     }
