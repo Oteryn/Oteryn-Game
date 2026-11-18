@@ -137,7 +137,7 @@ fn vampire(key: &str, y: u16, weakened: bool) -> Callback {
             })
             .collect();
     }
-    callback.storage = vec![set(MISSION03, -1, 4, 4), set(QUESTLINE, 8, 8, 9)];
+    callback.storage = vec![set(MISSION03, 0, 6, 4), set(QUESTLINE, 8, 8, 9)];
     callback.sources = vec![
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/actions_vampire_hunt.lua:10-31".into(),
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:330-336".into(),
@@ -169,7 +169,7 @@ fn haunted() -> Callback {
         to: 7868,
         reset_after_ms: 10_000,
     });
-    callback.storage = vec![set(MISSION04, -1, 2, 2), set(QUESTLINE, 12, 12, 13)];
+    callback.storage = vec![set(MISSION04, 0, 3, 2), set(QUESTLINE, 12, 12, 13)];
     callback.sources = vec![
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:65-80".into(),
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:337-342".into(),
@@ -217,7 +217,7 @@ fn nexus(repeat: bool) -> Callback {
     callback.storage = if repeat {
         vec![set(QUESTLINE, 22, 25, 22)]
     } else {
-        vec![set(MISSION07, -1, 2, 2), set(QUESTLINE, -1, 21, 22)]
+        vec![set(MISSION07, 0, 5, 2), set(QUESTLINE, 0, 21, 22)]
     };
     callback.sources = vec![
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:117-135".into(),

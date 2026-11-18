@@ -67,29 +67,40 @@ async fn exercise(h: &Harness) -> TestResult {
     let native = active.native_gameplay().ok_or("native item profiles")?;
     let world = world::native_scene_with_appearances(
         native,
-        [(33269, 31476, 33272, 31482), (33385, 31461, 33399, 31481)]
-            .into_iter()
-            .map(|bounds| world::NativeCrop {
+        [
+            world::NativeCrop {
+                bytes: include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../../content/world/placements/region-z14-x129-y122.b3"
+                )),
+                region: (14, 129, 122),
+                bounds: (33269, 31476, 33272, 31482),
+                start: (33270, 31477),
+                expected: vec![],
+            },
+            world::NativeCrop {
                 bytes: include_bytes!(concat!(
                     env!("CARGO_MANIFEST_DIR"),
                     "/../../../content/world/placements/region-z14-x130-y122.b3"
                 )),
                 region: (14, 130, 122),
-                bounds,
-                start: (33270, 31477),
+                bounds: (33385, 31461, 33399, 31481),
+                start: (33392, 31479),
                 expected: vec![],
-            })
-            .chain(std::iter::once(world::NativeCrop {
-                bytes: include_bytes!(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/../../../content/world/placements/region-z13-x130-y126.b3"
-                )),
-                region: (13, 130, 126),
-                bounds: (33319, 32318, 33320, 32319),
-                start: (33319, 32318),
-                expected: vec![],
-            }))
-            .collect(),
+            },
+        ]
+        .into_iter()
+        .chain(std::iter::once(world::NativeCrop {
+            bytes: include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/world/placements/region-z13-x130-y126.b3"
+            )),
+            region: (13, 130, 126),
+            bounds: (33319, 32318, 33320, 32319),
+            start: (33319, 32318),
+            expected: vec![],
+        }))
+        .collect(),
         &[],
         &[8911, 8912, 14955, 14961],
     )?;
