@@ -29,7 +29,7 @@ pub(crate) struct Stack {
     pub(super) servers: ClientRuntime,
     http_url: String,
     requests: Arc<Mutex<Vec<String>>>,
-    pub(super) admissions: Arc<AtomicUsize>,
+    pub(crate) admissions: Arc<AtomicUsize>,
     pub(super) root_path: PathBuf,
     _fixture: tempfile::TempDir,
     pub(super) game_port: u16,
@@ -41,7 +41,7 @@ impl Stack {
         Self::start_with_frames(refusals, Vec::new())
     }
 
-    pub(super) fn start_with_frames(
+    pub(crate) fn start_with_frames(
         refusals: Vec<u32>,
         admitted_frames: Vec<Vec<u8>>,
     ) -> Result<Self, Box<dyn std::error::Error>> {

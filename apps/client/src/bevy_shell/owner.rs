@@ -569,3 +569,7 @@ fn logout_reaches_the_picker_even_when_quick_login_has_a_valid_selection()
         run().map_err(|error| error.to_string())
     })?.join().map_err(|_| "logout picker scenario panicked")?.map_err(Into::into)
 }
+
+#[cfg(test)]
+#[path = "owner/admission_tests.rs"]
+mod admission_tests;

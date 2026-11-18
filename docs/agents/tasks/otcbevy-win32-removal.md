@@ -168,17 +168,17 @@ this branch's base. Status of the 95 MISSING rows on this branch:
 
 - P: ported on this branch (54)
 - S: Bevy already presented it; the row was stale (24)
-- B: pre-game account screens moved to a separate lane (4)
+- B: pre-game account screens covered by the account-screen fixes in this PR (4)
 - N: not ported (13): by design 16, 138, 152; in scope but not ported 147, 149, 150,
   155, 158, 162-166
 
 | row | status | where / why |
 |---|---|---|
 | 5 | P | 069a9f4959 picker Mark/Train marked |
-| 6 | B | lane (b) |
-| 7 | B | lane (b) |
-| 8 | B | lane (b) |
-| 9 | B | entry overview lane (b); in-game premium form ported 0593fe242b |
+| 6 | B | Bevy login form shows the server queue position and retry countdown, with Cancel |
+| 7 | B | Bevy Account Services presents Character Bazaar, transfer and operation receipts |
+| 8 | B | Bevy coin checkout opens from Account Services and Store and shows recent orders |
+| 9 | B | Bevy Account Services presents the pre-game Premium overview. The in-game form was ported in 0593fe242b. |
 | 11 | S | bevy_shell/login/bulletin.rs (News) |
 | 12 | P | Misc options page; turning one off forgets the device (see Assumptions) |
 | 13 | P | 2e80440985, 70a75a0d36 login Sign out device (configured Platform sign-out) |
@@ -279,8 +279,8 @@ this branch's base. Status of the 95 MISSING rows on this branch:
 - Later ports outside the form window: character-picker batch training, NPC Talk/Trade
   context entries, the communication-lists form, device sign-out, About, the survey, the
   Support and Cookies links, the minimap create-mark key and the remembered-login toggles.
-- Independent inventory, 95 MISSING rows: 54 ported, 24 stale, 4 other lane, 13 not
-  ported (3 by design, 10 in scope).
+- Independent inventory, 95 MISSING rows: 54 ported in the original lane, 24 stale, 4 covered by
+  the account-screen fixes, 13 not ported (3 by design, 10 in scope).
 
 ## Assumptions
 
@@ -298,9 +298,11 @@ this branch's base. Status of the 95 MISSING rows on this branch:
   `OTERYN_NATIVE_REMEMBERED_DEVICES_ENABLED=true`; the Bevy rows are always editable, and
   `DeviceLogin::configured` still applies that switch. The revoke itself has no test.
 - Workflows, installer and packaging, the exe manifest, `[[bin]]`/`[features]` wiring and
-  the build and shipping docs (`apps/client/BEVY.md` build section) moved to a separate
-  lane, as did the pre-game account screens (bazaar, transfer, coin packages, premium
-  overview, admission queue).
+  the build and shipping docs (`apps/client/BEVY.md` build section) moved to a separate lane.
+- The account-screen fixes in this PR restored the Bazaar controls, world transfers,
+  receipts and pending-operation recovery, coin packages and checkout, and the Premium
+  overview. Run C restored inspection of recent coin orders, the read-only auction
+  details and minimum-bid default, and the admission queue countdown in Bevy.
 
 ## Closeout
 

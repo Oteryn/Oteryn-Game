@@ -61,6 +61,12 @@ fn reply(outbox: &Outbox, payload: Vec<u8>, status: CommandStatus) {
     });
 }
 fn fixture(total: u64) -> Result<(App, Receiver, Outbox), Box<dyn std::error::Error>> {
+    fixture_in(App::new(), total)
+}
+fn fixture_in(
+    mut app: App,
+    total: u64,
+) -> Result<(App, Receiver, Outbox), Box<dyn std::error::Error>> {
     let (link, mut rx, outbox) = play_channel();
     outbox.bevy_store_initialize();
     link.store_set_open(true);
@@ -75,7 +81,6 @@ fn fixture(total: u64) -> Result<(App, Receiver, Outbox), Box<dyn std::error::Er
         link,
         view: PlayView::new(TileCoord::new(100, 100), 7, &[])?,
     });
-    let mut app = App::new();
     app.insert_non_send(owner)
         .init_resource::<InputFocus>()
         .insert_resource(Skins {

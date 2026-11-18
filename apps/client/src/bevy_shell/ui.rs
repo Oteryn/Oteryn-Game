@@ -189,7 +189,10 @@ pub(super) struct ShellToolbar;
 #[derive(Component)]
 pub(super) struct Dialog;
 #[derive(Component)]
-pub(super) struct Feedback;
+pub(super) enum Feedback {
+    Settings,
+    Admission,
+}
 #[derive(Component)]
 pub(super) struct ScopeLabel;
 #[derive(Component)]
@@ -267,7 +270,7 @@ pub(super) fn setup(
     let shell_feedback = commands
         .spawn((
             source::text("", source::font(skins.font.clone(), false)),
-            Feedback,
+            Feedback::Admission,
         ))
         .insert(TextLayout::default())
         .id();
@@ -440,7 +443,7 @@ pub(super) fn setup(
     let feedback = commands
         .spawn((
             source::text("", source::font(skins.font.clone(), false)),
-            Feedback,
+            Feedback::Settings,
         ))
         .insert(TextLayout::default())
         .id();
@@ -475,7 +478,7 @@ pub(super) fn project(
     owner: NonSend<HostOwner>,
     skins: Res<Skins>,
     mut dialogs: Query<&mut Node, With<Dialog>>,
-    mut text: Query<(&mut Text, Has<Feedback>, Has<ScopeLabel>)>,
+    mut text: Query<(&mut Text, Option<&Feedback>, Has<ScopeLabel>)>,
     controls: Query<(Entity, &Control, Has<Checked>)>,
     mut indicators: Query<(&Indicator, &mut ImageNode)>,
     mut focus: ResMut<InputFocus>,
@@ -500,16 +503,18 @@ pub(super) fn project(
         node.display = if open { Display::Flex } else { Display::None };
     }
     for (mut text, feedback, scope) in &mut text {
-        let next = if feedback {
-            Some(owner.settings.feedback.as_str())
-        } else if scope {
-            Some(owner.settings.scope_label())
-        } else {
-            None
+        let next = match feedback {
+            Some(Feedback::Admission)
+                if owner.phase == super::owner::Phase::Entering && !owner.login.visible =>
+            {
+                owner.status.as_str()
+            }
+            Some(Feedback::Admission) => "",
+            Some(Feedback::Settings) => owner.settings.feedback.as_str(),
+            None if scope => owner.settings.scope_label(),
+            None => continue,
         };
-        if let Some(next) = next
-            && text.0 != next
-        {
+        if text.0 != next {
             text.0 = next.into();
         }
     }

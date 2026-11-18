@@ -266,3 +266,204 @@ fn coin_shop_checkout_control_routes_to_the_authenticated_presenter() -> TestRes
     ));
     Ok(())
 }
+
+#[test]
+fn get_coins_reopens_and_inspects_an_awaiting_payment_order_by_request_id() -> TestResult {
+    use crate::account_services::test_server::coins::PACKAGE;
+    use std::sync::{Arc, Mutex};
+
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let authority = mock.authority.clone();
+        authority
+            .lock()
+            .map_err(|_| "authority")?
+            .coins
+            .as_mut()
+            .ok_or("coin authority")?
+            .fail_after_create = true;
+        let (mut app, mut config) = commerce_app()?;
+        let opens = Arc::new(Mutex::new(Vec::new()));
+        let browser = opens.clone();
+        config.open_browser = Arc::new(move |url| {
+            if let Ok(mut opened) = browser.lock() {
+                opened.push(url.to_owned());
+            }
+            true
+        });
+        let worker = thread::Builder::new().stack_size(64 << 20).spawn(move || {
+            mock.runtime
+                .block_on(crate::account_services::run(
+                    &client,
+                    &token,
+                    &config,
+                    CancellationToken::new(),
+                ))
+                .map_err(|e| format!("{e:?}"))
+        })?;
+
+        let menu = wait(&mut app, None)?;
+        click_named(&mut app, "account.coins")?;
+        let packages = wait(&mut app, Some(menu))?;
+        click_named(&mut app, &format!("coin.package.{PACKAGE}"))?;
+        click_named(&mut app, "commerce.confirm")?;
+        let pending = wait(&mut app, Some(packages))?;
+        click_named(&mut app, "coin.retry")?;
+        let checkout = wait(&mut app, Some(pending))?;
+        let order = authority
+            .lock()
+            .map_err(|_| "authority")?
+            .coins
+            .as_ref()
+            .and_then(|coin| coin.orders.values().next())
+            .map(|(_, order)| order.clone())
+            .ok_or("order")?;
+        assert_ne!(order.order_id, order.request_id);
+        click(&mut app, Action::Back)?;
+        let menu = wait(&mut app, Some(checkout))?;
+        click_named(&mut app, "account.coins")?;
+        let recent = wait(&mut app, Some(menu))?;
+        click_named(&mut app, &format!("coin.order.{}", order.order_id))?;
+        let inspected = wait(&mut app, Some(recent))?;
+        click_named(&mut app, "coin.checkout")?;
+        let reopened = wait(&mut app, Some(inspected))?;
+        click(&mut app, Action::Back)?;
+        wait(&mut app, Some(reopened))?;
+        click(&mut app, Action::Back)?;
+        worker.join().map_err(|_| "account services worker")??;
+
+        let state = authority.lock().map_err(|_| "authority")?;
+        assert!(
+            state
+                .requests
+                .iter()
+                .any(|request| request.starts_with(&format!(
+                    "GET /api/v1/native-account/coin-purchases/requests/{} ",
+                    order.request_id
+                )))
+        );
+        assert_eq!(state.coins.as_ref().ok_or("coin authority")?.creations, 1);
+        assert_eq!(opens.lock().map_err(|_| "browser")?.len(), 2);
+        Ok(())
+    })
+}
+
+#[test]
+fn bazaar_page_keeps_auction_details_during_bid_retry_and_status_recovery() -> TestResult {
+    use crate::account_services::test_server::{AUCTION, CHARACTER, DESTINATION};
+    use oteryn_platform_client::native_login::bazaar::BazaarCommand;
+
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let authority = mock.authority.clone();
+        {
+            let mut state = authority.lock().map_err(|_| "authority")?;
+            state.paginate = true;
+            state.pending_first = true;
+        }
+        let (mut app, config) = commerce_app()?;
+        let worker = thread::Builder::new().stack_size(64 << 20).spawn(move || {
+            mock.runtime
+                .block_on(crate::account_services::run(
+                    &client,
+                    &token,
+                    &config,
+                    CancellationToken::new(),
+                ))
+                .map_err(|e| format!("{e:?}"))
+        })?;
+
+        let menu = wait(&mut app, None)?;
+        click_named(&mut app, "account.bazaar.all")?;
+        let browse = wait(&mut app, Some(menu))?;
+        click_named(&mut app, "account.bazaar.next")?;
+        let page = wait(&mut app, Some(browse))?;
+        click_named(&mut app, &format!("account.auction.{AUCTION}"))?;
+        click_named(&mut app, "commerce.confirm")?;
+        let pending = wait(&mut app, Some(page))?;
+        assert!(
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|text| {
+                    text.0.contains("Next character")
+                        && text.0.contains("highest bid 0")
+                        && text.0.contains("2000000000 UTC")
+                }),
+            "keep the auction summary visible while a bid is pending"
+        );
+        let id = authority
+            .lock()
+            .map_err(|_| "authority")?
+            .commands
+            .keys()
+            .next()
+            .cloned()
+            .ok_or("bid request")?;
+        assert!(
+            app.world_mut()
+                .query_filtered::<&Text, With<Body>>()
+                .single(app.world())?
+                .0
+                .contains(&id)
+        );
+        click_named(&mut app, "account.retry")?;
+        let retried = wait(&mut app, Some(pending))?;
+        click_named(&mut app, "account.status")?;
+        let resolved = wait(&mut app, Some(retried))?;
+        {
+            let mut state = authority.lock().map_err(|_| "authority")?;
+            let (bid, _) = state.commands.get(&id).ok_or("same bid")?;
+            assert!(
+                matches!(&bid.command, BazaarCommand::Bid { auction_id, coins: 10, .. } if auction_id == AUCTION)
+            );
+            assert_eq!(state.commands.len(), 1);
+            assert_eq!(state.effects, 1);
+            let bid_submissions = state.requests.iter().filter(|request| {
+                request.starts_with("POST /api/v1/native-account/bazaar/commands ")
+            });
+            assert_eq!(
+                bid_submissions
+                    .filter(|request| request.contains(&id))
+                    .count(),
+                2
+            );
+            assert!(state.requests.iter().any(|request| {
+                request.starts_with(&format!("GET /api/v1/native-account/bazaar/commands/{id} "))
+            }));
+            state.pending_first = false;
+        }
+        click_named(&mut app, &format!("account.receipt.{id}"))?;
+        let receipt = wait(&mut app, Some(resolved))?;
+        click_named(&mut app, &format!("account.character.{CHARACTER}"))?;
+        click_named(&mut app, "account.sell")?;
+        click_named(&mut app, "commerce.confirm")?;
+        let listed = wait(&mut app, Some(receipt))?;
+        click_named(&mut app, &format!("account.character.{CHARACTER}"))?;
+        click_named(&mut app, &format!("account.transfer.{DESTINATION}"))?;
+        let quote = wait(&mut app, Some(listed))?;
+        click_named(&mut app, "account.transfer.confirm")?;
+        click_named(&mut app, "commerce.confirm")?;
+        wait(&mut app, Some(quote))?;
+        click(&mut app, Action::Back)?;
+        worker.join().map_err(|_| "account services worker")??;
+
+        let state = authority.lock().map_err(|_| "authority")?;
+        assert_eq!(state.effects, 3);
+        assert!(state.commands.values().any(|(request, _)| matches!(
+            &request.command,
+            BazaarCommand::Sell { character_id, minimum_bid: 1, duration_hours: 24 } if character_id == CHARACTER
+        )));
+        assert!(
+            state
+                .commands
+                .values()
+                .any(|(request, _)| matches!(&request.command, BazaarCommand::Transfer { .. }))
+        );
+        Ok(())
+    })
+}

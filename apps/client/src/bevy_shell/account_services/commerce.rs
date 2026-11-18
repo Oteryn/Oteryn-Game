@@ -20,7 +20,6 @@ enum FieldKind {
     Bid,
     MinimumBid,
     Duration,
-    Order,
 }
 
 #[derive(Component)]
@@ -33,7 +32,6 @@ enum Action {
     Quote(String),
     Bid(String, String, u64),
     Sell,
-    InspectOrder,
     Prepare(String, Reply),
     Confirm(Reply),
     Cancel,
@@ -113,7 +111,10 @@ fn account(ui: &mut Builder<'_, '_, '_>, view: &crate::account_services::View) {
             "account.transfer.confirm",
             "Review world transfer",
             Action::Prepare(
-                view.transfer_description(quote),
+                format!(
+                    "{}\nGame rechecks offline, guild, house and market restrictions before committing.",
+                    view.transfer_description(quote)
+                ),
                 Reply::Account(Account::Transfer { confirmed: true }),
             ),
         );
@@ -122,56 +123,55 @@ fn account(ui: &mut Builder<'_, '_, '_>, view: &crate::account_services::View) {
     if page.next_cursor.is_some() {
         ui.account("account.bazaar.next", "Next page", Account::Next);
     }
-    if !view.pending() {
-        if page
+    if !view.pending()
+        && page
             .auctions
             .iter()
             .any(|auction| auction.state == AuctionState::Open)
-        {
-            ui.field("Bid amount (coins)", FieldKind::Bid, "");
-        }
-        for auction in &page.auctions {
-            let label = format!(
-                "{} · level {} · {} · {:?} · minimum {} coins",
-                auction.character_name,
-                auction.level,
-                auction.world_name,
-                auction.state,
-                auction.minimum_next_bid
+    {
+        ui.field("Bid amount (coins, blank for minimum)", FieldKind::Bid, "");
+    }
+    for auction in &page.auctions {
+        ui.text(&format!(
+            "{} · level {} · {} · {:?} · minimum {} coins · highest bid {} · ends {} UTC seconds",
+            auction.character_name,
+            auction.level,
+            auction.world_name,
+            auction.state,
+            auction.minimum_next_bid,
+            auction.highest_bid,
+            auction.ends_at
+        ));
+        if !view.pending() && auction.state == AuctionState::Open {
+            ui.button(
+                &format!("account.auction.{}", auction.id),
+                "Review bid",
+                Action::Bid(
+                    auction.id.clone(),
+                    auction.character_name.clone(),
+                    auction.minimum_next_bid,
+                ),
             );
-            if auction.state == AuctionState::Open {
-                ui.button(
-                    &format!("account.auction.{}", auction.id),
-                    &label,
-                    Action::Bid(
-                        auction.id.clone(),
-                        auction.character_name.clone(),
-                        auction.minimum_next_bid,
-                    ),
-                );
-            } else {
-                ui.text(&label);
-            }
         }
-        if !page.owned_characters.is_empty() {
-            ui.text("Select your character for listing or transfer");
-            for character in &page.owned_characters {
-                ui.button(
-                    &format!("account.character.{}", character.id),
-                    &character.name,
-                    Action::ChooseCharacter(character.id.clone(), character.name.clone()),
-                );
-            }
-            ui.field("Minimum listing bid (coins)", FieldKind::MinimumBid, "1");
-            ui.field("Listing duration (hours)", FieldKind::Duration, "24");
-            ui.button("account.sell", "Review auction listing", Action::Sell);
-            for world in &page.worlds {
-                ui.button(
-                    &format!("account.transfer.{}", world.id),
-                    &format!("Check transfer to {}", world.name),
-                    Action::Quote(world.id.clone()),
-                );
-            }
+    }
+    if !view.pending() && !page.owned_characters.is_empty() {
+        ui.text("Select your character for listing or transfer");
+        for character in &page.owned_characters {
+            ui.button(
+                &format!("account.character.{}", character.id),
+                &character.name,
+                Action::ChooseCharacter(character.id.clone(), character.name.clone()),
+            );
+        }
+        ui.field("Minimum listing bid (coins)", FieldKind::MinimumBid, "1");
+        ui.field("Listing duration (hours)", FieldKind::Duration, "24");
+        ui.button("account.sell", "Review auction listing", Action::Sell);
+        for world in &page.worlds {
+            ui.button(
+                &format!("account.transfer.{}", world.id),
+                &format!("Check transfer to {}", world.name),
+                Action::Quote(world.id.clone()),
+            );
         }
     }
     for receipt in &page.recent_operations {
@@ -200,7 +200,7 @@ fn coins(ui: &mut Builder<'_, '_, '_>, view: &crate::coin_shop::View) {
     if let Some(catalogue) = &view.catalogue {
         for package in &catalogue.packages {
             let price = crate::coin_shop::price_text(&package.price);
-            let label = format!("{} coins · {price}", package.coins);
+            let label = format!("{} · {} coins · {price}", package.title, package.coins);
             if view.can_purchase(&package.id) {
                 ui.button(&format!("coin.package.{}", package.id), &label, Action::Prepare(
                     format!("Buy {} coins for {price} in sandbox checkout? No real money is charged.", package.coins),
@@ -210,9 +210,22 @@ fn coins(ui: &mut Builder<'_, '_, '_>, view: &crate::coin_shop::View) {
                 ui.text(&label);
             }
         }
+        if !catalogue.recent_orders.is_empty() {
+            ui.text("Recent orders");
+        }
+        for order in &catalogue.recent_orders {
+            let price = crate::coin_shop::price_text(&order.price);
+            let label = format!("{:?} · {} coins · {price}", order.state, order.coins);
+            ui.text(&format!("{label} · {}", order.order_id));
+            if !view.pending() {
+                ui.coin(
+                    &format!("coin.order.{}", order.order_id),
+                    "Inspect order",
+                    Coin::Inspect(order.request_id.clone()),
+                );
+            }
+        }
     }
-    ui.field("Previous order ID", FieldKind::Order, "");
-    ui.button("coin.inspect", "Check previous order", Action::InspectOrder);
 }
 
 struct Builder<'a, 'w, 's> {
@@ -237,7 +250,7 @@ impl Builder<'_, '_, '_> {
     fn field(&mut self, label: &str, kind: FieldKind, initial: &str) {
         self.text(label);
         let mut text = EditableText::new(initial);
-        text.max_characters = Some(if kind == FieldKind::Order { 128 } else { 20 });
+        text.max_characters = Some(20);
         let entity = self
             .commands
             .spawn((
@@ -382,19 +395,15 @@ fn finish(
             );
             return;
         }
-        Action::InspectOrder => {
-            let Some(id) = value(FieldKind::Order).filter(|value| !value.is_empty()) else {
-                status("Enter an order ID".into());
-                return;
-            };
-            owner
-                .services
-                .reply(button.request, Reply::Coin(Coin::Inspect(id)));
-            return;
-        }
         Action::Bid(id, name, minimum) => {
             let Some(coins) = value(FieldKind::Bid)
-                .and_then(|text| text.parse::<u64>().ok())
+                .and_then(|text| {
+                    if text.is_empty() {
+                        Some(*minimum)
+                    } else {
+                        text.parse::<u64>().ok()
+                    }
+                })
                 .filter(|coins| coins >= minimum)
             else {
                 status(format!("Enter a bid of at least {minimum} coins"));
@@ -402,7 +411,7 @@ fn finish(
             };
             (
                 format!(
-                    "Bid {coins} Oteryn coins for {name}? The service reserves the bid amount."
+                    "Bid {coins} Oteryn coins for {name}? The service reserves funds; settlement requires the Game ownership receipt."
                 ),
                 Reply::Account(Account::Bid {
                     auction_id: id.clone(),
@@ -443,7 +452,7 @@ fn finish(
                 .map_or(character_id.as_str(), |row| row.name.as_str());
             (
                 format!(
-                    "List {name} for {duration_hours} hours with a minimum bid of {minimum_bid} coins? The offline character will be locked."
+                    "List {name} for {duration_hours} hours with a minimum bid of {minimum_bid} coins? The offline character will be locked. Items and gold remain with it."
                 ),
                 Reply::Account(Account::Sell {
                     character_id: character_id.clone(),

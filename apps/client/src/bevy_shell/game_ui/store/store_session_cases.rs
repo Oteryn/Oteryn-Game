@@ -386,3 +386,64 @@ fn store_exposes_coin_checkout_with_an_admitted_account() -> ResultTest {
     assert!(world.get::<InteractionDisabled>(button).is_none());
     Ok(())
 }
+
+#[test]
+fn store_get_coins_opens_the_account_catalogue_for_the_admitted_character() -> ResultTest {
+    use crate::{
+        account_services::test_server::{CHARACTER, MockPlatform, coins::PACKAGE, test_thread},
+        native_entry::test_support::Stack,
+    };
+    use std::time::{Duration, Instant};
+
+    test_thread(|| {
+        let stack = Stack::start_with_frames(vec![], vec![])?;
+        let mock = MockPlatform::start()?;
+        let mut app = App::new();
+        crate::bevy_shell::account_services::install(&mut app);
+        let (mut app, _commands, _) = fixture_in(app, 250)?;
+        let mut config = stack.config();
+        config.platform_url = mock.base.clone();
+        let owner = app.world().non_send::<HostOwner>();
+        owner.services.configure(&mut config);
+        owner
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .configure_coin_shop(Some(config), CHARACTER);
+        app.update();
+        click(&mut app, Kind::CoinCheckout)?;
+
+        let deadline = Instant::now() + Duration::from_secs(5);
+        let package = format!("coin.package.{PACKAGE}");
+        loop {
+            app.update();
+            let world = app.world_mut();
+            if world
+                .query::<&Name>()
+                .iter(world)
+                .any(|name| name.as_str() == package)
+            {
+                break;
+            }
+            if Instant::now() >= deadline {
+                return Err("Store did not open the authenticated coin packages".into());
+            }
+            std::thread::yield_now();
+        }
+        let request = format!(
+            "GET /api/v1/native-account/coin-purchases/catalogue?character_id={CHARACTER} "
+        );
+        assert!(
+            mock.authority
+                .lock()
+                .map_err(|_| "authority")?
+                .requests
+                .iter()
+                .any(|line| line.starts_with(&request))
+        );
+        drop(app);
+        stack.finish();
+        Ok(())
+    })
+}

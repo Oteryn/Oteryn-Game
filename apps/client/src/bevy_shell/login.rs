@@ -78,6 +78,8 @@ impl LoginState {
 }
 #[derive(Component)]
 pub(super) struct LoginDialog;
+#[derive(Component)]
+pub(super) struct LoginProgress;
 /// The developer connection fields, shown only while Advanced is on.
 #[derive(Component)]
 pub(super) struct AdvancedFields;
@@ -340,9 +342,16 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     ] {
         control_button(&mut commands, &skins, footer, control, caption, width);
     }
+    let progress = commands
+        .spawn((
+            LoginProgress,
+            source::text("", source::font(skins.font.clone(), false)),
+            TextLayout::default(),
+        ))
+        .id();
     commands
         .entity(panel)
-        .add_children(&[advanced, toggle, footer]);
+        .add_children(&[advanced, toggle, progress, footer]);
     let alert = commands
         .spawn((
             LoginAlert,
@@ -427,7 +436,8 @@ pub(super) fn project(
     mut owner: NonSendMut<HostOwner>,
     mut dialogs: DialogNodes,
     mut fields: Query<(Entity, &LoginField, &mut EditableText)>,
-    mut texts: Query<&mut Text>,
+    mut texts: Query<&mut Text, Without<LoginProgress>>,
+    mut progress_text: Query<&mut Text, With<LoginProgress>>,
     alert_text: Query<Entity, With<AlertText>>,
     alert_title: Query<&Children, With<AlertTitle>>,
     controls: Query<(Entity, &LoginControl)>,
@@ -440,6 +450,17 @@ pub(super) fn project(
         focus.clear();
     }
     *shown = visible;
+    let pending = owner.login.form.pending();
+    let progress = if visible && pending {
+        owner.login.form.message()
+    } else {
+        ""
+    };
+    for mut text in &mut progress_text {
+        if text.0 != progress {
+            text.0 = progress.to_owned();
+        }
+    }
     let alert = owner.login.form.alert();
     for (mut node, dialog, alert_box) in &mut dialogs {
         let shown = if dialog {
@@ -490,7 +511,6 @@ pub(super) fn project(
         }
         *revision = Some(owner.login.revision);
     }
-    let pending = owner.login.form.pending();
     for (entity, _, _) in &fields {
         if pending {
             commands.entity(entity).insert(InteractionDisabled);
