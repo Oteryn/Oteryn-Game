@@ -258,16 +258,40 @@ impl Replacements {
                 self.members.swap_remove(index);
                 continue;
             }
-            let retire: Vec<_> = self
-                .members
-                .iter()
-                .filter(|member| {
-                    rule.retire_siblings
-                        && &member.creature == defeated
-                        && runtime.contains_live_creature(member.actor)
-                })
-                .map(|member| member.actor)
-                .collect();
+            // Crystal 201189f8, the_first_dragon/creaturescripts_death_dragon_essence.lua:3-11.
+            // Its sweep includes matching creatures that arrived after the lever was used.
+            let retire: Vec<_> = if let Some(area) = rule.retire_siblings_in {
+                runtime
+                    .current_live_creature_census()?
+                    .into_iter()
+                    .filter(|actor| {
+                        runtime.matches_live_creature_identity(*actor, defeated.as_bytes())
+                            && runtime
+                                .read_actor_position(*actor)
+                                .ok()
+                                .is_some_and(|position| {
+                                    super::super::quest_callbacks::native(position.position())
+                                        .is_some_and(|at| {
+                                            area.contains(
+                                        oteryn_gameplay_quests::quest::world_callbacks::Position {
+                                            x: at.x, y: at.y, floor: at.floor,
+                                        }
+                                    )
+                                        })
+                                })
+                    })
+                    .collect()
+            } else {
+                self.members
+                    .iter()
+                    .filter(|member| {
+                        rule.retire_siblings
+                            && &member.creature == defeated
+                            && runtime.contains_live_creature(member.actor)
+                    })
+                    .map(|member| member.actor)
+                    .collect()
+            };
             let spawn = rule
                 .spawn
                 .iter()

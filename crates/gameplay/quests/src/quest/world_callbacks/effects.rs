@@ -539,10 +539,43 @@ pub struct DeathReplacement {
     pub defeated: String,
     #[serde(default, skip_serializing_if = "is_false")]
     pub retire_siblings: bool,
+    /// When the source sweeps a whole room, include later arrivals of the defeated species.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub retire_siblings_in: Option<DeathRetirementArea>,
     pub spawn: Vec<ReplacementActor>,
     /// Move an existing encounter member only if it still occupies the source tile.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub relocate: Option<DeathRelocation>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DeathRetirementArea {
+    pub minimum: Position,
+    pub maximum: Position,
+}
+
+impl DeathRetirementArea {
+    pub fn contains(self, position: Position) -> bool {
+        position.floor == self.minimum.floor
+            && (self.minimum.x..=self.maximum.x).contains(&position.x)
+            && (self.minimum.y..=self.maximum.y).contains(&position.y)
+    }
+
+    fn valid(self) -> bool {
+        (-15..=0).contains(&self.minimum.floor)
+            && self.minimum.floor == self.maximum.floor
+            && self
+                .maximum
+                .x
+                .checked_sub(self.minimum.x)
+                .is_some_and(|span| span <= 64)
+            && self
+                .maximum
+                .y
+                .checked_sub(self.minimum.y)
+                .is_some_and(|span| span <= 64)
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -615,6 +648,9 @@ fn valid_death_phases(
         if rule.defeated == plan.terminal
             || !known.contains(rule.defeated.as_str())
             || !defeated.insert(rule.defeated.as_str())
+            || rule
+                .retire_siblings_in
+                .is_some_and(|area| !rule.retire_siblings || !area.valid())
             || if let Some(relocate) = &rule.relocate {
                 !rule.spawn.is_empty()
                     || rule.retire_siblings

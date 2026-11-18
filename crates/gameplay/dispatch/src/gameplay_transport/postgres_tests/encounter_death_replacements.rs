@@ -21,6 +21,10 @@ const SHIELDED: &str = "oteryn:creature.the_shielded_thorn_knight";
 const ENRAGED: &str = "oteryn:creature.the_enraged_thorn_knight";
 const STEED: &str = "oteryn:creature.thorn_steed";
 const DRAGON_ESSENCE: &str = "oteryn:creature.dragon_essence";
+const ESSENCE_AREA_MIN: Position = at(33603, 31009);
+const ESSENCE_AREA_MAX: Position = at(33631, 31037);
+const ESSENCE_LATE_INSIDE: Position = at(33624, 31028);
+const ESSENCE_OUTSIDE: Position = at(33632, 31028);
 const DRAGON: &str = "oteryn:creature.the_first_dragon";
 const CHALLENGER: &str = "oteryn:creature.fallen_challenger";
 const SPIRIT: &str = "oteryn:creature.spirit_of_fertility";
@@ -147,7 +151,7 @@ fn first_dragon_death_sends_two_room_spectators_to_the_reward_landing() -> TestR
 }
 
 #[test]
-fn dragon_essence_death_retires_the_five_siblings_and_summons_one_first_dragon() -> TestResult {
+fn dragon_essence_death_retires_nearby_essences_and_summons_one_first_dragon() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -298,6 +302,7 @@ pub(super) fn callback(name: &str, lever: Position) -> TestResult<Callback> {
                 .collect(),
             json!({"terminal":DRAGON,"replacements":[
                 {"defeated":DRAGON_ESSENCE,"retire_siblings":true,
+                 "retire_siblings_in":{"minimum":ESSENCE_AREA_MIN,"maximum":ESSENCE_AREA_MAX},
                  "spawn":[{"creature":DRAGON,"position":at(33617,31023)}]}
             ]}),
         )
@@ -396,7 +401,7 @@ pub(super) fn world(
     let extra = match name {
         BOWL => vec![BOWL_APPROACH],
         ENERGY => vec![LLOYD_REBIRTH, LLOYD_RETURN],
-        ESSENCE => vec![at(33617, 31023)],
+        ESSENCE => vec![at(33617, 31023), ESSENCE_LATE_INSIDE, ESSENCE_OUTSIDE],
         FALLEN => vec![
             at(33592, 31014),
             at(33592, 31015),
@@ -812,8 +817,34 @@ pub(super) async fn exercise(
     } else {
         let cohort = live(owner, DRAGON_ESSENCE).await?;
         assert_eq!(cohort.len(), 6);
+        let late_outside = if name == ESSENCE {
+            let mut runtime = owner.runtime.lock().await;
+            let health = runtime
+                .companion_policy(DRAGON_ESSENCE)
+                .map_err(debug)?
+                .maximum_health;
+            let positions = [ESSENCE_LATE_INSIDE, ESSENCE_OUTSIDE].map(|position| {
+                (
+                    DRAGON_ESSENCE,
+                    health,
+                    super::quest_world_callbacks::local(position),
+                )
+            });
+            let [inside, outside]: [ExactActorRef; 2] = runtime
+                .commit_quest_creature_replacement(&[], &positions, || true)
+                .map_err(debug)?
+                .try_into()
+                .map_err(|_| "two late Essences")?;
+            assert!(runtime.contains_live_creature(inside));
+            Some(outside)
+        } else {
+            None
+        };
         super::engenc2_cults::kill(owner, admitted, cohort[0], DRAGON_ESSENCE, 101).await?;
-        assert!(live(owner, DRAGON_ESSENCE).await?.is_empty());
+        assert_eq!(
+            live(owner, DRAGON_ESSENCE).await?,
+            late_outside.into_iter().collect::<Vec<_>>()
+        );
         assert_eq!(live(owner, DRAGON).await?.len(), 1);
         if name == VICTORY {
             let peer =
