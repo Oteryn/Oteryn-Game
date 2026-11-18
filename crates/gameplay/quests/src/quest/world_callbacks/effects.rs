@@ -794,7 +794,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     && track.add == Some(1)
                     && track.set == 5
             })
-            || callback.item_reward().is_none_or(|reward| {
+            || callback.item_reward().as_ref().is_none_or(|reward| {
                 reward.item != "oteryn:item.tibia.i3035"
                     || reward.count != 1
                     || !reward.contents.is_empty()
@@ -804,6 +804,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
     {
         return false;
     }
+    let merchant_wave = callback.starts_merchant_wave();
     if effects.place_item.is_some_and(|appearance| {
         appearance != 12187
             || callback.selector.appearance != Some(10480)
@@ -812,11 +813,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || !callback.requires_world_admission
             || !mission_active()
             || !callback.storage.iter().any(|track| {
-                let final_net = callback.starts_merchant_wave();
+                let bounds = if merchant_wave { (4, 4, 5) } else { (0, 3, 4) };
                 track.track == "oteryn:quest-progress/crystalserver/kv/rottinwood-trap-count"
-                    && track.minimum == if final_net { 4 } else { 0 }
-                    && track.maximum == if final_net { 4 } else { 3 }
-                    && track.set == if final_net { 5 } else { 4 }
+                    && (track.minimum, track.maximum, track.set) == bounds
                     && track.add == Some(1)
             })
             || callback.reversible
@@ -831,9 +830,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     || item.target_remove
             })
             || callback.lever.is_some()
-            || (callback.teleport.is_some() && !callback.starts_merchant_wave())
+            || (callback.teleport.is_some() && !merchant_wave)
             || !callback.passages.is_empty()
-            || (effects.encounter.is_some() && !callback.starts_merchant_wave())
+            || (effects.encounter.is_some() && !merchant_wave)
             || effects.item_cycle.is_some()
             || effects.item_presence.is_some()
             || effects.portals.is_some()
