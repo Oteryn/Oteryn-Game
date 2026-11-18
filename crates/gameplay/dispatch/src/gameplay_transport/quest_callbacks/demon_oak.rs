@@ -270,26 +270,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
                 map.facts.emit_movement_effect(target, 1);
                 let mut states = self.states.spell_states.lock().await;
-                if let Some(position) = native(expected.position()) {
-                    super::area_damage::oak_earth_hit(
-                        &runtime,
-                        &mut states,
+                super::area_damage::oak_earth_hit(
+                    &runtime,
+                    &mut states,
+                    actor,
+                    session,
+                    (170, 210),
+                    oak_draw(
+                        runtime.content_pin().server_artifact_digest(),
                         actor,
                         session,
-                        map,
-                        position,
-                        (170, 210),
-                        oak_draw(
-                            runtime.content_pin().server_artifact_digest(),
-                            actor,
-                            session,
-                            command.command_id().get(),
-                            "demon_oak.cut_damage",
-                            0,
-                        ),
-                        self.owner_now(),
-                    );
-                }
+                        command.command_id().get(),
+                        "demon_oak.cut_damage",
+                        0,
+                    ),
+                    self.owner_now(),
+                );
             }
         }
         Some(outcome(UseDisposition::Committed))

@@ -70,21 +70,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ReferenceResistanceKind::Physical,
             )
         };
-        if let Some(position) = native(entered.position())
-            && environmental_hit(
-                &runtime,
-                &mut states,
-                actor,
-                session,
-                raw,
-                kind,
-                element,
-                self.owner_now(),
-            )
-        {
-            map.facts
-                .emit_movement_effect(position, if matching { 16 } else { 37 });
-        }
+        environmental_hit(
+            &runtime,
+            &mut states,
+            actor,
+            session,
+            raw,
+            kind,
+            element,
+            self.owner_now(),
+        );
     }
 
     async fn step_demon_oak_area(
@@ -133,40 +128,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         }
         let mut states = self.states.spell_states.lock().await;
-        if let Some(position) = native(at) {
-            oak_earth_hit(
-                &runtime,
-                &mut states,
+        oak_earth_hit(
+            &runtime,
+            &mut states,
+            actor,
+            session,
+            (270, 310),
+            super::demon_oak::oak_draw(
+                runtime.content_pin().server_artifact_digest(),
                 actor,
                 session,
-                map,
-                position,
-                (270, 310),
-                super::demon_oak::oak_draw(
-                    runtime.content_pin().server_artifact_digest(),
-                    actor,
-                    session,
-                    entered.revision(),
-                    "demon_oak.area",
-                    1,
-                ),
-                self.owner_now(),
-            );
-        }
+                entered.revision(),
+                "demon_oak.area",
+                1,
+            ),
+            self.owner_now(),
+        );
     }
 }
 
-#[allow(
-    clippy::too_many_arguments,
-    reason = "passes the active actor, proven source and typed damage to the HP owner"
-)]
 pub(super) fn oak_earth_hit(
     runtime: &ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
     actor: ExactActorRef,
     session: GameSessionId,
-    map: &BundleMap,
-    position: TilePos,
     (minimum, maximum): (u32, u32),
     draw: Option<u64>,
     now: oteryn_simulation_determinism::SemanticTimeMicros,
@@ -178,7 +163,7 @@ pub(super) fn oak_earth_hit(
     }) else {
         return;
     };
-    if environmental_hit(
+    environmental_hit(
         runtime,
         states,
         actor,
@@ -187,9 +172,7 @@ pub(super) fn oak_earth_hit(
         PlayerHitKind::Earth,
         ReferenceResistanceKind::Earth,
         now,
-    ) {
-        map.facts.emit_movement_effect(position, 51);
-    }
+    );
 }
 
 #[allow(
@@ -205,9 +188,9 @@ fn environmental_hit(
     kind: PlayerHitKind,
     element: ReferenceResistanceKind,
     now: oteryn_simulation_determinism::SemanticTimeMicros,
-) -> bool {
+) {
     let Some(state) = states.get(runtime, actor, session) else {
-        return false;
+        return;
     };
     let damage = state
         .equipped_element_protection(element)
@@ -216,17 +199,16 @@ fn environmental_hit(
         })
         .unwrap_or(raw);
     let Ok(damage) = u32::try_from(damage) else {
-        return false;
+        return;
     };
-    states
-        .apply_creature_damage_kind(
-            runtime,
-            actor,
-            session,
-            damage,
-            kind,
-            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get()),
-            AnalyserDamageSource::None,
-        )
-        .is_some()
+    // Crystal Combat::doCombatHealth requires a caster for an explicit impact effect.
+    let _ = states.apply_creature_damage_kind(
+        runtime,
+        actor,
+        session,
+        damage,
+        kind,
+        crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get()),
+        AnalyserDamageSource::None,
+    );
 }
