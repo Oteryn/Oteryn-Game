@@ -413,7 +413,8 @@ fn scenario_case(
     } else if name == super::super::shadow_nexus::NAME {
         super::super::shadow_nexus::callback(false)?
     } else if name.starts_with(super::super::vampire_hunt::PREFIX) {
-        super::super::vampire_hunt::callback(false)?
+        let native = super::super::vampire_hunt::native_ground(name);
+        super::super::vampire_hunt::callback(native, native.then_some(trigger))?
     } else if classic_npc {
         callback("behemoth")?
     } else if rotten_purchase {

@@ -372,10 +372,11 @@ fn world_cells(
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
     data.manifest.palette.truncate(1);
-    let haunted_ground = callback.key == super::haunted_ruin::NATIVE_KEY;
-    if haunted_ground {
-        data.manifest.palette[0].key =
-            format!("oteryn:terrain.tibia.i{}", super::haunted_ruin::APPEARANCE);
+    let summon_ground = callback.selector.native.as_ref().filter(|selector| {
+        selector.position == trigger && selector.ordinal == 0 && callback.effects.use_summon.is_some()
+    });
+    if let Some(selector) = summon_ground {
+        data.manifest.palette[0].key = format!("oteryn:terrain.tibia.i{}", selector.appearance);
     }
     let distinct_seals = matches!(
         callback.native_rule,
@@ -647,7 +648,7 @@ fn world_cells(
                 attrs: Default::default(),
             });
     }
-    if !haunted_ground {
+    if summon_ground.is_none() {
         cells
             .entry((trigger.floor, trigger.x, trigger.y))
             .or_default()

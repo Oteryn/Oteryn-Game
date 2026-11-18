@@ -974,7 +974,7 @@ pub(super) async fn exercise(
         return Box::pin(super::shadow_nexus::exercise(owner, admitted, h)).await;
     }
     if name.starts_with(super::vampire_hunt::PREFIX) {
-        return Box::pin(super::vampire_hunt::exercise(owner, admitted, h, name.ends_with("all"))).await;
+        return Box::pin(super::vampire_hunt::exercise(owner, admitted, h, name)).await;
     }
     if name == super::thalas_greeting::NAME {
         return Box::pin(super::thalas_greeting::exercise(owner, admitted, h, authority)).await;
