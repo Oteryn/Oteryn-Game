@@ -50,6 +50,7 @@ use super::{ComposedFreshAdmission, operator_event};
 mod boss_reward_contribution;
 #[path = "boss_reward_settlement.rs"]
 mod boss_reward_settlement;
+mod death_portals;
 pub(super) use boss_reward_settlement::personal_death_id;
 
 #[cfg(test)]
@@ -1859,6 +1860,7 @@ fn refuse(reason: &str, creature: &str) {
 /// Project `target`'s committed death and append its settle (§1.1–§1.3). `lethal` is the
 /// attacker whose committed hit was lethal; it is the principal only when no contributor was
 /// tracked. Runs under the runtime lock and never awaits.
+#[cfg(test)]
 pub fn record_creature_kill(
     runtime: &mut ChannelRuntimeV1,
     sink: KillSink<'_>,
@@ -1866,6 +1868,30 @@ pub fn record_creature_kill(
     lethal: CapturedRewardPrincipal,
     now_ms: u64,
     observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
+) {
+    record_creature_kill_with_portals(runtime, sink, target, lethal, now_ms, observed_at, None);
+}
+
+type PortalContext<'a> = (
+    &'a crate::map::boot::BundleMap,
+    &'a [oteryn_gameplay_quests::quest::source_deaths::DeathPortal],
+);
+
+pub(super) fn portal_context(
+    map: Option<&crate::map::boot::BundleMap>,
+) -> Option<PortalContext<'_>> {
+    let rules = oteryn_gameplay_quests::quest::source_deaths::death_portals().ok()?;
+    (!rules.is_empty()).then_some((map?, rules))
+}
+
+pub(super) fn record_creature_kill_with_portals(
+    runtime: &mut ChannelRuntimeV1,
+    sink: KillSink<'_>,
+    target: ExactActorRef,
+    lethal: CapturedRewardPrincipal,
+    now_ms: u64,
+    observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
+    portals: Option<PortalContext<'_>>,
 ) {
     // Physical statistics precede every reward/principal/Bestiary admission.
     // The owner-issued lethal receipt proves death even for a no-corpse arena
@@ -1954,6 +1980,7 @@ pub fn record_creature_kill(
         sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
         native_room_placement_context: pin.frame_binding_digest().to_vec(),
     };
+    let position = portals.and_then(|_| runtime.read_actor_position(target).ok());
     let daily_boost = runtime.daily_boost().cloned();
     // Freeze the principal's Prey boost on the death turn, before any command can reroll it.
     if crate::combat::project_fixed_one_creature_death(&mut runtime.borrow_combat_death(), target)
@@ -1970,6 +1997,9 @@ pub fn record_creature_kill(
         refuse("no_loot_binding", "unknown");
         return;
     };
+    if wild && let (Some((map, bindings)), Some(position)) = (portals, position) {
+        death_portals::publish(map, &creature, position.position(), bindings);
+    }
     // Retain room victory independently of loot admission. If a personal reward
     // plan is admitted, its existing atomic settlement consumes the room death;
     // otherwise the nonreward descendant still needs this sealed occurrence.
@@ -2776,11 +2806,22 @@ fn release_settled_corpse(
 }
 
 /// §1.4: every lethal effect of a committed or replayed spell batch.
+#[cfg(test)]
 pub fn record_batch_kills(
     runtime: &mut ChannelRuntimeV1,
     sink: KillSink<'_>,
     receipt: &CombatBatchReceipt,
     now_ms: u64,
+) {
+    record_batch_kills_with_portals(runtime, sink, receipt, now_ms, None);
+}
+
+fn record_batch_kills_with_portals(
+    runtime: &mut ChannelRuntimeV1,
+    sink: KillSink<'_>,
+    receipt: &CombatBatchReceipt,
+    now_ms: u64,
+    portals: Option<PortalContext<'_>>,
 ) {
     sink.queue.boss_spell_contribution(runtime, receipt);
     let observed_at = runtime.committed_spell_batch_time(receipt).ok().flatten();
@@ -2799,7 +2840,15 @@ pub fn record_batch_kills(
             session,
             actor: receipt.caster,
         };
-        record_creature_kill(runtime, sink, effect.target, lethal, now_ms, observed_at);
+        record_creature_kill_with_portals(
+            runtime,
+            sink,
+            effect.target,
+            lethal,
+            now_ms,
+            observed_at,
+            portals,
+        );
     }
 }
 
@@ -3133,7 +3182,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let now_ms = self.owner_now().get() / 1_000;
         for receipt in receipts {
-            record_batch_kills(runtime, sink, receipt, now_ms);
+            record_batch_kills_with_portals(
+                runtime,
+                sink,
+                receipt,
+                now_ms,
+                portal_context(self.bundle_map()),
+            );
         }
     }
     /// Settle earlier deaths before a Task Board or EXTRA equipment mutation can

@@ -10,6 +10,9 @@ use super::{
 use serde::Deserialize;
 use std::{collections::BTreeMap, sync::OnceLock};
 
+mod portals;
+pub use portals::{DeathPortal, death_portals};
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct Effect {
     pub track: String,
@@ -113,6 +116,8 @@ struct Document {
     runtime_enabled: bool,
     quest: String,
     rules: Vec<Rule>,
+    #[serde(default)]
+    escape_portals: Vec<DeathPortal>,
     tracks: Vec<Track>,
 }
 #[derive(Deserialize)]
@@ -210,6 +215,7 @@ pub fn active(tracks: &BTreeMap<String, i64>) -> Vec<&'static str> {
     )
 }
 pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
+    death_portals()?;
     let mut tracks = catalogue.tracks;
     let mut transitions = catalogue.transitions;
     for doc in documents()? {

@@ -313,7 +313,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let root = GameplayDecisionRoot::from_bytes(digest);
         let mut trained = TrainingDue::new();
         for (target, lethal, at) in std::mem::take(&mut states.equipment_reflection_kills) {
-            crate::gameplay_transport::kill_reward::record_creature_kill(
+            crate::gameplay_transport::kill_reward::record_creature_kill_with_portals(
                 &mut runtime,
                 crate::gameplay_transport::kill_reward::KillSink {
                     prey: Some(&states),
@@ -326,6 +326,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 lethal,
                 at / 1_000,
                 Some(SemanticTimeMicros::from_micros(at)),
+                super::super::kill_reward::portal_context(self.bundle_map()),
             );
         }
         let mut pvp_hits = Vec::new();
@@ -1439,6 +1440,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                         lethal,
                                         now,
                                         false,
+                                        self.bundle_map(),
                                     );
                                 }
                             }
@@ -1456,6 +1458,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         lethal,
                         now,
                         !extension,
+                        self.bundle_map(),
                     );
                 }
             }
@@ -2209,8 +2212,9 @@ fn settle_kill(
     lethal: crate::combat::CapturedRewardPrincipal,
     now: SemanticTimeMicros,
     clear: bool,
+    map: Option<&crate::map::boot::BundleMap>,
 ) {
-    crate::gameplay_transport::kill_reward::record_creature_kill(
+    crate::gameplay_transport::kill_reward::record_creature_kill_with_portals(
         runtime,
         crate::gameplay_transport::kill_reward::KillSink {
             prey: Some(states),
@@ -2223,6 +2227,7 @@ fn settle_kill(
         lethal,
         now.get() / 1_000,
         Some(now),
+        super::super::kill_reward::portal_context(map),
     );
     if clear {
         entry.clear_target();

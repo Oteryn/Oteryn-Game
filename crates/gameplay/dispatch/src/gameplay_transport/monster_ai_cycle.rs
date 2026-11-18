@@ -1085,7 +1085,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let activity = attack.shared_experience_cells();
         for (target, lethal, at) in std::mem::take(&mut states.equipment_reflection_kills) {
-            super::kill_reward::record_creature_kill(
+            super::kill_reward::record_creature_kill_with_portals(
                 &mut runtime,
                 super::kill_reward::KillSink {
                     prey: Some(&states),
@@ -1098,6 +1098,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 lethal,
                 at / 1_000,
                 Some(oteryn_simulation_determinism::SemanticTimeMicros::from_micros(at)),
+                super::kill_reward::portal_context(self.bundle_map()),
             );
         }
         drop(attack);

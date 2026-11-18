@@ -293,7 +293,7 @@ fn scenario_case(
         || name.starts_with("qengine-rewards-")
         || name == "questpc7-golden"
         || name == "questpc7-friends";
-    let classic_npc = shared_rewards
+    let classic_npc = name.starts_with("qewrath-") || shared_rewards
         || name.starts_with("engoutfit-")
         || qengine_reward
         || name.starts_with("npcfix-m38-mistrock")
@@ -906,6 +906,8 @@ fn scenario_case(
             )],
             &[],
         )?
+    } else if name == super::super::qewrath_herald_escape::NAME {
+        super::super::qewrath_herald_escape::world(&callback)?
     } else if name == "questpc7-outfits-formal" {
         // The fixture includes the same admitted entry appearance as the real palace.
         let mut physical = callback.clone();
@@ -936,6 +938,7 @@ fn scenario_case(
                 name,
                 "catalogue-npc" | "catalogue-npc-inventory" | "catalogue-npc-scoped"
             )
+            || name == "qewrath-npc-handoff-dragon"
             || name == "srv7-reliable-ram"
             || name.starts_with("m09-treasure-")
             || name.starts_with("engoutfit-")
@@ -2464,6 +2467,8 @@ fn scenario_case(
             .await?;
         } else if name.starts_with("qewrath-emiliana-") {
             Box::pin(super::super::qewrath_emiliana::exercise(&mut owner, &mut admitted, &h, name)).await?;
+        } else if name == super::super::qewrath_herald_escape::NAME {
+            Box::pin(super::super::qewrath_herald_escape::exercise(&mut owner, &mut admitted)).await?;
         } else if name.starts_with("qewrath-npc-handoff-") {
             Box::pin(super::super::qewrath_npc_handoffs::exercise(&mut owner, &mut admitted, &h, name)).await?;
         } else if name == "m16-marker" {

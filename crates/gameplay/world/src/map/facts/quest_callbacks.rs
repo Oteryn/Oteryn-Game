@@ -1423,6 +1423,65 @@ impl BundleFacts {
             .unwrap_or_default()
     }
 
+    /// Publish the visual Item and its movement destination in one callback turn.
+    /// Repeated deaths at the same source leave the existing portal intact.
+    pub fn publish_quest_death_portal(
+        &self,
+        position: TilePos,
+        destination: TilePos,
+        appearance: u16,
+        effect: u16,
+    ) -> bool {
+        let Some(facts) = self
+            .movement_item_facts(appearance)
+            .filter(|facts| !facts.pickupable)
+        else {
+            return false;
+        };
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        if let Some(portal) = states.portals.get(&position) {
+            return portal.destination == destination;
+        }
+        if states.position_reserved(position) || !states.has_capacity(3) {
+            return false;
+        }
+        let Some(sequence) = states.movement_sequence.checked_add(1) else {
+            return false;
+        };
+        let Some(entry) = EntryId::callback(sequence) else {
+            return false;
+        };
+        let states = Arc::make_mut(&mut states);
+        states.movement_sequence = sequence;
+        states
+            .movement_items
+            .entry(position)
+            .or_default()
+            .push(view::ComposedEntry {
+                source: view::EntrySource::Added(entry),
+                facts,
+            });
+        states.portals.insert(
+            position,
+            DynamicPortal {
+                owner: entry.get(),
+                destination,
+                entry: Some(entry),
+                owner_revision: None,
+                expires: None,
+            },
+        );
+        if states.movement_effects.len() == 512 {
+            states.movement_effects.pop_front();
+        }
+        states
+            .movement_effects
+            .push_back((sequence, None, position, effect));
+        true
+    }
+
     /// Only live, current portals resolve; the timer and explicit removal retire both ends.
     pub fn quest_portal_destination(&self, pos: TilePos, now: u64) -> Option<TilePos> {
         let states = self.callbacks.lock().ok()?;
