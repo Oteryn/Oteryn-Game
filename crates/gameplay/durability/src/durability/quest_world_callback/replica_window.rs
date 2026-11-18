@@ -1,8 +1,7 @@
 //! Crystal 201189f, actions_servants_mechanism.lua:1-56.
 use super::{CurrentCharacterGameplayFence, DurabilityError, SpellLanePermit};
 use crate::durability::{
-    DurabilityRoot,
-    character_authority::{ReconciledCharacterAuthority, assert_recovery_fence},
+    DurabilityRoot, character_authority::ReconciledCharacterAuthority,
     character_equipment::assert_current_equipment_in_transaction,
     runtime_scope_assignment::NodeIncarnationProof,
 };
@@ -55,7 +54,6 @@ impl DurabilityRoot {
         let node = node.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = crate::durability::db::begin_type2_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &record).await?;
             assert_current_equipment_in_transaction(
                 &mut tx, &record, &node, &fence.item_fence(), None, native_digest
             ).await.map_err(|_| DurabilityError::Unavailable)?;
@@ -76,7 +74,7 @@ impl DurabilityRoot {
 }
 
 pub(crate) async fn credit(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    tx: &mut sqlx::PgConnection,
     scope: RuntimeScopeRefV1,
     kind: ReplicaKind,
 ) -> Result<(), DurabilityError> {
@@ -89,7 +87,7 @@ pub(crate) async fn credit(
         )
         .bind(world_id.as_bytes().as_slice())
         .bind(kind.number())
-        .execute(&mut **tx)
+        .execute(&mut *tx)
         .await?;
     }
     Ok(())
