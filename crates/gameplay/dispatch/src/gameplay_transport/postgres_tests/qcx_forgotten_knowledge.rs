@@ -133,22 +133,30 @@ fn retained_world_claims_grant_each_quest_item_once() -> TestResult {
                 let key =
                     oteryn_world_bundle::bundle::placement_key(-i8::try_from(z)?, x, y, ordinal)
                         .ok_or("quest reward placement")?;
+                // The second chest stands beside decorative platform objects.
+                // Boot on bare ground and position the fixture actor within use range.
+                let entry = if suffix == "halls_of_hope.reward2" {
+                    (x, y + 2)
+                } else {
+                    start
+                };
                 let outcome = claim_item(
                     &format!("oteryn:reward-claim.{suffix}"),
                     item,
                     key,
+                    start,
                     &activation,
                     &template,
                     NativeCrop {
                         bytes,
                         region: (z, x / 256, y / 256),
                         bounds: (
-                            x.min(start.0),
-                            y.min(start.1),
-                            x.max(start.0) + 1,
-                            y.max(start.1) + 1,
+                            x.min(entry.0),
+                            y.min(entry.1),
+                            x.max(entry.0) + 1,
+                            y.max(entry.1) + 1,
                         ),
-                        start,
+                        start: entry,
                         expected: Vec::new(),
                     },
                 );
@@ -181,6 +189,7 @@ fn claim_item(
     claim: &str,
     item: u16,
     key: u64,
+    stand: (u16, u16),
     activation: &CatalogueActivation,
     template: &MigratedDatabaseTemplate,
     crop: NativeCrop,
@@ -236,8 +245,8 @@ fn claim_item(
             .initialize_pinned_test_position(
                 deps.actor,
                 MovementLocalPosition {
-                    x: i32::from(start.x),
-                    y: i32::from(start.y),
+                    x: i32::from(stand.0),
+                    y: i32::from(stand.1),
                     floor: -i16::from(start.floor),
                 },
             )
