@@ -86,6 +86,16 @@ fn quest_use_refuses_wave_credit_bound_to_a_world_occurrence_before_relocation()
 }
 
 #[test]
+fn quest_use_refuses_a_wave_room_with_an_unreachable_timeout_exit() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("quest-invalid-wave-exit", move || {
+        scenario(admin, Case::UnreachableExit)
+    })
+}
+
+#[test]
 fn quest_step_admits_guarded_survival_trial_and_credits_at_deadline() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -144,6 +154,7 @@ enum Case {
     Stations,
     EarthStep,
     Retaliation,
+    UnreachableExit,
     WorldCredit,
 }
 
@@ -189,7 +200,11 @@ fn scenario(admin: String, case: Case) -> TestResult {
             // uses shorter durations and two waves to exercise both deadlines.
             wave_run: Some(WaveRun {
                 timeout_ms: 10_000,
-                timeout_exit: EXIT,
+                timeout_exit: if matches!(case, Case::UnreachableExit) {
+                    row(40)
+                } else {
+                    EXIT
+                },
                 timeout_credit: match case {
                     Case::Victory => None,
                     Case::WorldCredit => Some(WaveCredit::Reference(CREDIT.into())),
@@ -351,7 +366,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
-        if matches!(case, Case::Waves | Case::Victory | Case::SurvivalStep | Case::Stations | Case::WorldCredit) {
+        if matches!(case, Case::Waves | Case::Victory | Case::SurvivalStep | Case::Stations | Case::UnreachableExit | Case::WorldCredit) {
             owner.quest_catalogue = Some(std::sync::Arc::new(credit_catalogue(&callback, matches!(case, Case::WorldCredit))?));
         } else if matches!(case, Case::Retaliation) {
             owner.quest_catalogue = Some(std::sync::Arc::new(retaliation_catalogue(&callback)?));
@@ -411,10 +426,15 @@ fn scenario(admin: String, case: Case) -> TestResult {
             Case::Periodic => periodic_scenario(&owner).await?,
             Case::EarthStep => earth_step_scenario(&owner, &mut admitted, deps.actor).await?,
             Case::Retaliation => retaliation_scenario(&owner, &mut admitted, deps.actor).await?,
-            Case::WorldCredit => {
+            Case::UnreachableExit | Case::WorldCredit => {
                 let peer = stage_peer(&h, &owner, &admitted).await?;
                 let peer_actor = peer.runtime_actor.ok_or("staged peer")?;
-                assert_eq!(use_room(&owner, &mut admitted, 1).await?, UseDisposition::Rejected);
+                let expected = if matches!(case, Case::WorldCredit) {
+                    UseDisposition::Rejected
+                } else {
+                    UseDisposition::NotPossible
+                };
+                assert_eq!(use_room(&owner, &mut admitted, 1).await?, expected);
                 assert_eq!(position(&owner, deps.actor).await?, local(START));
                 assert_eq!(position(&owner, peer_actor).await?, local(PEER_START));
             }

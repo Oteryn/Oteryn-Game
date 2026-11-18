@@ -305,6 +305,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return UseDisposition::Rejected;
             }
+            let Some(&(member, member_session, expected)) = players.first() else {
+                return UseDisposition::Rejected;
+            };
+            // The room owns both exits from admission onward. Check the same
+            // movement rules used by the scheduler before moving the party.
+            for exit in std::iter::once(wave.timeout_exit)
+                .chain(wave.victory.iter().map(|victory| victory.exit))
+            {
+                if crate::map::floor::prepare_quest_encounter_ejection(
+                    runtime,
+                    self.movement_cells(),
+                    member,
+                    member_session,
+                    expected,
+                    local(exit),
+                    &closed,
+                )
+                .is_err()
+                {
+                    return UseDisposition::NotPossible;
+                }
+            }
             let Some(native) = self.active_generation.and_then(|a| a.native_gameplay()) else {
                 return UseDisposition::Rejected;
             };
