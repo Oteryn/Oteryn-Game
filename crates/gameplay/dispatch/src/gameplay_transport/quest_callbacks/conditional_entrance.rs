@@ -12,6 +12,7 @@ pub(super) enum Observation<'a> {
     Current {
         gate: &'a Entrance,
         expected: MovementPositionSnapshot,
+        fence: CurrentCharacterGameplayFence,
         facts: Facts,
         premium: bool,
     },
@@ -115,9 +116,19 @@ impl<'a> Observation<'a> {
             Self::Current {
                 gate,
                 expected,
+                fence,
                 facts,
                 premium,
-            } if *expected == current => (*gate, facts, *premium),
+            } if *expected == current
+                && runtime
+                    .bound_attacker_lease(actor, session)
+                    .is_ok_and(|lease| {
+                        lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                            && lease.generation() == fence.character_lease_generation
+                    }) =>
+            {
+                (*gate, facts, *premium)
+            }
             _ => return Err(Unavailable.into()),
         };
         let state = states
@@ -205,6 +216,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         Observation::Current {
             gate,
             expected,
+            fence,
             facts,
             premium,
         }

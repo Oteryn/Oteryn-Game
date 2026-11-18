@@ -170,7 +170,8 @@ impl Case {
             row["key"] = json!("oteryn:quest-callback/qgate-chyllfroest-summit");
             row["quest"] = json!(CHYLLFROEST);
             row["selector"]["appearance"] = json!(4285);
-            row["selector"]["unique"] = json!(3263);
+            // Mirror the retained UID-free summit selector shape on the
+            // fixture map. See docs/reference/QUESTPC8-CONTRACT-NOTES.md:41-48.
             row["selector"]["native"] = json!({
                 "position":source,"ordinal":1,"appearance":4285
             });
@@ -214,6 +215,18 @@ impl Case {
             row["effects"]["conditional_entrance"] = json!({
                 "guards":[], "intercept_teleport":true
             });
+        }
+        if self == Self::Flags {
+            row["teleport"] = serde_json::Value::Null;
+            row["sources"] = json!(["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/soul_war/moveevent-soul_war_entrances.lua:60-88"]);
+            row["effects"]["conditional_entrance"]["guards"]
+                .as_array_mut()
+                .ok_or("Megalomania guards")?
+                .insert(0, json!({
+                    "when":{"kind":"level","minimum":250},
+                    "refusal":{"message":"You are not allowed to enter here.",
+                        "push_back":{"kind":"from","dx":0,"dy":0},"effect":11}
+                }));
         }
         if self == Self::Door {
             // Zalamon actions_zalamon_door.lua:5-17, exact UID and transform.
@@ -344,6 +357,9 @@ impl Case {
         if self == Self::Flags {
             sqlx::query("INSERT INTO game_character_soul_war(character_id,teleport_access,defeated_bosses,first_taint_at) VALUES(encode($1,'hex')::uuid,true,15,1)")
                 .bind(fence.character_id.as_bytes().as_slice()).execute(&h.pool).await?;
+            super::qengine_outfit_stories::earn_level(owner, admitted, authority, 250).await?;
+            owner.states.level_refresh.mark([fence.character_id]);
+            owner.refresh_level_up_vitals(actor, session).await;
         }
         if self == Self::PvpLock {
             sqlx::query("INSERT INTO game_character_pvp_state (character_id,world_id,pz_block_until) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,clock_timestamp()+interval '30 seconds')")
@@ -488,7 +504,7 @@ impl Case {
                 .await?;
             assert_eq!(before, after, "admitted Bounac travel creates no Quest receipt");
         }
-        let landing = if matches!(self, Self::Door | Self::Isle { .. }) {
+        let landing = if matches!(self, Self::Door | Self::Flags | Self::Isle { .. }) {
             GATE
         } else {
             LANDING
@@ -669,7 +685,7 @@ impl Case {
                 .read_actor_position(actor)
                 .map_err(debug)?
                 .position();
-            let destination = if matches!(self, Self::Isle { .. }) { GATE } else { LANDING };
+            let destination = if matches!(self, Self::Flags | Self::Isle { .. }) { GATE } else { LANDING };
             Ok(position == local(destination))
         }
     }
