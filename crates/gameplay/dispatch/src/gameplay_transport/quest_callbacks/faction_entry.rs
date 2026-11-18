@@ -21,7 +21,7 @@ fn entrance(map: &BundleMap, at: MovementLocalPosition) -> Option<Entrance> {
     // The imported entrance is blocked ground. Only the captured lava and
     // energy tile may take the callback path, so a newly placed obstacle is
     // still authoritative.
-    if tile.depths() != [0, 0] {
+    if tile.depths() != [0, 0] || !map.facts.quest_step_source_is_unmodified(pos) {
         return None;
     }
     let mut keys = [placement_key(pos, 0)?, placement_key(pos, 1)?];

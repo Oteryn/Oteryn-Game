@@ -1880,6 +1880,29 @@ impl BundleFacts {
         true
     }
 
+    /// A native STEP may override the static collision of a captured source
+    /// only while its tile has no other live collision or replacement.
+    pub fn quest_step_source_is_unmodified(&self, pos: TilePos) -> bool {
+        let Some(first) = placement_key(pos, 0) else {
+            return false;
+        };
+        let Ok(rotations) = self.rotations.lock().map(|states| Arc::clone(&states)) else {
+            return false;
+        };
+        let Ok(states) = self.callbacks.lock() else {
+            return false;
+        };
+        let placements = first..=first + 63;
+        !states.solid_items.contains(&pos)
+            && !states.batch_blockers.contains(&pos)
+            && !states.arena_pillar_closed_at(pos)
+            && states.phase_entry(pos, 0).is_none()
+            && states.changed.range(placements.clone()).next().is_none()
+            && states.hidden.range(placements.clone()).next().is_none()
+            && states.passable.range(placements.clone()).next().is_none()
+            && rotations.range(placements).next().is_none()
+    }
+
     pub fn quest_callback_blocked(
         &self,
         base: &super::super::WorldBase,
