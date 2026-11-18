@@ -1,6 +1,7 @@
 syntax = "proto3";
 package oteryn.game.v1;
-// PLAYER-TRADE0 / TRADE-WIRE-1. Integers/oneofs are required even at zero where stated.
+// PLAYER-TRADE0 / TRADE-WIRE-1. The intent oneof and phase are required.
+// Omitted subtype, acceptance flags, reason, text and counter_offer use their proto3 defaults.
 message TradePartnerV1 { bytes actor_id = 1; uint64 generation = 2; }
 message PlayerTradeOfferIntentV1 { TradePartnerV1 partner = 1; uint64 item_handle = 2; }
 message PlayerTradeLookV1 { bytes trade_id = 1; bool counter_offer = 2; }

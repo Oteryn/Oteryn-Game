@@ -83,6 +83,12 @@ where
         return Err(ServeEnd::Disconnected);
     }
     session.admitted.continuity.next_command_id = session.commands.next_command_id();
+    if matches!(dispatch, Dispatch::Depot(_))
+        && let Some(view) = &session.item_view
+    {
+        // Carry reserved display ordinals across resume, even if writing the reply fails.
+        session.admitted.continuity.item_view = view.continuity();
+    }
     if matches!(
         dispatch,
         Dispatch::Logout(LogoutResult::Accepted)

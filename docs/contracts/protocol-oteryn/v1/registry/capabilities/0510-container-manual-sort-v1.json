@@ -9,7 +9,7 @@
   "command_types": [],
   "state_domains": [],
   "offered": false,
-  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Selected 510 extends only command type 9 of the already-selected container tree (14) with the container destination's slot and command type 36 of depot (37) with a deposit's box slot; it grants no command or domain authority. See container-manual-sort-v1.md.",
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Selected 510 extends only command type 9 of the already-selected container tree (14) with the container destination's slot and command type 36 of depot (37) with a deposit's box slot and opaque page-scoped withdrawal ordinals; it grants no command or domain authority. See container-manual-sort-v1.md.",
   "extends_core_commands": [
     9,
     36

@@ -202,3 +202,45 @@ fn snapshot_rejects_forecasts_for_another_player() -> Result<(), WorldSpatialErr
     assert!(encode_snapshot(&snapshot(vec![own(), other]), fields, &lights).is_err());
     Ok(())
 }
+
+#[test]
+fn public_delta_views_accept_negotiated_sidecars() -> Result<(), WorldSpatialError> {
+    let header = delta(0, 0, 0);
+    for (capability, sidecar) in [
+        (
+            508,
+            DeltaSidecar::InventoryCapacity(crate::inventory_capacity::InventoryCapacity {
+                capacity: 100,
+                free: 50,
+            }),
+        ),
+        (509, DeltaSidecar::GuildEmblems(Vec::new())),
+    ] {
+        let bytes = encode_world_spatial_entities_sidecar_delta(
+            header.content_generation,
+            header.actor_position,
+            &sidecar,
+        )?;
+        let selected = [4, 6, capability];
+        assert_eq!(
+            decode_world_spatial_entities_delta_with_fields(
+                &bytes,
+                EntityFields::selected(&selected)
+            )?,
+            (header.clone(), EntityLights::new())
+        );
+        assert_eq!(
+            decode_world_spatial_delta_view(&selected, 2, &bytes)?,
+            WorldSpatialDeltaView::Entities(header.clone())
+        );
+        assert_eq!(
+            decode_world_spatial_delta_view_lit(&selected, 2, &bytes)?,
+            (
+                WorldSpatialDeltaView::Entities(header.clone()),
+                EntityLights::new()
+            )
+        );
+        assert!(decode_world_spatial_delta_view(&selected[..2], 2, &bytes).is_err());
+    }
+    Ok(())
+}

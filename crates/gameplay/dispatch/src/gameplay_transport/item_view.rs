@@ -559,6 +559,8 @@ pub struct SessionItemView {
     /// Exact native instances on the last shown depot page, never guessed from ordinals.
     /// These are historical selection data; writing must revalidate under its own lane.
     pub(super) depot_items: Vec<(u64, [u8; 16])>,
+    /// Capability 510: scope of the last page's opaque withdrawal ordinals.
+    pub(super) depot_selection: Option<(u16, u8, u32)>,
 }
 
 impl SessionItemView {
@@ -579,7 +581,15 @@ impl SessionItemView {
             appearances: false,
             open_depot: None,
             depot_items: Vec::new(),
+            depot_selection: None,
         }
+    }
+
+    /// Reserve display ordinals from the session's non-reusing handle counter.
+    /// They never enter the generic item-handle lookup table.
+    pub(super) fn reserve_depot_ordinals(&mut self, entries: usize) -> Option<u64> {
+        self.table.last = self.table.last.checked_add(entries as u64)?;
+        Some(self.table.last)
     }
 
     pub fn continuity(&self) -> ItemViewContinuity {

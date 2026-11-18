@@ -915,7 +915,8 @@ pub fn decode_world_spatial_entities_delta_with_item_handles(
     decode_delta(payload, EntityFields::handles(true)).map(|(delta, _)| delta)
 }
 
-/// Decodes a delta with the optional fields a session selected, and the lights it carries.
+/// Decodes a delta with the optional fields a session selected and the lights it carries.
+/// Selected sidecars are validated. Use the sidecar decoder to retain their values.
 pub fn decode_world_spatial_entities_delta_with_fields(
     payload: &[u8],
     fields: EntityFields,
@@ -927,7 +928,7 @@ fn decode_delta(
     payload: &[u8],
     fields: EntityFields,
 ) -> Result<(WorldSpatialEntitiesDelta, EntityLights), WorldSpatialError> {
-    decode_world_spatial_entities_delta_with_icons(payload, fields)
+    decode_world_spatial_entities_delta_with_sidecar(payload, fields)
         .map(|(delta, lights, _)| (delta, lights))
 }
 

@@ -189,6 +189,17 @@ pub(super) async fn execute(
                 .iter()
                 .find(|entry| entry.ordinal == ordinal)
                 .map(|entry| entry.item.item_instance_id),
+            DepotAction::WithdrawDisplayed(_) => match selected_item {
+                Some(ItemKey::Instance(item))
+                    if page
+                        .entries
+                        .iter()
+                        .any(|entry| entry.item.item_instance_id == item) =>
+                {
+                    Some(item)
+                }
+                _ => None,
+            },
             DepotAction::Browse => None,
         };
         outcome = if let Some(item) = item {
