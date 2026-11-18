@@ -5,9 +5,8 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::{
     character_authority::ReconciledCharacterAuthority,
     character_progression::CurrentCharacterGameplayFence,
-    quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest},
 };
-use crate::foundation::{CommandId, CommandRef, ExactActorRef, GameSessionId};
+use crate::foundation::{ExactActorRef, GameSessionId};
 use crate::map::{
     overlay::TilePos,
     view::{MapFacts, placement_key},
@@ -46,11 +45,17 @@ const WARZONE_ACCESS: [&str; 3] = [
 ];
 const NEW_FRONTIER_08: &str = "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08";
 const WRATH_11: &str = "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission11";
-const VISITOR: &str = "oteryn:quest-progress/quest/u9_4/liquid_black_quest/visitor";
+const INQUISITION: &str = "oteryn:quest.the_inquisition_quest";
+const FORGE_QUESTLINE: &str = "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline";
+const PITS: &str = "oteryn:quest.the_pits_of_inferno_quest";
+// Crystal data-global/lib/core/storages.lua:832-838.
+const THRONES: [(u32, i64); 7] = [
+    (41020, 1), (41021, 1), (41022, 1), (41023, 1), (41024, 1), (41025, 1), (41026, 10),
+];
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Case {
-    Storage,
+    Inquisition { pumin: bool },
     Completion,
     Flags,
     Carried,
@@ -61,23 +66,23 @@ pub(super) enum Case {
     Level,
     Premium,
     Occupied,
-    CalendarStep,
-    CalendarUse,
+    Calendar { use_action: bool, donor_window: bool },
     PvpLock,
     Stair,
 }
 
 impl Case {
     fn is_use(self) -> bool {
-        matches!(self, Self::CalendarUse | Self::PvpLock | Self::Door | Self::Bounac)
+        matches!(self, Self::Calendar { use_action: true, .. } | Self::PvpLock | Self::Door | Self::Bounac)
     }
 
     pub(super) fn callback(self, source: Position) -> TestResult<Callback> {
         let predicate = match self {
             // Inquisition movements_entrance.lua:1-32, any exact throne value.
-            Self::Storage => json!({"kind":"any","predicates":[
-                {"kind":"storage","range":{"source":{"kind":"track","track":VISITOR},"minimum":1,"maximum":1}},
-                {"kind":"storage","range":{"source":{"kind":"track","track":VISITOR},"minimum":10,"maximum":10}}
+            Self::Inquisition { .. } => json!({"kind":"all","predicates":[
+                {"kind":"any","predicates": THRONES.map(|(id, value)| storage_range(&throne_track(id), value, value))},
+                {"kind":"level","minimum":100},
+                storage_range(FORGE_QUESTLINE, 20, i64::MAX)
             ]}),
             // Zalamon actions_zalamon_door.lua:5-17 reads both owning quests.
             Self::Door => json!({"kind":"all","predicates":[
@@ -110,7 +115,7 @@ impl Case {
             // Soul War moveevent-soul_war_entrances.lua:60-88.
             Self::Flags => json!({"kind":"distinct_flags","minimum":5,"flags":
                 (["Malice","Hatred","Spite","Cruelty","Greed"].map(|boss| json!({
-                    "label":boss,"range":{"source":{"kind":"soul_war_boss","boss":boss},"minimum":1,"maximum":1}
+                    "label":format!("Goshnar's {boss}"),"range":{"source":{"kind":"soul_war_boss","boss":boss},"minimum":1,"maximum":1}
                 })))
             }),
             // Pits of Inferno movements_holy_tible_tile.lua:14-20.
@@ -123,15 +128,26 @@ impl Case {
             // Demon Oak movements_entrance.lua:21-44, only players count.
             Self::Occupied => json!({"kind":"unoccupied","minimum":LANDING,"maximum":LANDING}),
             // Chyllfroest movements_prohibit_entry.lua:9-15 and actions_reward.lua:4-8.
-            Self::CalendarStep => json!({"kind":"calendar","start":[4,1],"end":[5,1]}),
-            Self::CalendarUse => json!({"kind":"calendar","start":[5,2],"end":[3,31]}),
+            Self::Calendar { donor_window: true, .. } => json!({"kind":"calendar","start":[4,1],"end":[5,1]}),
+            Self::Calendar { donor_window: false, .. } => json!({"kind":"calendar","start":[5,2],"end":[3,31]}),
             // Thieves Guild actions_climbing_vine.lua:13-18.
             Self::PvpLock => json!({"kind":"no_pvp_lock"}),
             // Bounac action-bounac_entrance.lua:24-25 intercepts the native
             // stairs without an actor predicate.
             Self::Stair => serde_json::Value::Null,
         };
-        let mut refusal = json!({"message":"Entrance refused by the fixture."});
+        let mut refusal = match self {
+            Self::Inquisition { .. } => json!({"effect":11,"effect_at":"both"}),
+            Self::Completion => json!({"message":"Only warriors who defeated Goshnar's Megalomania can access this area."}),
+            Self::Flags => json!({"message":"You still need to defeat:"}),
+            Self::Level => json!({"message":"You need at least level 250 to enter.","effect":11}),
+            Self::Calendar { use_action: true, .. } => json!({"message":"This can only be used between 1st of April and 1st of May.","message_kind":"status"}),
+            Self::Calendar { use_action: false, .. } => json!({"message":"You cannot pass here outside the period from April 1st to May 1st.","effect":11}),
+            Self::PvpLock => json!({"message":"You can not enter a protection zone after attacking another player.","message_kind":"status","effect":3}),
+            Self::Door => json!({"message":"The door seems to be sealed against unwanted intruders."}),
+            Self::Occupied => json!({"effect":11}),
+            _ => json!({}),
+        };
         if !self.is_use() {
             refusal["push_back"] = json!({"kind":"from","dx":0,"dy":0});
         }
@@ -144,6 +160,10 @@ impl Case {
             "effects":{"conditional_entrance":{"guards":[{"when":predicate,"refusal":refusal}]}},
             "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_holy_tible_tile.lua:14-20"]
         });
+        if matches!(self, Self::Inquisition { .. }) {
+            row["quest"] = json!(INQUISITION);
+            row["sources"] = json!(["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_entrance.lua:1-48"]);
+        }
         if self == Self::Premium {
             // The Spike donor registers AID 4226. A native floor change at
             // the fixture tile would otherwise skip that StepIn altogether.
@@ -228,6 +248,28 @@ impl Case {
             assert!(self.attempt(owner, admitted, callback, 1).await?);
             return Ok(());
         }
+        if let Self::Inquisition { pumin } = self {
+            let current = owner.quest_catalogue.as_deref().ok_or("quest catalogue")?;
+            let questline = current.track(FORGE_QUESTLINE).cloned().ok_or("Inquisition questline")?;
+            let tracks = THRONES.into_iter().map(|(id, _)| QuestTrack {
+                key: throne_track(id),
+                quest: PITS.into(),
+                initial: -1,
+                min: -1,
+                max: 10,
+            }).chain([questline]).collect();
+            owner.quest_catalogue = Some(std::sync::Arc::new(QuestStateCatalogue::new(
+                current.content_revision().to_owned(), tracks, Vec::new(),
+            ).map_err(debug)?));
+            super::qengine_outfit_stories::earn_level(owner, admitted, authority, 100).await?;
+            owner.states.level_refresh.mark([fence.character_id]);
+            owner.refresh_level_up_vitals(actor, session).await;
+            set_fixture_track(owner, h, fence, FORGE_QUESTLINE, 20).await?;
+            let (id, _) = if pumin { THRONES[6] } else { THRONES[0] };
+            // Merely touching Pumin too early (9) or a spurious higher flag
+            // on another throne (2) must not satisfy the exact value gate.
+            set_fixture_track(owner, h, fence, &throne_track(id), if pumin { 9 } else { 2 }).await?;
+        }
         if let Self::Warzone { access } = self {
             let current = owner.quest_catalogue.as_deref().ok_or("quest catalogue")?;
             let mut tracks = WARZONE_ACCESS
@@ -279,11 +321,11 @@ impl Case {
         let before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
             .fetch_one(&h.pool)
             .await?;
-        if matches!(self, Self::CalendarStep | Self::CalendarUse) {
+        if let Self::Calendar { donor_window, .. } = self {
             let in_season: bool = sqlx::query_scalar(
                 "SELECT to_char(transaction_timestamp() AT TIME ZONE 'UTC','MMDD') BETWEEN '0401' AND '0501'",
             ).fetch_one(&h.pool).await?;
-            let allowed = in_season == (self == Self::CalendarStep);
+            let allowed = in_season == donor_window;
             let result = self.attempt(owner, admitted, callback, 1).await?;
             assert_eq!(result, allowed);
             let expected = if allowed { local(LANDING) } else { origin };
@@ -331,14 +373,9 @@ impl Case {
         );
 
         match self {
-            Self::Storage => {
-                let catalogue = owner.quest_catalogue.clone().ok_or("quest catalogue")?;
-                let seeded = owner.revision_sequencer.acquire(fence.character_id).await
-                    .commit_quest_transition(owner.root, owner.character, owner.holder, fence, QuestTransitionRequest {
-                        transition_key: "oteryn:quest-transition/quest/u9_4/liquid_black_quest/visitor/npc_1".into(),
-                        cause: QuestCause::Command(CommandRef::new(session, CommandId::new(901).map_err(debug)?)),
-                    }, catalogue).await.map_err(debug)?;
-                assert!(matches!(seeded, QuestTransitionOutcome::Committed(_)));
+            Self::Inquisition { pumin } => {
+                let (id, value) = if pumin { THRONES[6] } else { THRONES[0] };
+                set_fixture_track(owner, h, fence, &throne_track(id), value).await?;
             }
             Self::Door => {
                 set_fixture_track(owner, h, fence, NEW_FRONTIER_08, 2).await?;
@@ -410,8 +447,8 @@ impl Case {
                 sqlx::query("UPDATE game_character_pvp_state SET pz_block_until=NULL,revision=revision+1 WHERE character_id=encode($1,'hex')::uuid")
                     .bind(id(41).as_slice()).execute(&h.pool).await?;
             }
-            Self::CalendarStep | Self::CalendarUse | Self::Stair => {
-                return Err("calendar handled by the complementary window cases".into());
+            Self::Calendar { .. } | Self::Stair => {
+                return Err("calendar and stair cases already exercised their single step".into());
             }
         }
 
@@ -546,6 +583,10 @@ impl Case {
     }
 }
 
+fn throne_track(id: u32) -> String {
+    format!("oteryn:quest-progress/storage/{id}")
+}
+
 fn storage_range(track: &str, minimum: i64, maximum: i64) -> serde_json::Value {
     json!({"kind":"storage","range":{"source":{"kind":"track","track":track},"minimum":minimum,"maximum":maximum}})
 }
@@ -592,12 +633,13 @@ fn scenario(case: Case) -> TestResult {
 }
 
 #[test]
-fn conditional_step_checks_literal_storage_range_alternatives() -> TestResult {
+fn conditional_step_admits_inquisition_with_any_exact_throne_value() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
     drop(admin);
-    scenario(Case::Storage)
+    scenario(Case::Inquisition { pumin: false })?;
+    scenario(Case::Inquisition { pumin: true })
 }
 
 #[test]
@@ -660,8 +702,12 @@ fn conditional_step_and_use_evaluate_the_annual_calendar() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    scenario(Case::CalendarStep)?;
-    scenario(Case::CalendarUse)
+    for use_action in [false, true] {
+        for donor_window in [true, false] {
+            scenario(Case::Calendar { use_action, donor_window })?;
+        }
+    }
+    Ok(())
 }
 
 #[test]
