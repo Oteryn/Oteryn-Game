@@ -731,6 +731,91 @@ pub(super) async fn static_field_case(admin: String) -> TestResult {
     .await
 }
 
+// The removed base item 2126 is an energy field. A delayed energy tick
+// would retain its remaining damage if the owner still saw the same field.
+async fn assert_removed_field_releases_energy_tick(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+) -> TestResult {
+    use crate::domain::condition::{ConflictKey, DotElement};
+    use oteryn_gameplay_foundation::foundation::condition::{
+        ApplicationFacts, ConditionDefinition, ConditionSourceKind, DamageSchedule, DamageSegment,
+    };
+    use oteryn_simulation_determinism::{
+        DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros,
+    };
+
+    let at = owner.owner_now().get();
+    let previous_health = {
+        let mut runtime = owner.runtime.lock().await;
+        let before = runtime.read_actor_position(actor).map_err(debug)?;
+        let destination = MovementLocalPosition { x: 101, ..before.position() };
+        assert_eq!(before.position().x, 100);
+        runtime
+            .borrow_movement_position()
+            .commit_cardinal(before, destination)
+            .map_err(debug)?;
+
+        let mut spells = owner.states.spell_states.lock().await;
+        let state = spells.get(&runtime, actor, session).ok_or("caster")?;
+        let health = state.vitals().health;
+        let current = state.owned_conditions();
+        let mut active = current.clone();
+        let damage = ConditionDefinition::new_damage_schedule(
+            "test.destroy-field.energy",
+            1,
+            DotElement::Energy,
+            DamageSchedule::Fixed {
+                delayed: true,
+                segments: vec![DamageSegment { count: 1, interval_ms: 2_000, amount: 10 }],
+            },
+        )
+        .ok_or("energy condition")?;
+        active
+            .apply(
+                &damage,
+                Some("creature:destroy-field-fixture".to_owned()),
+                ConditionSourceKind::Creature,
+                &[],
+                &ApplicationFacts {
+                    now: at,
+                    base_speed: 220,
+                    mana_shield_capacity: 0,
+                    target_reentry_protected: false,
+                    source_reentry_protected: false,
+                    target_is_player: true,
+                    decision_root: &GameplayDecisionRoot::from_bytes([1; 32]),
+                    occurrence: DecisionOccurrenceId::from_bytes([1; 16]),
+                },
+            )
+            .map_err(debug)?;
+        let mut next = state.clone();
+        next.apply_batch_conditions(current, &active).map_err(debug)?;
+        next.advance_batch_revision().map_err(debug)?;
+        assert!(spells.commit(&runtime, actor, session, next));
+        health
+    };
+
+    let due = SemanticTimeMicros::from_micros(at + 2_000_000);
+    let (_, vital) = owner
+        .tick_spell_periodic_at(actor, session, due)
+        .await
+        .ok_or("periodic damage turn")?;
+    assert!(vital.health < previous_health);
+    let runtime = owner.runtime.lock().await;
+    let spells = owner.states.spell_states.lock().await;
+    let state = spells.get(&runtime, actor, session).ok_or("caster after tick")?;
+    assert!(
+        state
+            .owned_conditions()
+            .active_at(ConflictKey::Element(DotElement::Energy), due.get())
+            .is_none(),
+        "a removed field does not retain the energy condition's final tick"
+    );
+    Ok(())
+}
+
 async fn field_case(
     admin: String,
     rune: u32,
@@ -896,7 +981,8 @@ async fn field_scenario_inner(
     // Equipped scenarios explicitly advance residual evaluation to application+11s.
     // Keep ambient connection turns at their simulation instant until then: SQL
     // latency must not inject a real nine-second fire pulse into replay checks.
-    let _simulation_clock = equipped(scenario).then(|| owner.freeze_owner_clock_for_test());
+    let _simulation_clock = (equipped(scenario) || scenario == Scenario::DestroyStatic)
+        .then(|| owner.freeze_owner_clock_for_test());
     owner.emit = |_, line| {
         eprintln!(
             "FIELD-RUNES owner module={} event={} code={:?}",
@@ -1277,6 +1363,7 @@ async fn field_scenario_inner(
                 "successful rune USE removes the base field"
             );
             assert_eq!(map.facts.object_revision(key), 1);
+            assert_removed_field_releases_energy_tick(&owner, actor, session).await?;
             return Ok(());
         }
         if committed {
