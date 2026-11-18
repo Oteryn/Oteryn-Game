@@ -29,7 +29,7 @@ impl ClearArea {
             && callback.storage.iter().any(|state| state.minimum >= 1)
             && (-15..=0).contains(&self.minimum.floor)
             && self.minimum.floor == self.maximum.floor
-            && self.additional_floors.len() <= 3
+            && self.additional_floors.len() <= 4
             && self
                 .additional_floors
                 .iter()

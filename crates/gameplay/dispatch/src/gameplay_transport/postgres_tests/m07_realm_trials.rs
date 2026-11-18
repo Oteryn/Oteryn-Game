@@ -8,8 +8,8 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback,Position,Offering};
 use oteryn_protocol_oteryn::world_object::{UseDisposition,WorldObjectTarget};
 const NAME:&str="m07/realm-trial";
-const BEGIN:Position=Position{x:33080,y:32582,floor:-3};
-const CONTROL:Position=Position{x:33080,y:32583,floor:-3};
+pub(super) const BEGIN:Position=Position{x:33080,y:32582,floor:-3};
+pub(super) const CONTROL:Position=Position{x:33080,y:32583,floor:-3};
 pub(super) fn start()->Position {Position{x:33079,y:32583,floor:-3}}
 #[test]
 fn m07_realm_postgres_retained_key_multifloor_clear_and_independent_resets()->TestResult {
@@ -99,7 +99,7 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
     assert_eq!(key_count(harness).await?,1);assert_eq!(receipts(harness).await?,2);
     Ok(())
 }
-async fn use_source(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admitted:&mut AdmittedSession,id:u64,position:Position,ordinal:u8,revision:u64)->TestResult<UseDisposition> {
+pub(super) async fn use_source(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admitted:&mut AdmittedSession,id:u64,position:Position,ordinal:u8,revision:u64)->TestResult<UseDisposition> {
     owner.clock_origin=owner.clock_origin.checked_sub(std::time::Duration::from_secs(1)).ok_or("clock")?;
     let map=owner.bundle_map().ok_or("map")?;
     let key=placement_key(crate::map::overlay::TilePos{x:position.x,y:position.y,floor:position.floor},ordinal).ok_or("source key")?;
@@ -114,6 +114,6 @@ async fn key_count(harness:&Harness)->TestResult<i64>{
 async fn receipts(harness:&Harness)->TestResult<i64>{
     Ok(sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts").fetch_one(&harness.pool).await?)
 }
-async fn phase(owner:&ComposedFreshAdmission<'_, '_, '_>,fence:CurrentCharacterGameplayFence,callback:&Callback)->TestResult<Option<i64>>{
+pub(super) async fn phase(owner:&ComposedFreshAdmission<'_, '_, '_>,fence:CurrentCharacterGameplayFence,callback:&Callback)->TestResult<Option<i64>>{
     Ok(owner.root.read_character_quest_state(owner.character,fence.character_id).await.map_err(debug)?.tracks().get(&callback.storage[0].track).copied())
 }

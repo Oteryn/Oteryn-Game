@@ -350,7 +350,7 @@ fn m07_clear_area_extra_floors_are_explicit_bounded_and_bound_to_admission() -> 
         serde_json::json!([-4, -4]),
         serde_json::json!([-16]),
         serde_json::json!([1]),
-        serde_json::json!([-7, -6, -5, -4]),
+        serde_json::json!([-8, -7, -6, -5, -4]),
     ] {
         let mut bad = v.clone();
         bad["effects"]["clear_area"]["additional_floors"] = floors;

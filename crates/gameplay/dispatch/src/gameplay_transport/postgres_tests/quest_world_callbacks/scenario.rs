@@ -457,6 +457,8 @@ fn scenario_case(
             || shared_gate
         {
             "fish-napping-key"
+        } else if name == super::super::five_floor_clearance::NAME {
+            "m07/realm-trial"
         } else if qm47 {
             "barbarian-test-mead"
         } else {
@@ -2004,6 +2006,11 @@ fn scenario_case(
                 &h,
                 fence,
                 &callback,
+            ))
+            .await?;
+        } else if name == super::super::five_floor_clearance::NAME {
+            Box::pin(super::super::five_floor_clearance::exercise(
+                &mut owner, &mut admitted, fence, &callback,
             ))
             .await?;
         } else if m07_realm {
