@@ -230,13 +230,13 @@ async fn exercise(h: &Harness) -> TestResult {
     let left = machine_key(&owner, LEFT, 842)?;
     let right = machine_key(&owner, RIGHT, 843)?;
     assert_ne!(
-        charge(&owner, &admitted, 714, left, RUBY).await?,
+        charge(&owner, &admitted, 713, left, RUBY).await?,
         UseDisposition::Committed
     );
     assert_eq!(gems(h).await?, -1);
     assert_eq!(carried(h, RUBY).await?, 1);
     assert_eq!(
-        click(&mut owner, &admitted, 710, left).await?,
+        click(&mut owner, &admitted, 714, left).await?,
         UseDisposition::Committed
     );
     assert_eq!(
@@ -253,7 +253,7 @@ async fn exercise(h: &Harness) -> TestResult {
     );
     assert_eq!(carried(h, EMERALD).await?, 24);
     assert_eq!(
-        click(&mut owner, &admitted, 711, right).await?,
+        click(&mut owner, &admitted, 716, right).await?,
         UseDisposition::Committed
     );
     assert_eq!(
@@ -274,7 +274,7 @@ async fn exercise(h: &Harness) -> TestResult {
         assert_eq!(carried(h, EMERALD).await?, 24 - i64::try_from(count)?);
     }
     assert_eq!(
-        click(&mut owner, &admitted, 713, right).await?,
+        click(&mut owner, &admitted, 744, right).await?,
         UseDisposition::Committed
     );
     assert_eq!(gems(h).await?, 3);
