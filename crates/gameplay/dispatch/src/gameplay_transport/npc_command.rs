@@ -42,6 +42,7 @@ mod cake_brutus;
 pub(super) mod catalogue;
 mod catalogue_track_mutation;
 mod classic_quests;
+mod cobra;
 mod coin_exchange;
 mod dark_trails;
 mod endgame;
@@ -757,6 +758,12 @@ pub(super) async fn npc_bank_talk(
         admission.owner_now(),
         super::item_ref_admission::pinned_index(&runtime, admission.active_generation),
     );
+    if ordinary.disposition == NpcIntentDisposition::NoConversation
+        && let Some(refusal) =
+            cobra::refuse_unpoisoned_greeting(admission, &runtime, actor, session, &intent)
+    {
+        return refusal;
+    }
     if ordinary.disposition != NpcIntentDisposition::Ok {
         admission.states.npc_conversations.cancel_bank(session);
         return ordinary;
