@@ -1669,6 +1669,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, snapshot.position()),
             );
         }
+        // Crystal actions_lions_rock.lua:130 emits HOLYAREA at the claimant.
+        if fresh_effects
+            && let Some(effect) = callback
+                .effects
+                .claim
+                .as_ref()
+                .and_then(|claim| claim.actor_magic_effect)
+            && let Ok(snapshot) = runtime.read_actor_position(actor)
+            && let Some(position) = native(snapshot.position())
+        {
+            map.facts.emit_movement_effect(position, effect);
+        }
         if let Some(magic) = &callback.effects.magic {
             map.facts
                 .emit_movement_effect(tile(magic.position), magic.effect);

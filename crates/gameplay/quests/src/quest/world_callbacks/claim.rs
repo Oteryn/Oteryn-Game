@@ -10,6 +10,9 @@ use serde::{Deserialize, Serialize};
 #[serde(deny_unknown_fields)]
 pub struct Claim {
     pub reset: ClaimReset,
+    /// Publish on the claimant's cell after the durable write commits.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub actor_magic_effect: Option<u16>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub eligibility: Option<ClaimEligibility>,
     /// Restore both live pools to their current maxima and save the same projection.
@@ -112,6 +115,7 @@ impl Claim {
             && callback.item_reward().is_none()
             && (callback.effects.transform.is_none() || callback.selector.appearance.is_some())
             && self.reset.valid(callback)
+            && self.actor_magic_effect != Some(0)
             && self.eligibility.as_ref().is_none_or(|gate| {
                 !gate.message.is_empty()
                     && gate.message.len() <= 512

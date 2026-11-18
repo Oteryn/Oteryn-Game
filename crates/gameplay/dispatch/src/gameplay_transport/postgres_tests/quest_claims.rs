@@ -36,6 +36,7 @@ const DRAGON: &str = "oteryn:creature.dragon";
 const LION: &str = "oteryn:creature.noble_lion";
 const LION_MOUNT: &str = "oteryn:content.mount.noble_lion";
 const LIONS_HEART: u16 = 21439;
+const HOLY_AREA_EFFECT: u16 = 50;
 const COUNT: &str = "oteryn:quest-progress/qonce-dispatch/count";
 const WELL_ACHIEVEMENT: &str = "oteryn:achievement/fountain_of_life";
 const HOARD_ACHIEVEMENT: &str = "oteryn:achievement/hoard_of_the_dragon";
@@ -255,6 +256,9 @@ pub(super) async fn exercise(
         }
         effects = json!({"reset":{"kind":"elapsed","track":LEDGER,"seconds":seconds},
             "selection_track":CHOICE,"rewards":rewards});
+        if name == DAILY {
+            effects["actor_magic_effect"] = json!(HOLY_AREA_EFFECT);
+        }
         if name == ANNUAL {
             tracks.push(track(FEATHERS, 1, 1, 2));
             let mut feathers = storage(FEATHERS, 2, 2, 2);
@@ -479,6 +483,17 @@ pub(super) async fn exercise(
     if name == DAILY {
         assert_eq!(track_value(h, CHOICE).await?, 2);
         assert_eq!(super::qengine_voucher_stories::quantity(h, LIONS_HEART).await?, before_hearts);
+        let actor = admitted.runtime_actor.ok_or("fountain claimant")?;
+        let cell = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position();
+        let claimant_cell = crate::map::overlay::TilePos {
+            x: cell.x.try_into()?, y: cell.y.try_into()?, floor: (-cell.floor).try_into()?,
+        };
+        let holy_area: Vec<_> = owner.bundle_map().ok_or("fountain map")?.facts
+            .movement_effects_since(0).into_iter()
+            .filter_map(|(_, position, effect)| (effect == HOLY_AREA_EFFECT).then_some(position))
+            .collect();
+        assert_eq!(holy_area, [claimant_cell, claimant_cell]);
+
     }
     let atomic: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_reward_claim_mint_receipts m \
