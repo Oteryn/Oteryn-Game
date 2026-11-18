@@ -131,20 +131,18 @@ fn scenario(
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("index")?;
-        let door = if vampire_door.is_some() {
+        let door = if brokul {
+            "oteryn:item.tibia.i2772"
+        } else if vampire_door.is_some() {
             "oteryn:item.tibia.i5102"
         } else {
             "oteryn:item.tibia.i5113"
         };
         let reference = |key: &str| index.definition_ref("Item", key, "definition-r1");
-        let secondary = if brokul {
-            "oteryn:item.tibia.i2772"
-        } else {
-            "oteryn:item.tibia.i3031"
-        };
+        let coin = "oteryn:item.tibia.i3031";
         let (bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
-            (door, reference(door).ok_or("door")?.get() - 1),
-            (secondary, reference(secondary).ok_or("secondary item")?.get() - 1),
+            (door, reference(door).ok_or("station item")?.get() - 1),
+            (coin, reference(coin).ok_or("coin")?.get() - 1),
         );
         let mut data = oteryn_world_bundle::bundle::read(&bytes)?;
         if closing {
@@ -239,17 +237,11 @@ fn scenario(
             })
             .ok_or("source door")?;
         assert_eq!(source.attrs.action, Some(action));
-        entry.attrs = source.attrs.clone();
         if brokul {
             // Crystal actions_brokulLever.lua:31 supplies the selector.
-            data.sectors
-                .iter_mut()
-                .flat_map(|sector| &mut sector.tiles)
-                .find(|tile| tile.x == 7)
-                .and_then(|tile| tile.items.get_mut(1))
-                .ok_or("Brokul action placement")?
-                .attrs
-                .action = Some(34000);
+            entry.attrs.action = Some(34000);
+        } else {
+            entry.attrs = source.attrs.clone();
         }
         let bytes = oteryn_world_bundle_compiler::bundle::write_with_npcs(
             &data.manifest,
@@ -379,20 +371,6 @@ fn scenario(
             oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?;
         owner.admit_quest_session(&admitted).await;
         if brokul {
-            let placement = crate::map::view::placement_key(
-                crate::map::overlay::TilePos {
-                    x: 7,
-                    ..station_pos
-                },
-                1,
-            )
-            .ok_or("Brokul placement")?;
-            let target = WorldObjectTarget {
-                placement: map.base().digest().into_iter().chain(placement.to_be_bytes()).collect(),
-                expected_revision: 0,
-            };
-            let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&target)
-                .map_err(debug)?;
             let (_, result, _) =
                 super::item_craft::exchange(&owner, admitted, 1, &payload, None).await?;
             assert_eq!(result, UseDisposition::NotPossible);
