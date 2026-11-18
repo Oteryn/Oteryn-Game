@@ -158,85 +158,90 @@ pub(super) async fn with_npc_items_and_loot(
         .await
         .map_err(debug)?;
     let world_id = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-    let (controller, activated) = if items.is_empty() && corpse.is_none() {
-        super::death_ml_loss_composed::production_generation_with_pin(world_id, "content-1")?
-    } else {
-        use crate::content::native_gameplay::{PinnedGameplayBytes, test_support};
-        use serde_json::{Value, json};
-        let mut input =
-            super::death_ml_loss_composed::production_input_with_source("content-1", None)?;
-        let mut profiles: Value = serde_json::from_slice(
-            &input
-                .item_profiles
-                .as_ref()
-                .ok_or("native item profiles")?
-                .bytes,
-        )?;
-        let records = profiles["records"]
-            .as_array_mut()
-            .ok_or("profile records")?;
-        for item in items {
-            let key = format!("oteryn:item.tibia.i{}", item.id);
-            let mut record = records
-                .iter()
-                .find(|record| {
-                    record["production_definition"]["production_key"]
-                        == if item.stackable {
-                            "oteryn:item.tibia.i3031"
-                        } else {
-                            "oteryn:item.tibia.i123"
-                        }
-                })
-                .ok_or("plain test item profile template")?
-                .clone();
-            record["production_definition"]["production_key"] = json!(key);
-            record["production_binding"]["target"]["key"] = json!(key);
-            record["production_binding"]["external_id"] = json!(item.id.to_string());
-            record["authoring"]["item"]["key"] = json!(format!("candidate:item/{}", item.id));
-            record["semantics"]["presentation"]["value"]["name"] =
-                json!({"state":"KNOWN","value":item.name});
-            record["semantics"]["physical"]["value"]["weight"] =
-                json!({"state":"KNOWN","value":item.weight});
-            records.push(record);
-        }
-        let pin = |document: &Value| -> TestResult<PinnedGameplayBytes> {
-            let bytes = serde_json::to_vec(document)?;
-            Ok(PinnedGameplayBytes {
-                sha256: <sha2::Sha256 as sha2::Digest>::digest(&bytes)
-                    .iter()
-                    .map(|byte| format!("{byte:02x}"))
-                    .collect(),
-                bytes,
-            })
-        };
-        input.item_profiles = Some(pin(&profiles)?);
-        if let Some(corpse) = corpse {
-            let mut loot: Value = serde_json::from_slice(
+    let corpse_world = corpse.is_some();
+    let (controller, activated) =
+        if items.is_empty() && !corpse_world {
+            super::death_ml_loss_composed::production_generation_with_pin(world_id, "content-1")?
+        } else {
+            use crate::content::native_gameplay::{PinnedGameplayBytes, test_support};
+            use serde_json::{Value, json};
+            let source = corpse_world.then_some(include_bytes!(
+            "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+        ).as_slice());
+            let mut input =
+                super::death_ml_loss_composed::production_input_with_source("content-1", source)?;
+            let mut profiles: Value = serde_json::from_slice(
                 &input
-                    .loot_tables
+                    .item_profiles
                     .as_ref()
-                    .ok_or("native loot tables")?
+                    .ok_or("native item profiles")?
                     .bytes,
             )?;
-            let facts = loot["items"]
+            let records = profiles["records"]
                 .as_array_mut()
-                .ok_or("loot item facts")?
-                .iter_mut()
-                .find(|facts| facts["item"]["key"] == corpse.corpse)
-                .ok_or("fixture corpse loot facts")?;
-            // The fixture isolates death MINT and decay from unrelated loot admission.
-            facts["materializable"] = json!(true);
-            let table = loot["tables"]
-                .as_array_mut()
-                .ok_or("loot table definitions")?
-                .iter_mut()
-                .find(|table| table["identity"]["key"] == corpse.table)
-                .ok_or("fixture creature loot table")?;
-            table["entries"] = json!([]);
-            input.loot_tables = Some(pin(&loot)?);
-        }
-        test_support::try_activate_input(world_id, &input).map_err(debug)?
-    };
+                .ok_or("profile records")?;
+            for item in items {
+                let key = format!("oteryn:item.tibia.i{}", item.id);
+                let mut record = records
+                    .iter()
+                    .find(|record| {
+                        record["production_definition"]["production_key"]
+                            == if item.stackable {
+                                "oteryn:item.tibia.i3031"
+                            } else {
+                                "oteryn:item.tibia.i123"
+                            }
+                    })
+                    .ok_or("plain test item profile template")?
+                    .clone();
+                record["production_definition"]["production_key"] = json!(key);
+                record["production_binding"]["target"]["key"] = json!(key);
+                record["production_binding"]["external_id"] = json!(item.id.to_string());
+                record["authoring"]["item"]["key"] = json!(format!("candidate:item/{}", item.id));
+                record["semantics"]["presentation"]["value"]["name"] =
+                    json!({"state":"KNOWN","value":item.name});
+                record["semantics"]["physical"]["value"]["weight"] =
+                    json!({"state":"KNOWN","value":item.weight});
+                records.push(record);
+            }
+            let pin = |document: &Value| -> TestResult<PinnedGameplayBytes> {
+                let bytes = serde_json::to_vec(document)?;
+                Ok(PinnedGameplayBytes {
+                    sha256: <sha2::Sha256 as sha2::Digest>::digest(&bytes)
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect(),
+                    bytes,
+                })
+            };
+            input.item_profiles = Some(pin(&profiles)?);
+            if let Some(corpse) = corpse {
+                let mut loot: Value = serde_json::from_slice(
+                    &input
+                        .loot_tables
+                        .as_ref()
+                        .ok_or("native loot tables")?
+                        .bytes,
+                )?;
+                let facts = loot["items"]
+                    .as_array_mut()
+                    .ok_or("loot item facts")?
+                    .iter_mut()
+                    .find(|facts| facts["item"]["key"] == corpse.corpse)
+                    .ok_or("fixture corpse loot facts")?;
+                // The fixture isolates death MINT and decay from unrelated loot admission.
+                facts["materializable"] = json!(true);
+                let table = loot["tables"]
+                    .as_array_mut()
+                    .ok_or("loot table definitions")?
+                    .iter_mut()
+                    .find(|table| table["identity"]["key"] == corpse.table)
+                    .ok_or("fixture creature loot table")?;
+                table["entries"] = json!([]);
+                input.loot_tables = Some(pin(&loot)?);
+            }
+            test_support::try_activate_input(world_id, &input).map_err(debug)?
+        };
     let generation = controller.active().ok_or("active content")?;
     let room = activated.qualified_room();
     let start = room.entry_start();
@@ -252,11 +257,15 @@ pub(super) async fn with_npc_items_and_loot(
         room.map_revision_digest(),
         (start.x, start.y, start.floor),
     );
-    let deps = Dependencies::with_content(
+    let mut deps = Dependencies::with_content_and_capacity(
         pin,
         room.clone(),
         crate::spell::cast::v1_spell_book().map_err(debug)?,
+        if corpse_world { 3 } else { 2 },
     )?;
+    if corpse_world {
+        deps.combat_room = Some(room.clone());
+    }
     deps.runtime
         .lock()
         .await
