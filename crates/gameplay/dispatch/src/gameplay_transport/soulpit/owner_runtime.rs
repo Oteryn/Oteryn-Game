@@ -103,11 +103,20 @@ struct VisibleSurvivor {
     observed: CurrentVisibleActorObservation,
 }
 
+#[track_caller]
+fn unavailable() -> SoulpitRuntimeError {
+    #[cfg(test)]
+    eprintln!("MAINFIX_SOULPIT unavailable at {}", std::panic::Location::caller());
+    SoulpitRuntimeError::AdapterUnavailable
+}
+
 fn durable(error: crate::durability::soulpit::SoulpitWriteError) -> SoulpitRuntimeError {
+    #[cfg(test)]
+    eprintln!("MAINFIX_SOULPIT durable error: {error:?}");
     match error {
         crate::durability::soulpit::SoulpitWriteError::Unavailable(_)
         | crate::durability::soulpit::SoulpitWriteError::StaleState => {
-            SoulpitRuntimeError::AdapterUnavailable
+            unavailable()
         }
         error => SoulpitRuntimeError::Durable(error),
     }
@@ -151,7 +160,7 @@ impl Owner<'_, '_, '_, '_> {
             let (current, now) = store
                 .current_session_at(member.session)
                 .await
-                .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)?;
+                .map_err(|_| unavailable())?;
             let lease = current.current_character_lease();
             if current.current_game_session_id() != member.session
                 || lease.character_id().as_bytes() != member.character.as_bytes()
@@ -170,13 +179,13 @@ impl Owner<'_, '_, '_, '_> {
                 .admission
                 .runtime
                 .try_lock()
-                .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)?;
+                .map_err(|_| unavailable())?;
             let states = self
                 .admission
                 .states
                 .spell_states
                 .try_lock()
-                .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)?;
+                .map_err(|_| unavailable())?;
             runtime.owner_fence()?;
             if runtime.binding().runtime_scope() != self.binding.scope
                 || runtime.binding().scope_generation() != self.binding.generation
@@ -189,12 +198,12 @@ impl Owner<'_, '_, '_, '_> {
                 .positioned_melee_census()?
                 .into_iter()
                 .find_map(|(actor, _, session)| (session == Some(member.session)).then_some(actor))
-                .ok_or(SoulpitRuntimeError::AdapterUnavailable)?;
+                .ok_or(unavailable())?;
             let control = runtime.player_control_facts(actor, member.session)?;
             if runtime.bound_attacker_lease(actor, member.session)? != lease
                 || states.get(&runtime, actor, member.session).is_none()
             {
-                return Err(SoulpitRuntimeError::AdapterUnavailable);
+                return Err(unavailable());
             }
             if !alive_in_arena(&runtime, &states, actor, member.session) {
                 continue;
@@ -213,11 +222,11 @@ impl Owner<'_, '_, '_, '_> {
                 _ => false,
             };
             if !agrees {
-                return Err(SoulpitRuntimeError::AdapterUnavailable);
+                return Err(unavailable());
             }
             let observed =
                 observe_current_visible_actor_for_source_read(&runtime, actor, member.session)
-                    .ok_or(SoulpitRuntimeError::AdapterUnavailable)?;
+                    .ok_or(unavailable())?;
             visible.push(VisibleSurvivor {
                 actor,
                 observed,
@@ -251,18 +260,18 @@ impl<'a, 'o, 'f, 's> ActivityHandoffOwnerRuntime for Owner<'a, 'o, 'f, 's> {
             .admission
             .runtime
             .try_lock()
-            .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)?;
+            .map_err(|_| unavailable())?;
         let states = self
             .admission
             .states
             .spell_states
             .try_lock()
-            .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)?;
+            .map_err(|_| unavailable())?;
         let doors = self
             .admission
             .door
             .try_lock()
-            .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)?;
+            .map_err(|_| unavailable())?;
         let native = self
             .admission
             .active_generation
@@ -330,17 +339,17 @@ impl<'a, 'o, 'f, 's> ActivityHandoffOwnerRuntime for Owner<'a, 'o, 'f, 's> {
             .admission
             .runtime
             .try_lock()
-            .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)?;
+            .map_err(|_| unavailable())?;
         let states = self
             .admission
             .states
             .spell_states
             .try_lock()
-            .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)?;
+            .map_err(|_| unavailable())?;
         let mut survivors = Vec::with_capacity(self.visible.len());
         for member in &self.visible {
             if !member.observed.matches(&runtime) {
-                return Err(SoulpitRuntimeError::AdapterUnavailable);
+                return Err(unavailable());
             }
             if alive_in_arena(
                 &runtime,
@@ -378,7 +387,7 @@ impl<'a, 'o, 'f, 's> ActivityHandoffOwnerRuntime for Owner<'a, 'o, 'f, 's> {
                 .admission
                 .spell_lane_permit()
                 .await
-                .ok_or(SoulpitRuntimeError::AdapterUnavailable)?;
+                .ok_or(unavailable())?;
             self.refresh_survivors().await?;
             let current = self.survivors()?;
             if request.survivors.iter().any(|expected| {
@@ -387,7 +396,7 @@ impl<'a, 'o, 'f, 's> ActivityHandoffOwnerRuntime for Owner<'a, 'o, 'f, 's> {
                         && actual.item_fence() == expected.item_fence()
                 })
             }) {
-                return Err(SoulpitRuntimeError::AdapterUnavailable);
+                return Err(unavailable());
             }
             request
                 .survivors
@@ -402,7 +411,7 @@ impl<'a, 'o, 'f, 's> ActivityHandoffOwnerRuntime for Owner<'a, 'o, 'f, 's> {
                 member.expected_character_revision = slot
                     .cursor(self.admission.root, self.admission.character)
                     .await
-                    .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)?;
+                    .map_err(|_| unavailable())?;
                 slots.push(slot);
             }
             let outcome = self
@@ -427,13 +436,13 @@ impl<'a, 'o, 'f, 's> ActivityHandoffOwnerRuntime for Owner<'a, 'o, 'f, 's> {
             .admission
             .runtime
             .try_lock()
-            .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)?;
+            .map_err(|_| unavailable())?;
         let mut states = self
             .admission
             .states
             .spell_states
             .try_lock()
-            .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)?;
+            .map_err(|_| unavailable())?;
         let native = self
             .admission
             .active_generation
@@ -467,7 +476,7 @@ impl<'a, 'o, 'f, 's> ActivityHandoffOwnerRuntime for Owner<'a, 'o, 'f, 's> {
             self.admission
                 .settle_soulpit_boss_rewards(&reward)
                 .await
-                .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)
+                .map_err(|_| unavailable())
         })
     }
     fn return_participants(
@@ -489,13 +498,13 @@ async fn return_members<'a, 'f, 's>(
         let result = admission
             .return_due_activity(admitted, ActivityReturnReason::SoulpitTerminal)
             .await
-            .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)?;
+            .map_err(|_| unavailable())?;
         match result {
             NativeActivityOutcome::Committed(commit) => admission
                 .publish_activity_commit(&commit)
-                .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)?,
+                .map_err(|_| unavailable())?,
             NativeActivityOutcome::Refused(_) => {
-                return Err(SoulpitRuntimeError::AdapterUnavailable);
+                return Err(unavailable());
             }
         }
     }
@@ -593,7 +602,7 @@ pub(super) async fn cleanup_terminal<'a, 'f, 's>(
     let _permit = view
         .spell_lane_permit()
         .await
-        .ok_or(SoulpitRuntimeError::AdapterUnavailable)?;
+        .ok_or(unavailable())?;
     {
         let mut runtime = registered.runtime.lock().await;
         runtime.owner_fence()?;
@@ -604,14 +613,14 @@ pub(super) async fn cleanup_terminal<'a, 'f, 's>(
             return Err(SoulpitRuntimeError::InvalidScope);
         }
         if !runtime.activity_retirement_empty()? {
-            return Err(SoulpitRuntimeError::AdapterUnavailable);
+            return Err(unavailable());
         }
         let (carrier, continuity, _) = runtime.soulpit_kernel_parts()?;
         carrier.retire_soulpit(continuity, cleanup.handoff_id())?;
     }
     view.reset_soulpit_obelisk()
         .await
-        .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)
+        .map_err(|_| unavailable())
 }
 
 pub(super) async fn leave_registered<'a, 'f, 's>(
