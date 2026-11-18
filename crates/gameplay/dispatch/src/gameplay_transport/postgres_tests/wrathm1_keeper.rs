@@ -272,3 +272,69 @@ async fn claim_tail(
     assert_eq!(outcome.disposition, UseDisposition::Committed);
     Ok(())
 }
+
+/// The content lane owns publishing these two Item profiles. The test generation
+/// admits the existing physical facts and immutable source bindings through the
+/// same compiler used by a live Channel.
+pub(super) fn generation(
+    world: crate::foundation::WorldId,
+) -> TestResult<(
+    crate::content::ContentActivationController,
+    crate::content::NativeEntryContentPin,
+)> {
+    use serde_json::{Value, json};
+    use sha2::{Digest, Sha256};
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let read = |path: &str| -> TestResult<Value> {
+        Ok(serde_json::from_slice(&std::fs::read(root.join(path))?)?)
+    };
+    let items = read("content/items/definitions/items-01000-01499.json")?;
+    let bindings = read("imports/crystalserver/bindings/items.json")?;
+    let mut input = super::death_ml_loss_composed::production_input_with_source("content-1", None)?;
+    let profiles = input.item_profiles.as_mut().ok_or("native item profiles")?;
+    let mut document: Value = serde_json::from_slice(&profiles.bytes)?;
+    let records = document["records"]
+        .as_array_mut()
+        .ok_or("native item records")?;
+    for id in ["11364", "11367"] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        if records
+            .iter()
+            .any(|row| row["production_definition"]["production_key"] == key)
+        {
+            continue;
+        }
+        let definition = items["records"]
+            .as_array()
+            .ok_or("canonical item records")?
+            .iter()
+            .map(|row| &row["definition"])
+            .find(|row| row["identity"]["key"] == key)
+            .filter(|row| row["materializable"] == true)
+            .ok_or("materializable Keeper item")?;
+        let binding = bindings["bindings"]
+            .as_array()
+            .ok_or("Crystal Item bindings")?
+            .iter()
+            .find(|row| row["external_id"] == id && row["target"] == definition["identity"])
+            .ok_or("exact Crystal Item binding")?;
+        records.push(json!({
+            "authoring": {"item": definition["identity"]},
+            "semantics": definition["semantics"],
+            "attributes": {},
+            "admission": {
+                "materializable": true,
+                "stack_class": definition["stack_class"],
+                "legal_destinations": ["CharacterInventory", "Ground"]
+            },
+            "production_definition": {
+                "family": "Item", "production_key": key, "revision_ref": definition["identity"]["revision"]
+            },
+            "production_binding": binding
+        }));
+    }
+    profiles.bytes = serde_json::to_vec(&document)?;
+    profiles.sha256 = format!("{:x}", Sha256::digest(&profiles.bytes));
+    crate::content::native_gameplay::test_support::try_activate_input(world, &input)
+        .map_err(|error| debug(error).into())
+}
