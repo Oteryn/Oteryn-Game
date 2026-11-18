@@ -1060,13 +1060,20 @@ async fn exercise_queen(
         after, before,
         "a durable kill deadline must refuse the kiss"
     );
-    let blocked_receipts: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_quest_npc_teleport_receipts WHERE transition_key=$1",
+    let blocked_state: (bool, bool, bool) = sqlx::query_as(
+        "SELECT EXISTS (SELECT 1 FROM game_quest_npc_teleport_receipts
+                        WHERE transition_key=$1),
+                EXISTS (SELECT 1 FROM game_character_quest_tracks
+                        WHERE character_id=encode($2,'hex')::uuid AND track_key=ANY($3) AND value=1),
+                EXISTS (SELECT 1 FROM game_character_pending_arrivals
+                        WHERE character_id=encode($2,'hex')::uuid)",
     )
     .bind(KISS)
+    .bind(character_id)
+    .bind(seal_tracks.as_slice())
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!(blocked_receipts, 0);
+    assert_eq!(blocked_state, (false, false, false));
     sqlx::query("DELETE FROM game_character_pvp_state WHERE character_id=encode($1,'hex')::uuid")
         .bind(character_id)
         .execute(&h.pool)
@@ -1111,5 +1118,16 @@ async fn exercise_queen(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(receipts, 1);
+    let arrival_pending: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM game_character_pending_arrivals
+                        WHERE character_id=encode($1,'hex')::uuid)",
+    )
+    .bind(character_id)
+    .fetch_one(&h.pool)
+    .await?;
+    assert!(
+        !arrival_pending,
+        "the dialogue caller placed and cleared the arrival"
+    );
     Ok(())
 }
