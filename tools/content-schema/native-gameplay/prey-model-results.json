@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "a40564017adb05f6515f6dd3ef457ee53c24067271d306eeecc52297e491473b",
+  "input_sha256": "6175ca2e1c1480bc3ab098c4dae2b2af0242f6fab423eeaf2df360bf90f1e2df",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -2804,7 +2804,6 @@
     "oteryn:creature.elder_bonelord",
     "oteryn:creature.elder_mummy",
     "oteryn:creature.elder_wyrm",
-    "oteryn:creature.elephant",
     "oteryn:creature.elf",
     "oteryn:creature.elf_scout",
     "oteryn:creature.emerald_damselfly",
@@ -3220,7 +3219,6 @@
     "oteryn:creature.tarantula",
     "oteryn:creature.tarnished_spirit",
     "oteryn:creature.terramite",
-    "oteryn:creature.terrified_elephant",
     "oteryn:creature.terror_bird",
     "oteryn:creature.terrorsleep",
     "oteryn:creature.thanatursus",

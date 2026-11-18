@@ -34,6 +34,19 @@ class ElephantCorpse(unittest.TestCase):
             (ROOT / 'tools/content-schema/native-gameplay/loot-tables.json').read_bytes())['items']}
         self.assertEqual((facts[FIRST]['materializable'], facts[FIRST]['container_capacity']), (True, 30))
 
+    def test_terrified_elephant_loot_items_are_materializable(self):
+        loot = json.loads((ROOT / 'tools/content-schema/native-gameplay/loot-tables.json').read_bytes())
+        reference = next(row['loot'] for row in loot['creature_loot']
+                         if row['creature']['key'] == 'oteryn:creature.terrified_elephant')
+        table = next(row for row in loot['tables'] if row['identity'] == reference)
+        facts = {row['item']['key']: row for row in loot['items']}
+        entries = list(table['entries'])
+        self.assertTrue(entries)
+        for entry in entries:
+            key = entry['item']['key']
+            self.assertTrue(facts[key]['materializable'], f'inadmissible loot item: {key}')
+            entries.extend(entry.get('children', []))
+
 
 if __name__ == '__main__':
     unittest.main()
