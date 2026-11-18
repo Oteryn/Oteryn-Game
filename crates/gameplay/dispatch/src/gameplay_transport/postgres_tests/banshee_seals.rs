@@ -229,6 +229,12 @@ async fn exercise_logic(
         "return_on_failure": false,
         "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/action-6-sixth_seal_lever.lua:3"]
     }))?;
+    let layout = [32309, 32311, 32313].into_iter()
+            .flat_map(|x| [31975, 31976].map(move |y| serde_json::json!({
+                "position": { "x": x, "y": y, "floor": -13 },
+                "appearance": if x == 32313 { 1998 } else { 1996 },
+            })))
+            .collect::<Vec<_>>();
     let flame: Callback = serde_json::from_value(serde_json::json!({
         "key": "oteryn:quest-callback/banshees-logic-flame",
         "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
@@ -240,12 +246,7 @@ async fn exercise_logic(
         "offerings": [],
         "passages": [],
         "return_on_failure": true,
-        "world_requirements": [32309, 32311, 32313].into_iter()
-            .flat_map(|x| [31975, 31976].map(move |y| serde_json::json!({
-                "position": { "x": x, "y": y, "floor": -13 },
-                "appearance": if x == 32313 { 1998 } else { 1996 },
-            })))
-            .collect::<Vec<_>>(),
+        "world_requirements": layout,
         "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-6-sixth_seal_flame.lua:3"]
     }))?;
     assert!(
@@ -351,15 +352,19 @@ async fn exercise_sacrifice(
     const KEY: &str = "oteryn:quest-callback/banshees-fourth-seal";
     const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-4-fourth_seal_flame.lua:3";
     let generation = owner.active_generation.ok_or("active generation")?;
+    let tracks = [TRACK, DOOR].map(|key| serde_json::json!({
+                "key": key, "initial": -1, "minimum": -1, "maximum": 1
+            }));
+    let storage = [TRACK, DOOR].map(|track| serde_json::json!({
+                        "track": track, "minimum": -1, "maximum": 0, "set": 1
+                    }));
     let bindings: Bindings = serde_json::from_value(serde_json::json!({
         "schema": 1,
         "quests": [{
             "quest": QUEST,
             "recipe_sha256": format!("{:x}", <sha2::Sha256 as sha2::Digest>::digest(SOURCE)),
             "sources": [SOURCE],
-            "tracks": [TRACK, DOOR].map(|key| serde_json::json!({
-                "key": key, "initial": -1, "minimum": -1, "maximum": 1
-            })),
+            "tracks": tracks,
             "stages": [{
                 "key": "sacrifice-flame",
                 "completes": false,
@@ -374,9 +379,7 @@ async fn exercise_sacrifice(
                     "requires_world_admission": true,
                     "offerings": [],
                     "passages": [],
-                    "storage": [TRACK, DOOR].map(|track| serde_json::json!({
-                        "track": track, "minimum": -1, "maximum": 0, "set": 1
-                    })),
+                    "storage": storage,
                     "effects": {
                         "splash_offering": { "position": {"x": 32243, "y": 31892, "floor": -14}, "subtype": 5 }
                     },
