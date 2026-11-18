@@ -92,6 +92,9 @@ pub(super) async fn exercise(
     case: Case,
 ) -> TestResult {
     let hard = case != Case::ShieldEasy;
+    for member in players {
+        owner.states.chat.admit(member.session, "Adventurer", owner.owner_now());
+    }
     let reinforcements = case == Case::ShieldReinforcements;
     let set_clock = |ms: u64| {
         owner.states.test_owner_time.store(ms * 1_000 + 1, std::sync::atomic::Ordering::Relaxed);
@@ -217,8 +220,23 @@ pub(super) async fn exercise(
     for member in players {
         assert_eq!(enter_exit(owner, *member, portal).await?, room);
     }
-    settle_actor_death(owner, players, if hard { CAVE_RAT } else { RAT }, terminal,
-        if hard { Case::ShieldHard } else { Case::ShieldEasy }, 541).await?;
+    let terminal_definition = if hard { CAVE_RAT } else { RAT };
+    if matches!(case, Case::ShieldEasy | Case::ShieldHard) {
+        // A second creature of the terminal's definition is not this encounter's outcome.
+        let outside = MovementLocalPosition { x: at.x + 2, ..at };
+        death(owner, players, terminal_definition, outside, case, 541).await?;
+        assert_first_defeat_messages(owner, players, [0, 0]);
+    }
+    settle_actor_death(owner, players, terminal_definition, terminal, case, 542).await?;
+    assert_first_defeat_messages(owner, players, [1, 1]);
+    assert_first_defeat_outfits(pool).await?;
+    let first_wins: Vec<i64> = sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks WHERE track_key=$1 ORDER BY character_id",
+    )
+    .bind(SHIELD_FIRST_WIN_TRACK)
+    .fetch_all(pool)
+    .await?;
+    assert_eq!(first_wins, [1, 1]);
     if let Some(adds) = adds {
         let mut runtime = owner.runtime.lock().await;
         tick(owner, &mut runtime, after_rod + 12_000).await;

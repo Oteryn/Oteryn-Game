@@ -20,6 +20,7 @@ const TRACK: &str = "oteryn:quest-progress/qcredit-fixture/kills";
 const PHASE: &str = "oteryn:quest-progress/qcredit-fixture/phase";
 const QUEST: &str = "oteryn:quest.authored.draccoon_herald_outfits_quest";
 const EXIT: &str = "oteryn:quest-progress/qcredit-fixture/exit";
+const SHIELD_FIRST_WIN_TRACK: &str = "oteryn:quest-progress/qcredit-fixture/shield-first-win";
 const PREOWNED_OUTFIT_TRACK: &str = "oteryn:quest-progress/qcredit-fixture/preowned-outfit";
 // Crystal 201189f8 arbaziloth_death.lua:38-41.
 const FIRST_DEFEAT_MESSAGE: &str =
@@ -411,6 +412,26 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
         counter["key"] = json!("oteryn:quest-transition/native-kills/qcredit-fixture-hard");
         counter["track"] = json!(HARD_TRACK);
         stages.push(stage("hard-kill", &counter));
+        if case.has_shields() {
+            // Crystal 201189f8 enraged_arbaziloth.lua:1-8, arbaziloth_death.lua:29-41.
+            // Both terminal definitions advance the same first-win track.
+            for (mode, creature) in [("easy", RAT), ("hard", CAVE_RAT)] {
+                let name = format!("first-win-{mode}");
+                stages.push(stage(&name, &json!({
+                    "key":format!("oteryn:quest-transition/native-kills/qcredit-fixture-{name}"),
+                    "creature":creature,
+                    "track":SHIELD_FIRST_WIN_TRACK,
+                    "gate":SHIELD_FIRST_WIN_TRACK,
+                    "gate_value":0,
+                    "maximum":1,
+                    "set_to_maximum":true,
+                    "damage_credit":{"recipients":"all_damagers"},
+                    "required_outcome":{"group":OUTCOME_GROUP,"mode":mode},
+                    "first_defeat_outfit":{"outfit":"oteryn:outfit.fiend_slayer","addons":0},
+                    "first_defeat_outfit_message":FIRST_DEFEAT_MESSAGE
+                })));
+            }
+        }
     } else if case.is_window() {
         stages.push(json!({
             "key":"timed-exit", "completes":false,
@@ -437,6 +458,12 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
             .as_array_mut()
             .ok_or("outfit fixture tracks")?
             .push(json!({"key":PREOWNED_OUTFIT_TRACK,"initial":0,"minimum":0,"maximum":1}));
+    }
+    if case.has_shields() {
+        definition["quests"][0]["tracks"]
+            .as_array_mut()
+            .ok_or("shield first-win track")?
+            .push(json!({"key":SHIELD_FIRST_WIN_TRACK,"initial":0,"minimum":0,"maximum":1}));
     }
     if case.has_reset() {
         let tracks = definition["quests"][0]["tracks"]
@@ -1389,10 +1416,10 @@ async fn exercise_first_defeat_outfit(
     assert_first_defeat_outfits(pool).await
 }
 
-fn assert_first_defeat_messages(
+fn assert_first_defeat_messages<const N: usize>(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     players: &[Player],
-    expected: [usize; 3],
+    expected: [usize; N],
 ) {
     use oteryn_protocol_oteryn::chat::ChatLine;
 
