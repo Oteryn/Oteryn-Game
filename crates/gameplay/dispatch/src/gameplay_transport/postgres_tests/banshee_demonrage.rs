@@ -486,6 +486,9 @@ fn scenario() -> TestResult {
             tracks,
             [THIRD, DOOR, WARLOCKS].map(|key| (key.to_owned(), 1))
         );
-        Ok(())
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        h.cleanup().await
     })
 }

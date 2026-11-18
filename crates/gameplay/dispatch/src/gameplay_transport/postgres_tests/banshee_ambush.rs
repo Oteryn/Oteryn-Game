@@ -305,6 +305,9 @@ fn scenario() -> TestResult {
             "SELECT track_key, value, count(*) FROM game_character_quest_tracks WHERE quest_key=$1 GROUP BY track_key,value ORDER BY track_key"
         ).bind(QUEST).fetch_all(&h.pool).await?;
         assert_eq!(progress, [(FIRST.to_owned(), 1, 2), (DOOR.to_owned(), 1, 2)]);
-        Ok(())
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        h.cleanup().await
     })
 }

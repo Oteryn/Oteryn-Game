@@ -348,7 +348,10 @@ fn scenario(circuit: Circuit) -> TestResult {
         .fetch_one(&h.pool)
         .await?;
         assert_eq!(receipts, 0);
-        Ok(())
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        h.cleanup().await
     })
 }
 

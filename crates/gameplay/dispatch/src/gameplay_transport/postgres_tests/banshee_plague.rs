@@ -279,7 +279,10 @@ fn scenario() -> TestResult {
         let consumption_counts: Vec<i32> = sqlx::query_scalar("SELECT quantity FROM game_quest_callback_consumptions WHERE transition_key='oteryn:quest-callback/banshee/plague-entrance' ORDER BY item_instance_id")
             .fetch_all(&h.pool).await?;
         assert_eq!(consumption_counts, [1, 1]);
-        Ok(())
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        h.cleanup().await
     })
 }
 
