@@ -1675,6 +1675,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, snapshot.position()),
             );
         }
+        if let Some(entry) = &callback.effects.encounter_exit {
+            self.retire_owned_encounter(runtime, entry, actor, session);
+        }
         if let Some(magic) = &callback.effects.magic {
             map.facts
                 .emit_movement_effect(tile(magic.position), magic.effect);

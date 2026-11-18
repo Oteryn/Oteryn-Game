@@ -54,6 +54,17 @@ pub struct FluidOffering {
     pub placement_cues: Vec<MagicEffect>,
 }
 
+/// Expire an admitted boss visit and retire only its original creatures.
+/// Crystal 201189f8 mission12_into_fortress.lua:513-532,568-575.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct EncounterTimeout {
+    pub duration_ms: u32,
+    pub landing: Position,
+    pub heal: bool,
+    pub message: String,
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
@@ -125,6 +136,11 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
     pub encounter: Option<Encounter>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub encounter_timeout: Option<EncounterTimeout>,
+    /// A manual StepIn exit retires the exact encounter the exiting player owns.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub encounter_exit: Option<String>,
 }
 
 /// The original wire shapes retain distinct owners: a child quest or the current quest.
@@ -525,6 +541,35 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 .placement_cues
                 .iter()
                 .any(|cue| cue.effect == 0 || !pos(cue.position))
+    }) {
+        return false;
+    }
+
+    if effects.encounter_timeout.as_ref().is_some_and(|timeout| {
+        callback.actor_kind != ActorKind::Player
+            || callback.trigger != Trigger::StepIn
+            || !callback.requires_world_admission
+            || callback.effects.encounter.as_ref().is_none_or(|encounter| {
+                encounter.timing.is_some()
+                    || encounter.phase.is_some()
+                    || encounter.players.len() != 1
+                    || (timeout.landing.floor == encounter.room_min.floor
+                        && (encounter.room_min.x..=encounter.room_max.x)
+                            .contains(&timeout.landing.x)
+                        && (encounter.room_min.y..=encounter.room_max.y)
+                            .contains(&timeout.landing.y))
+            })
+            || !(1..=3_600_000).contains(&timeout.duration_ms)
+            || !pos(timeout.landing)
+            || timeout.message.is_empty()
+            || timeout.message.len() > 512
+    }) || effects.encounter_exit.as_ref().is_some_and(|entry| {
+        callback.actor_kind != ActorKind::Player
+            || callback.trigger != Trigger::StepIn
+            || callback.teleport.is_none()
+            || effects.encounter.is_some()
+            || !entry.starts_with("oteryn:quest-callback/")
+            || !super::super::valid_quest_key(entry)
     }) {
         return false;
     }

@@ -12,13 +12,31 @@ pub(in crate::gameplay_transport) fn room_contains(
         && (i32::from(encounter.room_min.y)..=i32::from(encounter.room_max.y)).contains(&at.y)
 }
 
+struct VisitDeadline {
+    due: u64,
+    rule: world_callbacks::EncounterTimeout,
+}
+
 pub(super) struct EncounterVisit {
+    key: String,
+    deadline: Option<VisitDeadline>,
     room: oteryn_gameplay_quests::quest::world_callbacks::Encounter,
     participants: Vec<(ExactActorRef, GameSessionId)>,
     creatures: Vec<ExactActorRef>,
 }
 
 impl EncounterVisit {
+    pub(super) fn due(&self) -> Option<u64> {
+        self.deadline.as_ref().map(|deadline| deadline.due)
+    }
+
+    fn retire(&self, runtime: &mut ChannelRuntimeV1) -> bool {
+        self.creatures.iter().all(|actor| {
+            !runtime.contains_live_creature(*actor)
+                || runtime.remove_encounter_actor(*actor).is_ok()
+        })
+    }
+
     fn active(&self, runtime: &ChannelRuntimeV1) -> bool {
         self.creatures
             .iter()
@@ -27,6 +45,106 @@ impl EncounterVisit {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) fn retire_owned_encounter(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        key: &str,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) {
+        if let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() {
+            visits.retain(|visit| {
+                visit.key != key
+                    || !visit.participants.contains(&(actor, session))
+                    || !visit.retire(runtime)
+            });
+        }
+    }
+
+    pub(super) fn drain_admitted_boss_deadlines(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        map: &BundleMap,
+    ) {
+        let Ok(mut states) = self.states.spell_states.try_lock() else {
+            return;
+        };
+        let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
+            return;
+        };
+        let now = self.owner_now();
+        visits.retain(|visit| {
+            if !visit.active(runtime) {
+                // A committed death cancels the timeout and preserves treasure access.
+                return false;
+            }
+            let Some(deadline) = visit
+                .deadline
+                .as_ref()
+                .filter(|deadline| deadline.due <= now.get())
+            else {
+                return true;
+            };
+            for &(actor, session) in &visit.participants {
+                if states.is_dead(actor) || runtime.player_control_facts(actor, session).is_err() {
+                    continue;
+                }
+                let Ok(current) = runtime.read_actor_position(actor) else {
+                    continue;
+                };
+                if !room_contains(&visit.room, current.position()) {
+                    continue;
+                }
+                if !states.spell_idle(runtime, actor, session) {
+                    return true;
+                }
+                let doors = crate::map::floor::BundleDoors(&map.facts);
+                let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+                    runtime,
+                    self.movement_cells(),
+                    actor,
+                    session,
+                    current,
+                    local(deadline.rule.landing),
+                    false,
+                    &doors,
+                ) else {
+                    return true;
+                };
+                let Ok(landed) = runtime.commit_source_step(proof) else {
+                    return true;
+                };
+                states.stage_special_movement_step(
+                    runtime,
+                    map,
+                    actor,
+                    session,
+                    now.get(),
+                    Some(current.position()),
+                    landed.position(),
+                    None,
+                );
+                states.stage_underwater_step(
+                    runtime,
+                    actor,
+                    session,
+                    now.get(),
+                    underwater(map, current.position()),
+                    underwater(map, landed.position()),
+                );
+                if deadline.rule.heal {
+                    let _ = states.apply_health_gain(runtime, actor, session, u64::MAX);
+                }
+                map.facts
+                    .emit_movement_effect(tile(deadline.rule.landing), 11);
+                self.states
+                    .chat
+                    .push_quest_feedback(session, &deadline.rule.message);
+            }
+            !visit.retire(runtime)
+        });
+    }
+
     pub(in crate::gameplay_transport) fn encounter_blocks_channel_switch(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -414,7 +532,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         drop(phases);
         if let Some(visits) = &mut visits {
+            let deadline = callback
+                .effects
+                .encounter_timeout
+                .as_ref()
+                .map(|rule| VisitDeadline {
+                    due: self
+                        .owner_now()
+                        .get()
+                        .saturating_add(u64::from(rule.duration_ms) * 1000),
+                    rule: rule.clone(),
+                });
+            if deadline.is_some() {
+                states.owner_wake.notify_one();
+            }
             visits.push(EncounterVisit {
+                key: callback.key.clone(),
+                deadline,
                 room: encounter.clone(),
                 participants: party,
                 creatures: actors.clone(),
