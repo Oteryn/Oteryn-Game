@@ -390,11 +390,6 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
         drop(objects);
         let mut states = owner.states.spell_states.lock().await;
         for actor in &actors {
-            // First town entry admits only the nearby rat. Faraway spawn
-            // points still enter the profile pass's full field census.
-            if logout && *actor != rat {
-                continue;
-            }
             let policy = runtime
                 .companion_snapshot(*actor)
                 .map_err(debug)?
@@ -432,6 +427,22 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
         .map_err(debug)?;
         if let Some(regression) = regression {
             let start = 10_000_000;
+            // Each viewer position represents interest in its spread chunk.
+            // Both regressions start with the full cohort awake and due.
+            let viewers = actors
+                .iter()
+                .map(|&actor| runtime.read_actor_position(actor).map(|snapshot| snapshot.position()))
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(debug)?;
+            let table = &mut states.monster_melee.creature_ai;
+            table.wake_indexed(
+                &viewers,
+                |actor| {
+                    runtime.read_actor_position(actor).ok().map(|snapshot| snapshot.position())
+                },
+                0,
+            );
+            assert!(actors.iter().all(|&actor| table.due(actor) == Some(0)));
             let prepared = owner.capture_native_health_names(&runtime).map_err(debug)?;
             let names = owner
                 .read_prepared_native_health_names(&permit, prepared)
@@ -443,13 +454,6 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                 ProfileRegression::Logout => {
                     use crate::gameplay_transport::connection::LogoutReply;
                     use oteryn_protocol_oteryn::logout::LogoutResult;
-                    let table = &mut states.monster_melee.creature_ai;
-                    if table.due(rat).is_none() {
-                        let _ = table
-                            .wake_for_player(&runtime, deps.actor, 0)
-                            .map_err(debug)?;
-                    }
-                    assert_eq!(table.due(rat), Some(0), "the nearby rat is due");
                     assert!(owner.root.is_ready(), "the durability holder starts ready");
                     let batch_started = std::time::Instant::now();
                     let background = async {
@@ -527,27 +531,6 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                     assert_eq!(due, Some(start), "the remaining census stays due");
                 }
                 ProfileRegression::DueCycle => {
-                    // Each synthetic viewer position represents interest in its
-                    // spread chunk, making the full cohort due at the same tick.
-                    let viewers = actors
-                        .iter()
-                        .map(|&actor| {
-                            runtime
-                                .read_actor_position(actor)
-                                .map(|snapshot| snapshot.position())
-                        })
-                        .collect::<Result<Vec<_>, _>>()
-                        .map_err(debug)?;
-                    states.monster_melee.creature_ai.wake_indexed(
-                        &viewers,
-                        |actor| {
-                            runtime
-                                .read_actor_position(actor)
-                                .ok()
-                                .map(|snapshot| snapshot.position())
-                        },
-                        0,
-                    );
                     let started = std::time::Instant::now();
                     let mut seen = std::collections::BTreeSet::new();
                     let mut turns = 0;
