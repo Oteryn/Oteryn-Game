@@ -242,7 +242,7 @@ fn ddepths_warzone_pump_native_use_postgres() -> TestResult {
 }
 
 pub(super) async fn exercise_warzone_pump(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
     (pos, award, combined, ordinal): (Position, &str, bool, u8),
@@ -284,12 +284,6 @@ pub(super) async fn exercise_warzone_pump(
     let key = oteryn_world_bundle::bundle::placement_key(pos.floor, pos.x, pos.y, ordinal)
         .ok_or("pump placement")?;
     let map = owner.bundle_map().ok_or("pump map")?;
-    let mut placement = map.overlay.base().digest().to_vec();
-    placement.extend_from_slice(&key.to_be_bytes());
-    let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget {
-        placement,
-        expected_revision: map.facts.object_revision(key),
-    }).map_err(debug)?;
     let fire_tiles: Vec<_> = (pos.x - 1..=pos.x + 1)
         .flat_map(|x| (pos.y - 1..=pos.y + 1).map(move |y| (x, y)))
         .filter(|(x, y)| map.overlay.base().tile(*x, *y, pos.floor).is_some())
@@ -297,9 +291,22 @@ pub(super) async fn exercise_warzone_pump(
     assert!(fire_tiles.contains(&(pos.x, pos.y)));
     let mut after = 0;
     for command in [1, 2] {
+        if command == 2 {
+            owner.clock_origin = owner
+                .clock_origin
+                .checked_sub(std::time::Duration::from_secs(1))
+                .ok_or("pump USE cooldown clock")?;
+        }
+        let map = owner.bundle_map().ok_or("pump map")?;
+        let mut placement = map.overlay.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget {
+            placement,
+            expected_revision: map.facts.object_revision(key),
+        })
+        .map_err(debug)?;
         let result =
-            super::quest_world_callbacks::wire(owner, admitted, command, 2, payload.clone())
-                .await?;
+            super::quest_world_callbacks::wire(owner, admitted, command, 2, payload).await?;
         assert_eq!(
             oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?,
             UseDisposition::Committed
