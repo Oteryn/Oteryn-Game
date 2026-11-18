@@ -737,6 +737,13 @@ impl ChannelActorCarrier {
             return Err(CarrierError::SubOrdinalOutOfRange);
         }
         let index = self.validate_ref(continuity, actor_ref)?;
+        if self
+            .encounter_hooks
+            .as_ref()
+            .is_some_and(|hooks| hooks.blocks_direct_damage(ExactActorRef(actor_ref)))
+        {
+            return Err(CarrierError::PlanConflict);
+        }
         self.assert_slot_spell_unreserved(index)?;
         if binding.is_empty()
             || attacker.is_some_and(|attacker| attacker.lease_generation == 0)

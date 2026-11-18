@@ -20,8 +20,8 @@ pub(super) fn think(
             draw_index += 1;
             u32::from(u16::from_be_bytes([digest[0], digest[1]])) % limit
         };
-        if let Ok(Some(phase)) = oberon::think(runtime, occurrence.actor, occurrence.sequence, draw)
-            && let Ok(line) = CallbackSpeech::oberon(runtime, occurrence.actor, phase.speech)
+        if let Ok(Some(taunt)) = oberon::think(runtime, occurrence.actor, occurrence.sequence, draw)
+            && let Ok(line) = CallbackSpeech::oberon(runtime, occurrence.actor, taunt)
         {
             spawns::emit_speech(room, vec![line]);
         }

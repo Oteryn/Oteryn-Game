@@ -19,18 +19,13 @@ impl Fight {
     }
 }
 
-pub struct Transition {
-    pub speech: &'static str,
-    pub summon: ExactActorRef,
-}
-
 /// The caller supplies the existing scheduler occurrence and its deterministic draws.
 pub fn think(
     runtime: &mut ChannelRuntimeV1,
     actor: ExactActorRef,
     sequence: u64,
     draw: impl FnMut(u32) -> u32,
-) -> Result<Option<Transition>, CarrierError> {
+) -> Result<Option<&'static str>, CarrierError> {
     if !runtime.matches_live_creature_identity(actor, OBERON_KEY.as_bytes()) {
         return Ok(None);
     }
@@ -82,31 +77,19 @@ pub fn think(
             return Ok(None);
         };
         let at = runtime.read_actor_position(actor)?.position();
-        let health = runtime.companion_policy(creature_key)?.maximum_health;
         let content = runtime.content_pin().server_artifact_digest();
-        let before = runtime.encounter_parts().0.clone();
-        let transition = (|| {
-            let summon = runtime.commit_quest_creature_spawn(&[(creature_key, health, at)])?[0];
-            runtime.commit_source_creature_heal_batch(
-                content,
-                &[(actor, OBERON_KEY.into(), maximum, maximum)],
-            )?;
-            Ok(Transition {
-                speech: text,
-                summon,
-            })
-        })();
-        match transition {
-            Ok(transition) => {
-                entry.rules = next;
-                entry.last_phase_sequence = sequence;
-                Ok(Some(transition))
-            }
-            Err(error) => {
-                *runtime.encounter_parts_mut().0 = before;
-                Err(error)
-            }
+        runtime.commit_source_creature_heal_batch(
+            content,
+            &[(actor, OBERON_KEY.into(), maximum, maximum)],
+        )?;
+        entry.rules = next;
+        entry.last_phase_sequence = sequence;
+        // Crystal keeps the heal and immunity when the forced summon cannot be created.
+        if let Ok(policy) = runtime.companion_policy(creature_key) {
+            let _ =
+                runtime.commit_quest_creature_spawn(&[(creature_key, policy.maximum_health, at)]);
         }
+        Ok(Some(text))
     })
 }
 

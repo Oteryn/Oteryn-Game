@@ -61,7 +61,10 @@ impl EncounterHooks for DamageGates {
         self
     }
     fn contains(&self, actor: ExactActorRef) -> bool {
-        self.actors.contains(&actor) || self.oberon.iter().any(|fight| fight.blocks(actor))
+        self.actors.contains(&actor) || self.blocks_direct_damage(actor)
+    }
+    fn blocks_direct_damage(&self, actor: ExactActorRef) -> bool {
+        self.oberon.iter().any(|fight| fight.blocks(actor))
     }
     #[allow(
         clippy::too_many_arguments,

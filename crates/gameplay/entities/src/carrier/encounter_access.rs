@@ -15,6 +15,10 @@ pub trait EncounterHooks: std::fmt::Debug + Send + Sync + std::any::Any {
     fn as_any(&self) -> &dyn std::any::Any;
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
     fn contains(&self, actor: ExactActorRef) -> bool;
+    /// Absolute immunity also covers damage prepared by a batch owner.
+    fn blocks_direct_damage(&self, _actor: ExactActorRef) -> bool {
+        false
+    }
     #[allow(clippy::too_many_arguments)]
     fn damage(
         &self,
