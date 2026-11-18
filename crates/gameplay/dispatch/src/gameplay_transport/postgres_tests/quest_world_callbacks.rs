@@ -449,6 +449,9 @@ fn world_cells(
             effect_positions.extend([player.from, player.to]);
         }
         effect_positions.extend(encounter.monsters.iter().map(|m| m.position));
+        if let Some(week) = &encounter.weekday_monsters {
+            effect_positions.extend(week.iter().flatten().map(|m| m.position));
+        }
     }
     for p in effect_positions {
         for x in p.x - 1..=p.x + 1 {

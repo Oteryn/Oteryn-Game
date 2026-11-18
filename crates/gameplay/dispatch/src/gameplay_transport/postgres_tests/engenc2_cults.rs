@@ -103,21 +103,33 @@ fn run_encounter(reenter: bool, dream_scar: bool) -> TestResult {
             if dream_scar {
                 callback.reversible = false;
                 let encounter = callback.effects.encounter.as_mut().ok_or("encounter")?;
-                let position = encounter.monsters.first().ok_or("monster position")?.position;
+                let position = encounter
+                    .monsters
+                    .first()
+                    .ok_or("monster position")?
+                    .position;
                 encounter.phase = None;
-                encounter.minimum_level = 1;
-                encounter.weekday_monsters = Some([
-                    "alptramun",
-                    "izcandar_the_banished",
-                    "malofur_mangrinder",
-                    "maxxenius",
-                    "izcandar_the_banished",
-                    "plagueroot",
-                    "maxxenius",
-                ].map(|boss| vec![oteryn_gameplay_quests::quest::world_callbacks::EncounterMonster {
-                    position,
-                    creature: format!("oteryn:creature.{boss}"),
-                }]));
+                encounter.minimum_level = 250;
+                encounter.weekday_monsters = Some(
+                    [
+                        "alptramun",
+                        "izcandar_the_banished",
+                        "malofur_mangrinder",
+                        "maxxenius",
+                        "izcandar_the_banished",
+                        "plagueroot",
+                        "maxxenius",
+                    ]
+                    .map(|boss| {
+                        vec![
+                            oteryn_gameplay_quests::quest::world_callbacks::EncounterMonster {
+                                position,
+                                creature: format!("oteryn:creature.{boss}"),
+                            },
+                        ]
+                    }),
+                );
+                encounter.monsters.clear();
             }
             let trigger = Position {
                 x: 100,
@@ -125,9 +137,6 @@ fn run_encounter(reenter: bool, dream_scar: bool) -> TestResult {
                 floor: -7,
             };
             let world = super::quest_world_callbacks::world(&callback, trigger)?;
-            if dream_scar {
-                callback.effects.encounter.as_mut().ok_or("encounter")?.monsters.clear();
-            }
             let mut deps = Dependencies::new()?;
             let (controller, activated) =
                 super::death_ml_loss_composed::production_generation_with_pin(
@@ -275,7 +284,27 @@ fn run_encounter(reenter: bool, dream_scar: bool) -> TestResult {
                 )
                 .map_err(debug)?;
             owner.admit_progression_session(&mut admitted).await;
-            deps.initialize(&owner).await;
+            if dream_scar {
+                let runtime = owner.runtime.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
+                assert!(
+                    states
+                        .initialize(
+                            &runtime,
+                            deps.actor,
+                            admitted.game_session_id,
+                            crate::spell::cast::CharacterCastFacts {
+                                level: 250,
+                                ..crate::gameplay_transport::actor_spell::tests::FACTS
+                            },
+                            (0, 0),
+                            owner.owner_now(),
+                        )
+                        .is_some()
+                );
+            } else {
+                deps.initialize(&owner).await;
+            }
             owner.admit_quest_session(&admitted).await;
             assert!(
                 owner
@@ -352,10 +381,14 @@ fn run_encounter(reenter: bool, dream_scar: bool) -> TestResult {
                 let runtime = owner.runtime.lock().await;
                 let spawned = runtime.current_live_creature_census().map_err(debug)?;
                 assert_eq!(spawned.len(), 1);
-                assert!(runtime.matches_live_creature_identity(
-                    spawned[0],
-                    b"oteryn:creature.alptramun",
-                ));
+                assert!(
+                    runtime
+                        .matches_live_creature_identity(spawned[0], b"oteryn:creature.alptramun",)
+                );
+                eprintln!(
+                    "POSTGRES_CASE_COMPLETED dcourts2_dream_scar_uses_startup_roster_on_lever_use_postgres duration={:?}",
+                    began.elapsed(),
+                );
                 return Ok(());
             }
             assert_eq!(
