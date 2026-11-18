@@ -119,7 +119,7 @@ pub(super) async fn exercise(
                 .is_ok_and(|position| position.position() == local(monster.position))));
         }
         let map = owner.bundle_map().ok_or("map")?;
-        let doors = crate::map::floor::BundleDoors(map.facts);
+        let doors = crate::map::floor::BundleDoors(map.facts.doors());
         let proof = crate::map::floor::prepare_quest_callback_teleport_facing(
             &runtime, owner.movement_cells(), actor, admitted.game_session_id, landed,
             origin, false, &doors, None,
