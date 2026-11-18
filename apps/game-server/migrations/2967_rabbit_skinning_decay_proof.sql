@@ -96,7 +96,7 @@ BEGIN
     AND race.race_key IN ('oteryn:creature.rabbit','oteryn:creature.killer_rabbit') AND race.race_definition_revision='definition-r1'
     AND race.mint_transaction_id=OLD.minted_transaction_id AND p.source_transaction_id=OLD.minted_transaction_id AND p.source_ordinal=0
     AND c.recipe='oteryn:skinning.crystal' AND NOT c.consume_source AND c.world_id=r.world_id
-    AND c.before_item->>'definition_production_key'='oteryn:item.tibia.i5908'
+    AND c.before_item->>'definition_production_key' IN ('oteryn:item.tibia.i3469','oteryn:item.tibia.i5908','oteryn:item.tibia.i9594','oteryn:item.tibia.i9598')
     AND s.created_xact_id=c.created_xact_id AND s.channel_id=r.channel_id AND s.scope_ownership_generation=r.ownership_generation
     AND OLD.state_revision=3
     AND (to_jsonb(OLD)-ARRAY['definition_production_key','definition_revision_ref','state_revision','last_transaction_id'])
@@ -108,11 +108,21 @@ BEGIN
  EXECUTE replace(body,anchor,replacement);
 END $migration$;
 
--- Keep the demon stake proof and require the obsidian knife for the timed rabbit.
+-- Keep the demon stake proof and admit only the donor knives for a timed rabbit.
 DO $migration$
-DECLARE body TEXT; anchor TEXT;
+DECLARE body TEXT; anchor TEXT; carried_tool TEXT;
 BEGIN
  body:=pg_get_functiondef('game_corpse_skinning_complete()'::regprocedure);
+
+ carried_tool:=$guard$c.before_item->>'definition_production_key' IN ('oteryn:item.tibia.i5908','oteryn:item.tibia.i5942')$guard$;
+ IF (length(body)-length(replace(body,carried_tool,'')))/length(carried_tool)<>1 THEN
+  RAISE EXCEPTION 'unexpected carried skinning tool predicate';
+ END IF;
+ body:=replace(body,carried_tool,$guard$(
+  (NEW.before_item->>'definition_production_key'<>'oteryn:item.tibia.i4301' AND $guard$||carried_tool||$guard$)
+  OR (NEW.before_item->>'definition_production_key'='oteryn:item.tibia.i4301'
+      AND c.before_item->>'definition_production_key' IN ('oteryn:item.tibia.i3469','oteryn:item.tibia.i5908','oteryn:item.tibia.i9594','oteryn:item.tibia.i9598'))
+ )$guard$);
  anchor:=$guard$OR c.before_item->>'definition_production_key'='oteryn:item.tibia.i5942'$guard$;
  IF (length(body)-length(replace(body,anchor,'')))/length(anchor)<>1 THEN
   RAISE EXCEPTION 'unexpected corpse skinning tool guard';
@@ -121,8 +131,20 @@ BEGIN
       AND NEW.before_item->>'definition_production_key'<>'oteryn:item.tibia.i4301')
   OR (NEW.before_item->>'definition_production_key'='oteryn:item.tibia.i4301'
       AND NEW.spent_key='oteryn:item.tibia.i4302'
-      AND c.before_item->>'definition_production_key'='oteryn:item.tibia.i5908'
+      AND c.before_item->>'definition_production_key' IN ('oteryn:item.tibia.i3469','oteryn:item.tibia.i5908','oteryn:item.tibia.i9594','oteryn:item.tibia.i9598')
       AND (jsonb_array_length(c.outputs)=0
            OR (c.outputs->0->>'key'='oteryn:item.tibia.i12172'
                AND c.outputs->0->>'count' IN ('1','2'))))$guard$);
+
+ -- The paired craft proof must also qualify the unchanged tool against this exact corpse.
+ body:=pg_get_functiondef('game_item_craft_admit()'::regprocedure);
+ carried_tool:=$guard$NEW.before_item->>'definition_production_key' IN ('oteryn:item.tibia.i5908','oteryn:item.tibia.i5942')$guard$;
+ IF (length(body)-length(replace(body,carried_tool,'')))/length(carried_tool)<>1 THEN
+  RAISE EXCEPTION 'unexpected craft skinning tool predicate';
+ END IF;
+ EXECUTE replace(body,carried_tool,$guard$(
+  (s.before_item->>'definition_production_key'<>'oteryn:item.tibia.i4301' AND $guard$||carried_tool||$guard$)
+  OR (s.before_item->>'definition_production_key'='oteryn:item.tibia.i4301'
+      AND NEW.before_item->>'definition_production_key' IN ('oteryn:item.tibia.i3469','oteryn:item.tibia.i5908','oteryn:item.tibia.i9594','oteryn:item.tibia.i9598'))
+ )$guard$);
 END $migration$;

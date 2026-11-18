@@ -80,9 +80,14 @@ pub struct GatheringYield {
     pub threshold: u32,
 }
 
+/// Crystal skinning.lua:16 and register_actions.lua:1070–1078.
+pub const fn rabbit_skinning_knife(tool: u16) -> bool {
+    matches!(tool, 3469 | 5908 | 9594 | 9598)
+}
+
 /// Only provenance-bound corpses may use the quest rabbit recipe.
 pub fn corpse_skinning_rule(tool: u16, corpse: u16) -> Option<(GatheringTarget, GatheringYield)> {
-    if (tool, corpse) == (5908, 4301) {
+    if corpse == 4301 && rabbit_skinning_knife(tool) {
         return Some((
             GatheringTarget::Corpse { spent_item: 4302 },
             GatheringYield {
@@ -623,16 +628,18 @@ mod tests {
         assert_eq!(gathering_rule(5908, 4301), None);
         assert_eq!(corpse_skinning_rule(5908, 6017), None);
         assert_eq!(corpse_skinning_rule(5942, 4301), None);
-        assert_eq!(
-            corpse_skinning_rule(5908, 4301),
-            Some((
-                GatheringTarget::Corpse { spent_item: 4302 },
-                GatheringYield {
-                    item: 12172,
-                    threshold: 25_000,
-                }
-            )),
-        );
+        for tool in [3469, 5908, 9594, 9598] {
+            assert_eq!(
+                corpse_skinning_rule(tool, 4301),
+                Some((
+                    GatheringTarget::Corpse { spent_item: 4302 },
+                    GatheringYield {
+                        item: 12172,
+                        threshold: 25_000,
+                    }
+                )),
+            );
+        }
     }
 
     #[test]

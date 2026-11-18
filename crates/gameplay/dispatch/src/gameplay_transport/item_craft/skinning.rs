@@ -84,12 +84,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .flat_map(|bag| &bag.entries)
             .find(|entry| entry.item.item_instance_id == tool);
-        if !entry.is_some_and(|entry| {
-            matches!(
-                entry.item.definition.production_key.as_str(),
-                "oteryn:item.tibia.i5908" | "oteryn:item.tibia.i5942"
-            )
-        }) {
+        let source_id = |key: &str| {
+            key.strip_prefix("oteryn:item.tibia.i")
+                .and_then(|id| id.parse::<u16>().ok())
+        };
+        let Some(tool_id) =
+            entry.and_then(|entry| source_id(&entry.item.definition.production_key))
+        else {
+            return Ok(None);
+        };
+        let rabbit_knife = oteryn_gameplay_items::fishing::rabbit_skinning_knife(tool_id);
+        if !rabbit_knife && tool_id != 5942 {
             return Ok(None);
         }
         let corpse = match target {
@@ -113,18 +118,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
-        let source_id = |key: &str| {
-            key.strip_prefix("oteryn:item.tibia.i")
-                .and_then(|id| id.parse::<u16>().ok())
-        };
-        let tool_id = entry.and_then(|entry| source_id(&entry.item.definition.production_key));
         let corpse_id = source_id(&ground.definition().production_key);
-        let fresh_rabbit = (tool_id, corpse_id) == (Some(5908), Some(6017));
+        let fresh_rabbit = rabbit_knife && corpse_id == Some(6017);
         if !fresh_rabbit
-            && !tool_id
-                .zip(corpse_id)
-                .and_then(|(tool, target)| {
-                    oteryn_gameplay_items::fishing::corpse_skinning_rule(tool, target)
+            && !corpse_id
+                .and_then(|target| {
+                    oteryn_gameplay_items::fishing::corpse_skinning_rule(tool_id, target)
                 })
                 .is_some_and(|(target, _)| {
                     matches!(
