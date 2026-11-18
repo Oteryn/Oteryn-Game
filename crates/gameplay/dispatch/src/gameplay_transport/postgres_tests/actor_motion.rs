@@ -101,6 +101,29 @@ fn scenario(position_before_change: bool) -> TestResult {
                 .map_err(debug)?;
         }
         dependencies.initialize(&owner).await;
+        if position_before_change {
+            let mut admitted = dependencies.admitted;
+            let fence = crate::gameplay_transport::character_gameplay_fence::current(
+                &owner, admitted.game_session_id, false,
+            ).await.ok_or("observation test fence")?;
+            admitted.item_fence = Some(fence.item_fence());
+            let offers = [crate::gameplay_transport::capabilities::OfferedCapability { id: 509, requires: &[] }];
+            admitted.continuity.selected_capabilities =
+                crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offers, &[509]).ok_or("emblem selection")?;
+            let mut writer = harness.pool.begin().await?;
+            sqlx::query("SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid FOR UPDATE")
+                .bind(admitted.game_session_id.as_bytes().as_slice()).execute(&mut *writer).await?;
+            let emblems = tokio::time::timeout(
+                std::time::Duration::from_secs(1), owner.observe_guild_emblems(admitted),
+            ).await?;
+            assert!(emblems.is_some(), "Channel emblem read can see a busy reconnect row");
+            sqlx::query("LOCK TABLE game_durability_reconnect_sessions IN EXCLUSIVE MODE").execute(&mut *writer).await?;
+            let forecast = tokio::time::timeout(
+                std::time::Duration::from_secs(1), owner.observe_channel_entities_projected(dependencies.actor, true),
+            ).await?;
+            assert!(forecast.is_some(), "motion projection completes while an admission writer holds its lock");
+            writer.rollback().await?;
+        }
         let entity = appearance::EntityRef {
             identity: dependencies.actor.placement_identity(),
             generation: dependencies.actor.actor_local_generation(),
