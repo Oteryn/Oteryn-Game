@@ -78,10 +78,13 @@ impl GrizzlyCaptureCache {
                         && snapshot.character == *lease.character_id().as_bytes()
                         && snapshot.lease_generation == lease.generation()
                         && snapshot.observed_revision > 0
-                        && snapshot.native_counters.iter().any(|counter| {
-                            counter.encounter_source.as_deref() == Some(source)
-                                && counter.definition_hash == Some(definition_hash)
-                        })
+                        // Grave Danger levers stay repeatable after quest credit.
+                        // Capture still requires an active counter at death.
+                        && (require_damage
+                            || snapshot.native_counters.iter().any(|counter| {
+                                counter.encounter_source.as_deref() == Some(source)
+                                    && counter.definition_hash == Some(definition_hash)
+                            }))
                 })
                 .ok_or(())?;
             participants.push(Participant {
