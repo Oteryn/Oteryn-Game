@@ -217,7 +217,7 @@ async fn use_browsed_corpse(
     .ok_or("browse and USE capabilities")?;
     let command = admitted.continuity.next_command_id;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    let client_task = async {
+    let client_task = async move {
         wire::snapshot(&mut client).await?;
         let position = WorldTilePosition {
             x: i32::from(BODY.x),
@@ -226,9 +226,15 @@ async fn use_browsed_corpse(
         };
         wire::browse(&mut client, command, BrowseFieldIntent::Open { position }).await?;
         let views = wire::views(&mut client).await?;
-        let handle = views.views.iter()
+        let handle = views
+            .views
+            .iter()
             .find(|view| view.browse.is_some_and(|page| page.position == position))
-            .and_then(|view| view.entries.iter().find(|entry| entry.item_definition_ref == definition))
+            .and_then(|view| {
+                view.entries
+                    .iter()
+                    .find(|entry| entry.item_definition_ref == definition)
+            })
             .ok_or("browsed Keeper corpse")?
             .handle;
         let payload = encode_item_use_intent(&UseIntent {
@@ -236,17 +242,28 @@ async fn use_browsed_corpse(
             use_with: None,
             use_with_position: None,
             use_with_map_item: None,
-        }).map_err(debug)?;
-        for (id, expected) in [(command + 1, UseDisposition::Committed), (command + 2, UseDisposition::Rejected)] {
+        })
+        .map_err(debug)?;
+        for (id, expected) in [
+            (command + 1, UseDisposition::Committed),
+            (command + 2, UseDisposition::Rejected),
+        ] {
             wire::send(&mut client, id, COMMAND_TYPE_USE_INTENT, &payload).await?;
-            assert_eq!(decode_use_result(&wire::result(&mut client, id).await?).map_err(debug)?, expected);
+            assert_eq!(
+                decode_use_result(&wire::result(&mut client, id).await?).map_err(debug)?,
+                expected
+            );
         }
         client.shutdown().await?;
         Ok::<_, Box<dyn std::error::Error>>(())
     };
     let (end, result) = tokio::time::timeout(std::time::Duration::from_secs(30), async {
-        tokio::join!(serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS), client_task)
-    }).await?;
+        tokio::join!(
+            serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS),
+            client_task
+        )
+    })
+    .await?;
     result?;
     assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)), "{end:?}");
     Ok(())
