@@ -36,17 +36,23 @@ struct VisitExpiry {
 
 impl EncounterVisit {
     pub(super) fn next_due_us(&self) -> Option<u64> {
-        self.arrival_due.into_iter().chain(self.expires.as_ref().map(|expiry| expiry.due)).min()
+        self.arrival_due
+            .into_iter()
+            .chain(self.expires.as_ref().map(|expiry| expiry.due))
+            .min()
     }
 
     fn active(&self, runtime: &ChannelRuntimeV1) -> bool {
-        self.owner_scope == runtime.encounter_owner_scope() && (self.arrival_due.is_some() || self.expires
-            .as_ref()
-            .is_some_and(|expiry| expiry.scope == runtime.encounter_owner_scope())
-            || self
-                .creatures
-                .iter()
-                .any(|actor| runtime.contains_live_creature(*actor)))
+        self.owner_scope == runtime.encounter_owner_scope()
+            && (self.arrival_due.is_some()
+                || self
+                    .expires
+                    .as_ref()
+                    .is_some_and(|expiry| expiry.scope == runtime.encounter_owner_scope())
+                || self
+                    .creatures
+                    .iter()
+                    .any(|actor| runtime.contains_live_creature(*actor)))
     }
 }
 
@@ -101,7 +107,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 visit.arrival_due = None;
                 if let Some(link) = visit.room.linked_arrival.as_ref()
                     && let Some(original) = visit.creatures.first().copied()
-                    && let Some(delayed) = self.spawn_linked_arrival(runtime, states, map, original, link)
+                    && let Some(delayed) =
+                        self.spawn_linked_arrival(runtime, states, map, original, link)
                 {
                     visit.creatures.push(delayed);
                 }
@@ -187,22 +194,50 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let at = local(link.monster.position);
         if self.movement_cells.index().lookup(
             self.movement_cells.scope(),
-            LogicalCell { x: at.x, y: at.y, z: i32::from(at.floor) },
+            LogicalCell {
+                x: at.x,
+                y: at.y,
+                z: i32::from(at.floor),
+            },
         ) != Ok(CollisionClass::Walkable)
-            || map.facts.quest_callback_blocked(map.overlay.base(), tile(link.monster.position), false)
-            || runtime.positioned_melee_census().ok()?.iter().any(|(_, position, _)| position.position() == at)
+            || map.facts.quest_callback_blocked(
+                map.overlay.base(),
+                tile(link.monster.position),
+                false,
+            )
+            || runtime
+                .positioned_melee_census()
+                .ok()?
+                .iter()
+                .any(|(_, position, _)| position.position() == at)
         {
             return None;
         }
-        let health = runtime.companion_policy(&link.monster.creature).ok()?.maximum_health;
-        let delayed = *runtime.commit_quest_creature_spawn(&[(link.monster.creature.as_str(), health, at)]).ok()?.first()?;
-        if states.encounter_phases.link(
-            runtime, delayed, original, link.radius, link.death_effect, self.movement_cells().clone(),
-        ).is_err() {
+        let health = runtime
+            .companion_policy(&link.monster.creature)
+            .ok()?
+            .maximum_health;
+        let delayed = *runtime
+            .commit_quest_creature_spawn(&[(link.monster.creature.as_str(), health, at)])
+            .ok()?
+            .first()?;
+        if states
+            .encounter_phases
+            .link(
+                runtime,
+                delayed,
+                original,
+                link.radius,
+                link.death_effect,
+                self.movement_cells().clone(),
+            )
+            .is_err()
+        {
             let _ = runtime.remove_encounter_actor(delayed);
             return None;
         }
-        map.facts.emit_movement_effect(tile(link.monster.position), link.arrival_effect);
+        map.facts
+            .emit_movement_effect(tile(link.monster.position), link.arrival_effect);
         Some(delayed)
     }
 
@@ -445,19 +480,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
         }
-        let expiration = if let Some(expiry) = encounter.solo_expiry {
+        let visit_lifetime = encounter
+            .solo_expiry
+            .map(|expiry| (expiry.exit, expiry.time_limit_ms))
+            .or_else(|| {
+                encounter
+                    .linked_arrival
+                    .as_ref()
+                    .map(|link| (link.exit, link.time_limit_ms))
+            });
+        let expiration = if let Some((exit, time_limit_ms)) = visit_lifetime {
             let Some(due) = self
                 .owner_now()
                 .get()
-                .checked_add(u64::from(expiry.time_limit_ms) * 1_000)
+                .checked_add(u64::from(time_limit_ms) * 1_000)
             else {
                 return UseDisposition::Exhausted;
             };
-            let Some(base) =
-                map.overlay
-                    .base()
-                    .tile(expiry.exit.x, expiry.exit.y, expiry.exit.floor)
-            else {
+            let Some(base) = map.overlay.base().tile(exit.x, exit.y, exit.floor) else {
                 return UseDisposition::Rejected;
             };
             if !base.walkable() {
@@ -465,7 +505,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Some(VisitExpiry {
                 due,
-                exit: expiry.exit,
+                exit,
                 scope: runtime.encounter_owner_scope(),
                 bundle_digest: map.overlay.base().digest(),
             })
@@ -477,7 +517,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if runtime.companion_policy(&link.monster.creature).is_err() {
                     return UseDisposition::Rejected;
                 }
-                let Some(due) = self.owner_now().get().checked_add(u64::from(link.after_ms) * 1_000) else {
+                let Some(due) = self
+                    .owner_now()
+                    .get()
+                    .checked_add(u64::from(link.after_ms) * 1_000)
+                else {
                     return UseDisposition::Exhausted;
                 };
                 Some(due)

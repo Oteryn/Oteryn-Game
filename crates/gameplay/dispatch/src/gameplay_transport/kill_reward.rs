@@ -1966,17 +1966,25 @@ pub fn record_creature_kill(
         if let Ok(top) = top
             && let Some(winner) = top.present()
         {
-            record_creature_kill(runtime, sink, linked, CapturedRewardPrincipal {
-                character: winner.character,
-                lease_generation: winner.lease_generation,
-                session: winner.session,
-                actor: winner.actor,
-            }, now_ms, observed_at);
+            record_creature_kill(
+                runtime,
+                sink,
+                linked,
+                CapturedRewardPrincipal {
+                    character: winner.character,
+                    lease_generation: winner.lease_generation,
+                    session: winner.session,
+                    actor: winner.actor,
+                },
+                now_ms,
+                observed_at,
+            );
         } else {
             // The script's hit carries no Character attribution. With no
             // contributor, publish its physical death without assigning credit.
             let _ = crate::combat::project_fixed_one_creature_death(
-                &mut runtime.borrow_combat_death(), linked,
+                &mut runtime.borrow_combat_death(),
+                linked,
             );
         }
     }

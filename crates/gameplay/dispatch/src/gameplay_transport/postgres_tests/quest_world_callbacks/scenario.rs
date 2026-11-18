@@ -366,7 +366,11 @@ fn scenario_case(
     let color_grid = dreamers_color_grid::matches(name);
     use super::super::dreamers_stone_exit;
     let stone_exit = name == dreamers_stone_exit::NAME;
-    let mut callback = if board_exit {
+    use super::super::zarganash_linked_boss;
+    let zarganash = name == zarganash_linked_boss::NAME;
+    let mut callback = if zarganash {
+        zarganash_linked_boss::binding()?
+    } else if board_exit {
         dreamers_board_exit::binding()?
     } else if board_portal {
         dreamers_board_portal::binding()?
@@ -678,7 +682,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if board_exit {
+    let world = if zarganash {
+        zarganash_linked_boss::world(&callback)?
+    } else if board_exit {
         dreamers_board_exit::world(&callback)?
     } else if board_portal {
         dreamers_board_portal::world(&callback, name == dreamers_board_portal::READY)?
@@ -1422,6 +1428,7 @@ fn scenario_case(
             "questpc7-grave" => Some(250),
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
+            zarganash_linked_boss::NAME => Some(250),
             _ => None,
         };
         if let Some(initial_level) = initial_level {
@@ -1745,7 +1752,7 @@ fn scenario_case(
                 name,
             )?);
         }
-        if board_portal || stone_exit {
+        if board_portal || stone_exit || zarganash {
             let binding = serde_json::json!({"schema":1,"callbacks":[&callback]}).to_string();
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 oteryn_gameplay_quests::quest::world_callbacks::with_fixture_world_document(
@@ -2958,6 +2965,8 @@ fn scenario_case(
                 trigger,
             )
             .await?;
+        } else if zarganash {
+            Box::pin(zarganash_linked_boss::exercise(&mut owner, &mut admitted)).await?;
         } else if board_exit {
             Box::pin(dreamers_board_exit::exercise(
                 &owner, &mut admitted, &h, fence, &callback,

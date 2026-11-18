@@ -30,8 +30,16 @@ impl Registry {
         {
             return Err(CarrierError::PlanConflict);
         }
-        links.try_reserve(1).map_err(|_| CarrierError::AllocationFailed)?;
-        links.push(Link { delayed, original, radius, effect, cells });
+        links
+            .try_reserve(1)
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        links.push(Link {
+            delayed,
+            original,
+            radius,
+            effect,
+            cells,
+        });
         Ok(())
     }
 
@@ -42,8 +50,12 @@ impl Registry {
         delayed: ExactActorRef,
         now_us: u64,
     ) -> Option<ExactActorRef> {
-        let source = runtime.borrow_combat_death().committed_lethal_receipt(delayed)
-            .ok()?.statistics_death_key().ok()?;
+        let source = runtime
+            .borrow_combat_death()
+            .committed_lethal_receipt(delayed)
+            .ok()?
+            .statistics_death_key()
+            .ok()?;
         let mut links = self.links.lock().ok()?;
         let index = links.iter().position(|link| link.delayed == delayed)?;
         let link = &links[index];
@@ -54,32 +66,46 @@ impl Registry {
         };
         let at = runtime.read_actor_position(link.original).ok()?.position();
         let radius = u32::from(link.radius);
-        if at.floor != died.floor || at.x.abs_diff(died.x) > radius || at.y.abs_diff(died.y) > radius {
+        if at.floor != died.floor
+            || at.x.abs_diff(died.x) > radius
+            || at.y.abs_diff(died.y) > radius
+        {
             links.swap_remove(index);
             return None;
         }
-        let digest: [u8;32] = Sha256::new()
+        let digest: [u8; 32] = Sha256::new()
             .chain_update(b"oteryn:linked-encounter-death:v1")
             .chain_update(source.native_bytes())
-            .finalize().into();
-        let result = runtime.borrow_exact_actor_commit_at_us(now_us).commit_damage(
-            link.original,
-            oteryn_gameplay_entities::OwnerDamageCommand {
-                target: original.state.policy.definition_key.as_bytes(),
-                occurrence: &digest,
-                binding: &digest,
-                damage: original.health,
-            },
-        ).ok()?;
+            .finalize()
+            .into();
+        let result = runtime
+            .borrow_exact_actor_commit_at_us(now_us)
+            .commit_damage(
+                link.original,
+                oteryn_gameplay_entities::OwnerDamageCommand {
+                    target: original.state.policy.definition_key.as_bytes(),
+                    occurrence: &digest,
+                    binding: &digest,
+                    damage: original.health,
+                },
+            )
+            .ok()?;
         if result.health_after != 0 {
             return None;
         }
         let finished = links.swap_remove(index);
         if let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
             finished.cells.index()
-            && let (Ok(x), Ok(y), Ok(floor)) = (u16::try_from(at.x), u16::try_from(at.y), i8::try_from(-at.floor))
+            && let (Ok(x), Ok(y), Ok(floor)) = (
+                u16::try_from(at.x),
+                u16::try_from(at.y),
+                i8::try_from(-at.floor),
+            )
         {
-            index.map().facts.emit_movement_effect(crate::map::overlay::TilePos { x, y, floor }, finished.effect);
+            index.map().facts.emit_movement_effect(
+                crate::map::overlay::TilePos { x, y, floor },
+                finished.effect,
+            );
         }
         Some(finished.original)
     }

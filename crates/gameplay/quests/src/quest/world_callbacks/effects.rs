@@ -401,6 +401,8 @@ pub struct Encounter {
 pub struct LinkedArrival {
     pub monster: EncounterMonster,
     pub after_ms: u32,
+    pub exit: Position,
+    pub time_limit_ms: u32,
     pub radius: u8,
     pub arrival_effect: u16,
     pub death_effect: u16,
@@ -942,7 +944,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
     if operations > 1
         || (operations > 0
             && ((!personal_encounter
-                && !effects.encounter.as_ref().is_some_and(|encounter| encounter.linked_arrival.is_some())
+                && !effects
+                    .encounter
+                    .as_ref()
+                    .is_some_and(|encounter| encounter.linked_arrival.is_some())
                 && !super::personal_trial::admitted(callback)
                 && (!lever
                     || (effects.scene.is_none()
@@ -1003,8 +1008,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_from: BTreeSet<_> = encounter.players.iter().map(|p| p.from).collect();
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
-        let source_party = encounter.phase == Some(EncounterPhase::Cults)
-            || encounter.linked_arrival.is_some();
+        let source_party =
+            encounter.phase == Some(EncounterPhase::Cults) || encounter.linked_arrival.is_some();
         if encounter.linked_arrival.as_ref().is_some_and(|link| {
             callback.trigger != Trigger::Use
                 || callback.actor_kind != ActorKind::Player
@@ -1024,6 +1029,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 })
                 || unique_to.contains(&link.monster.position)
                 || !(1..=60_000).contains(&link.after_ms)
+                || !pos(link.exit)
+                || in_room(link.exit)
+                || link.time_limit_ms <= link.after_ms
+                || link.time_limit_ms > 3_600_000
                 || !(1..=32).contains(&link.radius)
                 || !(1..=255).contains(&link.arrival_effect)
                 || !(1..=255).contains(&link.death_effect)
