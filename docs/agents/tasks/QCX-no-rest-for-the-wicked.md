@@ -28,6 +28,8 @@ The parent definition in `content/quests/definitions/quests-00100-00199.json` ha
 
 Placement comparison decoded the Edron and Azzilon B3 regions using the repository codec. The checked floor-14 Azzilon regions did not contain the Doomforge portal's donor AID or the donor chest UIDs. The Forge portal destination above is an observed Oteryn placement, independent of the donor script's dynamic gate. Crystal's chest script relies on room access and only checks the shared claim marker on use. Admitting chests independently could therefore bypass hard-win eligibility.
 
+The admitted appearance pair in the outfit catalogue is female 1808 and male 1809. The canonical Item records mark Fishing Rod 3483 materializable. The records for 49908, 49909, 50060, 50061 and all eleven donor chest reward IDs mark `materializable: false`. The source IDs alone are insufficient for a native item grant.
+
 ## Blockers
 
 - BLOCKER Fernlor entry exact Global admission trigger and mission writer `data-global/npc/fernlor.lua:54-76`
@@ -44,4 +46,4 @@ Exact global mist threshold, the level/Premium enforcement point, crystal durati
 
 ## PARTIAL
 
-Audit only. Entry, claims, progression, rewards and a PostgreSQL dispatch regression remain open. The simple authored count corrections were attempted through the Quest tree generator. Its checked source receipt rejects changes to the compiler input with `ValueError: input/proof/compiler SHA mismatch: tools/content-schema/quest-authoring/quest_tree_authoring.py`. The attempted changes were removed. That shared receipt needs a compliant generator path before the inactive recipe values can be corrected. A dispatch test against the inactive candidate would provide no evidence for quest behavior.
+Audit only. Entry, claims, progression, rewards and a PostgreSQL dispatch regression remain open. The simple authored count corrections were attempted through the Quest tree generator. Its checked source receipt rejects changes to the compiler input with `ValueError: input/proof/compiler SHA mismatch: tools/content-schema/quest-authoring/quest_tree_authoring.py`. The attempted changes were removed. The existing ITEMHOLD repin tool only accepts its listed predecessors, which exclude this base compiler digest. The Monk receipt generator is scoped to its own approved inputs. The affected receipt therefore needs a scoped compiler repin before the inactive recipe values can be corrected. A dispatch test against the inactive candidate would provide no evidence for quest behavior.
