@@ -1,5 +1,5 @@
 //! Completion metadata preserves exact old NPC pins and existing absent-track semantics.
-use super::{NpcRuleCatalog, admission};
+use super::{NpcRuleCatalog, admission, dream_courts_myzzi};
 use crate::quest::{NpcDefinitionPredecessor, QuestStateCatalogue};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
@@ -59,6 +59,35 @@ pub(super) fn register(
                     defaults: BTreeMap::new(),
                 });
         }
+    }
+    if let Some(myzzi) = source
+        .programs()
+        .iter()
+        .find(|p| p.document.program_key.as_deref() == Some(dream_courts_myzzi::PROGRAM))
+    {
+        // Myzzi writes a track already owned by the canonical quest. Dropping
+        // only the new binding reconstructs the pin held by Stricken Soul saves.
+        let mut transitions = active.transitions.clone();
+        transitions
+            .remove(&admission::binding_key(myzzi))
+            .ok_or("missing Myzzi programme marker")?;
+        let previous = QuestStateCatalogue::new(
+            active.content_revision.clone(),
+            active.tracks.values().cloned().collect(),
+            transitions.into_values().collect(),
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        let hash = previous
+            .definition_hash(dream_courts_myzzi::QUEST)
+            .ok_or("missing Dream Courts predecessor quest")?;
+        active
+            .predecessors
+            .entry(dream_courts_myzzi::QUEST.into())
+            .or_default()
+            .push(NpcDefinitionPredecessor {
+                hash,
+                defaults: BTreeMap::new(),
+            });
     }
     Ok(())
 }

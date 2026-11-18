@@ -6,6 +6,7 @@ mod achievement_tests;
 mod admission;
 mod bounds;
 mod calendar;
+mod dream_courts_myzzi;
 mod equipped_storage;
 pub use calendar::NpcUtcCalendar;
 mod evaluate;
@@ -518,6 +519,7 @@ impl NpcRuleCatalog {
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-henricus.json"),
                 ])?;
                 catalogue.programs.extend(supplemental.programs);
+                catalogue.programs.extend(dream_courts_myzzi::source()?.programs);
                 validate::catalogue(&catalogue)?;
                 catalogue.programs.retain(|p| {
                     p.document.program_key.as_deref() == Some(hidden_threats::PROGRAM)

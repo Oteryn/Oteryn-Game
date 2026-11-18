@@ -849,9 +849,22 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .collect::<std::collections::BTreeSet<_>>(),
         std::collections::BTreeSet::from([None, Some(questpc2_gnomus_source::PROGRAM)])
     );
-    // The distinct quest set counts Gnomus once; its second source programme
-    // and the separately checked schema2 Mystery each add one runtime owner.
-    assert_eq!(runtime.programs().len(), expected_programmes.len() + 2);
+    let dream_courts_programmes = runtime
+        .programs()
+        .iter()
+        .filter(|program| program.document.quest == dream_courts_myzzi::QUEST)
+        .map(|program| program.document.program_key.as_deref())
+        .collect::<Vec<_>>();
+    assert_eq!(dream_courts_programmes.len(), 2);
+    assert_eq!(
+        dream_courts_programmes
+            .into_iter()
+            .collect::<std::collections::BTreeSet<_>>(),
+        std::collections::BTreeSet::from([None, Some(dream_courts_myzzi::PROGRAM)])
+    );
+    // Gnomus and the Dream Courts each contribute a second schema1 owner.
+    // Mystery contributes its independently checked schema2 owner.
+    assert_eq!(runtime.programs().len(), expected_programmes.len() + 3);
     assert_eq!(
         runtime
             .programs()
