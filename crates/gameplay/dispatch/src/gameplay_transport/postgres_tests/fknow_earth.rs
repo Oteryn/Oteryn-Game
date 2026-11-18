@@ -120,3 +120,253 @@ pub(super) async fn exercise(
     assert_eq!(appearance()?, SOIL);
     Ok(())
 }
+
+pub(super) const TREE_NAME: &str = "fknow-earth-world-tree";
+const TREE: Position = Position {
+    x: 32737,
+    y: 32116,
+    floor: -10,
+};
+const CROWN: Position = Position {
+    x: 32737,
+    y: 32114,
+    floor: -10,
+};
+const FOREST_GROUND: Position = Position {
+    x: 32732,
+    y: 32113,
+    floor: -11,
+};
+const PHIAL: &str = "oteryn:item.tibia.i23810";
+
+#[test]
+fn fknow_earth_world_tree_use_step_and_expiry() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty());
+    super::kill_reward_e2e::scenario_thread::run(TREE_NAME, || {
+        quest_world_callbacks::scenario(TREE_NAME, TREE, false)
+    })
+}
+
+pub(super) fn tree_callback() -> TestResult<Callback> {
+    use oteryn_gameplay_quests::quest::world_callbacks::{
+        EARTH_TREE_PORTAL, EARTH_TREE_REQUIREMENTS, EARTH_TREE_RETURN,
+    };
+    let storage: Vec<_> = EARTH_TREE_REQUIREMENTS.into_iter().map(|(track, minimum)| {
+        serde_json::json!({"track": track, "minimum": minimum, "maximum": i32::MAX, "set": minimum, "preserve": true})
+    }).collect();
+    Ok(serde_json::from_value(serde_json::json!({
+        "key": "oteryn:quest-callback/forgotten-knowledge/water-world-tree",
+        "quest": "oteryn:quest.forgotten_knowledge_quest",
+        "trigger": "use",
+        "selector": {"position": TREE, "appearance": 6180},
+        "reversible": false,
+        "passages": [],
+        "storage": storage,
+        "offerings": [],
+        "return_on_failure": false,
+        "item_on_target": {"item": PHIAL, "count": 1, "reusable": true, "selected_instance": true},
+        "effects": {"scene": {
+            "open": [
+                {"position": CROWN, "remove": 6189, "create": 3617, "passable": true},
+                {"position": FOREST_GROUND, "remove": 10605, "create": 4515, "passable": true},
+                {"position": EARTH_TREE_PORTAL, "create": 11108, "passable": true}
+            ],
+            "close": [],
+            "evacuate_open": [{"from": EARTH_TREE_PORTAL, "players_to": EARTH_TREE_RETURN, "creatures_to": EARTH_TREE_RETURN, "all": false}]
+        }},
+        "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/forgotten_knowledge/actions_plant.lua:437-495"]
+    }))?)
+}
+
+pub(super) fn tree_world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
+    use oteryn_gameplay_quests::quest::world_callbacks::{
+        EARTH_TREE_CHAMBER, EARTH_TREE_PORTAL, EARTH_TREE_RETURN,
+    };
+    quest_world_callbacks::world_cells(
+        callback,
+        TREE,
+        6180,
+        1,
+        &[(CROWN, 6189), (FOREST_GROUND, 10605)],
+        &[3617, 4515, 775, 11108],
+        None,
+        &[EARTH_TREE_PORTAL, EARTH_TREE_CHAMBER, EARTH_TREE_RETURN],
+    )
+}
+
+pub(super) fn tree_catalogue(
+    source: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
+    callback: &Callback,
+) -> TestResult<oteryn_gameplay_quests::quest::QuestStateCatalogue> {
+    use oteryn_gameplay_quests::quest::{QuestStateCatalogue, world_callbacks::primary_transition};
+    let tracks = callback
+        .storage
+        .iter()
+        .map(|condition| {
+            source
+                .track(&condition.track)
+                .cloned()
+                .ok_or("world tree track")
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    QuestStateCatalogue::new(
+        source.content_revision(),
+        tracks,
+        vec![primary_transition(callback)?],
+    )
+    .map_err(debug)
+    .map_err(Into::into)
+}
+
+pub(super) async fn exercise_tree(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    harness: &super::fixture::Harness,
+) -> TestResult {
+    use oteryn_gameplay_quests::quest::world_callbacks::{
+        EARTH_TREE_CHAMBER, EARTH_TREE_PORTAL, EARTH_TREE_REQUIREMENTS, Offering,
+    };
+    use oteryn_protocol_oteryn::world_object::{
+        MapUseTarget, UseIntent, UseTarget, encode_item_use_intent,
+    };
+    use oteryn_protocol_oteryn::world_spatial::{
+        StepDirection, StepDisposition, decode_step_result, encode_step_intent,
+    };
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "quest fence")?
+        .ok_or("quest fence")?;
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    for (track, value) in EARTH_TREE_REQUIREMENTS {
+        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision)
+            SELECT character_id,$2,'oteryn:quest.forgotten_knowledge_quest',$3,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(track).bind(value).execute(&mut *tx).await?;
+    }
+    tx.commit().await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &[4, 6, 11, 15, 18],
+        )
+        .ok_or("capabilities")?;
+    quest_world_callbacks::input_item(
+        owner,
+        fence.item_fence(),
+        &Offering {
+            position: TREE,
+            item: PHIAL.into(),
+            count: 1,
+        },
+        950,
+        true,
+    )
+    .await?;
+    let reference = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .and_then(|native| native.item_index())
+        .and_then(|index| index.definition_ref("Item", PHIAL, "definition-r1"))
+        .ok_or("phial definition")?;
+    let map = owner.bundle_map().ok_or("world tree map")?;
+    let tile = |p: Position| TilePos {
+        x: p.x,
+        y: p.y,
+        floor: p.floor,
+    };
+    let appearance = |p: Position| -> TestResult<u16> {
+        let item = *map
+            .overlay
+            .base()
+            .tile(p.x, p.y, p.floor)
+            .ok_or("world tree cell")?
+            .ids()
+            .get(1)
+            .ok_or("world tree item")?;
+        Ok(map
+            .facts
+            .base_entry(tile(p), 1, item)
+            .ok_or("world tree appearance")?
+            .appearance_id)
+    };
+    assert_eq!(appearance(CROWN)?, 6189);
+    assert_eq!(appearance(FOREST_GROUND)?, 10605);
+    let key = oteryn_world_bundle::bundle::placement_key(TREE.floor, TREE.x, TREE.y, 1)
+        .ok_or("world tree placement")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::Item(std::num::NonZeroU64::MIN),
+        use_with: None,
+        use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
+            placement,
+            expected_revision: 0,
+        })),
+        use_with_position: None,
+    })
+    .map_err(debug)?;
+    let (next, result, _) = super::item_craft::exchange(
+        owner,
+        *admitted,
+        admitted.continuity.next_command_id,
+        &payload,
+        Some(reference),
+    )
+    .await?;
+    *admitted = next;
+    assert_eq!(result, UseDisposition::Committed);
+    assert_eq!(appearance(CROWN)?, 3617);
+    assert_eq!(appearance(FOREST_GROUND)?, 4515);
+    assert_eq!(
+        map.facts
+            .quest_portal_destination(tile(EARTH_TREE_PORTAL), owner.owner_now().get()),
+        Some(tile(EARTH_TREE_CHAMBER))
+    );
+    let actor = admitted.runtime_actor.ok_or("world tree player")?;
+    let command = admitted.continuity.next_command_id;
+    let result = quest_world_callbacks::wire(
+        owner,
+        admitted,
+        command,
+        1,
+        encode_step_intent(StepDirection::South),
+    )
+    .await?;
+    assert_eq!(
+        decode_step_result(&result).map_err(debug)?,
+        StepDisposition::Moved
+    );
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        quest_world_callbacks::local(EARTH_TREE_CHAMBER)
+    );
+    let due = map
+        .facts
+        .next_movement_decay_time()
+        .ok_or("world tree expiry")?;
+    assert_eq!(map.facts.expire_movement_items(due - 1), 0);
+    assert_eq!(map.facts.expire_movement_items(due), 1);
+    assert_eq!(appearance(CROWN)?, 6189);
+    assert_eq!(appearance(FOREST_GROUND)?, 10605);
+    assert_eq!(
+        map.facts
+            .quest_portal_destination(tile(EARTH_TREE_PORTAL), due),
+        None
+    );
+    Ok(())
+}

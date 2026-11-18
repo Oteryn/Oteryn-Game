@@ -26,6 +26,7 @@ fn scenario_case(
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
     let earth_birch = name == super::super::fknow_earth::NAME;
+    let earth_tree = name == super::super::fknow_earth::TREE_NAME;
     let energy_replicas = name == super::super::fknow_energy::NAME;
     let name = if energy_replicas {
         "qengine-rewards-forgotten-story"
@@ -412,6 +413,8 @@ fn scenario_case(
         callback(name)?
     } else if earth_birch {
         super::super::fknow_earth::callback()?
+    } else if earth_tree {
+        super::super::fknow_earth::tree_callback()?
     } else if classic_npc {
         callback("behemoth")?
     } else if rotten_purchase {
@@ -937,6 +940,8 @@ fn scenario_case(
         world(&physical, trigger)?
     } else if earth_birch {
         super::super::fknow_earth::world(&callback)?
+    } else if earth_tree {
+        super::super::fknow_earth::tree_world(&callback)?
     } else if energy_replicas {
         super::super::fknow_energy::world(&callback)?
     } else {
@@ -1342,7 +1347,7 @@ fn scenario_case(
                 generation.native_gameplay().ok_or("native")?,
                 &super::super::questpc7_feaster::native_items()?,
             )?
-        } else if name == "qengine-rewards-forgotten-story" {
+        } else if name == "qengine-rewards-forgotten-story" && !energy_replicas {
             world_with_native_items(
                 &callback,
                 trigger,
@@ -1763,9 +1768,18 @@ fn scenario_case(
                 )?,
             ));
         }
+        if earth_tree {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                super::super::fknow_earth::tree_catalogue(
+                    owner.quest_catalogue.as_ref().ok_or("tree catalogue")?,
+                    &callback,
+                )?,
+            ));
+        }
         if name.starts_with("qengine-rewards-questpc4-admission-")
             || name.starts_with("qengine-rewards-questpc4-puzzle-predicate")
             || earth_birch
+            || earth_tree
             || lever_fixture
             || target_swap
             || failure_landing
@@ -3094,6 +3108,8 @@ fn scenario_case(
             .await?;
         } else if earth_birch {
             super::super::fknow_earth::exercise(&mut owner, &mut admitted).await?;
+        } else if earth_tree {
+            super::super::fknow_earth::exercise_tree(&owner, &mut admitted, &h).await?;
         } else if name.starts_with("questpc2-albinius-portals-") {
             super::super::questpc2_albinius_portals::exercise(
                 &mut owner,

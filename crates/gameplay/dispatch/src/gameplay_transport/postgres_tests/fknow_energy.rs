@@ -80,6 +80,10 @@ pub(super) async fn exercise(
         .ids()
         .get(1)
         .ok_or("lever item")?;
+    assert!(
+        map.facts
+            .quest_callback_matches(key, None, Some(26663), Some(9125))
+    );
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     for (revision, appearance) in [(0, 9126), (1, 9125), (2, 9125)] {
