@@ -1,6 +1,7 @@
 //! Crystal 201189f8 data-global/scripts/quests/spike_tasks/actions_spirit_shovel.lua:1-43.
 use super::fixture::{Harness, debug, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use crate::foundation::GameSessionId;
 use crate::gameplay_transport::{connection::UseCommand, item_view::ItemKey};
 use crate::map::{overlay::TilePos, view::MapFacts};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
@@ -14,6 +15,7 @@ use serde_json::json;
 use std::{num::NonZeroU64, sync::Arc, time::Duration};
 
 pub(super) const NAME: &str = "qespike-mound";
+pub(super) const OCCUPIED: &str = "qespike-mound-occupied";
 const QUEST: &str = "oteryn:quest.spike_task";
 const TRACK: &str = "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_mound_main";
 const TOOL: &str = "oteryn:item.tibia.i3003";
@@ -32,6 +34,17 @@ fn spike_mound_draw_transforms_restores_spawns_and_debits_only_on_enraged_soul()
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(NAME, || {
         super::quest_world_callbacks::scenario(NAME, MOUND, false)
+    })
+}
+
+#[test]
+fn spike_mound_enraged_soul_roll_still_credits_when_the_spawn_tile_is_occupied() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(OCCUPIED, || {
+        super::quest_world_callbacks::scenario(OCCUPIED, MOUND, false)
     })
 }
 
@@ -79,6 +92,7 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     harness: &Harness,
+    occupied: bool,
 ) -> TestResult {
     let generation = owner.active_generation.ok_or("active generation")?;
     let native = generation.native_gameplay().ok_or("native")?;
@@ -88,6 +102,26 @@ pub(super) async fn exercise(
     native
         .install_companion_policies(&mut *owner.runtime.lock().await)
         .map_err(debug)?;
+    if occupied {
+        let mut runtime = owner.runtime.lock().await;
+        let reservation = runtime
+            .reserve_fresh_session(GameSessionId::decode(&id(51)).map_err(debug)?)
+            .map_err(debug)?;
+        let occupant = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        let mound = super::quest_world_callbacks::local(MOUND);
+        runtime
+            .initialize_pinned_test_position(occupant, mound)
+            .map_err(debug)?;
+        assert!(
+            runtime
+                .positioned_melee_census()
+                .map_err(debug)?
+                .iter()
+                .any(|(actor, snapshot, session)| *actor == occupant
+                    && snapshot.position() == mound
+                    && session.is_some(),)
+        );
+    }
     let session = admitted.game_session_id;
     let actor = admitted.runtime_actor.ok_or("digger")?;
     owner.refresh_quest_session(session, false).await;
@@ -116,7 +150,12 @@ pub(super) async fn exercise(
             .map(|entry| entry.appearance_id)
     };
     let mut next_command = admitted.continuity.next_command_id;
-    for (minimum, maximum) in [(1, 49), (90, 100)] {
+    let intervals: &[(u8, u8)] = if occupied {
+        &[(90, 100)]
+    } else {
+        &[(1, 49), (90, 100)]
+    };
+    for &(minimum, maximum) in intervals {
         let command_id = (next_command..next_command + 2048)
             .find(|command| {
                 (minimum..=maximum).contains(
@@ -187,13 +226,15 @@ pub(super) async fn exercise(
             assert_eq!((progress, debits), (1, 1));
             let runtime = owner.runtime.lock().await;
             let creatures = runtime.positioned_melee_census().map_err(debug)?;
-            assert!(creatures.iter().any(|(actor, snapshot, player)| {
+            let spawned = creatures.iter().any(|(actor, snapshot, player)| {
                 player.is_none()
                     && snapshot.position() == super::quest_world_callbacks::local(MOUND)
                     && runtime
                         .companion_snapshot(*actor)
                         .is_ok_and(|creature| creature.state.policy.definition_key == SOUL)
-            }));
+            });
+            // Crystal actions_spirit_shovel.lua:24-34 ignores the spawn result.
+            assert_eq!(spawned, !occupied);
         }
     }
     Ok(())

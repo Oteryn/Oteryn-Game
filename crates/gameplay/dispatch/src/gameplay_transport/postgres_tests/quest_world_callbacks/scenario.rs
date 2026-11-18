@@ -53,7 +53,10 @@ fn scenario_case(
     let m03_use = name == super::super::qengine_m03_use::NAME;
     let qd_world = name.starts_with(super::super::qd_world::PREFIX);
     let machine_deposit = name.starts_with(super::super::qespike_machine_deposit::PREFIX);
-    let mound = name == super::super::qespike_mound::NAME;
+    let mound = matches!(
+        name,
+        super::super::qespike_mound::NAME | super::super::qespike_mound::OCCUPIED
+    );
     let sphere_machine = matches!(
         name,
         super::super::qespike_sphere_machine::BELOW_THRESHOLD
@@ -2492,7 +2495,13 @@ fn scenario_case(
         } else if name == super::super::qespike_ashes::NAME {
             Box::pin(super::super::qespike_ashes::exercise(&mut owner, &admitted, &h)).await?;
         } else if mound {
-            Box::pin(super::super::qespike_mound::exercise(&mut owner, &admitted, &h)).await?;
+            Box::pin(super::super::qespike_mound::exercise(
+                &mut owner,
+                &admitted,
+                &h,
+                name == super::super::qespike_mound::OCCUPIED,
+            ))
+            .await?;
         } else if matches!(name, super::super::qespike_tracker::NAME | super::super::qespike_tracker::REPEAT_NAME) {
             Box::pin(super::super::qespike_tracker::exercise(&mut owner, &mut admitted, &h, name == super::super::qespike_tracker::REPEAT_NAME)).await?;
         } else if name == super::super::qespike_hotspot::NAME {
