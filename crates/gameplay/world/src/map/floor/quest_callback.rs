@@ -84,6 +84,7 @@ pub fn prepare_quest_encounter_landing<'a>(
     pz_blocked: bool,
     closed: &'a dyn CellBlocker,
     player_stack: bool,
+    facing: Option<MovementFacing>,
 ) -> Result<impl crate::foundation::SourceStepCommitProof + 'a, MovementError> {
     let proof = CallbackTeleport {
         cells,
@@ -93,7 +94,7 @@ pub fn prepare_quest_encounter_landing<'a>(
         destination,
         closed,
         pz_blocked,
-        facing: None,
+        facing,
         player_stack,
         forced: false,
     };

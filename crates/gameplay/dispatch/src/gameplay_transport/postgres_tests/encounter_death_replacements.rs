@@ -649,14 +649,13 @@ async fn fallen_portals(
         }
     }
     let mut runtime = owner.runtime.lock().await;
-    // Crystal teleport.cpp:97-100 moves both creatures directly to the same tile.
+    // Both Crystal source corpses are west of the shared landing.
     for actor in [primary, peer] {
+        let landing = runtime.read_actor_position(actor).map_err(debug)?;
+        assert_eq!(landing.position(), local(FINALE));
         assert_eq!(
-            runtime
-                .read_actor_position(actor)
-                .map_err(debug)?
-                .position(),
-            local(FINALE)
+            landing.facing(),
+            Some(crate::foundation::MovementFacing::East)
         );
     }
     runtime.retain_live_corpse_items(&[]).map_err(debug)?;

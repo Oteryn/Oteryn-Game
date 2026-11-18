@@ -388,6 +388,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 blocked,
                 &closed,
                 encounter.shared_staging,
+                None,
             ) else {
                 return UseDisposition::NotPossible;
             };
