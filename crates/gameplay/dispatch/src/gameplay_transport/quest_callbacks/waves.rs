@@ -2,7 +2,7 @@
 use super::*;
 use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::quest_state::wave_egress::WaveEgress;
-use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
+use crate::foundation::{CharacterLease, RuntimeScopeRefV1, ScopeOwnershipGeneration};
 use oteryn_gameplay_quests::quest::world_callbacks::{
     Encounter, EncounterMonster,
     waves::{Wave, WaveSpawn},
@@ -135,7 +135,89 @@ impl ActiveWaveRun {
     }
 }
 
+pub(super) struct MemberGuard(
+    Vec<(
+        ExactActorRef,
+        GameSessionId,
+        MovementPositionSnapshot,
+        CharacterLease,
+    )>,
+);
+
+impl MemberGuard {
+    pub(super) fn current(&self, runtime: &ChannelRuntimeV1) -> bool {
+        self.0.iter().all(|(actor, session, position, lease)| {
+            runtime.read_actor_position(*actor) == Ok(*position)
+                && runtime.bound_attacker_lease(*actor, *session).ok() == Some(*lease)
+        })
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn qualify_wave_members(
+        &self,
+        callback: &Callback,
+    ) -> Result<Option<MemberGuard>, UseDisposition> {
+        let Some(room) = &callback.effects.encounter else {
+            return Ok(None);
+        };
+        let Some(guard) = room
+            .wave_run
+            .as_ref()
+            .and_then(|wave| wave.member_guard.as_ref())
+        else {
+            return Ok(None);
+        };
+        let catalogue = self
+            .quest_catalogue
+            .as_ref()
+            .ok_or(UseDisposition::Rejected)?;
+        let participants = {
+            let runtime = self.runtime.lock().await;
+            let census = runtime
+                .positioned_melee_census()
+                .map_err(|_| UseDisposition::Rejected)?;
+            let mut participants = Vec::with_capacity(room.players.len());
+            for player in &room.players {
+                let mut matches = census
+                    .iter()
+                    .filter(|(_, position, _)| position.position() == local(player.from));
+                let Some(&(actor, position, Some(session))) = matches.next() else {
+                    return Err(UseDisposition::Rejected);
+                };
+                if matches.next().is_some() {
+                    return Err(UseDisposition::Occupied);
+                }
+                let lease = runtime
+                    .bound_attacker_lease(actor, session)
+                    .map_err(|_| UseDisposition::Rejected)?;
+                participants.push((actor, session, position, lease));
+            }
+            participants
+        };
+        for (_, session, _, lease) in &participants {
+            let fence = self
+                .current_quest_fence(*session)
+                .await
+                .map_err(|_| UseDisposition::Rejected)?
+                .ok_or(UseDisposition::Rejected)?;
+            if !lease.accepts_generation(fence.character_lease_generation)
+                || lease.character_id().as_bytes() != fence.character_id.as_bytes()
+            {
+                return Err(UseDisposition::Rejected);
+            }
+            let state = self
+                .root
+                .read_character_quest_state(self.character, fence.character_id)
+                .await
+                .map_err(|_| UseDisposition::Rejected)?;
+            if !guard.holds(catalogue, state.tracks()) {
+                return Err(UseDisposition::Rejected);
+            }
+        }
+        Ok(Some(MemberGuard(participants)))
+    }
+
     pub(super) async fn drain_wave_credit(&self) {
         let queue = &self.states.quest_callbacks.wave_credits;
         let Some(credit) = queue.lock().ok().and_then(|q| q.front().cloned()) else {

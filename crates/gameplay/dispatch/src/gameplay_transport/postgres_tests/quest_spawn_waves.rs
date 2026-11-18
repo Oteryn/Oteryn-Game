@@ -85,6 +85,14 @@ fn scenario(admin: String, waves: bool) -> TestResult {
                 eject_room: false,
                 stay_at_stations: false,
                 hatch: None,
+                allow_unstaged_activator: false,
+                member_guard: Some(
+                    oteryn_gameplay_quests::quest::reward_callbacks::TrackRequirement {
+                        track: TRACK.into(),
+                        minimum: 0,
+                        maximum: 0,
+                    },
+                ),
                 waves: [(1_000, FIRST, RAT), (3_000, SECOND, CAVE_RAT)]
                     .into_iter()
                     .map(|(at_ms, position, creature)| Wave {

@@ -89,7 +89,7 @@ fn pick(plan: &PeriodicBoss) -> Option<&world_callbacks::EncounterMonster> {
         .iter()
         .map(|choice| u32::from(choice.weight))
         .sum();
-    // Multiply and reject the uneven tail, so equal weights get equal probability.
+    // Reject the uneven tail so equal weights get equal probability.
     let mut roll = random_below(total)?;
     for choice in &plan.choices {
         let weight = u32::from(choice.weight);

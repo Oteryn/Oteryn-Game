@@ -19,6 +19,11 @@ pub struct WaveRun {
     pub stay_at_stations: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub hatch: Option<TargetTransform>,
+    /// A non-participant may operate the switch for the staged group.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub allow_unstaged_activator: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub member_guard: Option<crate::quest::reward_callbacks::TrackRequirement>,
     pub waves: Vec<Wave>,
 }
 
@@ -92,6 +97,11 @@ pub(super) fn valid(callback: &Callback, room: &Encounter, run: &WaveRun) -> boo
     let valid_credit =
         |key: &str| key.starts_with(CREDIT_PREFIX) && crate::quest::valid_quest_key(key);
     matches!(callback.trigger, Trigger::Use | Trigger::StepIn)
+        && (!run.allow_unstaged_activator || callback.trigger == Trigger::Use)
+        && run.member_guard.as_ref().is_none_or(|guard| {
+            callback.trigger == Trigger::Use && !callback.has_state()
+                && crate::quest::valid_quest_key(&guard.track) && guard.minimum <= guard.maximum
+        })
         && run.credit_transition(false).is_none_or(valid_credit)
         && run.credit_transition(true).is_none_or(valid_credit)
         && (1..=3_600_000).contains(&run.timeout_ms)

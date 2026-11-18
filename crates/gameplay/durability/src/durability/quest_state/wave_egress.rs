@@ -18,7 +18,10 @@ pub struct WaveEgress {
 
 impl WaveEgress {
     /// The Channel calls this for a committed forced movement only.
-    #[allow(clippy::too_many_arguments, reason = "complete exact movement and lease witness")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "complete exact movement and lease witness"
+    )]
     pub fn from_committed_movement(
         callback: String,
         transition: String,
@@ -30,7 +33,17 @@ impl WaveEgress {
         movement_revision: u64,
         reset_epoch: u64,
     ) -> Self {
-        Self { callback, transition, actor, command, victory, lease, owner_generation, movement_revision, reset_epoch }
+        Self {
+            callback,
+            transition,
+            actor,
+            command,
+            victory,
+            lease,
+            owner_generation,
+            movement_revision,
+            reset_epoch,
+        }
     }
 
     pub fn command(&self) -> CommandRef {
@@ -45,7 +58,9 @@ impl WaveEgress {
             || self.command.game_session_id() != fence.game_session_id
             || self.owner_generation != fence.scope_ownership_generation
             || self.lease.character_id().as_bytes() != fence.character_id.as_bytes()
-            || !self.lease.accepts_generation(fence.character_lease_generation)
+            || !self
+                .lease
+                .accepts_generation(fence.character_lease_generation)
         {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
@@ -63,17 +78,33 @@ impl WaveEgress {
     ) -> bool {
         callbacks.iter().any(|callback| {
             callback.key == self.callback
-                && callback.effects.encounter.as_ref()
+                && callback
+                    .effects
+                    .encounter
+                    .as_ref()
                     .and_then(|room| room.wave_run.as_ref())
                     .and_then(|wave| wave.credit_transition(self.victory))
                     == Some(request.transition_key.as_str())
-                && catalogue.transition(&request.transition_key)
-                    .is_some_and(|transition| transition.quest == callback.quest
-                        && !transition.completes && transition.experience.is_none())
+                && catalogue
+                    .transition(&request.transition_key)
+                    .is_some_and(|transition| {
+                        transition.quest == callback.quest
+                            && !transition.completes
+                            && transition.experience.is_none()
+                            && transition.world_change.is_none()
+                            && oteryn_gameplay_quests::quest::admission_binding::validate(
+                                transition, false,
+                            )
+                            .is_ok()
+                    })
         })
     }
 
-    pub(super) fn binding(&self, character: CharacterId, request: &QuestTransitionRequest) -> [u8; 33] {
+    pub(super) fn binding(
+        &self,
+        character: CharacterId,
+        request: &QuestTransitionRequest,
+    ) -> [u8; 33] {
         let mut binding = request_binding(character, request);
         let mut hash = Sha256::new();
         hash.update(binding);
@@ -100,10 +131,25 @@ impl DurabilityRoot {
     ) -> Result<QuestTransitionOutcome> {
         let request = input.request(&fence)?;
         self.commit_quest_inner::<_, 0>(
-            authority, node, fence, request, catalogue,
-            None, None, None, None, &grizzly::NoGrizzlyPremium,
-            None, None, None, None, None, None, None,
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            None,
+            None,
+            None,
+            None,
+            &grizzly::NoGrizzlyPremium,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
             Some(super::QuestSourceAction::WaveEgress(input)),
-        ).await
+        )
+        .await
     }
 }

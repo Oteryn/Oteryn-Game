@@ -849,6 +849,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         observation.as_ref(),
                         optional_pvp,
                         None,
+                        None,
                         pending.selected_tool.as_ref(),
                     ))
                     .await
@@ -1191,6 +1192,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
+            let wave_members = match self.qualify_wave_members(callback).await {
+                Ok(proof) => proof,
+                Err(disposition) => return disposition,
+            };
             if !self.prepare_scene_items(&permit, actor, command, map, callback, resolved.placement_key, target.expected_revision, fence).await {
                 return UseDisposition::Rejected;
             }
@@ -1240,6 +1245,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 observation.as_ref(),
                 optional_pvp,
                 read_only_gate.as_ref(),
+                wave_members.as_ref(),
                 selected_tool.as_ref(),
             ))
             .await;
@@ -1532,6 +1538,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         observation.as_ref(),
                         optional_pvp,
                         read_only_gate.as_ref(),
+                        None,
                         None,
                     ))
                     .await

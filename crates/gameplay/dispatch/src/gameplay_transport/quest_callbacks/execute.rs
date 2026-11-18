@@ -21,6 +21,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         observed_world: Option<&ObservedWorldCallback>,
         optional_pvp: Option<bool>,
         read_only_gate: Option<&ReadOnlyGate>,
+        wave_members: Option<&super::waves::MemberGuard>,
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
     ) -> UseDisposition {
         if callback.effects.encounter.is_none()
@@ -883,6 +884,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && gate.callback == callback.key
                     && runtime.read_actor_position(actor) == Ok(gate.expected)
             })
+        {
+            return UseDisposition::Rejected;
+        }
+        if callback
+            .effects
+            .encounter
+            .as_ref()
+            .and_then(|room| room.wave_run.as_ref())
+            .is_some_and(|wave| wave.member_guard.is_some())
+            && !wave_members.is_some_and(|proof| proof.current(runtime))
         {
             return UseDisposition::Rejected;
         }

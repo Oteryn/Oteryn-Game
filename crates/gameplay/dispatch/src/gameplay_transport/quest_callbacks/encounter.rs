@@ -283,9 +283,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             proofs.push(proof);
         }
-        if !players
-            .iter()
-            .any(|(who, s, _)| *who == actor && *s == session)
+        if !wave.is_some_and(|wave| wave.allow_unstaged_activator)
+            && !players
+                .iter()
+                .any(|(who, s, _)| *who == actor && *s == session)
         {
             return UseDisposition::Rejected;
         }

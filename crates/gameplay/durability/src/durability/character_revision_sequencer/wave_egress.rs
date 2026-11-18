@@ -15,7 +15,16 @@ impl RevisionSlot {
             root_revision(root, authority),
             fence,
             Expect::Cursor(OnMismatch::RetryOnce),
-            |fence| root.commit_quest_wave_egress(authority, node, fence, input.clone(), Arc::clone(&catalogue)),
-        ).await
+            |fence| {
+                root.commit_quest_wave_egress(
+                    authority,
+                    node,
+                    fence,
+                    input.clone(),
+                    Arc::clone(&catalogue),
+                )
+            },
+        )
+        .await
     }
 }

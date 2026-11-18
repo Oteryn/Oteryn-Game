@@ -834,8 +834,14 @@ impl DurabilityRoot {
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
+        let wave_key = request.transition_key.starts_with(
+            oteryn_gameplay_quests::quest::world_callbacks::waves::CREDIT_PREFIX,
+        );
         // Ownership survives a caller removing or renaming a bound effect.
-        if let Some(transition) = catalogue.transition(&request.transition_key) {
+        // Wave egress has its own source check below for authored survivor tracks.
+        if !wave_key
+            && let Some(transition) = catalogue.transition(&request.transition_key)
+        {
             oteryn_gameplay_quests::quest::admission_binding::validate_resolved_world(
                 &catalogue,
                 transition,
@@ -933,9 +939,6 @@ impl DurabilityRoot {
             }
             _ => false,
         };
-        let wave_key = request.transition_key.starts_with(
-            oteryn_gameplay_quests::quest::world_callbacks::waves::CREDIT_PREFIX,
-        );
         if source_key != soul_input
             || area_key != area_input
             || wave_key != wave_input
