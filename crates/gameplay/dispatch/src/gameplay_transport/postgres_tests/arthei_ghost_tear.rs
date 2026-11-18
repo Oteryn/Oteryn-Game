@@ -46,7 +46,7 @@ fn binding() -> Value {
         "key":"oteryn:quest-callback/fixture-arthei-ghost-tear",
         "quest":"oteryn:quest.blood_brothers_quest", "trigger":"use",
         "selector":{"position":STATUE,"appearance":8325,
-            "native":{"position":STATUE,"ordinal":1,"appearance":8325}},
+            "native":{"position":STATUE,"ordinal":2,"appearance":8325}},
         "lever":null,"reversible":false,"teleport":null,"offerings":[],"passages":[],
         "item_on_target":{"item":TEAR,"count":1,"selected_instance":true},
         "return_on_failure":false,"failure_message":null,"requires_world_admission":true,
@@ -74,7 +74,7 @@ pub(super) fn callback() -> TestResult<Callback> {
 }
 
 pub(super) fn world(row: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
-    super::quest_world_callbacks::world_with_objects(row, STATUE, &[], &[8326])
+    super::quest_world_callbacks::world_ordinal(row, STATUE, 8325, 2)
 }
 
 pub(super) async fn exercise(
@@ -133,7 +133,7 @@ pub(super) async fn exercise(
         (peer, reference)
     };
     let map = owner.bundle_map().ok_or("map")?;
-    let key = oteryn_world_bundle::bundle::placement_key(STATUE.floor, STATUE.x, STATUE.y, 1)
+    let key = oteryn_world_bundle::bundle::placement_key(STATUE.floor, STATUE.x, STATUE.y, 2)
         .ok_or("statue placement")?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());

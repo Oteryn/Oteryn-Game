@@ -283,7 +283,7 @@ pub(super) fn world_with_objects(
     )
 }
 
-fn world_ordinal(
+pub(super) fn world_ordinal(
     callback: &Callback,
     trigger: Position,
     appearance: u16,

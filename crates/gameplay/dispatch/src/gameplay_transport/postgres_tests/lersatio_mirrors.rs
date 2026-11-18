@@ -68,7 +68,7 @@ fn binding(second: bool) -> Value {
     json!({
         "key":format!("oteryn:quest-callback/fixture-lersatio-mirror-{count}"),
         "quest":QUEST,"trigger":"use",
-        "selector":{"position":MIRROR,"appearance":8667,"native":{"position":MIRROR,"ordinal":1,"appearance":8667}},
+        "selector":{"position":MIRROR,"appearance":8667,"native":{"position":MIRROR,"ordinal":2,"appearance":8667}},
         "lever":null,"reversible":false,"teleport":null,"offerings":[],
         "passages":[{"position":STATUE,"appearance":8325,"replacement":8326,"if_present":true}],
         "item_on_target":null,"return_on_failure":false,"failure_message":null,
@@ -87,7 +87,7 @@ pub(super) fn callback() -> TestResult<Callback> {
 }
 
 pub(super) fn world(row: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
-    super::quest_world_callbacks::world_with_objects(row, MIRROR, &[(STATUE, 8325)], &[8326, 8721])
+    super::quest_world_callbacks::world_ordinal(row, MIRROR, 8667, 2)
 }
 
 pub(super) async fn exercise(
@@ -201,8 +201,8 @@ pub(super) async fn exercise(
     Ok(())
 }
 
-fn placement(at: Position) -> TestResult<u64> {
-    oteryn_world_bundle::bundle::placement_key(at.floor, at.x, at.y, 1)
+fn placement(at: Position, ordinal: u8) -> TestResult<u64> {
+    oteryn_world_bundle::bundle::placement_key(at.floor, at.x, at.y, ordinal)
         .ok_or_else(|| "mirror fixture placement".into())
 }
 
@@ -216,7 +216,7 @@ fn appearance(map: &crate::map::boot::BundleMap, at: Position) -> TestResult<u16
         y: at.y,
         floor: at.floor,
     };
-    let key = MapEntryKey::Base(placement(at)?);
+    let key = MapEntryKey::Base(placement(at, if at == MIRROR { 2 } else { 1 })?);
     compose_tile(&map.overlay, &map.facts.pinned(), pos)
         .map_err(debug)?
         .and_then(|tile| {
@@ -238,7 +238,7 @@ async fn use_mirror(
         .checked_sub(Duration::from_secs(2))
         .ok_or("owner clock")?;
     let map = owner.bundle_map().ok_or("map")?;
-    let key = placement(MIRROR)?;
+    let key = placement(MIRROR, 2)?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     let fence = owner
