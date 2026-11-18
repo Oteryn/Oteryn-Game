@@ -158,9 +158,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return;
             }
             ReplicaPortalAccess::InsufficientEnergy => {
-                "Seems that you don't absorb enough energy to use this portal."
+                "You need more energy from both replica types to enter."
             }
-            ReplicaPortalAccess::LloydCooldown => "You have to wait to challenge this enemy again!",
+            ReplicaPortalAccess::LloydCooldown => {
+                "You can return when your Lloyd cooldown expires."
+            }
             ReplicaPortalAccess::Dormant => return,
         };
         map.facts.emit_movement_effect(REPLICA_PORTAL, 11);
@@ -309,7 +311,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(None) => {
                     self.states.chat.push_quest_feedback(
                         command.game_session_id,
-                        "seems that the mechanism still active.",
+                        "This mechanism is already running.",
                     );
                     return UseDisposition::Committed;
                 }
@@ -325,10 +327,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if before.appearance_id == 9125 {
             let message = match kind {
                 ReplicaKind::Diamond => {
-                    "5 diamond entities are consuming too much raw energy for the cosmic chamber to awaken, it will be put to rest again in 10 minutes."
+                    "Defeat five Diamond Servant Replicas within ten minutes to charge the chamber."
                 }
                 ReplicaKind::Golden => {
-                    "5 golden entities are consuming too much raw energy for the cosmic chamber to awaken, it will be put to rest again in 10 minutes."
+                    "Defeat five Golden Servant Replicas within ten minutes to charge the chamber."
                 }
             };
             self.states
