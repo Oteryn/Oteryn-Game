@@ -115,7 +115,10 @@ fn catalogue(revision: &str, funded: &Callback, initial: i64) -> TestResult<Ques
             "kind":"map_use","callback":callback
         }})
     });
-    let recipe = format!("{:x}", Sha256::digest(serde_json::to_vec(&stages)?));
+    let recipe: String = Sha256::digest(serde_json::to_vec(&stages)?)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
     let authored = Bindings::parse(
         serde_json::to_string(&json!({"schema":1,"quests":[{
             "quest":QUEST,"recipe_sha256":recipe,"sources":funded.sources,
