@@ -33,12 +33,19 @@ fn quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal(
         .into_iter()
         .filter(|chest| claims.contains(&chest.claim.as_str()))
         .collect();
-    assert!(selected.iter().all(|chest| chest.servable));
     for claim in claims {
-        assert_eq!(
-            selected.iter().filter(|chest| chest.claim == claim).count(),
-            1,
-            "expected one native source placement for {claim}"
+        let mut placements = selected.iter().filter(|chest| chest.claim == claim);
+        let placement = placements
+            .next()
+            .ok_or_else(|| format!("missing source placement for {claim}"))?;
+        assert!(
+            placements.next().is_none(),
+            "unexpected extra source placement for {claim}"
+        );
+        assert!(
+            placement.servable,
+            "{claim} has no native selector at {:?}",
+            placement.position
         );
     }
     execute(selected)
