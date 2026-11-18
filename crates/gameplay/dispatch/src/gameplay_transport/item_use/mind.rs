@@ -97,7 +97,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .commit_source_step(proof)
                 .map_err(|_| UseDisposition::Rejected)?;
             if let Some(at) = tile(destination) {
-                let _ = map.facts.emit_movement_effect(at, 12);
+                let _ = map.facts.emit_movement_effect(at, 38);
             }
             self.states.chat.push_quest_feedback(
                 session,
