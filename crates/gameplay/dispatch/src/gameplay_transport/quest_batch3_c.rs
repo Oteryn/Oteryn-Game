@@ -17,7 +17,7 @@ pub(super) struct Snapshot {
     pub character: [u8; 16],
     pub lease_generation: u64,
     pub observed_revision: u64,
-    pub objectives: Vec<&'static str>,
+    pub objectives: Vec<source_deaths::Rule>,
 }
 
 /// Called under the original lethal turn. The enclosing capture cache retains
@@ -28,9 +28,6 @@ pub(super) fn capture(
     principal_present: bool,
     snapshots: impl Iterator<Item = Snapshot>,
 ) -> Vec<Recipient> {
-    if !source_deaths::tracks_creature(&entry.creature) {
-        return Vec::new();
-    }
     let Ok(census) = runtime.positioned_melee_census() else {
         return Vec::new();
     };
@@ -65,12 +62,13 @@ pub(super) fn capture(
                 && share.session == Some(snapshot.session)
                 && share.lease_generation == Some(snapshot.lease_generation)
         });
-        for key in &snapshot.objectives {
-            let Some(rule) = source_deaths::rule(key) else {
-                continue;
-            };
+        for rule in &snapshot.objectives {
             if rule.creature != entry.creature
                 || !rule.recipient(position, damaged)
+                || (rule.delivery.is_some() && !runtime.read_actor_position(entry.target).is_ok_and(|at| {
+                    let at = at.position();
+                    rule.recipient([at.x, at.y, -i32::from(at.floor)], false)
+                }))
                 || (rule.top_damage_only
                     && (!principal_present
                         || principal.actor != snapshot.actor
@@ -86,7 +84,7 @@ pub(super) fn capture(
                 character: snapshot.character,
                 lease_generation: snapshot.lease_generation,
                 death: NativeQuestDeath {
-                    transition: (*key).into(),
+                    transition: rule.transition.clone(),
                     creature: entry.creature.clone(),
                     observed_revision: snapshot.observed_revision,
                     definition_hash: None,

@@ -443,6 +443,8 @@ pub struct QuestStateCatalogue {
     authored_bindings: Option<std::sync::Arc<authored_bindings::RuntimeBindings>>,
     #[cfg(any(test, feature = "test-support"))]
     fixture_npc_rules: Option<std::sync::Arc<npc_rules::NpcRuleCatalog>>,
+    #[cfg(any(test, feature = "test-support"))]
+    fixture_source_deaths: Vec<source_deaths::Rule>,
     npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
     predecessors: BTreeMap<String, Vec<NpcDefinitionPredecessor>>,
     native_recipe_evidence: Option<std::sync::Arc<authored_bindings::embedded::RecipeEvidence>>,
@@ -650,6 +652,8 @@ impl QuestStateCatalogue {
             authored_bindings: None,
             #[cfg(any(test, feature = "test-support"))]
             fixture_npc_rules: None,
+            #[cfg(any(test, feature = "test-support"))]
+            fixture_source_deaths: Vec::new(),
             native_recipe_evidence: None,
         })
     }

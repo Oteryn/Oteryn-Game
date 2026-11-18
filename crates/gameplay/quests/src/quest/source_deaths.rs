@@ -10,7 +10,7 @@ use super::{
 use serde::Deserialize;
 use std::{collections::BTreeMap, sync::OnceLock};
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 pub struct Effect {
     pub track: String,
     pub default: i64,
@@ -20,7 +20,7 @@ pub struct Effect {
     #[serde(default)]
     pub add: Option<i64>,
 }
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 pub struct Comparison {
     kind: String,
     #[serde(default)]
@@ -48,7 +48,7 @@ impl Comparison {
         }
     }
 }
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 pub struct Rule {
     pub creature: String,
     pub transition: String,
@@ -61,9 +61,38 @@ pub struct Rule {
     /// Only mission-start guards are revision predecessors for cumulative counters.
     /// Counter increments from earlier queued deaths must not invalidate later ones.
     pub epoch_tracks: Option<Vec<String>>,
+    #[serde(default)]
+    pub delivery: Option<DeathDelivery>,
     #[serde(skip)]
     pub quest: String,
 }
+
+/// Crystal 201189f feaster_of_souls/creaturescripts_pale_worm_death.lua:9-19.
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum DeathDelivery {
+    PoltergeistAndBeyonder,
+}
+
+impl DeathDelivery {
+    fn valid(self, rule: &Rule) -> bool {
+        match self {
+            Self::PoltergeistAndBeyonder => {
+                rule.quest == "oteryn:quest.feaster_of_souls_quest"
+                    && rule.creature == "oteryn:creature.the_pale_worm"
+                    && rule.room == Some([33794, 31493, 33816, 31515, -14])
+                    && !rule.top_damage_only
+                    && rule.define_transition
+                    && rule.effects.len() == 1
+                    && rule.effects.iter().all(|effect| {
+                        effect.default == -1 && effect.from.kind == "any"
+                            && effect.set == Some(1) && effect.add.is_none()
+                    })
+            }
+        }
+    }
+}
+
 impl Rule {
     pub fn active(&self, tracks: &BTreeMap<String, i64>) -> bool {
         self.effects.iter().all(|e| {
@@ -148,6 +177,9 @@ const DOCUMENTS: &[&[u8]] = &[
 fn documents() -> Result<Vec<Document>, String> {
     DOCUMENTS
         .iter()
+        .copied()
+        .chain(super::authored_bindings::embedded::NATIVE_DEATH_REWARDS.iter()
+            .map(|(_, document)| document.as_bytes()))
         .map(|bytes| {
             let doc: Document = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
             if doc.schema != 1 || !doc.runtime_enabled {
@@ -179,6 +211,7 @@ pub fn rules() -> Result<&'static [Rule], &'static str> {
                     }
                     if rule.effects.is_empty()
                         || rule.effects.iter().any(|e| e.from.comparison().is_err())
+                        || rule.delivery.is_some_and(|delivery| !delivery.valid(&rule))
                         || rules.iter().any(|r: &Rule| r.transition == rule.transition)
                     {
                         return Err("invalid source death rule".into());
@@ -193,6 +226,47 @@ pub fn rules() -> Result<&'static [Rule], &'static str> {
 }
 pub fn rule(key: &str) -> Option<&'static Rule> {
     rules().ok()?.iter().find(|rule| rule.transition == key)
+}
+
+pub fn rule_for<'a>(catalogue: &'a QuestStateCatalogue, key: &str) -> Option<&'a Rule> {
+    let _ = catalogue;
+    #[cfg(any(test, feature = "test-support"))]
+    if let Some(rule) = catalogue.fixture_source_deaths.iter().find(|r| r.transition == key) {
+        return Some(rule);
+    }
+    rule(key)
+}
+
+pub fn active_for(
+    catalogue: Option<&QuestStateCatalogue>, tracks: &BTreeMap<String, i64>,
+) -> Vec<Rule> {
+    let mut active: Vec<_> = rules().ok().into_iter().flatten()
+        .filter(|rule| rule.active(tracks)).cloned().collect();
+    let _ = (&catalogue, &mut active);
+    #[cfg(any(test, feature = "test-support"))]
+    if let Some(catalogue) = catalogue {
+        active.extend(catalogue.fixture_source_deaths.iter()
+            .filter(|rule| rule.active(tracks)).cloned());
+    }
+    active
+}
+
+#[cfg(any(test, feature = "test-support"))]
+pub fn with_fixture_rule(
+    catalogue: &QuestStateCatalogue, quest: &str, document: &str,
+) -> Result<QuestStateCatalogue, String> {
+    let mut rule: Rule = serde_json::from_str(document).map_err(|error| error.to_string())?;
+    rule.quest = quest.into();
+    if rule.delivery.is_none_or(|delivery| !delivery.valid(&rule))
+        || self::rule(&rule.transition).is_some()
+    {
+        return Err("invalid fixture source death delivery".into());
+    }
+    let mut with_rule = catalogue.with_fixture_transition(rule.transition()?)
+        .map_err(|error| format!("{error:?}"))?;
+    with_rule.fixture_source_deaths.clone_from(&catalogue.fixture_source_deaths);
+    with_rule.fixture_source_deaths.push(rule);
+    Ok(with_rule)
 }
 pub fn tracks_creature(creature: &str) -> bool {
     rules().is_ok_and(|rules| rules.iter().any(|rule| rule.creature == creature))

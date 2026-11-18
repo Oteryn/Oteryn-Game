@@ -103,6 +103,8 @@ pub(crate) enum QuestOutfitGrant {
     Revenant,
     /// PR2784 answer6547536027: base only; no unverified addon.
     DecayingDefender,
+    /// Crystal creaturescripts_pale_worm_death.lua:13-15 grants both base looks.
+    Poltergeist,
 }
 
 impl QuestOutfitGrant {
@@ -112,6 +114,7 @@ impl QuestOutfitGrant {
             Self::DecayingDefender => {
                 "oteryn:appearance-grant/quest/rotten-blood/decaying-defender-base"
             }
+            Self::Poltergeist => "oteryn:outfit.poltergeist/quest-grant/0",
         }
     }
 
@@ -119,6 +122,7 @@ impl QuestOutfitGrant {
         match self {
             Self::Revenant => "crystal-201189f-soul-war-revenant-v1",
             Self::DecayingDefender => "owner-pr2784-decaying-defender-base-v1",
+            Self::Poltergeist => "crystal-201189f-pale-worm-v1",
         }
     }
 }

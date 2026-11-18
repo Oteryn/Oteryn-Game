@@ -493,8 +493,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                 }));
                 let objective = source_deaths::rule(&rule.transition)
                     .ok_or("Herald rule")?
-                    .transition
-                    .as_str();
+                    .clone();
                 let snapshots = [
                     quest_batch3_c::Snapshot {
                         actor,
@@ -502,7 +501,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                         character: *lease.character_id().as_bytes(),
                         lease_generation: lease.generation(),
                         observed_revision: winner.death.observed_revision,
-                        objectives: vec![objective],
+                        objectives: vec![objective.clone()],
                     },
                     quest_batch3_c::Snapshot {
                         actor: other_actor,

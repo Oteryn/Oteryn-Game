@@ -29,7 +29,7 @@ struct TaskSnapshot {
     observed_revision: u64,
     active_tasks: Vec<u8>,
     native_counters: Vec<NativeCounterCapture>,
-    source_objectives: Vec<&'static str>,
+    source_objectives: Vec<oteryn_gameplay_quests::quest::source_deaths::Rule>,
     active_goals: Vec<String>,
     objective_keys: Vec<String>,
 }
@@ -286,6 +286,7 @@ pub(super) fn tracks_native_creature(queue: &KillSettlementQueue, creature: &str
                     .native_counters
                     .iter()
                     .any(|counter| counter.creature == creature)
+                    || snapshot.source_objectives.iter().any(|rule| rule.creature == creature)
             })
         })
 }
@@ -549,8 +550,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 .filter(|objective| objective.active(&tracks))
                                 .map(|objective| objective.key.clone())
                                 .collect(),
-                            source_objectives: oteryn_gameplay_quests::quest::source_deaths::active(
-                                &tracks,
+                            source_objectives: oteryn_gameplay_quests::quest::source_deaths::active_for(
+                                self.quest_catalogue.as_deref(), &tracks,
                             ),
                         },
                         hit_snapshot,

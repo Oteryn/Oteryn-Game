@@ -54,8 +54,9 @@ impl SourceDeathContext {
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
         fence: CurrentCharacterGameplayFence,
         death: &super::native_kills::NativeQuestDeath,
+        catalogue: &QuestStateCatalogue,
     ) -> StoredResult<bool> {
-        let Some(rule) = oteryn_gameplay_quests::quest::source_deaths::rule(&death.transition)
+        let Some(rule) = oteryn_gameplay_quests::quest::source_deaths::rule_for(catalogue, &death.transition)
         else {
             return Ok(false);
         };
@@ -88,6 +89,50 @@ impl SourceDeathContext {
         }
         Ok(true)
     }
+}
+
+pub(super) async fn apply_delivery(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: CurrentCharacterGameplayFence,
+    request: &QuestTransitionRequest,
+    rule: &oteryn_gameplay_quests::quest::source_deaths::Rule,
+    changes: &[oteryn_gameplay_quests::quest::QuestTrackChange],
+) -> StoredResult<()> {
+    use super::super::account_achievement::{
+        AchievementCatalogueLookup, AchievementGrantRequest, AchievementSourceEvent,
+        FencedGrantingCharacter, record_achievement_grant,
+    };
+    use super::super::character_appearance::{QuestOutfitGrant, grant_quest_outfit};
+    use oteryn_gameplay_quests::quest::source_deaths::DeathDelivery;
+    let Some(DeathDelivery::PoltergeistAndBeyonder) = rule.delivery else {
+        return Ok(());
+    };
+    if !matches!(request.cause, QuestCause::CreatureDeath(_)) {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    // Both grants belong to the fenced boss death. The storage effect tracks
+    // the first base outfit and an older entitlement stays valid.
+    let occurrence = serde_json::to_vec(&(request.cause.key(), &request.transition_key))
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    if changes.iter().any(|change| change.before == -1 && change.after == 1) {
+        grant_quest_outfit(tx, fence.character_id, &occurrence, QuestOutfitGrant::Poltergeist)
+            .await?;
+    }
+    let catalogue = oteryn_gameplay_progression::achievement_catalogue::parse_shards(
+        &oteryn_gameplay_progression::achievement_catalogue::SHARDS,
+    ).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let key = "oteryn:achievement.beyonder";
+    let entry = catalogue.get(key).filter(|entry| !entry.retired)
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let source = AchievementSourceEvent {kind: "oteryn:quest-reward".into(),
+        event_id: Sha256::digest(&occurrence).to_vec()};
+    let granter = FencedGrantingCharacter::in_transaction(tx, fence.character_id).await?;
+    record_achievement_grant(tx, granter, &AchievementGrantRequest {
+        achievement_key: key.into(),
+        catalogue: AchievementCatalogueLookup::Earnable {revision: entry.revision.clone()},
+        source,
+    }).await?.map_err(|_| DurabilityError::InvalidStoredState)?;
+    Ok(())
 }
 
 #[cfg(test)]

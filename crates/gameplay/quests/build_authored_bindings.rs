@@ -62,6 +62,11 @@ pub fn generate(root: &Path, out: &Path) -> Result<(), Box<dyn std::error::Error
         "quests-",
         64,
     )?;
+    let death_rewards = documents(
+        &repository.join("content/quests/native-death-bindings"),
+        "death-reward-",
+        16,
+    )?;
     let claims = documents(
         &repository.join("content/interactions/reward_claims"),
         "reward-claim-variants-",
@@ -72,6 +77,7 @@ pub fn generate(root: &Path, out: &Path) -> Result<(), Box<dyn std::error::Error
         ("AUTHORED_BINDING_DOCUMENTS", bindings),
         ("CANONICAL_QUEST_SHARDS", definitions),
         ("NATIVE_CLAIM_SHARDS", claims),
+        ("NATIVE_DEATH_REWARDS", death_rewards),
     ] {
         writeln!(
             generated,

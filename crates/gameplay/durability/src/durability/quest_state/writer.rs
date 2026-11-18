@@ -705,6 +705,9 @@ impl DurabilityRoot {
         if timer_recipe.is_some() != matches!(request.cause, QuestCause::ServerTimer(_)) {
             return Err(CharacterProgressionError::InvalidInput);
         }
+        let source_death = oteryn_gameplay_quests::quest::source_deaths::rule_for(
+            &catalogue, &request.transition_key,
+        );
         let native_key = hit_key
             || request
                 .transition_key
@@ -712,8 +715,7 @@ impl DurabilityRoot {
             || request
                 .transition_key
                 .starts_with(oteryn_gameplay_quests::quest::authored_bindings::door_use::PREFIX)
-            || oteryn_gameplay_quests::quest::source_deaths::rule(&request.transition_key)
-                .is_some()
+            || source_death.is_some()
             || oteryn_gameplay_quests::quest::native_kills::counter(&request.transition_key)
                 .is_some();
         if native_key != native.is_some()
@@ -1877,6 +1879,9 @@ impl DurabilityRoot {
 
                     // A native death reads its mission gate; it must not move that mission epoch.
                     if native.is_some() {changes.retain(|change|change.before!=change.after);}
+                    if let Some(rule) = source_death {
+                        super::source_deaths::apply_delivery(&mut tx, fence, &request, rule, &changes).await?;
+                    }
                     if !super::rotten_blood_access::validate_access_changes(
                         &request.transition_key,&changes,state.try_get("level")?,
                     )? {

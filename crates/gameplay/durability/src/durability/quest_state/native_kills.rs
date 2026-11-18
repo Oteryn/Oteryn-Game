@@ -81,7 +81,7 @@ impl NativeQuestDeath {
                 }
                 NativeDeathSource::Source(_) => {
                     self.definition_hash.is_none()
-                        && oteryn_gameplay_quests::quest::source_deaths::rule(&self.transition)
+                        && oteryn_gameplay_quests::quest::source_deaths::rule_for(catalogue, &self.transition)
                             .is_some_and(|rule| rule.creature == self.creature)
                 }
             }
@@ -163,7 +163,7 @@ impl NativeQuestDeath {
         catalogue: &QuestStateCatalogue,
     ) -> StoredResult<bool> {
         if let NativeDeathSource::Source(source) = &self.source {
-            return source.admit(tx, fence, self).await;
+            return source.admit(tx, fence, self, catalogue).await;
         }
         if let NativeDeathSource::InstanceBoss {
             death,
