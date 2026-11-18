@@ -1,6 +1,8 @@
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult};
-use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition, NodeId};
+use crate::foundation::{
+    ChannelContentPin, ChannelRuntimeV1, CharacterId, CharacterLease, MovementLocalPosition, NodeId,
+};
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::map::{
     overlay::TilePos,
