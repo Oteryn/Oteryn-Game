@@ -198,6 +198,44 @@ fn scenario(case: &str, placement: Option<fn() -> TestResult<NpcPlacement>>) -> 
                     .await?;
                 assert_eq!(advanced.rows_affected(), 1);
             }
+            let questline = "oteryn:quest-progress/quest/u11_02/the_first_dragon/questline";
+            sqlx::query(
+                "INSERT INTO game_character_quest_receipts (
+                     character_id, cause_kind, cause_id, cause_ordinal, transition_key,
+                     quest_key, request_binding, pinned_content_revision, definition_hash,
+                     completes, track_keys, values_before, values_after, original_character_revision,
+                     committed_character_revision, level_before, level_after, experience_before,
+                     experience_after, profile_revision, ruleset_revision, content_revision,
+                     simulation_revision, evidence_revision, declaration_revision, policy_revision,
+                     reward_revision, committed_at)
+                 SELECT character_id, 'command', encode($3, 'hex')::uuid, 1,
+                        'oteryn:quest-npc/the_first_dragon_quest/tamoril/conversation-102-7-1-1',
+                        $1, decode($2, 'hex'), content_revision, decode($2, 'hex'),
+                        false, ARRAY[$4::text], ARRAY[-1]::bigint[], ARRAY[1]::bigint[],
+                        character_revision - 1, character_revision,
+                        level, level, total_experience, total_experience,
+                        profile_revision, ruleset_revision, content_revision, simulation_revision,
+                        evidence_revision, declaration_revision, policy_revision, reward_revision, 1
+                 FROM game_character_progression_state
+                 WHERE character_id=encode($5, 'hex')::uuid",
+            )
+            .bind(QUEST)
+            .bind(BASE_DEFINITION)
+            .bind(session.as_bytes().as_slice())
+            .bind(questline)
+            .bind(gameplay.character_id.as_bytes().as_slice())
+            .execute(&mut *fixture)
+            .await?;
+            sqlx::query(
+                "INSERT INTO game_character_quest_tracks
+                 (character_id, track_key, quest_key, value, committed_character_revision)
+                 VALUES (encode($1, 'hex')::uuid, $2, $3, 1, 2)",
+            )
+            .bind(gameplay.character_id.as_bytes().as_slice())
+            .bind(questline)
+            .bind(QUEST)
+            .execute(&mut *fixture)
+            .await?;
             sqlx::query(
                 "INSERT INTO game_character_quest_states(
                      character_id, quest_key, pinned_content_revision, definition_hash,
