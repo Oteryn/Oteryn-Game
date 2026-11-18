@@ -1069,8 +1069,13 @@ impl DurabilityRoot {
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let dance_achievement = super::super::quest_unnatural_selection::prepare(callback.as_ref())
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
-        // Native rules require a world occurrence even if a caller renames the
-        // transition. Inspect the effects, not only the authored callback key.
+        // World-owned rules require a physical occurrence even if the
+        // transition key is changed. The Nightmare report uses a dialogue command.
+        if request.transition_key == oteryn_gameplay_quests::quest::threatened_dreams::REPORT
+            && !matches!(request.cause, QuestCause::Command(_))
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let native_world_rule =
             catalogue
                 .transition(&request.transition_key)
@@ -1078,7 +1083,8 @@ impl DurabilityRoot {
                     transition.effects.iter().any(|effect| {
                         matches!(
                             effect.effect,
-                            oteryn_gameplay_quests::quest::QuestEffectKind::Native(_)
+                            oteryn_gameplay_quests::quest::QuestEffectKind::Native(rule)
+                                if rule != oteryn_gameplay_quests::quest::native_rules::NativeRule::NightmareIntruders
                         )
                     })
                 });

@@ -77,6 +77,7 @@ fn kroazur_step_in_requires_access_and_uses_shared_boss_timer() -> TestResult {
 }
 
 async fn exercise(h: &Harness) -> TestResult {
+    let evidence = super::house_transfer::RecoverySource::start(h).await?;
     prepare_current_session(h).await?;
     h.seed_appearance_observer().await?;
     observer_visibility_tests::admit(h).await?;
@@ -145,6 +146,7 @@ async fn exercise(h: &Harness) -> TestResult {
         crate::spell::cast::v1_spell_book().map_err(debug)?,
     )?;
     let mut owner = deps.owner(h, &authority);
+    owner.evidence = &evidence.evidence;
     owner.active_generation = activation.active();
     owner.movement_cells = (&cells).into();
     owner.rooms = SeamRooms::new(Some(&view), Some(&view));
