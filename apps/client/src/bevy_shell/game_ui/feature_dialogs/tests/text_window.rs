@@ -256,12 +256,81 @@ fn house_acl_reply_replaces_pending_member_draft() -> TestResult {
 }
 #[test]
 fn house_acl_reply_restores_requested_house_after_map() -> TestResult {
-    house_window_action_with_map("Load guests", 4, "", true)
+    house_window_action_with_map("Load guests", 4, "", ReplyTiming::AfterMapProjection)
 }
 #[test]
 fn house_acl_refused_door_read_restores_requested_house_after_map() -> TestResult {
-    house_window_action_with_map("Load door", 5, "101 110 -7", true)
+    refused_door_read(ReplyTiming::AfterMapProjection)
 }
+#[test]
+fn house_acl_refused_door_read_routes_before_map_projection() -> TestResult {
+    refused_door_read(ReplyTiming::BeforeMapProjection)
+}
+
+fn refused_door_read(timing: ReplyTiming) -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            house_window_action_with_map("Load door", 5, "101 110 -7", timing)
+                .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "house ACL scenario panicked")??;
+    Ok(())
+}
+
+struct MissingDoor;
+
+impl crate::play::Stepper for MissingDoor {
+    fn feature_selected(&self, capability: u32) -> bool {
+        capability == 49
+    }
+
+    async fn feature(
+        &mut self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+    ) -> Result<oteryn_session::GatedCommandResult, oteryn_session::SessionError> {
+        use oteryn_session::property_services::house;
+        assert_eq!((command.capability, command.kind), (49, 57));
+        Ok(oteryn_session::GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: house::encode_house_result(house::HouseDisposition::Rejected, 0),
+        })
+    }
+
+    async fn serve(&mut self, _: std::time::Duration) -> Result<(), oteryn_session::SessionError> {
+        // Let the test advance the real session exactly once between Bevy frames.
+        tokio::task::yield_now().await;
+        Ok(())
+    }
+
+    fn drain(&mut self) -> Vec<oteryn_session::SessionEvent> {
+        Vec::new()
+    }
+
+    async fn step(
+        &mut self,
+        _: oteryn_session::StepDirection,
+    ) -> Result<oteryn_session::StepOutcome, oteryn_session::SessionError> {
+        Err(oteryn_session::SessionError::SessionUnusable)
+    }
+
+    async fn combat(
+        &mut self,
+        _: crate::combat_input::CombatCommand,
+    ) -> Result<crate::combat_input::CombatReport, oteryn_session::SessionError> {
+        Err(oteryn_session::SessionError::SessionUnusable)
+    }
+
+    async fn logout(
+        &mut self,
+    ) -> Result<Option<oteryn_session::LogoutResult>, oteryn_session::SessionError> {
+        Ok(None)
+    }
+}
+
 #[test]
 fn house_acl_reply_preserves_unrelated_draft_and_pending_paste() -> TestResult {
     house_window_action("Load subowners", 4, "")
@@ -275,15 +344,24 @@ fn rejected_house_member_edit_sends_nothing() -> TestResult {
     house_window_action("Save guests", 4, &"é".repeat(4097))
 }
 fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestResult {
-    house_window_action_with_map(caption, field_index, value, false)
+    house_window_action_with_map(caption, field_index, value, ReplyTiming::WithoutMap)
+}
+
+#[derive(PartialEq)]
+enum ReplyTiming {
+    WithoutMap,
+    AfterMapProjection,
+    BeforeMapProjection,
 }
 
 fn house_window_action_with_map(
     caption: &str,
     field_index: usize,
     value: &str,
-    map_during_read: bool,
+    timing: ReplyTiming,
 ) -> TestResult {
+    let map_during_read = timing != ReplyTiming::WithoutMap;
+    let reply_before_map_projection = timing == ReplyTiming::BeforeMapProjection;
     use crate::{
         combat_input::PlayCommand,
         play::{PlayView, play_channel},
@@ -291,6 +369,22 @@ fn house_window_action_with_map(
     use bevy::input::keyboard::{Key as LogicalKey, KeyboardInput};
     let (link, mut receiver, outbox) = play_channel();
     link.use_shared_frontend();
+    let advance_session = |session: std::pin::Pin<&mut _>| {
+        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+        assert!(std::future::Future::poll(session, &mut context).is_pending());
+    };
+    let routed = if caption == "Load door" {
+        let (send, incoming) = tokio::sync::mpsc::unbounded_channel();
+        let mut session = Box::pin(crate::play::run_session(
+            MissingDoor,
+            incoming,
+            outbox.clone(),
+        ));
+        advance_session(session.as_mut());
+        Some((send, session))
+    } else {
+        None
+    };
     if map_during_read {
         link.bevy_house_map_fixture();
     } else {
@@ -616,7 +710,7 @@ fn house_window_action_with_map(
             if field.0 == 2 {
                 text.editor_mut().set_text("2");
             }
-            if field.0 == 4 {
+            if field.0 == 4 && !reply_before_map_projection {
                 text.editor_mut().set_text("intervening edit");
             }
             if field.0 == 5 && caption == "Load subowners" {
@@ -631,16 +725,18 @@ fn house_window_action_with_map(
             let entity = button(&mut app, "Show entrance map")?;
             app.world_mut().trigger(Activate { entity });
             app.update();
-            app.update();
-            assert!(
-                app.world_mut()
-                    .query::<&Text>()
-                    .iter(app.world())
-                    .any(|text| text.0 == "◆ 2: Harbour Home\n120,130,7")
-            );
+            if !reply_before_map_projection {
+                app.update();
+                assert!(
+                    app.world_mut()
+                        .query::<&Text>()
+                        .iter(app.world())
+                        .any(|text| text.0 == "◆ 2: Harbour Home\n120,130,7")
+                );
+            }
         }
         let door_refused = caption == "Load door";
-        let payload = if door_refused {
+        if let Some((send, mut session)) = routed {
             let query =
                 house::decode_house_query(&command.payload).map_err(|e| format!("{e:?}"))?;
             assert_eq!(
@@ -654,24 +750,37 @@ fn house_window_action_with_map(
                     },
                 })
             );
-            // The house query returns this disposition when the tile has no door.
-            house::encode_house_result(house::HouseDisposition::Rejected, 0)
+            let owner = app.world().non_send::<HostOwner>();
+            let link = &owner.play.as_ref().ok_or("active play")?.link;
+            let selected = link.house_panel().model;
+            assert_eq!(selected.index, 1);
+            assert_eq!(selected.pending.as_ref(), Some(&command));
+            send.send(PlayCommand::Feature(command))?;
+            advance_session(session.as_mut());
+            let restored = link.house_panel().model;
+            assert!(
+                !restored.pending_acl_read,
+                "the session must route the door refusal"
+            );
+            assert!(restored.pending.is_none());
+            assert!(restored.acl_snapshot.is_none());
+            assert_eq!(restored.index, 0);
         } else {
-            house::encode_house_acl_snapshot(&house::HouseAclSnapshot {
+            let payload = house::encode_house_acl_snapshot(&house::HouseAclSnapshot {
                 revision: 8,
                 members: vec![],
             })
-            .map_err(|e| format!("{e:?}"))?
-        };
-        outbox.bevy_properties_result(
-            &command,
-            &GatedCommandResult {
-                command_id: 1,
-                server_sequence: 1,
-                status: CommandStatus::Accepted,
-                payload,
-            },
-        );
+            .map_err(|e| format!("{e:?}"))?;
+            outbox.bevy_properties_result(
+                &command,
+                &GatedCommandResult {
+                    command_id: 1,
+                    server_sequence: 1,
+                    status: CommandStatus::Accepted,
+                    payload,
+                },
+            );
+        }
         app.update();
         assert!(
             app.world_mut()
@@ -679,12 +788,14 @@ fn house_window_action_with_map(
                 .iter(app.world())
                 .any(|(field, text)| field.0 == 4 && text.value() == "")
         );
-        assert!(
-            app.world_mut()
-                .query::<(&super::super::houses::Field, &EditableText)>()
-                .iter(app.world())
-                .any(|(field, text)| field.0 == 2 && text.value() == "1")
-        );
+        if !reply_before_map_projection {
+            assert!(
+                app.world_mut()
+                    .query::<(&super::super::houses::Field, &EditableText)>()
+                    .iter(app.world())
+                    .any(|(field, text)| field.0 == 2 && text.value() == "1")
+            );
+        }
         if caption == "Load subowners" {
             let entity = door_editor.ok_or("door editor")?;
             let draft = app

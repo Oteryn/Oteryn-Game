@@ -127,11 +127,14 @@ fn project(
                         == new.page.rows.get(new.index).map(|row| &row.house)
             })
     });
-    let acl_loaded = projected.as_ref().is_some_and(|panel| {
-        state.model.as_ref().is_some_and(|old| old.pending_acl_read)
-            && !panel.model.pending_acl_read
-            && panel.model.acl_snapshot.is_some()
-    });
+    let acl_read_finished = state.model.as_ref().is_some_and(|old| old.pending_acl_read)
+        && projected
+            .as_ref()
+            .is_some_and(|panel| !panel.model.pending_acl_read);
+    let acl_loaded = acl_read_finished
+        && projected
+            .as_ref()
+            .is_some_and(|panel| panel.model.acl_snapshot.is_some());
     // Only a door list binds the shared door/date editor to the reply.
     let door_loaded = acl_loaded
         && state
@@ -152,7 +155,9 @@ fn project(
         projected.as_ref().is_some_and(|panel| {
             state.activity_revision == panel.activity_revision
                 && (same_house || !matches!(index, 2 | 4 | 6))
-                && !(acl_loaded && matches!(index, 2 | 4 | 6))
+                // Even a refusal restores the requested row before any snapshot is loaded.
+                && !(acl_read_finished && index == 2)
+                && !(acl_loaded && matches!(index, 4 | 6))
                 && !(door_loaded && index == 5)
                 && panel.fields[index] == state.fields[index]
         })
