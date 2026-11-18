@@ -41,7 +41,7 @@ fn catalogue(
         .collect();
     let source = serde_json::json!({
         "key":SOURCE,"quest":QUEST,"trigger":"use","selector":{"position":cell(3),"ordinal":0},
-        "lever":null,"reversible":false,"passages":[],"storage":[],"teleport":null,
+        "lever":null,"reversible":false,"passages":[],"storage":[],"offerings":[],"teleport":null,"return_on_failure":false,
         "effects":{"encounter":{
             "minimum_level":250,
             "players":players,

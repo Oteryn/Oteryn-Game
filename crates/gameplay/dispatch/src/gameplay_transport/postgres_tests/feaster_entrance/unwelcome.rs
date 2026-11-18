@@ -130,6 +130,7 @@ async fn exercise(admin: String) -> TestResult {
                         actor,
                         session,
                         crate::spell::cast::CharacterCastFacts {
+                            vocation: crate::spell::Vocation::Monk,
                             level: 250,
                             ..crate::gameplay_transport::actor_spell::tests::FACTS
                         },
@@ -146,7 +147,7 @@ async fn exercise(admin: String) -> TestResult {
         "quest":"oteryn:quest.feaster_of_souls_quest",
         "trigger":"use",
         "selector":{"position":{"x":7,"y":0,"floor":-7},"ordinal":1},
-        "passages":[],"offerings":[],"storage":[],"reversible":false,
+        "passages":[],"offerings":[],"storage":[],"reversible":false,"return_on_failure":false,
         "effects":{"encounter":{
             "minimum_level":250,
             "players":[

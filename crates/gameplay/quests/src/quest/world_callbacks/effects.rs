@@ -1229,7 +1229,7 @@ mod phase_tests {
                 "room_min":{"x":33699,"y":31529,"floor":-14},
                 "room_max":{"x":33719,"y":31546,"floor":-14}
             }},
-            "passages":[],"offerings":[],"storage":[],"reversible":false,
+            "passages":[],"offerings":[],"storage":[],"reversible":false,"return_on_failure":false,
             "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_the_unwelcome_lever.lua:1-44"]
         });
         let packet = |callback| serde_json::json!({"schema":1,"callbacks":[callback]}).to_string();
