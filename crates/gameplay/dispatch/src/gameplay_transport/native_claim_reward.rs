@@ -323,6 +323,9 @@ mod tests {
             .find(|callback| Some(&callback.key) == placement.reward_callback.as_ref())
             .ok_or("source callback")?;
         authored.key = "oteryn:quest-reward/nrwicked-catalogue-fixture".into();
+        for storage in &mut authored.storage {
+            storage.track.push_str("/nrwicked-catalogue");
+        }
         placement.reward_callback = Some(authored.key.clone());
         let tracks = authored
             .storage
