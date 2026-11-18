@@ -16,13 +16,17 @@ fn courtyard_bones_award_one_blood_goblet() -> TestResult {
     }
     let started = std::time::Instant::now();
     super::kill_reward_e2e::scenario_thread::run("qcx_blood_brothers", scenario)?;
-    eprintln!("POSTGRES_CASE_COMPLETED courtyard_bones_award_one_blood_goblet {:?}", started.elapsed());
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED courtyard_bones_award_one_blood_goblet {:?}",
+        started.elapsed()
+    );
     Ok(())
 }
 
 fn scenario() -> TestResult {
     run(async |admin| {
-        let h = Harness::create_with_admission_seed(admin, "qcx_blood_brothers", false, false).await?;
+        let h =
+            Harness::create_with_admission_seed(admin, "qcx_blood_brothers", false, false).await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -38,7 +42,14 @@ fn scenario() -> TestResult {
             )?;
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native generation")?;
-        let world = super::quest_callbacks::source_world((32953, 31474, -4), 0, 1900, 0)?;
+        // The wiki marker is on the square south of the actual pile of bones.
+        let bones = crate::map::overlay::TilePos {
+            x: 32953,
+            y: 31473,
+            floor: -4,
+        };
+        let start = crate::map::overlay::TilePos { y: 31472, ..bones };
+        let world = super::source_world_crop::world(start, bones, start, native)?;
         let cells = world
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
@@ -49,7 +60,7 @@ fn scenario() -> TestResult {
             generation.identity().client_artifact_digest(),
             activated_pin.frame_binding().digest(),
             world.map_revision_digest(),
-            (32952, 31474, 4),
+            (32953, 31472, 4),
         );
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             deps.admitted.world_id,
@@ -71,8 +82,8 @@ fn scenario() -> TestResult {
             .initialize_pinned_test_position(
                 deps.actor,
                 MovementLocalPosition {
-                    x: 32952,
-                    y: 31474,
+                    x: 32953,
+                    y: 31472,
                     floor: 4,
                 },
             )
@@ -115,11 +126,14 @@ fn scenario() -> TestResult {
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
-        let key = oteryn_world_bundle::bundle::placement_key(-4, 32953, 31474, 1)
+        let key = oteryn_world_bundle::bundle::placement_key(bones.floor, bones.x, bones.y, 1)
             .ok_or("courtyard bones placement")?;
         let mut placement = world.base().digest().to_vec();
         placement.extend_from_slice(&key.to_be_bytes());
-        let target = WorldObjectTarget { placement, expected_revision: 0 };
+        let target = WorldObjectTarget {
+            placement,
+            expected_revision: 0,
+        };
         let loaded = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
             .map_err(debug)?;
         let mut owner = deps.owner(&h, &authority);
@@ -131,8 +145,8 @@ fn scenario() -> TestResult {
         owner.admit_quest_session(&admitted).await;
 
         assert_eq!(
-            wire_uses(&owner, admitted, &[1], &target).await?,
-            [UseDisposition::Committed]
+            wire_uses(&owner, admitted, &[1, 2], &target).await?,
+            [UseDisposition::Committed, UseDisposition::Rejected]
         );
         let quantity: i64 = sqlx::query_scalar(
             "SELECT COALESCE(sum(i.quantity), 0)::bigint FROM game_item_instances i
@@ -141,22 +155,30 @@ fn scenario() -> TestResult {
              AND e.character_id=encode($1,'hex')::uuid",
         )
         .bind(fence.character_id.as_bytes().as_slice())
-        .fetch_one(&h.pool).await?;
+        .fetch_one(&h.pool)
+        .await?;
         assert_eq!(quantity, 1);
-        let progress = h.root.read_character_quest_state(&authority, fence.character_id).await.map_err(debug)?;
+        let progress = h
+            .root
+            .read_character_quest_state(&authority, fence.character_id)
+            .await
+            .map_err(debug)?;
         assert_eq!(
-            progress.tracks().get("oteryn:quest-progress/crystalserver/quest/u8_4/blood_brothers/blood_goblet"),
+            progress
+                .tracks()
+                .get("oteryn:quest-progress/crystalserver/quest/u8_4/blood_brothers/blood_goblet"),
             Some(&1)
-        );
-        assert_eq!(
-            wire_uses(&owner, admitted, &[2], &target).await?,
-            [UseDisposition::Rejected]
         );
         let copies: i64 = sqlx::query_scalar(
             "SELECT count(*) FROM game_item_instances
              WHERE definition_production_key='oteryn:item.tibia.i8531'",
-        ).fetch_one(&h.pool).await?;
+        )
+        .fetch_one(&h.pool)
+        .await?;
         assert_eq!(copies, 1);
+        drop(owner);
+        drop(authority);
+        drop(seal);
         h.cleanup().await
     })
 }

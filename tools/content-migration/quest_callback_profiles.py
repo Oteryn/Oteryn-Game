@@ -229,6 +229,9 @@ def _requested_inputs(root, extra_keys=()):
                 if tool.get('replacement'):
                     authored_keys.add(tool['replacement'])
                     keys.add(tool['replacement'])
+    # Blood Brothers' courtyard action grants the portable goblet (Crystal
+    # 201189f actions_blood_goblet.lua:9-12).
+    keys.add('oteryn:item.tibia.i8531')
     # Rotten Blood's fixed Rust callback is not part of the JSON inventory.
     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
     # apply the same pinned source, exact binding and portability checks below.
