@@ -56,6 +56,7 @@
     "oteryn:npc.frank_the_plank",
     "oteryn:npc.gail",
     "oteryn:npc.gamon",
+    "oteryn:npc.gelidrazah_s_thirst",
     "oteryn:npc.gnomally",
     "oteryn:npc.gnommander",
     "oteryn:npc.gregor",
@@ -74,6 +75,7 @@
     "oteryn:npc.ishina",
     "oteryn:npc.isimov",
     "oteryn:npc.ivalisse",
+    "oteryn:npc.jack_springer",
     "oteryn:npc.jorge",
     "oteryn:npc.kasmir",
     "oteryn:npc.kawill",
@@ -308,6 +310,25 @@
     }
   },
   "placement_overrides": {
+    "oteryn:npc.jack_springer": {
+      "basis": "Crystal world-npc.xml:2722-2724 anchors Jack Springer at the Isle of the Kings. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32326,
+            "y": 32261,
+            "z": 9
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
     "oteryn:npc.rashid": {
       "basis": "Pinned Canary startup/weekday schedule; the existing native UTC weekday filter requires these exact seven cells instead of the wiki-arbitrated migration cell.",
       "placements": [

@@ -64,6 +64,13 @@ content digests are derived from committed inputs.
   `quest-authoring/batch3_world.py` and `quest-authoring/quest_batch4.py --available`
   preserve other batches' callback values and sort the combined registry by key.
 
+- Node-boot world regions are a load budget. A change to the compile-region
+  list in `tools/qualification/node_boot/run.sh` states its measured cost
+  (bundle MB, map load seconds, realized creatures) in the PR. Going from 3 to
+  20 regions took the bundle from 2.85 to 13.4 MB and map load from 7.5 to 42 s,
+  and admissions then timed out. Keep the ordinary shards on the minimal
+  profile and add only the regions holding the cells a row needs.
+
 ## Writing data files
 
 Reading large data files: `navigation.md`, *Large data files*. Write JSON
