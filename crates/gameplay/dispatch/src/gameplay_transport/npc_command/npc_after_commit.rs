@@ -3,8 +3,8 @@ use super::super::{ComposedFreshAdmission, connection::UseCommand};
 use super::*;
 use crate::durability::reward_claim_mint::QuestActorConditionProof;
 use oteryn_gameplay_foundation::foundation::condition::{
-    ApplicationFacts, ConditionDefinition, ConditionProvenance, ConditionSourceKind, DamageSchedule,
-    DamageSegment,
+    ApplicationFacts, ConditionDefinition, ConditionProvenance, ConditionSourceKind,
+    DamageSchedule, DamageSegment,
 };
 use oteryn_gameplay_quests::quest::reward_callbacks::{NpcAfterCommit, NpcFireDamage};
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};

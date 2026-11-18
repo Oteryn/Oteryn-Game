@@ -16,6 +16,7 @@ use oteryn_protocol_oteryn::{
     world_object::{UseDisposition, UseIntent, UseTarget},
     world_spatial_entities::EntityRef,
 };
+use oteryn_simulation_determinism::SemanticTimeMicros;
 use std::{num::NonZeroU64, sync::atomic::Ordering};
 
 const QUEST: &str = "oteryn:quest.what_a_foolish_quest";
@@ -286,16 +287,12 @@ fn scenario(admin: String, npc: &'static str) -> TestResult {
                 let delivered = talk(owner, admitted, fence, entity, 3, "yes").await?;
                 assert_eq!(delivered.lines, [reply]);
                 assert!(delivered.inventory_changed);
-                {
+                let actor = admitted.runtime_actor.ok_or("actor")?;
+                let session = admitted.game_session_id;
+                let (applied_at, starting_health) = {
                     let runtime = owner.runtime.lock().await;
                     let states = owner.states.spell_states.lock().await;
-                    let state = states
-                        .get(
-                            &runtime,
-                            admitted.runtime_actor.ok_or("actor")?,
-                            admitted.game_session_id,
-                        )
-                        .ok_or("player state")?;
+                    let state = states.get(&runtime, actor, session).ok_or("player state")?;
                     let now = owner.owner_now().get();
                     let fire = state
                         .owned_conditions()
@@ -307,7 +304,26 @@ fn scenario(admin: String, npc: &'static str) -> TestResult {
                         )
                         .ok_or("active Soulfire")?;
                     assert_eq!(fire.remaining_duration_ms(now), Some(120_000));
+                    (now, state.vitals().health)
+                };
+
+                // Crystal 201189f8 data-global/npc/wyda.lua:52-54 delays the
+                // first 10 damage until 2 seconds after applying the condition.
+                let first_tick = applied_at + 2_000_000;
+                let _ = owner
+                    .tick_spell_periodic_at(actor, session, SemanticTimeMicros::from_micros(first_tick - 1))
+                    .await;
+                {
+                    let runtime = owner.runtime.lock().await;
+                    let states = owner.states.spell_states.lock().await;
+                    let state = states.get(&runtime, actor, session).ok_or("player state")?;
+                    assert_eq!(state.vitals().health, starting_health);
                 }
+                let (_, vitals) = owner
+                    .tick_spell_periodic_at(actor, session, SemanticTimeMicros::from_micros(first_tick))
+                    .await
+                    .ok_or("Soulfire tick did not publish vitals")?;
+                assert_eq!(vitals.health, starting_health - 10);
                 let cookies: i64 = sqlx::query_scalar(
                 "SELECT count(*) FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1",
             ).bind(COOKIE).fetch_one(&h.pool).await?;

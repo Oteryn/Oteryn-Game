@@ -141,12 +141,12 @@ impl ChannelSpellStates {
         // CONDITIONS-0 §3.5: an agony hit the cycle could not deal (lethal) is a creature hit
         // for this death-capable owner as well.
         let hit = |kind: TickKind| matches!(kind, TickKind::Damage { .. } | TickKind::Agony { .. });
-        let environment = |t: &oteryn_gameplay_foundation::foundation::condition::ConditionTick<
-            String,
-        >| {
-            t.provenance.is_unattributed()
-                || (matches!(t.kind, TickKind::Damage { .. }) && is_environment_damage(&t.provenance))
-        };
+        let environment =
+            |t: &oteryn_gameplay_foundation::foundation::condition::ConditionTick<String>| {
+                t.provenance.is_unattributed()
+                    || (matches!(t.kind, TickKind::Damage { .. })
+                        && is_environment_damage(&t.provenance))
+            };
         if !preview.combat_ticks.iter().any(|t| {
             hit(t.kind)
                 && (t.provenance.source_kind == ConditionSourceKind::Creature || environment(t))

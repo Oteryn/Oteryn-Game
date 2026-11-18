@@ -2731,11 +2731,11 @@ impl ChannelSpellStates {
                     if !tick.provenance.is_unattributed()
                         && !super::spell_periodic::is_environment_damage(&tick.provenance)
                         && (tick.provenance.source_kind != ConditionSourceKind::Creature
-                        || !tick
-                            .provenance
-                            .source
-                            .as_deref()
-                            .is_some_and(|s| s.starts_with("creature:")))
+                            || !tick
+                                .provenance
+                                .source
+                                .as_deref()
+                                .is_some_and(|s| s.starts_with("creature:")))
                     {
                         return None;
                     }
