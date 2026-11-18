@@ -162,6 +162,30 @@ impl ChannelActorCarrier {
     }
 }
 
+/// Actor placement, creature slots and encounter state are prepared together.
+/// The caller retains the exclusive runtime borrow until it publishes the
+/// source map change or drops this preparation.
+#[must_use]
+pub struct PreparedQuestEncounter<'a, T> {
+    runtime: &'a mut ChannelRuntimeV1,
+    carrier: ChannelActorCarrier,
+    positions: Vec<MovementPositionSnapshot>,
+    phase: T,
+}
+
+impl<T> PreparedQuestEncounter<'_, T> {
+    pub fn publish(
+        self,
+        project: impl FnOnce() -> bool,
+    ) -> Result<(Vec<MovementPositionSnapshot>, T), CarrierError> {
+        if !project() {
+            return Err(CarrierError::PlanConflict);
+        }
+        self.runtime.carrier = self.carrier;
+        Ok((self.positions, self.phase))
+    }
+}
+
 impl ChannelRuntimeV1 {
     /// One source lever publishes all relocations, native monsters and its map
     /// projection together. Failed admission or projection restores the carrier.
@@ -212,21 +236,18 @@ impl ChannelRuntimeV1 {
             true,
         )
     }
-    pub fn commit_quest_encounter_with_phase<P: SourceStepCommitProof, T>(
+    /// Prepare the complete native admission before exposing its actor or map changes.
+    pub fn prepare_quest_encounter_with_phase<P: SourceStepCommitProof, T>(
         &mut self,
         players: Vec<P>,
         monsters: &[(&str, i64, MovementLocalPosition)],
         bind: impl FnOnce(&mut Self, &[ExactActorRef]) -> Result<T, CarrierError>,
-        project: impl FnOnce() -> bool,
-    ) -> Result<(Vec<MovementPositionSnapshot>, T), CarrierError> {
-        self.quest_encounter_with_phase(
-            players,
-            monsters,
-            |runtime, actors, _| bind(runtime, actors),
-            project,
-            true,
-        )
+    ) -> Result<PreparedQuestEncounter<'_, T>, CarrierError> {
+        self.prepare_quest_encounter(players, monsters, |runtime, actors, _| {
+            bind(runtime, actors)
+        })
     }
+
     /// Build the participant-bound defender owner before the map CAS; every failure rolls back.
     pub fn commit_quest_encounter_entry_with_defenders<P: SourceStepCommitProof>(
         &mut self,
@@ -296,6 +317,26 @@ impl ChannelRuntimeV1 {
         project: impl FnOnce() -> bool,
         publish: bool,
     ) -> Result<(Vec<MovementPositionSnapshot>, T), CarrierError> {
+        let plan = self.prepare_quest_encounter(players, monsters, bind)?;
+        if publish {
+            plan.publish(project)
+        } else if project() {
+            Ok((plan.positions, plan.phase))
+        } else {
+            Err(CarrierError::PlanConflict)
+        }
+    }
+
+    fn prepare_quest_encounter<P: SourceStepCommitProof, T>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        bind: impl FnOnce(
+            &mut Self,
+            &[ExactActorRef],
+            &[MovementPositionSnapshot],
+        ) -> Result<T, CarrierError>,
+    ) -> Result<PreparedQuestEncounter<'_, T>, CarrierError> {
         if players.is_empty() || players.len() > 16 || monsters.is_empty() || monsters.len() > 16 {
             return Err(CarrierError::PlanConflict);
         }
@@ -322,16 +363,15 @@ impl ChannelRuntimeV1 {
             for proof in players {
                 snapshots.push(self.commit_source_step(proof)?);
             }
-            let phase = bind(self, &actors, &snapshots)?;
-            if !project() {
-                return Err(CarrierError::PlanConflict);
-            }
-            Ok((snapshots, phase))
+            bind(self, &actors, &snapshots)
         })();
-        if !publish || result.is_err() {
-            self.carrier = before;
-        }
-        result
+        let carrier = std::mem::replace(&mut self.carrier, before);
+        Ok(PreparedQuestEncounter {
+            runtime: self,
+            carrier,
+            positions: snapshots,
+            phase: result?,
+        })
     }
 
     /// Publish a bounded group relocation and its source map projection together.

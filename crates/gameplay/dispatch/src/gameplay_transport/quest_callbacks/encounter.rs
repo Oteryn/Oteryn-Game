@@ -408,7 +408,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let Ok((snapshots, (phase, actors, roster, prepared_outcome))) = runtime.commit_quest_encounter_with_phase(
+        let Ok(admission) = runtime.prepare_quest_encounter_with_phase(
             proofs,
             &monsters,
             |runtime, actors| {
@@ -440,11 +440,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
                     .transpose().map(|phase| (phase, actors.to_vec(), roster, prepared_outcome))
             },
-            || {
-                map.facts
-                    .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
-            },
         ) else {
+            return UseDisposition::Rejected;
+        };
+        let Ok((snapshots, (phase, actors, roster, prepared_outcome))) = admission.publish(|| {
+            map.facts
+                .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
+        }) else {
             return UseDisposition::Rejected;
         };
         if let (Some(capture), Some(prepared), Some(roster)) = (capture.as_mut(), prepared, roster)
