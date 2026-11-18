@@ -54,7 +54,6 @@ mod dense_ground;
 mod dense_step_teleport;
 mod effects;
 mod feaster_routes;
-mod galthen_shortcut;
 pub mod ground;
 mod ground_stack;
 mod guarded_routes;
@@ -611,7 +610,13 @@ impl Callback {
 
     /// Crystal's shortcut uses the exact shared boss cooldown identity.
     pub fn boss_cooldown_requirement(&self) -> Option<&'static str> {
-        galthen_shortcut::boss_for_callback(&self.key)
+        match self.key.as_str() {
+            "oteryn:quest-callback/galthen-yselda-shortcut-1"
+            | "oteryn:quest-callback/galthen-yselda-shortcut-2" => {
+                Some("oteryn:boss.megasylvan_yselda")
+            }
+            _ => None,
+        }
     }
 }
 
@@ -793,7 +798,6 @@ pub fn load() -> Result<Vec<Callback>, String> {
         super::schrodinger_island::callback(),
     ];
     native_callbacks.extend(super::elvenbane::callbacks());
-    native_callbacks.extend(galthen_shortcut::callbacks()?);
     native_callbacks.extend(super::last_creep_native::callbacks()?);
     native_callbacks.extend(super::fire_feathered_native::callbacks());
     native_callbacks.extend(super::goblin_merchant::callbacks()?);
