@@ -54,6 +54,8 @@ pub struct CallbackEffects {
     /// Current native occupants must be absent before a previously started stage commits.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub clear_area: Option<ClearArea>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color_grid: Option<ColorGrid>,
     /// Finish this quest only through its bound, irreversible native trial.
     #[serde(default, skip_serializing_if = "is_false")]
     pub completes_quest: bool,
@@ -471,6 +473,13 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects
+        .color_grid
+        .as_ref()
+        .is_some_and(|grid| !grid.valid(callback))
+    {
+        return false;
+    }
     if effects
         .solid_teleport
         .as_ref()

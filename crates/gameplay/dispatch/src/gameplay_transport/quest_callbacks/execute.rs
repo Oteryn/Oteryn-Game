@@ -261,6 +261,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 destination: tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::DESTINATION),
             });
         }
+        if let Some(grid) = &callback.effects.color_grid {
+            let QuestCause::Step(command) = cause else {
+                return UseDisposition::Rejected;
+            };
+            if projection.is_some() {
+                return UseDisposition::Rejected;
+            }
+            projection = match super::color_grid::prepare(map, pos, grid, command) {
+                Ok(projection) => Some(projection),
+                Err(disposition) => return disposition,
+            };
+        }
         projection = match super::conditional_cells::prepare(map, callback, projection) {
             Ok(projection) => projection,
             Err(result) => return result,

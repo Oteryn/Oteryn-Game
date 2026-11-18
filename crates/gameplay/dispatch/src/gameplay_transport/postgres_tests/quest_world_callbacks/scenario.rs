@@ -358,7 +358,11 @@ fn scenario_case(
     let lucifuga = name == lucifuga_bait_spawn::NAME;
     use super::super::kroazur_solo_room;
     let kroazur = name == kroazur_solo_room::NAME;
-    let mut callback = if kroazur {
+    use super::super::dreamers_color_grid;
+    let color_grid = dreamers_color_grid::matches(name);
+    let mut callback = if color_grid {
+        dreamers_color_grid::binding(name)?
+    } else if kroazur {
         kroazur_solo_room::binding()?
     } else if lucifuga {
         lucifuga_bait_spawn::binding()?
@@ -660,7 +664,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if kroazur {
+    let world = if color_grid {
+        dreamers_color_grid::world(&callback, name)?
+    } else if kroazur {
         super::world_with_cells(&callback, trigger, &[kroazur_solo_room::EXIT])?
     } else if dreamers_wall {
         dreamers_wall_portal::world(&callback, name == dreamers_wall_portal::BLOCKED)?
@@ -1786,6 +1792,7 @@ fn scenario_case(
             || name.starts_with("qengine-rewards-questpc4-puzzle-predicate")
             || lever_fixture
             || dreamers_wall
+            || color_grid
             || target_swap
             || failure_landing
             || name.ends_with("-expiry")
@@ -2904,6 +2911,8 @@ fn scenario_case(
                 trigger,
             )
             .await?;
+        } else if color_grid {
+            Box::pin(dreamers_color_grid::exercise(&owner, &mut admitted, name)).await?;
         } else if kroazur {
             Box::pin(kroazur_solo_room::exercise(&mut owner, &mut admitted, &h, fence)).await?;
         } else if lucifuga {

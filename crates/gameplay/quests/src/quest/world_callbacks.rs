@@ -44,6 +44,8 @@ pub use character_requirements::CharacterRequirements;
 mod clear_area;
 pub use clear_area::ClearArea;
 mod clock;
+mod color_grid;
+pub use color_grid::{ColorGrid, GridAxis, GridGroup};
 mod completed_quests;
 mod counter_initials;
 #[cfg(test)]
