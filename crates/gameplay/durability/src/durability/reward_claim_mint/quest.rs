@@ -456,7 +456,22 @@ pub(crate) async fn apply(
             .await?,
         );
     }
-    let minted = if let Some(reward) = &callback.give {
+    // A historical quest receipt returns before this transaction reaches the
+    // draw. A failed mint rolls back consumption, progress and the whole draw.
+    let reward = if callback.weighted_rewards.is_empty() {
+        callback.give.as_ref()
+    } else {
+        let draw: i16 = sqlx::query_scalar("SELECT floor(random() * 100)::smallint")
+            .fetch_one(&mut **tx)
+            .await?;
+        let percentile = u8::try_from(draw).map_err(|_| DurabilityError::InvalidStoredState)?;
+        Some(
+            callback
+                .reward_for_percentile(percentile)
+                .ok_or(DurabilityError::InvalidStoredState)?,
+        )
+    };
+    let minted = if let Some(reward) = reward {
         let Some(transaction) =
             mint_npc(tx, tuple, node, fence, command, callback, reward, admission).await?
         else {
