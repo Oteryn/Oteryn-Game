@@ -65,6 +65,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         runtime: &mut ChannelRuntimeV1,
         states: &ChannelSpellStates,
+        now: u64,
     ) {
         let Some(map) = self.bundle_map() else {
             return;
@@ -72,7 +73,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
             return;
         };
-        let now = self.owner_now().get();
         let scope = runtime.encounter_owner_scope();
         for visit in visits.iter_mut().filter(|visit| {
             visit.owner_scope == scope
@@ -545,7 +545,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 local(member.to),
                 blocked,
                 &closed,
-                encounter.linked_arrival.is_some(),
+                encounter.linked_arrival.is_some() || callback.effects.position_forms.is_some(),
             ) else {
                 return UseDisposition::NotPossible;
             };

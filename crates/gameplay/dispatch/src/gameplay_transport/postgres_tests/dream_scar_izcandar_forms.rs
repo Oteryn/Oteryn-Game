@@ -177,11 +177,11 @@ pub(super) async fn exercise(
             .ok_or("injured form")?;
         let states = owner.states.spell_states.lock().await;
         let started = owner.owner_now().get();
-        owner.observe_quest_encounter_forms(&mut runtime, &states);
+        owner.observe_quest_encounter_forms(&mut runtime, &states, started);
         (health, started)
     };
     let winter_due = due(owner)?;
-    assert!((10_000_000..20_100_000).contains(&(winter_due - started)));
+    assert!((10_000_000..=20_000_000).contains(&(winter_due - started)));
     owner.drain_quest_encounter_deadlines().await;
     assert_eq!(live(owner, BASE).await?, [initial]);
     assert!(live(owner, WINTER).await?.is_empty());
@@ -203,7 +203,7 @@ pub(super) async fn exercise(
             .commit_creature_relocation(winter, before, local(WEST))
             .map_err(debug)?;
         let states = owner.states.spell_states.lock().await;
-        owner.observe_quest_encounter_forms(&mut runtime, &states);
+        owner.observe_quest_encounter_forms(&mut runtime, &states, owner.owner_now().get());
     }
     let [interim] = live(owner, BASE)
         .await?
