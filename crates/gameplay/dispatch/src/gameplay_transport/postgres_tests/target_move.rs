@@ -13,7 +13,6 @@ use std::time::Duration;
 use tokio::io::DuplexStream;
 
 fn cell(x: u8, y: u8) -> Vec<u8> {
-    // Ordinary Bundles accept legacy +7 (zigzag 14) in target commands.
     vec![10, 6, 8, x * 2, 16, y * 2, 24, 14]
 }
 
@@ -77,11 +76,10 @@ async fn next_step(client: &mut DuplexStream) -> TestResult<MovementLocalPositio
             if delta.domain_id == 1 {
                 let value = oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_delta_with_item_handles(delta.payload).map_err(debug)?;
                 let at = value.actor_position;
-                assert_eq!(at.floor, -7);
                 return Ok(MovementLocalPosition {
                     x: at.x,
                     y: at.y,
-                    floor: -at.floor,
+                    floor: at.floor,
                 });
             }
         }
@@ -375,9 +373,9 @@ pub(super) async fn without_capability(client: &mut DuplexStream, corpse: [u8; 1
                 assert_ne!(domain.domain_id, 17, "map view was not selected");
                 if domain.domain_id == 1 {
                     let snapshot = oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_snapshot_with_item_handles(domain.payload).map_err(debug)?;
-                    assert_eq!(snapshot.actor_position.floor, -7);
+                    assert_eq!(snapshot.actor_position.floor, 7);
                     let entry = snapshot.entities.iter().find(|entry| entry.entity.identity == corpse).ok_or("corpse without map view")?;
-                    assert_eq!(entry.position.floor, -7);
+                    assert_eq!(entry.position.floor, snapshot.actor_position.floor);
                     saw_corpse = true;
                 }
             }

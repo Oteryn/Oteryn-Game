@@ -1,12 +1,11 @@
 //! Project one proven physical position into the existing wire position fields.
-//! Bundles use native -z on the wire and positive z for movement.
+//! Source activity Bundles use native -z on their map wire and legacy +z in physics.
 use crate::content::{NativeEntryMovementCells, QualifiedNativeEntryRoom};
 use crate::foundation::{ChannelContentPin, MovementLocalPosition};
 use oteryn_protocol_oteryn::world_spatial::ActorPosition;
 
 #[derive(Clone, Copy)]
 pub(super) struct WirePositionFrame {
-    bundle: bool,
     native_source_bundle: bool,
 }
 impl WirePositionFrame {
@@ -16,12 +15,11 @@ impl WirePositionFrame {
         pin: &ChannelContentPin,
         map: [u8; 32],
     ) -> Option<Self> {
-        let bundle = matches!(
-            cells.index(),
-            crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
-        );
-        let native_source_bundle =
-            bundle && room.is_some_and(|r| r.pinned_activity_source_room().is_some());
+        let native_source_bundle = room.is_some_and(|r| r.pinned_activity_source_room().is_some())
+            && matches!(
+                cells.index(),
+                crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
+            );
         if native_source_bundle {
             let room = room?;
             if cells.scope() != room.movement_cells().scope()
@@ -36,12 +34,11 @@ impl WirePositionFrame {
             }
         }
         Some(Self {
-            bundle,
             native_source_bundle,
         })
     }
     pub(super) fn project(self, physical: MovementLocalPosition) -> Option<ActorPosition> {
-        let floor = if self.bundle {
+        let floor = if self.native_source_bundle {
             if !(0..=15).contains(&physical.floor) {
                 return None;
             }
@@ -63,9 +60,6 @@ impl WirePositionFrame {
                 return None;
             }
             wire.floor.checked_neg()?
-        } else if self.bundle {
-            // Older clients also send the positive movement floor for ordinary Bundles.
-            oteryn_protocol_oteryn::world_spatial::runtime_floor(wire.floor)
         } else {
             wire.floor
         };
@@ -293,15 +287,17 @@ mod tests {
                 floor: 8
             }),
             Some(physical),
-            "an ordinary Bundle still accepts legacy positive input"
+            "an ordinary Bundle reads its raw +z wire floor back unchanged"
         );
-        let wire_position = ActorPosition {
-            x: 32373,
-            y: 31151,
-            floor: -8,
-        };
-        assert_eq!(legacy.project(physical), Some(wire_position));
-        assert_eq!(legacy.unproject(wire_position), Some(physical));
+        assert_eq!(
+            legacy.project(physical),
+            Some(ActorPosition {
+                x: 32373,
+                y: 31151,
+                floor: 8
+            }),
+            "ordinary Bundle contract remains explicit"
+        );
         assert!(
             WirePositionFrame::from_pin(Some(&bundle), bundle.movement_cells(), &pin, [0; 32])
                 .is_none(),
