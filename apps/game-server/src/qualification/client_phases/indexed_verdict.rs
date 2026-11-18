@@ -273,6 +273,30 @@ mod tests {
     }
 
     #[test]
+    fn qualification_spawn_wait_renews_watchdog_exemption_after_walk() -> TestResult {
+        runtime()?.block_on(async {
+            let harness = Box::leak(Box::new(Harness::new(true, Some(Duration::from_secs(10)))));
+            let watch = new_watch(harness);
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(95);
+            watch
+                .bound(Duration::from_secs(100), "row deadline", async {
+                    harness.bounded_wait(deadline, "spawn observation");
+                    harness.progress("walk");
+                    crate::qualification::client_world::wait_for_spawn_observation(
+                        harness,
+                        deadline,
+                        async {
+                            tokio::time::sleep(Duration::from_secs(90)).await;
+                            Ok(())
+                        },
+                    )
+                    .await
+                })
+                .await
+        })
+    }
+
+    #[test]
     fn bounded_observation_wait_preserves_its_real_budget_and_idle_watchdog() -> TestResult {
         runtime()?.block_on(async {
             let harness = Box::leak(Box::new(Harness::new(true, Some(Duration::from_secs(90)))));

@@ -218,23 +218,26 @@ async fn earn(
         .flat_map(|source| {
             source.points.iter().filter_map(|point| {
                 (spawns.creatures[point.creature as usize].key == "oteryn:creature.rat")
-                    .then_some((point.x, point.y, source.floor))
+                    .then_some((point.x, point.y, source.floor, point.respawn_ms))
             })
         })
         .collect();
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
+    // Reserve one authored respawn window as well as the fare-earning work budget.
+    let fare_work_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
+    let deadline = fare_work_deadline
+        + spawn_observation_budget(rats.iter().map(|&(_, _, _, respawn_ms)| respawn_ms));
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     while carried_gold(client)? < needed {
-        if tokio::time::Instant::now() >= deadline {
+        if tokio::time::Instant::now() >= fare_work_deadline {
             return Err(format!("step earn-fare: combat/loot budget expired; observed carried_gold={}, required={needed}; need sufficient authored player-obtainable loot", carried_gold(client)?).into());
         }
         let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            rats.iter().any(|&(x, y, floor)| {
+            rats.iter().any(|&(x, y, floor, _)| {
                 at.x.abs_diff(x).max(at.y.abs_diff(y)) <= 1 && at.floor == floor
             })
         })
         .ok_or("step earn-fare: no legitimate route to an authored rat spawn")?;
-        walk(client, world, &path).await?;
+        approach_action(fare_work_deadline, walk(client, world, &path)).await?;
         let target = approach_spawn_target(client, world, "Rat", deadline).await?;
         client_hunt::hunt_target(client, Some(target))
             .await

@@ -1317,6 +1317,10 @@ mod travel {
 
     const NAGINATA_PICK_HITS: u64 = 6;
 
+    fn initial_pick_revision(revision: Option<u64>, complete: bool) -> Option<u64> {
+        revision.or(complete.then_some(NAGINATA_PICK_HITS))
+    }
+
     fn pick_observation(revision: Option<u64>, complete: bool, before: u64) -> Option<u64> {
         match revision {
             Some(revision) if revision > before => Some(revision),
@@ -1483,7 +1487,26 @@ mod travel {
                     hits,
                     direction,
                 } => {
-                    let mut revision = if tool.is_some() {
+                    let open_pick = tool == Some(3456) && {
+                        let position = ActorPosition {
+                            x: i32::from(spot.x),
+                            y: i32::from(spot.y),
+                            floor: i16::from(spot.floor),
+                        };
+                        client
+                            .session_mut()
+                            .world_map_tile(position)
+                            .is_some_and(|tile| {
+                                let complete = !tile.more;
+                                initial_pick_revision(
+                                    base_ordinal_revision(&[tile], spot, ordinal),
+                                    complete,
+                                ) == Some(NAGINATA_PICK_HITS)
+                            })
+                    };
+                    let mut revision = if open_pick {
+                        NAGINATA_PICK_HITS
+                    } else if tool.is_some() {
                         observed_revision(client, &self.placement(spot, ordinal)?, spot, ordinal)?
                     } else {
                         0
@@ -2150,6 +2173,13 @@ mod travel {
             assert_eq!(pick_observation(Some(4), true, 4), None);
             assert_eq!(pick_observation(Some(5), true, 4), Some(5));
             assert_eq!(pick_observation(None, true, 4), Some(6));
+        }
+
+        #[test]
+        fn qualification_initial_pick_accepts_only_complete_open_projection() {
+            assert_eq!(initial_pick_revision(None, false), None);
+            assert_eq!(initial_pick_revision(Some(4), true), Some(4));
+            assert_eq!(initial_pick_revision(None, true), Some(6));
         }
 
         include!("travel_tests.rs");
@@ -5670,13 +5700,43 @@ async fn travel_to_spawn_target(
         )
     })?;
     walk(client, world, &path).await?;
+    let here = tile(client.world_spatial().actor_position)?;
+    let nearby_respawns = points.iter().filter_map(|(floor, point)| {
+        (*floor == here.floor && here.x.abs_diff(point.x).max(here.y.abs_diff(point.y)) <= 1)
+            .then_some(point.respawn_ms)
+    });
     approach_spawn_target(
         client,
         world,
         name,
-        tokio::time::Instant::now() + Duration::from_secs(75),
+        tokio::time::Instant::now() + spawn_observation_budget(nearby_respawns),
     )
     .await
+}
+
+fn spawn_observation_budget(respawn_ms: impl Iterator<Item = u32>) -> Duration {
+    let authored = Duration::from_millis(u64::from(respawn_ms.max().unwrap_or_default()));
+    // Leave room for spawn admission and the next visibility update.
+    Duration::from_secs(75).max(authored + Duration::from_secs(5))
+}
+
+async fn approach_action(
+    deadline: tokio::time::Instant,
+    operation: impl std::future::Future<Output = TestResult>,
+) -> TestResult {
+    if tokio::time::Instant::now() >= deadline {
+        return Err("spawn approach deadline expired before starting an action".into());
+    }
+    tokio::time::timeout_at(deadline, operation).await?
+}
+
+async fn wait_for_spawn_observation(
+    harness: &verdict::Harness,
+    deadline: tokio::time::Instant,
+    operation: impl std::future::Future<Output = TestResult>,
+) -> TestResult {
+    harness.bounded_wait(deadline, "spawn observation");
+    approach_action(deadline, operation).await
 }
 
 async fn approach_spawn_target(
@@ -5685,15 +5745,21 @@ async fn approach_spawn_target(
     name: &str,
     deadline: tokio::time::Instant,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
-    verdict::Harness::global().bounded_wait(deadline, "spawn observation");
     let mut steps = 0;
-    while steps < 32 && tokio::time::Instant::now() < deadline {
+    while tokio::time::Instant::now() < deadline {
         let here = client.world_spatial().actor_position;
         let Some(target) = client
             .world_entities()
             .and_then(|entities| nearest_spawn(entities.iter(), here, name))
         else {
-            client.service_liveness(Duration::from_millis(100)).await?;
+            if steps == 32 {
+                break;
+            }
+            wait_for_spawn_observation(verdict::Harness::global(), deadline, async {
+                client.service_liveness(Duration::from_millis(100)).await?;
+                Ok(())
+            })
+            .await?;
             client.take_events();
             continue;
         };
@@ -5706,7 +5772,10 @@ async fn approach_spawn_target(
         let Some(direction) = path.first() else {
             return Ok(entity);
         };
-        walk(client, world, &[*direction]).await?;
+        if steps == 32 {
+            break;
+        }
+        approach_action(deadline, walk(client, world, &[*direction])).await?;
         steps += 1;
     }
     Err("could not approach a live creature within the route budget".into())
@@ -6731,4 +6800,29 @@ fn qualification_routed_hunts_service_empty_spawns_and_approach_live_targets() {
     .filter_map(|(name, ok)| (!ok).then_some(name))
     .collect();
     assert!(missing.is_empty(), "missing caller behavior: {missing:?}");
+}
+
+#[test]
+fn qualification_approach_action_honors_deadline_during_pending_command() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()?
+        .block_on(async {
+            let start = tokio::time::Instant::now();
+            let budget = Duration::from_secs(1);
+            let result = approach_action(start + budget, async {
+                tokio::time::sleep(Duration::from_secs(10)).await;
+                Ok(())
+            })
+            .await;
+            assert!(result.is_err());
+            assert_eq!(start.elapsed(), budget);
+            Ok(())
+        })
+}
+
+#[test]
+fn qualification_spawn_budget_covers_authored_ninety_seconds() {
+    assert!(spawn_observation_budget([90_000].into_iter()) > Duration::from_secs(90));
 }
