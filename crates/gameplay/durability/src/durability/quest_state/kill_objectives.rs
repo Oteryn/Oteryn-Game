@@ -57,7 +57,8 @@ impl NativeObjectiveDeath {
             recipients
                 .into_iter()
                 .filter_map(|(actor, session, lease)| {
-                    let character = CharacterId::from_bytes(*lease.character_id().as_bytes()).ok()?;
+                    let character =
+                        CharacterId::from_bytes(*lease.character_id().as_bytes()).ok()?;
                     Some((
                         actor,
                         session,
