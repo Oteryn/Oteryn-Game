@@ -6,7 +6,10 @@ fn order_of_the_stag_use_preserves_main_era_quest_save() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    assert!(!admin.is_empty(), "PostgreSQL route must be nonempty when configured");
+    assert!(
+        !admin.is_empty(),
+        "PostgreSQL route must be nonempty when configured"
+    );
     super::kill_reward_e2e::scenario_thread::run("stag-main-era-use", || {
         let boat = callback("order-of-the-stag-boat-to-ada")?;
         assert!(boat.is_read_only());

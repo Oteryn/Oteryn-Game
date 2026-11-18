@@ -28,7 +28,10 @@ fn fenced_look_dispatch_shows_crystal_arena_goblet_inscriptions() -> TestResult 
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    assert!(!admin.is_empty(), "PostgreSQL route must be nonempty when configured");
+    assert!(
+        !admin.is_empty(),
+        "PostgreSQL route must be nonempty when configured"
+    );
     item_look::large_stack(item_look::scenario_with_goblets)
 }
 
@@ -60,7 +63,9 @@ pub(super) async fn client_looks(
             let (_, domains) = decode_snapshot_chunk(envelope.payload()).map_err(debug)?;
             for domain in domains {
                 if domain.domain_id == STATE_DOMAIN_CHARACTER_INVENTORY {
-                    entries = decode_character_inventory(domain.payload).map_err(debug)?.entries;
+                    entries = decode_character_inventory(domain.payload)
+                        .map_err(debug)?
+                        .entries;
                 }
             }
         }
@@ -86,28 +91,45 @@ pub(super) async fn client_looks(
         None,
     ];
     for ((key, _), inscription) in GOBLETS.into_iter().zip(inscriptions) {
-        let reference = index.definition_ref("Item", key, "definition-r1")
+        let reference = index
+            .definition_ref("Item", key, "definition-r1")
             .ok_or("goblet definition reference")?;
         expected.push((reference, inscription.map(str::to_owned)));
     }
     expected.sort_unstable();
-    let mut observed_refs: Vec<_> = entries.iter().map(|entry| entry.item_definition_ref).collect();
+    let mut observed_refs: Vec<_> = entries
+        .iter()
+        .map(|entry| entry.item_definition_ref)
+        .collect();
     observed_refs.sort_unstable();
-    assert_eq!(observed_refs, expected.iter().map(|(reference, _)| *reference).collect::<Vec<_>>());
+    assert_eq!(
+        observed_refs,
+        expected
+            .iter()
+            .map(|(reference, _)| *reference)
+            .collect::<Vec<_>>()
+    );
 
     let selection = ItemLookSelection { extended: true };
     let mut descriptions = Vec::new();
     for (offset, entry) in entries.iter().enumerate() {
         let command_id = u64::try_from(offset)? + 1;
         let payload = encode_item_look_intent_for(
-            ItemLookIntent { target: ItemLookTarget::Item(entry.handle) },
+            ItemLookIntent {
+                target: ItemLookTarget::Item(entry.handle),
+            },
             selection,
-        ).map_err(debug)?;
-        let frame = encode_client_command(1, &ClientCommandValue {
-            command_id,
-            command_type: COMMAND_TYPE_ITEM_LOOK_INTENT,
-            payload: &payload,
-        }).map_err(debug)?;
+        )
+        .map_err(debug)?;
+        let frame = encode_client_command(
+            1,
+            &ClientCommandValue {
+                command_id,
+                command_type: COMMAND_TYPE_ITEM_LOOK_INTENT,
+                payload: &payload,
+            },
+        )
+        .map_err(debug)?;
         client.write_u32(u32::try_from(frame.len())?).await?;
         client.write_all(&frame).await?;
         loop {
@@ -119,14 +141,17 @@ pub(super) async fn client_looks(
             let result = decode_command_result(envelope.payload()).map_err(debug)?;
             assert_eq!(result.command_id, command_id);
             assert_eq!(result.status, CommandStatus::Accepted);
-            let ItemLookResult::Text(text) = decode_item_look_result_for(result.payload, selection)
-                .map_err(debug)? else {
+            let ItemLookResult::Text(text) =
+                decode_item_look_result_for(result.payload, selection).map_err(debug)?
+            else {
                 return Err(format!("LOOK refused goblet {}", entry.item_definition_ref).into());
             };
             assert!(text.starts_with("You see "), "{text}");
             descriptions.push((
                 entry.item_definition_ref,
-                text.lines().find(|line| line.contains("Awarded to")).map(str::to_owned),
+                text.lines()
+                    .find(|line| line.contains("Awarded to"))
+                    .map(str::to_owned),
             ));
             break;
         }
