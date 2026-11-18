@@ -1104,6 +1104,11 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         "gameplay_transport/postgres_tests/proficiency_modification.rs",
         1,
     ),
+    // Threatened Dreams supplies the combat room for its Bundle fixture.
+    (
+        "gameplay_transport/postgres_tests/qcx_threatened_dreams.rs",
+        1,
+    ),
     ("gameplay_transport/postgres_tests/ranged_attack.rs", 1),
     // QUESTPC4 source callback and reset fixtures bind their explicit source room.
     (

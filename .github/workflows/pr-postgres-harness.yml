@@ -314,12 +314,17 @@ jobs:
               --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"
           fi
 
-      # The library test link peaks above the hosted runner's memory; add swap so it slows instead of dying.
+      # The library test build peaks above the hosted runner's memory: one rustc for the dispatch
+      # library tests reaches about 19 GB. Add swap so it slows instead of dying, and build only that
+      # crate without debug info to lower the peak (owner decision 2026-11-18). Other crates keep the
+      # line tables, so the cache restored from main stays valid for them.
       - name: Add swap for the library test build
         if: steps.scope.outputs.empty != 'true' && matrix.archive == 'lib'
         run: |
           set -euo pipefail
-          sudo fallocate -l 8G /mnt/oteryn-extra.swap
+          mkdir -p "$HOME/.cargo"
+          printf '[profile.dev.package.oteryn-gameplay-dispatch]\ndebug = 0\n' >> "$HOME/.cargo/config.toml"
+          sudo fallocate -l 16G /mnt/oteryn-extra.swap
           sudo chmod 600 /mnt/oteryn-extra.swap
           sudo mkswap /mnt/oteryn-extra.swap
           sudo swapon /mnt/oteryn-extra.swap
@@ -764,13 +769,17 @@ jobs:
 
   # The physical qualification runs as the `pr` shard set of node-boot-qualification.yml:
   # the same journeys and rows as one run.sh, split over hosted machines.
+  # Node boot is opt-in on pull requests (owner 2026-11-18, CI measurement): it is
+  # informational (owner 2026-11-09), so it runs only on PRs labelled `node-boot`,
+  # and heavy-gate does not wait for it. Protected main still runs it after each
+  # merge (merge-group-gate.yml), and it can be dispatched by hand.
   node_boot_plan:
     name: PR heavy / Node boot / plan shards
     if: >-
       github.event.pull_request.draft == false
       && github.event.pull_request.user.login != 'dependabot[bot]'
-      && contains(github.event.pull_request.labels.*.name, 'heavy-tests')
-      && (github.event.action != 'labeled' || github.event.label.name == 'heavy-tests')
+      && contains(github.event.pull_request.labels.*.name, 'node-boot')
+      && (github.event.action != 'labeled' || github.event.label.name == 'node-boot')
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -807,8 +816,8 @@ jobs:
     if: >-
       github.event.pull_request.draft == false
       && github.event.pull_request.user.login != 'dependabot[bot]'
-      && contains(github.event.pull_request.labels.*.name, 'heavy-tests')
-      && (github.event.action != 'labeled' || github.event.label.name == 'heavy-tests')
+      && contains(github.event.pull_request.labels.*.name, 'node-boot')
+      && (github.event.action != 'labeled' || github.event.label.name == 'node-boot')
     runs-on: ubuntu-24.04
     # W20a's natural day and W20b's light decay run serially for almost two hours.
     # Include build, the basic seam, World setup and the remaining journeys.
@@ -935,8 +944,8 @@ jobs:
       always()
       && github.event.pull_request.draft == false
       && github.event.pull_request.user.login != 'dependabot[bot]'
-      && contains(github.event.pull_request.labels.*.name, 'heavy-tests')
-      && (github.event.action != 'labeled' || github.event.label.name == 'heavy-tests')
+      && contains(github.event.pull_request.labels.*.name, 'node-boot')
+      && (github.event.action != 'labeled' || github.event.label.name == 'node-boot')
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -984,7 +993,7 @@ jobs:
   # window; wait for the real run or push after labelling.
   heavy_gate:
     name: heavy-gate
-    needs: [build, durability_postgres, node_boot]
+    needs: [build, durability_postgres]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -999,7 +1008,6 @@ jobs:
           IS_REAL_RUN: ${{ github.event.action != 'labeled' || github.event.label.name == 'heavy-tests' }}
           BUILD_RESULT: ${{ needs.build.result }}
           POSTGRES_RESULT: ${{ needs.durability_postgres.result }}
-          NODE_BOOT_RESULT: ${{ needs.node_boot.result }}
           REPOSITORY: ${{ github.repository }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -1020,12 +1028,9 @@ jobs:
             exit 0
           fi
           if [[ "$IS_REAL_RUN" == 'true' ]]; then
-            echo "Heavy harness results: build=$BUILD_RESULT durability_postgres=$POSTGRES_RESULT node_boot=$NODE_BOOT_RESULT"
-            # Node boot is informational until NODEBOOT-CONTROL-LOST is fixed (owner decision
-            # 2026-11-09): it still runs and reports, but does not gate the merge.
-            if [[ "$NODE_BOOT_RESULT" != 'success' ]]; then
-              echo "::warning title=node boot (informational)::node_boot=$NODE_BOOT_RESULT"
-            fi
+            echo "Heavy harness results: build=$BUILD_RESULT durability_postgres=$POSTGRES_RESULT"
+            # Node boot is informational (owner 2026-11-09) and opt-in on PRs through the
+            # `node-boot` label (owner 2026-11-18); heavy-gate does not wait for it.
             [[ "$BUILD_RESULT" == 'success' && "$POSTGRES_RESULT" == 'success' ]]
             exit
           fi

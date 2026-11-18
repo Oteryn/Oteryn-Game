@@ -61,6 +61,10 @@ cover only the files no cut reached, and the files a cut flagged.
 ## 4. Between rounds
 
 - Triage per `SKILL.md` §6, sweep per `batch-review.md` §3.
+- Verification of a round's P0/P1: read-only Codex Cloud runs grouped by
+  area, each told to trace the real caller and to default to refuted when
+  unsure (authorized for loops only, `OWNER_FUNDED_AI_POLICY.md`, *Owner review
+  loop*); a Claude subagent may take the hard calls as a second opinion.
 - A P0 gets its own fix PR at once. Other confirmed P0/P1 go into a few fix
   PRs grouped by area, with disjoint files so their lanes run in parallel.
   P2 go into one grouped P2 PR per round, opened after that round's P0/P1
