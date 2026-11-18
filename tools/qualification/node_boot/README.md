@@ -108,6 +108,17 @@ holds the disposable stack's passwords). The second reruns only the seam stage
 against the same node and characters. Neither reports `NODE_BOOT_PASS`: they end
 with `NODE_BOOT_PARTIAL` and exit 3. Teardown removes the stack and the state.
 
+Use the row 298 shard to run `W15c.full` on a fresh stack.
+
+```sh
+PLATFORM_SOURCE=/path/to/pinned/platform NODE_BOOT_SKIP_BASIC=1 \
+  NODE_BOOT_E2E_ONLY=rows OTERYN_E2E_ROW_BATCH=298:1 \
+  bash tools/qualification/node_boot/run.sh
+```
+
+Look for `W15c_boat` and the `W15c_walk` legs, including
+`fresh-admission-grizzly-adams` from the saved ramp foot.
+
 Every run starts PostgreSQL with lock-wait (200 ms), deadlock and 500 ms
 slow-statement logging and `pg_stat_statements`. `pg_observe.py` samples blocked,
 waiting and long transactions every 2 s and dumps the stage's top statements and
