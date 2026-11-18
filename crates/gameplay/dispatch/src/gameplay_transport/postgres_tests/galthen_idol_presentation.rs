@@ -160,11 +160,8 @@ fn scenario() -> TestResult {
         owner.premium_coordinator = Some(&coordinator);
         owner.admit_premium(id(40), deps.admitted.game_session_id);
         owner.active_generation = Some(active);
-        let catalogue =
-            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
-                .map_err(debug)?
-                .catalogue()
-                .clone();
+        let catalogue = oteryn_gameplay_quests::quest::QuestStateCatalogue::empty("content-1")
+            .ok_or("empty quest catalogue")?;
         let bindings = oteryn_gameplay_quests::quest::authored_bindings::Bindings::parse(
             include_bytes!("galthen_idol_presentation/binding.json"),
         )?;
@@ -243,6 +240,7 @@ fn scenario() -> TestResult {
                 )),
             ),
         ] {
+            super::maintain_ready(&harness.root).await?;
             let outcome = owner
                 .use_event_item(
                     deps.actor,
