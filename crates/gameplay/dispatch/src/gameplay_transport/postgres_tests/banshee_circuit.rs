@@ -311,9 +311,7 @@ fn scenario(circuit: Circuit) -> TestResult {
             assert_eq!(appearance(circuit.switch)?, 2773);
             assert_eq!(map.facts.next_movement_decay_time(), None);
 
-            let permit = owner.spell_lane_permit().await.ok_or("spell lane")?;
-            let (origin, entered) = {
-                use crate::movement::CardinalStep;
+            let origin = {
                 let mut runtime = owner.runtime.lock().await;
                 let origin = runtime.read_actor_position(actor).map_err(debug)?;
                 let closed = crate::map::floor::BundleDoors(&map.facts);
@@ -323,33 +321,36 @@ fn scenario(circuit: Circuit) -> TestResult {
                     actor,
                     session,
                     origin,
-                    CardinalStep::North,
+                    crate::movement::CardinalStep::North,
                     false,
                     &closed,
                 )
                 .map_err(debug)?;
-                let origin = runtime.commit_source_step(approach).map_err(debug)?;
-                let proof = crate::map::floor::prepare_bundle_step(
-                    &runtime,
-                    owner.movement_cells(),
-                    actor,
-                    session,
-                    origin,
-                    CardinalStep::East,
-                    false,
-                    &closed,
-                )
-                .map_err(debug)?;
-                assert_eq!(proof.destination(), local(plate));
-                let entered = runtime.commit_source_step(proof).map_err(debug)?;
-                (origin, entered)
+                runtime.commit_source_step(approach).map_err(debug)?
             };
             let before_step = owner.owner_now().get();
+            let (outcome, _) = owner
+                .ordinary_paced_step(
+                    actor,
+                    session,
+                    crate::gameplay_transport::StepDirection::East,
+                    Some(origin),
+                    None,
+                )
+                .await;
+            assert_eq!(
+                outcome.disposition,
+                crate::gameplay_transport::StepDisposition::Moved
+            );
             assert_eq!(
                 owner
-                    .step_quest_callback(&permit, actor, session, origin, entered)
-                    .await,
-                entered
+                    .runtime
+                    .lock()
+                    .await
+                    .read_actor_position(actor)
+                    .map_err(debug)?
+                    .position(),
+                local(plate)
             );
             let due = map
                 .facts
