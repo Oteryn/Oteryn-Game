@@ -181,6 +181,14 @@ async fn exercise(h: &Harness, mission_fixture: Mission) -> TestResult {
     .fetch_optional(&h.pool)
     .await?;
     assert_eq!(stage, (!carries_soil).then_some(1));
+    let receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_quest_npc_program_receipts
+         WHERE character_id=encode($1,'hex')::uuid AND command_id=702",
+    )
+    .bind(id(41).as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(receipts, i64::from(!carries_soil));
     Ok(())
 }
 
