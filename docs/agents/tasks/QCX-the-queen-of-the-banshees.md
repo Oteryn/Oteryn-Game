@@ -59,3 +59,5 @@ The existing startup placement overlay restores action 25019 on the three Hidden
 ## Verification
 
 PG via shard (pgsplit build files applied on `5f5f96a04d817c96e928b988190f67a3d6701601`) baseline executable, 0 passed and 3 failed in 67.32 s. The native reward binder first failed on the untagged Stone Skin Amulet chest. The final-room STEP completed in 20.87 s and exposed the underground donor target. The Hidden and Plague callbacks dispatched on the fixtures in 13.14 s and 14.32 s before the native placement check exposed the missing return action. The final regression also checks all three action tiles, both unique IDs and the six real USE plans.
+
+The callback registry and SOURCE proof were regenerated with the existing authoring tools. The quest tree generator then refreshed only shared source-change provenance hashes in 28 generated definitions and their catalogue index. A structural comparison found no gameplay field changes in those records.
