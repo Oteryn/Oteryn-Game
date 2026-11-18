@@ -405,6 +405,8 @@ async fn wave_scenario(
         .remove_test_actor(blocker)
         .map_err(debug)?;
 
+    // An occupied USE consumes the per-player world action cooldown.
+    tokio::time::sleep(Duration::from_millis(200)).await;
     let (release, released) = std::sync::mpsc::channel::<()>();
     let (ready, started) = tokio::sync::oneshot::channel();
     let blocking = tokio::task::spawn_blocking(move || {
