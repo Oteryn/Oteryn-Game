@@ -192,7 +192,7 @@ pub(super) async fn qualify(
     Ok(())
 }
 
-async fn teleport(
+pub(in crate::gameplay_transport) async fn teleport(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     session: GameSessionId,

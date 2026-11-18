@@ -51,6 +51,7 @@ fn scenario_case(
         name == "uneasy-alliance-crystal" || m44_children || m44_lions || m44_amphora || m44_flower;
     let qm48 = name == "qm48/mammoth";
     let m03_use = name == super::super::qengine_m03_use::NAME;
+    let bosscred_forge = name == super::super::bosscred_inquisition::NAME;
     let qd_world = name.starts_with(super::super::qd_world::PREFIX);
     let elemental_pin = name.starts_with("qn1-elemental-");
     let qm50 = name == "goblin-merchant-elevator-upper";
@@ -352,6 +353,8 @@ fn scenario_case(
     let draconia_escape = name.starts_with("draconia-escape-");
     let mut callback = if m03_use {
         super::super::qengine_m03_use::callback()?
+    } else if bosscred_forge {
+        super::super::bosscred_inquisition::fixture_callback(callback("inquisition-portal-2167")?)
     } else if qd_world {
         super::super::qd_world::callback(name)?
     } else if engenc_asura {
@@ -789,6 +792,8 @@ fn scenario_case(
             &super::super::questpc7_grave::objects()?,
             &[],
         )?
+    } else if bosscred_forge {
+        super::super::bosscred_inquisition::world(&callback)?
     } else if name == "questpc7-ferumbras" {
         world_with_objects(
             &callback,
@@ -1872,6 +1877,11 @@ fn scenario_case(
                 &mut admitted,
                 &h,
                 &authority,
+            ))
+            .await?;
+        } else if bosscred_forge {
+            Box::pin(super::super::bosscred_inquisition::exercise(
+                &mut owner, &mut admitted, &deps, &h,
             ))
             .await?;
         } else if qd_world {
