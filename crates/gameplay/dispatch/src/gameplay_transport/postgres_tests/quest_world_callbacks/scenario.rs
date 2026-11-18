@@ -26,6 +26,12 @@ fn scenario_case(
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
     let earth_birch = name == super::super::fknow_earth::NAME;
+    let energy_replicas = name == super::super::fknow_energy::NAME;
+    let name = if energy_replicas {
+        "qengine-rewards-forgotten-story"
+    } else {
+        name
+    };
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
     let ring_offering =
@@ -2604,7 +2610,12 @@ fn scenario_case(
         } else if feaster {
             super::super::questpc7_feaster::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-forgotten-story" {
-            super::super::questpc7_forgotten_story::exercise(&mut owner, &mut admitted, &h).await?;
+            if energy_replicas {
+                super::super::fknow_energy::exercise(&owner, &admitted, &h).await?;
+            } else {
+                super::super::questpc7_forgotten_story::exercise(&mut owner, &mut admitted, &h)
+                    .await?;
+            }
         } else if name == "qengine-rewards-heart-story" {
             super::super::questpc7_heart_story::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-grimvale-story" {

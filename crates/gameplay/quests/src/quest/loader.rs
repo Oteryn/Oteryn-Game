@@ -383,6 +383,10 @@ pub(super) fn lower_embedded_quest_state(
         .map_err(QuestLoadError::Json)?;
     super::npc_rules::albinius_predecessor::register(&mut lowered.catalogue)
         .map_err(QuestLoadError::Json)?;
+    super::source_deaths::extend_replica_credit(&mut lowered.catalogue)
+        .map_err(QuestLoadError::Json)?;
+    super::npc_rules::albinius_predecessor::register(&mut lowered.catalogue)
+        .map_err(QuestLoadError::Json)?;
     restrict_runtime_scope(lowered, content_revision)
 }
 

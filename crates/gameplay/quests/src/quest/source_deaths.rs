@@ -8,7 +8,7 @@ use super::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
 };
 mod forgotten_knowledge;
-pub(super) use forgotten_knowledge::extend as extend_forgotten_knowledge;
+pub(super) use forgotten_knowledge::{extend as extend_forgotten_knowledge, extend_replica_credit};
 
 use serde::Deserialize;
 use std::{collections::BTreeMap, sync::OnceLock};
