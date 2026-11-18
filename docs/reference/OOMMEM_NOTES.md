@@ -28,9 +28,9 @@ bytes. Its link used 239 rlibs (1,953,996,922 bytes) and 263 objects
 invoked a linker. A stable `rustc --test --emit=mir` replay of the same
 verbose command recovered 4,339 unique registered test names and a
 4,339-entry libtest descriptor array. The output was emitted before
-rustc was OOM-killed, without LLVM object generation. Of those registrations, 2,238
-belong to the generated PG mounts and 2,101 to all other mounts and
-modules. The retained offline-death retry is registered exactly once.
+rustc was OOM-killed, without LLVM object generation. The generated PG
+mounts account for 2,238 registrations. The remaining mounts and modules
+account for 2,101. The retained offline-death retry is registered exactly once.
 The MIR inventory gives an exact baseline for comparing names after a
 split. The baseline executable size and final link input totals are
 unavailable.
@@ -41,11 +41,12 @@ RSS continued rising after codegen started. The cgroup recorded one OOM
 kill when rustc received SIGKILL. At the last sample the cgroup held
 17.01 GB of anonymous memory and 23.02 MB of file-backed memory.
 The dispatch test process was the largest resident process and there was
-no final linker invocation. The dispatch source tree has 4,238 test attributes and 29 direct lifted-test mounts in
-`lib.rs`. The build script generates another 735 PostgreSQL module mounts
-for the same test crate. The PostgreSQL subtree contains 2,171 test
-attributes, including nested helper files. A repeat of the baseline confirmed 735 generated module mounts and the
-identical 48 direct archive inputs by size. The fresh verbose command also
+no final linker invocation. The dispatch source tree has 4,238 test
+attributes and 29 direct lifted-test mounts in `lib.rs`. The build script
+generates another 735 PostgreSQL module mounts for the same test crate.
+The PostgreSQL subtree contains 2,171 test attributes, including nested
+helper files. A repeat of the baseline confirmed all 735 generated module
+mounts and the identical 48 direct archive inputs by size. The fresh verbose command also
 confirmed line tables and an active incremental cache. Neither nightly nor
 `cargo llvm-lines` is installed in the retained environment.
 
@@ -118,7 +119,8 @@ The executable also carried 217 non-mount tests retained by the scratch
 control. No names were added relative to the base. The link used
 241 rlibs (1,487,365,036 bytes) and 258 objects (1,162,448,280 bytes).
 Its measured peak was 4,134,660 KiB over 13.190 s. Replaying the captured
-link command independently peaked at 4,136,800 KiB over 9.687 s.
+link command independently peaked at 4,136,800 KiB over 9.687 s. The
+executable identifies LLD 23.1.5 in its ELF `.comment` section.
 
 The focused
 `boss_activity_postgres_offline_native_death_deadline_retry_keeps_retained_trigger`
