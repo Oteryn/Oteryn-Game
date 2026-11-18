@@ -130,7 +130,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
-use super::actor_spell::ChannelSpellStates;
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
 use crate::{
     content::{CollisionClass, LogicalCell},
@@ -154,7 +153,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) fn prepare_wrath_keeper_poison(
         &self,
         runtime: &ChannelRuntimeV1,
-        states: &ChannelSpellStates,
         map: &BundleMap,
         actor: ExactActorRef,
         tool: [u8; 16],
@@ -182,8 +180,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let now = self.owner_now().get();
         if let Some((keeper, deadline)) = round.active {
             if deadline > now
-                && runtime.read_actor_position(keeper).is_ok()
-                && !states.is_dead(keeper)
+                && runtime
+                    .companion_snapshot(keeper)
+                    .is_ok_and(|snapshot| snapshot.health > 0)
             {
                 return Err(UseDisposition::Committed);
             }
@@ -264,7 +263,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return false;
         };
         round.active = Some((actors[0], deadline));
-        let _ = map.facts.emit_movement_effect(target, 15);
+        let _ = map.facts.emit_movement_effect(target, 8);
         let _ = map.facts.emit_movement_effect(spawn.tile, 11);
         true
     }
