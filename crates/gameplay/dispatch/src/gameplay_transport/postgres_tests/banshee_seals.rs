@@ -968,20 +968,27 @@ async fn exercise_queen(
         crate::gameplay_transport::pvp_live::lock_mut(&mut spells, actor, session)
             .on_aggression(owner.owner_now());
     }
-    let mixed = super::classic_quests::talk(owner, admitted, queen, 11, "banshee yes").await?;
-    assert!(
-        mixed
-            .iter()
-            .all(|line| !line.contains("spilled too much blood")),
-        "a static dialogue keyword must keep the kiss topic pending"
-    );
-    let refused = super::classic_quests::talk(owner, admitted, queen, 12, "yes").await?;
+    for (command, text) in [
+        (11, "banshee yes"),
+        (12, "addon yes"),
+        (13, "moonorchid holy orchid yes"),
+    ] {
+        let mixed = super::classic_quests::talk(owner, admitted, queen, command, text).await?;
+        assert!(
+            mixed
+                .iter()
+                .all(|line| line != "Sorry, not possible."
+                    && !line.contains("spilled too much blood")),
+            "a higher priority dialogue keyword must keep the kiss topic pending: {text}"
+        );
+    }
+    let refused = super::classic_quests::talk(owner, admitted, queen, 14, "yes").await?;
     assert!(
         refused
             .iter()
             .any(|line| line.contains("spilled too much blood"))
     );
-    let repeated = super::classic_quests::talk(owner, admitted, queen, 13, "yes").await?;
+    let repeated = super::classic_quests::talk(owner, admitted, queen, 15, "yes").await?;
     assert!(
         !repeated
             .iter()
@@ -1021,11 +1028,11 @@ async fn exercise_queen(
         .await
         .read_actor_position(actor)
         .map_err(debug)?;
-    super::classic_quests::talk(owner, admitted, queen, 14, "seventh seal").await?;
-    for command in 15..=20 {
+    super::classic_quests::talk(owner, admitted, queen, 16, "seventh seal").await?;
+    for command in 17..=22 {
         super::classic_quests::talk(owner, admitted, queen, command, "yes").await?;
     }
-    super::classic_quests::talk(owner, admitted, queen, 21, "kiss").await?;
+    super::classic_quests::talk(owner, admitted, queen, 23, "kiss").await?;
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
@@ -1035,7 +1042,7 @@ async fn exercise_queen(
             actor,
             UseCommand {
                 game_session_id: session,
-                command_id: 22,
+                command_id: 24,
                 item_fence: Some(fence.item_fence()),
             },
             oteryn_protocol_oteryn::npc_service::NpcTalkIntent {
@@ -1078,12 +1085,12 @@ async fn exercise_queen(
         .bind(character_id)
         .execute(&h.pool)
         .await?;
-    super::classic_quests::talk(owner, admitted, queen, 23, "seventh seal").await?;
-    for command in 24..=29 {
+    super::classic_quests::talk(owner, admitted, queen, 25, "seventh seal").await?;
+    for command in 26..=31 {
         super::classic_quests::talk(owner, admitted, queen, command, "yes").await?;
     }
-    super::classic_quests::talk(owner, admitted, queen, 30, "kiss").await?;
-    super::classic_quests::talk(owner, admitted, queen, 31, "yes").await?;
+    super::classic_quests::talk(owner, admitted, queen, 32, "kiss").await?;
+    super::classic_quests::talk(owner, admitted, queen, 33, "yes").await?;
     let at = owner
         .runtime
         .lock()
