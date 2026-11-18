@@ -266,6 +266,7 @@ pub(super) mod faults {
     use tokio::sync::oneshot;
     pub(in crate::gameplay_transport) const REMOVAL: u8 = 0;
     pub(in crate::gameplay_transport) const PLAYER: u8 = 1;
+    pub(in crate::gameplay_transport) const QUEST_STEP: u8 = 2;
     thread_local! {static ARMED:RefCell<Option<(u8,bool,oneshot::Sender<()>)>>=const{RefCell::new(None)};}
     pub(in crate::gameplay_transport) fn arm(family: u8, after: bool) -> oneshot::Receiver<()> {
         let (sender, receiver) = oneshot::channel();

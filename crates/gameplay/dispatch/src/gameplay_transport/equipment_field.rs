@@ -49,6 +49,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             cycle,
         )
         .await
+        .map(|(amount, _)| amount)
     }
 
     /// The direct hit already accounts for passive protection. Read active
@@ -60,7 +61,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         element: ReferenceResistanceKind,
         damage: u32,
         cycle: [u8; 32],
-    ) -> Result<u32, DurabilityError> {
+    ) -> Result<(u32, bool), DurabilityError> {
         self.equipped_damage(tx, read, element, damage, ProtectionSource::Direct, cycle)
             .await
     }
@@ -77,7 +78,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         damage: u32,
         source: ProtectionSource,
         cycle: [u8; 32],
-    ) -> Result<u32, DurabilityError> {
+    ) -> Result<(u32, bool), DurabilityError> {
         let unavailable = || DurabilityError::Unavailable;
         let content = self
             .active_generation
@@ -225,6 +226,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             .get(&element)
             .map_or(Some(damage), |percent| apply_protection(damage, *percent))
             .ok_or_else(unavailable)?;
+        let mut spent_charge = false;
         for (item, definition, target, expected_revision, percent) in charged {
             if apply_protection(damage, percent).is_none_or(|after| after >= damage) {
                 continue;
@@ -255,7 +257,11 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             if result.disposition != oteryn_protocol_oteryn::timed_item::TimedDisposition::Ok {
                 return Err(unavailable());
             }
+            spent_charge = true;
         }
-        u32::try_from(reduced).map_err(|_| unavailable())
+        Ok((
+            u32::try_from(reduced).map_err(|_| unavailable())?,
+            spent_charge,
+        ))
     }
 }

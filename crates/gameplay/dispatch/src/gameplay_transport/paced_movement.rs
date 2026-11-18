@@ -420,6 +420,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         let snapshot = self
                             .step_quest_callback(&mut permit, actor, session, origin, snapshot)
                             .await;
+                        if permit.has_unresolved() {
+                            let runtime = self.runtime.lock().await;
+                            self.states.chat.close_out_of_range(&runtime, session);
+                            return (
+                                StepOutcome {
+                                    disposition: StepDisposition::Moved,
+                                    moved_to: self.wire_observation(&runtime, snapshot.position()),
+                                },
+                                Some(duration),
+                            );
+                        }
                         let snapshot = self
                             .step_grizzly_boss(&permit, actor, session, origin, snapshot)
                             .await;

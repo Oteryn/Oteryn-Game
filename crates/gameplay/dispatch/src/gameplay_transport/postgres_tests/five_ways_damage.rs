@@ -116,8 +116,17 @@ pub(super) async fn exercise(
         assert_eq!(charges(h).await?, Some(4));
         step(owner, mover, StepDirection::West, 1).await?;
         assert_eq!(charges(h).await?, Some(4));
+        let before_retry = health(owner, actor, session).await?;
+        use crate::gameplay_transport::field_removal::faults::{QUEST_STEP, arm};
+        let mut committed = arm(QUEST_STEP, true);
         step(owner, mover, StepDirection::East, 2).await?;
+        committed.try_recv()?;
         assert_eq!(charges(h).await?, Some(3));
+        assert_eq!(health(owner, actor, session).await?, before_retry);
+        step(owner, mover, StepDirection::West, 1).await?;
+        let after_retry = health(owner, actor, session).await?;
+        assert!((1..=15).contains(&before_retry.saturating_sub(after_retry)));
+        assert_eq!(charges(h).await?, Some(3), "recovery installs the hit without a second debit");
     } else {
         assert!((31..=72).contains(&after_fire.saturating_sub(after_physical)));
     }

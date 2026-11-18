@@ -46,15 +46,8 @@ impl PendingStepDamage {
         )
     }
 
-    fn matches_current(
-        &self,
-        runtime: &ChannelRuntimeV1,
-        states: &ChannelSpellStates,
-        map: &BundleMap,
-    ) -> bool {
+    fn matches_actor(&self, runtime: &ChannelRuntimeV1, states: &ChannelSpellStates) -> bool {
         runtime.read_actor_position(self.actor) == Ok(self.entered)
-            && !map.facts.base_hidden(self.source_key)
-            && map.facts.object_revision(self.source_key) == self.source_revision
             && states
                 .get(runtime, self.actor, self.session)
                 .is_some_and(|state| state.revision() == self.vitals_revision)
@@ -156,9 +149,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         pending: PendingStepDamage,
     ) {
         let Some(map) = self.bundle_map() else {
-            permit
-                .open_commit_window(pending, PendingStepDamage::park)
-                .park();
             return;
         };
         let runtime = self.runtime.lock().await;
@@ -180,8 +170,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         states: &mut ChannelSpellStates,
         map: &BundleMap,
     ) {
-        let current = pending.matches_current(runtime, states, map);
-        if !current && !recovering {
+        // An actor that has left this generation cannot receive the retained
+        // HP successor. Its old attempt must never fence later Channel work.
+        if !pending.matches_actor(runtime, states) {
+            return;
+        }
+        let current_source = !map.facts.base_hidden(pending.source_key)
+            && map.facts.object_revision(pending.source_key) == pending.source_revision;
+        if !current_source && !recovering {
             return;
         }
         let mut window = permit.open_commit_window(pending, PendingStepDamage::park);
@@ -217,7 +213,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .chain_update(hit.vitals_revision.to_be_bytes())
                         .chain_update(hit.source_revision.to_be_bytes())
                         .chain_update(hit.raw.to_be_bytes())
-                        .chain_update(hit.hit.effect.to_be_bytes())
+                        .chain_update([
+                            match hit.hit.kind {
+                                StepDamageKind::Fire => 0,
+                                StepDamageKind::Physical => 1,
+                            },
+                            hit.hit.effect,
+                        ])
                         .finalize()
                         .into();
                     if recovering
@@ -233,13 +235,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         tx.into_inner().rollback().await?;
                         return Ok(true);
                     }
-                    if !current {
+                    if !current_source {
                         tx.into_inner().rollback().await?;
                         return Ok(false);
                     }
                     // Crystal Player::blockHit (player.cpp:3920-3950) consumes a
                     // charge on ordinary absorption; field-only resistance is excluded.
-                    let reduced = owner
+                    let (reduced, spent_charge) = owner
                         .equipped_step_damage(
                             &mut tx,
                             &read,
@@ -248,23 +250,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             hit.occurrence,
                         )
                         .await?;
+                    let occurrence = hit.occurrence;
+                    window.attempt_mut().reduced = reduced;
+                    if !spent_charge {
+                        tx.into_inner().rollback().await?;
+                        return Ok(true);
+                    }
                     pvp_live::record_field_cycle_in_transaction(
-                        &mut tx,
-                        &read,
-                        hit.occurrence,
-                        binding,
+                        &mut tx, &read, occurrence, binding,
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    window.attempt_mut().reduced = reduced;
                     pvp_live::commit_live_pvp_transaction(tx.into_inner(), deadline, window)
                         .await?;
+                    #[cfg(test)]
+                    if crate::gameplay_transport::field_removal::faults::take(
+                        crate::gameplay_transport::field_removal::faults::QUEST_STEP,
+                        true,
+                    ) {
+                        return Err(DurabilityError::Unavailable);
+                    }
                     Ok(true)
                 })
             })
             .await;
         match result {
-            Ok(true) if current => {
+            Ok(true) => {
                 let hit = window.install();
                 self.apply_quest_amount(
                     runtime,
@@ -277,7 +288,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     hit.reduced,
                 );
             }
-            Ok(_) => {
+            Ok(false) => {
                 window.release();
             }
             Err(_) => {
