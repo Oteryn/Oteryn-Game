@@ -41,8 +41,15 @@ Native kill and encounter infrastructure exists on main. The NPC interpreter als
 
 ## OPEN-FACTS
 
-Global numeric item IDs where the donor/item catalogue supplies no proven identity, Faloriel's price, XP, Sculptor Apprentice eligibility, precise Sun and Sea award trigger, Global confirmation of outfit numeric IDs, Global Wanted-portal level/cooldown/reset rules, owl trigger cells, and any additional completion or replay policy absent from the snapshot. Crystal numbers are source witnesses for internal state and item identity. They do not override explicit Global action, count or route facts.
+Global numeric item IDs where the donor/item catalogue supplies no proven identity, Faloriel's price, XP, Sculptor Apprentice eligibility, precise Sun and Sea award trigger, Global confirmation of outfit numeric IDs, Global Urmahlullu level requirement, Wanted-portal level/cooldown/reset rules, owl trigger cells, and any additional completion or replay policy absent from the snapshot. Crystal numbers are source witnesses for internal state and item identity. They do not override explicit Global action, count or route facts.
 
 ## PARTIAL
 
 Fafnar's Wrath activation through Sun Medal, Midnight Rituals and Cordon, Alyxo's preceding bosses/cultists and three hand-ins, Revenge of the Ogres and Bijou, Shark, Aspiring Oracle and Mosaic, Wanted and outfit, both shortcuts, Yonan assembly and Sun and Sea remain unqualified. The chosen approximation and held world content still carry the differences listed above.
+
+## Verification
+
+- PG via shard (pgsplit build files applied on `a3a3e25acf95e50b0b895b98a717a3755214f63e`). With the fixed rules, the Alyxo case passed in **51.628737927 s**. Its fixture writes prerequisite states through receipted quest transitions and exercises the live NPC transaction through the Character revision sequencer.
+- A baseline replay on the same fixture restored the original Alyxo programme from the base SHA locally. In **30.23 s**, it failed the intended assertion because Alyxo committed the claim and changed inventory with the lyre hand-in missing. The fixed rules were restored after the replay. Earlier attempts caught a fixture import error and a rejected raw progress seed. Those attempts did not reach the claim.
+- The same filter without the PostgreSQL URL returned successfully in **0.00 s**. This confirms the route-less guard.
+- Quest authoring passed all 44 checks. Formatting and dispatch library Clippy passed. The World compiler checked one pin and regenerated the same digest `0676b1568f55a55fbe994f344a8e0c60debf766751d12849f56c19f60c93aae5`. This revision of the compiler requires an output directory for `pin-check`.
