@@ -187,37 +187,34 @@ impl Skirmish {
                 recipients.push(session);
             }
         }
-        if !proofs.is_empty() {
-            runtime.commit_quest_relocation(proofs, || true)?;
+        // Crystal commander_kills.lua:14-19 preserves monsters with a master.
+        // The timeout in action_drume.lua:23-32 removes every monster in the room.
+        let mut retired = Vec::new();
+        for actor in runtime.current_live_creature_census()? {
+            if !super::super::quest_callbacks::room_contains(
+                room,
+                runtime.read_actor_position(actor)?.position(),
+            ) || (matches!(reason, Ejection::Defeat)
+                && (runtime.native_summon_master(actor).is_some()
+                    || runtime
+                        .companion_snapshot(actor)
+                        .is_ok_and(|snapshot| snapshot.state.master.is_some())))
+            {
+                continue;
+            }
+            retired.push(actor);
         }
-        // The successful move consumes this player's room presence. If cleanup
-        // retries after a creature-removal error, these sessions are already outside.
-        // Crystal commander_kills.lua:19 and action_drume.lua:31.
+        if !proofs.is_empty() || !retired.is_empty() {
+            runtime.commit_quest_relocation_with_retirements(proofs, &retired, || true)?;
+        }
+        // Crystal commander_kills.lua:19 and action_drume.lua:31. Only
+        // publish feedback after the whole battlefield exit commits.
         let notice = match reason {
             Ejection::Defeat => "You lost the skirmish.",
             Ejection::Timeout => "Your time is over.",
         };
         for session in recipients {
             self.feedback.push(session, notice);
-        }
-        // Crystal commander_kills.lua:14-19 preserves monsters with a master.
-        // The timeout in action_drume.lua:23-32 removes every monster in the room.
-        for actor in runtime.current_live_creature_census()? {
-            // An earlier removal can also retire the removed master's children.
-            if !runtime.contains_live_creature(actor)
-                || !super::super::quest_callbacks::room_contains(
-                    room,
-                    runtime.read_actor_position(actor)?.position(),
-                )
-                || (matches!(reason, Ejection::Defeat)
-                    && (runtime.native_summon_master(actor).is_some()
-                        || runtime
-                            .companion_snapshot(actor)
-                            .is_ok_and(|snapshot| snapshot.state.master.is_some())))
-            {
-                continue;
-            }
-            runtime.remove_encounter_actor(actor)?;
         }
         // Crystal commander_kills.lua:23 emits a single effect at the exit.
         if matches!(reason, Ejection::Defeat) {

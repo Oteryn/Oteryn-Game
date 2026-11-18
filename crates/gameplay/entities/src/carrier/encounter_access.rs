@@ -361,12 +361,29 @@ impl ChannelRuntimeV1 {
         players: Vec<P>,
         project: impl FnOnce() -> bool,
     ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
+        self.commit_quest_relocation_with_retirements(players, &[], project)
+    }
+
+    /// An encounter exit publishes relocation and the retirement of its exact
+    /// live roster in one carrier transaction.
+    pub fn commit_quest_relocation_with_retirements<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        retired: &[ExactActorRef],
+        project: impl FnOnce() -> bool,
+    ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
         self.owner_fence()?;
-        if players.len() > self.actor_slot_capacity() {
+        if players.len().saturating_add(retired.len()) > self.actor_slot_capacity() {
             return Err(CarrierError::PlanConflict);
         }
         for proof in &players {
             proof.validate_current(self)?;
+        }
+        if retired
+            .iter()
+            .any(|actor| !self.contains_live_creature(*actor))
+        {
+            return Err(CarrierError::CreatureTargetMismatch);
         }
         let mut snapshots = Vec::new();
         snapshots
@@ -376,6 +393,12 @@ impl ChannelRuntimeV1 {
         let result = (|| {
             for proof in players {
                 snapshots.push(self.commit_source_step(proof)?);
+            }
+            for &actor in retired {
+                // An earlier removal may have retired this master's child.
+                if self.contains_live_creature(actor) {
+                    self.remove_encounter_actor(actor)?;
+                }
             }
             if !project() {
                 return Err(CarrierError::PlanConflict);
