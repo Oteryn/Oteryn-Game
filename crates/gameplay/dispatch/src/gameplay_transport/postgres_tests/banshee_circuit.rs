@@ -164,7 +164,7 @@ fn scenario(circuit: Circuit) -> TestResult {
             1,
             generation.identity().server_artifact_digest(),
             generation.identity().client_artifact_digest(),
-            activated.frame_binding().digest(),
+            world.frame_binding_digest(deps.admitted.world_id),
             world.map_revision_digest(),
             (origin.x, origin.y, origin.floor),
         );
@@ -198,7 +198,12 @@ fn scenario(circuit: Circuit) -> TestResult {
             .map_err(|_| "duplicate callback installation")?;
         deps.initialize(&owner).await;
 
-        let map = cells.map();
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            cells.index()
+        else {
+            return Err("bundle collision index".into());
+        };
+        let map = index.map();
         let switch = placement_key(circuit.switch, 1).ok_or("switch placement")?;
         let wall = placement_key(circuit.passage, 1).ok_or("wall placement")?;
         let mut placement = map.overlay.base().digest().to_vec();
@@ -276,7 +281,7 @@ fn scenario(circuit: Circuit) -> TestResult {
                 let origin = runtime.read_actor_position(actor).map_err(debug)?;
                 let proof = crate::map::floor::prepare_quest_callback_teleport(
                     &runtime,
-                    &owner.movement_cells,
+                    owner.movement_cells(),
                     actor,
                     session,
                     origin,
