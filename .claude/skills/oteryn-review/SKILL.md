@@ -89,7 +89,7 @@ with CI and never blocks or delays it.
   "not reviewed, no PC" is not an accepted result. A Codex lane never reviews its
   own code.
 - How: the review owner starts it in Codex Cloud, read-only, model
-  gpt-6.2-sol, reasoning effort high, or, from a
+  gpt-6.2-astra, reasoning effort high, or, from a
   session without the PC, with one native `@codex review` PR comment naming the
   exact head (it answers again since 2026-11-15; check that no review is already
   requested for that head first). Either way it is one round of parallel lens
@@ -108,7 +108,7 @@ with CI and never blocks or delays it.
   edits code. After you verify each finding (§6), write only the confirmed ones,
   one per line as `P1|P2 path:line - problem - failure path`, to a file and hand
   them, with every instance the pattern sweep found, to one code-writing
-  Codex run, model gpt-6.2-sol at reasoning effort `medium` (one run for the whole batch, never
+  Codex run, model gpt-6.2-sol at reasoning effort `high` (one run for the whole batch, never
   one per finding): on the PC
   `bash ~/oteryn-cache/codex-review.sh <worktree> <tag> --fix-confirmed <file>`
   (it runs `codex-task.sh` as `fix-<tag>`); elsewhere a Codex Cloud packet with
