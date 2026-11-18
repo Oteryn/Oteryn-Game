@@ -38,9 +38,10 @@ native_case!(srvenc_m24_postgres_herald_top_damage, "herald_of_fire");
 
 #[test]
 fn secserv_renegade_orc_credits_damaging_players_postgres() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    assert!(!admin.is_empty(), "PostgreSQL test route is empty");
     scenario(
         "secserv_renegade_orc_credits_damaging_players_postgres",
         "renegade_orc",
@@ -235,10 +236,8 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
     let session = admitted.game_session_id;
     if historical_predecessor && !seeds.is_empty() {
         // Seed the protected NPC assignment before exercising the live death path.
-        super::qengine_outfit_stories::seed_quest_prerequisites(
-            h, &owner, &admitted, &seeds, 0xa6,
-        )
-        .await?;
+        super::qengine_outfit_stories::seed_quest_prerequisites(h, &owner, &admitted, &seeds, 0xa6)
+            .await?;
     } else if !seeds.is_empty() {
         let fence = owner
             .current_quest_fence(session)
@@ -383,18 +382,32 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
             let mut runtime = owner.runtime.lock().await;
             let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
             let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
-            runtime.bind_attacker_lease(actor, session, lease).map_err(debug)?;
-            runtime.initialize_pinned_test_position(actor, MovementLocalPosition {
-                x: position[0] - 1,
-                y: position[1],
-                floor: i16::try_from(-position[2])?,
-            }).map_err(debug)?;
+            runtime
+                .bind_attacker_lease(actor, session, lease)
+                .map_err(debug)?;
+            runtime
+                .initialize_pinned_test_position(
+                    actor,
+                    MovementLocalPosition {
+                        x: position[0] - 1,
+                        y: position[1],
+                        floor: i16::try_from(-position[2])?,
+                    },
+                )
+                .map_err(debug)?;
             actor
         };
-        owner.root.initialize_admission_equipment(
-            &authority, &h.node, &fence,
-            generation.identity().server_artifact_digest(), &operation,
-        ).await.map_err(debug)?;
+        owner
+            .root
+            .initialize_admission_equipment(
+                &authority,
+                &h.node,
+                &fence,
+                generation.identity().server_artifact_digest(),
+                &operation,
+            )
+            .await
+            .map_err(debug)?;
         let mut peer = super::AdmittedSession {
             game_session_id: session,
             runtime_actor: Some(actor),
@@ -403,12 +416,16 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
             ..admitted
         };
         owner.admit_progression_session(&mut peer).await;
-        super::qengine_outfit_stories::seed_quest_prerequisites(
-            h, &owner, &peer, &seeds, 0xa7,
-        ).await?;
+        super::qengine_outfit_stories::seed_quest_prerequisites(h, &owner, &peer, &seeds, 0xa7)
+            .await?;
         owner.admit_quest_session(&peer).await;
         assert!(owner.refresh_source_party_presence(actor, session).await);
-        Some((actor, session, *lease.character_id().as_bytes(), lease.generation()))
+        Some((
+            actor,
+            session,
+            *lease.character_id().as_bytes(),
+            lease.generation(),
+        ))
     } else if rule.top_damage_only {
         let mut runtime = owner.runtime.lock().await;
         let session = crate::foundation::GameSessionId::decode(&id(77)).map_err(debug)?;
@@ -474,7 +491,10 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                 .map_err(debug)?;
             let health = runtime.companion_snapshot(target).map_err(debug)?.health;
             let damage = if let Some((other_actor, other_session, _, _)) = lesser_contributor {
-                assert!(health > 2, "distinct damage contributions require over two HP");
+                assert!(
+                    health > 2,
+                    "distinct damage contributions require over two HP"
+                );
                 runtime
                     .borrow_exact_actor_commit_at(now)
                     .commit_damage_for_bound_attacker(
@@ -557,9 +577,16 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                         && share.lease_generation == Some(other_lease)
                 }));
                 if renegade_orc {
-                    assert!(entry.grizzly.as_ref().ok_or("captured native credit")?
-                        .native.iter().any(|recipient| recipient.actor == other_actor
-                            && recipient.death.transition == rule.transition));
+                    assert!(
+                        entry
+                            .grizzly
+                            .as_ref()
+                            .ok_or("captured native credit")?
+                            .native
+                            .iter()
+                            .any(|recipient| recipient.actor == other_actor
+                                && recipient.death.transition == rule.transition)
+                    );
                     continue;
                 }
                 let objective = source_deaths::rule(&rule.transition)
@@ -586,11 +613,16 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                 ];
                 let recipients =
                     quest_batch3_c::capture(&runtime, entry, true, snapshots.iter().cloned());
-                assert_eq!(recipients.len(), 1, "damage alone cannot earn Herald credit");
+                assert_eq!(
+                    recipients.len(),
+                    1,
+                    "damage alone cannot earn Herald credit"
+                );
                 assert_eq!(recipients[0].actor, actor);
                 assert_eq!(recipients[0].character, *lease.character_id().as_bytes());
                 assert!(
-                    quest_batch3_c::capture(&runtime, entry, false, snapshots.into_iter()).is_empty(),
+                    quest_batch3_c::capture(&runtime, entry, false, snapshots.into_iter())
+                        .is_empty(),
                     "a lethal fallback is not the present most-damage player"
                 );
                 drop(taken); // Leave the real original queue entry for durable settlement below.
@@ -624,12 +656,18 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         );
     }
     if let Some((_, _, character, _)) = lesser_contributor.filter(|_| renegade_orc) {
-        let track = rule.effects.iter().find(|effect| effect.track.ends_with("/quest_door"))
+        let track = rule
+            .effects
+            .iter()
+            .find(|effect| effect.track.ends_with("/quest_door"))
             .ok_or("Renegade Orc door")?;
         let value: i64 = sqlx::query_scalar(
             "SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
         ).bind(character.as_slice()).bind(&track.track).fetch_one(&h.pool).await?;
-        assert_eq!(value, 1, "the lesser damaging player receives durable credit");
+        assert_eq!(
+            value, 1,
+            "the lesser damaging player receives durable credit"
+        );
     }
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",

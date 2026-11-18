@@ -58,14 +58,7 @@ pub(super) fn reserve(
         return None;
     }
     let npc = super::service_context::live_npc(runtime, actor, session, intent.npc_actor)?;
-    let visible = runtime.visible_entities();
-    let occupied = visible
-        .players
-        .iter()
-        .map(|entry| entry.position)
-        .chain(visible.npcs.iter().map(|entry| entry.position))
-        .chain(visible.creatures.iter().map(|entry| entry.position))
-        .collect::<Vec<_>>();
+    let player_position = runtime.read_actor_position(actor).ok()?.position();
     let movement = admission.movement_cells();
     let pin = runtime.content_pin().server_artifact_digest();
     let cells = [-1, 0, 1]
@@ -85,9 +78,9 @@ pub(super) fn reserve(
                     z: i32::from(at.floor),
                 })
                 .is_none_or(|tile| map.facts.house_tile(tile) || map.facts.doors().blocks(tile))
-            }) && !occupied
-                .iter()
-                .any(|pos| pos.x == at.x && pos.y == at.y && pos.floor == at.floor)
+            }) && at != player_position
+                && runtime.position_occupied_by_other(actor, at) == Ok(false)
+                && runtime.reserved_into_by_own_pending(actor, at) == Ok(false)
                 && super::super::respawn_cell_admissible(
                     movement.index(),
                     movement.scope(),

@@ -5,9 +5,10 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
 
 #[test]
 fn secserv_gamel_greeting_atomically_spawns_bandits_postgres() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    assert!(!admin.is_empty(), "PostgreSQL test route is empty");
     super::kill_reward_e2e::scenario_thread::run("secserv-gamel-greeting", scenario)
 }
 
@@ -15,7 +16,7 @@ fn scenario() -> TestResult {
     world_scenario!(
         "secserv_gamel",
         |h,
-         request,
+         _request,
          seal,
          authority,
          world_id,
