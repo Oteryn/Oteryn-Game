@@ -71,8 +71,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return Ok(outcome(result.disposition));
         }
-        let Some(ItemKey::Instance(tool)) = source else {
-            return Ok(None);
+        let source_id = |key: &str| {
+            key.strip_prefix("oteryn:item.tibia.i")
+                .and_then(|id| id.parse::<u16>().ok())
+        };
+        let hotkey = match (intent.target, source) {
+            (UseTarget::Item(_), Some(ItemKey::Instance(_))) => None,
+            (UseTarget::ItemByDefinition(wanted), None) => {
+                let Some((key, revision)) = native
+                    .item_index()
+                    .and_then(|index| index.definition_at(wanted))
+                else {
+                    return Ok(None);
+                };
+                if !source_id(key)
+                    .is_some_and(oteryn_gameplay_items::fishing::rabbit_skinning_knife)
+                {
+                    return Ok(None);
+                }
+                Some((key, revision))
+            }
+            _ => return Ok(None),
         };
         let inventory = self
             .root
@@ -83,14 +102,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .backpack
             .iter()
             .flat_map(|bag| &bag.entries)
-            .find(|entry| entry.item.item_instance_id == tool);
-        let source_id = |key: &str| {
-            key.strip_prefix("oteryn:item.tibia.i")
-                .and_then(|id| id.parse::<u16>().ok())
+            .find(|entry| {
+                if let Some((key, revision)) = hotkey {
+                    entry.item.definition.family == "Item"
+                        && entry.item.definition.production_key == key
+                        && entry.item.definition.revision_ref == revision
+                        && self
+                            .states
+                            .player_trades
+                            .physical(command.game_session_id, Some(entry.item.item_instance_id))
+                } else {
+                    source == Some(ItemKey::Instance(entry.item.item_instance_id))
+                }
+            });
+        let Some(entry) = entry else {
+            return Ok(None);
         };
-        let Some(tool_id) =
-            entry.and_then(|entry| source_id(&entry.item.definition.production_key))
-        else {
+        let tool = entry.item.item_instance_id;
+        let Some(tool_id) = source_id(&entry.item.definition.production_key) else {
             return Ok(None);
         };
         let rabbit_knife = oteryn_gameplay_items::fishing::rabbit_skinning_knife(tool_id);
@@ -119,6 +148,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(None);
         };
         let corpse_id = source_id(&ground.definition().production_key);
+        if hotkey.is_some() && !matches!(corpse_id, Some(6017 | 4301)) {
+            return Ok(None);
+        }
         let fresh_rabbit = rabbit_knife && corpse_id == Some(6017);
         if !fresh_rabbit
             && !corpse_id

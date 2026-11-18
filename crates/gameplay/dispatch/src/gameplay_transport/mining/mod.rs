@@ -34,6 +34,15 @@ pub(super) async fn dispatch_map_use<A: FreshAdmissionAuthority>(
         Some(MapUseTarget::Item(handle)) => Some(view.and_then(|v| v.resolve(handle))),
         _ => None,
     };
+    // A definition hotkey over the map's ground view belongs to the map tool
+    // owner. Pick refining uses a carried stone and cannot accept this target.
+    if matches!(intent.target, UseTarget::ItemByDefinition(_))
+        && target
+            .flatten()
+            .is_some_and(|key| view.is_some_and(|v| v.shows_ground_item(&key)))
+    {
+        return super::item_craft::dispatch(authority, actor, command, intent, view).await;
+    }
     match target {
         Some(Some(ItemKey::Instance(_))) => {
             let result = dispatch(authority, actor, command, intent.clone(), view).await?;
