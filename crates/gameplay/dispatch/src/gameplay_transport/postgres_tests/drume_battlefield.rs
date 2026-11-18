@@ -293,6 +293,29 @@ pub(super) fn assert_feedback(
     );
 }
 
+pub(super) fn assert_admission_effects(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    lever: Position,
+    after: u64,
+) -> TestResult {
+    let observed: Vec<_> = owner
+        .bundle_map()
+        .ok_or("battlefield map")?
+        .facts
+        .movement_effects_since(after)
+        .into_iter()
+        .map(|(_, pos, effect)| (pos.x, pos.y, pos.floor, effect))
+        .collect();
+    assert_eq!(
+        observed,
+        vec![
+            (LANDING.x.try_into()?, LANDING.y.try_into()?, -i8::try_from(LANDING.floor)?, 11),
+            (lever.x, lever.y, lever.floor, 3),
+        ]
+    );
+    Ok(())
+}
+
 async fn list(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     creature: &str,

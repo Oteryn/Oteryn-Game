@@ -472,6 +472,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let minutes = battlefield.timeout_ms / 60_000;
             format!("You have {minutes} minutes to defeat Drume.")
         });
+        let battlefield_landing = snapshots
+            .first()
+            .and_then(|snapshot| native(snapshot.position()));
         for ((who, member_session, expected, _), snapshot) in players.into_iter().zip(snapshots) {
             states.stage_special_movement_step(
                 runtime,
@@ -491,11 +494,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, expected.position()),
                 underwater(map, snapshot.position()),
             );
-            if let Some(pos) = native(snapshot.position()) {
+            if !battlefield && let Some(pos) = native(snapshot.position()) {
                 map.facts.emit_movement_effect(pos, 11);
             }
             if let Some(notice) = battlefield_notice.as_deref() {
                 self.states.chat.push_quest_feedback(member_session, notice);
+            }
+        }
+        // Crystal action_drume.lua:123-124 emits the pair once for the whole party.
+        if battlefield {
+            if let Some(pos) = battlefield_landing {
+                map.facts.emit_movement_effect(pos, 11);
+            }
+            if let Some((lever, _)) = crate::map::view::placement_of(key) {
+                map.facts.emit_movement_effect(lever, 3);
             }
         }
         UseDisposition::Committed

@@ -374,6 +374,11 @@ pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResu
             } else {
                 None
             };
+            let before_admission_effects = world
+                .facts()
+                .movement_effects_since(0)
+                .last()
+                .map_or(0, |(sequence, _, _)| *sequence);
             let outcome = owner
                 .use_object(
                     deps.actor,
@@ -411,6 +416,9 @@ pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResu
             }
             if let Some(spawn_boss) = drume {
                 let (second_actor, second_session) = second.ok_or("second player")?;
+                super::drume_battlefield::assert_admission_effects(
+                    &owner, trigger, before_admission_effects,
+                )?;
                 for session in [admitted.game_session_id, second_session] {
                     super::drume_battlefield::assert_feedback(
                         &owner, session, "You have 20 minutes to defeat Drume.",
