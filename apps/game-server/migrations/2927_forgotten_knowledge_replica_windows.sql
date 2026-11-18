@@ -38,12 +38,12 @@ LANGUAGE plpgsql SET search_path = pg_catalog, public, pg_temp AS $$ BEGIN
         END IF;
         IF OLD.state=1 AND NEW.state=2 AND NEW.defeat_id IS NOT NULL
            AND NEW.terminal_at BETWEEN OLD.opened_at AND OLD.deadline
-           AND CASE
+           AND (CASE
              WHEN OLD.boss_creature_key='oteryn:creature.the_last_lore_keeper'
                THEN NEW.exit_deadline=OLD.deadline
              WHEN OLD.after_kill_ms=0 THEN NEW.exit_deadline IS NULL
              ELSE NEW.exit_deadline=NEW.terminal_at+OLD.after_kill_ms
-           END THEN RETURN NEW; END IF;
+           END) THEN RETURN NEW; END IF;
         IF OLD.state=1 AND NEW.state=3 AND NEW.defeat_id IS NULL
            AND NEW.terminal_at>=OLD.deadline AND NEW.exit_deadline=NEW.terminal_at THEN RETURN NEW; END IF;
         IF OLD.state IN(1,2,3) AND NEW.state=4 AND NOT EXISTS(
