@@ -265,6 +265,25 @@ first appeared. The cgroup recorded zero OOM kills. Running the matching
 `cargo test -- --list` produced 4,341 lines and listed 4,339 tests,
 matching the pinned base's compiler registry count.
 
+Run the following with the checked-in profile and the retained Rust
+toolchain. The pipe counts the two summary lines as well as the test
+names. Use `pipefail` so a failed Cargo invocation cannot produce a
+passing count.
+
+```bash
+set -o pipefail
+export CARGO_BUILD_JOBS=1
+cargo test --locked -p oteryn-gameplay-dispatch --lib --no-run --timings -v
+cargo test --locked -p oteryn-gameplay-dispatch --lib -- --list | wc -l
+```
+
+Capture the compile and link peak with GNU time or Linux `wait4`.
+Record the dependency cache state with the elapsed time. The
+dependencies-rebuilt run and the cached one-job base run measure
+different amounts of work, so their elapsed times are unsuitable for
+estimating a compile speedup. The pinned base did not link, so its
+4,339 entries came from the compiler's MIR registry.
+
 The complete executable ran the exact
 `boss_activity_postgres_offline_native_death_deadline_retry_keeps_retained_trigger`
 case against PostgreSQL 18.6. It emitted the state-and-replay completion
