@@ -242,6 +242,7 @@ pub(super) async fn exercise_switch(
         false,
     )
     .await?;
+    owner.states.loop_ground.invalidate();
     let original: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(item_instance_id) FROM game_item_instances WHERE definition_production_key=$1")
         .bind(RING).fetch_one(&harness.pool).await?;
     let target = object_target(owner, LEVER, 1)?;
