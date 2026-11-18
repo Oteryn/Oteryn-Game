@@ -317,10 +317,7 @@ impl CallbackStates {
                 presence,
                 source_reset,
             } => {
-                if close
-                    || (!entries.is_empty()
-                        && !self.project_timed_passages(owner, *due, entries, *source_reset))
-                {
+                if close || !self.project_timed_passages(owner, *due, entries, *source_reset) {
                     return false;
                 }
                 if let Some((position, entry)) = presence
