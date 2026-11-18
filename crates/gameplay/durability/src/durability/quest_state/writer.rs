@@ -1107,6 +1107,7 @@ impl DurabilityRoot {
                             || !callback.present.is_empty()
                             || !callback.required_travel.is_empty()
                             || callback.effects.outfit_reward.is_some()
+                            || callback.effects.creature_spawn.is_some()
                             || callback.effects.scene.is_some()
                             || callback.effects.requires_item_disguise.is_some()
                             || callback.effects.restore_disguise)
