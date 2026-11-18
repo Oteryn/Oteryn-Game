@@ -14,7 +14,9 @@ import threading
 import uuid
 
 
-PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk", "c17a", "c17c")
+PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk", "c17a", "c17c", "c04")
+CONTROL_EXCHANGE_SECONDS = 30
+FIXTURE_RECONCILE_SECONDS = 2 * CONTROL_EXCHANGE_SECONDS
 
 
 CREATURE_KEY = re.compile(r"[A-Za-z0-9:._/-]{1,128}")
@@ -127,12 +129,12 @@ def provision(socket_path, session, profile, node_log=None):
     identifier = uuid.UUID(session)
     if identifier.version != 7 or str(identifier) != session or profile not in PROFILES:
         raise ValueError("invalid qualification request")
-    reconcile = profile in ("c17a", "c17c")
+    reconcile = profile in ("c17a", "c17c", "c04")
     line = f"qualify {session} {profile}{'-reconcile' if reconcile else ''}\n"
-    deadline = time.monotonic() + 20
+    deadline = time.monotonic() + FIXTURE_RECONCILE_SECONDS
     while True:
         try:
-            answer = (_request(socket_path, line, 64, timeout=max(0.001, deadline - time.monotonic()))
+            answer = (_request(socket_path, line, 64, timeout=max(0.001, min(CONTROL_EXCHANGE_SECONDS, deadline - time.monotonic())))
                       if reconcile else _request(socket_path, line, 64))
         except (TimeoutError, ConnectionError):
             if not reconcile:
@@ -141,9 +143,11 @@ def provision(socket_path, session, profile, node_log=None):
         if answer == b"qualified\n":
             return
         report_node_failures(node_log, offset)
-        if reconcile and (not answer or b"qualified\n".startswith(bytes(answer))) and time.monotonic() < deadline:
-            print("C17 fixture acknowledgement unknown; reconciling the same build", file=sys.stderr)
-            continue
+        if reconcile and (not answer or b"unavailable\n".startswith(bytes(answer)) or b"qualified\n".startswith(bytes(answer))):
+            if time.monotonic() < deadline:
+                print("C17 fixture acknowledgement unknown; reconciling the same build", file=sys.stderr)
+                continue
+            raise RuntimeError("qualification build reconciliation deadline exceeded; outcome=unknown")
         raise RuntimeError(
             "node refused qualification provisioning: "
             f"node_answer={bytes(answer[:64])!r} truncated={len(answer) > 64}"
@@ -173,6 +177,91 @@ def spawn(socket_path, session, creature_key):
 
 
 
+# Container exec is outside the helper's process group. A per-operation lease
+# fences delayed starts and lets cancellation kill and observe the actual PHP
+# writer, rather than merely killing the local Docker client.
+PARENT_CANCELLED = threading.Event()
+WRITER_LOCK = threading.Lock()
+REMOTE_WRITER = None
+
+REMOTE_INTENT = r'''op=$1; shift
+lease=/tmp/oteryn-c17-intent-$op
+mkdir -p "$lease"
+[ ! -f "$lease/cancelled" ] || exit 124
+sh -c 'lease=$1; op=$2; shift 2
+printf "%s\n" "$$" > "$lease/pid"
+[ ! -f "$lease/cancelled" ] || exit 124
+exec "$@"' c17-writer "$lease" "$op" "$@" &
+writer=$!
+( sleep 30
+  if tr "\000" " " < "/proc/$writer/cmdline" 2>/dev/null | grep -Fq -- "$op"; then
+    kill -KILL "$writer" 2>/dev/null || true
+  fi
+) </dev/null >/dev/null 2>&1 &
+watchdog=$!
+wait "$writer"; result=$?
+kill "$watchdog" 2>/dev/null || true
+wait "$watchdog" 2>/dev/null || true
+exit "$result"
+'''
+
+CANCEL_INTENT = r'''op=$1
+lease=/tmp/oteryn-c17-intent-$op
+mkdir -p "$lease"
+: > "$lease/cancelled"
+[ -f "$lease/pid" ] || exit 0
+writer=$(cat "$lease/pid")
+case "$writer" in ''|*[!0-9]*) exit 0 ;; esac
+owned() { tr "\000" " " < "/proc/$writer/cmdline" 2>/dev/null | grep -Fq -- "$op"; }
+if owned; then kill -KILL "$writer" 2>/dev/null || true; fi
+for attempt in 1 2 3 4 5 6 7 8 9 10; do
+  owned || exit 0
+  sleep 0.1
+done
+exit 1
+'''
+
+
+class PlatformIntentWriter:
+    def __init__(self, container, operation):
+        self.container = container
+        self.operation = str(operation)
+        self.quiesced = threading.Event()
+
+    def cancel(self):
+        result = subprocess.run(["docker", "exec", "--user", "www-data", self.container,
+            "sh", "-c", CANCEL_INTENT, "c17-cancel", self.operation],
+            capture_output=True, timeout=5)
+        if result.returncode:
+            raise RuntimeError("C17 Platform writer cancellation was not acknowledged")
+        self.quiesced.set()
+
+    def run(self, php, request):
+        global REMOTE_WRITER
+        with WRITER_LOCK:
+            if PARENT_CANCELLED.is_set():
+                raise RuntimeError("C17 parent cancelled before intent issuance")
+            REMOTE_WRITER = self
+        try:
+            result = run_capture(["docker", "exec", "--user", "www-data", self.container,
+                "sh", "-c", REMOTE_INTENT, "c17-intent", self.operation,
+                "php", "-r", php, json.dumps(request)], "Platform bootstrap intent", timeout=35)
+            self.quiesced.set()  # The remote wrapper waited for PHP and reaped its watchdog.
+            if PARENT_CANCELLED.is_set():
+                raise RuntimeError("C17 parent cancelled during intent issuance")
+            return result
+        except Exception:
+            if not self.quiesced.is_set():
+                self.cancel()
+            if PARENT_CANCELLED.is_set():
+                raise SystemExit(124) from None
+            raise
+        finally:
+            with WRITER_LOCK:
+                if REMOTE_WRITER is self:
+                    REMOTE_WRITER = None
+
+
 def fresh_character(socket_path, project, request, node_log=None):
     """Issue a real Platform intent, then ask the existing node bootstrap owner."""
     operation = uuid.UUID(int=(int(time.time() * 1000) << 80)
@@ -199,9 +288,7 @@ $code=Illuminate\Support\Facades\Artisan::call("game-auth:character-bootstrap-in
 "--content-revision"=>$r["revisions"][2],"--starter-template-revision"=>$r["revisions"][3]]);
 if ($code !== 0) { fwrite(STDERR,Illuminate\Support\Facades\Artisan::output()); }
 exit($code);'''
-    run_capture(["docker", "exec", "--user", "www-data", containers[0],
-                    "php", "-r", php, json.dumps(request)],
-                   "Platform bootstrap intent", timeout=30)
+    PlatformIntentWriter(containers[0], operation).run(php, request)
     commit_character_bootstrap(socket_path, operation, node_log)
     return name
 
@@ -261,10 +348,19 @@ def watch_parent_stdin():
     operation; a request already delivered remains subject to native reconciliation.
     """
     def stopped():
-        try:
-            sys.stdin.buffer.read(1)
-        finally:
-            os._exit(124)
+        sys.stdin.buffer.read(1)
+        with WRITER_LOCK:
+            PARENT_CANCELLED.set()
+            writer = REMOTE_WRITER
+        if writer is not None:
+            # Do not report cancellation complete while the remote writer can
+            # still issue the intent. Its own 30s watchdog also bounds PHP.
+            while not writer.quiesced.is_set():
+                try:
+                    writer.cancel()
+                except (OSError, subprocess.TimeoutExpired, RuntimeError):
+                    print("C17 cancellation awaiting Platform writer quiescence", file=sys.stderr)
+        os._exit(124)
     threading.Thread(target=stopped, daemon=True).start()
 
 

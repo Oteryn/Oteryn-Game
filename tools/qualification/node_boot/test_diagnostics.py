@@ -14,7 +14,7 @@ import unittest
 
 # The workflows run this file only; it carries the node boot tool tests with it.
 from test_node_boot_tools import (  # noqa: F401
-    FailureSummaryTests, KnobTests, PgObserveTests, ReuseTests, SeamPassThroughTests,
+    FailureSummaryTests, KnownFailureGateTests, KnobTests, PgObserveTests, ReuseTests, SeamPassThroughTests,
     StageDumpTests, TimelineTests,
 )
 

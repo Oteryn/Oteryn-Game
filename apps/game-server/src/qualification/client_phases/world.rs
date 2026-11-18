@@ -5094,47 +5094,63 @@ fn creature_matches(entry: &oteryn_dev_client::WorldSpatialEntity, name: &str) -
 }
 
 fn creature_display_name(key: &str) -> TestResult<&'static str> {
-    static NAMES: std::sync::OnceLock<Result<BTreeMap<String, String>, String>> =
-        std::sync::OnceLock::new();
+    // Aliases of the same canonical creature are one binding. A genuinely
+    // shared name is ambiguous only for its owners, never for every creature.
+    type Names = BTreeMap<String, Option<String>>;
+    static NAMES: std::sync::OnceLock<Result<Names, String>> = std::sync::OnceLock::new();
+    let canonical = |key: &str| {
+        key.strip_prefix("canary:creature/")
+            .map_or_else(|| key.to_owned(), |key| format!("oteryn:creature.{key}"))
+    };
     let names = NAMES
         .get_or_init(|| {
-            let read = || -> TestResult<BTreeMap<String, String>> {
-                let input = native_input()?;
+            let read = || -> TestResult<Names> {
                 let profiles: serde_json::Value =
-                    serde_json::from_slice(&input.creature_profiles.bytes)?;
-                let mut names = BTreeMap::new();
-                let mut unique = BTreeSet::new();
+                    serde_json::from_slice(&native_input()?.creature_profiles.bytes)?;
+                let mut by_key: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+                let mut owners: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
                 for row in profiles["records"]
                     .as_array()
                     .ok_or("creature profile records absent")?
                 {
-                    let key = row["profile"]["target"]["key"]
-                        .as_str()
-                        .ok_or("creature profile key absent")?;
-                    let Some(name) =
+                    let key = canonical(
+                        row["profile"]["target"]["key"]
+                            .as_str()
+                            .ok_or("creature profile key absent")?,
+                    );
+                    if let Some(name) =
                         row["profile"]["data"]["profile"]["details"]["display_name"].as_str()
-                    else {
-                        continue;
-                    };
-                    let key = key
-                        .strip_prefix("canary:creature/")
-                        .map(|key| format!("oteryn:creature.{key}"))
-                        .unwrap_or_else(|| key.to_owned());
-                    if !unique.insert(name.to_owned()) {
-                        return Err("creature display-name binding is ambiguous".into());
+                    {
+                        by_key
+                            .entry(key.clone())
+                            .or_default()
+                            .insert(name.to_owned());
+                        owners.entry(name.to_owned()).or_default().insert(key);
                     }
-                    names.insert(key, name.to_owned());
                 }
-                Ok(names)
+                Ok(by_key
+                    .into_iter()
+                    .map(|(key, names)| {
+                        let name = if names.len() == 1 {
+                            names.into_iter().next().filter(|name| {
+                                owners.get(name).is_some_and(|owners| owners.len() == 1)
+                            })
+                        } else {
+                            None
+                        };
+                        (key, name)
+                    })
+                    .collect())
             };
             read().map_err(|error| error.to_string())
         })
         .as_ref()
         .map_err(|error| error.clone())?;
     names
-        .get(key)
-        .map(String::as_str)
-        .ok_or_else(|| format!("source creature name absent: {key}").into())
+        .get(&canonical(key))
+        .ok_or_else(|| format!("source creature name absent: {key}"))?
+        .as_deref()
+        .ok_or_else(|| format!("source creature display-name binding is ambiguous: {key}").into())
 }
 
 async fn travel_to_spawn(
@@ -5938,6 +5954,24 @@ fn flr2_catalogue_admission() -> TestResult {
 #[cfg(test)]
 mod review_spawn_tests {
     use super::*;
+    #[test]
+    fn r2_spawn_names_resolve_the_real_pinned_catalogue() -> TestResult {
+        for key in ["oteryn:creature.rat", "oteryn:creature.skeleton"] {
+            assert!(!creature_display_name(key)?.is_empty());
+        }
+        assert_eq!(creature_display_name("oteryn:creature.rat")?, "Rat");
+        assert_eq!(creature_display_name("canary:creature/rat")?, "Rat");
+        for vocation in ["sorcerer", "druid", "knight", "paladin", "monk"] {
+            let key = format!("oteryn:creature.{vocation}_familiar");
+            assert!(!creature_display_name(&key)?.is_empty());
+        }
+        assert!(creature_display_name("oteryn:creature.night_harpy").is_err());
+        assert_eq!(
+            creature_display_name("oteryn:creature.skeleton")?,
+            "Skeleton"
+        );
+        Ok(())
+    }
     #[test]
     fn review_spawn_approach_binds_the_requested_species() -> TestResult {
         use oteryn_protocol_oteryn::{entity_names::EntityDisplayName, world_spatial_entities::*};

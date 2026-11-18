@@ -57,6 +57,32 @@ fn early_refusal_warning(reason: EarlyRefusal) -> oteryn_error_codes::Line<'stat
         .field("reason", FieldValue::Token(reason))
 }
 
+#[derive(Debug)]
+struct FixtureStepFailure {
+    stage: &'static str,
+    reason: &'static str,
+}
+impl std::fmt::Display for FixtureStepFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "stage={} reason={}", self.stage, self.reason)
+    }
+}
+impl std::error::Error for FixtureStepFailure {}
+
+fn fixture_failure_reply(profile: &str, error: &(dyn std::error::Error + 'static)) -> &'static str {
+    if matches!(
+        profile,
+        "c17a-reconcile" | "c17c-reconcile" | "c04-reconcile"
+    ) && error
+        .downcast_ref::<FixtureStepFailure>()
+        .is_some_and(|failure| failure.reason == "commit_unknown")
+    {
+        "unavailable"
+    } else {
+        "rejected"
+    }
+}
+
 pub(super) async fn prepare(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -87,7 +113,7 @@ pub(super) async fn prepare(
                 "event=qualification_fixture_failure stage=guard reason={reason}"
             ));
             emit(PROCESS, &refusal_warning(&session, profile, error.as_ref()));
-            "rejected"
+            fixture_failure_reply(profile, error.as_ref())
         }
     }
 }
@@ -322,7 +348,7 @@ async fn prepare_build(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let reconcile = profile.ends_with("-reconcile");
     let profile = profile.strip_suffix("-reconcile").unwrap_or(profile);
-    if reconcile && !matches!(profile, "c17a" | "c17c") {
+    if reconcile && !matches!(profile, "c17a" | "c17c" | "c04") {
         return Err("reconciliation is spell-fixture only".into());
     }
     let session = crate::foundation::GameSessionId::decode(&session)?;
@@ -359,11 +385,11 @@ async fn prepare_build(
     let policy = progression.policy_for(profile_revision, ruleset_revision, content_revision)?;
     let context = policy.context.clone();
     let (vocation, level) = match profile {
-        "c17a" | "c17c" => {
-            let words = if profile == "c17a" {
-                "utani hur"
-            } else {
-                "utevo res ina"
+        "c17a" | "c17c" | "c04" => {
+            let words = match profile {
+                "c17a" => "utani hur",
+                "c04" => "exevo vis lux",
+                _ => "utevo res ina",
             };
             let spell = native
                 .spell_book()
@@ -407,7 +433,7 @@ async fn prepare_build(
             uuid_v7()?
         },
     };
-    if matches!(profile, "c17a" | "c17c") {
+    if matches!(profile, "c17a" | "c17c" | "c04") {
         prepare_admitted_spell_character(
             root,
             authority,
@@ -677,7 +703,10 @@ async fn fixture_step<T, E: FixtureError>(
             "event=qualification_fixture_failure stage={stage} reason={}",
             error.reason()
         ));
-        fixture_error(error).into()
+        Box::new(FixtureStepFailure {
+            stage,
+            reason: error.reason(),
+        }) as Box<dyn std::error::Error>
     })
 }
 
@@ -854,6 +883,42 @@ mod tests {
     use super::*;
 
     #[test]
+    fn r2_unknown_fixture_commit_requires_reconciliation_not_refusal() {
+        for stage in ["experience", "build"] {
+            let failure = FixtureStepFailure {
+                stage,
+                reason: DurabilityError::CommitOutcomeUnknown.reason(),
+            };
+            assert_eq!(
+                fixture_failure_reply("c17a-reconcile", &failure),
+                "unavailable"
+            );
+            assert_eq!(fixture_failure_reply("c17a", &failure), "rejected");
+            let semantic = FixtureStepFailure {
+                stage,
+                reason: "authority",
+            };
+            assert_eq!(
+                fixture_failure_reply("c17a-reconcile", &semantic),
+                "rejected"
+            );
+        }
+    }
+
+    #[test]
+    fn r2_c04_has_a_real_admitted_sorcerer_fixture() -> crate::bestiary_postgres_harness::TestResult
+    {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                admitted_profiles(false, false, &[("c04", 23)]).map_err(|error| error.to_string())
+            })?
+            .join()
+            .map_err(|_| "C04 provisioning test panicked")?
+            .map_err(Into::into)
+    }
+
+    #[test]
     fn qualification_c17_profiles_accept_admission_initialized_progression()
     -> crate::bestiary_postgres_harness::TestResult {
         std::thread::Builder::new()
@@ -890,17 +955,25 @@ mod tests {
         busy: bool,
         reconcile: bool,
     ) -> crate::bestiary_postgres_harness::TestResult {
+        admitted_profiles(busy, reconcile, &[("c17a", 20), ("c17c", 23)])
+    }
+
+    fn admitted_profiles(
+        busy: bool,
+        reconcile: bool,
+        profiles: &[(&str, u32)],
+    ) -> crate::bestiary_postgres_harness::TestResult {
         use crate::bestiary_postgres_harness::{self as fixture, Harness, debug};
-        let Some(admin) = fixture::configured_admin() else {
-            return Ok(());
-        };
+        let admin = fixture::configured_admin().ok_or(
+            "qualification fixture PostgreSQL tests require OTERYN_TEST_POSTGRES_ADMIN_URL",
+        )?;
         fixture::runtime()?.block_on(async {
             let world = crate::foundation::WorldId::decode(&fixture::id(fixture::WORLD))?;
             let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("../../content/spells.manifest.json");
             let room = crate::content::qualify_native_entry_room_from_gameplay_manifest(world, &manifest)?;
             let native = crate::content::qualified_native_gameplay_test_state(room.compiled())?;
-            for (profile, level) in [("c17a", 20), ("c17c", 23)] {
+            for &(profile, level) in profiles {
                 let h = Harness::create_with_admission_seed(admin.clone(), profile, false, false).await?;
                 admit_fixture(&h).await?;
                 let seal = h.recovery.seal_current().map_err(debug)?;
@@ -932,6 +1005,10 @@ mod tests {
                     let progressed: i64 = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid").bind(fixture::id(fixture::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
                     assert_eq!(u32::try_from(progressed)?, level, "XP did not commit before injected build refusal");
                     sqlx::raw_sql("DROP TRIGGER c17_refuse_build ON game_character_build_state; DROP FUNCTION c17_refuse_build();").execute(&h.pool).await?;
+                    let unknown = fixture_step(&h.root, tokio::time::Instant::now() + Duration::from_secs(1), "experience", async || {
+                        Err::<(), _>(crate::durability::character_progression::CharacterProgressionError::Unavailable(DurabilityError::CommitOutcomeUnknown))
+                    }).await.err().ok_or("lost XP acknowledgement became success")?;
+                    assert_eq!(fixture_failure_reply(&format!("{profile}-reconcile"), unknown.as_ref()), "unavailable");
                 }
                 {
                 let fixture = prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes());
@@ -951,6 +1028,12 @@ mod tests {
                     crate::gameplay_transport::CastFactsLoad::Ready { facts, .. }
                     if facts.level == level && facts.vocation == crate::spell::Vocation::Sorcerer && facts.max_mana >= 100));
                 let revision = h.root_revision().await?;
+                if reconcile {
+                    let unknown = fixture_step(&h.root, tokio::time::Instant::now() + Duration::from_secs(1), "build", async || {
+                        Err::<(), _>(crate::durability::character_progression::CharacterProgressionError::Unavailable(DurabilityError::CommitOutcomeUnknown))
+                    }).await.err().ok_or("lost build acknowledgement became success")?;
+                    assert_eq!(fixture_failure_reply(&format!("{profile}-reconcile"), unknown.as_ref()), "unavailable");
+                }
                 assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes()).await, if reconcile { "qualified" } else { "rejected" });
                 assert_eq!(h.root_revision().await?, revision, "one-shot rejection changed the Character");
                 drop(authority);

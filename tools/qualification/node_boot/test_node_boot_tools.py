@@ -190,6 +190,49 @@ class SeamPassThroughTests(unittest.TestCase):
                              result.stderr)
 
 
+class KnownFailureGateTests(unittest.TestCase):
+    def test_r2_new_failure_on_a_known_row_fails_the_actual_stage(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            known = root / 'tools/qualification/node_boot/known_fail_rows.txt'
+            known.parent.mkdir(parents=True)
+            known.write_text('W22b.full assertion at W22b.full/fixture-release; old-loot-failure\n')
+            script = textwrap.dedent(f"""\
+                set -Eeuo pipefail
+                GAME_SOURCE={directory}; WORK={directory}; VARS={directory}/vars; : > "$VARS"
+                node_log={directory}/node.log; : > "$node_log"
+                NODE_BOOT_WORLD=0; NODE_BOOT_SPELLS=0; ACTIVE_STAGE=setup
+                declare -A STATUS=(); ORDER=()
+                evidence() {{ :; }}; start_runtime_diagnostics() {{ :; }}; stop_runtime_diagnostics() {{ :; }}
+                pg_observability_dump() {{ :; }}
+                probe() {{ echo 'SEAM_EVIDENCE e2e_all scenario=W22b.full status=FAIL cause=transport root=W22b.full/admission evidence=new-admission-failure'; }}
+                """)
+            script += '\n'.join(function(name) for name in ('stage_rows', 'known_rows', 'matching_known_rows', 'stage'))
+            script += '\nstage sample -- probe\nprintf "%s" "${STATUS[sample]}"\n'
+            result = bash(script)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(result.stdout.rstrip().endswith('FAIL(rows)'), result.stdout)
+    def test_r2_known_waiver_requires_the_complete_failure_fingerprint(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            known, log = root / 'known', root / 'log'
+            known.write_text('C17c.full assertion at C17c/cast-rat; expected-failure\n')
+            base = 'SEAM_EVIDENCE e2e_all scenario=C17c.full status=FAIL cause=assertion root=C17c/cast-rat evidence=expected-failure'
+            for lines, expected in [
+                ([base], 'C17c.full'),
+                ([base.replace('cause=assertion', 'cause=transport')], ''),
+                ([base.replace('cast-rat', 'admission')], ''),
+                ([base.replace('expected-failure', 'different-failure')], ''),
+                ([base, base.replace('expected-failure', 'different-failure')], ''),
+            ]:
+                with self.subTest(lines=lines):
+                    log.write_text('\n'.join(lines) + '\n')
+                    result = bash(function('matching_known_rows') + f'\nmatching_known_rows {log} {known}\n')
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(result.stdout.strip(), expected)
+
+
+
 class StageDumpTests(unittest.TestCase):
     def run_stage(self, command):
         with tempfile.TemporaryDirectory() as temp:

@@ -1,6 +1,6 @@
 # Node-boot e2e rows known to FAIL on main (seeded from merge-group-gate run 44089797199, main 2026-11-17).
-# One row per line: <scenario id> <first failing assertion>. A listed FAIL row does not fail its stage but is
-# printed as NODE_BOOT_KNOWN_FAIL; any FAIL row not listed fails the stage. Remove a row when it passes
+# One row per line: <scenario id> <cause> at <root>[; <complete evidence>]. Only an exact fingerprint
+# match is waived and printed as NODE_BOOT_KNOWN_FAIL. Missing or truncated evidence fails closed. Remove a row when it passes
 # (NODE_BOOT_KNOWN_FAIL_STALE). Never add a row to make a new failure green.
 C01.full assertion at C01.full/admission
 C02.full no-progress at C02.full/walk; watch-aborted-before-verdict

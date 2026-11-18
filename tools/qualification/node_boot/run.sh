@@ -877,6 +877,33 @@ stage_rows() { grep -oE "e2e_all scenario=[^ ]+ status=$2( |$)" "$1" | sed -E 's
 # Row ids listed in the known-failure file (first field, comments skipped); a missing file lists none.
 known_rows() { [[ -f $1 ]] && grep -vE '^[[:space:]]*(#|$)' "$1" | awk '{print $1}' || true; }
 
+# A scenario id alone is not a waiver. Require the recorded cause, action and
+# complete evidence, and reject a row if any of its FAIL records differs.
+matching_known_rows() { # stage log, known failure file
+  python3 - "$1" "$2" <<'PY_KNOWN_FAILURE'
+from pathlib import Path
+import re
+import sys
+known = {}
+path = Path(sys.argv[2])
+if path.exists():
+    for line in path.read_text().splitlines():
+        match = re.fullmatch(r'([A-Za-z0-9_.-]+) ([a-z-]+) at ([^; ]+)(?:; (.*))?', line)
+        if match:
+            known[match[1]] = (match[2], match[3], match[4] or '')
+observed = {}
+with Path(sys.argv[1]).open(errors='replace') as log:
+    for line in log:
+        match = re.search(r'\be2e_all scenario=([A-Za-z0-9_.-]+) status=FAIL\b(.*)', line)
+        if match:
+            fields = dict(re.findall(r'\b(cause|root|evidence)=(\S+)', match[2]))
+            observed.setdefault(match[1], []).append(tuple(fields.get(key, '') for key in ('cause', 'root', 'evidence')))
+for row, failures in sorted(observed.items()):
+    if row in known and all(failure == known[row] for failure in failures):
+        print(row)
+PY_KNOWN_FAILURE
+}
+
 stage() { # name prerequisite... -- function
   local name=$1; shift
   local prerequisites=()
@@ -904,11 +931,11 @@ stage() { # name prerequisite... -- function
   echo "::endgroup::"
   if [[ $rc == 0 ]]; then
     STATUS[$name]=PASS
-    # A FAIL row fails its stage even when the stage process exits 0, unless the row is
-    # listed in known_fail_rows.txt (debt that every run prints).
+    # A FAIL row fails its stage even when the process exits 0, unless its complete
+    # recorded fingerprint matches known_fail_rows.txt (debt every run prints).
     local known_fail="$GAME_SOURCE/tools/qualification/node_boot/known_fail_rows.txt" new_rows known_hit stale_rows
-    new_rows=$(stage_rows "$WORK/stage-$name.log" FAIL | grep -vxFf <(known_rows "$known_fail") | paste -sd, - || true)
-    known_hit=$(stage_rows "$WORK/stage-$name.log" FAIL | grep -xFf <(known_rows "$known_fail") | paste -sd, - || true)
+    new_rows=$(stage_rows "$WORK/stage-$name.log" FAIL | grep -vxFf <(matching_known_rows "$WORK/stage-$name.log" "$known_fail") | paste -sd, - || true)
+    known_hit=$(stage_rows "$WORK/stage-$name.log" FAIL | grep -xFf <(matching_known_rows "$WORK/stage-$name.log" "$known_fail") | paste -sd, - || true)
     stale_rows=$(stage_rows "$WORK/stage-$name.log" PASS | grep -xFf <(known_rows "$known_fail") | paste -sd, - || true)
     [[ -z $known_hit ]] || echo "NODE_BOOT_KNOWN_FAIL $name rows=$known_hit"
     [[ -z $stale_rows ]] || echo "NODE_BOOT_KNOWN_FAIL_STALE $name rows=$stale_rows"

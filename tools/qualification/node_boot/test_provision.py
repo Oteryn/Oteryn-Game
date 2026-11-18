@@ -1,4 +1,7 @@
 import contextlib
+import os
+import sys
+import time
 import io
 import re
 import subprocess
@@ -94,6 +97,83 @@ class ProvisionTests(unittest.TestCase):
                     child.wait(timeout=3)
                     child.stdout.close()
                     child.stderr.close()
+
+    def test_r2_timeout_leaves_time_to_reconcile_the_same_build(self):
+        now = [0.0]
+        calls = []
+        def request(path, line, limit, **kwargs):
+            calls.append(line)
+            if len(calls) == 1:
+                now[0] += kwargs["timeout"]
+                raise TimeoutError("lost acknowledgement after commit")
+            return b"qualified\n"
+        with patch.object(PROVISION.time, "monotonic", side_effect=lambda: now[0]), patch.object(PROVISION, "_request", request):
+            PROVISION.provision("socket", SESSION, "c17a")
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[0], calls[1])
+
+    def test_r2_exhausted_reconciliation_reports_an_unknown_outcome(self):
+        now = [0.0]
+        def request(path, line, limit, **kwargs):
+            now[0] += kwargs["timeout"]
+            raise TimeoutError("no commit acknowledgement")
+        with patch.object(PROVISION.time, "monotonic", side_effect=lambda: now[0]), patch.object(PROVISION, "_request", request):
+            with self.assertRaisesRegex(RuntimeError, "outcome=unknown"):
+                PROVISION.provision("socket", SESSION, "c17a")
+
+    def test_r2_unknown_database_commit_reply_reconciles(self):
+        with patch.object(PROVISION, "_request", side_effect=[b"unavailable\n", b"qualified\n"]) as request:
+            PROVISION.provision("socket", SESSION, "c17a")
+        self.assertEqual(request.call_count, 2)
+
+    def test_r2_partial_unknown_commit_reply_reconciles(self):
+        with patch.object(PROVISION, "_request", side_effect=[b"unavail", b"qualified\n"]) as request:
+            PROVISION.provision("socket", SESSION, "c17a")
+        self.assertEqual(request.call_count, 2)
+
+    def test_r2_parent_cancellation_stops_the_remote_platform_writer(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            docker = root / "docker"
+            docker.write_text("#!" + sys.executable + "\n" + """import os,subprocess,sys
+if sys.argv[1] == 'ps':
+    print('container-id')
+else:
+    command=sys.argv[5:]
+    command=[arg.replace('/tmp/oteryn-c17-intent-',os.environ['LEASE_PREFIX']) for arg in command]
+    child=subprocess.Popen(command,start_new_session=True)
+    sys.exit(child.wait())
+""")
+            php = root / "php"
+            php.write_text("#!" + sys.executable + "\n" + """import os,pathlib,time
+pathlib.Path(os.environ['WRITER_STARTED']).write_text(str(os.getpid()))
+time.sleep(0.7)
+pathlib.Path(os.environ['WRITER_COMMITTED']).write_text('intent issued')
+""")
+            docker.chmod(0o755)
+            php.chmod(0o755)
+            started, committed = root / 'started', root / 'committed'
+            env = dict(os.environ, PATH=str(root) + os.pathsep + os.environ['PATH'],
+                       WRITER_STARTED=str(started), WRITER_COMMITTED=str(committed),
+                       LEASE_PREFIX=str(root / 'lease-'))
+            child = subprocess.Popen([sys.executable, str(Path(__file__).with_name('provision.py')),
+                '--watch-parent-stdin', '--socket', str(root / 'unused'), '--project', 'test', '--fresh-character', '{}'],
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+            try:
+                deadline = time.monotonic() + 3
+                while not started.exists() and time.monotonic() < deadline:
+                    time.sleep(0.01)
+                self.assertTrue(started.exists(), 'Platform writer never started')
+                child.stdin.close()
+                self.assertEqual(child.wait(timeout=3), 124)
+                time.sleep(0.9)
+                self.assertFalse(committed.exists(), 'Platform writer committed after cancellation ended the row')
+            finally:
+                if child.poll() is None:
+                    child.kill()
+                child.wait(timeout=3)
+                child.stdout.close()
+                child.stderr.close()
 
     def test_qualified_reply_is_accepted(self):
         self.exchange(b"qualified\n")
@@ -225,7 +305,8 @@ class C17BootstrapTests(unittest.TestCase):
 
     def test_php_failure_is_reported_before_connecting_to_the_node(self):
         results = [subprocess.CompletedProcess([], 0, "container-id\n", ""),
-                   subprocess.CompletedProcess([], 1, "Artisan: issue refused\n", "safe PHP error\n")]
+                   subprocess.CompletedProcess([], 1, "Artisan: issue refused\n", "safe PHP error\n"),
+                   subprocess.CompletedProcess([], 0, "", "")]
         log = io.StringIO()
         with patch.object(provision.subprocess, "run", side_effect=results), contextlib.redirect_stderr(log):
             with self.assertRaisesRegex(RuntimeError, "Platform bootstrap intent exit status 1"):

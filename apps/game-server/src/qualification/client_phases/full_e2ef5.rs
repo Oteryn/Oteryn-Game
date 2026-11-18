@@ -7,9 +7,9 @@ use oteryn_dev_client::{
 use oteryn_protocol_oteryn::appearance::{self, Binding, Look};
 use std::collections::BTreeSet;
 
-// Python: discovery 20s + intent 30s + reconciliation 60s + fixture 20s.
+// Python: discovery 20s + intent 35s + reconciliation 60s + fixture reconciliation 60s.
 // Admission/SQL has its own bounded 30s stage; casting retains its original row budget.
-pub(super) const C17_SETUP_LIMIT: Duration = Duration::from_secs(20 + 30 + 60 + 20 + 30);
+pub(super) const C17_SETUP_LIMIT: Duration = Duration::from_secs(20 + 35 + 60 + 60 + 30);
 const C17_CLEANUP_LIMIT: Duration = Duration::from_secs(30);
 
 pub(super) async fn spell_fixture(
@@ -89,10 +89,19 @@ pub(super) async fn spell_characters(clients: &SeamClients<'_>) -> TestResult<[[
 
 // Own the child until it is reaped. Dropping a row deadline kills the complete
 // helper process group, including sudo/Python, before it can submit another request.
-struct ProvisionChild(std::process::Child);
+struct ProvisionChild(std::process::Child, bool);
 impl Drop for ProvisionChild {
     fn drop(&mut self) {
         drop(self.0.stdin.take());
+        let deadline = std::time::Instant::now() + Duration::from_secs(40);
+        while self.1
+            && self.0.try_wait().ok().flatten().is_none()
+            && std::time::Instant::now() < deadline
+        {
+            std::thread::sleep(Duration::from_millis(10));
+            // Helpers observe EOF and quiesce the remote writer; plain test
+            // commands have no cooperative protocol and use the fallback.
+        }
         if self.0.try_wait().ok().flatten().is_none() {
             let _ = std::process::Command::new("kill")
                 .args(["-KILL", "--", &format!("-{}", self.0.id())])
@@ -113,7 +122,10 @@ async fn c17_output(mut command: std::process::Command) -> TestResult<std::proce
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
-    let mut child = ProvisionChild(command.spawn()?);
+    let cooperative = command
+        .get_args()
+        .any(|argument| argument == "--watch-parent-stdin");
+    let mut child = ProvisionChild(command.spawn()?, cooperative);
     let read = |mut stream: Box<dyn Read + Send>| {
         std::thread::spawn(move || -> std::io::Result<Vec<u8>> {
             let mut tail = Vec::new();

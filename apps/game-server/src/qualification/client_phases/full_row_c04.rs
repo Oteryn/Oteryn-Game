@@ -193,7 +193,12 @@ async fn journey(
     let ordinary = index(&book, "exura")?;
     let primary_peer = index(&book, "exura gran")?;
     let aggressive = index(&book, "exevo vis lux")?;
-    let mut client = connect_world(clients, 0xc4).await?;
+    let (characters, mut client) = full_e2ef5::spell_fixture(clients, "c04", 0xc4).await?;
+    let row_clients = SeamClients {
+        characters: &characters,
+        ..*clients
+    };
+    let clients = &row_clients;
 
     let before = mana(&client)?;
     let pz = cast(&mut client, aggressive).await?;
@@ -440,7 +445,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             ChannelId::decode(&clients.channel)?,
         )?;
         verdict::indexed_timeout(
-            Duration::from_secs(120),
+            full_e2ef5::C17_SETUP_LIMIT + Duration::from_secs(120),
             journey(&mut row, clients, world, &metadata.spawns),
         )
         .await
