@@ -1,5 +1,5 @@
 //! Crystal's one-use tear ritual, retained arena and native two-player exit.
-use super::annihilator_route::step;
+use super::annihilator_route::{position, step};
 use super::fixture::debug;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::content::native_gameplay::NativeGameplayState;
@@ -239,18 +239,4 @@ pub(super) async fn exercise(
     }
     eprintln!("POSTGRES_CASE_COMPLETED bbro2_arthei_single_selected_tear_and_exit");
     Ok(())
-}
-
-async fn position(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    member: &AdmittedSession,
-) -> TestResult<(i32, i32, i16)> {
-    let at = owner
-        .runtime
-        .lock()
-        .await
-        .read_actor_position(member.runtime_actor.ok_or("actor")?)
-        .map_err(debug)?
-        .position();
-    Ok((at.x, at.y, at.floor))
 }

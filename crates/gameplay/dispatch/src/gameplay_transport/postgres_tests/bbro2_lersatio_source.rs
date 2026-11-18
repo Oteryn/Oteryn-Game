@@ -1,5 +1,5 @@
 //! Mirror USE, timed repair, area admission and the retained native return portal.
-use super::annihilator_route::{step, use_target};
+use super::annihilator_route::{position, step, use_target};
 use super::fixture::debug;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::content::native_gameplay::NativeGameplayState;
@@ -172,20 +172,6 @@ fn placement(map: &BundleMap, position: Position) -> TestResult<(WorldObjectTarg
         },
         appearance,
     ))
-}
-
-async fn position(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    member: &AdmittedSession,
-) -> TestResult<(i32, i32, i16)> {
-    let position = owner
-        .runtime
-        .lock()
-        .await
-        .read_actor_position(member.runtime_actor.ok_or("actor")?)
-        .map_err(debug)?
-        .position();
-    Ok((position.x, position.y, position.floor))
 }
 
 pub(super) async fn exercise(

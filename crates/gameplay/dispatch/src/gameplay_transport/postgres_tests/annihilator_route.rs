@@ -688,6 +688,20 @@ pub(super) fn target(
     })
 }
 
+pub(super) async fn position(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    member: &AdmittedSession,
+) -> TestResult<(i32, i32, i16)> {
+    let position = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(member.runtime_actor.ok_or("actor")?)
+        .map_err(debug)?
+        .position();
+    Ok((position.x, position.y, position.floor))
+}
+
 pub(super) async fn step(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     member: &mut AdmittedSession,
