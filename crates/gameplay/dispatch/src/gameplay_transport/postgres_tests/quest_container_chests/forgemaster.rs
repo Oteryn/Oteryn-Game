@@ -18,11 +18,12 @@ fn key(item: u16) -> String {
 }
 
 pub(super) fn selectors() -> impl Iterator<Item = (u16, u16)> {
-    (57237..=57247).enumerate().map(|(index, uid)| {
-        let x = match index {
-            0 => CHEST.0,
-            1 => CHEST.0 - 2,
-            _ => CHEST.0 + (uid - 57238),
+    (57237..=57247).map(|uid| {
+        let x = match uid {
+            57237 => CHEST.0 - 2,
+            // This selector breaks the sequence of reward item IDs.
+            57244 => CHEST.0,
+            _ => CHEST.0 + (uid - 57237),
         };
         (x, uid)
     })

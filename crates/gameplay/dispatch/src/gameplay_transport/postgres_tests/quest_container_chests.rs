@@ -191,8 +191,8 @@ fn scenario_case(
         Case::ForgemasterChoices => (
             forgemaster::CLAIM,
             forgemaster::CHEST,
-            57237,
-            "oteryn:item.tibia.i49520",
+            57244,
+            "oteryn:item.tibia.i49530",
             vec![],
         ),
         Case::Authored | Case::Forgemaster => (
