@@ -60,7 +60,7 @@ async fn exercise(h: &Harness) -> TestResult {
         super::death_ml_loss_composed::production_generation_with_pin(world_id, "content-1")?;
     let active = controller.active().ok_or("active generation")?;
     let native = active.native_gameplay().ok_or("native content")?;
-    use super::l6_world_pickups::{NativeCrop, native_scene};
+    use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_scene};
     let world = native_scene(
         native,
         vec![
@@ -91,9 +91,20 @@ async fn exercise(h: &Harness) -> TestResult {
                     "/../../../content/world/placements/region-z06-x132-y127.b3"
                 )),
                 region: (6, 132, 127),
-                bounds: (34010, 32650, 34011, 32650),
+                bounds: (34010, 32650, 34012, 32651),
                 start: (34010, 32650),
-                expected: Vec::new(),
+                expected: vec![
+                    ExpectedTile {
+                        position: (34010, 32650),
+                        ids: vec![53873, 53874, 846],
+                        counted_entry: None,
+                    },
+                    ExpectedTile {
+                        position: (34011, 32650),
+                        ids: vec![53873, 53876, 847],
+                        counted_entry: None,
+                    },
+                ],
             },
         ],
         &[],
