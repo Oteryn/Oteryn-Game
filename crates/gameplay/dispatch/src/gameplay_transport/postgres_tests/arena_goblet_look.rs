@@ -1,5 +1,6 @@
 use super::fixture::{Harness, debug, id};
 use super::{TestResult, item_look};
+use crate::content::item_ref::ItemDefinitionIndex;
 use crate::foundation::{MessageType, decode_wire_envelope};
 use crate::gameplay_transport::capabilities::COMMAND_TYPE_ITEM_LOOK_INTENT;
 use oteryn_protocol_oteryn::item_look::{
@@ -15,6 +16,13 @@ use oteryn_protocol_oteryn::{
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
 
+const GOBLETS: [(&str, i64); 4] = [
+    ("oteryn:item.tibia.i5807", 1),
+    ("oteryn:item.tibia.i5806", 1),
+    ("oteryn:item.tibia.i5805", 1),
+    ("oteryn:item.tibia.i5805", 1),
+];
+
 #[test]
 fn fenced_look_dispatch_shows_crystal_arena_goblet_inscriptions() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
@@ -25,16 +33,7 @@ fn fenced_look_dispatch_shows_crystal_arena_goblet_inscriptions() -> TestResult 
 }
 
 pub(super) async fn seed_goblets(harness: &Harness) -> TestResult {
-    item_look::seed_main_backpack(
-        harness,
-        &[
-            ("oteryn:item.tibia.i5807", 1),
-            ("oteryn:item.tibia.i5806", 1),
-            ("oteryn:item.tibia.i5805", 1),
-            ("oteryn:item.tibia.i5805", 1),
-        ],
-    )
-    .await?;
+    item_look::seed_main_backpack(harness, &GOBLETS).await?;
     // Match the text rows written by the qpkgw5 arena reward claim.
     for seed in 71..=73 {
         sqlx::query("INSERT INTO game_item_text_revisions VALUES(encode($1,'hex')::uuid,1)")
@@ -49,7 +48,10 @@ pub(super) async fn seed_goblets(harness: &Harness) -> TestResult {
     Ok(())
 }
 
-pub(super) async fn client_looks(client: &mut DuplexStream) -> TestResult {
+pub(super) async fn client_looks(
+    client: &mut DuplexStream,
+    index: &ItemDefinitionIndex,
+) -> TestResult {
     let mut entries = Vec::new();
     loop {
         let frame = item_look::read_frame(client).await?;
@@ -66,9 +68,10 @@ pub(super) async fn client_looks(client: &mut DuplexStream) -> TestResult {
             break;
         }
     }
+    // This inventory capability sends definition refs without appearance IDs.
     assert_eq!(
-        entries.iter().map(|entry| entry.appearance_id).collect::<Vec<_>>(),
-        [5807, 5806, 5805, 5805]
+        entries.iter().map(|entry| Some(entry.item_definition_ref)).collect::<Vec<_>>(),
+        GOBLETS.map(|(key, _)| index.definition_ref("Item", key, "definition-r1"))
     );
     let selection = ItemLookSelection { extended: true };
     for (offset, (entry, expected)) in entries.iter().zip([
@@ -100,7 +103,7 @@ pub(super) async fn client_looks(client: &mut DuplexStream) -> TestResult {
             assert_eq!(result.status, CommandStatus::Accepted);
             let ItemLookResult::Text(text) = decode_item_look_result_for(result.payload, selection)
                 .map_err(debug)? else {
-                return Err(format!("LOOK refused goblet {}", entry.appearance_id).into());
+                return Err(format!("LOOK refused goblet {}", entry.item_definition_ref).into());
             };
             assert!(text.starts_with("You see "), "{text}");
             assert_eq!(text.lines().find(|line| line.contains("Awarded to")), expected, "{text}");
