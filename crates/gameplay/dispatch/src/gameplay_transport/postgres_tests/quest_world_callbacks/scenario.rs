@@ -357,6 +357,8 @@ fn scenario_case(
     let dreamers_wall = matches!(name, dreamers_wall_portal::BLOCKED | dreamers_wall_portal::CLEAR);
     use super::super::lucifuga_bait_spawn;
     let lucifuga = name == lucifuga_bait_spawn::NAME;
+    use super::super::faceless_bane_phase;
+    let faceless_bane = name == faceless_bane_phase::NAME;
     use super::super::feaster_solo_rooms;
     let feaster_solo = matches!(name, feaster_solo_rooms::IRGIX | feaster_solo_rooms::UNAZ | feaster_solo_rooms::VOK);
     use super::super::haunted_cellar_disguise;
@@ -382,6 +384,8 @@ fn scenario_case(
     let zarganash = name == zarganash_linked_boss::NAME;
     let mut callback = if zarganash {
         zarganash_linked_boss::binding()?
+    } else if faceless_bane {
+        faceless_bane_phase::binding()?
     } else if feaster_solo {
         feaster_solo_rooms::binding(name)?
     } else if haunted_tomb {
@@ -708,6 +712,8 @@ fn scenario_case(
     }
     let world = if zarganash {
         zarganash_linked_boss::world(&callback)?
+    } else if faceless_bane {
+        faceless_bane_phase::world(&callback)?
     } else if feaster_solo {
         feaster_solo_rooms::world(&callback, name)?
     } else if haunted_tomb {
@@ -1779,6 +1785,11 @@ fn scenario_case(
         ));
         if haunted_cellar {
             owner.quest_catalogue = Some(haunted_cellar_disguise::catalogue(
+                owner.quest_catalogue.as_ref().ok_or("quest catalogue")?, &callback,
+            )?);
+        }
+        if faceless_bane {
+            owner.quest_catalogue = Some(faceless_bane_phase::catalogue(
                 owner.quest_catalogue.as_ref().ok_or("quest catalogue")?, &callback,
             )?);
         }
@@ -3033,6 +3044,8 @@ fn scenario_case(
             .await?;
         } else if zarganash {
             Box::pin(zarganash_linked_boss::exercise(&mut owner, &mut admitted)).await?;
+        } else if faceless_bane {
+            Box::pin(faceless_bane_phase::exercise(&mut owner, &mut admitted)).await?;
         } else if feaster_solo {
             Box::pin(feaster_solo_rooms::exercise(&mut owner, &mut admitted, &h, fence, name)).await?;
         } else if haunted_tomb {
