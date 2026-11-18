@@ -259,7 +259,9 @@ fn scenario() -> TestResult {
             assert_eq!(outcome.disposition, expected);
             let effects = map.facts.movement_effects_since(0);
             assert_eq!(effects.len(), 1, "the first use emits green magic once");
-            assert_eq!(effects[0].2, 15);
+            let (_, position, effect) = effects[0];
+            assert_eq!(effect, 15);
+            assert_eq!((position.x, position.y, position.floor), (6, 0, -7));
             assert_eq!(
                 owner.states.server_messages.take(session, generation),
                 notice
