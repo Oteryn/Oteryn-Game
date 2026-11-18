@@ -15,13 +15,20 @@ use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
 const ARKULIUS: &str = "oteryn:npc.arkulius";
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Mission {
+    Published,
+    Expanded,
+    ExpandedWithSoil,
+}
+
 #[test]
 fn espher_arkulius_accepts_the_druid_mission_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
     drop(admin);
-    run_case(false)
+    run_case(Mission::Published)
 }
 
 #[test]
@@ -30,23 +37,36 @@ fn espher_arkulius_checks_eleven_item_identities_in_the_npc_transaction_postgres
         return Ok(());
     };
     drop(admin);
-    run_case(true)
+    run_case(Mission::Expanded)
 }
 
-fn run_case(wide_exchange: bool) -> TestResult {
+#[test]
+fn espher_arkulius_refuses_start_with_carried_soil_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    run_case(Mission::ExpandedWithSoil)
+}
+
+fn run_case(mission_fixture: Mission) -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("espher-arkulius", move || {
         run(async |admin| {
             let h =
                 Harness::create_with_admission_seed(admin, "espher_arkulius", false, false).await?;
-            let result = exercise(&h, wide_exchange).await;
+            let result = exercise(&h, mission_fixture).await;
             h.cleanup().await?;
             result
         })
     })
 }
 
-async fn exercise(h: &Harness, wide_exchange: bool) -> TestResult {
+async fn exercise(h: &Harness, mission_fixture: Mission) -> TestResult {
     prepare_current_session(h).await?;
+    let carries_soil = mission_fixture == Mission::ExpandedWithSoil;
+    if carries_soil {
+        super::item_look::seed_main_backpack(h, &[("oteryn:item.tibia.i940", 1)]).await?;
+    }
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
@@ -142,8 +162,8 @@ async fn exercise(h: &Harness, wide_exchange: bool) -> TestResult {
         "{:?}",
         mission.conversation
     );
-    if wide_exchange {
-        accept_with_eleven_item_identities(&owner, &admitted).await?;
+    if mission_fixture != Mission::Published {
+        accept_with_eleven_item_identities(&owner, &admitted, carries_soil).await?;
     } else {
         let result = talk(&mut owner, &admitted, arkulius, 702, "yes").await?;
         assert!(
@@ -156,15 +176,15 @@ async fn exercise(h: &Harness, wide_exchange: bool) -> TestResult {
             result.conversation
         );
     }
-    let stage: i64 = sqlx::query_scalar(
+    let stage: Option<i64> = sqlx::query_scalar(
         "SELECT value FROM game_character_quest_tracks
          WHERE character_id=encode($1,'hex')::uuid
            AND track_key='oteryn:quest-progress/elemental_spheres/quest_line'",
     )
     .bind(id(41).as_slice())
-    .fetch_one(&h.pool)
+    .fetch_optional(&h.pool)
     .await?;
-    assert_eq!(stage, 1);
+    assert_eq!(stage, (!carries_soil).then_some(1));
     Ok(())
 }
 
@@ -173,6 +193,7 @@ async fn exercise(h: &Harness, wide_exchange: bool) -> TestResult {
 async fn accept_with_eleven_item_identities(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
+    carries_soil: bool,
 ) -> TestResult {
     use crate::durability::quest_state::QuestTransitionOutcome;
     use crate::durability::quest_state::npc_program::NpcProgramRequest;
@@ -268,17 +289,22 @@ async fn accept_with_eleven_item_identities(
         )
         .await
         .map_err(debug)?;
-    assert!(
-        matches!(receipt.transition, QuestTransitionOutcome::Committed(_)),
-        "{receipt:?}"
-    );
-    assert_eq!(
-        source
-            .item_exchange_keys(ARKULIUS)
-            .ok_or("exchange keys")?
-            .len(),
-        11
-    );
+    if carries_soil {
+        assert!(
+            matches!(
+                receipt.transition,
+                QuestTransitionOutcome::Refused(
+                    oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch
+                )
+            ),
+            "{receipt:?}"
+        );
+    } else {
+        assert!(
+            matches!(receipt.transition, QuestTransitionOutcome::Committed(_)),
+            "{receipt:?}"
+        );
+    }
     Ok(())
 }
 
