@@ -337,27 +337,41 @@ async fn redeem_mortar(
     let (mut server, peer) = tokio::io::duplex(1 << 20);
     drive(owner, admitted, &mut server, async {
         let mut client = Client::new(peer, admitted);
-        for word in ["hi", "gratitude", "repairs", "books", "yes"] {
-            client.talk(npc, word).await?;
-        }
+        client.talk(npc, "hi").await?;
+        client.talk(npc, "gratitude").await?;
+        assert_eq!(
+            client.talk(npc, "repairs").await?.lines,
+            ["You delivered 1 mortar and killed 0 frazzlemaws and 0 silencers for 100 gold."],
+        );
+        assert_eq!(
+            client.talk(npc, "books").await?.lines,
+            ["Record 100 recent gold? You have 0 gold in the books."],
+        );
+        assert_eq!(client.talk(npc, "yes").await?.lines, ["100 gold recorded."]);
         assert_eq!(amount(GOLD).await?, Some(100));
         for track in [MORTAR, FRAZZLEMAWS, SILENCERS] {
             assert_eq!(amount(track).await?, Some(0));
         }
-        client.talk(npc, "trade").await?;
+        assert_eq!(
+            client.talk(npc, "trade").await?.lines,
+            ["You have 100 gold. How many clusters?"],
+        );
         assert_eq!(
             client.talk(npc, "2").await?.lines,
-            ["Your balance cannot cover that quantity."],
+            ["You can ask for up to 1 clusters."],
         );
         assert_eq!(amount(GOLD).await?, Some(100));
         assert_eq!(clusters().await?, 0);
         let command = admitted.continuity.next_command_id + 7;
-        assert_eq!(client.talk(npc, "1").await?.lines, ["Clusters delivered."]);
+        assert_eq!(
+            client.talk(npc, "1").await?.lines,
+            ["Clusters delivered. 0 gold remains."]
+        );
         assert_eq!(amount(GOLD).await?, Some(0));
         assert_eq!(clusters().await?, 1);
         assert_eq!(
             client.talk_command(npc, "1", command).await?.lines,
-            ["Clusters delivered."],
+            ["Clusters delivered. 0 gold remains."],
         );
         assert_eq!(amount(GOLD).await?, Some(0));
         assert_eq!(clusters().await?, 1);

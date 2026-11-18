@@ -80,11 +80,14 @@ pub(super) fn sandomo_catalogue(
     let topic = |value| json!({"kind":"set_topic","value":value});
     let quantity =
         |status| json!({"kind":"redemption_quantity","track":GOLD,"unit_cost":100,"status":status});
-    let rule = |key, words: &[&str], from, guards: Vec<Value>, effects: Vec<Value>, reply| {
+    let storage = |track| json!({"kind":"nonnegative_storage","track":track});
+    let total = json!({"kind":"contribution_total","terms":terms});
+    let rule = |key, words: &[&str], from, guards: Vec<Value>, effects: Vec<Value>, reply, numbers| {
         json!({
             "key":format!("oteryn:quest-npc/roshamuul_quest/sandomo/{key}"),
             "quest":QUEST,"npc":NPC,"trigger":"say","topics":[from],"keywords":words,
-            "any_message":words.is_empty(),"guards":guards,"effects":effects,"reply":[reply],"sources":[SOURCE]
+            "any_message":words.is_empty(),"guards":guards,"effects":effects,"reply":[reply],
+            "reply_numbers":numbers,"sources":[SOURCE]
         })
     };
     let rules = vec![
@@ -95,6 +98,7 @@ pub(super) fn sandomo_catalogue(
             vec![],
             vec![topic(3)],
             "How did you contribute?",
+            json!({}),
         ),
         rule(
             "repairs",
@@ -102,7 +106,9 @@ pub(super) fn sandomo_catalogue(
             3,
             vec![json!({"kind":"contribution_total","op":"gt","value":0,"terms":terms})],
             vec![topic(4)],
-            "You have contributions to record.",
+            "You delivered {{mortar}} mortar and killed {{frazzlemaws}} frazzlemaws and {{silencers}} silencers for {{total}} gold.",
+            json!({"mortar":storage(MORTAR),"frazzlemaws":storage(FRAZZLEMAWS),
+                   "silencers":storage(SILENCERS),"total":total}),
         ),
         rule(
             "books",
@@ -110,7 +116,8 @@ pub(super) fn sandomo_catalogue(
             4,
             vec![],
             vec![topic(5)],
-            "Record the recent contributions?",
+            "Record {{total}} recent gold? You have {{balance}} gold in the books.",
+            json!({"total":total,"balance":storage(GOLD)}),
         ),
         rule(
             "confirm",
@@ -124,7 +131,8 @@ pub(super) fn sandomo_catalogue(
                 json!({"kind":"set","track":SILENCERS,"value":0}),
                 topic(0),
             ],
-            "Contributions recorded.",
+            "{{balance}} gold recorded.",
+            json!({"balance":storage(GOLD)}),
         ),
         rule(
             "trade",
@@ -132,7 +140,8 @@ pub(super) fn sandomo_catalogue(
             0,
             vec![json!({"kind":"storage","track":GOLD,"op":"ge","value":100})],
             vec![topic(6)],
-            "How many clusters?",
+            "You have {{balance}} gold. How many clusters?",
+            json!({"balance":storage(GOLD)}),
         ),
         rule(
             "invalid",
@@ -141,6 +150,7 @@ pub(super) fn sandomo_catalogue(
             vec![quantity("invalid")],
             vec![],
             "Give a whole positive quantity.",
+            json!({}),
         ),
         rule(
             "insufficient",
@@ -148,7 +158,8 @@ pub(super) fn sandomo_catalogue(
             6,
             vec![quantity("insufficient")],
             vec![],
-            "Your balance cannot cover that quantity.",
+            "You can ask for up to {{limit}} clusters.",
+            json!({"limit":{"kind":"redemption_limit","track":GOLD,"unit_cost":100}}),
         ),
         rule(
             "redeem",
@@ -161,7 +172,8 @@ pub(super) fn sandomo_catalogue(
                 }),
                 topic(0),
             ],
-            "Clusters delivered.",
+            "Clusters delivered. {{balance}} gold remains.",
+            json!({"balance":storage(GOLD)}),
         ),
     ];
     let tracks =
@@ -185,8 +197,14 @@ pub(super) const CLUSTER: FixtureItem = FixtureItem {
 async fn exercise(h: &Harness, recorded_gold: i64) -> TestResult {
     with_npc_items(h, Arc::new(catalogue(recorded_gold)?), NPC, &[CLUSTER], async |owner, admitted, npc| {
         talk(owner, admitted, npc, 1, "hi").await?;
-        for (index, word) in ["gratitude", "repairs", "books", "yes", "trade"].into_iter().enumerate() {
-            talk(owner, admitted, npc, u64::try_from(index)? + 2, word).await?;
+        for (index, (word, expected)) in [
+            ("gratitude", "How did you contribute?"),
+            ("repairs", "You delivered 3 mortar and killed 2 frazzlemaws and 1 silencers for 303 gold."),
+            ("books", "Record 303 recent gold? You have 500 gold in the books."),
+            ("yes", "303 gold recorded."),
+            ("trade", "You have 303 gold. How many clusters?"),
+        ].into_iter().enumerate() {
+            assert_eq!(talk(owner, admitted, npc, u64::try_from(index)? + 2, word).await?, [expected]);
         }
         let amount = |track: &'static str| async move {
             sqlx::query_scalar::<_, i64>("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
@@ -197,12 +215,12 @@ async fn exercise(h: &Harness, recorded_gold: i64) -> TestResult {
             assert_eq!(amount(track).await?, 0);
         }
         assert_eq!(talk(owner, admitted, npc, 7, "1.5").await?, ["Give a whole positive quantity."]);
-        assert_eq!(talk(owner, admitted, npc, 8, "4").await?, ["Your balance cannot cover that quantity."]);
+        assert_eq!(talk(owner, admitted, npc, 8, "4").await?, ["You can ask for up to 3 clusters."]);
         assert_eq!(amount(GOLD).await?, 303);
-        assert_eq!(talk(owner, admitted, npc, 9, "2.0").await?, ["Clusters delivered."]);
+        assert_eq!(talk(owner, admitted, npc, 9, "2.0").await?, ["Clusters delivered. 103 gold remains."]);
         assert_eq!(amount(GOLD).await?, 103);
         talk(owner, admitted, npc, 10, "trade").await?;
-        assert_eq!(talk(owner, admitted, npc, 11, "1").await?, ["Clusters delivered."]);
+        assert_eq!(talk(owner, admitted, npc, 11, "1").await?, ["Clusters delivered. 3 gold remains."]);
         assert_eq!(amount(GOLD).await?, 3);
         let (
             items, receipts
@@ -232,15 +250,15 @@ async fn exercise_bulk(h: &Harness, recorded_gold: i64) -> TestResult {
         let (_, ()) = drive(owner, admitted, &mut server, async {
             let mut client = Client::new(peer, admitted);
             client.talk(npc, "hi").await?;
-            client.talk(npc, "trade").await?;
-            assert_eq!(client.talk(npc, "102").await?.lines, ["Your balance cannot cover that quantity."]);
+            assert_eq!(client.talk(npc, "trade").await?.lines, ["You have 10103 gold. How many clusters?"]);
+            assert_eq!(client.talk(npc, "102").await?.lines, ["You can ask for up to 101 clusters."]);
             assert_eq!(read().await?, (10_103, 0, 0, 0));
 
             // Crystal npc/sandomo.lua:151-165 charges for all requested clusters
             // together. 101 crosses the current native stack size of 100.
             let command = admitted.continuity.next_command_id + 3;
             let committed = client.talk(npc, "101").await?;
-            assert_eq!(committed.lines, ["Clusters delivered."]);
+            assert_eq!(committed.lines, ["Clusters delivered. 3 gold remains."]);
             assert_eq!(read().await?, (3, 1, 2, 101));
             let stack_sizes: Vec<i64> = sqlx::query_scalar(
                 "SELECT quantity FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1 ORDER BY quantity"
