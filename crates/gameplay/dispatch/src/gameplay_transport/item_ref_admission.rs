@@ -151,7 +151,9 @@ pub(super) fn visible_corpses(
                 position: ActorPosition {
                     x: corpse.position.x,
                     y: corpse.position.y,
-                    floor: corpse.position.floor,
+                    floor: oteryn_protocol_oteryn::world_spatial::native_floor(
+                        corpse.position.floor,
+                    ),
                 },
                 revision: corpse.revision,
             })
