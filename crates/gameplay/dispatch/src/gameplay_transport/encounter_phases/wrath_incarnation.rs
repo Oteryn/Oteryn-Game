@@ -19,7 +19,10 @@ pub(super) struct Incarnation {
 }
 
 impl Registry {
-    #[allow(clippy::too_many_arguments, reason = "one exact pillar CAS owns the native spawn")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "one exact pillar CAS owns the native spawn"
+    )]
     pub(in crate::gameplay_transport) fn incarnation(
         &self,
         runtime: &mut ChannelRuntimeV1,
@@ -50,7 +53,9 @@ impl Registry {
         if !placement(cells, runtime, at)
             || map.facts.quest_callback_replacement(key, 11427).is_none()
             || runtime.positioned_melee_census().map_or(true, |census| {
-                census.iter().any(|(_, position, _)| position.position() == at)
+                census
+                    .iter()
+                    .any(|(_, position, _)| position.position() == at)
             })
         {
             return UseDisposition::Occupied;
@@ -63,7 +68,10 @@ impl Registry {
         }
         let Ok(actors) = runtime.commit_quest_creature_spawn_with_projection(
             &[(&monster.creature, policy.maximum_health, at)],
-            || map.facts.apply_quest_callback(key, revision, after, &[], &[], false, None),
+            || {
+                map.facts
+                    .apply_quest_callback(key, revision, after, &[], &[], false, None)
+            },
         ) else {
             return UseDisposition::Rejected;
         };
@@ -86,13 +94,14 @@ impl Registry {
         }
     }
 
-    pub(super) fn reset_incarnations(&self, runtime: &ChannelRuntimeV1) {
+    pub(in crate::gameplay_transport) fn reset_incarnations(&self, runtime: &ChannelRuntimeV1) {
         let Ok(mut rooms) = self.incarnations.lock() else {
             return;
         };
         rooms.retain(|room| {
             if room.scope != runtime.encounter_owner_scope()
-                || room.cells.scope().generation_digest != runtime.content_pin().server_artifact_digest()
+                || room.cells.scope().generation_digest
+                    != runtime.content_pin().server_artifact_digest()
             {
                 return false;
             }
@@ -106,9 +115,19 @@ impl Registry {
             };
             let facts = &index.map().facts;
             facts.object_revision(room.key) == room.revision
-                && !facts.quest_callback_replacement(room.key, 11427).is_some_and(|before| {
-                    facts.apply_quest_callback(room.key, room.revision, before, &[], &[], true, None)
-                })
+                && !facts
+                    .quest_callback_replacement(room.key, 11427)
+                    .is_some_and(|before| {
+                        facts.apply_quest_callback(
+                            room.key,
+                            room.revision,
+                            before,
+                            &[],
+                            &[],
+                            true,
+                            None,
+                        )
+                    })
         });
     }
 }

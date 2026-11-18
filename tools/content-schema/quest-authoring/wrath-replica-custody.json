@@ -1,0 +1,7 @@
+{
+  "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+  "item": "oteryn:item.tibia.i11362",
+  "sources": [
+    "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua#L45"
+  ]
+}

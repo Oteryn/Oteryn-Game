@@ -1,0 +1,308 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/replica_cooldown",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "writable": true,
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/wrath/banish-fury",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.a_sleeping_dragon",
+      "keywords": [
+        "banish-fury"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "carried_item": "oteryn:item.tibia.i11362",
+      "creature_target": "oteryn:creature.fury_of_the_emperor",
+      "corpse_target": {
+        "appearance": 11361,
+        "maximum_age_ms": 60000
+      },
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua"
+      ],
+      "reply": [
+        "The sceptre banishes the presence of the emperor."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/boss_status",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission10",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/replica_cooldown",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 60
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
+      "failure_reply": [
+        "You must wait before using this again."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/wrath/banish-scorn",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.a_sleeping_dragon",
+      "keywords": [
+        "banish-scorn"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "carried_item": "oteryn:item.tibia.i11362",
+      "creature_target": "oteryn:creature.scorn_of_the_emperor",
+      "corpse_target": {
+        "appearance": 11361,
+        "maximum_age_ms": 60000
+      },
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua"
+      ],
+      "reply": [
+        "The sceptre banishes the presence of the emperor."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/boss_status",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission10",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/replica_cooldown",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 60
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
+      "failure_reply": [
+        "You must wait before using this again."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/wrath/banish-spite",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.a_sleeping_dragon",
+      "keywords": [
+        "banish-spite"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "carried_item": "oteryn:item.tibia.i11362",
+      "creature_target": "oteryn:creature.spite_of_the_emperor",
+      "corpse_target": {
+        "appearance": 11361,
+        "maximum_age_ms": 60000
+      },
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua"
+      ],
+      "reply": [
+        "The sceptre banishes the presence of the emperor."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/boss_status",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission10",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/replica_cooldown",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 60
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
+      "failure_reply": [
+        "You must wait before using this again."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/wrath/banish-wrath",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.a_sleeping_dragon",
+      "keywords": [
+        "banish-wrath"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "carried_item": "oteryn:item.tibia.i11362",
+      "creature_target": "oteryn:creature.wrath_of_the_emperor",
+      "corpse_target": {
+        "appearance": 11361,
+        "maximum_age_ms": 60000
+      },
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua"
+      ],
+      "reply": [
+        "The sceptre banishes the presence of the emperor."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/boss_status",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission10",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/replica_cooldown",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 60
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
+      "failure_reply": [
+        "You must wait before using this again."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/wrath/replica",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zizzle",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 29,
+          "maximum": 29,
+          "set": 30
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission10",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/boss_status",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/teleport_access/inner_sanctum",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i11362",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take this replica. Use it on each crystal and then on the incarnation’s remains."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zizzle.lua#L75-L93"
+      ]
+    }
+  ]
+}

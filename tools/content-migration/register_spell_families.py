@@ -556,6 +556,8 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     quest_corpse_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import authored_npc_item_profiles
     authored_npc_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import wrath_remains_profiles
+    wrath_remains_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import quest_loot_profiles
     quest_loot_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import build_questpc4_stag_item_profiles

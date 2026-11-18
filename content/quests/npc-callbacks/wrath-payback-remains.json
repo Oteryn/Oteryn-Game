@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/wrath/banish-zalamon",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.a_sleeping_dragon",
+      "keywords": [
+        "banish-zalamon"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/godslayer",
+      "carried_item": "oteryn:item.tibia.i11362",
+      "creature_target": "oteryn:creature.mutated_zalamon",
+      "corpse_target": {
+        "appearance": 11429,
+        "maximum_age_ms": 60000
+      },
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua"
+      ],
+      "reply": [
+        "The presence of the emperor has been banished."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 31,
+          "maximum": 31,
+          "set": 32
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission11",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 2
+        }
+      ]
+    }
+  ]
+}

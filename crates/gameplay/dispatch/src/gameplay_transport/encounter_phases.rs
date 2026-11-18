@@ -71,6 +71,7 @@ impl Registry {
         actor: ExactActorRef,
     ) {
         self.incarnation_death(actor);
+        self.reset_incarnations(runtime);
         self.payback_death(runtime, actor);
         let Ok(mut active) = self.active.lock() else {
             return;

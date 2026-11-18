@@ -787,14 +787,17 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && matches!(callback.selector.unique, Some(3193..=3196))
             && callback.requires_world_admission
             && callback.item_on_target.as_ref().is_some_and(|item| {
-                item.item == "oteryn:item.tibia.i11362" && item.selected_instance
-                    && item.reusable && item.target_replacement == Some(10797)
+                item.item == "oteryn:item.tibia.i11362"
+                    && item.selected_instance
+                    && item.reusable
+                    && item.target_replacement == Some(10797)
             })
             && encounter.players.is_empty()
             && encounter.monsters.len() == 1
     });
     if operations > 1
-        || (operations > 0 && !incarnation
+        || (operations > 0
+            && !incarnation
             && ((!personal_encounter
                 && !super::personal_trial::admitted(callback)
                 && (!lever
@@ -878,8 +881,15 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         * (u64::from(encounter.room_max.y.saturating_sub(encounter.room_min.y)) + 1)
                         > 4096
             } else {
-                !incarnation && !(1..=if payback { 36 } else if encounter.phase.is_some() { 16 } else { 8 })
-                    .contains(&encounter.players.len())
+                !incarnation
+                    && !(1..=if payback {
+                        36
+                    } else if encounter.phase.is_some() {
+                        16
+                    } else {
+                        8
+                    })
+                        .contains(&encounter.players.len())
             }
             || !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                 .contains(&encounter.monsters.len())

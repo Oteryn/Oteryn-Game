@@ -68,15 +68,15 @@ fn callback() -> TestResult<Callback> {
 
 #[test]
 fn engenc2_cults_callback_native_phases_and_settlement_postgres() -> TestResult {
-    cults_scenario(false)
+    cults_scenario(false, false)
 }
 
 #[test]
 fn qmrevfix_cults_second_lever_after_victory_postgres() -> TestResult {
-    cults_scenario(true)
+    cults_scenario(true, false)
 }
 
-fn cults_scenario(reenter: bool) -> TestResult {
+pub(super) fn cults_scenario(reenter: bool, payback: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -87,7 +87,11 @@ fn cults_scenario(reenter: bool) -> TestResult {
             let h =
                 Harness::create_with_admission_seed(admin, "engenc2_cults", true, false).await?;
             prepare_current_session(&h).await?;
-            let callback = callback()?;
+            let callback = if payback {
+                super::wrath_payback::callback()?
+            } else {
+                callback()?
+            };
             let trigger = Position {
                 x: 100,
                 y: 100,
@@ -307,6 +311,9 @@ fn cults_scenario(reenter: bool) -> TestResult {
                 UseDisposition::Committed,
                 "phase admission"
             );
+            if payback {
+                return super::wrath_payback::exercise(&owner, &admitted, &placement, key).await;
+            }
             assert_eq!(
                 owner
                     .states
@@ -520,7 +527,7 @@ async fn value(h: &Harness) -> TestResult<i64> {
     .await?)
 }
 
-async fn kill(
+pub(super) async fn kill(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &crate::gameplay_transport::connection::AdmittedSession,
     target: ExactActorRef,

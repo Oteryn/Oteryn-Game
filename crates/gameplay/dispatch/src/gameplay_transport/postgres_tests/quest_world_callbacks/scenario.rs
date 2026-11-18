@@ -940,6 +940,7 @@ fn scenario_case(
             || name.starts_with("m09-treasure-")
             || name.starts_with("engoutfit-")
             || name == "nx6-wayfarer"
+            || name == super::super::wrath_incarnation::NAME
             || name == "engitem-targuna-selected-tool"
             || name == "engitem-native-seal-paint"
             || name == super::super::engitem_seal_paint_lost_ack::NAME
@@ -2926,6 +2927,10 @@ fn scenario_case(
         } else if name == "authored-wrath-hunt" {
             super::super::questpc8_wrath_hunt::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
+        } else if name == super::super::wrath_incarnation::NAME {
+            Box::pin(super::super::wrath_incarnation::exercise(
+                &mut owner, &mut admitted, &h, trigger,
+            )).await?;
         } else if name == "nx6-wayfarer" {
             Box::pin(super::super::nx6_wayfarer::exercise(
                 &mut owner,

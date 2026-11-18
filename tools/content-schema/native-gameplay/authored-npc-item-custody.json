@@ -7,6 +7,11 @@
       "quest": "oteryn:quest.a_father_s_burden_quest"
     },
     {
+      "path": "tools/content-schema/quest-authoring/wrath-replica-custody.json",
+      "sha256": "1388ccc80ae10e31e494ff2eff06fff58e4241754a82eff4a7e1f6f0b674c450",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest"
+    },
+    {
       "path": "tools/content-schema/quest-authoring/wrath-spiritual-charm.json",
       "sha256": "2fc697878a920648d59e739ea1f579941a0308d9b5fc3d5db7a7f654dacf0b16",
       "quest": "oteryn:quest.wrath_of_the_emperor_quest"

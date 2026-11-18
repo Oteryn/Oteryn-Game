@@ -997,12 +997,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && conditional_cells::matches(map, c)
             })
             .collect::<Vec<_>>();
-        if selected_tool.is_some() && selected.iter().any(|callback| {
-            callback.effects.encounter.as_ref().is_some_and(|encounter| {
-                encounter.phase == Some(world_callbacks::EncounterPhase::WrathIncarnation)
+        if selected_tool.is_some()
+            && selected.iter().any(|callback| {
+                callback
+                    .effects
+                    .encounter
+                    .as_ref()
+                    .is_some_and(|encounter| {
+                        encounter.phase == Some(world_callbacks::EncounterPhase::WrathIncarnation)
+                    })
             })
-        }) {
-            selected.retain(|callback| callback.item_on_target.as_ref().is_some_and(|tool| tool.selected_instance));
+        {
+            selected.retain(|callback| {
+                callback
+                    .item_on_target
+                    .as_ref()
+                    .is_some_and(|tool| tool.selected_instance)
+            });
         }
         let source_trial = selected
             .iter()

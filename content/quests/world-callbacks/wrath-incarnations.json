@@ -27,9 +27,10 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
-          "minimum": 29,
-          "maximum": 29,
-          "set": 29
+          "minimum": 30,
+          "maximum": 32,
+          "set": 30,
+          "preserve": true
         }
       ],
       "offerings": [],
@@ -102,9 +103,10 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
-          "minimum": 29,
-          "maximum": 29,
-          "set": 29
+          "minimum": 30,
+          "maximum": 32,
+          "set": 30,
+          "preserve": true
         }
       ],
       "offerings": [],
@@ -177,9 +179,10 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
-          "minimum": 29,
-          "maximum": 29,
-          "set": 29
+          "minimum": 30,
+          "maximum": 32,
+          "set": 30,
+          "preserve": true
         }
       ],
       "offerings": [],
@@ -252,9 +255,10 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
-          "minimum": 29,
-          "maximum": 29,
-          "set": 29
+          "minimum": 30,
+          "maximum": 32,
+          "set": 30,
+          "preserve": true
         }
       ],
       "offerings": [],
