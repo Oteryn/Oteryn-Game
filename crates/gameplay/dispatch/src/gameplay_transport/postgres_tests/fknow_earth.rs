@@ -448,7 +448,10 @@ pub(super) fn tree_generation(
         "semantics": definition["semantics"]
     }));
     pin.bytes = serde_json::to_vec(&document)?;
-    pin.sha256 = format!("{:x}", sha2::Sha256::digest(&pin.bytes));
+    pin.sha256 = sha2::Sha256::digest(&pin.bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
     crate::content::native_gameplay::test_support::try_activate_input(world, &input)
         .map_err(debug)
         .map_err(Into::into)
