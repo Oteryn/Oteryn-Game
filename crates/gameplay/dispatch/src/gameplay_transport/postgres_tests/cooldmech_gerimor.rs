@@ -26,6 +26,17 @@ pub(super) async fn exercise(
     for (id, text) in [(1, "hi"), (2, "mission"), (3, "humans"), (4, "yes")] {
         talk(owner, admitted, gerimor, id, text).await?;
     }
+    assert_eq!(
+        progress(
+            owner,
+            admitted,
+            authority,
+            &format!("{PREFIX}humans/mission")
+        )
+        .await?,
+        1,
+    );
+    // Import the existing character's completed investigations; only Gerimor can report them.
     for (track, value) in [
         ("barkless/mission", 7),
         ("humans/mission", 2),
@@ -125,7 +136,11 @@ pub(super) async fn exercise(
 }
 
 async fn set_track(harness: &Harness, suffix: &str, value: i64) -> TestResult {
-    sqlx::query(
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let result = sqlx::query(
         "INSERT INTO game_character_quest_tracks(
              character_id, track_key, quest_key, value, committed_character_revision
          ) SELECT character_id, $2, $3, $4, character_revision
@@ -133,7 +148,9 @@ async fn set_track(harness: &Harness, suffix: &str, value: i64) -> TestResult {
          ON CONFLICT (character_id, track_key)
          DO UPDATE SET value=EXCLUDED.value, committed_character_revision=EXCLUDED.committed_character_revision",
     ).bind(id(41).as_slice()).bind(format!("{PREFIX}{suffix}")).bind(QUEST).bind(value)
-    .execute(&harness.pool).await?;
+    .execute(&mut *tx).await?;
+    assert_eq!(result.rows_affected(), 1);
+    tx.commit().await?;
     Ok(())
 }
 
