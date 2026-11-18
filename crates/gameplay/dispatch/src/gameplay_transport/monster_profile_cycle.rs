@@ -736,8 +736,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 if !pending.fields_known() {
                     let (actors, range) = pending.field_batch(runtime);
+                    // Field ticks read current condition stores, which can advance
+                    // between slices. The retained AI reservation still uses now.
                     owner.tick_creature_fields(
-                        &mut map, runtime, states, native, &actors[range.clone()], now, native_health_names,
+                        &mut map, runtime, states, native, &actors[range.clone()], execution_now, native_health_names,
                     ).await?;
                     pending.advance_fields(range.end, actors.len());
                     if range.end < actors.len() {
