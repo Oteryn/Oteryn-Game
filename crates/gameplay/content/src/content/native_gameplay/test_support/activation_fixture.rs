@@ -279,8 +279,11 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     // Change these source-qualification expectations only with admitted content.
     let newly_admitted = [
         "oteryn:creature.demodras",
-        "oteryn:creature.the_percht_queen",
         "oteryn:creature.goshnar_s_spite",
+        "oteryn:creature.the_baron_from_below",
+        "oteryn:creature.the_count_of_the_core",
+        "oteryn:creature.the_duke_of_the_depths",
+        "oteryn:creature.the_percht_queen",
     ];
     let mut missing = 0;
     let mut inadmissible = 0;
@@ -591,7 +594,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 262, 38, 36)
+        (52, 258, 38, 40)
     );
     assert_eq!(
         admitted,
@@ -626,7 +629,11 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.rupture",
             "oteryn:creature.sugar_daddy",
             "oteryn:creature.tazhadur",
+            "oteryn:creature.the_baron_from_below",
+            "oteryn:creature.the_count_of_the_core",
+            "oteryn:creature.the_duke_of_the_depths",
             "oteryn:creature.the_first_dragon",
+            "oteryn:creature.the_hungry_baron_from_below",
             "oteryn:creature.the_many",
             "oteryn:creature.the_percht_queen",
             "oteryn:creature.the_primal_menace",
