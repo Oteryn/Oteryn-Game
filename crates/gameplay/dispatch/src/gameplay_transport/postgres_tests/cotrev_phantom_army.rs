@@ -94,7 +94,7 @@ fn scenario(admin: String) -> TestResult {
         );
         let mut data = oteryn_world_bundle::bundle::read(&template)?;
         // The spell-tile projection requires a source appearance for every entry.
-        data.manifest.palette[0].key = "oteryn:terrain.tibia.i293".into();
+        data.manifest.palette[0].key = "oteryn:terrain.tibia.i970".into();
         data.manifest.world.min_x = 33240;
         data.manifest.world.min_y = 31070;
         data.manifest.world.max_x = 33355;
