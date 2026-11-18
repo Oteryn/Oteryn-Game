@@ -323,6 +323,11 @@ pub enum EncounterPhase {
     GraveDangerDukeKrule { exit: Position },
     #[serde(rename = "grave_danger_earl_osam")]
     GraveDangerEarlOsam { exit: Position, centre: Position },
+    #[serde(rename = "grave_danger_lord_azaram")]
+    GraveDangerLordAzaram {
+        exit: Position,
+        splinters: [Position; 4],
+    },
     #[serde(rename = "grave_danger_sirs")]
     GraveDangerSirs {
         exit: Position,
@@ -901,6 +906,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 EncounterPhase::GraveDangerCountVlarkorth { .. }
                 | EncounterPhase::GraveDangerDukeKrule { .. }
                 | EncounterPhase::GraveDangerEarlOsam { .. }
+                | EncounterPhase::GraveDangerLordAzaram { .. }
                 | EncounterPhase::GraveDangerSirs { .. },
             ) => 5,
             Some(EncounterPhase::GraveDangerZelos { .. }) => 10,
@@ -935,6 +941,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || matches!(encounter.phase, Some(EncounterPhase::GraveDangerEarlOsam { exit, centre })
                 if encounter.monsters.len() != 1 || !pos(exit) || in_room(exit)
                     || !pos(centre) || !in_room(centre))
+            || matches!(encounter.phase, Some(EncounterPhase::GraveDangerLordAzaram { exit, splinters })
+                if !pos(exit) || in_room(exit) || !splinters.into_iter().all(|at| pos(at) && in_room(at))
+                    || splinters.into_iter().collect::<BTreeSet<_>>().len() != splinters.len())
             || matches!(encounter.phase, Some(EncounterPhase::GraveDangerSirs { exit, fight })
                 if encounter.monsters.len() != 2 || !pos(exit) || in_room(exit)
                     || !fight.into_iter().all(|at| pos(at) && in_room(at))

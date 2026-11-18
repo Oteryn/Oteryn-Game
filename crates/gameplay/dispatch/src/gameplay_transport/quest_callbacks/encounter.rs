@@ -152,6 +152,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 EncounterPhase::GraveDangerCountVlarkorth { .. }
                     | EncounterPhase::GraveDangerDukeKrule { .. }
                     | EncounterPhase::GraveDangerEarlOsam { .. }
+                    | EncounterPhase::GraveDangerLordAzaram { .. }
                     | EncounterPhase::GraveDangerSirs { .. }
                     | EncounterPhase::GraveDangerZelos { .. }
             )

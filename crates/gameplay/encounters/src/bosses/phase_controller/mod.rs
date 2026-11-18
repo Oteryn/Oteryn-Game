@@ -11,6 +11,7 @@ pub mod cults;
 pub mod duke_krule;
 pub mod earl_osam;
 pub mod gates;
+pub mod lord_azaram;
 pub mod sirs;
 #[cfg(test)]
 mod tests;

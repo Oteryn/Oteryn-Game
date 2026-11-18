@@ -82,6 +82,7 @@ pub(super) enum PhaseScenario {
     Cults { reenter: bool },
     DukeKrule,
     EarlOsam,
+    LordAzaram,
     Sirs,
     Zelos,
 }
@@ -109,6 +110,9 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                 }
                 PhaseScenario::EarlOsam => {
                     super::gravedg_lich_knights::configure_osam(&mut callback)?
+                }
+                PhaseScenario::LordAzaram => {
+                    super::gravedg_lich_knights::configure_azaram(&mut callback)?
                 }
                 PhaseScenario::Sirs => super::gravedg_lich_knights::configure(&mut callback)?,
                 PhaseScenario::Zelos => super::gravedg_zelos::configure(&mut callback)?,
@@ -371,6 +375,16 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                 }
                 PhaseScenario::EarlOsam => {
                     return super::gravedg_lich_knights::exercise_osam(
+                        &owner,
+                        &admitted,
+                        second
+                            .and_then(|p| p.runtime_actor)
+                            .ok_or("second admitted player")?,
+                    )
+                    .await;
+                }
+                PhaseScenario::LordAzaram => {
+                    return super::gravedg_lich_knights::exercise_azaram(
                         &owner,
                         &admitted,
                         second

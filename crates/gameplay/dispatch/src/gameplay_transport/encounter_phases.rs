@@ -7,6 +7,7 @@ use crate::foundation::{
 use oteryn_gameplay_encounters::bosses::phase_controller::count_vlarkorth::CountVlarkorthEncounter;
 use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
 use oteryn_gameplay_encounters::bosses::phase_controller::duke_krule::DukeKruleEncounter;
+use oteryn_gameplay_encounters::bosses::phase_controller::lord_azaram::LordAzaramEncounter;
 use oteryn_gameplay_encounters::bosses::phase_controller::zelos::ZelosEncounter;
 use oteryn_gameplay_encounters::bosses::phase_controller::{
     earl_osam::{self, EarlOsamEncounter},
@@ -64,6 +65,7 @@ enum Fight {
     Cults(CultsEncounter),
     DukeKrule(DukeKruleEncounter),
     EarlOsam(EarlOsamEncounter),
+    LordAzaram(LordAzaramEncounter),
     Sirs(SirsEncounter),
     Zelos(ZelosEncounter),
 }
@@ -75,6 +77,7 @@ impl Fight {
             Self::CountVlarkorth(fight) => fight.is_current(runtime),
             Self::DukeKrule(fight) => fight.is_current(runtime),
             Self::EarlOsam(fight) => fight.is_current(runtime),
+            Self::LordAzaram(fight) => fight.is_current(runtime),
             Self::Sirs(fight) => fight.is_current(runtime),
             Self::Zelos(fight) => fight.is_current(runtime),
         }
@@ -86,6 +89,7 @@ impl Fight {
             Self::CountVlarkorth(fight) => fight.contains(actor),
             Self::DukeKrule(fight) => fight.contains(actor),
             Self::EarlOsam(fight) => fight.contains(actor),
+            Self::LordAzaram(fight) => fight.contains(actor),
             Self::Sirs(fight) => fight.contains(actor),
             Self::Zelos(fight) => fight.contains(actor),
         }
@@ -97,6 +101,7 @@ impl Fight {
             Self::CountVlarkorth(fight) => fight.contains(actor),
             Self::DukeKrule(fight) => fight.contains(actor),
             Self::EarlOsam(fight) => fight.contains(actor),
+            Self::LordAzaram(fight) => fight.owns_scoped_credit(actor),
             Self::Sirs(fight) => fight.contains(actor),
             Self::Zelos(fight) => fight.contains_terminal(actor),
         }
@@ -105,9 +110,11 @@ impl Fight {
     fn contains_terminal(&self, actor: ExactActorRef) -> bool {
         match self {
             Self::Cults(fight) => fight.contains_terminal(actor),
-            Self::CountVlarkorth(_) | Self::DukeKrule(_) | Self::EarlOsam(_) | Self::Sirs(_) => {
-                false
-            }
+            Self::CountVlarkorth(_)
+            | Self::DukeKrule(_)
+            | Self::EarlOsam(_)
+            | Self::LordAzaram(_)
+            | Self::Sirs(_) => false,
             Self::Zelos(fight) => fight.contains_terminal(actor),
         }
     }
@@ -121,6 +128,7 @@ impl Fight {
             Self::CountVlarkorth(fight) => fight.victors(runtime),
             Self::DukeKrule(fight) => fight.victors(runtime),
             Self::EarlOsam(fight) => fight.victors(runtime),
+            Self::LordAzaram(fight) => fight.victors(runtime),
             Self::Sirs(fight) => fight.victors(runtime),
             Self::Zelos(fight) => fight.victors(runtime),
         }
@@ -136,6 +144,7 @@ impl Fight {
             Self::CountVlarkorth(fight) => fight.projected_death(runtime, actor),
             Self::DukeKrule(fight) => fight.projected_death(runtime, actor),
             Self::EarlOsam(fight) => fight.projected_death(runtime, actor),
+            Self::LordAzaram(fight) => fight.projected_death(runtime, actor),
             Self::Sirs(fight) => fight.projected_death(runtime, actor),
             Self::Zelos(fight) => fight.projected_death(runtime, actor),
         }
@@ -147,6 +156,7 @@ impl Fight {
             Self::CountVlarkorth(fight) => fight.timeout_participants(now),
             Self::DukeKrule(fight) => fight.timeout_participants(now),
             Self::EarlOsam(fight) => fight.timeout_participants(now),
+            Self::LordAzaram(fight) => fight.timeout_participants(now),
             Self::Sirs(fight) => fight.timeout_participants(now),
             Self::Zelos(fight) => fight.timeout_participants(now),
         }
@@ -158,6 +168,7 @@ impl Fight {
             Self::CountVlarkorth(fight) => fight.retire(runtime),
             Self::DukeKrule(fight) => fight.retire(runtime),
             Self::EarlOsam(fight) => fight.retire(runtime),
+            Self::LordAzaram(fight) => fight.retire(runtime),
             Self::Sirs(fight) => fight.retire(runtime),
             Self::Zelos(fight) => fight.retire(runtime),
         }
@@ -185,6 +196,10 @@ impl Fight {
             Self::CountVlarkorth(_) | Self::DukeKrule(_) => Err(CarrierError::PlanConflict),
             Self::EarlOsam(fight) => match now {
                 Some(now) => fight.advance(runtime, now, at, relocate),
+                None => Ok(true),
+            },
+            Self::LordAzaram(fight) => match now {
+                Some(now) => fight.advance(runtime, now, at),
                 None => Ok(true),
             },
             Self::Sirs(fight) => match now {
@@ -218,6 +233,7 @@ impl Registry {
                     Fight::Cults(_) => None,
                     Fight::DukeKrule(fight) => Some(fight.next_due_us()),
                     Fight::EarlOsam(fight) => Some(fight.next_due_us()),
+                    Fight::LordAzaram(fight) => Some(fight.next_due_us()),
                     Fight::Sirs(fight) => Some(fight.next_due_us()),
                     Fight::Zelos(fight) => Some(fight.next_due_us()),
                 })
@@ -488,6 +504,24 @@ pub(super) fn bind(
             Some((
                 Fight::EarlOsam(EarlOsamEncounter::bind(
                     runtime, players, actors, centre, now,
+                )?),
+                room,
+            ))
+        }
+        Some(EncounterPhase::GraveDangerLordAzaram { exit, splinters }) => {
+            let room = make_room(exit, None)?;
+            let positions = splinters.map(local);
+            if room.contains(room.exit)
+                || !placement(&cells, runtime, room.exit)
+                || !positions
+                    .iter()
+                    .all(|&at| room.contains(at) && placement(&cells, runtime, at))
+            {
+                return Err(CarrierError::PlanConflict);
+            }
+            Some((
+                Fight::LordAzaram(LordAzaramEncounter::bind(
+                    runtime, players, actors, positions, now,
                 )?),
                 room,
             ))

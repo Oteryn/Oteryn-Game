@@ -136,13 +136,33 @@ impl ChannelRuntimeV1 {
         expected: &CompanionSnapshot,
         new_definition_key: &str,
     ) -> Result<PreparedCreatureProfileTransformation, CarrierError> {
-        self.prepare_creature_profile_transformation_inner(expected, new_definition_key, false)
+        self.prepare_creature_profile_transformation_inner(
+            expected,
+            new_definition_key,
+            false,
+            expected.health,
+        )
+    }
+    /// Prepare an encounter form change that publishes the new profile and HP together.
+    pub fn prepare_quest_creature_profile_with_health(
+        &self,
+        expected: &CompanionSnapshot,
+        new_definition_key: &str,
+        health: i64,
+    ) -> Result<PreparedCreatureProfileTransformation, CarrierError> {
+        self.prepare_creature_profile_transformation_inner(
+            expected,
+            new_definition_key,
+            false,
+            health,
+        )
     }
     fn prepare_creature_profile_transformation_inner(
         &self,
         expected: &CompanionSnapshot,
         new_definition_key: &str,
         registered_source: bool,
+        resulting_health: i64,
     ) -> Result<PreparedCreatureProfileTransformation, CarrierError> {
         self.assert_actor_spell_unreserved(expected.actor)?;
         self.validate_companion_snapshot(expected)?;
@@ -159,7 +179,8 @@ impl ChannelRuntimeV1 {
             || policy.is_familiar
             || expected.health < 0
             || (!registered_source && expected.health == 0)
-            || expected.health > policy.maximum_health
+            || resulting_health < if registered_source { 0 } else { 1 }
+            || resulting_health > policy.maximum_health
         {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
@@ -167,6 +188,7 @@ impl ChannelRuntimeV1 {
         let target_identity = Arc::from(copy_bounded_binding(policy.definition_key.as_bytes())?);
         let mut resulting = expected.clone();
         resulting.maximum_health = policy.maximum_health;
+        resulting.health = resulting_health;
         resulting.state.outfit_look_type = policy.outfit_look_type;
         resulting.state.object_look_type = policy.object_look_type;
         resulting.state.lifecycle_epoch = expected.state.lifecycle_epoch.checked_add(1).ok_or(
@@ -222,8 +244,12 @@ impl ChannelRuntimeV1 {
             self.carrier
                 .committed_lethal_receipt_inner(&self.continuity, expected.actor.0)?;
         }
-        let mut prepared =
-            self.prepare_creature_profile_transformation_inner(expected, new_definition_key, true)?;
+        let mut prepared = self.prepare_creature_profile_transformation_inner(
+            expected,
+            new_definition_key,
+            true,
+            expected.health,
+        )?;
         // Monster:setType(..., false) preserves both current and maximum HP.
         prepared.resulting.maximum_health = expected.maximum_health;
         Ok(prepared)
@@ -267,6 +293,7 @@ impl ChannelRuntimeV1 {
             expected,
             "oteryn:creature.greater_splinter_of_madness",
             true,
+            expected.health,
         )?;
         if prepared.resulting.maximum_health != 4000 {
             return Err(CarrierError::CreatureTargetMismatch);

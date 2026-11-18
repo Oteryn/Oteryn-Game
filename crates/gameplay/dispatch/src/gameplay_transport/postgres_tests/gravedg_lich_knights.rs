@@ -465,3 +465,109 @@ pub(super) async fn exercise_count(
     }
     Ok(())
 }
+
+const LORD: &str = "oteryn:creature.lord_azaram";
+const SOUL: &str = "oteryn:creature.azaram_s_soul";
+
+#[test]
+fn gravedg_azaram_two_players_soul_phase_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::engenc2_cults::phase_scenario(super::engenc2_cults::PhaseScenario::LordAzaram)
+}
+
+pub(super) fn configure_azaram(callback: &mut Callback) -> TestResult {
+    configure_duke(callback)?;
+    callback.key = "oteryn:quest-callback/grave-danger/lord-azaram".into();
+    let encounter = callback.effects.encounter.as_mut().ok_or("encounter")?;
+    encounter.phase = Some(EncounterPhase::GraveDangerLordAzaram {
+        exit: at(103, 100),
+        splinters: [at(115, 113), at(121, 113), at(115, 121), at(121, 121)],
+    });
+    encounter.monsters[0].creature = LORD.into();
+    Ok(())
+}
+
+pub(super) async fn exercise_azaram(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    peer: ExactActorRef,
+) -> TestResult {
+    use super::gravedg_zelos::tick_at;
+    let player = admitted.runtime_actor.ok_or("admitted player")?;
+    assert_position(owner, player, 116, 117).await?;
+    assert_position(owner, peer, 110, 117).await?;
+    let boss = {
+        let runtime = owner.runtime.lock().await;
+        runtime
+            .current_live_creature_census()
+            .map_err(debug)?
+            .into_iter()
+            .find(|&actor| runtime.matches_live_creature_identity(actor, LORD.as_bytes()))
+            .ok_or("admitted Lord Azaram")?
+    };
+    hit(owner, admitted, boss, LORD, 101).await?;
+    let now = owner.owner_now().get();
+    let saved = owner
+        .runtime
+        .lock()
+        .await
+        .companion_snapshot(boss)
+        .map_err(debug)?
+        .health;
+    tick_at(owner, now).await;
+    tick_at(owner, now + 100_000).await;
+    assert!(
+        hit_by_amount(owner, admitted, boss, SOUL, 102, 1)
+            .await
+            .is_err()
+    );
+    {
+        let mut runtime = owner.runtime.lock().await;
+        assert!(runtime.matches_live_creature_identity(boss, SOUL.as_bytes()));
+        let soul = runtime.companion_snapshot(boss).map_err(debug)?;
+        assert_eq!(soul.health, soul.maximum_health * 3 / 10);
+        let splinters = runtime
+            .current_live_creature_census()
+            .map_err(debug)?
+            .into_iter()
+            .filter(|&actor| {
+                runtime
+                    .matches_live_creature_identity(actor, b"oteryn:creature.tainted_soul_splinter")
+            })
+            .count();
+        assert_eq!(splinters, 4);
+        let maximum = u64::try_from(soul.maximum_health)?;
+        let digest = runtime.content_pin().server_artifact_digest();
+        runtime
+            .commit_source_creature_heal_batch(digest, &[(boss, SOUL.to_owned(), maximum, maximum)])
+            .map_err(debug)?;
+    }
+    tick_at(owner, now + 200_000).await;
+    tick_at(owner, now + 700_000).await;
+    {
+        let runtime = owner.runtime.lock().await;
+        assert!(runtime.matches_live_creature_identity(boss, LORD.as_bytes()));
+        assert_eq!(
+            runtime.companion_snapshot(boss).map_err(debug)?.health,
+            saved
+        );
+        assert!(
+            !runtime
+                .current_live_creature_census()
+                .map_err(debug)?
+                .into_iter()
+                .any(|actor| runtime.matches_live_creature_identity(
+                    actor,
+                    b"oteryn:creature.tainted_soul_splinter"
+                ))
+        );
+    }
+    tick_at(owner, now + 20 * 60 * 1_000_000).await;
+    for actor in [player, peer] {
+        assert_position(owner, actor, 103, 100).await?;
+    }
+    Ok(())
+}
