@@ -19,8 +19,12 @@ class CollectorDelivery(unittest.TestCase):
             self.assertIsNone(callback['achievement'])
             if index == 7:
                 self.assertEqual(callback['give'], {'item': 'oteryn:item.tibia.i3035', 'count': 20, 'contents': [], 'premium': True})
+                self.assertEqual(callback['maximum_level'], 24)
+                self.assertEqual(callback['failure_reply'], ['This reward is only available below level 25.'])
+                self.assertIn('Guide Jonathan, Edron; 2000 gold below level 25', callback['sources'][-1])
             else:
                 self.assertIsNone(callback['give'])
+                self.assertNotIn('maximum_level', callback)
 
 
     def test_stampede_personal_trial_has_five_kills_before_collector_achievement(self):
