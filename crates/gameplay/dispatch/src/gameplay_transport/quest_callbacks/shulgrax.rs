@@ -106,7 +106,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let runtime = self.runtime.lock().await;
         let session = command.game_session_id;
         let spell_states = self.states.spell_states.try_lock().ok()?;
-        if spell_states.is_dead(actor)
+        if runtime.owner_fence().is_err()
+            || spell_states.is_dead(actor)
             || !spell_states.spell_idle(&runtime, actor, session)
             || !self.states.player_trades.physical(session, None)
             || !runtime
@@ -136,7 +137,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if appearance == 9111 && !FLOWERS.iter().all(|&(at, item)| has_item(map, at, item)) {
             self.states
                 .chat
-                .push_quest_feedback(session, "The order of the flowers in the garden are wrong.");
+                .push_quest_feedback(session, "The flower pattern is incomplete.");
             return Some(UseDisposition::Rejected);
         }
         let newly_accepted = appearance == 9111 && !puzzle.accepted.contains_key(&session);
@@ -200,11 +201,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if newly_accepted {
             puzzle.accepted.insert(session, due);
-            self.states.chat.push_quest_feedback(session, "A portal forms as two beams of a strange construction dividing this room move towards each other.");
+            self.states
+                .chat
+                .push_quest_feedback(session, "The garden portal is open for you.");
         } else if appearance == 9111 {
             self.states
                 .chat
-                .push_quest_feedback(session, "The portal still activated.");
+                .push_quest_feedback(session, "You can still enter the portal.");
         }
         Some(UseDisposition::Committed)
     }
