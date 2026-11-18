@@ -354,7 +354,9 @@ fn scenario_case(
     let draconia_escape = name.starts_with("draconia-escape-");
     let death_replacement = matches!(name, super::super::encounter_death_replacements::EARTH | super::super::encounter_death_replacements::ENERGY | super::super::encounter_death_replacements::ESSENCE | super::super::encounter_death_replacements::LORE | super::super::encounter_death_replacements::VICTORY);
     let monster_step = matches!(name, super::super::zamulosh_monster_step::CASE | super::super::zamulosh_monster_step::BLOSSOM);
-    let mut callback = if monster_step {
+    let mut callback = if name == super::super::shulgrax_flower_pattern::CASE {
+        super::super::shulgrax_flower_pattern::callback()?
+    } else if monster_step {
         super::super::zamulosh_monster_step::callback(name)?
     } else if name == super::super::warzone_portal_cooldown::CASE {
         super::super::warzone_portal_cooldown::callback()?
@@ -660,7 +662,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if death_replacement {
+    let world = if name == super::super::shulgrax_flower_pattern::CASE {
+        super::super::shulgrax_flower_pattern::world(&callback)?
+    } else if death_replacement {
         super::super::encounter_death_replacements::world(&callback, trigger, name)?
     } else if name == super::super::ferumbras_crystal_reset::CASE {
         super::super::ferumbras_crystal_reset::world(&callback)?
@@ -1892,7 +1896,9 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if monster_step {
+        if name == super::super::shulgrax_flower_pattern::CASE {
+            Box::pin(super::super::shulgrax_flower_pattern::exercise(&owner, &mut admitted, callback.clone())).await?;
+        } else if monster_step {
             Box::pin(super::super::zamulosh_monster_step::exercise(&owner, &h, callback.clone())).await?;
         } else if name == super::super::warzone_portal_cooldown::CASE {
             Box::pin(super::super::warzone_portal_cooldown::exercise(&owner, &mut admitted, &h)).await?;

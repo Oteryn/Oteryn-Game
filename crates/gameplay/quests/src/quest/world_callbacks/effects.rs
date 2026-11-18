@@ -51,6 +51,9 @@ pub struct CallbackEffects {
     /// Match the exact creature entering this source tile and remove it from the room.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub monster_step: Option<MonsterStepEffect>,
+    /// Presence of Channel-created scene items at every authored layout cell.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub generated_item_requirements: Vec<ItemPresence>,
     /// Distinct carried definitions consumed atomically by the Quest receipt owner.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
@@ -757,6 +760,23 @@ pub(super) fn valid(callback: &Callback) -> bool {
     }
     let pos = |p: Position| (-15..=0).contains(&p.floor);
     let lever = callback.trigger == Trigger::Use && callback.lever.is_some();
+    // Crystal 201189f8, ferumbras_ascension/actions_flower_puzzle_lever.lua:1-11,30-37.
+    let generated = &effects.generated_item_requirements;
+    if !generated.is_empty()
+        && (callback.trigger != Trigger::Use
+            || generated.len() > 9
+            || generated
+                .iter()
+                .map(|item| item.position)
+                .collect::<BTreeSet<_>>()
+                .len()
+                != generated.len()
+            || generated
+                .iter()
+                .any(|item| item.appearance == 0 || !pos(item.position)))
+    {
+        return false;
+    }
     if effects
         .monster_step
         .as_ref()

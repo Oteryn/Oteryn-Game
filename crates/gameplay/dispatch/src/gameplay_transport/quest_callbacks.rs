@@ -1754,6 +1754,17 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
 }
 
 fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
+    if callback.effects.generated_item_requirements.iter().any(|item| {
+        let at = tile(item.position);
+        map.facts.house_tile(at)
+            || map.overlay.base().tile(at.x, at.y, at.floor).is_none()
+            || !map.facts.movement_items(at).iter().any(|entry| {
+                matches!(entry.source, crate::map::view::EntrySource::Added(id) if id.get() >> 62 == 2)
+                    && entry.facts.appearance_id == item.appearance
+            })
+    }) {
+        return false;
+    }
     callback.world_requirements.iter().all(|requirement| {
         // Closed Ground-only slots have no static anchor; the refreshed Ground
         // owner and fenced SQL read-set prove their portable roots separately.
