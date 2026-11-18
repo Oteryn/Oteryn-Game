@@ -847,7 +847,8 @@ impl DurabilityRoot {
         let shared_entrance = context.is_some()
             && world_callbacks.iter().any(|callback| {
                 callback.key == request.transition_key
-                    && (oteryn_gameplay_quests::quest::dreamer_fire_bug::shared_input(callback)
+                    && (oteryn_gameplay_quests::quest::dangerous_depth_geodes::shared_input(callback)
+                        || oteryn_gameplay_quests::quest::dreamer_fire_bug::shared_input(callback)
                         || oteryn_gameplay_quests::quest::dreamer_carrot::shared_input(callback))
                     && matches!(
                         (callback.trigger, request.cause),
@@ -863,12 +864,14 @@ impl DurabilityRoot {
             && catalogue
                 .transition(&request.transition_key)
                 .is_some_and(|transition| {
-                    oteryn_gameplay_quests::quest::dreamer_fire_bug::shared_transition(transition)
+                    oteryn_gameplay_quests::quest::dangerous_depth_geodes::shared_transition(transition)
+                        || oteryn_gameplay_quests::quest::dreamer_fire_bug::shared_transition(transition)
                         || oteryn_gameplay_quests::quest::dreamer_carrot::shared_transition(
                             transition,
                         )
                 });
-        if (request.transition_key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE
+        if (oteryn_gameplay_quests::quest::dangerous_depth_geodes::binding(&request.transition_key).is_some()
+            || request.transition_key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE
             || request.transition_key == oteryn_gameplay_quests::quest::dreamer_carrot::KEY)
             != shared_entrance
         {

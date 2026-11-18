@@ -16,6 +16,7 @@ mod effects;
 mod encounter;
 mod execute;
 mod faction_entry;
+mod geode;
 mod goblin_elevator;
 mod ground_stack;
 mod mead;

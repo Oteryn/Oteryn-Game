@@ -35,6 +35,7 @@ pub mod classic_dialogue;
 pub mod classic_talk;
 pub mod completion_sets;
 pub mod cults_of_tibia;
+pub mod dangerous_depth_geodes;
 pub mod dark_trails;
 pub mod death_objectives;
 pub mod deepling_boss_access;
@@ -478,6 +479,7 @@ impl QuestStateCatalogue {
             }
             if transition.effects.is_empty()
                 && !transition.completes
+                && !dangerous_depth_geodes::shared_transition(&transition)
                 && !dreamer_fire_bug::shared_transition(&transition)
                 && !dreamer_carrot::shared_transition(&transition)
                 && !(((transition.key == "oteryn:quest-transition/worldchange/benevola/handover"

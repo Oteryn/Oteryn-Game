@@ -86,3 +86,27 @@ BEGIN
     END IF;
     RETURN NEW;
 END; $$;
+
+-- Geode contributions persist for the live World reset epoch and Channel.
+CREATE TABLE game_warzone_geodes (
+    world_id UUID NOT NULL,
+    channel_id UUID NOT NULL,
+    geode_key TEXT NOT NULL CHECK (geode_key IN (
+        'oteryn:quest-callback/dangerous-depth-geode-iv',
+        'oteryn:quest-callback/dangerous-depth-geode-v',
+        'oteryn:quest-callback/dangerous-depth-geode-vi'
+    )),
+    reset_epoch NUMERIC(20,0) NOT NULL CHECK (reset_epoch >= 0),
+    fragments SMALLINT NOT NULL CHECK (fragments BETWEEN 1 AND 30),
+    opened_at TIMESTAMPTZ,
+    opening_session UUID,
+    opening_command NUMERIC(20,0) CHECK (opening_command > 0),
+    PRIMARY KEY (world_id, channel_id, geode_key),
+    CHECK ((fragments = 30) = (opened_at IS NOT NULL)),
+    CHECK ((opened_at IS NULL) = (opening_session IS NULL)),
+    CHECK ((opened_at IS NULL) = (opening_command IS NULL))
+);
+
+REVOKE ALL ON game_warzone_geodes FROM PUBLIC;
+GRANT SELECT, INSERT, UPDATE ON game_warzone_geodes TO oteryn_game_runtime;
+GRANT SELECT ON game_warzone_geodes TO oteryn_game_control;
