@@ -116,6 +116,9 @@ pub struct CallbackEffects {
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teleport_effect: Option<u16>,
+    /// Override the cue at the committed refusal landing.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub failure_teleport_effect: Option<u16>,
     pub portals: Option<PortalPair>,
     pub item_cycle: Option<ItemCycle>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -748,6 +751,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
             .magic
             .as_ref()
             .is_some_and(|m| !pos(m.position) || m.effect == 0)
+        || effects.failure_teleport_effect.is_some_and(|effect| {
+            effect == 0 || callback.trigger != Trigger::StepIn || !callback.return_on_failure
+        })
         || (callback.trigger == Trigger::StepOut && callback.return_on_failure)
     {
         return false;

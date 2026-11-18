@@ -2,7 +2,7 @@
 use super::quest_world_callbacks::{self, tool_fixture};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::debug};
 use oteryn_gameplay_quests::quest::{
-    QuestTrack,
+    QuestTrack, authored_bindings::Bindings,
     world_callbacks::{Callback, Position},
 };
 use oteryn_protocol_oteryn::world_spatial::{
@@ -20,6 +20,12 @@ const MISSION_74: &str = "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_
 const MISSION_75: &str = "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission75";
 const SERVANT: &str = "oteryn:creature.necromancer_servant";
 const FRAGMENT: &str = "oteryn:item.tibia.i18933";
+const DORMITORY_OUTSIDE: Position = Position {
+    x: 33018,
+    y: 32437,
+    floor: -10,
+};
+const DORMITORY_NOTICE: &str = "The teleport is accessible only once.";
 
 #[test]
 fn dormitory_entry_commits_once_and_redirects_an_ineligible_player() -> TestResult {
@@ -29,6 +35,57 @@ fn dormitory_entry_commits_once_and_redirects_an_ineligible_player() -> TestResu
     super::kill_reward_e2e::scenario_thread::run("gravedigger-room", move || {
         dormitory_gate(admin.clone(), 0)?;
         dormitory_gate(admin, 1)
+    })
+}
+
+#[test]
+fn dormitory_return_pad_sends_the_player_outside_without_writing_quest_progress() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("gravedigger-dormitory-exit", move || {
+        let pad = Position {
+            x: 33015,
+            y: 32441,
+            floor: -10,
+        };
+        let key = "oteryn:quest-callback/fixture/gravedigger-dormitory-exit";
+        // Crystal 201189f8 registers action 4535 for the unconditional return branch.
+        // The imported native placement is the top-level 1949 at ordinal 2.
+        let callback: Callback = serde_json::from_value(serde_json::json!({
+            "key": key, "quest": QUEST, "trigger": "step_in",
+            "selector": { "appearance": 1949, "native": { "position": pad, "appearance": 1949, "ordinal": 2 } },
+            "requires_world_admission": false, "reversible": false, "passages": [], "offerings": [],
+            "storage": [], "return_on_failure": false, "teleport": DORMITORY_OUTSIDE,
+            "success_message": DORMITORY_NOTICE, "effects": { "teleport_effect": 3 },
+            "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/movements_dormitory_teleport.lua:14-23",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:640-644"
+            ]
+        }))?;
+        let world = quest_world_callbacks::world_with_cells(&callback, pad, &[])?;
+        let bindings = Bindings { schema: 1, quests: Vec::new() };
+        tool_fixture::run_bound_world(
+            admin,
+            "gravedigger_dormitory_exit",
+            world,
+            pad,
+            bindings,
+            async move |owner, mut admitted, h, _| {
+                owner.states.quest_callbacks.fixture.set(vec![callback])
+                    .map_err(|_| "dormitory return fixture already installed")?;
+                step_east(owner, &mut admitted).await?;
+                let landed = owner.runtime.lock().await
+                    .read_actor_position(admitted.runtime_actor.ok_or("actor")?)
+                    .map_err(debug)?.position();
+                assert_eq!(landed, quest_world_callbacks::local(DORMITORY_OUTSIDE));
+                let receipts: i64 = sqlx::query_scalar(
+                    "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+                ).bind(key).fetch_one(&h.pool).await?;
+                assert_eq!(receipts, 0);
+                Ok(())
+            },
+        )
     })
 }
 
@@ -208,11 +265,7 @@ fn dormitory_gate(admin: String, entered: i64) -> TestResult {
         y: 32440,
         floor: -10,
     };
-    let outside = Position {
-        x: 33018,
-        y: 32437,
-        floor: -10,
-    };
+    let outside = DORMITORY_OUTSIDE;
     // Crystal 201189f8 movements_dormitory_teleport.lua:9-17 and startup/tables/item.lua:634-644.
     let callback: Callback = serde_json::from_value(serde_json::json!({
         "key": "oteryn:quest-callback/fixture/gravedigger-dormitory-entry",
@@ -225,8 +278,8 @@ fn dormitory_gate(admin: String, entered: i64) -> TestResult {
         ],
         "teleport": room, "failure_teleport": outside, "return_on_failure": true,
         "success_message": "You should hurry, try not to dwell here any longer than a few minutes.",
-        "failure_message": "The teleport is accessible only once.",
-        "effects": { "teleport_effect": 11 },
+        "failure_message": DORMITORY_NOTICE,
+        "effects": { "teleport_effect": 11, "failure_teleport_effect": 3 },
         "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/movements_dormitory_teleport.lua:9-17"]
     }))?;
     let world = quest_world_callbacks::world_with_cells(&callback, pad, &[outside])?;
@@ -245,10 +298,16 @@ fn dormitory_gate(admin: String, entered: i64) -> TestResult {
                 .read_actor_position(admitted.runtime_actor.ok_or("actor")?)
                 .map_err(debug)?
                 .position();
-            assert_eq!(
-                landed,
-                quest_world_callbacks::local(if entered == 0 { room } else { outside })
-            );
+            let destination = if entered == 0 { room } else { outside };
+            assert_eq!(landed, quest_world_callbacks::local(destination));
+            let target = crate::map::overlay::TilePos {
+                x: destination.x,
+                y: destination.y,
+                floor: destination.floor,
+            };
+            let effect = if entered == 0 { 11 } else { 3 };
+            let cues = owner.bundle_map().ok_or("dormitory map")?.facts.movement_effects_since(0);
+            assert!(cues.iter().any(|(_, at, id)| (*at, *id) == (target, effect)));
             let snapshot = owner
                 .root
                 .read_character_quest_state(owner.character, fence.character_id)

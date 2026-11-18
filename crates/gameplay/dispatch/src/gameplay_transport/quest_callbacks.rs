@@ -1668,10 +1668,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, snapshot.position()),
             );
             self.punish_carrot_refusal(runtime, states, actor, session, entered, snapshot);
-            if let Some(effect) = callback.effects.teleport_effect.or_else(|| {
-                oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key)
-                    .map(|gate| gate.effect)
-            }) && let Some(at) = native(snapshot.position())
+            if let Some(effect) = callback
+                .effects
+                .failure_teleport_effect
+                .or(callback.effects.teleport_effect)
+                .or_else(|| {
+                    oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key)
+                        .map(|gate| gate.effect)
+                })
+                && let Some(at) = native(snapshot.position())
             {
                 let _ = map.facts.emit_movement_effect(at, effect);
             }
