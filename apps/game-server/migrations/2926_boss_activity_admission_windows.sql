@@ -27,10 +27,17 @@ BEGIN
         WHERE handoff_id = NEW.handoff_id FOR UPDATE;
     IF NOT FOUND OR (v_group.state <> 1 AND NOT (
         v_group.state = 2 AND v_group.admission_closes_at IS NOT NULL
+        AND v_group.admission_window_ms = 8000
+        AND v_group.activity_key IN (
+            'oteryn:boss.the_baron_from_below',
+            'oteryn:boss.the_count_of_the_core',
+            'oteryn:boss.the_duke_of_the_depths'
+        )
         AND clock_timestamp() < v_group.admission_closes_at
         AND EXISTS (
             SELECT 1 FROM game_boss_room_activities b
             WHERE b.admission = v_group.handoff_id AND b.state = 1
+              AND b.boss_key = v_group.activity_key
               AND b.origin_channel_id = NEW.origin_channel_id
             FOR SHARE
         )
