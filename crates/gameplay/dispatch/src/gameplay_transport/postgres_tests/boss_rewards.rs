@@ -105,9 +105,14 @@ pub(super) fn run_case(case: Case) -> TestResult {
 fn scenario(case: Case) -> TestResult {
     run(async |admin| {
         super::reset();
-        let h = Harness::create_with_admission_seed(admin, "boss_rewards", true, false)
-            .await
-            .map_err(|error| format!("W03 fixture harness: {error:?}"))?;
+        let h = Harness::create_with_admission_seed(
+            admin,
+            "boss_rewards",
+            !matches!(case, Case::AtomicDeathFault),
+            false,
+        )
+        .await
+        .map_err(|error| format!("W03 fixture harness: {error:?}"))?;
         prepare_current_session(&h)
             .await
             .map_err(|error| format!("W03 fixture current session: {error:?}"))?;
