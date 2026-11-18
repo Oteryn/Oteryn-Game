@@ -90,20 +90,17 @@ async fn open_world(clients: &SeamClients<'_>) -> TestResult<&'static BundleWorl
 use oteryn_dev_client::{ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome};
 use oteryn_protocol_oteryn::browse_field as browse;
 use oteryn_protocol_oteryn::container_tree as tree;
-use oteryn_protocol_oteryn::item_view::WorldTilePosition;
+use oteryn_protocol_oteryn::item_view::{ItemEntry, ItemHandle, WorldTilePosition};
 
-fn view_of(selected: &[u32], payload: &[u8]) -> TestResult<tree::ContainerViews> {
-    selected_container_views(selected, payload)
-        .map_err(|error| format!("step=views-decode observed={error:?}").into())
-}
-
-async fn browse_open(
+pub(super) async fn browse_open(
     client: &mut DevClientSession,
     at: WorldTilePosition,
 ) -> TestResult<(tree::ContainerViewOutcome, Option<tree::ContainerView>)> {
     let payload =
         browse::encode_browse_field_intent(&browse::BrowseFieldIntent::Open { position: at })
             .map_err(|error| format!("step=browse-encode observed={error:?}"))?;
+    client.take_events();
+    let before = client.last_server_sequence();
     let reply = client
         .session_mut()
         .gated_command(
@@ -112,48 +109,45 @@ async fn browse_open(
             &payload,
         )
         .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("step=browse observed={:?}", reply.status).into());
+    }
     let outcome = tree::decode_container_view_result(&reply.payload)
         .map_err(|error| format!("step=browse-reply observed={error:?}"))?;
     if outcome != tree::ContainerViewOutcome::Opened {
         return Ok((outcome, None));
     }
-    let delta = client
-        .session_mut()
-        .read_gated_delta(
-            tree::STATE_DOMAIN_CONTAINER_VIEWS,
-            tree::DELTA_TYPE_CONTAINER_VIEWS_V1,
-        )
-        .await?;
-    let view = view_of(client.selected_capabilities(), &delta.payload)?
+    let view = wait_container_views(client, before).await?
         .views
         .into_iter()
-        .find(|view| view.browse.is_some());
+        .find(|view| view.browse.is_some_and(|page| page.position == at));
     Ok((outcome, view))
 }
 
-fn here(client: &DevClientSession) -> WorldTilePosition {
+pub(super) fn here(client: &DevClientSession) -> WorldTilePosition {
     let at = client.world_spatial().actor_position;
     WorldTilePosition {
         x: at.x,
         y: at.y,
-        floor: -at.floor,
+        floor: -at.floor.abs(),
     }
 }
 
-fn ground(client: &DevClientSession) -> WorldTilePosition {
-    let at = client.world_spatial().actor_position;
-    WorldTilePosition {
-        x: at.x,
-        y: at.y,
-        floor: at.floor,
-    }
-}
-
-/// Drops the first backpack entry on the actor's own tile and returns its definition and count.
-async fn drop_first(
+/// Drop a carried stack and identify its new ground handle in the pushed tile delta.
+pub(super) async fn drop_first(
     client: &mut DevClientSession,
     prefer: Option<std::num::NonZeroU32>,
-) -> TestResult<(std::num::NonZeroU32, std::num::NonZeroU32)> {
+) -> TestResult<ItemEntry> {
+    use oteryn_protocol_oteryn::world_map::{MapDefinition, MapOrigin};
+    let at = here(client);
+    let (outcome, view) = browse_open(client, at).await?;
+    let baseline = require_browse(at, outcome, view)?;
+    if baseline
+        .browse
+        .is_none_or(|page| usize::from(page.total) != baseline.entries.len())
+    {
+        return Err("step=drop observed=incomplete-ground-baseline".into());
+    }
     let item = client
         .inventory()
         .and_then(|inventory| {
@@ -164,11 +158,15 @@ async fn drop_first(
                         .iter()
                         .find(|item| item.item_definition_ref == want)
                 })
-                .or(inventory.entries.first())
+                .or_else(|| {
+                    prefer
+                        .is_none()
+                        .then(|| inventory.entries.first())
+                        .flatten()
+                })
         })
         .copied()
         .ok_or("step=drop observed=no-backpack-item;needed:player-acquired-item")?;
-    let at = ground(client);
     let before = quantity(client, item.item_definition_ref)?;
     client.take_events();
     let moved = client
@@ -177,18 +175,51 @@ async fn drop_first(
             destination: ItemMoveDestination::Ground(at),
         })
         .await?;
-    if moved.outcome != ItemMoveOutcome::Moved {
+    if moved.status != CommandStatus::Accepted || moved.outcome != ItemMoveOutcome::Moved {
         return Err(format!("step=drop observed={:?};needed=Moved", moved.outcome).into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    while quantity(client, item.item_definition_ref)? >= before {
-        client.take_events();
+    let expected = before
+        .checked_sub(u64::from(item.count.get()))
+        .ok_or("drop custody underflow")?;
+    let mut dropped = None;
+    loop {
+        for event in client.take_events() {
+            if let SessionEvent::WorldMap(delta) = event
+                && delta.server_sequence > moved.result_server_sequence
+                && let Some(tile) = delta.value.tiles.iter().find(|tile| {
+                    (tile.position.x, tile.position.y, tile.position.floor)
+                        == (at.x, at.y, at.floor)
+                })
+            {
+                let mut candidates = tile.items.iter().filter_map(|ground| {
+                    let MapOrigin::Handle(handle) = ground.origin else {
+                        return None;
+                    };
+                    (ground.definition == MapDefinition::Item(item.item_definition_ref)
+                        && ground.count == item.count.get()
+                        && ground.sub_type == item.sub_type
+                        && !baseline.entries.iter().any(|entry| entry.handle == handle))
+                    .then_some(handle)
+                });
+                if let (Some(handle), None) = (candidates.next(), candidates.next()) {
+                    dropped = Some(ItemEntry { handle, ..item });
+                }
+            }
+        }
+        if let Some(dropped) = dropped
+            && quantity(client, item.item_definition_ref)? == expected
+        {
+            close_browse(client, baseline.view_id).await?;
+            return Ok(dropped);
+        }
         if tokio::time::Instant::now() >= deadline {
-            return Err("step=drop observed=no-inventory-debit".into());
+            return Err(
+                "step=drop observed=no-exact-inventory-debit-and-unique-ground-handle".into(),
+            );
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
-    Ok((item.item_definition_ref, item.count))
 }
 
 /// Moves a browse entry into the main backpack and waits for the inventory credit.
@@ -216,14 +247,47 @@ async fn take_entry(
     Ok(())
 }
 
-fn has(
-    view: &tree::ContainerView,
-    definition: std::num::NonZeroU32,
-) -> Option<oteryn_protocol_oteryn::item_view::ItemEntry> {
-    view.entries
+pub(super) fn require_browse(
+    at: WorldTilePosition,
+    outcome: tree::ContainerViewOutcome,
+    view: Option<tree::ContainerView>,
+) -> TestResult<tree::ContainerView> {
+    match view {
+        Some(view)
+            if outcome == tree::ContainerViewOutcome::Opened
+                && view.browse.is_some_and(|page| page.position == at) =>
+        {
+            Ok(view)
+        }
+        _ => Err(
+            format!("step=browse observed={outcome:?};needed=Opened-with-view-at-{at:?}").into(),
+        ),
+    }
+}
+
+pub(super) async fn close_browse(client: &mut DevClientSession, view_id: u8) -> TestResult {
+    let payload = tree::encode_container_view_intent(&tree::ContainerViewIntent::Close { view_id })
+        .map_err(|error| format!("step=close-browse encode={error:?}"))?;
+    client.take_events();
+    let before = client.last_server_sequence();
+    let reply = client
+        .session_mut()
+        .gated_command(
+            tree::CAPABILITY_CONTAINER_TREE_V1,
+            tree::COMMAND_TYPE_CONTAINER_VIEW_INTENT,
+            &payload,
+        )
+        .await?;
+    let outcome = tree::decode_container_view_result(&reply.payload)
+        .map_err(|error| format!("step=close-browse decode={error:?}"))?;
+    if reply.status != CommandStatus::Accepted || outcome != tree::ContainerViewOutcome::Closed {
+        return Err(format!("step=close-browse observed={:?}/{outcome:?}", reply.status).into());
+    }
+    let still_open = wait_container_views(client, before).await?
+        .views
         .iter()
-        .find(|entry| entry.item_definition_ref == definition)
-        .copied()
+        .any(|view| view.view_id == view_id);
+    super::full_row_i18b::verify_browse_close(outcome, still_open)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -231,10 +295,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0xf1).await?;
     let t0 = tile(client.world_spatial().actor_position)?;
     let at = here(&client);
-    let (definition, count) = drop_first(&mut client, None).await?;
-    let away = route(world, t0, |tile| {
+    let dropped = drop_first(&mut client, None).await?;
+    let away = route_with(world, t0, |tile| {
         tile.floor == t0.floor && tile.x.abs_diff(t0.x).max(tile.y.abs_diff(t0.y)) >= 4
-    })
+    }, |at| keeps_drop_projected(at, t0))
     .ok_or("step=walk-away observed=no-route;needed:walkable-tiles-around-the-town-start")?;
     walk(&mut client, world, &away).await?;
     let (far, view) = browse_open(&mut client, at).await?;
@@ -242,28 +306,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("step=browse-far observed={far:?};needed=TooFar").into());
     }
     let now = tile(client.world_spatial().actor_position)?;
-    let back = route(world, now, |tile| {
+    let back = route_with(world, now, |tile| {
         tile.floor == t0.floor && tile.x.abs_diff(t0.x).max(tile.y.abs_diff(t0.y)) <= 1
-    })
+    }, |at| keeps_drop_projected(at, t0))
     .ok_or("step=walk-back observed=no-route")?;
     walk(&mut client, world, &back).await?;
     let (near, view) = browse_open(&mut client, at).await?;
-    let view =
-        view.ok_or_else(|| format!("step=browse-near observed={near:?};needed=Opened-with-view"))?;
-    let page = view
-        .browse
-        .ok_or("step=browse-near observed=no-browse-page")?;
-    if near != tree::ContainerViewOutcome::Opened || page.position != at {
-        return Err(format!(
-            "step=browse-near observed={near:?}-{:?};needed=Opened-at-{at:?}",
-            page.position
-        )
-        .into());
-    }
-    let entry =
-        has(&view, definition).ok_or("step=browse-near observed=dropped-item-not-listed")?;
+    let view = require_browse(at, near, view)?;
+    let entry = browse_entry(&view.entries, dropped.item_definition_ref, dropped.handle)
+        .ok_or("step=browse-near observed=dropped-item-not-listed")?;
     take_entry(&mut client, &entry).await?;
-    if quantity(&client, definition)? < u64::from(count.get()) {
+    if quantity(&client, dropped.item_definition_ref)? < u64::from(dropped.count.get()) {
         return Err("step=restore observed=backpack-count-not-restored".into());
     }
     logout(&mut client).await?;
@@ -271,4 +324,81 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "too-far-then-opened-with-item-entries={}",
         view.entries.len()
     ))
+}
+
+pub(super) fn browse_entry(
+    entries: &[ItemEntry],
+    definition: std::num::NonZeroU32,
+    handle: ItemHandle,
+) -> Option<ItemEntry> {
+    entries
+        .iter()
+        .copied()
+        .find(|entry| entry.item_definition_ref == definition && entry.handle == handle)
+}
+
+#[test]
+fn browse_entry_selects_exact_dropped_instance() {
+    let first = ItemEntry {
+        appearance_id: 0,
+        handle: ItemHandle::MIN,
+        item_definition_ref: std::num::NonZeroU32::MIN,
+        count: std::num::NonZeroU32::MIN,
+        sub_type: 0,
+    };
+    let Some(handle) = ItemHandle::new(2) else {
+        return;
+    };
+    let dropped = ItemEntry { handle, ..first };
+    assert_eq!(
+        browse_entry(&[first, dropped], first.item_definition_ref, handle),
+        Some(dropped)
+    );
+    assert_eq!(
+        browse_entry(&[first], first.item_definition_ref, handle),
+        None
+    );
+}
+
+fn observed_views(events: Vec<SessionEvent>, after: u64) -> Option<tree::ContainerViews> {
+    events.into_iter().rev().find_map(|event| match event {
+        SessionEvent::ContainerViews(delta) if delta.server_sequence > after => Some(delta.value),
+        _ => None,
+    })
+}
+
+#[test]
+fn round2_browse_observes_views_among_other_domain_events() {
+    let events = vec![
+        SessionEvent::Inventory(oteryn_dev_client::AppliedDelta {
+            server_sequence: 11, base_revision: 1, new_revision: 2,
+            value: oteryn_dev_client::CharacterInventory::default(),
+        }),
+        SessionEvent::ContainerViews(oteryn_dev_client::AppliedDelta {
+            server_sequence: 12, base_revision: 2, new_revision: 3,
+            value: tree::ContainerViews { views: vec![] },
+        }),
+    ];
+    assert!(observed_views(events, 10).is_some());
+}
+
+fn keeps_drop_projected(origin: TilePos, drop: TilePos) -> bool {
+    let at = |tile: TilePos| ActorPosition { x:i32::from(tile.x), y:i32::from(tile.y), floor:i16::from(tile.floor) };
+    oteryn_protocol_oteryn::world_map::in_window(at(origin), at(drop))
+}
+
+#[test]
+fn round2_browse_walk_excludes_tiles_outside_drop_projection() {
+    let drop = TilePos { x: 100, y: 100, floor: -7 };
+    assert!(keeps_drop_projected(TilePos {x: 104, ..drop}, drop));
+    assert!(!keeps_drop_projected(TilePos {x: 120, ..drop}, drop));
+}
+
+pub(super) async fn wait_container_views(client: &mut DevClientSession, after: u64) -> TestResult<tree::ContainerViews> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        if let Some(views) = observed_views(client.take_events(), after) { return Ok(views); }
+        if tokio::time::Instant::now() >= deadline { return Err("missing container-view update".into()); }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
 }

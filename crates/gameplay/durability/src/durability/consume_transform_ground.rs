@@ -19,10 +19,14 @@ pub struct GroundActionSource {
     generation: u64,
     map_mint: bool,
     action_ground_output: bool,
+    skinning_spent: bool,
 }
 impl GroundActionSource {
     pub fn definition(&self) -> &TypedDefinitionRef {
         &self.definition
+    }
+    pub fn skinning_spent(&self) -> bool {
+        self.skinning_spent
     }
     pub fn position(&self) -> MovementLocalPosition {
         self.position
@@ -179,7 +183,7 @@ impl DurabilityRoot {
     let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'),33))")
         .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).execute(&mut *tx).await?;
-    let row = sqlx::query("SELECT to_jsonb(i) AS before_item,to_jsonb(g) AS location,i.definition_family,i.definition_production_key,i.definition_revision_ref,g.spatial_position,g.corpse_ref,g.map_revision,g.content_revision,g.native_room_placement_context,game_item_loop_map_mint_source(i.item_instance_id) AS map_mint,game_item_action_ground_source(i.item_instance_id) AS action_ground_output FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid AND g.runtime_scope_ownership_generation=$4::text::numeric AND i.lifecycle=1 AND i.quantity>0 AND g.stack_ordinal IS NOT NULL")
+    let row = sqlx::query("SELECT to_jsonb(i) AS before_item,to_jsonb(g) AS location,i.definition_family,i.definition_production_key,i.definition_revision_ref,g.spatial_position,g.corpse_ref,g.map_revision,g.content_revision,g.native_room_placement_context,game_item_loop_map_mint_source(i.item_instance_id) AS map_mint,game_item_action_ground_source(i.item_instance_id) AS action_ground_output,EXISTS(SELECT 1 FROM game_corpse_skinning_records s WHERE s.corpse_item_instance_id=i.item_instance_id AND s.spent_key=i.definition_production_key AND s.spent_revision=i.definition_revision_ref) AS skinning_spent FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid AND g.runtime_scope_ownership_generation=$4::text::numeric AND i.lifecycle=1 AND i.quantity>0 AND g.stack_ordinal IS NOT NULL")
                 .bind(item.as_slice()).bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
                 .bind(fence.scope_ownership_generation.get().to_string()).fetch_optional(&mut *tx).await?;
             let result = row.map(|row| -> Result<GroundActionSource, DurabilityError> {
@@ -200,6 +204,7 @@ impl DurabilityRoot {
                     scope: fence.runtime_scope, generation: fence.scope_ownership_generation.get(),
                     map_mint: row.try_get("map_mint")?,
                     action_ground_output: row.try_get("action_ground_output")?,
+                    skinning_spent: row.try_get("skinning_spent")?,
                 })
             }).transpose()?;
             crate::durability::db::commit_semantic_transaction(tx, deadline).await?;

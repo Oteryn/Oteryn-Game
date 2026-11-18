@@ -1,10 +1,9 @@
 //! I19: gem and weapon enchanting at elemental shrines (`items/src/item_craft/enchanting.rs`).
-//! Buys a small ruby (3030) from an NPC seller with the character's own gold and uses it with no
-//! altar in reach: the server must not consume it. Enchanting needs the gem used on an elemental
-//! shrine altar with mana and soul, which this character cannot reach, so the row ends FAIL
-//! `needed:elemental-shrine-altar...`.
+//! Buys the operands from ordinary shops, verifies targetless refusal, then
+//! crafts a ruby at an authored altar and applies it to a carried sword.
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
+use oteryn_protocol_oteryn::world_object::UseDisposition;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -208,28 +207,111 @@ fn reference(id: u32) -> TestResult<std::num::NonZeroU32> {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    use super::full_row_i11::{carried_item, use_ingredient, walk_to_map_item};
+    use oteryn_gameplay_items::item_craft::enchanting::rule;
+
+    const RUBY: u16 = 3030;
+    const SWORD: u16 = 3271;
     let world = open_world(clients).await?;
-    let gem = reference(3030)?;
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let gem = reference(u32::from(RUBY))?;
+    let sword = reference(u32::from(SWORD))?;
     let mut client = connect_world(clients, 0xdf).await?;
-    acquire(&mut client, world, 3030, 1)
-        .await
-        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!(
-                "step=buy-small-ruby observed={error};needed:player-gold-500-and-reachable-seller"
-            ), error) })?;
-    let handle = client
-        .inventory()
-        .and_then(|inventory| {
-            inventory
-                .entries
-                .iter()
-                .find(|item| item.item_definition_ref == gem)
-        })
-        .map(|item| item.handle)
-        .ok_or("step=gem observed=no-handle")?;
+    let unit_rule = rule(RUBY, 146, 1, 1).ok_or("I19 ruby altar rule absent")?;
+    if client.actor_vitals().ok_or("I19 vitals absent")?.max_mana < unit_rule.mana {
+        super::full_row_q01::provision(clients, &mut client, 0xdf, 1, "sorcerer", "I19").await?;
+    }
+    acquire(&mut client, world, u32::from(RUBY), 1).await?;
+    let ruby = carried_item(&client, gem)?;
     let before = quantities(&client)?;
+    let targetless = client.use_item(ruby.handle).await?;
+    client.service_liveness(Duration::from_millis(100)).await?;
+    if targetless.disposition == UseDisposition::Committed || quantities(&client)? != before {
+        return Err(format!("step=targetless-ruby expected refusal and unchanged inventory; reply={targetless:?}").into());
+    }
+
+    let (altar, site) = walk_to_map_item(&mut client, world, &bytes, "ruby-altar", |key| {
+        crate::map::palette_appearance(key).is_some_and(|id| rule(RUBY, id, 1, 1).is_some())
+    }).await?;
+    let ruby = carried_item(&client, gem)?;
+    let altar_rule = rule(RUBY, 146, ruby.count.get(), 1).ok_or("I19 invalid ruby stack")?;
+    let enchanted = reference(u32::from(altar_rule.output))?;
+    let input_before = quantity(&client, gem)?;
+    let output_before = quantity(&client, enchanted)?;
+    let before = *client.actor_vitals().ok_or("I19 altar vitals absent")?;
+    let expected_mana = before.mana.checked_sub(altar_rule.mana).ok_or("I19 altar needs more mana")?;
+    let expected_soul = before.soul.checked_sub(altar_rule.soul).ok_or("I19 altar needs more soul")?;
     client.take_events();
-    let reply = client.use_item(handle).await?;
-    let unchanged = quantities(&client)? == before;
+    let reply = use_ingredient(&mut client, ruby.handle, None, Some(altar)).await?;
+    if reply != UseDisposition::Committed {
+        return Err(format!("step=ruby-altar position={site:?} reply={reply:?}").into());
+    }
+    wait_quantity(&mut client, enchanted, output_before + u64::from(altar_rule.count)).await?;
+    if !observed_conversion(
+        reply, (input_before, quantity(&client, gem)?),
+        (output_before, quantity(&client, enchanted)?),
+        altar_rule.source_debit, altar_rule.count,
+    ) {
+        return Err("step=ruby-altar inventory conversion mismatch".into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while !client.actor_vitals().is_some_and(|now| now.mana == expected_mana && now.soul == expected_soul) {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("step=ruby-altar expected mana {expected_mana} and soul {expected_soul}; observed {:?}", client.actor_vitals()).into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
+
+    acquire(&mut client, world, u32::from(SWORD), 1).await?;
+    let ruby = carried_item(&client, enchanted)?;
+    let blade = carried_item(&client, sword)?;
+    let weapon_rule = rule(altar_rule.output, SWORD, ruby.count.get(), blade.count.get())
+        .ok_or("I19 enchanted ruby sword rule absent")?;
+    let weapon = reference(u32::from(weapon_rule.output))?;
+    let blade_before = quantity(&client, sword)?;
+    let ruby_before = quantity(&client, enchanted)?;
+    let weapon_before = quantity(&client, weapon)?;
+    client.take_events();
+    let reply = use_ingredient(&mut client, ruby.handle, Some(blade.handle), None).await?;
+    if reply != UseDisposition::Committed {
+        return Err(format!("step=enchant-sword reply={reply:?}").into());
+    }
+    wait_quantity(&mut client, weapon, weapon_before + u64::from(weapon_rule.count)).await?;
+    if !observed_conversion(
+        reply, (ruby_before, quantity(&client, enchanted)?),
+        (weapon_before, quantity(&client, weapon)?),
+        weapon_rule.source_debit, weapon_rule.count,
+    ) || blade_before.checked_sub(u64::from(blade.count.get())) != Some(quantity(&client, sword)?) {
+        return Err("step=enchant-sword inventory conversion mismatch".into());
+    }
+    let expected = quantities(&client)?;
     logout(&mut client).await?;
-    Err(format!("small-ruby-bought;step=enchant observed=use-without-altar:{:?};state_unchanged={unchanged};needed:elemental-shrine-altar-and-mana-soul-in-reach", reply.disposition).into())
+    let mut fresh = connect_world(clients, 0xdf).await?;
+    if quantities(&fresh)? != expected {
+        return Err("step=enchant-relog inventory conversion did not persist".into());
+    }
+    logout(&mut fresh).await?;
+    Ok(format!("altar={site:?} ruby_output={} weapon_output={} mana_debit={} soul_debit={}",
+        altar_rule.output, weapon_rule.output, altar_rule.mana, altar_rule.soul))
+}
+
+fn observed_conversion(
+    disposition: UseDisposition,
+    input: (u64, u64),
+    output: (u64, u64),
+    source_units: u32,
+    output_units: u32,
+) -> bool {
+    disposition == UseDisposition::Committed
+        && input.0.checked_sub(u64::from(source_units)) == Some(input.1)
+        && output.0.checked_add(u64::from(output_units)) == Some(output.1)
+}
+
+#[test]
+fn altar_enchant_requires_committed_conversion() {
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+    assert!(observed_conversion(UseDisposition::Committed, (3, 2), (0, 1), 1, 1));
+    assert!(!observed_conversion(UseDisposition::Committed, (3, 3), (0, 1), 1, 1));
+    assert!(!observed_conversion(UseDisposition::NothingToUse, (3, 2), (0, 1), 1, 1));
 }

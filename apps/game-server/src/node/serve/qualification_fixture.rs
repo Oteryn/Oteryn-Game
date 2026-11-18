@@ -62,6 +62,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
             | "private-channel"
             | "coin-converters"
             | "rune-training"
+            | "sweep"
     )
     .then_some((session, profile))
 }
@@ -511,12 +512,12 @@ async fn prepare_build(
         ("sorcerer", unlock - 1)
     } else {
         (
-            if profile == "explorer" {
+            if matches!(profile, "explorer" | "sweep") {
                 "knight"
             } else {
                 profile
             },
-            100,
+            if profile == "sweep" { 1000 } else { 100 },
         )
     };
     let context = policy.context.clone();
@@ -906,6 +907,7 @@ mod tests {
                                 "explorer",
                                 "monk",
                                 "coin-converters",
+                                "sweep",
                             ] {
                                 let script = Path::new(env!("CARGO_MANIFEST_DIR"))
                                     .join("../../tools/qualification/node_boot/provision.py");
@@ -920,9 +922,10 @@ mod tests {
                                         .output()
                                 });
                                 let (mut stream, _) = listener.accept().await?;
-                                let bytes = handle_control(&mut stream, true)
+                                let (bytes, cancellation) = handle_control(&mut stream, true)
                                     .await
                                     .ok_or("Python request exceeded control bound")?;
+                                assert!(cancellation);
                                 assert_eq!(
                                     bytes,
                                     format!("qualify {} {profile}\n", uuid_text(&session))
@@ -1092,7 +1095,9 @@ mod tests {
     #[test]
     fn qualification_request_accepts_only_named_profiles_and_v7_sessions() {
         let id = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
-        for profile in ["explorer", "knight", "paladin", "sorcerer", "druid", "monk"] {
+        for profile in [
+            "explorer", "knight", "paladin", "sorcerer", "druid", "monk", "sweep",
+        ] {
             assert!(request(format!("qualify {id} {profile}\n").as_bytes()).is_some());
         }
         for text in [

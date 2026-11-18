@@ -75,135 +75,11 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+use super::full_row_i18a::{
+    browse_entry, browse_open, close_browse, drop_first, here, require_browse,
+};
 use oteryn_dev_client::{ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome};
-use oteryn_protocol_oteryn::browse_field as browse;
 use oteryn_protocol_oteryn::container_tree as tree;
-use oteryn_protocol_oteryn::item_view::WorldTilePosition;
-
-fn view_of(selected: &[u32], payload: &[u8]) -> TestResult<tree::ContainerViews> {
-    selected_container_views(selected, payload)
-        .map_err(|error| format!("step=views-decode observed={error:?}").into())
-}
-
-async fn browse_open(
-    client: &mut DevClientSession,
-    at: WorldTilePosition,
-) -> TestResult<(tree::ContainerViewOutcome, Option<tree::ContainerView>)> {
-    let payload =
-        browse::encode_browse_field_intent(&browse::BrowseFieldIntent::Open { position: at })
-            .map_err(|error| format!("step=browse-encode observed={error:?}"))?;
-    let reply = client
-        .session_mut()
-        .gated_command(
-            browse::CAPABILITY_BROWSE_FIELD_V1,
-            browse::COMMAND_TYPE_BROWSE_FIELD_INTENT,
-            &payload,
-        )
-        .await?;
-    let outcome = tree::decode_container_view_result(&reply.payload)
-        .map_err(|error| format!("step=browse-reply observed={error:?}"))?;
-    if outcome != tree::ContainerViewOutcome::Opened {
-        return Ok((outcome, None));
-    }
-    let delta = client
-        .session_mut()
-        .read_gated_delta(
-            tree::STATE_DOMAIN_CONTAINER_VIEWS,
-            tree::DELTA_TYPE_CONTAINER_VIEWS_V1,
-        )
-        .await?;
-    let view = view_of(client.selected_capabilities(), &delta.payload)?
-        .views
-        .into_iter()
-        .find(|view| view.browse.is_some());
-    Ok((outcome, view))
-}
-
-async fn view_intent(
-    client: &mut DevClientSession,
-    intent: tree::ContainerViewIntent,
-) -> TestResult<(tree::ContainerViewOutcome, Vec<tree::ContainerView>)> {
-    let payload = tree::encode_container_view_intent(&intent)
-        .map_err(|error| format!("step=view-encode observed={error:?}"))?;
-    let reply = client
-        .session_mut()
-        .gated_command(
-            tree::CAPABILITY_CONTAINER_TREE_V1,
-            tree::COMMAND_TYPE_CONTAINER_VIEW_INTENT,
-            &payload,
-        )
-        .await?;
-    let outcome = tree::decode_container_view_result(&reply.payload)
-        .map_err(|error| format!("step=view-reply observed={error:?}"))?;
-    let delta = client
-        .session_mut()
-        .read_gated_delta(
-            tree::STATE_DOMAIN_CONTAINER_VIEWS,
-            tree::DELTA_TYPE_CONTAINER_VIEWS_V1,
-        )
-        .await?;
-    Ok((outcome, view_of(client.selected_capabilities(), &delta.payload)?.views))
-}
-
-fn here(client: &DevClientSession) -> WorldTilePosition {
-    let at = client.world_spatial().actor_position;
-    WorldTilePosition {
-        x: at.x,
-        y: at.y,
-        floor: -at.floor,
-    }
-}
-
-fn ground(client: &DevClientSession) -> WorldTilePosition {
-    let at = client.world_spatial().actor_position;
-    WorldTilePosition {
-        x: at.x,
-        y: at.y,
-        floor: at.floor,
-    }
-}
-
-/// Drops the first backpack entry on the actor's own tile and returns its definition and count.
-async fn drop_first(
-    client: &mut DevClientSession,
-    prefer: Option<std::num::NonZeroU32>,
-) -> TestResult<(std::num::NonZeroU32, std::num::NonZeroU32)> {
-    let item = client
-        .inventory()
-        .and_then(|inventory| {
-            prefer
-                .and_then(|want| {
-                    inventory
-                        .entries
-                        .iter()
-                        .find(|item| item.item_definition_ref == want)
-                })
-                .or(inventory.entries.first())
-        })
-        .copied()
-        .ok_or("step=drop observed=no-backpack-item;needed:player-acquired-item")?;
-    let at = ground(client);
-    let before = quantity(client, item.item_definition_ref)?;
-    client.take_events();
-    let moved = client
-        .move_item(&ItemMoveIntent {
-            source: item.handle,
-            destination: ItemMoveDestination::Ground(at),
-        })
-        .await?;
-    if moved.outcome != ItemMoveOutcome::Moved {
-        return Err(format!("step=drop observed={:?};needed=Moved", moved.outcome).into());
-    }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    while quantity(client, item.item_definition_ref)? >= before {
-        client.take_events();
-        if tokio::time::Instant::now() >= deadline {
-            return Err("step=drop observed=no-inventory-debit".into());
-        }
-        client.service_liveness(Duration::from_millis(50)).await?;
-    }
-    Ok((item.item_definition_ref, item.count))
-}
 
 /// Moves a browse entry into the main backpack and waits for the inventory credit.
 async fn take_entry(
@@ -230,44 +106,28 @@ async fn take_entry(
     Ok(())
 }
 
-fn has(
-    view: &tree::ContainerView,
-    definition: std::num::NonZeroU32,
-) -> Option<oteryn_protocol_oteryn::item_view::ItemEntry> {
-    view.entries
-        .iter()
-        .find(|entry| entry.item_definition_ref == definition)
-        .copied()
-}
-
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0xf2).await?;
     let at = here(&client);
-    let (definition, count) = drop_first(&mut client, None).await?;
+    let dropped = drop_first(&mut client, None).await?;
+    let definition = dropped.item_definition_ref;
+    let count = dropped.count;
     let (outcome, view) = browse_open(&mut client, at).await?;
-    let view =
-        view.ok_or_else(|| format!("step=browse observed={outcome:?};needed=Opened-with-view"))?;
-    let entry = has(&view, definition).ok_or("step=browse observed=dropped-item-not-listed")?;
+    let view = require_browse(at, outcome, view)?;
+    let entry = browse_entry(&view.entries, definition, dropped.handle)
+        .ok_or("step=browse observed=dropped-item-not-listed")?;
     take_entry(&mut client, &entry).await?;
-    let (_, after) = browse_open(&mut client, at).await?;
-    if after
-        .as_ref()
-        .and_then(|view| has(view, definition))
-        .is_some()
-    {
+    close_browse(&mut client, view.view_id).await?;
+    let (outcome, after) = browse_open(&mut client, at).await?;
+    let after = require_browse(at, outcome, after)?;
+    if browse_entry(&after.entries, definition, dropped.handle).is_some() {
         return Err("step=browse-after-take observed=entry-still-listed".into());
     }
-    let (_, _) = view_intent(
-        &mut client,
-        tree::ContainerViewIntent::Close {
-            view_id: view.view_id,
-        },
-    )
-    .await?;
-    let (definition_again, _) = drop_first(&mut client, Some(definition)).await?;
-    let (_, again) = browse_open(&mut client, at).await?;
-    let again = again.ok_or("step=browse-again observed=no-view")?;
-    let entry = has(&again, definition_again)
+    close_browse(&mut client, after.view_id).await?;
+    let dropped_again = drop_first(&mut client, Some(definition)).await?;
+    let (outcome, again) = browse_open(&mut client, at).await?;
+    let again = require_browse(at, outcome, again)?;
+    let entry = browse_entry(&again.entries, definition, dropped_again.handle)
         .ok_or("step=browse-again observed=re-dropped-item-not-listed")?;
     take_entry(&mut client, &entry).await?;
     let held = quantity(&client, definition)?;
@@ -280,4 +140,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     logout(&mut client).await?;
     Ok("moved-out-and-in-of-browse-field-and-durable".to_owned())
+}
+
+pub(super) fn verify_browse_close(
+    outcome: tree::ContainerViewOutcome,
+    still_open: bool,
+) -> TestResult {
+    if outcome != tree::ContainerViewOutcome::Closed || still_open {
+        return Err(
+            format!("step=close-browse observed={outcome:?};view-still-open={still_open}").into(),
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn browse_close_requires_closed_reply_and_removed_view() {
+    assert!(verify_browse_close(tree::ContainerViewOutcome::Closed, false).is_ok());
+    assert!(verify_browse_close(tree::ContainerViewOutcome::Closed, true).is_err());
+    assert!(verify_browse_close(tree::ContainerViewOutcome::Stale, false).is_err());
 }

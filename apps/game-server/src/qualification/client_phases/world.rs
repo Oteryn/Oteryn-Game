@@ -2352,8 +2352,17 @@ fn route(
     from: TilePos,
     goal: impl Fn(TilePos) -> bool,
 ) -> Option<Vec<StepDirection>> {
+    route_with(world, from, goal, |_| true)
+}
+
+fn route_with(
+    world: &BundleWorld,
+    from: TilePos,
+    goal: impl Fn(TilePos) -> bool,
+    traversable: impl Fn(TilePos) -> bool,
+) -> Option<Vec<StepDirection>> {
     route_with_edges(from, goal, |at, direction| {
-        destination(world, at, direction)
+        destination(world, at, direction).filter(|next| traversable(*next))
     })
 }
 
@@ -7177,7 +7186,7 @@ fn flr2_reward_route(label: &'static str, target: TilePos) -> TestResult {
             if label == "Q03a" {
                 let reason = planned.err().ok_or("Q03a unexpectedly has a route")?;
                 assert_eq!(reason, "every reachable tile of the search box exhausted (114052 settled); closest tile reached 32305,32254,7");
-                let result: TestResult = Err(reason.into());
+                let result = full_row_q01::q03a_route::<()>(label, Err(reason)).map(|_| ());
                 assert_eq!(full_row_q01::row_status(&result), "FAIL");
                 return Ok(());
             }
@@ -7427,6 +7436,89 @@ fn flr2_catalogue_admission() -> TestResult {
         }),
         "catalogue blocking stone must block movement"
     );
+    Ok(())
+}
+
+async fn final_logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
+    drive_final_logout(
+        client,
+        async |client| Ok(client.session_mut().logout().await?.result),
+        async |client| {
+            client.service_liveness(Duration::from_millis(250)).await?;
+            client.take_events();
+            Ok(())
+        },
+    )
+    .await
+}
+
+async fn drive_final_logout<C>(
+    client: &mut C,
+    mut send: impl AsyncFnMut(
+        &mut C,
+    ) -> TestResult<Option<oteryn_protocol_oteryn::logout::LogoutResult>>,
+    mut service: impl AsyncFnMut(&mut C) -> TestResult,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+    loop {
+        let result = send(client).await?;
+        if !final_logout_retry(result) || tokio::time::Instant::now() >= deadline {
+            return require_final_logout_result(result);
+        }
+        service(client).await?;
+    }
+}
+
+fn require_final_logout_result(
+    result: Option<oteryn_protocol_oteryn::logout::LogoutResult>,
+) -> TestResult {
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("final logout requires Accepted, observed {result:?}").into());
+    }
+    Ok(())
+}
+
+#[test]
+fn round2_final_logout_requires_accepted_release() {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    assert!(require_final_logout_result(Some(LogoutResult::Accepted)).is_ok());
+    assert!(require_final_logout_result(Some(LogoutResult::Busy)).is_err());
+    assert!(
+        require_final_logout_result(Some(LogoutResult::InFight { retry_after_ms: 1 })).is_err()
+    );
+    assert!(require_final_logout_result(None).is_err());
+}
+
+fn final_logout_retry(result: Option<oteryn_protocol_oteryn::logout::LogoutResult>) -> bool {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    matches!(
+        result,
+        Some(LogoutResult::Busy | LogoutResult::InFight { .. })
+    )
+}
+
+#[tokio::test]
+async fn round3_final_logout_retry() -> TestResult {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    let mut state = (
+        std::collections::VecDeque::from([
+            LogoutResult::Busy,
+            LogoutResult::InFight { retry_after_ms: 1 },
+            LogoutResult::Accepted,
+        ]),
+        0,
+    );
+    drive_final_logout(
+        &mut state,
+        async |state| Ok(state.0.pop_front()),
+        async |state| {
+            state.1 += 1;
+            Ok(())
+        },
+    )
+    .await?;
+    assert!(state.0.is_empty());
+    assert_eq!(state.1, 2);
     Ok(())
 }
 

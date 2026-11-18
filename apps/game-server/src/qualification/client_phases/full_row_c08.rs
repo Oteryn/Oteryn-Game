@@ -268,6 +268,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     row.pass((second, admitted, tick));
-    let _ = client.session_mut().logout().await?;
+    final_logout(&mut client).await?;
     Ok(())
 }

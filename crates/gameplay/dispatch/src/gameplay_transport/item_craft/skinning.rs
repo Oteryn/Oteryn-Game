@@ -118,15 +118,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .and_then(|id| id.parse::<u16>().ok())
         };
         let tool_id = entry.and_then(|entry| source_id(&entry.item.definition.production_key));
-        if !tool_id
-            .zip(source_id(&ground.definition().production_key))
-            .and_then(|(tool, target)| oteryn_gameplay_items::fishing::gathering_rule(tool, target))
-            .is_some_and(|(target, _)| {
-                matches!(
-                    target,
-                    oteryn_gameplay_items::fishing::GatheringTarget::Corpse { spent_item: 1.. }
-                )
-            })
+        // Keep a valid retry on a proven spent corpse with the fenced skinning
+        // owner. Generic map-item fallback cannot resolve a dynamic corpse.
+        if !ground.skinning_spent()
+            && !tool_id
+                .zip(source_id(&ground.definition().production_key))
+                .and_then(|(tool, target)| {
+                    oteryn_gameplay_items::fishing::gathering_rule(tool, target)
+                })
+                .is_some_and(|(target, _)| {
+                    matches!(
+                        target,
+                        oteryn_gameplay_items::fishing::GatheringTarget::Corpse { spent_item: 1.. }
+                    )
+                })
         {
             return Ok(None);
         }

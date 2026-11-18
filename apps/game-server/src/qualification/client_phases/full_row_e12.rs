@@ -190,7 +190,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
             need: "house-position-in-wire-range",
             source: None,
         })?,
-        floor: i8::try_from(position.floor).map_err(|_| StepFailure {
+        floor: summon_wire_floor(position.floor).map_err(|_| StepFailure {
             step: 2,
             observed: format!("invalid-floor-{}", position.floor),
             need: "house-position-in-wire-range",
@@ -337,8 +337,20 @@ impl verdict::IndexedError for StepFailure {
     }
 }
 
+fn summon_wire_floor(floor: i16) -> Result<i8, std::num::TryFromIntError> {
+    i8::try_from(floor.unsigned_abs())
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn summon_floor_round_trips_through_legacy_dispatch() {
+        assert_eq!(
+            super::summon_wire_floor(-7).map(|wire| -i16::from(wire)),
+            Ok(-7)
+        );
+    }
+
     use super::token;
 
     #[test]

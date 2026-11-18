@@ -10,8 +10,7 @@
 //!    the final refusal tile to remain the durable admitted position.
 //!
 //! The server owner is `crates/gameplay/spell/src/spell/world_execution.rs`.
-//! A reached rope cast that is accepted but denied solely by the bundle landing
-//! flags is reported at run time as MISSING-SERVER, with that owner path.
+//! A cast must produce the expected changes within the observation window.
 use super::*;
 use oteryn_dev_client::{
     ChatDisposition, ChatIntent, ChatOutcome, ChatSpeechMode, DevClientSession,
@@ -26,31 +25,38 @@ const ROPE_TOPS: &[u32] = &[12935];
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await;
-    let (status, evidence_text) = match result {
-        Ok(Ok(())) => ("PASS", None),
-        Ok(Err(error)) => {
-            let detail = error.to_string();
-            evidence(&format!("M11B_GAP observed={detail}"));
-            if detail.starts_with("landing-denied:") {
-                (
-                    "MISSING-SERVER",
-                    Some("source:crates/gameplay/spell/src/spell/world_execution.rs:516"),
-                )
-            } else {
-                ("FAIL", None)
-            }
-        }
-        Err(_) => {
-            evidence("M11B_GAP observed=journey-timeout");
-            ("FAIL", None)
-        }
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients)))
+            .await;
+    let result = match result {
+        Ok(result) => result,
+        Err(_) => Err("journey-timeout".into()),
     };
+    let status = classify_cast_result(&result);
+    if let Err(error) = result {
+        evidence(&format!("M11B_GAP observed={error}"));
+    }
     evidence(&format!(
-        "SEAM_EVIDENCE e2e_all scenario=M11b.full status={status} seconds={:.3}{}",
+        "SEAM_EVIDENCE e2e_all scenario=M11b.full status={status} seconds={:.3}",
         started.elapsed().as_secs_f64(),
-        evidence_text.map_or(String::new(), |value| format!(" evidence={value}")),
     ));
+}
+
+fn classify_cast_result(result: &TestResult) -> &'static str {
+    if result.is_ok() { "PASS" } else { "FAIL" }
+}
+
+#[cfg(test)]
+mod verdict_tests {
+    #[test]
+    fn accepted_chat_without_relocation_does_not_identify_the_cause() {
+        for detail in [
+            "landing-denied:position unchanged, mana=50->50",
+            "landing-denied:position unchanged, mana=50->30",
+        ] {
+            assert_eq!(super::classify_cast_result(&Err(detail.into())), "FAIL");
+        }
+    }
 }
 
 async fn say(client: &mut DevClientSession) -> TestResult<ChatOutcome> {
@@ -142,7 +148,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .ok_or("step-2:missing post-cast vitals")?
         .mana;
     if landed == rope {
-        return Err(format!("landing-denied:step-2 accepted reply status={:?} disposition={:?}, position unchanged={landed:?}, mana={before_mana}->{after_mana}", cast.status, cast.disposition).into());
+        return Err(format!("step-2: accepted reply status={:?} disposition={:?}, position unchanged={landed:?}, mana={before_mana}->{after_mana}", cast.status, cast.disposition).into());
     }
     if landed.floor != rope.floor + 1
         || landed.x.abs_diff(rope.x).max(landed.y.abs_diff(rope.y)) != 1

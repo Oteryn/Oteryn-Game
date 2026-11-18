@@ -18,6 +18,7 @@ use std::collections::HashMap;
 
 const QUEST_LEVEL: u32 = 250;
 const KESAR: &str = "oteryn:npc.kesar_the_younger_day";
+const ELDORAN: &str = "oteryn:npc.eldoran_the_ambitious";
 const WARLOCK: &str = "oteryn:creature.court_warlock";
 const REWARD_ITEM: u32 = 52824;
 const BOAT_REFUSAL: &str = "This small fishing boat is tied up firmly.";
@@ -218,7 +219,7 @@ async fn setup(clients: &SeamClients<'_>, client: &mut DevClientSession) -> Test
     ))
 }
 
-/// Talk to Kesar as a player: walk to him and say hi, problem, help, help, help.
+/// Walk to Kesar and confirm his outbound mission offer.
 /// Kesar has no fixed placement: the day/night clock spawns him at his day or night tile
 /// (`bundle_npcs.rs`), so the row walks to the day tile, then the night tile, until it sees him.
 async fn kesar(
@@ -278,7 +279,7 @@ async fn kesar(
     }
     let actor = actor.ok_or_else(|| format!("kesar not found: {misses:?}"))?;
     let mut replies = Vec::new();
-    for text in ["hi", "problem", "help", "help", "help"] {
+    for &text in KESAR_DIALOGUE {
         let lines = travel::converse(client, actor, text).await?;
         evidence(&format!("Q02_NPC say={text:?} reply={lines:?}"));
         if lines.is_empty() {
@@ -331,8 +332,73 @@ async fn warlock(
     Ok(format!("killed at {}", show(point)))
 }
 
-/// The final reward must be carried.
-fn reward(client: &DevClientSession) -> TestResult<String> {
+/// Claim through Eldoran's authored post-Warlock dialogue and await the inventory grant.
+async fn reward(
+    client: &mut DevClientSession,
+    planner: &travel::Planner<'_>,
+    npcs: &oteryn_world_bundle::npc::Table,
+) -> TestResult<String> {
+    let placement = npcs
+        .npcs
+        .iter()
+        .find(|npc| npc.key == ELDORAN)
+        .and_then(|npc| npc.placements.first())
+        .ok_or("Eldoran has no authored placement")?;
+    let spot = TilePos {
+        x: placement.x,
+        y: placement.y,
+        floor: placement.floor,
+    };
+    let mut passages = travel::Passages::default();
+    travel::travel_to(
+        client,
+        planner,
+        "Q02:eldoran",
+        spot,
+        &travel::beside(spot),
+        &mut passages,
+    )
+    .await?;
+    let actor = client
+        .world_entities()
+        .and_then(|entities| {
+            entities.iter().find(|e| {
+                e.kind == EntityKind::Npc
+                    && e.display_name.is_some_and(|name| {
+                        name.as_str()
+                            .is_ok_and(|name| name.eq_ignore_ascii_case("Eldoran the Ambitious"))
+                    })
+                    && e.position
+                        .x
+                        .abs_diff(i32::from(spot.x))
+                        .max(e.position.y.abs_diff(i32::from(spot.y)))
+                        <= 3
+                    && e.position.floor == -i16::from(spot.floor)
+            })
+        })
+        .map(|entity| entity.entity)
+        .ok_or("Eldoran is missing from the reached entity view")?;
+    let reference = provisioning::item_reference(&provisioning::item_index()?, REWARD_ITEM)?;
+    let before = full_row_q01::carried(client, reference);
+    travel::converse(client, actor, "hi").await?;
+    let response = travel::converse(client, actor, "news").await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let held = full_row_q01::carried(client, reference);
+        if fresh_reward(before, held) {
+            return Ok(format!(
+                "item={REWARD_ITEM} carried={before}->{held} reply={response:?}"
+            ));
+        }
+        if tokio::time::Instant::now() >= deadline || held > before {
+            return Err(format!("reward item {REWARD_ITEM} expected one new grant; carried={before}->{held}; reply={response:?}").into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
+}
+
+fn retained_reward(client: &DevClientSession) -> TestResult<String> {
     let reference = provisioning::item_reference(&provisioning::item_index()?, REWARD_ITEM)?;
     let held = full_row_q01::carried(client, reference);
     if held == 0 {
@@ -398,6 +464,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .await,
     );
     row.check("court_warlock", warlock(c, planner, &metadata.spawns).await);
+    row.check("reward", reward(c, planner, &metadata.npcs).await);
     row.check(
         "boat_return",
         crossed(
@@ -422,8 +489,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .await,
     );
-    row.check("reward", reward(c));
-    let _ = client.session_mut().logout().await;
+    row.check("reward-retained", retained_reward(c));
+    row.check("logout", final_logout(&mut client).await.map(|()| "accepted".into()));
     row.finish()
 }
 
@@ -438,6 +505,24 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         if result.is_ok() { "PASS" } else { "FAIL" },
         started.elapsed().as_secs_f64()
     ));
+}
+
+fn fresh_reward(before: usize, after: usize) -> bool {
+    before.checked_add(1) == Some(after)
+}
+
+#[test]
+fn quest_reward_must_be_newly_granted() {
+    assert!(!fresh_reward(1, 1));
+    assert!(fresh_reward(1, 2));
+    assert!(!fresh_reward(1, 3));
+}
+
+const KESAR_DIALOGUE: &[&str] = &["hi", "problem", "help", "help", "help", "yes"];
+
+#[test]
+fn round3_kesar_answers_the_outbound_offer() {
+    assert!(KESAR_DIALOGUE.ends_with(&["help", "yes"]));
 }
 
 #[test]

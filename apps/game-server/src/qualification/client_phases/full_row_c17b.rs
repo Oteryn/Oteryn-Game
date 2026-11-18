@@ -79,14 +79,18 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result =
-        match verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(&mut row, clients))).await {
-            Ok(result) => result,
-            Err(_) => Err(
-                "step=journey observed=timeout-after-180s need=responsive-spell/AI/visibility-path"
-                    .into(),
-            ),
-        };
+    let result = match verdict::indexed_timeout(
+        Duration::from_secs(360),
+        verdict::observe(journey(&mut row, clients)),
+    )
+    .await
+    {
+        Ok(result) => result,
+        Err(_) => Err(
+            "step=journey observed=timeout-after-360s need=responsive-spell/AI/visibility-path"
+                .into(),
+        ),
+    };
     row.finish(&result);
 }
 
@@ -333,6 +337,27 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let session = caster.join_snapshot().game_session_id;
     let position = caster.world_spatial().actor_position;
     logout(&mut caster).await?;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let snapshot: serde_json::Value = sqlx::query_scalar(
+        "SELECT snapshot FROM game_character_condition_snapshots WHERE character_id=encode($1,'hex')::uuid",
+    ).bind(clients.characters[1].as_slice()).fetch_one(&mut db).await?;
+    let saved = crate::foundation::condition::ConditionStore::<String>::from_persistent_snapshot(
+        &snapshot, 0,
+    )
+    .map_err(|reason| {
+        format!("step=fresh-admission-condition invalid saved condition: {reason:?}")
+    })?;
+    let remaining = saved
+        .instances()
+        .iter()
+        .find(|instance| {
+            instance.definition().condition_type()
+                == oteryn_gameplay_domain::domain::condition::ConditionType::Invisible
+        })
+        .and_then(|instance| instance.remaining_duration_ms(0))
+        .filter(|duration| *duration > 0)
+        .ok_or("step=fresh-admission-condition no active invisibility in logout snapshot")?;
+    let admit_started = tokio::time::Instant::now();
     caster = connect_character(clients, 0xb3, 1).await?;
     if caster.join_snapshot().game_session_id == session
         || caster.world_spatial().actor_position != position
@@ -342,13 +367,64 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step=fresh-admission-condition observed=session/position/vitals-mismatch need=durable-condition-state".into());
     }
+    let fresh_ref = own(&caster)?;
+    let expected_expiry = admit_started + Duration::from_millis(u64::try_from(remaining)?);
+    if tokio::time::Instant::now() >= expected_expiry {
+        return Err(
+            "step=fresh-admission-condition cannot observe active invisibility after expiry".into(),
+        );
+    }
     observer
         .service_liveness(Duration::from_millis(100))
         .await?;
-    if visible(&observer, own(&caster)?) {
+    let visible_after_relog = visible(&observer, fresh_ref);
+    if visible_after_relog {
         return Err("step=fresh-admission-condition observed=caster-visible need=reloaded-invisibility-condition".into());
     }
-    row.pass("fresh-admission-condition", cast.result_server_sequence)?;
+    // Send the fresh actor identity directly to attack authority. Delayed
+    // delivery of an entity frame cannot make its visible actor untargetable.
+    let refused = observer.session_mut().attack_target(Some(&fresh_ref)).await?;
+    let target_refused = refused.disposition == AttackIntentDisposition::TargetNotVisible
+        && tokio::time::Instant::now() < expected_expiry;
+    if !target_refused {
+        return Err(format!("fresh caster did not refuse targeting while invisibility should be active: {refused:?}").into());
+    }
+    let deadline = tokio::time::Instant::now()
+        + Duration::from_millis(u64::try_from(remaining)?)
+        + Duration::from_secs(10);
+    verdict::Harness::global().bounded_wait(deadline, "invisibility-expiry");
+    let published = loop {
+        caster.service_liveness(Duration::from_millis(50)).await?;
+        caster.take_events();
+        observer.service_liveness(Duration::from_millis(50)).await?;
+        let published = observer
+            .take_events()
+            .into_iter()
+            .find_map(|event| match event {
+                SessionEvent::WorldSpatialEntities(delta)
+                    if delta
+                        .value
+                        .enter
+                        .iter()
+                        .chain(&delta.value.update)
+                        .any(|entity| entity.entity == fresh_ref)
+                        && visible(&observer, fresh_ref) =>
+                {
+                    Some(delta.server_sequence)
+                }
+                _ => None,
+            });
+        if published.is_some() || tokio::time::Instant::now() >= deadline {
+            break published.filter(|_| tokio::time::Instant::now() >= expected_expiry);
+        }
+    };
+    if !fresh_invisibility_evidence(!visible_after_relog, published.is_some(), target_refused) {
+        return Err("step=fresh-admission-condition need=fresh-entity-publication-after-invisibility-expiry".into());
+    }
+    row.pass(
+        "fresh-admission-condition",
+        published.ok_or("missing entity publication sequence")?,
+    )?;
     let back = route(world, tile(caster.world_spatial().actor_position)?, |at| {
         at == TOWN
     })
@@ -377,4 +453,25 @@ mod tests {
         assert!(ACTIONS.iter().all(|action| row.passed.contains(action)));
         Ok(())
     }
+}
+
+fn invisibility_persisted(visible_after_relog: bool, visible_after_expiry: bool) -> bool {
+    !visible_after_relog && visible_after_expiry
+}
+
+#[test]
+fn invisibility_requires_fresh_entity_publication_after_expiry() {
+    assert!(!invisibility_persisted(false, false));
+    assert!(!invisibility_persisted(true, true));
+    assert!(invisibility_persisted(false, true));
+}
+
+fn fresh_invisibility_evidence(hidden: bool, published: bool, target_refused: bool) -> bool {
+    target_refused && invisibility_persisted(!hidden, published)
+}
+
+#[test]
+fn round2_delayed_visible_actor_does_not_prove_invisibility() {
+    assert!(!fresh_invisibility_evidence(true, true, false));
+    assert!(fresh_invisibility_evidence(true, true, true));
 }

@@ -79,7 +79,6 @@ pub(super) const CHESTS: [Chest; 16] = [
 pub(super) fn row_status(result: &TestResult) -> &'static str {
     match result {
         Ok(()) => "PASS",
-        Err(error) if error.to_string().starts_with("MISSING ") => "MISSING",
         Err(_) => "FAIL",
     }
 }
@@ -141,8 +140,8 @@ async fn journey(clients: &SeamClients<'_>, chest: &Chest) -> TestResult {
         Ok(()) => claim(&mut client, planner, chest, &label, ordinal, reference).await,
         Err(error) => Err(error),
     };
-    let _ = client.session_mut().logout().await;
-    result
+    let logout = final_logout(&mut client).await;
+    result.and(logout)
 }
 
 /// The character's level, read from the GeneralStats tab.
@@ -176,16 +175,16 @@ async fn below_level_check(
     chest: &Chest,
     label: &str,
     level: u32,
-) -> TestResult {
+) -> TestResult<TilePos> {
     let action = u16::try_from(1000 + DOOR_LEVEL)?;
-    let Some(&door) = planner.level_doors(chest.at, 12, action).first() else {
-        evidence(&format!(
-            "Q01_CHECK {label} below_level not_run: no level-{DOOR_LEVEL} door within 12 tiles of the chest"
-        ));
-        return Ok(());
-    };
+    let door = *planner
+        .level_doors(chest.at, 12, action)
+        .first()
+        .ok_or_else(|| {
+            format!("{label} no level-{DOOR_LEVEL} door within 12 tiles of the chest")
+        })?;
     let mut passages = travel::Passages::default();
-    if let Err(error) = travel::travel_to(
+    travel::travel_to(
         client,
         planner,
         &format!("{label}:below-level"),
@@ -193,24 +192,30 @@ async fn below_level_check(
         &travel::beside(door),
         &mut passages,
     )
-    .await
-    {
-        evidence(&format!(
-            "Q01_CHECK {label} below_level not_run: cannot walk to the door: {error}"
-        ));
-        return Ok(());
-    }
+    .await?;
     let reply = travel::use_map_object(client, &planner.door_placement(door)?).await?;
     evidence(&format!(
         "Q01_CHECK {label} below_level level={level} door={},{},{} action={action} use={reply:?}",
         door.x, door.y, -door.floor
     ));
-    if reply == UseDisposition::Committed {
-        return Err(
-            format!("{label} level {level} character opened the level-{DOOR_LEVEL} door").into(),
-        );
+    validate_level_refusal(label, level, reply)?;
+    Ok(door)
+}
+
+fn validate_level_refusal(label: &str, level: u32, reply: UseDisposition) -> TestResult {
+    if level >= DOOR_LEVEL || reply != UseDisposition::Locked {
+        return Err(format!(
+            "{label} level {level} door-{DOOR_LEVEL} probe returned {reply:?}; expected a below-level Locked reply"
+        ).into());
     }
     Ok(())
+}
+
+#[test]
+fn level_door_requires_locked_reply_from_below_level_character() {
+    assert!(validate_level_refusal("test", 1, UseDisposition::Locked).is_ok());
+    assert!(validate_level_refusal("test", 1, UseDisposition::TooFar).is_err());
+    assert!(validate_level_refusal("test", DOOR_LEVEL, UseDisposition::Locked).is_err());
 }
 
 /// Below-level check first, then the fixture build (knight, level 100), logout, reconnect and
@@ -223,14 +228,19 @@ async fn setup(
     client: &mut oteryn_dev_client::DevClientSession,
 ) -> TestResult {
     let before = level(client).await?;
+    let probed_door = if chest.quest == "noble_armor" {
+        if before >= DOOR_LEVEL {
+            return Err(format!("{label} needs a character below level {DOOR_LEVEL} for the door probe; observed {before}").into());
+        }
+        Some(below_level_check(client, planner, chest, label, before).await?)
+    } else {
+        None
+    };
     if before >= DOOR_LEVEL {
         evidence(&format!(
             "Q01_CHECK {label} setup:fixture_level={before} (raised by an earlier row)"
         ));
         return Ok(());
-    }
-    if chest.quest == "noble_armor" {
-        below_level_check(client, planner, chest, label, before).await?;
     }
     let after = provision(clients, client, chest.tag, chest.character, "knight", label).await?;
     evidence(&format!(
@@ -241,6 +251,58 @@ async fn setup(
             "{label} fixture left the character at level {after}, below {DOOR_LEVEL}"
         )
         .into());
+    }
+    if let Some(door) = probed_door {
+        let mut passages = travel::Passages::default();
+        travel::travel_to(
+            client,
+            planner,
+            &format!("{label}:at-level"),
+            door,
+            &travel::beside(door),
+            &mut passages,
+        )
+        .await?;
+        let placement = planner.door_placement(door)?;
+        let ordinal = *placement.last().ok_or("empty level-door placement")?;
+        let mut revision = client.world_object_overlay().iter()
+            .find(|entry| entry.placement == placement).map_or(0, |entry| entry.revision);
+        if let Some(map) = client.session_mut().world_map_snapshot() {
+            revision = door_revision(&map.tiles, door, ordinal).unwrap_or(revision);
+        }
+        for event in client.take_events() {
+            if let oteryn_dev_client::SessionEvent::WorldMap(delta) = event {
+                revision = door_revision(&delta.value.tiles, door, ordinal).unwrap_or(revision);
+            }
+        }
+        let reply = use_door_with_cooldown(client, &placement, revision).await?;
+        if reply != UseDisposition::Committed {
+            return Err(format!(
+                "{label} level {after} same-door positive control returned {reply:?}"
+            )
+            .into());
+        }
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        let new_revision = loop {
+            let updated = client.take_events().into_iter().filter_map(|event| {
+                if let oteryn_dev_client::SessionEvent::WorldMap(delta) = event {
+                    door_revision(&delta.value.tiles, door, ordinal)
+                } else { None }
+            }).max().or_else(|| client.world_object_overlay().iter()
+                .find(|entry| entry.placement == placement).map(|entry| entry.revision));
+            if let Some(updated) = revised_door(revision, updated) { break updated; }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("{label} opened level door without publishing its new revision").into());
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+        };
+        let restored = use_door_with_cooldown(client, &placement, new_revision).await?;
+        if restored != UseDisposition::Committed {
+            return Err(format!(
+                "{label} same-door positive control could not restore door: {restored:?}"
+            )
+            .into());
+        }
     }
     Ok(())
 }
@@ -260,14 +322,15 @@ pub(super) async fn provision(
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let mut command = fixture_command();
     command.args(["--socket", &socket, "--session", &session, "--profile", &profile]);
-    let status = wait_fixture_command(
+    let status = tokio::time::timeout(Duration::from_secs(22), wait_fixture_command(
         async { Ok(run_fixture_command(&mut command).await?) },
         async || {
+            verdict::Harness::global().progress("fixture provisioning liveness");
             client.service_liveness(Duration::from_millis(100)).await?;
             client.take_events();
             Ok(())
         },
-    ).await?;
+    )).await??;
     if !status.status.success() {
         evidence(&format!("fixture provisioning failed: {}", String::from_utf8_lossy(&status.stderr)));
         return Err(format!("{label} node-boot fenced build provisioning failed").into());
@@ -289,7 +352,7 @@ fn from_town(planner: &travel::Planner<'_>, chest: &Chest, label: &str) -> TestR
     let goal = planner.reward_goal(chest.at);
     let planned = planner.plan(TOWN, chest.at, &goal, true, &travel::Passages::default());
     verdict::Harness::global().progress("walk");
-    match planned {
+    match q03a_route(chest.row, planned)? {
         Ok(route) => {
             evidence(&format!(
                 "TRAVEL_ROUTE {label} from-town {TOWN:?} actions={}",
@@ -300,13 +363,24 @@ fn from_town(planner: &travel::Planner<'_>, chest: &Chest, label: &str) -> TestR
             }
         }
         Err(reason) => {
-            evidence(&format!("TRAVEL_ROUTE {label} from-town {TOWN:?} unreached: {reason}"));
+            evidence(&format!(
+                "TRAVEL_ROUTE {label} from-town {TOWN:?} unreached: {reason}"
+            ));
             match chest.row {
                 "Q01a" | "Q01b" => {
-                    let entries = [(32558,31960,7), (32546,31969,8), (32411,32008,7),
-                        (32441,32016,8), (32453,32039,9), (32453,32040,8), (32448,32042,8)]
-                        .map(|(x,y,z)| planner.tile_evidence(TilePos { x,y,floor:-z }));
-                    for entry in &entries { evidence(&format!("TRAVEL_MAP_GAP {label} {entry}")); }
+                    let entries = [
+                        (32558, 31960, 7),
+                        (32546, 31969, 8),
+                        (32411, 32008, 7),
+                        (32441, 32016, 8),
+                        (32453, 32039, 9),
+                        (32453, 32040, 8),
+                        (32448, 32042, 8),
+                    ]
+                    .map(|(x, y, z)| planner.tile_evidence(TilePos { x, y, floor: -z }));
+                    for entry in &entries {
+                        evidence(&format!("TRAVEL_MAP_GAP {label} {entry}"));
+                    }
                     return Err(format!("MISSING served bundle has no supported route into noble_armor; confirmed full-bundle entrance waypoints: [{}]; {reason}", entries.join("; ")).into());
                 },
                 "Q01c" => {
@@ -385,4 +459,147 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, chest: &Chest) {
         row_status(&result),
         started.elapsed().as_secs_f64()
     ));
+}
+
+pub(super) fn q03a_route<T>(row: &str, plan: Result<T, String>) -> TestResult<Result<T, String>> {
+    match plan {
+        Err(reason) if row == "Q03a" && reason.starts_with("every reachable tile of the search box exhausted") => {
+            Err(format!("{row} from-town route: {reason}").into())
+        }
+        Err(reason) if !reason.starts_with("every reachable tile of the search box exhausted") => {
+            Err(format!("{row} from-town route: {reason}").into())
+        }
+        outcome => Ok(outcome),
+    }
+}
+
+#[test]
+fn q03a_admission_depends_on_current_route() {
+    let reachable = q03a_route("Q03a", Ok(()));
+    assert!(matches!(reachable, Ok(Ok(()))));
+    let unreachable = q03a_route::<()>("Q03a", Err("every reachable tile of the search box exhausted (10 settled)".into())).map(|_| ());
+    assert_eq!(row_status(&unreachable), "FAIL");
+    assert!(unreachable.is_err_and(|error| error.to_string().contains("10 settled")));
+}
+
+#[test]
+fn round2_planner_limit_is_not_missing_content() {
+    let limited = q03a_route::<()>("Q03a", Err("search limit of 20 tiles hit after 20 settled".into()))
+        .and_then(|planned| Ok(planned?));
+    assert_eq!(row_status(&limited), "FAIL");
+}
+
+fn revised_door(previous: u64, observed: Option<u64>) -> Option<u64> {
+    observed.filter(|revision| *revision > previous)
+}
+
+#[test]
+fn round2_door_restore_waits_for_the_new_revision() {
+    assert_eq!(revised_door(1, None), None);
+    assert_eq!(revised_door(1, Some(1)), None);
+    assert_eq!(revised_door(1, Some(2)), Some(2));
+}
+
+fn door_revision(tiles: &[oteryn_protocol_oteryn::world_map::MapTile], door: TilePos, ordinal: u8) -> Option<u64> {
+    use oteryn_protocol_oteryn::world_map::MapOrigin;
+    let tile = tiles.iter().find(|tile| (tile.position.x, tile.position.y, tile.position.floor)
+        == (i32::from(door.x), i32::from(door.y), i16::from(door.floor)))?;
+    tile.items.iter().find_map(|item| match item.origin {
+        MapOrigin::BaseOrdinal { ordinal: actual, object_revision } if actual == ordinal => Some(object_revision),
+        _ => None,
+    })
+}
+
+#[cfg(test)]
+struct FixtureProcess(std::process::Child);
+
+#[cfg(test)]
+impl Drop for FixtureProcess {
+    fn drop(&mut self) {
+        drop(self.0.stdin.take());
+        if !matches!(self.0.try_wait(), Ok(Some(_))) {
+            let _ = self.0.kill();
+            let _ = self.0.wait();
+        }
+    }
+}
+
+#[test]
+fn round2_cancelled_provisioning_reaps_the_child() -> TestResult {
+    let process = FixtureProcess(std::process::Command::new("sleep").arg("30").spawn()?);
+    let pid = process.0.id().to_string();
+    drop(process);
+    let proc = std::path::Path::new("/proc").join(&pid);
+    let still_running = proc.exists();
+    if still_running {
+        std::process::Command::new("kill").args(["-KILL", &pid]).status()?;
+    }
+    assert!(!still_running);
+    Ok(())
+}
+
+#[test]
+fn round3_from_town_stops_on_planner_budget() {
+    for row in ["Q01a", "Q01b", "Q01c", "Q03a"] {
+        let reason = "search limit of 20 tiles hit after 20 settled";
+        let result = q03a_route::<()>(row, Err(reason.into()));
+        assert!(result.is_err_and(|error| error.to_string() == format!("{row} from-town route: {reason}")));
+    }
+}
+
+async fn use_door_with_cooldown(
+    client: &mut oteryn_dev_client::DevClientSession,
+    placement: &[u8],
+    revision: u64,
+) -> TestResult<UseDisposition> {
+    retry_door_use(
+        client,
+        revision,
+        async |client, revision| Ok(client.use_object(placement, revision).await?.disposition),
+        async |client| {
+            client.service_liveness(Duration::from_millis(200)).await?;
+            Ok(())
+        },
+    ).await
+}
+
+async fn retry_door_use<C>(
+    client: &mut C,
+    revision: u64,
+    mut send: impl AsyncFnMut(&mut C, u64) -> TestResult<UseDisposition>,
+    mut service: impl AsyncFnMut(&mut C) -> TestResult,
+) -> TestResult<UseDisposition> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+    loop {
+        let disposition = send(client, revision).await?;
+        if disposition != UseDisposition::Exhausted || tokio::time::Instant::now() >= deadline {
+            return Ok(disposition);
+        }
+        service(client).await?;
+    }
+}
+
+#[tokio::test]
+async fn round3_door_use_retry() -> TestResult {
+    let mut state = (0, Vec::new());
+    let opened = retry_door_use(
+        &mut state, 4,
+        async |state, revision| {
+            state.1.push(revision);
+            Ok(UseDisposition::Committed)
+        },
+        async |_| Err("unexpected liveness wait when opening the door".into()),
+    ).await?;
+    assert_eq!(opened, UseDisposition::Committed);
+    let restored = retry_door_use(
+        &mut state, 5,
+        async |state, revision| {
+            state.1.push(revision);
+            Ok(if state.0 == 0 { UseDisposition::Exhausted } else { UseDisposition::Committed })
+        },
+        async |state| { state.0 += 1; Ok(()) },
+    ).await?;
+    assert_eq!(restored, UseDisposition::Committed);
+    assert_eq!(state, (1, vec![4, 5, 5]));
+    Ok(())
 }

@@ -3,13 +3,15 @@
 import argparse
 import os
 import re
+import select
 import socket
+import sys
 import time
 from threading import Thread
 import uuid
 
 
-PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk", "combat-progression", "private-channel", "coin-converters", "rune-training")
+PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk", "combat-progression", "private-channel", "coin-converters", "rune-training", "sweep")
 CREATURE_KEY = re.compile(r"[A-Za-z0-9:._/-]{1,128}")
 CAPACITY = re.compile(rb"capacity [1-9][0-9]* [1-9][0-9]*\n")
 SPAWNED = re.compile(rb"spawned [0-9a-f]{32} [0-9]+\n")
@@ -20,7 +22,7 @@ CONTROL_REPLY_TIMEOUT = 40
 CONTROL_QUEUE_TIMEOUT = 40
 
 
-def _request(socket_path, line, limit):
+def _request(socket_path, line, limit, cancel=None):
     """One control exchange; returns up to `limit` answer bytes plus one overflow-detecting byte."""
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as control:
         queue_deadline = time.monotonic() + CONTROL_QUEUE_TIMEOUT
@@ -34,12 +36,19 @@ def _request(socket_path, line, limit):
         deadline = time.monotonic() + CONTROL_REPLY_TIMEOUT
         control.settimeout(CONTROL_REPLY_TIMEOUT)
         control.sendall(line.encode("ascii"))
-        control.shutdown(socket.SHUT_WR)
+        if not line.startswith("qualify "):
+            control.shutdown(socket.SHUT_WR)
         answer = bytearray()
         while len(answer) <= limit:
             control.settimeout(max(0.001, deadline - time.monotonic()))
             if time.monotonic() >= deadline:
                 raise TimeoutError("qualification provisioning deadline exceeded")
+            if cancel is not None:
+                ready, _, _ = select.select([control, cancel], [], [], max(0, deadline - time.monotonic()))
+                if cancel in ready:
+                    raise RuntimeError("qualification provisioning caller disconnected")
+                if not ready:
+                    raise TimeoutError("qualification provisioning deadline exceeded")
             chunk = control.recv(limit + 1 - len(answer))
             if not chunk:
                 break
@@ -47,11 +56,11 @@ def _request(socket_path, line, limit):
         return answer
 
 
-def provision(socket_path, session, profile):
+def provision(socket_path, session, profile, cancel=None):
     identifier = uuid.UUID(session)
     if identifier.version != 7 or str(identifier) != session or profile not in PROFILES:
         raise ValueError("invalid qualification request")
-    answer = _request(socket_path, f"qualify {session} {profile}\n", 64)
+    answer = _request(socket_path, f"qualify {session} {profile}\n", 64, cancel)
     if answer != b"qualified\n":
         # repr escapes control/non-ASCII bytes; the 65th byte only detects overflow.
         raise RuntimeError(
@@ -107,6 +116,7 @@ if __name__ == "__main__":
     group.add_argument("--item-handle", type=int)
     group.add_argument("--recovery-epoch", type=int)
     group.add_argument("--capacity", action="store_true")
+    parser.add_argument("--cancel-on-stdin", action="store_true")
     args = parser.parse_args()
     if args.watch_stdin:
         def stop_when_parent_drops_pipe():
@@ -135,4 +145,4 @@ if __name__ == "__main__":
     elif args.spawn is not None:
         print(spawn(args.socket, args.session, args.spawn))
     else:
-        provision(args.socket, args.session, args.profile)
+        provision(args.socket, args.session, args.profile, sys.stdin if args.cancel_on_stdin else None)

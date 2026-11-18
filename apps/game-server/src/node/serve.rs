@@ -2838,11 +2838,14 @@ fn parse_operation_id(request: &[u8]) -> Option<[u8; 16]> {
     (bytes[6] >> 4 == 7 && bytes[8] & 0xc0 == 0x80).then_some(bytes)
 }
 
-async fn handle_control(stream: &mut UnixStream, qualification_fixture: bool) -> Option<Vec<u8>> {
+async fn handle_control(
+    stream: &mut UnixStream,
+    qualification_fixture: bool,
+) -> Option<(Vec<u8>, bool)> {
     let mut request = Vec::with_capacity(CONTROL_REQUEST_BYTES);
     let mut first = [0];
     if stream.read(&mut first).await.ok()? == 0 {
-        return Some(request);
+        return Some((request, false));
     }
     let fixture_prefix = first[0] == b'!';
     if fixture_prefix {
@@ -2857,13 +2860,71 @@ async fn handle_control(stream: &mut UnixStream, qualification_fixture: bool) ->
     }
     let remaining = CONTROL_REQUEST_BYTES + 1 - request.len();
     let mut limited = (&mut *stream).take(remaining as u64);
-    limited.read_to_end(&mut request).await.ok()?;
-    if request.len() > CONTROL_REQUEST_BYTES
-        || (fixture_prefix && !request.starts_with(b"qualify ") && !request.starts_with(b"spawn "))
-    {
+    let mut cancellation = false;
+    while request.len() <= CONTROL_REQUEST_BYTES {
+        let mut byte = [0];
+        if limited.read(&mut byte).await.ok()? == 0 {
+            break;
+        }
+        request.push(byte[0]);
+        if fixture_prefix && byte[0] == b'\n' && request.starts_with(b"qualify ") {
+            cancellation = true;
+            break;
+        }
+    }
+    let fixture_command = [
+        b"qualify ".as_slice(),
+        b"spawn ",
+        b"capacity ",
+        b"recovery-replay ",
+        b"item-instance ",
+    ]
+    .into_iter()
+    .any(|prefix| request.starts_with(prefix));
+    if request.len() > CONTROL_REQUEST_BYTES || (fixture_prefix && !fixture_command) {
         return None;
     }
-    Some(request)
+    Some((request, cancellation))
+}
+
+async fn while_control_peer_connected<T>(
+    stream: &mut UnixStream,
+    work: impl std::future::Future<Output = T>,
+) -> Option<T> {
+    let mut unexpected = [0];
+    tokio::select! {
+        biased;
+        _ = stream.read(&mut unexpected) => None,
+        result = work => Some(result),
+    }
+}
+
+#[tokio::test]
+async fn qualification_control_cancels_submitted_work_when_peer_disconnects()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (mut node, mut caller) = UnixStream::pair()?;
+    caller.write_all(b"!qualify session knight\n").await?;
+    let request = tokio::time::timeout(Duration::from_secs(1), handle_control(&mut node, true))
+        .await?
+        .ok_or("control request rejected")?;
+    assert_eq!(request, (b"qualify session knight\n".to_vec(), true));
+    let (begun, started) = tokio::sync::oneshot::channel();
+    let work = async {
+        let _ = begun.send(());
+        std::future::pending::<()>().await;
+    };
+    let disconnect = async {
+        started.await?;
+        drop(caller);
+        Ok::<(), tokio::sync::oneshot::error::RecvError>(())
+    };
+    let (result, disconnected) = tokio::time::timeout(Duration::from_secs(1), async {
+        tokio::join!(while_control_peer_connected(&mut node, work), disconnect)
+    })
+    .await?;
+    disconnected?;
+    assert!(result.is_none());
+    Ok(())
 }
 
 /// Bounded, privacy-safe node health for local read-only operations clients.
@@ -2965,21 +3026,32 @@ async fn control_loop(
         let connection = uuid_v7().ok().map(|bytes| uuid_text(&bytes));
         let connection = connection.as_deref();
         let served = tokio::time::timeout(CONTROL_DEADLINE, async {
-            let request = handle_control(&mut stream, config.qualification_fixture).await;
+            let (request, cancellation) =
+                match handle_control(&mut stream, config.qualification_fixture).await {
+                    Some((request, cancellation)) => (Some(request), cancellation),
+                    None => (None, false),
+                };
             let (answer, event_name) = match request {
                 Some(request) if request == b"health\n" => (control_health(root), "ops_health"),
                 Some(request) if control_diagnose(&request).is_some() => (
                     control_diagnose(&request).unwrap_or_else(|| "[]".to_owned()),
                     "ops_diagnose",
                 ),
-                Some(request) if request.starts_with(b"qualify ") => (
-                    qualification_fixture::prepare(
+                Some(request) if request.starts_with(b"qualify ") => {
+                    let work = qualification_fixture::prepare(
                         root, authority, proof, config, native, &request,
-                    )
-                    .await
-                    .to_owned(),
-                    "character_bootstrap",
-                ),
+                    );
+                    let answer = if cancellation {
+                        let Some(answer) = while_control_peer_connected(&mut stream, work).await
+                        else {
+                            return;
+                        };
+                        answer
+                    } else {
+                        work.await
+                    };
+                    (answer.to_owned(), "character_bootstrap")
+                }
                 Some(request) if request.starts_with(b"capacity ") => (
                     qualification_fixture::carry_capacity(root, proof, config, premium, &request)
                         .await,
