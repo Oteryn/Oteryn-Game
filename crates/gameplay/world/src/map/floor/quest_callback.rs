@@ -11,6 +11,8 @@ struct CallbackTeleport<'a> {
     closed: &'a dyn CellBlocker,
     facing: Option<MovementFacing>,
     player_stack: bool,
+    forced: bool,
+    retiring: &'a [ExactActorRef],
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -62,6 +64,8 @@ pub fn prepare_quest_callback_teleport_facing<'a>(
         closed,
         facing,
         player_stack: false,
+        forced: false,
+        retiring: &[],
     };
     proof.check(runtime)?;
     Ok(proof)
@@ -88,6 +92,38 @@ pub fn prepare_quest_encounter_ejection<'a>(
         pz_blocked: false,
         facing: None,
         player_stack: true,
+        forced: true,
+        retiring: &[],
+    };
+    proof.check(runtime)?;
+    Ok(proof)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn prepare_quest_encounter_entry<'a>(
+    runtime: &ChannelRuntimeV1,
+    cells: &'a NativeEntryMovementCells,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    expected: MovementPositionSnapshot,
+    destination: MovementLocalPosition,
+    pz_blocked: bool,
+    closed: &'a dyn CellBlocker,
+    gather_players: bool,
+    retiring: &'a [ExactActorRef],
+) -> Result<impl crate::foundation::SourceStepCommitProof + 'a, MovementError> {
+    let proof = CallbackTeleport {
+        cells,
+        actor,
+        session,
+        expected,
+        destination,
+        pz_blocked,
+        closed,
+        facing: None,
+        player_stack: gather_players,
+        forced: false,
+        retiring,
     };
     proof.check(runtime)?;
     Ok(proof)
@@ -95,7 +131,7 @@ pub fn prepare_quest_encounter_ejection<'a>(
 
 impl CallbackTeleport<'_> {
     fn check(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
-        // Only a forced encounter ejection (`player_stack`) moves a control-lost player.
+        // Only a forced encounter ejection moves a control-lost player.
         qualify_origin_control(
             runtime,
             self.cells,
@@ -103,7 +139,7 @@ impl CallbackTeleport<'_> {
             self.session,
             self.expected,
             None,
-            self.player_stack,
+            self.forced,
         )?;
         let to = self.destination;
         let cell = (to.x, to.y, i32::from(to.floor));
@@ -115,7 +151,10 @@ impl CallbackTeleport<'_> {
                     .map_err(MovementError::Actor)?
                     .iter()
                     .any(|(actor, position, session)| {
-                        *actor != self.actor && session.is_none() && position.position() == to
+                        *actor != self.actor
+                            && session.is_none()
+                            && position.position() == to
+                            && !self.retiring.contains(actor)
                     })
             } else {
                 runtime

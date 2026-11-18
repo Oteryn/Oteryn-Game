@@ -155,7 +155,7 @@ pub(super) async fn exercise(
                 item_fence: Some(fence.item_fence()),
             },
             WorldObjectTarget {
-                placement,
+                placement: placement.clone(),
                 expected_revision: 0,
             },
         )
@@ -176,7 +176,8 @@ pub(super) async fn exercise(
             super::quest_world_callbacks::local(LANDING));
     }
     assert!(find(&runtime, FORMS[0]).is_some());
-    assert!(find(&runtime, GUARD).is_some());
+    let original_guard = find(&runtime, GUARD).ok_or("opening guard")?.0;
+    let original_boss = find(&runtime, FORMS[0]).ok_or("opening boss")?.0;
     if !timeout {
         for (index, creature) in FORMS.iter().enumerate() {
             let (target, position, _) = find(&runtime, creature).ok_or("current form")?;
@@ -241,19 +242,40 @@ pub(super) async fn exercise(
         owner.owner_now().get()
     };
     crate::gameplay_transport::encounter_phases::tick(&mut runtime, &states, reset_at);
-    assert!(find(&runtime, GUARD).is_none());
-    assert!(FORMS.iter().all(|key| find(&runtime, key).is_none()));
+    assert!(runtime.contains_live_creature(original_guard));
+    assert_eq!(runtime.contains_live_creature(original_boss), timeout);
     for (member, member_session) in [(actor, session), (partner, partner_session)] {
         let at = runtime.read_actor_position(member).map_err(debug)?.position();
-        assert!(!owner.encounter_blocks_channel_switch(&runtime, member, member_session, at));
+        assert!(!states.encounter_phases.blocks_channel_switch(&runtime, member, member_session, at));
     }
-    assert!(
-        states
-            .encounter_phases
-            .active
-            .lock()
-            .map_err(|_| "phase registry")?
-            .is_empty()
-    );
+    assert!(states.encounter_phases.active.lock().map_err(|_| "phase registry")?.is_empty());
+
+    // Position the two characters for a return trip. The next real USE must
+    // clear the old room on the same turn as it admits the replacement roster.
+    let closed = crate::map::floor::BundleDoors(&map.facts);
+    for (member, member_session, pad) in [
+        (actor, session, Position { x:33357, ..LEVER }),
+        (partner, partner_session, TEAM_PAD),
+    ] {
+        let expected = runtime.read_actor_position(member).map_err(debug)?;
+        let teleport = crate::map::floor::prepare_quest_encounter_ejection(
+            &runtime, owner.movement_cells(), member, member_session, expected,
+            super::quest_world_callbacks::local(pad), &closed,
+        ).map_err(debug)?;
+        runtime.commit_source_step(teleport).map_err(debug)?;
+    }
+    drop(states);
+    drop(runtime);
+    let restarted = owner.use_object(
+        actor,
+        UseCommand { game_session_id:session, command_id:99, item_fence:Some(fence.item_fence()) },
+        WorldObjectTarget { placement, expected_revision:1 },
+    ).await;
+    assert_eq!(restarted.disposition, UseDisposition::Committed);
+    let runtime = owner.runtime.lock().await;
+    assert!(!runtime.contains_live_creature(original_guard));
+    assert!(!runtime.contains_live_creature(original_boss));
+    assert!(find(&runtime, FORMS[0]).is_some());
+    assert!(find(&runtime, GUARD).is_some());
     Ok(())
 }

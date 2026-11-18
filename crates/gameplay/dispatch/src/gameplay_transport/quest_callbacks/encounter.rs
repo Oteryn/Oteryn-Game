@@ -181,14 +181,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };
+        let gather_players = encounter.linear_phases.is_some();
+        // Crystal 201189f8 actions_mission11_payback_time_lever.lua:26–40.
+        // Once the source room is released, the next admission removes its
+        // previous monsters and gathers the new players onto one landing cell.
+        let retiring = if gather_players {
+            census
+                .iter()
+                .filter_map(|(who, pos, occupant_session)| {
+                    (occupant_session.is_none() && room_contains(encounter, pos.position()))
+                        .then_some(*who)
+                })
+                .collect::<Vec<_>>()
+        } else {
+            Vec::new()
+        };
         let personal_entry = callback.personal_room_entry().map(local);
-        if census.iter().any(|(who, pos, occupant_session)| {
-            occupant_session.is_some()
-                && room_contains(encounter, pos.position())
-                && !(Some(pos.position()) == personal_entry
-                    && *who == actor
-                    && *occupant_session == Some(session))
-        }) {
+        if !gather_players
+            && census.iter().any(|(who, pos, occupant_session)| {
+                occupant_session.is_some()
+                    && room_contains(encounter, pos.position())
+                    && !(Some(pos.position()) == personal_entry
+                        && *who == actor
+                        && *occupant_session == Some(session))
+            })
+        {
             return UseDisposition::Occupied;
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
@@ -247,7 +264,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let blocked =
                 super::super::pvp_live::pz_blocked(states, who, member_session, self.owner_now());
-            let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+            let Ok(proof) = crate::map::floor::prepare_quest_encounter_entry(
                 runtime,
                 &self.movement_cells,
                 who,
@@ -256,6 +273,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 local(member.to),
                 blocked,
                 &closed,
+                gather_players,
+                &retiring,
             ) else {
                 return UseDisposition::NotPossible;
             };
@@ -284,7 +303,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     tile(monster.position),
                     false,
                 )
-                || census.iter().any(|(_, pos, _)| pos.position() == at)
+                || census
+                    .iter()
+                    .any(|(actor, pos, _)| pos.position() == at && !retiring.contains(actor))
             {
                 return UseDisposition::Occupied;
             }
@@ -381,6 +402,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok((snapshots, (phase, actors, roster))) = runtime.commit_quest_encounter_with_phase(
             proofs,
             &monsters,
+            &retiring,
             |runtime, actors| {
                 let roster = if prepared.is_some() {
                     Some(oteryn_gameplay_entities::carrier::encounter_access::EncounterDefenders::from_admission(

@@ -7,7 +7,6 @@ use oteryn_gameplay_quests::quest::world_callbacks::LinearPhases;
 pub struct LinearEncounter {
     phase: NativePhaseOwner,
     next_at: Option<MovementLocalPosition>,
-    guards: Vec<ExactActorRef>,
     speeches: Vec<String>,
     deadline_us: u64,
 }
@@ -61,11 +60,6 @@ impl LinearEncounter {
         Ok(Self {
             phase,
             next_at: None,
-            guards: roster
-                .iter()
-                .copied()
-                .filter(|actor| *actor != opening)
-                .collect(),
             speeches: definition.speeches.clone(),
             deadline_us,
         })
@@ -100,11 +94,8 @@ impl LinearEncounter {
     ) -> Result<Option<Arrival<'_>>, CarrierError> {
         self.phase.current(runtime)?;
         if self.phase.progress.completed() || self.expired(now_us) {
-            for actor in self.guards.iter().chain(self.phase.actors.iter().flatten()) {
-                if runtime.contains_live_creature(*actor) {
-                    runtime.remove_encounter_actor(*actor)?;
-                }
-            }
+            // Crystal 201189f8 actions_mission11_payback_time_lever.lua:23–32
+            // releases the room before the next admission retires its old roster.
             return Ok(None);
         }
         let Some((role, _)) = self.phase.pending().next() else {

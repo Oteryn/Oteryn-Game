@@ -264,6 +264,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             false
         } else {
             close
+                && !callback
+                    .effects
+                    .encounter
+                    .as_ref()
+                    .is_some_and(|encounter| encounter.linear_phases.is_some())
         };
         if let Some(appearance) = callback.effects.transform {
             let Some(replacement) = map.facts.quest_callback_replacement(key, appearance) else {

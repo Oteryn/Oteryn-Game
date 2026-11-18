@@ -199,6 +199,7 @@ impl ChannelRuntimeV1 {
         self.quest_encounter_with_phase(
             players,
             monsters,
+            &[],
             |_, actors, _| Ok(actors.to_vec()),
             project,
             true,
@@ -208,12 +209,14 @@ impl ChannelRuntimeV1 {
         &mut self,
         players: Vec<P>,
         monsters: &[(&str, i64, MovementLocalPosition)],
+        retiring: &[ExactActorRef],
         bind: impl FnOnce(&mut Self, &[ExactActorRef]) -> Result<T, CarrierError>,
         project: impl FnOnce() -> bool,
     ) -> Result<(Vec<MovementPositionSnapshot>, T), CarrierError> {
         self.quest_encounter_with_phase(
             players,
             monsters,
+            retiring,
             |runtime, actors, _| bind(runtime, actors),
             project,
             true,
@@ -237,6 +240,7 @@ impl ChannelRuntimeV1 {
         self.commit_quest_encounter_prepared(
             players,
             monsters,
+            &[],
             |positions, actors| {
                 Ok((
                     positions,
@@ -260,6 +264,7 @@ impl ChannelRuntimeV1 {
         self.quest_encounter_with_phase(
             players,
             monsters,
+            &[],
             |_, actors, positions| prepare(positions.to_vec(), actors.to_vec()),
             project,
             true,
@@ -273,13 +278,14 @@ impl ChannelRuntimeV1 {
         project: impl FnOnce() -> bool,
         publish: bool,
     ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
-        self.quest_encounter_with_phase(players, monsters, |_, _, _| Ok(()), project, publish)
+        self.quest_encounter_with_phase(players, monsters, &[], |_, _, _| Ok(()), project, publish)
             .map(|(positions, ())| positions)
     }
     fn quest_encounter_with_phase<P: SourceStepCommitProof, T>(
         &mut self,
         players: Vec<P>,
         monsters: &[(&str, i64, MovementLocalPosition)],
+        retiring: &[ExactActorRef],
         bind: impl FnOnce(
             &mut Self,
             &[ExactActorRef],
@@ -302,6 +308,11 @@ impl ChannelRuntimeV1 {
         // The exclusive runtime owner prevents an observer from seeing these staged slots.
         let before = self.carrier.clone();
         let result = (|| {
+            for actor in retiring {
+                if self.contains_live_creature(*actor) {
+                    self.remove_encounter_actor(*actor)?;
+                }
+            }
             let mut actors = Vec::new();
             actors
                 .try_reserve(monsters.len())
