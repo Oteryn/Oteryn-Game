@@ -22,10 +22,17 @@ pub(in crate::play) fn world_map(pushed: &mut Pushed, delta: AppliedDelta<WorldM
 }
 
 impl crate::play::Outbox {
-    pub(in crate::play) fn map_initialize(&self, payload: Option<Vec<u8>>) {
-        crate::play::mailbox::lock(&self.0).map = payload
+    pub(in crate::play) fn map_initialize(
+        &self,
+        payload: Option<Vec<u8>>,
+        wire_position: Option<oteryn_session::ActorPosition>,
+    ) {
+        let map = payload
             .and_then(|bytes| oteryn_session::world_map::decode_world_map_snapshot(&bytes).ok())
             .map(Box::new);
+        let mut mailbox = crate::play::mailbox::lock(&self.0);
+        mailbox.seed_wire_frame(wire_position, map.as_deref().map(|map| map.header.origin));
+        mailbox.map = map;
     }
 }
 

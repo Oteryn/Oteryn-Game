@@ -33,9 +33,8 @@ fn exploration_and_markers_survive_reopen_and_bindings_stay_separate()
     };
     map.observe(&snapshot);
     map.edit_marker(100, 200, -7, "Home".into(), 1)?;
-    // A live window clears a legacy item-only cell when it confirms no ground there.
-    map.cells.insert((-7, 103, 200), 86);
-    map.dirty = true;
+    // Exploration saved by an older client survives an empty observation.
+    map.set_cell_colour((-7, 103, 200), 86);
     map.save()?;
     let binding = map.binding;
     let mut restored = Minimap::default();
@@ -44,7 +43,7 @@ fn exploration_and_markers_survive_reopen_and_bindings_stay_separate()
     restored.observe(&snapshot);
     assert_eq!(restored.markers[0].label, "Home");
     assert!(restored.cells.contains_key(&(-7, 100, 200)));
-    assert!(!restored.cells.contains_key(&(-7, 103, 200)));
+    assert_eq!(restored.cells.get(&(-7, 103, 200)), Some(&86));
     snapshot.header.reset_epoch += 1;
     restored.observe(&snapshot);
     assert!(restored.markers.is_empty());
@@ -75,7 +74,7 @@ fn camera_and_marker_validation_do_not_change_gameplay_positions()
     Ok(())
 }
 #[test]
-fn authoritative_window_clears_ground_but_preserves_distant_exploration() {
+fn empty_and_item_only_observations_preserve_exploration() {
     use oteryn_session::{
         ActorPosition,
         world_map::{MapTile, MapViewHeader, WorldMapViewSnapshot},
@@ -111,9 +110,9 @@ fn authoritative_window_clears_ground_but_preserves_distant_exploration() {
     cleared.tiles.clear();
     map.observe(&cleared);
     assert!(map.cells.contains_key(&(-7, 100, 200)));
-    assert!(!map.cells.contains_key(&(-7, 1000, 200)));
+    assert!(map.cells.contains_key(&(-7, 1000, 200)));
     map.observe(&snapshot(100, 0));
-    assert!(!map.cells.contains_key(&(-7, 100, 200)));
+    assert!(map.cells.contains_key(&(-7, 100, 200)));
 }
 
 #[test]
@@ -187,5 +186,140 @@ fn version_one_palette_survives_rejoin_save_and_transfer() -> Result<(), Box<dyn
             .collect::<Vec<_>>(),
         ["Home", "Gate"]
     );
+    Ok(())
+}
+
+fn joined_window(x: i32, y: i32) -> WorldMapViewSnapshot {
+    use oteryn_session::{
+        ActorPosition,
+        world_map::{MapDefinition, MapItem, MapOrigin, MapTile, MapViewHeader},
+    };
+    let origin = ActorPosition { x, y, floor: -7 };
+    WorldMapViewSnapshot {
+        header: MapViewHeader {
+            content_generation: [1; 32],
+            bundle_digest: [2; 32],
+            reset_epoch: 1,
+            origin,
+            first_visible_floor: -7,
+        },
+        tiles: vec![MapTile {
+            position: origin,
+            ground_speed: 100,
+            more: false,
+            items: vec![MapItem {
+                definition: MapDefinition::Item(std::num::NonZeroU32::MIN),
+                count: 1,
+                sub_type: 0,
+                origin: MapOrigin::DisplayOnly,
+                appearance_id: 0,
+            }],
+        }],
+    }
+}
+
+#[test]
+fn review_minimap_default_root_round_trips_a_marker() -> Result<(), Box<dyn std::error::Error>> {
+    const CHILD: &str = "OTERYN_MINIMAP_ROOT_TEST";
+    if std::env::var_os(CHILD).is_none() {
+        let root = std::env::temp_dir().join(format!("minimap-root-{}", std::process::id()));
+        let mut child = std::process::Command::new(std::env::current_exe()?);
+        child
+            .arg("review_minimap_default_root_round_trips_a_marker")
+            .env(CHILD, "1")
+            .env("XDG_CONFIG_HOME", &root)
+            .env("HOME", &root)
+            .env("LOCALAPPDATA", &root);
+        if !cfg!(windows) {
+            child.env_remove("LOCALAPPDATA");
+        }
+        let status = child.status()?;
+        if root.exists() {
+            std::fs::remove_dir_all(root)?;
+        }
+        assert!(status.success());
+        return Ok(());
+    }
+    let mut map = Minimap::default();
+    let world = format!(
+        "{:032x}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_nanos()
+    );
+    map.bind_world(&world);
+    let snapshot = joined_window(100, 200);
+    map.observe(&snapshot);
+    assert!(map.create_mark_at((100, 200, -7))?);
+    let mut reopened = Minimap::default();
+    reopened.bind_world(&world);
+    reopened.observe(&snapshot);
+    assert_eq!(reopened.markers, map.markers);
+    if let Some(root) = reopened.root.as_ref() {
+        std::fs::remove_dir_all(root.join(world))?;
+    }
+    Ok(())
+}
+
+#[test]
+fn review_minimap_live_window_preserves_cached_palette() -> Result<(), Box<dyn std::error::Error>> {
+    let root = std::env::temp_dir().join(format!("minimap-live-{}", std::process::id()));
+    let world = "11111111-1111-4111-8111-111111111111";
+    let mut map = Minimap::default();
+    map.root = Some(root.clone());
+    map.bind_world(world);
+    let snapshot = joined_window(0, 0);
+    map.observe(&snapshot);
+    map.set_cell_colour((-7, 0, 0), 86);
+    map.edit_marker(0, 0, -7, "Home".into(), 1)?;
+    drop(map);
+
+    let mut reopened = Minimap::default();
+    reopened.root = Some(root.clone());
+    reopened.bind_world(world);
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), -7, &[])?;
+    let shared = std::sync::Arc::new(std::sync::Mutex::new(reopened));
+    view.replace_test_minimap(shared.clone());
+    view.set_live_map(&snapshot)?;
+    {
+        let mut map = lock(&shared);
+        map.edit_marker(1, 0, -7, "Gate".into(), 2)?;
+        map.load()?;
+        assert_eq!(map.cells.get(&(-7, 0, 0)), Some(&86));
+    }
+
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+
+#[test]
+fn review_minimap_live_window_keeps_cache_readable_at_map_edges()
+-> Result<(), Box<dyn std::error::Error>> {
+    let root = std::env::temp_dir().join(format!("minimap-edge-{}", std::process::id()));
+    let mut map = Minimap::default();
+    map.root = Some(root.clone());
+    map.bind_world("11111111-1111-4111-8111-111111111111");
+    map.observe(&joined_window(20, 20));
+    map.edit_marker(20, 20, -7, "Home".into(), 1)?;
+    let shared = std::sync::Arc::new(std::sync::Mutex::new(map));
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(20, 20), -7, &[])?;
+    view.replace_test_minimap(shared.clone());
+    for (x, y) in [(-1_i32, 0_i32), (0, -1), (65536, 0), (0, 65536)] {
+        let mut snapshot = joined_window(x.clamp(0, 65535), y.clamp(0, 65535));
+        snapshot.tiles[0].position.x = x;
+        snapshot.tiles[0].position.y = y;
+        use oteryn_session::world_map::{decode_world_map_snapshot, encode_world_map_snapshot};
+        let payload = encode_world_map_snapshot(&snapshot).map_err(|e| format!("{e:?}"))?;
+        let decoded = decode_world_map_snapshot(&payload).map_err(|e| format!("{e:?}"))?;
+        view.set_live_map(&decoded)?;
+        lock(&shared).save()?;
+    }
+    {
+        let mut map = lock(&shared);
+        map.load()?;
+        assert_eq!(map.markers[0].label, "Home");
+        assert!(map.cells.contains_key(&(-7, 20, 20)));
+    }
+    std::fs::remove_dir_all(root)?;
     Ok(())
 }

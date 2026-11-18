@@ -27,6 +27,46 @@ impl PlayView {
         )
     }
 
+    pub(crate) fn with_join_scene<S: oteryn_session::SessionStream>(
+        mut self,
+        session: &oteryn_session::Session<S>,
+    ) -> Result<Self, BatchError> {
+        use crate::play::wire_frame::WireFrame;
+        let map = session.world_map_snapshot();
+        let frame = map.as_ref().map_or(WireFrame::Native, |map| {
+            WireFrame::derive(
+                WireFrame::Native,
+                session.world_spatial().actor_position,
+                map.header.origin,
+            )
+        });
+        if let Some(entities) = session.world_entities() {
+            self.set_own_identity(*entities.own_identity());
+        }
+        if let Some(map) = &map {
+            self.set_live_map(map)?;
+        }
+        let mut appearances = session.visible_appearances();
+        for entry in &mut appearances {
+            entry.entity.position = frame.to_native(entry.entity.position);
+        }
+        self.set_presentations(appearances)?;
+        self.with_entities(
+            session
+                .world_entities()
+                .map(|entities| {
+                    entities
+                        .others()
+                        .map(|entity| oteryn_session::WorldSpatialEntity {
+                            position: frame.to_native(entity.position),
+                            ..*entity
+                        })
+                        .collect()
+                })
+                .unwrap_or_default(),
+        )
+    }
+
     #[must_use]
     pub const fn scene(&self) -> &Scene {
         &self.scene
@@ -273,5 +313,15 @@ impl PlayView {
             self.hit_flash = Some(std::time::Instant::now());
         }
         self.rebuild()
+    }
+}
+
+#[cfg(test)]
+impl PlayView {
+    pub(crate) fn replace_test_minimap(
+        &mut self,
+        map: crate::play::feature_local_minimap::state::SharedMinimap,
+    ) {
+        self.minimap = map;
     }
 }

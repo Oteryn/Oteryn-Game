@@ -10,6 +10,7 @@ pub(super) fn initialize<T: Stepper>(
     if session.feature_selected(451) {
         outbox.personal_map_marks_initialize();
     }
+    outbox.map_initialize(session.feature_snapshot(17), session.world_position());
     outbox.discovery_initialize(session);
     outbox.hud_stamina_initialize(session.feature_selected(199));
     outbox.properties_initialize(session);
@@ -37,7 +38,6 @@ pub(super) fn initialize<T: Stepper>(
     outbox.channel_list_initialize(session.feature_snapshot(48));
     outbox.world_light_initialize(session.feature_snapshot(18));
     outbox.world_weather_initialize(session.feature_snapshot(22));
-    outbox.map_initialize(session.feature_snapshot(17));
     outbox.animus_initialize(session.animus_selected());
     outbox.wheel_initialize(
         session.wheel_selected(),

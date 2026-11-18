@@ -10,7 +10,8 @@ fn minimap_settings_transfer_is_bound_validated_and_persistent()
     map.root = Some(root.join("maps"));
     map.bind_world("11111111-1111-4111-8111-111111111111");
     map.binding = Some(([1; 32], [2; 32], 1));
-    map.cells.insert((-7, 500, 500), 55);
+    map.load()?;
+    map.set_cell_colour((-7, 500, 500), 55);
     map.edit_marker(500, 500, -7, "Home".into(), 1)?;
     let active = map.path().ok_or("active map")?;
     let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), -7, &[])?;

@@ -55,10 +55,6 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
 ) {
     modal = modal.with_outbox(&outbox);
     outbox.performance_reset();
-    let personal_marks_selected = session.feature_selected(451);
-    if personal_marks_selected {
-        outbox.personal_map_marks_initialize();
-    }
     let commands = std::sync::Arc::new(std::sync::Mutex::new(commands));
     outbox.scope_receiver(&commands);
     if outbox.session_cancelled() {
@@ -68,32 +64,57 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
         outbox.end(public_class(&error));
         return;
     }
-    if let Some(command) = outbox.returner_initial_request() {
-        match session.feature(&command).await {
-            Ok(result) => outbox.daily_reward_returner_result(command.kind, &result),
-            Err(_) => outbox.returner_unavailable(),
-        }
-    }
     let mut held = Vec::new();
+    // Publish the admission queue before any query can append a new scope's
+    // snapshot with the same initial sequence and revisions.
+    publish(&mut session, &outbox, &mut held);
     let mut personal_marks_refresh = std::time::Instant::now();
-    for command in outbox.server_info_initial_commands() {
-        let Some(query) = oteryn_session::server_info::Query::decode(&command.payload) else {
-            continue;
-        };
-        match session.feature(&command).await {
-            Ok(result) => outbox.server_info_result(&query, &result),
-            Err(error) => {
-                if publish_scope_transition(&error, &mut session, &outbox, &mut held, &mut modal) {
-                    break;
-                }
+    let mut read_initial_features = !super::mailbox::lock(&outbox.0).scope_pending;
+    let mut query_returner = true;
+    'session: loop {
+        if outbox.session_cancelled() {
+            return;
+        }
+        if outbox.scope_needs_initialize() {
+            if let Err(error) = initialize(&session, &outbox) {
                 outbox.end(public_class(&error));
                 return;
             }
+            read_initial_features = true;
         }
-    }
-    loop {
-        if outbox.session_cancelled() {
-            return;
+        if std::mem::take(&mut read_initial_features) {
+            // An initial recovery receipt clears the admission mailbox. Wait for
+            // the destination to be presented and initialized before querying.
+            if std::mem::take(&mut query_returner)
+                && let Some(command) = outbox.returner_initial_request()
+            {
+                match session.feature(&command).await {
+                    Ok(result) => outbox.daily_reward_returner_result(command.kind, &result),
+                    Err(_) => outbox.returner_unavailable(),
+                }
+            }
+            for command in outbox.server_info_initial_commands() {
+                let Some(query) = oteryn_session::server_info::Query::decode(&command.payload)
+                else {
+                    continue;
+                };
+                match session.feature(&command).await {
+                    Ok(result) => outbox.server_info_result(&query, &result),
+                    Err(error) => {
+                        if publish_scope_transition(
+                            &error,
+                            &mut session,
+                            &outbox,
+                            &mut held,
+                            &mut modal,
+                        ) {
+                            continue 'session;
+                        }
+                        outbox.end(public_class(&error));
+                        return;
+                    }
+                }
+            }
         }
         match modal.poll(&mut session).await {
             Ok(Some(ModalCompletion::Answered(answer))) => outbox.store_modal_answered(answer),
@@ -110,7 +131,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 return;
             }
         }
-        if personal_marks_selected && std::time::Instant::now() >= personal_marks_refresh {
+        if session.feature_selected(451) && std::time::Instant::now() >= personal_marks_refresh {
             let command = oteryn_client_ui::personal_map_marks::request();
             match session.feature(&command).await {
                 Ok(result) => {
@@ -138,12 +159,6 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             personal_marks_refresh = std::time::Instant::now() + Duration::from_secs(5);
         }
 
-        if outbox.scope_needs_initialize()
-            && let Err(error) = initialize(&session, &outbox)
-        {
-            outbox.end(public_class(&error));
-            return;
-        }
         if let Some(command) = outbox.server_info_quest_observation_command() {
             match session.feature(&command).await {
                 Ok(result) => {

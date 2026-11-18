@@ -48,7 +48,7 @@ fn watch_window_draws_the_cast_and_sends_chat_then_leaves_on_escape()
             sequence: 1,
             scene: Scene {
                 tiles: vec![],
-                actors: vec![(1, 16, 272, 1, 75)],
+                actors: vec![(1, 12, 272, 1, 75)],
             },
         },
         Message::Media {
@@ -63,7 +63,7 @@ fn watch_window_draws_the_cast_and_sends_chat_then_leaves_on_escape()
                 reset: true,
                 last: true,
                 tiles: vec![DisplayTile {
-                    x: 16,
+                    x: 21,
                     y: 16,
                     floor: -7,
                     appearances: vec![100],
@@ -83,14 +83,18 @@ fn watch_window_draws_the_cast_and_sends_chat_then_leaves_on_escape()
 
     let pixels = canvas_pixels(&app)?;
     assert_eq!(pixels.len(), (WIDTH * HEIGHT * 4) as usize);
-    assert!(
+    let lit_pixels = |left: bool| {
         pixels
             .as_chunks::<4>()
             .0
             .iter()
-            .any(|pixel| pixel[..3] != [0, 0, 0]),
-        "the map tile and the creature are drawn into the window"
-    );
+            .enumerate()
+            .any(|(index, pixel)| {
+                ((index % WIDTH as usize) < WIDTH as usize / 2) == left && pixel[..3] != [0, 0, 0]
+            })
+    };
+    assert!(lit_pixels(true), "the creature is drawn on the left");
+    assert!(lit_pixels(false), "the map tile is drawn on the right");
     let (_, panel) = link.snapshot().ok_or("watch panel")?;
     assert!(shown_text(&mut app)?.starts_with(&panel_text(&panel)));
 

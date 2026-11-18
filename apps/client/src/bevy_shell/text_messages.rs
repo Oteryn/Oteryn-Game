@@ -147,6 +147,10 @@ fn project(
             state.slots = default();
             state.dismissals = dismissals;
         }
+        let feedback = play.view.take_minimap_feedback();
+        if !feedback.is_empty() {
+            state.show(Area::Bottom, &feedback, [255; 3], now);
+        }
         (banners, popups)
     } else {
         *state = ScreenMessages::default();

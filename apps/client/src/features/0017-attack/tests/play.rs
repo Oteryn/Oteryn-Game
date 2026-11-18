@@ -37,6 +37,12 @@ fn named_battle_lists_filter_sort_save_and_attack_live_entities()
             oteryn_session::EntityDisplayName::new("River wolf")
                 .map_err(|e| std::io::Error::other(format!("{e:?}")))?,
         ),
+        detail: EntityDetail::ActorWithIcons {
+            direction: StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 75,
+            icons: Default::default(),
+        },
         ..creature(2, 90)
     };
     let player = WorldSpatialEntity {
@@ -88,6 +94,7 @@ fn named_battle_lists_filter_sort_save_and_attack_live_entities()
     assert_eq!(search.rows(&link.battle_panel().rows), vec![high]);
     let rows = preferences.battle_lists[0].rows(&link.battle_panel().rows);
     assert_eq!(rows, vec![low]);
+    assert_eq!(link.filtered_battle_rows(0), vec![low]);
     assert_eq!(
         preferences.battle_lists[1].rows(&link.battle_panel().rows),
         vec![player]
@@ -306,7 +313,21 @@ fn o014_battle_list_filters_by_type_and_sorts_by_each_choice() {
             health_percent: health,
         },
     };
-    let creature = row(1, EntityKind::Creature, 80);
+    let mut creature = row(1, EntityKind::Creature, 80);
+    creature.detail = EntityDetail::ActorWithIcons {
+        direction: StepDirection::South,
+        appearance_ref: 1,
+        health_percent: 75,
+        icons: Default::default(),
+    };
+    assert!(
+        BattleListPreferences {
+            max_health: 20,
+            ..Default::default()
+        }
+        .rows(&[creature])
+        .is_empty()
+    );
     let player = row(2, EntityKind::Player, 30);
     let rows = [creature, player];
     let list = |players, creatures, sort| BattleListPreferences {

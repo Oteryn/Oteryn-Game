@@ -12,7 +12,6 @@ pub(super) struct Editor {
     root: Option<Entity>,
     pending: Option<Entity>,
     color: u8,
-    feedback: String,
 }
 #[derive(Component)]
 struct Field;
@@ -66,7 +65,6 @@ pub(super) fn click(
 impl Editor {
     fn open(&mut self, key: MarkerKey) {
         self.at = Some(key);
-        self.feedback.clear();
     }
 }
 fn project(
@@ -221,14 +219,11 @@ fn finish(
     if play.view.gameplay_input_blocked(&play.link) {
         return;
     }
-    match play
+    if play
         .view
         .edit_minimap_marker(at, text.value().to_string(), editor.color)
+        .is_ok()
     {
-        Ok(()) => editor.at = None,
-        Err(error) => {
-            owner.status = format!("Map mark: {error}");
-            editor.feedback = error.to_string();
-        }
+        editor.at = None;
     }
 }

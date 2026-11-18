@@ -35,6 +35,10 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     {
         oteryn_client_runtime::container_tree::send(self, intent).await
     }
+    fn world_position(&self) -> Option<oteryn_session::ActorPosition> {
+        Some(self.world_spatial().actor_position)
+    }
+
     fn battle_floor(&self) -> Option<i16> {
         Some(self.world_spatial().actor_position.floor)
     }

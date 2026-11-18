@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 #[path = "transfer.rs"]
 mod transfer;
 use std::{
-    collections::{BTreeMap, BTreeSet},
-    io::{self, Read},
-    path::PathBuf,
+    collections::{BTreeMap, btree_map::Entry},
+    io,
+    path::{Path, PathBuf},
     time::{Duration, Instant},
 };
 pub type SharedMinimap = std::sync::Arc<std::sync::Mutex<Minimap>>;
@@ -71,10 +71,22 @@ impl Drop for EditorOwner {
         close_editor(&self.0);
     }
 }
+type CellPosition = (i16, i32, i32);
+
+#[derive(Debug)]
+enum CacheAccess {
+    Owner { _lock: std::fs::File },
+    ReadOnly(io::Error),
+}
+
 type Binding = ([u8; 32], [u8; 32], u64);
 const MAX_CELLS: usize = 1_048_576;
 const MAX_MARKERS: usize = 512;
 const MAX_BYTES: u64 = 64 << 20;
+
+fn cache_position(floor: i32, x: i32, y: i32) -> bool {
+    (-15..=0).contains(&floor) && u16::try_from(x).is_ok() && u16::try_from(y).is_ok()
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -90,11 +102,19 @@ pub struct Marker {
 struct Saved {
     version: u8,
     cells: Vec<[i32; 4]>,
+    // Accept the version 1 fields written by older clients.
+    #[serde(default, rename = "observed_at", skip_serializing)]
+    legacy_observed_at: Vec<u64>,
+    #[serde(default, rename = "imported_at", skip_serializing)]
+    _legacy_imported_at: u64,
+    #[serde(default, rename = "applied_journals", skip_serializing)]
+    _legacy_journal_receipts: Option<serde::de::IgnoredAny>,
     markers: Vec<Marker>,
 }
+
 #[derive(Debug)]
 pub struct Minimap {
-    pub cells: BTreeMap<(i16, i32, i32), u8>,
+    pub cells: BTreeMap<CellPosition, u8>,
     pub markers: Vec<Marker>,
     /// Current Character facts; never serialized into the World-only local cache.
     pub quest_marks: oteryn_client_ui::personal_map_marks::PersonalMapMarks,
@@ -114,7 +134,9 @@ pub struct Minimap {
     root: Option<PathBuf>,
     world: Option<String>,
     binding: Option<Binding>,
-    dirty: bool,
+    // Hold each cache lock for the session, including across binding changes.
+    cache_access: BTreeMap<PathBuf, CacheAccess>,
+    cells_dirty: bool,
     load_failed: bool,
     saved_at: Instant,
 }
@@ -135,10 +157,13 @@ impl Default for Minimap {
             editor: None,
             own: (0, 0, -7),
             feedback: String::new(),
-            root: std::env::var_os("LOCALAPPDATA").map(|p| PathBuf::from(p).join("Oteryn/minimap")),
+            root: std::env::var_os("LOCALAPPDATA")
+                .map(|path| PathBuf::from(path).join("Oteryn/minimap"))
+                .or_else(|| crate::play::PreferenceStore::configuration_path("minimap")),
             world: None,
             binding: None,
-            dirty: false,
+            cache_access: BTreeMap::new(),
+            cells_dirty: false,
             load_failed: false,
             saved_at: Instant::now(),
         }
@@ -195,7 +220,7 @@ impl Minimap {
             self.binding = None;
             self.cells.clear();
             self.markers.clear();
-            self.dirty = false;
+            self.cells_dirty = false;
             self.tracking = true;
             self.zoom = 1;
             self.quest_marks = Default::default();
@@ -211,6 +236,7 @@ impl Minimap {
             self.binding = None;
             self.cells.clear();
             self.markers.clear();
+            self.cells_dirty = false;
         }
     }
     pub fn replace_quest_marks(
@@ -232,7 +258,16 @@ impl Minimap {
             hex(&bundle)
         )))
     }
-    pub fn observe(&mut self, map: &WorldMapViewSnapshot) {
+    #[cfg(test)]
+    fn observe(&mut self, map: &WorldMapViewSnapshot) {
+        self.observe_colours(map, &BTreeMap::new());
+    }
+
+    pub(in crate::play) fn observe_colours(
+        &mut self,
+        map: &WorldMapViewSnapshot,
+        colours: &BTreeMap<(i16, i32, i32), u8>,
+    ) {
         let binding = (
             map.header.content_generation,
             map.header.bundle_digest,
@@ -245,7 +280,7 @@ impl Minimap {
             }
             self.cells.clear();
             self.markers.clear();
-            self.dirty = false;
+            self.cells_dirty = false;
             self.binding = Some(binding);
             self.load_failed = false;
             if let Err(error) = self.load() {
@@ -253,71 +288,45 @@ impl Minimap {
                 self.feedback = lfmt!("Could not load minimap: {error}", error = error);
             }
         }
-        // The snapshot is authoritative only within its visible window. Retain distant
-        // exploration, but remove cleared cells and item-only tiles from remembered ground.
-        use oteryn_session::world_map::{
-            VIEW_HEIGHT, VIEW_LEFT, VIEW_TOP, VIEW_WIDTH, floors_in_view, in_window,
-        };
-        let origin = map.header.origin;
-        let observed: BTreeSet<_> = map
-            .tiles
-            .iter()
-            .filter(|tile| {
-                tile.ground_speed > 0
-                    && tile.position.floor <= map.header.first_visible_floor
-                    && in_window(origin, tile.position)
-            })
-            .map(|tile| (tile.position.floor, tile.position.x, tile.position.y))
-            .collect();
-        if let Some(floors) = floors_in_view(origin.floor) {
-            for floor in floors.filter(|f| *f <= map.header.first_visible_floor) {
-                let shift = i64::from(floor) - i64::from(origin.floor);
-                for y in 0..VIEW_HEIGHT {
-                    for x in 0..VIEW_WIDTH {
-                        let (Ok(x), Ok(y)) = (
-                            i32::try_from(
-                                i64::from(origin.x) - i64::from(VIEW_LEFT) + shift + i64::from(x),
-                            ),
-                            i32::try_from(
-                                i64::from(origin.y) - i64::from(VIEW_TOP) + shift + i64::from(y),
-                            ),
-                        ) else {
-                            continue;
-                        };
-                        let key = (floor, x, y);
-                        if !observed.contains(&key) && self.cells.remove(&key).is_some() {
-                            self.dirty = true;
-                        }
-                    }
-                }
+        // Only visible ground contributes to exploration. Unseen and empty
+        // positions leave remembered terrain intact.
+        use oteryn_session::world_map::in_window;
+        for tile in &map.tiles {
+            let position = tile.position;
+            let key = (position.floor, position.x, position.y);
+            if tile.ground_speed == 0
+                || !cache_position(i32::from(position.floor), position.x, position.y)
+                || position.floor > map.header.first_visible_floor
+                || !in_window(map.header.origin, position)
+            {
+                continue;
             }
-        }
-        for key in observed {
             if self.cells.len() >= MAX_CELLS && !self.cells.contains_key(&key) {
                 self.feedback =
                     tr!("Local exploration limit reached; existing exploration is retained").into();
                 continue;
             }
-            if let std::collections::btree_map::Entry::Vacant(entry) = self.cells.entry(key) {
+            if let Some(&colour) = colours.get(&key) {
+                self.set_cell_colour(key, colour);
+            } else if let Entry::Vacant(entry) = self.cells.entry(key) {
                 entry.insert(55);
-                self.dirty = true;
+                self.cells_dirty = true;
             }
         }
-        if self.saved_at.elapsed() >= Duration::from_secs(5)
+        if self.cells_dirty
+            && self.saved_at.elapsed() >= Duration::from_secs(5)
             && let Err(error) = self.save()
         {
             self.feedback = lfmt!("Could not save minimap: {error}", error = error);
         }
     }
-    pub(in crate::play) fn observe_colours(&mut self, map: &WorldMapViewSnapshot, colours: &BTreeMap<(i16, i32, i32), u8>) {
-        self.observe(map);
-        for (&key, &colour) in colours {
-            if let Some(current) = self.cells.get_mut(&key) && *current != colour {
-                *current = colour;
-                self.dirty = true;
-            }
+
+    fn set_cell_colour(&mut self, key: CellPosition, colour: u8) {
+        if self.cells.insert(key, colour) != Some(colour) {
+            self.cells_dirty = true;
         }
     }
+
     pub fn follow(&mut self, x: i32, y: i32, floor: i16) {
         self.own = (x, y, floor);
         if self.tracking {
@@ -361,14 +370,6 @@ impl Minimap {
         label: String,
         color: u8,
     ) -> io::Result<()> {
-        if self
-            .quest_markers
-            .iter()
-            .any(|m| (m.x, m.y, m.floor) == (x, y, floor))
-        {
-            return Err(io::Error::other("Quest markers are supplied by the server"));
-        }
-
         if !(0..=65_535).contains(&x)
             || !(0..=65_535).contains(&y)
             || !(-15..=0).contains(&floor)
@@ -381,118 +382,209 @@ impl Minimap {
                 "Use map coordinates 0-65535, floor -15 to 0 and a label of 1-128 bytes"
             )));
         }
-        let previous = self.markers.clone();
-        if let Some(marker) = self
-            .markers
-            .iter_mut()
-            .find(|m| (m.x, m.y, m.floor) == (x, y, floor))
-        {
-            marker.label = label;
-            marker.color = color;
-        } else {
-            if self.markers.len() >= MAX_MARKERS {
-                return Err(io::Error::other(tr!(
-                    "The minimap supports up to 512 markers"
-                )));
-            }
-            self.markers.push(Marker {
+        self.change_marker(
+            (x, y, floor),
+            Some(Marker {
                 x,
                 y,
                 floor,
                 label,
                 color,
-            });
-        }
-        self.save_marker_change(previous)
+            }),
+            false,
+        )?;
+        Ok(())
     }
     /// `Misc.: Create Mark`: adds a default-labelled marker at `own`. Returns `false` and leaves
     /// the map unchanged when a marker already sits there, so the caller opens it for editing.
     pub fn create_mark_at(&mut self, own: (i32, i32, i16)) -> io::Result<bool> {
         let (x, y, floor) = own;
-        if self
-            .markers
-            .iter()
-            .any(|m| (m.x, m.y, m.floor) == (x, y, floor))
-        {
-            return Ok(false);
+        if !cache_position(i32::from(floor), x, y) {
+            return Err(io::Error::other(tr!(
+                "Use map coordinates 0-65535, floor -15 to 0 and a label of 1-128 bytes"
+            )));
         }
-        self.edit_marker(x, y, floor, tr!("Mark").into(), 0)?;
-        Ok(true)
+        self.change_marker(
+            own,
+            Some(Marker {
+                x,
+                y,
+                floor,
+                label: tr!("Mark").into(),
+                color: 0,
+            }),
+            true,
+        )
     }
     // Invoked by native Windows controls; the headless tests exercise the same state.
     #[allow(dead_code)]
     pub fn remove_marker(&mut self, x: i32, y: i32, floor: i16) -> io::Result<()> {
+        self.change_marker((x, y, floor), None, false)?;
+        Ok(())
+    }
+
+    fn change_marker(
+        &mut self,
+        position: (i32, i32, i16),
+        replacement: Option<Marker>,
+        create_only: bool,
+    ) -> io::Result<bool> {
+        let path = self.path();
+        if let Some(path) = &path {
+            self.require_cache_owner(path)?;
+        } else if self.world.is_some() {
+            return Err(io::Error::other("Minimap storage is unavailable"));
+        }
         if self
             .quest_markers
             .iter()
-            .any(|m| (m.x, m.y, m.floor) == (x, y, floor))
+            .any(|m| (m.x, m.y, m.floor) == position)
         {
             return Err(io::Error::other("Quest markers are supplied by the server"));
         }
-        let previous = self.markers.clone();
-        self.markers
-            .retain(|m| (m.x, m.y, m.floor) != (x, y, floor));
-        self.save_marker_change(previous)
+        let at_position = |marker: &Marker| (marker.x, marker.y, marker.floor) == position;
+        let index = self.markers.iter().position(at_position);
+        let current = index.map(|index| &self.markers[index]);
+        if (create_only && current.is_some()) || current == replacement.as_ref() {
+            self.save()?;
+            return Ok(false);
+        }
+        let mut markers = self.markers.clone();
+        match (index, replacement) {
+            (Some(index), Some(marker)) => markers[index] = marker,
+            (Some(_), None) => markers.retain(|marker| !at_position(marker)),
+            (None, Some(marker)) => {
+                if markers.len() >= MAX_MARKERS {
+                    return Err(io::Error::other(tr!(
+                        "The minimap supports up to 512 markers"
+                    )));
+                }
+                markers.push(marker);
+            }
+            (None, None) => return Ok(false),
+        }
+        if let Some(path) = path {
+            self.write_cache(&path, markers)?;
+        } else {
+            self.markers = markers;
+        }
+        Ok(true)
     }
-    fn save_marker_change(&mut self, previous: Vec<Marker>) -> io::Result<()> {
-        let was_dirty = std::mem::replace(&mut self.dirty, true);
-        self.save().inspect_err(|_| {
-            self.markers = previous;
-            self.dirty = was_dirty;
-        })
-    }
+
     pub fn save(&mut self) -> io::Result<()> {
-        if !self.dirty {
+        if !self.cells_dirty {
             return Ok(());
         }
-        let Some(path) = self.path() else {
-            return Ok(());
-        };
-        if self.load_failed {
-            return Err(io::Error::other(tr!("Invalid minimap file")));
+        match self.path() {
+            Some(path) if matches!(self.cache_access.get(&path), Some(CacheAccess::ReadOnly(_))) => {}
+            Some(path) => {
+                self.require_cache_owner(&path)?;
+                return self.write_cache(&path, self.markers.clone());
+            }
+            None if self.world.is_some() => {
+                return Err(io::Error::other("Minimap storage is unavailable"));
+            }
+            None => {}
         }
-        let saved = Saved {
-            version: 1,
+        self.cells_dirty = false;
+        Ok(())
+    }
+
+    pub(in crate::play) fn is_read_only(&self) -> bool {
+        self.path()
+            .is_some_and(|path| matches!(self.cache_access.get(&path), Some(CacheAccess::ReadOnly(_))))
+    }
+
+    fn require_cache_owner(&self, path: &Path) -> io::Result<()> {
+        match self.cache_access.get(path) {
+            Some(CacheAccess::Owner { .. }) => Ok(()),
+            Some(CacheAccess::ReadOnly(error)) => {
+                Err(io::Error::new(error.kind(), error.to_string()))
+            }
+            None => Err(io::Error::other("Minimap storage is unavailable")),
+        }
+    }
+
+    fn snapshot(&self, markers: Vec<Marker>) -> Saved {
+        Saved {
             cells: self
                 .cells
                 .iter()
-                .map(|(&(f, x, y), &c)| [i32::from(f), x, y, i32::from(c)])
+                .map(|(&(f, x, y), &colour)| [i32::from(f), x, y, i32::from(colour)])
                 .collect(),
-            markers: self.markers.clone(),
-        };
-        saved.write_to(&path)?;
-        self.dirty = false;
+            markers,
+            ..Saved::default()
+        }
+    }
+
+    fn write_cache(&mut self, path: &Path, markers: Vec<Marker>) -> io::Result<()> {
+        if self.load_failed {
+            return Err(io::Error::other(tr!("Invalid minimap file")));
+        }
+        let saved = self.snapshot(markers);
+        saved.validate()?;
+        saved.write_to(path)?;
+        self.markers = saved.markers;
+        self.cells_dirty = false;
         self.saved_at = Instant::now();
         Ok(())
     }
+
     fn load(&mut self) -> io::Result<()> {
         let Some(path) = self.path() else {
             return Ok(());
         };
-        let file = match std::fs::File::open(path) {
-            Ok(f) => f,
-            Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(()),
-            Err(e) => return Err(e),
-        };
-        if file.metadata()?.len() > MAX_BYTES {
-            return Err(io::Error::other(tr!("Minimap file is too large")));
+        if let Entry::Vacant(entry) = self.cache_access.entry(path.clone()) {
+            let access = match Saved::lock_cache(&path) {
+                Ok(lock) => CacheAccess::Owner { _lock: lock },
+                Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
+                    CacheAccess::ReadOnly(error)
+                }
+                Err(error) => CacheAccess::ReadOnly(io::Error::new(
+                    error.kind(),
+                    format!("Minimap storage is read-only: {error}"),
+                )),
+            };
+            entry.insert(access);
         }
-        let mut bytes = Vec::new();
-        file.take(MAX_BYTES + 1).read_to_end(&mut bytes)?;
-        if bytes.len() as u64 > MAX_BYTES {
-            return Err(io::Error::other(tr!("Minimap file is too large")));
+        if let Some(saved) = Saved::read_from(&path)? {
+            self.cells = saved_cells(saved.cells);
+            self.markers = saved.markers;
         }
-        let saved: Saved = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
-        saved.validate()?;
-        // Version 1 uses the same value for old item-only cells and real gray terrain.
-        // Only an authoritative observation can tell which remembered cells to clear.
-        self.cells = saved
-            .cells
-            .into_iter()
-            .map(|[f, x, y, c]| ((f as i16, x, y), c as u8))
-            .collect();
-        self.markers = saved.markers;
         Ok(())
+    }
+}
+
+fn saved_cells(cells: Vec<[i32; 4]>) -> BTreeMap<CellPosition, u8> {
+    cells
+        .into_iter()
+        .map(|[f, x, y, c]| ((f as i16, x, y), c as u8))
+        .collect()
+}
+
+impl Default for Saved {
+    fn default() -> Self {
+        Self {
+            version: 1,
+            cells: Vec::new(),
+            legacy_observed_at: Vec::new(),
+            _legacy_imported_at: 0,
+            _legacy_journal_receipts: None,
+            markers: Vec::new(),
+        }
+    }
+}
+
+impl Saved {
+    fn read_from(path: &std::path::Path) -> io::Result<Option<Self>> {
+        let file = match std::fs::File::open(path) {
+            Ok(file) => file,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+            Err(error) => return Err(error),
+        };
+        let saved: Saved = transfer::read_json(file)?;
+        saved.validate()?;
+        Ok(Some(saved))
     }
 }
 impl Drop for Minimap {
@@ -537,6 +629,7 @@ mod quest_mark_tests {
         map.root = Some(directory.clone());
         map.bind_world("11111111-1111-4111-8111-111111111111");
         map.binding = Some(([1; 32], [2; 32], 1));
+        map.load()?;
         assert!(map.replace_quest_marks(treasure()));
         assert!(
             map.replace_quest_markers(&[oteryn_session::quest_log::QuestMapMark {

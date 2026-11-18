@@ -162,6 +162,19 @@ struct Recorder {
 }
 
 impl Stepper for Recorder {
+    fn world_position(&self) -> Option<ActorPosition> {
+        Some(at(100, 200, 7))
+    }
+
+    fn feature_snapshot(&self, domain: u32) -> Option<Vec<u8>> {
+        let SessionEvent::WorldMapSnapshot(map) = map_snapshot(at(100, 200, -7)) else {
+            return None;
+        };
+        (domain == 17)
+            .then(|| oteryn_session::world_map::encode_world_map_snapshot(&map.value).ok())
+            .flatten()
+    }
+
     fn drain(&mut self) -> Vec<SessionEvent> {
         Vec::new()
     }
@@ -425,5 +438,63 @@ fn picked_ground_item_look_reaches_dispatch_with_its_native_tile_and_raw_frame()
     assert_eq!(command.target, Target::Item(handle));
     assert_eq!(command.action, Action::Look);
     assert_eq!(command.selection.as_ref().map(|s| s.position), Some(native));
+    Ok(())
+}
+
+#[test]
+fn review_ordinary_admission_seeds_target_walk_and_entity_floor()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (_, _, outbox) = play_channel();
+    let walks = Arc::new(Mutex::new(Vec::new()));
+    let combats = Arc::new(Mutex::new(Vec::new()));
+    let mut peer = Recorder {
+        walks: Arc::clone(&walks),
+        combats: Arc::clone(&combats),
+        contexts: Default::default(),
+    };
+    crate::play::session_initialize::initialize(&peer, &outbox)?;
+    outbox.entities(vec![entity(at(101, 200, 7))]);
+    assert_eq!(
+        crate::play::mailbox::lock(&outbox.0)
+            .pushed
+            .entities
+            .as_ref()
+            .ok_or("entities")?[0]
+            .position
+            .floor,
+        -7
+    );
+    let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+    let spell = NonZeroU32::MIN;
+    runtime.block_on(async {
+        let _ = outbox.target_walk_run(&mut peer, at(101, 200, -7)).await;
+        let _ = outbox
+            .battle_run(
+                &mut peer,
+                crate::combat_input::PlayCommand::Combat(CombatCommand::CastAt {
+                    spell,
+                    position: SpellTargetPosition {
+                        x: 101,
+                        y: 200,
+                        floor: -7,
+                    },
+                }),
+            )
+            .await;
+    });
+    assert!(matches!(
+        combats
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .as_slice(),
+        [CombatCommand::CastAt {
+            position: SpellTargetPosition { floor: 7, .. },
+            ..
+        }]
+    ));
+    assert_eq!(
+        *walks.lock().unwrap_or_else(PoisonError::into_inner),
+        [at(101, 200, 7)]
+    );
     Ok(())
 }

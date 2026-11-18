@@ -28,6 +28,7 @@ fn fixture() -> Result<App, Box<dyn std::error::Error>> {
     );
     app.add_systems(Update, super::super::project);
     install(&mut app);
+    crate::bevy_shell::text_messages::install(&mut app);
     app.update();
     Ok(app)
 }
@@ -377,16 +378,12 @@ mod foreground_click {
     }
 }
 
-#[test]
-fn secondary_minimap_click_edits_the_viewed_coordinate() -> TestResult {
+fn open_marker_editor(app: &mut App) -> TestResult {
     use bevy::picking::{
         backend::HitData,
         events::Pointer,
         pointer::{Location, PointerButton, PointerId},
     };
-    let mut app = fixture()?;
-    activate(&mut app, "E")?;
-    activate(&mut app, "Floor up")?;
     let image = app
         .world_mut()
         .query_filtered::<Entity, With<MiniImage>>()
@@ -415,6 +412,15 @@ fn secondary_minimap_click_edits_the_viewed_coordinate() -> TestResult {
         count: 1,
     });
     app.update();
+    Ok(())
+}
+
+#[test]
+fn secondary_minimap_click_edits_the_viewed_coordinate() -> TestResult {
+    let mut app = fixture()?;
+    activate(&mut app, "E")?;
+    activate(&mut app, "Floor up")?;
+    open_marker_editor(&mut app)?;
     for mut text in app
         .world_mut()
         .query::<&mut bevy::text::EditableText>()
@@ -437,6 +443,60 @@ fn secondary_minimap_click_edits_the_viewed_coordinate() -> TestResult {
         "Cave entrance"
     ))));
     assert_eq!(play.view.satellite_player(), (100, 200, -7));
+    Ok(())
+}
+
+#[test]
+fn exclusive_marker_refusals_appear_in_playing_status() -> TestResult {
+    use oteryn_input_actions::{
+        ButtonState, KeyCode as InputKey, Modifier, Modifiers, NormalizedInputEvent,
+    };
+
+    let mut visible = Vec::new();
+    for shortcut in [true, false] {
+        let mut app = fixture()?;
+        let root = std::env::temp_dir().join(format!(
+            "minimap-marker-status-{}-{shortcut}",
+            std::process::id()
+        ));
+        let mut writer = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), -7, &[])?;
+        writer.bind_test_minimap(root.clone());
+        {
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            let play = owner.play.as_mut().ok_or("play")?;
+            play.view.bind_test_minimap(root.clone());
+            if shortcut {
+                owner.route_input(
+                    &[NormalizedInputEvent::Key {
+                        code: InputKey::new(16)?,
+                        state: ButtonState::Pressed,
+                        modifiers: Modifiers::NONE.with(Modifier::Alt).with(Modifier::Shift),
+                        repeat: false,
+                    }],
+                    false,
+                );
+            }
+        }
+        if !shortcut {
+            open_marker_editor(&mut app)?;
+            activate(&mut app, "Save mark")?;
+        }
+        app.update();
+        let shows_refusal = app
+            .world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.contains("The minimap is busy in another client"));
+        drop(app);
+        drop(writer);
+        std::fs::remove_dir_all(root)?;
+        visible.push(shows_refusal);
+    }
+    assert_eq!(
+        visible,
+        [true, true],
+        "shortcut and editor must both display the refusal"
+    );
     Ok(())
 }
 

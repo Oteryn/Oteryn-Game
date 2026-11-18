@@ -20,7 +20,7 @@ const SECRET_SUFFIXES: [&str; 11] = [
     "credential",
     "credentials",
 ];
-/// Keys that are secret in a query string (`?code=` / `&code=`) but ordinary words elsewhere.
+/// Query keys whose assignments can carry secrets.
 const QUERY_SECRETS: [&str; 7] = [
     "code",
     "key",
@@ -30,17 +30,122 @@ const QUERY_SECRETS: [&str; 7] = [
     "code_verifier",
     "assertion",
 ];
-const VALUE_END: &[u8] = b" \t\r\n\"'&#,;)]}<>";
+const VALUE_END: &[u8] = b" \t\r\n\x0b\x0c\"'&#,;)]}<>";
 
 /// Returns `text` with every secret value replaced by `[redacted]`.
 pub fn redact(text: &str) -> String {
+    // An encoded authority can otherwise disappear into a key/value match.
+    let text = redact_encoded(redact_urls(text), redact_urls);
+    let text = redact_pairs(&text);
+    redact_encoded(redact_bearer(&text), redact_plain)
+}
+
+fn redact_encoded(text: String, redact: fn(&str) -> String) -> String {
+    if !text.contains(['%', '\\']) {
+        return text;
+    }
+    let mut out = String::with_capacity(text.len());
+    for line in text.split_inclusive('\n') {
+        if line.contains(['%', '\\']) && encoded_secret(line, redact) {
+            out.push_str(MASK);
+            if line.ends_with('\n') {
+                out.push('\n');
+            }
+        } else {
+            out.push_str(line);
+        }
+    }
+    out
+}
+
+fn encoded_secret(line: &str, redact: fn(&str) -> String) -> bool {
+    let mut next = decode_escapes(line);
+    // Inspect the decoded form without emitting it. If the nesting is too
+    // deep to inspect, remove the entire line.
+    for _ in 0..8 {
+        let Some(decoded) = next else {
+            return false;
+        };
+        if redact(&decoded) != decoded {
+            return true;
+        }
+        next = decode_escapes(&decoded);
+    }
+    next.is_some()
+}
+
+fn redact_plain(text: &str) -> String {
     let text = redact_urls(text);
     let text = redact_pairs(&text);
     redact_bearer(&text)
 }
 
+fn escaped_ascii(bytes: &[u8]) -> Option<(u8, usize)> {
+    let (digits, length) = match bytes {
+        [b'\\', b'"' | b'\'' | b'/' | b'\\', ..] => return Some((bytes[1], 2)),
+        [b'\\', b'n', ..] => return Some((b'\n', 2)),
+        [b'\\', b'r', ..] => return Some((b'\r', 2)),
+        [b'\\', b't', ..] => return Some((b'\t', 2)),
+        [b'\\', b'u', a, b, c, d, ..] => ([*a, *b, *c, *d], 6),
+        [b'%', a, b, ..] => ([b'0', b'0', *a, *b], 3),
+        _ => return None,
+    };
+    let decoded = u8::from_str_radix(std::str::from_utf8(&digits).ok()?, 16).ok()?;
+    decoded.is_ascii().then_some((decoded, length))
+}
+
+fn decode_escapes(text: &str) -> Option<String> {
+    let bytes = text.as_bytes();
+    let mut out = String::with_capacity(text.len());
+    let mut copied = 0;
+    let mut index = 0;
+    while index < bytes.len() {
+        if let Some((decoded, length)) = escaped_ascii(&bytes[index..]) {
+            out.push_str(&text[copied..index]);
+            out.push(char::from(decoded));
+            index += length;
+            copied = index;
+        } else {
+            index += 1;
+        }
+    }
+    if copied == 0 {
+        return None;
+    }
+    out.push_str(&text[copied..]);
+    Some(out)
+}
+
 fn identifier(byte: u8) -> bool {
     byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'-'
+}
+
+fn skip_space(bytes: &[u8], mut start: usize) -> usize {
+    while bytes
+        .get(start)
+        .is_some_and(|byte| b" \t\r\n\x0b\x0c".contains(byte))
+    {
+        start += 1;
+    }
+    start
+}
+
+fn line_end(bytes: &[u8], start: usize) -> usize {
+    bytes[start..]
+        .iter()
+        .position(|byte| matches!(byte, b'\r' | b'\n'))
+        .map_or(bytes.len(), |offset| start + offset)
+}
+
+fn quoted_end(bytes: &[u8], mut cursor: usize, quote: u8) -> usize {
+    while let Some(&byte) = bytes.get(cursor) {
+        match byte {
+            byte if byte == quote => return cursor,
+            b'\\' => cursor += 2,
+            _ => cursor += 1,
+        }
+    }
+    bytes.len()
 }
 
 fn value_end(bytes: &[u8], start: usize) -> usize {
@@ -65,30 +170,59 @@ fn redact_urls(text: &str) -> String {
             .map_or(0, |index| index + 1);
         let scheme = text[scheme_start..marker].to_ascii_lowercase();
         let authority = marker + 3;
-        let end = value_end(bytes, authority);
         if text[authority..].starts_with(MASK) {
             search = authority + MASK.len();
             continue;
         }
+        let terminates_url = |byte: &u8| byte.is_ascii_whitespace() || b"\"<>".contains(byte);
         if scheme.starts_with("postgres") {
+            let mut end = authority;
+            while let Some(byte) = bytes.get(end).filter(|byte| !terminates_url(byte)) {
+                end += if *byte == b'\\' && matches!(bytes.get(end + 1), Some(b'"' | b'\\')) {
+                    2
+                } else {
+                    1
+                };
+            }
             out.push_str(&text[copied..authority]);
             out.push_str(MASK);
             copied = end;
+            search = end;
         } else {
-            let host_end = bytes[authority..end]
+            // URL user information permits RFC 3986 sub-delimiters, including commas.
+            let host_end = bytes[authority..]
                 .iter()
-                .position(|byte| b"/?#".contains(byte))
-                .map_or(end, |offset| authority + offset);
+                .position(|byte| terminates_url(byte) || b"/?#".contains(byte))
+                .map_or(bytes.len(), |offset| authority + offset);
             if let Some(at) = bytes[authority..host_end].iter().rposition(|b| *b == b'@') {
                 out.push_str(&text[copied..authority]);
                 out.push_str(MASK);
                 copied = authority + at;
             }
+            // Continue scanning the path and surrounding text for another URL scheme.
+            search = authority.max(copied);
         }
-        search = end.max(authority);
     }
     out.push_str(&text[copied..]);
     out
+}
+
+/// Decode a JSON member name so escaped characters participate in secret-key matching.
+fn json_key(text: &str, start: usize) -> Option<(String, usize)> {
+    let bytes = text.as_bytes();
+    let end = quoted_end(bytes, start + 1, b'"');
+    if bytes.get(skip_space(bytes, end + 1)) != Some(&b':') {
+        return None;
+    }
+    let key: String = serde_json::from_str(&text[start..=end]).ok()?;
+    Some((key.to_ascii_lowercase(), end))
+}
+
+fn json_container_end(text: &str, start: usize) -> Option<usize> {
+    let mut values =
+        serde_json::Deserializer::from_str(&text[start..]).into_iter::<serde::de::IgnoredAny>();
+    values.next()?.ok()?;
+    Some(start + values.byte_offset())
 }
 
 /// `token=...`, `"password": "..."`, `Authorization: Bearer ...` and `?code=...` values.
@@ -98,53 +232,76 @@ fn redact_pairs(text: &str) -> String {
     let mut copied = 0;
     let mut index = 0;
     while index < bytes.len() {
-        if !identifier(bytes[index]) || (index > 0 && identifier(bytes[index - 1])) {
-            index += 1;
-            continue;
-        }
         let key_start = index;
-        while index < bytes.len() && identifier(bytes[index]) {
-            index += 1;
-        }
-        let key = text[key_start..index].to_ascii_lowercase();
+        let key = if bytes[index] == b'"'
+            && (index == 0 || bytes[index - 1] != b'\\')
+            && let Some((key, end)) = json_key(text, index)
+        {
+            index = end;
+            key
+        } else {
+            if !identifier(bytes[index]) || (index > 0 && identifier(bytes[index - 1])) {
+                index += 1;
+                continue;
+            }
+            while index < bytes.len() && identifier(bytes[index]) {
+                index += 1;
+            }
+            text[key_start..index].to_ascii_lowercase()
+        };
+        let query_key = QUERY_SECRETS.contains(&key.as_str());
+        let secret = SECRET_SUFFIXES.iter().any(|suffix| key.ends_with(suffix));
         let in_query = key_start > 0 && matches!(bytes[key_start - 1], b'?' | b'&');
-        let secret = SECRET_SUFFIXES.iter().any(|suffix| key.ends_with(suffix))
-            || (in_query && QUERY_SECRETS.contains(&key.as_str()));
-        if !secret {
+        if !secret && !query_key {
+            index += usize::from(bytes[key_start] == b'"');
             continue;
         }
         let mut cursor = index;
-        if cursor < bytes.len() && matches!(bytes[cursor], b'"' | b'\'') {
-            cursor += 1;
-        }
-        while cursor < bytes.len() && bytes[cursor] == b' ' {
-            cursor += 1;
-        }
+        let quoted_key = bytes
+            .get(cursor)
+            .is_some_and(|byte| matches!(byte, b'"' | b'\''));
+        cursor = skip_space(bytes, cursor + usize::from(quoted_key));
         if cursor >= bytes.len() || !matches!(bytes[cursor], b'=' | b':') {
             continue;
         }
-        cursor += 1;
-        while cursor < bytes.len() && matches!(bytes[cursor], b' ' | b'"' | b'\'') {
-            cursor += 1;
+        if !secret && bytes[cursor] != b'=' && !in_query {
+            continue;
+        }
+        let header = bytes[cursor] == b':' && !quoted_key;
+        cursor = skip_space(bytes, cursor + 1);
+        while matches!(bytes.get(cursor), Some(b'=' | b':')) {
+            cursor = skip_space(bytes, cursor + 1);
         }
         if text[cursor..].starts_with(MASK) {
             index = cursor + MASK.len();
             continue;
         }
-        let mut end = value_end(bytes, cursor);
-        // `Authorization: Bearer abc` keeps the scheme word visible and hides its credential.
-        let word = text[cursor..end].to_ascii_lowercase();
-        if matches!(word.as_str(), "bearer" | "basic" | "token" | "digest")
-            && end < bytes.len()
-            && bytes[end] == b' '
-        {
-            cursor = end + 1;
-            if text[cursor..].starts_with(MASK) {
-                index = cursor + MASK.len();
-                continue;
-            }
-            end = value_end(bytes, cursor);
+        if matches!(bytes.get(cursor), Some(b'[' | b'{')) {
+            let end = json_container_end(text, cursor).unwrap_or(bytes.len());
+            out.push_str(&text[copied..cursor]);
+            out.push('"');
+            out.push_str(MASK);
+            out.push('"');
+            copied = end;
+            index = end;
+            continue;
         }
+        let (cursor, end) = if header && key.ends_with("cookie") {
+            (cursor, line_end(bytes, cursor))
+        } else {
+            let word_end = value_end(bytes, cursor);
+            let word = text[cursor..word_end].to_ascii_lowercase();
+            let next = skip_space(bytes, word_end);
+            if matches!(word.as_str(), "bearer" | "basic" | "token" | "digest") && next > word_end {
+                if header {
+                    (next, line_end(bytes, next))
+                } else {
+                    credential_span(text, next)
+                }
+            } else {
+                credential_span(text, cursor)
+            }
+        };
         if end == cursor {
             index = end.max(index);
             continue;
@@ -158,6 +315,20 @@ fn redact_pairs(text: &str) -> String {
     out
 }
 
+fn credential_span(text: &str, start: usize) -> (usize, usize) {
+    let bytes = text.as_bytes();
+    if text[start..].starts_with(MASK) {
+        (start, start + MASK.len())
+    } else if let Some(&quote @ (b'"' | b'\'')) = bytes.get(start) {
+        (start + 1, quoted_end(bytes, start + 1, quote))
+    } else if escaped_ascii(&bytes[start..]).is_some() {
+        // Encoded delimiters can wrap a credential with raw spaces.
+        (start, line_end(bytes, start))
+    } else {
+        (start, value_end(bytes, start))
+    }
+}
+
 /// A bare `Bearer <credential>` anywhere in the text.
 fn redact_bearer(text: &str) -> String {
     let lower = text.to_ascii_lowercase();
@@ -165,16 +336,20 @@ fn redact_bearer(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     let mut copied = 0;
     let mut search = 0;
-    while let Some(found) = lower[search..].find("bearer ") {
+    while let Some(found) = lower[search..].find("bearer") {
         let start = search + found;
-        let value = start + "bearer ".len();
+        let after_scheme = start + "bearer".len();
+        let value = skip_space(bytes, after_scheme);
+        if value == after_scheme || (start > 0 && identifier(bytes[start - 1])) {
+            search = after_scheme;
+            continue;
+        }
         if text[value..].starts_with(MASK) {
             search = value + MASK.len();
             continue;
         }
-        let end = value_end(bytes, value);
-        let bounded = start == 0 || !identifier(bytes[start - 1]);
-        if bounded && end > value {
+        let (value, end) = credential_span(text, value);
+        if end > value {
             out.push_str(&text[copied..value]);
             out.push_str(MASK);
             copied = end;

@@ -131,6 +131,8 @@ pub use preferences::*;
 
 pub use feature_0004_item_view_move::state::GroundItem;
 pub use feature_0017_attack::view::GuildFilter;
+#[cfg(bevy_shell)]
+pub(crate) use feature_0017_attack::view::health as battle_row_health;
 pub use feature_local_minimap::view::{
     MinimapBinding, MinimapMark, MinimapMemory, MinimapNavigation,
 };

@@ -16,9 +16,6 @@ impl World {
             .iter()
             .filter(|tile| in_draw_window(map, tile.position))
         {
-            world
-                .minimap_colors
-                .insert((tile.position.floor, tile.position.x, tile.position.y), 55);
             world.insert_floor_tile(
                 tile.position,
                 MapTile {
@@ -63,21 +60,28 @@ impl World {
             .iter()
             .filter(|tile| in_draw_window(map, tile.position))
         {
-            let mut color = 0;
-            for item in &tile.items {
+            let mut color = (!tile.more && !tile.items.is_empty()).then_some(0);
+            for (stack_index, item) in tile.items.iter().enumerate() {
                 if let Some(appearance) = index.get(u32::from(item.appearance_id)) {
                     if let Some((level, color)) = appearance.light.filter(|(level, _)| *level > 0) {
                         item_lights.push((tile.position, level, color));
                     }
-                    if let Some(value) = appearance.minimap_color.filter(|value| *value != 0) {
-                        color = value;
+                    // A truncated stack can hide a coloured item above the ground.
+                    if (!tile.more || stack_index != 0)
+                        && let Some(value) = appearance.minimap_color.filter(|value| *value != 0)
+                    {
+                        color = Some(value);
                     }
+                } else {
+                    color = None;
                 }
             }
-            minimap_colors.insert(
-                (tile.position.floor, tile.position.x, tile.position.y),
-                color,
-            );
+            if let Some(color) = color {
+                minimap_colors.insert(
+                    (tile.position.floor, tile.position.x, tile.position.y),
+                    color,
+                );
+            }
             let hook = tile
                 .items
                 .iter()
@@ -311,11 +315,11 @@ impl World {
         let mut next = None;
         for animation in self.animations.iter() {
             let position = animation.position;
-            let shift = i32::from(position.floor - self.center.2);
+            let Some((x, y)) = self.project_floor_tile(position) else {
+                continue;
+            };
             let tile = animation.sample(elapsed);
-            if self.floor_tile(position.floor, position.x - shift, position.y - shift)
-                != Some(&tile)
-            {
+            if self.floor_tile(position.floor, x, y) != Some(&tile) {
                 next.get_or_insert_with(|| self.clone())
                     .insert_floor_tile(position, tile);
             }
@@ -332,9 +336,18 @@ fn in_draw_window(map: &WorldMapViewSnapshot, position: oteryn_session::ActorPos
 }
 
 impl World {
+    fn project_floor_tile(&self, position: oteryn_session::ActorPosition) -> Option<(i32, i32)> {
+        let shift = i32::from(position.floor) - i32::from(self.center.2);
+        Some((
+            position.x.checked_sub(shift)?,
+            position.y.checked_sub(shift)?,
+        ))
+    }
+
     fn insert_floor_tile(&mut self, position: oteryn_session::ActorPosition, tile: MapTile) {
-        let shift = i32::from(position.floor - self.center.2);
-        let projected = (position.x - shift, position.y - shift);
+        let Some(projected) = self.project_floor_tile(position) else {
+            return;
+        };
         if position.floor == self.center.2 {
             self.tiles.insert(projected, tile);
         } else {
@@ -374,6 +387,69 @@ mod tests {
     use oteryn_session::ActorPosition;
     use oteryn_session::world_map::{MapDefinition, MapItem, MapOrigin, MapTile, MapViewHeader};
     use std::num::NonZeroU32;
+
+    #[test]
+    fn review_live_map_skips_unrepresentable_projected_tiles() -> Result<(), BatchError> {
+        let origin = ActorPosition {
+            x: i32::MAX,
+            y: i32::MAX,
+            floor: -6,
+        };
+        for position in [
+            ActorPosition {
+                x: origin.x,
+                y: origin.y - 1,
+                floor: -7,
+            },
+            ActorPosition {
+                x: origin.x - 1,
+                y: origin.y,
+                floor: -7,
+            },
+        ] {
+            let snapshot = WorldMapViewSnapshot {
+                header: MapViewHeader {
+                    origin,
+                    content_generation: [0; 32],
+                    bundle_digest: [0; 32],
+                    reset_epoch: 1,
+                    first_visible_floor: -6,
+                },
+                tiles: vec![MapTile {
+                    position,
+                    items: vec![MapItem {
+                        definition: MapDefinition::Item(NonZeroU32::MIN),
+                        count: 1,
+                        sub_type: 0,
+                        origin: MapOrigin::DisplayOnly,
+                        appearance_id: 0,
+                    }],
+                    more: false,
+                    ground_speed: 100,
+                }],
+            };
+            use oteryn_session::world_map::{decode_world_map_snapshot, encode_world_map_snapshot};
+            let payload =
+                encode_world_map_snapshot(&snapshot).map_err(|_| BatchError::InvalidView)?;
+            let snapshot =
+                decode_world_map_snapshot(&payload).map_err(|_| BatchError::InvalidView)?;
+            let mut view = crate::play::PlayView::new(
+                oteryn_renderer::TileCoord::new(origin.x - 32, origin.y - 32),
+                origin.floor,
+                &[],
+            )?;
+            view.set_live_map(&snapshot)?;
+            let mut world = World::from_live_map(&snapshot)?;
+            assert!(world.floor_tile(-7, i32::MIN, i32::MIN).is_none());
+            world.animations = std::sync::Arc::from([TileAnimation {
+                position,
+                elevation: 0,
+                items: Vec::new(),
+            }]);
+            assert!(world.animated_at(std::time::Instant::now()).is_none());
+        }
+        Ok(())
+    }
 
     #[test]
     fn animation_durations_preserve_stack_order_and_transparent_phases() {

@@ -39,7 +39,8 @@ fn mini(play: &PlayView) -> Vec<oteryn_renderer::QuadInstance> {
 fn minimap_projects_live_tiles_creatures_floor_changes_and_reset() -> Result<(), BatchError> {
     let mut play = minimap_view()?;
     assert!(mini(&play).is_empty());
-    let map = snapshot(101);
+    let mut map = snapshot(101);
+    map.tiles[0].ground_speed = 100;
     play.set_live_map(&map)?;
     let base = mini(&play);
     #[cfg(bevy_shell)]
@@ -106,7 +107,7 @@ fn minimap_projects_live_tiles_creatures_floor_changes_and_reset() -> Result<(),
     let mut empty = map;
     empty.tiles.clear();
     play.set_live_map(&empty)?;
-    assert_eq!(mini(&play).len(), 31 * 25 + 2); // Creature remains; the authoritative clear removes terrain.
+    assert_eq!(mini(&play).len(), 31 * 25 + 3); // The creature and remembered terrain remain.
     Ok(())
 }
 
@@ -620,7 +621,9 @@ fn zoomed_cells_retain_exploration_between_sampled_coordinates() -> Result<(), B
 #[test]
 fn live_minimap_uses_the_same_palette_cell_at_every_zoom() -> Result<(), BatchError> {
     let mut play = minimap_view()?;
-    play.set_live_map(&snapshot(101))?;
+    let mut snapshot = snapshot(101);
+    snapshot.tiles[0].ground_speed = 100;
+    play.set_live_map(&snapshot)?;
     let at = [64., 48.];
     let color = mini(&play).into_iter().rfind(|quad| quad.position == at).ok_or(BatchError::InvalidView)?;
     assert_eq!(color.uv[0], color.uv[2]);

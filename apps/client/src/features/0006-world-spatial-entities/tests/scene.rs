@@ -618,7 +618,7 @@ fn srx3_native_object_pixels_use_explicit_resource_not_opaque_definition_referen
         },
     };
     let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
-    scene.set_presentations_from(std::slice::from_ref(&entry), 0, Some(root))?;
+    scene.set_presentations_from(std::slice::from_ref(&entry), 0, Some(root.clone()))?;
     assert!(
         scene.native_item_rendered_at(at, 42),
         "actual pinned39529 cells must draw the opaque Item reference42"
@@ -629,6 +629,114 @@ fn srx3_native_object_pixels_use_explicit_resource_not_opaque_definition_referen
             .iter()
             .all(|draw| draw.cell > MARKER_CELL)
     );
+    let origin = oteryn_session::ActorPosition { floor: -6, ..at };
+    entry.entity.position = oteryn_session::ActorPosition {
+        x: at.x - 1,
+        y: at.y - 1,
+        floor: -7,
+    };
+    let world = World::from_live_map(&oteryn_session::world_map::WorldMapViewSnapshot {
+        header: oteryn_session::world_map::MapViewHeader {
+            origin,
+            first_visible_floor: -6,
+            content_generation: [0; 32],
+            bundle_digest: [0; 32],
+            reset_epoch: 1,
+        },
+        tiles: vec![oteryn_session::world_map::MapTile {
+            position: entry.entity.position,
+            ground_speed: 100,
+            more: false,
+            items: vec![],
+        }],
+    })?;
+    let mut layered = Scene::centered_on(
+        Arc::new(world),
+        Some(TileCoord::new(0, 0)),
+        tile,
+        StepDir::South,
+        &[],
+    )?;
+    layered.set_presentations_from(std::slice::from_ref(&entry), -6, Some(root.clone()))?;
+    let object = layered
+        .object_draws
+        .first()
+        .ok_or(BatchError::InvalidView)?;
+    let uv = layered.atlas().uv_rect(object.2[0].cell)?;
+    assert_eq!(
+        layered
+            .sprites()
+            .instances()
+            .iter()
+            .filter(|quad| quad.uv == uv)
+            .count(),
+        1
+    );
+    let (batch, _, ranges, _) = layered.world_sprites()?;
+    let (range, _) = ranges
+        .iter()
+        .find(|(_, floor)| *floor == -7)
+        .ok_or(BatchError::InvalidView)?;
+    let draw = object.2[0];
+    let scale = layered.view().tile_px() as f32 / oteryn_client_domain::world::CELL_PX as f32;
+    let [x, y] = layered.view().tile_to_screen(tile);
+    assert!(
+        batch.instances()[range.clone()]
+            .iter()
+            .any(|quad| quad.uv == uv
+                && quad.position
+                    == [
+                        x + draw.offset[0] as f32 * scale,
+                        y + draw.offset[1] as f32 * scale
+                    ])
+    );
+
+    #[cfg(bevy_shell)]
+    {
+        // The player remains below the roof as its terrain leaves the visible-floor cutoff.
+        entry.entity.position = oteryn_session::ActorPosition {
+            x: at.x + 1,
+            y: at.y + 1,
+            floor: -6,
+        };
+        let below = oteryn_session::ActorPosition { floor: -7, ..at };
+        let mut map = oteryn_session::world_map::WorldMapViewSnapshot {
+            header: oteryn_session::world_map::MapViewHeader {
+                origin: below,
+                first_visible_floor: -6,
+                content_generation: [0; 32],
+                bundle_digest: [0; 32],
+                reset_epoch: 1,
+            },
+            tiles: vec![oteryn_session::world_map::MapTile {
+                position: entry.entity.position,
+                ground_speed: 100,
+                more: false,
+                items: vec![],
+            }],
+        };
+        for cutoff in [-6, -7] {
+            map.header.first_visible_floor = cutoff;
+            let mut frame = Scene::centered_on(
+                Arc::new(World::from_live_map(&map)?),
+                Some(TileCoord::new(0, 0)),
+                tile,
+                StepDir::South,
+                &[],
+            )?;
+            frame.set_presentations_from(std::slice::from_ref(&entry), -7, Some(root.clone()))?;
+            let (range, _) = frame
+                .floor_quad_ranges()
+                .iter()
+                .find(|(_, floor)| *floor == -6)
+                .ok_or(BatchError::InvalidView)?;
+            assert!(
+                range.len() > 1,
+                "corpse must be painted alongside the retained roof at cutoff {cutoff}"
+            );
+        }
+    }
+    entry.entity.position = at;
     entry.entity.detail = EntityDetail::Object {
         item_definition_ref: 39529,
         quantity: 1,
