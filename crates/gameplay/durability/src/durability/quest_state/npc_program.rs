@@ -531,7 +531,9 @@ impl DurabilityRoot {
                         return Ok(Ok(refused(QuestRefusal::StageMismatch)));
                     }
                     let blocked = super::super::pvp_state::load_pvp_state(&mut tx, character)
-                        .await?.is_some_and(|state| state.pz_block_remaining_ms.is_some());
+                        .await?.is_some_and(|state| {
+                            state.pz_block_remaining_ms.is_some() || state.kill_block_remaining_ms.is_some()
+                        });
                     if blocked {
                         return Ok(Ok(refused(QuestRefusal::StageMismatch)));
                     }
