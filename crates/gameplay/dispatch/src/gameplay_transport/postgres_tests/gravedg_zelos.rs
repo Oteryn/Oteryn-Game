@@ -124,7 +124,7 @@ pub(super) async fn admit_party_member(
         61 + index,
         69 + index,
         now,
-        (index > 1).then_some("platform-test"),
+        (index > 1).then_some("platform"),
     )
     .await
     .map_err(|error| format!("second player's durable admission: {error}"))?;
