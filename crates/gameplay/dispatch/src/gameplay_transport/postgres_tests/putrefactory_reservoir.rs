@@ -260,7 +260,10 @@ fn canonical_recipe_sha() -> TestResult<String> {
         })
         .and_then(|record| record.pointer("/definition/oteryn_recipe/payload/recipe"))
         .ok_or("canonical Rotten Blood recipe")?;
-    Ok(format!("{:x}", Sha256::digest(serde_json::to_vec(recipe)?)))
+    Ok(Sha256::digest(serde_json::to_vec(recipe)?)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect())
 }
 
 async fn seed_previous_charge(h: &Harness, definition_hash: [u8; 32]) -> TestResult {
