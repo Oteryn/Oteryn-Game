@@ -41,6 +41,110 @@ fn activity_deadline_paging_postgres_blocked_and_foreign_first_page() -> TestRes
     Ok(())
 }
 
+#[test]
+fn boss_admission_window_two_players_enter_and_return_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || window_scenario(admin).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "boss admission window scenario panicked")??;
+    Ok(())
+}
+
+fn window_scenario(admin: String) -> TestResult {
+    let runtime = crate::bestiary_postgres_harness::runtime()?;
+    let harness = runtime.block_on(Harness::create_with_admission_seed(
+        admin, "boss_admission_window", true, false,
+    ))?;
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        runtime.block_on(window_case(&harness))
+    }));
+    let cleanup = runtime.block_on(harness.cleanup());
+    match result {
+        Ok(result) => {
+            result?;
+            cleanup
+        }
+        Err(panic) => std::panic::resume_unwind(panic),
+    }
+}
+
+async fn window_case(h: &Harness) -> TestResult {
+    let (evidence, mut first) = prepare_activity_fixture(h).await?;
+    first.activity_key = BOSS.into();
+    first.time_limit_ms = 9_000;
+    let world = first.destination_scope.world_id();
+    install_pager_room(h, &first, 2, 36_000, 9).await?;
+    let owner = ActivityHandoffOwner::new(h.root.clone());
+    let store = FreshAdmissionStore::from_root(h.root.clone());
+    let second_session = admit_member(h, &evidence.evidence, 1).await?;
+    let mut second = first.clone();
+    let member = &mut second.participants[0];
+    member.source = item_fence_of(store.current_session_at(second_session).await?.0)
+        .ok_or("second source fence")?;
+    member.destination_game_session_id = GameSessionId::decode(&id(91)).map_err(debug)?;
+    member.destination_transport =
+        Some(AuthenticatedTransportRefV1::decode(&[91; 16]).map_err(debug)?);
+    second.initiating_character_id =
+        CharacterId::decode(member.source.character_id.as_bytes()).map_err(debug)?;
+
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+    let window = std::num::NonZeroU32::new(8_000).ok_or("nonzero enrollment window")?;
+    for request in [&first, &second] {
+        let account: String = sqlx::query_scalar(
+            "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
+        ).bind(request.initiating_character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+        evidence.evidence.refresh_account(&h.root, &h.node, &account).await.map_err(debug)?;
+        let outcome = owner.enter_boss_admission_window(
+            &authority, &h.node, request.clone(), window,
+        ).await?;
+        let ActivityEnterOutcome::Entered(receipt) = outcome else {
+            return Err(format!("window admission refused: {outcome:?}").into());
+        };
+        assert_eq!(receipt.handoff_id, first.handoff_id);
+        assert_eq!(receipt.destination_scope, first.destination_scope);
+        assert_eq!(receipt.participants.len(), 1);
+        assert_eq!(receipt.participants[0].character_id, request.initiating_character_id);
+    }
+    let (members, cooldowns): (i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM game_boss_room_participants WHERE admission=encode($1,'hex')::uuid),
+                (SELECT count(*) FROM game_character_boss_cooldowns WHERE admission=encode($1,'hex')::uuid)"
+    ).bind(first.handoff_id.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!((members, cooldowns), (2, 2));
+
+    tokio::time::sleep(std::time::Duration::from_millis(first.time_limit_ms)).await;
+    for (tag, request) in [(240, &first), (241, &second)] {
+        let member = &request.participants[0];
+        let source = item_fence_of(store.current_session_at(member.destination_game_session_id).await?.0)
+            .ok_or("Instance source fence")?;
+        let destination = GameSessionId::decode(&id(tag)).map_err(debug)?;
+        let outcome = owner.return_participant(
+            &authority, &h.node, ActivityReturnRequest {
+                return_id: id(tag - 20),
+                handoff_id: first.handoff_id,
+                command_id: None,
+                source,
+                destination_game_session_id: destination,
+                destination_transport: Some(AuthenticatedTransportRefV1::decode(&[tag; 16]).map_err(debug)?),
+                destination_generation: member.source.scope_ownership_generation,
+                reason: ActivityReturnReason::Timeout,
+                current_vitals: member.source_position.vitals,
+                current_rest: member.source_position.rest,
+            },
+        ).await?;
+        assert!(matches!(outcome, ActivityReturnOutcome::Returned(_)), "{outcome:?}");
+        let returned = item_fence_of(store.current_session_at(destination).await?.0)
+            .ok_or("returned Channel fence")?;
+        assert_eq!(returned.runtime_scope, member.source.runtime_scope);
+    }
+    assert!(owner.due_boss_rooms(&authority, &h.node, world).await?.is_empty());
+    Ok(())
+}
+
 fn scenario() -> TestResult {
     let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
         return Ok(());
@@ -66,17 +170,22 @@ fn scenario() -> TestResult {
     Ok(())
 }
 
-async fn case(h: &Harness) -> TestResult {
-    let (evidence, mut template) = prepare_activity_fixture(h).await?;
-    template.activity_key = BOSS.into();
-    template.time_limit_ms = 1_000; // Explicit isolated fixture policy.
+async fn install_pager_room(
+    h: &Harness,
+    template: &crate::durability::activity_handoff::ActivityEnterRequest,
+    capacity: i16,
+    cooldown_seconds: i64,
+    time_limit_seconds: i64,
+) -> TestResult {
     let world = template.destination_scope.world_id();
     let pin = template.destination_content;
     let cell = |x, y| serde_json::json!({"x":x,"y":y,"floor":7});
-    sqlx::query("INSERT INTO game_boss_room_catalogue(boss_key,content_revision,boss_creature_key,minimum_players,maximum_players,minimum_level,cooldown_seconds,time_limit_seconds,lever_positions,room_template_key,reward_key,enabled,template_revision,entry_positions,exit_position,boss_position,after_kill_seconds) VALUES($1,'content-1','fixture:pager_boss',1,1,0,20,1,$2,'fixture:pager_room','fixture:pager_reward',true,$3,$4,$5,$6,1)")
-        .bind(BOSS).bind(serde_json::json!([cell(100,101)]))
-        .bind(&template.template_revision).bind(serde_json::json!([cell(200,201)]))
-        .bind(cell(102,103)).bind(cell(201,201)).execute(&h.pool).await?;
+    let levers: Vec<_> = (0..capacity).map(|offset| cell(100 + offset, 101)).collect();
+    let entries: Vec<_> = (0..capacity).map(|_| cell(200, 201)).collect();
+    sqlx::query("INSERT INTO game_boss_room_catalogue(boss_key,content_revision,boss_creature_key,minimum_players,maximum_players,minimum_level,cooldown_seconds,time_limit_seconds,lever_positions,room_template_key,reward_key,enabled,template_revision,entry_positions,exit_position,boss_position,after_kill_seconds) VALUES($1,'content-1','fixture:pager_boss',1,$7,0,$8,$9,$2,'fixture:pager_room','fixture:pager_reward',true,$3,$4,$5,$6,1)")
+        .bind(BOSS).bind(serde_json::json!(levers))
+        .bind(&template.template_revision).bind(serde_json::json!(entries))
+        .bind(cell(102,103)).bind(cell(201,201)).bind(capacity).bind(cooldown_seconds).bind(time_limit_seconds).execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'activity-pager-fixture',$2,$3,$4,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),'2026-10')")
         .bind(world.as_bytes().as_slice()).bind(pin.server_artifact_digest.as_slice())
         .bind([0x44_u8;32].as_slice()).bind(pin.coordinate_frame_digest.as_slice()).execute(&h.pool).await?;
@@ -84,6 +193,15 @@ async fn case(h: &Harness) -> TestResult {
         .bind(world.as_bytes().as_slice())
         .execute(&h.pool)
         .await?;
+    Ok(())
+}
+
+async fn case(h: &Harness) -> TestResult {
+    let (evidence, mut template) = prepare_activity_fixture(h).await?;
+    template.activity_key = BOSS.into();
+    template.time_limit_ms = 1_000; // Explicit isolated fixture policy.
+    let world = template.destination_scope.world_id();
+    install_pager_room(h, &template, 1, 20, 1).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
