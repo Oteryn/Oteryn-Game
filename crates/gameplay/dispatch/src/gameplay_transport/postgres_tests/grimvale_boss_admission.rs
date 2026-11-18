@@ -11,13 +11,6 @@ use crate::gameplay_transport::{
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
-#[allow(
-    dead_code,
-    reason = "reuse native multi-region cropping without mounting unrelated pickup cases"
-)]
-#[path = "l6_world_pickups/world.rs"]
-mod native_crop;
-
 #[test]
 fn curse_spreads_step_admits_bloodback_and_spends_cooldown_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
@@ -36,81 +29,170 @@ fn ancient_feud_step_enforces_level_and_spends_cooldown_postgres() -> TestResult
     super::kill_reward_e2e::scenario_thread::run("ancient-feud-step", move || scenario(admin, true))
 }
 
+/// Reconstruct only the cells exercised by STEP and arena relocation, using the
+/// same grounds and portal IDs as the pinned Crystal placements.
 fn source_world(
     native: &crate::content::native_gameplay::NativeGameplayState,
     trial: bool,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    use native_crop::{ExpectedTile, NativeCrop, native_scene};
-    const TRIAL: &[u8] = include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../../content/world/placements/region-z12-x129-y125.b3"
-    ));
-    const CURSE_ENTRANCE: &[u8] = include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../../content/world/placements/region-z08-x129-y124.b3"
-    ));
-    const CURSE_ARENA: &[u8] = include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../../content/world/placements/region-z08-x129-y125.b3"
-    ));
-    let crops = if trial {
-        vec![
-            NativeCrop {
-                bytes: TRIAL,
-                region: (12, 129, 125),
-                bounds: (33123, 32239, 33124, 32241),
-                start: (33123, 32239),
-                expected: vec![ExpectedTile {
-                    position: (33123, 32239),
-                    ids: vec![34106],
-                    counted_entry: None,
-                }],
-            },
-            NativeCrop {
-                bytes: TRIAL,
-                region: (12, 129, 125),
-                bounds: (33154, 32246, 33155, 32247),
-                start: (33154, 32246),
-                expected: vec![],
-            },
-            NativeCrop {
-                bytes: TRIAL,
-                region: (12, 129, 125),
-                bounds: (33154, 32252, 33155, 32253),
-                start: (33154, 32252),
-                expected: vec![],
-            },
-        ]
+    use oteryn_world_bundle::{bundle, sector};
+    use oteryn_world_bundle_compiler::compile::{KeyResolver, Resolution};
+    use std::collections::BTreeMap;
+    let (floor, start, trigger, exit, landing, spawn, entry_ground, arena_ground, portal) = if trial
+    {
+        (
+            -12,
+            (33123, 32240),
+            (33123, 32239),
+            (33123, 32240),
+            (33154, 32246),
+            (33154, 32252),
+            923,
+            10160,
+            34106,
+        )
     } else {
-        vec![
-            NativeCrop {
-                bytes: CURSE_ENTRANCE,
-                region: (8, 129, 124),
-                bounds: (33167, 31977, 33169, 31979),
-                start: (33168, 31977),
-                expected: vec![ExpectedTile {
-                    position: (33167, 31977),
-                    ids: vec![1020, 998, 25049],
-                    counted_entry: None,
-                }],
-            },
-            NativeCrop {
-                bytes: CURSE_ARENA,
-                region: (8, 129, 125),
-                bounds: (33182, 32012, 33183, 32013),
-                start: (33182, 32012),
-                expected: vec![],
-            },
-            NativeCrop {
-                bytes: CURSE_ARENA,
-                region: (8, 129, 125),
-                bounds: (33184, 32016, 33185, 32017),
-                start: (33184, 32016),
-                expected: vec![],
-            },
-        ]
+        (
+            -8,
+            (33168, 31977),
+            (33167, 31977),
+            (33167, 31978),
+            (33182, 32012),
+            (33184, 32016),
+            1020,
+            1020,
+            25049,
+        )
     };
-    native_scene(native, crops, &[])
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let index = serde_json::from_slice(&std::fs::read(
+        root.join("content/world/placements/index.json"),
+    )?)?;
+    let (registry, _) = oteryn_world_bundle_compiler::source::registry(
+        &root,
+        &oteryn_world_bundle_compiler::source::Project {
+            index,
+            regions: Vec::new(),
+            families: Default::default(),
+        },
+    )?;
+    let (bytes, mut pins) = crate::map::boot::tests::bundle();
+    let mut manifest = bundle::read(&bytes)?.manifest;
+    manifest.palette.clear();
+    let mut by_id = BTreeMap::new();
+    for id in [entry_ground, arena_ground, portal] {
+        if by_id.contains_key(&id) {
+            continue;
+        }
+        let key = format!("oteryn:item.tibia.i{id}");
+        let Resolution::Resolved(family, id_ref) = registry.resolve(&key) else {
+            return Err(format!("unresolved Grimvale fixture definition {key}").into());
+        };
+        by_id.insert(id, u32::try_from(manifest.palette.len())?);
+        manifest.palette.push(bundle::PaletteEntry {
+            terrain: registry.terrain(&key)?,
+            key,
+            family,
+            id: id_ref,
+        });
+    }
+    let mut cells = BTreeMap::from([
+        (start, vec![entry_ground]),
+        (exit, vec![entry_ground]),
+        (landing, vec![arena_ground]),
+        (spawn, vec![arena_ground]),
+    ]);
+    if trial {
+        cells.insert(trigger, vec![portal]);
+    } else {
+        cells.insert(trigger, vec![entry_ground, portal]);
+    }
+    let mut sectors = BTreeMap::<(u16, u16), Vec<sector::Tile>>::new();
+    for ((x, y), ids) in &cells {
+        sectors
+            .entry((*x / 32, *y / 32))
+            .or_default()
+            .push(sector::Tile {
+                x: *x,
+                y: *y,
+                flags: 0,
+                house: 0,
+                zones: vec![],
+                items: ids
+                    .iter()
+                    .map(|id| sector::Item {
+                        palette: by_id[id],
+                        depth: 0,
+                        attrs: Default::default(),
+                    })
+                    .collect(),
+            });
+    }
+    manifest.world = bundle::Extent {
+        min_x: cells
+            .keys()
+            .map(|(x, _)| *x)
+            .min()
+            .ok_or("room minimum x")?,
+        min_y: cells
+            .keys()
+            .map(|(_, y)| *y)
+            .min()
+            .ok_or("room minimum y")?,
+        max_x: cells
+            .keys()
+            .map(|(x, _)| *x)
+            .max()
+            .ok_or("room maximum x")?
+            + 1,
+        max_y: cells
+            .keys()
+            .map(|(_, y)| *y)
+            .max()
+            .ok_or("room maximum y")?
+            + 1,
+        floors: vec![floor],
+    };
+    let mut sectors = sectors
+        .into_iter()
+        .map(|((sx, sy), mut tiles)| {
+            tiles.sort_by_key(|tile| (tile.y, tile.x));
+            bundle::Sector {
+                floor,
+                sx,
+                sy,
+                tiles,
+            }
+        })
+        .collect::<Vec<_>>();
+    sectors.sort_by_key(bundle::order);
+    let bytes = oteryn_world_bundle::writer::write(&manifest, &sectors, &Default::default())?;
+    pins.digest = bundle::read(&bytes)?.digest;
+    let map = crate::map::load(&bytes, &pins).map_err(debug)?;
+    crate::map::boot::boot(
+        &bytes,
+        &crate::map::boot::BootPins {
+            map_revision: crate::map::overlay::map_revision(&map),
+            bundle: pins,
+            start: crate::map::overlay::TilePos {
+                x: start.0,
+                y: start.1,
+                floor,
+            },
+        },
+        crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
+        crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
+        |key| {
+            let mut definition = crate::map::boot::native_item_definition(Some(native), key)?;
+            // The pinned WorldObject catalogue identifies i25049 as a
+            // nonblocking teleport. The sparse fixture has no native destination.
+            if key == "oteryn:item.tibia.i25049" {
+                definition.solid = Some(false);
+            }
+            Some(definition)
+        },
+    )
+    .map_err(debug)
 }
 
 fn scenario(admin: String, trial: bool) -> TestResult {
