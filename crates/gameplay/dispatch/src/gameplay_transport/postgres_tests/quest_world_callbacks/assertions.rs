@@ -5,7 +5,7 @@ fn quest_world_callbacks_real_use_opens_all_walls_and_toggle_restores_collision(
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::super::kill_reward_e2e::scenario_thread::run("quest-world-levers", || {
+    super::super::kill_reward_e2e_fixtures::scenario_thread::run("quest-world-levers", || {
         scenario(
             "behemoth",
             Position {
@@ -41,7 +41,7 @@ fn quest_world_callbacks_real_step_checks_storage_and_teleports() -> TestResult 
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::super::kill_reward_e2e::scenario_thread::run("quest-world-step", || {
+    super::super::kill_reward_e2e_fixtures::scenario_thread::run("quest-world-step", || {
         scenario(
             "liquid-black-shortcut",
             Position {
@@ -59,7 +59,7 @@ fn quest_world_callbacks_real_paradox_step_consumes_the_four_skulls() -> TestRes
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::super::kill_reward_e2e::scenario_thread::run("quest-world-paradox-step", || {
+    super::super::kill_reward_e2e_fixtures::scenario_thread::run("quest-world-paradox-step", || {
         scenario(
             "paradox-skulls",
             Position {
@@ -78,7 +78,7 @@ fn quest_world_callbacks_multi_item_lever_consumes_all_altars_and_grants_atomica
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::super::kill_reward_e2e::scenario_thread::run("quest-world-offerings", || {
+    super::super::kill_reward_e2e_fixtures::scenario_thread::run("quest-world-offerings", || {
         scenario(
             "paradox-skulls",
             Position {

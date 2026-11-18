@@ -1,56 +1,12 @@
 //! Synthetic citizenship tile and two temples through the real bundle loader.
+use oteryn_gameplay_combat::ability::creature_bite::CreatureBiteVitals;
+use super::character_home_town_fixtures::{towns};
+
 use super::fixture::{Harness, debug, fence, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
-use crate::ability::creature_bite::CreatureBiteVitals;
+
 use crate::foundation::{CharacterLease, MovementLocalPosition};
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
-
-pub(super) fn towns() -> oteryn_world_bundle::subarea::Table {
-    use oteryn_world_bundle::subarea::{Area, Mask, Run, Table, Temple};
-    let hash = "a".repeat(64);
-    let area = |id, town, x| Area {
-        id,
-        key: format!("oteryn:content.area.fixture{id}"),
-        name: format!("Town {id}"),
-        parent: (id != 1).then_some(1),
-        source_record_sha256: hash.clone(),
-        town_id: town,
-        hometown: town.is_some(),
-        temple: town.map(|_| Temple {
-            x,
-            y: 11,
-            floor: -7,
-        }),
-    };
-    Table {
-        default_town: Some(8),
-        client_version: "15.30".into(),
-        candidate_sha256: hash.clone(),
-        // Town 11 (Edron) is the P20 premium-area home town; 8 and 6 are free-account towns.
-        areas: vec![
-            area(1, None, 0),
-            area(2, Some(8), 2),
-            area(3, Some(6), 8),
-            area(4, Some(11), 14),
-        ],
-        masks: vec![Mask {
-            subarea: 2,
-            asset: format!("content/assets/files/subarea-0002-{hash}.bmp.lzma"),
-            compressed_sha256: hash.clone(),
-            bmp_sha256: hash.clone(),
-            source_record_sha256: hash,
-            source_tiles: 1,
-            admitted_tiles: 1,
-        }],
-        runs: vec![Run {
-            floor: -7,
-            y: 11,
-            begin: 2,
-            end: 3,
-            subarea: 2,
-        }],
-    }
-}
 
 #[test]
 fn citizen_tile_persists_town_death_uses_temple_and_reconnect_keeps_it() -> TestResult {
@@ -100,7 +56,7 @@ fn scenario(p20: Option<PremiumEntry>) -> TestResult {
             .await
             .map_err(debug)?;
         let world_id = fence(1)?.runtime_scope.world_id();
-        let (controller, pin) = super::death_ml_loss_composed::production_generation_with_source(
+        let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_source(
             world_id,
             "content-1",
             None,

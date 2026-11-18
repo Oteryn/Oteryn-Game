@@ -8,7 +8,7 @@ use crate::spell::Vocation;
 #[test]
 fn vocationless_vitals_admission_keeps_saved_pools_and_combat_reaches_death_postgres() -> TestResult
 {
-    super::kill_reward_e2e::scenario_thread::run("tutorial-vitals", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("tutorial-vitals", scenario)
 }
 
 fn scenario() -> TestResult {
@@ -58,10 +58,11 @@ fn scenario() -> TestResult {
                 Some((27, 9))
             );
         }
-        let (controller, _) = super::death_ml_loss_composed::production_generation_with_pin(
-            dependencies.admitted.world_id,
-            "content-1",
-        )?;
+        let (controller, _) =
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                dependencies.admitted.world_id,
+                "content-1",
+            )?;
         owner.active_generation = controller.active();
         let mut admitted = dependencies.admitted;
         Box::pin(owner.admit_progression_session(&mut admitted)).await;

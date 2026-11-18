@@ -80,7 +80,7 @@ async fn window_tracker(
         boss_key: BOSS.into(),
     };
     let id = admitted.continuity.next_command_id;
-    let (status, payload) = super::boss_difficulty::exchange(
+    let (status, payload) = super::boss_difficulty_fixtures::exchange(
         owner,
         admitted,
         id,

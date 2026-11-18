@@ -217,7 +217,7 @@ fn scenario() -> TestResult {
                 generation: actor.actor_local_generation(),
             }
         };
-        super::item_look::seed_main_backpack(
+        super::item_look_fixtures::seed_main_backpack(
             &h,
             &[
                 ("oteryn:item.tibia.i3004", 1),

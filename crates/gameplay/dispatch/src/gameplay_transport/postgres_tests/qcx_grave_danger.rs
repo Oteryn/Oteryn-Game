@@ -21,7 +21,7 @@ fn jack_starts_twelve_graves_and_answers_an_early_report() -> TestResult {
         return Ok(());
     }
     let start = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("qcx-grave-danger", scenario);
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("qcx-grave-danger", scenario);
     eprintln!(
         "QCX_GRAVE_DANGER duration={:?} success={}",
         start.elapsed(),

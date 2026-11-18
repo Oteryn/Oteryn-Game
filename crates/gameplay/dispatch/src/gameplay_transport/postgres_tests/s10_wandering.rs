@@ -166,7 +166,7 @@ fn scenario() -> TestResult {
             identity: actor.placement_identity(),
             generation: actor.actor_local_generation(),
         };
-        super::npc_paid_travel::talk(&owner, &deps, npc, 1, "hi").await?;
+        super::npc_paid_travel_fixtures::talk(&owner, &deps, npc, 1, "hi").await?;
         for tick in 12..20_u64 {
             owner.emit_npc_voices(&mut cycle, tick * 1_000_000).await;
         }
@@ -179,7 +179,7 @@ fn scenario() -> TestResult {
                 .map_err(debug)?,
             before
         );
-        super::npc_paid_travel::talk(&owner, &deps, npc, 2, "bye").await?;
+        super::npc_paid_travel_fixtures::talk(&owner, &deps, npc, 2, "bye").await?;
         for tick in 20..28_u64 {
             owner.emit_npc_voices(&mut cycle, tick * 1_000_000).await;
         }

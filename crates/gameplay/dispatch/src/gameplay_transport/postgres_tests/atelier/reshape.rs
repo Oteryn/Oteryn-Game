@@ -378,7 +378,7 @@ async fn stow_fragments(
     use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
     use oteryn_protocol_oteryn::stash::{StashAction, StashIntent, StashOutcome};
     let (generation, pin) =
-        super::super::death_ml_loss_composed::production_generation_with_pin(
+        super::super::death_ml_loss_composed_fixtures::production_generation_with_pin(
             owner.world_id,
             "content-1",
         )?;

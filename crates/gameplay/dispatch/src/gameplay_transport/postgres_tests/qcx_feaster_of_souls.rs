@@ -1,5 +1,5 @@
 //! Para Norbert's confirmation from TibiaWiki curid 89657, oldid 1153851.
-use super::{TestResult, kill_reward_e2e::scenario_thread, quest_world_callbacks};
+use super::{TestResult, kill_reward_e2e_fixtures::scenario_thread, quest_world_callbacks_fixtures as quest_world_callbacks};
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
 #[test]

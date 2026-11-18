@@ -24,7 +24,7 @@ fn telas_entry_gate_and_all_five_research_notes() -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("qcx53-errand", || {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("qcx53-errand", || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(admin, "qcx53_errand", true, false).await?;
             let result = exercise(&h).await;
@@ -50,7 +50,7 @@ async fn exercise(h: &Harness) -> TestResult {
         .map_err(debug)?;
     let world = WorldId::decode(&id(42)).map_err(debug)?;
     let (controller, pin) =
-        super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+        super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
     let deps = Dependencies::with_content_and_capacity(
         pin.into_channel_pin(),
         crate::content::qualify_native_entry_room(world).map_err(debug)?,
@@ -76,7 +76,7 @@ async fn exercise(h: &Harness) -> TestResult {
         .refresh_quest_session(admitted.game_session_id, true)
         .await;
     let [telas, boveas, cerdras, dreadeye, milos, scutty] =
-        super::classic_quests::install_with_offsets(
+        super::classic_quests_fixtures::install_with_offsets(
             &owner,
             &admitted,
             [
@@ -90,7 +90,7 @@ async fn exercise(h: &Harness) -> TestResult {
             Some([(0, 1), (1, 1), (2, 1), (0, 2), (1, 2), (2, 2)]),
         )
         .await?;
-    super::qd_world::select_talk_capabilities(&owner, &mut admitted, &[3, 6, 25])?;
+    super::qd_world_fixtures::select_talk_capabilities(&owner, &mut admitted, &[3, 6, 25])?;
     let mut command = 1000;
     let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
     h.root
@@ -203,9 +203,9 @@ async fn converse(
     command: &mut u64,
     keyword: &str,
 ) -> TestResult {
-    super::classic_quests::talk(owner, admitted, npc, *command, "hi").await?;
-    super::qengine_rewards::talk(owner, admitted, npc, *command + 1, keyword).await?;
-    super::classic_quests::talk(owner, admitted, npc, *command + 2, "bye").await?;
+    super::classic_quests_fixtures::talk(owner, admitted, npc, *command, "hi").await?;
+    super::qengine_rewards_fixtures::talk(owner, admitted, npc, *command + 1, keyword).await?;
+    super::classic_quests_fixtures::talk(owner, admitted, npc, *command + 2, "bye").await?;
     *command += 3;
     Ok(())
 }

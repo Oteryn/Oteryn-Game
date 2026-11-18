@@ -13,7 +13,7 @@ fn srx3_source_death_real_malice_lethal_runs_copied_goal_and_preserves_pre_taint
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("srx3-source-death-quest", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-source-death-quest", || {
         run(async |admin| {
             reset();
             // Crystal201189f lib/quests/soul_war.lua:332-354: literal first
@@ -39,8 +39,8 @@ fn srx3_source_death_real_malice_lethal_runs_copied_goal_and_preserves_pre_taint
             sqlx::query("INSERT INTO game_character_soul_war(character_id,teleport_access,defeated_bosses,first_taint_at,megalomania_completed,final_reward_claimed) VALUES(encode($1,'hex')::uuid,true,0,NULL,false,false)")
                 .bind(id(41).as_slice()).execute(&mut *historical).await?;
             historical.commit().await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -62,7 +62,7 @@ fn srx3_source_death_real_malice_lethal_runs_copied_goal_and_preserves_pre_taint
             );
             owner.quest_catalogue = Some(std::sync::Arc::new(catalogue.catalogue().clone()));
             install_scene(&mut owner, &scene, PinnedActivitySourceRoom::GoshnarsMalice)?;
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             let supported = [
                 4,
@@ -88,9 +88,9 @@ fn srx3_source_death_real_malice_lethal_runs_copied_goal_and_preserves_pre_taint
                 .ok_or("actual native source capability selection")?;
             assert!(admitted.continuity.selected_capabilities.contains(30));
             prepare_player(&h, &owner, &mut admitted, 1999).await?;
-            let instance = super::activity_runtime::allocate_ready_instance(&h, 215).await?;
+            let instance = super::activity_runtime_fixtures::allocate_ready_instance(&h, 215).await?;
             let mut frames = Vec::new();
-            let (_, reply, barrier) = super::boss_activity::exchange_capture(
+            let (_, reply, barrier) = super::boss_activity_fixtures::exchange_capture(
                 &owner,
                 &mut admitted,
                 "oteryn:creature.goshnar_s_malice",
@@ -221,7 +221,7 @@ fn srx3_source_death_real_malice_lethal_runs_copied_goal_and_preserves_pre_taint
                 captured.ok_or("real source timer work must quiesce before the lethal fixture")?;
             // Production dispatcher and ordinary physical drain only. No direct
             // apply_soul_war_kill/Quest helper invocation can mask a missing hook.
-            super::srx3_native_source_cast::drain_source_death(&view, boss, observed).await?;
+            super::srx3_native_source_cast_fixtures::drain_source_death(&view, boss, observed).await?;
             let flags:i16=sqlx::query_scalar("SELECT defeated_bosses FROM game_character_soul_war WHERE character_id=encode($1,'hex')::uuid")
                 .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(

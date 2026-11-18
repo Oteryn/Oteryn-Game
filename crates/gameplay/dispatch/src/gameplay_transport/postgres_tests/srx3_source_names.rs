@@ -18,7 +18,7 @@ fn srx3_source_names_detached_sql_reproves_two_players_npc_registered_dead_creat
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("srx3-source-names", || {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-source-names", || {
         run(async |admin| {
             super::reset();
             let scene = SourceScene::new(
@@ -39,10 +39,10 @@ fn srx3_source_names_detached_sql_reproves_two_players_npc_registered_dead_creat
             )?;
             let h = Harness::create_with_admission_seed(admin, "srx3_source_names", false, false)
                 .await?;
-            super::house_transfer::prepare_owned_session(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
             h.seed_appearance_observer().await?;
-            super::appearance_change_postgres::observer_visibility_tests::admit(&h).await?;
-            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
+            super::appearance_change_postgres_fixtures::observer_visibility_tests::admit(&h).await?;
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -52,7 +52,7 @@ fn srx3_source_names_detached_sql_reproves_two_players_npc_registered_dead_creat
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             install_scene(&mut owner, &scene, PinnedActivitySourceRoom::Murcion)?;
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity_fixtures::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             prepare_player(&h, &owner, &mut admitted, 1999).await?;
             let native = owner
@@ -230,7 +230,7 @@ fn srx3_source_names_detached_sql_reproves_two_players_npc_registered_dead_creat
                 .map_err(|_| "detached initial SQL names")?;
             drop(permit);
             let observer =
-                super::appearance_change_postgres::observer_visibility_tests::initialize(
+                super::appearance_change_postgres_fixtures::observer_visibility_tests::initialize(
                     &deps, &owner,
                 )
                 .await?;
