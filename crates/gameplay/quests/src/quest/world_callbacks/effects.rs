@@ -92,6 +92,9 @@ pub struct CallbackEffects {
     /// Restore the traversed portal's replacement and its collision in the same STEP.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub portal_reset_passable: Option<bool>,
+    /// On portal exit retire each matching live Ground stack that remains.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub cleanup_offerings: bool,
     /// Restore the exact pre-transform source revision after this delay.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reset_after_ms: Option<u32>,
@@ -477,7 +480,12 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 }
 
 pub(super) fn valid(callback: &Callback) -> bool {
-    if callback.effects.board_portal.as_ref().is_some_and(|board| !board.valid(callback)) {
+    if callback
+        .effects
+        .board_portal
+        .as_ref()
+        .is_some_and(|board| !board.valid(callback))
+    {
         return false;
     }
     let effects = &callback.effects;
@@ -520,6 +528,16 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || effects.transform == callback.selector.appearance
             || effects.passages_reset_after_ms.is_some()
             || effects.reset_after_ms.is_some())
+    {
+        return false;
+    }
+    if effects.cleanup_offerings
+        && (effects.portal_reset_passable.is_none()
+            || !callback.key.starts_with(super::GROUND_CLEANUP_PREFIX)
+            || !callback.requires_world_admission
+            || callback.item_on_target.is_some()
+            || !(1..=16).contains(&callback.offerings.len())
+            || callback.offerings.iter().any(|item| item.count != 1))
     {
         return false;
     }

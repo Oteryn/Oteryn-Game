@@ -9,7 +9,7 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget, de
 const LEVER: Position = at(32834,32285);
 const PORTAL: Position = at(32836,32288);
 const PILLARS: [Position; 4] = [at(32835,32285), at(32836,32285), at(32837,32285), at(32838,32285)];
-const TOKENS: [(Position,u16);9] = [
+pub(super) const TOKENS: [(Position,u16);9] = [
     (at(32845,32264),3548), (at(32843,32266),3548), (at(32843,32268),3548),
     (at(32845,32268),3548), (at(32844,32267),3548), (at(32840,32269),3548),
     (at(32841,32269),3547), (at(32840,32268),3547), (at(32842,32267),3547),

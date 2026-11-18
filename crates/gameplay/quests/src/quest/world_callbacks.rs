@@ -18,6 +18,7 @@ pub const MAX_CALLBACKS: usize = 512;
 // The merged source cohorts and native callbacks share a separate boot bound.
 pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1024;
 pub const MAX_EFFECTS: usize = 8;
+pub const GROUND_CLEANUP_PREFIX: &str = "oteryn:quest-callback/ground-cleanup/";
 pub const MAX_SELECTOR_POSITIONS: usize = 8;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -43,8 +44,8 @@ mod character_requirements;
 pub use character_requirements::CharacterRequirements;
 mod clear_area;
 pub use clear_area::ClearArea;
-mod clock;
 mod board_portal;
+mod clock;
 pub use board_portal::{BoardPortal, BoardToken};
 mod color_grid;
 pub use color_grid::{ColorGrid, GridAxis, GridGroup};
@@ -1027,7 +1028,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     .world_requirements
                     .iter()
                     .any(|r| r.ground.is_some()))
-                && (!callback.has_state_writes()
+                && ((!callback.has_state_writes() && !callback.effects.cleanup_offerings)
                     || callback.native_rule.is_some()))
             || (callback.opening_only
                 && (callback.trigger != Trigger::Use
@@ -1271,7 +1272,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             })
             || ((!callback.present.is_empty() || !callback.required_travel.is_empty())
                 && (!callback.has_state() || callback.is_read_only()))
-            || callback.offerings.len() > MAX_EFFECTS
+            || (callback.offerings.len() > MAX_EFFECTS && !callback.effects.cleanup_offerings)
             || callback
                 .experience
                 .is_some_and(|xp| !(1..=super::QUESTGATE0_RL_05).contains(&xp))
@@ -1291,7 +1292,8 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                         .contains(&key)
                     })
             })
-            || (!callback.offerings.is_empty() && !callback.has_personal_state())
+            || (!callback.offerings.is_empty() && !callback.has_personal_state()
+                && !callback.effects.cleanup_offerings)
             || (callback.key.starts_with("oteryn:quest-callback/m01b/")
                 && !imported_explore::admitted(callback))
             || (((callback

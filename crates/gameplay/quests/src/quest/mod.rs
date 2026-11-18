@@ -497,7 +497,8 @@ impl QuestStateCatalogue {
                 && !dreamer_carrot::shared_transition(&transition)
                 && !(((transition.key == "oteryn:quest-transition/worldchange/benevola/handover"
                     && transition.quest == "oteryn:quest/worldchange/benevola")
-                    || transition.key.starts_with("oteryn:quest-reward/"))
+                    || transition.key.starts_with("oteryn:quest-reward/")
+                    || transition.key.starts_with(world_callbacks::GROUND_CLEANUP_PREFIX))
                     && transition.experience.is_none())
             {
                 return Err(E::InvalidEffect(transition.key));

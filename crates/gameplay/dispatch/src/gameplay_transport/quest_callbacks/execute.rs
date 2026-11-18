@@ -267,7 +267,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             projection = match super::board_portal::prepare(
-                map, ground, runtime, actor, board, after.appearance_id,
+                map,
+                ground,
+                runtime,
+                actor,
+                board,
+                after.appearance_id,
             ) {
                 Ok(projection) => Some(projection),
                 Err(disposition) => return disposition,
@@ -371,11 +376,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             if !passable
                 && runtime
-                    .position_occupied_by_other(actor, local(Position {
-                        x: pos.x,
-                        y: pos.y,
-                        floor: pos.floor,
-                    }))
+                    .position_occupied_by_other(
+                        actor,
+                        local(Position {
+                            x: pos.x,
+                            y: pos.y,
+                            floor: pos.floor,
+                        }),
+                    )
                     .unwrap_or(true)
             {
                 return UseDisposition::Occupied;

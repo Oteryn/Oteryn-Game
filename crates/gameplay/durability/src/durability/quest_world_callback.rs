@@ -704,10 +704,11 @@ async fn consume_inputs(
 ) -> Result<bool, DurabilityError> {
     // Resolve and lock every input before any write, including replacement preconditions.
     let mut inputs = Vec::new();
-    let solid_repair = callback
-        .passages
-        .iter()
-        .any(|p| p.replacement_passable == Some(false));
+    let solid_repair = !callback.effects.cleanup_offerings
+        && callback
+            .passages
+            .iter()
+            .any(|p| p.replacement_passable == Some(false));
     if solid_repair {
         let Some(required) = &callback.item_on_target else {
             return Ok(false);
@@ -895,7 +896,14 @@ async fn consume_inputs(
         .bind(i64::from(offering.count))
         .fetch_optional(&mut **tx)
         .await?;
-        let Some(row) = row else { return Ok(false) };
+        let Some(row) = row else {
+            // Crystal movement_tic_teleport.lua:35-40 removes each token if
+            // present, including every token in a matching stack.
+            if callback.effects.cleanup_offerings {
+                continue;
+            }
+            return Ok(false);
+        };
         let item: String = row.try_get("item")?;
         if inputs.iter().any(|input| input.item == item) {
             return Ok(false);
@@ -906,7 +914,7 @@ async fn consume_inputs(
             location: row.try_get("before_ground")?,
             kind: "ground".into(),
             quantity: row.try_get("quantity")?,
-            count: if callback.effects.party_transfer.is_some() {
+            count: if callback.effects.party_transfer.is_some() || callback.effects.cleanup_offerings {
                 let quantity: i64 = row.try_get("quantity")?;
                 let Ok(count) = u16::try_from(quantity) else {
                     return Ok(false);
