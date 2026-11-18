@@ -371,6 +371,15 @@ pub struct MonsterStepEffect {
     pub replace_with: Option<String>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub consume_source: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub retirement_cue: Option<MonsterStepRetirementCue>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct MonsterStepRetirementCue {
+    pub text: String,
+    pub effect: u16,
 }
 
 impl MonsterStepEffect {
@@ -387,6 +396,13 @@ impl MonsterStepEffect {
                 .replace_with
                 .as_ref()
                 .is_none_or(|key| key != &self.creature && creature(key))
+            && self.retirement_cue.as_ref().is_none_or(|cue| {
+                self.replace_with.is_none()
+                    && cue.effect != 0
+                    && !cue.text.trim().is_empty()
+                    && cue.text.len() <= 256
+                    && !cue.text.chars().any(char::is_control)
+            })
             && *callback.effects
                 == CallbackEffects {
                     monster_step: Some(self.clone()),

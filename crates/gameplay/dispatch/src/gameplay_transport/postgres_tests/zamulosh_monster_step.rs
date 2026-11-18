@@ -9,6 +9,8 @@ const FRAZZLEMAW: &str = "oteryn:creature.lovely_frazzlemaw";
 const DEER: &str = "oteryn:creature.lovely_deer";
 const SPIRIT: &str = "oteryn:creature.spirit_of_fertility";
 const PLANT: &str = "oteryn:creature.angry_plant";
+const MATCHED_CUE: &str = "That seemed correct!";
+const THUNDER: u16 = 73; // Crystal src/utils/utils_definitions.hpp:128.
 // Mount the source UID on a tile in the finale fixture. Crystal selects its
 // appearance and UID, while the map asset determines the coordinates.
 const FLOWER: Position = Position {
@@ -65,7 +67,8 @@ pub(super) fn callback(name: &str) -> TestResult<Callback> {
             "trigger":"step_in","actor_kind":"monster",
             "selector":{"position":PORTAL,"action":34315},
             "reversible":false,"passages":[],"storage":[],"offerings":[],"return_on_failure":false,
-            "effects":{"monster_step":{"creature":FRAZZLEMAW}},
+            "effects":{"monster_step":{"creature":FRAZZLEMAW,
+                "retirement_cue":{"text":MATCHED_CUE,"effect":THUNDER}}},
             "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/movements_lovely_monsters.lua:1-28"]
         })
     };
@@ -100,6 +103,7 @@ pub(super) async fn exercise(
         y: position.y - 1,
         ..position
     });
+    let map = owner.bundle_map().ok_or("map")?;
     let candidates = if position == FLOWER {
         [(DEER, true), (SPIRIT, false)]
     } else {
@@ -120,9 +124,38 @@ pub(super) async fn exercise(
         step_monster(owner, h, actor, position).await?;
         let mut runtime = owner.runtime.lock().await;
         assert_eq!(runtime.contains_live_creature(actor), survives);
+        if position == PORTAL {
+            let speech: Vec<_> = map
+                .facts
+                .movement_speech_since(0)
+                .into_iter()
+                .filter(|(_, cue)| cue.speaker == actor)
+                .collect();
+            if survives {
+                assert!(speech.is_empty());
+            } else {
+                let [(_, cue)] = speech.as_slice() else {
+                    return Err("expected one paired-creature cue".into());
+                };
+                assert_eq!(cue.text, MATCHED_CUE);
+                assert!(cue.captured_name.is_some());
+            }
+        }
         if survives {
             runtime.remove_encounter_actor(actor).map_err(debug)?;
         }
+    }
+    if position == PORTAL {
+        assert_eq!(
+            map.facts
+                .movement_effects_since(0)
+                .into_iter()
+                .filter(|(_, at, effect)| (at.x, at.y, at.floor)
+                    == (PORTAL.x, PORTAL.y, PORTAL.floor)
+                    && *effect == THUNDER)
+                .count(),
+            1
+        );
     }
     if position == FLOWER {
         use crate::map::view::MapFacts;

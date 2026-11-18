@@ -74,7 +74,7 @@ impl MovementSpeech {
         runtime: &crate::foundation::ChannelRuntimeV1,
         actor: crate::foundation::ExactActorRef,
         talk_type: u8,
-        text: &'static str,
+        text: &str,
     ) -> Option<Self> {
         runtime.owner_fence().ok()?;
         if !runtime.contains_live_creature(actor)

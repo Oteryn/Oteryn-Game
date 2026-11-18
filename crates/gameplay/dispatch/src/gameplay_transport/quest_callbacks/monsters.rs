@@ -47,7 +47,21 @@ pub(in crate::gameplay_transport) fn settle_monster_step(
         return replace_monster(runtime, states, step, &next, || true);
     };
     let Some(next) = effect.replace_with.as_deref() else {
-        return runtime.remove_encounter_actor(step.actor).is_ok();
+        // Crystal 201189f8, movements_lovely_monsters.lua:24-28. Capture the
+        // speaking actor before retiring its carrier slot.
+        let speech = effect.retirement_cue.as_ref().and_then(|cue| {
+            crate::map::facts::MovementSpeech::capture_monster(runtime, step.actor, 36, &cue.text)
+        });
+        if runtime.remove_encounter_actor(step.actor).is_err() {
+            return false;
+        }
+        if let Some(cue) = &effect.retirement_cue {
+            if let Some(speech) = speech {
+                map.facts.emit_movement_speech(speech);
+            }
+            map.facts.emit_movement_effect(position, cue.effect);
+        }
+        return true;
     };
     let revision = map.facts.object_revision(key);
     replace_monster(runtime, states, step, next, || {
