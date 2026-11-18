@@ -28,6 +28,7 @@ impl PendingCallbacks {
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Choose disjoint source trials only as advice; SQL rechecks their full snapshot.
+    /// Crystal actions_demon_oak.lua:80-102 uses the same target for blows and the final cut.
     pub(super) async fn select_source_phase(
         &self,
         selected: &mut Vec<&Callback>,
@@ -35,9 +36,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: &UseCommand,
     ) {
         if selected.len() <= 1
-            || selected
-                .iter()
-                .any(|c| c.effects.target_transform.is_none())
             || selected.iter().enumerate().any(|(i, a)| {
                 selected[..i]
                     .iter()

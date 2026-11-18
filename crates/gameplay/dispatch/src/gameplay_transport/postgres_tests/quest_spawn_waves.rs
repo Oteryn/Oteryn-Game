@@ -6,11 +6,13 @@ use super::{
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition, NodeId,
 };
+use crate::map::view::MapFacts;
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
 use oteryn_gameplay_quests::quest::world_callbacks::{
-    Callback, Encounter, EncounterMonster, EncounterPlayer, Position, Storage, Trigger,
+    Callback, Encounter, EncounterMonster, EncounterPlayer, ItemOnTarget, Offering, Position,
+    Storage, Trigger,
     periodic_bosses::{PeriodicBoss, WeightedBoss},
-    reactive_waves::{Chance, EarthHit},
+    reactive_waves::{Chance, EarthHit, FinishArea, Retaliation, SpecialWave},
     waves::{Wave, WaveCredit, WaveCreditEffect, WaveRun, WaveSpawn, WaveVictory},
 };
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
@@ -48,6 +50,8 @@ const RAT: &str = "oteryn:creature.rat";
 const CAVE_RAT: &str = "oteryn:creature.cave_rat";
 const CREDIT: &str = "oteryn:quest-transition/wave-egress/fixture";
 const TRACK: &str = "oteryn:quest-progress/fixture/wave-survived";
+const CUT: &str = "oteryn:quest-progress/fixture/weak-point";
+const OAK_TOOL: &str = "oteryn:item.tibia.i919";
 
 #[test]
 fn periodic_boss_waits_for_interval_and_cooldown_and_keeps_one_live_actor() -> TestResult {
@@ -109,6 +113,16 @@ fn quest_step_earth_hit_updates_current_vitals_once() -> TestResult {
     })
 }
 
+#[test]
+fn quest_axe_use_spawns_last_retaliation_and_requires_clearance_for_final_cut() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("quest-retaliation", move || {
+        scenario(admin, Case::Retaliation)
+    })
+}
+
 #[derive(Clone, Copy, Debug)]
 enum Case {
     Periodic,
@@ -117,6 +131,7 @@ enum Case {
     SurvivalStep,
     Stations,
     EarthStep,
+    Retaliation,
 }
 
 fn scenario(admin: String, case: Case) -> TestResult {
@@ -239,6 +254,9 @@ fn scenario(admin: String, case: Case) -> TestResult {
                 effect: 51,
             });
         }
+        if matches!(case, Case::Retaliation) {
+            retaliation_binding(&mut callback);
+        }
         // Use the real typed callback decode in addition to the composed PG fixture.
         let callback: Callback = serde_json::from_value(serde_json::to_value(callback)?)?;
         let world = super::quest_world_callbacks::world_with_cells(
@@ -305,6 +323,8 @@ fn scenario(admin: String, case: Case) -> TestResult {
         owner.movement_cells = (&cells).into();
         if matches!(case, Case::Waves | Case::Victory | Case::SurvivalStep | Case::Stations) {
             owner.quest_catalogue = Some(std::sync::Arc::new(credit_catalogue(&callback)?));
+        } else if matches!(case, Case::Retaliation) {
+            owner.quest_catalogue = Some(std::sync::Arc::new(retaliation_catalogue(&callback)?));
         } else if matches!(case, Case::EarthStep) {
             assert!(
                 owner
@@ -360,6 +380,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
             Case::Stations => stations_scenario(&h, &owner, &mut admitted, deps.actor).await?,
             Case::Periodic => periodic_scenario(&owner).await?,
             Case::EarthStep => earth_step_scenario(&owner, &mut admitted, deps.actor).await?,
+            Case::Retaliation => retaliation_scenario(&owner, &mut admitted, deps.actor).await?,
         }
         eprintln!(
             "POSTGRES_CASE_COMPLETED quest_spawn case={case:?} duration={:?}",
@@ -395,6 +416,151 @@ fn credit_catalogue(
     }]});
     let bindings = Bindings::parse(&serde_json::to_vec(&document)?)?;
     Ok(bindings.attach(&base)?)
+}
+
+fn retaliation_binding(callback: &mut Callback) {
+    // Crystal actions_demon_oak.lua:80-126. The fixture starts at the last
+    // special blow, using one weak point and one legal spawn cell.
+    callback.effects.encounter = None;
+    callback.requires_world_admission = true;
+    callback.item_on_target = Some(ItemOnTarget {
+        item: OAK_TOOL.into(),
+        alternatives: vec![],
+        count: 1,
+        replacement: None,
+        target_replacement: None,
+        target_remove: false,
+        reusable: true,
+        on_step: false,
+        selected_instance: false,
+        ingredients: vec![],
+    });
+    callback.storage.push(Storage {
+        track: CUT.into(),
+        minimum: 10,
+        maximum: 10,
+        set: 11,
+        add: Some(1),
+        set_if: None,
+        preserve: false,
+        increment: false,
+        at_least: false,
+        read_only: false,
+    });
+    callback.effects.retaliation = Some(Retaliation {
+        progress: CUT.into(),
+        weak_points: vec![CUT.into()],
+        completed_at: 11,
+        positions: vec![FIRST],
+        ordinary_chance: Chance { wins: 11, rolls: 100 },
+        ordinary: vec![RAT.into()],
+        special: vec![SpecialWave {
+            before: 10,
+            creatures: vec![RAT.into()],
+        }],
+        last: CAVE_RAT.into(),
+    });
+    callback.effects.earth_hit = Some(EarthHit {
+        chance: Chance { wins: 1, rolls: 1 },
+        minimum: 35,
+        maximum: 35,
+        effect: 51,
+    });
+}
+
+fn retaliation_catalogue(
+    hit: &Callback,
+) -> TestResult<oteryn_gameplay_quests::quest::QuestStateCatalogue> {
+    use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
+    let mut finish = hit.clone();
+    finish.key = "oteryn:quest-callback/fixture/finish-weak-point".into();
+    finish.teleport = Some(EXIT);
+    finish.effects.retaliation = None;
+    finish.effects.earth_hit = None;
+    finish.effects.finish_area = Some(FinishArea {
+        minimum: FIRST,
+        maximum: SECOND,
+    });
+    let cut = finish.storage.first_mut().ok_or("fixture cut track")?;
+    cut.minimum = 11;
+    cut.maximum = 11;
+    cut.add = None;
+    cut.preserve = true;
+    let done = Storage {
+        track: TRACK.into(),
+        minimum: 0,
+        maximum: 0,
+        set: 1,
+        preserve: false,
+        ..cut.clone()
+    };
+    finish.storage.push(done);
+    let bindings = Bindings::parse(&serde_json::to_vec(&serde_json::json!({"schema":1,"quests":[{
+        "quest":hit.quest,
+        "recipe_sha256":"2222222222222222222222222222222222222222222222222222222222222222",
+        "sources":["Crystal 201189f8 demon_oak/actions_demon_oak.lua:62-126"],
+        "tracks":[
+            {"key":CUT,"initial":10,"minimum":10,"maximum":11},
+            {"key":TRACK,"initial":0,"minimum":0,"maximum":1}
+        ],
+        "stages":[
+            {"key":"hit","completes":false,"trigger":{"kind":"map_use","callback":hit}},
+            {"key":"finish","completes":false,"trigger":{"kind":"map_use","callback":finish}}
+        ]
+    }]}))?)?;
+    let base = QuestStateCatalogue::new("content-1", Vec::new(), Vec::new()).map_err(debug)?;
+    Ok(bindings.attach(&base)?)
+}
+
+async fn retaliation_scenario(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    player: ExactActorRef,
+) -> TestResult {
+    let fence = admitted.item_fence.ok_or("axe item fence")?;
+    super::quest_world_callbacks::input_item(
+        owner,
+        fence,
+        &Offering { position: TRIGGER, item: OAK_TOOL.into(), count: 1 },
+        60,
+        true,
+    ).await?;
+
+    let session = admitted.game_session_id;
+    let health = async || -> TestResult<_> {
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        Ok(states.get(&runtime, player, session).ok_or("axe player vitals")?.vitals().health)
+    };
+    let before = health().await?;
+    assert_eq!(use_room(owner, admitted, 1).await?, UseDisposition::Committed);
+    let actors = creatures(owner).await?;
+    let [(last, at)] = actors.as_slice() else {
+        return Err("the last blow must spawn exactly one retaliation".into());
+    };
+    assert_eq!(*at, local(FIRST));
+    {
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(
+            runtime.companion_snapshot(*last).map_err(debug)?.state.policy.definition_key,
+            CAVE_RAT,
+        );
+    }
+    assert_eq!(before - health().await?, 35);
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    assert_eq!(use_room(owner, admitted, 2).await?, UseDisposition::Rejected);
+    assert_eq!(position(owner, player).await?, local(START));
+    assert_eq!(before - health().await?, 35);
+    owner.runtime.lock().await.remove_encounter_actor(*last).map_err(debug)?;
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    assert_eq!(use_room(owner, admitted, 3).await?, UseDisposition::Committed);
+    assert_eq!(position(owner, player).await?, local(EXIT));
+    let state = owner.root.read_character_quest_state(owner.character, fence.character_id)
+        .await.map_err(debug)?;
+    assert_eq!(state.tracks().get(CUT), Some(&11));
+    assert_eq!(state.tracks().get(TRACK), Some(&1));
+    assert_eq!(before - health().await?, 35);
+    Ok(())
 }
 
 async fn periodic_scenario(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
@@ -785,7 +951,7 @@ async fn use_room(
     placement.extend_from_slice(&key.to_be_bytes());
     let payload = encode_use_intent(&WorldObjectTarget {
         placement,
-        expected_revision: 0,
+        expected_revision: map.facts.object_revision(key),
     })
     .map_err(debug)?;
     let reply = super::quest_world_callbacks::wire(owner, admitted, id, 2, payload).await?;
