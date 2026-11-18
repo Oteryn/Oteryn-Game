@@ -49,7 +49,7 @@ def exports():
             'Atomic Atelier economy/items, crusher/drop/trade',
             'Protocol, client UI/icons and gameplay E2E',
             'Guiding Presence arithmetic and declared reveal-scope difference',
-            'Architect decision synchronization: owner-confirmed Supreme III12M/15']}
+            'Broader Global parity beyond the owner-supplied Winter Update CT supreme grade 2 cost']}
     result['import-manifest.json'] = encoded(manifest)
     return result
 

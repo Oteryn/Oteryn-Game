@@ -194,7 +194,7 @@ mod tests {
         );
         assert_eq!(
             data.gems()["catalogue"]["grade_costs"][1]["supreme"]["gold"],
-            12_000_000
+            12_500_000
         );
         assert_eq!(
             data.gems()["catalogue"]["grade_costs"][1]["supreme"]["fragments"],

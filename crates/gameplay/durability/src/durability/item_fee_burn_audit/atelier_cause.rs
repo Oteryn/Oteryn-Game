@@ -4,6 +4,9 @@ use serde_json::Value;
 
 mod materials;
 
+// Current Tibia CT 2026-11-16; matches the qualified catalogue and migration 2883.
+pub(super) const SUPREME_GRADE_TWO_GOLD: u64 = 12_500_000;
+
 pub(crate) const COIN_INPUTS_MAX: usize = 508;
 pub(crate) const MATERIAL_INPUTS_MAX: usize = 30;
 pub(crate) const ASSET_LINES_MAX: u64 = 540;
@@ -88,7 +91,7 @@ pub(super) fn check(
             (Some("Basic"), 5_000_000) => (15, "oteryn:item.tibia.i46625"),
             (Some("Basic"), 30_000_000) => (30, "oteryn:item.tibia.i46625"),
             (Some("Supreme"), 5_000_000) => (5, "oteryn:item.tibia.i46626"),
-            (Some("Supreme"), 12_000_000) => (15, "oteryn:item.tibia.i46626"),
+            (Some("Supreme"), SUPREME_GRADE_TWO_GOLD) => (15, "oteryn:item.tibia.i46626"),
             (Some("Supreme"), 75_000_000) => (30, "oteryn:item.tibia.i46626"),
             _ => return Err(AuditError::InvalidInput),
         };

@@ -2,11 +2,11 @@
   "schema": "OTERYN_WHEEL_GEM_DATA_MANIFEST/v1",
   "revision": "wheel-authoring-candidate-r1",
   "runtime_admitted": false,
-  "source_candidate_sha256": "01a8d04a493d50c9de18b3139c5bdf12f95fd685077a7ea83e66e694ca0fe061",
+  "source_candidate_sha256": "f706605225e1e170cc179c226cadf13ac876ec18f2850d47f9392306efd9afae",
   "source": "tools/content-schema/wheel-authoring/samples/wheel-candidate.json",
   "files": {
-    "wheel.json": "20d4da43556702e90a62a2450a34796a7c3be30765a298d5b834c2cff850df40",
-    "gems.json": "4d537c998fff7fd804dff2bbdada19bd9d225e57d2381b107a68620fb3d4109a"
+    "wheel.json": "3f91088461445ec8fac4b0e449d87fe70a8e35d22da3dfa357006ec58d4ba30a",
+    "gems.json": "50c4c0f2b0fa0dc6ded7d1eba3d0d59238a81a21465c084ef8cc39044c25dc4e"
   },
   "coverage": {
     "vocations": 5,
@@ -21,6 +21,6 @@
     "Atomic Atelier economy/items, crusher/drop/trade",
     "Protocol, client UI/icons and gameplay E2E",
     "Guiding Presence arithmetic and declared reveal-scope difference",
-    "Architect decision synchronization: owner-confirmed Supreme III12M/15"
+    "Broader Global parity beyond the owner-supplied Winter Update CT supreme grade 2 cost"
   ]
 }

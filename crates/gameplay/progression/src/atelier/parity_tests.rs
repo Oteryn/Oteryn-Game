@@ -141,14 +141,17 @@ fn revealed_gem_limit_and_vocation_validation_refuse_without_spending() -> Resul
 }
 
 #[test]
-fn shared_modifier_grade_costs_cap_and_promotion_points_follow_crystal() -> Result<(), Error> {
+fn shared_modifier_grade_costs_cap_and_promotion_points_follow_current_tibia() -> Result<(), Error>
+{
     // Crystal player_wheel.cpp:1514-1597; grades are shared per modifier.
+    // Supreme grade 2 follows the newer CT measurement (Content session, 2026-11-16):
+    // evidence/2026-11-16-testserver/fragment-workshop.txt supersedes Crystal's 12M.
     for (kind, mod_id, costs) in [
         (FragmentKind::Basic, 31, [2_000_000, 5_000_000, 30_000_000]),
         (
             FragmentKind::Supreme,
             5,
-            [5_000_000, 12_000_000, 75_000_000],
+            [5_000_000, 12_500_000, 75_000_000],
         ),
     ] {
         let mut state = state()?;

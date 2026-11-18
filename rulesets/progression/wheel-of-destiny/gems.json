@@ -2,7 +2,7 @@
   "schema": "OTERYN_GEM_DATA_IMPORT/v1",
   "revision": "wheel-authoring-candidate-r1",
   "runtime_admitted": false,
-  "source_candidate_sha256": "01a8d04a493d50c9de18b3139c5bdf12f95fd685077a7ea83e66e694ca0fe061",
+  "source_candidate_sha256": "f706605225e1e170cc179c226cadf13ac876ec18f2850d47f9392306efd9afae",
   "data": {
     "vocations": {
       "knight": {
@@ -10253,7 +10253,7 @@
             "fragments": 15
           },
           "supreme": {
-            "gold": 12000000,
+            "gold": 12500000,
             "fragments": 15
           }
         },

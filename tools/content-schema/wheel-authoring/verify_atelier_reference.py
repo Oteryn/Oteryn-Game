@@ -1,10 +1,16 @@
 """Qualify the selected Atelier snapshot independently of its builder.
 
-Owner confirms from Global: Supreme II -> III12M gold +15Greater Fragments (2026-10-01).
-Wiki r1151969 / WHEEL-GEM-0A 12.5M remains conflict evidence.
+Current Tibia wins: the owner-supplied CT measurement after the Winter Update
+(2026-11-16, Content session, evidence/2026-11-16-testserver/fragment-workshop.txt)
+selects supreme target grade 2 at 12.5M gold +15 fragments. See also
+docs/reference/winter-update-2026-testserver/. Crystal 201189f8 still has
+12M +15 at src/creatures/players/wheel/player_wheel.cpp:1592; it is superseded.
 These reference facts do not admit runtime effects or certify Global RNG.
 Semantic authoring can tune values; exact source qualification cannot.
 """
+import hashlib
+import json
+import sys
 from wheel_authoring import ROOT, read
 
 WIKI = 'https://tibia.fandom.com/wiki/Wheel_of_Destiny?oldid=1151969'
@@ -25,7 +31,7 @@ def validate_atelier_reference(candidate):
         {'target_grade': 1, 'basic': {'gold': 2000000, 'fragments': 5},
          'supreme': {'gold': 5000000, 'fragments': 5}},
         {'target_grade': 2, 'basic': {'gold': 5000000, 'fragments': 15},
-         'supreme': {'gold': 12000000, 'fragments': 15}},
+         'supreme': {'gold': 12500000, 'fragments': 15}},
         {'target_grade': 3, 'basic': {'gold': 30000000, 'fragments': 30},
          'supreme': {'gold': 75000000, 'fragments': 30}},
     ], 'ATELIER_REFERENCE_GRADE_COSTS')
@@ -44,6 +50,21 @@ def validate_atelier_reference(candidate):
     ], 'ATELIER_REFERENCE_LOOT_TRIALS')
 
 
+def refresh_evidence_bindings():
+    """Repin the rebuilt candidate and manifests without changing recorded observations."""
+    candidate = ROOT / 'samples/wheel-candidate.json'
+    validate_atelier_reference(read(candidate))
+    path = ROOT / 'samples/verification-evidence.json'
+    evidence = read(path)
+    evidence['candidate_sha256'] = hashlib.sha256(candidate.read_bytes()).hexdigest()
+    for key in ('client_icon_manifest', 'reference_selection'):
+        binding = evidence[key]
+        binding['sha256'] = hashlib.sha256((ROOT / binding['file']).read_bytes()).hexdigest()
+    path.write_text(json.dumps(evidence, indent=2, allow_nan=False) + '\n')
+
+
 if __name__ == '__main__':
+    if '--refresh-evidence' in sys.argv:
+        refresh_evidence_bindings()
     validate_atelier_reference(read(ROOT / 'samples/wheel-candidate.json'))
     print('PASS: Atelier cap/costs and OTS stop-on-first-failure loot reference.')
