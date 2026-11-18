@@ -1,4 +1,4 @@
-"""Five finite CHOSEN journal mappings; never rewrites donor Source or readiness."""
+"""Finite CHOSEN journal and objective corrections. Donor Source stays frozen."""
 import tarfile
 import argparse, copy, hashlib, json, sys
 from pathlib import Path
@@ -197,6 +197,8 @@ def apply(root, records):
         if sha((path.parent / evidence['path']).read_bytes()) != evidence['sha256']:
             raise ValueError('Chosen evidence packet fence')
     result = apply_records(records, packet, sha(raw))
+    from quest_no_rest_for_the_wicked_followup import apply as apply_wicked_followup
+    apply_wicked_followup(result)
     return (result, {'path': PACKET, 'sha256': sha(raw), 'runtime_enabled': False, 'source_equivalence': False})
 
 def main():

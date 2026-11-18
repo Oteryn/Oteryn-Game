@@ -300,10 +300,15 @@ def teleports(
     rejected["destination_tile_absent"] = 0
     families = {"Item": 0, "Terrain": 0, "WorldObject": 0}
     ordinal: dict[tuple, int] = {}
+    from doomforge_portal import REJECTION, holds_link
+
     for tp in sorted(
         candidates,
         key=lambda t: (t["from"][2], t["from"][1], t["from"][0], t["item"], t["to"]),
     ):
+        if holds_link(tp["from"], tp["item"], tp["to"]):
+            rejected[REJECTION] = rejected.get(REJECTION, 0) + 1
+            continue
         if tp["to"] not in present:
             if "namespace" in tp:
                 raise ConvertError(
