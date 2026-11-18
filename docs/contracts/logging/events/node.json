@@ -321,7 +321,7 @@
         "cause"
       ],
       "codes": [],
-      "note": "Qualification spawn cleanup failed; the cause is bounded to 200 characters."
+      "note": "Qualification spawn cleanup failed. The cause is bounded to 200 characters."
     },
     {
       "event": "qualification_spawn_refused",
