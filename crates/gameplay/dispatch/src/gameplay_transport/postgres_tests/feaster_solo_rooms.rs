@@ -76,7 +76,7 @@ pub(super) fn binding(name: &str) -> TestResult<Callback> {
         "selector":{"position":r.door,"native":{"position":r.door,"ordinal":1,"appearance":25047}},
         "requires_world_admission":true,"return_on_failure":true,
         "reversible":false,"passages":[],"offerings":[],"storage":[],
-        "effects":{"teleport_effect":11,"encounter":{
+        "effects":{"encounter":{
             "minimum_level":250,"players":[{"from":r.door,"to":r.entry}],
             "monsters":[{"creature":r.boss,"position":r.spawn}],
             "room_min":r.min,"room_max":r.max,
@@ -88,12 +88,17 @@ pub(super) fn binding(name: &str) -> TestResult<Callback> {
 
 pub(super) fn world(callback: &Callback, name: &str) -> TestResult<crate::map::boot::BundleWorld> {
     let r = room(name)?;
-    world_cells(callback, r.door, 25047, 1, &[], &[], None, &[r.exit])
+    world_cells(callback, r.door, 25047, 1, &[], &[], None, &[r.exit, spectator_wait(r)])
 }
 
 pub(super) fn catalogue(base: &QuestStateCatalogue, callback: &Callback) -> TestResult<Arc<QuestStateCatalogue>> {
     let document = serde_json::json!({"schema":1,"callbacks":[callback]}).to_string();
-    Ok(Arc::new(world_callbacks::with_fixture_world_document(base, &document)?))
+    let base = base.with_fixture_transition(world_callbacks::primary_transition(callback)?).map_err(debug)?;
+    Ok(Arc::new(world_callbacks::with_fixture_world_document(&base, &document)?))
+}
+
+fn spectator_wait(room: &Room) -> Position {
+    Position { y: room.exit.y + 1, ..room.exit }
 }
 
 #[test]
@@ -149,7 +154,7 @@ pub(super) async fn exercise(
             let map = owner.bundle_map().ok_or("map")?;
             let proof = crate::map::floor::prepare_quest_callback_teleport(
                 &runtime, owner.movement_cells(), other, other_session,
-                runtime.read_actor_position(other).map_err(debug)?, local(r.exit),
+                runtime.read_actor_position(other).map_err(debug)?, local(spectator_wait(r)),
                 false, &crate::map::floor::BundleDoors(&map.facts),
             ).map_err(debug)?;
             runtime.commit_source_step(proof).map_err(debug)?;
