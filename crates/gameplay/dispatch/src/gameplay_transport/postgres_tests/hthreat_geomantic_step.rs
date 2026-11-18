@@ -43,7 +43,10 @@ fn bindings() -> TestResult<Bindings> {
     // These are test-only placements. The admitted World supplies the AID 56421 placement.
     // A digest of the scoped source reference binds this fixture's recipe identity.
     use sha2::{Digest, Sha256};
-    let digest = format!("{:x}", Sha256::digest(serde_json::to_vec(&stages)?));
+    let digest = Sha256::digest(serde_json::to_vec(&stages)?)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
     Ok(Bindings::parse(&serde_json::to_vec(
         &json!({"schema":1,"quests":[{
             "quest":QUEST, "recipe_sha256":digest,
@@ -199,6 +202,9 @@ fn scenario() -> TestResult {
             .fetch_one(&h.pool)
             .await?;
             assert_eq!(receipts, 1);
+            drop(owner);
+            drop(authority);
+            drop(_seal);
             h.cleanup().await
         }
     )

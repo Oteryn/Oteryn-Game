@@ -34,12 +34,12 @@ fn bindings() -> TestResult<Bindings> {
         .map(|record| &record["definition"])
         .find(|definition| definition["identity"]["key"] == QUEST)
         .ok_or("canonical Spike definition")?;
-    let digest = format!(
-        "{:x}",
-        Sha256::digest(serde_json::to_vec(
-            &recipe["oteryn_recipe"]["payload"]["recipe"]
-        )?)
-    );
+    let digest = Sha256::digest(serde_json::to_vec(
+        &recipe["oteryn_recipe"]["payload"]["recipe"],
+    )?)
+    .iter()
+    .map(|byte| format!("{byte:02x}"))
+    .collect::<String>();
     let document = json!({"schema":1,"quests":[{
         "quest":QUEST,"recipe_sha256":digest,
         "admission":{"minimum_level":80,"premium":false,"personal_assignment":"spike_tasks"},
@@ -267,6 +267,9 @@ fn scenario() -> TestResult {
             let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1 AND NOT completes")
                 .bind(CREDIT).fetch_one(&h.pool).await?;
             assert_eq!(receipts, 7, "one durable credit per qualified death");
+            drop(owner);
+            drop(authority);
+            drop(_seal);
             h.cleanup().await
         }
     )
