@@ -1,7 +1,7 @@
 //! Crystal 201189f8 data-global/scripts/quests/wrath_of_the_emperor/creaturescripts_zalamon_kill.lua:1-42,
 //! actions_mission11_payback_time_lever.lua:1-48.
-use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::debug};
-use crate::foundation::{CharacterId, CharacterLease, CommandId, CommandRef, OwnerDamageCommand};
+use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::{debug, id}};
+use crate::foundation::{CharacterId, CharacterLease, CommandId, CommandRef, GameSessionId, OwnerDamageCommand};
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::gameplay_transport::kill_reward::{self, KillSink};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
@@ -14,6 +14,8 @@ const LEVER: Position = Position {
     y: 31404,
     floor: -9,
 };
+const TEAM_PAD: Position = Position { x: 33358, y: 31405, floor: -9 };
+const LANDING: Position = Position { x: 33359, y: 31406, floor: -10 };
 const FIGHT: Position = Position {
     x: 33365,
     y: 31407,
@@ -50,7 +52,10 @@ fn fixture() -> TestResult<Callback> {
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/creaturescripts_zalamon_kill.lua:1-42"],
         "effects":{"encounter":{
             "minimum_level":0,
-            "players":[{"from":{"x":33357,"y":31404,"floor":-9},"to":{"x":33359,"y":31406,"floor":-10}}],
+            "players":[
+                {"from":{"x":33357,"y":31404,"floor":-9},"to":LANDING},
+                {"from":TEAM_PAD,"to":LANDING}
+            ],
             "monsters":[
                 {"creature":FORMS[0],"position":FIGHT},
                 {"creature":GUARD,"position":{"x":33355,"y":31403,"floor":-10}},
@@ -58,7 +63,11 @@ fn fixture() -> TestResult<Callback> {
             "room_min":{"x":33349,"y":31396,"floor":-10},
             "room_max":{"x":33369,"y":31416,"floor":-10},
             "phase":"linear_death_chain",
-            "linear_phases":{"forms":FORMS,"speeches":["Second form", "Third form", "Final form"],"reservation_ms":600000},
+            "linear_phases":{"forms":FORMS,"speeches":[
+                "IT'S NOT THAT EASY MORTALS! FEEL THE POWER OF THE GOD!",
+                "NOOO! NOW YOU HERETICS WILL FACE MY GODLY WRATH!",
+                "YOU ... WILL ... PAY WITH ETERNITY ... OF AGONY!"
+            ],"reservation_ms":600000},
         }}
     });
     use oteryn_gameplay_quests::quest::authored_bindings::{Bindings, Trigger};
@@ -117,12 +126,25 @@ pub(super) async fn exercise(
         fence.character_lease_generation,
     )
     .map_err(debug)?;
-    owner
-        .runtime
-        .lock()
-        .await
-        .bind_attacker_lease(actor, session, lease)
-        .map_err(debug)?;
+    let partner_session = GameSessionId::decode(&id(51)).map_err(debug)?;
+    let partner = {
+        let mut runtime = owner.runtime.lock().await;
+        runtime.bind_attacker_lease(actor, session, lease).map_err(debug)?;
+        let reservation = runtime.reserve_fresh_session(partner_session).map_err(debug)?;
+        let partner = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime.initialize_source_pinned_lab_player_position(
+            partner, partner_session, super::quest_world_callbacks::local(TEAM_PAD),
+        ).map_err(debug)?;
+        let partner_lease = CharacterLease::new(CharacterId::decode(&id(52)).map_err(debug)?, 1)
+            .map_err(debug)?;
+        runtime.bind_attacker_lease(partner, partner_session, partner_lease).map_err(debug)?;
+        owner.states.spell_states.lock().await.initialize(
+            &runtime, partner, partner_session,
+            crate::gameplay_transport::actor_spell::tests::FACTS,
+            (0,0), owner.owner_now(),
+        ).ok_or("partner spell state")?;
+        partner
+    };
     let admitted_at = owner.owner_now().get();
     let outcome = owner
         .use_object(
@@ -149,6 +171,10 @@ pub(super) async fn exercise(
             })
         })
     };
+    for member in [actor, partner] {
+        assert_eq!(runtime.read_actor_position(member).map_err(debug)?.position(),
+            super::quest_world_callbacks::local(LANDING));
+    }
     assert!(find(&runtime, FORMS[0]).is_some());
     assert!(find(&runtime, GUARD).is_some());
     if !timeout {
@@ -217,6 +243,10 @@ pub(super) async fn exercise(
     crate::gameplay_transport::encounter_phases::tick(&mut runtime, &states, reset_at);
     assert!(find(&runtime, GUARD).is_none());
     assert!(FORMS.iter().all(|key| find(&runtime, key).is_none()));
+    for (member, member_session) in [(actor, session), (partner, partner_session)] {
+        let at = runtime.read_actor_position(member).map_err(debug)?.position();
+        assert!(!owner.encounter_blocks_channel_switch(&runtime, member, member_session, at));
+    }
     assert!(
         states
             .encounter_phases
