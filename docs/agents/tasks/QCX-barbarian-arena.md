@@ -33,7 +33,7 @@ Each weapon, container, goblet and unmarked child below has count 1. The runtime
 
 ## Reward correction
 
-The arena transaction now treats a present, backpack or weapon receipt as consuming the tier's one choice. It recognizes previously committed receipts in any of those categories. The goblet has its own entitlement. The same mint transaction records the wiki's `Awarded to <name>.` inscription using the fenced character's name. See the [spoiler revision](https://tibia.fandom.com/?curid=34102&oldid=668035).
+The arena transaction now treats a present, backpack or weapon receipt as consuming the tier's one choice. It recognizes previously committed receipts in any of those categories. The goblet has its own entitlement. The same mint transaction records the wiki's `Awarded to <name>.` inscription using the fenced character's name. The wiki gives the same inscription for all three goblets. Crystal adds tier-specific description prose and omits the final period for Greenhorn in `data-global/lib/quests/svargrond_arena.lua:175-190`. [Spoiler revision](https://tibia.fandom.com/?curid=34102&oldid=668035).
 
 ## Remaining parity
 
@@ -49,4 +49,14 @@ BLOCKER spectator barrier and corpse cleanup shared item-transfer and corpse own
 
 OPEN-FACTS Global item numeric IDs, precise placement attributes and coordinates, fee source or bank policy, lower-tier achievements, donor surrender outfit, Warlord achievement points, and journal state timing after each tier. The reward IDs above map named Global items to pinned donor records.
 
-PARTIAL Gate Premium and The Barbarian Test at admission, wire Halvar's payment and physical access/reward selectors, expose the stored inscription on LOOK, and resolve arena-specific item movement, corpse cleanup and tier journal updates. The reward command is the scope of the new dispatch case. Existing goblets retain their original minted state.
+PARTIAL Gate Premium and The Barbarian Test at admission, wire Halvar's payment and physical access/reward selectors, expose the stored inscription on LOOK, and resolve arena-specific item movement, corpse cleanup and tier journal updates. The reward command is the scope of the new dispatch case. Historical goblets minted before the correction lack the new inscription.
+
+## Verification
+
+- PG via shard (pgsplit build files applied on `92fd7373bab2595fd954b08501eb8af637cb1746`). `one_reward_choice_and_inscribed_goblet_per_tier` passed in 27.26 s. The production wire and durable claim transactions run against PostgreSQL. The test seeds the completed arena state and exercises the three tier choices, three second-choice refusals, and three goblet mints.
+- Before the reward fix, the same case failed in 42.13 s. The three second choices returned `Applied` and the inscription query returned no rows.
+- The same case returned `Ok(())` without `OTERYN_TEST_POSTGRES_ADMIN_URL` in 0.00 s. This is the route-less check.
+- Quest authoring `run_checks.py --part checks` passed all 44 commands.
+- `cargo fmt --all -- --check` passed.
+- World pin check passed for one world, `oteryn`. The CLI requires an output directory, so the check used `oteryn-world-bundle-compiler pin-check . <temporary directory>`.
+- Dispatch library Clippy passed with `--all-features --lib -- -D warnings`.
