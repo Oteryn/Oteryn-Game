@@ -1,29 +1,36 @@
 //! Source MoveEvents that apply ordinary typed combat damage.
 use super::*;
 use crate::content::ReferenceResistanceKind;
+use crate::gameplay_transport::paced_movement::special_movement::{TileEntries, tile_entries};
 use crate::player_lethal::PlayerHitKind;
 use oteryn_protocol_oteryn::analyser::AnalyserDamageSource;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// Crystal's Five Ways fire tiles use the base vocation, including promotions.
-    pub(super) async fn step_five_ways(
+    pub(super) async fn step_area_damage(
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
         map: &BundleMap,
         entered: MovementPositionSnapshot,
     ) {
-        let Some(position) = native(entered.position()) else {
+        let Some(entries) = tile_entries(map, entered.position()) else {
             return;
         };
-        let Some(entries) =
-            crate::gameplay_transport::paced_movement::special_movement::tile_entries(
-                map,
-                entered.position(),
-            )
-        else {
-            return;
-        };
+        self.step_five_ways(actor, session, map, entered, &entries)
+            .await;
+        self.step_demon_oak_area(actor, session, map, entered, &entries)
+            .await;
+    }
+
+    /// Crystal's Five Ways fire tiles use the base vocation, including promotions.
+    async fn step_five_ways(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        map: &BundleMap,
+        entered: MovementPositionSnapshot,
+        entries: &TileEntries,
+    ) {
         let mut fires = entries
             .entries
             .iter()
@@ -63,27 +70,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ReferenceResistanceKind::Physical,
             )
         };
-        if environmental_hit(
-            &runtime,
-            &mut states,
-            actor,
-            session,
-            raw,
-            kind,
-            element,
-            self.owner_now(),
-        ) {
+        if let Some(position) = native(entered.position())
+            && environmental_hit(
+                &runtime,
+                &mut states,
+                actor,
+                session,
+                raw,
+                kind,
+                element,
+                self.owner_now(),
+            )
+        {
             map.facts
                 .emit_movement_effect(position, if matching { 16 } else { 37 });
         }
     }
 
-    pub(super) async fn step_demon_oak_area(
+    async fn step_demon_oak_area(
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
         map: &BundleMap,
         entered: MovementPositionSnapshot,
+        entries: &TileEntries,
     ) {
         let at = entered.position();
         let Some(active) = self.active_generation else {
@@ -95,11 +105,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(|index| {
                 index.definition_ref("Item", "oteryn:item.tibia.i918", "definition-r1")
             })
-        else {
-            return;
-        };
-        let Some(entries) =
-            crate::gameplay_transport::paced_movement::special_movement::tile_entries(map, at)
         else {
             return;
         };

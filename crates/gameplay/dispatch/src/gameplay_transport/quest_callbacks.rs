@@ -1303,8 +1303,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return entered;
         };
         if trigger == Trigger::StepIn && origin.position() != entered.position() {
-            self.step_five_ways(actor, session, map, entered).await;
-            self.step_demon_oak_area(actor, session, map, entered).await;
+            self.step_area_damage(actor, session, map, entered).await;
         }
         let selected_position = if trigger == Trigger::StepOut {
             origin.position()
