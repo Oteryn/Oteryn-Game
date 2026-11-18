@@ -61,4 +61,26 @@ mod tests {
         }
         Ok(())
     }
+    #[test]
+    fn first_dragon_descendant_clock_reopens_at_two_hours() -> Result<(), String> {
+        let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        for portal in super::callbacks()? {
+            let transition = catalogue
+                .transition(&portal.key)
+                .ok_or("portal transition")?;
+            let clock = &portal.state_operations[0].track;
+            let mut tracks = std::collections::BTreeMap::new();
+            assert!(catalogue.evaluate(transition, &tracks, 100).is_err());
+            for state in portal.storage {
+                tracks.insert(state.track, state.minimum);
+            }
+            assert!(catalogue.evaluate(transition, &tracks, 100).is_ok());
+            tracks.insert(clock.clone(), 100);
+            assert!(catalogue.evaluate(transition, &tracks, 7299).is_err());
+            assert!(catalogue.evaluate(transition, &tracks, 7300).is_ok());
+        }
+        Ok(())
+    }
 }
