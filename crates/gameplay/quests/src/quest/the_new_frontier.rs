@@ -132,9 +132,17 @@ mod tests {
                 .iter()
                 .any(|callback| callback.key == MORTAL_COMBAT)
         );
-        for key in [CUROS, TIRECZ_VICTORY] {
-            assert!(catalogue.transition(key).is_some(), "{key}");
-        }
+        let curos = catalogue.transition(CUROS).ok_or("Curos transition")?;
+        super::super::admission_binding::validate(curos, true)?;
+        assert!(super::super::admission_binding::validate(curos, false).is_err());
+        let tirecz = catalogue
+            .transition(TIRECZ_VICTORY)
+            .ok_or("Tirecz transition")?;
+        super::super::admission_binding::validate(tirecz, false)?;
+        let mountain = catalogue
+            .transition("oteryn:quest-callback/new-frontier-mountain-passage-31532")
+            .ok_or("existing mountain passage")?;
+        super::super::admission_binding::validate(mountain, true)?;
         let prior = prior_definition(catalogue);
         assert_ne!(catalogue.definition_hash(QUEST), Some(prior.hash));
         assert_eq!(

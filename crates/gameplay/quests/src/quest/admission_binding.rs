@@ -60,8 +60,11 @@ fn registry() -> Result<&'static Registry, String> {
             }
             let shared_world = shared_world::catalogue()?;
             for callback in world_callbacks::load()? {
-                let protect = world_callbacks::gated_binding(&callback)?.is_some()
-                    || callback.operation_count() > 0;
+                // Curos owns its exact fenced STEP. The Frontier questline is
+                // also written by the existing NPC and map mission owners.
+                let protect = callback.key != super::the_new_frontier::CUROS
+                    && (world_callbacks::gated_binding(&callback)?.is_some()
+                        || callback.operation_count() > 0);
                 let transition = if callback.key == super::rotten_blood::SACRIFICE {
                     super::rotten_blood::altar_transition()
                 } else if let Some(operation) = shared_world.transition(&callback.key) {
