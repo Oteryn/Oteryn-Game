@@ -41,7 +41,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let mut states = self.states.spell_states.lock().await;
             let gate = states.item_uses.gate(&runtime, actor, session)?;
-            if let Some((id, previous, disposition)) = gate.source_last
+            if let Some((id, previous, disposition)) = gate.arbaziloth_rod_last
                 && id == command.command_id
             {
                 return outcome(if previous == wire {
@@ -139,7 +139,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             UseDisposition::NotPossible
         };
-        gate.source_last = Some((command.command_id, wire, disposition));
+        gate.arbaziloth_rod_last = Some((command.command_id, wire, disposition));
         outcome(disposition)
     }
 }
