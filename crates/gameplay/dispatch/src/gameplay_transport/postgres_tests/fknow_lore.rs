@@ -42,10 +42,19 @@ fn fknow_lore_keeper_two_player_entry_and_exit() -> TestResult {
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run("fknow-lore-keeper", scenario)
+    super::kill_reward_e2e::scenario_thread::run("fknow-lore-keeper", || scenario(false))
 }
 
-fn scenario() -> TestResult {
+#[test]
+fn fknow_lore_keeper_astral_victory_cooldown() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty());
+    super::kill_reward_e2e::scenario_thread::run("fknow-lore-victory", || scenario(true))
+}
+
+fn scenario(victory: bool) -> TestResult {
     run(async |admin| {
         super::reset();
         let expected = fixture::fence(1)?;
@@ -272,6 +281,29 @@ fn scenario() -> TestResult {
         ).bind(handoff.as_slice()).fetch_all(&h.pool).await?;
         assert_eq!(timers, vec![(1_800_000, 1_209_600_000); 2]);
 
+        if victory {
+            // The production native death records wall time, while the room
+            // fixture moved its admission clock forward by two seconds.
+            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+            exercise_astral_victory(&destination, &leader).await?;
+            let cooldowns: Vec<(bool, i64)> = sqlx::query_as(
+                "SELECT c.character_id=encode($2,'hex')::uuid,
+                        CASE WHEN c.character_id=encode($2,'hex')::uuid
+                             THEN c.available_at-(d.minted_at/1000)*1000
+                             ELSE c.available_at-a.opened_at END
+                 FROM game_boss_room_activities a
+                 JOIN game_boss_reward_deaths d ON d.death_id=a.defeat_id
+                 JOIN game_character_boss_cooldowns c ON c.admission=a.admission
+                 WHERE a.admission=encode($1,'hex')::uuid ORDER BY 1",
+            )
+            .bind(handoff.as_slice())
+            .bind(leader_fence.character_id.as_bytes().as_slice())
+            .fetch_all(&h.pool)
+            .await?;
+            assert_eq!(cooldowns, [(false, 1_209_600_000), (true, 1_195_200_000)]);
+            return Ok(());
+        }
+
         h.root.advance_test_quest_clock(1801).map_err(debug)?;
         let (_, reply, barrier) = super::boss_activity::exchange_command(
             &owner,
@@ -306,4 +338,132 @@ fn scenario() -> TestResult {
         );
         Ok(())
     })
+}
+
+async fn exercise_astral_victory(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+) -> TestResult {
+    use crate::foundation::{CommandId, CommandRef, ExactActorRef};
+    use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink, record_creature_kill};
+    let actor = admitted.runtime_actor.ok_or("participant actor")?;
+    let session = admitted.game_session_id;
+    let native = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .ok_or("native encounter content")?;
+    let map = owner.bundle_map().ok_or("Astral map")?;
+    let creature = async |key: &str| -> TestResult<(ExactActorRef, MovementLocalPosition)> {
+        let runtime = owner.runtime.lock().await;
+        let target = runtime
+            .current_live_creature_census()
+            .map_err(debug)?
+            .into_iter()
+            .find(|target| {
+                runtime
+                    .creature_spell_target_atom(*target)
+                    .is_ok_and(|atom| atom == key)
+            })
+            .ok_or_else(|| format!("missing live {key}"))?;
+        Ok((
+            target,
+            runtime
+                .read_actor_position(target)
+                .map_err(debug)?
+                .position(),
+        ))
+    };
+    let kill = async |target: ExactActorRef, command: u64| -> TestResult {
+        let now = owner.owner_now();
+        let queue = owner.states.attack.lock().await.kills().clone();
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let lease = runtime
+                .bound_attacker_lease(actor, session)
+                .map_err(debug)?;
+            let atom = runtime.creature_spell_target_atom(target).map_err(debug)?;
+            let health = runtime.companion_snapshot(target).map_err(debug)?.health;
+            runtime
+                .borrow_exact_actor_commit_at(now.get() / 1000)
+                .commit_damage_for_bound_attacker(
+                    target,
+                    actor,
+                    CommandRef::new(session, CommandId::new(command).map_err(debug)?),
+                    0,
+                    crate::foundation::OwnerDamageCommand {
+                        target: atom.as_bytes(),
+                        occurrence: session.as_bytes(),
+                        binding: b"fknow-astral-native-death",
+                        damage: health,
+                    },
+                )
+                .map_err(debug)?;
+            record_creature_kill(
+                &mut runtime,
+                KillSink {
+                    prey: None,
+                    activity: &[],
+                    queue: &queue,
+                    rewards: native.reward_table(),
+                    charms: None,
+                },
+                target,
+                crate::combat::CapturedRewardPrincipal {
+                    character: lease.character_id(),
+                    lease_generation: lease.generation(),
+                    session,
+                    actor,
+                },
+                now.get() / 1000,
+                Some(now),
+            );
+        }
+        assert_eq!(
+            owner.drain_kill_rewards(session).await,
+            DrainOutcome::Drained
+        );
+        Ok(())
+    };
+
+    let power_key = "oteryn:creature.bound_astral_power";
+    let (power, at) = creature(power_key).await?;
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let expected = runtime.read_actor_position(actor).map_err(debug)?;
+        let closed = crate::map::floor::BundleDoors(map.facts.doors());
+        let proof = crate::map::floor::prepare_quest_callback_teleport(
+            &runtime,
+            &owner.movement_cells,
+            actor,
+            session,
+            expected,
+            at,
+            false,
+            &closed,
+        )
+        .map_err(debug)?;
+        runtime.commit_source_step(proof).map_err(debug)?;
+    }
+    kill(power, 200).await?;
+    let (next_power, next_cell) = creature(power_key).await?;
+    assert_ne!(power, next_power);
+    assert_eq!(
+        next_cell,
+        MovementLocalPosition {
+            x: 31975,
+            y: 32839,
+            floor: 15
+        }
+    );
+    let shield_key = "oteryn:creature.a_shielded_astral_glyph";
+    let glyph_key = "oteryn:creature.an_astral_glyph";
+    let (shield, shield_cell) = creature(shield_key).await?;
+    let (glyph, glyph_cell) = creature(glyph_key).await?;
+    owner.tick_lore_keeper().await;
+    assert_eq!(creature(shield_key).await?, (shield, glyph_cell));
+    assert_eq!(creature(glyph_key).await?, (glyph, shield_cell));
+    kill(glyph, 201).await?;
+    let (boss, boss_cell) = creature("oteryn:creature.the_last_lore_keeper").await?;
+    assert_eq!(boss_cell, shield_cell);
+    kill(boss, 202).await
 }
