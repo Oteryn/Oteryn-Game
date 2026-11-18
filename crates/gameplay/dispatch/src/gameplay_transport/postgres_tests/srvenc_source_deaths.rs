@@ -79,7 +79,11 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
     let generation = controller.active().ok_or("generation")?;
     let native = generation.native_gameplay().ok_or("native policies")?;
     let without_rewards = crate::content::creature_reward::CreatureRewardTable::default();
-    let rewards = if mode == "overlordcr_rowless" {
+    let ended_secondary = matches!(
+        mode,
+        "overlordcr_ended_secondary_xp" | "overlordcr_ended_secondary_no_xp"
+    );
+    let rewards = if matches!(mode, "overlordcr_rowless" | "overlordcr_ended_secondary_no_xp") {
         &without_rewards
     } else {
         native.reward_table()
@@ -740,6 +744,26 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 drop(taken); // Leave the real original queue entry for durable settlement below.
             }
         }
+        if ended_secondary {
+            use crate::gameplay_transport::kill_reward::TakeOutcome;
+            let (peer_actor, peer_session, _) = overlord_peers[0];
+            let mut runtime = owner.runtime.lock().await;
+            let lease = runtime.bound_attacker_lease(actor, session).map_err(debug)?;
+            let TakeOutcome::Taken(taken) = queue.take(session, lease.generation()) else {
+                return Err("captured Overlord queue entry".into());
+            };
+            let entry = taken.entry().ok_or("captured Overlord death")?;
+            let recipients = crate::gameplay_transport::quest_kill_objectives::overlord_recipients(entry);
+            assert_eq!(recipients.len(), 2);
+            assert!(recipients.iter().any(|(_, captured, _)| *captured == peer_session));
+            drop(taken);
+            runtime.remove_terminal_session(peer_session, peer_actor).map_err(debug)?;
+            drop(runtime);
+            let ended = sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3,current_transport_ref=NULL,prepared_attempt_ref=NULL WHERE game_session_id=encode($1,'hex')::uuid AND session_state IN (1,2)")
+                .bind(peer_session.as_bytes().as_slice()).execute(&h.pool).await?;
+            assert_eq!(ended.rows_affected(), 1);
+            assert!(owner.current_quest_fence(peer_session).await.map_err(|_| "secondary fence read")?.is_none());
+        }
         if mode == "overlordcr_atomic" {
             for statement in [
                 "CREATE SEQUENCE overlordcr_second_receipt",
@@ -793,6 +817,14 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             );
         }
         assert_eq!(drained, DrainOutcome::Drained);
+        if ended_secondary {
+            assert!(!queue.has_session(drain_session), "the settled death leaves the queue");
+            let (xp, chests, deaths): (i64, i64, i64) = sqlx::query_as(
+                "SELECT (SELECT count(*) FROM game_character_xp_receipts WHERE character_id=encode($1,'hex')::uuid AND experience_awarded>0), (SELECT count(*) FROM game_character_boss_reward_chests WHERE character_id=encode($1,'hex')::uuid), (SELECT count(*) FROM game_boss_death_settlements)",
+            ).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!((xp, chests, deaths), if mode == "overlordcr_ended_secondary_xp" { (1, 1, 1) } else { (0, 0, 1) });
+        }
+
         if let Some((target, observed)) = crash_replay {
             let canonical: i64 =
                 sqlx::query_scalar("SELECT count(*) FROM game_boss_death_settlements")
@@ -899,7 +931,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             .bind(character.as_slice()).bind(&rule.effects[0].track).fetch_optional(&h.pool).await?;
         assert_eq!(
             value,
-            if index
+            if !ended_secondary && index
                 < if mode == "overlordcr_seventeen" {
                     16
                 } else {
@@ -926,7 +958,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
     .await?;
     assert_eq!(
         receipts,
-        if mode == "overlordcr_fallback" {
+        if mode == "overlordcr_fallback" || ended_secondary {
             1
         } else {
             i64::try_from(kills)?

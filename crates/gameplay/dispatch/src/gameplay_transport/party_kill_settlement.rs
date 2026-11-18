@@ -226,6 +226,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(Into::into)
     }
 
+    async fn current_overlord_fence(
+        &self,
+        character: crate::domain::CharacterId,
+        session: crate::foundation::GameSessionId,
+        lease: u64,
+    ) -> Result<Option<CurrentCharacterGameplayFence>, CharacterProgressionError> {
+        match self.current_quest_fence_durable(session).await {
+            Ok(fence) => Ok(fence.filter(|fence| {
+                fence.character_id == character && fence.character_lease_generation == lease
+            })),
+            Err(DurabilityError::CommitRejected) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
     pub(super) async fn settle_party_experience(
         &self,
         permit: &SpellLanePermit,
@@ -287,27 +302,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         for (character, session, lease) in super::quest_kill_objectives::overlord_recipients(entry)
         {
-            if let Some((old_session, _)) = recipients.get(&character)
-                && *old_session != session
-            {
-                return Err(rejected());
-            }
-            recipients.insert(character, (session, Some(lease)));
+            // The current XP member keeps its own fence. Only an exact match
+            // against the frozen quest recipient can earn BossStorage later.
+            recipients
+                .entry(character)
+                .or_insert((session, Some(lease)));
         }
         let mut slots = Vec::with_capacity(recipients.len());
         let mut quest_fences = Vec::with_capacity(recipients.len());
         for (character, (session, lease)) in recipients {
             let mut slot = self.revision_sequencer.acquire(character).await;
-            let mut fence = self
-                .current_quest_fence(session)
-                .await
-                .map_err(|_| CharacterProgressionError::Unavailable(DurabilityError::Unavailable))?
-                .ok_or_else(rejected)?;
-            if fence.character_id != character
-                || lease.is_some_and(|lease| fence.character_lease_generation != lease)
-            {
-                return Err(rejected());
-            }
+            let mut fence = if let Some(lease) = lease {
+                let Some(fence) = self
+                    .current_overlord_fence(character, session, lease)
+                    .await?
+                else {
+                    continue;
+                };
+                fence
+            } else {
+                self.current_quest_fence(session)
+                    .await
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .filter(|fence| fence.character_id == character)
+                    .ok_or_else(rejected)?
+            };
             if character.as_bytes() == entry.facts.principal.character.as_bytes()
                 && (fence.game_session_id != entry.facts.principal.session
                     || fence.character_lease_generation != entry.facts.principal.lease_generation)
@@ -798,14 +817,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut fences = Vec::new();
         for (character, (session, lease)) in recipients {
             let mut slot = self.revision_sequencer.acquire(character).await;
-            let mut fence = self
-                .current_quest_fence(session)
-                .await
-                .map_err(|_| CharacterProgressionError::Unavailable(DurabilityError::Unavailable))?
-                .ok_or_else(rejected)?;
-            if fence.character_id != character || fence.character_lease_generation != lease {
-                return Err(rejected());
-            }
+            let Some(mut fence) = self
+                .current_overlord_fence(character, session, lease)
+                .await?
+            else {
+                continue;
+            };
             fence.expected_character_revision = slot.cursor(self.root, self.character).await.map_err(|error| match error {
                 crate::durability::character_authority::CharacterAuthorityError::Unavailable(error) => CharacterProgressionError::Unavailable(error),
                 _ => rejected(),

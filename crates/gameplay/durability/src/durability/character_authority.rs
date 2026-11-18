@@ -182,7 +182,19 @@ impl DurabilityRoot {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             super::db::lock_admission_relations(&mut tx).await?;
-            let current = store.current_session_in_transaction(&mut tx, session).await?;
+            let current = match store.current_session_in_transaction(&mut tx, session).await {
+                Ok(current) => current,
+                Err(DurabilityError::Unavailable) => {
+                    let exists: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid)")
+                        .bind(session.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+                    if exists {
+                        return Err(DurabilityError::Unavailable);
+                    }
+                    commit_semantic_transaction(tx, deadline).await?;
+                    return Ok(Ok(None));
+                }
+                Err(error) => return Err(error),
+            };
             if current.session_state() == crate::foundation::GameSessionState::Terminal {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(Ok(None));

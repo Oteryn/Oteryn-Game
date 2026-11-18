@@ -281,7 +281,7 @@ async fn admit_peer_inner(
         .bind(account.as_slice())
         .execute(&h.pool)
         .await?;
-    sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name,sex) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,1,'profile-1','ruleset-1','content-1','starter-1',$4,2)")
+    sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name,sex,creation_vocation) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,1,'profile-1','ruleset-1','content-1','starter-1',$4,2,'knight')")
         .bind(character.as_slice()).bind(account.as_slice()).bind(id(42).as_slice())
         .bind(format!("Fixture Member {}",char::from(b'A' + member))).execute(&h.pool).await?;
     // Gameplay entry initializes XP through the active content owner. The
@@ -416,6 +416,7 @@ async fn seed_peer_creation(h: &Harness, member: u8) -> TestResult {
         "target_world_id": world,
         "requested_name": name,
         "requested_sex": "Male",
+        "requested_vocation": "Knight",
         "interpretation_context": {"profile_revision":"profile-1", "ruleset_revision":"ruleset-1",
             "content_revision":"content-1", "starter_template_revision":"starter-1"},
         "issued_at_source":"1", "expires_at_source":"120",

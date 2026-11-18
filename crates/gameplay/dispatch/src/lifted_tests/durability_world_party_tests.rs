@@ -1186,7 +1186,10 @@ async fn initialize_official_party_build(
     );
     assert!(matches!(
         load_character_cast_facts(&h.root, &authority, character).await,
-        CastFactsLoad::Unavailable
+        CastFactsLoad::Ready { facts, character_revision }
+            if facts.vocation == crate::spell::Vocation::Sorcerer
+                && facts.level == crate::durability::character_progression::INITIAL_CHARACTER_LEVEL
+                && character_revision.get() == 1
     ));
     let fence = CurrentCharacterGameplayFence {
         character_id: character,

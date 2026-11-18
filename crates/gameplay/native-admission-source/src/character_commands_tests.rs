@@ -899,3 +899,82 @@ fn closure_publisher_is_independent_of_pending_list_and_quarantines_conflicts() 
         );
     }
 }
+
+#[test]
+fn retained_create_refusal_alarms_and_does_not_block_later_receipts() {
+    struct Retained {
+        reads: usize,
+    }
+
+    impl Decider for Retained {
+        async fn decide(&mut self, _: &str, _: &str, _: Input<'_>) -> Decision {
+            Decision::Transient
+        }
+
+        async fn next_retained_create_receipt(
+            &mut self,
+            after: Option<&str>,
+        ) -> Result<Option<RetainedCreateReceipt>, SourceError> {
+            self.reads += 1;
+            if self.reads > 5 {
+                return std::future::pending().await;
+            }
+            Ok(match after {
+                None => Some(RetainedCreateReceipt {
+                    operation_id: op(1),
+                    body: Some(b"receipt-a".to_vec()),
+                }),
+                Some(id) if id == OP1 => Some(RetainedCreateReceipt {
+                    operation_id: op(2),
+                    body: Some(b"receipt-b".to_vec()),
+                }),
+                Some(_) => None,
+            })
+        }
+    }
+
+    thread_local! {
+        static LOG: std::cell::RefCell<Vec<String>> = const { std::cell::RefCell::new(Vec::new()) };
+    }
+
+    let ack = br#"{"contract_version":1,"result":"accepted"}"#.to_vec();
+    for refusal in [
+        Err(Failure::Conflict),
+        Err(Failure::NotFound),
+        Ok(b"invalid acknowledgement".to_vec()),
+    ] {
+        LOG.with_borrow_mut(Vec::clear);
+        let sent = Arc::new(Mutex::new(Vec::new()));
+        let publisher = run_account_closure_publications(
+            Clock::default(),
+            Source {
+                script: Arc::new(Mutex::new(VecDeque::from([
+                    Err(Failure::Unavailable),
+                    refusal,
+                    Ok(ack.clone()),
+                ]))),
+                sent: sent.clone(),
+            },
+            Retained { reads: 0 },
+            |event| LOG.with_borrow_mut(|log| log.push(event.into())),
+        );
+        let mut run = pin!(publisher);
+        assert!(matches!(
+            run.as_mut().poll(&mut Context::from_waker(Waker::noop())),
+            Poll::Pending
+        ));
+        let operation = Operation::PublishCharacterCommandReceiptV1;
+        assert_eq!(
+            *sent.lock().unwrap(),
+            [
+                (operation, "receipt-a".into()),
+                (operation, "receipt-a".into()),
+                (operation, "receipt-b".into()),
+            ]
+        );
+        LOG.with_borrow(|log| {
+            assert_eq!(log.len(), 1);
+            assert!(log[0].contains("alarm=receipt_refused"));
+        });
+    }
+}

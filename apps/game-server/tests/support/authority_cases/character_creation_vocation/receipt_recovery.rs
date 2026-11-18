@@ -1,7 +1,7 @@
 use super::*;
 use native_admission_source::SourceError;
 use native_admission_source::character_commands::{
-    CommandSource, Decider, Failure, run_account_closure_publications,
+    CommandSource, Decider, Failure, RetainedCreateReceipt, run_account_closure_publications,
 };
 use native_admission_source::descriptor::Operation;
 use native_admission_source::runtime_status::SystemClock;
@@ -44,7 +44,7 @@ impl Decider for Durable<'_, '_, '_> {
     async fn next_retained_create_receipt(
         &mut self,
         after: Option<&str>,
-    ) -> Result<Option<(String, Vec<u8>)>, SourceError> {
+    ) -> Result<Option<RetainedCreateReceipt>, SourceError> {
         self.root
             .next_retained_create_receipt(self.authority, self.node, SOURCE, after)
             .await

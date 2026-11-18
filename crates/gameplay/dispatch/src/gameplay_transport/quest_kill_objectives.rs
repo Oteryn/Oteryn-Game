@@ -255,14 +255,13 @@ pub(super) async fn apply_in_transaction(
         let mut committed = Vec::new();
         for objective in captured.iter() {
             let snapshot = &objective.snapshot;
-            let fence = quest_fences
-                .iter()
-                .find(|fence| {
-                    fence.character_id.as_bytes() == &snapshot.character
-                        && fence.game_session_id == snapshot.session
-                        && fence.character_lease_generation == snapshot.lease
-                })
-                .ok_or(CharacterProgressionError::AuthorityRejected)?;
+            let Some(fence) = quest_fences.iter().find(|fence| {
+                fence.character_id.as_bytes() == &snapshot.character
+                    && fence.game_session_id == snapshot.session
+                    && fence.character_lease_generation == snapshot.lease
+            }) else {
+                continue;
+            };
             sqlx::query("SAVEPOINT overlord_quest_credit")
                 .execute(&mut **tx)
                 .await
@@ -286,8 +285,12 @@ pub(super) async fn apply_in_transaction(
                 .execute(&mut **tx)
                 .await
                 .map_err(crate::durability::DurabilityError::from)?;
-            if let Some(receipt) = outcome? {
-                committed.push(receipt);
+            match outcome {
+                Ok(Some(receipt)) => committed.push(receipt),
+                // The savepoint isolates recipient refusals. A dependency
+                // failure still retries the atomic settlement.
+                Err(error @ CharacterProgressionError::Unavailable(_)) => return Err(error),
+                Ok(None) | Err(_) => {}
             }
         }
         return Ok(committed);

@@ -61,7 +61,7 @@ use crate::native_admission_source::account_characters::{
 };
 use crate::native_admission_source::bazaar::transport as bazaar_transport;
 use crate::native_admission_source::character_commands::{
-    CommandDescriptor, Consumer, Decider, Decision, Input, MtlsSource,
+    CommandDescriptor, Consumer, Decider, Decision, Input, MtlsSource, RetainedCreateReceipt,
 };
 use crate::native_admission_source::descriptor::ProducerDescriptor;
 use crate::native_admission_source::public_projections::{
@@ -1518,7 +1518,7 @@ impl Decider for CommandDecider<'_, '_, '_> {
     async fn next_retained_create_receipt(
         &mut self,
         after: Option<&str>,
-    ) -> Result<Option<(String, Vec<u8>)>, crate::native_admission_source::SourceError> {
+    ) -> Result<Option<RetainedCreateReceipt>, crate::native_admission_source::SourceError> {
         self.root
             .next_retained_create_receipt(self.authority, self.proof, &self.source_authority, after)
             .await

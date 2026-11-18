@@ -136,3 +136,13 @@ fn overlordcr_ordinary_boss_damager_chest_excludes_healer_postgres() -> TestResu
     drop(admin);
     super::boss_rewards::run_case(super::boss_rewards::Case::OrdinaryDamagerAndHealer)
 }
+
+#[test]
+fn overlordcr_ended_secondary_keeps_principal_xp_chest_and_storage_postgres() -> TestResult {
+    super::srvenc_source_deaths::scenario("overlordcr_ended_secondary_xp", "earth_overlord")
+}
+
+#[test]
+fn overlordcr_ended_secondary_no_xp_completes_without_requeue_postgres() -> TestResult {
+    super::srvenc_source_deaths::scenario("overlordcr_ended_secondary_no_xp", "earth_overlord")
+}

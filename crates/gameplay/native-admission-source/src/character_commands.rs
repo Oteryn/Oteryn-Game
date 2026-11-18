@@ -17,7 +17,7 @@ use super::{
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, HashSet},
     future::Future,
     time::Duration,
 };
@@ -469,13 +469,20 @@ pub enum Decision {
     Transient,
 }
 
+/// A retained operation and its verified immutable publication bytes.
+pub struct RetainedCreateReceipt {
+    pub operation_id: String,
+    /// Absent when the row is present but its stored receipt is invalid.
+    pub body: Option<Vec<u8>>,
+}
+
 /// The Character Authority side of the consumer.
 pub trait Decider: Send {
     /// Fenced immutable create receipts, independent of the retired intent feed.
     fn next_retained_create_receipt(
         &mut self,
         _after: Option<&str>,
-    ) -> impl Future<Output = Result<Option<(String, Vec<u8>)>, SourceError>> + Send {
+    ) -> impl Future<Output = Result<Option<RetainedCreateReceipt>, SourceError>> + Send {
         async { Ok(None) }
     }
 
@@ -1034,19 +1041,51 @@ pub async fn run_account_closure_publications<C: ReportClock, S: CommandSource, 
 ) {
     let mut backoff = POLL;
     let mut create_cursor: Option<String> = None;
+    let mut stopped_creates = HashSet::new();
     loop {
         match decider
             .next_retained_create_receipt(create_cursor.as_deref())
             .await
         {
-            Ok(Some((operation, receipt))) => {
-                if let Ok(body) = std::str::from_utf8(&receipt)
-                    && let Ok(raw) = source
+            Ok(Some(receipt)) if stopped_creates.contains(&receipt.operation_id) => {
+                create_cursor = Some(receipt.operation_id);
+            }
+            Ok(Some(RetainedCreateReceipt { operation_id, body })) => {
+                let published = match body
+                    .as_deref()
+                    .and_then(|body| std::str::from_utf8(body).ok())
+                {
+                    Some(body) => source
                         .exchange(Operation::PublishCharacterCommandReceiptV1, body)
                         .await
-                    && decode_receipt_response(&raw).is_ok()
-                {
-                    create_cursor = Some(operation);
+                        .and_then(|raw| {
+                            decode_receipt_response(&raw).map_err(|_| Failure::InvalidResponse)
+                        }),
+                    None => Err(Failure::InvalidResponse),
+                };
+                let settlement = match published {
+                    Ok(()) => Settle::Done,
+                    Err(
+                        failure
+                        @ (Failure::NotFound | Failure::Conflict | Failure::InvalidResponse),
+                    ) => {
+                        (event)(&format!(
+                            "event=character_commands operation=PublishCharacterCommandReceiptV1 command=CreateCharacter receipt={} alarm=receipt_refused",
+                            if body.is_none() {
+                                "invalid_stored_state"
+                            } else {
+                                failure.label()
+                            },
+                        ));
+                        Settle::Stopped
+                    }
+                    Err(_) => Settle::Retry,
+                };
+                if settlement == Settle::Stopped {
+                    stopped_creates.insert(operation_id.clone());
+                }
+                if settlement != Settle::Retry {
+                    create_cursor = Some(operation_id);
                 }
             }
             Ok(None) => create_cursor = None,

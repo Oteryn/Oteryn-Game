@@ -691,7 +691,11 @@ async fn initialize_build(
         crate::durability::character_build::BuildChangeRequest {
             occurrence: crate::durability::character_build::BuildOccurrence::from_bytes(id(seed))
                 .map_err(debug)?,
-            cause: crate::durability::character_build::BuildCause::VocationChoice,
+            cause: if before.vocation() == "none" {
+                crate::durability::character_build::BuildCause::VocationChoice
+            } else {
+                crate::durability::character_build::BuildCause::VocationTrial
+            },
             before,
             after: after.clone(),
             pruned_stance: None,
