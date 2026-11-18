@@ -228,12 +228,15 @@ fn scenario() -> TestResult {
         );
         let pearl = seed_pearl(&h, 0, 3, &frame, map, &content).await?;
         let mut second = None;
-        for (start, trigger, destination, remaining) in [
-            (START, TRIGGER, START, 3),
-            (START, TRIGGER, DESTINATION, 2),
-            (EAST_START, EAST_TRIGGER, EAST_DESTINATION, 1),
+        for (start, trigger, destination, remaining, fund) in [
+            (START, TRIGGER, START, 3, false),
+            (EAST_START, EAST_TRIGGER, EAST_START, 3, false),
+            (START, TRIGGER, DESTINATION, 2, true),
+            (EAST_START, EAST_TRIGGER, EAST_DESTINATION, 1, false),
+            (START, TRIGGER, DESTINATION, 0, false),
+            (EAST_START, EAST_TRIGGER, EAST_START, 0, false),
         ] {
-            if remaining == 2 {
+            if fund {
                 second = Some(seed_pearl(&h, 1, 3, &frame, map, &content).await?);
             }
             let origin = {
@@ -338,10 +341,20 @@ fn scenario() -> TestResult {
         .bind(QUEST)
         .fetch_all(&h.pool)
         .await?;
-        assert_eq!(receipt_guards, [true, true]);
+        assert_eq!(receipt_guards, [true, true, true]);
         let consumption_counts: Vec<i32> = sqlx::query_scalar("SELECT quantity FROM game_quest_callback_consumptions WHERE transition_key IN ('oteryn:quest-callback/banshee/plague-entrance','oteryn:quest-callback/banshee/plague-entrance-east') ORDER BY item_instance_id")
             .fetch_all(&h.pool).await?;
-        assert_eq!(consumption_counts, [1, 1, 1, 1]);
+        assert_eq!(consumption_counts, [1, 1, 1, 1, 1, 1]);
+        let exhausted: (i64, i64) = sqlx::query_as(
+            "SELECT count(*) FILTER (WHERE i.lifecycle = 2 AND i.quantity = 0), count(g.item_instance_id)
+               FROM game_item_instances i LEFT JOIN game_item_ground_locations g USING (item_instance_id)
+              WHERE i.item_instance_id IN ($1::uuid, $2::uuid)",
+        )
+        .bind(&pearl)
+        .bind(second.as_deref().ok_or("second pearl")?)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(exhausted, (2, 0));
         drop(owner);
         drop(authority);
         drop(seal);
