@@ -1,6 +1,7 @@
 //! The Well of Life action settles the once-only receipt and restores both pools.
-use super::fixture::{Harness, debug};
+use super::fixture::Harness;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, quest_world_callbacks as world};
+use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 

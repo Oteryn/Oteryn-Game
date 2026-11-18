@@ -65,6 +65,7 @@ pub(super) async fn exercise(
         assert_eq!(at.position(), world::local(expected));
         if expected == LANDING {
             let map = owner.bundle_map().ok_or("map")?;
+            let closed = crate::map::floor::BundleDoors(map.facts.doors());
             let proof = crate::map::floor::prepare_quest_callback_teleport(
                 &runtime,
                 owner.movement_cells(),
@@ -73,7 +74,7 @@ pub(super) async fn exercise(
                 at,
                 world::local(origin),
                 false,
-                &crate::map::floor::BundleDoors(map.facts.doors()),
+                &closed,
             )
             .map_err(debug)?;
             runtime.commit_source_step(proof).map_err(debug)?;
