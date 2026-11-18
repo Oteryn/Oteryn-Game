@@ -43,6 +43,8 @@ pub struct TargetTransform {
     pub from: u16,
     pub to: u16,
     pub reset_after_ms: u32,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub if_present: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]

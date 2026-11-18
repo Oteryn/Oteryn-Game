@@ -39,7 +39,7 @@ pub(super) fn callback(at: Position) -> TestResult<Callback> {
         "item_on_target":{"item":WATER,"count":1,"reusable":false,"selected_instance":true},
         "effects":{
             "use_summon":{"creature":"oteryn:creature.pirate_ghost"},
-            "target_transform":{"position":DOOR,"from":7869,"to":7868,"reset_after_ms":10000}
+            "target_transform":{"position":DOOR,"from":7869,"to":7868,"reset_after_ms":10000,"if_present":true}
         },
         "sources":[SOURCE]
     }))?)

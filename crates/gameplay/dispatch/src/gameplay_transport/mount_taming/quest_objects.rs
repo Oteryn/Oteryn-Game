@@ -4,6 +4,11 @@ use oteryn_gameplay_quests::quest::{targuna_ram, world_callbacks::Callback};
 pub(crate) fn accepts(callback: &Callback) -> bool {
     callback.item_on_target.is_some()
         && (callback.key == targuna_ram::KEY
+            || (callback.effects.use_summon.is_some()
+                && callback
+                    .item_on_target
+                    .as_ref()
+                    .is_some_and(|tool| tool.selected_instance))
             || matches!(
                 callback.native_rule,
                 Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { .. })

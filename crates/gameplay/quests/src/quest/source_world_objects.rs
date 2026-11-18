@@ -130,7 +130,7 @@ pub(crate) fn lions_amphora() -> Vec<Callback> {
             };
             callback.effects = CallbackEffectSet::default();
             callback.effects.target_transform = Some(TargetTransform {
-                position: Position { x: 33119, y: 32247, floor: -9 }, from: 21945, to: 21946, reset_after_ms: 15_000,
+                position: Position { x: 33119, y: 32247, floor: -9 }, from: 21945, to: 21946, reset_after_ms: 15_000, if_present: false,
             });
             callback.effects.item_reward = Some(ItemReward {
         key_number: None,
