@@ -80,8 +80,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let teleport = crate::map::floor::is_teleport(cells, cell);
                 Some(SourcePlacementCell {
                     exists: base.is_some(),
+                    // Crystal 201189f8 src/items/tile.cpp:624-630 rejects
+                    // masterless monsters on floor changes, portals and PZs.
                     query_add: !protection_zone
                         && !teleport
+                        && !cells.spell_tiles().lookup(cells.scope(), cell).map_or_else(
+                            |_| map.floors.contains(pos),
+                            |tile| tile.flags().floor_change,
+                        )
                         && cells.index().lookup(cells.scope(), cell)
                             == Ok(CollisionClass::Walkable)
                         && !map

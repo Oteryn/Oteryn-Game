@@ -118,7 +118,11 @@ fn static_element(
             ReferenceItemField::Unknown | ReferenceItemField::Conflict => StaticItemFact::Unknown,
         }
     };
-    let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
+    // BundleSpellTiles borrows its base shape and returns an owned shape
+    // for a complete phase replacement. Only base shapes use base ordinals.
+    let (NativeMovementCollisionIndex::Bundle(index), std::borrow::Cow::Borrowed(_)) =
+        (cells.index(), &tile)
+    else {
         return fold_static(top.iter().copied().map(classify));
     };
 
