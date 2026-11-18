@@ -154,7 +154,8 @@ pub(super) async fn exercise_victory(
 }
 
 #[test]
-fn warzone_step_stamps_individual_cooldown_without_summoning_another_boss() -> TestResult {
+fn warzone_step_stamps_each_entrant_and_refuses_a_retry_without_summoning_another_boss()
+-> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -249,15 +250,60 @@ pub(super) async fn exercise(
             .position(),
         origin
     );
-    let cooldown: i64 = sqlx::query_scalar(
+    let approach = Position {
+        y: PORTAL.y - 1,
+        ..PORTAL
+    };
+    let peer = super::ferumbras_crystal_reset::admit_peer(owner, h, approach).await?;
+    let peer_session = {
+        let runtime = owner.runtime.lock().await;
+        runtime
+            .positioned_melee_census()
+            .map_err(debug)?
+            .into_iter()
+            .find_map(|(actor, _, session)| (actor == peer).then_some(session).flatten())
+            .ok_or("peer session")?
+    };
+    let (outcome, _) = owner
+        .ordinary_paced_step(peer, peer_session, StepDirection::South, None, None)
+        .await;
+    assert_eq!(
+        outcome.disposition,
+        oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved
+    );
+    let runtime = owner.runtime.lock().await;
+    assert_eq!(
+        runtime.read_actor_position(peer).map_err(debug)?.position(),
+        super::quest_world_callbacks::local(ARRIVAL)
+    );
+    assert_eq!(
+        runtime
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        origin
+    );
+    assert!(
+        runtime
+            .current_live_creature_census()
+            .map_err(debug)?
+            .is_empty()
+    );
+    drop(runtime);
+    let cooldowns: Vec<i64> = sqlx::query_scalar(
         "SELECT available_at - floor(extract(epoch FROM now()) * 1000)::bigint FROM game_character_boss_cooldowns WHERE boss_key=$1",
-    ).bind(BOSS).fetch_one(&h.pool).await?;
-    assert!((35_990_000..=36_000_000).contains(&cooldown));
+    ).bind(BOSS).fetch_all(&h.pool).await?;
+    assert_eq!(cooldowns.len(), 2);
+    assert!(
+        cooldowns
+            .iter()
+            .all(|cooldown| (35_970_000..=36_000_000).contains(cooldown))
+    );
     let receipts: i64 =
         sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1")
             .bind(QUEST)
             .fetch_one(&h.pool)
             .await?;
-    assert_eq!(receipts, 1);
+    assert_eq!(receipts, 2);
     Ok(())
 }
