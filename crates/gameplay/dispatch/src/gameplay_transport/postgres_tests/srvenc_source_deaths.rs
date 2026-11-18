@@ -48,7 +48,7 @@ pub(super) fn scenario(name: &'static str, creature: &'static str) -> TestResult
                 .find(|r| r.creature == format!("oteryn:creature.{creature}"))
                 .ok_or("source rule")?;
             let h = Harness::create_with_admission_seed(admin, "srvenc_m24", false, false).await?;
-            let result = exercise(&h, rule).await;
+            let result = exercise(&h, rule, name).await;
             let cleanup = h.cleanup().await;
             result?;
             cleanup?;
@@ -63,7 +63,7 @@ pub(super) fn scenario(name: &'static str, creature: &'static str) -> TestResult
     result
 }
 
-async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
+async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestResult {
     prepare_current_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
@@ -347,7 +347,12 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         use crate::gameplay_transport::connection::{
             AdmittedSession, FirstEntryOutcome, SessionContinuity,
         };
-        for member in [1u8, 2] {
+        let peer_count = if mode == "overlordcr_seventeen" {
+            17u8
+        } else {
+            2
+        };
+        for member in 1..=peer_count {
             let peer_session =
                 super::boss_rewards::privacy::admit_gameplay_peer(h, &source.evidence, member)
                     .await?;
@@ -402,18 +407,31 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                 owner.progression_binding(peer_session).is_some(),
                 "peer completed progression admission"
             );
-            owner.admit_quest_session(&peer).await;
-            assert!(
-                owner
-                    .states
-                    .quest_sessions
-                    .lock()
-                    .map_err(|_| "quest session lock")?
-                    .get(&peer_session)
-                    .is_some_and(|state| state.copy.is_some()),
-                "peer has an admitted quest snapshot"
-            );
-            owner.refresh_quest_session(peer_session, false).await;
+            if mode == "overlordcr_missing_cache" && member == 1 {
+                assert!(
+                    owner
+                        .states
+                        .quest_sessions
+                        .lock()
+                        .map_err(|_| "quest cache")?
+                        .get(&peer_session)
+                        .is_none_or(|entry| entry.copy.is_none()),
+                    "the eligible damager has no loaded quest copy"
+                );
+            } else {
+                owner.admit_quest_session(&peer).await;
+                assert!(
+                    owner
+                        .states
+                        .quest_sessions
+                        .lock()
+                        .map_err(|_| "quest session lock")?
+                        .get(&peer_session)
+                        .is_some_and(|state| state.copy.is_some()),
+                    "peer has an admitted quest snapshot"
+                );
+                owner.refresh_quest_session(peer_session, false).await;
+            }
             overlord_peers.push((peer_actor, peer_session, *fence.character_id.as_bytes()));
         }
     }
@@ -484,8 +502,31 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
             let lease = runtime
                 .bound_attacker_lease(actor, session)
                 .map_err(debug)?;
-            let health = runtime.companion_snapshot(target).map_err(debug)?.health;
-            let health = if let Some((peer_actor, peer_session, _)) = overlord_peers.first() {
+            let mut health = runtime.companion_snapshot(target).map_err(debug)?.health;
+            if mode == "overlordcr_seventeen" {
+                runtime
+                    .borrow_exact_actor_commit_at(now)
+                    .commit_damage_for_bound_attacker(
+                        target,
+                        actor,
+                        CommandRef::new(session, CommandId::new(1).map_err(debug)?),
+                        0,
+                        crate::foundation::OwnerDamageCommand {
+                            target: rule.creature.as_bytes(),
+                            occurrence: session.as_bytes(),
+                            binding: b"overlordcr-primary-first-damage",
+                            damage: 1,
+                        },
+                    )
+                    .map_err(debug)?;
+                health -= 1;
+            }
+            let damaging_peers = if mode == "overlordcr_seventeen" {
+                16
+            } else {
+                1
+            };
+            for (peer_actor, peer_session, _) in overlord_peers.iter().take(damaging_peers) {
                 runtime
                     .borrow_exact_actor_commit_at(now)
                     .commit_damage_for_bound_attacker(
@@ -501,10 +542,8 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                         },
                     )
                     .map_err(debug)?;
-                health - 1
-            } else {
-                health
-            };
+                health -= 1;
+            }
             let damage = if let Some((other_actor, other_session, _, _)) = lesser_contributor {
                 assert!(
                     health > 2,
@@ -630,6 +669,34 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                 drop(taken); // Leave the real original queue entry for durable settlement below.
             }
         }
+        if mode == "overlordcr_atomic" {
+            for statement in [
+                "CREATE SEQUENCE overlordcr_second_receipt",
+                "CREATE FUNCTION overlordcr_refuse_second() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.transition_key LIKE 'oteryn:quest-transition/elemental-spheres/%' AND nextval('overlordcr_second_receipt')=2 THEN RAISE EXCEPTION 'overlordcr second recipient unavailable' USING ERRCODE='23514'; END IF; RETURN NEW; END $$",
+                "CREATE TRIGGER overlordcr_refuse_second BEFORE INSERT ON game_character_quest_receipts FOR EACH ROW EXECUTE FUNCTION overlordcr_refuse_second()",
+            ] {
+                sqlx::query(statement).execute(&h.pool).await?;
+            }
+            assert_eq!(
+                owner.drain_kill_rewards(session).await,
+                DrainOutcome::Deferred
+            );
+            let counts: (i64,i64) = sqlx::query_as(
+                "SELECT (SELECT count(*) FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u8_2/elemental_spheres/boss_storage'), (SELECT count(*) FROM game_party_kill_xp_receipts)"
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(
+                counts,
+                (0, 0),
+                "a second-recipient failure rolls back every flag and the durable death"
+            );
+            for statement in [
+                "DROP TRIGGER overlordcr_refuse_second ON game_character_quest_receipts",
+                "DROP FUNCTION overlordcr_refuse_second()",
+                "DROP SEQUENCE overlordcr_second_receipt",
+            ] {
+                sqlx::query(statement).execute(&h.pool).await?;
+            }
+        }
         let drained = owner.drain_kill_rewards(session).await;
         if drained != DrainOutcome::Drained {
             let roots: Vec<(String, String)> = sqlx::query_as(
@@ -675,7 +742,17 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
             .bind(character.as_slice()).bind(&rule.effects[0].track).fetch_optional(&h.pool).await?;
         assert_eq!(
             value,
-            if index == 0 { Some(1) } else { None },
+            if index
+                < if mode == "overlordcr_seventeen" {
+                    16
+                } else {
+                    1
+                }
+            {
+                Some(1)
+            } else {
+                None
+            },
             "only damage participants receive BossStorage"
         );
     }
@@ -692,7 +769,14 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
     .await?;
     assert_eq!(
         receipts,
-        i64::try_from(kills)? + if overlord_peers.is_empty() { 0 } else { 1 },
+        i64::try_from(kills)?
+            + if overlord_peers.is_empty() {
+                0
+            } else if mode == "overlordcr_seventeen" {
+                16
+            } else {
+                1
+            },
         "duplicate corpse projection must retain the first captured receipt"
     );
     Ok(())

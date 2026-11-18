@@ -55,3 +55,30 @@ fn overlordcr_non_overlord_retains_anti_leech_postgres() -> TestResult {
     drop(admin);
     super::boss_rewards::run_case(super::boss_rewards::Case::NonOverlordHealing)
 }
+
+#[test]
+fn overlordcr_atomic_all_recipients_and_death_rollback_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::srvenc_source_deaths::scenario("overlordcr_atomic", "earth_overlord")
+}
+
+#[test]
+fn overlordcr_seventeenth_distinct_damager_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::srvenc_source_deaths::scenario("overlordcr_seventeen", "earth_overlord")
+}
+
+#[test]
+fn overlordcr_missing_quest_copy_retains_damager_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::srvenc_source_deaths::scenario("overlordcr_missing_cache", "earth_overlord")
+}
