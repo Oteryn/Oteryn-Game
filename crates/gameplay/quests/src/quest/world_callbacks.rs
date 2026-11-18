@@ -888,13 +888,6 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
     let mut keys = BTreeSet::new();
     let mut selectors = BTreeMap::<Vec<u8>, Vec<&Callback>>::new();
     for callback in callbacks {
-        if callback.calendar_window.is_some_and(|window| {
-            !window.valid()
-                || !matches!(callback.trigger, Trigger::StepIn | Trigger::Use)
-                || (callback.trigger == Trigger::StepIn && !callback.return_on_failure)
-        }) {
-            return Err("invalid callback calendar window".into());
-        }
         if callback
             .item_on_target
             .as_ref()
@@ -943,6 +936,13 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
     }
     let mut keys = BTreeSet::new();
     for callback in &document.callbacks {
+        if callback.calendar_window.is_some_and(|window| {
+            !window.valid()
+                || !matches!(callback.trigger, Trigger::StepIn | Trigger::Use)
+                || (callback.trigger == Trigger::StepIn && !callback.return_on_failure)
+        }) {
+            return Err("invalid callback calendar window".into());
+        }
         let selector = &callback.selector;
         let valid_pos = |p: Position| (-15..=0).contains(&p.floor);
         let unique_offerings: BTreeSet<_> = callback.offerings.iter().map(|o| o.position).collect();
