@@ -272,6 +272,42 @@ QUALIFIED.update({
         'quest_catalogue_chests_qchk1_ring_quest_use_replay_and_refusal',
     'oteryn:reward-claim.kv.ringquest2':
         'quest_catalogue_chests_qchk1_ring_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.key.id0909':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.black_skull':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.ebony_piece':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.eye_key':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.lotus_key':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.peacock_ballad':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.scribbled_notes':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.silver_chimes':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.skeleton_notes':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.asuras.strand_hair':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.mo_ta.bony_rod':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.mo_ta.broken_compass':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.mo_ta.sample_blood':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.small_islands.fishing':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.small_islands.hawser':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.small_islands.parchment':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.small_islands.sapphire':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
+    'oteryn:reward-claim.quest.u11_80.the_secret_library.small_islands.shovel':
+        'quest_catalogue_chests_qchk1_the_secret_library_quest_use_replay_and_refusal',
 })
 
 
