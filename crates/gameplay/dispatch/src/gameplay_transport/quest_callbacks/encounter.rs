@@ -2,6 +2,7 @@
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::view::EntryFacts;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(
@@ -88,11 +89,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
         };
+        let room_exit = callback.timed_room_exit();
         if preflight && callback.has_personal_state() {
             if !callback.requires_world_admission {
                 return UseDisposition::Rejected;
             }
-            if encounter.timing.is_some() {
+            if encounter.timing.is_some() && room_exit.is_none() {
                 // A timed personal trial schedules only after its durable receipt.
                 // Preflight checks the same guards without reserving a timer.
                 let ready = oteryn_gameplay_quests::quest::world_callbacks::personal_trial::admitted(
@@ -112,7 +114,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if callback.has_personal_state() && !preflight && reservation.is_none() {
             return UseDisposition::Rejected;
         }
-        if encounter.timing.is_some() {
+        if encounter.timing.is_some() && room_exit.is_none() {
             return self.schedule_timed_quest_encounter(
                 runtime,
                 states,
@@ -125,20 +127,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 after,
             );
         }
+        let mut room_timer = if let Some(exit) = room_exit {
+            match self.prepare_quest_room_timer(
+                runtime,
+                map,
+                callback,
+                key,
+                expected_revision,
+                actor,
+                session,
+                exit,
+            ) {
+                Ok(timer) => Some(timer),
+                Err(disposition) => return disposition,
+            }
+        } else {
+            None
+        };
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
-        };
-        let in_room = |at: MovementLocalPosition| {
-            at.floor == -i16::from(encounter.room_min.floor)
-                && (i32::from(encounter.room_min.x)..=i32::from(encounter.room_max.x))
-                    .contains(&at.x)
-                && (i32::from(encounter.room_min.y)..=i32::from(encounter.room_max.y))
-                    .contains(&at.y)
         };
         let personal_entry = callback.personal_room_entry().map(local);
         if census.iter().any(|(who, pos, occupant_session)| {
             occupant_session.is_some()
-                && in_room(pos.position())
+                && native(pos.position()).is_some_and(|position| {
+                    encounter.contains(position.x, position.y, position.floor)
+                })
                 && !(Some(pos.position()) == personal_entry
                     && *who == actor
                     && *occupant_session == Some(session))
@@ -201,6 +215,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return UseDisposition::Rejected;
             }
+            if let Some(exit) = room_exit
+                && crate::map::floor::prepare_quest_encounter_ejection(
+                    runtime,
+                    self.movement_cells(),
+                    who,
+                    member_session,
+                    expected,
+                    local(exit),
+                    &closed,
+                )
+                .is_err()
+            {
+                return UseDisposition::NotPossible;
+            }
             let blocked =
                 super::super::pvp_live::pz_blocked(states, who, member_session, self.owner_now());
             let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
@@ -221,6 +249,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !players
             .iter()
             .any(|(who, s, _)| *who == actor && *s == session)
+        {
+            return UseDisposition::Rejected;
+        }
+        if room_timer.is_some()
+            && self
+                .active_generation
+                .and_then(|active| active.native_gameplay())
+                .is_none_or(|native| native.install_companion_policies(runtime).is_err())
         {
             return UseDisposition::Rejected;
         }
@@ -353,6 +389,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             phases.push(phase);
         }
         drop(phases);
+        if let Some(timer) = room_timer.take() {
+            timer.publish(actors.clone());
+            states.owner_wake.notify_one();
+        }
         if let Some(reservation) = reservation
             && let Err(disposition) = reservation.publish(runtime, actors)
         {

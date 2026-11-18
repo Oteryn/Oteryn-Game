@@ -640,9 +640,29 @@ impl Callback {
             && self.has_personal_state()
             && self.actor_kind == ActorKind::Player
             && self.trigger == Trigger::StepIn
-            && encounter.timing.is_none()
+            && (encounter.timing.is_none() || self.timed_room_exit().is_some())
             && self.selector.position == Some(member.from))
         .then_some(member.from)
+    }
+
+    /// An immediate, solo STEP encounter returns its admitted player to the same
+    /// outside destination used when admission fails.
+    #[must_use]
+    pub fn timed_room_exit(&self) -> Option<Position> {
+        let encounter = self.effects.encounter.as_ref()?;
+        let [member] = encounter.players.as_slice() else {
+            return None;
+        };
+        let exit = self.failure_teleport?;
+        (self.trigger == Trigger::StepIn
+            && self.return_on_failure
+            && self.selector.position == Some(member.from)
+            && self.selector.position_aliases.is_empty()
+            && encounter
+                .timing
+                .is_some_and(|timing| timing.spawn_after_ms == 0)
+            && !encounter.contains(exit.x, exit.y, exit.floor))
+        .then_some(exit)
     }
 
     /// Canary action_horn.lua:38-50: mammoth progress requires a currently active

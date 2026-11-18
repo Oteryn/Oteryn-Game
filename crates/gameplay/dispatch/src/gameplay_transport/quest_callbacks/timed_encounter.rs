@@ -18,7 +18,26 @@ pub(super) struct TimedEncounter {
     reset_at: u64,
     attempted_spawn: bool,
     spawned: Vec<ExactActorRef>,
+    occupant: Option<RoomOccupant>,
 }
+struct RoomOccupant {
+    actor: ExactActorRef,
+    session: GameSessionId,
+    exit: Position,
+}
+
+pub(super) struct RoomTimer<'a> {
+    pending: std::sync::MutexGuard<'a, Vec<TimedEncounter>>,
+    memo: TimedEncounter,
+}
+
+impl RoomTimer<'_> {
+    pub(super) fn publish(mut self, actors: Vec<ExactActorRef>) {
+        self.memo.spawned = actors;
+        self.pending.push(self.memo);
+    }
+}
+
 impl TimedEncounter {
     pub(super) fn source_key(&self) -> u64 {
         self.key
@@ -34,6 +53,64 @@ impl TimedEncounter {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the room timer belongs to one fenced encounter entry"
+    )]
+    pub(super) fn prepare_quest_room_timer(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        map: &BundleMap,
+        callback: &Callback,
+        key: u64,
+        revision: u64,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        exit: Position,
+    ) -> Result<RoomTimer<'_>, UseDisposition> {
+        let timing = callback
+            .effects
+            .encounter
+            .as_ref()
+            .and_then(|encounter| encounter.timing)
+            .ok_or(UseDisposition::Rejected)?;
+        let now = self.owner_now().get();
+        let reset_at = now
+            .checked_add(u64::from(timing.reset_after_ms) * 1_000)
+            .ok_or(UseDisposition::Exhausted)?;
+        let revision = revision.checked_add(1).ok_or(UseDisposition::Exhausted)?;
+        let mut pending = self
+            .states
+            .quest_callbacks
+            .timed
+            .lock()
+            .map_err(|_| UseDisposition::Rejected)?;
+        if pending.iter().any(|memo| memo.key == key) {
+            return Err(UseDisposition::Occupied);
+        }
+        if pending.len() >= MAX_TIMED_ENCOUNTERS || pending.try_reserve(1).is_err() {
+            return Err(UseDisposition::Exhausted);
+        }
+        let memo = TimedEncounter {
+            callback: callback.clone(),
+            key,
+            revision,
+            content: runtime.content_pin().server_artifact_digest(),
+            map: map.overlay.base().digest(),
+            scope: runtime.encounter_owner_scope(),
+            spawn_at: now,
+            reset_at,
+            attempted_spawn: true,
+            spawned: Vec::new(),
+            occupant: Some(RoomOccupant {
+                actor,
+                session,
+                exit,
+            }),
+        };
+        Ok(RoomTimer { pending, memo })
+    }
+
     #[allow(
         clippy::too_many_arguments,
         reason = "the held native USE occurrence owns one source timer"
@@ -122,6 +199,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             reset_at,
             attempted_spawn: false,
             spawned: Vec::new(),
+            occupant: None,
         });
         states.owner_wake.notify_one();
         UseDisposition::Committed
@@ -143,6 +221,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        let mut states = self.states.spell_states.lock().await;
         let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
             return;
         };
@@ -153,7 +232,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if memo.content != runtime.content_pin().server_artifact_digest()
                 || memo.map != map.overlay.base().digest()
                 || memo.scope != runtime.encounter_owner_scope()
-                || map.facts.object_revision(memo.key) != memo.revision
+                || (memo.occupant.is_none() && map.facts.object_revision(memo.key) != memo.revision)
             {
                 pending.remove(index);
                 continue;
@@ -166,6 +245,57 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 pending.remove(index);
                 continue;
             };
+            if let Some(occupant) = &memo.occupant {
+                if let Ok(before) = runtime.read_actor_position(occupant.actor)
+                    && runtime
+                        .bound_attacker_lease(occupant.actor, occupant.session)
+                        .is_ok()
+                    && native(before.position()).is_some_and(|position| {
+                        encounter.contains(position.x, position.y, position.floor)
+                    })
+                {
+                    let closed = crate::map::floor::BundleDoors(&map.facts);
+                    let moved = crate::map::floor::prepare_quest_encounter_ejection(
+                        &runtime,
+                        self.movement_cells(),
+                        occupant.actor,
+                        occupant.session,
+                        before,
+                        local(occupant.exit),
+                        &closed,
+                    )
+                    .ok()
+                    .and_then(|proof| runtime.commit_source_step(proof).ok());
+                    let Some(after) = moved else {
+                        // A temporarily occupied exit must not lose the expulsion.
+                        memo.reset_at = now.saturating_add(1_000_000);
+                        index += 1;
+                        continue;
+                    };
+                    states.stage_special_movement_step(
+                        &runtime,
+                        map,
+                        occupant.actor,
+                        occupant.session,
+                        now,
+                        Some(before.position()),
+                        after.position(),
+                        None,
+                    );
+                    states.stage_underwater_step(
+                        &runtime,
+                        occupant.actor,
+                        occupant.session,
+                        now,
+                        underwater(map, before.position()),
+                        underwater(map, after.position()),
+                    );
+                    map.facts.emit_movement_effect(tile(occupant.exit), 11);
+                }
+                super::personal_trial::cleanup(&mut runtime, &mut memo.spawned);
+                pending.remove(index);
+                continue;
+            }
             let Ok(census) = runtime.current_live_creature_census() else {
                 index += 1;
                 continue;

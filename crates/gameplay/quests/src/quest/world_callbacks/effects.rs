@@ -305,12 +305,20 @@ pub struct Encounter {
     pub monsters: Vec<EncounterMonster>,
     pub room_min: Position,
     pub room_max: Position,
-    /// A value-free source switch schedules native monsters without moving a party.
+    /// A delayed source switch, or an immediate solo encounter with timed expulsion.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub timing: Option<EncounterTiming>,
     /// Source phases run on the shared encounter owner after atomic party admission.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phase: Option<EncounterPhase>,
+}
+
+impl Encounter {
+    pub fn contains(&self, x: u16, y: u16, floor: i8) -> bool {
+        floor == self.room_min.floor
+            && (self.room_min.x..=self.room_max.x).contains(&x)
+            && (self.room_min.y..=self.room_max.y).contains(&y)
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -762,6 +770,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             return false;
         }
     }
+    let timed_room = callback.timed_room_exit().is_some();
     let personal_encounter = effects.encounter.as_ref().is_some_and(|encounter| {
         callback.has_personal_state()
             && callback.requires_world_admission
@@ -773,7 +782,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && callback.offerings.is_empty()
             && callback.item_on_target.is_none()
             && encounter.players.len() == 1
-            && encounter.timing.is_none()
+            && (encounter.timing.is_none() || timed_room)
             && effects.item_reward.is_none()
             && effects.outfit_reward.is_none()
     });
@@ -832,18 +841,14 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
     if let Some(encounter) = &effects.encounter {
-        let in_room = |p: Position| {
-            p.floor == encounter.room_min.floor
-                && (encounter.room_min.x..=encounter.room_max.x).contains(&p.x)
-                && (encounter.room_min.y..=encounter.room_max.y).contains(&p.y)
-        };
         let unique_from: BTreeSet<_> = encounter.players.iter().map(|p| p.from).collect();
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
         if (encounter.minimum_level == 0 && !source_party)
             || if let Some(timing) = encounter.timing {
-                !encounter.players.is_empty()
+                (timed_room && !personal_encounter)
+                    || (!timed_room && !encounter.players.is_empty())
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
                     || callback.experience.is_some()
@@ -852,7 +857,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     || callback.item_reward().is_some()
                     || effects.outfit_reward.is_some()
                     || effects.mount_reward.is_some()
-                    || !(1..=60_000).contains(&timing.spawn_after_ms)
+                    || (!timed_room && !(1..=60_000).contains(&timing.spawn_after_ms))
                     || timing.reset_after_ms <= timing.spawn_after_ms
                     || timing.reset_after_ms > 3_600_000
                     || (u64::from(encounter.room_max.x.saturating_sub(encounter.room_min.x)) + 1)
@@ -878,12 +883,13 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || encounter.players.iter().any(|p| {
                 !pos(p.from)
                     || !pos(p.to)
-                    || !in_room(p.to)
-                    || (in_room(p.from) && callback.personal_room_entry() != Some(p.from))
+                    || !encounter.contains(p.to.x, p.to.y, p.to.floor)
+                    || (encounter.contains(p.from.x, p.from.y, p.from.floor)
+                        && callback.personal_room_entry() != Some(p.from))
             })
             || encounter.monsters.iter().any(|m| {
                 !pos(m.position)
-                    || !in_room(m.position)
+                    || !encounter.contains(m.position.x, m.position.y, m.position.floor)
                     || !super::super::valid_quest_key(&m.creature)
             })
         {
