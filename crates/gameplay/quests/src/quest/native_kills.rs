@@ -239,6 +239,7 @@ pub(crate) fn counters() -> impl Iterator<Item = &'static Counter> {
         .iter()
         .chain(qworld::counters().unwrap_or_default())
         .chain(fugue::COUNTERS)
+        .chain(super::threatened_dreams::COUNTERS)
         .chain(
             super::world_change_journals::counters()
                 .into_iter()
@@ -251,6 +252,7 @@ pub(super) fn registered_counters() -> Result<impl Iterator<Item = &'static Coun
     Ok(COUNTERS
         .iter()
         .chain(fugue::COUNTERS)
+        .chain(super::threatened_dreams::COUNTERS)
         .chain(phase_settlements::COUNTERS)
         .chain(qworld::counters()?)
         .chain(super::world_change_journals::counters()?))

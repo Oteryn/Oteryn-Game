@@ -230,13 +230,18 @@ pub(super) async fn apply(
         };
         if states.is_dead(actor)
             || !states.spell_idle(&runtime, actor, command.game_session_id)
-            || admission.states.npc_conversations.current_npc(
-                &admission.states.chat,
-                &runtime,
-                actor,
-                command.game_session_id,
-                &intent,
-            ) != Some(context)
+            || admission
+                .states
+                .npc_conversations
+                .current_npc(
+                    &admission.states.chat,
+                    &runtime,
+                    actor,
+                    command.game_session_id,
+                    &intent,
+                )
+                .as_ref()
+                != Some(&context)
             || !runtime
                 .bound_attacker_lease(actor, command.game_session_id)
                 .is_ok_and(|lease| {
@@ -301,6 +306,16 @@ pub(super) async fn apply(
                 .refresh_quest_session(command.game_session_id, false)
                 .await;
             response(&intent, reply)
+        }
+        Ok(QuestTransitionOutcome::Refused(
+            oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch,
+        )) if transition == quest::REPORT => {
+            install_topic(admission, command.game_session_id, None);
+            admission
+                .refresh_quest_session(command.game_session_id, false)
+                .await;
+            quest::reply(&context.2, 105)
+                .map_or_else(rejected, |reply| response(&intent, reply.to_vec()))
         }
         Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
             _,

@@ -25,6 +25,111 @@ const BASE: &str = "oteryn:quest-progress/quest/u11_40/threatened_dreams/";
 const COUPLE: &str = "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission03_1";
 const COUPLE_PROGRESS: &str =
     "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission03/unlikely_couple";
+pub const QUEST: &str = "oteryn:quest.threatened_dreams_quest";
+pub const ACCESS: &str =
+    "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/kroazur_access";
+pub const REPORT: &str = "oteryn:quest-transition/threatened-dreams/maelyrra-report";
+const START: &str = "oteryn:quest-transition/threatened-dreams/maelyrra-start";
+const ENFEEBLED: &str =
+    "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/enfeebled_count";
+const FRAZZLEMAWS: &str = "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/frazzlemaws_count";
+const KROAZUR: &str =
+    "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/kroazur_kill";
+
+pub(super) const REPORT_TRACKS: [&str; 4] = [NIGHTMARE, ENFEEBLED, FRAZZLEMAWS, KROAZUR];
+
+const NIGHTMARE_COUNTERS: [(&str, &str, &str, i64); 3] = [
+    (
+        "oteryn:quest-transition/native-kills/threatened-dreams/enfeebled-silencer",
+        "oteryn:creature.enfeebled_silencer",
+        ENFEEBLED,
+        i32::MAX as i64,
+    ),
+    (
+        "oteryn:quest-transition/native-kills/threatened-dreams/kroazur",
+        "oteryn:creature.kroazur",
+        KROAZUR,
+        1,
+    ),
+    (
+        "oteryn:quest-transition/native-kills/threatened-dreams/weakened-frazzlemaw",
+        "oteryn:creature.weakened_frazzlemaw",
+        FRAZZLEMAWS,
+        i32::MAX as i64,
+    ),
+];
+
+const fn kill_counter(index: usize) -> super::native_kills::Counter {
+    let (transition, creature, track, maximum) = NIGHTMARE_COUNTERS[index];
+    super::native_kills::Counter {
+        transition,
+        creature,
+        quest: QUEST,
+        track,
+        gate: NIGHTMARE,
+        maximum,
+        authored_stage: false,
+        world_change: None,
+    }
+}
+
+// Crystal 201189f8, threatened_dreams_quest/nightmare_monsters_kills.lua:9-25.
+// The existing party death owner credits the present most-damage player's party.
+pub(super) const COUNTERS: &[super::native_kills::Counter] =
+    &[kill_counter(0), kill_counter(1), kill_counter(2)];
+
+pub(super) fn report_transition() -> super::QuestTransition {
+    use super::{
+        QuestComparison, QuestEffect, QuestEffectKind, QuestTransition, native_rules::NativeRule,
+    };
+    QuestTransition {
+        key: REPORT.into(),
+        quest: QUEST.into(),
+        effects: REPORT_TRACKS
+            .into_iter()
+            .map(|track| QuestEffect {
+                track: track.into(),
+                from: QuestComparison::Any,
+                effect: QuestEffectKind::Native(NativeRule::NightmareIntruders),
+            })
+            .collect(),
+        completes: false,
+        experience: None,
+        world_change: None,
+    }
+}
+
+pub(super) fn start_transition() -> Result<super::QuestTransition, String> {
+    npc_overlay("threatened-dreams")?
+        .catalogue()
+        .transition(START)
+        .cloned()
+        .ok_or_else(|| "missing Maelyrra start".into())
+}
+
+// A persisted quest retains its original hash even after compatible rules
+// are added. Derive the exact predecessor from the unchanged source rules.
+pub(super) fn retain_nightmare_predecessor(catalogue: &mut super::QuestStateCatalogue) {
+    let mut tracks = catalogue.tracks.clone();
+    tracks.remove(KROAZUR);
+    let mut transitions = catalogue.transitions.clone();
+    transitions.remove(REPORT);
+    for counter in COUNTERS {
+        transitions.remove(counter.transition);
+    }
+    let hash = super::definition_hash(QUEST, &tracks, &transitions);
+    let defaults = tracks
+        .into_values()
+        .filter(|track| track.quest == QUEST)
+        .map(|track| (track.key, track.initial))
+        .collect();
+    catalogue
+        .predecessors
+        .entry(QUEST.to_owned())
+        .or_default()
+        .push(super::NpcDefinitionPredecessor { hash, defaults });
+}
+
 const NIGHTMARE: &str = "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/nightmare_intruders";
 const FAIRIES: &str =
     "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/fairies_counter";
@@ -320,9 +425,8 @@ pub fn choose(
             }
         }
         "oteryn:npc.maelyrra" => {
-            // Crystal npc/maelyrra.lua:61-170. Deferred sum/item/final reward
-            // predicates require the excluded owners; no success text or flag
-            // substitutes for them (PR2844 ANSWER6589521017, point5).
+            // Crystal npc/maelyrra.lua:61-170. The report's inputs are evaluated
+            // by the fenced writer. Later inventory predicates have separate owners.
             let nightmare = value(NIGHTMARE);
             if contains(text, "mission") {
                 return Some(match nightmare {
@@ -337,30 +441,14 @@ pub fn choose(
             }
             if contains(text, "yes") {
                 if at(1) {
-                    return Some(answer(
-                        86,
-                        0,
-                        Some("oteryn:quest-transition/threatened-dreams/maelyrra-start"),
-                    ));
+                    return Some(answer(86, 0, Some(START)));
                 }
                 if at(2) {
                     if nightmare == 2 {
                         return Some(answer(102, 3, None));
                     }
-                    let enfeebled = value(
-                        "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/enfeebled_count",
-                    );
-                    let frazzlemaws = value(
-                        "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/frazzlemaws_count",
-                    );
-                    let kroazur = value(
-                        "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/kroazur_kill",
-                    );
-                    if nightmare == 1
-                        && kroazur >= 1
-                        && i128::from(enfeebled) + i128::from(frazzlemaws) >= 200
-                    {
-                        return None;
+                    if nightmare == 1 {
+                        return Some(answer(98, 3, Some(REPORT)));
                     }
                     return Some(answer(105, 0, None));
                 }
@@ -585,14 +673,18 @@ pub fn reply(npc: &str, line: u16) -> Option<&'static [String]> {
         .map(|b| b.reply.as_slice())
 }
 
+fn npc_overlay(content_revision: &str) -> Result<super::loader::LoweredQuestState, String> {
+    super::loader::parse_quest_state(
+        include_str!("../../../../../content/quests/threatened-dreams-npc.json"),
+        content_revision,
+    )
+    .map_err(|e| format!("{e:?}"))
+}
+
 pub(super) fn extend(
     catalogue: super::QuestStateCatalogue,
 ) -> Result<super::QuestStateCatalogue, String> {
-    let overlay = super::loader::parse_quest_state(
-        include_str!("../../../../../content/quests/threatened-dreams-npc.json"),
-        catalogue.content_revision(),
-    )
-    .map_err(|e| format!("{e:?}"))?;
+    let overlay = npc_overlay(catalogue.content_revision())?;
     let mut tracks = catalogue.tracks.clone();
     let mut transitions = catalogue.transitions.clone();
     for (key, track) in &overlay.catalogue().tracks {
@@ -608,6 +700,20 @@ pub(super) fn extend(
         {
             return Err(format!("Threatened Dreams transition conflict {key}"));
         }
+    }
+    let boss_credit = super::QuestTrack {
+        key: KROAZUR.into(),
+        quest: QUEST.into(),
+        initial: 0,
+        min: 0,
+        max: 1,
+    };
+    if tracks.insert(KROAZUR.into(), boss_credit).is_some()
+        || transitions
+            .insert(REPORT.into(), report_transition())
+            .is_some()
+    {
+        return Err("Threatened Dreams report conflicts with existing rules".into());
     }
     super::QuestStateCatalogue::new(
         catalogue.content_revision,
@@ -969,8 +1075,7 @@ mod tests {
     }
 
     #[test]
-    fn threatened_expansion_does_not_claim_held_inventory_or_sum_kill_completion()
-    -> Result<(), String> {
+    fn threatened_report_requests_atomic_rule_and_inventory_stays_held() -> Result<(), String> {
         let npc = "oteryn:npc.maelyrra";
         let tracks=BTreeMap::from([
             ("oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/nightmare_intruders".into(),1),
@@ -978,10 +1083,15 @@ mod tests {
             ("oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/frazzlemaws_count".into(),50),
             ("oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/kroazur_kill".into(),1),
         ]);
-        for step in [2, 7, 8] {
+        assert_eq!(
+            choose(npc, "yes", Some(Topic { npc, step: 2 }), &tracks)
+                .and_then(|choice| choice.transition),
+            Some(REPORT)
+        );
+        for step in [7, 8] {
             assert!(
                 choose(npc, "yes", Some(Topic { npc, step }), &tracks).is_none(),
-                "no atomic source guard or inventory owner for this completion"
+                "inventory owner is required for this completion"
             );
         }
         assert!(
