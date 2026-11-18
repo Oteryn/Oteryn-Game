@@ -3,9 +3,13 @@ use super::fixture::{Harness, debug};
 use super::quest_world_callbacks::{local, scenario, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::ExactActorRef;
+use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+use crate::gameplay_transport::item_view::ItemKey;
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position, Trigger};
-use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+use oteryn_protocol_oteryn::world_object::{
+    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
+};
 use oteryn_protocol_oteryn::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, decode_step_result, encode_step_intent,
 };
@@ -198,6 +202,45 @@ pub(super) async fn exercise(
         };
         if name == SATCHEL {
             return exercise_satchel(owner, admitted, h, actor, start, expected, target, key).await;
+        }
+        if name == "galthen-iksupan-entrance" {
+            let item = "oteryn:item.tibia.i3003";
+            super::item_look::seed_main_backpack(h, &[(item, 1)]).await?;
+            let result = owner
+                .tame_mount(
+                    actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: admitted.continuity.next_command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    UseIntent {
+                        target: UseTarget::Item(std::num::NonZeroU64::MIN),
+                        use_with: None,
+                        use_with_map_item: Some(MapUseTarget::Object(target.clone())),
+                        use_with_position: None,
+                    },
+                    Some(ItemKey::Instance(super::fixture::id(71))),
+                    None,
+                    false,
+                )
+                .await
+                .map_err(debug)?;
+            assert_eq!(
+                result.map(|outcome| outcome.disposition),
+                Some(UseDisposition::NotPossible),
+                "Crystal registers only direct USE for the Iksupan entrance"
+            );
+            assert_eq!(
+                owner
+                    .runtime
+                    .lock()
+                    .await
+                    .read_actor_position(actor)?
+                    .position(),
+                local(start)
+            );
+            assert!(map.facts.movement_effects_since(effect_before).is_empty());
         }
         let outcomes =
             super::quest_callbacks::wire_use_targets_retained(owner, admitted, &[(1, &target)])
