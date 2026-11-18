@@ -805,6 +805,11 @@ fn native_soulpit_scenario_with_entry_cue(
                             tokio::time::timeout(std::time::Duration::from_secs(10), async {
                                 let mut global_due = owner.owner_now().get();
                                 loop {
+                                    // The real Node also runs activity_cycles.rs: finish
+                                    // deferred kill work and retained native returns before
+                                    // asking the Source owner for its next encounter step.
+                                    // A deferred pass retries under the same fixture deadline.
+                                    let _ = owner.activity_lifecycle_pass_with(false).await;
                                     let now = owner.owner_now().get();
                                     let global = now >= global_due;
                                     if global { global_due = now.saturating_add(1_000_000); }
