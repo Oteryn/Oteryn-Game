@@ -94,7 +94,6 @@ pub(super) async fn exercise(
             vec!["hi", "feed", "yes"],
         )
         .await?;
-        assert_eq!(result, expected);
         let sources: i64 = sqlx::query_scalar(
             "SELECT count(*) FROM game_quest_reward_sources
              WHERE transition_key=$1 AND mint_transaction_id IS NOT NULL AND plan->>'experience'='250'"
@@ -109,6 +108,7 @@ pub(super) async fn exercise(
         ).fetch_one(&h.pool).await?;
         assert_eq!(contents.0, 2 - reports);
         assert_eq!(contents.1 + 100 * contents.2, 150 * reports);
+        assert_eq!(result, expected, "clock {clock}");
     }
     Ok(())
 }

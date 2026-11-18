@@ -539,17 +539,18 @@ pub(super) async fn apply(
             );
             rendered.disposition = NpcIntentDisposition::Rejected;
             let runtime = admission.runtime.lock().await;
-            publish_committed_reply(
-                admission.states.npc_conversations.current_npc(
-                    &admission.states.chat,
-                    &runtime,
-                    actor,
-                    command.game_session_id,
-                    &intent,
-                ),
-                &step.context,
-                rendered,
-            )
+            if admission.states.npc_conversations.current_npc(
+                &admission.states.chat,
+                &runtime,
+                actor,
+                command.game_session_id,
+                &intent,
+            ) == Some(step.context)
+            {
+                rendered
+            } else {
+                rejected()
+            }
         }
     }
 }
