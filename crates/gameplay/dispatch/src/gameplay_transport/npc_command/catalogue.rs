@@ -348,10 +348,11 @@ pub(super) fn prepare(
             .ok()
             .flatten();
     if teleport.as_ref().is_some_and(|p| {
-        !matches!(
+        !(matches!(
             p.source.quest.as_str(),
             "oteryn:quest.the_paradox_tower_quest" | "oteryn:quest.in_service_of_yalahar_quest"
-        )
+        ) || (p.source.quest == "oteryn:quest.blood_brothers_quest"
+            && request.npc == "oteryn:npc.armenius"))
     }) {
         return Some(Step::Refused);
     }

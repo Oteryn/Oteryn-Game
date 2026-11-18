@@ -80,8 +80,24 @@ impl<'a> Staged<'a> {
         &mut self,
         guard: &NpcRuleGuard,
         input: &NpcRuleInput<'_>,
+        seed: Option<[u8; 32]>,
     ) -> Result<bool, NpcRuleError> {
         Ok(match guard {
+            NpcRuleGuard::Roll { sides, value } => {
+                // Crystal npc/armenius.lua:87-104 chooses once for the entire reply.
+                let sides = u64::from(*sides);
+                let draw = seed
+                    .and_then(|seed| {
+                        seed.as_chunks::<8>()
+                            .0
+                            .iter()
+                            .copied()
+                            .map(u64::from_be_bytes)
+                            .find(|draw| *draw < u64::MAX - u64::MAX % sides)
+                    })
+                    .ok_or_else(|| NpcRuleError::MissingNativeResolution("dialogue roll".into()))?;
+                draw % sides + 1 == u64::from(*value)
+            }
             NpcRuleGuard::Storage {
                 track,
                 op,
@@ -308,14 +324,30 @@ pub(super) fn plan(
     resolutions: &BTreeMap<String, Vec<NpcRuleEffect>>,
     storage_only: bool,
 ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
-    plan_with_teleport(catalogue, input, resolutions, storage_only, false)
+    plan_with_teleport(catalogue, input, resolutions, storage_only, false, None)
+}
+
+pub(super) fn plan_occurrence(
+    catalogue: &NpcRuleCatalog,
+    input: &NpcRuleInput<'_>,
+    teleport: bool,
+    seed: [u8; 32],
+) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+    plan_with_teleport(
+        catalogue,
+        input,
+        &BTreeMap::new(),
+        true,
+        teleport,
+        Some(seed),
+    )
 }
 
 pub(super) fn plan_teleport(
     catalogue: &NpcRuleCatalog,
     input: &NpcRuleInput<'_>,
 ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
-    plan_with_teleport(catalogue, input, &BTreeMap::new(), true, true)
+    plan_with_teleport(catalogue, input, &BTreeMap::new(), true, true, None)
 }
 
 fn plan_with_teleport(
@@ -324,6 +356,7 @@ fn plan_with_teleport(
     resolutions: &BTreeMap<String, Vec<NpcRuleEffect>>,
     storage_only: bool,
     allow_teleport: bool,
+    seed: Option<[u8; 32]>,
 ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
     if input.topic < 0 || input.message.len() > 4096 || input.inventory.items.len() > 4096 {
         return Err(NpcRuleError::Invalid("invalid NPC input".into()));
@@ -359,7 +392,8 @@ fn plan_with_teleport(
                 if storage_only
                     && !matches!(
                         guard,
-                        NpcRuleGuard::Storage { .. }
+                        NpcRuleGuard::Roll { .. }
+                            | NpcRuleGuard::Storage { .. }
                             | NpcRuleGuard::StorageTime { .. }
                             | NpcRuleGuard::CalendarMonth { .. }
                             | NpcRuleGuard::Level { .. }
@@ -370,7 +404,7 @@ fn plan_with_teleport(
                 {
                     return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));
                 }
-                if !state.guard(guard, input)? {
+                if !state.guard(guard, input, seed)? {
                     eligible = false;
                     break;
                 }

@@ -108,7 +108,7 @@ pub(super) fn evaluate(
     Option<NpcTeleportPlan>,
     oteryn_gameplay_quests::quest::npc_rules::NpcRuleError,
 > {
-    source.plan_storage_teleport(&NpcRuleInput {
+    source.plan_teleport_occurrence(&NpcRuleInput {
         npc: &request.npc,
         trigger: request.trigger,
         message: &request.message,
@@ -123,7 +123,7 @@ pub(super) fn evaluate(
         vocation: &facts.eligibility.vocation,
         sex: facts.appearance.1,
         outfits: facts.appearance.0,
-    })
+    }, dialogue_seed(request))
 }
 
 pub(super) fn response(plan: &NpcRulePlan) -> NpcProgramCommit {

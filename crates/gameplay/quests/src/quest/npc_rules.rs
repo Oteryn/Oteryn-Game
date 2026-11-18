@@ -123,6 +123,11 @@ pub struct NpcRulePosition {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum NpcRuleGuard {
+    /// One server-owned, replay-stable die for the current dialogue occurrence.
+    Roll {
+        sides: u8,
+        value: u8,
+    },
     Storage {
         track: String,
         op: NpcComparison,
@@ -619,6 +624,14 @@ impl NpcRuleCatalog {
         input: &NpcRuleInput<'_>,
     ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
         evaluate::plan(self, input, &BTreeMap::new(), true)
+    }
+
+    pub fn plan_storage_occurrence(
+        &self,
+        input: &NpcRuleInput<'_>,
+        seed: [u8; 32],
+    ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+        evaluate::plan_occurrence(self, input, false, seed)
     }
 
     /// Inventory recipes own exact carried items and UTC calendar facts. Other

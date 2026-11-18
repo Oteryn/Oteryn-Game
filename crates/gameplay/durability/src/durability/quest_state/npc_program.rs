@@ -299,8 +299,18 @@ fn evaluate_source(
     } else if inventory.is_some() {
         source.plan_item_exchange(&input)
     } else {
-        source.plan_storage(&input)
+        source.plan_storage_occurrence(&input, dialogue_seed(request))
     }
+}
+
+fn dialogue_seed(request: &NpcProgramRequest) -> [u8; 32] {
+    Sha256::new()
+        .chain_update(b"oteryn:quest-npc-dialogue-roll:v1\0")
+        .chain_update(request.command.game_session_id().as_bytes())
+        .chain_update(request.command.command_id().get().to_be_bytes())
+        .chain_update(request.npc.as_bytes())
+        .finalize()
+        .into()
 }
 
 impl DurabilityRoot {

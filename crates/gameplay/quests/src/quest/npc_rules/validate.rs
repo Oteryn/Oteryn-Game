@@ -267,6 +267,9 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
             }
             for guard in &rule.guards {
                 let valid = match guard {
+                    NpcRuleGuard::Roll { sides, value } => {
+                        (2..=32).contains(sides) && (1..=*sides).contains(value)
+                    }
                     NpcRuleGuard::Storage {
                         track,
                         op,

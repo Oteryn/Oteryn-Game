@@ -17,7 +17,19 @@ impl NpcRuleCatalog {
         &self,
         input: &NpcRuleInput<'_>,
     ) -> Result<Option<NpcTeleportPlan>, NpcRuleError> {
-        let Some(source) = super::evaluate::plan_teleport(self, input)? else {
+        Self::teleport_plan(super::evaluate::plan_teleport(self, input)?)
+    }
+
+    pub fn plan_teleport_occurrence(
+        &self,
+        input: &NpcRuleInput<'_>,
+        seed: [u8; 32],
+    ) -> Result<Option<NpcTeleportPlan>, NpcRuleError> {
+        Self::teleport_plan(super::evaluate::plan_occurrence(self, input, true, seed)?)
+    }
+
+    fn teleport_plan(source: Option<NpcRulePlan>) -> Result<Option<NpcTeleportPlan>, NpcRuleError> {
+        let Some(source) = source else {
             return Ok(None);
         };
         let mut destination = None;
@@ -41,6 +53,7 @@ impl NpcRuleCatalog {
                 | NpcRuleEffect::Add { .. }
                 | NpcRuleEffect::SetNowPlus { .. }
                 | NpcRuleEffect::SetTopic { .. }
+                | NpcRuleEffect::Achievement { .. }
                 | NpcRuleEffect::EndConversation { .. } => {}
                 _ => {
                     return Err(NpcRuleError::MissingNativeResolution(
