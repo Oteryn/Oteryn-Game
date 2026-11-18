@@ -378,6 +378,19 @@ fn scenario(case: Case) -> TestResult {
                 "SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_boss_reward_items)"
             ).fetch_one(&h.pool).await?;
             assert_eq!(counts, (0, 0, 0));
+            let config: Option<Vec<String>> = sqlx::query_scalar(
+                "SELECT proconfig FROM pg_proc WHERE oid='game_boss_reward_death_complete()'::regprocedure"
+            ).fetch_one(&h.pool).await?;
+            let expected: String = sqlx::query_scalar(
+                "SELECT format('search_path=pg_catalog, %I, pg_temp', current_schema())",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(
+                config,
+                Some(vec![expected]),
+                "the replacement keeps its fixed search path"
+            );
             drop(owner);
             drop(authority);
             drop(seal);
