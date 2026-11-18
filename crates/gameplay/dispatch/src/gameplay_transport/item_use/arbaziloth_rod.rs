@@ -3,7 +3,7 @@ use super::*;
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use oteryn_protocol_oteryn::world_object::{UseIntent, UseTarget, encode_item_use_intent};
 
-const ROD: &str = "oteryn:item.tibia.i3483";
+use oteryn_gameplay_items::fishing::FISHING_ROD as ROD;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn use_arbaziloth_rod(

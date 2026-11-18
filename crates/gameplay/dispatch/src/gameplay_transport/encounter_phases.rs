@@ -407,10 +407,10 @@ impl ActivePhase {
                 };
                 candidate != position
                     && placement(&self.cells, runtime, candidate)
-                    && map.floors().teleport(*at).is_none()
+                    && map.floors.teleport(*at).is_none()
             })
             .collect();
-        let count = u64::try_from(candidates.len()).map_err(|_| CarrierError::PlanConflict)?;
+        let count = i64::try_from(candidates.len()).map_err(|_| CarrierError::PlanConflict)?;
         if count == 0 {
             return Err(CarrierError::PlanConflict);
         }
