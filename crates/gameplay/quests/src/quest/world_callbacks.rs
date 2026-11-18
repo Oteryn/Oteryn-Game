@@ -760,6 +760,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     ))?);
     callbacks.push(super::barbarian_mead::callback()?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/galthen.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/qready1-clocks.json"
     ))?);
     callbacks.extend(parse(include_str!(
