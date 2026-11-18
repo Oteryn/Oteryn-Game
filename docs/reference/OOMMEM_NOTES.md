@@ -2,8 +2,8 @@
 
 Base verified against origin/main at `2c1e9158c30b411de28ec064bc7198ea4f87dd44`.
 Rust 1.100.0, 16 GiB cgroup, no swap. Linux `wait4` supplied peak RSS and
-wall time because `/usr/bin/time` was unavailable. RSS is the largest
-process peak, not the sum across concurrently running processes.
+wall time because `/usr/bin/time` was unavailable. RSS records the largest
+individual process peak. Concurrent processes also contribute to cgroup usage.
 
 | Run | Cargo jobs | Peak RSS (KiB) | Wall (s) | Result |
 | --- | ---: | ---: | ---: | --- |
@@ -35,8 +35,8 @@ An empty generated mount list (0 mounted files, 0 PostgreSQL test
 attributes) reached 4,281,120 KiB after 120.644 s with two Cargo jobs.
 This run failed at compile time. Existing test modules import helpers from
 ten of the removed modules, including `inspection`,
-`scheduled_event_rates`, and `appearance_change_postgres`. Its peak is
-therefore a failed type-check measurement, rather than a complete test build.
+`scheduled_event_rates`, and `appearance_change_postgres`. Its peak
+measures the failed type-check run only.
 The test sources and build script were untouched. All ablations use temporary
 generated mount lists.
 
@@ -79,3 +79,92 @@ cgroup killed both rustc and Cargo. Wall time was 644.269 s. The verbose
 command confirmed `-C codegen-units=256` and omitted `-C incremental`.
 No linker ran. The package override did not produce a usable binary.
 The clean half-mount link replay used 4,898,860 KiB in 9.891 s.
+
+## Proposed structural fix
+
+Keep the remaining library unit tests in dispatch. Extract the shared
+fixtures imported across mount boundaries and mount the same PostgreSQL
+cases into three integration targets in the dispatch package,
+`dispatch-pg-1`, `dispatch-pg-2`, and `dispatch-pg-3`. Keep one owner
+per case, preserve assertions and use the production dispatch boundary.
+Assign the offline-death retry case to `dispatch-pg-1`.
+
+The measured half's complement needs 646 module roots before fixture
+extraction, including 278 shared with the measured half. Balancing by
+source lines yields three nominal groups of 245 roots and approximately
+657, 769 and 744 lexical test attributes. Before fixture extraction their
+dependency closures expand to 463, 472 and 466 roots. The shared fixture
+split is required to realize those savings. Interpolating between the
+11.10 GiB fixture-only control and 15.08 GiB half-mount build gives
+planning peaks of about 13.4, 13.8 and 13.7 GiB, respectively. The
+estimate includes the cost of the remaining library test code and is
+unverified for independent targets.
+
+Compile the targets serially into the existing archive. The PostgreSQL
+planner already enumerates distinct binary IDs and assigns each listed
+case once. The PR unit jobs include the three targets when dispatch is
+selected and retain their exhaustive `hash:<shard>` partition. The
+Merge Queue integration-test planner discovers the new targets through
+Cargo metadata. The PG archive selects them explicitly for execution
+with PostgreSQL. Before landing, compare the sorted test-name multisets
+from the full base binary and the union of the four proposed targets,
+then measure each target and run the affected PostgreSQL cases.
+
+The diff below selects the targets after they exist. The exact-command
+assertions in the merge-authority audit and repository validators also
+need to be synchronized through the protected change process. Test
+durations keyed by current binary ID need the new IDs to retain the
+existing scheduling estimates. The proposed split was too large to
+implement and verify as a package-only change. The branch contains the
+investigation report only.
+
+### Proposed workflow diff
+
+```diff
+--- a/.github/workflows/pr-postgres-harness.yml
++++ b/.github/workflows/pr-postgres-harness.yml
+@@ -341,5 +341,11 @@
+           test "${#args[@]}" -gt 0
+           mkdir -p "$RUNNER_TEMP/pg-archives"
+-          cargo +1.100.0 nextest archive --locked "${args[@]}" --lib \
++          pg_targets=()
++          for package in "${packages[@]}"; do
++            if [[ "$package" == oteryn-gameplay-dispatch ]]; then
++              pg_targets=(--test dispatch-pg-1 --test dispatch-pg-2 --test dispatch-pg-3)
++            fi
++          done
++          CARGO_BUILD_JOBS=1 cargo +1.100.0 nextest archive --locked "${args[@]}" --lib "${pg_targets[@]}" \
+             --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
+ 
+--- a/.github/workflows/merge-gate.yml
++++ b/.github/workflows/merge-gate.yml
+@@ -1006,5 +1006,9 @@
+           code=0
+           mapfile -t package_args < "$RUNNER_TEMP/rust-fast-package-args.txt"
+-          cargo +1.100.0 nextest run --locked "${package_args[@]}" --lib --bins \
++          pg_targets=()
++          if grep -Fxq -e '--workspace' -e 'oteryn-gameplay-dispatch' "$RUNNER_TEMP/rust-fast-package-args.txt"; then
++            pg_targets=(--test dispatch-pg-1 --test dispatch-pg-2 --test dispatch-pg-3)
++          fi
++          cargo +1.100.0 nextest run --locked "${package_args[@]}" --lib --bins "${pg_targets[@]}" \
+             --config-file "$RUNNER_TEMP/nextest.toml" --profile rust-fast -E "$expression" \
+             --partition "hash:${SHARD}" --no-tests=pass --no-fail-fast < /dev/null || code=$?
+--- a/.github/workflows/merge-group-gate.yml
++++ b/.github/workflows/merge-group-gate.yml
+@@ -833,5 +833,5 @@
+         run: |
+           set -euo pipefail
+-          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
++          CARGO_BUILD_JOBS=1 cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --test dispatch-pg-1 --test dispatch-pg-2 --test dispatch-pg-3 --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
+ 
+       - name: Record archive digests and candidate
+--- a/.github/workflows/integration-regressions.yml
++++ b/.github/workflows/integration-regressions.yml
+@@ -168,5 +168,5 @@
+           set -euo pipefail
+           test -n "$OTERYN_TEST_POSTGRES_ADMIN_URL"
+-          cargo +1.100.0 test --locked -p oteryn-gameplay-dispatch --lib \
++          cargo +1.100.0 test --locked -p oteryn-gameplay-dispatch --test dispatch-pg-1 \
+             'gameplay_transport::monk_save::postgres_tests::boss_activity::boss_activity_postgres_offline_native_death_deadline_retry_keeps_retained_trigger' \
+             -- --exact --nocapture 2>&1 | tee "$RUNNER_TEMP/offline-death-retry-postgres.log"
+```
