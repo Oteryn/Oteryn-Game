@@ -405,3 +405,97 @@ fn fugue_native_combat_closure_qualifies_every_source_attack_and_heal()
     );
     Ok(())
 }
+
+#[test]
+fn unwelcome_delays_brother_and_links_only_its_admitted_boss() {
+    use crate::content::creature_policy::CompiledCreaturePolicies;
+    use oteryn_gameplay_entities::*;
+    use unwelcome::{BROTHER_WORM, UNWELCOME, UnwelcomeEncounter};
+
+    let world = WorldId::decode(&uuid(1)).unwrap();
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        ChannelId::decode(&uuid(2)).unwrap(),
+        NodeId::decode(&uuid(3)).unwrap(),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        8,
+        ChannelContentPin::test(world),
+    )
+    .unwrap();
+    let session = GameSessionId::decode(&uuid(4)).unwrap();
+    let reserved = runtime.reserve_fresh_session(session).unwrap();
+    let player = runtime.commit_fresh_session(reserved).unwrap();
+    let party = [(player, session)];
+    let entry = |x| MovementLocalPosition {
+        x,
+        y: 100,
+        floor: 7,
+    };
+    runtime
+        .install_companion_policies(
+            CompiledCreaturePolicies::from_active_artifact(
+                runtime.content_pin().server_artifact_digest(),
+                vec![policy(UNWELCOME), policy(BROTHER_WORM)],
+            )
+            .unwrap(),
+        )
+        .unwrap();
+    let actors = runtime
+        .commit_quest_creature_spawn(&[(UNWELCOME, 100, entry(100)), (UNWELCOME, 100, entry(101))])
+        .unwrap();
+    let boss = actors[0];
+    let unrelated = actors[1];
+    let mut fight = UnwelcomeEncounter::bind(&runtime, &party, boss, entry(102), 40).unwrap();
+    fight
+        .advance(&mut runtime, 20_000_039, |_, _| true)
+        .unwrap();
+    assert_eq!(runtime.current_live_creature_census().unwrap().len(), 2);
+    fight
+        .advance(&mut runtime, 20_000_040, |_, _| true)
+        .unwrap();
+    let brother = runtime
+        .visible_entities()
+        .creatures
+        .into_iter()
+        .map(|row| row.actor)
+        .find(|actor| runtime.matches_live_creature_identity(*actor, BROTHER_WORM.as_bytes()))
+        .unwrap();
+    assert!(
+        fight
+            .projected_death(&mut runtime, brother, 20_001)
+            .is_err()
+    );
+    runtime
+        .borrow_exact_actor_commit()
+        .commit_damage(
+            brother,
+            OwnerDamageCommand {
+                target: BROTHER_WORM.as_bytes(),
+                occurrence: b"native-phase-test",
+                binding: b"brother-lethal",
+                damage: 100,
+            },
+        )
+        .unwrap();
+    let mut death = runtime.borrow_combat_death();
+    let lethal = death.committed_lethal_receipt(brother).unwrap();
+    death.project_committed_lethal(lethal).unwrap();
+    assert_eq!(
+        fight
+            .projected_death(&mut runtime, brother, 20_001)
+            .unwrap(),
+        Some(boss)
+    );
+    assert_eq!(runtime.live_creature_health(unrelated), Some(100));
+    let mut death = runtime.borrow_combat_death();
+    let lethal = death.committed_lethal_receipt(boss).unwrap();
+    death.project_committed_lethal(lethal).unwrap();
+    assert_eq!(
+        fight.projected_death(&mut runtime, boss, 20_001).unwrap(),
+        None
+    );
+    assert_eq!(fight.victors(&runtime).unwrap(), Some(party.as_slice()));
+}
