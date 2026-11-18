@@ -75,6 +75,9 @@ pub(super) async fn exercise(
             assert!(map.facts.transform_movement_item_facts(key, after));
         }
     }
+    owner.clock_origin = owner.clock_origin
+        .checked_sub(std::time::Duration::from_secs(1))
+        .ok_or("clock")?;
     let response=super::quest_world_callbacks::wire(owner,admitted,2,2,use_source(0)?).await?;
     assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&response).map_err(debug)?,UseDisposition::Committed);
     let due={
