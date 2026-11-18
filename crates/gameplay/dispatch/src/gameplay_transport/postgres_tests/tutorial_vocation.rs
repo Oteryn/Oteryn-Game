@@ -4,6 +4,7 @@ use super::tutorial_vitals_fixture::{admit, native_asset_revisions, publish_nati
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
 use oteryn_protocol_oteryn::CommandStatus;
+use crate::gameplay_transport::connection::{ControlLossResult, FreshAdmissionAuthority, ResumeAttempt};
 
 #[test]
 fn tutorial_vocation_offer_and_submit_real_dispatch() -> TestResult {
@@ -27,7 +28,16 @@ fn vocation_scenario(missing_bag: bool, retained: bool) -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("tutorial-vocation", move || {
         run(async |admin| {
             let h = Harness::create_newhaven(admin, "tutorial_vocation").await?;
-            let request = prepare_current_session(&h).await?;
+            let recovery = if retained {
+                Some(super::house_transfer::RecoverySource::start(&h).await?)
+            } else {
+                None
+            };
+            let request = if retained {
+                super::house_transfer::prepare_owned_session_request(&h).await?
+            } else {
+                prepare_current_session(&h).await?
+            };
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -59,6 +69,9 @@ fn vocation_scenario(missing_bag: bool, retained: bool) -> TestResult {
             )?;
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(active);
+            if let Some(recovery) = &recovery {
+                owner.evidence = &recovery.evidence;
+            }
             let mut admitted = deps.admitted;
             Box::pin(owner.admit_progression_session(&mut admitted)).await;
             admit(&owner, &deps, &request).await?;
@@ -77,7 +90,7 @@ fn vocation_scenario(missing_bag: bool, retained: bool) -> TestResult {
                 CommandStatus::Rejected,
                 "504 must be selected"
             );
-            let offers = [
+            const OFFERS: &[OfferedCapability] = &[
                 OfferedCapability {
                     id: 31,
                     requires: &[],
@@ -88,7 +101,10 @@ fn vocation_scenario(missing_bag: bool, retained: bool) -> TestResult {
                 },
             ];
             admitted.continuity.selected_capabilities =
-                SelectedCapabilities::select(&offers, &[31, 504]).ok_or("select vocation")?;
+                SelectedCapabilities::select(OFFERS, &[31, 504]).ok_or("select vocation")?;
+            owner.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+                &[], current.current_runtime_scope(), current.current_scope_generation().get(), "policy-1", OFFERS,
+            ).map_err(debug)?;
             let (status, bytes) =
                 super::cyclopedia::support::exchange(&owner, &mut admitted, 2, 6243, &[]).await?;
             assert_eq!(
@@ -189,15 +205,22 @@ fn vocation_scenario(missing_bag: bool, retained: bool) -> TestResult {
                         formula_digest: formula.digest()
                     }
                 ));
-                sqlx::query("UPDATE game_durability_reconnect_sessions SET current_generation=current_generation+1 WHERE game_session_id=encode($1,'hex')::uuid").bind(admitted.game_session_id.as_bytes().as_slice()).execute(&h.pool).await?;
-                admitted.continuity.connection_generation += 1;
-                admitted.item_fence = Some(
-                    owner
-                        .npc_vocation_fence(admitted.game_session_id)
-                        .await
-                        .ok_or("resumed fence")?
-                        .item_fence(),
+                owner.states.command_ingress.admit(admitted.game_session_id);
+                assert_eq!(
+                    owner.lose_control(admitted, std::time::Duration::ZERO, None).await,
+                    ControlLossResult::Recorded,
                 );
+                let token = super::house_transfer::RecoverySource::token(88)?;
+                let prior = admitted;
+                admitted = owner.resume_session(ResumeAttempt {
+                    game_session_id: prior.game_session_id,
+                    recovery_material: token.as_bytes(),
+                    transport: crate::foundation::AuthenticatedTransportRefV1::decode(&[88; 16]).map_err(debug)?,
+                    last_applied_server_sequence: prior.continuity.server_sequence,
+                    supported_capabilities: prior.continuity.selected_capabilities.as_slice(),
+                }).await.map_err(debug)?;
+                assert_eq!(admitted.game_session_id, prior.game_session_id);
+                assert_eq!(admitted.continuity.connection_generation, prior.continuity.connection_generation + 1);
             }
             let (status, selected) = super::cyclopedia::support::exchange(
                 &owner,
@@ -245,12 +268,15 @@ fn vocation_scenario(missing_bag: bool, retained: bool) -> TestResult {
                 refusal.starts_with("cyclopedia command 9/6243 ended AdmittedThenDisconnected(")
             );
             assert!(refusal.ends_with("early eof"));
-            let receipts: i64 = sqlx::query_scalar(
-                "SELECT count(*) FROM game_character_build_receipts WHERE cause='vocation_choice'",
+            let occurrences: Vec<Vec<u8>> = sqlx::query_scalar(
+                "SELECT uuid_send(build_occurrence_id) FROM game_character_build_receipts WHERE cause='vocation_choice'",
             )
-            .fetch_one(&h.pool)
+            .fetch_all(&h.pool)
             .await?;
-            assert_eq!(receipts, 1);
+            assert_eq!(occurrences.len(), 1);
+            if retained {
+                assert_eq!(occurrences[0], id(88));
+            }
             let grants: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_starter_grants WHERE template_key LIKE 'oteryn:starter.newhaven.%'").fetch_one(&h.pool).await?;
             assert!(grants > 0, "the accepted profession kit is granted");
             if let Some(directory) = std::env::var_os("OTERYN_TUTORIAL_VOCATION_CAPTURE") {
