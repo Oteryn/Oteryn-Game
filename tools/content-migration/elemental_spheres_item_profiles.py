@@ -4,11 +4,13 @@ import json
 import encounter_loot_item_admissions as loot
 import qengine_reward_item_profiles as rewards
 
-# Crystal 201189f8 data-global/npc/arkulius.lua:162-165 selects these identities.
+ICE_CRYSTAL = 942
+
+# Crystal 201189f8 actions_lever.lua:1-25 and
+# data-global/npc/arkulius.lua:162-165 select these identities.
 # The retained Item source supplies corroborated physical values only.
 WEIGHTS = {
-    # Crystal actions_lever.lua checks these three carried items. Ice crystal
-    # (942), the fourth carried item, already has canonical custody.
+    ICE_CRYSTAL: 250,
     946: 250,
     947: 250,
     948: 250,
@@ -34,7 +36,8 @@ def qualified(root):
 
 def apply_admissions(definitions, root):
     qualified(root)
-    loot.apply_admissions(definitions, root, set(WEIGHTS), source_core=True)
+    # The Flawless Ice Crystal has an existing canonical admission.
+    loot.apply_admissions(definitions, root, set(WEIGHTS) - {ICE_CRYSTAL}, source_core=True)
 
 
 def admit(root, generated, profile, manifest, order, canonical):
@@ -50,8 +53,16 @@ def admit(root, generated, profile, manifest, order, canonical):
                 definitions[key] = definition
     for key, record in records.items():
         definition = definitions[key]
-        if not definition['materializable'] or definition['stack_class'] != record['admission']['stack_class']:
+        if not definition['materializable']:
             raise ValueError('ELEMENTAL_SPHERES_CANONICAL_ADMISSION:' + key)
+        canonical_stack = definition['stack_class']
+        source_stack = record['admission']['stack_class']
         record['semantics'] = rewards.accepted.accepted_first(
             definition['semantics'], record['semantics'])
+        if KEYS[key] == ICE_CRYSTAL and (canonical_stack, source_stack) == ('NonStackable', 'StackCapable'):
+            # Project native custody with the accepted canonical stack class.
+            record['admission']['stack_class'] = canonical_stack
+            record['semantics']['stack'] = definition['semantics']['stack']
+        elif canonical_stack != source_stack:
+            raise ValueError('ELEMENTAL_SPHERES_CANONICAL_ADMISSION:' + key)
     rewards.admit_records(root, generated, profile, manifest, order, canonical, records.values())
