@@ -23,7 +23,8 @@ pub(super) async fn settle(
         return false;
     }
     use crate::durability::quest_world_callback::replica_window::ReplicaKind;
-    if let Some(kind) = ReplicaKind::from_creature(&entry.creature) {
+    let replica = ReplicaKind::from_creature(&entry.creature);
+    if let Some(kind) = replica {
         let death = entry.facts.death;
         if owner
             .root
@@ -67,7 +68,7 @@ pub(super) async fn settle(
         return true;
     }
     let Some(frozen) = &entry.grizzly else {
-        return false;
+        return replica.is_some();
     };
     if frozen.native.is_empty() {
         return true;
