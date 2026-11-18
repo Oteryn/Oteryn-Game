@@ -1782,7 +1782,6 @@ fn scenario_case(
         if name.starts_with("qengine-rewards-questpc4-admission-")
             || name.starts_with("qengine-rewards-questpc4-puzzle-predicate")
             || earth_birch
-            || earth_tree
             || lever_fixture
             || target_swap
             || failure_landing

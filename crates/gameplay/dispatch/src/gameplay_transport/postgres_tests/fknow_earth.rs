@@ -203,23 +203,48 @@ pub(super) fn tree_catalogue(
     source: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
     callback: &Callback,
 ) -> TestResult<oteryn_gameplay_quests::quest::QuestStateCatalogue> {
-    use oteryn_gameplay_quests::quest::{QuestStateCatalogue, world_callbacks::primary_transition};
+    use oteryn_gameplay_quests::quest::{
+        QuestStateCatalogue,
+        authored_bindings::{Bindings, BoundQuest, Stage, Track, Trigger},
+    };
+    use sha2::Digest;
     let tracks = callback
         .storage
         .iter()
         .map(|condition| {
-            source
-                .track(&condition.track)
-                .cloned()
-                .ok_or("world tree track")
+            let track = source.track(&condition.track).ok_or("world tree track")?;
+            Ok(Track {
+                key: track.key.clone(),
+                initial: track.initial,
+                minimum: track.min,
+                maximum: track.max,
+            })
         })
-        .collect::<Result<Vec<_>, _>>()?;
-    QuestStateCatalogue::new(
-        source.content_revision(),
-        tracks,
-        vec![primary_transition(callback)?],
-    )
-    .map_err(debug)
+        .collect::<Result<Vec<_>, &str>>()?;
+    let recipe_sha256 = sha2::Sha256::digest(serde_json::to_vec(callback)?)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    let base = QuestStateCatalogue::empty(source.content_revision()).ok_or("empty catalogue")?;
+    Bindings {
+        schema: 1,
+        quests: vec![BoundQuest {
+            quest: callback.quest.clone(),
+            recipe_sha256,
+            occurrence: None,
+            admission: None,
+            tracks,
+            stages: vec![Stage {
+                key: "water-world-tree".into(),
+                completes: false,
+                trigger: Trigger::MapUse {
+                    callback: Box::new(callback.clone()),
+                },
+            }],
+            sources: callback.sources.clone(),
+        }],
+    }
+    .attach(&base)
     .map_err(Into::into)
 }
 
