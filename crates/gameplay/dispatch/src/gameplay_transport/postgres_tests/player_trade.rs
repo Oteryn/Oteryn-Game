@@ -337,9 +337,13 @@ async fn scenario(
         owner.admit_loop_training(a).await;
         assert_eq!(a.first_entry, FirstEntryOutcome::Positioned);
         a.continuity.selected_capabilities = SelectedCapabilities::select(
-            owner.offered_capabilities(),
             if contents {
-                &[3, 4, 6, 21, 60, 132, 501]
+                crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES
+            } else {
+                owner.offered_capabilities()
+            },
+            if contents {
+                &[3, 4, 6, 12, 14, 21, 60, 61, 132, 501]
             } else if inspection {
                 &[4, 6, 21, 60, 132]
             } else {
@@ -348,6 +352,9 @@ async fn scenario(
         )
         .ok_or("selected")?;
         assert!(a.continuity.selected_capabilities.contains(60));
+        if contents {
+            assert!([12, 14, 61, 501].iter().all(|&id| a.continuity.selected_capabilities.contains(id)));
+        }
     }
 
     if read_priority {
@@ -825,6 +832,23 @@ async fn scenario(
             item_view::ItemMoveOutcome::Moved
         );
         assert_eq!(a.trade(offer_a).await?, ResultCode::Offered.payload());
+        if contents {
+            let bag = std::num::NonZeroU64::new(handle_a).ok_or("offered bag")?;
+            let nested = a.open_container(bag).await?;
+            let leaf = a.open_container(nested).await?;
+            let mut payload = item_view::encode_item_move_intent(&item_view::ItemMoveIntent {
+                source: leaf,
+                destination: item_view::ItemMoveDestination::MainBackpack,
+            }).map_err(debug)?;
+            // Command 9 field 6: split one unit from the offered bag's nested stack.
+            payload.extend([0x30, 1]);
+            let result = a.command(9, &payload).await?;
+            assert_eq!(item_view::decode_item_move_result(&result).map_err(debug)?, item_view::ItemMoveOutcome::Rejected);
+            let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(153).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(quantity, 3, "offered descendant stack cannot be split");
+            assert_eq!(a.trade(offer_a).await?, ResultCode::Offered.payload());
+        }
         let payload = oteryn_protocol_oteryn::world_object::encode_item_use_intent(
             &oteryn_protocol_oteryn::world_object::UseIntent {
                 target: oteryn_protocol_oteryn::world_object::UseTarget::Item(
@@ -1335,7 +1359,7 @@ impl Peer {
             }
             if d.domain_id == 9 {
                 self.last_inventory =
-                    Some(item_view::decode_character_inventory(d.payload).map_err(debug)?);
+                    Some(item_view::decode_character_inventory_with_equip_drop(d.payload, self.details).map_err(debug)?);
             }
         }
         Ok(())
@@ -1352,6 +1376,28 @@ impl Peer {
             r.1
         );
         Ok(r.1)
+    }
+    async fn open_container(&mut self, handle: item_view::ItemHandle) -> TestResult<item_view::ItemHandle> {
+        use oteryn_protocol_oteryn::container_tree as tree;
+        let payload = tree::encode_container_view_intent(&tree::ContainerViewIntent::Open {
+            handle, replace_view: None,
+        }).map_err(debug)?;
+        let reply = self.command(tree::COMMAND_TYPE_CONTAINER_VIEW_INTENT, &payload).await?;
+        assert_eq!(tree::decode_container_view_result(&reply).map_err(debug)?, tree::ContainerViewOutcome::Opened);
+        loop {
+            let frame = self.read().await?;
+            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            if envelope.message_type() == MessageType::StateDelta {
+                let delta = decode_state_delta(envelope.payload()).map_err(debug)?;
+                if delta.domain_id == tree::STATE_DOMAIN_CONTAINER_VIEWS {
+                    let views = tree::decode_container_views(delta.payload).map_err(debug)?;
+                    if let Some(view) = views.views.iter().find(|view| view.container_handle == handle) {
+                        return Ok(view.entries.first().ok_or("container child")?.handle);
+                    }
+                }
+            }
+            self.capture(&frame)?;
+        }
     }
     async fn trade(&mut self, intent: Intent) -> TestResult<Vec<u8>> {
         let r = self
