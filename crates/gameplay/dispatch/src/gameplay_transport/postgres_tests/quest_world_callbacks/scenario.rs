@@ -1873,17 +1873,19 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if name == super::super::stag_engine::CATHEDRAL {
-            let result = Box::pin(super::super::stag_engine::exercise_cathedral(
-                &mut owner, &mut admitted, &h, fence, deps.actor,
-            )).await;
-            let cleanup = h.cleanup().await;
-            return result.and(cleanup);
-        }
-        if name == super::super::stag_engine::COURT {
-            let result = Box::pin(super::super::stag_engine::exercise_court(
-                &mut owner, &mut admitted, &h, fence, &deps,
-            )).await;
+        if stag {
+            let result = if name == super::super::stag_engine::CATHEDRAL {
+                Box::pin(super::super::stag_engine::exercise_cathedral(
+                    &mut owner, &mut admitted, &h, fence, deps.actor,
+                )).await
+            } else {
+                Box::pin(super::super::stag_engine::exercise_court(
+                    &mut owner, &mut admitted, &h, fence, &deps,
+                )).await
+            };
+            drop(owner);
+            drop(authority);
+            drop(seal);
             let cleanup = h.cleanup().await;
             return result.and(cleanup);
         }
