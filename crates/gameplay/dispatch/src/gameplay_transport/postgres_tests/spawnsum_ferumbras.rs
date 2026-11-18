@@ -9,6 +9,7 @@ use crate::map::{
     overlay::TilePos,
     view::{MapFacts, placement_key},
 };
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::sync::atomic::Ordering;
 
