@@ -30,7 +30,8 @@ const PORT_HOPE: TilePos = TilePos {
     y: 32784,
     floor: -6,
 };
-// An enterable tile on the raised Port Hope walkway, east of the harbor.
+// The harbor-to-walkway leg spans 155 by 14 cells. Starting the next search here
+// keeps Grizzly's ramp within the planner's 160-cell horizontal bound.
 const WALKWAY: TilePos = TilePos {
     x: 32682,
     y: 32770,
@@ -145,6 +146,13 @@ fn placement<'a>(
 
 fn to_walkway(world: &BundleWorld, from: TilePos) -> Option<Vec<StepDirection>> {
     route(world, from, |at| at == WALKWAY)
+}
+
+fn to_ramp(world: &BundleWorld) -> TestResult<Vec<StepDirection>> {
+    // Crystal 201189f8, data-global/world/world.otbm. The path descends onto
+    // the ladder at (32674, 32784, 7) and crosses the jungle grass to the ramp.
+    route(world, WALKWAY, |at| at == RAMP_FOOT)
+        .ok_or_else(|| "step=reach observed=no-walk-route-from-walkway-to-ramp".into())
 }
 
 fn from_ramp(
@@ -359,8 +367,7 @@ async fn reach(
     npc: &oteryn_world_bundle::npc::Npc,
 ) -> TestResult<EntityRef> {
     let from = tile(client.world_spatial().actor_position)?;
-    let ramp = route(world, WALKWAY, |at| at == RAMP_FOOT)
-        .ok_or("step=reach observed=no-walk-route-from-walkway-to-ramp")?;
+    let ramp = to_ramp(world)?;
     let approach = from_ramp(world, npc)?;
     let path = if let Some(path) = to_walkway(world, from) {
         path
@@ -573,6 +580,15 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
         ChannelId::decode(&v7(1, 3))?,
     )?;
     let grizzly = placement(&metadata.npcs, NPC)?;
+    let captain = placement(&metadata.npcs, CAPTAIN)?;
+    // Crystal 201189f8, data-global/world/world-npc.xml:886-887.
+    assert!(
+        captain
+            .placements
+            .iter()
+            .any(|p| (p.x, p.y, p.floor) == (32310, 32209, -6)),
+        "Captain Bluebear must be on the Thais upper deck"
+    );
     let check_leg = |name, from: TilePos, path: Vec<StepDirection>| -> TestResult<TilePos> {
         assert!(!path.is_empty(), "{name} must walk");
         let mut at = from;
@@ -608,7 +624,7 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
     let ramp = check_leg(
         "Raised walkway to Grizzly's ramp",
         walkway,
-        route(&world, walkway, |at| at == RAMP_FOOT).ok_or("ramp foot unreachable")?,
+        to_ramp(&world)?,
     )?;
     assert_eq!(ramp, RAMP_FOOT);
     let approach = from_ramp(&world, grizzly)?;
@@ -634,7 +650,6 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
         TOWN,
         route(&world, TOWN, near_boarding_ladder).ok_or("boarding ladder unreachable")?,
     )?;
-    let captain = placement(&metadata.npcs, CAPTAIN)?;
     let deck = TilePos {
         y: BOARDING_LADDER.y + 1,
         floor: BOARDING_LADDER.floor + 1,
