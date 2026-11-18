@@ -259,7 +259,7 @@ fn pickup(chest: (u16, u16, i8), ordinal: u8, item: u16) -> TestResult {
             assert_eq!(bag.entries.len(), 1);
             assert_eq!(bag.entries[0].item.quantity, 1);
             assert_eq!(bag.entries[0].item.definition.production_key, format!("oteryn:item.tibia.i{item}"));
-            let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources WHERE transition_key LIKE 'oteryn:quest-callback/dream-courts/%'")
+            let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_reward_claims WHERE claim_production_key LIKE 'oteryn:quest-callback/dream-courts/%'")
                 .fetch_one(&harness.pool).await?;
             assert_eq!(receipts, 1);
             Ok(())
