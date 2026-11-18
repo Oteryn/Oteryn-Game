@@ -915,7 +915,7 @@ fn scenario_case(
     } else if name == super::super::qewrath_herald_escape::NAME {
         super::super::qewrath_herald_escape::world(&callback)?
     } else if matches!(name, super::super::qewrath_herald_sweep::NAME | super::super::qewrath_herald_sweep::FIELD_NAME) {
-        world(&super::super::qewrath_herald_sweep::fixture()?, trigger)?
+        super::super::qewrath_herald_sweep::world(name == super::super::qewrath_herald_sweep::FIELD_NAME)?
     } else if name == super::super::qewrath_wall_recreation::NAME {
         world(&super::super::qewrath_wall_recreation::fixture()?, trigger)?
     } else if name == super::super::qewrath_keeper_summon::NAME {

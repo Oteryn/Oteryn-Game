@@ -1118,6 +1118,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 context.into()
             };
+            let context = if callback.effects.sweep_fields.is_some()
+                && let Some(crate::map::facts::QuestCallbackProjection::Scene { mutations, .. }) =
+                    &projection
+            {
+                let mut fields = Vec::new();
+                for mutation in mutations {
+                    let crate::map::facts::QuestSceneMutation::Remove { key, .. } = mutation else {
+                        return UseDisposition::Rejected;
+                    };
+                    let Some((at, ordinal)) = crate::map::view::placement_of(*key) else {
+                        return UseDisposition::Rejected;
+                    };
+                    let appearance =
+                        map.overlay
+                            .base()
+                            .tile(at.x, at.y, at.floor)
+                            .and_then(|tile| {
+                                let (id, _) = tile
+                                    .ids()
+                                    .iter()
+                                    .zip(tile.depths())
+                                    .filter(|(_, depth)| **depth == 0)
+                                    .nth(usize::from(ordinal))?;
+                                Some(map.facts.base_entry(at, ordinal, *id)?.appearance_id)
+                            });
+                    let Some(appearance) = appearance else {
+                        return UseDisposition::Rejected;
+                    };
+                    let mut cell = [0; 10];
+                    cell[..4].copy_from_slice(&i32::from(at.x).to_be_bytes());
+                    cell[4..8].copy_from_slice(&i32::from(at.y).to_be_bytes());
+                    cell[8..].copy_from_slice(&(-i16::from(at.floor)).to_be_bytes());
+                    fields.push((cell, appearance));
+                }
+                context.with_static_fields(fields)
+            } else {
+                context
+            };
             let reward_weights = self
                 .active_generation
                 .and_then(|g| g.native_gameplay())

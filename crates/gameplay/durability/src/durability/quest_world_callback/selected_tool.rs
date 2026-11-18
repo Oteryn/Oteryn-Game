@@ -9,6 +9,8 @@ pub struct QuestWorldToolContext {
     world: QuestWorldContext,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) selected_tool: Option<SelectedQuestTool>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub(super) static_fields: Vec<([u8; 10], u16)>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -22,10 +24,16 @@ impl From<QuestWorldContext> for QuestWorldToolContext {
         Self {
             world,
             selected_tool: None,
+            static_fields: Vec::new(),
         }
     }
 }
 impl QuestWorldToolContext {
+    pub fn with_static_fields(mut self, fields: Vec<([u8; 10], u16)>) -> Self {
+        self.static_fields = fields;
+        self
+    }
+
     /// The replay identity of a legacy World claim. Like main's RewardClaim
     /// chest owner, its receipt is keyed by cause and claim; the actor's
     /// movement proof is re-derived by a rebuilt owner and is checked live.
@@ -71,6 +79,7 @@ impl QuestWorldContext {
         Some(QuestWorldToolContext {
             world: self,
             selected_tool: Some(SelectedQuestTool { source, intent }),
+            static_fields: Vec::new(),
         })
     }
 }

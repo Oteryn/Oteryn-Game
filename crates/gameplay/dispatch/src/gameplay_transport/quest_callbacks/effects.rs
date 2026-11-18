@@ -1,5 +1,5 @@
 use super::*;
-use crate::map::facts::QuestCallbackProjection;
+use crate::map::facts::{QuestCallbackProjection, QuestSceneMutation};
 use crate::map::view::EntryFacts;
 use oteryn_gameplay_quests::quest::world_callbacks::Facing;
 
@@ -21,6 +21,62 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         close: bool,
         after: &mut EntryFacts,
     ) -> Result<Option<QuestCallbackProjection>, UseDisposition> {
+        if let Some(sweep) = &callback.effects.sweep_fields {
+            // Crystal 201189f8 movements_herald_red_floors.lua:42–56 looks
+            // through the physical tile. Ground Items retire through the
+            // durable participant, and bundle placements through this scene.
+            let mut mutations = Vec::new();
+            for x in sweep.minimum.x..=sweep.maximum.x {
+                for y in sweep.minimum.y..=sweep.maximum.y {
+                    let position = TilePos {
+                        x,
+                        y,
+                        floor: sweep.minimum.floor,
+                    };
+                    let Some(base) = map.overlay.base().tile(x, y, position.floor) else {
+                        continue;
+                    };
+                    let mut appearances = std::collections::BTreeSet::new();
+                    for (ordinal, (id, _)) in base
+                        .ids()
+                        .iter()
+                        .zip(base.depths())
+                        .filter(|(_, depth)| **depth == 0)
+                        .enumerate()
+                    {
+                        let ordinal =
+                            u8::try_from(ordinal).map_err(|_| UseDisposition::Exhausted)?;
+                        let key =
+                            placement_key(position, ordinal).ok_or(UseDisposition::Rejected)?;
+                        let entry = map
+                            .facts
+                            .base_entry(position, ordinal, *id)
+                            .ok_or(UseDisposition::Rejected)?;
+                        if sweep.appearances.contains(&entry.appearance_id)
+                            && !map.facts.base_hidden(key)
+                            && appearances.insert(entry.appearance_id)
+                        {
+                            if entry.pickupable || map.facts.house_tile(position) {
+                                return Err(UseDisposition::Rejected);
+                            }
+                            mutations.push(QuestSceneMutation::Remove {
+                                key,
+                                revision: map.facts.object_revision(key),
+                            });
+                            if mutations.len() > 32 {
+                                return Err(UseDisposition::Exhausted);
+                            }
+                        }
+                    }
+                }
+            }
+            if !mutations.is_empty() {
+                return Ok(Some(QuestCallbackProjection::Scene {
+                    mutations,
+                    remove_self: false,
+                }));
+            }
+        }
         if let Some(target) = &callback.effects.target_transform {
             return super::source_transforms::prepare(map, target).map(Some);
         }

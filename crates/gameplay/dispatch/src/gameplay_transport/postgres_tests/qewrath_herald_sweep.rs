@@ -3,6 +3,7 @@ use super::{
     AdmittedSession, ComposedFreshAdmission, TestResult,
     fixture::{Harness, debug},
 };
+use crate::map::{overlay::TilePos, view::MapFacts};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
@@ -23,6 +24,10 @@ const QUEST: &str = "oteryn:quest.targuna_quest";
 const MISSION: &str =
     "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/burning_heart/mission";
 const FIELD_CASTER: &str = "oteryn:creature.fire_elemental";
+const BAKED_FIELD: Position = Position {
+    y: 32653,
+    ..LAST_PLATE
+};
 const HERALD: &str = "oteryn:creature.herald_of_fire";
 const SUMMON: &str = "oteryn:creature.infernoid_blob";
 const LAST_PLATE: Position = Position {
@@ -83,6 +88,20 @@ pub(super) fn fixture() -> TestResult<Callback> {
         }},
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/targuna/movements_herald_red_floors.lua:31-83"]
     }))?)
+}
+
+pub(super) fn world(fields: bool) -> TestResult<crate::map::boot::BundleWorld> {
+    let callback = fixture()?;
+    if fields {
+        super::quest_world_callbacks::world_with_objects(
+            &callback,
+            LAST_PLATE,
+            &[(BAKED_FIELD, 2120)],
+            &[2120],
+        )
+    } else {
+        super::quest_world_callbacks::world(&callback, LAST_PLATE)
+    }
 }
 
 fn field_catalogue() -> TestResult<QuestStateCatalogue> {
@@ -190,7 +209,23 @@ pub(super) async fn exercise(
     h: &Harness,
     fields: bool,
 ) -> TestResult {
+    let baked_key = crate::map::view::placement_key(
+        TilePos {
+            x: BAKED_FIELD.x,
+            y: BAKED_FIELD.y,
+            floor: BAKED_FIELD.floor,
+        },
+        1,
+    )
+    .ok_or("baked field")?;
     let field = if fields {
+        assert!(
+            !owner
+                .bundle_map()
+                .ok_or("room map")?
+                .facts
+                .base_hidden(baked_key)
+        );
         owner.quest_catalogue = Some(Arc::new(field_catalogue()?));
         owner
             .refresh_quest_session(admitted.game_session_id, false)
@@ -269,6 +304,13 @@ pub(super) async fn exercise(
     assert!(runtime.contains_live_creature(targets[2]));
     drop(runtime);
     if let Some(field) = field {
+        assert!(
+            owner
+                .bundle_map()
+                .ok_or("room map")?
+                .facts
+                .base_hidden(baked_key)
+        );
         let lifecycle: i16 = sqlx::query_scalar(
             "SELECT lifecycle FROM game_item_instances WHERE item_instance_id=$1",
         )

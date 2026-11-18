@@ -68,7 +68,11 @@ pub(super) async fn consume(
         "context":context,
     }))
     .map_err(|_| DurabilityError::InvalidStoredState)?;
-    let mut observed = std::collections::BTreeSet::new();
+    let mut observed: std::collections::BTreeSet<_> = context
+        .static_fields
+        .iter()
+        .map(|(cell, appearance)| (cell.to_vec(), format!("oteryn:item.tibia.i{appearance}")))
+        .collect();
     for row in rows {
         // Tile:getItemById removes one current field for each appearance.
         if !observed.insert((
