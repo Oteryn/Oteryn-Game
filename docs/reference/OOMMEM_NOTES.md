@@ -1,9 +1,12 @@
 # Dispatch library test build memory
 
-One dispatch lib-test rustc process exceeds the hosted memory budget.
-Separating the generated PostgreSQL mount is the smallest tested
-structural direction. Two scratch executables cover the complete
-4,339-name baseline at a measured per-process peak of about 14.52 GiB.
+The dispatch lib-test crate hits the 16 GiB memory limit during rustc
+codegen. A package-only test profile builds and links all 4,339 tests
+at 15.58 GiB with one Cargo job. The same manifest profile is being
+measured with two jobs. Splitting the generated PostgreSQL mount is
+the tested structural alternative with more memory headroom. Its
+two scratch executables cover the complete test registry and peak at
+14.52 GiB per process.
 
 The requested base, `2c1e9158c30b411de28ec064bc7198ea4f87dd44`, is an ancestor
 of the fetched `origin/main` at `fe9a5a18a58abfb779b0196579acb1b3c83a0c7f`.
@@ -13,6 +16,11 @@ from the pinned base only in this report.
 Rust 1.100.0, 16 GiB cgroup, no swap. Linux `wait4` supplied peak RSS and
 wall time because `/usr/bin/time` was unavailable. RSS records the largest
 individual process peak. Concurrent processes also contribute to cgroup usage.
+
+The startup PostgreSQL identity guard saw a one-second difference between
+the PID file and the authenticated postmaster timestamp. The SQL
+probe reported the expected data directory and the connection and
+durability checks passed. The focused case used that retained cluster.
 
 | Run | Cargo jobs | Peak RSS (KiB) | Wall (s) | Result |
 | --- | ---: | ---: | ---: | --- |
