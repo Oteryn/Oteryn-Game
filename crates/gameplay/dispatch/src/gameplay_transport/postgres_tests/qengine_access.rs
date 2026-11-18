@@ -819,6 +819,7 @@ async fn wardrobe(
         per_occurrence_mint: false,
         map_mark: None,
         world_claim: None,
+        direct_corpse_claim: None,
         magic_effects: vec![],
         carried_item: None,
         carried_exchange: false,

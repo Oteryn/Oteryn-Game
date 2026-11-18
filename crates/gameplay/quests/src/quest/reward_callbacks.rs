@@ -221,6 +221,63 @@ pub struct NativeClaimBinding {
     pub authority_sha256: String,
 }
 
+/// An exact corpse appearance used directly, with a single draw from its loot.
+/// Crystal 201189f8 actions_corpse_bosses.lua:36-67.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DirectCorpseClaim {
+    pub appearance: u16,
+    pub rewards: Vec<String>,
+    pub completion_track: String,
+}
+
+impl DirectCorpseClaim {
+    fn valid(&self, callback: &RewardCallback) -> bool {
+        let [claim, mission] = callback.storage.as_slice() else {
+            return false;
+        };
+        self.appearance != 0
+            && (1..=8).contains(&self.rewards.len())
+            && self.rewards.iter().collect::<BTreeSet<_>>().len() == self.rewards.len()
+            && self
+                .rewards
+                .iter()
+                .all(|item| slug(item, "oteryn:item.", b"._/:-", 256))
+            && claim.minimum == 0
+            && claim.maximum == 0
+            && claim.set == 1
+            && claim.track != mission.track
+            && mission.track == self.completion_track
+            && mission.minimum == mission.maximum
+            && mission.minimum < mission.set
+            && callback.counter.as_ref().is_some_and(|counter| {
+                counter.track != claim.track
+                    && counter.track != mission.track
+                    && (1..=8).contains(&counter.maximum)
+            })
+            && callback
+                .storage
+                .iter()
+                .all(|state| !state.preserve && !state.at_least && !state.increment)
+            && callback.npc.is_empty()
+            && callback.keywords.is_empty()
+            && callback.topic == 0
+            && callback.next_topic == 0
+            && callback.world_claim.is_none()
+            && callback.carried_item.is_none()
+            && callback.creature_target.is_none()
+            && callback.self_target.is_none()
+            && callback.corpse_target.is_none()
+            && callback.give.is_none()
+            && callback.take.is_empty()
+            && callback.fee.is_none()
+            && callback.participants.is_empty()
+            && callback.state_ops.is_empty()
+            && !callback.completes
+            && !callback.repeatable
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct RewardCallback {
@@ -242,6 +299,8 @@ pub struct RewardCallback {
     pub npc: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub world_claim: Option<NativeClaimBinding>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub direct_corpse_claim: Option<DirectCorpseClaim>,
     /// Ordinary carried USE binding; NPC dialogue cannot execute this callback.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub carried_item: Option<String>,
@@ -873,8 +932,11 @@ fn validate_document_with_capacity(
             })
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
+            || c.direct_corpse_claim
+                .as_ref()
+                .is_some_and(|claim| !claim.valid(c))
             || match &c.world_claim {
-                None => !slug(&c.npc, "oteryn:npc.", b"_", 128),
+                None => c.direct_corpse_claim.is_none() && !slug(&c.npc, "oteryn:npc.", b"_", 128),
                 Some(binding) => {
                     !c.npc.is_empty()
                         || !c.keywords.is_empty()
@@ -1031,7 +1093,7 @@ fn validate_document_with_capacity(
                 != c.cosmetic_targets().count()
             || c.cosmetic_targets()
                 .any(|r| !slug(&r.outfit, "oteryn:outfit.", b"_", 160) || r.addons > 3)
-            || (c.keywords.is_empty() && c.world_claim.is_none())
+            || (c.keywords.is_empty() && c.world_claim.is_none() && c.direct_corpse_claim.is_none())
             || c.keywords.len() > 8
             || c.keywords.iter().collect::<BTreeSet<_>>().len() != c.keywords.len()
             || c.keywords.iter().any(|s| {
@@ -1095,6 +1157,7 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
     if callback.minimum_level.is_none()
         && callback.inventory.is_empty()
         && callback.world_claim.is_none()
+        && callback.direct_corpse_claim.is_none()
         && callback.peer_requires.is_none()
         && callback.creature_target.is_none()
         && callback.map_mark.is_none()
@@ -1543,6 +1606,12 @@ pub(super) fn retain_outfit_reward_predecessor(
 /// Exact primary state operation shared by lowering and bound admission validation.
 pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, String> {
     let binding = gated_binding(callback)?;
+    let corpse_completion = callback
+        .direct_corpse_claim
+        .as_ref()
+        .zip(callback.counter.as_ref());
+    let counter_index = u8::try_from(callback.storage.len() + callback.state_ops.len())
+        .map_err(|_| "reward effect index")?;
     // A guarded exchange may only read progress while still binding admission.
     let bound_effect = callback
         .storage
@@ -1561,7 +1630,15 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
             .map(|(index, state)| QuestEffect {
                 track: state.track.clone(),
                 from: QuestComparison::Between(state.minimum, state.maximum),
-                effect: if state.preserve {
+                effect: if let Some((_, counter)) =
+                    corpse_completion.filter(|(claim, _)| claim.completion_track == state.track)
+                {
+                    QuestEffectKind::SetWhenAtLeast {
+                        other_effect: counter_index,
+                        minimum: counter.maximum - 1,
+                        value: state.set,
+                    }
+                } else if state.preserve {
                     match binding.filter(|_| Some(index) == bound_effect) {
                         Some(binding) => QuestEffectKind::AddWithBinding { delta: 0, binding },
                         None => QuestEffectKind::Add(0),
