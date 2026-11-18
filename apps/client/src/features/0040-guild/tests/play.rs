@@ -186,9 +186,19 @@ fn guild_controls_use_real_codecs_and_apply_server_state() -> Result<(), Error> 
                     ));
                     link.guild_request(Intent::Invite("Bob".into()));
                     ready(&link, "accepted").await?;
+                    use oteryn_client_ui::chat::{ChannelEntry, ChannelTab};
+                    let guild = ChannelEntry::Local(ChannelTab::Guild);
+                    assert!(link.chat_dialog_entries().contains(&guild));
+                    link.open_chat();
+                    link.chat_open_entry(&guild);
+                    assert_eq!(link.chat_panel().console.current, Some(ChannelTab::Guild));
+                    assert!(link.chat_console_mirror());
                     link.guild_request(Intent::Leave);
                     ready(&link, "No guild").await?;
                     assert!(link.guild_panel().roster.is_empty());
+                    let console = link.chat_panel().console.clone();
+                    assert!(!console.channels.contains(&oteryn_client_ui::chat::ChannelTab::Guild));
+                    assert!(console.current.is_none() && console.mirror.is_none());
                     assert!(!oteryn_client_ui::chat_guild_room::available(
                         &link.chat_panel()
                     ));

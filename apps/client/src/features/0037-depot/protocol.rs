@@ -9,7 +9,7 @@ impl Outbox {
         oteryn_client_ui::depot::apply_result(&mut lock(&self.0).depot, reply);
     }
     pub(in crate::play) fn depot_publish(&self, session: &impl Stepper) {
-        lock(&self.0).depot.items = session.depot_items();
+        lock(&self.0).depot.replace_items(session.depot_items());
         self.imbue_items_changed();
     }
     pub(in crate::play) async fn depot_container_run(
@@ -82,6 +82,6 @@ impl Outbox {
         self.depot_result(reply);
     }
     pub(crate) fn bevy_depot_items(&self, items: oteryn_client_runtime::depot::Items) {
-        lock(&self.0).depot.items = items;
+        lock(&self.0).depot.replace_items(items);
     }
 }

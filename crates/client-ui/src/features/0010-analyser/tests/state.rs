@@ -441,17 +441,101 @@ fn parity_a_current_combat_rates_expire_without_erasing_session_totals() -> Resu
         ],
         100,
     );
+    let initial = crate::analyser::view::impact_text(&panel, 100);
+    assert!(
+        initial
+            .lines()
+            .any(|line| line == "DPS: 100.00 | HPS: 100.00")
+    );
     let fresh = crate::analyser::view::impact_text(&panel, 101);
-    assert!(fresh.contains("HPS: 100.00"), "{fresh}");
+    assert!(
+        fresh.lines().any(|line| line == "DPS: 50.00 | HPS: 50.00"),
+        "{fresh}"
+    );
     let expired = crate::analyser::view::impact_text(&panel, 111);
     assert!(expired.contains("HPS: 0.00"), "{expired}");
     assert_eq!(
         (panel.damage, panel.healing, panel.received),
         (100, 100, 100)
     );
-    assert!(fresh.contains("DPS: 100.00"));
     assert!(expired.contains("DPS: 0.00"));
-    assert!(crate::analyser::view::input_text(&panel, 101).contains("Incoming DPS: 100.00"));
+    assert!(crate::analyser::view::input_text(&panel, 100).contains("Incoming DPS: 100.00"));
+    assert!(crate::analyser::view::input_text(&panel, 101).contains("Incoming DPS: 50.00"));
     assert!(crate::analyser::view::input_text(&panel, 104).contains("Incoming DPS: 0.00"));
+    Ok(())
+}
+
+#[test]
+fn healing_rate_uses_the_same_duration_before_and_after_a_current_second_sample() {
+    use crate::analyser::protocol::{AnalyserFact, AnalyserImpact, apply_at};
+    use std::num::NonZeroU32;
+
+    let mut panel = Panel {
+        selected: true,
+        ..Default::default()
+    };
+    apply_at(
+        &mut panel,
+        &[AnalyserFact::Impact(AnalyserImpact::Healing(
+            NonZeroU32::MIN.saturating_add(99),
+        ))],
+        0,
+    );
+    let before = super::view::outgoing_text(&panel, 1, Tool::Healing);
+    apply_at(
+        &mut panel,
+        &[AnalyserFact::Impact(AnalyserImpact::Healing(
+            NonZeroU32::MIN.saturating_add(1),
+        ))],
+        1,
+    );
+    let after = super::view::outgoing_text(&panel, 1, Tool::Healing);
+    assert!(before.lines().any(|line| line == "HPS: 50.00"), "{before}");
+    assert!(after.lines().any(|line| line == "HPS: 51.00"), "{after}");
+}
+
+#[test]
+fn expired_buckets_do_not_change_combat_report_rates() -> Result<(), &'static str> {
+    use crate::analyser::protocol::{AnalyserFact, AnalyserImpact, apply_at};
+    let damage = oteryn_client_runtime::analyser::decode_analyser_facts(&[
+        10, 8, 34, 6, 8, 1, 16, 100, 24, 2,
+    ])
+    .map_err(|_| "damage wire")?;
+    let [AnalyserFact::Impact(AnalyserImpact::Damage { value, element })] = damage.as_slice()
+    else {
+        return Err("damage fact");
+    };
+    let incoming = [AnalyserFact::DamageInput {
+        value: *value,
+        element: *element,
+        source: oteryn_client_runtime::analyser::AnalyserDamageSource::Player,
+    }];
+
+    for first in [0, 1] {
+        let mut panel = Panel {
+            selected: true,
+            ..Default::default()
+        };
+        apply_at(&mut panel, &damage, first);
+        apply_at(&mut panel, &incoming, first);
+        apply_at(&mut panel, &damage, 11);
+        apply_at(&mut panel, &incoming, 11);
+
+        let outgoing = super::view::outgoing_text(&panel, 11, Tool::Damage);
+        assert!(
+            outgoing.lines().any(|line| line == "DPS: 100.00"),
+            "{outgoing}"
+        );
+        let impact = super::view::impact_text(&panel, 11);
+        assert!(
+            impact.lines().any(|line| line == "DPS: 100.00 | HPS: 0.00"),
+            "{impact}"
+        );
+        let input = super::view::input_text(&panel, 11);
+        assert!(
+            input.lines().any(|line| line == "Incoming DPS: 100.00"),
+            "{input}"
+        );
+    }
     Ok(())
 }

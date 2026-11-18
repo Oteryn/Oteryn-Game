@@ -361,7 +361,10 @@ mod activity;
 
 #[cfg(bevy_shell)]
 impl crate::play::Outbox {
-    pub(crate) fn bevy_analyser_catalogue_result(&self, result: &oteryn_session::GatedCommandResult) {
+    pub(crate) fn bevy_analyser_catalogue_result(
+        &self,
+        result: &oteryn_session::GatedCommandResult,
+    ) {
         self.analyser_catalogue_result(result);
     }
 }
@@ -453,4 +456,100 @@ fn analyser_reset_isolates_every_report_through_playlink_and_fact_feed()
         );
     }
     Ok(())
+}
+
+#[test]
+fn reset_minute_charts_hunting() {
+    check_reset_chart(oteryn_client_ui::analyser::Tool::Hunting);
+}
+
+#[test]
+fn reset_minute_charts_loot_tracker() {
+    check_reset_chart(oteryn_client_ui::analyser::Tool::LootTracker);
+}
+
+#[test]
+fn reset_minute_charts_xp() {
+    check_reset_chart(oteryn_client_ui::analyser::Tool::Xp);
+}
+
+fn check_reset_chart(tool: oteryn_client_ui::analyser::Tool) {
+    use oteryn_client_ui::analyser::Tool;
+    use oteryn_session::analyser_transport::AnalyserItemCount;
+    let (link, _, outbox) = play_channel();
+    outbox.analyser_initialize(true);
+    let clock = |second| {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.analyser.clock =
+            (std::time::Instant::now() - std::time::Duration::from_secs(second)).into();
+        mailbox.analyser.open = true;
+    };
+    let start = if tool == Tool::Xp { 58 } else { 59 * 60 };
+    clock(start - 1);
+    outbox.push(vec![SessionEvent::AnalyserFacts(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 1,
+        new_revision: 2,
+        value: vec![AnalyserFact::Experience {
+            raw: 90,
+            gained: 100,
+        }],
+    })]);
+    clock(start);
+    assert!(link.analyser_select(tool.key()));
+    link.analyser_reset();
+    clock(start + 1);
+    outbox.push(vec![SessionEvent::AnalyserFacts(AppliedDelta {
+        server_sequence: 2,
+        base_revision: 2,
+        new_revision: 3,
+        value: vec![
+            AnalyserFact::Kill { race: None },
+            AnalyserFact::Experience {
+                raw: 11,
+                gained: 15,
+            },
+            AnalyserFact::KillLoot {
+                race: None,
+                corpse_items: vec![AnalyserItemCount {
+                    item_type: std::num::NonZeroU32::MIN,
+                    count: std::num::NonZeroU16::MIN,
+                }],
+                gold: 0,
+            },
+        ],
+    })]);
+    clock(start + 2);
+    let mut text = link.analyser_text();
+    if tool == Tool::Hunting {
+        text.push_str(&oteryn_client_ui::analyser::session_text(
+            &link.analyser_panel(),
+        ));
+    }
+    if tool == Tool::Xp {
+        assert!(
+            text.lines()
+                .any(|line| line == "Experience: 11 raw / 15 gained"),
+            "{text}"
+        );
+        assert!(
+            text.lines().any(|line| line == "Elapsed: 2 seconds"),
+            "{text}"
+        );
+    }
+    let expected = if tool == Tool::Xp { "█▁" } else { "█" };
+    let bars: Vec<_> = text
+        .lines()
+        .filter(|line| line.contains('█') && line.chars().all(|c| ('▁'..='█').contains(&c)))
+        .collect();
+    assert!(
+        bars.len()
+            >= match tool {
+                Tool::Hunting => 3,
+                Tool::Xp => 2,
+                _ => 1,
+            },
+        "{text}"
+    );
+    assert!(bars.iter().all(|line| *line == expected), "{text}");
 }

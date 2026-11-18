@@ -68,12 +68,7 @@ pub fn request_in_mode(
             None
         }
         (Intent::Withdraw(row), Some(handle)) => {
-            let reply = p.reply.as_ref()?;
-            reply.entries.get(row)?;
-            let slot = reply
-                .page
-                .checked_mul(32)?
-                .checked_add(u32::try_from(row).ok()?)?;
+            let slot = p.placement_slot(row)?;
             let intent = request(p, Intent::Deposit(handle))?;
             p.held = None;
             Some((intent, Some(slot)))
