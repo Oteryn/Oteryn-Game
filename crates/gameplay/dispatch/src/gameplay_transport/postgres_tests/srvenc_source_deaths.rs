@@ -827,6 +827,12 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
         assert_eq!(drained, DrainOutcome::Drained);
         if let Some(entry) = crash_replay {
             let before: (i64,i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_character_quest_receipts)").fetch_one(&h.pool).await?;
+            assert_eq!(before.0, 1, "the original durable boss death committed");
+            assert_eq!(before.1, 2, "both damaging characters already have chests");
+            assert!(
+                before.2 > 0 && before.3 >= 2,
+                "XP and both quest credits committed before recovery"
+            );
             let permit = owner
                 .spell_lane_permit()
                 .await
@@ -836,10 +842,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 .await
                 .map_err(debug)?;
             assert!(
-                !matches!(
-                    replay.xp,
-                    Err(crate::combat::CombatDeathRewardXpError::Progression(_))
-                ),
+                replay.xp.is_ok(),
                 "the committed death replays without a new grant"
             );
             drop(replay);
