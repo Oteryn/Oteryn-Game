@@ -5533,6 +5533,9 @@
           "family": "Item",
           "key": "candidate:item/4828",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -5651,6 +5654,8 @@
         }
       },
       "attributes": {
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
         "field_condition": null,
@@ -5694,6 +5699,9 @@
           "family": "Item",
           "key": "candidate:item/4835",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -5812,6 +5820,8 @@
         }
       },
       "attributes": {
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
         "field_condition": null,

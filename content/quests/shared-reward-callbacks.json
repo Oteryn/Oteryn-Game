@@ -352,7 +352,15 @@
       ],
       "topic": 1,
       "next_topic": 0,
-      "storage": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 0,
+          "maximum": 18,
+          "set": 0,
+          "preserve": true
+        }
+      ],
       "take": [],
       "fee": {
         "gold": 50,

@@ -1,6 +1,7 @@
 """Lower the source-bound Ape City exchanges and outfit confirmation."""
 
 NPC = 'oteryn:npc.padreia'
+QUESTLINE = 'oteryn:quest-progress/quest/u7_6/the_ape_city/questline'
 GLOBAL = 'https://tibia.fandom.com/?curid=5846&oldid=1023981'
 CRYSTAL = (
     'crystal:201189f871d23597b82caf88fd611454a2ddefb8:'
@@ -18,7 +19,9 @@ def append(callbacks, offers):
         'key': 'oteryn:quest-reward/ape-city-cough-syrup',
         'quest': 'oteryn:quest.the_ape_city_quest',
         'npc': NPC, 'keywords': ['yes'], 'topic': 1, 'next_topic': 0,
-        'storage': [], 'take': [],
+        # The paid MINT owner records the existing stage without advancing it.
+        'storage': [{'track': QUESTLINE, 'minimum': 0, 'maximum': 18, 'set': 0, 'preserve': True}],
+        'take': [],
         'fee': {'gold': 50, 'include_bank': True},
         'repeatable': True,
         'give': {'item': 'oteryn:item.tibia.i4828', 'count': 1, 'contents': []},
@@ -33,7 +36,6 @@ def append(callbacks, offers):
     quest = 'oteryn:quest.the_ape_city_quest'
     npc = 'oteryn:npc.hairycles'
     track = 'oteryn:quest-progress/quest/u7_6/the_ape_city/'
-    questline = track + 'questline'
     shaman = track + 'shaman_outfit'
     donor = 'crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua'
     digest = 'b2307616dfa9b6bdff899c60daf02a09980299c80b211d73c948d8681732df73'
@@ -41,7 +43,7 @@ def append(callbacks, offers):
     offers.append({
         'npc': npc, 'keywords': ['mission'], 'topic': 0, 'next_topic': 17,
         'storage': [],
-        'requires': [{'track': questline, 'minimum': 16, 'maximum': 16}],
+        'requires': [{'track': QUESTLINE, 'minimum': 16, 'maximum': 16}],
         'reply': [
             'You have proven yourself a friend, me will grant you permission to enter the deepest catacombs under Banuta which we have sealed in the past ...',
             'Me still can sense the evil presence there. We did not dare to go deeper and fight creatures of evil there ...',
@@ -52,7 +54,7 @@ def append(callbacks, offers):
     callbacks.append({
         'key': 'oteryn:quest-reward/ape-city-catacombs-accept',
         'quest': quest, 'npc': npc, 'keywords': ['yes'], 'topic': 17, 'next_topic': 0,
-        'storage': [{'track': questline, 'minimum': 16, 'maximum': 16, 'set': 17}],
+        'storage': [{'track': QUESTLINE, 'minimum': 16, 'maximum': 16, 'set': 17}],
         'take': [],
         'give': {'item': 'oteryn:item.tibia.i4835', 'count': 1, 'contents': []},
         'outfit': None, 'achievement': None,
@@ -60,7 +62,7 @@ def append(callbacks, offers):
         'sources': [GLOBAL, f'{donor}:174-181:sha256:{digest}', f'{donor}:442-450:sha256:{digest}'],
     })
 
-    shaman_ready = {'track': questline, 'minimum': 18, 'maximum': 18}
+    shaman_ready = {'track': QUESTLINE, 'minimum': 18, 'maximum': 18}
     shaman_unclaimed = {'track': shaman, 'minimum': 0, 'maximum': 0}
     offers.append({
         'npc': npc, 'keywords': ['outfit', 'shamanic powers'], 'topic': 0, 'next_topic': 18,
