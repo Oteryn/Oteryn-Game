@@ -229,9 +229,24 @@ async fn exercise(h: &Harness) -> TestResult {
     let instance: String = sqlx::query_scalar("SELECT item_instance_id::text FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1")
         .bind(FILLED).fetch_one(&h.pool).await?;
     let read = || async {
-        sqlx::query_as::<_, (String, Option<i64>, i64)>(
-            "SELECT definition_production_key, (SELECT value FROM game_character_quest_tracks WHERE character_id=encode($2,'hex')::uuid AND track_key=$3), (SELECT count(*) FROM game_quest_callback_consumptions) FROM game_item_instances WHERE item_instance_id=$1::uuid AND lifecycle=1",
-        ).bind(&instance).bind(id(41).as_slice()).bind(TRACK).fetch_one(&h.pool).await
+        sqlx::query_as::<_, (String, i64, Option<i16>, Option<i64>, i64)>(
+            "SELECT i.definition_production_key, i.quantity, f.fluid_subtype, \
+               (SELECT value FROM game_character_quest_tracks \
+                WHERE character_id=encode($2,'hex')::uuid AND track_key=$3), \
+               (SELECT count(*) FROM game_quest_callback_consumptions c \
+                WHERE c.item_instance_id=i.item_instance_id AND c.transition_key=$4) \
+             FROM game_item_instances i \
+             JOIN game_item_container_entries e USING(item_instance_id) \
+             LEFT JOIN game_item_fluid_states f USING(item_instance_id) \
+             WHERE i.item_instance_id=$1::uuid AND i.lifecycle=1 \
+             AND e.character_id=encode($2,'hex')::uuid",
+        )
+        .bind(&instance)
+        .bind(id(41).as_slice())
+        .bind(TRACK)
+        .bind(&callback.key)
+        .fetch_one(&h.pool)
+        .await
     };
     let map = owner.bundle_map().ok_or("map")?;
     let item_index = native.item_index().ok_or("item index")?;
@@ -255,6 +270,7 @@ async fn exercise(h: &Harness) -> TestResult {
         .map_err(debug)?)
     };
     let before = read().await?;
+    assert_eq!(before, (FILLED.into(), 1, None, None, 0));
     let (admitted, wrong, _) = exchange(
         &owner,
         admitted,
@@ -269,13 +285,23 @@ async fn exercise(h: &Harness) -> TestResult {
     let (admitted, result, actual) =
         exchange(&owner, admitted, command, &use_on(TROUGH)?, Some(reference)).await?;
     assert_eq!(result, UseDisposition::Committed);
-    assert_eq!(read().await?, (EMPTY.into(), Some(1), before.2 + 1));
+    let committed = (EMPTY.into(), 1, None, Some(1), 1);
+    assert_eq!(read().await?, committed);
     let effects = map.facts.movement_effects_since(0);
-    assert_eq!(effects.iter().filter(|cue| cue.2 == 10).count(), 1);
+    let trough_effects: Vec<_> = effects.iter().filter(|cue| cue.2 == 10).collect();
+    assert_eq!(trough_effects.len(), 1);
+    assert_eq!(
+        trough_effects[0].1,
+        crate::map::overlay::TilePos {
+            x: TROUGH.x,
+            y: TROUGH.y,
+            floor: TROUGH.floor
+        },
+    );
 
     let (_, replayed, _) = exchange(&owner, admitted, command, &actual, None).await?;
     assert_eq!(replayed, UseDisposition::Committed);
-    assert_eq!(read().await?, (EMPTY.into(), Some(1), before.2 + 1));
+    assert_eq!(read().await?, committed);
     assert_eq!(map.facts.movement_effects_since(0), effects);
     Ok(())
 }
