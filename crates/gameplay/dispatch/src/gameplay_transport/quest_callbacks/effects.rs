@@ -21,6 +21,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         close: bool,
         after: &mut EntryFacts,
     ) -> Result<Option<QuestCallbackProjection>, UseDisposition> {
+        if let Some(presence) = &callback.effects.timed_presence {
+            let position = tile(presence.position);
+            let entry = map
+                .facts
+                .movement_item_facts(presence.appearance)
+                .filter(|facts| !facts.pickupable && !facts.blocks_projectile)
+                .ok_or(UseDisposition::Rejected)?;
+            if map.facts.house_tile(position)
+                || map
+                    .overlay
+                    .base()
+                    .tile(position.x, position.y, position.floor)
+                    .is_none()
+                || !map
+                    .facts
+                    .quest_timed_presence_available(position, presence.appearance)
+            {
+                return Err(UseDisposition::NothingToUse);
+            }
+            return Ok(Some(QuestCallbackProjection::TimedPresence {
+                position,
+                entry,
+                starts: 0,
+                expires: 0,
+            }));
+        }
         if let Some(target) = &callback.effects.target_transform {
             return super::source_transforms::prepare(map, target).map(Some);
         }

@@ -70,6 +70,15 @@ struct DynamicPortal {
     expires: Option<u64>,
 }
 
+#[derive(Clone, Debug)]
+struct TimedPresence {
+    position: TilePos,
+    entry: EntryFacts,
+    starts: u64,
+    expires: u64,
+    published: Option<EntryId>,
+}
+
 /// Already qualified facts for one atomic, Channel-local callback projection.
 pub enum QuestCallbackProjection {
     /// Restore exactly this revision at an original source deadline.
@@ -116,6 +125,12 @@ pub enum QuestCallbackProjection {
         position: TilePos,
         entry: EntryFacts,
     },
+    TimedPresence {
+        position: TilePos,
+        entry: EntryFacts,
+        starts: u64,
+        expires: u64,
+    },
     Scene {
         mutations: Vec<QuestSceneMutation>,
         remove_self: bool,
@@ -161,10 +176,26 @@ pub(super) struct CallbackStates {
     solid_items: BTreeSet<TilePos>,
     batch_blockers: BTreeSet<TilePos>,
     presences: BTreeMap<u64, (TilePos, EntryId)>,
+    timed_presences: BTreeMap<u64, TimedPresence>,
     naginata_picks: Vec<NaginataPick>,
 }
 
 impl CallbackStates {
+    fn timed_presence_available(&self, position: TilePos, appearance: u16) -> bool {
+        !self.position_reserved(position)
+            && self.has_capacity(2)
+            && self.movement_sequence < u64::MAX
+            && !self
+                .timed_presences
+                .values()
+                .any(|entry| entry.position == position)
+            && !self.movement_items.get(&position).is_some_and(|entries| {
+                entries
+                    .iter()
+                    .any(|entry| entry.facts.appearance_id == appearance)
+            })
+    }
+
     fn key_reserved(&self, key: u64) -> bool {
         self.reserved.contains(&key)
             || view::placement_of(key)
@@ -451,6 +482,31 @@ impl CallbackStates {
                     self.presences.insert(owner, (*position, entry));
                 }
             }
+            QuestCallbackProjection::TimedPresence {
+                position,
+                entry,
+                starts,
+                expires,
+            } => {
+                if close
+                    || *starts >= *expires
+                    || entry.pickupable
+                    || self.timed_presences.contains_key(&owner)
+                    || !self.timed_presence_available(*position, entry.appearance_id)
+                {
+                    return false;
+                }
+                self.timed_presences.insert(
+                    owner,
+                    TimedPresence {
+                        position: *position,
+                        entry: *entry,
+                        starts: *starts,
+                        expires: *expires,
+                        published: None,
+                    },
+                );
+            }
             QuestCallbackProjection::Scene {
                 mutations,
                 remove_self,
@@ -517,6 +573,8 @@ impl CallbackStates {
         self.batch_blockers.retain(|p| !inside(*p));
         self.portals.retain(|p, _| !cleared(p));
         self.presences.retain(|_, (p, _)| !cleared(p));
+        self.timed_presences
+            .retain(|_, presence| !cleared(&presence.position));
     }
 
     pub(super) fn has_capacity(&self, additional: usize) -> bool {
@@ -534,6 +592,7 @@ impl CallbackStates {
             + self.creature_visuals.len()
             + self.movement_speech.len()
             + self.portals.len()
+            + self.timed_presences.len() * 2
             + self.solid_items.len()
             + self.batch_blockers.len()
             + self.movement_items.values().map(Vec::len).sum::<usize>();
@@ -542,6 +601,12 @@ impl CallbackStates {
 }
 
 impl BundleFacts {
+    pub fn quest_timed_presence_available(&self, position: TilePos, appearance: u16) -> bool {
+        self.callbacks
+            .lock()
+            .is_ok_and(|state| state.timed_presence_available(position, appearance))
+    }
+
     /// Fence up to eight already qualified map placements without transforming
     /// them. The synchronous consequence runs under the same map owner lock,
     /// so an arrival can publish its prepared spawn while charges stay intact.
@@ -836,6 +901,13 @@ impl BundleFacts {
             .map(|((due, _), _)| *due)
             .into_iter()
             .chain(states.portals.values().filter_map(|p| p.expires))
+            .chain(states.timed_presences.values().filter_map(|p| {
+                (!states.position_reserved(p.position)).then_some(if p.published.is_some() {
+                    p.expires
+                } else {
+                    p.starts
+                })
+            }))
             .min()
     }
 
@@ -856,6 +928,46 @@ impl BundleFacts {
         for owner in expired {
             states.remove_portals(owner);
             changed += 1;
+        }
+        let ready: Vec<_> = states
+            .timed_presences
+            .iter()
+            .filter(|(_, p)| {
+                !states.position_reserved(p.position)
+                    && (p.expires <= now || (p.published.is_none() && p.starts <= now))
+            })
+            .map(|(key, _)| *key)
+            .collect();
+        for key in ready {
+            let Some(mut presence) = states.timed_presences.remove(&key) else {
+                continue;
+            };
+            if presence.expires <= now {
+                if let Some(entry) = presence.published
+                    && let Some(entries) = states.movement_items.get_mut(&presence.position)
+                {
+                    entries.retain(|item| item.source != view::EntrySource::Added(entry));
+                    if entries.is_empty() {
+                        states.movement_items.remove(&presence.position);
+                    }
+                    changed += 1;
+                }
+            } else if let Some(sequence) = states.movement_sequence.checked_add(1)
+                && let Some(entry) = EntryId::callback(sequence)
+            {
+                states.movement_sequence = sequence;
+                states
+                    .movement_items
+                    .entry(presence.position)
+                    .or_default()
+                    .push(view::ComposedEntry {
+                        source: view::EntrySource::Added(entry),
+                        facts: presence.entry,
+                    });
+                presence.published = Some(entry);
+                states.timed_presences.insert(key, presence);
+                changed += 1;
+            }
         }
         let due: Vec<_> = states
             .movement_decays
@@ -1648,6 +1760,7 @@ impl BundleFacts {
                     entries.iter().any(|(key, _, _)| states.key_reserved(*key))
                 }
                 QuestCallbackProjection::ItemPresence { position, .. }
+                | QuestCallbackProjection::TimedPresence { position, .. }
                 | QuestCallbackProjection::ItemCycle { position, .. } => {
                     states.position_reserved(*position)
                 }

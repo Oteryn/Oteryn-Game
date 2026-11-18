@@ -104,6 +104,9 @@ pub struct CallbackEffects {
     pub item_cycle: Option<ItemCycle>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
+    /// Delayed, temporary non-portable scenery after a paid world interaction.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub timed_presence: Option<TimedPresence>,
     pub encounter: Option<Encounter>,
 }
 
@@ -275,6 +278,15 @@ pub struct PortalPair {
 pub struct ItemPresence {
     pub position: Position,
     pub appearance: u16,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct TimedPresence {
+    pub position: Position,
+    pub appearance: u16,
+    pub spawn_after_ms: u32,
+    pub expires_after_ms: u32,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -741,7 +753,31 @@ pub(super) fn valid(callback: &Callback) -> bool {
     }) {
         return false;
     }
-    let operations = usize::from(effects.portals.is_some())
+    if effects.timed_presence.as_ref().is_some_and(|presence| {
+        !pos(presence.position)
+            || presence.appearance == 0
+            || !(1..presence.expires_after_ms).contains(&presence.spawn_after_ms)
+            || presence.expires_after_ms > 3_600_000
+            || callback.trigger != Trigger::Use
+            || !callback.requires_world_admission
+            || !callback.has_state_writes()
+            || callback.reversible
+            || callback.lever.is_some()
+            || callback
+                .item_on_target
+                .as_ref()
+                .is_none_or(|tool| tool.reusable)
+            || !callback.passages.is_empty()
+            || callback.teleport.is_some()
+            || effects.item_presence.is_some()
+            || effects.target_transform.is_some()
+            || effects.transform.is_some()
+            || effects.reset_after_ms.is_some()
+    }) {
+        return false;
+    }
+    let operations = usize::from(effects.timed_presence.is_some())
+        + usize::from(effects.portals.is_some())
         + usize::from(effects.item_cycle.is_some())
         + usize::from(effects.encounter.is_some())
         + usize::from(effects.scene.is_some())

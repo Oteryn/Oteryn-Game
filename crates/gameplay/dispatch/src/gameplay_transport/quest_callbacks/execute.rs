@@ -1475,6 +1475,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 *due = published_due;
             }
+            // Crystal gems.lua:187-188 schedules both events from the paid USE.
+            if let Some(source) = &callback.effects.timed_presence
+                && let Some(crate::map::facts::QuestCallbackProjection::TimedPresence {
+                    starts,
+                    expires,
+                    ..
+                }) = projection.as_mut()
+            {
+                let published = self.owner_now().get();
+                let (Some(spawn), Some(expiry)) = (
+                    published.checked_add(u64::from(source.spawn_after_ms) * 1_000),
+                    published.checked_add(u64::from(source.expires_after_ms) * 1_000),
+                ) else {
+                    return UseDisposition::Exhausted;
+                };
+                *starts = spawn;
+                *expires = expiry;
+            }
             // Crystal actions_lions_rock.lua:69: start the shared reset after
             // durable success. Commit latency must not shorten its visible lifetime.
             if let Some(crate::map::facts::QuestCallbackProjection::TimedPassages {
@@ -1588,6 +1606,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 crate::map::facts::QuestCallbackProjection::TimedTransform { .. }
                     | crate::map::facts::QuestCallbackProjection::TimedRemoteTransform { .. }
                     | crate::map::facts::QuestCallbackProjection::TimedEntrance { .. }
+                    | crate::map::facts::QuestCallbackProjection::TimedPresence { .. }
             )
         ) || callback.effects.reset_after_ms.is_some()
             || callback.effects.passages_reset_after_ms.is_some()
