@@ -12,7 +12,7 @@ use crate::map::view::MapFacts;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue, authored_bindings::Bindings,
-    world_callbacks::Position,
+    world_callbacks::{Callback, Position},
 };
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use serde_json::{Value, json};
@@ -23,6 +23,7 @@ pub(super) const PREFIX: &str = "qengine-rewards-qonce-";
 const WELL: &str = "qengine-rewards-qonce-well";
 const WELL_LOST_ACK: &str = "qengine-rewards-qonce-well-lost-ack";
 const DAILY: &str = "qengine-rewards-qonce-daily";
+const FOUNTAIN_TRANSFORM: &str = "qengine-rewards-qonce-fountain-transform";
 const ANNUAL: &str = "qengine-rewards-qonce-annual";
 const FULL_BACKPACK: &str = "qengine-rewards-qonce-full-backpack";
 const HOARD: &str = "qengine-rewards-qonce-hoard";
@@ -38,6 +39,9 @@ const LION: &str = "oteryn:creature.noble_lion";
 const LION_MOUNT: &str = "oteryn:content.mount.noble_lion";
 const LIONS_HEART: u16 = 21439;
 const HOLY_AREA_EFFECT: u16 = 50;
+const LIONS_FOUNTAIN: u16 = 6389;
+const LIONS_SANCTUARY_ROCK: u16 = 1852;
+const DAILY_PERIOD: i64 = 86_401;
 const COUNT: &str = "oteryn:quest-progress/qonce-dispatch/count";
 const WELL_ACHIEVEMENT: &str = "oteryn:achievement/fountain_of_life";
 const HOARD_ACHIEVEMENT: &str = "oteryn:achievement/hoard_of_the_dragon";
@@ -67,6 +71,20 @@ fn annual_claim_delivers_backpack_and_refuses_until_period_expires_postgres() ->
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     drop(admin);
     super::qengine_rewards::scenario(ANNUAL)
+}
+
+#[test]
+fn fountain_replay_projects_the_rock_and_refuses_it_after_cooldown_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::qengine_rewards::scenario(FOUNTAIN_TRANSFORM)
+}
+
+pub(super) fn map_fixture(name: &str, callback: &mut Callback) {
+    if name == FOUNTAIN_TRANSFORM {
+        callback.selector.appearance = Some(LIONS_FOUNTAIN);
+        callback.effects.transform = Some(LIONS_SANCTUARY_ROCK);
+    }
 }
 
 #[test]
@@ -312,6 +330,47 @@ async fn full_backpack_retry(
     Ok(())
 }
 
+async fn fountain_transform(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::encode_use_intent;
+    let source_appearance = |owner: &ComposedFreshAdmission<'_, '_, '_>| -> TestResult<u16> {
+        let map = owner.bundle_map().ok_or("fountain map")?;
+        let tile = map.overlay.base().tile(AT.x, AT.y, AT.floor).ok_or("fountain tile")?;
+        let (id, _) = tile.ids().iter().zip(tile.depths())
+            .filter(|(_, depth)| **depth == 0).nth(1).ok_or("fountain stack entry")?;
+        Ok(map.facts.base_entry(
+            crate::map::overlay::TilePos { x: AT.x, y: AT.y, floor: AT.floor },
+            1,
+            *id,
+        ).ok_or("fountain source facts")?.appearance_id)
+    };
+    assert_eq!(source_appearance(owner)?, LIONS_FOUNTAIN);
+    let before = super::qengine_voucher_stories::quantity(h, 3039).await?;
+    let original = claim_target(owner)?;
+    let payload = encode_use_intent(&original).map_err(debug)?;
+    owner.states.quest_callbacks.interrupt_after_commit
+        .store(true, std::sync::atomic::Ordering::Release);
+    assert!(super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload).await.is_err());
+    assert!(owner.has_pending_quest_callback(admitted.game_session_id));
+    assert_eq!(source_appearance(owner)?, LIONS_FOUNTAIN);
+    assert_eq!(receipts(h).await?, 1);
+    assert_eq!(super::qengine_voucher_stories::quantity(h, 3039).await?, before + 1);
+
+    assert!(owner.reconcile_quest_callbacks(admitted.game_session_id).await);
+    assert!(!owner.has_pending_quest_callback(admitted.game_session_id));
+    assert_eq!(source_appearance(owner)?, LIONS_SANCTUARY_ROCK);
+    assert_eq!(claim_target(owner)?.expected_revision, original.expected_revision + 1);
+    h.root.advance_test_quest_clock(DAILY_PERIOD).map_err(debug)?;
+    advance_interaction(owner)?;
+    assert_eq!(use_claim(owner, *admitted, 2).await?, UseDisposition::NothingToUse);
+    assert_eq!(receipts(h).await?, 1, "an expired personal clock cannot reopen the shared rock");
+    assert_eq!(super::qengine_voucher_stories::quantity(h, 3039).await?, before + 1);
+    Ok(())
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -338,7 +397,7 @@ pub(super) async fn exercise(
     let mut tracks = vec![];
     let mut effects;
     let period = match name {
-        DAILY => Some((86_401_i64, DAILY_REFUSAL)),
+        DAILY | FOUNTAIN_TRANSFORM => Some((DAILY_PERIOD, DAILY_REFUSAL)),
         ANNUAL | FULL_BACKPACK => Some((31_536_001_i64, ANNUAL_REFUSAL)),
         _ => None,
     };
@@ -355,6 +414,7 @@ pub(super) async fn exercise(
         let give = match name {
             ANNUAL => json!({"item":"oteryn:item.tibia.i2854","count":1,
                 "contents":[{"item":"oteryn:item.tibia.i3031","count":2}]}),
+            FOUNTAIN_TRANSFORM => json!({"item":"oteryn:item.tibia.i3039","count":1}),
             FULL_BACKPACK => json!({"item":"oteryn:item.tibia.i2854","count":1,"contents":[
                 {"item":"oteryn:item.tibia.i3039","count":1},
                 {"item":"oteryn:item.tibia.i3037","count":1}
@@ -412,6 +472,10 @@ pub(super) async fn exercise(
         }
     }
     callback["effects"]["claim"] = effects;
+    if name == FOUNTAIN_TRANSFORM {
+        callback["selector"]["appearance"] = json!(LIONS_FOUNTAIN);
+        callback["effects"]["transform"] = json!(LIONS_SANCTUARY_ROCK);
+    }
     let recipe_sha256: String = Sha256::digest(serde_json::to_vec(&callback)?)
         .iter()
         .map(|byte| format!("{byte:02x}"))
@@ -527,6 +591,9 @@ pub(super) async fn exercise(
     }
 
     h.root.set_test_quest_clock(100_000_000).map_err(debug)?;
+    if name == FOUNTAIN_TRANSFORM {
+        return Box::pin(fountain_transform(owner, admitted, h)).await;
+    }
     if name == FULL_BACKPACK {
         return Box::pin(full_backpack_retry(owner, admitted, h)).await;
     }

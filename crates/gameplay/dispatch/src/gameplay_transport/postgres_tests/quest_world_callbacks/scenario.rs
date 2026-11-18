@@ -563,6 +563,7 @@ fn scenario_case(
         )
     {
         callback = super::super::authored_world_rewards::placeholder(trigger)?;
+        super::super::quest_claims::map_fixture(name, &mut callback);
     }
     if name.ends_with("-expiry") {
         callback
