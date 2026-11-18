@@ -609,20 +609,19 @@ async fn scan_rashid_candidates<C, A: Copy + Ord>(
 ) -> TestResult<Option<A>> {
     let mut identified = std::collections::BTreeMap::new();
     loop {
-        // While LOOK is in flight the session applies entity deltas. Classify any
-        // newly visible candidates and decide using the latest anchor membership.
+        // LOOK can apply entity deltas. Check for a known duplicate before
+        // another LOOK can remove it from the current anchor view.
         let current = candidates(client)?;
-        if let Some(candidate) = current.iter().copied().find(|actor| !identified.contains_key(actor)) {
-            let is_rashid = identify(client, candidate, !identified.is_empty()).await?;
-            identified.insert(candidate, is_rashid);
-            continue;
-        }
-        let mut matches = current.into_iter().filter(|actor| identified.get(actor) == Some(&true));
+        let mut matches = current.iter().copied().filter(|actor| identified.get(actor) == Some(&true));
         let rashid = matches.next();
         if matches.next().is_some() {
             return Err("step rashid-gate: multiple live Rashid actors at anchor".into());
         }
-        return Ok(rashid);
+        let Some(candidate) = current.into_iter().find(|actor| !identified.contains_key(actor)) else {
+            return Ok(rashid);
+        };
+        let is_rashid = identify(client, candidate, !identified.is_empty()).await?;
+        identified.insert(candidate, is_rashid);
     }
 }
 
@@ -902,6 +901,28 @@ async fn rashid_scan_identifies_a_duplicate_published_during_look() {
             Ok(true)
         },
     ).await;
+    assert!(result.is_err_and(|error| error.to_string().contains("multiple live Rashid")));
+    assert_eq!(looked, [1, 2]);
+}
+
+#[tokio::test]
+async fn rashid_scan_preserves_duplicate_evidence_before_another_look() {
+    let mut visible = vec![1, 3];
+    let mut looked = Vec::new();
+    let result = scan_rashid_candidates(
+        &mut visible,
+        |visible| Ok(visible.clone()),
+        async |visible, candidate, _| {
+            looked.push(candidate);
+            match candidate {
+                1 => visible.insert(1, 2),
+                3 => visible.retain(|actor| *actor != 2),
+                _ => {}
+            }
+            Ok(candidate != 3)
+        },
+    )
+    .await;
     assert!(result.is_err_and(|error| error.to_string().contains("multiple live Rashid")));
     assert_eq!(looked, [1, 2]);
 }
