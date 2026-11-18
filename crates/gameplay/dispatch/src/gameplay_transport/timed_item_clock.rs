@@ -3,7 +3,7 @@ use super::timed_item::*;
 use crate::durability::item_timed_runtime::{TimedOperation, TimedRequest};
 use crate::foundation::GameSessionId;
 use sha2::{Digest, Sha256};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 impl super::ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn stop_timed_actor(
@@ -57,47 +57,59 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         }
         next.store(now.saturating_add(1_000), Ordering::Relaxed);
 
-        let mut sessions = {
+        let census = {
             let runtime = self.runtime.lock().await;
             let Ok(census) = runtime.positioned_melee_census() else {
                 return;
             };
             census
-                .into_iter()
-                .filter_map(|(actor, _, session)| session.map(|session| (actor, session)))
-                .collect::<Vec<_>>()
         };
-        let period_ms = 1_000
-            * oteryn_gameplay_quests::quest::rotten_blood::putrefactory::PASSIVE_PERIOD_SECONDS;
-        let next_putrefactory = &self.states.timed_items.next_putrefactory_tick_ms;
-        let expected = next_putrefactory.load(Ordering::Relaxed);
-        // Crystal re-arms after each pulse, including delayed pulses.
-        let putrefactory_due = now >= expected.max(period_ms)
-            && next_putrefactory
-                .compare_exchange(
-                    expected,
-                    now.saturating_add(period_ms),
-                    Ordering::Relaxed,
-                    Ordering::Relaxed,
-                )
-                .is_ok();
-        let present: HashSet<GameSessionId> =
-            sessions.iter().map(|(_, session)| *session).collect();
+        let present: HashMap<_, _> = census
+            .iter()
+            .filter_map(|(actor, _, session)| session.map(|session| (session, *actor)))
+            .collect();
+        let mut sessions: Vec<_> = present
+            .iter()
+            .map(|(session, actor)| (*actor, *session))
+            .collect();
+        if let Ok(mut pulse) = self.states.timed_items.putrefactory.lock() {
+            use oteryn_gameplay_quests::quest::rotten_blood::putrefactory;
+            let period_ms = 1_000 * putrefactory::PASSIVE_PERIOD_SECONDS;
+            if now >= pulse.next_ms.max(period_ms) {
+                // Crystal re-arms from the pulse, including a delayed pulse. A
+                // new pulse samples the actors in range and expires the old one.
+                pulse.next_ms = now.saturating_add(period_ms);
+                pulse.period = now / period_ms;
+                pulse.pending = census
+                    .into_iter()
+                    .filter_map(|(actor, snapshot, session)| {
+                        let at = snapshot.position();
+                        session
+                            .filter(|_| putrefactory::accrues_charge_at(at.x, at.y, at.floor))
+                            .map(|session| (session, actor))
+                    })
+                    .collect();
+            } else {
+                pulse
+                    .pending
+                    .retain(|session, actor| present.get(session) == Some(actor));
+            }
+        }
         self.states
             .timed_items
             .sessions
             .lock()
             .await
-            .retain(|session, _| present.contains(session));
+            .retain(|session, _| present.contains_key(session));
         self.states
             .timed_items
             .imbuements
             .lock()
             .await
-            .retain(|session, _| present.contains(session));
+            .retain(|session, _| present.contains_key(session));
         let converters: Vec<GameSessionId> = {
             let mut active = self.states.timed_items.magic_converters.lock().await;
-            active.retain(|session, _| present.contains(session));
+            active.retain(|session, _| present.contains_key(session));
             active.keys().copied().collect()
         };
         // Stable order, one cursor across equipment, quests and converters as
@@ -125,10 +137,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                         if (index - 2) % 2 == 0 {
                             self.checkpoint_timed_equipment(actor, session, false).await;
                         } else {
-                            if putrefactory_due {
-                                self.apply_putrefactory_tick(actor, session, now / period_ms)
-                                    .await;
-                            }
+                            self.drain_putrefactory_pulse(actor, session).await;
                             self.drain_quest_timers(actor, session).await;
                         }
                     }
@@ -146,6 +155,24 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 }
             })
             .await;
+        }
+    }
+
+    async fn drain_putrefactory_pulse(
+        &self,
+        actor: crate::foundation::ExactActorRef,
+        session: GameSessionId,
+    ) {
+        let clock = &self.states.timed_items.putrefactory;
+        let period = clock.lock().ok().and_then(|pulse| {
+            (pulse.pending.get(&session) == Some(&actor)).then_some(pulse.period)
+        });
+        if let Some(period) = period
+            && self.apply_putrefactory_tick(actor, session, period).await
+            && let Ok(mut pulse) = clock.lock()
+            && pulse.period == period
+        {
+            pulse.pending.remove(&session);
         }
     }
 

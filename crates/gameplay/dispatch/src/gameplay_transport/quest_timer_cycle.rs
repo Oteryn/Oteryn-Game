@@ -10,10 +10,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
         period: u64,
-    ) {
+    ) -> bool {
         self.root
             .with_background_operation(self.apply_putrefactory_tick_inner(actor, session, period))
-            .await;
+            .await
     }
 
     async fn apply_putrefactory_tick_inner(
@@ -21,16 +21,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
         period: u64,
-    ) {
+    ) -> bool {
         let Some(catalogue) = self
             .quest_catalogue
             .as_ref()
             .filter(|catalogue| catalogue.transition(putrefactory::PASSIVE_TICK).is_some())
         else {
-            return;
+            return true;
         };
         if self.bundle_map().is_none() {
-            return;
+            return true;
         }
         let in_zone = {
             let runtime = self.runtime.lock().await;
@@ -43,17 +43,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
         };
         if !in_zone {
-            return;
+            return true;
         }
-        let Ok(Some(fence)) = self.current_quest_fence(session).await else {
-            return;
+        let fence = match self.current_quest_fence(session).await {
+            Ok(Some(fence)) => fence,
+            Ok(None) => return true,
+            Err(()) => return false,
         };
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         let runtime = self.runtime.lock().await;
         let Some(input) = crate::durability::quest_state::putrefactory::QualifiedPutrefactoryTick::from_current_actor(
             &runtime, actor, fence, period,
         ) else {
-            return;
+            return true;
         };
         match slot
             .commit_putrefactory_tick(
@@ -74,8 +76,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.apply_committed_quest_copy(session, false, &committed);
                 self.schedule_quest_refresh(session);
             }
+            Err(
+                crate::durability::character_progression::CharacterProgressionError::Unavailable(_),
+            ) => return false,
             _ => {}
         }
+        true
     }
 
     pub(super) async fn drain_quest_timers(&self, actor: ExactActorRef, session: GameSessionId) {

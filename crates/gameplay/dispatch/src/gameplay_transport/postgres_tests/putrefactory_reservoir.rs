@@ -211,21 +211,31 @@ pub(super) async fn exercise(
         owner.tick_timed_items_at(19_000).await;
         assert_eq!(tracks().await?, values);
         h.root.advance_test_quest_clock(1).map_err(debug)?;
-        owner.tick_timed_items_at(20_100).await;
+        // An in-flight holder pass makes the real background scheduler defer
+        // its database work at pulse time. The same pulse is retried later.
+        let held = h.root.try_issue_background_semantic_pass()?;
+        crate::durability::DurabilityRoot::with_background_holder(
+            owner.tick_timed_items_at(20_100),
+        ).await;
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        assert_eq!(tracks().await?, values);
+        h.root.advance_test_quest_clock(1).map_err(debug)?;
+        owner.tick_timed_items_at(21_100).await;
         let charged = tracks().await?;
         assert_eq!(
             charged,
             vec![
                 (CHARGE.to_owned(), first_charge + 1),
-                (PASSIVE_CLOCK.to_owned(), STARTED_AT + 20),
+                (PASSIVE_CLOCK.to_owned(), STARTED_AT + 21),
                 (CLOCK.to_owned(), STARTED_AT),
             ]
         );
         // A delayed pulse re-arms from 20.1 seconds, not the start of its bucket.
-        h.root.advance_test_quest_clock(20).map_err(debug)?;
+        h.root.advance_test_quest_clock(19).map_err(debug)?;
         owner.tick_timed_items_at(40_000).await;
         assert_eq!(tracks().await?, charged);
         // The containing item clock checks once per second.
+        h.root.advance_test_quest_clock(1).map_err(debug)?;
         owner.tick_timed_items_at(41_000).await;
         assert_eq!(tracks().await?[0], (CHARGE.to_owned(), first_charge + 2));
         let receipts: i64 = sqlx::query_scalar(
