@@ -468,8 +468,9 @@ def build():
         ('helmet','demon_oak',prefix+'u8_2/the_demon_oak/done',3,4,2)]:
         add('l3-demon-'+name,quest,'avar_tar',[name],[storage(track,before,after)],
             outfit=('demon',bit),topic=2,requires=[requirement(annihilator,2)])
-    for word,topic,next_topic in [('outfit',0,1),('yes',1,2)]:
-        offers.append({'npc':'oteryn:npc.avar_tar','keywords':[word],'topic':topic,
+    # Avar Tar's donor selector matches the word outfit in the Demon Outfit phrase.
+    for words,topic,next_topic in [(['outfit','demon outfit'],0,1),(['yes'],1,2)]:
+        offers.append({'npc':'oteryn:npc.avar_tar','keywords':words,'topic':topic,
             'next_topic':next_topic,'storage':[],'reply':['Choose the base, shield or helmet.']})
     dark=prefix+'u10_50/dark_trails/'
     votes=prefix+'u10_50/oramond_quest/voting_points'
