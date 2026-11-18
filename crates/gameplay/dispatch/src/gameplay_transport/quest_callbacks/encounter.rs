@@ -20,6 +20,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         expected_revision: u64,
         after: EntryFacts,
         preflight: bool,
+        projection: Option<&crate::map::facts::QuestCallbackProjection>,
         cause: QuestCause,
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
     ) -> UseDisposition {
@@ -34,6 +35,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             expected_revision,
             after,
             preflight,
+            projection,
             cause,
             reservation,
         )
@@ -64,6 +66,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             expected_revision,
             after,
             true,
+            None,
             cause,
             None,
         )
@@ -82,6 +85,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         expected_revision: u64,
         after: EntryFacts,
         preflight: bool,
+        projection: Option<&crate::map::facts::QuestCallbackProjection>,
         cause: QuestCause,
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
     ) -> UseDisposition {
@@ -340,7 +344,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             || {
                 map.facts
-                    .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
+                    .apply_quest_callback(key, expected_revision, after, &[], &[], false, projection)
             },
         ) else {
             return UseDisposition::Rejected;

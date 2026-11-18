@@ -639,7 +639,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || effects.portals.is_some()
                 || effects.item_presence.is_some()
                 || effects.item_cycle.is_some()
-                || effects.encounter.is_some()
+                || effects.encounter.as_ref().is_some_and(|encounter| {
+                    encounter.timing.is_some() || !callback.passages.is_empty()
+                })
                 || (!callback.passages.is_empty() && effects.passages_reset_after_ms.is_none())
         })
         || effects.passages_reset_after_ms.is_some_and(|delay| {

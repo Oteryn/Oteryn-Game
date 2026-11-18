@@ -954,6 +954,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 expected_revision,
                 after,
                 true,
+                None,
                 cause,
                 None,
             );
@@ -1305,6 +1306,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 optional_pvp,
             );
         }
+        // Durable admission may wait on PostgreSQL. Start source reset/regrowth
+        // at publication, so commit latency cannot consume its visible lifetime.
+        // Readset projections carry the same timer for the Children lever owner.
+        if !close && let Some(delay) = callback.effects.reset_after_ms {
+            let Some(published_due) = self.owner_now().get().checked_add(u64::from(delay) * 1_000)
+            else {
+                return UseDisposition::Exhausted;
+            };
+            match projection.as_mut() {
+                Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
+                    due, ..
+                })
+                | Some(crate::map::facts::QuestCallbackProjection::ReadsetTransforms {
+                    reset: Some((due, _)),
+                    ..
+                }) => *due = published_due,
+                _ => {}
+            }
+        }
         if callback.effects.encounter.is_some() && !close {
             let disposition = self.execute_quest_encounter(
                 runtime,
@@ -1317,10 +1337,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 expected_revision,
                 after,
                 false,
+                projection.as_ref(),
                 cause,
                 personal_reservation.as_mut(),
             );
             if disposition == UseDisposition::Committed {
+                if callback.effects.reset_after_ms.is_some() {
+                    states.owner_wake.notify_one();
+                }
                 if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                     pending.remove(&session);
                 }
@@ -1359,27 +1383,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 record.flame_effect_sent = true;
             }
         } else {
-            // Durable admission may wait on PostgreSQL. Start source reset/regrowth
-            // at publication, so commit latency cannot consume its visible lifetime.
-            // Readset projections carry the same timer for the Children lever owner.
-            if !close && let Some(delay) = callback.effects.reset_after_ms {
-                let Some(published_due) =
-                    self.owner_now().get().checked_add(u64::from(delay) * 1_000)
-                else {
-                    return UseDisposition::Exhausted;
-                };
-                match projection.as_mut() {
-                    Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
-                        due,
-                        ..
-                    })
-                    | Some(crate::map::facts::QuestCallbackProjection::ReadsetTransforms {
-                        reset: Some((due, _)),
-                        ..
-                    }) => *due = published_due,
-                    _ => {}
-                }
-            }
             if let Some(target) = &callback.effects.target_transform
                 && let Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
                     due,
