@@ -2,7 +2,7 @@
 use super::*;
 use crate::content::{ReferenceItemField, native_gameplay::NativeGameplayState};
 use crate::durability::{
-    item_mint::GroundPlacement,
+    item_mint::{GroundPlacement, TypedDefinitionRef},
     native_map_items_abi::{
         NativeMapInitializationProof, NativeMapItemPlacement, NativeMapOwnerBinding,
         map_initializer_seal,
@@ -115,7 +115,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             content,
             placement: NativeMapItemPlacement {
                 placement_key: source.clone(),
-                definition: record.production_definition.clone(),
+                definition: TypedDefinitionRef {
+                    family: record.production_definition.family.clone(),
+                    production_key: record.production_definition.production_key.clone(),
+                    revision_ref: record.production_definition.revision_ref.clone(),
+                },
                 ground: GroundPlacement {
                     spatial_position:
                         crate::durability::map_item_mint_audit::map_item_spatial_position(
