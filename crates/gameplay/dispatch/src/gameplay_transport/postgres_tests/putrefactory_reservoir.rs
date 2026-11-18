@@ -117,7 +117,7 @@ pub(super) async fn exercise(
     assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Committed);
     let values = tracks().await?;
     assert_eq!(values.len(), 2);
-    assert_eq!(values[0], (CHARGE.into(), if cap { 100 } else { 20 }));
+    assert_eq!(values[0], (CHARGE.to_owned(), if cap { 100 } else { 20 }));
     assert_eq!(values[1].0, CLOCK);
     assert_eq!(values[1].1, STARTED_AT);
 
@@ -136,7 +136,7 @@ pub(super) async fn exercise(
         assert_eq!(disposition, UseDisposition::Committed);
         assert_eq!(
             tracks().await?,
-            vec![(CHARGE.into(), 40), (CLOCK.into(), STARTED_AT + 20)]
+            vec![(CHARGE.to_owned(), 40), (CLOCK.to_owned(), STARTED_AT + 20)]
         );
     }
     Ok(())
