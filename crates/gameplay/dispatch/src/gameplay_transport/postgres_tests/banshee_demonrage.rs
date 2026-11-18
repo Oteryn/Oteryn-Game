@@ -542,7 +542,12 @@ fn scenario() -> TestResult {
             assert_eq!(item(at)?.1, 2114);
         }
 
-        for plate in [PLATE, EAST_PLATE] {
+        let effect_cursor = map
+            .facts
+            .movement_effects_since(0)
+            .last()
+            .map_or(0, |cue| cue.0);
+        for plate in [EAST_PLATE, PLATE] {
             let (origin, entered) = step_onto(plate).await?;
             assert_eq!(
                 owner
@@ -566,6 +571,14 @@ fn scenario() -> TestResult {
             positions.sort_by_key(|position| position.y);
             assert_eq!(positions, SPAWNS.map(local));
         }
+        let cues: Vec<_> = map
+            .facts
+            .movement_effects_since(effect_cursor)
+            .into_iter()
+            .map(|(_, at, effect)| (at, effect))
+            .collect();
+        assert_eq!(cues, [(EAST_PLATE, 14)], "only the first crossing emits a cue");
+
         let tracks: Vec<(String,i64)> = sqlx::query_as("SELECT track_key,value FROM game_character_quest_tracks WHERE quest_key=$1 ORDER BY track_key")
             .bind(QUEST).fetch_all(&h.pool).await?;
         assert_eq!(
