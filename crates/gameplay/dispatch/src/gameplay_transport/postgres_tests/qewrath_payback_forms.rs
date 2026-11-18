@@ -24,6 +24,8 @@ const TEAM_PAD: Position = Position {
     y: 31405,
     floor: -9,
 };
+const OUTSIDE_TIMEOUT: &str = "qewrath-payback-outside-timeout";
+const OUTSIDE_PAD: Position = Position { y: 31403, ..LEVER };
 const LANDING: Position = Position {
     x: 33359,
     y: 31406,
@@ -53,6 +55,17 @@ fn payback_advances_exact_deaths_and_releases_the_room_on_victory_or_timeout() -
             super::quest_world_callbacks::scenario(name, LEVER, false)?;
         }
         Ok(())
+    })
+}
+
+#[test]
+fn payback_lever_admits_the_staged_player_while_the_operator_stays_outside() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(OUTSIDE_TIMEOUT, || {
+        super::quest_world_callbacks::scenario(OUTSIDE_TIMEOUT, LEVER, false)
     })
 }
 
@@ -111,8 +124,9 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
-    timeout: bool,
+    name: &str,
 ) -> TestResult {
+    let timeout = name.ends_with("-timeout");
     let callback = fixture()?;
     let map = owner.bundle_map().ok_or("map")?;
     let key = oteryn_world_bundle::bundle::placement_key(LEVER.floor, LEVER.x, LEVER.y, 1)
@@ -302,11 +316,19 @@ pub(super) async fn exercise(
             .is_empty()
     );
 
-    // Crystal's spectator scan gathers both characters on the same source tile.
-    // The next USE must retire the old room and admit both stacked players.
+    // Crystal's spectator scan gathers stacked players and excludes anyone
+    // outside the staging rectangle, even if they are operating the lever.
     let closed = crate::map::floor::BundleDoors(&map.facts);
-    let pad = super::quest_world_callbacks::local(Position { x: 33357, ..LEVER });
-    for (member, member_session) in [(actor, session), (partner, partner_session)] {
+    let pad = Position { x: 33357, ..LEVER };
+    let operator_pad = if name == OUTSIDE_TIMEOUT {
+        OUTSIDE_PAD
+    } else {
+        pad
+    };
+    for (member, member_session, from) in [
+        (actor, session, operator_pad),
+        (partner, partner_session, pad),
+    ] {
         let expected = runtime.read_actor_position(member).map_err(debug)?;
         let teleport = crate::map::floor::prepare_quest_encounter_ejection(
             &runtime,
@@ -314,7 +336,7 @@ pub(super) async fn exercise(
             member,
             member_session,
             expected,
-            pad,
+            super::quest_world_callbacks::local(from),
             &closed,
         )
         .map_err(debug)?;
@@ -322,6 +344,7 @@ pub(super) async fn exercise(
     }
     drop(states);
     drop(runtime);
+    let effect_cursor = map.facts.movement_effects_since(0).last().map_or(0, |cue| cue.0);
     let restarted = owner
         .use_object(
             actor,
@@ -342,10 +365,27 @@ pub(super) async fn exercise(
     assert!(!runtime.contains_live_creature(original_boss));
     assert!(find(&runtime, FORMS[0]).is_some());
     assert!(find(&runtime, GUARD).is_some());
-    for member in [actor, partner] {
+    let actor_destination = if name == OUTSIDE_TIMEOUT {
+        OUTSIDE_PAD
+    } else {
+        LANDING
+    };
+    for (member, destination) in [(actor, actor_destination), (partner, LANDING)] {
         assert_eq!(
             runtime.read_actor_position(member).map_err(debug)?.position(),
-            super::quest_world_callbacks::local(LANDING)
+            super::quest_world_callbacks::local(destination)
+        );
+    }
+    let admitted_count = if name == OUTSIDE_TIMEOUT { 1 } else { 2 };
+    let cues = map.facts.movement_effects_since(effect_cursor);
+    for at in [pad, LANDING] {
+        assert_eq!(
+            cues.iter()
+                .filter(|(_, position, effect)| {
+                    *effect == 11 && (position.x, position.y, position.floor) == (at.x, at.y, at.floor)
+                })
+                .count(),
+            admitted_count
         );
     }
     Ok(())

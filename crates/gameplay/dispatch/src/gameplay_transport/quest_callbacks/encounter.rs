@@ -298,9 +298,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             players.push((who, member_session, expected));
             proofs.push(proof);
         }
-        if !players
-            .iter()
-            .any(|(who, s, _)| *who == actor && *s == session)
+        // Crystal 201189f8 actions_mission11_payback_time_lever.lua:17,35–40
+        // keeps the lever user and the staging rectangle independent.
+        let accepts_outside_operator =
+            gather_players && !callback.has_personal_state() && !callback.requires_world_admission;
+        if players.is_empty()
+            || (!accepts_outside_operator
+                && !players
+                    .iter()
+                    .any(|(who, s, _)| *who == actor && *s == session))
         {
             return UseDisposition::Rejected;
         }
@@ -488,6 +494,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, expected.position()),
                 underwater(map, snapshot.position()),
             );
+            // Payback shows the teleport cue at both endpoints of each admitted move.
+            if gather_players && let Some(pos) = native(expected.position()) {
+                map.facts.emit_movement_effect(pos, 11);
+            }
             if let Some(pos) = native(snapshot.position()) {
                 map.facts.emit_movement_effect(pos, 11);
             }
