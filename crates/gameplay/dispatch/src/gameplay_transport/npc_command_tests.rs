@@ -61,10 +61,15 @@ fn book() -> NpcTalkBook {
 
 /// The chat state of the session: admitted, serving capability 3, with the NPC book installed.
 fn chat_of(session: GameSessionId) -> ChatRuntime {
+    chat_with(session, Arc::new(book()))
+}
+
+/// The talk book is installed once per Channel, so a test with another book starts here.
+fn chat_with(session: GameSessionId, book: Arc<NpcTalkBook>) -> ChatRuntime {
     let chat = ChatRuntime::default();
     chat.admit(session, "Aela", at(BASE));
     chat.set_npc_service(session);
-    chat.install_npc_talk(Arc::new(book()));
+    chat.install_npc_talk(book);
     chat
 }
 
@@ -553,8 +558,7 @@ fn frodo_and_mordecai_trade_offers_reach_talk_in() {
         ),
     ] {
         let (runtime, actor, session, npc) = fixture_for(2, key);
-        let chat = chat_of(session);
-        chat.install_npc_talk(Arc::clone(&book));
+        let chat = chat_with(session, Arc::clone(&book));
         let conversations = NpcConversations::default();
         let say = |text, now| {
             conversations.talk_in(
@@ -578,8 +582,7 @@ fn frodo_and_mordecai_trade_offers_reach_talk_in() {
 #[test]
 fn frodo_phrase_keywords_reach_talk_in() {
     let (runtime, actor, session, npc) = fixture_for(2, "oteryn:npc.frodo");
-    let chat = chat_of(session);
-    chat.install_npc_talk(frodo_mordecai_book());
+    let chat = chat_with(session, frodo_mordecai_book());
     let conversations = NpcConversations::default();
     let say = |text, now| {
         conversations.talk_in(
@@ -615,8 +618,7 @@ fn frodo_phrase_keywords_reach_talk_in() {
 #[test]
 fn frodo_authored_keyword_preempts_farewell_and_trade() {
     let (runtime, actor, session, npc) = fixture_for(2, "oteryn:npc.frodo");
-    let chat = chat_of(session);
-    chat.install_npc_talk(frodo_mordecai_book());
+    let chat = chat_with(session, frodo_mordecai_book());
     let conversations = NpcConversations::default();
     let index = shop_index(&[3577]);
     let say = |text, now| {
@@ -648,9 +650,8 @@ fn frodo_authored_keyword_preempts_farewell_and_trade() {
 #[test]
 fn mordecai_categories_open_only_the_selected_offers() {
     let (runtime, actor, session, npc) = fixture_for(2, "oteryn:npc.mordecai");
-    let chat = chat_of(session);
     let book = frodo_mordecai_book();
-    chat.install_npc_talk(Arc::clone(&book));
+    let chat = chat_with(session, Arc::clone(&book));
     let conversations = NpcConversations::default();
     let index = shop_index(&[3074, 3180]);
     let say = |text, now| {
