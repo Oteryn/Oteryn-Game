@@ -50,22 +50,33 @@ fn spider_queen_wrap_waits_for_grease_expiry_and_sends_the_player_to_an_escapabl
 
 fn document() -> serde_json::Value {
     use serde_json::json;
-    json!({"schema":1,"callbacks":[
-        {"key":"oteryn:quest-callback/rookie-guard-grease-retry", "quest":QUEST, "trigger":"use",
+    let grease = json!({"key":"oteryn:quest-callback/rookie-guard-grease", "quest":QUEST, "trigger":"use",
          "selector":{"position":STONE,"appearance":12727},"requires_world_admission":true,
          "passages":[],"offerings":[],"reversible":false,"return_on_failure":false,
-         "storage":[{"track":TRACK,"minimum":4,"maximum":4,"set":2}],
+         "activation":{"track":TRACK,"minimum":1,"maximum":2},
+         "storage":[{"track":TRACK,"minimum":1,"maximum":2,"set":2}],
          "effects":{"invisibility_ms":120000,
            "creature_capture":{"creature":QUEEN,"interval_ms":5000,"range":1,"track":TRACK,"value":4,
                "condition_ms":30000,"combat_effect":17,"projectile":15,"look_type":422,"speed":[-300,-450],"teleport_delay_ms":4500,
                "landing":NEST,"message":"The spider queen caught you in her net and paralysed you!"}},
-         "sources":[GREASE,WRAP,ATTACK]},
-        {"key":"oteryn:quest-callback/rookie-guard-web-sample", "quest":QUEST, "trigger":"use",
+         "sources":[GREASE,WRAP,ATTACK]});
+    let mut regrease = grease.clone();
+    regrease["key"] = "oteryn:quest-callback/rookie-guard-grease-retry".into();
+    regrease["activation"] = json!({"track":TRACK,"minimum":4,"maximum":4});
+    regrease["storage"] = json!([{"track":TRACK,"minimum":4,"maximum":4,"set":2}]);
+    regrease["effects"] = json!({"invisibility_ms":120000});
+    regrease["sources"] = json!([GREASE]);
+    let sample = json!({"key":"oteryn:quest-callback/rookie-guard-web-sample", "quest":QUEST, "trigger":"use",
          "selector":{"position":WEB,"appearance":100},"requires_world_admission":true,
          "passages":[],"offerings":[],"reversible":false,"return_on_failure":false,
-         "storage":[{"track":TRACK,"minimum":4,"maximum":4,"set":3}],
-         "sources":[SAMPLE]}
-    ]})
+         "activation":{"track":TRACK,"minimum":2,"maximum":2},
+         "storage":[{"track":TRACK,"minimum":2,"maximum":2,"set":3}],
+         "sources":[SAMPLE]});
+    let mut recovered_sample = sample.clone();
+    recovered_sample["key"] = "oteryn:quest-callback/rookie-guard-web-sample-after-wrap".into();
+    recovered_sample["activation"] = json!({"track":TRACK,"minimum":4,"maximum":4});
+    recovered_sample["storage"] = json!([{"track":TRACK,"minimum":4,"maximum":4,"set":3}]);
+    json!({"schema":1,"callbacks":[grease,regrease,sample,recovered_sample]})
 }
 
 pub(super) fn callback() -> TestResult<Callback> {
@@ -150,7 +161,7 @@ pub(super) async fn exercise(
         vec![QuestTrack {
             key: TRACK.into(),
             quest: QUEST.into(),
-            initial: 4,
+            initial: 1,
             min: -1,
             max: 5,
         }],

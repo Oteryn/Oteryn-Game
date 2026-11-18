@@ -17,14 +17,20 @@ pub(super) const ENTRY: Position = Position {
     y: 31891,
     floor: -14,
 };
+// Crystal startup/tables/teleport.lua:234-240, west member of the paired portals.
+const PLAGUE_ENTRY: Position = Position {
+    x: 32176,
+    y: 31869,
+    floor: -15,
+};
 const ALTAR: Position = Position {
     x: 32243,
     y: 31892,
     floor: -14,
 };
 const PLAGUE_LANDING: Position = Position {
-    y: ENTRY.y - 6,
-    ..ENTRY
+    y: PLAGUE_ENTRY.y - 6,
+    ..PLAGUE_ENTRY
 };
 const SACRIFICE_LANDING: Position = Position {
     x: 32261,
@@ -51,7 +57,7 @@ fn plague_entrance_consumes_neither_pearl_until_both_are_present() -> TestResult
     };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(PLAGUE, || {
-        super::quest_world_callbacks::scenario(PLAGUE, ENTRY, false)
+        super::quest_world_callbacks::scenario(PLAGUE, PLAGUE_ENTRY, false)
     })
 }
 
@@ -112,7 +118,10 @@ fn document(name: &str) -> serde_json::Value {
     }
     json!({"schema":1,"callbacks":[{
         "key":format!("oteryn:quest-callback/{name}"),"quest":QUEST,
-        "trigger":"step_in","selector":{"position":ENTRY,"appearance":100},
+        "trigger":"step_in","selector":{
+            "position":if plague { PLAGUE_ENTRY } else { ENTRY },
+            "appearance":if plague { 1949 } else { 100 }
+        },
         "reversible":false,"passages":[],"teleport":if plague { PLAGUE_LANDING } else { SACRIFICE_LANDING },
         "requires_world_admission":true,"storage":storage,
         "offerings":offerings,"effects":effects,"return_on_failure":true,"sources":sources

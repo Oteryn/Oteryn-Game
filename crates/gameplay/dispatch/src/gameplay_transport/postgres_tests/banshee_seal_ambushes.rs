@@ -8,9 +8,15 @@ use oteryn_protocol_oteryn::world_spatial::{StepDirection, encode_step_intent};
 const FIRST: &str = "banshee-hidden-flame";
 const THIRD: &str = "banshee-demonrage-warlocks";
 const QUEST: &str = "oteryn:quest.the_queen_of_the_banshees_quest";
-const ENTRY: Position = Position {
-    x: 32210,
-    y: 31839,
+// Crystal startup/tables/teleport.lua:561-564 and startup/tables/tile.lua:938-944.
+const FIRST_ENTRY: Position = Position {
+    x: 32278,
+    y: 31903,
+    floor: -13,
+};
+const THIRD_ENTRY: Position = Position {
+    x: 32215,
+    y: 31838,
     floor: -15,
 };
 const FIRST_EXIT: Position = Position {
@@ -42,12 +48,16 @@ fn banshee_demonrage_spawns_two_warlocks_only_on_first_step() -> TestResult {
 
 fn run(name: &'static str) -> TestResult {
     super::kill_reward_e2e::scenario_thread::run(name, move || {
-        super::quest_world_callbacks::scenario(name, ENTRY, false)
+        super::quest_world_callbacks::scenario(name, entry(name), false)
     })
 }
 
 pub(super) fn matches(name: &str) -> bool {
     matches!(name, FIRST | THIRD)
+}
+
+fn entry(name: &str) -> Position {
+    if name == FIRST { FIRST_ENTRY } else { THIRD_ENTRY }
 }
 
 fn document(name: &str) -> serde_json::Value {
@@ -82,12 +92,17 @@ fn document(name: &str) -> serde_json::Value {
             })
         })
         .collect();
+    let effects = if first {
+        json!({"ambush":ambush,"teleport_effect":11})
+    } else {
+        json!({"ambush":ambush,"magic":{"position":THIRD_ENTRY,"effect":14}})
+    };
     json!({"schema":1,"callbacks":[{
         "key":format!("oteryn:quest-callback/{name}"),"quest":QUEST,
-        "trigger":"step_in","selector":{"position":ENTRY,"appearance":100},
+        "trigger":"step_in","selector":{"position":entry(name),"appearance":if first { 1959 } else { 431 }},
         "reversible":false,"passages":[],"teleport":first.then_some(FIRST_EXIT),
         "requires_world_admission":true,"return_on_failure":first,
-        "storage":storage,"offerings":[],"effects":{"ambush":ambush},"sources":[source]
+        "storage":storage,"offerings":[],"effects":effects,"sources":[source]
     }]})
 }
 
@@ -156,7 +171,7 @@ pub(super) async fn exercise(
     let spawned = {
         let mut runtime = owner.runtime.lock().await;
         let landed = runtime.read_actor_position(actor).map_err(debug)?;
-        assert_eq!(landed.position(), local(callback.teleport.unwrap_or(ENTRY)));
+        assert_eq!(landed.position(), local(callback.teleport.unwrap_or_else(|| entry(name))));
         let spawned = runtime.current_live_creature_census().map_err(debug)?;
         assert_eq!(spawned.len(), callback.effects.ambush.len());
         for monster in &callback.effects.ambush {
@@ -198,7 +213,7 @@ pub(super) async fn exercise(
             .read_actor_position(actor)
             .map_err(debug)?
             .position(),
-        if name == FIRST { origin } else { local(ENTRY) }
+        if name == FIRST { origin } else { local(THIRD_ENTRY) }
     );
     drop(runtime);
     let receipts: i64 = sqlx::query_scalar(

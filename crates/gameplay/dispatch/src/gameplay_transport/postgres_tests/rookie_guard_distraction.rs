@@ -12,8 +12,8 @@ use oteryn_protocol_oteryn::world_object::{
 
 pub(super) const NAME: &str = "rookie-guard-distraction";
 const GUARD: Position = Position {
-    x: 31980,
-    y: 32154,
+    x: 31977,
+    y: 32150,
     floor: -7,
 };
 const EJECT: Position = Position {
@@ -25,6 +25,7 @@ const QUEST: &str = "oteryn:quest.the_rookie_guard_quest";
 const TRACK: &str = "oteryn:quest-progress/quest/u9_1/the_rookie_guard/mission12";
 const BONE: &str = "oteryn:item.tibia.i12674";
 const APPEARANCE: u16 = 12792;
+const GUARD_ORDINAL: u8 = 2;
 const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua:251-294";
 
 #[test]
@@ -40,10 +41,10 @@ fn fleshy_bone_use_retains_the_item_and_recovers_the_guard_after_two_minutes() -
 
 fn document() -> serde_json::Value {
     use serde_json::json;
-    json!({"schema":1,"callbacks":[{
+    let first = json!({
         "key":"oteryn:quest-callback/rookie-guard-distraction", "quest":QUEST, "trigger":"use",
         "selector":{"position":GUARD,"appearance":APPEARANCE,
-            "native":{"position":GUARD,"ordinal":1,"appearance":APPEARANCE}},
+            "native":{"position":GUARD,"ordinal":GUARD_ORDINAL,"appearance":APPEARANCE}},
         "requires_world_admission":true, "passages":[],"offerings":[],
         "reversible":false,"return_on_failure":false,
         "storage":[{"track":TRACK,"minimum":5,"maximum":5,"set":6}], "experience":50,
@@ -52,7 +53,12 @@ fn document() -> serde_json::Value {
             "spawns":[{"creature":"oteryn:creature.running_elite_orc_guard","offset_y":1,"count":1},
                       {"creature":"oteryn:creature.wild_dog","offset_y":3,"count":8}]}},
         "sources":[SOURCE]
-    }]})
+    });
+    let mut retry = first.clone();
+    retry["key"] = "oteryn:quest-callback/rookie-guard-distraction-retry".into();
+    retry["storage"] = json!([{"track":TRACK,"minimum":6,"maximum":15,"set":6,"at_least":true}]);
+    retry["experience"] = serde_json::Value::Null;
+    json!({"schema":1,"callbacks":[first,retry]})
 }
 
 pub(super) fn callback() -> TestResult<Callback> {
@@ -64,7 +70,7 @@ pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleW
         callback,
         GUARD,
         APPEARANCE,
-        1,
+        GUARD_ORDINAL,
         &[],
         &[],
         None,
@@ -90,7 +96,7 @@ pub(super) async fn exercise(
             quest: QUEST.into(),
             initial: 5,
             min: -1,
-            max: 13,
+            max: 15,
         }],
         vec![],
     )
@@ -147,35 +153,14 @@ pub(super) async fn exercise(
             .install_companion_policies(native.policies().clone())
             .map_err(debug)?;
     }
-    let map = owner.bundle_map().ok_or("map")?;
     let target = crate::map::overlay::TilePos {
         x: GUARD.x,
         y: GUARD.y,
         floor: GUARD.floor,
     };
-    let key = placement_key(target, 1).ok_or("guard placement")?;
-    let mut placement = map.overlay.base().digest().to_vec();
-    placement.extend_from_slice(&key.to_be_bytes());
-    let payload = encode_item_use_intent(&UseIntent {
-        target: UseTarget::Item(std::num::NonZeroU64::new(3).ok_or("handle")?),
-        use_with: None,
-        use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
-            placement,
-            expected_revision: map.facts.object_revision(key),
-        })),
-        use_with_position: None,
-    })
-    .map_err(debug)?;
-    let (next, result, _) = super::item_craft::exchange(
-        owner,
-        *admitted,
-        admitted.continuity.next_command_id,
-        &payload,
-        Some(reference),
-    )
-    .await?;
-    *admitted = next;
-    assert_eq!(result, UseDisposition::Committed);
+    let key = placement_key(target, GUARD_ORDINAL).ok_or("guard placement")?;
+    let origin = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position();
+    use_bone(owner, admitted, key, reference).await?;
     {
         let runtime = owner.runtime.lock().await;
         let census = runtime.current_live_creature_census().map_err(debug)?;
@@ -201,6 +186,9 @@ pub(super) async fn exercise(
                 (SELECT count(*) FROM game_item_instances WHERE definition_production_key=$2 AND lifecycle=1)",
     ).bind(TRACK).bind(BONE).fetch_one(&h.pool).await?;
     assert_eq!((stage, bones), (6, 1));
+    let first_experience: i64 = sqlx::query_scalar(
+        "SELECT total_experience FROM game_character_progression_state",
+    ).fetch_one(&h.pool).await?;
     owner.drain_quest_encounter_deadlines().await;
     assert!(owner.bundle_map().ok_or("map")?.facts.base_hidden(key));
     owner.clock_origin = owner
@@ -209,19 +197,58 @@ pub(super) async fn exercise(
         .ok_or("clock")?;
     owner.drain_quest_encounter_deadlines().await;
     assert!(!owner.bundle_map().ok_or("map")?.facts.base_hidden(key));
-    let runtime = owner.runtime.lock().await;
+    let mut runtime = owner.runtime.lock().await;
     assert!(
         runtime
             .current_live_creature_census()
             .map_err(debug)?
             .is_empty()
     );
+    let ejected = runtime.read_actor_position(actor).map_err(debug)?;
+    assert_eq!(ejected.position(), local(EJECT));
+    let map = owner.bundle_map().ok_or("map")?;
+    let doors = crate::map::floor::BundleDoors(map.facts.doors());
+    let step = crate::map::floor::prepare_quest_callback_teleport(
+        &runtime, owner.movement_cells(), actor, admitted.game_session_id,
+        ejected, origin, false, &doors,
+    ).map_err(debug)?;
+    runtime.commit_source_step(step).map_err(debug)?;
+    drop(runtime);
+    use_bone(owner, admitted, key, reference).await?;
+    assert!(owner.bundle_map().ok_or("map")?.facts.base_hidden(key));
     assert_eq!(
-        runtime
-            .read_actor_position(actor)
-            .map_err(debug)?
-            .position(),
-        local(EJECT)
+        owner.runtime.lock().await.current_live_creature_census().map_err(debug)?.len(),
+        9,
     );
+    let retry_experience: i64 = sqlx::query_scalar(
+        "SELECT total_experience FROM game_character_progression_state",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(retry_experience, first_experience);
+    Ok(())
+}
+
+async fn use_bone(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    key: u64,
+    reference: std::num::NonZeroU32,
+) -> TestResult {
+    let map = owner.bundle_map().ok_or("map")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::Item(std::num::NonZeroU64::new(3).ok_or("handle")?),
+        use_with: None,
+        use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
+            placement,
+            expected_revision: map.facts.object_revision(key),
+        })),
+        use_with_position: None,
+    }).map_err(debug)?;
+    let (next, result, _) = super::item_craft::exchange(
+        owner, *admitted, admitted.continuity.next_command_id, &payload, Some(reference),
+    ).await?;
+    *admitted = next;
+    assert_eq!(result, UseDisposition::Committed);
     Ok(())
 }
