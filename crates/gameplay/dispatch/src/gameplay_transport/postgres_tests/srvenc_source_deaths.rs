@@ -36,7 +36,7 @@ native_case!(srvenc_m24_postgres_morguthis_stage, "morguthis");
 native_case!(srvenc_m24_postgres_rahemos_stage, "rahemos");
 native_case!(srvenc_m24_postgres_herald_top_damage, "herald_of_fire");
 
-fn scenario(name: &'static str, creature: &'static str) -> TestResult {
+pub(super) fn scenario(name: &'static str, creature: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -48,7 +48,7 @@ fn scenario(name: &'static str, creature: &'static str) -> TestResult {
                 .find(|r| r.creature == format!("oteryn:creature.{creature}"))
                 .ok_or("source rule")?;
             let h = Harness::create_with_admission_seed(admin, "srvenc_m24", false, false).await?;
-            let result = exercise(&h, rule).await;
+            let result = exercise(&h, rule, name).await;
             let cleanup = h.cleanup().await;
             result?;
             cleanup?;
@@ -63,7 +63,7 @@ fn scenario(name: &'static str, creature: &'static str) -> TestResult {
     result
 }
 
-async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
+async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestResult {
     prepare_current_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
@@ -78,6 +78,12 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
     )?;
     let generation = controller.active().ok_or("generation")?;
     let native = generation.native_gameplay().ok_or("native policies")?;
+    let without_rewards = crate::content::creature_reward::CreatureRewardTable::default();
+    let rewards = if mode == "overlordcr_rowless" {
+        &without_rewards
+    } else {
+        native.reward_table()
+    };
     let position = rule
         .room
         .map_or([100, 100, -7], |[x, y, _, _, z]| [x, y, z]);
@@ -225,10 +231,8 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         // generic writer must not impersonate her protected quest operation.
         // Import only that predecessor, as the other native Quest fixtures do;
         // the death and all its rewards still use the real fenced owners.
-        super::qengine_outfit_stories::seed_quest_prerequisites(
-            h, &owner, &admitted, &seeds, 0xa6,
-        )
-        .await?;
+        super::qengine_outfit_stories::seed_quest_prerequisites(h, &owner, &admitted, &seeds, 0xa6)
+            .await?;
     } else if !seeds.is_empty() {
         let fence = owner
             .current_quest_fence(session)
@@ -337,6 +341,150 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
     }
     owner.admit_quest_session(&admitted).await;
     owner.refresh_quest_session(session, false).await;
+    // Both peers are independently admitted durable Characters in this Channel.
+    // Member one damages the boss; member two only stands nearby.
+    let mut overlord_peers = Vec::new();
+    let peer_source = if rule.creature.ends_with("_overlord") {
+        Some(super::house_transfer::RecoverySource::start(h).await?)
+    } else {
+        None
+    };
+    if let Some(source) = &peer_source {
+        use crate::gameplay_transport::connection::{
+            AdmittedSession, FirstEntryOutcome, SessionContinuity,
+        };
+        let peer_count = if mode == "overlordcr_seventeen" {
+            17u8
+        } else {
+            2
+        };
+        for member in 1..=peer_count {
+            let peer_session =
+                super::boss_rewards::privacy::admit_gameplay_peer(h, &source.evidence, member)
+                    .await?;
+            let current =
+                crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
+                    .current_session_at(peer_session)
+                    .await?
+                    .0;
+            let fence = crate::gameplay_transport::item_fence_of(current).ok_or("peer fence")?;
+            let peer_actor = {
+                let mut runtime = owner.runtime.lock().await;
+                let reservation = runtime.reserve_fresh_session(peer_session).map_err(debug)?;
+                let peer_actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+                runtime
+                    .bind_attacker_lease(
+                        peer_actor,
+                        peer_session,
+                        crate::foundation::CharacterLease::new(
+                            crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                                .map_err(debug)?,
+                            fence.character_lease_generation,
+                        )
+                        .map_err(debug)?,
+                    )
+                    .map_err(debug)?;
+                runtime
+                    .initialize_pinned_test_position(
+                        peer_actor,
+                        MovementLocalPosition {
+                            x: position[0] - i32::from(member),
+                            y: position[1],
+                            floor: i16::try_from(-position[2])?,
+                        },
+                    )
+                    .map_err(debug)?;
+                peer_actor
+            };
+            deps.initialize_player(&owner, peer_actor, peer_session)
+                .await;
+            let mut peer = AdmittedSession {
+                game_session_id: peer_session,
+                world_id: admitted.world_id,
+                channel_id: admitted.channel_id,
+                runtime_actor: Some(peer_actor),
+                first_entry: FirstEntryOutcome::Positioned,
+                controller: None,
+                continuity: SessionContinuity::FRESH,
+                item_fence: Some(fence),
+            };
+            owner.admit_progression_session(&mut peer).await;
+            assert!(
+                owner.progression_binding(peer_session).is_some(),
+                "peer completed progression admission"
+            );
+            if mode == "overlordcr_missing_cache" && member == 1 {
+                assert!(
+                    owner
+                        .states
+                        .quest_sessions
+                        .lock()
+                        .map_err(|_| "quest cache")?
+                        .get(&peer_session)
+                        .is_none_or(|entry| entry.copy.is_none()),
+                    "the eligible damager has no loaded quest copy"
+                );
+            } else {
+                owner.admit_quest_session(&peer).await;
+                assert!(
+                    owner
+                        .states
+                        .quest_sessions
+                        .lock()
+                        .map_err(|_| "quest session lock")?
+                        .get(&peer_session)
+                        .is_some_and(|state| state.copy.is_some()),
+                    "peer has an admitted quest snapshot"
+                );
+                owner.refresh_quest_session(peer_session, false).await;
+            }
+            overlord_peers.push((peer_actor, peer_session, *fence.character_id.as_bytes()));
+        }
+    }
+    if mode == "overlordcr_old_pin" {
+        let previous = source_deaths::overlord_predecessor(&catalogue)?;
+        let hash = previous
+            .definition_hash(&rule.quest)
+            .ok_or("existing Elemental Spheres pin")?;
+        assert_ne!(Some(hash), catalogue.definition_hash(&rule.quest));
+        let fence = owner
+            .current_quest_fence(session)
+            .await
+            .map_err(|_| "old pin fence")?
+            .ok_or("old pin fence")?;
+        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+        let outcome = slot
+            .commit_quest_transition(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                QuestTransitionRequest {
+                    transition_key:
+                        "oteryn:quest-transition/quest/u8_2/elemental_spheres/boss_room/action_1"
+                            .into(),
+                    cause: QuestCause::Command(CommandRef::new(
+                        session,
+                        CommandId::new(1).map_err(debug)?,
+                    )),
+                },
+                Arc::new(previous),
+            )
+            .await
+            .map_err(debug)?;
+        assert!(
+            matches!(outcome, QuestTransitionOutcome::Committed(_)),
+            "existing pin seed: {outcome:?}"
+        );
+        drop(slot);
+        let stored: Vec<u8> = sqlx::query_scalar("SELECT definition_hash FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(&rule.quest).fetch_one(&h.pool).await?;
+        assert_eq!(stored, hash);
+    }
+    let drain_session = if mode == "overlordcr_fallback" {
+        overlord_peers[0].1
+    } else {
+        session
+    };
     let actor = deps.actor;
     let queue = owner.states.attack.lock().await.kills().clone();
     // This second current native actor really deals damage. It remains an invalid
@@ -382,6 +530,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
     for batch in (0..actual_kills).step_by(2) {
         owner.refresh_quest_session(session, false).await;
         assert!(owner.refresh_source_party_presence(actor, session).await);
+        let mut crash_replay = None;
         for ordinal in batch..(batch + 2).min(actual_kills) {
             let observed = owner.owner_now();
             let now = observed.get() / 1000;
@@ -404,7 +553,65 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
             let lease = runtime
                 .bound_attacker_lease(actor, session)
                 .map_err(debug)?;
-            let health = runtime.companion_snapshot(target).map_err(debug)?.health;
+            let mut health = runtime.companion_snapshot(target).map_err(debug)?.health;
+            if matches!(mode, "overlordcr_seventeen" | "overlordcr_fallback") {
+                let prime = if mode == "overlordcr_fallback" {
+                    health - 2
+                } else {
+                    1
+                };
+                runtime
+                    .borrow_exact_actor_commit_at(now)
+                    .commit_damage_for_bound_attacker(
+                        target,
+                        actor,
+                        CommandRef::new(session, CommandId::new(1).map_err(debug)?),
+                        0,
+                        crate::foundation::OwnerDamageCommand {
+                            target: rule.creature.as_bytes(),
+                            occurrence: session.as_bytes(),
+                            binding: b"overlordcr-primary-first-damage",
+                            damage: prime,
+                        },
+                    )
+                    .map_err(debug)?;
+                health -= prime;
+            }
+            let damaging_peers = if mode == "overlordcr_seventeen" {
+                16
+            } else {
+                1
+            };
+            for (peer_actor, peer_session, _) in overlord_peers.iter().take(damaging_peers) {
+                runtime
+                    .borrow_exact_actor_commit_at(now)
+                    .commit_damage_for_bound_attacker(
+                        target,
+                        *peer_actor,
+                        CommandRef::new(*peer_session, CommandId::new(1).map_err(debug)?),
+                        0,
+                        crate::foundation::OwnerDamageCommand {
+                            target: rule.creature.as_bytes(),
+                            occurrence: peer_session.as_bytes(),
+                            binding: b"overlordcr-peer-damage",
+                            damage: 1,
+                        },
+                    )
+                    .map_err(debug)?;
+                health -= 1;
+            }
+            let (actor, session, lease) = if mode == "overlordcr_fallback" {
+                runtime
+                    .remove_terminal_session(session, actor)
+                    .map_err(debug)?;
+                let (peer_actor, peer_session, _) = overlord_peers[0];
+                let peer_lease = runtime
+                    .bound_attacker_lease(peer_actor, peer_session)
+                    .map_err(debug)?;
+                (peer_actor, peer_session, peer_lease)
+            } else {
+                (actor, session, lease)
+            };
             let damage = if let Some((other_actor, other_session, _, _)) = lesser_contributor {
                 assert!(
                     health > 2,
@@ -454,7 +661,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                         prey: None,
                         activity: &[],
                         queue: &queue,
-                        rewards: native.reward_table(),
+                        rewards,
                         charms: None,
                     },
                     target,
@@ -467,6 +674,9 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                     now,
                     Some(observed),
                 );
+            }
+            if matches!(mode, "overlordcr_crash_replay" | "overlordcr_rowless") {
+                crash_replay = Some((target, observed));
             }
             if let Some((other_actor, other_session, other_character, other_lease)) =
                 lesser_contributor
@@ -530,13 +740,136 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                 drop(taken); // Leave the real original queue entry for durable settlement below.
             }
         }
-        assert_eq!(
-            owner.drain_kill_rewards(session).await,
-            DrainOutcome::Drained
-        );
+        if mode == "overlordcr_atomic" {
+            for statement in [
+                "CREATE SEQUENCE overlordcr_second_receipt",
+                "CREATE FUNCTION overlordcr_refuse_second() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.transition_key LIKE 'oteryn:quest-transition/elemental-spheres/%' AND nextval('overlordcr_second_receipt')=2 THEN RAISE EXCEPTION 'overlordcr second recipient unavailable' USING ERRCODE='23514'; END IF; RETURN NEW; END $$",
+                "CREATE TRIGGER overlordcr_refuse_second BEFORE INSERT ON game_character_quest_receipts FOR EACH ROW EXECUTE FUNCTION overlordcr_refuse_second()",
+            ] {
+                sqlx::query(statement).execute(&h.pool).await?;
+            }
+            assert_eq!(
+                owner.drain_kill_rewards(drain_session).await,
+                DrainOutcome::Deferred
+            );
+            let attempted: i64 =
+                sqlx::query_scalar("SELECT last_value FROM overlordcr_second_receipt")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert_eq!(
+                attempted, 2,
+                "the injected failure reached the second recipient"
+            );
+            let counts: (i64,i64,i64) = sqlx::query_as(
+                "SELECT (SELECT count(*) FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u8_2/elemental_spheres/boss_storage'), (SELECT count(*) FROM game_party_kill_xp_receipts), (SELECT count(*) FROM game_character_quest_receipts WHERE transition_key LIKE 'oteryn:quest-transition/elemental-spheres/%')"
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(
+                counts,
+                (0, 0, 0),
+                "a second-recipient failure rolls back every flag and the durable death"
+            );
+            for statement in [
+                "DROP TRIGGER overlordcr_refuse_second ON game_character_quest_receipts",
+                "DROP FUNCTION overlordcr_refuse_second()",
+                "DROP SEQUENCE overlordcr_second_receipt",
+            ] {
+                sqlx::query(statement).execute(&h.pool).await?;
+            }
+        }
+        let drained = owner.drain_kill_rewards(drain_session).await;
+        if drained != DrainOutcome::Drained {
+            let roots: Vec<(String, String)> = sqlx::query_as(
+                "SELECT character_id::text,character_revision::text FROM game_character_roots ORDER BY character_id",
+            ).fetch_all(&h.pool).await?;
+            let tracks: Vec<(String, String, i64)> = sqlx::query_as(
+                "SELECT character_id::text,track_key,value FROM game_character_quest_tracks ORDER BY character_id,track_key",
+            ).fetch_all(&h.pool).await?;
+            let xp: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_xp_receipts")
+                .fetch_one(&h.pool)
+                .await?;
+            eprintln!(
+                "SOURCE_DEATH_DEFERRED creature={} roots={roots:?} tracks={tracks:?} xp_receipts={xp}",
+                rule.creature
+            );
+        }
+        assert_eq!(drained, DrainOutcome::Drained);
+        if let Some((target, observed)) = crash_replay {
+            let canonical: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_boss_death_settlements")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert_eq!(canonical, 1, "the canonical death committed once");
+            let before: (i64,i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_character_quest_receipts)").fetch_one(&h.pool).await?;
+            let private_admitted = rewards.row(&rule.creature).is_ok();
+            assert_eq!(before.0, i64::from(private_admitted));
+            assert_eq!(
+                before.1,
+                if private_admitted { 2 } else { 0 },
+                "retained private-loot refusal never invents a chest"
+            );
+            if mode == "overlordcr_rowless" {
+                assert_eq!(before, (0, 0, 0, 2), "only the two quest credits commit");
+            } else {
+                assert!(
+                    before.2 > 0 && before.3 >= 2,
+                    "XP and both storage credits committed before recovery"
+                );
+            }
+            {
+                let replay_observed = observed.checked_add(1_000).map_err(debug)?;
+                let mut runtime = owner.runtime.lock().await;
+                let lease = runtime
+                    .bound_attacker_lease(actor, session)
+                    .map_err(debug)?;
+                crate::gameplay_transport::kill_reward::record_creature_kill(
+                    &mut runtime,
+                    KillSink {
+                        prey: None,
+                        activity: &[],
+                        queue: &queue,
+                        rewards,
+                        charms: None,
+                    },
+                    target,
+                    crate::combat::CapturedRewardPrincipal {
+                        character: lease.character_id(),
+                        lease_generation: lease.generation(),
+                        session,
+                        actor,
+                    },
+                    replay_observed.get() / 1000,
+                    Some(replay_observed),
+                );
+                let crate::gameplay_transport::kill_reward::TakeOutcome::Taken(replay) =
+                    queue.take(session, lease.generation())
+                else {
+                    return Err("late native replay must reach the real durable drain".into());
+                };
+                let entry = replay.entry().ok_or("retained replay entry")?;
+                assert_eq!(entry.activity_observed_at, Some(observed));
+                drop(replay);
+            }
+            assert_eq!(
+                owner.drain_kill_rewards(session).await,
+                DrainOutcome::Drained
+            );
+            let after: (i64,i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_character_quest_receipts)").fetch_one(&h.pool).await?;
+            assert_eq!(
+                before, after,
+                "durable death replay cannot mint or credit twice"
+            );
+            let canonical_after: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_boss_death_settlements")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert_eq!(
+                canonical_after, canonical,
+                "replay never inserts a second canonical death"
+            );
+        }
     }
     assert_eq!(
-        owner.drain_kill_rewards(session).await,
+        owner.drain_kill_rewards(drain_session).await,
         DrainOutcome::Drained
     );
     for effect in &rule.effects {
@@ -551,11 +884,39 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
             .unwrap_or(before + effect.add.unwrap_or(0) * i64::try_from(kills)?);
         assert_eq!(
             value,
-            Some(expected),
+            if mode == "overlordcr_fallback" {
+                None
+            } else {
+                Some(expected)
+            },
             "native {} must commit {}",
             rule.creature,
             effect.track
         );
+    }
+    for (index, (_, _, character)) in overlord_peers.iter().enumerate() {
+        let value: Option<i64> = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
+            .bind(character.as_slice()).bind(&rule.effects[0].track).fetch_optional(&h.pool).await?;
+        assert_eq!(
+            value,
+            if index
+                < if mode == "overlordcr_seventeen" {
+                    16
+                } else {
+                    1
+                }
+            {
+                Some(1)
+            } else {
+                None
+            },
+            "only damage participants receive BossStorage"
+        );
+    }
+    if !rule.creature.ends_with("_overlord") {
+        let flags: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u8_2/elemental_spheres/boss_storage'")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(flags, 0, "other creature deaths do not set BossStorage");
     }
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
@@ -565,8 +926,52 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
     .await?;
     assert_eq!(
         receipts,
-        i64::try_from(kills)?,
+        if mode == "overlordcr_fallback" {
+            1
+        } else {
+            i64::try_from(kills)?
+                + if overlord_peers.is_empty() {
+                    0
+                } else if mode == "overlordcr_seventeen" {
+                    16
+                } else {
+                    1
+                }
+        },
         "duplicate corpse projection must retain the first captured receipt"
     );
+    if mode == "overlordcr_old_pin" {
+        let previous = source_deaths::overlord_predecessor(&catalogue)?;
+        let stored: Vec<u8> = sqlx::query_scalar("SELECT definition_hash FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(&rule.quest).fetch_one(&h.pool).await?;
+        assert_eq!(
+            Some(stored.as_slice()),
+            previous
+                .definition_hash(&rule.quest)
+                .as_ref()
+                .map(|hash| hash.as_slice()),
+            "compatible quest pins remain immutable"
+        );
+        let skipped: i64 = sqlx::query_scalar("SELECT count(*) FROM game_boss_death_quest_skips")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(skipped, 0, "a compatible predecessor is never skipped");
+    }
+    if mode == "overlordcr_fallback" {
+        let xp: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_xp_receipts")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(
+            xp, 0,
+            "the existing top-damager departure XP refusal is preserved"
+        );
+    }
+    if mode == "overlordcr_rowless" {
+        let counts: (i64, i64, i64) = sqlx::query_as(
+            "SELECT (SELECT count(*) FROM game_boss_death_settlements), (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_character_boss_reward_chests)",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(counts, (1, 0, 0), "the death settles quest credit alone");
+    }
     Ok(())
 }

@@ -98,6 +98,37 @@ pub(super) fn capture(
             }
         }
     }
+    if let Some(rule) = oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature) {
+        let Ok(census) = runtime.positioned_actor_census() else {
+            return;
+        };
+        // Eligibility is physical damage plus the bound lease, never a quest-cache read.
+        for (actor, _, session) in census {
+            let Some(session) = session else {
+                continue;
+            };
+            let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {
+                continue;
+            };
+            let snapshot = Snapshot {
+                actor,
+                session,
+                character: *lease.character_id().as_bytes(),
+                lease: lease.generation(),
+                revision: 0,
+                phases: Default::default(),
+            };
+            if let Some(source) =
+                NativeObjectiveDeath::capture_overlord(runtime, entry.target, actor, session)
+            {
+                captured.push(CapturedObjective {
+                    snapshot,
+                    transition: &rule.transition,
+                    source,
+                });
+            }
+        }
+    }
     let captured = Arc::new(captured);
     cache
         .deaths
@@ -182,8 +213,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
+/// Additional quest-only recipients do not become XP or loot members.
+pub(super) fn overlord_recipients(
+    entry: &PendingKillSettlement,
+) -> Vec<(crate::domain::CharacterId, GameSessionId, u64)> {
+    if oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_none() {
+        return Vec::new();
+    }
+    entry
+        .objectives
+        .iter()
+        .flat_map(|items| items.iter())
+        .filter_map(|item| {
+            crate::domain::CharacterId::from_bytes(item.snapshot.character)
+                .ok()
+                .map(|character| (character, item.snapshot.session, item.snapshot.lease))
+        })
+        .collect()
+}
+
 /// The XP owner holds all captured Character slots and the native Channel turn.
-/// Only the exact original damage principal may consume a captured objective.
+/// Ordinary objectives require the original principal; Overlords require sealed physical damage.
 pub(super) async fn apply_in_transaction(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
@@ -192,9 +242,56 @@ pub(super) async fn apply_in_transaction(
         crate::durability::character_progression::CurrentCharacterGameplayFence,
         bool,
     )],
+    quest_fences: &[crate::durability::character_progression::CurrentCharacterGameplayFence],
     catalogue: Option<&oteryn_gameplay_quests::quest::QuestStateCatalogue>,
 ) -> Result<Vec<crate::durability::quest_state::CommittedQuestTransition>, CharacterProgressionError>
 {
+    if oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_some() {
+        let captured = entry
+            .objectives
+            .as_ref()
+            .ok_or(CharacterProgressionError::AuthorityRejected)?;
+        let catalogue = catalogue.ok_or(CharacterProgressionError::InvalidInput)?;
+        let mut committed = Vec::new();
+        for objective in captured.iter() {
+            let snapshot = &objective.snapshot;
+            let fence = quest_fences
+                .iter()
+                .find(|fence| {
+                    fence.character_id.as_bytes() == &snapshot.character
+                        && fence.game_session_id == snapshot.session
+                        && fence.character_lease_generation == snapshot.lease
+                })
+                .ok_or(CharacterProgressionError::AuthorityRejected)?;
+            sqlx::query("SAVEPOINT overlord_quest_credit")
+                .execute(&mut **tx)
+                .await
+                .map_err(crate::durability::DurabilityError::from)?;
+            let outcome =
+                crate::durability::quest_state::kill_objectives::apply_batch_in_transaction(
+                    tx,
+                    node,
+                    *fence,
+                    &[(objective.transition, &objective.source)],
+                    catalogue,
+                )
+                .await;
+            if outcome.is_err() {
+                sqlx::query("ROLLBACK TO SAVEPOINT overlord_quest_credit")
+                    .execute(&mut **tx)
+                    .await
+                    .map_err(crate::durability::DurabilityError::from)?;
+            }
+            sqlx::query("RELEASE SAVEPOINT overlord_quest_credit")
+                .execute(&mut **tx)
+                .await
+                .map_err(crate::durability::DurabilityError::from)?;
+            if let Some(receipt) = outcome? {
+                committed.push(receipt);
+            }
+        }
+        return Ok(committed);
+    }
     let principal = entry.facts.principal;
     let mut requests = super::grizzly_kills::native_goals::requests(entry)?;
     if let Some(captured) = &entry.objectives {

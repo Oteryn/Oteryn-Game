@@ -84,8 +84,6 @@ pub(super) async fn live_other_character(
             .ok_or("recipient controller")?
             .account_id
     );
-    sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
-        .bind(peer_fence.character_id.as_bytes().as_slice()).execute(&h.pool).await?;
     let actor = {
         let _permit = owner
             .spell_lane_permit()
@@ -253,10 +251,27 @@ async fn reward_and_custody_snapshot(
 }
 
 // The existing deadline-pager admission pattern, kept local to this one test.
-async fn admit_peer(
+pub(in super::super) async fn admit_gameplay_peer(
     h: &Harness,
     evidence: &crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
     member: u8,
+) -> TestResult<GameSessionId> {
+    admit_peer_inner(h, evidence, member, false).await
+}
+
+pub(in super::super) async fn admit_peer(
+    h: &Harness,
+    evidence: &crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
+    member: u8,
+) -> TestResult<GameSessionId> {
+    admit_peer_inner(h, evidence, member, true).await
+}
+
+async fn admit_peer_inner(
+    h: &Harness,
+    evidence: &crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
+    member: u8,
+    seed_progression: bool,
 ) -> TestResult<GameSessionId> {
     let character = id(100 + member);
     let account = id(120 + member);
@@ -266,11 +281,16 @@ async fn admit_peer(
         .bind(account.as_slice())
         .execute(&h.pool)
         .await?;
-    sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name,sex) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,1,'profile-1','ruleset-1','content-1','starter-1',$4,NULL)")
+    sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name,sex) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,1,'profile-1','ruleset-1','content-1','starter-1',$4,2)")
         .bind(character.as_slice()).bind(account.as_slice()).bind(id(42).as_slice())
         .bind(format!("Fixture Member {}",char::from(b'A' + member))).execute(&h.pool).await?;
-    sqlx::query("INSERT INTO game_character_progression_state VALUES(encode($1,'hex')::uuid,1,50,1000,'profile-1','ruleset-1','content-1','simulation-1','evidence-1','declaration-1','policy-1','reward-1')")
+    // Gameplay entry initializes XP through the active content owner. The
+    // private chest-only case retains its historical progression fixture.
+    if seed_progression {
+        sqlx::query("INSERT INTO game_character_progression_state VALUES(encode($1,'hex')::uuid,1,50,1000,'profile-1','ruleset-1','content-1','simulation-1','evidence-1','declaration-1','policy-1','reward-1')")
         .bind(character.as_slice()).execute(&h.pool).await?;
+    }
+    seed_peer_creation(h, member).await?;
     let (account, character_text): (String, String) = sqlx::query_as("SELECT account_id::text,character_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
         .bind(character.as_slice()).fetch_one(&h.pool).await?;
     // The real producer-owned security floor is independent of published guards.
@@ -370,4 +390,47 @@ async fn admit_peer(
         "real privacy peer admission: {outcome:?}"
     );
     Ok(session)
+}
+
+/// Match the harness's initial Character facts, including its canonical creation
+/// receipt. A raw root alone cannot be resolved by current gameplay-fence reads.
+async fn seed_peer_creation(h: &Harness, member: u8) -> TestResult {
+    use crate::character_bootstrap_intent as bootstrap;
+    let operation = id(160 + member);
+    let decision = id(190 + member);
+    let (account, world, name, operation_text, decision_text): (String, String, String, String, String) =
+        sqlx::query_as("SELECT account_id::text,world_id::text,name,encode($2,'hex')::uuid::text,encode($3,'hex')::uuid::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+            .bind(id(100 + member).as_slice()).bind(operation.as_slice()).bind(decision.as_slice())
+            .fetch_one(&h.pool).await?;
+    let revision: i64 = sqlx::query_scalar("SELECT COALESCE(max(source_revision),0)+1 FROM game_character_bootstrap_intent_floors WHERE issuer_scope=1")
+        .fetch_one(&h.pool).await?;
+    let wire = serde_json::to_vec(&serde_json::json!({
+        "contract_version": bootstrap::CONTRACT_VERSION,
+        "variant": bootstrap::VARIANT,
+        "issuer_authority": bootstrap::ISSUER_AUTHORITY,
+        "issuer_decision_id": decision_text,
+        "source_revision": revision.to_string(),
+        "operation_id": operation_text,
+        "operation": bootstrap::OPERATION,
+        "account_id": account,
+        "target_world_id": world,
+        "requested_name": name,
+        "requested_sex": "Male",
+        "interpretation_context": {"profile_revision":"profile-1", "ruleset_revision":"ruleset-1",
+            "content_revision":"content-1", "starter_template_revision":"starter-1"},
+        "issued_at_source":"1", "expires_at_source":"120",
+        "audience": bootstrap::AUDIENCE,
+    }))?;
+    let intent = bootstrap::decode_producer_response(&wire, operation).map_err(debug)?;
+    let binding = intent.binding();
+    sqlx::query("INSERT INTO game_character_operation_receipts(operation_id,command_binding,account_id,character_id,world_id,character_revision,event_id,occurred_at,server_build_id,transaction_id,issuer_decision_id,intent_source_revision,issued_at_source,expires_at_source) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,1,encode($6,'hex')::uuid,1,'test/1',encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9,1,120)")
+        .bind(operation.as_slice()).bind(&binding).bind(id(120 + member).as_slice())
+        .bind(id(100 + member).as_slice()).bind(id(42).as_slice())
+        .bind(id(170 + member).as_slice()).bind(id(180 + member).as_slice())
+        .bind(decision.as_slice()).bind(revision).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_character_bootstrap_intent_floors VALUES(1,$1,encode($2,'hex')::uuid,$3) ON CONFLICT(issuer_scope) DO UPDATE SET source_revision=EXCLUDED.source_revision,issuer_decision_id=EXCLUDED.issuer_decision_id,intent_binding=EXCLUDED.intent_binding")
+        .bind(revision).bind(decision.as_slice()).bind(&binding).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
+        .bind(id(100 + member).as_slice()).execute(&h.pool).await?;
+    Ok(())
 }
