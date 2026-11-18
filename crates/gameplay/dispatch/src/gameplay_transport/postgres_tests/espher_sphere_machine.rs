@@ -359,6 +359,13 @@ async fn exercise(h: &Harness) -> TestResult {
     assert!(owner.has_pending_quest_callback(session));
     assert_eq!(gems(h).await?, 3);
     assert_eq!(
+        charge(&mut owner, &admitted, command + 1, left, EMERALD).await?,
+        UseDisposition::Exhausted,
+        "the pending entry reserves the opposite half against a different USE"
+    );
+    assert_eq!(gems(h).await?, 3);
+    assert_eq!(carried(h, EMERALD).await?, 1);
+    assert_eq!(
         (
             machine_appearance(&owner, left)?,
             machine_appearance(&owner, right)?
