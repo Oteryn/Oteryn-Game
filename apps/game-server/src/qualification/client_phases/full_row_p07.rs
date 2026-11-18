@@ -234,10 +234,104 @@ fn insert_socket(mut vessels: wheel::WheelVessels, gem: [u8; 16]) -> Option<whee
     Some(vessels)
 }
 
-fn grade_fee_matches(before: &atelier::resources::ResourceBalances, after: &atelier::resources::ResourceBalances, fee: u64) -> bool {
-    let carried = before.carried_gold.min(fee);
-    before.carried_gold.checked_sub(carried) == Some(after.carried_gold)
+fn wallet_carried(total: u64, eligible: u64) -> Option<u64> {
+    total.checked_sub(eligible)
+}
+
+fn wheel_profile_required(vocation: &str, level: u32) -> bool {
+    oteryn_gameplay_progression::wheel::base_vocation(&vocation.replace(' ', "_")).is_none() || level < 1050
+}
+
+fn socket_revision_evidence(receipt: u64, wheel: u64, atelier: u64, workshop: u64) -> String {
+    format!("receipt_wheel={receipt} live_wheel={wheel} live_atelier={atelier} workshop={workshop}")
+}
+
+fn grade_fee_matches(
+    before: &atelier::resources::ResourceBalances, after: &atelier::resources::ResourceBalances,
+    eligible: (u64, u64), fee: u64,
+) -> bool {
+    let (eligible_before, eligible_after) = eligible;
+    let carried = eligible_before.min(fee);
+    eligible_before.checked_sub(carried) == Some(eligible_after)
         && before.bank_gold.checked_sub(fee - carried) == Some(after.bank_gold)
+        && wallet_carried(before.carried_gold, eligible_before)
+            .is_some_and(|ineligible| wallet_carried(after.carried_gold, eligible_after) == Some(ineligible))
+}
+
+async fn eligible_gold(database: &mut sqlx::PgConnection, clients: &SeamClients<'_>) -> TestResult<u64> {
+    let total: i64 = sqlx::query_scalar(
+        "SELECT coalesce(sum(i.quantity * CASE i.definition_production_key
+                  WHEN 'oteryn:item.tibia.i3031' THEN 1 WHEN 'oteryn:item.tibia.i3035' THEN 100
+                  WHEN 'oteryn:item.tibia.i3043' THEN 10000 END),0)::bigint
+           FROM game_atelier_carried_coin_sources(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c
+           JOIN game_item_instances i USING(item_instance_id)",
+    ).bind(clients.characters[1].as_slice()).bind(clients.world.as_slice()).fetch_one(database).await?;
+    Ok(u64::try_from(total)?)
+}
+
+async fn wheel_build(database: &mut sqlx::PgConnection, clients: &SeamClients<'_>) -> TestResult<(String, bool)> {
+    Ok(sqlx::query_as(
+        "SELECT b.vocation, EXISTS(SELECT 1 FROM game_character_promotions p WHERE p.character_id=b.character_id)
+           FROM game_character_build_state b WHERE b.character_id=encode($1,'hex')::uuid",
+    ).bind(clients.characters[1].as_slice()).fetch_one(database).await?)
+}
+
+async fn wheel_setup(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
+    use sqlx::Connection;
+    use super::full_row_p20 as promotion;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let (vocation, promoted) = wheel_build(&mut database, clients).await?;
+    let level = super::full_row_q01::level(client).await?;
+    if wheel_profile_required(&vocation, level) {
+        let level = super::full_row_q01::provision(clients, client, 0xa9, 1, "atelier", "P07").await?;
+        if level < 1050 || wheel_build(&mut database, clients).await?.0 != "knight" {
+            return Err(format!("step=wheel-setup observed=level:{level};needed=Atelier-profile").into());
+        }
+    }
+    if promoted {
+        return Ok(());
+    }
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
+    full_gold::earn(client, world, &metadata.spawns, "P07 promotion", 20_000).await?;
+    let king = promotion::approach_king(client, world, &metadata.npcs).await?;
+    let _ = promotion::talk(client, king, "hi").await?;
+    let quote = promotion::talk(client, king, "promotion").await?;
+    if quote != ["Do you want to be promoted for 20000 gold coins?"] {
+        return Err(format!("step=wheel-setup observed=promotion-quote:{quote:?}").into());
+    }
+    let purchase_session = client.join_snapshot().game_session_id;
+    let answer = promotion::talk(client, king, "yes").await?;
+    let purchased: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_character_promotions p JOIN game_character_npc_purchase_receipts r
+                        ON (p.character_id,p.purchase_occurrence_id)=(r.character_id,r.purchase_occurrence_id)
+                        WHERE p.character_id=encode($1,'hex')::uuid AND r.command_session_id=encode($2,'hex')::uuid
+                          AND r.cause_kind=2 AND r.fee_gold_units=20000)",
+    ).bind(clients.characters[1].as_slice()).bind(purchase_session.as_bytes().as_slice()).fetch_one(&mut database).await?;
+    if answer != ["You are now promoted."] || !purchased {
+        return Err(format!("step=wheel-setup observed=promotion:{answer:?} committed-receipt:{purchased}").into());
+    }
+    logout(client).await?;
+    *client = connect_world(clients, 0xaa).await?;
+    if !wheel_build(&mut database, clients).await?.1 {
+        return Err("step=wheel-setup observed=promotion-lost-on-fresh-admission".into());
+    }
+    Ok(())
+}
+
+async fn wheel_allocation(client: &mut DevClientSession) -> TestResult<wheel::WheelAllocationReply> {
+    let request = wheel::WheelAllocationRequest {
+        action: 0, occurrence: [0; 16], expected_revision: 0, points: [0; 36], vessels: None,
+    };
+    let payload = wheel::encode_wheel_request(&request).map_err(|error| format!("wheel query encode: {error:?}"))?;
+    let reply = raw(client, wheel::COMMAND_TYPE_WHEEL_ALLOCATION, payload).await?;
+    let view = wheel::decode_wheel_reply(&reply.payload).map_err(|error| format!("wheel query decode: {error:?}"))?;
+    if reply.status != CommandStatus::Accepted || view.refused {
+        return Err(format!("step=wheel-query observed={:?} {view:?}", reply.status).into());
+    }
+    Ok(view)
 }
 
 async fn vessel_state(client: &mut DevClientSession) -> TestResult<atelier::v2::AtelierReply> {
@@ -263,7 +357,7 @@ async fn presentation(
     ).await?;
     let view = wheel_presentation::Reply::decode(&response.payload).ok_or("step=socket observed=undecodable-wheel-presentation")?;
     if response.status != CommandStatus::Accepted || view.request != request || !view.eligible {
-        return Err(format!("step=socket observed=presentation:{:?} eligible:{} reason:{}", response.status, view.eligible, view.reason).into());
+        return Err(format!("step=socket observed=presentation:{:?} eligible:{} reason:{} sent={request:?} echoed={:?}", response.status, view.eligible, view.reason, view.request).into());
     }
     Ok(view)
 }
@@ -285,6 +379,7 @@ fn socket_effect_matches(view: &wheel_presentation::Reply, state: &AtelierState,
 
 async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResult {
     let mut client = connect_world(clients, 0xa7).await?;
+    wheel_setup(&mut client, clients).await?;
     let session = client.join_snapshot().game_session_id;
     let (initial, initial_resources) = match query(&mut client).await {
         Ok(value) if !value.0.refused => {
@@ -392,6 +487,9 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
             mod_id: target.1,
         },
     };
+    use sqlx::Connection;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let eligible_before = eligible_gold(&mut database, clients).await?;
     let response = raw(
         &mut client,
         atelier::COMMAND_TYPE_ATELIER_MUTATE,
@@ -399,6 +497,7 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
     )
     .await?;
     let graded = query(&mut client).await?;
+    let eligible_after = eligible_gold(&mut database, clients).await?;
     let selected_grade = |state: &atelier::AtelierReply| state.grades.iter().any(|row| (row.kind, row.mod_id, row.grade) == (target.0, target.1, grade));
     match atelier_reply(&response) {
         Ok(reply)
@@ -407,7 +506,7 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
                 && reply.revision > revision
                 && reply.revision == graded.0.revision
                 && selected_grade(&reply) && grade_preserves_other_assets(&dismantled, &graded, target.0, target.1, grade)
-                && grade_fee_matches(&dismantled.1, &graded.1, grade_quote.gold)
+                && grade_fee_matches(&dismantled.1, &graded.1, (eligible_before, eligible_after), grade_quote.gold)
                 && fragment_total(&dismantled.1, target.0).checked_sub(fragment_total(&graded.1, target.0)) == Some(u64::from(grade_quote.fragments)) =>
         {
             revision = reply.revision;
@@ -522,32 +621,7 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
         observed => seen.fail("5-switch-domain", (&response.status, observed)),
     }
 
-    let wheel_query = wheel::WheelAllocationRequest {
-        action: 0,
-        occurrence: [0; 16],
-        expected_revision: 0,
-        points: [0; wheel::WHEEL_SLOTS],
-        vessels: None,
-    };
-    let wheel_response = raw(
-        &mut client,
-        wheel::COMMAND_TYPE_WHEEL_ALLOCATION,
-        wheel::encode_wheel_request(&wheel_query)
-            .map_err(|e| format!("wheel query encode: {e:?}"))?,
-    )
-    .await?;
-    let wheel_state = match wheel::decode_wheel_reply(&wheel_response.payload) {
-        Ok(reply) => reply,
-        Err(error) => {
-            seen.fail("5-wheel-query", (&wheel_response.status, error));
-            wheel::WheelAllocationReply {
-                refused: true,
-                revision: 0,
-                points: [0; wheel::WHEEL_SLOTS],
-                vessels: None,
-            }
-        }
-    };
+    let wheel_state = wheel_allocation(&mut client).await?;
     let before_socket = vessel_state(&mut client).await?;
     let target = before_socket.gems.iter().find(|entry| entry.id == gem && entry.slot.is_none())
         .ok_or("step=socket needed=unsocketed-original-gem")?;
@@ -581,10 +655,11 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
     ).await?;
     let before_stale = query(&mut client).await?;
     let live = vessel_state(&mut client).await?;
+    let saved = wheel_allocation(&mut client).await?;
     if response.status == CommandStatus::Accepted
         && let Ok(reply) = wheel::decode_wheel_reply(&response.payload)
         && reply.revision > wheel_state.revision && reply.points == points
-        && reply.vessels == Some(expected_cells)
+        && reply.vessels == Some(expected_cells) && saved.points == points && saved.revision == reply.revision
         && live.wheel_revision == reply.revision && live.revision == before_stale.0.revision
         && live.vessels[destination].open
         && live.vessels.iter().map(|slot| slot.gem).eq(expected)
@@ -597,7 +672,9 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
             seen.fail("5-socket-vessel-resonance", (&effect.current, &before_stale.0.grades, target));
         }
     } else {
-        seen.fail("5-socket-vessel-resonance", (&response, &live.vessels, expected));
+        let receipt = wheel::decode_wheel_reply(&response.payload).map_or(0, |reply| reply.revision);
+        seen.fail("5-socket-vessel-resonance", (socket_revision_evidence(receipt, live.wheel_revision,
+            live.revision, before_stale.0.revision), &response, &saved, &live.vessels, expected));
     }
 
     let stale = atelier::MutateRequest {
@@ -630,6 +707,10 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
     logout(&mut client).await?;
     let mut fresh = connect_world(clients, 0xa8).await?;
     let fresh_state = verdict::observe(query(&mut fresh)).await;
+    let fresh_wheel = wheel_allocation(&mut fresh).await?;
+    if fresh_wheel.revision != saved.revision || fresh_wheel.points != saved.points {
+        seen.fail("7-fresh-wheel-allocation", (&saved, &fresh_wheel));
+    }
     match (&durable, &fresh_state) {
         (Ok(before), Ok(after)) if before == after && !after.0.refused => {
             seen.pass("7-fresh-admission-durable-state");
@@ -647,7 +728,7 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let mut seen = Observations::default();
-    let result = verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(clients, &mut seen))).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(360) + full_gold::allowance(20_000), verdict::observe(journey(clients, &mut seen))).await;
     if let Err(error) = &result {
         seen.fail("journey-deadline", error);
     }
@@ -765,7 +846,33 @@ mod review_regressions {
         let before = atelier::resources::ResourceBalances { carried_gold: 80, bank_gold: 100, ..Default::default() };
         let wrong = atelier::resources::ResourceBalances { bank_gold: 50, ..before };
         let right = atelier::resources::ResourceBalances { carried_gold: 30, ..before };
-        assert!(!grade_fee_matches(&before, &wrong, 50));
-        assert!(grade_fee_matches(&before, &right, 50));
+        assert!(!grade_fee_matches(&before, &wrong, (80, 80), 50));
+        assert!(grade_fee_matches(&before, &right, (80, 30), 50));
     }
+}
+
+#[cfg(test)]
+mod eligibility_review {
+    use super::*;
+
+    #[test]
+    fn ordinary_admission_requests_a_wheel_capable_build() {
+        assert!(wheel_profile_required("none", 8));
+        assert!(wheel_profile_required("knight", 100));
+        assert!(!wheel_profile_required("knight", 1050));
+    }
+    #[test]
+    fn carried_pouch_is_not_funds_for_the_grade_fee() {
+        let before = atelier::resources::ResourceBalances { carried_gold: 100, bank_gold: 100, ..Default::default() };
+        let correct = atelier::resources::ResourceBalances { bank_gold: 50, ..before };
+        let wrong = atelier::resources::ResourceBalances { carried_gold: 50, ..before };
+        assert!(grade_fee_matches(&before, &correct, (0, 0), 50));
+        assert!(!grade_fee_matches(&before, &wrong, (0, 0), 50));
+    }
+    #[test]
+    fn socket_diagnostic_names_both_live_revisions() {
+        let diagnostic = socket_revision_evidence(11, 10, 13, 12);
+        assert!(diagnostic.contains("live_wheel=10") && diagnostic.contains("live_atelier=13") && diagnostic.contains("workshop=12"));
+    }
+
 }

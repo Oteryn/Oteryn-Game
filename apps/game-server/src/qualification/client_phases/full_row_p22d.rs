@@ -116,18 +116,37 @@ async fn finish_refresh<T>(
     Ok((live, readback().await?))
 }
 
-async fn read_then_cleanup<S>(
-    session: &mut S,
-    read: impl AsyncFnOnce(&mut S) -> TestResult<u32>,
-    cleanup: impl AsyncFnOnce(&mut S) -> TestResult,
-) -> TestResult<u32> {
-    let count = read(session).await;
-    let cleaned = cleanup(session).await;
-    match (count, cleaned) {
+fn preserve_readback<T>(observation: TestResult<T>, cleanup: TestResult) -> TestResult<T> {
+    match (observation, cleanup) {
         (Err(read), Err(cleanup)) => Err(format!("{read}; cleanup also failed: {cleanup}").into()),
         (Err(error), _) | (_, Err(error)) => Err(error),
-        (Ok(count), Ok(())) => Ok(count),
+        (Ok(value), Ok(())) => Ok(value),
     }
+}
+
+async fn cleanup_tracker(client: &mut DevClientSession, best: u32, remove: bool) -> TestResult {
+    let removed: TestResult = async {
+        if remove {
+            let (status, list) = call(client, best, &change(tr::TrackerAction::Remove, RAT)).await?;
+            expect(status == CommandStatus::Accepted && list.is_some() && !has(&list, RAT),
+                "cleanup-remove", (status, &list))?;
+            let confirmed = read(client, best).await?;
+            expect(confirmed.is_some() && !has(&confirmed, RAT), "cleanup-read", confirmed)?;
+        }
+        Ok(())
+    }.await;
+    let closed = logout(client).await;
+    preserve_readback(removed, closed)
+}
+
+async fn recover_tracker_cleanup<S>(
+    failed: S,
+    recover: impl AsyncFnOnce() -> TestResult<S>,
+    remove: impl AsyncFnOnce(&mut S) -> TestResult,
+) -> TestResult {
+    drop(failed);
+    let mut replacement = recover().await?;
+    remove(&mut replacement).await
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
@@ -218,21 +237,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
 
     let (live, after) = finish_refresh(live, async || {
         let mut fresh = connect_world(clients, 0xd7).await?;
-        read_then_cleanup(
-            &mut fresh,
-            async |fresh| Ok(kills(&read(fresh, best).await?, RAT)),
-            async |fresh| {
-                let removed: TestResult = async {
-                    if !was_tracked {
-                        let (status, list) = call(fresh, best, &change(tr::TrackerAction::Remove, RAT)).await?;
-                        expect(status == CommandStatus::Accepted && !has(&list, RAT), "cleanup", status)?;
-                    }
-                    Ok(())
-                }.await;
-                let closed = logout(fresh).await;
-                removed.and(closed)
-            },
-        ).await
+        let observed = read(&mut fresh, best).await.map(|list| kills(&list, RAT));
+        let cleanup = match observed {
+            Err(_) if !was_tracked => {
+                // An invalid envelope can poison the session before a REMOVE is sent.
+                // Drop it and wait for its owner to release before fresh admission.
+                recover_tracker_cleanup(fresh, async || connect_world(clients, 0xd8).await,
+                    async |replacement| cleanup_tracker(replacement, best, true).await).await
+            }
+            _ => cleanup_tracker(&mut fresh, best, !was_tracked).await,
+        };
+        preserve_readback(observed, cleanup)
     }).await?;
     expect(before.checked_add(1) == Some(after), "kill-credit", (before, after, &live))?;
     let (pushed, push_error) = live?;
@@ -352,11 +367,30 @@ mod review_regressions {
     #[tokio::test]
     async fn malformed_readback_still_attempts_remove() {
         let mut tracked = true;
-        let outcome = read_then_cleanup(&mut tracked, async |_| Err("malformed READ".into()), async |tracked| {
-            *tracked = false;
+        let removed = recover_tracker_cleanup((), async || Ok(()), async |_| {
+            tracked = false;
             Ok(())
         }).await;
+        let outcome = preserve_readback::<u32>(Err("malformed READ".into()), removed);
         assert!(!tracked);
         assert_eq!(outcome.err().map(|e| e.to_string()).as_deref(), Some("malformed READ"));
     }
+}
+
+#[cfg(test)]
+mod eligibility_review {
+    use super::*;
+
+    #[tokio::test]
+    async fn poisoned_tracker_read_removes_on_a_replacement_session() -> TestResult {
+        let mut sent = false;
+        recover_tracker_cleanup(false, async || Ok(true), async |usable| {
+            if !*usable { return Err("poisoned session".into()); }
+            sent = true;
+            Ok(())
+        }).await?;
+        assert!(sent);
+        Ok(())
+    }
+
 }

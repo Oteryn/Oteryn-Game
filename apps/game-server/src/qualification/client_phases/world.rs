@@ -5090,6 +5090,15 @@ async fn travel_to_named_spawn(
     travel_to_spawn_target(client, world, spawns, creature, Some(name)).await
 }
 
+fn named_respawn_deadline(
+    timeout: Duration,
+    register: impl FnOnce(tokio::time::Instant),
+) -> tokio::time::Instant {
+    let deadline = tokio::time::Instant::now() + timeout;
+    register(deadline);
+    deadline
+}
+
 async fn travel_to_spawn_target(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
@@ -5153,7 +5162,7 @@ async fn travel_to_spawn_target(
         .map(|(_, point)| point.respawn_ms)
         .max()
         .unwrap_or(0);
-    let deadline = tokio::time::Instant::now() + Duration::from_millis(u64::from(respawn) + 2_000);
+    let mut wait = None;
     for _ in 0..32 {
         let here = client.world_spatial().actor_position;
         let target = loop {
@@ -5181,11 +5190,19 @@ async fn travel_to_spawn_target(
                 })
                 .copied();
             if let Some(target) = target {
+                if wait.take().is_some() {
+                    verdict::Harness::global().progress("named-spawn-visible");
+                }
                 break target;
             }
             if name.is_none() {
                 return Err("spawn route has no visible creature".into());
             }
+            let deadline = *wait.get_or_insert_with(|| {
+                named_respawn_deadline(Duration::from_millis(u64::from(respawn) + 2_000), |until| {
+                    verdict::Harness::global().bounded_wait(until, "named-spawn-respawn");
+                })
+            });
             tokio::time::timeout_at(
                 deadline,
                 client.service_liveness(Duration::from_millis(250)),
@@ -5920,4 +5937,17 @@ fn flr2_catalogue_admission() -> TestResult {
         "catalogue blocking stone must block movement"
     );
     Ok(())
+}
+
+#[cfg(test)]
+mod eligibility_review {
+    use super::*;
+
+    #[test]
+    fn named_respawn_registers_its_full_watchdog_window() {
+        let mut registered = None;
+        let deadline =
+            named_respawn_deadline(Duration::from_secs(92), |until| registered = Some(until));
+        assert_eq!(registered, Some(deadline));
+    }
 }

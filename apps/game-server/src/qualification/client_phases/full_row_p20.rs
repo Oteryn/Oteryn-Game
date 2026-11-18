@@ -120,7 +120,7 @@ async fn vocation(client: &mut DevClientSession) -> TestResult<String> {
     }
 }
 
-async fn approach_king(
+pub(super) async fn approach_king(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
@@ -156,7 +156,7 @@ async fn approach_king(
         .ok_or_else(|| "step-3 King Tibianus actor absent after walking to him".into())
 }
 
-async fn talk(
+pub(super) async fn talk(
     client: &mut DevClientSession,
     npc: oteryn_dev_client::EntityRef,
     text: &str,

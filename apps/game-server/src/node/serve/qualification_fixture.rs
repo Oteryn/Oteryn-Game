@@ -12,7 +12,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let session = parse_operation_id(session.as_bytes())?;
     matches!(
         profile,
-        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk"
+        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "atelier"
     )
     .then_some((session, profile))
 }
@@ -349,12 +349,12 @@ async fn prepare_build(
         proof,
         &current,
         qualification_build::QualificationBuildSpec {
-            vocation: if profile == "explorer" {
+            vocation: if matches!(profile, "explorer" | "atelier") {
                 "knight"
             } else {
                 profile
             },
-            level: 100,
+            level: if profile == "atelier" { 1050 } else { 100 },
             context,
             xp_occurrence: uuid_v7()?,
             build_occurrence: uuid_v7()?,
@@ -733,7 +733,7 @@ mod tests {
     #[test]
     fn qualification_request_accepts_only_named_profiles_and_v7_sessions() {
         let id = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
-        for profile in ["explorer", "knight", "paladin", "sorcerer", "druid", "monk"] {
+        for profile in ["explorer", "knight", "paladin", "sorcerer", "druid", "monk", "atelier"] {
             assert!(request(format!("qualify {id} {profile}\n").as_bytes()).is_some());
         }
         for text in [
