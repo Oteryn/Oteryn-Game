@@ -3,17 +3,14 @@ use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::foundation::{CommandId, CommandRef, MovementLocalPosition};
-use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
+use crate::gameplay_transport::connection::FirstEntryOutcome;
 use crate::gameplay_transport::spell_premium_coordinator::{
     SpellPremiumCoordinator, purchase_fixture,
 };
+use oteryn_gameplay_quests::quest::loader;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
-use oteryn_gameplay_quests::quest::{
-    QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition, loader,
-};
 use std::sync::Arc;
 
-const FRONTIER: &str = "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission06";
 const ALLIANCE: &str = "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline";
 const DOOR: &str = "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/quest_door";
 
@@ -129,30 +126,13 @@ fn scenario() -> TestResult {
             super::qengine_rewards::talk(&mut owner, &mut admitted, curos, 101, "mission").await?;
             assert_eq!(super::m39_bone_journey::stage(&h, ALLIANCE).await?, None);
 
-            for (command, track, value) in [(900, FRONTIER, 3), (901, FRONTIER, 4), (902, DOOR, 1)]
-            {
-                // Model historical Frontier and kill credit through durable setup transitions.
-                let track = canonical.track(track).ok_or("fixture track")?.clone();
-                let setup = format!("oteryn:quest-transition/qcx58-fixture-{command}");
-                let catalogue = Arc::new(
-                    QuestStateCatalogue::new(
-                        "content-1",
-                        vec![track.clone()],
-                        vec![QuestTransition {
-                            world_change: None,
-                            key: setup.clone(),
-                            quest: track.quest.clone(),
-                            effects: vec![QuestEffect {
-                                track: track.key.clone(),
-                                from: QuestComparison::Any,
-                                effect: QuestEffectKind::Set(value),
-                            }],
-                            completes: false,
-                            experience: None,
-                        }],
-                    )
-                    .map_err(debug)?,
-                );
+            // Arrange upstream credit through the canonical durable storage
+            // transitions. The mission assertions exercise Curos's dispatcher.
+            for (command, transition_key) in [
+                (900, "oteryn:quest-transition/quest/u8_54/the_new_frontier/mission06/other_1"),
+                (901, "oteryn:quest-transition/quest/u8_54/the_new_frontier/mission06/npc_1"),
+                (902, "oteryn:quest-transition/quest/u8_54/an_uneasy_alliance/quest_door/creature_event_1"),
+            ] {
                 let fence = owner
                     .current_quest_fence(admitted.game_session_id)
                     .await
@@ -166,17 +146,17 @@ fn scenario() -> TestResult {
                         owner.holder,
                         fence,
                         QuestTransitionRequest {
-                            transition_key: setup,
+                            transition_key: transition_key.into(),
                             cause: QuestCause::Command(CommandRef::new(
                                 admitted.game_session_id,
                                 CommandId::new(command).map_err(debug)?,
                             )),
                         },
-                        catalogue,
+                        owner.quest_catalogue.clone().ok_or("quest catalogue")?,
                     )
                     .await
                     .map_err(debug)?;
-                assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
+                assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)), "{transition_key}: {outcome:?}");
                 drop(slot);
                 owner
                     .refresh_quest_session(admitted.game_session_id, false)
@@ -204,6 +184,7 @@ fn scenario() -> TestResult {
                             .any(|line| line.contains("Find him in the mountain north-west"))
                     );
                     assert_eq!(super::m39_bone_journey::stage(&h, ALLIANCE).await?, Some(1));
+                    assert_eq!(super::m39_bone_journey::stage(&h, DOOR).await?, Some(0));
                     super::qengine_rewards::talk(&mut owner, &mut admitted, curos, 105, "mission")
                         .await?;
                     assert_eq!(super::m39_bone_journey::stage(&h, ALLIANCE).await?, Some(1));
