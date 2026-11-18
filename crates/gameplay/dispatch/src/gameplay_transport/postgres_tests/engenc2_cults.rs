@@ -85,6 +85,7 @@ fn qmrevfix_cults_second_lever_after_victory_postgres() -> TestResult {
 enum EncounterCase {
     Cults { reenter: bool },
     DreamScar,
+    DreamScarParty,
     Faceless,
 }
 
@@ -104,8 +105,17 @@ fn dcourts2_dream_scar_uses_startup_roster_on_lever_use_postgres() -> TestResult
     run_encounter(EncounterCase::DreamScar)
 }
 
+#[test]
+fn dcourts2_dream_scar_two_players_enter_and_exit_postgres() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_encounter(EncounterCase::DreamScarParty)
+}
+
 fn run_encounter(case: EncounterCase) -> TestResult {
-    let dream_scar = case == EncounterCase::DreamScar;
+    let with_peer = case == EncounterCase::DreamScarParty;
+    let dream_scar = case == EncounterCase::DreamScar || with_peer;
     let faceless = case == EncounterCase::Faceless;
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -167,19 +177,49 @@ fn run_encounter(case: EncounterCase) -> TestResult {
                 y: 100,
                 floor: -7,
             };
-            let world = if faceless {
-                let tiles: Vec<_> = (117..=123)
-                    .map(|x| {
-                        (
-                            Position {
+            let mut registered = vec![callback.clone()];
+            let world = if faceless || with_peer {
+                let tiles: Vec<_> = if faceless {
+                    (117..=123)
+                        .map(|x| {
+                            (
+                                Position {
+                                    x,
+                                    y: 117,
+                                    floor: -7,
+                                },
+                                23108,
+                            )
+                        })
+                        .collect()
+                } else {
+                    let exits = [(115, 101), (117, 100)];
+                    exits
+                        .into_iter()
+                        .map(|(x, y)| {
+                            let position = Position {
                                 x,
                                 y: 117,
                                 floor: -7,
-                            },
-                            23108,
-                        )
-                    })
-                    .collect();
+                            };
+                            let mut exit = callback.clone();
+                            exit.key = format!("oteryn:quest-callback/dcourts2/fixture-exit-{x}");
+                            exit.trigger =
+                                oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn;
+                            exit.selector.position = Some(position);
+                            exit.selector.appearance = None;
+                            exit.selector.action = Some(23109);
+                            exit.effects = Default::default();
+                            exit.teleport = Some(Position {
+                                x: 100,
+                                y,
+                                floor: -7,
+                            });
+                            registered.push(exit);
+                            (position, 23109)
+                        })
+                        .collect()
+                };
                 super::quest_world_callbacks::world_with_action_tiles(&callback, trigger, &tiles)?
             } else {
                 super::quest_world_callbacks::world(&callback, trigger)?
@@ -266,14 +306,7 @@ fn run_encounter(case: EncounterCase) -> TestResult {
                     .catalogue()
                     .clone()
             }));
-            assert!(
-                owner
-                    .states
-                    .quest_callbacks
-                    .fixture
-                    .set(vec![callback.clone()])
-                    .is_ok()
-            );
+            assert!(owner.states.quest_callbacks.fixture.set(registered).is_ok());
             let mut admitted = deps.admitted;
             admitted.runtime_actor = Some(deps.actor);
             admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -396,6 +429,11 @@ fn run_encounter(case: EncounterCase) -> TestResult {
                     .is_some(),
                 "admitted quest snapshot"
             );
+            let peer = if with_peer {
+                Some(admit_dream_scar_peer(&h, &owner, &admitted).await?)
+            } else {
+                None
+            };
             let key =
                 oteryn_world_bundle::bundle::placement_key(-7, 100, 100, 1).ok_or("lever key")?;
             let mut placement = world.base().digest().to_vec();
@@ -427,6 +465,19 @@ fn run_encounter(case: EncounterCase) -> TestResult {
                 "phase admission"
             );
             if dream_scar {
+                if let Some((actor, _)) = peer {
+                    let runtime = owner.runtime.lock().await;
+                    assert_eq!(
+                        runtime
+                            .read_actor_position(actor)
+                            .map_err(debug)?
+                            .position(),
+                        runtime
+                            .read_actor_position(deps.actor)
+                            .map_err(debug)?
+                            .position(),
+                    );
+                }
                 let boss = {
                     let runtime = owner.runtime.lock().await;
                     let spawned = runtime.current_live_creature_census().map_err(debug)?;
@@ -449,7 +500,37 @@ fn run_encounter(case: EncounterCase) -> TestResult {
                 assert_eq!(values[0].0, SCAR_TIMER);
                 let now = crate::gameplay_transport::unix_seconds().ok_or("host clock")?;
                 assert!((now - 60..=now).contains(&values[0].1));
-                {
+                if let Some((peer_actor, peer_session)) = peer {
+                    use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+                    for (actor, session, direction, expected_y) in [
+                        (
+                            deps.actor,
+                            admitted.game_session_id,
+                            StepDirection::East,
+                            100,
+                        ),
+                        (peer_actor, peer_session, StepDirection::West, 101),
+                    ] {
+                        owner.clock_origin = owner
+                            .clock_origin
+                            .checked_sub(std::time::Duration::from_secs(1))
+                            .ok_or("exit clock")?;
+                        let (step, _) = owner.paced_step(actor, session, direction).await;
+                        assert_eq!(step.disposition, StepDisposition::Moved);
+                        let runtime = owner.runtime.lock().await;
+                        assert_eq!(
+                            runtime
+                                .read_actor_position(actor)
+                                .map_err(debug)?
+                                .position(),
+                            MovementLocalPosition {
+                                x: 100,
+                                y: expected_y,
+                                floor: 7
+                            },
+                        );
+                    }
+                } else {
                     let mut runtime = owner.runtime.lock().await;
                     let expected = runtime.read_actor_position(deps.actor).map_err(debug)?;
                     let closed = crate::map::floor::BundleDoors(world.facts());
@@ -499,7 +580,12 @@ fn run_encounter(case: EncounterCase) -> TestResult {
                     "Alptramun cooldown"
                 );
                 eprintln!(
-                    "POSTGRES_CASE_COMPLETED dcourts2_dream_scar_uses_startup_roster_on_lever_use_postgres duration={:?}",
+                    "POSTGRES_CASE_COMPLETED {} duration={:?}",
+                    if with_peer {
+                        "dcourts2_dream_scar_two_players_enter_and_exit_postgres"
+                    } else {
+                        "dcourts2_dream_scar_uses_startup_roster_on_lever_use_postgres"
+                    },
                     began.elapsed(),
                 );
                 drop(owner);
@@ -716,6 +802,84 @@ fn run_encounter(case: EncounterCase) -> TestResult {
     assert!(elapsed > 0.05);
     eprintln!("ENGENC2_CULTS_PG_EXECUTED elapsed_s={elapsed:.6}");
     Ok(())
+}
+
+async fn admit_dream_scar_peer(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    leader: &crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult<(ExactActorRef, crate::foundation::GameSessionId)> {
+    use crate::gameplay_transport::connection::{
+        AdmittedSession, ControllerBinding, SessionContinuity,
+    };
+    use crate::world_party_runtime_postgres_cases::{
+        FreshPlayerOwners, committed_fresh_player_owned,
+    };
+    let now = crate::gameplay_transport::unix_seconds().ok_or("host clock")?;
+    let current = committed_fresh_player_owned(
+        &FreshPlayerOwners {
+            root: h.root.clone(),
+            node: h.node.clone(),
+            recovery: &h.recovery,
+        },
+        60,
+        63,
+        171,
+        now,
+    )
+    .await?;
+    let fence = crate::gameplay_transport::item_fence_of(current).ok_or("peer fence")?;
+    let session = fence.game_session_id;
+    let actor = {
+        let mut runtime = owner.runtime.lock().await;
+        let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .bind_attacker_lease(actor, session, current.current_character_lease())
+            .map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(
+                actor,
+                MovementLocalPosition {
+                    x: 100,
+                    y: 101,
+                    floor: 7,
+                },
+            )
+            .map_err(debug)?;
+        let mut states = owner.states.spell_states.lock().await;
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                crate::spell::cast::CharacterCastFacts {
+                    level: 250,
+                    ..crate::gameplay_transport::actor_spell::tests::FACTS
+                },
+                (0, 0),
+                owner.owner_now(),
+            )
+            .ok_or("peer spell facts")?;
+        actor
+    };
+    owner
+        .admit_quest_session(&AdmittedSession {
+            game_session_id: session,
+            world_id: leader.world_id,
+            channel_id: leader.channel_id,
+            runtime_actor: Some(actor),
+            first_entry: FirstEntryOutcome::Positioned,
+            controller: Some(ControllerBinding {
+                transport: current.current_transport().ok_or("peer transport")?,
+                account_id: id(63),
+            }),
+            continuity: SessionContinuity::FRESH,
+            item_fence: Some(fence),
+        })
+        .await;
+    assert!(owner.refresh_source_party_presence(actor, session).await);
+    Ok((actor, session))
 }
 
 fn dream_scar_catalogue(
