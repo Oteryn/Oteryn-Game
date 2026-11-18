@@ -1106,6 +1106,20 @@ async fn verify_shared_reward(
             object::decode_use_result(&result).map_err(debug)
         };
     let greenhorn_use = use_chest(admitted, 31066).await?;
+    // Ordinary equipment and chest USE share the world-action clock.
+    let delay = owner
+        .states
+        .world_gate
+        .lock()
+        .map_err(|_| "world-action gate")?
+        .equip_delay(
+            actor,
+            oteryn_protocol_oteryn::item_view::EquipmentSlot::Head as u8,
+            owner.clock_origin.elapsed(),
+        );
+    if let Some(delay) = delay {
+        tokio::time::sleep(delay).await;
+    }
     let scrapper_use = use_chest(admitted, 31061).await?;
     assert_eq!(scrapper_use, object::UseDisposition::Committed);
     relocate(donor::REWARD_ROOM).await?;
