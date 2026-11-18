@@ -28,8 +28,10 @@ Dispatch reached about 14 GiB before the LLVM coordinator appeared. Its
 source tree has 4,238 test attributes and 29 direct lifted-test mounts in
 `lib.rs`. The build script generates another 735 PostgreSQL module mounts
 for the same test crate. The PostgreSQL subtree contains 2,171 test
-attributes, including nested helper files. The mount-count experiment
-will quantify the contribution of that subtree.
+attributes, including nested helper files. A repeat of the baseline confirmed 735 generated module mounts and the
+identical 48 direct archive inputs by size. The fresh verbose command also
+confirmed line tables and an active incremental cache. Neither nightly nor
+`cargo llvm-lines` is installed in the retained environment.
 
 ## Local mount ablation
 
