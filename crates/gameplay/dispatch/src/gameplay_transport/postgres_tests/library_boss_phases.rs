@@ -4,7 +4,10 @@
 use super::fixture::{Harness, debug, id};
 use super::quest_world_callbacks::{local, wire};
 use super::{Dependencies, TestResult, prepare_current_session};
-use crate::foundation::{CommandId, CommandRef, ExactActorRef, OwnerDamageCommand};
+use crate::foundation::{
+    CharacterId, CharacterLease, CommandId, CommandRef, ExactActorRef, GameSessionId,
+    MovementPositionSnapshot, OwnerDamageCommand,
+};
 use crate::gameplay_transport::{
     ComposedFreshAdmission,
     capabilities::SelectedCapabilities,
@@ -13,7 +16,9 @@ use crate::gameplay_transport::{
 };
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::{
-    QuestStateCatalogue, authored_bindings::Bindings, world_callbacks::Position,
+    QuestStateCatalogue,
+    authored_bindings::Bindings,
+    world_callbacks::{Callback, Position},
 };
 use oteryn_protocol_oteryn::{
     chat::{self, ChatDisposition, ChatIntent, ChatSpeechMode},
@@ -34,11 +39,15 @@ const BOOK: &str = "oteryn:creature.the_book_of_death";
 const DEATH: &str = "oteryn:creature.concentrated_death";
 const LEVER: Position = at(100, 100);
 const STAGING: Position = at(101, 100);
+const SECOND_STAGE: Position = at(102, 100);
 const LANDING: Position = at(103, 104);
 const BOSS_AT: Position = at(104, 104);
 const BOOK_AT: Position = at(104, 105);
 const MIN: Position = at(102, 102);
 const MAX: Position = at(107, 107);
+const EXIT_PAD: Position = at(103, 103);
+const EXIT: Position = at(99, 100);
+const EXIT_CLEAR: Position = at(98, 100);
 
 const fn at(x: u16, y: u16) -> Position {
     Position { x, y, floor: -10 }
@@ -50,7 +59,9 @@ fn oberon_scheduler_heals_and_summons_then_only_correct_say_removes_immunity() -
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(admin, OBERON).await)
+    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+        exercise(admin, OBERON, false).await
+    })
 }
 
 #[test]
@@ -60,7 +71,20 @@ fn ghulosh_scheduler_transforms_with_current_hp_and_book_death_spawns_concentrat
         return Ok(());
     };
     assert!(!admin.is_empty());
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| exercise(admin, GHULOSH).await)
+    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+        exercise(admin, GHULOSH, false).await
+    })
+}
+
+#[test]
+fn library_lever_admits_two_staged_players_to_one_cell_and_both_step_out() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty());
+    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+        exercise(admin, OBERON, true).await
+    })
 }
 
 fn catalogue(boss: &str) -> TestResult<QuestStateCatalogue> {
@@ -103,7 +127,7 @@ fn catalogue(boss: &str) -> TestResult<QuestStateCatalogue> {
                 "selector": {"position": LEVER, "ordinal": 1, "appearance": 2772},
                 "storage": [], "lever": [2772, 2773], "reversible": false,
                 "effects": {"encounter": {
-                    "players": [{"from": STAGING, "to": LANDING}, {"from": at(102, 100), "to": LANDING}],
+                    "players": [{"from": STAGING, "to": LANDING}, {"from": SECOND_STAGE, "to": LANDING}],
                     "monsters": monsters, "room_min": MIN, "room_max": MAX,
                     "minimum_level": 1, "boss_phases": phases
                 }},
@@ -115,7 +139,7 @@ fn catalogue(boss: &str) -> TestResult<QuestStateCatalogue> {
     Ok(Bindings::parse(&serde_json::to_vec(&data)?)?.attach(&base)?)
 }
 
-async fn exercise(admin: String, boss: &str) -> TestResult {
+async fn exercise(admin: String, boss: &str, party: bool) -> TestResult {
     let h = Harness::create_with_admission_seed(admin, "library_boss_phase", true, false).await?;
     prepare_current_session(&h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -136,8 +160,13 @@ async fn exercise(admin: String, boss: &str) -> TestResult {
         .ok_or("authored library boss")?
         .world_callbacks()
         .next()
-        .ok_or("boss lever")?;
-    let world = super::quest_world_callbacks::world(callback, LEVER)?;
+        .ok_or("boss lever")?
+        .clone();
+    let world = super::quest_world_callbacks::world_with_cells(
+        &callback,
+        LEVER,
+        &[EXIT_PAD, EXIT, EXIT_CLEAR],
+    )?;
     super::arena_match::fixture::runtime_at(&mut deps, generation, &pin, &world, local(STAGING))?;
     let cells = world
         .movement_cells(deps.room.movement_cells())
@@ -147,6 +176,43 @@ async fn exercise(admin: String, boss: &str) -> TestResult {
     owner.movement_cells = (&cells).into();
     owner.quest_catalogue = Some(Arc::new(catalogue));
     deps.initialize(&owner).await;
+    let peer = if party {
+        let session = GameSessionId::decode(&id(51)).map_err(debug)?;
+        let peer = {
+            let mut runtime = owner.runtime.lock().await;
+            let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+            let peer = runtime.commit_fresh_session(reservation).map_err(debug)?;
+            runtime
+                .bind_attacker_lease(
+                    peer,
+                    session,
+                    CharacterLease::new(CharacterId::decode(&id(52)).map_err(debug)?, 1)
+                        .map_err(debug)?,
+                )
+                .map_err(debug)?;
+            runtime
+                .initialize_pinned_test_position(peer, local(SECOND_STAGE))
+                .map_err(debug)?;
+            peer
+        };
+        deps.initialize_player(&owner, peer, session).await;
+        let exit: Callback = serde_json::from_value(json!({
+            "key": "oteryn:quest-callback/fixture-library-boss/exit", "quest": QUEST,
+            "trigger": "step_in", "selector": {"position": EXIT_PAD, "ordinal": 0},
+            "teleport": EXIT, "effects": {"teleport_effect": 11},
+            "storage": [], "offerings": [], "passages": [], "reversible": false,
+            "sources": callback.sources
+        }))?;
+        owner
+            .states
+            .quest_callbacks
+            .fixture
+            .set(vec![callback, exit])
+            .map_err(|_| "boss room callback fixture")?;
+        Some((peer, session))
+    } else {
+        None
+    };
     let mut admitted = deps.admitted;
     admitted.first_entry = FirstEntryOutcome::Positioned;
     admitted.continuity.selected_capabilities =
@@ -185,6 +251,36 @@ async fn exercise(admin: String, boss: &str) -> TestResult {
         decode_use_result(&result).map_err(debug)?,
         UseDisposition::Committed
     );
+    if let Some((peer, peer_session)) = peer {
+        let participants = [(deps.actor, admitted.game_session_id), (peer, peer_session)];
+        {
+            let runtime = owner.runtime.lock().await;
+            for (actor, _) in participants {
+                assert_eq!(
+                    runtime
+                        .read_actor_position(actor)
+                        .map_err(debug)?
+                        .position(),
+                    local(LANDING)
+                );
+            }
+        }
+        let permit = owner
+            .spell_lane_permit()
+            .await
+            .ok_or("source step permit")?;
+        for (actor, session) in participants {
+            let (origin, entered) = move_to(&owner, actor, session, EXIT_PAD).await?;
+            let after = owner
+                .step_quest_callback(&permit, actor, session, origin, entered)
+                .await;
+            assert_eq!(after.position(), local(EXIT));
+            if actor == deps.actor {
+                move_to(&owner, actor, session, EXIT_CLEAR).await?;
+            }
+        }
+        return Ok(());
+    }
     let target = find(&owner, boss).await?;
     let initial = owner
         .runtime
@@ -339,6 +435,36 @@ async fn exercise(admin: String, boss: &str) -> TestResult {
         );
     }
     Ok(())
+}
+
+async fn move_to(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    destination: Position,
+) -> TestResult<(MovementPositionSnapshot, MovementPositionSnapshot)> {
+    let map = owner.bundle_map().ok_or("map")?;
+    let mut runtime = owner.runtime.lock().await;
+    let origin = runtime.read_actor_position(actor).map_err(debug)?;
+    let closed = crate::map::floor::BundleDoors(&map.facts);
+    let proof = crate::map::floor::prepare_quest_callback_teleport(
+        &runtime,
+        owner.movement_cells(),
+        actor,
+        session,
+        origin,
+        local(destination),
+        false,
+        &closed,
+    )
+    .map_err(debug)?;
+    let [entered] = runtime
+        .commit_source_steps_and_project(vec![proof], || true)
+        .map_err(debug)?
+        .as_slice()
+        .try_into()
+        .map_err(|_| "one admitted step")?;
+    Ok((origin, entered))
 }
 
 async fn find(owner: &ComposedFreshAdmission<'_, '_, '_>, key: &str) -> TestResult<ExactActorRef> {
