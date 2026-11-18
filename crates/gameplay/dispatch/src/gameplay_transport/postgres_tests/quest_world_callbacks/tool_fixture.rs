@@ -20,6 +20,7 @@ use oteryn_protocol_oteryn::world_object::{
 };
 use std::num::NonZeroU64;
 
+#[path = "tool_fixture/source_items.rs"]
 mod source_items;
 
 pub(in super::super) fn run_world(

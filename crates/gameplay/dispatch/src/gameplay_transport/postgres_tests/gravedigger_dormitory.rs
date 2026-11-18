@@ -14,6 +14,9 @@ const QUEST: &str = "oteryn:quest.the_gravedigger_of_drefia_quest";
 const MISSION_55: &str = "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission55";
 const MISSION_56: &str = "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission56";
 const MISSION_57: &str = "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission57";
+const MISSION_05: &str = "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission05";
+const MISSION_06: &str = "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission06";
+const MISSION_74: &str = "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission74";
 const SERVANT: &str = "oteryn:creature.necromancer_servant";
 const FRAGMENT: &str = "oteryn:item.tibia.i18933";
 
@@ -35,6 +38,118 @@ fn dormitory_step_spawns_the_servant_and_its_death_keeps_the_fragment_in_the_cor
         return Ok(());
     };
     super::kill_reward_e2e::scenario_thread::run("gravedigger-servant", move || servant(admin))
+}
+
+#[test]
+fn heart_and_ritual_pads_use_distinct_mission_gates_and_destinations() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("gravedigger-source-pads", move || {
+        let heart = Pad {
+            at: Position {
+                x: 32988,
+                y: 32398,
+                floor: -9,
+            },
+            ordinal: 1,
+            destination: Position {
+                x: 32987,
+                y: 32401,
+                floor: -9,
+            },
+            denied: Some(Position {
+                x: 32988,
+                y: 32397,
+                floor: -9,
+            }),
+            source: "data-global/scripts/quests/the_gravedigger_of_drefia/movements_teleport.lua:1-31",
+        };
+        let ritual = Pad {
+            at: Position {
+                x: 33020,
+                y: 32419,
+                floor: -11,
+            },
+            ordinal: 1,
+            destination: Position {
+                x: 33017,
+                y: 32419,
+                floor: -11,
+            },
+            denied: None,
+            source: "data-global/scripts/quests/the_gravedigger_of_drefia/movements_sacrifice_teleport.lua:1-17",
+        };
+        for ready in [false, true] {
+            gate_landing(
+                admin.clone(),
+                &heart,
+                [(MISSION_05, 1, 1), (MISSION_06, i64::from(!ready), 0)],
+                ready,
+            )?;
+            gate_landing(
+                admin.clone(),
+                &ritual,
+                [(MISSION_74, i64::from(ready), 1)],
+                ready,
+            )?;
+        }
+        Ok(())
+    })
+}
+
+struct Pad {
+    at: Position,
+    ordinal: u8,
+    destination: Position,
+    denied: Option<Position>,
+    source: &'static str,
+}
+
+fn gate_landing<const N: usize>(
+    admin: String,
+    pad: &Pad,
+    states: [(&str, i64, i64); N],
+    ready: bool,
+) -> TestResult {
+    // Crystal 201189f8 startup/tables/item.lua:620-625,652-657 supplies the pad positions.
+    let storage: Vec<_> = states.into_iter().map(|(track, _, required)| serde_json::json!({
+        "track": track, "minimum": required, "maximum": required, "set": required, "preserve": true,
+    })).collect();
+    let callback: Callback = serde_json::from_value(serde_json::json!({
+        "key": "oteryn:quest-callback/fixture/gravedigger-mission-pad", "quest": QUEST, "trigger": "step_in",
+        "selector": { "appearance": 1949, "native": { "position": pad.at, "appearance": 1949, "ordinal": pad.ordinal } },
+        "requires_world_admission": true, "reversible": false, "passages": [], "offerings": [],
+        "storage": storage, "teleport": pad.destination,
+        "return_on_failure": pad.denied.is_some(), "failure_teleport": pad.denied,
+        "sources": [format!("crystal:201189f871d23597b82caf88fd611454a2ddefb8:{}", pad.source)]
+    }))?;
+    let extra_cells = pad.denied.into_iter().collect::<Vec<_>>();
+    let world = quest_world_callbacks::world_with_cells(&callback, pad.at, &extra_cells)?;
+    let expected = if ready {
+        pad.destination
+    } else {
+        pad.denied.unwrap_or(pad.at)
+    };
+    tool_fixture::run_world(
+        admin,
+        "gravedigger_mission_pad",
+        world,
+        callback,
+        tracks(states.map(|(key, initial, _)| (key, initial))),
+        async move |owner, mut admitted, _, _| {
+            step_east(owner, &mut admitted).await?;
+            let position = owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(admitted.runtime_actor.ok_or("actor")?)
+                .map_err(debug)?
+                .position();
+            assert_eq!(position, quest_world_callbacks::local(expected));
+            Ok(())
+        },
+    )
 }
 
 fn dormitory_gate(admin: String, entered: i64) -> TestResult {
