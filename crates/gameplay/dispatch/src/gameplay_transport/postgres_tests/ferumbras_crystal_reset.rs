@@ -8,6 +8,10 @@ use oteryn_protocol_oteryn::world_object::UseDisposition;
 pub(super) const CASE: &str = "ferumbras-crystal-reset";
 const LEVER: Position = at(33270, 31476);
 const ARRIVAL: Position = at(33392, 31479);
+const BOSS_AT: Position = at(33392, 31473);
+const ROOM_MIN: Position = at(33379, 31460);
+const ROOM_MAX: Position = at(33405, 31485);
+const OUTSIDE: Position = at(33392, 31486);
 const CRYSTALS: [Position; 8] = [
     at(33390, 31468),
     at(33394, 31468),
@@ -20,13 +24,17 @@ const CRYSTALS: [Position; 8] = [
 ];
 const BOSS: &str = "oteryn:creature.ascending_ferumbras";
 const DEMON: &str = "oteryn:creature.enthralled_demon";
+const DESTABILIZED: &str = "oteryn:creature.destabilized_ferumbras";
+const ESSENCE: &str = "oteryn:creature.ferumbras_essence";
+const SHELL: &str = "oteryn:creature.ferumbras_mortal_shell";
+const SPLINTER: &str = "oteryn:creature.ferumbras_soul_splinter";
 
 const fn at(x: u16, y: u16) -> Position {
     Position { x, y, floor: -14 }
 }
 
 #[test]
-fn ferumbras_lever_stacks_two_staged_players_and_resets_the_eight_crystals() -> TestResult {
+fn ferumbras_lever_resets_crystals_and_later_phase_deaths_replace_exact_actors() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -42,7 +50,7 @@ pub(super) fn callback() -> TestResult<Callback> {
             (31477..=31481).map(move |y| serde_json::json!({"from": at(x, y), "to": ARRIVAL}))
         })
         .collect();
-    let mut monsters = vec![serde_json::json!({"creature": BOSS, "position": at(33392,31473)})];
+    let mut monsters = vec![serde_json::json!({"creature": BOSS, "position": BOSS_AT})];
     monsters.extend(
         [
             at(33385, 31466),
@@ -55,6 +63,7 @@ pub(super) fn callback() -> TestResult<Callback> {
     let edits = CRYSTALS.map(|position| serde_json::json!({
         "position": position, "remove": 14961, "create": 14955, "passable": false, "allow_missing": true
     }));
+    let late_area = serde_json::json!({"minimum":ROOM_MIN,"maximum":ROOM_MAX});
     let document = serde_json::json!({"schema":1,"callbacks":[{
         "key":"oteryn:quest-callback/ferumbras/final-fight",
         "quest":"oteryn:quest.ferumbras_ascension_quest",
@@ -65,10 +74,18 @@ pub(super) fn callback() -> TestResult<Callback> {
             "scene":{"open":edits,"close":[]},
             "encounter":{
                 "minimum_level":0,"players":players,"monsters":monsters,
-                "room_min":at(33379,31460),"room_max":at(33405,31485),"shared_staging":true
+                "room_min":ROOM_MIN,"room_max":ROOM_MAX,"shared_staging":true,
+                "death_phases":{"terminal":SHELL,"replacements":[
+                    {"defeated":SPLINTER,"observe_deaths_in":late_area,"spawn":[{"creature":ESSENCE}]},
+                    {"defeated":DESTABILIZED,"observe_deaths_in":late_area,"spawn":[{"creature":SHELL,"position":BOSS_AT}]}
+                ]}
             }
         },
-        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_ferumbras_lever.lua:1-62"]
+        "sources":[
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_ferumbras_lever.lua:1-62",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/creaturescripts_ferumbras_soul_splinter.lua:3-9",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/creaturescripts_ferumbras_mortal_shell_death.lua:5-16"
+        ]
     }]});
     let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&document.to_string())?
         .try_into()
@@ -77,11 +94,12 @@ pub(super) fn callback() -> TestResult<Callback> {
 }
 
 pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
-    super::quest_world_callbacks::world_with_objects(
+    super::quest_world_callbacks::world_with_scene_cells(
         callback,
         LEVER,
         &CRYSTALS.map(|position| (position, 14961)),
         &[14955],
+        &[OUTSIDE],
     )
 }
 
@@ -215,6 +233,63 @@ pub(super) async fn exercise(
                     .and_then(|ordinal| map.facts.base_entry(pos, ordinal, *id))
                     .is_some_and(|facts| facts.appearance_id == 14955))
         );
+    }
+    let local = super::quest_world_callbacks::local;
+    let [first, second, outside, destabilized] = {
+        let mut runtime = owner.runtime.lock().await;
+        let spawns = [
+            (SPLINTER, BOSS_AT),
+            (SPLINTER, ARRIVAL),
+            (SPLINTER, OUTSIDE),
+            (DESTABILIZED, ARRIVAL),
+        ]
+        .map(|(key, at)| {
+            runtime
+                .companion_policy(key)
+                .map(|policy| (key, policy.maximum_health, local(at)))
+        });
+        let [first, second, outside, destabilized] = spawns;
+        // The preceding Rift Invader and vortex callbacks own these summons.
+        runtime
+            .commit_quest_creature_spawn(&[
+                first.map_err(debug)?,
+                second.map_err(debug)?,
+                outside.map_err(debug)?,
+                destabilized.map_err(debug)?,
+            ])
+            .map_err(debug)?
+            .try_into()
+            .map_err(|_| "four later Ferumbras actors")?
+    };
+    super::engenc2_cults::kill(owner, admitted, outside, SPLINTER, 100).await?;
+    super::engenc2_cults::kill(owner, admitted, first, SPLINTER, 101).await?;
+    {
+        let runtime = owner.runtime.lock().await;
+        assert!(runtime.contains_live_creature(second));
+    }
+    super::engenc2_cults::kill(owner, admitted, second, SPLINTER, 102).await?;
+    super::engenc2_cults::kill(owner, admitted, destabilized, DESTABILIZED, 103).await?;
+    {
+        let runtime = owner.runtime.lock().await;
+        let positions = |key: &str| -> TestResult<Vec<_>> {
+            runtime
+                .current_live_creature_census()
+                .map_err(debug)?
+                .into_iter()
+                .filter(|actor| runtime.matches_live_creature_identity(*actor, key.as_bytes()))
+                .map(|actor| {
+                    runtime
+                        .read_actor_position(actor)
+                        .map(|at| at.position())
+                        .map_err(debug)
+                        .map_err(Into::into)
+                })
+                .collect()
+        };
+        let essences = positions(ESSENCE)?;
+        assert_eq!(essences.len(), 2);
+        assert!(essences.contains(&local(BOSS_AT)) && essences.contains(&local(ARRIVAL)));
+        assert_eq!(positions(SHELL)?, vec![local(BOSS_AT)]);
     }
     Ok(())
 }

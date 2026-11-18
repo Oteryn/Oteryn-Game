@@ -178,7 +178,7 @@ impl Registry {
             && let Some(creature) = creature
             && let Ok((_, at)) = runtime.borrow_combat_death().projected_death(actor)
         {
-            // Crystal's Essence callback applies to creatures summoned after entry.
+            // Crystal's Essence and Ferumbras callbacks apply to creatures summoned after entry.
             // An exact admitted actor wins over a region; overlapping regions never guess.
             let mut regional = active
                 .iter_mut()

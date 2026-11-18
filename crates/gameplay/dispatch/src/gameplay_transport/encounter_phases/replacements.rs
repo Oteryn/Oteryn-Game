@@ -4,9 +4,7 @@ use super::{CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, Moveme
 use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
 use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
 use oteryn_gameplay_entities::carrier::QuestCorpseStep;
-use oteryn_gameplay_quests::quest::world_callbacks::{
-    DeathPhases, DeathRetirementArea, Encounter, Position,
-};
+use oteryn_gameplay_quests::quest::world_callbacks::{DeathArea, DeathPhases, Encounter, Position};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::collections::BTreeSet;
 
@@ -99,7 +97,8 @@ impl Replacements {
                 rule.defeated == creature
                     && rule
                         .retire_siblings_in
-                        .is_some_and(|area| in_retirement_area(area, at))
+                        .or(rule.observe_deaths_in)
+                        .is_some_and(|area| in_death_area(area, at))
             })
     }
 
@@ -306,7 +305,7 @@ impl Replacements {
                         runtime.matches_live_creature_identity(*actor, defeated.as_bytes())
                             && runtime
                                 .read_actor_position(*actor)
-                                .is_ok_and(|position| in_retirement_area(area, position.position()))
+                                .is_ok_and(|position| in_death_area(area, position.position()))
                     })
                     .collect()
             } else {
@@ -398,7 +397,7 @@ impl Replacements {
     }
 }
 
-fn in_retirement_area(area: DeathRetirementArea, position: MovementLocalPosition) -> bool {
+fn in_death_area(area: DeathArea, position: MovementLocalPosition) -> bool {
     super::super::quest_callbacks::native(position).is_some_and(|at| {
         area.contains(Position {
             x: at.x,

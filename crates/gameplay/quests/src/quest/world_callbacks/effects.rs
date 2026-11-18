@@ -541,7 +541,10 @@ pub struct DeathReplacement {
     pub retire_siblings: bool,
     /// When the source sweeps a whole room, include later arrivals of the defeated species.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub retire_siblings_in: Option<DeathRetirementArea>,
+    pub retire_siblings_in: Option<DeathArea>,
+    /// Observe later arrivals in this room without retiring other actors of that species.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub observe_deaths_in: Option<DeathArea>,
     /// The defeated creature speaks only after its replacement has been published.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub announcement: Option<DeathAnnouncement>,
@@ -564,12 +567,12 @@ pub struct DeathAnnouncement {
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
-pub struct DeathRetirementArea {
+pub struct DeathArea {
     pub minimum: Position,
     pub maximum: Position,
 }
 
-impl DeathRetirementArea {
+impl DeathArea {
     pub fn contains(self, position: Position) -> bool {
         position.floor == self.minimum.floor
             && (self.minimum.x..=self.maximum.x).contains(&position.x)
@@ -661,11 +664,18 @@ fn valid_death_phases(
     for rule in &plan.replacements {
         if rule.defeated == plan.terminal
             || (!known.contains(rule.defeated.as_str())
-                && (rule.retire_siblings_in.is_none() || !creature(&rule.defeated)))
+                && (rule.retire_siblings_in.or(rule.observe_deaths_in).is_none()
+                    || !creature(&rule.defeated)))
             || !defeated.insert(rule.defeated.as_str())
             || rule
                 .retire_siblings_in
                 .is_some_and(|area| !rule.retire_siblings || !area.valid())
+            || rule.observe_deaths_in.is_some_and(|area| {
+                rule.retire_siblings
+                    || !area.valid()
+                    || !in_room(area.minimum)
+                    || !in_room(area.maximum)
+            })
             || rule.announcement.as_ref().is_some_and(|speech| {
                 speech.text.trim().is_empty()
                     || speech.text.len() > 256
