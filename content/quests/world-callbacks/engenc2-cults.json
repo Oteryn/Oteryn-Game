@@ -188,6 +188,63 @@
           "phase": "cults_boss_phase_closures"
         }
       }
+    },
+    {
+      "key": "oteryn:quest-callback/engenc2/cults-essence-entry",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33096,
+          "y": 31963,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 1949,
+        "native": {
+          "position": {
+            "x": 33096,
+            "y": 31963,
+            "floor": -15
+          },
+          "ordinal": 1,
+          "appearance": 1949
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "requires_world_admission": true,
+      "passages": [],
+      "teleport": {
+        "x": 33095,
+        "y": 31953,
+        "floor": -15
+      },
+      "storage": [],
+      "state_operations": [
+        {
+          "track": "oteryn:quest-progress/cults-of-tibia/essence-entered-at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "The Essence of Malice portal is still on cooldown.",
+      "effects": {
+        "scripted_teleport": true,
+        "teleport_effect": 11
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/movements_boss_timer.lua:12-16",
+        "content/world/placements/region-z15-x129-y124.b3"
+      ]
     }
   ]
 }
