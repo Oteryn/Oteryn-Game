@@ -895,22 +895,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let tile =
                 crate::map::view::compose_tile(&at.map.overlay, &facts, resolved.pos).ok()??;
-            let entry = tile.entries.iter().find(|entry| {
-                entry.source.key() == crate::map::view::MapEntryKey::Base(resolved.placement_key)
-            })?;
-            match entry.facts.definition {
-                MapDefinition::Item(reference) => {
-                    let index = native.item_index()?;
-                    let definition = super::item_look::typed_definition(index, reference)?;
-                    let item_id = definition
-                        .production_key
-                        .strip_prefix("oteryn:item.tibia.i")?
-                        .parse::<u32>()
-                        .ok()?;
-                    Some(item_id)
-                }
-                MapDefinition::Terrain(_) => None,
-            }
+            tile.entries
+                .iter()
+                .find(|entry| {
+                    entry.source.key()
+                        == crate::map::view::MapEntryKey::Base(resolved.placement_key)
+                })
+                .and_then(|entry| match entry.facts.definition {
+                    MapDefinition::Item(reference) => {
+                        let index = native.item_index()?;
+                        let definition = super::item_look::typed_definition(index, reference)?;
+                        definition
+                            .production_key
+                            .strip_prefix("oteryn:item.tibia.i")?
+                            .parse::<u32>()
+                            .ok()
+                    }
+                    _ => None,
+                })
         };
         // Only read durable splash objects after the complete map target/range validation.
         // Refused USE_WITH commands must not mutate (or otherwise refresh) map state.
