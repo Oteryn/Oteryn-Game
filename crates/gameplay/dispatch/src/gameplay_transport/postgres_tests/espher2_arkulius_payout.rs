@@ -79,8 +79,21 @@ async fn exercise(h: &Harness, vocation: crate::spell::Vocation, reward: u16) ->
     )?;
     let admitted = deps.admitted;
     let account = super::fixture::id(40);
-    let (consumer, clock, _activation, _proof) = purchase_fixture::current(account);
-    let premium = SpellPremiumCoordinator::new(consumer, Some(clock), None, Some(h.root.clone()));
+    let (consumer, clock, activation, _proof) = purchase_fixture::current(account);
+    h.root
+        .latch_premium_activation(
+            &activation.activation_id,
+            activation.switch_over_us,
+            activation.switch_over_us + 60_000_000,
+        )
+        .await
+        .map_err(debug)?;
+    let premium = SpellPremiumCoordinator::new(
+        consumer,
+        Some(clock),
+        Some(activation),
+        Some(h.root.clone()),
+    );
     let mut owner = deps.owner(h, &authority);
     owner.premium_coordinator = Some(&premium);
     owner.active_generation = controller.active();
@@ -207,8 +220,14 @@ async fn exercise(h: &Harness, vocation: crate::spell::Vocation, reward: u16) ->
         .await;
     super::item_look::seed_main_backpack(h, &[(NEUTRAL_MATTER, 2)]).await?;
 
-    super::npc_dialogue_fixture::talk(&mut owner, &admitted, arkulius, 700, "hi").await?;
-    super::npc_dialogue_fixture::talk(&mut owner, &admitted, arkulius, 701, "mission").await?;
+    let greeting =
+        super::npc_dialogue_fixture::talk(&mut owner, &admitted, arkulius, 700, "hi").await?;
+    let payout =
+        super::npc_dialogue_fixture::talk(&mut owner, &admitted, arkulius, 701, "mission").await?;
+    assert!(
+        payout.iter().any(|line| line.contains("Alverus")),
+        "Arkulius must acknowledge the hand-in after {greeting:?}: {payout:?}"
+    );
     super::npc_dialogue_fixture::talk(&mut owner, &admitted, arkulius, 702, "mission").await?;
     let carried: Vec<(String, i64)> = sqlx::query_as(
         "SELECT i.definition_production_key,i.quantity FROM game_item_instances i
