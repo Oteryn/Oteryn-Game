@@ -6,8 +6,10 @@ use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityPublicationV1,
 };
-use crate::foundation::{AuthenticatedTransportRefV1, GameSessionId};
+use crate::foundation::{AuthenticatedTransportRefV1, GameSessionId, MovementFacing};
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
+use oteryn_protocol_oteryn::world_spatial::StepDirection;
+
 fn uuid(id: &[u8; 16]) -> String {
     crate::gameplay_transport::canonical_uuid(id)
 }
@@ -77,6 +79,12 @@ fn bootstrap_v4_every_vocation_first_entry_without_progression_postgres() -> Tes
                     owner.observe(deps.actor).await.is_some(),
                     "{vocation}: connection cannot build the initial spatial snapshot"
                 );
+                assert!(
+                    owner.turn_actor(deps.actor, session, StepDirection::East).await,
+                    "{vocation}: first turn was refused"
+                );
+                let position = owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?;
+                assert_eq!(position.facing(), Some(MovementFacing::East), "{vocation}");
                 let familiar = h.root.read_character_familiar_state(&authority, character).await?;
                 assert!(familiar.committed_character_revision().is_none());
                 let loaded = crate::gameplay_transport::load_character_cast_facts(&h.root, &authority, character).await;
