@@ -84,6 +84,17 @@ async fn exercise(h: &Harness) -> TestResult {
                 start: (33331, 32076),
                 expected: Vec::new(),
             },
+            // The full bundle derives these replacement appearances from retained placements.
+            NativeCrop {
+                bytes: include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../../content/world/placements/region-z06-x132-y127.b3"
+                )),
+                region: (6, 132, 127),
+                bounds: (34010, 32650, 34011, 32650),
+                start: (34010, 32650),
+                expected: Vec::new(),
+            },
         ],
         &[],
     )?;
