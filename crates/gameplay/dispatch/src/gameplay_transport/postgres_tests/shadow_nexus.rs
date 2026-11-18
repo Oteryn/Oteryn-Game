@@ -43,6 +43,11 @@ pub(super) fn callback(spend: bool) -> TestResult<Callback> {
         row["item_on_target"] = serde_json::json!({"item":WATER,"count":1,"selected_instance":true});
         row["effects"] = serde_json::json!({
             "charge_window":{"kind":"spend","group":CHARGE,"active":7931,"radius":3,
+                "cues":[
+                    {"position":{"x":99,"y":100,"floor":-7},"effect":50},
+                    {"position":{"x":102,"y":100,"floor":-7},"effect":50},
+                    {"position":TARGET,"effect":50}
+                ],
                 "announcement":"destroyed the shadow nexus! In 10 seconds it will return to its original state."}
         });
     } else {
@@ -165,6 +170,14 @@ pub(super) async fn exercise(
         }
         assert_eq!(use_water(owner,admitted).await?,UseDisposition::Committed);
         assert_eq!(appearance(owner)?,7931,"an admitted debit leaves the remaining window visible");
+        if attempt == 0 {
+            let map = owner.bundle_map().ok_or("map")?;
+            let mut lights: Vec<_> = map.facts.movement_effects_since(0).into_iter()
+                .filter_map(|(_, at, effect)| (effect == 50).then_some(at.x))
+                .collect();
+            lights.sort_unstable();
+            assert_eq!(lights, [99, 101, 102]);
+        }
         let mission: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
             .bind(MISSION).fetch_one(&h.pool).await?;
         assert_eq!(mission, if attempt == 0 { 2 } else { 1 });

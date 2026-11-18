@@ -19,6 +19,8 @@ pub enum ChargeWindow {
         active: u16,
         announcement: String,
         radius: u8,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        cues: Vec<super::MagicEffect>,
     },
 }
 
@@ -165,11 +167,16 @@ pub(super) fn valid(callback: &Callback, charge: &ChargeWindow) -> bool {
             active,
             announcement,
             radius,
+            cues,
             ..
         } => {
             *active != initial
                 && *active != 0
                 && text_valid(announcement, *radius)
+                && cues.len() <= 8
+                && cues
+                    .iter()
+                    .all(|cue| cue.effect > 0 && (-15..=0).contains(&cue.position.floor))
                 && callback.requires_world_admission
                 && callback.has_state_writes()
                 && callback.item_on_target.as_ref().is_some_and(|tool| {

@@ -1789,9 +1789,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && let Some(world_callbacks::ChargeWindow::Spend {
                 announcement,
                 radius,
+                cues,
                 ..
             }) = &callback.effects.charge_window
         {
+            for cue in cues {
+                map.facts
+                    .emit_movement_effect(tile(cue.position), cue.effect);
+            }
             self.states.chat.publish_quest_charge_announcement(
                 runtime,
                 actor,
