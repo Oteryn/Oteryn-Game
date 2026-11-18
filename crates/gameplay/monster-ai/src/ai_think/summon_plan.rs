@@ -566,6 +566,9 @@ impl CreatureAiTable {
         reader: &mut R,
         mut consume: impl FnMut(&mut ChannelRuntimeV1, &mut Self, ExactActorRef, &ThinkReport, &mut R),
     ) -> Vec<(ExactActorRef, ThinkReport)> {
+        let Some(entries) = batch.entries.get(range) else {
+            return Vec::new();
+        };
         if !runtime
             .owner_fence()
             .is_ok_and(|fence| fence.accepts_stamp(batch.stamp))
@@ -589,7 +592,7 @@ impl CreatureAiTable {
             })
             .collect::<Vec<_>>();
         let mut reports = Vec::new();
-        for reserved in &batch.entries[range] {
+        for reserved in entries {
             if !runtime
                 .owner_fence()
                 .is_ok_and(|fence| fence.accepts_stamp(batch.stamp))
