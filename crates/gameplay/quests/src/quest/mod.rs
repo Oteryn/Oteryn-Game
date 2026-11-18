@@ -431,6 +431,7 @@ pub struct QuestStateCatalogue {
     npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
     predecessors: BTreeMap<String, Vec<NpcDefinitionPredecessor>>,
     native_recipe_evidence: Option<std::sync::Arc<authored_bindings::embedded::RecipeEvidence>>,
+    npc_rule_source: Option<std::sync::Arc<npc_rules::NpcRuleCatalog>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -621,6 +622,7 @@ impl QuestStateCatalogue {
             predecessors: BTreeMap::new(),
             authored_bindings: None,
             native_recipe_evidence: None,
+            npc_rule_source: None,
         })
     }
 

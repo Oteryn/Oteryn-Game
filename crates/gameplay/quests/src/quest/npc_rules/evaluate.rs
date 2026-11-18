@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use super::{
     MAX_NPC_EFFECTS, MAX_NPC_TRACK_CHANGES, NpcInventorySnapshot, NpcItemKey, NpcKeywordMode,
     NpcRule, NpcRuleCatalog, NpcRuleEffect, NpcRuleError, NpcRuleGuard, NpcRuleInput, NpcRulePlan,
-    NpcRuleProgram, NpcTrackChange, NpcTrackDefinition, keyword,
+    NpcRuleProgram, NpcTrackChange, NpcTrackDefinition, contributions, keyword,
 };
 
 struct Staged<'a> {
@@ -82,6 +82,22 @@ impl<'a> Staged<'a> {
         input: &NpcRuleInput<'_>,
     ) -> Result<bool, NpcRuleError> {
         Ok(match guard {
+            NpcRuleGuard::ContributionTotal { terms, op, value } => op.holds(
+                contributions::total(terms, |track| self.track(track))?,
+                *value,
+                None,
+            ),
+            NpcRuleGuard::RedemptionQuantity {
+                track,
+                unit_cost,
+                status,
+            } => {
+                contributions::status(
+                    contributions::quantity(input.message),
+                    self.track(track)?,
+                    *unit_cost,
+                ) == *status
+            }
             NpcRuleGuard::Storage {
                 track,
                 op,
@@ -144,6 +160,15 @@ impl<'a> Staged<'a> {
     /// `false` means an optional source removeItem failed and made no change.
     fn effect(&mut self, effect: &NpcRuleEffect, now: i64) -> Result<bool, NpcRuleError> {
         match effect {
+            NpcRuleEffect::SetContributionTotal { track, terms } => {
+                let total = contributions::total(terms, |input| self.track(input))?;
+                self.set_track(track, total)?;
+            }
+            NpcRuleEffect::RedeemContribution { .. } => {
+                return Err(NpcRuleError::MissingNativeResolution(
+                    "unresolved contribution redemption".into(),
+                ));
+            }
             NpcRuleEffect::BigfootMatchmakerTarget | NpcRuleEffect::BigfootSoulMelody => {
                 return Err(NpcRuleError::MissingNativeResolution(
                     "unresolved native effect".into(),
@@ -342,6 +367,7 @@ fn plan_with_teleport(
         let mut reply = Vec::new();
         let mut effects = Vec::new();
         let mut completes = false;
+        let mut redemption = None;
         let mut inventory_failure_reply = Vec::new();
         for rule in &program.document.rules {
             if rule.npc != input.npc
@@ -360,6 +386,8 @@ fn plan_with_teleport(
                     && !matches!(
                         guard,
                         NpcRuleGuard::Storage { .. }
+                            | NpcRuleGuard::ContributionTotal { .. }
+                            | NpcRuleGuard::RedemptionQuantity { .. }
                             | NpcRuleGuard::StorageTime { .. }
                             | NpcRuleGuard::CalendarMonth { .. }
                             | NpcRuleGuard::Level { .. }
@@ -398,6 +426,7 @@ fn plan_with_teleport(
                             | NpcRuleEffect::Set { .. }
                             | NpcRuleEffect::Add { .. }
                             | NpcRuleEffect::SetNowPlus { .. }
+                            | NpcRuleEffect::SetContributionTotal { .. }
                             | NpcRuleEffect::SetTopic { .. }
                             | NpcRuleEffect::EndConversation { .. }
                             | NpcRuleEffect::Experience { .. }
@@ -405,6 +434,56 @@ fn plan_with_teleport(
                     )
                 {
                     return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));
+                }
+                if let NpcRuleEffect::RedeemContribution {
+                    track,
+                    unit_cost,
+                    item,
+                } = effect
+                {
+                    if redemption.is_some()
+                        || effects
+                            .iter()
+                            .any(|effect| matches!(effect, NpcRuleEffect::GiveItem { .. }))
+                    {
+                        return Err(NpcRuleError::LimitExceeded);
+                    }
+                    let balance = state.track(track)?;
+                    let quantity = contributions::quantity(input.message);
+                    let Some(quantity) = quantity.filter(|_| {
+                        contributions::status(quantity, balance, *unit_cost)
+                            == super::QuantityStatus::Affordable
+                    }) else {
+                        return Err(NpcRuleError::Invalid(
+                            "invalid contribution redemption".into(),
+                        ));
+                    };
+                    state
+                        .set_track(track, balance - i64::from(quantity) * i64::from(*unit_cost))?;
+                    for count in (0..quantity)
+                        .step_by(100)
+                        .map(|offset| (quantity - offset).min(100))
+                    {
+                        let gift = NpcRuleEffect::GiveItem {
+                            item: item.clone(),
+                            count,
+                            subtype: None,
+                        };
+                        state.effect(&gift, input.now_epoch_seconds)?;
+                        effects.push(gift);
+                    }
+                    if effects.len() > MAX_NPC_EFFECTS {
+                        return Err(NpcRuleError::LimitExceeded);
+                    }
+                    redemption = Some(super::ContributionRedemption {
+                        track: track.clone(),
+                        unit_cost: *unit_cost,
+                        quantity,
+                    });
+                    continue;
+                }
+                if redemption.is_some() && matches!(effect, NpcRuleEffect::GiveItem { .. }) {
+                    return Err(NpcRuleError::LimitExceeded);
                 }
                 let concrete = match effect {
                     NpcRuleEffect::BigfootMatchmakerTarget | NpcRuleEffect::BigfootSoulMelody => {
@@ -468,6 +547,7 @@ fn plan_with_teleport(
             inventory_before: input.inventory.clone(),
             inventory_after: state.inventory,
             inventory_failure_reply,
+            redemption,
         }));
     }
     Ok(None)

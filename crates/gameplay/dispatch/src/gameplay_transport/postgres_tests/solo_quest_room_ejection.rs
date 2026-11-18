@@ -85,7 +85,7 @@ async fn exercise(h: &Harness) -> TestResult {
     let bindings: Bindings = serde_json::from_value(serde_json::json!({
         "schema":1,"quests":[{
             "quest":QUEST,
-            "recipe_sha256":format!("{:x}", <sha2::Sha256 as sha2::Digest>::digest(source)),
+            "recipe_sha256":<sha2::Sha256 as sha2::Digest>::digest(source).iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
             "tracks":[{"key":TRACK,"initial":9,"minimum":9,"maximum":10}],
             "stages":[{"key":"s1","completes":false,"trigger":{"kind":"step_in","callback":callback_json}}],
             "sources":[source]

@@ -267,6 +267,16 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
             }
             for guard in &rule.guards {
                 let valid = match guard {
+                    NpcRuleGuard::ContributionTotal { terms, op, value } => {
+                        *value >= 0
+                            && *op != NpcComparison::Between
+                            && super::contributions::valid_terms(terms, |track| {
+                                tracks.contains_key(track)
+                            })
+                    }
+                    NpcRuleGuard::RedemptionQuantity {
+                        track, unit_cost, ..
+                    } => *unit_cost > 0 && tracks.contains_key(track),
                     NpcRuleGuard::Storage {
                         track,
                         op,
@@ -313,6 +323,25 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
             }
             for effect in &rule.effects {
                 let valid = match effect {
+                    NpcRuleEffect::SetContributionTotal { track, terms } => {
+                        tracks.contains_key(track)
+                            && terms.iter().all(|term| &term.track != track)
+                            && super::contributions::valid_terms(terms, |input| tracks.contains_key(input))
+                    }
+                    NpcRuleEffect::RedeemContribution { track, unit_cost, item } => {
+                        *unit_cost > 0
+                            && tracks.contains_key(track)
+                            && valid_quest_key(item)
+                            && rule.effects.iter().filter(|effect| matches!(effect,
+                                NpcRuleEffect::RedeemContribution { .. } | NpcRuleEffect::GiveItem { .. }
+                            )).count() == 1
+                            && rule.guards.iter().any(|guard| matches!(guard,
+                                NpcRuleGuard::RedemptionQuantity {
+                                    track: guarded, unit_cost: cost,
+                                    status: super::QuantityStatus::Affordable,
+                                } if guarded == track && cost == unit_cost
+                            ))
+                    }
                     NpcRuleEffect::BigfootMatchmakerTarget => {
                         document.quest == "oteryn:quest.bigfoot_s_burden_quest"
                             && tracks.keys().any(|key| key.as_str() == "oteryn:quest-progress/quest/u9_60/bigfoots_burden/matchmaker_id_needed")

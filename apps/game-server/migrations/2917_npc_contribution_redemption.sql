@@ -1,0 +1,62 @@
+-- NPC contribution redemption uses a distinct MINT identity for each priced
+-- request. Preserve cooking and the existing once-only claim identities.
+CREATE FUNCTION game_quest_npc_redemption_claim_key(
+    plan JSONB, transition_key TEXT, cause_id UUID, cause_ordinal NUMERIC
+) RETURNS TEXT LANGUAGE plpgsql IMMUTABLE AS $$
+DECLARE
+    redemption JSONB := plan->'redemption';
+    ledger_change JSONB;
+    item_count BIGINT;
+    quantity BIGINT;
+    cost BIGINT;
+BEGIN
+    IF redemption IS NULL THEN
+        RETURN game_quest_npc_reward_claim_key(plan, transition_key);
+    END IF;
+
+    SELECT change INTO STRICT ledger_change FROM jsonb_array_elements(plan->'tracks') change
+      WHERE change->>'key'=redemption->>'track';
+    quantity := (redemption->>'quantity')::BIGINT;
+    cost := (redemption->>'unit_cost')::BIGINT;
+    SELECT (plan #>> '{give,count}')::BIGINT
+         + coalesce(sum((entry->>'count')::BIGINT), 0) INTO item_count
+      FROM jsonb_array_elements(coalesce(plan #> '{give,additional}', '[]'::JSONB)) entry;
+    IF NOT ((quantity BETWEEN 1 AND 2000
+        AND cost BETWEEN 1 AND 4294967295
+        AND (ledger_change->>'after')::NUMERIC >= 0
+        AND (ledger_change->>'before')::NUMERIC - (ledger_change->>'after')::NUMERIC
+             = quantity * cost
+        AND item_count = quantity
+        AND NOT EXISTS(
+            SELECT 1 FROM jsonb_array_elements(coalesce(plan #> '{give,additional}', '[]'::JSONB)) entry
+             WHERE entry->>'item' IS DISTINCT FROM plan #>> '{give,item}'
+        )) IS TRUE) THEN
+        RAISE EXCEPTION 'invalid NPC contribution redemption' USING ERRCODE='23514';
+    END IF;
+    RETURN 'oteryn:reward-claim.npc-redemption.' || encode(
+        sha256(convert_to(transition_key || '/' || encode(uuid_send(cause_id), 'hex')
+            || '/' || cause_ordinal::TEXT, 'UTF8')), 'hex');
+END $$;
+
+DO $$
+DECLARE
+    body TEXT := pg_get_functiondef('game_quest_npc_item_complete()'::regprocedure);
+    old_key CONSTANT TEXT := 'game_quest_npc_reward_claim_key(NEW.plan,NEW.transition_key)';
+    new_key CONSTANT TEXT := 'game_quest_npc_redemption_claim_key(NEW.plan, NEW.transition_key, NEW.cause_id, NEW.cause_ordinal)';
+    mint_guard CONSTANT TEXT := 'IF (NEW.plan->''give''=''null''::jsonb)';
+BEGIN
+    IF strpos(body, old_key) = 0 OR strpos(body, mint_guard) = 0 THEN
+        RAISE EXCEPTION 'missing canonical NPC item MINT guard';
+    END IF;
+    body := replace(body, old_key, new_key);
+    body := replace(body, mint_guard,
+        'IF NEW.plan ? ''redemption'' AND NEW.mint_transaction_id IS NULL THEN
+             RAISE EXCEPTION ''NPC contribution redemption lacks a MINT'' USING ERRCODE=''23514'';
+         END IF;
+         ' || mint_guard);
+    EXECUTE body;
+    EXECUTE format('ALTER FUNCTION game_quest_npc_redemption_claim_key(JSONB,TEXT,UUID,NUMERIC) SET search_path=pg_catalog,%I,pg_temp', current_schema());
+END $$;
+
+REVOKE ALL ON FUNCTION game_quest_npc_redemption_claim_key(JSONB,TEXT,UUID,NUMERIC) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_quest_npc_redemption_claim_key(JSONB,TEXT,UUID,NUMERIC) TO oteryn_game_runtime;

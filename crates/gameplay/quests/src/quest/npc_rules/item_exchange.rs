@@ -17,6 +17,8 @@ impl NpcRuleCatalog {
             for guard in &rule.guards {
                 match guard {
                     NpcRuleGuard::Storage { .. }
+                    | NpcRuleGuard::ContributionTotal { .. }
+                    | NpcRuleGuard::RedemptionQuantity { .. }
                     | NpcRuleGuard::StorageTime { .. }
                     | NpcRuleGuard::CalendarMonth { .. }
                     | NpcRuleGuard::CalendarWindow { .. }
@@ -40,6 +42,7 @@ impl NpcRuleCatalog {
             for effect in &rule.effects {
                 match effect {
                     NpcRuleEffect::Set { .. }
+                    | NpcRuleEffect::SetContributionTotal { .. }
                     | NpcRuleEffect::SetNowPlus { .. }
                     | NpcRuleEffect::Add { .. }
                     | NpcRuleEffect::SetTopic { .. }
@@ -57,6 +60,10 @@ impl NpcRuleCatalog {
                     } => {
                         keys.insert(item.clone());
                         items = true;
+                    }
+                    NpcRuleEffect::RedeemContribution { .. } => {
+                        items = true;
+                        grants += 20;
                     }
                     NpcRuleEffect::GiveItem {
                         count: 1..=100,

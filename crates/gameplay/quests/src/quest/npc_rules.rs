@@ -6,8 +6,10 @@ mod achievement_tests;
 mod admission;
 mod bounds;
 mod calendar;
+mod contributions;
 mod equipped_storage;
 pub use calendar::NpcUtcCalendar;
+pub use contributions::{ContributionRedemption, ContributionTerm, QuantityStatus};
 mod evaluate;
 mod hidden_threats;
 mod item_exchange;
@@ -123,6 +125,16 @@ pub struct NpcRulePosition {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum NpcRuleGuard {
+    ContributionTotal {
+        terms: Vec<ContributionTerm>,
+        op: NpcComparison,
+        value: i64,
+    },
+    RedemptionQuantity {
+        track: String,
+        unit_cost: u32,
+        status: QuantityStatus,
+    },
     Storage {
         track: String,
         op: NpcComparison,
@@ -188,6 +200,15 @@ pub enum NpcRuleGuard {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum NpcRuleEffect {
+    SetContributionTotal {
+        track: String,
+        terms: Vec<ContributionTerm>,
+    },
+    RedeemContribution {
+        track: String,
+        unit_cost: u32,
+        item: String,
+    },
     /// Once-only proof of one source saga; never closes the canonical quest.
     /// The declared 0..1 track includes the canonical quest and source identity.
     CompleteSource {
@@ -336,13 +357,13 @@ fn npc_false(value: &bool) -> bool {
     !*value
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcRuleProgram {
     pub document: NpcRuleDocument,
     pub digest: [u8; 32],
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct NpcRuleCatalog {
     programs: Vec<NpcRuleProgram>,
 }
@@ -409,9 +430,29 @@ pub struct NpcRulePlan {
     pub inventory_before: NpcInventorySnapshot,
     pub inventory_after: NpcInventorySnapshot,
     pub inventory_failure_reply: Vec<String>,
+    pub redemption: Option<ContributionRedemption>,
 }
 
 impl NpcRuleCatalog {
+    /// Prefer the exact source snapshot which supplied the catalogue's rule pins.
+    pub fn source_for(native: &super::QuestStateCatalogue) -> Result<&Self, NpcRuleError> {
+        if let Some(source) = native.npc_rule_source.as_deref() {
+            return Ok(source);
+        }
+        Self::runtime()
+    }
+
+    /// Inject a test source snapshot through the embedded registry's track and rule pin lowering.
+    #[cfg(feature = "test-support")]
+    pub fn with_fixture_npc_rules(
+        self,
+        native: super::QuestStateCatalogue,
+    ) -> Result<super::QuestStateCatalogue, String> {
+        let mut active = extend_source(native, &BTreeMap::new(), &self)?;
+        active.npc_rule_source = Some(std::sync::Arc::new(self));
+        Ok(active)
+    }
+
     /// Resolve only programmes explicitly bound into this catalogue for this NPC.
     pub fn admitted_for_npc(
         &self,
@@ -549,6 +590,7 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.in_service_of_yalahar_quest"
                                 | "oteryn:quest.the_paradox_tower_quest"
                                 | "oteryn:quest.marlin_trophy_quest"
+                                | "oteryn:quest.roshamuul_quest"
                                 | "oteryn:quest.the_djinn_war_efreet_faction"
                                 | "oteryn:quest.the_djinn_war_marid_faction"
                                 | "oteryn:quest.the_white_raven_monastery_quest"
@@ -758,6 +800,14 @@ pub(super) fn extend(
     source_tracks: &BTreeMap<String, String>,
 ) -> Result<super::QuestStateCatalogue, String> {
     let source = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
+    extend_source(catalogue, source_tracks, source)
+}
+
+fn extend_source(
+    catalogue: super::QuestStateCatalogue,
+    source_tracks: &BTreeMap<String, String>,
+    source: &NpcRuleCatalog,
+) -> Result<super::QuestStateCatalogue, String> {
     let mut legacy = catalogue.npc_legacy.clone();
     let predecessors = catalogue.predecessors.clone();
     for program in source.programs() {

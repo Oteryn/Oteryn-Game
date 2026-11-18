@@ -3,10 +3,13 @@ use std::sync::Arc;
 
 use super::classic_quests::{install, talk};
 use super::fixture::{Harness, debug, id, run};
-use super::{Dependencies, TestResult, prepare_current_session};
+use super::{
+    AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session,
+};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::gameplay_transport::connection::FirstEntryOutcome;
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack, authored_bindings::Bindings};
+use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
 const DARK_TRAILS: &str = "oteryn:quest.dark_trails_quest";
 const ORAMOND: &str = "oteryn:quest.oramond_quest";
@@ -54,7 +57,7 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
     let binding = Bindings::parse(serde_json::json!({
         "schema":1,"quests":[{
             "quest":DARK_TRAILS,
-            "recipe_sha256":format!("{:x}", <sha2::Sha256 as sha2::Digest>::digest(source)),
+            "recipe_sha256":<sha2::Sha256 as sha2::Digest>::digest(source).iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
             "tracks":[{"key":ARCHIVES,"initial":-1,"minimum":-1,"maximum":1}],
             "stages":[{"key":"s1","completes":false,"trigger":{"kind":"npc_dialogue","callback":{
                 "key":"oteryn:quest-reward/fixture/archive-vote","quest":DARK_TRAILS,"npc":"oteryn:npc.marvin",
@@ -76,7 +79,36 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
 }
 
 async fn exercise(h: &Harness) -> TestResult {
-    let catalogue = Arc::new(catalogue()?);
+    with_npc(h, Arc::new(catalogue()?), "oteryn:npc.marvin", async |owner, admitted, marvin| {
+    talk(owner, admitted, marvin, 1, "hi").await?;
+    let reply = talk(owner, admitted, marvin, 2, "yes").await?;
+    assert_eq!(reply, ["Vote recorded."]);
+    let read = || async {
+        sqlx::query_as::<_, (String, i64, String)>(
+            "SELECT track_key, value, committed_character_revision::text FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key IN ($2,$3) ORDER BY track_key",
+        ).bind(id(41).as_slice()).bind(ARCHIVES).bind(VOTES).fetch_all(&h.pool).await
+    };
+    let rows = read().await?;
+    assert_eq!(rows.len(), 2);
+    assert_eq!((&*rows[0].0, rows[0].1), (ARCHIVES, 1));
+    assert_eq!((&*rows[1].0, rows[1].1), (VOTES, 1));
+    assert_eq!(rows[0].2, rows[1].2);
+    let _ = talk(owner, admitted, marvin, 2, "yes").await?;
+    assert_eq!(read().await?, rows);
+    Ok(())
+    }).await
+}
+
+pub(super) async fn with_npc(
+    h: &Harness,
+    catalogue: Arc<QuestStateCatalogue>,
+    npc: &str,
+    exercise: impl AsyncFnOnce(
+        &mut ComposedFreshAdmission<'_, '_, '_>,
+        &AdmittedSession,
+        EntityRef,
+    ) -> TestResult,
+) -> TestResult {
     prepare_current_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
@@ -123,30 +155,45 @@ async fn exercise(h: &Harness) -> TestResult {
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
         .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(digest.as_slice()).bind(client_digest.as_slice())
         .bind(frame.as_slice()).execute(&h.pool).await?;
-    let [marvin] = install(&owner, &admitted, ["oteryn:npc.marvin"]).await?;
+    let [npc] = install(&owner, &admitted, [npc]).await?;
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
         .map_err(|()| "fence")?
         .ok_or("fence")?;
     admitted.item_fence = Some(fence.item_fence());
+    let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
+    h.root
+        .initialize_admission_equipment(
+            &authority,
+            &h.node,
+            &fence.item_fence(),
+            digest,
+            fresh.operation(),
+        )
+        .await
+        .map_err(debug)?;
+    let native = generation.native_gameplay().ok_or("native gameplay")?;
+    let template = crate::durability::starter_grant::StarterTemplate {
+        definition: crate::durability::item_mint::TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: "oteryn:item.tibia.i2854".into(),
+            revision_ref: "definition-r1".into(),
+        },
+        ..crate::durability::starter_grant::StarterTemplate::main()
+    };
+    h.root
+        .grant_starter_items(
+            &authority,
+            &h.node,
+            &fence.item_fence(),
+            &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native),
+            &template,
+        )
+        .await
+        .map_err(debug)?;
     deps.initialize(&owner).await;
     owner.admit_progression_session(&mut admitted).await;
     owner.admit_quest_session(&admitted).await;
-    talk(&mut owner, &admitted, marvin, 1, "hi").await?;
-    let reply = talk(&mut owner, &admitted, marvin, 2, "yes").await?;
-    assert_eq!(reply, ["Vote recorded."]);
-    let read = || async {
-        sqlx::query_as::<_, (String, i64, String)>(
-            "SELECT track_key, value, committed_character_revision::text FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key IN ($2,$3) ORDER BY track_key",
-        ).bind(id(41).as_slice()).bind(ARCHIVES).bind(VOTES).fetch_all(&h.pool).await
-    };
-    let rows = read().await?;
-    assert_eq!(rows.len(), 2);
-    assert_eq!((&*rows[0].0, rows[0].1), (ARCHIVES, 1));
-    assert_eq!((&*rows[1].0, rows[1].1), (VOTES, 1));
-    assert_eq!(rows[0].2, rows[1].2);
-    let _ = talk(&mut owner, &admitted, marvin, 2, "yes").await?;
-    assert_eq!(read().await?, rows);
-    Ok(())
+    Box::pin(exercise(&mut owner, &admitted, npc)).await
 }
