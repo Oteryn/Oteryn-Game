@@ -52,10 +52,40 @@ pub(super) fn source_bundle(
     native: &NativeGameplayState,
     candidate: &crate::content::bosses::activity_template::BossLeverCandidate,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    let low = candidate.zone_from.ok_or("source room lower bound")?;
+    let high = candidate.zone_to.ok_or("source room upper bound")?;
+    let start = *candidate
+        .lever_positions
+        .first()
+        .ok_or("source staging start")?;
+    let anchors = candidate
+        .lever_positions
+        .iter()
+        .chain(&candidate.entry_positions)
+        .chain(candidate.boss_position.iter())
+        .chain(candidate.exit_position.iter())
+        .copied()
+        .collect::<Vec<_>>();
+    source_bundle_for_layout(world, channel, native, [low, high], &anchors, start)
+}
+
+pub(super) fn source_bundle_for_layout(
+    world: crate::foundation::WorldId,
+    channel: crate::foundation::ChannelId,
+    native: &NativeGameplayState,
+    [low, high]: [[i32; 3]; 2],
+    anchors: &[[i32; 3]],
+    start: [i32; 3],
+) -> TestResult<crate::map::boot::BundleWorld> {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    let anchor = candidate.boss_position.ok_or("source boss position")?;
-    let region = (u16::try_from(anchor[0] / 256)?, u16::try_from(anchor[1] / 256)?);
-    let project = source::project_regions(&root, &[region])?;
+    let mut regions = std::collections::BTreeSet::new();
+    for position in anchors.iter().chain([&low, &high]) {
+        regions.insert((
+            u16::try_from(position[0] / 256)?,
+            u16::try_from(position[1] / 256)?,
+        ));
+    }
+    let project = source::project_regions(&root, &regions.into_iter().collect::<Vec<_>>())?;
     let (registry, palette) = source::registry(&root, &project)?;
     let identity: bundle::Identity = serde_json::from_slice(&source::read(
         &root.join("content/world/pins/oteryn.identity.json"),
@@ -70,8 +100,6 @@ pub(super) fn source_bundle(
         families: &project.families,
     };
     let compiled = compile::compile(&input, &registry)?;
-    let low = candidate.zone_from.ok_or("source room lower bound")?;
-    let high = candidate.zone_to.ok_or("source room upper bound")?;
     let held: std::collections::BTreeSet<_> = compiled
         .diagnostics
         .iter()
@@ -84,14 +112,7 @@ pub(super) fn source_bundle(
             let in_room = (low[0]..=high[0]).contains(&at[0])
                 && (low[1]..=high[1]).contains(&at[1])
                 && (low[2]..=high[2]).contains(&at[2]);
-            in_room
-                || candidate
-                    .lever_positions
-                    .iter()
-                    .chain(&candidate.entry_positions)
-                    .chain(candidate.boss_position.iter())
-                    .chain(candidate.exit_position.iter())
-                    .any(|anchor| *anchor == at)
+            in_room || anchors.contains(&at)
         })
         .map(|diagnostic| diagnostic.key.as_str())
         .collect();
@@ -101,7 +122,6 @@ pub(super) fn source_bundle(
     );
     let parity = compile::equivalence(&input, &registry, &compiled.bytes)?;
     assert!(parity.tiles > 0 && parity.entries > 0);
-    let start = candidate.lever_positions.first().ok_or("source staging start")?;
     let pins = crate::map::boot::BootPins {
         bundle: crate::map::BundlePins {
             digest: compiled.digest,
