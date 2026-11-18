@@ -76,9 +76,9 @@ fn kroazur_step_in_requires_access_and_uses_shared_boss_timer() -> TestResult {
 
 async fn exercise(h: &Harness) -> TestResult {
     let evidence = super::house_transfer::RecoverySource::start(h).await?;
-    prepare_current_session(h).await?;
+    super::house_transfer::prepare_owned_session(h).await?;
     h.seed_appearance_observer().await?;
-    observer_visibility_tests::admit(h).await?;
+    observer_visibility_tests::admit_with_activity_claims(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root

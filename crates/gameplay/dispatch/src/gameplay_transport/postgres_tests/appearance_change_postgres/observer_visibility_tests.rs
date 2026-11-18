@@ -7,6 +7,16 @@ use crate::foundation::admission_authority_publication::{
 pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn admit(
     harness: &Harness,
 ) -> TestResult {
+    admit_observer(harness, false).await
+}
+
+pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn admit_with_activity_claims(
+    harness: &Harness,
+) -> TestResult {
+    admit_observer(harness, true).await
+}
+
+async fn admit_observer(harness: &Harness, activity_claims: bool) -> TestResult {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&harness.pool)
@@ -65,6 +75,22 @@ pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn admit(
                 format!("platform-observation-{}", row.source.source_revision);
         } else {
             *row = prior;
+        }
+    }
+    if activity_claims {
+        for row in &mut source.rows {
+            if matches!(
+                row.key,
+                AdmissionAuthorityGuardKeyV1::Account { .. }
+                    | AdmissionAuthorityGuardKeyV1::Character(_)
+            ) {
+                row.source.authority =
+                    crate::durability::fresh_admission_composition::COMPOSITION_SOURCE_AUTHORITY
+                        .into();
+                if let crate::foundation::admission_authority_publication::AdmissionAuthorityGuardStateV1::Account { security, .. } = &mut row.state {
+                    security.provenance.source_authority = "platform-test".into();
+                }
+            }
         }
     }
     let rows = source.rows.clone();
