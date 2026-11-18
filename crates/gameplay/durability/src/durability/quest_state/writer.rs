@@ -701,7 +701,10 @@ impl DurabilityRoot {
             return Err(CharacterProgressionError::InvalidInput);
         }
         let timer_recipe = oteryn_gameplay_quests::quest::timers::recipe(&request.transition_key);
-        if timer_recipe.is_some() != matches!(request.cause, QuestCause::ServerTimer(_)) {
+        let personal_timer = world_callbacks.iter().find(|callback| {
+            callback.personal_return_key().as_deref() == Some(request.transition_key.as_str())
+        }).cloned();
+        if (timer_recipe.is_some() || personal_timer.is_some()) != matches!(request.cause, QuestCause::ServerTimer(_)) {
             return Err(CharacterProgressionError::InvalidInput);
         }
         let native_key = hit_key
@@ -1336,6 +1339,11 @@ impl DurabilityRoot {
                     }
                     if let Some(recipe) = timer_recipe
                         && !server_timer::admit(&mut tx,fence,&request,recipe).await? {
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
+                    if let Some(callback) = &personal_timer
+                        && !super::personal_return::admit(&mut tx, fence, &request, callback).await?
+                    {
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
                     if reward_callback.as_ref().is_some_and(|c| c.requires_premium)
@@ -2096,6 +2104,12 @@ impl DurabilityRoot {
                         .ok_or(DurabilityError::InvalidStoredState)?;
                     if let Some(recipe) = timer_recipe {
                         server_timer::record(&mut tx,fence,&request,recipe,changes.first().ok_or(DurabilityError::InvalidStoredState)?.before,Some(committed_revision)).await?;
+                    }
+                    if personal_timer.is_some() {
+                        super::personal_return::settle(&mut tx, fence, &request, committed_revision).await?;
+                    }
+                    if let (Some(callback), Some((_, world, _))) = (&callback, &context) {
+                        super::personal_return::arm(&mut tx, fence, callback, &world.map_revision).await?;
                     }
                     let (original, committed) =
                         (root.revision.to_string(), committed_revision.to_string());

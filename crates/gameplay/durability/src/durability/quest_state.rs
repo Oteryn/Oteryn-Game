@@ -770,6 +770,7 @@ pub(super) async fn inquisition_blessing_eligible(
 }
 
 /// Durable source-expiry admissions and complete immutable proofs.
+pub mod personal_return;
 pub mod server_timer;
 
 /// Private closed source union: causes alone never grant autonomous mutations.
