@@ -516,7 +516,7 @@ async fn use_count_remains(
     partner: &AdmittedSession,
     boss: ExactActorRef,
 ) -> TestResult {
-    use crate::gameplay_transport::connection::UseCommand;
+    use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
     use crate::gameplay_transport::item_view::ItemKey;
     use crate::map::view::{EntrySource, MapFacts};
     use oteryn_protocol_oteryn::item_view::ItemHandle;
@@ -599,10 +599,10 @@ async fn use_count_remains(
             item_fence: member.item_fence,
         };
         let outcome = owner
-            .dispatch_count_remains(
+            .use_count_remains(
                 member.runtime_actor.ok_or("actor")?,
                 command,
-                &intent,
+                intent.clone(),
                 ItemKey::MapAdded(remains),
             )
             .await
@@ -1026,11 +1026,25 @@ pub(super) async fn exercise_five(
             crate::gameplay_transport::kill_reward::DrainOutcome::Drained
         );
     }
-    let credited: i64 = sqlx::query_scalar(
-        "SELECT count(DISTINCT character_id) FROM game_character_quest_receipts WHERE transition_key=$1",
-    ).bind(FIVE_CREDIT).fetch_one(&h.pool).await?;
+    let credited: Vec<Vec<u8>> = sqlx::query_scalar(
+        "SELECT DISTINCT uuid_send(character_id) AS character_bytes
+         FROM game_character_quest_receipts WHERE transition_key = $1 ORDER BY character_bytes",
+    )
+    .bind(FIVE_CREDIT)
+    .fetch_all(&h.pool)
+    .await?;
+    let mut entrants = party
+        .iter()
+        .map(|member| {
+            member
+                .item_fence
+                .map(|fence| fence.character_id.as_bytes().to_vec())
+                .ok_or("party item fence")
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    entrants.sort_unstable();
     assert_eq!(
-        credited, 5,
+        credited, entrants,
         "all five admitted damage contributors earn durable credit"
     );
     super::gravedg_zelos::tick_at(owner, owner.owner_now().get() + 60_000_000).await;
