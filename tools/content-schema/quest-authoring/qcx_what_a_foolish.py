@@ -6,6 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 QUEST = 'oteryn:quest.what_a_foolish_quest'
+OUTPUT = 'content/quests/authored-bindings/qcx-what-a-foolish.json'
 PREFIX = 'oteryn:quest-progress/quest/u8_1/what_afoolish_quest/'
 SOURCES = [
     'https://tibia.fandom.com/?curid=19799&oldid=1094085',
@@ -56,11 +57,21 @@ def build(root):
     }
 
 
+def verify_source_entry(root, reference):
+    """Bozo's source entry precedes the selected recipe and has its own proof."""
+    expected = {
+        'kind': 'npc_dialogue', 'document': OUTPUT, 'stage': 'join',
+        'callback': 'oteryn:quest-reward/what-a-foolish-join',
+    }
+    if reference != expected or json.loads((root / OUTPUT).read_bytes()) != build(root):
+        raise ValueError('Foolish Quest source entry differs from its generated binding')
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
-    output = ROOT / 'content/quests/authored-bindings/qcx-what-a-foolish.json'
+    output = ROOT / OUTPUT
     payload = json.dumps(build(ROOT), indent=2, ensure_ascii=False) + '\n'
     if args.check:
         if output.read_text() != payload:

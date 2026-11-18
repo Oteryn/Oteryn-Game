@@ -87,3 +87,26 @@ Mission 1 flower and hand-in, missions 2–11, the scoped hat level gate,
 Triangle Tower, queen’s cat room and keyed access integration, all outfit/addon and achievement
 grants, and greeting differences remain open. The existing
 watch and bag payloads required no item/count changes.
+
+## Verification
+
+- The baseline dispatch case reached Bozo and failed in 78.81 s because
+  ordinary TALK returned `Ok` for the final confirmation and bypassed
+  the Premium gate. The timed baseline result excludes the earlier fixture
+  failure from the NPC floor convention.
+- PG via shard (pgsplit build files applied on 2330ef5ed26b7b9977ac5c7ef04e9e05141b8b72).
+  One passed, zero failed. `bozo_join_requires_premium_and_two_confirmations`
+  ran in 102.63 s. It uses the real NPC command owner, a pinned test room
+  with Bozo placed alongside the player, and PostgreSQL quest writes.
+- The bundled-world generator reproduced the existing pin. Pin check passed
+  for one World and a 33,688,785-byte bundle.
+- The native binding audit verifies this exact source entry document
+  separately from the chosen mission plan. The candidate registries changed
+  only their input provenance and digest. The bag proof registration checks
+  the exact Foolish Quest and claim keys with the existing native-container
+  verifier.
+- The same dispatch filter with the PostgreSQL admin URL absent returned
+  `Ok(())` for one case in 0.00 s. The route-less result verifies the guard.
+- Workspace formatting and both quest-specific generator checks passed.
+- Dispatch library Clippy passed with `--all-features --lib -- -D warnings`.
+- Quest authoring passed all 44 checks, including 269 schema cases and 27 nested unit tests.

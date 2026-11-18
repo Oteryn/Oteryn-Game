@@ -97,8 +97,9 @@ def verify_talk_binding(root, definition, stage_key, reference):
     return callbacks
 
 
-def registered_talk_bindings(root):
-    """Use the same immediate JSON registry as the Rust build-time consumer."""
+def registered_talk_bindings(root, source_entry_paths=None):
+    """Verify the source entry and collect TALK stages in the chosen plan."""
+    from qcx_what_a_foolish import QUEST as FOOLISH_QUEST, verify_source_entry
     result = {}
     owners = set()
     for path in sorted((root / "content/quests/authored-bindings").glob("*.json")):
@@ -118,6 +119,11 @@ def registered_talk_bindings(root):
                 reference = {"kind": "npc_dialogue", "document": path.relative_to(root).as_posix(),
                              "stage": stage["key"]}
                 reference["callback" if len(callbacks) == 1 else "callbacks"] = callbacks[0] if len(callbacks) == 1 else callbacks
+                if key == (FOOLISH_QUEST, "join"):
+                    verify_source_entry(root, reference)
+                    if source_entry_paths is not None:
+                        source_entry_paths.add(reference["document"])
+                    continue
                 result[key] = reference
     return result
 
@@ -133,7 +139,7 @@ def apply_native_talk_bindings(root, plan, definitions):
     stages = {(record["quest"], stage["stage_key"]): stage
               for record in plan["records"] for stage in record["stages"]}
     paths = set()
-    for (quest, key), reference in registered_talk_bindings(root).items():
+    for (quest, key), reference in registered_talk_bindings(root, paths).items():
         stage = stages.get((quest, key))
         require(stage is not None and quest in definitions, "Registered TALK stage has no canonical plan owner")
         if stage["event_identity_associations"]["kind"] != "talk":
