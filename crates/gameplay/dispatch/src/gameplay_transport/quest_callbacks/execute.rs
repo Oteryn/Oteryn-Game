@@ -958,6 +958,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 cause,
                 None,
                 step_origin,
+                None,
             );
             if preflight != UseDisposition::Committed {
                 return preflight;
@@ -1323,6 +1324,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 cause,
                 personal_reservation.as_mut(),
                 step_origin,
+                projection.as_ref(),
             );
             if disposition == UseDisposition::Committed {
                 if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {

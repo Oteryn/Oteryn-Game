@@ -1,6 +1,7 @@
 //! Source parties are the players standing on the exact staging tiles, not a social-party id.
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
+use crate::map::facts::QuestCallbackProjection;
 use crate::map::view::EntryFacts;
 
 pub(in crate::gameplay_transport) fn room_contains(
@@ -173,6 +174,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         cause: QuestCause,
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
         step_origin: Option<MovementLocalPosition>,
+        projection: Option<&QuestCallbackProjection>,
     ) -> UseDisposition {
         self.quest_encounter(
             runtime,
@@ -188,6 +190,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             cause,
             reservation,
             step_origin,
+            projection,
         )
     }
 
@@ -220,6 +223,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             cause,
             None,
             step_origin,
+            None,
         )
     }
 
@@ -239,6 +243,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         cause: QuestCause,
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
         step_origin: Option<MovementLocalPosition>,
+        projection: Option<&QuestCallbackProjection>,
     ) -> UseDisposition {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
@@ -317,8 +322,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
                 // Cults collects whoever stands on the five source staging tiles.
-                if encounter.phase
-                    == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults)
+                if encounter.shared_staging
+                    || encounter.phase
+                        == Some(
+                            oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults,
+                        )
                 {
                     continue;
                 }
@@ -366,7 +374,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let blocked =
                 super::super::pvp_live::pz_blocked(states, who, member_session, self.owner_now());
-            let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+            let Ok(proof) = crate::map::floor::prepare_quest_encounter_landing(
                 runtime,
                 &self.movement_cells,
                 who,
@@ -375,6 +383,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 local(member.to),
                 blocked,
                 &closed,
+                encounter.shared_staging,
             ) else {
                 return UseDisposition::NotPossible;
             };
@@ -523,7 +532,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             || {
                 map.facts
-                    .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
+                    .apply_quest_callback(key, expected_revision, after, &[], &[], false, projection)
             },
         ) else {
             return UseDisposition::Rejected;

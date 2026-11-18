@@ -311,6 +311,9 @@ pub struct Encounter {
     /// Source phases run on the shared encounter owner after atomic party admission.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phase: Option<EncounterPhase>,
+    /// Use every occupied staging tile and permit a shared party landing.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub shared_staging: bool,
     /// Cooldown of the sole boss admitted by a fenced personal StepIn.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub personal_cooldown_seconds: Option<u32>,
@@ -738,10 +741,14 @@ pub(super) fn valid(callback: &Callback) -> bool {
     }) {
         return false;
     }
+    let resets_scene = effects
+        .scene
+        .as_ref()
+        .is_some_and(|scene| super::scene::is_encounter_reset(callback, scene));
     let operations = usize::from(effects.portals.is_some())
         + usize::from(effects.item_cycle.is_some())
         + usize::from(effects.encounter.is_some())
-        + usize::from(effects.scene.is_some())
+        + usize::from(effects.scene.is_some() && !resets_scene)
         + usize::from(effects.reward_door.is_some())
         + usize::from(effects.party_transfer.is_some());
     if let Some(claimed_rewards) = effects
@@ -793,6 +800,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         && callback.has_state())))
                 || !callback.passages.is_empty()
                 || callback.teleport.is_some())
+            && !resets_scene
             && !(effects.encounter.is_some() && super::asura_authored::admitted(callback)))
     {
         return false;
@@ -846,9 +854,14 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_from: BTreeSet<_> = encounter.players.iter().map(|p| p.from).collect();
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
-        let source_party = encounter.phase == Some(EncounterPhase::Cults);
+        let source_party =
+            encounter.phase == Some(EncounterPhase::Cults) || encounter.shared_staging;
         let personal_cooldown = encounter.personal_cooldown_seconds.is_some();
         if (encounter.minimum_level == 0 && !source_party && !personal_cooldown)
+            || (encounter.shared_staging
+                && (callback.trigger != Trigger::Use
+                    || encounter.timing.is_some()
+                    || callback.has_personal_state()))
             || encounter.personal_cooldown_seconds.is_some_and(|seconds| {
                 !(1..=30 * 24 * 60 * 60).contains(&seconds)
                     || callback.personal_room_entry().is_none()
@@ -876,7 +889,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         * (u64::from(encounter.room_max.y.saturating_sub(encounter.room_min.y)) + 1)
                         > 4096
             } else {
-                !(1..=if encounter.phase.is_some() { 16 } else { 8 })
+                !(1..=if encounter.phase.is_some() || encounter.shared_staging {
+                    16
+                } else {
+                    8
+                })
                     .contains(&encounter.players.len())
             }
             || !(1..=if encounter.phase.is_some() { 16 } else { 8 })

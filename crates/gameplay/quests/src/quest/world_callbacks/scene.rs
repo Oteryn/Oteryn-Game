@@ -50,6 +50,33 @@ pub struct SceneEdits {
     pub relocate_items_close: bool,
 }
 
+/// Crystal 201189f8, ferumbras_ascension/actions_ferumbras_lever.lua:35-56.
+/// Arena reset edits share the creature admission's map publication.
+pub(super) fn is_encounter_reset(callback: &Callback, scene: &SceneEdits) -> bool {
+    callback.effects.encounter.as_ref().is_some_and(|room| {
+        room.shared_staging
+            && !callback.reversible
+            && !scene.remove_self
+            && scene.close.is_empty()
+            && scene.relocations.is_empty()
+            && scene.evacuate_open.is_empty()
+            && scene.evacuate_close.is_empty()
+            && !scene.relocate_items_close
+            && scene.open.iter().all(|edit| {
+                edit.remove.is_some()
+                    && edit.create.is_some()
+                    && edit.position.floor == room.room_min.floor
+                    && (room.room_min.x..=room.room_max.x).contains(&edit.position.x)
+                    && (room.room_min.y..=room.room_max.y).contains(&edit.position.y)
+                    && room.players.iter().all(|player| player.to != edit.position)
+                    && room
+                        .monsters
+                        .iter()
+                        .all(|monster| monster.position != edit.position)
+            })
+    })
+}
+
 pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
     let valid = |edits: &[SceneEdit]| {
         edits.len() <= MAX_SCENE_EDITS
@@ -103,7 +130,7 @@ pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
                 })
         });
     callback.trigger == Trigger::Use
-        && callback.lever.is_some()
+        && (callback.lever.is_some() || is_encounter_reset(callback, scene))
         && callback.passages.is_empty()
         && callback.teleport.is_none()
         && callback.offerings.is_empty()
