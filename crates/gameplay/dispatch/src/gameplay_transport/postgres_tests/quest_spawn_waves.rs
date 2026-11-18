@@ -227,7 +227,14 @@ enum Case {
 
 impl Case {
     fn has_victory_binding(self) -> bool {
-        matches!(self, Self::Victory | Self::VictoryBeforeTimeout | Self::VictoryWithoutProgress | Self::DeathAtTimeout | Self::UnknownAchievement)
+        matches!(
+            self,
+            Self::Victory
+                | Self::VictoryBeforeTimeout
+                | Self::VictoryWithoutProgress
+                | Self::DeathAtTimeout
+                | Self::UnknownAchievement
+        )
     }
 }
 
@@ -909,7 +916,8 @@ async fn wave_scenario(
         }
         project_wave_death(owner, *terminal, b"terminal-wave").await?;
         if timeout_edge {
-            tokio::time::advance(Duration::from_millis(1)).await;
+            tokio::time::advance(Duration::from_millis(2)).await;
+            assert_eq!(next_spawn_delay(owner).await, Some(Duration::ZERO));
         }
         owner.drain_quest_encounter_deadlines().await;
         if timed_out { EXIT } else { VICTORY_EXIT }
