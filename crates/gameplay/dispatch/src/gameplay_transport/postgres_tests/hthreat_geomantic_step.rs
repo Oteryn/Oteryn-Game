@@ -23,8 +23,7 @@ fn bindings() -> TestResult<Bindings> {
             effects["timed_disguise"] =
                 json!({"look_type":307,"duration_ms":120000,"magic_effect":11});
         }
-        let success_message = advances
-            .then_some("You have charged your body with geomantic energy and can report about it.");
+        let success_message = advances.then_some("Geomantic energy charged. You can report back.");
         if advances {
             effects["magic"] = json!({"position":position,"effect":12});
         }
