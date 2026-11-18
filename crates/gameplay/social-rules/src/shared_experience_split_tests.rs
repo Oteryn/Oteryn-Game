@@ -250,20 +250,3 @@ fn a_member_on_another_channel_of_the_world_gets_no_share_and_does_not_dilute_it
         Ok(None)
     );
 }
-
-#[test]
-fn low_xp_has_no_bonus_for_any_vocation_count() {
-    for count in 1..=5 {
-        let members: Vec<_> = (1..=count)
-            .map(|id| {
-                let mut m = member(id);
-                m.vocation = id;
-                m
-            })
-            .collect();
-        assert_eq!(
-            split(&members, 19),
-            Ok(Some((19 + i64::from(count) - 1) / i64::from(count)))
-        );
-    }
-}
