@@ -4,7 +4,10 @@ use super::quest_world_callbacks::{local, scenario, wire, world_cells};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::foundation::GameSessionId;
-use oteryn_gameplay_quests::quest::{QuestStateCatalogue, world_callbacks::{self, Callback, Position}};
+use oteryn_gameplay_quests::quest::{
+    QuestStateCatalogue,
+    world_callbacks::{self, Callback, Position},
+};
 use oteryn_protocol_oteryn::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
     encode_step_intent,
@@ -64,7 +67,10 @@ const ROOMS: &[Room] = &[
 ];
 
 fn room(name: &str) -> TestResult<&'static Room> {
-    ROOMS.iter().find(|room| room.name == name).ok_or_else(|| "Feaster room".into())
+    ROOMS
+        .iter()
+        .find(|room| room.name == name)
+        .ok_or_else(|| "Feaster room".into())
 }
 
 pub(super) fn binding(name: &str) -> TestResult<Callback> {
@@ -88,91 +94,181 @@ pub(super) fn binding(name: &str) -> TestResult<Callback> {
 
 pub(super) fn world(callback: &Callback, name: &str) -> TestResult<crate::map::boot::BundleWorld> {
     let r = room(name)?;
-    world_cells(callback, r.door, 25047, 1, &[], &[], None, &[r.exit, spectator_wait(r)])
+    world_cells(
+        callback,
+        r.door,
+        25047,
+        1,
+        &[],
+        &[],
+        None,
+        &[r.exit, spectator_wait(r)],
+    )
 }
 
-pub(super) fn catalogue(base: &QuestStateCatalogue, callback: &Callback) -> TestResult<Arc<QuestStateCatalogue>> {
+pub(super) fn catalogue(
+    base: &QuestStateCatalogue,
+    callback: &Callback,
+) -> TestResult<Arc<QuestStateCatalogue>> {
     let document = serde_json::json!({"schema":1,"callbacks":[callback]}).to_string();
-    let base = base.with_fixture_transition(world_callbacks::primary_transition(callback)?).map_err(debug)?;
-    Ok(Arc::new(world_callbacks::with_fixture_world_document(&base, &document)?))
+    let base = base
+        .with_fixture_transition(world_callbacks::primary_transition(callback)?)
+        .map_err(debug)?;
+    Ok(Arc::new(world_callbacks::with_fixture_world_document(
+        &base, &document,
+    )?))
 }
 
 fn spectator_wait(room: &Room) -> Position {
-    Position { y: room.exit.y + 1, ..room.exit }
+    Position {
+        y: room.exit.y + 1,
+        ..room.exit
+    }
 }
 
 #[test]
 fn irgix_solo_room_rejects_an_occupant_and_sets_cooldown_before_timed_exit() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
-    super::kill_reward_e2e::scenario_thread::run(IRGIX, || scenario(IRGIX, room(IRGIX)?.door, false))
+    super::kill_reward_e2e::scenario_thread::run(IRGIX, || {
+        scenario(IRGIX, room(IRGIX)?.door, false)
+    })
 }
 
 #[test]
 fn unaz_solo_room_rejects_an_occupant_and_sets_cooldown_before_timed_exit() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(UNAZ, || scenario(UNAZ, room(UNAZ)?.door, false))
 }
 
 #[test]
 fn vok_solo_room_rejects_an_occupant_and_sets_cooldown_before_timed_exit() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(VOK, || scenario(VOK, room(VOK)?.door, false))
 }
 
 pub(super) async fn exercise(
-    owner: &mut ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession,
-    harness: &Harness, fence: CurrentCharacterGameplayFence, name: &str,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    harness: &Harness,
+    fence: CurrentCharacterGameplayFence,
+    name: &str,
 ) -> TestResult {
     let r = room(name)?;
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let other_session = GameSessionId::decode(&id(112)).map_err(debug)?;
     let other = {
         let mut runtime = owner.runtime.lock().await;
-        let lease = runtime.reserve_fresh_session(other_session).map_err(debug)?;
+        let lease = runtime
+            .reserve_fresh_session(other_session)
+            .map_err(debug)?;
         let other = runtime.commit_fresh_session(lease).map_err(debug)?;
-        runtime.initialize_pinned_test_position(other, local(r.entry)).map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(other, local(r.entry))
+            .map_err(debug)?;
         other
     };
     let live = super::engworldchg_journals::live_creatures;
-    let cooldown = || sqlx::query_scalar::<_, i64>(
-        "SELECT available_at FROM game_character_boss_cooldowns
-         WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2"
-    ).bind(fence.character_id.as_bytes().as_slice()).bind(r.boss).fetch_optional(&harness.pool);
-    let origin = Position { x:r.door.x - 1, ..r.door };
+    let cooldown = || {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT available_at FROM game_character_boss_cooldowns
+         WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(r.boss)
+        .fetch_optional(&harness.pool)
+    };
+    let origin = Position {
+        x: r.door.x - 1,
+        ..r.door
+    };
     for (command, expected) in [(1, origin), (2, r.entry)] {
-        let result = wire(owner, admitted, command, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-            encode_step_intent(StepDirection::East)).await?;
-        assert_eq!(decode_step_result(&result).map_err(debug)?, StepDisposition::Moved);
-        assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), local(expected));
+        let result = wire(
+            owner,
+            admitted,
+            command,
+            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+            encode_step_intent(StepDirection::East),
+        )
+        .await?;
+        assert_eq!(
+            decode_step_result(&result).map_err(debug)?,
+            StepDisposition::Moved
+        );
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            local(expected)
+        );
         if command == 1 {
             assert!(live(owner, r.boss).await?.is_empty());
             assert!(cooldown().await?.is_none());
             let mut runtime = owner.runtime.lock().await;
             let map = owner.bundle_map().ok_or("map")?;
             let proof = crate::map::floor::prepare_quest_callback_teleport(
-                &runtime, owner.movement_cells(), other, other_session,
-                runtime.read_actor_position(other).map_err(debug)?, local(spectator_wait(r)),
-                false, &crate::map::floor::BundleDoors(&map.facts),
-            ).map_err(debug)?;
+                &runtime,
+                owner.movement_cells(),
+                other,
+                other_session,
+                runtime.read_actor_position(other).map_err(debug)?,
+                local(spectator_wait(r)),
+                false,
+                &crate::map::floor::BundleDoors(&map.facts),
+            )
+            .map_err(debug)?;
             runtime.commit_source_step(proof).map_err(debug)?;
         }
     }
     assert_eq!(live(owner, r.boss).await?.len(), 1);
     let future: i64 = sqlx::query_scalar(
-        "SELECT floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint + 72000000"
-    ).fetch_one(&harness.pool).await?;
+        "SELECT floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint + 72000000",
+    )
+    .fetch_one(&harness.pool)
+    .await?;
     let booked = cooldown().await?.ok_or("solo cooldown")?;
     assert!((future - 10_000..=future).contains(&booked));
     owner.drain_quest_encounter_deadlines().await;
-    assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), local(r.entry));
-    let due = owner.states.quest_callbacks.next_encounter_due_us().ok_or("solo deadline")?;
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        local(r.entry)
+    );
+    let due = owner
+        .states
+        .quest_callbacks
+        .next_encounter_due_us()
+        .ok_or("solo deadline")?;
     let advance = Duration::from_micros(due.saturating_sub(owner.owner_now().get()));
     owner.clock_origin = owner.clock_origin.checked_sub(advance).ok_or("clock")?;
     owner.drain_quest_encounter_deadlines().await;
-    assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), local(r.exit));
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        local(r.exit)
+    );
     assert!(live(owner, r.boss).await?.is_empty());
     Ok(())
 }

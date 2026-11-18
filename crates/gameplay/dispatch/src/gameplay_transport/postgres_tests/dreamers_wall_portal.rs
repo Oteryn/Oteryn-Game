@@ -1,6 +1,6 @@
 //! Crystal 201189f data-global/scripts/quests/dreamers_challenge_quest/movement_wall_teleport.lua:1-43.
-use super::quest_world_callbacks::{stateless_scenario, world_cells};
 use super::TestResult;
+use super::quest_world_callbacks::{stateless_scenario, world_cells};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 
 pub(super) const BLOCKED: &str = "dreamers-wall-portal-blocked";
@@ -49,7 +49,10 @@ pub(super) fn binding() -> TestResult<Callback> {
     }))?)
 }
 
-pub(super) fn world(callback: &Callback, blocked: bool) -> TestResult<crate::map::boot::BundleWorld> {
+pub(super) fn world(
+    callback: &Callback,
+    blocked: bool,
+) -> TestResult<crate::map::boot::BundleWorld> {
     let mut cells = WALLS.to_vec();
     cells.push(PUZZLE);
     // The first item is movable solid furniture. Only the second (if present)
@@ -63,7 +66,9 @@ pub(super) fn world(callback: &Callback, blocked: bool) -> TestResult<crate::map
 
 #[test]
 fn dreamers_wall_portal_redirects_when_any_live_cell_has_an_immovable_solid() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(BLOCKED, || {
         stateless_scenario(BLOCKED, TRIGGER, PUZZLE)
@@ -72,9 +77,9 @@ fn dreamers_wall_portal_redirects_when_any_live_cell_has_an_immovable_solid() ->
 
 #[test]
 fn dreamers_wall_portal_passes_when_only_movable_solids_remain() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
-    super::kill_reward_e2e::scenario_thread::run(CLEAR, || {
-        stateless_scenario(CLEAR, TRIGGER, EXIT)
-    })
+    super::kill_reward_e2e::scenario_thread::run(CLEAR, || stateless_scenario(CLEAR, TRIGGER, EXIT))
 }

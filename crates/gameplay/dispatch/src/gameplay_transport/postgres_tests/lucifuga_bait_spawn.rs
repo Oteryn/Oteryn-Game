@@ -8,18 +8,27 @@ use crate::durability::{
 };
 use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::{AdmittedSession, ComposedFreshAdmission};
-use oteryn_gameplay_quests::quest::{QuestStateCatalogue, world_callbacks::{self, Callback, Position}};
+use oteryn_gameplay_quests::quest::{
+    QuestStateCatalogue,
+    world_callbacks::{self, Callback, Position},
+};
 use oteryn_protocol_oteryn::world_spatial::{
-    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result, encode_step_intent,
+    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
+    encode_step_intent,
 };
 use std::sync::Arc;
 
 pub(super) const NAME: &str = "lucifuga-bait-spawn";
 const QUEST: &str = "oteryn:quest.the_dream_courts_quest";
-const BAIT: &str = "oteryn:quest-progress/crystalserver/quest/u12_00/the_dream_courts/unsafe_release/has_bait";
+const BAIT: &str =
+    "oteryn:quest-progress/crystalserver/quest/u12_00/the_dream_courts/unsafe_release/has_bait";
 const BAIT_TRANSITION: &str = "oteryn:quest-transition/crystalserver/quest/u12_00/the_dream_courts/unsafe_release/has_bait/npc_2";
 const SPIDER: &str = "oteryn:creature.lucifuga_aranea";
-const TRIGGER: Position = Position { x: 33672, y: 32228, floor: -7 };
+const TRIGGER: Position = Position {
+    x: 33672,
+    y: 32228,
+    floor: -7,
+};
 
 pub(super) fn binding() -> TestResult<Callback> {
     Ok(serde_json::from_value(serde_json::json!({
@@ -37,12 +46,16 @@ pub(super) fn binding() -> TestResult<Callback> {
 
 pub(super) fn catalogue(base: &QuestStateCatalogue) -> TestResult<Arc<QuestStateCatalogue>> {
     let document = serde_json::json!({"schema":1,"callbacks":[binding()?]}).to_string();
-    Ok(Arc::new(world_callbacks::with_fixture_world_document(base, &document)?))
+    Ok(Arc::new(world_callbacks::with_fixture_world_document(
+        base, &document,
+    )?))
 }
 
 #[test]
 fn lucifuga_requires_bait_and_rearms_its_exact_tile_after_the_donor_window() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(NAME, || scenario(NAME, TRIGGER, false))
 }
@@ -53,8 +66,18 @@ async fn step(
     command: u64,
     direction: StepDirection,
 ) -> TestResult {
-    let reply = wire(owner, admitted, command, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, encode_step_intent(direction)).await?;
-    assert_eq!(decode_step_result(&reply).map_err(debug)?, StepDisposition::Moved);
+    let reply = wire(
+        owner,
+        admitted,
+        command,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        encode_step_intent(direction),
+    )
+    .await?;
+    assert_eq!(
+        decode_step_result(&reply).map_err(debug)?,
+        StepDisposition::Moved
+    );
     Ok(())
 }
 
@@ -64,9 +87,15 @@ pub(super) async fn exercise(
     fence: CurrentCharacterGameplayFence,
 ) -> TestResult {
     let map = owner.bundle_map().ok_or("map")?;
-    let key = crate::map::view::placement_key(crate::map::overlay::TilePos {
-        x: TRIGGER.x, y: TRIGGER.y, floor: TRIGGER.floor,
-    }, 1).ok_or("source tile")?;
+    let key = crate::map::view::placement_key(
+        crate::map::overlay::TilePos {
+            x: TRIGGER.x,
+            y: TRIGGER.y,
+            floor: TRIGGER.floor,
+        },
+        1,
+    )
+    .ok_or("source tile")?;
     let creatures = super::engworldchg_journals::live_creatures;
     step(owner, admitted, 1, StepDirection::East).await?;
     assert!(creatures(owner, SPIDER).await?.is_empty());
@@ -76,23 +105,47 @@ pub(super) async fn exercise(
     let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
     let request = QuestTransitionRequest {
         transition_key: BAIT_TRANSITION.into(),
-        cause: QuestCause::Command(CommandRef::new(admitted.game_session_id, CommandId::new(2900).map_err(debug)?)),
+        cause: QuestCause::Command(CommandRef::new(
+            admitted.game_session_id,
+            CommandId::new(2900).map_err(debug)?,
+        )),
     };
-    let admitted_bait = slot.commit_quest_transition(
-        owner.root, owner.character, owner.holder, fence, request,
-        owner.quest_catalogue.clone().ok_or("quest catalogue")?,
-    ).await.map_err(debug)?;
-    assert!(matches!(admitted_bait, QuestTransitionOutcome::Committed(_)));
+    let admitted_bait = slot
+        .commit_quest_transition(
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence,
+            request,
+            owner.quest_catalogue.clone().ok_or("quest catalogue")?,
+        )
+        .await
+        .map_err(debug)?;
+    assert!(matches!(
+        admitted_bait,
+        QuestTransitionOutcome::Committed(_)
+    ));
     drop(slot);
 
     let before = owner.owner_now().get();
     step(owner, admitted, 3, StepDirection::East).await?;
-    let [spider] = creatures(owner, SPIDER).await?.try_into().map_err(|_| "exactly one spider")?;
+    let [spider] = creatures(owner, SPIDER)
+        .await?
+        .try_into()
+        .map_err(|_| "exactly one spider")?;
     assert_eq!(map.facts.action_at(key), None);
-    let due = map.facts.next_movement_decay_time().ok_or("rearm deadline")?;
+    let due = map
+        .facts
+        .next_movement_decay_time()
+        .ok_or("rearm deadline")?;
     assert!(due >= before + 60_000_000);
     assert!(due <= owner.owner_now().get() + 600_000_000);
-    owner.runtime.lock().await.remove_encounter_actor(spider).map_err(debug)?;
+    owner
+        .runtime
+        .lock()
+        .await
+        .remove_encounter_actor(spider)
+        .map_err(debug)?;
     step(owner, admitted, 4, StepDirection::West).await?;
     step(owner, admitted, 5, StepDirection::East).await?;
     assert!(creatures(owner, SPIDER).await?.is_empty());

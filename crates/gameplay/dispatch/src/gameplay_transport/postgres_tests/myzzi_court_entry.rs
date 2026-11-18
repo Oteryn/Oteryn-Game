@@ -6,10 +6,13 @@ use super::quest_world_callbacks::{local, scenario, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use oteryn_gameplay_quests::quest::{
-    QuestStateCatalogue, npc_rules::{MYZZI_PROGRAM, NpcRuleCatalog}, world_callbacks::{self, Callback, Position},
+    QuestStateCatalogue,
+    npc_rules::{MYZZI_PROGRAM, NpcRuleCatalog},
+    world_callbacks::{self, Callback, Position},
 };
 use oteryn_protocol_oteryn::world_spatial::{
-    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result, encode_step_intent,
+    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
+    encode_step_intent,
 };
 use serde_json::{Value, json};
 use std::sync::Arc;
@@ -19,8 +22,16 @@ const QUEST: &str = "oteryn:quest.the_dream_courts_quest";
 const NPC: &str = "oteryn:npc.myzzi";
 const TRACK: &str = "oteryn:quest-progress/quest/u12_00/the_dream_courts/main/questline";
 const PIN: &str = "201189f871d23597b82caf88fd611454a2ddefb8";
-const ENTRY: Position = Position { x: 33675, y: 32147, floor: -7 };
-const DESTINATION: Position = Position { x: 32354, y: 31249, floor: -3 };
+const ENTRY: Position = Position {
+    x: 33675,
+    y: 32147,
+    floor: -7,
+};
+const DESTINATION: Position = Position {
+    x: 32354,
+    y: 31249,
+    floor: -3,
+};
 
 pub(super) fn binding() -> TestResult<Callback> {
     Ok(serde_json::from_value(json!({
@@ -43,18 +54,71 @@ fn rule(label: &str, trigger: &str, line: &str, reply: &[&str]) -> Value {
 
 fn program() -> Value {
     let mut rules = vec![
-        rule("greet", "greet", "100", &["Hello adventurer. It is {good} to see you."]),
+        rule(
+            "greet",
+            "greet",
+            "100",
+            &["Hello adventurer. It is {good} to see you."],
+        ),
         rule("farewell", "farewell", "101", &["Well, bye then."]),
         rule("walkaway", "walkaway", "102", &["Well, bye then."]),
     ];
     let guard = json!([{"kind":"storage","track":TRACK,"op":"lt","value":1}]);
     for (keyword, topic, next, line, reply) in [
-        ("good", None, 2, "68-70", &["I'm just a mere messenger and I'm here to find brave adventurers that might {help} my friends in this time of need."][..]),
-        ("help", Some(2), 3, "71-73", &["Lady Alivar of the Summer Court and Lord Cadion of the Winter Court are in need of brave adventurers to avert a great {threat} for the whole world."][..]),
-        ("threat", Some(3), 4, "74-79", &["I know only little and I forget so much. So many things going around my mind! ...", "However, I can grant you access to the {Courts} of Summer and Winter if you promise to help! There you can meet with Undal or Vanys, the servants of Lord Cadion and Lady Alivar. They will be able to tell you more about the issue."][..]),
-        ("courts", Some(4), 5, "80-82", &["There are {entrances} to the hidden Courts of Summer and Winter in secluded places. You can find the portal to the Winter Court high in the mountains of Tyrsung and the portal to the Summer Court in the meadows of Feyrist. ...", "With my magic you will be able to enter the Courts. Find Undal or Vanys and talk to them."][..]),
-        ("entrances", Some(5), 6, "83-85", &["So, are you willing to help in this time of need?"][..]),
-        ("yes", Some(6), 0, "86-90", &["You are a true hero! Here, take my enchantment and you will be able to pass the portals. Now hurry, my friends are waiting."][..]),
+        (
+            "good",
+            None,
+            2,
+            "68-70",
+            &[
+                "I'm just a mere messenger and I'm here to find brave adventurers that might {help} my friends in this time of need.",
+            ][..],
+        ),
+        (
+            "help",
+            Some(2),
+            3,
+            "71-73",
+            &[
+                "Lady Alivar of the Summer Court and Lord Cadion of the Winter Court are in need of brave adventurers to avert a great {threat} for the whole world.",
+            ][..],
+        ),
+        (
+            "threat",
+            Some(3),
+            4,
+            "74-79",
+            &[
+                "I know only little and I forget so much. So many things going around my mind! ...",
+                "However, I can grant you access to the {Courts} of Summer and Winter if you promise to help! There you can meet with Undal or Vanys, the servants of Lord Cadion and Lady Alivar. They will be able to tell you more about the issue.",
+            ][..],
+        ),
+        (
+            "courts",
+            Some(4),
+            5,
+            "80-82",
+            &[
+                "There are {entrances} to the hidden Courts of Summer and Winter in secluded places. You can find the portal to the Winter Court high in the mountains of Tyrsung and the portal to the Summer Court in the meadows of Feyrist. ...",
+                "With my magic you will be able to enter the Courts. Find Undal or Vanys and talk to them.",
+            ][..],
+        ),
+        (
+            "entrances",
+            Some(5),
+            6,
+            "83-85",
+            &["So, are you willing to help in this time of need?"][..],
+        ),
+        (
+            "yes",
+            Some(6),
+            0,
+            "86-90",
+            &[
+                "You are a true hero! Here, take my enchantment and you will be able to pass the portals. Now hurry, my friends are waiting.",
+            ][..],
+        ),
     ] {
         let mut row = rule(keyword, "say", line, reply);
         row["keywords"] = json!([keyword]);
@@ -82,23 +146,51 @@ fn program() -> Value {
     })
 }
 
-pub(super) fn catalogue(base: &QuestStateCatalogue, callback: &Callback) -> TestResult<Arc<QuestStateCatalogue>> {
-    let native = NpcRuleCatalog::with_fixture_document(base, &program().to_string()).map_err(debug)?;
+pub(super) fn catalogue(
+    base: &QuestStateCatalogue,
+    callback: &Callback,
+) -> TestResult<Arc<QuestStateCatalogue>> {
+    let native =
+        NpcRuleCatalog::with_fixture_document(base, &program().to_string()).map_err(debug)?;
     let world = json!({"schema":1,"callbacks":[callback]}).to_string();
-    Ok(Arc::new(world_callbacks::with_fixture_world_document(&native, &world)?))
+    Ok(Arc::new(world_callbacks::with_fixture_world_document(
+        &native, &world,
+    )?))
 }
 
 #[test]
 fn myzzi_enchantment_admits_the_winter_court_after_the_full_dialogue() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(NAME, || scenario(NAME, ENTRY, false))
 }
 
-async fn step(owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession, id: u64, destination: Position) -> TestResult {
-    let reply = wire(owner, admitted, id, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, encode_step_intent(StepDirection::East)).await?;
-    assert_eq!(decode_step_result(&reply).map_err(debug)?, StepDisposition::Moved);
-    let position = owner.runtime.lock().await.read_actor_position(admitted.runtime_actor.ok_or("actor")?).map_err(debug)?;
+async fn step(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    id: u64,
+    destination: Position,
+) -> TestResult {
+    let reply = wire(
+        owner,
+        admitted,
+        id,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        encode_step_intent(StepDirection::East),
+    )
+    .await?;
+    assert_eq!(
+        decode_step_result(&reply).map_err(debug)?,
+        StepDisposition::Moved
+    );
+    let position = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(admitted.runtime_actor.ok_or("actor")?)
+        .map_err(debug)?;
     assert_eq!(position.position(), local(destination));
     Ok(())
 }
@@ -108,7 +200,10 @@ pub(super) async fn exercise(
     admitted: &mut AdmittedSession,
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
-    let origin = Position { x: ENTRY.x - 1, ..ENTRY };
+    let origin = Position {
+        x: ENTRY.x - 1,
+        ..ENTRY
+    };
     step(owner, admitted, 1, origin).await?;
     let [myzzi] = install(owner, admitted, [NPC]).await?;
     talk(owner, admitted, myzzi, 10, "hi").await?;

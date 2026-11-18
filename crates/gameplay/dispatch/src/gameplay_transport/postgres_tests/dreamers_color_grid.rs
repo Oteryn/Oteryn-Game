@@ -36,22 +36,45 @@ pub(super) fn matches(name: &str) -> bool {
 }
 
 fn groups() -> Vec<GridGroup> {
-    [(0, 0), (3, 0), (0, 3), (3, 3)].into_iter().zip(COLORS).map(|((dx, dy), color)| {
-        let cells = (0..3).flat_map(|x| (0..3).map(move |y| at(32818 + dx + x, 32334 + dy + y, -9))).collect();
-        GridGroup { cells, colors: if color == 2397 { vec![2397, 900] } else { vec![color] } }
-    }).collect()
+    [(0, 0), (3, 0), (0, 3), (3, 3)]
+        .into_iter()
+        .zip(COLORS)
+        .map(|((dx, dy), color)| {
+            let cells = (0..3)
+                .flat_map(|x| (0..3).map(move |y| at(32818 + dx + x, 32334 + dy + y, -9)))
+                .collect();
+            GridGroup {
+                cells,
+                colors: if color == 2397 {
+                    vec![2397, 900]
+                } else {
+                    vec![color]
+                },
+            }
+        })
+        .collect()
 }
 
 pub(super) fn binding(name: &str) -> TestResult<Callback> {
     let (selector, grid, destination, refund, effect, source) = if name == RIGHT {
-        (serde_json::json!({"position":SHIFT,"action":2245,"appearance":431}),
-         serde_json::json!({"mode":"shift","axis":"x","offset":2,"length":6,"colors":[2394,2395,2396,2397,900]}),
-         None, false, serde_json::json!({"transform":430}), "movement_riddle.lua:3-54")
+        (
+            serde_json::json!({"position":SHIFT,"action":2245,"appearance":431}),
+            serde_json::json!({"mode":"shift","axis":"x","offset":2,"length":6,"colors":[2394,2395,2396,2397,900]}),
+            None,
+            false,
+            serde_json::json!({"transform":430}),
+            "movement_riddle.lua:3-54",
+        )
     } else {
-        (serde_json::json!({"position":TRIGGER,"unique":50147,"appearance":1949,
+        (
+            serde_json::json!({"position":TRIGGER,"unique":50147,"appearance":1949,
             "native":{"position":TRIGGER,"ordinal":1,"appearance":1949}}),
-         serde_json::json!({"mode":"reset","groups":groups()}),
-         Some(DESTINATION), true, serde_json::json!({"teleport_effect":11}), "movement_riddle_teleport.lua:11-58")
+            serde_json::json!({"mode":"reset","groups":groups()}),
+            Some(DESTINATION),
+            true,
+            serde_json::json!({"teleport_effect":11}),
+            "movement_riddle_teleport.lua:11-58",
+        )
     };
     let mut effects = effect;
     effects["color_grid"] = grid;
@@ -67,19 +90,38 @@ pub(super) fn binding(name: &str) -> TestResult<Callback> {
 
 pub(super) fn world(callback: &Callback, name: &str) -> TestResult<crate::map::boot::BundleWorld> {
     let mut objects = if name == RIGHT {
-        (0..6).map(|x| at(32818 + x, 32334, -9)).zip(PATTERN).collect::<Vec<_>>()
+        (0..6)
+            .map(|x| at(32818 + x, 32334, -9))
+            .zip(PATTERN)
+            .collect::<Vec<_>>()
     } else {
-        groups().into_iter().flat_map(|group| {
-            let color = if group.colors.len() > 1 { 900 } else { group.colors[0] };
-            group.cells.into_iter().map(move |position| (position, color))
-        }).collect()
+        groups()
+            .into_iter()
+            .flat_map(|group| {
+                let color = if group.colors.len() > 1 {
+                    900
+                } else {
+                    group.colors[0]
+                };
+                group
+                    .cells
+                    .into_iter()
+                    .map(move |position| (position, color))
+            })
+            .collect()
     };
     if name == UNSOLVED {
         objects[0].1 = 2395;
     }
     world_cells(
-        callback, trigger(name), callback.selector.appearance.ok_or("source appearance")?, 1,
-        &objects, &[430, 2394, 2395, 2396, 2397], None, &[],
+        callback,
+        trigger(name),
+        callback.selector.appearance.ok_or("source appearance")?,
+        1,
+        &objects,
+        &[430, 2394, 2395, 2396, 2397],
+        None,
+        &[],
     )
 }
 
@@ -101,26 +143,34 @@ pub(super) fn catalogue(
         }));
     }
     let document = serde_json::json!({"schema":1,"callbacks":callbacks}).to_string();
-    Ok(std::sync::Arc::new(world_callbacks::with_fixture_world_document(base, &document)?))
+    Ok(std::sync::Arc::new(
+        world_callbacks::with_fixture_world_document(base, &document)?,
+    ))
 }
 
 #[test]
 fn dreamers_color_grid_step_rotates_the_six_cells_once() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(RIGHT, || scenario(RIGHT, SHIFT, false))
 }
 
 #[test]
 fn dreamers_color_grid_solved_quadrants_reset_to_nine_of_each_color() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(SOLVED, || scenario(SOLVED, TRIGGER, false))
 }
 
 #[test]
 fn dreamers_color_grid_mixed_quadrant_returns_the_player_without_reset() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(UNSOLVED, || scenario(UNSOLVED, TRIGGER, false))
 }
@@ -133,31 +183,68 @@ pub(super) async fn exercise(
     use crate::map::view::MapFacts;
     let map = owner.bundle_map().ok_or("grid map")?;
     let read = |position: Position| -> TestResult<u16> {
-        let pos = crate::map::overlay::TilePos { x: position.x, y: position.y, floor: position.floor };
-        let base = map.overlay.base().tile(pos.x, pos.y, pos.floor).ok_or("color cell")?;
-        let facts = map.facts.base_entry(pos, 1, *base.ids().get(1).ok_or("color item")?)
+        let pos = crate::map::overlay::TilePos {
+            x: position.x,
+            y: position.y,
+            floor: position.floor,
+        };
+        let base = map
+            .overlay
+            .base()
+            .tile(pos.x, pos.y, pos.floor)
+            .ok_or("color cell")?;
+        let facts = map
+            .facts
+            .base_entry(pos, 1, *base.ids().get(1).ok_or("color item")?)
             .ok_or("current color")?;
         Ok(facts.appearance_id)
     };
     let cells = if name == RIGHT {
-        (0..6).map(|x| at(32818 + x,32334,-9)).collect::<Vec<_>>()
+        (0..6).map(|x| at(32818 + x, 32334, -9)).collect::<Vec<_>>()
     } else {
         groups().into_iter().flat_map(|group| group.cells).collect()
     };
-    let before = cells.iter().copied().map(read).collect::<Result<Vec<_>, _>>()?;
-    let reply = wire(owner, admitted, 1, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, encode_step_intent(StepDirection::East)).await?;
-    assert_eq!(decode_step_result(&reply).map_err(debug)?, StepDisposition::Moved);
+    let before = cells
+        .iter()
+        .copied()
+        .map(read)
+        .collect::<Result<Vec<_>, _>>()?;
+    let reply = wire(
+        owner,
+        admitted,
+        1,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        encode_step_intent(StepDirection::East),
+    )
+    .await?;
+    assert_eq!(
+        decode_step_result(&reply).map_err(debug)?,
+        StepDisposition::Moved
+    );
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let landing = match name {
         RIGHT => SHIFT,
         SOLVED => DESTINATION,
         _ => at(TRIGGER.x - 1, TRIGGER.y, TRIGGER.floor),
     };
-    assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), local(landing));
-    let after = cells.iter().copied().map(read).collect::<Result<Vec<_>, _>>()?;
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        local(landing)
+    );
+    let after = cells
+        .iter()
+        .copied()
+        .map(read)
+        .collect::<Result<Vec<_>, _>>()?;
     match name {
         RIGHT => {
-            assert_eq!(after, vec![2395,2394,2395,2396,2397,2394]);
+            assert_eq!(after, vec![2395, 2394, 2395, 2396, 2397, 2394]);
             assert_eq!(read(SHIFT)?, 430);
             let reply = wire(
                 owner,
@@ -165,10 +252,21 @@ pub(super) async fn exercise(
                 2,
                 COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
                 encode_step_intent(StepDirection::West),
-            ).await?;
-            assert_eq!(decode_step_result(&reply).map_err(debug)?, StepDisposition::Moved);
+            )
+            .await?;
+            assert_eq!(
+                decode_step_result(&reply).map_err(debug)?,
+                StepDisposition::Moved
+            );
             assert_eq!(read(SHIFT)?, 431);
-            assert_eq!(cells.iter().copied().map(read).collect::<Result<Vec<_>, _>>()?, after);
+            assert_eq!(
+                cells
+                    .iter()
+                    .copied()
+                    .map(read)
+                    .collect::<Result<Vec<_>, _>>()?,
+                after
+            );
         }
         SOLVED => {
             for color in COLORS {
