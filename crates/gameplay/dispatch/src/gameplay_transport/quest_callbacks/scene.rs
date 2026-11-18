@@ -1,8 +1,50 @@
 use super::*;
 use crate::map::facts::{QuestCallbackProjection, QuestSceneMutation};
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::world_callbacks::SceneEdit;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) fn prepare_delayed_scene_spawn<'a>(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        map: &BundleMap,
+        callback: &'a Callback,
+    ) -> Result<Option<(&'a str, i64, MovementLocalPosition)>, UseDisposition> {
+        let Some(spawn) = callback
+            .effects
+            .scene
+            .as_ref()
+            .and_then(|scene| scene.delayed_open.as_ref())
+            .and_then(|delayed| delayed.spawn.as_ref())
+        else {
+            return Ok(None);
+        };
+        let at = local(spawn.position);
+        // Crystal 201189f8, actions_habitat_grass.lua:439-449. The creature
+        // enters on lever use and the later landscape does not admit it again.
+        if map.facts.house_tile(tile(spawn.position))
+            || !super::super::encounter_phases::placement(self.movement_cells(), runtime, at)
+        {
+            return Err(UseDisposition::Rejected);
+        }
+        let native = self
+            .active_generation
+            .and_then(|generation| generation.native_gameplay())
+            .ok_or(UseDisposition::Rejected)?;
+        native
+            .install_companion_policies(runtime)
+            .map_err(|_| UseDisposition::Rejected)?;
+        let health = runtime
+            .companion_policy(&spawn.creature)
+            .map_err(|_| UseDisposition::Rejected)?
+            .maximum_health;
+        let prepared = (spawn.creature.as_str(), health, at);
+        runtime
+            .preflight_quest_creature_spawn(&[prepared])
+            .map_err(|_| UseDisposition::Rejected)?;
+        Ok(Some(prepared))
+    }
+
     pub(super) fn prepare_quest_scene(
         &self,
         map: &BundleMap,

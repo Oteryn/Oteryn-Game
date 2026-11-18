@@ -482,12 +482,32 @@ impl ChannelRuntimeV1 {
         self.commit_quest_creature_replacement(&[], monsters, project)
     }
 
+    /// Verify a native USE spawn under the exclusive owner before durable admission.
+    pub fn preflight_quest_creature_spawn(
+        &mut self,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        self.quest_creature_replacement(&[], monsters, || true, false)
+            .map(|_| ())
+    }
+
     /// One phase replaces exact live siblings and admits its successors atomically.
     pub fn commit_quest_creature_replacement(
         &mut self,
         retire: &[ExactActorRef],
         monsters: &[(&str, i64, MovementLocalPosition)],
         project: impl FnOnce() -> bool,
+    ) -> Result<Vec<ExactActorRef>, CarrierError> {
+        self.quest_creature_replacement(retire, monsters, project, true)
+    }
+
+    fn quest_creature_replacement(
+        &mut self,
+        retire: &[ExactActorRef],
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        project: impl FnOnce() -> bool,
+        publish: bool,
     ) -> Result<Vec<ExactActorRef>, CarrierError> {
         if monsters.is_empty() || monsters.len() > 8 || retire.len() > MAX_QUEST_PHASE_RETIREMENTS {
             return Err(CarrierError::PlanConflict);
@@ -514,7 +534,7 @@ impl ChannelRuntimeV1 {
             }
             Ok(actors)
         })();
-        if result.is_err() {
+        if !publish || result.is_err() {
             self.carrier = before;
         }
         result

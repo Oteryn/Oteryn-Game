@@ -59,6 +59,9 @@ pub struct SceneEdits {
 pub struct DelayedSceneEdits {
     pub delay_ms: u32,
     pub edits: Vec<SceneEdit>,
+    /// A native creature admitted with the opening lever and basin.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spawn: Option<EncounterMonster>,
 }
 
 /// Crystal 201189f8, ferumbras_ascension/actions_ferumbras_lever.lua:35-56.
@@ -137,6 +140,14 @@ pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
             && (1..=60_000).contains(&delayed.delay_ms)
             && !delayed.edits.is_empty()
             && valid(&delayed.edits, true)
+            && delayed.spawn.as_ref().is_none_or(|spawn| {
+                spawn.creature.starts_with("oteryn:creature.")
+                    && super::super::valid_quest_key(&spawn.creature)
+                    && (-15..=0).contains(&spawn.position.floor)
+                    && callback.selector.position != Some(spawn.position)
+                    && !scene.open.iter().any(|now| now.position == spawn.position)
+                    && anchors.contains(&spawn.position)
+            })
             && delayed.edits.iter().all(|edit| {
                 !edit.allow_missing
                     && anchors.contains(&edit.position)

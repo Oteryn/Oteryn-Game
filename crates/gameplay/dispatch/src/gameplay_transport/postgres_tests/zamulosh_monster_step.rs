@@ -38,7 +38,12 @@ const BASIN: Position = Position {
     y: 32667,
     floor: -12,
 };
-const HABITAT_TILES: [(Position, u16); 2] = [
+const HABITAT_SPAWN: Position = Position {
+    x: 33642,
+    y: 32666,
+    floor: -12,
+};
+const HABITAT_TILES: [(Position, u16); 3] = [
     (
         Position {
             x: 33641,
@@ -47,6 +52,7 @@ const HABITAT_TILES: [(Position, u16); 2] = [
         },
         4515,
     ),
+    (HABITAT_SPAWN, 4515),
     (
         Position {
             x: 33642,
@@ -121,9 +127,10 @@ pub(super) fn habitat_callback() -> TestResult<Callback> {
         "return_on_failure":false,
         "effects":{"scene":{
             "open":[{"position":BASIN,"remove":11114,"create":22196,"passable":true}],
-            "close":[],"delayed_open":{"delay_ms":2000,"edits":delayed_edits}
+            "close":[],"delayed_open":{"delay_ms":2000,"edits":delayed_edits,
+                "spawn":{"position":HABITAT_SPAWN,"creature":FRAZZLEMAW}}
         }},
-        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_grass.lua:15-27,393-420,439-472"]
+        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_habitat_grass.lua:15-27,93,393-420,439-472"]
     }]});
     let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&document.to_string())?
         .try_into()
@@ -132,15 +139,15 @@ pub(super) fn habitat_callback() -> TestResult<Callback> {
 }
 
 pub(super) fn habitat_world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
+    let mut objects = vec![(BASIN, 11114)];
+    objects.extend(HABITAT_TILES.map(|(position, _)| (position, PREVIOUS_TERRAIN)));
+    let mut appearances = vec![22196];
+    appearances.extend(HABITAT_TILES.map(|(_, appearance)| appearance));
     super::quest_world_callbacks::world_with_scene_cells(
         callback,
         HABITAT_LEVER,
-        &[
-            (BASIN, 11114),
-            (HABITAT_TILES[0].0, PREVIOUS_TERRAIN),
-            (HABITAT_TILES[1].0, PREVIOUS_TERRAIN),
-        ],
-        &[22196, HABITAT_TILES[0].1, HABITAT_TILES[1].1],
+        &objects,
+        &appearances,
         &[],
     )
 }
@@ -186,7 +193,25 @@ pub(super) async fn exercise_habitat(
     assert!(due >= before + 2_000_000 && due <= owner.owner_now().get() + 2_000_000);
     assert!(has(BASIN, 22196)?);
     assert!(!has(BASIN, 11114)?);
-    let _channel = owner.runtime.lock().await;
+    let channel = owner.runtime.lock().await;
+    let frazzlemaws = || -> TestResult<Vec<ExactActorRef>> {
+        Ok(channel
+            .current_live_creature_census()
+            .map_err(debug)?
+            .into_iter()
+            .filter(|actor| channel.matches_live_creature_identity(*actor, FRAZZLEMAW.as_bytes()))
+            .collect())
+    };
+    let [frazzlemaw] = frazzlemaws()?
+        .try_into()
+        .map_err(|_| "one frazzlemaw after USE")?;
+    assert_eq!(
+        channel
+            .read_actor_position(frazzlemaw)
+            .map_err(debug)?
+            .position(),
+        super::quest_world_callbacks::local(HABITAT_SPAWN)
+    );
     assert_eq!(map.facts.expire_movement_items(due - 1), 0);
     for (at, next) in HABITAT_TILES {
         assert!(has(at, PREVIOUS_TERRAIN)?);
@@ -223,6 +248,7 @@ pub(super) async fn exercise_habitat(
     }
     assert_eq!(map.facts.expire_movement_items(due), 0);
     assert_eq!(map.facts.next_movement_decay_time(), None);
+    assert_eq!(frazzlemaws()?, [frazzlemaw]);
     Ok(())
 }
 

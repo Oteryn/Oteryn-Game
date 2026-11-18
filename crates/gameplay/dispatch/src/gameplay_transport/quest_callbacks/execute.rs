@@ -246,6 +246,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
+        let scene_spawn = if matches!(
+            &projection,
+            Some(crate::map::facts::QuestCallbackProjection::DelayedScene { .. })
+        ) {
+            match self.prepare_delayed_scene_spawn(runtime, map, callback) {
+                Ok(spawn) => spawn,
+                Err(disposition) => return disposition,
+            }
+        } else {
+            None
+        };
         // Both lifecycle deadlines belong to this operation, even when preparing
         // its remote object read set takes time.
         let lifecycle_now = self.owner_now().get();
@@ -1378,6 +1389,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Durable admission may wait on PostgreSQL. Start source reset/regrowth
             // at publication, so commit latency cannot consume its visible lifetime.
             // Readset projections carry the same timer for the Children lever owner.
+            if let Some(crate::map::facts::QuestCallbackProjection::DelayedScene { due, .. }) =
+                &mut projection
+                && let Some(scene) = callback.effects.scene.as_ref()
+                && let Some(delayed) = &scene.delayed_open
+            {
+                let Some(published_due) = self
+                    .owner_now()
+                    .get()
+                    .checked_add(u64::from(delayed.delay_ms) * 1_000)
+                else {
+                    return UseDisposition::Exhausted;
+                };
+                *due = published_due;
+            }
             if !close && let Some(delay) = callback.effects.reset_after_ms {
                 let Some(published_due) =
                     self.owner_now().get().checked_add(u64::from(delay) * 1_000)
@@ -1511,6 +1536,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             underwater(map, after.position()),
                         );
                     }
+                }
+            } else if let Some(spawn) = scene_spawn {
+                if runtime
+                    .commit_quest_creature_spawn_with_projection(&[spawn], apply_scene)
+                    .is_err()
+                {
+                    return UseDisposition::Rejected;
                 }
             } else if !callback.is_read_only() && !personal_gift_preserves_object && !apply_scene()
             {
