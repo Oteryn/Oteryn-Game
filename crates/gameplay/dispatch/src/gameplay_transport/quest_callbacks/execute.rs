@@ -497,6 +497,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(crate::map::facts::QuestCallbackProjection::ReadsetTransforms {
                 entries, ..
             }) if sphere_machine.is_some() => entries.first().map(|entry| entry.0),
+            // A gem deposit or a toggle with no matching partner must still
+            // respect an unresolved entry that owns this half of the machine.
+            _ if sphere_machine.is_some()
+                || oteryn_gameplay_quests::quest::elemental_spheres::machine_gem_use(
+                    &callback.key,
+                )
+                .is_some() =>
+            {
+                Some(key)
+            }
             _ => None,
         };
         if let Some(target) = projection_target
