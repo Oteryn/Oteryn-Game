@@ -2,11 +2,14 @@
 use super::*;
 use crate::foundation::{CommandId, CommandRef, OwnerDamageCommand};
 use crate::gameplay_transport::{
+    connection::UseCommand,
     encounter_phases,
     kill_reward::{KillSink, record_creature_kill},
 };
+use crate::map::view::MapFacts;
 use oteryn_gameplay_encounters::bosses::phase_controller::unwelcome::{BROTHER_WORM, UNWELCOME};
 use oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase;
+use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 #[test]
 fn feaster_unwelcome_native_worm_death_closes_only_its_linked_boss() -> TestResult {
@@ -20,6 +23,8 @@ fn feaster_unwelcome_native_worm_death_closes_only_its_linked_boss() -> TestResu
 async fn exercise(admin: String) -> TestResult {
     let h = Harness::create_with_admission_seed(admin, "feaster_unwelcome", true, false).await?;
     prepare_current_session(&h).await?;
+    h.seed_appearance_observer().await?;
+    super::super::appearance_change_postgres::observer_visibility_tests::admit(&h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
@@ -51,7 +56,14 @@ async fn exercise(admin: String) -> TestResult {
         },
         world_id,
         initial.admitted.channel_id,
-        boot::tests::items,
+        |key| {
+            let mut item = boot::tests::items(key)?;
+            if key == "item:box" {
+                item.solid = Some(false);
+                item.blocks_projectile = false;
+            }
+            Some(item)
+        },
     )
     .map_err(debug)?;
     let cells = world.movement_cells(room.movement_cells()).map_err(debug)?;
@@ -65,7 +77,7 @@ async fn exercise(admin: String) -> TestResult {
         (1, 0, 7),
     );
     let deps =
-        Dependencies::with_content_and_capacity(pin, room.clone(), initial.spells.clone(), 4)?;
+        Dependencies::with_content_and_capacity(pin, room.clone(), initial.spells.clone(), 5)?;
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = Some(active);
     owner.movement_cells = (&cells).into();
@@ -81,10 +93,12 @@ async fn exercise(admin: String) -> TestResult {
         fence.character_lease_generation,
     )
     .map_err(debug)?;
-    {
+    let observer_session = GameSessionId::decode(&id(110)).map_err(debug)?;
+    let observer = {
         let mut runtime = deps.runtime.lock().await;
+        let at = |x| MovementLocalPosition { x, y: 0, floor: 7 };
         runtime
-            .initialize_first_entry_position(actor)
+            .initialize_pinned_test_position(actor, at(6))
             .map_err(debug)?;
         runtime
             .bind_attacker_lease(actor, session, lease)
@@ -92,53 +106,134 @@ async fn exercise(admin: String) -> TestResult {
         runtime
             .install_companion_policies(native.policies().clone())
             .map_err(debug)?;
-    }
-    deps.initialize(&owner).await;
-    let mut callback = portal(None)?;
-    callback.effects.encounter = Some(serde_json::from_value(serde_json::json!({
-        "minimum_level":250,"players":[{"from":{"x":1,"y":0,"floor":-7},"to":{"x":2,"y":0,"floor":-7}}],
-        "monsters":[
-            {"position":{"x":2,"y":0,"floor":-7},"creature":UNWELCOME},
-            {"position":{"x":3,"y":0,"floor":-7},"creature":BROTHER_WORM}
-        ],
-        "room_min":{"x":2,"y":0,"floor":-7},"room_max":{"x":3,"y":0,"floor":-7},
-        "phase":EncounterPhase::Unwelcome
-    }))?);
+        let reservation = runtime
+            .reserve_fresh_session(observer_session)
+            .map_err(debug)?;
+        let observer = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(observer, at(7))
+            .map_err(debug)?;
+        runtime
+            .bind_attacker_lease(
+                observer,
+                observer_session,
+                CharacterLease::new(CharacterId::decode(&id(101)).map_err(debug)?, 2)
+                    .map_err(debug)?,
+            )
+            .map_err(debug)?;
+        let mut states = owner.states.spell_states.lock().await;
+        for (actor, session) in [(actor, session), (observer, observer_session)] {
+            assert!(
+                states
+                    .initialize(
+                        &runtime,
+                        actor,
+                        session,
+                        crate::spell::cast::CharacterCastFacts {
+                            level: 250,
+                            ..crate::gameplay_transport::actor_spell::tests::FACTS
+                        },
+                        (3, 7_000_000),
+                        owner.owner_now(),
+                    )
+                    .is_some()
+            );
+        }
+        observer
+    };
+    let callback: Callback = serde_json::from_value(serde_json::json!({
+        "key":"oteryn:quest-callback/feaster-unwelcome-fixture",
+        "quest":"oteryn:quest.feaster_of_souls_quest",
+        "trigger":"use",
+        "selector":{"position":{"x":7,"y":0,"floor":-7},"ordinal":1},
+        "passages":[],"offerings":[],"storage":[],"reversible":false,
+        "effects":{"encounter":{
+            "minimum_level":250,
+            "players":[
+                {"from":{"x":6,"y":0,"floor":-7},"to":{"x":1,"y":0,"floor":-7}},
+                {"from":{"x":7,"y":0,"floor":-7},"to":{"x":1,"y":0,"floor":-7}}
+            ],
+            "monsters":[
+                {"position":{"x":2,"y":0,"floor":-7},"creature":UNWELCOME},
+                {"position":{"x":3,"y":0,"floor":-7},"creature":BROTHER_WORM}
+            ],
+            "room_min":{"x":1,"y":0,"floor":-7},"room_max":{"x":3,"y":0,"floor":-7},
+            "phase":EncounterPhase::Unwelcome
+        }},
+        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_the_unwelcome_lever.lua:1-44"]
+    }))?;
+    assert!(
+        owner
+            .states
+            .quest_callbacks
+            .fixture
+            .set(vec![callback])
+            .is_ok()
+    );
+    let map = owner.bundle_map().ok_or("qualified map")?;
+    let key = oteryn_world_bundle::bundle::placement_key(-7, 7, 0, 1).ok_or("source placement")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let before_use = owner.owner_now().get();
+    let result = owner
+        .use_world_object(
+            actor,
+            UseCommand {
+                game_session_id: session,
+                command_id: 1,
+                item_fence: Some(fence.item_fence()),
+            },
+            WorldObjectTarget {
+                placement,
+                expected_revision: map.facts.object_revision(key),
+            },
+        )
+        .await;
+    assert_eq!(result.disposition, UseDisposition::Committed);
+    let after_use = owner.owner_now().get();
     let queue = owner.states.attack.lock().await.kills().clone();
     let mut runtime = deps.runtime.lock().await;
     let states = owner.states.spell_states.lock().await;
+    for participant in [actor, observer] {
+        assert_eq!(
+            runtime
+                .read_actor_position(participant)
+                .map_err(debug)?
+                .position()
+                .x,
+            1
+        );
+    }
+    let [boss] = runtime
+        .current_live_creature_census()
+        .map_err(debug)?
+        .try_into()
+        .map_err(|_| "immediate The Unwelcome")?;
+    assert!(runtime.matches_live_creature_identity(boss, UNWELCOME.as_bytes()));
     let health = runtime
         .companion_policy(UNWELCOME)
         .map_err(debug)?
         .maximum_health;
-    let at = |x| MovementLocalPosition { x, y: 0, floor: 7 };
-    let foes = runtime
-        .commit_quest_creature_spawn(&[(UNWELCOME, health, at(2)), (UNWELCOME, health, at(7))])
-        .map_err(debug)?;
-    let now = owner.owner_now();
-    let key = oteryn_world_bundle::bundle::placement_key(-7, 1, 0, 0).ok_or("source placement")?;
-    let phase = encounter_phases::bind(
-        &mut runtime,
-        &callback,
-        key,
-        &foes[..1],
-        &[(actor, session)],
-        Vec::new(),
-        cells.clone(),
-        now.get(),
-    )
-    .map_err(debug)?;
-    states
-        .encounter_phases
-        .reserve(&mut runtime, key, now.get())
+    let [decoy] = runtime
+        .commit_quest_creature_spawn(&[(
+            UNWELCOME,
+            health,
+            MovementLocalPosition {
+                x: 6,
+                y: 0,
+                floor: 7,
+            },
+        )])
         .map_err(debug)?
-        .push(phase);
-    encounter_phases::tick(&mut runtime, &states, now.get() + 19_999_999);
+        .try_into()
+        .map_err(|_| "independent The Unwelcome")?;
+    encounter_phases::tick(&mut runtime, &states, before_use + 19_999_999);
     assert_eq!(
         runtime.current_live_creature_census().map_err(debug)?.len(),
         2
     );
-    encounter_phases::tick(&mut runtime, &states, now.get() + 20_000_000);
+    encounter_phases::tick(&mut runtime, &states, after_use + 20_000_000);
+    let now = owner.owner_now();
     let worm = runtime
         .current_live_creature_census()
         .map_err(debug)?
@@ -182,8 +277,8 @@ async fn exercise(admin: String) -> TestResult {
         now.get() / 1000,
         Some(now),
     );
-    assert!(runtime.retains_corpse_projection(foes[0]));
-    assert!(runtime.contains_live_creature(foes[1]));
+    assert!(runtime.retains_corpse_projection(boss));
+    assert!(runtime.contains_live_creature(decoy));
     drop(states);
     drop(runtime);
     drop(authority);
