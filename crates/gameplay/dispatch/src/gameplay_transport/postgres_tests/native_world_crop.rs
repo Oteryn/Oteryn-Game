@@ -294,8 +294,8 @@ pub(crate) fn native_scene_with_appearances(
                 floor: start.2,
             },
         },
-        crate::foundation::WorldId::decode(&super::super::fixture::id(42)).map_err(debug)?,
-        crate::foundation::ChannelId::decode(&super::super::fixture::id(43)).map_err(debug)?,
+        crate::foundation::WorldId::decode(&super::fixture::id(42)).map_err(debug)?,
+        crate::foundation::ChannelId::decode(&super::fixture::id(43)).map_err(debug)?,
         definitions,
     )
     .map_err(debug)
