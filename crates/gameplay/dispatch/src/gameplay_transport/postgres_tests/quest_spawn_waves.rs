@@ -10,7 +10,7 @@ use crate::map::view::MapFacts;
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
 use oteryn_gameplay_quests::quest::world_callbacks::{
     Callback, Encounter, EncounterMonster, EncounterPlayer, ItemOnTarget, Offering, Position,
-    Storage, Trigger,
+    Storage, TargetTransform, Trigger,
     periodic_bosses::{PeriodicBoss, WeightedBoss},
     reactive_waves::{Chance, EarthHit, FinishArea, Retaliation, SpecialWave},
     waves::{Wave, WaveCredit, WaveCreditEffect, WaveRun, WaveSpawn, WaveVictory},
@@ -46,6 +46,7 @@ const FIRST: Position = row(3);
 const SECOND: Position = row(4);
 const EXIT: Position = row(6);
 const VICTORY_EXIT: Position = row(7);
+const HATCH: Position = row(8);
 const RAT: &str = "oteryn:creature.rat";
 const CAVE_RAT: &str = "oteryn:creature.cave_rat";
 const CREDIT: &str = "oteryn:quest-transition/wave-egress/fixture";
@@ -233,6 +234,19 @@ fn scenario(admin: String, case: Case) -> TestResult {
                 }).into();
                 wave.stay_at_stations = true;
                 wave.eject_room = true;
+                wave.hatch = Some(TargetTransform {
+                    position: HATCH,
+                    from: 1897,
+                    to: 1977,
+                    reset_after_ms: 3_000,
+                });
+                wave.waves[0].spawn = WaveSpawn::Scatter {
+                    creature: RAT.into(),
+                    count: 1,
+                    attempts_per_creature: 10,
+                    min: FIRST,
+                    max: FIRST,
+                };
             } else {
                 // Crystal movement_minotaur_boss.lua:7-15,22-40 decrees a
                 // survival deadline without summoning any timed waves.
@@ -877,29 +891,61 @@ async fn stations_scenario(
     admitted: &mut AdmittedSession,
     player: ExactActorRef,
 ) -> TestResult {
+    use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+    use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+
     let peer = stage_peer(h, owner, admitted).await?;
     let peer_actor = peer.runtime_actor.ok_or("staged peer")?;
+    let map = owner.bundle_map().ok_or("station map")?;
+    let hatch_key = oteryn_world_bundle::bundle::placement_key(HATCH.floor, HATCH.x, HATCH.y, 1)
+        .ok_or("station hatch key")?;
+    assert_eq!(map.facts.object_revision(hatch_key), 0);
     guarded_wave_step(owner, admitted).await?;
     assert_eq!(position(owner, player).await?, local(TRIGGER));
     assert_eq!(position(owner, peer_actor).await?, local(PEER_START));
+    assert_eq!(map.facts.object_revision(hatch_key), 1);
+    let close_at = map.facts.next_movement_decay_time().ok_or("station hatch timer")?;
+    assert_eq!(map.facts.expire_movement_items(close_at - 1), 0);
+    assert_eq!(map.facts.object_revision(hatch_key), 1);
     advance(owner, 999).await;
     assert!(creatures(owner).await?.is_empty());
     advance(owner, 1).await;
-    assert_eq!(creatures(owner).await?.len(), 1);
-    advance(owner, 9_000).await;
+    let spawned = creatures(owner).await?;
+    assert_eq!(spawned.len(), 1);
+    assert_eq!(spawned[0].1, local(FIRST));
+
+    // Crystal movements_click.lua:106-125 opens a separate route. Move one
+    // station member into the room through the normal movement owner.
+    let clock = owner.freeze_owner_clock_for_test();
+    for expected in [row(1), LANDING] {
+        owner.states.test_owner_time.store(
+            owner.owner_now().get() + 1_000_001,
+            std::sync::atomic::Ordering::Relaxed,
+        );
+        let (step, _) = owner.paced_step(player, admitted.game_session_id, StepDirection::East).await;
+        assert_eq!(step.disposition, StepDisposition::Moved);
+        assert_eq!(position(owner, player).await?, local(expected));
+    }
+    drop(clock);
+    advance(owner, 2_000).await;
+    assert_eq!(map.facts.expire_movement_items(close_at), 1);
+    assert_eq!(map.facts.object_revision(hatch_key), 2);
+    advance(owner, 6_999).await;
+    assert_eq!(position(owner, player).await?, local(LANDING));
+    advance(owner, 1).await;
     assert!(creatures(owner).await?.is_empty());
-    assert_eq!(position(owner, player).await?, local(TRIGGER));
+    assert_eq!(position(owner, player).await?, local(EXIT));
     assert_eq!(position(owner, peer_actor).await?, local(PEER_START));
     tokio::time::resume();
     owner.drain_quest_encounter_deadlines().await;
-    for staged in [admitted.item_fence, peer.item_fence] {
+    for (staged, credit) in [(admitted.item_fence, 1), (peer.item_fence, 0)] {
         let character = staged.ok_or("staging item fence")?.character_id;
         let state = owner
             .root
             .read_character_quest_state(owner.character, character)
             .await
             .map_err(debug)?;
-        assert_eq!(state.tracks().get(TRACK).copied().unwrap_or(0), 0);
+        assert_eq!(state.tracks().get(TRACK).copied().unwrap_or(0), credit);
     }
     Ok(())
 }

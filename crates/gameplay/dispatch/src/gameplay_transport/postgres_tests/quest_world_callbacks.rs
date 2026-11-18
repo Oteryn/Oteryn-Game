@@ -339,13 +339,23 @@ pub(super) fn world_with_cells(
     trigger: Position,
     cells: &[Position],
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    let hatch = callback
+        .effects
+        .encounter
+        .as_ref()
+        .and_then(|encounter| encounter.wave_run.as_ref())
+        .and_then(|wave| wave.hatch.as_ref());
+    let objects = hatch.map(|hatch| [(hatch.position, hatch.from)]);
+    let appearances = hatch.map(|hatch| [hatch.to]);
     world_cells(
         callback,
         trigger,
         callback.selector.appearance.unwrap_or(100),
         1,
-        &[],
-        &[],
+        objects.as_ref().map_or(&[][..], |objects| &objects[..]),
+        appearances
+            .as_ref()
+            .map_or(&[][..], |appearances| &appearances[..]),
         None,
         cells,
     )
