@@ -4382,7 +4382,8 @@
       ],
       "offerings": [],
       "return_on_failure": false,
-      "failure_message": null,
+      "failure_message": "It's empty.",
+      "success_message": "You have found demon legs.",
       "sources": [
         "oteryn-authored:world-projection:demon-oak:quest-r1",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak_chest.lua:1-31",
@@ -4425,7 +4426,8 @@
       ],
       "offerings": [],
       "return_on_failure": false,
-      "failure_message": null,
+      "failure_message": "It's empty.",
+      "success_message": "You have found a rainbow shield.",
       "sources": [
         "oteryn-authored:world-projection:demon-oak:quest-r1",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak_chest.lua:1-31",
@@ -4468,7 +4470,8 @@
       ],
       "offerings": [],
       "return_on_failure": false,
-      "failure_message": null,
+      "failure_message": "It's empty.",
+      "success_message": "You have found a thorn spitter.",
       "sources": [
         "oteryn-authored:world-projection:demon-oak:quest-r1",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak_chest.lua:1-31",
@@ -4511,7 +4514,8 @@
       ],
       "offerings": [],
       "return_on_failure": false,
-      "failure_message": null,
+      "failure_message": "It's empty.",
+      "success_message": "You have found a spellbook of ancient arcana.",
       "sources": [
         "oteryn-authored:world-projection:demon-oak:quest-r1",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak_chest.lua:1-31",
@@ -4564,7 +4568,10 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/demon_oak.lua:4",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:3784-3788",
         "https://tibia.fandom.com/index.php?curid=34086&oldid=855950"
-      ]
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
     }
   ]
 }

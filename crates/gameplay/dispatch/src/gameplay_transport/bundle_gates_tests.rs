@@ -1118,6 +1118,8 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     // S10 source NPC fixtures supply combat only; qualified room remains None.
     ("gameplay_transport/postgres_tests/s10_travel.rs", 1),
     ("gameplay_transport/postgres_tests/s10_wandering.rs", 1),
+    // The Cults Bundle fixture supplies combat only, checked below.
+    ("gameplay_transport/postgres_tests/qcx_cults_of_tibia.rs", 2),
     // Soul War's Bundle fixture supplies combat only, never qualification.
     ("gameplay_transport/postgres_tests/soul_war.rs", 1),
     // I14 special-potion fixture supplies only combat; its qualified room stays None.
@@ -1182,6 +1184,16 @@ fn a_bundle_world_seam_has_no_qualified_room() {
         expected,
         "`SeamRooms` is named in another place: a new construction could hand a bundle World its \
          qualified room"
+    );
+    let cults = parse_source("src/gameplay_transport/postgres_tests/qcx_cults_of_tibia.rs");
+    let mut fixture_constructions = Constructions::default();
+    fixture_constructions.visit_file(&cults);
+    assert!(
+        matches!(fixture_constructions.0.as_slice(), [call]
+            if matches!(&*call.func, syn::Expr::Path(path) if path_name(&path.path) == "SeamRooms::new")
+                && call.args.len() == 2
+                && call.args.first().is_some_and(|arg| named_expr(arg, "None"))),
+        "the Cults Bundle fixture must withhold the qualified room"
     );
     let serve = parse_source("src/node/serve.rs");
     let mut constructions = Constructions::default();

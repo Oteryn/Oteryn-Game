@@ -13,6 +13,7 @@ use crate::map::{
     overlay::TilePos,
 };
 use oteryn_gameplay_quests::quest::loader::load_embedded_quest_state;
+use oteryn_protocol_oteryn::chat::ChatLine;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::sync::Arc;
 
@@ -204,11 +205,22 @@ fn scenario(name: &'static str, choice: Option<usize>) -> TestResult {
             .await
             .map_err(debug)?;
         owner.admit_quest_session(&admitted).await;
+        let session = admitted.game_session_id;
+        owner
+            .states
+            .chat
+            .admit(session, "Fixture Hero", owner.owner_now());
+        let feedback = |message: &str| ChatLine::Private {
+            speaker_name: "Game".into(),
+            text: message.into(),
+        };
         let target = choice.map_or(GRAVE, |index| CHESTS[index].0);
         assert_ne!(
             use_at(&owner, admitted, target, 1).await?,
             UseDisposition::Committed
         );
+
+        let before_victory = owner.states.chat.drain(session);
 
         // Seed the reward precondition through the canonical source transitions.
         let catalogue = Arc::clone(owner.quest_catalogue.as_ref().ok_or("quest catalogue")?);
@@ -265,6 +277,13 @@ fn scenario(name: &'static str, choice: Option<usize>) -> TestResult {
         );
 
         if let Some((index, other)) = choice.zip(alternative) {
+            let discovery = [
+                "You have found demon legs.",
+                "You have found a rainbow shield.",
+                "You have found a thorn spitter.",
+                "You have found a spellbook of ancient arcana.",
+            ];
+            let on_claim = owner.states.chat.drain(session);
             owner.clock_origin = owner
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(2))
@@ -273,6 +292,15 @@ fn scenario(name: &'static str, choice: Option<usize>) -> TestResult {
                 use_at(&owner, admitted, CHESTS[other].0, 3).await?,
                 UseDisposition::Rejected,
                 "a different reachable chest must refuse after the first reward"
+            );
+            let after_claim = owner.states.chat.drain(session);
+            assert_eq!(
+                [before_victory, on_claim, after_claim],
+                [
+                    vec![feedback("It's empty.")],
+                    vec![feedback(discovery[index])],
+                    vec![feedback("It's empty.")],
+                ]
             );
             for (ci, (_, item)) in CHESTS.iter().enumerate() {
                 let count: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1")
@@ -287,6 +315,14 @@ fn scenario(name: &'static str, choice: Option<usize>) -> TestResult {
             .await?;
             assert_eq!(value, 3, "all four options share Done 2 → 3");
         } else {
+            let map = owner.bundle_map().ok_or("bundle map")?;
+            let effects: Vec<_> = map
+                .facts
+                .movement_effects_since(0)
+                .into_iter()
+                .map(|(_, at, effect)| (at, effect))
+                .collect();
+            assert_eq!(effects, [(LANDING, 11)]);
             assert_eq!(
                 deps.runtime
                     .lock()
