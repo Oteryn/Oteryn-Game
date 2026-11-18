@@ -10,6 +10,14 @@ fn timed_encounter_moves_the_admitted_group_at_expiry_and_resets_the_lever() -> 
 }
 
 #[test]
+fn timed_encounter_uses_the_lever_to_admit_and_eject_two_players() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::annihilator_route::timed_pair_transfer(admin)
+}
+
+#[test]
 fn ashmunrah_step_counts_only_the_stepping_characters_durable_switches() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());

@@ -27,6 +27,7 @@ enum Route {
     BansheeWindows,
     Entry,
     TimedGroup,
+    TimedPair,
     TimedPassage,
     Ashmunrah,
     CathedralNote,
@@ -77,6 +78,10 @@ pub(super) fn timed_group_transfer(admin: String) -> TestResult {
     run_with_admin(Route::TimedGroup, admin)
 }
 
+pub(super) fn timed_pair_transfer(admin: String) -> TestResult {
+    run_with_admin(Route::TimedPair, admin)
+}
+
 pub(super) fn timed_passage(admin: String) -> TestResult {
     run_with_admin(Route::TimedPassage, admin)
 }
@@ -122,6 +127,7 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         Route::BansheeWindows
             | Route::Entry
             | Route::TimedGroup
+            | Route::TimedPair
             | Route::TimedPassage
             | Route::Ashmunrah
             | Route::CathedralNote
@@ -220,7 +226,7 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         let mut operations = Vec::new();
         let participants = match route {
             Route::CathedralNote | Route::Logic | Route::TimedPassage => 1,
-            Route::Ashmunrah | Route::BansheeWindows | Route::CoalBasin | Route::Demonrage | Route::Lord => 2,
+            Route::Ashmunrah | Route::BansheeWindows | Route::CoalBasin | Route::Demonrage | Route::Lord | Route::TimedPair => 2,
             _ => 4,
         };
         for index in 0..participants {
@@ -697,7 +703,7 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
             h.cleanup().await?;
             return result;
         }
-        if route == Route::TimedGroup {
+        if matches!(route, Route::TimedGroup | Route::TimedPair) {
             let content = oteryn_gameplay_quests::quest::world_callbacks::load()?;
             let mut entry = content
                 .iter()
@@ -705,7 +711,12 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
                 .ok_or("fixture encounter")?
                 .clone();
             // Exercise the Lord deadline (actions_lord_of_elements_lever.lua:63-69,180)
-            // using the existing physical four-player admission fixture.
+            // on the real Annihilator pads. The pair fixture keeps the first
+            // two donor pads and destinations without modifying the source row.
+            if route == Route::TimedPair {
+                entry.effects.encounter.as_mut().ok_or("fixture encounter effect")?
+                    .players.truncate(admitted.len());
+            }
             let mut authored = serde_json::to_value(&entry)?;
             authored["effects"]["timed_group_transfer"] = serde_json::json!({
                 "after_ms": 600000,
@@ -740,7 +751,7 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         }
         assert_eq!(runtime.visible_entities().creatures.len(), 6);
         drop(runtime);
-        if route == Route::TimedGroup {
+        if matches!(route, Route::TimedGroup | Route::TimedPair) {
             use std::sync::atomic::Ordering;
             let clock = &owner.states.test_owner_time;
             assert_eq!(
@@ -750,7 +761,7 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
             clock.store(700_000_000, Ordering::Relaxed);
             owner.drain_quest_encounter_deadlines().await;
             assert_eq!(target(map, 33226, 31671)?.expected_revision, 1);
-            {
+            if route == Route::TimedGroup {
                 let mut runtime = owner.runtime.lock().await;
                 let absent = &admitted[3];
                 let actor = absent.runtime_actor.ok_or("leaving participant")?;
@@ -780,7 +791,7 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
                     .read_actor_position(member.runtime_actor.ok_or("actor")?)
                     .map_err(debug)?
                     .position();
-                let expected = if index == 3 {
+                let expected = if route == Route::TimedGroup && index == 3 {
                     Position {
                         x: start.x + 2,
                         ..start
@@ -802,7 +813,8 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
             super::annihilator_finish::complete(&mut owner, &mut admitted[0], map, &h.pool).await?;
         }
         eprintln!(
-            "ANNIHILATOR_ROUTE POSTGRES_CASE_COMPLETED members=4 creatures=6 elapsed_ms={}",
+            "ANNIHILATOR_ROUTE POSTGRES_CASE_COMPLETED members={} creatures=6 elapsed_ms={}",
+            admitted.len(),
             started.elapsed().as_millis()
         );
         drop(owner);
