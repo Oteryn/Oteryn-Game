@@ -18,8 +18,7 @@ fn postman_briefing_and_completed_passages_advance_mission_postgres() -> TestRes
     };
     let started = std::time::Instant::now();
     super::kill_reward_e2e::scenario_thread::run_async(async move |_fixture_admin| {
-        let h =
-            Harness::create_with_admission_seed(admin, "postman_dialogue", false, false).await?;
+        let h = Harness::create_with_admission_seed(admin, "postman_dialogue", true, false).await?;
         let result = exercise(&h).await;
         h.cleanup().await?;
         result
@@ -32,7 +31,7 @@ fn postman_briefing_and_completed_passages_advance_mission_postgres() -> TestRes
 }
 
 async fn exercise(h: &Harness) -> TestResult {
-    let request = prepare_current_session(h).await?;
+    prepare_current_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
@@ -50,6 +49,11 @@ async fn exercise(h: &Harness) -> TestResult {
         deps.admitted.world_id,
         "content-1",
     )?;
+    deps.runtime
+        .lock()
+        .await
+        .initialize_first_entry_position(deps.actor)
+        .map_err(debug)?;
     let mut owner = deps.owner(h, &authority);
     owner.quest_catalogue = Some(Arc::new(
         load_embedded_quest_state("content-1")
@@ -57,9 +61,11 @@ async fn exercise(h: &Harness) -> TestResult {
             .catalogue()
             .clone(),
     ));
-    super::tutorial_vitals_fixture::admit(&owner, &deps, &request).await?;
     owner.active_generation = Some(controller.active().ok_or("active generation")?);
-    let admitted = &deps.admitted;
+    let mut admitted = deps.admitted;
+    owner.admit_progression_session(&mut admitted).await;
+    deps.initialize(&owner).await;
+    let admitted = &admitted;
     owner.admit_quest_session(admitted).await;
     let [kevin, captain, technomancer] = install(
         &owner,
