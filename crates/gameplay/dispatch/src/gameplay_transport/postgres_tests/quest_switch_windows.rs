@@ -313,7 +313,7 @@ pub(super) async fn lord(
                     "warning": {
                         "after_ms": 300_000, "position": at(33266,31835,-13),
                         "room_min": at(33261,31829,-12), "room_max": at(33274,31842,-12),
-                        "text": "The chamber will close in five minutes."
+                        "text": "You have 5 minutes from now on until you get teleported out."
                     }
                 }
             },
@@ -436,6 +436,10 @@ pub(super) async fn lord(
         }
     );
     assert_eq!(speech[0].1.talk_type, 37);
+    assert_eq!(
+        speech[0].1.text,
+        "You have 5 minutes from now on until you get teleported out."
+    );
     assert_eq!(
         owner.states.quest_callbacks.next_encounter_due_us(),
         Some(703_000_000)
