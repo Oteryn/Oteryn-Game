@@ -50,7 +50,7 @@ impl Scene {
                     )),
                     region: (7, 126, 128),
                     bounds: (32254, 32788, 32262, 32794),
-                    start: (32256, 32789),
+                    start: (32257, 32790),
                     expected: vec![],
                 },
                 TilePos {
@@ -194,7 +194,14 @@ async fn exercise(h: &Harness, scene: Scene) -> TestResult {
         y: i32::from(crop.start.1),
         floor: i16::from(crop.region.0),
     };
-    let world = world::native_scene_with_appearances(native, vec![crop], &[], appearances)?;
+    // Bootstrap the sparse bundle at the known walkable retained Nexus tile.
+    // The actor is positioned independently at each source's USE range below.
+    let crops = if matches!(scene, Scene::ShadowNexus) {
+        vec![crop]
+    } else {
+        vec![Scene::ShadowNexus.crop().0, crop]
+    };
+    let world = world::native_scene_with_appearances(native, crops, &[], appearances)?;
     let cells = world
         .movement_cells(pin.qualified_room().movement_cells())
         .map_err(debug)?;
