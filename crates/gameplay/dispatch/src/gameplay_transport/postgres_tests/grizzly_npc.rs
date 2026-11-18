@@ -538,7 +538,7 @@ fn scenario(case: u8) -> TestResult {
             )
             .await?;
             let companion = if case == 8 {
-                "oteryn:creature.rat"
+                "oteryn:creature.demon_skeleton"
             } else {
                 "oteryn:creature.druid_familiar"
             };
