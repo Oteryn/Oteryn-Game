@@ -278,9 +278,12 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
         let mut owner = deps.owner(harness, &authority);
         owner.active_generation = Some(active);
         owner.movement_cells = deps.room.movement_cells().into();
+        let mut admitted = deps.admitted;
         if matches!(regression, Some(ProfileRegression::Logout)) {
             deps.initialize(&owner).await;
             super::super::track(&owner, &deps)?;
+            admitted.item_fence = Some(owner.current_quest_fence(admitted.game_session_id)
+                .await.map_err(debug)?.ok_or("logout item fence")?.item_fence());
         }
         let permit = owner.spell_lane_permit().await.ok_or("lane")?;
         let mut runtime = deps.runtime.lock().await;
@@ -409,10 +412,10 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                         // Own the guards here so the foreground can lock the runtime as
                         // soon as this physical pass returns.
                         let (mut runtime, mut states, mut attack) = (runtime, states, attack);
-                        let permit = permit;
+                        let profile_permit = permit;
                         owner.drive_monster_profiles(
                             &mut runtime, &mut states, &mut attack, &deps.room, native,
-                            &permit, &revisions, &[], start, &names,
+                            &profile_permit, &revisions, &[], start, &names,
                         ).await.map_err(debug)
                     };
                     let mut background = std::pin::pin!(background);
@@ -421,7 +424,7 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
                     )).await);
                     assert!(!owner.root.is_ready(), "the profile pass already holds the root");
                     let foreground = tokio::time::timeout(
-                        std::time::Duration::from_secs(2), owner.logout_session(deps.admitted),
+                        std::time::Duration::from_secs(2), owner.logout_session(admitted),
                     );
                     let (logout, profile) = tokio::join!(biased; foreground, background);
                     assert_eq!(logout?, LogoutReply::Result(LogoutResult::Accepted));
