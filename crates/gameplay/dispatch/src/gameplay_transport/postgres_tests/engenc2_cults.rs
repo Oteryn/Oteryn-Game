@@ -111,7 +111,16 @@ fn cults_scenario(reenter: bool, cooldown: bool) -> TestResult {
                 y: 100,
                 floor: -7,
             };
-            let world = super::quest_world_callbacks::world(&callback, trigger)?;
+            let exits = [
+                (Position { x:117, y:117, floor:-7 }, Position { x:127, y:117, floor:-7 }),
+                (Position { x:115, y:117, floor:-7 }, Position { x:105, y:117, floor:-7 }),
+            ];
+            let world = if cooldown {
+                let cells = exits.into_iter().flat_map(|(from, to)| [from, to]).collect::<Vec<_>>();
+                super::quest_world_callbacks::world_with_cells(&callback, trigger, &cells)?
+            } else {
+                super::quest_world_callbacks::world(&callback, trigger)?
+            };
             let mut deps = Dependencies::new()?;
             let (controller, activated) =
                 super::death_ml_loss_composed::production_generation_with_pin(
@@ -192,14 +201,18 @@ fn cults_scenario(reenter: bool, cooldown: bool) -> TestResult {
                     .catalogue()
                     .clone(),
             ));
-            assert!(
-                owner
-                    .states
-                    .quest_callbacks
-                    .fixture
-                    .set(vec![callback.clone()])
-                    .is_ok()
-            );
+            let mut callbacks = vec![callback.clone()];
+            if cooldown {
+                for (index, (from, to)) in exits.into_iter().enumerate() {
+                    callbacks.push(serde_json::from_value(serde_json::json!({
+                        "key":format!("oteryn:quest-callback/cults-cooldown-exit-{index}"),
+                        "quest":callback.quest,"trigger":"step_in","selector":{"position":from,"ordinal":0},
+                        "reversible":false,"passages":[],"storage":[],"offerings":[],
+                        "teleport":to,"return_on_failure":false
+                    }))?);
+                }
+            }
+            assert!(owner.states.quest_callbacks.fixture.set(callbacks).is_ok());
             let mut admitted = deps.admitted;
             admitted.runtime_actor = Some(deps.actor);
             admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -291,7 +304,10 @@ fn cults_scenario(reenter: bool, cooldown: bool) -> TestResult {
                 }
             }
             let peer = if cooldown {
-                Some(install_cooldown_peer(&owner, &h, &authority, admitted).await?)
+                Some(super::classic_quests::install_peer(
+                    &owner, &h, &authority, admitted,
+                    MovementLocalPosition { x:107, y:108, floor:7 },
+                ).await?)
             } else {
                 None
             };
@@ -512,6 +528,23 @@ fn cults_scenario(reenter: bool, cooldown: bool) -> TestResult {
             let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key='oteryn:quest-transition/native-kills/cults-essence'")
             .fetch_one(&h.pool).await?;
             assert_eq!(receipts, 1);
+            if let Some((peer, peer_session)) = peer {
+                use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+                for ((actor, session, direction), (_, exit)) in [
+                    (deps.actor, admitted.game_session_id, StepDirection::East),
+                    (peer, peer_session, StepDirection::West),
+                ].into_iter().zip(exits) {
+                    let (outcome, _) = owner.ordinary_paced_step(actor, session, direction, None, None).await;
+                    assert_eq!(outcome.disposition, StepDisposition::Moved);
+                    let runtime = owner.runtime.lock().await;
+                    assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(),
+                        super::quest_world_callbacks::local(exit));
+                }
+                assert_eq!(sqlx::query_scalar::<_, i64>(
+                    "SELECT count(*) FROM game_character_boss_cooldowns WHERE boss_key=$1
+                     AND available_at>floor(extract(epoch FROM clock_timestamp())*1000)::bigint"
+                ).bind(ESSENCE).fetch_one(&h.pool).await?, 2);
+            }
             if reenter {
                 {
                     let mut runtime = owner.runtime.lock().await;
@@ -668,49 +701,4 @@ async fn kill(
         );
     }
     Ok(())
-}
-
-
-async fn install_cooldown_peer(
-    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
-    h: &Harness,
-    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
-    primary: super::AdmittedSession,
-) -> TestResult<(ExactActorRef, crate::foundation::GameSessionId)> {
-    let source = super::house_transfer::RecoverySource::start(h).await?;
-    super::maintain_ready(&h.root).await?;
-    let character = super::desert_party_rite::create_peer(h, authority, &source.evidence, 0).await?;
-    let session =
-        super::activity_deadline_paging::admit_created_member(h, &source.evidence, 0, character).await?;
-    let fence = owner.current_quest_fence(session).await.map_err(|()| "peer fence")?
-        .ok_or("peer fence")?;
-    let actor = {
-        let mut runtime = owner.runtime.lock().await;
-        let reserved = runtime.reserve_fresh_session(session).map_err(debug)?;
-        let actor = runtime.commit_fresh_session(reserved).map_err(debug)?;
-        runtime.initialize_pinned_test_position(
-            actor,
-            MovementLocalPosition { x: 107, y: 108, floor: 7 },
-        ).map_err(debug)?;
-        let lease = crate::foundation::CharacterLease::new(
-            crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
-            fence.character_lease_generation,
-        ).map_err(debug)?;
-        runtime.bind_attacker_lease(actor, session, lease).map_err(debug)?;
-        let mut states = owner.states.spell_states.lock().await;
-        assert!(states.initialize(
-            &runtime, actor, session,
-            crate::gameplay_transport::actor_spell::tests::FACTS,
-            (3, 7_000_000), owner.owner_now(),
-        ).is_some());
-        actor
-    };
-    let mut admitted = primary;
-    admitted.game_session_id = session;
-    admitted.runtime_actor = Some(actor);
-    admitted.item_fence = Some(fence.item_fence());
-    owner.admit_progression_session(&mut admitted).await;
-    owner.admit_quest_session(&admitted).await;
-    assert!(owner.refresh_source_party_presence(actor, session).await);
-    Ok((actor, session))
 }

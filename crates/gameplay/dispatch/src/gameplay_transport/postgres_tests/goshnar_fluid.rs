@@ -1,6 +1,6 @@
 use super::fixture::{Harness, debug, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
-use crate::foundation::GameSessionId;
+use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Offering, Position};
 use oteryn_protocol_oteryn::world_object::{
@@ -42,6 +42,7 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
     assert!(owner.states.quest_callbacks.fixture.set(vec![callback(TARGET)?]).is_ok());
     sqlx::query(
@@ -57,22 +58,11 @@ pub(super) async fn exercise(
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let fence = owner.current_quest_fence(session).await
         .map_err(|()| "fence")?.ok_or("fence")?;
-    let member_session = GameSessionId::decode(&id(51)).map_err(debug)?;
-    let member = {
-        let mut runtime = owner.runtime.lock().await;
-        let reservation = runtime.reserve_fresh_session(member_session).map_err(debug)?;
-        let member = runtime.commit_fresh_session(reservation).map_err(debug)?;
-        let staging = super::quest_world_callbacks::local(STAGING);
-        assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(), staging);
-        runtime.initialize_pinned_test_position(member, staging).map_err(debug)?;
-        let mut states = owner.states.spell_states.lock().await;
-        assert!(states.initialize(
-            &runtime, member, member_session,
-            crate::gameplay_transport::actor_spell::tests::FACTS,
-            (3, 7_000_000), owner.owner_now()
-        ).is_some());
-        member
-    };
+    let staging = super::quest_world_callbacks::local(STAGING);
+    assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), staging);
+    let (member, member_session) = super::classic_quests::install_peer(
+        owner, h, authority, *admitted, staging,
+    ).await?;
     super::quest_world_callbacks::input_item(
         owner, fence.item_fence(),
         &Offering { position:TARGET,item:VIAL.into(),count:1 },
@@ -115,6 +105,17 @@ pub(super) async fn exercise(
         for who in [actor, member] {
             assert_eq!(runtime.read_actor_position(who).map_err(debug)?.position(), super::quest_world_callbacks::local(DESTINATION));
         }
+    }
+    use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+    for (who, peer, direction, x) in [
+        (actor, session, StepDirection::East, DESTINATION.x+1),
+        (member, member_session, StepDirection::West, DESTINATION.x-1),
+    ] {
+        let (result, _) = owner.ordinary_paced_step(who, peer, direction, None, None).await;
+        assert_eq!(result.disposition,StepDisposition::Moved);
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(runtime.read_actor_position(who).map_err(debug)?.position(),
+            super::quest_world_callbacks::local(Position {x,..DESTINATION}));
     }
     let consumed: (i64,i64) = sqlx::query_as(
         "SELECT (SELECT count(*) FROM game_item_fluid_states),

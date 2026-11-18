@@ -655,3 +655,48 @@ pub(super) async fn exercise_step(
     ));
     Ok(())
 }
+
+pub(super) async fn install_peer(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    primary: super::AdmittedSession,
+    position: crate::foundation::MovementLocalPosition,
+) -> TestResult<(crate::foundation::ExactActorRef, crate::foundation::GameSessionId)> {
+    let source = super::house_transfer::RecoverySource::start(h).await?;
+    super::maintain_ready(&h.root).await?;
+    let character = super::desert_party_rite::create_peer(h, authority, &source.evidence, 0).await?;
+    let session =
+        super::activity_deadline_paging::admit_created_member(h, &source.evidence, 0, character).await?;
+    let fence = owner.current_quest_fence(session).await.map_err(|()| "peer fence")?
+        .ok_or("peer fence")?;
+    let actor = {
+        let mut runtime = owner.runtime.lock().await;
+        let reserved = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reserved).map_err(debug)?;
+        runtime.initialize_pinned_test_position(
+            actor,
+            position,
+        ).map_err(debug)?;
+        let lease = crate::foundation::CharacterLease::new(
+            crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+            fence.character_lease_generation,
+        ).map_err(debug)?;
+        runtime.bind_attacker_lease(actor, session, lease).map_err(debug)?;
+        let mut states = owner.states.spell_states.lock().await;
+        assert!(states.initialize(
+            &runtime, actor, session,
+            crate::gameplay_transport::actor_spell::tests::FACTS,
+            (3, 7_000_000), owner.owner_now(),
+        ).is_some());
+        actor
+    };
+    let mut admitted = primary;
+    admitted.game_session_id = session;
+    admitted.runtime_actor = Some(actor);
+    admitted.item_fence = Some(fence.item_fence());
+    owner.admit_progression_session(&mut admitted).await;
+    owner.admit_quest_session(&admitted).await;
+    assert!(owner.refresh_source_party_presence(actor, session).await);
+    Ok((actor, session))
+}
