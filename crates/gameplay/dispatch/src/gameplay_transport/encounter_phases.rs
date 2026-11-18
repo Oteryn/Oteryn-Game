@@ -230,12 +230,9 @@ pub(super) fn bind(
                 .find(|actor| runtime.matches_live_creature_identity(*actor, key.as_bytes()))
                 .ok_or(CarrierError::CreatureTargetMismatch)
         };
-        let fight = ArbazilothEncounter::bind(
-            runtime,
-            players,
-            find_actor(arbaziloth::BOSS)?,
-            find_actor(arbaziloth::FORGEMASTER)?,
-        )?;
+        let boss = find_actor(arbaziloth::BOSS)?;
+        let forgemaster = find_actor(arbaziloth::FORGEMASTER)?;
+        let fight = ArbazilothEncounter::bind(runtime, players, boss, forgemaster)?;
         return Ok(ActivePhase {
             key,
             fight: Fight::Arbaziloth(Box::new(fight)),
