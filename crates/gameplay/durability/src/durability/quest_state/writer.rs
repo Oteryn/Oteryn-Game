@@ -2167,7 +2167,10 @@ impl DurabilityRoot {
                         return Err(DurabilityError::InvalidStoredState);
                     }
                     if request.transition_key == oteryn_gameplay_quests::quest::world_callbacks::EARTH_TREE_CALLBACK
-                        && !super::super::quest_world_callback::world_tree::open(&mut tx, fence.runtime_scope).await?
+                        && (context.is_none()
+                            || !callback.as_ref().is_some_and(oteryn_gameplay_quests::quest::world_callbacks::earth_tree_scene)
+                            || !matches!(request.cause, QuestCause::Use(_))
+                            || !super::super::quest_world_callback::world_tree::open(&mut tx, fence.runtime_scope).await?)
                     {
                         tx.rollback().await?;
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));

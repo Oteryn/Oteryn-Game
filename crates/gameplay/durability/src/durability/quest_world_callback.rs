@@ -11,7 +11,6 @@ mod npc_input;
 pub mod replica_window;
 mod selected_tool;
 mod tool_reads;
-pub(crate) mod world_tree;
 pub use selected_tool::QuestWorldToolContext;
 
 /// Test-only entry for the lifted PostgreSQL harness; the opaque transaction
@@ -29,6 +28,7 @@ pub async fn test_ground_stack_matches_in_transaction(
 pub mod shared_count;
 mod shared_input;
 pub mod shared_switch;
+pub(crate) mod world_tree;
 
 use super::{
     DurabilityError, character_progression::CurrentCharacterGameplayFence,
