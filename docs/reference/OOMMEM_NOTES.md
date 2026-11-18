@@ -18,6 +18,7 @@ individual process peak. Concurrent processes also contribute to cgroup usage.
 | --- | ---: | ---: | ---: | --- |
 | Dispatch lib test, dependencies rebuilt | 2 | 16,437,864 | 1067.773 | rustc SIGKILL before link |
 | Dispatch lib test, fresh resubmission on the same source | 2 | 16,590,240 | 1428.314 | rustc SIGKILL before link |
+| Dispatch lib test, independent pinned-base run | 2 | 16,436,944 | 2747.548 | rustc SIGKILL before link |
 | Dispatch lib test, dependencies cached | 1 | 16,559,372 | 392.963 | rustc SIGKILL before link |
 | Dispatch lib test, 32 codegen units, dependencies cached | 1 | 16,551,756 | 622.273 | rustc SIGKILL before link |
 | Dispatch MIR-only replay, incremental retained | 1 | 16,660,920 | 688.945 | emitted MIR, then OOM-killed |
@@ -64,6 +65,14 @@ rustc started at about 1,622.75 s into the build after dependency
 compilation. The generated mount contained 735 roots. That invocation
 retained line tables and incremental compilation and accepted 48 direct
 rlibs totaling 1,163,943,208 bytes.
+
+The independent run reached a 14,971,640 KiB compiler high-water mark
+before the first LLVM coordinator sample, 1,031.41 s into dispatch rustc.
+The compiler's measured peak was 16,436,944 KiB, and the cgroup recorded
+one OOM kill. Its last sample near the cap held 17,021,087,744 bytes of
+anonymous memory and 16,404,480 file-backed bytes. Cargo exited 101
+after rustc received SIGKILL. The build emitted the Cargo timing report
+without a dispatch test executable.
 
 The historical change associated with the first CI symptoms, #3056
 (`e2152d050`), grew the generated mount list from 541 to 730 roots.
