@@ -66,6 +66,31 @@ impl TimedEncounter {
         self.key
     }
 
+    pub(super) fn blocks_party_entry(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        map: &BundleMap,
+        quest: &str,
+        window_lever: Position,
+    ) -> bool {
+        self.scope == runtime.encounter_owner_scope()
+            && self.content == runtime.content_pin().server_artifact_digest()
+            && self.map == map.overlay.base().digest()
+            && self.revision == map.facts.object_revision(self.key)
+            && self.callback.quest == quest
+            && self
+                .callback
+                .effects
+                .timed_group_transfer
+                .as_ref()
+                .is_some_and(|window| {
+                    window
+                        .switches
+                        .iter()
+                        .any(|switch| switch.lever == window_lever)
+                })
+    }
+
     pub(super) fn contains_participant(
         &self,
         runtime: &ChannelRuntimeV1,

@@ -494,6 +494,8 @@ pub struct PartyTransfer {
     /// Run the rite only after the lever changes to this source appearance.
     pub activation_appearance: u16,
     pub stations: Vec<PartyStation>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub room_entry: Option<PartyRoomEntry>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -503,7 +505,33 @@ pub struct PartyStation {
     pub to: Position,
     /// Base vocation; promoted members retain their base eligibility.
     pub vocation: String,
-    pub offering: Position,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub offering: Option<Position>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub carried_item: Option<String>,
+}
+
+/// Read each participant's progress and carried item before admitting the party
+/// to the room shared with a coordinated switch window.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct PartyRoomEntry {
+    pub initiator: Position,
+    pub room_min: Position,
+    pub room_max: Position,
+    pub window_lever: Position,
+    pub track: String,
+    pub minimum: i64,
+    pub occupied_speech: GroupTransferSpeech,
+    pub ineligible_speech: GroupTransferSpeech,
+}
+
+impl PartyRoomEntry {
+    pub fn contains(&self, p: Position) -> bool {
+        p.floor == self.room_min.floor
+            && (self.room_min.x..=self.room_max.x).contains(&p.x)
+            && (self.room_min.y..=self.room_max.y).contains(&p.y)
+    }
 }
 
 fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
@@ -516,8 +544,33 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
             .lever
             .is_some_and(|pair| pair.contains(&party.activation_appearance))
         && callback.reversible
-        && !callback.storage.is_empty()
-        && callback.offerings.len() == party.stations.len()
+        && if let Some(room) = &party.room_entry {
+            !callback.has_state()
+                && !callback.requires_world_admission
+                && callback.offerings.is_empty()
+                && callback
+                    .lever
+                    .is_some_and(|pair| pair[1] == party.activation_appearance)
+                && pos(room.initiator)
+                && pos(room.room_min)
+                && pos(room.room_max)
+                && room.room_min.floor == room.room_max.floor
+                && room.contains(room.window_lever)
+                && super::super::valid_quest_key(&room.track)
+                && room.track.starts_with("oteryn:quest-progress/")
+                && party.stations.iter().any(|s| s.from == room.initiator)
+                && [&room.occupied_speech, &room.ineligible_speech]
+                    .iter()
+                    .all(|cue| {
+                        pos(cue.position)
+                            && cue.position.floor == room.initiator.floor
+                            && valid_group_speech_text(&cue.text)
+                    })
+        } else {
+            !callback.storage.is_empty()
+                && callback.offerings.len() == party.stations.len()
+                && unique(party.stations.iter().filter_map(|s| s.offering).collect())
+        }
         && callback.item_on_target.is_none()
         && callback.minimum_level.is_none()
         && callback.experience.is_none()
@@ -532,22 +585,34 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
         && (1..=8).contains(&party.stations.len())
         && unique(party.stations.iter().map(|s| s.from).collect())
         && unique(party.stations.iter().map(|s| s.to).collect())
-        && unique(party.stations.iter().map(|s| s.offering).collect())
         && party.stations.iter().all(|station| {
             pos(station.from)
                 && pos(station.to)
-                && pos(station.offering)
                 && station.from != station.to
                 && matches!(
                     station.vocation.as_str(),
                     "druid" | "sorcerer" | "paladin" | "knight" | "monk"
                 )
-                && callback
-                    .offerings
-                    .iter()
-                    .filter(|o| o.position == station.offering && o.count == 1)
-                    .count()
-                    == 1
+                && if let Some(room) = &party.room_entry {
+                    station.offering.is_none()
+                        && station.from.floor == room.initiator.floor
+                        && !room.contains(station.from)
+                        && room.contains(station.to)
+                        && station.carried_item.as_ref().is_some_and(|item| {
+                            item.starts_with("oteryn:item.") && super::super::valid_quest_key(item)
+                        })
+                } else {
+                    station.carried_item.is_none()
+                        && station.offering.is_some_and(|offering| {
+                            pos(offering)
+                                && callback
+                                    .offerings
+                                    .iter()
+                                    .filter(|o| o.position == offering && o.count == 1)
+                                    .count()
+                                    == 1
+                        })
+                }
         })
 }
 

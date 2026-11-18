@@ -2,6 +2,7 @@
 use super::*;
 use crate::content::spell_data::Vocation;
 use crate::durability::quest_world_callback::QuestWorldPartyMember;
+use crate::map::facts::MovementSpeech;
 
 pub(super) struct Member {
     actor: ExactActorRef,
@@ -19,6 +20,105 @@ impl<P> Plan<P> {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) fn party_room_available(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        map: &BundleMap,
+        callback: &Callback,
+        room: &world_callbacks::PartyRoomEntry,
+    ) -> Result<(), UseDisposition> {
+        let occupied = runtime
+            .positioned_melee_census()
+            .map_err(|_| UseDisposition::Rejected)?
+            .iter()
+            .any(|(_, at, session)| {
+                session.is_some() && native(at.position()).is_some_and(|p| room.contains(p))
+            });
+        let pending = self
+            .states
+            .quest_callbacks
+            .timed
+            .lock()
+            .map_err(|_| UseDisposition::Rejected)?;
+        if occupied
+            || pending.iter().any(|window| {
+                window.blocks_party_entry(runtime, map, &callback.quest, room.window_lever)
+            })
+        {
+            return Err(UseDisposition::Occupied);
+        }
+        Ok(())
+    }
+
+    pub(super) async fn party_room_requirements<P>(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        plan: &Plan<P>,
+        party: &world_callbacks::PartyTransfer,
+        room: &world_callbacks::PartyRoomEntry,
+    ) -> bool {
+        // Crystal 201189f8 elemental_spheres/actions_lever.lua:45-60.
+        // The existing Character and Item owners read each member's own state.
+        for (member, station) in plan.members.iter().zip(&party.stations) {
+            let (Ok(Some(fence)), Some(item)) = (
+                self.current_quest_fence(member.session).await,
+                station.carried_item.as_deref(),
+            ) else {
+                return false;
+            };
+            if !runtime
+                .bound_attacker_lease(member.actor, member.session)
+                .is_ok_and(|lease| {
+                    lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                        && lease.generation() == fence.character_lease_generation
+                })
+            {
+                return false;
+            }
+            let Ok(quest) = self
+                .root
+                .read_character_quest_state(self.character, fence.character_id)
+                .await
+            else {
+                return false;
+            };
+            if quest
+                .tracks()
+                .get(&room.track)
+                .is_none_or(|&value| value < room.minimum)
+            {
+                return false;
+            }
+            let Ok(inventory) = self
+                .root
+                .read_item_use_inventory(self.character, self.holder, fence.item_fence())
+                .await
+            else {
+                return false;
+            };
+            if !inventory
+                .equipment
+                .iter()
+                .chain(inventory.backpack.iter().map(|bag| &bag.backpack))
+                .chain(
+                    inventory
+                        .backpack
+                        .iter()
+                        .flat_map(|bag| bag.entries.iter().map(|entry| &entry.item)),
+                )
+                .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
+                .any(|stack| {
+                    stack.definition.family == "Item"
+                        && stack.definition.production_key == item
+                        && stack.quantity > 0
+                })
+            {
+                return false;
+            }
+        }
+        true
+    }
+
     pub(super) fn prepare_party_transfer<'a>(
         &'a self,
         runtime: &ChannelRuntimeV1,
@@ -136,6 +236,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         close: bool,
         initiator: GameSessionId,
         optional_pvp: Option<bool>,
+        origin_effect: u16,
     ) -> UseDisposition {
         let Ok(snapshots) = runtime.commit_source_steps_and_project(plan.proofs, || {
             map.facts
@@ -166,7 +267,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 map.facts.emit_movement_effect(at, 11);
             }
             if let Some(at) = native(member.expected.position()) {
-                map.facts.emit_movement_effect(at, 3);
+                map.facts.emit_movement_effect(at, origin_effect);
             }
         }
         if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
@@ -201,4 +302,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
             })
     }
+}
+
+pub(super) fn emit_room_refusal(
+    map: &BundleMap,
+    actor: ExactActorRef,
+    cue: &world_callbacks::GroupTransferSpeech,
+) {
+    map.facts.emit_movement_speech(MovementSpeech {
+        speaker: actor,
+        position: tile(cue.position),
+        talk_type: 36,
+        text: cue.text.clone(),
+        captured_name: None,
+    });
 }

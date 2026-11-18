@@ -922,6 +922,52 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     UseDisposition::StaleState
                 };
             }
+            if let Some(room) = &party.room_entry {
+                // Crystal 201189f8 elemental_spheres/actions_lever.lua:29-68.
+                // A refused chamber entry leaves its lever ready for the next use.
+                if native(expected.position()) != Some(room.initiator) {
+                    return UseDisposition::Rejected;
+                }
+                if let Err(disposition) = self.party_room_available(runtime, map, callback, room) {
+                    if disposition == UseDisposition::Occupied {
+                        super::party_transfer::emit_room_refusal(map, actor, &room.occupied_speech);
+                    }
+                    return disposition;
+                }
+                let plan = match self
+                    .prepare_party_transfer(runtime, states, &closed, callback, session)
+                {
+                    Ok(plan) => plan,
+                    Err(disposition) => {
+                        super::party_transfer::emit_room_refusal(
+                            map,
+                            actor,
+                            &room.ineligible_speech,
+                        );
+                        return disposition;
+                    }
+                };
+                if !self
+                    .party_room_requirements(runtime, &plan, party, room)
+                    .await
+                {
+                    super::party_transfer::emit_room_refusal(map, actor, &room.ineligible_speech);
+                    return UseDisposition::Rejected;
+                }
+                return self.commit_party_transfer(
+                    runtime,
+                    states,
+                    map,
+                    plan,
+                    key,
+                    expected_revision,
+                    after,
+                    close,
+                    session,
+                    optional_pvp,
+                    11,
+                );
+            }
             match self.prepare_party_transfer(runtime, states, &closed, callback, session) {
                 Ok(plan) => Some(plan),
                 Err(refusal) => {
@@ -1323,6 +1369,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 close,
                 session,
                 optional_pvp,
+                3,
             );
         }
         if callback.effects.encounter.is_some() && !close {
