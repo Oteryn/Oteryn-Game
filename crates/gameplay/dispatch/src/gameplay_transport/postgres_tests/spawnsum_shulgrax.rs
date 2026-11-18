@@ -196,6 +196,10 @@ async fn exercise(h: &Harness) -> TestResult {
     );
     assert!(has_item(LEVER, 9111));
     assert!(has_item(PORTAL, 5068));
+    assert!(
+        !map.facts
+            .quest_callback_blocked(map.overlay.base(), PORTAL, true)
+    );
     let exit = TilePos {
         x: 33436,
         y: 32800,
@@ -217,7 +221,7 @@ async fn exercise(h: &Harness) -> TestResult {
     );
     assert_eq!(access(second, 1_000_100), Some(exit));
     assert_eq!(map.facts.next_movement_decay_time(), Some(30_000_100));
-    assert_eq!(map.facts.expire_movement_items(30_000_100), 4);
+    assert_eq!(map.facts.expire_movement_items(30_000_100), 5);
     assert_ne!(access(first, 30_000_100), Some(exit));
     assert_eq!(access(second, 30_000_100), Some(exit));
     assert_ne!(access(second, 31_000_100), Some(exit));

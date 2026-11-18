@@ -19,9 +19,11 @@ const FLOWERS: [(TilePos, u16); 9] = [
     (garden(33459, 32686), 3677),
     (garden(33456, 32687), 3677),
 ];
-const GATES: [(TilePos, u16, u16); 4] = [
+const GATES: [(TilePos, u16, u16); 5] = [
     (garden(33475, 32698), 1635, 7144),
     (garden(33476, 32698), 7144, 1635),
+    // The sparks overlay the retained buttress. Its visible Item stays in place.
+    (PORTAL, 7144, 7144),
     (garden(33478, 32698), 7144, 1634),
     (garden(33479, 32698), 1634, 7144),
 ];
@@ -154,8 +156,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             key: placement_key,
                             before: entry.facts,
                             expected_revision: map.facts.object_revision(placement_key),
-                            after: Some(map.facts.quest_callback_replacement(placement_key, to)?),
-                            passable: to != 7144,
+                            after: Some(if position == PORTAL {
+                                entry.facts
+                            } else {
+                                map.facts.quest_callback_replacement(placement_key, to)?
+                            }),
+                            passable: position == PORTAL || to != 7144,
                         });
                         break;
                     }
