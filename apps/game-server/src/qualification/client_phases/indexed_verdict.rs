@@ -169,11 +169,7 @@ impl Harness {
     /// A condition/timer with its own existing deadline is not a stalled row.
     /// This never changes that deadline or the enclosing journey's wall budget.
     pub(crate) fn bounded_wait(&self, until: tokio::time::Instant, phase: &'static str) {
-        if let Some(watch) = self
-            .active()
-            .as_ref()
-            .filter(|watch| watch.scenario.is_some())
-        {
+        if let Some(watch) = self.active().as_ref() {
             let mut state = watch.state();
             state.phase = phase;
             state.last = tokio::time::Instant::now();
@@ -333,6 +329,24 @@ mod tests {
             let error = blocked.as_ref().err().ok_or("expected fixture block")?;
             second.remember(error.as_ref());
             assert_eq!(second.failure().0, Cause::BlockedBy { root });
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn packet_observation_extends_only_the_existing_timer() -> TestResult {
+        runtime()?.block_on(async {
+            let harness = Box::leak(Box::new(Harness::new(true, Some(Duration::from_secs(90)))));
+            let watch = Watch::new("P10", harness);
+            let start = tokio::time::Instant::now();
+            watch
+                .bound(Duration::from_secs(200), "wall budget", async {
+                    harness.bounded_wait(start + Duration::from_secs(180), "resting stamina");
+                    tokio::time::sleep(Duration::from_secs(180)).await;
+                    Ok(())
+                })
+                .await?;
+            assert_eq!(start.elapsed(), Duration::from_secs(180));
             Ok(())
         })
     }

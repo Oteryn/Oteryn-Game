@@ -1,6 +1,4 @@
 {
-    #[path = "full_e2ef6.rs"]
-    mod full_e2ef6;
     // Observe pristine starter custody before packet journeys can earn loot or move items.
     if groups.runs("f6") {
         let before = journey_verdicts();

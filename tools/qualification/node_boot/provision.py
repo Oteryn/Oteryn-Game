@@ -9,7 +9,7 @@ from threading import Thread
 import uuid
 
 
-PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk", "combat-progression", "private-channel")
+PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk", "combat-progression", "private-channel", "coin-converters", "rune-training")
 CREATURE_KEY = re.compile(r"[A-Za-z0-9:._/-]{1,128}")
 CAPACITY = re.compile(rb"capacity [1-9][0-9]* [1-9][0-9]*\n")
 SPAWNED = re.compile(rb"spawned [0-9a-f]{32} [0-9]+\n")

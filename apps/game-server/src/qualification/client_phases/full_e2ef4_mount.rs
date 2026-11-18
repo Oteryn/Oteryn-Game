@@ -1,6 +1,4 @@
 {
-    #[path = "full_e2ef4.rs"]
-    mod full_e2ef4;
     // F4 uses both ordinary starter characters before the profile fixture changes one.
     let mut client = None;
     let (pending, restored) = full_e2ef4::run(&mut client, clients, world, &metadata.npcs).await;

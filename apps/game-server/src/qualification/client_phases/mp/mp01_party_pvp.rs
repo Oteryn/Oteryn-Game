@@ -530,7 +530,7 @@ const PVP_VOCATIONS: [&str; 2] = ["knight", "sorcerer"];
 
 /// The Open PvP World's serving node, Characters and scope (`run.sh` `pvp_world_ready`). One
 /// node serves one World/Channel (`node/config.rs:81-83`), so this World has its own node.
-struct PvpWorld {
+pub(in super::super) struct PvpWorld {
     address: std::net::SocketAddr,
     url: String,
     accounts: [String; 2],
@@ -540,12 +540,25 @@ struct PvpWorld {
     scope_generation: u64,
 }
 
-async fn pvp_world() -> TestResult<PvpWorld> {
+impl PvpWorld {
+    pub(in super::super) fn pair<'a>(&'a self, core: &SeamClients<'a>) -> SeamClients<'a> {
+        SeamClients {
+            address: self.address,
+            accounts: &self.accounts,
+            characters: &self.characters,
+            world: self.world,
+            channel: self.channel,
+            scope_generation: self.scope_generation,
+            url: &self.url,
+            uses_core_release_gate: false,
+            ..*core
+        }
+    }
+}
+
+pub(in super::super) async fn pvp_world_for(accounts: [&str; 2]) -> TestResult<PvpWorld> {
     let url = required("NODE_BOOT_PVP_DATABASE_URL")?;
-    let accounts = [
-        required("NODE_BOOT_PVP_ACCOUNT_ID")?,
-        required("NODE_BOOT_PVP_SECOND_ACCOUNT_ID")?,
-    ];
+    let accounts = [required(accounts[0])?, required(accounts[1])?];
     let world = crate::node::uuid_bytes(&required("NODE_BOOT_PVP_WORLD_ID")?)
         .ok_or("invalid NODE_BOOT_PVP_WORLD_ID")?;
     let channel = crate::node::uuid_bytes(&required("NODE_BOOT_PVP_CHANNEL_ID")?)
@@ -592,7 +605,16 @@ async fn pvp_world_rows(
     towns: &oteryn_world_bundle::subarea::Table,
     failures: &mut Vec<String>,
 ) {
-    let fixture = match bounded("pvp-world", 60, pvp_world()).await {
+    let fixture = match bounded(
+        "pvp-world",
+        60,
+        pvp_world_for([
+            "NODE_BOOT_PVP_ACCOUNT_ID",
+            "NODE_BOOT_PVP_SECOND_ACCOUNT_ID",
+        ]),
+    )
+    .await
+    {
         Ok(fixture) => fixture,
         Err(error) => {
             check("pvp-world", Err(error), failures);
@@ -603,16 +625,7 @@ async fn pvp_world_rows(
         }
     };
     check("pvp-world", Ok(()), failures);
-    let pair = SeamClients {
-        address: fixture.address,
-        accounts: &fixture.accounts,
-        characters: &fixture.characters,
-        world: fixture.world,
-        channel: fixture.channel,
-        scope_generation: fixture.scope_generation,
-        url: &fixture.url,
-        ..*core
-    };
+    let pair = fixture.pair(core);
     let (mut bots, setup) = tokio::time::timeout(
         Duration::from_secs(180),
         bots::connect_bots(&[

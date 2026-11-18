@@ -52,7 +52,7 @@ class ProvisionTests(unittest.TestCase):
             control.recv.side_effect = recv
             PROVISION.provision("fixture.sock", SESSION, "knight")
 
-    def exchange(self, answer):
+    def exchange(self, answer, profile="knight"):
         with tempfile.TemporaryDirectory() as directory:
             path = str(Path(directory) / "control.sock")
             with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:
@@ -69,13 +69,13 @@ class ProvisionTests(unittest.TestCase):
                         while chunk := connection.recv(128):
                             request.extend(chunk)
                             self.assertLessEqual(len(request), 128)
-                        self.assertEqual(request, f"qualify {SESSION} knight\n".encode())
+                        self.assertEqual(request, f"qualify {SESSION} {profile}\n".encode())
                         connection.sendall(answer)
 
                 with ThreadPoolExecutor(max_workers=1) as executor:
                     served = executor.submit(serve)
                     try:
-                        PROVISION.provision(path, SESSION, "knight")
+                        PROVISION.provision(path, SESSION, profile)
                     finally:
                         served.result(timeout=3)
 
@@ -105,6 +105,9 @@ class ProvisionTests(unittest.TestCase):
 
     def test_qualified_reply_is_accepted(self):
         self.exchange(b"qualified\n")
+
+    def test_coin_converter_fixture_uses_control_request(self):
+        self.exchange(b"qualified\n", "coin-converters")
 
     def test_refusal_retains_the_exact_node_answer(self):
         with self.assertRaises(RuntimeError) as refused:

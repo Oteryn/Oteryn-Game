@@ -45,6 +45,17 @@ where
     F: FnOnce(ServerStream) -> Fut + 'static,
     Fut: std::future::Future<Output = TestResult> + 'static,
 {
+    connect_peer_with_expert(false, script).await
+}
+
+async fn connect_peer_with_expert<F, Fut>(
+    expert: bool,
+    script: F,
+) -> TestResult<(DevClientSession, tokio::task::JoinHandle<TestResult>)>
+where
+    F: FnOnce(ServerStream) -> Fut + 'static,
+    Fut: std::future::Future<Output = TestResult> + 'static,
+{
     let generated = rcgen::generate_simple_self_signed(vec!["localhost".to_owned()])?;
     let certificate = generated.cert.der().clone();
     let key = PrivatePkcs8KeyDer::from(generated.signing_key.serialize_der());
@@ -64,7 +75,11 @@ where
         let bootstrap = light_read(&mut stream).await?;
         let envelope = native::decode_wire_envelope(&bootstrap)?;
         let bootstrap = envelope.client_bootstrap()?;
-        let selected = [6, 13, 21, 64];
+        let mut selected = vec![6, 13, 21, 64];
+        if expert {
+            selected.extend([native::attack::CAPABILITY_ATTACK_V1, native::pvp_expert::CAPABILITY_PVP_EXPERT_V1]);
+            selected.sort_unstable();
+        }
         assert!(
             selected
                 .iter()
@@ -114,25 +129,38 @@ where
         .map_err(|error| format!("cleanup entities snapshot: {error:?}"))?;
         let overlay = native::world_object::encode_world_object_overlay_snapshot(&[])
             .map_err(|error| format!("cleanup overlay snapshot: {error:?}"))?;
-        for frame in native::encode_single_chunk_snapshot(
-            1,
-            1,
-            JOIN_SEQUENCE,
-            &[
+        let mut snapshots = vec![
+            DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                revision: 0,
+                snapshot_type: spatial::SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2,
+                payload: &entities,
+            },
+            DomainSnapshot {
+                domain_id: native::world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                revision: 0,
+                snapshot_type: native::world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                payload: &overlay,
+            },
+        ];
+        use native::{attack, pvp_expert};
+        let combat = attack::encode_actor_combat_state(&attack::ActorCombatState {
+            target: None, modes: attack::FightModes::DEFAULT, in_fight: false,
+        }).map_err(|error| format!("fixture combat snapshot: {error:?}"))?;
+        let modes = pvp_expert::encode_expert_fight_modes(&pvp_expert::ExpertFightModes::default());
+        if expert {
+            snapshots.extend([
                 DomainSnapshot {
-                    domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                    revision: 0,
-                    snapshot_type: spatial::SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2,
-                    payload: &entities,
+                    domain_id: attack::STATE_DOMAIN_ACTOR_COMBAT_STATE, revision: 1,
+                    snapshot_type: attack::SNAPSHOT_TYPE_ACTOR_COMBAT_STATE_V1, payload: &combat,
                 },
                 DomainSnapshot {
-                    domain_id: native::world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
-                    revision: 0,
-                    snapshot_type: native::world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
-                    payload: &overlay,
+                    domain_id: pvp_expert::STATE_DOMAIN_EXPERT_FIGHT_MODES, revision: 1,
+                    snapshot_type: 1, payload: &modes,
                 },
-            ],
-        )? {
+            ]);
+        }
+        for frame in native::encode_single_chunk_snapshot(1, 1, JOIN_SEQUENCE, &snapshots)? {
             send(&mut stream, &frame).await?;
         }
         script(stream).await
@@ -373,6 +401,64 @@ fn logout_cleanup_expired_budget_rejects_busy_without_sending_a_turn() -> TestRe
         assert_eq!(client.next_command_id(), 8);
         drop(client);
         peer.await??;
+        Ok(())
+    })
+}
+
+
+#[test]
+fn expert_modes_wire_requires_the_ordered_confirmation() -> TestResult {
+    use tokio::io::AsyncReadExt as _;
+    use native::{attack, pvp_expert as expert};
+
+    run_transport(|| async {
+        let requested = expert::ExpertFightModes {
+            modes: attack::FightModes {
+                fight_mode: attack::FightMode::Offensive,
+                secure: false,
+                ..attack::FightModes::DEFAULT
+            },
+            expert: expert::ExpertMode::RedFist,
+        };
+        for (label, confirmation) in [
+            ("interleaved", Some(requested)),
+            ("wrong", Some(expert::ExpertFightModes::default())),
+            ("missing", None),
+        ] {
+            let (mut client, server) = connect_peer_with_expert(true, move |mut stream| async move {
+                expect_command(
+                    &mut stream, FIRST_COMMAND_ID, expert::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT,
+                    &expert::encode_expert_fight_modes(&requested),
+                ).await?;
+                send(&mut stream, &native::encode_command_result(
+                    1, JOIN_SEQUENCE + 1, FIRST_COMMAND_ID, CommandStatus::Accepted,
+                    &attack::encode_attack_intent_result(attack::AttackIntentDisposition::Ok),
+                )?).await?;
+                let combat = attack::encode_actor_combat_state(&attack::ActorCombatState {
+                    target: None, modes: requested.modes, in_fight: false,
+                }).map_err(|error| format!("fixture combat delta: {error:?}"))?;
+                send(&mut stream, &native::encode_state_delta(
+                    1, JOIN_SEQUENCE + 2, attack::STATE_DOMAIN_ACTOR_COMBAT_STATE, 1, 2,
+                    attack::DELTA_TYPE_ACTOR_COMBAT_STATE_V1, &combat,
+                )?).await?;
+                if let Some(modes) = confirmation {
+                    send(&mut stream, &native::encode_state_delta(
+                        1, JOIN_SEQUENCE + 3, expert::STATE_DOMAIN_EXPERT_FIGHT_MODES, 1, 2,
+                        1, &expert::encode_expert_fight_modes(&modes),
+                    )?).await?;
+                }
+                let _ = stream.read(&mut [0]).await;
+                Ok(())
+            }).await?;
+            let outcome = super::super::full_e2ef6::set_open_pvp_aggression(&mut client).await;
+            drop(client);
+            server.await??;
+            match label {
+                "interleaved" => outcome?,
+                "wrong" => assert!(outcome.is_err_and(|error| error.to_string().contains("RedFist/secure-off not served"))),
+                _ => assert!(outcome.is_err_and(|error| error.to_string().contains("expert mode confirmation deadline"))),
+            }
+        }
         Ok(())
     })
 }

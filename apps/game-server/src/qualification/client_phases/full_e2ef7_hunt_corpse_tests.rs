@@ -97,6 +97,24 @@ async fn delta(
     Ok(())
 }
 
+async fn hit(stream: &mut ServerStream, sequence: &mut u64, x: i32) -> TestResult {
+    use native::presentation::*;
+    let payload = encode_presentation_batch(&[PresentationEvent {
+        decision_ordinal: 1,
+        emission_ordinal: 1,
+        kind: PresentationEventKind::ValueText {
+            kind: PresentationValueKind::DamageDealt,
+            position: position(x), target: creature().entity,
+            attacker: Some(spatial::EntityRef { identity: v7(1,1), generation: 1 }),
+            primary: PresentationValue { value: 10, color: PresentationColor::Red },
+            secondary: None,
+        }
+    }]).map_err(|e| format!("hunt replay presentation: {e:?}"))?;
+    *sequence += 1;
+    send(stream, &native::encode_state_delta(1, *sequence,
+        STATE_DOMAIN_WORLD_PRESENTATION, 0, 1, 1, &payload)?).await
+}
+
 async fn replay_peer(mut stream: ServerStream, scenario: Replay) -> TestResult {
     let mut sequence = 0;
     let mut revision = 0;
@@ -145,6 +163,7 @@ async fn replay_peer(mut stream: ServerStream, scenario: Replay) -> TestResult {
                         .await?;
                     }
                     (Replay::Ranged, 2) => {
+                        hit(&mut stream, &mut sequence, 104).await?;
                         delta(
                             &mut stream,
                             &mut sequence,
@@ -223,6 +242,7 @@ async fn replay_peer(mut stream: ServerStream, scenario: Replay) -> TestResult {
                         .await?;
                     }
                     (Replay::Ambiguous, 3) => {
+                        hit(&mut stream, &mut sequence, 102).await?;
                         delta(
                             &mut stream,
                             &mut sequence,

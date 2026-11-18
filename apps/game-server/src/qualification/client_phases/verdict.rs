@@ -436,7 +436,7 @@ pub(super) struct Harness {
 }
 
 impl Harness {
-    fn new(failfast: bool, no_progress: Option<Duration>) -> Self {
+    pub(super) fn new(failfast: bool, no_progress: Option<Duration>) -> Self {
         Self {
             failfast,
             no_progress,

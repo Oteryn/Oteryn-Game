@@ -8,6 +8,9 @@ mod creature_sweep;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::path::Path;
 
+#[path = "mp/mount.rs"]
+mod mp;
+
 #[path = "general_stats.rs"]
 mod general_stats;
 
@@ -15,6 +18,10 @@ include!("character_core.rs");
 include!("character_release.rs");
 include!("e2e_row_batch.rs");
 include!("floor_journey.rs");
+#[path = "full_e2ef4.rs"]
+mod full_e2ef4;
+#[path = "full_e2ef6.rs"]
+mod full_e2ef6;
 include!("full_e2ef7_mount.rs");
 include!("full_gold_mount.rs");
 include!("full_row_c03_mount.rs");
@@ -2820,8 +2827,19 @@ async fn walk(
     world: &BundleWorld,
     path: &[StepDirection],
 ) -> TestResult {
-    walk_until(client, world, path, None, false).await?;
-    Ok(())
+    walk_observing(client, world, path, |_, _| Ok(())).await
+}
+
+async fn walk_observing(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+    observe: impl FnMut(
+        &oteryn_dev_client::DevClientSession,
+        Vec<oteryn_dev_client::SessionEvent>,
+    ) -> TestResult,
+) -> TestResult {
+    walk_until_observing(client, world, path, None, false, observe).await
 }
 
 async fn probe_step(
@@ -2853,6 +2871,23 @@ async fn walk_until(
     path: &[StepDirection],
     deadline: Option<tokio::time::Instant>,
     tolerate_refusal: bool,
+) -> TestResult {
+    walk_until_observing(client, world, path, deadline, tolerate_refusal, |_, _| {
+        Ok(())
+    })
+    .await
+}
+
+async fn walk_until_observing(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+    deadline: Option<tokio::time::Instant>,
+    tolerate_refusal: bool,
+    mut observe: impl FnMut(
+        &oteryn_dev_client::DevClientSession,
+        Vec<oteryn_dev_client::SessionEvent>,
+    ) -> TestResult,
 ) -> TestResult {
     for &direction in path {
         if probe_expired(deadline) {
@@ -2931,7 +2966,8 @@ async fn walk_until(
             )
             .into());
         }
-        client.take_events();
+        let events = client.take_events();
+        observe(client, events)?;
     }
     Ok(())
 }
@@ -4739,6 +4775,14 @@ pub(super) async fn journeys(
         for index in 0..clients.accounts.len() {
             wait_character_released(clients, index).await?;
         }
+        // Keep the low-level speech witness and Adventurer victim eligible
+        // until their rows finish, then let that player choose a caster vocation.
+        if groups.runs("f5") {
+            full_e2ef5::support_rows(clients, world).await;
+        }
+        if groups.runs("f7add") {
+            full_e2ef7::run_light(clients).await;
+        }
         if groups.runs("rows") {
             let before = journey_verdicts();
             if e2e_row_selected(233) {
@@ -5394,8 +5438,6 @@ pub(super) async fn journeys(
         }
     }
     if groups.runs("mp") {
-        #[path = "mp/mount.rs"]
-        mod mp;
         let before = journey_verdicts();
         mp::run(clients, packet_clients, world, &metadata.manifest.subareas).await;
         journey_group_completed("mp", before);

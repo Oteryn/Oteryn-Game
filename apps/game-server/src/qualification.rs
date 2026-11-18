@@ -1666,6 +1666,7 @@ fn node_boot_seam_against_running_node() -> TestResult {
                 url: &url,
                 runtime: None,
                 recovery: &recovery_key()?,
+                uses_core_release_gate: true,
             };
             if let Some(path) = world_path {
                 let packet_accounts = packet_accounts
@@ -2164,6 +2165,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         url: &url,
         runtime: Some(&runtime),
         recovery: &recovery_signing,
+        uses_core_release_gate: true,
     };
     let clients = async {
         if let Some(spell_lane) = spell_lane {
@@ -2818,6 +2820,8 @@ struct SeamClients<'a> {
     runtime: Option<&'a tokio::sync::Mutex<crate::foundation::ChannelRuntimeV1>>,
     /// The published Platform recovery key (`oteryn-reauth-recovery-v1`) and its id.
     recovery: &'a (String, SigningKey),
+    /// Only fixtures in the main qualification lane use its indexed fail-fast gate.
+    uses_core_release_gate: bool,
 }
 
 /// The Platform recovery signing key published in the topology (#822 resume).

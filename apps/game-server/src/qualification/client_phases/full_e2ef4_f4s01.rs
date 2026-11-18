@@ -27,6 +27,13 @@ struct Stats {
     xp: u64,
     level: u32,
     stamina: u16,
+    vocation: Option<u8>,
+}
+
+fn troll_share(vocations: [Option<u8>; 2]) -> i64 {
+    // GeneralStats uses adjacent IDs for the base and promoted forms of each vocation.
+    let [a, b] = vocations.map(|vocation| vocation.unwrap_or(1) / 2);
+    if a != 0 && b != 0 && a != b { 13 } else { 12 }
 }
 
 async fn stats(client: &mut DevClientSession) -> TestResult<Stats> {
@@ -42,15 +49,11 @@ async fn stats(client: &mut DevClientSession) -> TestResult<Stats> {
         return Err(format!("S01 GeneralStats refused: {reply:?}").into());
     }
     let vocation = general_stats::validate(&reply.payload, general_stats::selected(client))?;
-    // Both harness starters have no vocation. Prove that from the served view,
-    // so the single-vocation Crystal bonus is not assumed from a fixture label.
-    if vocation != character::vocation_id("none") {
-        return Err(format!("S01 requires observed starter vocation, got {vocation:?}").into());
-    }
     Ok(Stats {
         xp: u64::from_le_bytes(reply.payload[1..9].try_into()?),
         level: u32::from_le_bytes(reply.payload[9..13].try_into()?),
         stamina: u16::from_le_bytes(reply.payload[29..31].try_into()?),
+        vocation,
     })
 }
 
@@ -73,8 +76,13 @@ async fn align_levels(
             (&mut *peer, &mut *client)
         };
         while_serving(idle, async {
-            let target = super::super::travel_to_spawn_target(lower, world, &metadata.spawns, "oteryn:creature.rat")
-                .await?;
+            let target = super::super::travel_to_spawn_target(
+                lower,
+                world,
+                &metadata.spawns,
+                "oteryn:creature.rat",
+            )
+            .await?;
             client_hunt::hunt_target(lower, Some(target)).await
         })
         .await?;
@@ -84,24 +92,19 @@ async fn align_levels(
 fn hits(
     client: &mut DevClientSession,
     target: EntityRef,
-    last_position: &mut oteryn_protocol_oteryn::world_spatial::ActorPosition,
+    proof: &mut super::super::full_e2ef7::HuntCorpseEvidence,
 ) -> u64 {
     client
         .take_events()
         .iter()
         .filter_map(|event| {
-            if let SessionEvent::WorldSpatialEntities(delta) = event
-                && let Some(updated) = delta
-                    .value
-                    .update
-                    .iter()
-                    .find(|entry| entry.entity == target)
-            {
-                *last_position = updated.position;
+            if let SessionEvent::WorldSpatialEntities(delta) = event {
+                proof.observe(&delta.value);
             }
             let SessionEvent::Presentation(delta) = event else {
                 return None;
             };
+            proof.observe_damage(&delta.value);
             Some(
                 delta
                     .value
@@ -198,7 +201,10 @@ async fn shared_kill(
     })
     .ok_or("S01 peer has no adjacent troll route")?;
     while_serving(client, walk(peer, world, &path)).await?;
-    let before = [while_serving(peer, stats(client)).await?, while_serving(client, stats(peer)).await?];
+    let before = [
+        while_serving(peer, stats(client)).await?,
+        while_serving(client, stats(peer)).await?,
+    ];
     if u64::from(before[0].level.min(before[1].level)) * 3
         < u64::from(before[0].level.max(before[1].level)) * 2
     {
@@ -225,11 +231,14 @@ async fn shared_kill(
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
     let mut damage = [0_u64; 2];
-    let mut last_position = [target.position; 2];
+    let mut proof = [
+        super::super::full_e2ef7::HuntCorpseEvidence::new(target, corpses_before.clone()),
+        super::super::full_e2ef7::HuntCorpseEvidence::new(target, corpses_before),
+    ];
     loop {
         for (i, fighter) in [&mut *client, &mut *peer].into_iter().enumerate() {
             fighter.service_liveness(Duration::from_millis(50)).await?;
-            damage[i] += hits(fighter, target.entity, &mut last_position[i]);
+            damage[i] += hits(fighter, target.entity, &mut proof[i]);
         }
         verdict::Harness::global().progress("e2ef4-s01-fight");
         let removed = [&*client, &*peer].iter().all(|fighter| {
@@ -237,13 +246,9 @@ async fn shared_kill(
                 .world_entities()
                 .is_some_and(|entities| entities.get(&target.entity).is_none())
         });
-        let corpse = client.world_entities().is_some_and(|entities| {
-            entities.iter().any(|entry| {
-                entry.kind == EntityKind::Corpse
-                    && !corpses_before.contains(&entry.entity)
-                    && last_position.contains(&entry.position)
-            })
-        });
+        let corpse = client
+            .world_entities()
+            .is_some_and(|entities| proof[0].corpse(entities.iter(), true).is_some());
         if removed && corpse {
             break;
         }
@@ -260,13 +265,14 @@ async fn shared_kill(
     if damage.contains(&0) {
         return Err(format!("S01 both members must damage this troll: {damage:?}").into());
     }
-    // Crystal: ceil(20 * 1.20 / 2) = 12 per member, before individual
-    // low-level/stamina modifiers. These non-premium starter accounts have
+    // Crystal: ceil(20 * 1.20 / 2) or ceil(20 * 1.30 / 2) per member,
+    // depending on the served vocation families, before individual modifiers. These non-premium starter accounts have
     // no purchased boosts or prey selected; this journey never activates any.
+    let share = troll_share([before[0].vocation, before[1].vocation]);
     let mut expected = [0_u64; 2];
     for (i, observed) in before.iter().enumerate() {
         let award = oteryn_gameplay_characters::hunting_experience::hunting_experience(
-            12,
+            share,
             0,
             0,
             i32::from(observed.stamina),
@@ -280,7 +286,10 @@ async fn shared_kill(
         }
     }
     loop {
-        let after = [while_serving(peer, stats(client)).await?, while_serving(client, stats(peer)).await?];
+        let after = [
+            while_serving(peer, stats(client)).await?,
+            while_serving(client, stats(peer)).await?,
+        ];
         let gained = [
             after[0]
                 .xp
@@ -292,7 +301,7 @@ async fn shared_kill(
                 .ok_or("S01 peer XP regressed")?,
         ];
         if gained == expected {
-            row.pass("shared-xp-split", format!("troll=20 bonus=20% members=2 share=12 before={:?} after={:?} gained={gained:?} damage={damage:?}", [before[0].xp,before[1].xp], [after[0].xp,after[1].xp]));
+            row.pass("shared-xp-split", format!("troll=20 members=2 share={share} before={:?} after={:?} gained={gained:?} damage={damage:?}", [before[0].xp,before[1].xp], [after[0].xp,after[1].xp]));
             return Ok(());
         }
         if gained.iter().zip(expected).any(|(got, want)| *got > want)
@@ -360,7 +369,8 @@ async fn journey(
             .ok_or("party invitation not visible to peer")?
             .handle;
         row.pass("invite", "peer-current-query-has-invitation");
-        let state = while_serving(client, send(&mut peer, Some(PartyIntent::Accept(handle)))).await?;
+        let state =
+            while_serving(client, send(&mut peer, Some(PartyIntent::Accept(handle)))).await?;
         if state.members.len() != 2 {
             return Err("party join did not produce two members".into());
         }
@@ -372,7 +382,11 @@ async fn journey(
             .find(|m| !m.leader)
             .ok_or("no nonleader member")?;
         let target_name = member.name.clone();
-        let state = while_serving(&mut peer, send(client, Some(PartyIntent::PassLeadership(member.handle)))).await?;
+        let state = while_serving(
+            &mut peer,
+            send(client, Some(PartyIntent::PassLeadership(member.handle))),
+        )
+        .await?;
         if !state
             .members
             .iter()
@@ -387,8 +401,12 @@ async fn journey(
         };
         let result = while_serving(client, peer.chat(&intent)).await?;
         if result.disposition != oteryn_dev_client::ChatDisposition::Ok
-            || !while_serving(client, send(&mut peer, None)).await?.shared_xp_enabled
-            || !while_serving(&mut peer, send(client, None)).await?.shared_xp_enabled
+            || !while_serving(client, send(&mut peer, None))
+                .await?
+                .shared_xp_enabled
+            || !while_serving(&mut peer, send(client, None))
+                .await?
+                .shared_xp_enabled
         {
             return Err("shared XP toggle not reflected by party owner".into());
         }
@@ -403,7 +421,8 @@ async fn journey(
         loop {
             let command = runtime::PartyCommand::intent(PartyIntent::Leave)
                 .map_err(|e| format!("S01 leave input: {e:?}"))?;
-            let reply = while_serving(&mut peer, runtime::send(client.session_mut(), &command)).await?;
+            let reply =
+                while_serving(&mut peer, runtime::send(client.session_mut(), &command)).await?;
             let operation = runtime::party::decode_party_result(&reply.operation)
                 .map_err(|e| format!("S01 leave operation: {e:?}"))?;
             match operation.disposition {
@@ -416,8 +435,14 @@ async fn journey(
                 other => return Err(format!("S01 leave refused: {other:?}").into()),
             }
         }
-        if !while_serving(&mut peer, send(client, None)).await?.members.is_empty()
-            || !while_serving(client, send(&mut peer, None)).await?.members.is_empty()
+        if !while_serving(&mut peer, send(client, None))
+            .await?
+            .members
+            .is_empty()
+            || !while_serving(client, send(&mut peer, None))
+                .await?
+                .members
+                .is_empty()
         {
             return Err("party leave retained membership".into());
         }
@@ -439,4 +464,20 @@ async fn journey(
         return Err(format!("party peer cleanup logout refused: {cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}; journey={result:?}").into());
     }
     result
+}
+
+#[cfg(test)]
+mod share_tests {
+    use super::*;
+
+    #[test]
+    fn advanced_players_use_the_observed_vocation_families() {
+        let vocation = character::vocation_id;
+        assert_eq!(troll_share([vocation("none"), vocation("knight")]), 12);
+        assert_eq!(
+            troll_share([vocation("knight"), vocation("elite_knight")]),
+            12
+        );
+        assert_eq!(troll_share([vocation("knight"), vocation("druid")]), 13);
+    }
 }

@@ -60,6 +60,8 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
             | "monk"
             | "combat-progression"
             | "private-channel"
+            | "coin-converters"
+            | "rune-training"
     )
     .then_some((session, profile))
 }
@@ -436,6 +438,18 @@ async fn prepare_build(
     {
         return Err("qualification scope mismatch".into());
     }
+    if profile == "coin-converters" {
+        return prepare_items(
+            root,
+            authority,
+            proof,
+            &current,
+            native,
+            deadline,
+            &[25719, 28525],
+        )
+        .await;
+    }
     if profile == "private-channel" {
         #[cfg(feature = "qualification-spawn")]
         if current.session_state() == crate::foundation::GameSessionState::Active
@@ -462,6 +476,18 @@ async fn prepare_build(
     .map_err(|error| format!("qualification interpretation: {error:?}"))?
     .ok_or("qualification interpretation unavailable")?;
     let [profile_revision, ruleset_revision, content_revision, _] = interpretation.revisions();
+    if profile == "rune-training" {
+        return qualification_build::prepare_rune_magic(
+            root,
+            authority,
+            proof,
+            &current,
+            content_revision,
+            uuid_v7()?,
+            deadline,
+        )
+        .await;
+    }
     let progression = native
         .progression()
         .ok_or("qualification progression unavailable")?;
@@ -514,13 +540,36 @@ async fn prepare_build(
     )
     .await?;
     if !combat_progression {
-        prepare_items(root, authority, proof, &current, native, vocation, deadline).await?;
+        let tools = [3276, 3003, 3457, 3147];
+        let count = if matches!(vocation, "paladin" | "monk") {
+            4
+        } else {
+            3
+        };
+        prepare_items(
+            root,
+            authority,
+            proof,
+            &current,
+            native,
+            deadline,
+            &tools[..count],
+        )
+        .await?;
     }
     Ok(())
 }
 
 // Fixture claims use the ordinary fenced/audited reward owner, never SQL item
 // inserts. They are setup evidence only, not proof of player chest interaction.
+fn fixture_item_claim_key(id: u32, session: &[u8; 16]) -> String {
+    if matches!(id, 25719 | 28525) {
+        format!("oteryn:qualification.item.i{id}.{}", uuid_text(session))
+    } else {
+        format!("oteryn:qualification.item.i{id}")
+    }
+}
+
 async fn prepare_items(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -529,8 +578,8 @@ async fn prepare_items(
         crate::foundation::AuthenticatedTransportRefV1,
     >,
     native: &NativeGameplayState,
-    vocation: &str,
     deadline: tokio::time::Instant,
+    items: &[u32],
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -571,10 +620,7 @@ async fn prepare_items(
     let index = native
         .item_index()
         .ok_or("qualification Item index missing")?;
-    // Axe, rope, shovel. Every profile needs the same map/melee prerequisites;
-    // vocation and level still come from the served progression policy.
-    let blank_rune = matches!(vocation, "paladin" | "monk").then_some(3147);
-    for (ordinal, id) in [3276, 3003, 3457].into_iter().chain(blank_rune).enumerate() {
+    for (ordinal, &id) in items.iter().enumerate() {
         if qualification_build::retry_holder(
             Some(root),
             deadline,
@@ -590,6 +636,15 @@ async fn prepare_items(
             continue;
         }
         let key = format!("oteryn:item.tibia.i{id}");
+        if matches!(id, 25719 | 28525)
+            && bag.entries.iter().any(|entry| {
+                entry.item.definition.production_key == key
+                    || (id == 28525
+                        && entry.item.definition.production_key == "oteryn:item.tibia.i28526")
+            })
+        {
+            continue;
+        }
         let definition = TypedDefinitionRef {
             family: "Item".into(),
             production_key: key.clone(),
@@ -610,7 +665,10 @@ async fn prepare_items(
             ),
             claim: TypedDefinitionRef {
                 family: "RewardClaim".into(),
-                production_key: format!("oteryn:qualification.item.i{id}"),
+                production_key: fixture_item_claim_key(
+                    id,
+                    current.current_game_session_id().as_bytes(),
+                ),
                 revision_ref: "qualification-v1".into(),
             },
             source_placement: "oteryn:qualification.node-boot".into(),
@@ -840,9 +898,15 @@ mod tests {
                             .join(format!("qualification-{}.sock", uuid_text(&session)));
                         let result = tokio::time::timeout(Duration::from_secs(10), async {
                             let listener = UnixListener::bind(&path)?;
-                            for profile in
-                                ["knight", "druid", "paladin", "sorcerer", "explorer", "monk"]
-                            {
+                            for profile in [
+                                "knight",
+                                "druid",
+                                "paladin",
+                                "sorcerer",
+                                "explorer",
+                                "monk",
+                                "coin-converters",
+                            ] {
                                 let script = Path::new(env!("CARGO_MANIFEST_DIR"))
                                     .join("../../tools/qualification/node_boot/provision.py");
                                 let socket = path.clone();
@@ -1040,6 +1104,23 @@ mod tests {
             assert!(request(text.as_bytes()).is_none());
         }
     }
+}
+
+#[cfg(test)]
+#[test]
+fn temporary_converter_occurrences_are_replayable_and_replenishable() {
+    assert_eq!(
+        fixture_item_claim_key(25719, &[1; 16]),
+        fixture_item_claim_key(25719, &[1; 16])
+    );
+    assert_ne!(
+        fixture_item_claim_key(25719, &[1; 16]),
+        fixture_item_claim_key(25719, &[2; 16])
+    );
+    assert_ne!(
+        fixture_item_claim_key(28525, &[1; 16]),
+        fixture_item_claim_key(28525, &[2; 16])
+    );
 }
 
 // The reward owner checks this Character's immutable claim key under the current

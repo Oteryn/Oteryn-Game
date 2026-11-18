@@ -1617,7 +1617,7 @@ const PARTY_COST_ACTIONS: &[&str] = &[
     "final-logout",
 ];
 
-async fn additional_rows(clients: &SeamClients<'_>) {
+pub(super) async fn run_light(clients: &SeamClients<'_>) {
     let mut row = JourneyRow::new("W20b", LIGHT_ACTIONS);
     let mut light = None;
     let watch = row.actions.watch();
@@ -1648,7 +1648,9 @@ async fn additional_rows(clients: &SeamClients<'_>) {
     }
     drop(light);
     row.finish(&result);
+}
 
+async fn additional_rows(clients: &SeamClients<'_>) {
     let mut gate = JourneyRow::new("S13a", PARTY_GATE_ACTIONS);
     let mut cost = JourneyRow {
         actions: verdict::Row::new("E2EF7", "S13b", PARTY_COST_ACTIONS)
@@ -1747,11 +1749,11 @@ fn qualification_spell_index(
 
 // These ordinary TLS observers include the boot-required capability closure and
 // decode its map/item domains as well as their journey-specific observations.
-const LIGHT_SUPPORTED_CAPABILITIES: &[u32] = &[4, 6, 11, 13, 15, 18, 19, 21, 30, 64];
+const LIGHT_SUPPORTED_CAPABILITIES: &[u32] = &[4, 6, 11, 13, 15, 18, 19, 21, 30, 64, 199];
 const PVP_SUPPORTED_CAPABILITIES: &[u32] =
     &[4, 6, 9, 11, 13, 15, 17, 18, 21, 30, 42, 64, 87, 134, 199];
 const FORGE_SUPPORTED_CAPABILITIES: &[u32] = &[
-    4, 6, 9, 11, 12, 13, 14, 15, 17, 18, 21, 25, 30, 64, 104, 152, 199,
+    4, 6, 9, 11, 12, 13, 14, 15, 17, 18, 21, 23, 25, 30, 64, 104, 152, 199,
 ];
 
 type LightStream = tokio_rustls::client::TlsStream<TcpStream>;
@@ -1961,13 +1963,13 @@ async fn raw_map_replacement<S: tokio::io::AsyncRead + Unpin>(
 
 impl LightClient {
     async fn connect(clients: &SeamClients<'_>, tag: u8) -> TestResult<Self> {
-        let generation = platform_generation(clients.descriptor, &clients.accounts[1]).await?;
+        let generation = platform_generation(clients.descriptor, &clients.accounts[full_e2ef5::SUPPORT_CHARACTER]).await?;
         let token = sign_grant(
             &Grant {
                 signing: clients.signing,
                 key_id: clients.key_id,
-                account_id: &clients.accounts[1],
-                character_id: clients.characters[1],
+                account_id: &clients.accounts[full_e2ef5::SUPPORT_CHARACTER],
+                character_id: clients.characters[full_e2ef5::SUPPORT_CHARACTER],
                 world_id: clients.world,
                 channel_id: clients.channel,
                 security_generation: generation,
@@ -1996,7 +1998,7 @@ impl LightClient {
             &mut stream,
             &native::encode_client_bootstrap(&native::ClientBootstrapValue {
                 schema_revision: 1,
-                character_id: CharacterId::decode(&clients.characters[1])?,
+                character_id: CharacterId::decode(&clients.characters[full_e2ef5::SUPPORT_CHARACTER])?,
                 admission_material: token.as_bytes(),
                 client_build_id: "oteryn-e2e-light",
                 supported_capabilities: supported,
@@ -2288,8 +2290,13 @@ impl LightClient {
                 &payload,
             )
             .await?;
-        if status != CommandStatus::Accepted || reply != [8, 1] || before != self.position {
-            return Err("personal-light ordinary activity turn refused or moved actor".into());
+        if status != CommandStatus::Accepted || reply != [8, 1] {
+            return Err("personal-light ordinary activity turn refused".into());
+        }
+        let tab = character::CharacterTab::GeneralStats as u8;
+        let (status, payload) = self.command(character::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB, &[tab, 0, 0, 1]).await?;
+        if status != CommandStatus::Accepted || payload.first() != Some(&tab) || before != self.position {
+            return Err("personal-light ordered turn changed position or its read barrier refused".into());
         }
         Ok(())
     }
@@ -2356,6 +2363,13 @@ async fn light_journey(
     clients: &SeamClients<'_>,
 ) -> TestResult {
     let book = native_spell_book()?;
+    let strongest = book.indexed(qualification_spell_index(book, "utevo vis lux")?)
+        .ok_or("personal-light final spell absent")?;
+    let mut ordinary = connect_character(clients, 0xe0, full_e2ef5::SUPPORT_CHARACTER).await?;
+    full_e2ef5::prepare_spell_progression(&mut ordinary, qualification_world(clients)?, strongest).await?;
+    release_when_unlocked(&mut ordinary, Duration::from_secs(70)).await?;
+    drop(ordinary);
+    wait_character_released(clients, full_e2ef5::SUPPORT_CHARACTER).await?;
     *connection = Some(LightClient::connect(clients, 0xe0).await?);
     row.pass("admission");
     for (words, level, mana, seconds, paid, refused, relog, tag, expired) in [
@@ -2407,7 +2421,7 @@ async fn light_journey(
             let spell = book
                 .indexed(index)
                 .ok_or("personal-light compiled index disappeared")?;
-            return Err(format!("prerequisite-blocked:words={words:?};observed={cast:?};detail={:?};required-level={};required-vocations={:?};required-premium={};required-mana={mana};served-mana={};no-player-progression-or-vocation-route-completed", client.refusal, spell.level, spell.vocations, spell.premium, before.mana).into());
+            return Err(format!("prerequisite-blocked:words={words:?};observed={cast:?};detail={:?};required-level={};required-vocations={:?};required-premium={};required-mana={mana};served-mana={};native-cast-after-player-progression", client.refusal, spell.level, spell.vocations, spell.premium, before.mana).into());
         }
         // Cast results precede their vitals and visibility deltas. Wait for both.
         let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
@@ -2487,6 +2501,7 @@ async fn light_journey(
             }
             let elapsed = qualification_elapsed(started, offset).saturating_sub(offline);
             light_sample(client.light, level, elapsed, duration)?;
+            verdict::Harness::global().progress("personal-light-observation");
             let current = client.light.map_or(0, |l| l.level);
             if current > last_level {
                 return Err("personal-light increased without a new cast".into());
@@ -2730,7 +2745,10 @@ async fn party_spell_journey(
 ) -> TestResult {
     let book = native_spell_book()?;
     pair[0] = Some(connect_character(clients, 0xe2, 1).await?);
-    pair[1] = Some(connect_character(clients, 0xe3, 0).await?);
+    let first = pair[0].as_mut().ok_or("first party admission absent")?;
+    pair[1] = Some(full_e2ef5::with_observer_liveness(
+        first, connect_character(clients, 0xe3, 0),
+    ).await?);
     let (caster, peer) = pair_mut(pair)?;
     if caster.join_snapshot().game_session_id == peer.join_snapshot().game_session_id
         || player_ref(caster)? == player_ref(peer)?
@@ -2913,7 +2931,10 @@ async fn party_spell_journey(
     logout(caster).await?;
     *pair = [None, None];
     pair[0] = Some(connect_character(clients, 0xe4, 1).await?);
-    pair[1] = Some(connect_character(clients, 0xe5, 0).await?);
+    let first = pair[0].as_mut().ok_or("first party admission absent")?;
+    pair[1] = Some(full_e2ef5::with_observer_liveness(
+        first, connect_character(clients, 0xe5, 0),
+    ).await?);
     let (caster, peer) = pair_mut(pair)?;
     for (client, previous, expected, position) in [
         (caster, sessions[0], saved[0], caster_start),
@@ -3188,12 +3209,13 @@ mod raw_observer_tests {
             offered_for_scope_with(true, None, false),
         )
         .map_err(|error| format!("raw observer boot requirements: {error:?}"))?;
-        // Appearance's owner adds 25/104 at session admission when cosmetics are
-        // available. They are intentionally absent from the static boot offer.
+        // The bound native world adds presentation (23), and the appearance
+        // owner adds 25/104 when cosmetics are available. This static offer has
+        // neither source bound.
         for (supported, dynamic_only) in [
             (LIGHT_SUPPORTED_CAPABILITIES, &[][..]),
             (PVP_SUPPORTED_CAPABILITIES, &[][..]),
-            (FORGE_SUPPORTED_CAPABILITIES, &[25, 104][..]),
+            (FORGE_SUPPORTED_CAPABILITIES, &[23, 25, 104][..]),
         ] {
             let selected = required
                 .authenticate_support(supported)
@@ -3657,6 +3679,7 @@ async fn earn_pvp_level_inner(client: &mut DevClientSession, world: &BundleWorld
                 "player-level-acquisition-blocked:served-level={level};required=8;ordinary-hunt={e}"
             )
         })?;
+        verdict::Harness::global().progress("pvp-earned-hunt");
     }
 }
 fn hunt_kill_proven(alive: bool, corpse_proof: bool) -> bool {
@@ -3675,29 +3698,39 @@ fn hunt_corpse_matches(
         && last_position.x.abs_diff(corpse.x).max(last_position.y.abs_diff(corpse.y)) <= 1
 }
 
+fn death_tile_matches(
+    last_seen: ActorPosition,
+    last_hit: Option<ActorPosition>,
+    corpse: ActorPosition,
+) -> bool {
+    corpse == last_seen || last_hit == Some(corpse)
+}
+
 // Observe spatial frames in wire order, including frames serviced by commands.
 // A corpse first seen before this target's removal cannot prove its kill.
-struct HuntCorpseEvidence {
+pub(super) struct HuntCorpseEvidence {
     target: spatial::EntityRef,
     last_position: ActorPosition,
+    last_hit: Option<ActorPosition>,
     removed: bool,
     excluded_corpses: BTreeSet<spatial::EntityRef>,
 }
 
 impl HuntCorpseEvidence {
-    fn new(
+    pub(super) fn new(
         target: spatial::WorldSpatialEntity,
         corpses_before: BTreeSet<spatial::EntityRef>,
     ) -> Self {
         Self {
             target: target.entity,
             last_position: target.position,
+            last_hit: None,
             removed: false,
             excluded_corpses: corpses_before,
         }
     }
 
-    fn observe(&mut self, delta: &spatial::WorldSpatialEntitiesDelta) {
+    pub(super) fn observe(&mut self, delta: &spatial::WorldSpatialEntitiesDelta) {
         if let Some(live) = delta
             .update
             .iter()
@@ -3721,7 +3754,20 @@ impl HuntCorpseEvidence {
         }
     }
 
-    fn corpse<'a>(
+    pub(super) fn observe_damage(&mut self, events: &[native::presentation::PresentationEvent]) {
+        use native::presentation::{PresentationEventKind, PresentationValueKind};
+        for event in events {
+            if let PresentationEventKind::ValueText {
+                kind: PresentationValueKind::DamageDealt, target, position, primary, ..
+            } = event.kind
+                && target == self.target && primary.value > 0
+            {
+                self.last_hit = Some(position);
+            }
+        }
+    }
+
+    pub(super) fn corpse<'a>(
         &self,
         entities: impl Iterator<Item = &'a spatial::WorldSpatialEntity>,
         earned_xp: bool,
@@ -3734,6 +3780,7 @@ impl HuntCorpseEvidence {
         let mut ambiguous = false;
         for entity in entities.filter(|e| {
             e.kind == spatial::EntityKind::Corpse
+                && death_tile_matches(self.last_position, self.last_hit, e.position)
                 && hunt_corpse_matches(
                     self.last_position,
                     e.position,
@@ -3885,6 +3932,9 @@ async fn hunt_one_inner(
             xp_checked_at = tokio::time::Instant::now();
         }
         for event in client.take_events() {
+            if let oteryn_dev_client::SessionEvent::Presentation(delta) = &event {
+                corpse_evidence.observe_damage(&delta.value);
+            }
             if let oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta) = event {
                 corpse_evidence.observe(&delta.value);
                 for updated in delta.value.update.iter().chain(&delta.value.enter) {
@@ -4072,6 +4122,9 @@ fn pz_edge(world: &BundleWorld, at: TilePos) -> Option<StepDirection> {
         })
     })
 }
+const S08_AGGRESSOR: usize = 1;
+const S08_VICTIM: usize = 0;
+
 async fn pvp_journey(
     row: &mut JourneyRow,
     pair: &mut [Option<DevClientSession>; 2],
@@ -4080,7 +4133,7 @@ async fn pvp_journey(
     world: &BundleWorld,
 ) -> TestResult {
     // Level both through their own playable route before admitting the peer concurrently.
-    pair[0] = Some(connect_character(clients, 0xf2, 0).await?);
+    pair[0] = Some(connect_character(clients, 0xf2, S08_AGGRESSOR).await?);
     earn_pvp_level(pair[0].as_mut().ok_or("first admission")?, world).await?;
     release_when_unlocked(
         pair[0].as_mut().ok_or("first admission")?,
@@ -4088,7 +4141,7 @@ async fn pvp_journey(
     )
     .await?;
     pair[0] = None;
-    pair[1] = Some(connect_character(clients, 0xf3, 1).await?);
+    pair[1] = Some(connect_character(clients, 0xf3, S08_VICTIM).await?);
     earn_pvp_level(pair[1].as_mut().ok_or("second admission")?, world).await?;
     row.pass("earned-levels");
     release_when_unlocked(
@@ -4097,8 +4150,14 @@ async fn pvp_journey(
     )
     .await?;
     pair[1] = None;
-    raw[0] = Some(PvpClient::connect(clients, 0xf4, 0).await?);
-    raw[1] = Some(PvpClient::connect(clients, 0xf5, 1).await?);
+    raw[0] = Some(PvpClient::connect(clients, 0xf4, S08_AGGRESSOR).await?);
+    let observer = raw[0].as_mut().ok_or("PvP attacker admission")?;
+    raw[1] = Some(full_e2ef5::service_observer(
+        observer,
+        PvpClient::connect(clients, 0xf5, S08_VICTIM),
+        async |observer: &mut PvpClient| observer.service_liveness(Duration::from_millis(50)).await,
+        |_| {},
+    ).await?);
     let [a, b] = raw;
     let (a, b) = (
         a.as_mut().ok_or("PvP attacker admission")?,
@@ -4238,7 +4297,7 @@ async fn pvp_journey(
         return Err(format!("lethal respawn has no new unjustified frag for {victim_name}").into());
     }
     row.pass("lethal-frag");
-    let until = tokio::time::Instant::now() + Duration::from_secs(65);
+    let until = tokio::time::Instant::now() + KILL_LOCK_PROBE_DELAY;
     while tokio::time::Instant::now() < until {
         pvp_poll(a, b).await?;
         a.take_events();
@@ -4250,19 +4309,19 @@ async fn pvp_journey(
         Some(native::logout::LogoutResult::InFight { .. })
     ) {
         return Err(
-            format!("kill lock absent after ordinary 60s hit lock elapsed:{locked:?}").into(),
+            format!("kill lock absent after ordinary 70s durable hit lock elapsed:{locked:?}").into(),
         );
     }
     row.pass("kill-lock");
     // Release the victim before awaiting the killer's natural 15-minute block.
     let respawn = b.position;
     pvp_release(b, Duration::from_secs(70)).await?;
-    pvp_fresh(a, clients, 0).await?;
+    pvp_fresh(a, clients, S08_AGGRESSOR).await?;
     if pvp_history(a).await? != new_kills {
         return Err("fresh admission lost durable frag history".into());
     }
     // White expires naturally; the victim must still see the durable orange revenge mark.
-    *b = PvpClient::connect(clients, 0xf7, 1).await?;
+    *b = PvpClient::connect(clients, 0xf7, S08_VICTIM).await?;
     if b.position != respawn {
         return Err("fresh admission lost victim respawn position".into());
     }
@@ -4318,18 +4377,16 @@ async fn pvp_history(client: &mut PvpClient) -> TestResult<Vec<(i64, u8, String)
     decode_pvp_history(&pvp_tab(client, character::CharacterTab::RecentPvpKills).await?)
 }
 
+fn unique_instance<T>(mut matches: impl Iterator<Item = T>) -> Option<T> {
+    let item = matches.next()?;
+    matches.next().is_none().then_some(item)
+}
+
 fn carried(client: &DevClientSession, definition: std::num::NonZeroU32) -> TestResult<ItemEntry> {
-    client
-        .inventory()
-        .and_then(|i| {
-            i.entries
-                .iter()
-                .find(|e| e.item_definition_ref == definition)
-        })
-        .copied()
-        .ok_or_else(|| {
-            format!("required direct-backpack item absent:definition-ref={definition}").into()
-        })
+    let inventory = client.inventory().ok_or("imbuement inventory absent")?;
+    unique_instance(inventory.entries.iter()
+        .filter(|e| e.item_definition_ref == definition).copied())
+        .ok_or_else(|| format!("imbuement requires one distinct carried instance: {definition}").into())
 }
 fn units(client: &DevClientSession, definition: std::num::NonZeroU32) -> u64 {
     client.inventory().map_or(0, |i| {
@@ -4711,7 +4768,7 @@ async fn shrine(client: &mut DevClientSession, world: &BundleWorld) -> TestResul
     let path=route(world,tile(client.world_spatial().actor_position)?,|at|positions.iter().any(|p|p.floor==at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y))<=1)).ok_or_else(||format!("shrine-prerequisite-blocked:compiled-shrines={};none reachable within town route budget",positions.len()))?;
     walk(client, world, &path).await
 }
-async fn use_on(
+pub(super) async fn use_on(
     client: &mut DevClientSession,
     source: ItemHandle,
     target: ItemHandle,
@@ -4775,7 +4832,7 @@ async fn imbuement_journey(
     earn_gold(client, world, basic.apply_gold + 15_000).await?;
     shrine(client, world).await?;
     let baseline = strike_effect(client).await?;
-    let payment_before = player_gold(client).await?;
+    let payment_before = player_balances(client).await?;
     let materials_before = inventory_counts(client)?;
     let active = apply_imbue(client, target, 1, 1).await?;
     verify_recipe_consumption(
@@ -4784,10 +4841,10 @@ async fn imbuement_journey(
         &inventory_counts(client)?,
         basic.materials,
     )?;
-    verify_gold_payment(payment_before, player_gold(client).await?, basic.apply_gold)?;
+    verify_gold_payment(payment_before, player_balances(client).await?, basic.apply_gold)?;
     row.pass("shrine-apply");
     let refusal_inventory = inventory_counts(client)?;
-    let refusal_gold = player_gold(client).await?;
+    let refusal_gold = player_balances(client).await?;
     let reply = imbue_request(
         client,
         carried(client, target)?.handle,
@@ -4802,7 +4859,7 @@ async fn imbuement_journey(
     {
         return Err(format!("occupied apply refusal changed slot:{reply:?}").into());
     }
-    if inventory_counts(client)? != refusal_inventory || player_gold(client).await? != refusal_gold
+    if inventory_counts(client)? != refusal_inventory || player_balances(client).await? != refusal_gold
     {
         return Err("occupied refusal charged resources".into());
     }
@@ -4840,7 +4897,7 @@ async fn imbuement_journey(
     }
     row.pass("fresh-admission-active");
     shrine(client, world).await?;
-    let clear_gold_before = player_gold(client).await?;
+    let clear_gold_before = player_balances(client).await?;
     let reply = imbue_request(
         client,
         carried(client, target)?.handle,
@@ -4854,8 +4911,9 @@ async fn imbuement_journey(
             format!("shrine clear blocked:{reply:?};required-player-earned-gold=15000").into(),
         );
     }
-    verify_gold_payment(clear_gold_before, player_gold(client).await?, 15_000)?;
+    verify_gold_payment(clear_gold_before, player_balances(client).await?, 15_000)?;
     row.pass("shrine-clear");
+    let empty_clear_before = player_balances(client).await?;
     let reply = imbue_request(
         client,
         carried(client, target)?.handle,
@@ -4867,7 +4925,7 @@ async fn imbuement_journey(
     {
         return Err("empty-slot clear did not refuse without changing item".into());
     }
-    verify_gold_payment(clear_gold_before, player_gold(client).await?, 15_000)?;
+    verify_gold_payment(empty_clear_before, player_balances(client).await?, 0)?;
     row.pass("empty-clear-refusal");
     // Inscribe an actual blank, then consume the newly produced scroll on the
     // cleared item. Filled scroll custody is observed, never supplied by a fixture.
@@ -4889,10 +4947,13 @@ async fn imbuement_journey(
     let scroll = oteryn_gameplay_items::imbuement::scroll_for_imbuement(1, 2)
         .ok_or("intricate Strike scroll mapping absent")?;
     let scroll_ref = provisioning::item_reference(&definitions, scroll.item_id)?;
-    let inscription_gold = player_gold(client).await?;
+    let inscription_gold = player_balances(client).await?;
     let inscription_materials = inventory_counts(client)?;
     let before_blank = units(client, blank);
     let before_scroll = units(client, scroll_ref);
+    let previous_scrolls: BTreeSet<_> = client.inventory().ok_or("scroll input inventory absent")?
+        .entries.iter().filter(|e| e.item_definition_ref == scroll_ref)
+        .map(|e| e.handle.get()).collect();
     let reply = imbue_request(
         client,
         carried(client, blank)?.handle,
@@ -4918,7 +4979,7 @@ async fn imbuement_journey(
     wait_units(client, scroll_ref, before_scroll + 1).await?;
     verify_gold_payment(
         inscription_gold,
-        player_gold(client).await?,
+        player_balances(client).await?,
         strong.apply_gold,
     )?;
     verify_recipe_consumption(
@@ -4928,13 +4989,19 @@ async fn imbuement_journey(
         strong.materials,
     )?;
     row.pass("scroll-create");
-    use_on(
-        client,
-        carried(client, scroll_ref)?.handle,
-        carried(client, target)?.handle,
-    )
+    let scroll = unique_instance(client.inventory().ok_or("scroll output inventory absent")?
+        .entries.iter().filter(|e| e.item_definition_ref == scroll_ref
+            && !previous_scrolls.contains(&e.handle.get())))
+        .ok_or("newly issued scroll instance absent or ambiguous")?.handle;
+    use_on(client, scroll, carried(client, target)?.handle)
     .await?;
     wait_units(client, scroll_ref, before_scroll).await?;
+    if client.inventory().is_none_or(|inventory| inventory.entries.iter()
+        .filter(|e| e.item_definition_ref == scroll_ref)
+        .map(|e| e.handle.get()).collect::<BTreeSet<_>>() != previous_scrolls)
+    {
+        return Err("scroll use consumed a different instance".into());
+    }
     let applied = imbue_window(client, target).await?.applied;
     if applied.len() != 1
         || applied[0].family != 1
@@ -5051,6 +5118,19 @@ struct PvpLogout {
     status: CommandStatus,
     result: Option<native::logout::LogoutResult>,
 }
+fn raw_step_matches(
+    status: CommandStatus,
+    disposition: StepDisposition,
+    position_observed: bool,
+) -> bool {
+    let expected = if matches!(disposition, StepDisposition::TooEarly | StepDisposition::Rejected) {
+        CommandStatus::Rejected
+    } else {
+        CommandStatus::Accepted
+    };
+    status == expected && (disposition != StepDisposition::Moved || position_observed)
+}
+
 #[derive(Debug)]
 struct PvpStep {
     disposition: StepDisposition,
@@ -5431,12 +5511,22 @@ impl PvpClient {
         })
     }
     async fn step(&mut self, direction: StepDirection) -> TestResult<PvpStep> {
-        let reply = self
-            .gated_command(6, 1, &encode_step_intent(direction))
-            .await?;
-        let disposition = native::world_spatial::decode_step_result_paced(&reply.payload, true)
-            .map_err(|e| format!("PvP step:{e:?}"))?;
-        Ok(PvpStep { disposition })
+        tokio::time::timeout(Duration::from_secs(5), async {
+            let position_before = self.position;
+            let reply = self.gated_command(6, 1, &encode_step_intent(direction)).await?;
+            let disposition = native::world_spatial::decode_step_result_paced(&reply.payload, true)
+                .map_err(|e| format!("PvP step:{e:?}"))?;
+            if matches!(disposition, StepDisposition::Moved | StepDisposition::Blocked) {
+                pvp_tab(self, character::CharacterTab::GeneralStats).await?;
+            }
+            if !raw_step_matches(reply.status, disposition, self.position != position_before) {
+                return Err(format!("PvP STEP status or ordered position delta mismatch:{reply:?}").into());
+            }
+            Ok(PvpStep { disposition })
+        }).await.map_err(|elapsed| ObserverIoDeadline {
+            operation: "PvP STEP exchange or ordered position deadline",
+            elapsed,
+        })?
     }
 }
 struct PvpSnapshot {
@@ -5525,8 +5615,11 @@ async fn pvp_release(client: &mut PvpClient, budget: Duration) -> TestResult {
         if !valid_cleanup_turn_reply(turn.status, &turn.payload) {
             return Err(format!("PvP lock-wait activity refused:{turn:?}").into());
         }
+        verdict::Harness::global().progress("pvp-live-lock-wait");
     }
 }
+const KILL_LOCK_PROBE_DELAY: Duration = Duration::from_secs(75);
+
 async fn pvp_fresh(client: &mut PvpClient, clients: &SeamClients<'_>, index: usize) -> TestResult {
     let old = client.session;
     pvp_release(client, Duration::from_secs(920)).await?;
@@ -5561,7 +5654,13 @@ async fn pvp_name(client: &mut PvpClient) -> TestResult<String> {
         .ok_or_else(|| "PvP victim ranking omitted own name".into())
 }
 
-async fn player_gold(client: &mut DevClientSession) -> TestResult<u64> {
+fn available_fee_gold(balances: native::atelier::resources::ResourceBalances) -> TestResult<u64> {
+    Ok(balances.carried_gold)
+}
+
+async fn player_balances(
+    client: &mut DevClientSession,
+) -> TestResult<native::atelier::resources::ResourceBalances> {
     use native::atelier::resources as money;
     let reply = client
         .session_mut()
@@ -5574,12 +5673,7 @@ async fn player_gold(client: &mut DevClientSession) -> TestResult<u64> {
     if reply.status != CommandStatus::Accepted {
         return Err(format!("native player balances refused:{reply:?}").into());
     }
-    let balances =
-        money::decode_reply(&reply.payload).map_err(|e| format!("native balances:{e:?}"))?;
-    balances
-        .carried_gold
-        .checked_add(balances.bank_gold)
-        .ok_or_else(|| "native gold total overflow".into())
+    Ok(money::decode_reply(&reply.payload).map_err(|e| format!("native balances:{e:?}"))?)
 }
 async fn earn_gold(
     client: &mut DevClientSession,
@@ -5594,27 +5688,31 @@ async fn earn_gold_inner(
     world: &BundleWorld,
     target: u64,
 ) -> TestResult {
-    let served = player_gold(client).await?;
+    let served = available_fee_gold(player_balances(client).await?)?;
     if served >= target {
         return Ok(());
     }
-    // Bank gold stays banked; the shared hunt earns the carried part still missing.
-    let bank = served.saturating_sub(full_gold::coin_value(client)?);
     let bytes = fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let meta = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    full_gold::earn(client, world, &meta.spawns, "P21", target - bank)
+    full_gold::earn(client, world, &meta.spawns, "P21", target)
         .await
         .map_err(|e| {
             format!(
-                "player-money-acquisition-blocked:required-gold={target};served-bank-plus-carried={served};ordinary-hunt={e}"
+                "player-money-acquisition-blocked:required-gold={target};served-carried={served};ordinary-hunt={e}"
             )
         })?;
     Ok(())
 }
-fn verify_gold_payment(before: u64, after: u64, charge: u64) -> TestResult {
-    if before.checked_sub(after) != Some(charge) {
+fn verify_gold_payment(
+    before: native::atelier::resources::ResourceBalances,
+    after: native::atelier::resources::ResourceBalances,
+    charge: u64,
+) -> TestResult {
+    if before.carried_gold.checked_sub(after.carried_gold) != Some(charge)
+        || before.bank_gold != after.bank_gold
+    {
         return Err(format!(
-            "native payment mismatch:before={before};after={after};required-charge={charge}"
+            "native payment mismatch:before={before:?};after={after:?};required-charge={charge}"
         )
         .into());
     }
@@ -5731,11 +5829,12 @@ mod pass_two_tests {
     }
     #[test]
     fn payment_oracle_refuses_undercharge_overcharge_and_increase() {
-        assert!(verify_gold_payment(30_000, 22_500, 7_500).is_ok());
+        let balance = |carried_gold| native::atelier::resources::ResourceBalances { carried_gold, ..Default::default() };
+        assert!(verify_gold_payment(balance(30_000), balance(22_500), 7_500).is_ok());
         for after in [30_000, 22_501, 22_499, 30_001] {
-            assert!(verify_gold_payment(30_000, after, 7_500).is_err());
+            assert!(verify_gold_payment(balance(30_000), balance(after), 7_500).is_err());
         }
-        assert!(verify_gold_payment(0, u64::MAX, 1).is_err());
+        assert!(verify_gold_payment(balance(0), balance(u64::MAX), 1).is_err());
     }
 }
 
@@ -5866,7 +5965,7 @@ impl ForgeClient {
             return Err("forge-native snapshot commit mismatch".into());
         }
         let domains = native::decode_snapshot_body(&body)?;
-        for id in [1, 3, 9, 10, 11, 14, 17, 21] {
+        for id in [1, 3, 9, 10, 11, 14, 17, 19, 21] {
             let domain = domains
                 .iter()
                 .find(|d| d.domain_id == id)
@@ -6042,6 +6141,13 @@ impl ForgeClient {
                     self.entities.push(entity);
                 }
             }
+            native::presentation::STATE_DOMAIN_WORLD_PRESENTATION => {
+                let batch = native::presentation::decode_presentation_batch(delta.payload)
+                    .map_err(|e| format!("Forge damage presentation: {e:?}"))?;
+                if let Some(hunt) = self.hunt.as_mut() {
+                    hunt.observe_damage(&batch);
+                }
+            }
             17 => {
                 self.map_header = raw_map_delta(&self.map_header, delta.payload)?;
             }
@@ -6192,6 +6298,9 @@ impl ForgeClient {
             .await?;
         let disposition = native::world_spatial::decode_step_result_paced(&reply.payload, true)
             .map_err(|e| format!("Forge step:{e:?}"))?;
+        if !raw_step_matches(reply.status, disposition, true) {
+            return Err(format!("Forge STEP status mismatch: {reply:?}").into());
+        }
         Ok(ForgeStep { disposition })
     }
 }
@@ -6836,12 +6945,30 @@ async fn forge_journey(
     if client.session == old || client.slivers(sliver) != held {
         return Err("second Forge admission lost conversion slivers".into());
     }
+    let expected_dust = (after, after_limit);
+    if client.dust_balance(1).await? != expected_dust {
+        return Err("second Forge admission lost the settled dust balance or limit".into());
+    }
     let replay = client.forge(Operation::DustToSlivers, occurrence).await?;
-    if replay != value || client.slivers(sliver) != held {
-        return Err("Forge receipt replay duplicated reward or changed retained result".into());
+    let observed_dust = client.dust_balance(2).await?;
+    if !forge_replay_matches(&value, &replay, held, client.slivers(sliver), expected_dust, observed_dust) {
+        return Err(format!(
+            "Forge receipt replay changed result or custody: dust/limit {expected_dust:?}->{observed_dust:?}"
+        ).into());
     }
     row.pass("receipt-replay-no-duplicate");
     Ok(())
+}
+
+fn forge_replay_matches(
+    original: &serde_json::Value,
+    replay: &serde_json::Value,
+    held: u64,
+    observed: u64,
+    expected_dust: (u64, u64),
+    observed_dust: (u64, u64),
+) -> bool {
+    original == replay && held == observed && expected_dust == observed_dust
 }
 
 fn forge_occurrence(session: native::GameSessionId, ordinal: u8) -> [u8; 16] {
@@ -6858,6 +6985,30 @@ fn forge_occurrence(session: native::GameSessionId, ordinal: u8) -> [u8; 16] {
     id
 }
 impl ForgeClient {
+    async fn dust_balance(&mut self, nonce: u64) -> TestResult<(u64, u64)> {
+        use native::forge_preview as preview;
+        let request = preview::Request {
+            nonce,
+            selection: preview::Selection::Browse { after: 0 },
+        }
+        .encode()
+        .ok_or("Forge balance query encoding failed")?;
+        let reply = self.gated_command(
+            preview::CAPABILITY_FORGE_PREVIEW_V1,
+            preview::COMMAND_TYPE_FORGE_PREVIEW,
+            &request,
+        ).await?;
+        if reply.status == CommandStatus::Accepted
+            && let Some(preview::Reply { nonce: seen, payload: preview::Payload::Page(page) }) =
+                preview::Reply::decode(&reply.payload)
+            && seen == nonce
+            && page.after == 0
+        {
+            return Ok((u64::from(page.resources.dust), u64::from(page.resources.dust_limit)));
+        }
+        Err(format!("Forge balance query failed: {reply:?}").into())
+    }
+
     async fn experience(&mut self) -> TestResult<u64> {
         let reply = self
             .gated_command(
@@ -6884,6 +7035,13 @@ impl ForgeClient {
 #[cfg(test)]
 mod forge_tests {
     use super::*;
+    #[test]
+    fn replay_with_identical_receipt_cannot_hide_dust_debit() {
+        let reply = serde_json::json!({"result": {"dust": 30, "dust_limit": 100}});
+        assert!(forge_replay_matches(&reply, &reply, 3, 3, (30, 100), (30, 100)));
+        assert!(!forge_replay_matches(&reply, &reply, 3, 3, (30, 100), (0, 100)));
+    }
+
     #[test]
     fn forge_intervals_follow_stacks_and_saturate_at_cap() -> TestResult {
         assert_eq!(forge_dust_interval((0, 59), 5, 100)?, (5, 74));
@@ -6941,4 +7099,99 @@ mod forge_tests {
         native::GameSessionId::decode(&forge_occurrence(first, 1))?;
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod pvp_role_tests {
+    use super::*;
+
+    #[test]
+    fn s08_does_not_forfeit_the_f6_adventurer() {
+        assert_eq!(S08_VICTIM, 0);
+        assert_ne!(S08_AGGRESSOR, S08_VICTIM);
+    }
+}
+
+#[cfg(test)]
+mod raw_step_tests {
+    use super::*;
+
+    #[test]
+    fn a_step_receipt_cannot_precede_movement_evidence_or_conflict_with_status() {
+        assert!(!raw_step_matches(CommandStatus::Accepted, StepDisposition::Moved, false));
+        assert!(raw_step_matches(CommandStatus::Accepted, StepDisposition::Moved, true));
+        assert!(!raw_step_matches(CommandStatus::Rejected, StepDisposition::Moved, true));
+        assert!(!raw_step_matches(CommandStatus::Accepted, StepDisposition::TooEarly, false));
+        assert!(raw_step_matches(CommandStatus::Rejected, StepDisposition::TooEarly, false));
+    }
+}
+
+#[cfg(test)]
+mod kill_lock_tests {
+    use super::*;
+
+    #[test]
+    fn kill_lock_probe_outlasts_durable_hit_lock() {
+        use oteryn_gameplay_durability::durability::pvp_state::{
+            PVP_BLOCK_MS, PVP_WRITE_AHEAD_SLACK_MS,
+        };
+        assert!(KILL_LOCK_PROBE_DELAY > Duration::from_millis(PVP_BLOCK_MS + PVP_WRITE_AHEAD_SLACK_MS));
+    }
+}
+
+#[cfg(test)]
+mod fee_gold_tests {
+    use super::*;
+
+    #[test]
+    fn bank_balance_cannot_fund_carried_coin_fee() -> TestResult {
+        let balance = native::atelier::resources::ResourceBalances {
+            bank_gold: 20_000,
+            carried_gold: 10,
+            ..Default::default()
+        };
+        assert_eq!(available_fee_gold(balance)?, 10);
+        Ok(())
+    }
+}
+
+
+#[cfg(test)]
+mod item_instance_tests {
+    use super::*;
+
+    #[test]
+    fn two_same_definition_items_cannot_identify_the_imbuement_target() {
+        assert_eq!(unique_instance([10_u64, 11].into_iter()), None);
+        assert_eq!(unique_instance([11_u64].into_iter()), Some(11));
+    }
+}
+
+
+#[cfg(test)]
+mod death_tile_tests {
+    use super::*;
+
+    #[test]
+    fn an_adjacent_corpse_requires_a_hit_on_the_selected_creature_at_that_tile() {
+        let at = ActorPosition { x: 100, y: 100, floor: 7 };
+        let adjacent = ActorPosition { x: 101, ..at };
+        assert!(!death_tile_matches(at, None, adjacent));
+        assert!(!death_tile_matches(at, Some(at), adjacent));
+        assert!(death_tile_matches(at, Some(adjacent), adjacent));
+    }
+}
+
+#[test]
+fn imbuement_payment_cannot_come_from_the_bank() {
+    let before = native::atelier::resources::ResourceBalances { carried_gold: 500, bank_gold: 500, ..Default::default() };
+    let after = native::atelier::resources::ResourceBalances { bank_gold: 400, ..before };
+    assert!(verify_gold_payment(before, after, 100).is_err());
+}
+
+#[test]
+fn entity_only_delta_is_not_a_step() {
+    let before = ActorPosition { x: 100, y: 100, floor: 0 };
+    let after = before;
+    assert!(!raw_step_matches(CommandStatus::Accepted, StepDisposition::Moved, before != after));
 }
