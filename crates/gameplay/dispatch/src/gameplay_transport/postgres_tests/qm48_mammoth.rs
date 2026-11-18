@@ -1,5 +1,5 @@
-//! Crystal 201189f8 action_horn.lua:34-46 and fluids.lua:1-2,120-122.
-//! Drinking mead through USE must enable the native mammoth callback.
+//! Crystal 201189f8 dankwart.lua:60-66, fluids.lua:1-2,120-122 and action_horn.lua:34-46.
+//! Buying and drinking Dankwart's mead must enable the native mammoth callback.
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::map::view::MapFacts;
@@ -13,6 +13,7 @@ const AT: Position = Position {
 };
 const MISSION: &str = "oteryn:quest-progress/quest/u8_0/barbarian_test/mission03";
 const KEY: &str = "oteryn:quest-callback/qm48/mammoth";
+const VIAL: &str = "oteryn:item.tibia.i2874";
 
 #[test]
 fn qm48_mammoth_live_drunk_refusal_expiry_cleanse_commit_replay() -> TestResult {
@@ -207,16 +208,22 @@ pub(super) async fn exercise(
     Ok(())
 }
 
-async fn drink_mead(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &mut AdmittedSession,
+async fn buy_mead(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
     h: &Harness,
 ) -> TestResult {
-    use crate::gameplay_transport::FreshAdmissionAuthority;
-    use oteryn_gameplay_domain::domain::condition::{ConditionType, StatusKind};
+    use super::classic_quests;
+    use crate::content::ProjectV2ServiceOfferDirection;
+    use crate::gameplay_transport::{
+        connection::{FreshAdmissionAuthority, UseCommand},
+        npc_trade_command::NpcTradeStep,
+    };
     use oteryn_gameplay_quests::quest::world_callbacks::Offering;
-    use oteryn_protocol_oteryn::world_object::encode_use_item_intent;
-    const VIAL: &str = "oteryn:item.tibia.i2874";
+    use oteryn_protocol_oteryn::npc_service::{
+        NpcIntentDisposition, NpcTalkIntent, NpcTradeIntent, NpcTradeSide,
+    };
+    const DANKWART: &str = "oteryn:npc.dankwart";
 
     let fence = admitted.item_fence.ok_or("item fence")?;
     super::quest_world_callbacks::input_item(
@@ -224,28 +231,96 @@ async fn drink_mead(
         fence,
         &Offering {
             position: AT,
-            item: VIAL.into(),
-            count: 1,
+            item: "oteryn:item.tibia.i3031".into(),
+            count: 5,
         },
         951,
         true,
     )
     .await?;
-    let mut tx = h.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role = replica")
-        .execute(&mut *tx)
-        .await?;
-    let seeded = sqlx::query(
-        "INSERT INTO game_item_fluid_states(item_instance_id,world_id,fluid_subtype,last_transaction_id)
-         SELECT item_instance_id,world_id,16,minted_transaction_id FROM game_item_instances
-         WHERE definition_production_key=$1 AND lifecycle=1",
+    let [npc] = classic_quests::install_above(owner, admitted, [DANKWART]).await?;
+    let book = owner.states.chat.npc_talk().ok_or("NPC catalogue")?;
+    let entry = book.get(DANKWART).ok_or("Dankwart catalogue entry")?;
+    let offer = entry
+        .offers()
+        .iter()
+        .find(|offer| {
+            offer.item.key == VIAL
+                && offer.sub_type == Some(16)
+                && offer.direction == ProjectV2ServiceOfferDirection::SellToPlayer
+        })
+        .ok_or("Dankwart's vial of mead")?;
+    assert_eq!((offer.count, offer.unit_price), (Some(1), 5));
+    let vial_ref = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .and_then(|native| native.item_index())
+        .and_then(|index| index.definition_ref("Item", VIAL, &offer.item.revision))
+        .ok_or("vial definition")?;
+    classic_quests::talk(owner, admitted, npc, 20501, "hi").await?;
+    let actor = admitted.runtime_actor.ok_or("buyer")?;
+    let command = |command_id| UseCommand {
+        game_session_id: admitted.game_session_id,
+        command_id,
+        item_fence: Some(fence),
+    };
+    let open = owner
+        .npc_talk(
+            actor,
+            command(20502),
+            NpcTalkIntent { npc_actor: npc, text: "trade".into() },
+        )
+        .await;
+    assert_eq!(open.disposition, NpcIntentDisposition::Ok);
+    let window = open.window.ok_or("Dankwart's shop window")?;
+    let (shop_npc, catalogue_revision) = window.open.ok_or("open shop")?;
+    assert_eq!(shop_npc, npc);
+    let offer_index = window
+        .offers
+        .iter()
+        .position(|shown| {
+            shown.item_definition_ref == vial_ref.get()
+                && shown.side == NpcTradeSide::Buy
+                && shown.count == 1
+                && shown.unit_price == 5
+        })
+        .ok_or("vial in the trade window")?;
+    let purchase = owner
+        .npc_trade(
+            actor,
+            command(20503),
+            NpcTradeIntent {
+                npc_actor: npc,
+                catalogue_revision,
+                offer_index: u32::try_from(offer_index)?,
+                side: NpcTradeSide::Buy,
+                quantity: 1,
+                expected_unit_price: 5,
+            },
+        )
+        .await;
+    assert!(matches!(purchase, NpcTradeStep::Traded));
+    let fluids: Vec<(i64, i16)> = sqlx::query_as(
+        "SELECT i.quantity, s.fluid_subtype FROM game_item_instances i
+         JOIN game_item_fluid_states s USING(item_instance_id)
+         WHERE i.definition_production_key=$1 AND i.lifecycle=1",
     )
     .bind(VIAL)
-    .execute(&mut *tx)
+    .fetch_all(&h.pool)
     .await?;
-    assert_eq!(seeded.rows_affected(), 1);
-    tx.commit().await?;
+    assert_eq!(fluids, [(1, 16)]);
+    Ok(())
+}
 
+async fn drink_mead(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use crate::gameplay_transport::FreshAdmissionAuthority;
+    use oteryn_gameplay_domain::domain::condition::{ConditionType, StatusKind};
+    use oteryn_protocol_oteryn::world_object::encode_use_item_intent;
+    buy_mead(owner, admitted, h).await?;
     let reference = owner
         .active_generation
         .and_then(|generation| generation.native_gameplay())
