@@ -441,6 +441,8 @@ pub struct DeathPhases {
     pub terminal: String,
     pub replacements: Vec<DeathReplacement>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub heal_before_damage: Option<HealBeforeDamage>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub contributor_route: Option<DeathContributorRoute>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub crystal_circuit: Option<DeathCrystalCircuit>,
@@ -453,6 +455,17 @@ pub struct DeathPhases {
     /// Room movement on the sealed terminal death. Quest credit uses its own writer.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub terminal_transfer: Option<TerminalTransfer>,
+}
+
+/// Some encounter creatures recover immediately before incoming damage while a cell is empty.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct HealBeforeDamage {
+    pub creatures: Vec<String>,
+    pub vacant_cell: Position,
+    pub amount: u32,
+    pub effect: u16,
+    pub announcement: String,
 }
 
 /// Select the next member of a recurring encounter from the sealed top contributor's position.
@@ -800,6 +813,21 @@ fn valid_death_phases(
         .iter()
         .map(|actor| actor.creature.as_str())
         .collect();
+    if let Some(recovery) = &plan.heal_before_damage
+        && (!(1..=8).contains(&recovery.creatures.len())
+            || recovery.creatures.iter().collect::<BTreeSet<_>>().len() != recovery.creatures.len()
+            || recovery.creatures.iter().any(|key| {
+                !creature(key) || !known.contains(key.as_str()) || key == &plan.terminal
+            })
+            || !in_room(recovery.vacant_cell)
+            || recovery.amount == 0
+            || !(1..=255).contains(&recovery.effect)
+            || recovery.announcement.trim().is_empty()
+            || recovery.announcement.len() > 256
+            || recovery.announcement.chars().any(char::is_control))
+    {
+        return false;
+    }
     if let Some(route) = &plan.contributor_route
         && (!creature(&route.creature)
             || !known.contains(route.creature.as_str())

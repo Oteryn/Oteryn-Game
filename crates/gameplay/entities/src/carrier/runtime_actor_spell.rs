@@ -93,6 +93,7 @@ pub struct ActorCombatState {
     /// Immutable current-type registrations; the deferred phase copies them at BEGIN.
     pub(super) native_death_events: Option<Arc<oteryn_gameplay_content::content::native_creature_death_events::QualifiedNativeDeathEvents>>,
     pub(super) native_callback_move_locked: bool,
+    pub(super) quest_damage_recovery: Option<super::encounter_access::QuestDamageRecovery>,
     pub tibiadrome: bool,
     pub(super) tibiadrome_wave: u32,
     pub(super) tibiadrome_modifiers: Option<super::tibiadrome_modifiers::DromeActorModifiers>,
@@ -146,6 +147,7 @@ impl ActorCombatState {
         self.reentry = None;
         self.pending_owner = None;
         self.pending_source = None;
+        self.quest_damage_recovery = None;
         self.party = super::runtime_actor_party::PartyActorState::default();
         self.hazard = None;
         self.records.clear();

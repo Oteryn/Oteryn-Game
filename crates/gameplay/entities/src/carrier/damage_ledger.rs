@@ -843,6 +843,21 @@ impl ChannelActorCarrier {
         let original_health = *health;
         let mut damage_phase_health = original_health;
         let mut actual_damage = effective_damage;
+        // Crystal 201189f8, forgotten_knowledge/creaturescripts_energy_prism.lua:2-10.
+        // Sample vacancy from the physical owner after the replay check and heal
+        // the staged target before applying the original incoming damage.
+        if let Slot::CreatureOccupied {
+            spell_combat,
+            position: Some(position),
+            ..
+        } = &self.slots[index]
+            && original_health < spell_combat.maximum_health
+            && let Some(rule) = &spell_combat.quest_damage_recovery
+            && rule.observe(self, *position)
+        {
+            damage_phase_health = rule.heal(original_health, spell_combat.maximum_health);
+        }
+        let recovery = damage_phase_health > original_health;
         let mut prepared_w01_conditions = None;
         // Source prepareDeath can cancel the complete hit while healing or
         // transforming HP. This fact is independent of before/after HP deltas.
@@ -1042,6 +1057,9 @@ impl ChannelActorCarrier {
         }
         if let Some(successor) = prepared_w01_conditions {
             committed.conditions = successor;
+        }
+        if recovery && let Some(rule) = &mut spell_combat.quest_damage_recovery {
+            rule.pending_cues = rule.pending_cues.saturating_add(1);
         }
         if let (Some(source), Some(companion)) = (source, companion.as_ref()) {
             spell_combat.stage_hatred_incoming_health(&companion.policy, source)?;

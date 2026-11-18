@@ -1,6 +1,27 @@
 //! Generic owner operations used by encounter rules in the runtime layer.
 use super::*;
 use crate::SourceStepCommitProof;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) struct QuestDamageRecovery {
+    vacant_cell: LocalPosition,
+    amount: i64,
+    pub(super) pending_cues: u64,
+}
+
+impl QuestDamageRecovery {
+    pub(super) fn observe(
+        &self,
+        carrier: &ChannelActorCarrier,
+        position: VersionedPosition,
+    ) -> bool {
+        !carrier.cell_occupied(position.context, self.vacant_cell)
+    }
+
+    pub(super) fn heal(&self, before: i64, maximum: i64) -> i64 {
+        before.saturating_add(self.amount).min(maximum)
+    }
+}
 #[path = "encounter_defenders.rs"]
 mod encounter_defenders;
 pub use encounter_defenders::EncounterDefenders;
@@ -160,6 +181,61 @@ impl ChannelActorCarrier {
 }
 
 impl ChannelRuntimeV1 {
+    /// Bind an admitted creature's pre-hit recovery to a vacant cell in its pinned map.
+    pub fn bind_quest_damage_recovery(
+        &mut self,
+        actor: ExactActorRef,
+        vacant_cell: MovementLocalPosition,
+        amount: u32,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        self.carrier.assert_slot_spell_unreserved(index)?;
+        let Slot::CreatureOccupied {
+            health,
+            spell_combat,
+            position: Some(_),
+            ..
+        } = &mut self.carrier.slots[index]
+        else {
+            return Err(CarrierError::NotCreature);
+        };
+        if *health <= 0
+            || amount == 0
+            || spell_combat.quest_damage_recovery.is_some()
+            || spell_combat.soul_war_health.is_some()
+            || spell_combat.soulpit.is_some()
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        spell_combat.quest_damage_recovery = Some(QuestDamageRecovery {
+            vacant_cell: LocalPosition {
+                x: vacant_cell.x,
+                y: vacant_cell.y,
+                floor: vacant_cell.floor,
+            },
+            amount: i64::from(amount),
+            pending_cues: 0,
+        });
+        Ok(())
+    }
+
+    pub fn take_quest_damage_recovery_cues(
+        &mut self,
+        actor: ExactActorRef,
+    ) -> Result<u64, CarrierError> {
+        self.owner_fence()?;
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        self.carrier.assert_slot_spell_unreserved(index)?;
+        let Slot::CreatureOccupied { spell_combat, .. } = &mut self.carrier.slots[index] else {
+            return Err(CarrierError::NotCreature);
+        };
+        Ok(spell_combat
+            .quest_damage_recovery
+            .as_mut()
+            .map_or(0, |rule| std::mem::take(&mut rule.pending_cues)))
+    }
+
     /// One source lever publishes all relocations, native monsters and its map
     /// projection together. Failed admission or projection restores the carrier.
     pub fn commit_quest_encounter_entry<P: SourceStepCommitProof>(

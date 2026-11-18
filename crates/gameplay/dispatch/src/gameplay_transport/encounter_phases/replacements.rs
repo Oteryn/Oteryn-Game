@@ -44,7 +44,7 @@ pub(super) struct Replacements {
 
 impl Replacements {
     pub(super) fn bind(
-        runtime: &ChannelRuntimeV1,
+        runtime: &mut ChannelRuntimeV1,
         encounter: &Encounter,
         plan: &DeathPhases,
         actors: &[ExactActorRef],
@@ -63,6 +63,14 @@ impl Replacements {
         }
         for actor in plan.replacements.iter().flat_map(|rule| &rule.spawn) {
             runtime.companion_policy(&actor.creature)?;
+        }
+        if let Some(recovery) = &plan.heal_before_damage {
+            let vacant_cell = super::super::quest_callbacks::local(recovery.vacant_cell);
+            for (&actor, monster) in actors.iter().zip(&encounter.monsters) {
+                if recovery.creatures.contains(&monster.creature) {
+                    runtime.bind_quest_damage_recovery(actor, vacant_cell, recovery.amount)?;
+                }
+            }
         }
         if let Some(circuit) = &plan.crystal_circuit {
             runtime.companion_policy(&circuit.defeated)?;
@@ -286,6 +294,28 @@ impl Replacements {
     ) -> Result<(), CarrierError> {
         if !self.is_current(runtime) {
             return Err(CarrierError::ContentPinWorldMismatch);
+        }
+        if let Some(recovery) = &self.plan.heal_before_damage
+            && let NativeMovementCollisionIndex::Bundle(index) = cells.index()
+        {
+            for member in &self.members {
+                if recovery.creatures.contains(&member.creature)
+                    && let Ok(view) = runtime.companion_snapshot_including_dead(member.actor)
+                    && let Some(at) = super::super::quest_callbacks::native(view.position)
+                    && let Ok(count) = runtime.take_quest_damage_recovery_cues(member.actor)
+                {
+                    for _ in 0..count.min(512) {
+                        announce(
+                            runtime,
+                            cells,
+                            member.actor,
+                            view.position,
+                            &recovery.announcement,
+                        );
+                        index.map().facts.emit_movement_effect(at, recovery.effect);
+                    }
+                }
+            }
         }
         while !self.finished {
             let Some((
