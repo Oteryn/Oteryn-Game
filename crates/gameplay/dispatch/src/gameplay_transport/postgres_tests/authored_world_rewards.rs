@@ -290,8 +290,31 @@ pub(super) async fn exercise_warzone_pump(
         placement,
         expected_revision: map.facts.object_revision(key),
     }).map_err(debug)?;
-    let result = super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload).await?;
-    assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?, UseDisposition::Committed);
+    let fire_tiles: Vec<_> = (pos.x - 1..=pos.x + 1)
+        .flat_map(|x| (pos.y - 1..=pos.y + 1).map(move |y| (x, y)))
+        .filter(|(x, y)| map.overlay.base().tile(*x, *y, pos.floor).is_some())
+        .collect();
+    assert!(fire_tiles.contains(&(pos.x, pos.y)));
+    let mut after = 0;
+    for command in [1, 2] {
+        let result =
+            super::quest_world_callbacks::wire(owner, admitted, command, 2, payload.clone())
+                .await?;
+        assert_eq!(
+            oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?,
+            UseDisposition::Committed
+        );
+        let observed: Vec<_> = map
+            .facts
+            .movement_effects_since(after)
+            .into_iter()
+            .filter_map(|(sequence, position, effect)| {
+                after = sequence;
+                (effect == 7 && position.floor == pos.floor).then_some((position.x, position.y))
+            })
+            .collect();
+        assert_eq!(observed, fire_tiles, "pump fire effect on command {command}");
+    }
     let award = format!("oteryn:achievement/{award}");
     let combined_key = "oteryn:achievement/death_in_the_depths";
     let awards: Vec<String> = sqlx::query_scalar(
