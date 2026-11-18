@@ -180,21 +180,21 @@ fn unique_eligible<'a>(
     eligible.next().is_none().then_some(selected)
 }
 
-fn tile(p: Position) -> TilePos {
+pub(super) fn tile(p: Position) -> TilePos {
     TilePos {
         x: p.x,
         y: p.y,
         floor: p.floor,
     }
 }
-fn local(p: Position) -> MovementLocalPosition {
+pub(super) fn local(p: Position) -> MovementLocalPosition {
     MovementLocalPosition {
         x: i32::from(p.x),
         y: i32::from(p.y),
         floor: -i16::from(p.floor),
     }
 }
-fn native(p: MovementLocalPosition) -> Option<TilePos> {
+pub(super) fn native(p: MovementLocalPosition) -> Option<TilePos> {
     Some(TilePos {
         x: p.x.try_into().ok()?,
         y: p.y.try_into().ok()?,
@@ -976,6 +976,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|c| {
                 c.actor_kind == world_callbacks::ActorKind::Player
                     && c.trigger == Trigger::Use
+                    && c.effects.fluid_relocation.is_none()
                     && !oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&c.key)
                     && matches(map, c, resolved.placement_key)
                     && c.activation.as_ref().is_none_or(|activation| {

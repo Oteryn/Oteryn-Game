@@ -156,6 +156,8 @@ pub struct CallbackEffects {
     pub use_summon: Option<UseSummon>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub use_chance: Option<UseChance>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fluid_relocation: Option<FluidRelocation>,
 }
 
 /// The original wire shapes retain distinct owners: a child quest or the current quest.
@@ -202,6 +204,19 @@ impl From<&str> for QuestCompletion {
 pub struct BossCooldownGate {
     pub boss: String,
     pub name: String,
+}
+
+/// An exact carried fluid poured onto the selected map object relocates its staging tile.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct FluidRelocation {
+    pub subtype: u8,
+    pub staging_dx: i8,
+    pub staging_dy: i8,
+    pub destination: Position,
+    pub source_effect: u8,
+    pub destination_effect: u8,
+    pub speech: String,
 }
 
 /// Spawn one native creature at the selected USE target after quest settlement.
@@ -559,6 +574,36 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || chance.failure_message.chars().any(char::is_control)
     }) {
         return false;
+    }
+    if let Some(relocation) = &effects.fluid_relocation {
+        return callback.trigger == Trigger::Use
+            && callback.actor_kind == ActorKind::Player
+            && (callback.selector.action.is_some() || callback.selector.native.is_some())
+            && !callback.requires_durable_commit()
+            && !callback.reversible
+            && callback.lever.is_none()
+            && callback.passages.is_empty()
+            && callback.item_on_target.is_none()
+            && callback.teleport.is_none()
+            && callback.remote_teleport.is_none()
+            && effects.legacy.is_empty()
+            && effects.shared
+                == (CallbackEffects {
+                    fluid_relocation: Some(relocation.clone()),
+                    ..CallbackEffects::default()
+                })
+            && (-15..=0).contains(&relocation.destination.floor)
+            && relocation
+                .staging_dx
+                .unsigned_abs()
+                .max(relocation.staging_dy.unsigned_abs())
+                == 1
+            && relocation.subtype != 0
+            && relocation.source_effect != 0
+            && relocation.destination_effect != 0
+            && !relocation.speech.is_empty()
+            && relocation.speech.len() <= 256
+            && !relocation.speech.chars().any(char::is_control);
     }
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();

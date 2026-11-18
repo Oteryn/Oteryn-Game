@@ -50,8 +50,8 @@ pub use house::resolve_house_step;
 use oteryn_world_bundle::bundle::Family;
 pub use platform::prepare_quest_platform_rider;
 pub use quest_callback::{
-    prepare_quest_callback_teleport, prepare_quest_callback_teleport_facing,
-    prepare_quest_encounter_ejection,
+    prepare_quest_callback_stacked_teleport, prepare_quest_callback_teleport,
+    prepare_quest_callback_teleport_facing, prepare_quest_encounter_ejection,
 };
 pub use quest_callback_scene::{PreparedSceneRelocations, prepare_scene_relocations};
 pub use rope::{LadderTarget, prepare_bundle_ladder, prepare_bundle_rope};

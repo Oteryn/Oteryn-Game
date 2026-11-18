@@ -14,6 +14,8 @@ mod soul_war_source;
 #[path = "item_use_temple_scroll.rs"]
 pub(super) mod temple_scroll;
 
+mod fluid_relocation;
+
 use std::num::NonZeroU32;
 use std::time::Duration;
 
@@ -868,7 +870,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let placement = target.placement.clone();
-        let base_target_item = {
+        let (base_target_item, base_key) = {
             let mut runtime = self.runtime.lock().await;
             let at = super::bundle_map_position(&mut runtime, self.movement_cells(), actor)?;
             let facts = at.map.facts.pinned();
@@ -895,7 +897,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let tile =
                 crate::map::view::compose_tile(&at.map.overlay, &facts, resolved.pos).ok()??;
-            tile.entries
+            let item = tile
+                .entries
                 .iter()
                 .find(|entry| {
                     entry.source.key()
@@ -912,7 +915,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .ok()
                     }
                     _ => None,
-                })
+                });
+            (item, resolved.placement_key)
         };
         // Only read durable splash objects after the complete map target/range validation.
         // Refused USE_WITH commands must not mutate (or otherwise refresh) map state.
@@ -931,6 +935,45 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map(|splash| splash.splash_item_id)
             .or(base_target_item)?;
         let before = inventory.fluids.get(&source).copied().unwrap_or(0);
+        if fluid_source_subtype(target_item).is_none()
+            && let Some(map) = self.bundle_map()
+            && let Some(callback) = self.callback_content().iter().find(|callback| {
+                callback
+                    .effects
+                    .fluid_relocation
+                    .as_ref()
+                    .is_some_and(|relocation| relocation.subtype == before)
+                    && super::quest_callbacks::matches(map, callback, base_key)
+            })
+        {
+            let request = ItemFluidRequest {
+                command_id: command.command_id,
+                transaction_id: crate::operator_files::uuid_v7().ok()?,
+                change: ItemFluidChange {
+                    item_instance_id: source,
+                    definition: entry.item.definition.clone(),
+                    fluid_before: before,
+                    fluid_after: 0,
+                },
+                other: None,
+            };
+            let disposition = self
+                .commit_fluid_relocation(
+                    actor,
+                    &command,
+                    fence,
+                    request,
+                    map,
+                    callback,
+                    base_key,
+                    target.expected_revision,
+                )
+                .await;
+            return Some(UseOutcome {
+                disposition,
+                ..UseOutcome::rejected()
+            });
+        }
         let (after, splash) = if before == 0 {
             (fluid_source_subtype(target_item)?, None)
         } else {
