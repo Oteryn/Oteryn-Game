@@ -53,12 +53,17 @@ def build(root):
     worlds.append(cb('souls-return','step_in',DATA['souls_return'],[state(TRACK,5,5,5,True),state(track('raw_souls'),20,20,20,True),state(track('purified'),20,20,20,True),state(track('souls_return'),-1,-1,1)],'Return the twenty purified souls to Norbert.',DATA['norbert_approach']))
     callbacks=[]
     for name,word,before,after,give,take,extra,reply in [
-        ('mission','mission',-1,0,32582,[],[state(track('bells'),-1,-1,0)],'Ring this Death Knell at Carlin graveyard, Ghostlands and Dark Cathedral; grind one skull and distil it with a grave flower.'),
+        ('mission','yes',-1,0,32582,[],[state(track('bells'),-1,-1,0)],'Ring this Death Knell at Carlin graveyard, Ghostlands and Dark Cathedral; grind one skull and distil it with a grave flower.'),
         ('scalpel','scalpel',3,3,32225,[],[state(track('scalpel_given'),-1,-1,1)],'Use this scalpel on the ulcer after drinking the potion at the Brain Grounds entrance.'),
         ('probes','probes',4,5,32226,[dict(item='oteryn:item.tibia.i32197',count=20)],[state(track('samples'),20,20,20,True),state(track('raw_souls'),-1,-1,0),state(track('purified'),-1,-1,0)],'The twenty personal probes are accepted. Use this purifier for twenty lost souls.'),
         ('souls','souls',5,6,None,[dict(item='oteryn:item.tibia.i32228',count=20)],[state(track('purified'),20,20,20,True)],'Your twenty purified souls are accepted. The Brain Head investigation may continue.'),
     ]:
-        callbacks.append(dict(key='oteryn:quest-reward/questpc7-feaster-'+name,quest=QUEST,npc='oteryn:npc.para_norbert',keywords=[word],topic=0,next_topic=0,storage=[state(TRACK,before,before,after,before==after)]+extra,take=take,give=None if give is None else reward(name,give,1),outfit=None,achievement=None,reply=[reply],requirements=dict(requirements),sources=sources))
+        # Drain the Brain transcript: the player confirms Norbert's request with "yes".
+        callback_sources = (
+            [*sources, 'https://tibia.fandom.com/?curid=89657&oldid=1153851']
+            if name == 'mission' else sources
+        )
+        callbacks.append(dict(key='oteryn:quest-reward/questpc7-feaster-'+name,quest=QUEST,npc='oteryn:npc.para_norbert',keywords=[word],topic=0,next_topic=0,storage=[state(TRACK,before,before,after,before==after)]+extra,take=take,give=None if give is None else reward(name,give,1),outfit=None,achievement=None,reply=[reply],requirements=dict(requirements),sources=callback_sources))
     for row in worlds:
         if row['key'] in PHASE_ROUTE_KEYS:
             if row['requirements'] != requirements:
