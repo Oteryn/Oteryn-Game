@@ -429,6 +429,8 @@ pub struct QuestStateCatalogue {
     hashes: BTreeMap<String, [u8; 32]>,
     authored_bindings: Option<std::sync::Arc<authored_bindings::RuntimeBindings>>,
     npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
+    #[cfg(any(test, feature = "test-support"))]
+    fixture_npc_rules: Option<std::sync::Arc<npc_rules::NpcRuleCatalog>>,
     predecessors: BTreeMap<String, Vec<NpcDefinitionPredecessor>>,
     native_recipe_evidence: Option<std::sync::Arc<authored_bindings::embedded::RecipeEvidence>>,
 }
@@ -618,6 +620,8 @@ impl QuestStateCatalogue {
             hashes,
             completion_sets: BTreeMap::new(),
             npc_legacy: BTreeMap::new(),
+            #[cfg(any(test, feature = "test-support"))]
+            fixture_npc_rules: None,
             predecessors: BTreeMap::new(),
             authored_bindings: None,
             native_recipe_evidence: None,

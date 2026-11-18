@@ -1,11 +1,20 @@
-//! Closed, reusable storage-and-plain-item source plans. Durable owners supply custody.
+//! Bounded carried-item source plans. Durable owners supply custody.
 use super::*;
 use std::collections::BTreeSet;
 
 impl NpcRuleCatalog {
-    /// A source NPC may require eight plain item types and grant twenty types.
+    /// A source NPC may require eight item and subtype pairs and grant twenty types.
     /// Outfit effects use the shared appearance participant; money and optional removals stay closed.
     pub fn item_exchange_keys(&self, npc: &str) -> Option<Vec<String>> {
+        let definitions = self
+            .item_exchange_inputs(npc)?
+            .into_iter()
+            .map(|input| input.item)
+            .collect::<BTreeSet<_>>();
+        Some(definitions.into_iter().collect())
+    }
+
+    fn item_exchange_inputs(&self, npc: &str) -> Option<BTreeSet<NpcItemKey>> {
         let mut keys = BTreeSet::new();
         let mut items = false;
         for rule in self
@@ -28,10 +37,13 @@ impl NpcRuleCatalog {
                     NpcRuleGuard::Item {
                         item,
                         count: 1..=100,
-                        subtype: None,
+                        subtype: subtype @ (None | Some(1..=255)),
                         op: NpcComparison::Ge | NpcComparison::Lt,
                     } => {
-                        keys.insert(item.clone());
+                        keys.insert(NpcItemKey {
+                            item: item.clone(),
+                            subtype: *subtype,
+                        });
                     }
                     _ => return None,
                 }
@@ -52,10 +64,15 @@ impl NpcRuleCatalog {
                     NpcRuleEffect::TakeItem {
                         item,
                         count: 1..=100,
-                        subtype: None,
+                        subtype: subtype @ (None | Some(1..=255)),
                         optional: false,
                     } => {
-                        keys.insert(item.clone());
+                        // Crystal rapanaio.lua:206-235 and lazaran.lua:153-162
+                        // select a filled container by its exact native subtype.
+                        keys.insert(NpcItemKey {
+                            item: item.clone(),
+                            subtype: *subtype,
+                        });
                         items = true;
                     }
                     NpcRuleEffect::GiveItem {
@@ -73,23 +90,15 @@ impl NpcRuleCatalog {
                 return None;
             }
         }
-        items.then(|| keys.into_iter().collect())
+        items.then_some(keys)
     }
 
     pub fn optimistic_item_inventory(&self, npc: &str) -> Option<NpcInventorySnapshot> {
         Some(NpcInventorySnapshot {
             items: self
-                .item_exchange_keys(npc)?
+                .item_exchange_inputs(npc)?
                 .into_iter()
-                .map(|item| {
-                    (
-                        NpcItemKey {
-                            item,
-                            subtype: None,
-                        },
-                        100,
-                    )
-                })
+                .map(|input| (input, 100))
                 .collect(),
             ..NpcInventorySnapshot::default()
         })
@@ -101,10 +110,10 @@ impl NpcRuleCatalog {
         &self,
         input: &NpcRuleInput<'_>,
     ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
-        self.item_exchange_keys(input.npc)
-            .ok_or_else(|| NpcRuleError::MissingNativeResolution("plain item exchange".into()))?;
+        self.item_exchange_inputs(input.npc)
+            .ok_or_else(|| NpcRuleError::MissingNativeResolution("carried item exchange".into()))?;
         // Keep storage-only branches on their existing owner. Only inventory-owned
-        // guards and effects select the plain item planner with the same atomic cap.
+        // guards and effects select the item planner with the same atomic cap.
         match self.plan_storage(input) {
             Err(NpcRuleError::MissingNativeResolution(_)) => {
                 evaluate::plan(self, input, &BTreeMap::new(), false)

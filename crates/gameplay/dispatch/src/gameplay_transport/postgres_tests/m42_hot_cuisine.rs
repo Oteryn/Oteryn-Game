@@ -105,6 +105,17 @@ async fn fluids(
     subtype: u8,
     occurrence: u64,
 ) -> TestResult {
+    typed_fluids(owner, admitted, h, authority, (2874, subtype, 2), occurrence).await
+}
+
+pub(super) async fn typed_fluids(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    (item, subtype, count): (u16, u8, u8),
+    occurrence: u64,
+) -> TestResult {
     let native = owner
         .active_generation
         .and_then(|g| g.native_gameplay())
@@ -142,11 +153,11 @@ async fn fluids(
         source_placement: format!("fixture:placement.m42-fluid-{subtype}-{occurrence}"),
         item: facts(2853)?,
         quantity: 1,
-        contents: (0..2)
+        contents: (0..count)
             .map(|_| {
                 Ok(RewardClaimMintContent {
                     charges_remaining: None,
-                    item: facts(2874)?,
+                    item: facts(item)?,
                     quantity: 1,
                     fluid_subtype: Some(subtype),
                     key_number: None,

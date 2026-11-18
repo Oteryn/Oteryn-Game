@@ -1,0 +1,267 @@
+//! Crystal 201189f8 data-global/npc/rapanaio.lua:90-100,206-235 and lazaran.lua:100-103,153-162.
+use super::fixture::Harness;
+use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use crate::durability::character_authority::ReconciledCharacterAuthority;
+use oteryn_gameplay_quests::quest::{
+    isle_of_evil, npc_rules, unnatural_selection, world_callbacks::Position,
+};
+use serde_json::{Value, json};
+use std::sync::Arc;
+
+pub(super) const NAME: &str = "quest-npc-exact-fluid";
+const RAPANAIO: &str = "oteryn:npc.rapanaio";
+const LAZARAN: &str = "oteryn:npc.lazaran";
+const RUM_SOURCE: &str =
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:90-100";
+const RAPANAIO_INTAKE: &str =
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rapanaio.lua:206-235";
+const LAZARAN_INTAKE: &str =
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:100-103";
+const LAZARAN_BEER: &str =
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:153-162";
+const MISSING: &str = "You have not brought the requested drink.";
+const ACCEPTED: &str = "Thank you for the drink.";
+
+#[test]
+fn quest_npc_rapanaio_consumes_only_rum_and_fruit_juice_at_their_topics() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    run("quest-npc-exact-fluid-rapanaio")
+}
+
+#[test]
+fn quest_npc_lazaran_exchanges_only_beer_for_the_tribal_crest() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    run("quest-npc-exact-fluid-lazaran")
+}
+
+fn run(name: &'static str) -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run(name, move || {
+        super::quest_world_callbacks::scenario(
+            name,
+            Position {
+                x: 33294,
+                y: 31677,
+                floor: -15,
+            },
+            false,
+        )
+    })
+}
+
+struct Intake {
+    mission: String,
+    topic: i32,
+    stage: i64,
+    item: u16,
+    subtype: u8,
+    quantity: u8,
+    complete_at: i64,
+    reward: Option<u16>,
+}
+
+impl Intake {
+    fn rules(&self, quest: &str, npc: &str, questline: &str) -> [Value; 3] {
+        let (prompt_source, intake_source) = if npc == RAPANAIO {
+            (RUM_SOURCE, RAPANAIO_INTAKE)
+        } else {
+            (LAZARAN_INTAKE, LAZARAN_BEER)
+        };
+        let item = format!("oteryn:item.tibia.i{}", self.item);
+        let topic = self.topic;
+        let group =
+            format!("oteryn:quest-npc/fixture-fluid/{npc}/{topic}").replace("oteryn:npc.", "");
+        let mut effects = vec![
+            json!({"kind":"take_item","item":item,"count":self.quantity,"subtype":self.subtype}),
+            json!({"kind":"set","track":questline,"value":self.stage+1}),
+            json!({"kind":"set","track":self.mission,"value":self.complete_at}),
+            json!({"kind":"set_topic","value":0}),
+        ];
+        if let Some(id) = self.reward {
+            effects.push(
+                json!({"kind":"give_item","item":format!("oteryn:item.tibia.i{id}"),"count":1}),
+            );
+        }
+        [
+            json!({
+                "key":format!("{group}/prompt"),"quest":quest,"npc":npc,"trigger":"say",
+                "keywords":["mission"],"keyword_mode":"exact",
+                "guards":[{"kind":"storage","track":questline,"op":"eq","value":self.stage}],
+                "reply":["Have you brought the drink?"],"effects":[{"kind":"set_topic","value":topic}],
+                "sources":[prompt_source]
+            }),
+            json!({
+                "key":format!("{group}/accept"),"quest":quest,"npc":npc,"trigger":"say",
+                "keywords":["yes"],"keyword_mode":"exact","topics":[topic],
+                "guards":[{"kind":"item","item":item,"count":self.quantity,"subtype":self.subtype}],
+                "reply":[ACCEPTED],"effects":effects,"sources":[intake_source]
+            }),
+            json!({
+                "key":format!("{group}/refuse"),"quest":quest,"npc":npc,"trigger":"say",
+                "keywords":["yes"],"keyword_mode":"exact","topics":[topic],
+                "guards":[{"kind":"item","item":item,"count":self.quantity,"subtype":self.subtype,"op":"lt"}],
+                "reply":[MISSING],"effects":[{"kind":"set_topic","value":0}],"sources":[intake_source]
+            }),
+        ]
+    }
+}
+
+pub(super) async fn exercise(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    name: &str,
+) -> TestResult {
+    let (quest, npc, questline, intakes) = if name.ends_with("rapanaio") {
+        (
+            isle_of_evil::QUEST,
+            RAPANAIO,
+            format!("{}questline", isle_of_evil::PREFIX),
+            vec![
+                Intake {
+                    mission: format!("{}mission02", isle_of_evil::PREFIX),
+                    topic: 10,
+                    stage: 4,
+                    item: 2874,
+                    subtype: 13,
+                    quantity: 10,
+                    complete_at: 2,
+                    reward: None,
+                },
+                Intake {
+                    mission: format!("{}mission03", isle_of_evil::PREFIX),
+                    topic: 11,
+                    stage: 6,
+                    item: 2874,
+                    subtype: 14,
+                    quantity: 1,
+                    complete_at: 2,
+                    reward: None,
+                },
+            ],
+        )
+    } else {
+        (
+            unnatural_selection::QUEST,
+            LAZARAN,
+            unnatural_selection::QUESTLINE_TRACK.into(),
+            vec![Intake {
+                mission: "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission06".into(),
+                topic: 6,
+                stage: 14,
+                item: 3465,
+                subtype: 3,
+                quantity: 1,
+                complete_at: 3,
+                reward: Some(10198),
+            }],
+        )
+    };
+    let base = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
+    let rules = intakes
+        .iter()
+        .flat_map(|intake| intake.rules(quest, npc, &questline))
+        .collect::<Vec<_>>();
+    let source = if npc == RAPANAIO {
+        RAPANAIO_INTAKE
+    } else {
+        LAZARAN_BEER
+    };
+    let tracks = std::iter::once(&questline).chain(intakes.iter().map(|intake| &intake.mission))
+        .map(|key| {
+            let track = base.track(key).ok_or("canonical track")?;
+            Ok(json!({"key":key,"quest":quest,"initial":track.initial,"min":track.min,"max":track.max,"sources":[source]}))
+        })
+        .collect::<TestResult<Vec<_>>>()?;
+    let document = json!({"schema":1,"quest":quest,"tracks":tracks,"rules":rules}).to_string();
+    owner.quest_catalogue = Some(Arc::new(npc_rules::with_fixture_programs(
+        (**base).clone(),
+        &[&document],
+    )?));
+    let [actor] = super::classic_quests::install(owner, admitted, [npc]).await?;
+    let mut command_id = 8100;
+    let mut occurrence = 1;
+    for intake in intakes {
+        super::qengine_outfit_stories::seed_quest_prerequisites(
+            h,
+            owner,
+            admitted,
+            &[
+                (questline.clone(), intake.stage),
+                (intake.mission.clone(), 1),
+            ],
+            120 + intake.topic as u8,
+        )
+        .await?;
+        super::m42_hot_cuisine::typed_fluids(
+            owner,
+            admitted,
+            h,
+            authority,
+            (intake.item, 1, 1),
+            occurrence,
+        )
+        .await?;
+        occurrence += 1;
+        let snapshot = live_fluids(h, intake.item).await?;
+
+        for (words, expected) in [
+            (["hi", "mission", "yes"], MISSING),
+            (["hi", "mission", "yes"], ACCEPTED),
+        ] {
+            if expected == ACCEPTED {
+                for count in (0..intake.quantity)
+                    .step_by(5)
+                    .map(|n| (intake.quantity - n).min(5))
+                {
+                    super::m42_hot_cuisine::typed_fluids(
+                        owner,
+                        admitted,
+                        h,
+                        authority,
+                        (intake.item, intake.subtype, count),
+                        occurrence,
+                    )
+                    .await?;
+                    occurrence += 1;
+                }
+            }
+            let mut reply = Vec::new();
+            for word in words {
+                reply =
+                    super::classic_quests::talk(owner, admitted, actor, command_id, word).await?;
+                command_id += 1;
+            }
+            assert_eq!(reply, [expected]);
+            assert_eq!(live_fluids(h, intake.item).await?, snapshot);
+            let mission = super::m39_bone_journey::stage(h, &intake.mission).await?;
+            let stage = super::m39_bone_journey::stage(h, &questline).await?;
+            if expected == ACCEPTED {
+                assert_eq!(
+                    (mission, stage),
+                    (Some(intake.complete_at), Some(intake.stage + 1))
+                );
+            } else {
+                assert_eq!((mission, stage), (Some(1), Some(intake.stage)));
+            }
+        }
+        if let Some(id) = intake.reward {
+            let key = format!("oteryn:item.tibia.i{id}");
+            let gifts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1")
+                .bind(key).fetch_one(&h.pool).await?;
+            assert_eq!(gifts, 1);
+        }
+    }
+    Ok(())
+}
+
+async fn live_fluids(h: &Harness, item: u16) -> TestResult<Vec<(i16, i64)>> {
+    Ok(sqlx::query_as("SELECT f.fluid_subtype,count(*) FROM game_item_fluid_states f JOIN game_item_instances i USING(item_instance_id) WHERE i.lifecycle=1 AND i.definition_production_key=$1 GROUP BY f.fluid_subtype ORDER BY f.fluid_subtype")
+        .bind(format!("oteryn:item.tibia.i{item}")).fetch_all(&h.pool).await?)
+}

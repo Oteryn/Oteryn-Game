@@ -336,13 +336,13 @@ fn npc_false(value: &bool) -> bool {
     !*value
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcRuleProgram {
     pub document: NpcRuleDocument,
     pub digest: [u8; 32],
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct NpcRuleCatalog {
     programs: Vec<NpcRuleProgram>,
 }
@@ -412,6 +412,15 @@ pub struct NpcRulePlan {
 }
 
 impl NpcRuleCatalog {
+    /// Resolve program bytes from the same source in preview and the durable writer.
+    pub fn for_state(_native: &super::QuestStateCatalogue) -> Result<&Self, NpcRuleError> {
+        #[cfg(any(test, feature = "test-support"))]
+        if let Some(fixture) = _native.fixture_npc_rules.as_deref() {
+            return Ok(fixture);
+        }
+        Self::runtime()
+    }
+
     /// Resolve only programmes explicitly bound into this catalogue for this NPC.
     pub fn admitted_for_npc(
         &self,
@@ -554,8 +563,10 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.the_white_raven_monastery_quest"
                                 | "oteryn:quest.the_dream_courts_quest"
                                 | "oteryn:quest.the_hidden_city_of_beregar_quest"
+                                | "oteryn:quest.the_isle_of_evil_quest"
                                 | "oteryn:quest.the_order_of_the_stag_quest"
                                 | "oteryn:quest.tower_defence_quest"
+                                | "oteryn:quest.unnatural_selection_quest"
                         )
                 });
                 let authored = Self::from_json_documents(AUTHORED_NPC_RULE_PROGRAMS)?;
@@ -758,6 +769,26 @@ pub(super) fn extend(
     source_tracks: &BTreeMap<String, String>,
 ) -> Result<super::QuestStateCatalogue, String> {
     let source = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
+    extend_source(catalogue, source_tracks, source)
+}
+
+#[cfg(any(test, feature = "test-support"))]
+pub fn with_fixture_programs(
+    catalogue: super::QuestStateCatalogue,
+    documents: &[&str],
+) -> Result<super::QuestStateCatalogue, String> {
+    let source =
+        NpcRuleCatalog::from_json_documents(documents).map_err(|error| error.to_string())?;
+    let mut catalogue = extend_source(catalogue, &BTreeMap::new(), &source)?;
+    catalogue.fixture_npc_rules = Some(std::sync::Arc::new(source));
+    Ok(catalogue)
+}
+
+fn extend_source(
+    catalogue: super::QuestStateCatalogue,
+    source_tracks: &BTreeMap<String, String>,
+    source: &NpcRuleCatalog,
+) -> Result<super::QuestStateCatalogue, String> {
     let mut legacy = catalogue.npc_legacy.clone();
     let predecessors = catalogue.predecessors.clone();
     for program in source.programs() {

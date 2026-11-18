@@ -69,7 +69,7 @@ pub(super) async fn inventory(
         let runtime = admission.runtime.lock().await;
         let npc =
             service_context::live_npc(&runtime, actor, command.game_session_id, intent.npc_actor)?;
-        let source = NpcRuleCatalog::runtime()
+        let source = NpcRuleCatalog::for_state(admission.quest_catalogue.as_ref()?)
             .ok()?
             .admitted_for_npc(&npc.key, admission.quest_catalogue.as_ref()?)
             .ok()??;
@@ -190,7 +190,7 @@ pub(super) fn prepare(
         intent,
     )?;
     let catalogue = admission.quest_catalogue.as_ref()?;
-    let source = NpcRuleCatalog::runtime()
+    let source = NpcRuleCatalog::for_state(catalogue)
         .ok()?
         .admitted_for_npc(&context.2, catalogue)
         .ok()??;

@@ -27,6 +27,7 @@ fn scenario_case(
     let name = name.strip_prefix("sidec-").unwrap_or(name);
     let dance_hints = name == super::super::quest_progress_magic::NAME;
     let native_dance = dance_hints || name == "unnatural-selection-dance-native";
+    let npc_fluid = name.starts_with(super::super::quest_npc_fluid_intake::NAME);
     let source_tile_magic = name == super::super::quest_source_tile_magic::NAME;
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
@@ -297,6 +298,7 @@ fn scenario_case(
         || name == "questpc7-golden"
         || name == "questpc7-friends";
     let classic_npc = shared_rewards
+        || npc_fluid
         || name.starts_with("engoutfit-")
         || qengine_reward
         || name.starts_with("npcfix-m38-mistrock")
@@ -2501,6 +2503,14 @@ fn scenario_case(
                 &authority,
             ))
             .await?;
+        } else if npc_fluid {
+            Box::pin(super::super::quest_npc_fluid_intake::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                name,
+            )).await?;
         } else if name == "npc-item-exchanges" {
             Box::pin(super::super::npc_item_exchanges::exercise(
                 &mut owner,
