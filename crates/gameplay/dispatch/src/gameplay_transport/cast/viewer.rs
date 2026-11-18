@@ -391,7 +391,7 @@ mod tests {
             },
             appearance_id: 100,
         };
-        let tiles = [-7, -6]
+        let tiles = [7, 6]
             .into_iter()
             .map(|floor| MapTile {
                 position: world_spatial::ActorPosition { floor, ..origin },
