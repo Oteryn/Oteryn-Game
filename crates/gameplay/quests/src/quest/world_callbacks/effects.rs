@@ -100,6 +100,9 @@ pub struct CallbackEffects {
     pub teleport_effect: Option<u16>,
     pub portals: Option<PortalPair>,
     pub item_cycle: Option<ItemCycle>,
+    /// Create one volatile trap at the selected world target after its item debit.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub place_item: Option<u16>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
     pub encounter: Option<Encounter>,
@@ -729,6 +732,35 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || effects.portals.is_some()
             || effects.item_cycle.is_some()
             || effects.encounter.is_some()
+    }) {
+        return false;
+    }
+    if effects.place_item.is_some_and(|appearance| {
+        appearance == 0
+            || callback.trigger != Trigger::Use
+            || callback.actor_kind != ActorKind::Player
+            || !callback.requires_world_admission
+            || !callback.has_personal_state()
+            || callback.reversible
+            || callback.opening_only
+            || callback.item_on_target.as_ref().is_none_or(|item| {
+                !item.selected_instance
+                    || item.reusable
+                    || item.count != 1
+                    || item.replacement.is_some()
+                    || item.target_replacement.is_some()
+                    || item.target_remove
+            })
+            || callback.lever.is_some()
+            || callback.teleport.is_some()
+            || !callback.passages.is_empty()
+            || effects.encounter.is_some()
+            || effects.item_cycle.is_some()
+            || effects.item_presence.is_some()
+            || effects.portals.is_some()
+            || effects.scene.is_some()
+            || effects.transform.is_some()
+            || effects.target_transform.is_some()
     }) {
         return false;
     }

@@ -1022,7 +1022,7 @@ impl BundleFacts {
         expected: u64,
         appearance: u16,
     ) -> bool {
-        self.transform_movement_item_with(key, expected, appearance, || true)
+        self.transform_movement_item_with(key, expected, appearance, |_| true)
     }
 
     /// Commit the owner operation after checking the exact volatile entry and before
@@ -1032,7 +1032,7 @@ impl BundleFacts {
         key: u64,
         expected: u64,
         appearance: u16,
-        consume: impl FnOnce() -> bool,
+        consume: impl FnOnce(EntryFacts) -> bool,
     ) -> bool {
         if key >> 62 != 2 || expected == u64::MAX {
             return false;
@@ -1066,7 +1066,7 @@ impl BundleFacts {
         }) else {
             return false;
         };
-        if !consume() {
+        if !consume(entry.facts) {
             return false;
         }
         after.bound = entry.facts.bound;
@@ -1203,6 +1203,12 @@ impl BundleFacts {
         true
     }
 
+    pub fn has_quest_item_presence(&self, pos: TilePos) -> bool {
+        self.callbacks.lock().map_or(true, |states| {
+            states.presences.values().any(|(at, _)| *at == pos)
+        })
+    }
+
     /// Crystal data-global/scripts/systems/hazard_primal.lua:53,68 removes
     /// only the pod that still exists.
     /// The physical owner supplies this exact volatile occurrence, position and
@@ -1237,6 +1243,7 @@ impl BundleFacts {
         if entries.is_empty() {
             states.movement_items.remove(&pos);
         }
+        states.presences.retain(|_, (_, id)| id.get() != key);
         states.changed.remove(&key);
         states.movement_decays.retain(|(_, entry), _| *entry != key);
         states.movement_sequence = sequence;

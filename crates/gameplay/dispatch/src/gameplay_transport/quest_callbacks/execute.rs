@@ -294,6 +294,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 create: None,
             });
         }
+        if let Some(appearance) = callback.effects.place_item {
+            let Some(facts) = map.facts.movement_item_facts(appearance) else {
+                return UseDisposition::Rejected;
+            };
+            if projection.is_some()
+                || facts.pickupable
+                || map.facts.house_tile(pos)
+                || map.facts.has_quest_item_presence(pos)
+            {
+                return UseDisposition::Rejected;
+            }
+            projection = Some(crate::map::facts::QuestCallbackProjection::ItemPresence {
+                position: pos,
+                entry: facts,
+            });
+        }
         if let Some(appearance) = callback
             .item_on_target
             .as_ref()

@@ -62,7 +62,10 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
                 *key,
                 map.facts.object_revision(*key),
                 12189,
-                || runtime.remove_encounter_actor(step.actor).is_ok(),
+                |current| {
+                    current.appearance_id == 12187
+                        && runtime.remove_encounter_actor(step.actor).is_ok()
+                },
             )
         {
             continue;
