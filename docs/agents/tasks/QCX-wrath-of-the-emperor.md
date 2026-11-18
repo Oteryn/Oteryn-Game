@@ -117,3 +117,19 @@ PG via shard (pgsplit build files applied on
 `9102bb7bda719bb45129f28b1d54097d343ac11a`): red, 0 passed and 1 failed in
 49.59 s. The first `wrath mission` wire command returned Accepted when the
 prerequisite was absent, where the regression expected Rejected.
+
+PG via shard (pgsplit build files applied on
+`c7c073ac755c13ccb2b4c9fdec84c7a22da2a050`): green, 1 passed and 0 failed
+in 52.47 s. The same wire request is rejected without the upstream flag
+and accepted after seeding it. The crate checks still pass for exact
+materials, partial-hand-in refusal, repeat and cold replay.
+
+- Route-less run using the same filter with `OTERYN_TEST_POSTGRES_ADMIN_URL`
+  removed returned `Ok(())`, 1 passed and 0 failed in 0.00 s.
+- Quest authoring passed all 44 check commands. The chosen reward generator's
+  own `--check` also passed.
+- World pin refresh retained
+  `0676b1568f55a55fbe994f344a8e0c60debf766751d12849f56c19f60c93aae5`.
+  The compiler's `pin-check . <temporary output directory>` passed.
+- `cargo fmt --all -- --check` passed.
+- Dispatch library Clippy passed with all features and `-D warnings`.
