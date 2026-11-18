@@ -60,18 +60,22 @@ pub(super) async fn exercise(
         .collect::<Vec<_>>();
     assert_eq!(source.programs().len(), 25);
     assert_eq!(inherited.len(), 23);
+    // Quest package 3 (#3290) added seven rules for Gelidrazah's Thirst.
+    // Under oteryn:quest-npc/the_first_dragon_quest/gelidrazahs_thirst/:
+    // greet, quiz-57-1-1-1, quiz-63-2-1-1, quiz-66-3-1-1,
+    // quiz-69-4-1-1, quiz-72-5-1-1, and quiz-77-6-1-1.
     assert_eq!(
         inherited
             .iter()
             .map(|p| p.document.rules.len())
             .sum::<usize>(),
-        1212
+        1219
     );
     let unique = inherited
         .iter()
         .flat_map(|p| p.document.rules.iter().map(|r| r.npc.as_str()))
         .collect::<std::collections::BTreeSet<_>>();
-    assert_eq!(unique.len(), 97);
+    assert_eq!(unique.len(), 98);
     for (quest, program_key, count, npcs) in [
         (
             "oteryn:quest.the_paradox_tower_quest",
