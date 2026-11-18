@@ -5,7 +5,7 @@ mod ground;
 #[path = "event_containers/wire.rs"]
 mod wire;
 use super::fixture::{Harness, debug, id, run};
-use super::item_craft::exchange;
+use super::item_craft_fixtures::exchange;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
@@ -192,7 +192,7 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
         if nested {
             seed_items.push((bag, 1));
         }
-        super::item_look::seed_main_backpack(&harness, &seed_items).await?;
+        super::item_look_fixtures::seed_main_backpack(&harness, &seed_items).await?;
         if nested {
             let mut tx = harness.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica")

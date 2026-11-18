@@ -66,5 +66,5 @@ fn qb_shaman_hand_ins_are_placed_and_story_completes() -> TestResult {
         missing.is_empty(),
         "QB_OUTFIT_PLACEMENT_RED shaman: reward-callback NPCs absent from the native placement index: {missing:?}"
     );
-    super::qengine_rewards::scenario("qengine-rewards-qb-shaman-story")
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-shaman-story")
 }

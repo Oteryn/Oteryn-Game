@@ -147,7 +147,7 @@ fn scenario() -> TestResult {
             .find(|epoch| crate::durability::world_event::changes::roll(world, *epoch, 0)
                 .is_ok_and(|day| day.oriental_trader.is_some()))
             .ok_or("active Oriental Trader epoch")?;
-        super::worldchg_trader::day(&h, world, epoch).await?;
+        super::worldchg_trader_fixtures::day(&h, world, epoch).await?;
         let (yasir_x, yasir_y, yasir_z) = crate::durability::world_event::changes::roll(world, epoch, 0)?
             .oriental_trader.ok_or("selected Yasir town")?.yasir_position();
         let (controller, pin) =
@@ -251,7 +251,7 @@ fn scenario() -> TestResult {
                 generation: placed.generation,
             }
         };
-        super::item_look::seed_main_backpack(&h, &[(&item_key, 2)]).await?;
+        super::item_look_fixtures::seed_main_backpack(&h, &[(&item_key, 2)]).await?;
         let current =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                 .current_session_at(session)

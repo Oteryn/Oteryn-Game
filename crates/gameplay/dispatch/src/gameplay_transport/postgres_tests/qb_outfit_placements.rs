@@ -88,7 +88,7 @@ fn qb_assassin_hand_ins_are_placed_and_story_completes() -> TestResult {
         "assassin",
         &["oteryn:npc.atrad", "oteryn:npc.erayo", "oteryn:npc.vescu"],
     )?;
-    super::qengine_rewards::scenario("qengine-rewards-l7-assassin-story")
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-l7-assassin-story")
 }
 
 #[test]
@@ -97,15 +97,15 @@ fn qb_beggar_hand_ins_are_placed_and_stories_complete() -> TestResult {
         "beggar",
         &["oteryn:npc.hugo", "oteryn:npc.simon_the_beggar"],
     )?;
-    super::qengine_rewards::scenario("qengine-rewards-l6-beggar-male-story")?;
-    super::qengine_rewards::scenario("qengine-rewards-l6-beggar-female-story")
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-l6-beggar-male-story")?;
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-l6-beggar-female-story")
 }
 
 #[test]
 fn qb_hunter_hand_ins_are_placed_and_stories_complete() -> TestResult {
     hand_ins_are_placed("hunter", &["oteryn:npc.elane", "oteryn:npc.legola"])?;
-    super::qengine_rewards::scenario("qengine-rewards-l8-hunter-male-story")?;
-    super::qengine_rewards::scenario("qengine-rewards-l8-hunter-female-story")
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-l8-hunter-male-story")?;
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-l8-hunter-female-story")
 }
 
 #[test]
@@ -120,8 +120,8 @@ fn qb_mage_and_summoner_hand_ins_are_placed_and_stories_complete() -> TestResult
             "oteryn:npc.zoltan",
         ],
     )?;
-    super::qengine_rewards::scenario("qengine-rewards-l8-mage-male-story")?;
-    super::qengine_rewards::scenario("qengine-rewards-l8-mage-female-story")
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-l8-mage-male-story")?;
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-l8-mage-female-story")
 }
 
 #[test]
@@ -130,7 +130,7 @@ fn qb_wizard_hand_ins_are_placed_and_story_completes() -> TestResult {
         "wizard",
         &["oteryn:npc.lugri", "oteryn:npc.the_queen_of_the_banshees"],
     )?;
-    super::qengine_rewards::scenario("qengine-rewards-l2-wizard-skull-story")
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-l2-wizard-skull-story")
 }
 
 // QB-2. Reference: TibiaWiki `<Name>_Outfits/Spoiler` (Brotherhood, Nightmare, Cave Explorer,
@@ -142,22 +142,22 @@ fn qb_wizard_hand_ins_are_placed_and_story_completes() -> TestResult {
 fn qb_brotherhood_and_nightmare_hand_ins_are_placed_and_stories_complete() -> TestResult {
     hand_ins_are_placed("brotherhood", &["oteryn:npc.the_bone_master"])?;
     hand_ins_are_placed("nightmare", &["oteryn:npc.the_dream_master"])?;
-    super::qengine_rewards::scenario("qengine-rewards-l10-documents-brotherhood-story")?;
-    super::qengine_rewards::scenario("qengine-rewards-l10-documents-nightmare-story")
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-l10-documents-brotherhood-story")?;
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-l10-documents-nightmare-story")
 }
 
 #[test]
 fn qb_cave_explorer_hand_in_is_placed_and_story_completes() -> TestResult {
     hand_ins_are_placed("cave-explorer", &["oteryn:npc.gnommander"])?;
-    super::qengine_rewards::scenario("qengine-rewards-l12-cave-explorer-story")
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-l12-cave-explorer-story")
 }
 
 #[test]
 fn qb_crystal_warlord_and_soil_guardian_hand_ins_are_placed_and_stories_complete() -> TestResult {
     hand_ins_are_placed("crystal-warlord", &["oteryn:npc.gnomally"])?;
     hand_ins_are_placed("soil", &["oteryn:npc.gnomally"])?;
-    super::qengine_rewards::scenario("qengine-rewards-l9-crystal-warlord-story")?;
-    super::qengine_rewards::scenario("qengine-rewards-l9-soil-guardian-story")
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-l9-crystal-warlord-story")?;
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-l9-soil-guardian-story")
 }
 
 /// The accessory story itself runs in `soul_war`. Bloodshade (Decaying Defender) is not
@@ -170,8 +170,8 @@ fn qb_revenant_hand_in_is_placed() -> TestResult {
 #[test]
 fn qb_dream_warden_and_warrior_hand_ins_are_placed_and_stories_complete() -> TestResult {
     hand_ins_are_placed("dream", &["oteryn:npc.eruaran", "oteryn:npc.vanys"])?;
-    super::qengine_rewards::scenario("qengine-rewards-l8-dream-warden-story")?;
-    super::qengine_rewards::scenario("qengine-rewards-l11-dream-warrior-story")
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-l8-dream-warden-story")?;
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-l11-dream-warrior-story")
 }
 
 #[test]
@@ -184,13 +184,13 @@ fn qb_druid_hand_ins_are_placed_and_story_completes() -> TestResult {
             "oteryn:npc.ustan",
         ],
     )?;
-    super::qengine_rewards::scenario("qengine-rewards-l7-druid-story")
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-l7-druid-story")
 }
 
 #[test]
 fn qb_knight_hand_ins_are_placed_and_story_completes() -> TestResult {
     hand_ins_are_placed("knight", &["oteryn:npc.gregor"])?;
-    super::qengine_rewards::scenario("qengine-rewards-l7-knight-story")
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-l7-knight-story")
 }
 
 #[test]
@@ -205,13 +205,13 @@ fn qb_inquisition_guards_are_placed_and_story_completes() -> TestResult {
             "oteryn:npc.walter_the_guard",
         ],
     )?;
-    super::qengine_rewards::scenario("qengine-rewards-qnpcfx-m10-inquisition")
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-qnpcfx-m10-inquisition")
 }
 
 #[test]
 fn qb_outfox_hand_in_is_placed_and_story_completes() -> TestResult {
     hand_ins_are_placed("outfox", &["oteryn:npc.budrik"])?;
-    super::qengine_rewards::scenario("qengine-rewards-outfox")
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-outfox")
 }
 
 // QB-3. Reference: TibiaWiki `Citizen_Outfits_Quest/Spoiler` and
@@ -242,7 +242,7 @@ fn two_hour_waits(prefix: &str, expected: usize) -> TestResult {
 fn qb_citizen_hand_ins_are_placed_and_story_completes() -> TestResult {
     hand_ins_are_placed("qb-citizen", &["oteryn:npc.hanna", "oteryn:npc.lubo"])?;
     two_hour_waits("/qb-citizen-", 1)?;
-    super::qengine_rewards::scenario("qengine-rewards-qb-citizen-story")
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-citizen-story")
 }
 
 #[test]
@@ -256,5 +256,5 @@ fn qb_warrior_hand_ins_are_placed_and_story_completes() -> TestResult {
         ],
     )?;
     two_hour_waits("/qb-warrior-", 1)?;
-    super::qengine_rewards::scenario("qengine-rewards-qb-warrior-story")
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-warrior-story")
 }

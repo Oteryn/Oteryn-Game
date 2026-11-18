@@ -125,7 +125,7 @@ fn scenario() -> TestResult {
                 .map_err(debug)?
                 .actors
         };
-        super::item_look::seed_main_backpack(&h, &[("oteryn:item.tibia.i3031", 100)]).await?;
+        super::item_look_fixtures::seed_main_backpack(&h, &[("oteryn:item.tibia.i3031", 100)]).await?;
         assert!(owner.ensure_source_map_initialized().await);
         let routes = [
             (0, "help"),
@@ -142,9 +142,9 @@ fn scenario() -> TestResult {
                 generation: actors[index].actor_local_generation(),
             };
             let command = u64::try_from(ordinal * 3 + 1)?;
-            super::npc_paid_travel::talk(&owner, &deps, npc, command, "hi").await?;
+            super::npc_paid_travel_fixtures::talk(&owner, &deps, npc, command, "hi").await?;
             let quote =
-                super::npc_paid_travel::talk(&owner, &deps, npc, command + 1, keyword).await?;
+                super::npc_paid_travel_fixtures::talk(&owner, &deps, npc, command + 1, keyword).await?;
             let text = quote
                 .conversation
                 .as_ref()
@@ -157,7 +157,7 @@ fn scenario() -> TestResult {
             );
             if ordinal == 5 {
                 let arrived =
-                    super::npc_paid_travel::talk(&owner, &deps, npc, command + 2, "yes").await?;
+                    super::npc_paid_travel_fixtures::talk(&owner, &deps, npc, command + 2, "yes").await?;
                 assert!(!arrived.unknown);
                 let position = deps
                     .runtime
@@ -168,7 +168,7 @@ fn scenario() -> TestResult {
                     .position();
                 assert_eq!((position.x, position.y, position.floor), (32734, 31668, 6));
             } else {
-                super::npc_paid_travel::talk(&owner, &deps, npc, command + 2, "bye").await?;
+                super::npc_paid_travel_fixtures::talk(&owner, &deps, npc, command + 2, "bye").await?;
             }
         }
         let receipt: (i64,i64) = sqlx::query_as("SELECT count(*),COALESCE(sum(fare_gold_units),0)::bigint FROM game_newhaven_travel_receipts WHERE route='oteryn:service.travel.scrutinon/ab_dendriel'")

@@ -1,4 +1,3 @@
-//! Descend into the outer Bear Room basement before the retained stone and key door.
 use super::*;
 
 #[test]
@@ -7,10 +6,10 @@ fn m01b_bear_native_basement_entry_credits_once_before_key_and_stone() -> TestRe
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::super::kill_reward_e2e::scenario_thread::run(
+    let result = super::super::kill_reward_e2e_fixtures::scenario_thread::run(
         "m01b-bear-basement-entry",
         move || {
-            super::super::quest_world_callbacks::scenario(
+            super::super::quest_world_callbacks_fixtures::scenario(
                 "m01b/bear-room/s1/entry",
                 Position {
                     x: 32145,
@@ -27,34 +26,4 @@ fn m01b_bear_native_basement_entry_credits_once_before_key_and_stone() -> TestRe
         result.is_ok()
     );
     result
-}
-
-pub(super) fn world(
-    native: &crate::content::native_gameplay::NativeGameplayState,
-) -> TestResult<crate::map::boot::BundleWorld> {
-    use super::super::l6_world_pickups::{ExpectedTile, NativeCrop, native_crop};
-    native_crop(
-        native,
-        NativeCrop {
-            bytes: include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../../../content/world/placements/region-z11-x125-y125.b3"
-            )),
-            region: (11, 125, 125),
-            bounds: (32145, 32102, 32146, 32104),
-            start: (32145, 32103),
-            expected: vec![
-                ExpectedTile {
-                    position: (32145, 32102),
-                    ids: vec![355],
-                    counted_entry: None,
-                },
-                ExpectedTile {
-                    position: (32145, 32103),
-                    ids: vec![354],
-                    counted_entry: None,
-                },
-            ],
-        },
-    )
 }

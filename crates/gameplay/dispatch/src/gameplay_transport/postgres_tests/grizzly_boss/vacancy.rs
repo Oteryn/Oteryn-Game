@@ -226,7 +226,7 @@ pub(super) async fn second_player(
     origin: MovementLocalPosition,
 ) -> TestResult<(ExactActorRef, AdmittedSession)> {
     h.seed_pvp_target().await?;
-    super::super::appearance_change_postgres::observer_visibility_tests::admit(h).await?;
+    super::super::appearance_change_postgres_fixtures::observer_visibility_tests::admit(h).await?;
     let session = GameSessionId::decode(&id(110)).map_err(debug)?;
     let fence = owner
         .current_quest_fence(session)

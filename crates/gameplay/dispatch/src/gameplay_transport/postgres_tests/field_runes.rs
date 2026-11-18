@@ -1,7 +1,7 @@
 //! FIELD-RUNES-1: real USE -> authored geometry -> atomic charge/field writer.
-use super::death_ml_loss_composed::{current_fence, production_generation_with_pin};
+use super::death_ml_loss_composed_fixtures::{current_fence, production_generation_with_pin};
 use super::fixture::{Harness, debug, id, join_two, run};
-use super::item_look::{large_stack, read_frame, seed_main_backpack};
+use super::item_look_fixtures::{large_stack, read_frame, seed_main_backpack};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
@@ -793,7 +793,7 @@ async fn field_scenario_inner(
     prepare_current_session(&harness).await?;
     if player_field || owner_loss {
         harness.seed_pvp_target().await?;
-        super::appearance_change_postgres::observer_visibility_tests::admit(&harness).await?;
+        super::appearance_change_postgres_fixtures::observer_visibility_tests::admit(&harness).await?;
     }
     let seal = harness.recovery.seal_current().map_err(debug)?;
     let authority = harness
@@ -966,7 +966,7 @@ async fn field_scenario_inner(
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
         .bind(id(41).as_slice()).execute(&harness.pool).await?;
     let target = if player_field || owner_loss {
-        let target = super::appearance_change_postgres::observer_visibility_tests::initialize(
+        let target = super::appearance_change_postgres_fixtures::observer_visibility_tests::initialize(
             &dependencies,
             &owner,
         )

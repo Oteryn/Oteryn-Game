@@ -8,12 +8,12 @@ use crate::gameplay_transport::connection::FirstEntryOutcome;
 use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
-use super::l6_world_pickups::NativeCrop;
-use super::quest_catalogue_chests::CatalogueActivation;
+use super::l6_world_pickups_fixtures::NativeCrop;
+use super::quest_catalogue_chests_fixtures::CatalogueActivation;
 
 #[test]
 fn albinius_ice_offering_requires_contactman_and_fifty_fish() -> TestResult {
-    super::qengine_rewards::scenario("questpc2-albinius-portals-exact")
+    super::qengine_rewards_fixtures::scenario("questpc2-albinius-portals-exact")
 }
 
 #[test]
@@ -22,11 +22,11 @@ fn retained_world_claims_grant_each_quest_item_once() -> TestResult {
         return Ok(());
     }
 
-    super::kill_reward_e2e::scenario_thread::run("qcx44-claims", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("qcx44-claims", || {
         let started = std::time::Instant::now();
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let activation =
-            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
         let mut template = None;
         run(async |admin| {
             template = Some(MigratedDatabaseTemplate::create(admin).await?);
@@ -207,7 +207,7 @@ fn claim_item(
         let (controller, activated_pin) = activation;
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
-        let world = super::l6_world_pickups::native_crop(native, crop)?;
+        let world = super::l6_world_pickups_fixtures::native_crop(native, crop)?;
         let start = world.start();
         let cells = world
             .movement_cells(deps.room.movement_cells())
@@ -307,7 +307,7 @@ fn claim_item(
         deps.initialize(&owner).await;
         let outcome: TestResult = async {
             let actual =
-                super::quest_callbacks::wire_uses(&owner, admitted, &[1, 2], &target).await?;
+                super::quest_callbacks_fixtures::wire_uses(&owner, admitted, &[1, 2], &target).await?;
             if actual != [UseDisposition::Committed, UseDisposition::NothingToUse] {
                 return Err(format!(
                     "{claim}: expected one commit and one refusal, got {actual:?}"

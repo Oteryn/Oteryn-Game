@@ -15,7 +15,7 @@ fn srx3_actual_grand_mother_raid_private_material_reward_chain_postgres() -> Tes
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("srx3-source-boss-chain", || {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-source-boss-chain", || {
         run(async |admin| {
             let h =
                 Harness::create_with_admission_seed(admin, "srx3_source_boss_chain", false, false)
@@ -42,7 +42,7 @@ async fn scenario(harness: &Harness) -> TestResult {
         .await
         .map_err(debug)?;
     let mut deps = Dependencies::new()?;
-    let (controller, activated) = super::death_ml_loss_composed::production_generation_with_pin(
+    let (controller, activated) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
         deps.admitted.world_id,
         "content-1",
     )?;
@@ -167,7 +167,7 @@ async fn scenario(harness: &Harness) -> TestResult {
         bundle_digest,
     )
     .await?;
-    super::item_look::seed_main_backpack(harness, &[]).await?;
+    super::item_look_fixtures::seed_main_backpack(harness, &[]).await?;
     let source_boss = "oteryn:creature.grand_mother_foulscale";
     let row = native.reward_table().row(source_boss).map_err(debug)?;
     assert_eq!(row.loot_table.entries.len(), 19);
@@ -338,7 +338,7 @@ async fn settle_source_boss(
         &oteryn_protocol_oteryn::boss_rewards::CollectAllRequest { death: Some(death) },
     )
     .map_err(debug)?;
-    let (status, bytes) = super::boss_rewards::exchange(
+    let (status, bytes) = super::boss_rewards_fixtures::exchange(
         owner,
         &mut admitted,
         1,
@@ -355,7 +355,7 @@ async fn settle_source_boss(
     );
     assert!(collected.moved >= 2);
     assert_eq!(collected.remaining, 0);
-    let (status, replay) = super::boss_rewards::exchange(
+    let (status, replay) = super::boss_rewards_fixtures::exchange(
         owner,
         &mut admitted,
         1,

@@ -50,7 +50,7 @@ fn scenario() -> TestResult {
             .await
             .map_err(debug)?;
         let world_id = fence(1)?.runtime_scope.world_id();
-        let (controller, pin) = super::death_ml_loss_composed::production_generation_with_source(
+        let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_source(
             world_id,
             "content-1",
             None,
@@ -214,7 +214,7 @@ fn world(world: crate::foundation::WorldId) -> TestResult<crate::map::boot::Bund
         self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
         TerrainKind,
     };
-    let mut subareas = super::character_home_town::towns();
+    let mut subareas = super::character_home_town_fixtures::towns();
     subareas.areas.truncate(1);
     for (index, (_, town)) in CITIZENS.into_iter().enumerate() {
         subareas.areas.push(Area {

@@ -1,7 +1,7 @@
 //! Native Ancient Tombs movement and reward claims through PostgreSQL-backed dispatch.
 use super::fixture::{Harness, debug, id};
-use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_scene};
-use super::quest_world_callbacks::{local, wire};
+use super::l6_world_pickups_fixtures::{ExpectedTile, NativeCrop, native_scene};
+use super::quest_world_callbacks_fixtures::{local, wire};
 use super::{
     AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session,
 };
@@ -56,37 +56,37 @@ fn sarcophagi_grant_their_pieces_once() -> TestResult {
 
 #[test]
 fn ashmunrah_north_table_assembles_helmet() -> TestResult {
-    super::l6_floor_native::run("l6-floor-assembly-native")
+    super::l6_floor_native_fixtures::run("l6-floor-assembly-native")
 }
 
 #[test]
 fn ashmunrah_north_table_enchants_helmet() -> TestResult {
-    super::l6_floor_native::run("l6-floor-assembly-native-ruby-stack")
+    super::l6_floor_native_fixtures::run("l6-floor-assembly-native-ruby-stack")
 }
 
 #[test]
 fn morguthis_boss_forcefield_accepts_pass() -> TestResult {
-    super::l6_tomb_native::l6_tomb_native_present_3950_uses_source_branch()
+    super::l6_tomb_native_fixtures::present_3950()
 }
 
 #[test]
 fn thalas_boss_forcefield_accepts_pass() -> TestResult {
-    super::l6_tomb_native::l6_tomb_native_present_3951_uses_source_branch()
+    super::l6_tomb_native_fixtures::present_3951()
 }
 
 #[test]
 fn mahrdis_boss_forcefield_accepts_pass() -> TestResult {
-    super::l6_tomb_native::l6_tomb_native_present_3952_uses_source_branch()
+    super::l6_tomb_native_fixtures::present_3952()
 }
 
 #[test]
 fn rahemos_boss_forcefield_accepts_pass() -> TestResult {
-    super::l6_tomb_other_native::l6_tomb_other_native_present_3954_uses_source_branch()
+    super::l6_tomb_native_fixtures::present_3954()
 }
 
 #[test]
 fn dipthrah_boss_forcefield_accepts_pass() -> TestResult {
-    super::l6_tomb_other_native::l6_tomb_other_native_present_3955_uses_source_branch()
+    super::l6_tomb_native_fixtures::present_3955()
 }
 
 fn run(name: &'static str, rewards: bool) -> TestResult {
@@ -94,7 +94,7 @@ fn run(name: &'static str, rewards: bool) -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run_async(async move |admin| {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |admin| {
         let h =
             Harness::create_with_admission_seed(admin, "qcx_ancient_tombs", false, false).await?;
         prepare_current_session(&h).await?;
@@ -106,7 +106,7 @@ fn run(name: &'static str, rewards: bool) -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;

@@ -1,12 +1,13 @@
 //! Canary livestream.cpp:249,260: real control caller starts/stops a session-only cast.
+use super::s17_client_fixtures::{settings_host};
+
 use super::{
     Dependencies, TestResult,
     fixture::{Harness, debug, run},
     prepare_current_session,
 };
 use oteryn_protocol_oteryn::cast::Message;
-#[path = "s17_client/settings_host.rs"]
-pub(super) mod settings_host;
+
 #[test]
 fn s17a_client_start_stop_dispatch_commits_audit_and_rejects_stale_revision() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

@@ -77,5 +77,5 @@ fn qb_barbarian_hand_ins_are_placed_and_story_completes() -> TestResult {
     let mut waits: Vec<i64> = rows.iter().filter_map(|(_, wait)| *wait).collect();
     waits.sort_unstable();
     assert_eq!(waits, [3601, 7201], "QB barbarian: timed conversations");
-    super::qengine_rewards::scenario("qengine-rewards-qb-barbarian-story")
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-qb-barbarian-story")
 }

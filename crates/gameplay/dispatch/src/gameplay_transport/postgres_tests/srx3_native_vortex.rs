@@ -43,7 +43,7 @@ fn source_map_case() -> TestResult {
     std::thread::Builder::new().stack_size(64 << 20).spawn(move || {
         run(async |admin| {
             let mut deps = Dependencies::new()?;
-            let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(deps.admitted.world_id, "content-1")?;
+            let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(deps.admitted.world_id, "content-1")?;
             let active = controller.active().ok_or("native activation")?;
             let native = active.native_gameplay().ok_or("native gameplay")?;
             let kind = source_kind;

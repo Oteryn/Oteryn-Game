@@ -1,7 +1,7 @@
 //! Real Store dispatch: character-bound earned currency, grant, replay and refusals.
 
 use super::fixture::{Harness, debug, id, run};
-use super::store::{FakePlatform, Ledger, serve, uuid};
+use super::store_fixtures::{FakePlatform, Ledger, serve, uuid};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::CommandStatus;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
@@ -15,7 +15,7 @@ fn cosmetic_tokens_real_dispatch_debits_character_and_unlocks_once() -> TestResu
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("cosmetic-tokens", || scenario(true))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("cosmetic-tokens", || scenario(true))
 }
 
 #[test]
@@ -23,7 +23,7 @@ fn cosmetic_tokens_real_dispatch_coin_payment_grants_and_replays() -> TestResult
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("cosmetic-coins", || scenario(false))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("cosmetic-coins", || scenario(false))
 }
 
 fn scenario(tokens: bool) -> TestResult {
@@ -175,7 +175,7 @@ fn scenario(tokens: bool) -> TestResult {
                 let mut earned = 0_u64;
                 // WU26-07: a Free seven-day cycle earns 5 tokens, so 870 needs 1218 claims.
                 for epoch in 1..=1300_u64 {
-                    super::daily_reward::epoch(&harness, epoch).await?;
+                    super::daily_reward_fixtures::epoch(&harness, epoch).await?;
                     let fence = crate::gameplay_transport::character_gameplay_fence::current(
                         &owner,
                         admitted.game_session_id,

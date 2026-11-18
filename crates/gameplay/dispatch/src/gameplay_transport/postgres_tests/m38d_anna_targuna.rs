@@ -10,7 +10,7 @@ fn m38d_anna_targuna_production_dispatch_postgres() -> TestResult {
         return Ok(());
     }
     let began = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("m38d-anna", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("m38d-anna", || {
         for (level, stored) in [(7_i64, true), (8, true), (21, false)] {
             scenario(level, stored)?;
         }
@@ -41,7 +41,7 @@ fn scenario(level: i64, stored: bool) -> TestResult {
             let mut geometry = oteryn_gameplay_quests::quest::world_callbacks::load()?.into_iter()
                 .find(|c| c.key.ends_with("behemoth")).ok_or("geometry seed")?;
             geometry.teleport = Some(Position { x: 31938, y: 31928, floor: -7 });
-            let world = super::quest_world_callbacks::world(&geometry, start)?;
+            let world = super::quest_world_callbacks_fixtures::world(&geometry, start)?;
             let cells = world.movement_cells(room.movement_cells()).map_err(debug)?;
             let channel_pin = ChannelContentPin::from_activation(world_id, 1,
                 room.compiled().server_digest(), room.compiled().client_digest(),
@@ -65,8 +65,8 @@ fn scenario(level: i64, stored: bool) -> TestResult {
                     .bind(id(41).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
                 tx.commit().await?;
             }
-            let [npc] = super::classic_quests::install(&owner, &admitted, ["oteryn:npc.anna"]).await?;
-            let talk = super::classic_quests::talk;
+            let [npc] = super::classic_quests_fixtures::install(&owner, &admitted, ["oteryn:npc.anna"]).await?;
+            let talk = super::classic_quests_fixtures::talk;
             assert_eq!(talk(&mut owner,&admitted,npc,48000,"hi").await?,
                 ["Hello, my friend. Do you seek {passage} to the island {Targuna}?"]);
             if level == 7 {

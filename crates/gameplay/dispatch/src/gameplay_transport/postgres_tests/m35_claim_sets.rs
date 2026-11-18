@@ -1,6 +1,6 @@
 //! Crystal 201189f8 chest.lua:917-931: both independent Alawar claims, in either order.
 use super::fixture::{Harness, debug, id, run};
-use super::quest_callbacks::{
+use super::quest_callbacks_fixtures::{
     source_world_choices, source_world_objects, source_world_spatial, wire_use_targets_retained,
 };
 use super::{Dependencies, TestResult, prepare_current_session};
@@ -478,7 +478,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
-            super::death_ml_loss_composed::production_generation_with_pin(
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
             )?;
@@ -1320,7 +1320,7 @@ async fn walk(
         } else {
             (StepDirection::North, 0, -1)
         };
-        let reply = super::quest_world_callbacks::wire(
+        let reply = super::quest_world_callbacks_fixtures::wire(
             owner,
             stream,
             *command,

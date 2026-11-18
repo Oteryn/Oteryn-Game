@@ -34,7 +34,7 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
         let generation = controller.active().ok_or("active generation")?;
         let room = pin.qualified_room().clone();
         let deps = Dependencies::with_content(
@@ -152,7 +152,7 @@ fn scenario() -> TestResult {
             &[4, 6, 195],
         )
         .ok_or("capabilities")?;
-        let served = super::proficiency_select_perk::connection(&owner, admitted, async |client| {
+        let served = super::proficiency_select_perk_fixtures::connection(&owner, admitted, async |client| {
         let started = std::time::Instant::now();
         let mut offset = 0_u32;
         let mut command_id = 1_u64;
@@ -167,7 +167,7 @@ fn scenario() -> TestResult {
             client.write_u32(u32::try_from(protocol.len())?).await?;
             client.write_all(&protocol).await?;
             let page = loop {
-                let bytes = super::item_look::read_frame(client).await?;
+                let bytes = super::item_look_fixtures::read_frame(client).await?;
                 let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&bytes).map_err(debug)?;
                 if envelope.message_type() == oteryn_protocol_oteryn::MessageType::CommandResult {
                     let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload()).map_err(debug)?;

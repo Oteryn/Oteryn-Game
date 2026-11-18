@@ -31,12 +31,12 @@ fn t087_offence_augments_postgres_real_capture_privacy_replay_and_fences() -> Te
 }
 
 fn scenario() -> TestResult {
-    use super::cyclopedia::support::exchange;
+    use super::cyclopedia_fixtures::support::exchange;
     run(async |admin| {
         reset();
         let mut deps = Dependencies::new()?;
         let (controller, pin) =
-            super::item_spell_augments::activate(deps.admitted.world_id, false)?;
+            super::item_spell_augments_fixtures::activate(deps.admitted.world_id, false)?;
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native gameplay")?;
         let h = Harness::create_with_admission_seed(admin, "t087_offence", true, false).await?;

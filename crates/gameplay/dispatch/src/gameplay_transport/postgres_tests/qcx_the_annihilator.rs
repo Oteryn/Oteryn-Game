@@ -1,5 +1,5 @@
 //! Avar Tar's Demon Outfit phrase and confirmation through the real NPC command dispatcher.
-use super::classic_quests::{install, talk};
+use super::classic_quests_fixtures::{install, talk};
 use super::fixture::{Harness, debug, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use oteryn_gameplay_quests::quest::{loader::load_embedded_quest_state, world_callbacks::Position};
@@ -11,7 +11,7 @@ fn avar_tar_accepts_demon_outfit_and_advances_to_the_choice() -> TestResult {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("qcx-the-annihilator", || {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run("qcx-the-annihilator", || {
         run(|admin| async move {
             let harness =
                 Harness::create_with_admission_seed(admin, "qcx_annihilator", false, false).await?;
@@ -28,7 +28,7 @@ fn avar_tar_accepts_demon_outfit_and_advances_to_the_choice() -> TestResult {
                 .await
                 .initialize_pinned_test_position(
                     deps.actor,
-                    super::quest_world_callbacks::local(Position {
+                    super::quest_world_callbacks_fixtures::local(Position {
                         x: 33294,
                         y: 31677,
                         floor: -15,
