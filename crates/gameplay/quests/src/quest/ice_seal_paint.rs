@@ -1,5 +1,5 @@
 //! Retained Crystal 9f5a72c bindings for immutable historical tool receipts.
-//! Fresh painting belongs to `ice_islands_seals` and its three-distinct-target rule.
+//! Fresh painting belongs to `ice_islands_seals` and its map reset authority.
 use super::world_callbacks::{Callback, Position};
 pub const PREFIX: &str = "oteryn:quest-callback/engitem-ice-seal-";
 pub const QUESTLINE: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline";
