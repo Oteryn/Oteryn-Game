@@ -12,9 +12,11 @@ use crate::map::{
     overlay::TilePos,
     view::{MapFacts, placement_key},
 };
-use oteryn_gameplay_quests::quest::world_callbacks::Callback;
+use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use oteryn_world_bundle::{bundle, sector};
+use sha2::{Digest, Sha256};
+use std::sync::Arc;
 
 #[derive(Clone, Copy)]
 struct Circuit {
@@ -131,9 +133,11 @@ fn scenario(circuit: Circuit) -> TestResult {
         } else {
             lever["effects"] = serde_json::json!({"passages_reset_after_ms":100000});
         }
-        let mut callbacks = vec![serde_json::from_value::<Callback>(lever)?];
+        let mut stages = vec![serde_json::json!({
+            "key":"switch","completes":false,"trigger":{"kind":"map_use","callback":lever}
+        })];
         if let Some(plate) = circuit.plate {
-            callbacks.push(serde_json::from_value(serde_json::json!({
+            let callback = serde_json::json!({
                 "key":"oteryn:quest-callback/banshee/trapdoor-pressure-plate",
                 "quest": QUEST,
                 "trigger":"step_in", "selector":{"position":position(plate), "ordinal":0},
@@ -143,9 +147,26 @@ fn scenario(circuit: Circuit) -> TestResult {
                     {"position":position(circuit.switch),"appearance":27260,"replacement":2773,"if_present":true}
                 ],
                 "effects":{"passages_close_after_ms":3000},
-                "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-1-first_seal_close_mw.lua:46-68"]
-            }))?);
+                "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-1-first_seal_close_mw.lua:54-73"]
+            });
+            stages.push(serde_json::json!({
+                "key":"pressure-plate","completes":false,"trigger":{"kind":"step_in","callback":callback}
+            }));
         }
+        let bindings = Bindings::parse(&serde_json::to_vec(&serde_json::json!({
+            "schema":1,"quests":[{
+                "quest":QUEST,
+                "recipe_sha256":format!("{:x}", Sha256::digest(serde_json::to_vec(&stages)?)),
+                "sources":stages[0]["trigger"]["callback"]["sources"],
+                "tracks":[{
+                    "key":"oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/first_seal",
+                    "initial":-1,"minimum":-1,"maximum":1
+                }],
+                "stages":stages
+            }]
+        }))?)?;
+        let catalogue =
+            bindings.attach(&QuestStateCatalogue::empty("content-1").ok_or("catalogue")?)?;
 
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
@@ -190,12 +211,7 @@ fn scenario(circuit: Circuit) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
-        owner
-            .states
-            .quest_callbacks
-            .fixture
-            .set(callbacks)
-            .map_err(|_| "duplicate callback installation")?;
+        owner.quest_catalogue = Some(Arc::new(catalogue));
         deps.initialize(&owner).await;
 
         let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =

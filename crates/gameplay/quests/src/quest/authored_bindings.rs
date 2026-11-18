@@ -329,6 +329,7 @@ impl Bindings {
                     || !transitions.insert(key)
                     || (storage.is_empty()
                         && !stage.is_native_encounter()
+                        && !stage.is_shared_passage_circuit()
                         && !matches!(&stage.trigger,
                             Trigger::MapUse { callback } | Trigger::StepIn { callback }
                             if callback.operation_count() > 0))
@@ -408,6 +409,7 @@ impl Bindings {
             }
             for stage in &quest.stages {
                 if stage.is_native_encounter()
+                    || stage.is_shared_passage_circuit()
                     || matches!(&stage.trigger, Trigger::MapUse { callback } | Trigger::StepIn { callback }
                         if callback.is_read_only())
                 {
@@ -490,6 +492,15 @@ impl Bindings {
 }
 
 impl Stage {
+    fn is_shared_passage_circuit(&self) -> bool {
+        !self.completes
+            && matches!(&self.trigger, Trigger::MapUse { callback } | Trigger::StepIn { callback }
+                if !callback.requires_durable_commit()
+                    && !callback.passages.is_empty()
+                    && (callback.effects.passages_close_after_ms.is_some()
+                        || (callback.reversible && callback.lever.is_some())))
+    }
+
     /// Native entry mutates the physical owner atomically and grants no quest value.
     pub(in crate::quest) fn is_native_encounter(&self) -> bool {
         matches!(&self.trigger, Trigger::MapUse { callback }
