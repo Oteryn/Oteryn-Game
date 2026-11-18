@@ -360,8 +360,9 @@ pub(super) async fn lord(
     owner: &mut super::ComposedFreshAdmission<'_, '_, '_>,
     members: &mut [super::AdmittedSession],
     map: &crate::map::boot::BundleMap,
+    entry_pool: Option<&sqlx::PgPool>,
 ) -> TestResult {
-    use super::{annihilator_route::use_target, fixture::debug, quest_world_callbacks::local};
+    use super::{annihilator_route::use_target, fixture::debug, quest_lord_entry as entry, quest_world_callbacks::local};
     use crate::map::{
         floor::BundleDoors,
         overlay::TilePos,
@@ -458,7 +459,15 @@ pub(super) async fn lord(
             "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_lord_of_elements_lever.lua:63-188"],
         }))?);
     }
+    if entry_pool.is_some() {
+        callbacks.push(entry::binding()?);
+    }
     assert!(owner.states.quest_callbacks.fixture.set(callbacks).is_ok());
+    if let Some(pool) = entry_pool {
+        entry::assert_entry(owner, members, map, pool).await?;
+    }
+    let speech_start = map.facts.movement_speech_since(0).last().map_or(0, |(seq,_)| *seq);
+    let effect_start = map.facts.movement_effects_since(0).last().map_or(0, |(seq,_,_)| *seq);
 
     let target_for = |lever: Position| -> TestResult<WorldObjectTarget> {
         let tile = TilePos {
@@ -495,9 +504,12 @@ pub(super) async fn lord(
     };
 
     // The east switch is deliberately used last. Only that use starts the 10-minute timer.
-    for (turn, (which_switch, which_member)) in
-        [(2, 0), (3, 1), (1, 1), (0, 0)].into_iter().enumerate()
-    {
+    let turns = if entry_pool.is_some() {
+        [(2, 0), (3, 1), (1, 2), (0, 3)]
+    } else {
+        [(2, 0), (3, 1), (1, 1), (0, 0)]
+    };
+    for (turn, (which_switch, which_member)) in turns.into_iter().enumerate() {
         let (lever, station, wall, _, _, sound) = switches[which_switch];
         let member = &mut members[which_member];
         {
@@ -540,12 +552,12 @@ pub(super) async fn lord(
             owner.states.quest_callbacks.next_encounter_due_us(),
             (turn == 3).then_some(403_000_000)
         );
-        let speech = map.facts.movement_speech_since(0);
+        let speech = map.facts.movement_speech_since(speech_start);
         assert_eq!(speech.len(), turn + 1 + usize::from(turn == 3));
         assert_eq!(speech[turn].1.talk_type, 36);
         assert_eq!(speech[turn].1.text, "ZOOOOOOOOM");
         assert_eq!(speech[turn].1.position, TilePos {x:sound.x,y:sound.y,floor:sound.floor});
-        let magic = map.facts.movement_effects_since(0);
+        let magic = map.facts.movement_effects_since(effect_start);
         if turn == 3 {
             assert_eq!(speech[4].1.talk_type, 37);
             assert_eq!(speech[4].1.text, "You have 10 minutes from now on until you get teleported out.");
@@ -568,31 +580,45 @@ pub(super) async fn lord(
             .len(),
         1
     );
+    let mut speeches_before_warning = 5;
+    if entry_pool.is_some() {
+        // The synchronized window must refuse another USE even with no
+        // spectators in the room (Crystal actions_lever.lua:39-43).
+        for (member, (station, _, _, _)) in members.iter().zip(entry::PARTIES) {
+            entry::move_member(owner, member, station).await?;
+        }
+        entry::assert_occupied(owner, &mut members[3], map).await?;
+        speeches_before_warning += 1;
+        for &(which_switch, which_member) in &turns {
+            entry::move_member(owner, &members[which_member], switches[which_switch].1).await?;
+        }
+    }
     owner
         .states
         .test_owner_time
         .store(403_000_000, Ordering::Relaxed);
     owner.drain_quest_encounter_deadlines().await;
-    assert_eq!(map.facts.movement_speech_since(0).len(), 5);
+    assert_eq!(map.facts.movement_speech_since(speech_start).len(), speeches_before_warning);
     owner
         .states
         .test_owner_time
         .store(403_000_001, Ordering::Relaxed);
     owner.drain_quest_encounter_deadlines().await;
     owner.drain_quest_encounter_deadlines().await;
-    let speech = map.facts.movement_speech_since(0);
-    assert_eq!(speech.len(), 6);
+    let speech = map.facts.movement_speech_since(speech_start);
+    assert_eq!(speech.len(), speeches_before_warning + 1);
+    let warning = &speech[speeches_before_warning].1;
     assert_eq!(
-        speech[5].1.position,
+        warning.position,
         TilePos {
             x: 33266,
             y: 31835,
             floor: -13
         }
     );
-    assert_eq!(speech[5].1.talk_type, 37);
+    assert_eq!(warning.talk_type, 37);
     assert_eq!(
-        speech[5].1.text,
+        warning.text,
         "You have 5 minutes from now on until you get teleported out."
     );
     assert_eq!(
@@ -605,7 +631,7 @@ pub(super) async fn lord(
         .store(703_000_001, Ordering::Relaxed);
     owner.drain_quest_encounter_deadlines().await;
     let runtime = owner.runtime.lock().await;
-    for member in members {
+    for member in &*members {
         let actor = member.runtime_actor.ok_or("actor")?;
         assert_eq!(
             runtime
@@ -628,6 +654,13 @@ pub(super) async fn lord(
             !map.facts
                 .quest_callback_blocked(map.overlay.base(), wall, false)
         );
+    }
+    drop(runtime);
+    if entry_pool.is_some() {
+        for (member, (station, _, _, _)) in members.iter().zip(entry::PARTIES) {
+            entry::move_member(owner, member, station).await?;
+        }
+        entry::assert_party_admitted(owner, members, map).await?;
     }
     Ok(())
 }

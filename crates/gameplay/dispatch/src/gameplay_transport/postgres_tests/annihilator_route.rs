@@ -33,6 +33,7 @@ enum Route {
     Demonrage,
     Logic,
     Lord,
+    LordEntry,
     Combat,
     Complete,
     ObjectiveAtomicity,
@@ -91,6 +92,10 @@ pub(super) fn logic_campfire_layout(admin: String) -> TestResult {
     run_with_admin(Route::Logic, admin)
 }
 
+pub(super) fn lord_entry(admin: String) -> TestResult {
+    run_with_admin(Route::LordEntry, admin)
+}
+
 pub(super) fn lord_switches(admin: String) -> TestResult {
     run_with_admin(Route::Lord, admin)
 }
@@ -118,8 +123,11 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
             | Route::Demonrage
             | Route::Logic
             | Route::Lord
+            | Route::LordEntry
     );
-    let start = if route == Route::Lord {
+    let start = if route == Route::LordEntry {
+        super::quest_lord_entry::START
+    } else if route == Route::Lord {
         super::quest_switch_windows::LORD_START
     } else if route == Route::CathedralNote {
         super::quest_switch_windows::CATHEDRAL_START
@@ -404,11 +412,16 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
             owner.admit_progression_session(member).await;
             let source_level = if combat { 2000 } else { 100 };
             level(&owner, *member, source_level, 180 + u8::try_from(index)?).await?;
-            if combat {
+            if combat || route == Route::LordEntry {
+                let vocation = if route == Route::LordEntry {
+                    super::quest_lord_entry::PARTIES[index].2
+                } else {
+                    "knight"
+                };
                 super::party_xp::initialize_build(
                     &owner,
                     member.game_session_id,
-                    "knight",
+                    vocation,
                     220 + u8::try_from(index)?,
                 )
                 .await?;
@@ -565,8 +578,10 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
             h.cleanup().await?;
             return result;
         }
-        if route == Route::Lord {
-            let result = super::quest_switch_windows::lord(&mut owner, &mut admitted, map).await;
+        if matches!(route, Route::Lord | Route::LordEntry) {
+            let result = super::quest_switch_windows::lord(
+                &mut owner, &mut admitted, map, (route == Route::LordEntry).then_some(&h.pool),
+            ).await;
             drop(owner);
             drop(authority);
             drop(seal);

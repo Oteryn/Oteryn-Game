@@ -924,6 +924,27 @@ pub(super) fn validate_group_switch_bindings(callbacks: &[Callback]) -> Result<(
             }
         }
     }
+    for callback in callbacks {
+        let Some(room) = callback
+            .effects
+            .party_transfer
+            .as_ref()
+            .and_then(|party| party.room_entry.as_ref())
+        else {
+            continue;
+        };
+        if !group_switches
+            .get(&room.window_lever)
+            .is_some_and(|&(peer, _)| {
+                peer.quest == callback.quest
+                    && peer.effects.encounter.as_ref().is_some_and(|encounter| {
+                        room.contains(encounter.room_min) && room.contains(encounter.room_max)
+                    })
+            })
+        {
+            return Err(format!("missing chamber window for {}", callback.key));
+        }
+    }
     Ok(())
 }
 
