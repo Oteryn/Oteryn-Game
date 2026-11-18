@@ -1,4 +1,4 @@
-"""Admit the closed Grizzly-room debris set as walkable native Item profiles."""
+"""Admit the fixed, walkable objects for Grizzly's rooms and Port Hope approach."""
 
 import hashlib
 import json
@@ -8,7 +8,7 @@ from native_profile_composition import encode_native_profile
 
 ROOT = Path(__file__).resolve().parents[2]
 PATH = "tools/content-schema/native-gameplay/grizzly-debris-item-profiles.json"
-IDS = {6475, 6476, 6477, 6478, 6479, 6480, 6481, 6482, 6483, 6485, 6486}
+IDS = {1054, 1057, 1058, 1059, 1065, 1968, 1976, 6475, 6476, 6477, 6478, 6479, 6480, 6481, 6482, 6483, 6485, 6486}
 SCHEMA = "OTERYN_NATIVE_GRIZZLY_DEBRIS_ITEM_PROFILES/v1"
 
 

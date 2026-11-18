@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Derive the closed Grizzly-room debris profiles from pinned source facts."""
+"""Derive Grizzly-room debris and the Port Hope approach from pinned source facts."""
 
 import argparse
 import hashlib
@@ -18,9 +18,13 @@ from client_appearance_reader import read_appearances
 
 OUTPUT = Path(__file__).with_name("grizzly-debris-item-profiles.json")
 IDS = {6475, 6476, 6477, 6478, 6479, 6480, 6481, 6482, 6483, 6485, 6486}
+# Walkable objects along the approach recorded in Crystal's data-global/world/world.otbm.
+# The ladder is the landing below the eastern walkway at (32674, 32784, 7).
+PORT_HOPE_IDS = {1054, 1057, 1058, 1059, 1065, 1968, 1976}
 REVISION = "201189f871d23597b82caf88fd611454a2ddefb8"
 XML_SHA256 = "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509"
 APPEARANCES_SHA256 = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
+CRYSTAL_APPEARANCES_SHA256 = "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1"
 SCHEMA = "OTERYN_NATIVE_GRIZZLY_DEBRIS_ITEM_PROFILES/v1"
 
 
@@ -91,10 +95,23 @@ def capture():
                 identifier, xml[identifier], appearance, physical, bindings, None
             )
         )
+    crystal_appearances = fetch(url.removesuffix("items.xml") + "appearances.dat")
+    if hashlib.sha256(crystal_appearances).hexdigest() != CRYSTAL_APPEARANCES_SHA256:
+        raise ValueError("GRIZZLY_PORT_HOPE_APPEARANCE_DIGEST")
+    crystal_objects = source.engine_items.load_appearance_objects(crystal_appearances)
+    for physical in source.policies(crystal_appearances, xml_raw, PORT_HOPE_IDS):
+        identifier = physical["server_item_id"]
+        if physical["block_solid"] or physical["movable"] or physical["pickupable"]:
+            raise ValueError(f"GRIZZLY_PORT_HOPE_NOT_FIXED_WALKABLE: {identifier}")
+        records.append(
+            source.profile(
+                identifier, xml[identifier], crystal_objects[identifier], physical, bindings, None
+            )
+        )
     bound = bind_profiles(
         {"schema": "OTERYN_NATIVE_ITEM_PROFILES/v1", "records": records},
         bindings,
-        IDS,
+        IDS | PORT_HOPE_IDS,
     )
     return {
         "schema": SCHEMA,
@@ -111,6 +128,11 @@ def capture():
             {
                 "path": "official/client-assets/15.30/" + file["name"],
                 "sha256": APPEARANCES_SHA256,
+            },
+            {
+                "path": "data/items/appearances.dat",
+                "revision": REVISION,
+                "sha256": CRYSTAL_APPEARANCES_SHA256,
             },
         ],
         "records": bound["records"],
