@@ -99,6 +99,17 @@ control found 1,179 additions and zero missing names. The executable
 was 1,344,527,264 bytes. LLD received 241 rlibs (1,487,365,036 bytes)
 and 263 objects (1,538,117,592 bytes).
 
+## Generated PG mount isolation control
+
+The two-job scratch replay uses the baseline test compiler invocation and
+retains all generated PG mounts. In a disk-backed copy of dispatch, it
+disables the test registrations outside the generated directory while
+retaining their fixture definitions. This measures isolating the generated
+mounts without rewriting any assertions. The source files in the checked-out
+branch stay intact. At LLVM coordinator startup the replay was approximately
+12.7 million KiB RSS, compared with the baseline's approximately 15.1 million
+KiB high-water mark at that phase.
+
 ## Full suite with 256 codegen units and incremental off
 
 With the full 735-mount input restored, one Cargo job, and line tables
