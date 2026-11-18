@@ -70,8 +70,8 @@ fn bundle_layout(
     bundle.manifest.world = Extent {
         min_x: if with_ice_islands { 32021 } else { 32160 },
         min_y: 31045,
-        max_x: if with_ice_islands { 32462 } else { 32260 },
-        max_y: if with_ice_islands { 31381 } else { 31105 },
+        max_x: if with_ice_islands { 32463 } else { 32260 },
+        max_y: if with_ice_islands { 31382 } else { 31105 },
         floors: vec![-7, -6],
     };
     let mut tiles = std::collections::BTreeMap::new();
