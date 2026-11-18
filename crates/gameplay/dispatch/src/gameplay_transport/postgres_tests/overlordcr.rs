@@ -31,6 +31,11 @@ fn overlordcr_all_four_overlords_credit_two_damagers_exclude_observer_and_replay
         );
         assert_eq!(rule.effects[0].default, -1);
         assert_eq!(rule.effects[0].set, Some(1));
+        assert!(rule.active(&std::collections::BTreeMap::new()));
+        for (value, eligible) in [(0, true), (1, false)] {
+            let tracks = std::collections::BTreeMap::from([(rule.effects[0].track.clone(), value)]);
+            assert_eq!(rule.active(&tracks), eligible);
+        }
         assert!(rule.room.is_none());
         assert!(!rule.top_damage_only);
         super::srvenc_source_deaths::scenario("overlordcr", creature)?;

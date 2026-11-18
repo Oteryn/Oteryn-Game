@@ -678,6 +678,8 @@ impl ChannelRuntimeV1 {
 impl ChannelRuntimeV1 {
     /// Resolve the complete physical damage map to exact players still present
     /// in the runtime, including players in reconnect grace.
+    /// Crystal 9f5a72c `data/libs/functions/functions.lua:1075-1082` resolves
+    /// each damage-map key with `Player(key)` and applies no damage-age cutoff.
     pub fn source_player_damage_recipients(
         &self,
         actor: ExactActorRef,
