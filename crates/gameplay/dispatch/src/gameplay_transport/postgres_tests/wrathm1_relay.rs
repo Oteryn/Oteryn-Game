@@ -17,6 +17,9 @@ pub(super) const SOURCE: Position = Position {
     y: 31067,
     floor: -9,
 };
+const DETECTION: Position = Position { x: 33370, y: 31075, floor: -8 };
+const APPROACH: Position = Position { y: 31074, ..DETECTION };
+const PRISON: Position = Position { x: 33361, y: 31206, floor: -8 };
 const LAMP_X: [u16; 3] = [33369, 33372, 33375];
 const LAMP_Y: u16 = 31075;
 const LAMP_FLOOR: i8 = -8;
@@ -49,7 +52,8 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
             SOURCE.y + 1,
             SOURCE.floor,
         ),
-        (LAMP_X[0], LAMP_Y, LAMP_X[2], LAMP_Y, LAMP_FLOOR),
+        (LAMP_X[0], APPROACH.y, LAMP_X[2], LAMP_Y, LAMP_FLOOR),
+        (PRISON.x, PRISON.y, PRISON.x, PRISON.y, PRISON.floor),
         (
             WALL_SWITCH.x - 1,
             WALL_SWITCH.y - 1,
@@ -173,12 +177,23 @@ pub(super) async fn exercise(
             require_state: false,
         })
         .collect();
+    let mut guard = callback.clone();
+    guard.key = "oteryn:quest-callback/test/wrathm1-relay-guard".into();
+    guard.sources = vec!["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/wrath_of_the_emperor/movements_crate.lua:268-273".into()];
+    guard.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn;
+    guard.selector.native = Some(NativeSelector { position: DETECTION, ordinal: 0, appearance: 10480 });
+    guard.lever = None;
+    guard.reversible = false;
+    guard.effects = Default::default();
+    guard.passages.clear();
+    guard.teleport = Some(PRISON);
     owner
         .states
         .quest_callbacks
         .fixture
-        .set(vec![callback, wall])
+        .set(vec![callback, guard, wall])
         .map_err(|_| "relay callback fixture already set")?;
+    cross_guard(owner, admitted, PRISON).await?;
     approach(owner, admitted, SOURCE).await?;
     let map = owner.bundle_map().ok_or("relay map")?;
     let source = placement_key(tile(SOURCE), 2).ok_or("lever key")?;
@@ -218,6 +233,7 @@ pub(super) async fn exercise(
     approach(owner, admitted, WALL_SWITCH).await?;
     use_switch(owner, admitted, &wall_placement, 0).await?;
 
+    cross_guard(owner, admitted, DETECTION).await?;
     let map = owner.bundle_map().ok_or("relay map")?;
     assert_eq!(map.facts.object_revision(source), 2);
     assert_eq!(map.facts.next_movement_decay_time(), Some(due));
@@ -244,6 +260,7 @@ pub(super) async fn exercise(
         assert_eq!(map.facts.object_revision(key), 2);
     }
     assert_eq!(map.facts.object_revision(wall_source), 1);
+    cross_guard(owner, admitted, PRISON).await?;
     Ok(())
 }
 
@@ -270,6 +287,32 @@ async fn use_switch(
     assert_eq!(
         decode_use_result(&reply).map_err(debug)?,
         UseDisposition::Committed
+    );
+    Ok(())
+}
+
+async fn cross_guard(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    expected: Position,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_spatial::{
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition,
+        decode_step_result, encode_step_intent,
+    };
+    super::questpc8_mystery_geometry::arrive(owner, admitted, tile(APPROACH)).await?;
+    owner.clock_origin -= std::time::Duration::from_secs(2);
+    let reply = super::quest_world_callbacks::wire(
+        owner, admitted, admitted.continuity.next_command_id, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        encode_step_intent(StepDirection::South)
+    ).await?;
+    assert_eq!(decode_step_result(&reply).map_err(debug)?, StepDisposition::Moved);
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let runtime = owner.runtime.lock().await;
+    assert_eq!(
+        runtime.read_actor_position(actor).map_err(debug)?.position(),
+        super::quest_world_callbacks::local(expected),
+        "relay guard landing while the switch is active or expired"
     );
     Ok(())
 }
