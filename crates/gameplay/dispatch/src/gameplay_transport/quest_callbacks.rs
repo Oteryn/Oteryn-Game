@@ -72,6 +72,7 @@ struct Pending {
     ingress_settled: bool,
     participants: Vec<GameSessionId>,
     projection_target: Option<u64>,
+    window_source: Option<ExactActorRef>,
     flame_effect_sent: bool,
     /// The exact carried tool bound into the durable World context, if any.
     selected_tool: Option<([u8; 16], Vec<u8>)>,
@@ -1596,6 +1597,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         ingress_settled: false,
                         participants: Vec::new(),
                         projection_target: None,
+                        window_source: None,
                         flame_effect_sent: false,
                         selected_tool: None,
                     });

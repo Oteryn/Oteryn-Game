@@ -23,38 +23,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         read_only_gate: Option<&ReadOnlyGate>,
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
     ) -> UseDisposition {
-        if let Some(window) = &callback.effects.death_window {
-            // A recorded step already passed the window. Reconcile that exact
-            // occurrence even if its durable acknowledgement outlasts the exit.
-            let replay = self
-                .states
-                .quest_callbacks
-                .records
-                .lock()
-                .is_ok_and(|records| {
-                    records.get(&session).is_some_and(|pending| {
+        let window_source = if let Some(window) = &callback.effects.death_window {
+            // Keep the exact opening death across durable acknowledgement replay.
+            // A consumable opening must not admit a competing pending step.
+            let mut replay = None;
+            if let Ok(records) = self.states.quest_callbacks.records.lock() {
+                if window.consume_on_progress
+                    && records.values().any(|pending| {
+                        pending.session != session
+                            && pending.callback == callback.key
+                            && pending.window_source.is_some()
+                    })
+                {
+                    return UseDisposition::Rejected;
+                }
+                replay = records
+                    .get(&session)
+                    .filter(|pending| {
                         pending.actor == actor
                             && pending.cause == cause
                             && pending.callback == callback.key
                             && pending.key == key
                             && pending.revision == expected_revision
                     })
-                });
-            if !replay
-                && !self.states.attack.try_lock().is_ok_and(|attack| {
-                    attack.kills().1.lock().is_ok_and(|capture| {
-                        capture.death_windows.is_open(
-                            runtime,
-                            &callback.key,
-                            window,
-                            self.owner_now().get() / 1_000,
-                        )
-                    })
-                })
-            {
-                return UseDisposition::Rejected;
+                    .and_then(|pending| pending.window_source);
             }
-        }
+            let Some(source) = replay.or_else(|| {
+                let attack = self.states.attack.try_lock().ok()?;
+                attack.kills().1.lock().ok()?.death_windows.open_source(
+                    runtime,
+                    &callback.key,
+                    window,
+                    self.owner_now().get() / 1_000,
+                )
+            }) else {
+                return UseDisposition::Rejected;
+            };
+            Some(source)
+        } else {
+            None
+        };
         if callback.effects.encounter.is_none()
             && let Some(catalogue) = self.quest_catalogue.as_deref()
             && let Some(bindings) = catalogue.authored_bindings()
@@ -628,6 +636,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     participants: Vec::new(),
                     flame_effect_sent: false,
                     projection_target: None,
+                    window_source: None,
                     selected_tool: None,
                 });
                 pending.context.get_or_insert(context).clone()
@@ -777,6 +786,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     participants: Vec::new(),
                     flame_effect_sent: false,
                     projection_target: None,
+                    window_source: None,
                     selected_tool: None,
                 });
                 pending.context.get_or_insert(context).clone()
@@ -1075,9 +1085,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     participants: party.as_ref().map_or_else(Vec::new, |plan| plan.sessions()),
                     flame_effect_sent: false,
                     projection_target: None,
+                    window_source: None,
                     selected_tool: None,
                 });
                 record.projection_target = projection_target;
+                record.window_source = window_source;
                 // The tool is bound with the first durable context. A replay keeps
                 // that exact binding instead of the replaying caller's tool.
                 if record.context.is_none() {
@@ -1251,6 +1263,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | QuestTransitionOutcome::AlreadyCommitted(ref committed),
                 ) => {
                     fresh_effects = fresh;
+                    if let (Some(source), Some(window)) = (window_source, callback.effects.death_window.as_ref())
+                        && window.consume_on_progress
+                        && committed.changes.iter().any(|change| change.before != change.after)
+                    {
+                        let attack = self.states.attack.lock().await;
+                        let Ok(mut capture) = attack.kills().1.lock() else {
+                            return UseDisposition::Rejected;
+                        };
+                        capture.death_windows.consume(&callback.key, window, source);
+                    }
                     if fresh {
                         success_message = callback.committed_message(&committed.changes).map(str::to_owned);
                         // Crystal action_mead.lua:8-11 says both lines on the winning sip.

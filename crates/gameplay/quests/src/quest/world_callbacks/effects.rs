@@ -159,9 +159,14 @@ pub struct RewardDoor {
 #[serde(deny_unknown_fields)]
 pub struct DeathWindow {
     pub creatures: Vec<String>,
-    pub area: crate::quest::authored_bindings::kills::DeathArea,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub area: Option<crate::quest::authored_bindings::kills::DeathArea>,
     pub required_deaths: u8,
     pub duration_ms: u32,
+    /// Crystal 201189f8 movements_teleport_main.lua:191-196 consumes
+    /// the shared boss state only when a player advances EnterTeleport.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub consume_on_progress: bool,
 }
 
 impl DeathWindow {
@@ -169,7 +174,7 @@ impl DeathWindow {
         (1..=8).contains(&self.creatures.len())
             && (1..=8).contains(&self.required_deaths)
             && (1..=3_600_000).contains(&self.duration_ms)
-            && self.area.valid()
+            && self.area.is_none_or(|area| area.valid())
             && self.creatures.iter().enumerate().all(|(index, key)| {
                 key.starts_with("oteryn:creature.")
                     && crate::quest::valid_quest_key(key)

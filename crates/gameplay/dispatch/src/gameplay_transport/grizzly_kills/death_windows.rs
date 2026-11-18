@@ -16,6 +16,7 @@ struct Exit {
     count: u8,
     due: u64,
     last: Option<ExactActorRef>,
+    opened_by: Option<ExactActorRef>,
 }
 
 impl DeathWindows {
@@ -34,6 +35,7 @@ impl DeathWindows {
                         count: 0,
                         due: 0,
                         last: None,
+                        opened_by: None,
                     });
             }
         }
@@ -72,11 +74,12 @@ impl DeathWindows {
                 && exit
                     .rule
                     .area
-                    .contains([point.x, point.y, i32::from(point.floor)])
+                    .is_none_or(|area| area.contains([point.x, point.y, i32::from(point.floor)]))
         }) {
             if !exit.current(runtime) || exit.due != 0 && when >= exit.due {
                 exit.count = 0;
                 exit.due = 0;
+                exit.opened_by = None;
             }
             exit.last = Some(target);
             exit.count = if exit.rule.required_deaths == 1 {
@@ -85,25 +88,44 @@ impl DeathWindows {
                 exit.count.saturating_add(1)
             };
             if exit.count == exit.rule.required_deaths {
+                exit.opened_by = Some(target);
                 exit.due = when.saturating_add(u64::from(exit.rule.duration_ms));
             }
         }
     }
 
-    pub(in crate::gameplay_transport) fn is_open(
+    pub(in crate::gameplay_transport) fn open_source(
         &self,
         runtime: &ChannelRuntimeV1,
         key: &str,
         rule: &DeathWindow,
         now_ms: u64,
-    ) -> bool {
-        runtime.owner_fence().is_ok()
-            && self.exits.get(key).is_some_and(|exit| {
-                &exit.rule == rule
-                    && exit.current(runtime)
-                    && exit.count == rule.required_deaths
-                    && now_ms < exit.due
-            })
+    ) -> Option<ExactActorRef> {
+        let exit = self.exits.get(key)?;
+        if runtime.owner_fence().is_err()
+            || &exit.rule != rule
+            || !exit.current(runtime)
+            || exit.count < rule.required_deaths
+            || now_ms >= exit.due
+        {
+            return None;
+        }
+        exit.opened_by
+    }
+
+    pub(in crate::gameplay_transport) fn consume(
+        &mut self,
+        key: &str,
+        rule: &DeathWindow,
+        opened_by: ExactActorRef,
+    ) {
+        if let Some(exit) = self.exits.get_mut(key)
+            && &exit.rule == rule
+            && exit.opened_by == Some(opened_by)
+        {
+            exit.count = 0;
+            exit.opened_by = None;
+        }
     }
 }
 

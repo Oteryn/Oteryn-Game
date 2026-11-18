@@ -54,6 +54,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ingress_settled: false,
                 participants: Vec::new(),
                 projection_target: None,
+                window_source: None,
                 flame_effect_sent: false,
                 selected_tool: None,
             });
