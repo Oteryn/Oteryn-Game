@@ -130,6 +130,7 @@ fn bloodgong() -> TestResult {
             .map_err(|()| "fence")?
             .ok_or("fence")?;
         admitted.item_fence = Some(fence.item_fence());
+        owner.admit_progression_session(&mut admitted).await;
         let catalogue = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
         let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
         let seeded = slot
@@ -151,7 +152,6 @@ fn bloodgong() -> TestResult {
             .map_err(debug)?;
         assert!(matches!(seeded, QuestTransitionOutcome::Committed(_)));
         drop(slot);
-        owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
         let key = oteryn_world_bundle::bundle::placement_key(
