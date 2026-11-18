@@ -752,9 +752,9 @@
       "reversible": false,
       "passages": [],
       "teleport": {
-        "x": 32269,
-        "y": 31853,
-        "floor": -15
+        "x": 32202,
+        "y": 31846,
+        "floor": -7
       },
       "storage": [
         {
@@ -811,7 +811,8 @@
       "failure_message": null,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-7-last_seal_flame.lua:3-24",
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:591-594"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:591-594",
+        "https://tibia.fandom.com/?curid=34100&oldid=1057212"
       ]
     },
     {
@@ -837,7 +838,8 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-1-first_seal_teleport_back.lua:3-14"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-1-first_seal_teleport_back.lua:3-14",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:885-894"
       ]
     },
     {

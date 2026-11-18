@@ -53,3 +53,9 @@ PARTIAL Hidden through Logic complete puzzle routes, Queen placement, kiss and f
 ## Corrections
 
 The six final-room chests now bind through the existing native placement alias owner. The aliases join the donor chest rows and canonical claims to the decoded native B3 stack at ordinal 1. The claim identities, once-per-character behavior, item IDs and counts stay exact. The amulet uses the pre-existing one-charge plan.
+
+The existing startup placement overlay restores action 25019 on the three Hidden Seal return tiles and UIDs 35014 and 35019 on the Plague Seal flame and final forcefield. The additions were extracted with the startup capture parser from its already pinned `TileAction` and `TeleportUnique` tables. The base conversion consumes these exact placement rows. The final forcefield now uses the Global surface destination and keeps the existing durable door resets. [Crystal tile.lua:885–894](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/tile.lua#L885-L894) · [Crystal teleport.lua:566–594](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/teleport.lua#L566-L594) · [Spoiler, curid 34100 and oldid 1057212](https://tibia.fandom.com/?curid=34100&oldid=1057212)
+
+## Verification
+
+PG via shard (pgsplit build files applied on `5f5f96a04d817c96e928b988190f67a3d6701601`) baseline executable, 0 passed and 3 failed in 67.32 s. The native reward binder first failed on the untagged Stone Skin Amulet chest. The final-room STEP completed in 20.87 s and exposed the underground donor target. The Hidden and Plague callbacks dispatched on the fixtures in 13.14 s and 14.32 s before the native placement check exposed the missing return action. The final regression also checks all three action tiles, both unique IDs and the six real USE plans.
