@@ -6,7 +6,9 @@ use super::{
 };
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition};
 use crate::gameplay_transport::connection::FirstEntryOutcome;
-use oteryn_gameplay_quests::quest::world_callbacks::Position;
+use oteryn_gameplay_quests::quest::{
+    QuestComparison, QuestEffect, QuestEffectKind, QuestTransition, world_callbacks::Position,
+};
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 use std::time::Duration;
 
@@ -80,6 +82,7 @@ const EXIT: Position = Position {
     floor: -7,
 };
 const CUROS_SPECTATOR: Position = Position { x: 33160, ..ARENA };
+const SETUP: &str = "oteryn:quest-transition/nfront2-fixture-stage";
 const QUEST: &str = "oteryn:quest.the_new_frontier_quest";
 const QUESTLINE: &str = "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline";
 const MISSION: &str = "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission06";
@@ -187,7 +190,19 @@ fn scenario(admin: String, mortal: bool) -> TestResult {
                 oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                     .map_err(debug)?
                     .catalogue()
-                    .clone(),
+                    .with_fixture_transition(QuestTransition {
+                        key: SETUP.into(),
+                        quest: QUEST.into(),
+                        effects: vec![QuestEffect {
+                            track: QUESTLINE.into(),
+                            from: QuestComparison::Any,
+                            effect: QuestEffectKind::Set(if mortal { 25 } else { 17 }),
+                        }],
+                        completes: false,
+                        experience: None,
+                        world_change: None,
+                    })
+                    .map_err(debug)?,
             ));
             let mut admitted = deps.admitted;
             admitted.runtime_actor = Some(deps.actor);
@@ -294,7 +309,7 @@ async fn curos(
         origin,
         "a player outside questline 17 returns to the origin"
     );
-    seed_questline(h, 41, 17).await?;
+    seed_questline(owner, session).await?;
     let occupant = {
         let mut runtime = owner.runtime.lock().await;
         let session = GameSessionId::decode(&id(110)).map_err(debug)?;
@@ -355,9 +370,41 @@ async fn curos(
     Ok(())
 }
 
-async fn seed_questline(h: &Harness, character: u8, value: i64) -> TestResult {
-    sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
-        .bind(id(character).as_slice()).bind(QUESTLINE).bind(QUEST).bind(value).execute(&h.pool).await?;
+async fn seed_questline(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+) -> TestResult {
+    use crate::durability::quest_state::{
+        QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+    };
+    use crate::foundation::{CommandId, CommandRef};
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|()| "seed fence")?
+        .ok_or("seed session")?;
+    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+    let outcome = slot
+        .commit_quest_transition(
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence,
+            QuestTransitionRequest {
+                transition_key: SETUP.into(),
+                cause: QuestCause::Command(CommandRef::new(
+                    session,
+                    CommandId::new(1000).map_err(debug)?,
+                )),
+            },
+            owner.quest_catalogue.clone().ok_or("seed catalogue")?,
+        )
+        .await
+        .map_err(debug)?;
+    assert!(
+        matches!(outcome, QuestTransitionOutcome::Committed(_)),
+        "seed stage: {outcome:?}"
+    );
     Ok(())
 }
 
@@ -516,7 +563,7 @@ async fn mortal_combat(
     let single = owner.use_object(actor, pull(1), target.clone()).await;
     assert_ne!(single.disposition, UseDisposition::Committed);
     assert_eq!(position(owner, actor).await?, local(MORTAL_ORIGIN));
-    seed_questline(h, 41, 25).await?;
+    seed_questline(owner, admitted.game_session_id).await?;
     let (peer, peer_session) = second_player(owner, deps, h).await?;
     owner.clock_origin -= Duration::from_secs(2);
     let paired = owner.use_object(actor, pull(2), target).await;
@@ -605,10 +652,10 @@ async fn second_player(
     deps: &Dependencies,
     h: &Harness,
 ) -> TestResult<(ExactActorRef, GameSessionId)> {
-    h.seed_pvp_target().await?;
+    h.seed_appearance_observer().await?;
     super::appearance_change_postgres::observer_visibility_tests::admit(h).await?;
-    seed_questline(h, 101, 25).await?;
     let session = GameSessionId::decode(&id(110)).map_err(debug)?;
+    seed_questline(owner, session).await?;
     let fence = owner
         .current_quest_fence(session)
         .await
