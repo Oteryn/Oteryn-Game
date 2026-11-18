@@ -106,7 +106,12 @@ exception to "never a loop" above and is limited to it:
 - the loop stops at its stop bar, or after 3 rounds in which the number of new
   confirmed P0/P1 has not fallen, and the coordinator reports to the owner;
 - it covers the review runs alone, not repair (repair runs under the
-  2026-11-11 decision above).
+  2026-11-11 decision above);
+- it also covers verification runs of the loop's own findings (owner,
+  2026-11-18: "zgoda na dodatkowe review jest"): read-only Codex Cloud tasks,
+  same model and effort, that try to refute or confirm the round's P0/P1
+  findings, grouped by area (never one run per finding). Per-PR reviews keep
+  the Claude-subagent refute of `batch-review.md` §3.
 
 The owner may revoke or narrow this standing authorization at any time by a later
 explicit instruction. A later protected policy may narrow execution further but
