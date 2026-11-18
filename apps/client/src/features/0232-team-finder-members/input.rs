@@ -153,8 +153,15 @@ impl PlayLink {
             MemberStatus, TeamFinderResult, leader as decide, member, query,
         };
         let mut mailbox = lock(&self.mailbox);
+        if !mailbox.discovery.teams.open {
+            return false;
+        }
+        if action == TeamControl::Close {
+            mailbox.discovery.teams.open = false;
+            return true;
+        }
         let teams = &mailbox.discovery.teams;
-        if !teams.open || mailbox.discovery.leader != *leader {
+        if mailbox.discovery.leader != *leader {
             return false;
         }
         if matches!(action, TeamControl::Publish(_) | TeamControl::Withdraw) {
@@ -208,10 +215,6 @@ impl PlayLink {
             }
         }
         let panel = &mut mailbox.discovery.teams;
-        if action == TeamControl::Close {
-            panel.open = false;
-            return true;
-        }
         if !panel.selected || panel.pending.is_some() {
             return false;
         }

@@ -51,15 +51,20 @@ fn publish(outbox: &crate::play::Outbox, revision: u64, price: u32) {
 }
 #[test]
 fn idle_shop_frame_skips_catalogue_formatting() -> Result {
-    test_large_buy_catalogue(false)
+    test_large_buy_catalogue(None, "")
 }
 
 #[test]
 fn regression_unrelated_inventory_delta_keeps_buy_offer_entities() -> Result {
-    test_large_buy_catalogue(true)
+    test_large_buy_catalogue(Some(1025), "")
 }
 
-fn test_large_buy_catalogue(inventory_delta: bool) -> Result {
+#[test]
+fn regression_hidden_offer_inventory_delta_keeps_search_results() -> Result {
+    test_large_buy_catalogue(Some(1), "item #1024")
+}
+
+fn test_large_buy_catalogue(inventory_item: Option<u32>, query: &str) -> Result {
     use std::{hint::black_box, time::Instant};
     let (host, _, outbox) = fixture()?;
     let mut window = host
@@ -89,7 +94,7 @@ fn test_large_buy_catalogue(inventory_delta: bool) -> Result {
         count: 1.try_into()?,
         sub_type: 0,
     };
-    if inventory_delta {
+    if inventory_item.is_some() {
         outbox.push(vec![SessionEvent::Inventory(AppliedDelta {
             server_sequence: 8,
             base_revision: 0,
@@ -133,7 +138,22 @@ fn test_large_buy_catalogue(inventory_delta: bool) -> Result {
     };
     let before = offers(&mut app);
     assert_eq!(before.len(), 1024);
-    if inventory_delta {
+    if let Some(item) = inventory_item {
+        let before = if query.is_empty() {
+            before
+        } else {
+            let world = app.world_mut();
+            let (_, mut editor) = world
+                .query::<(&Field, &mut EditableText)>()
+                .iter_mut(world)
+                .find(|(field, _)| **field == Field::Search)
+                .ok_or("search field")?;
+            editor.editor_mut().set_text(query);
+            app.update();
+            let filtered = offers(&mut app);
+            assert_eq!(filtered.len(), 1);
+            filtered
+        };
         outbox.push(vec![SessionEvent::Inventory(AppliedDelta {
             server_sequence: 9,
             base_revision: 1,
@@ -143,7 +163,7 @@ fn test_large_buy_catalogue(inventory_delta: bool) -> Result {
                 entries: vec![oteryn_session::ItemEntry {
                     appearance_id: 0,
                     handle: 7.try_into()?,
-                    item_definition_ref: 1025.try_into()?,
+                    item_definition_ref: item.try_into()?,
                     count: 1.try_into()?,
                     sub_type: 0,
                 }],

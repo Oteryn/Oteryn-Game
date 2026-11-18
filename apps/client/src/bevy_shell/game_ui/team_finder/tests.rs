@@ -29,9 +29,17 @@ fn fixture_with_layout(selected: bool, layout: bool) -> Result<Fixture> {
     let mut app = App::new();
     if layout {
         super::super::pointer_layout::install(&mut app, UVec2::new(1200, 900));
-        app.add_message::<bevy::window::Ime>()
-            .add_message::<bevy::picking::events::PointerRelease>()
-            .add_plugins(bevy::ui_widgets::TextInputPlugin);
+        app.add_message::<bevy::window::Ime>().add_plugins((
+            bevy::input::InputPlugin,
+            bevy::mesh::MeshPlugin,
+            bevy::camera::visibility::VisibilityPlugin,
+            bevy::picking::PickingPlugin,
+            bevy::picking::InteractionPlugin,
+            bevy::ui_widgets::ButtonPlugin,
+            bevy::ui_widgets::TextInputPlugin,
+        ));
+        app.world_mut()
+            .spawn(bevy::picking::pointer::PointerId::Mouse);
     } else {
         app.add_plugins((
             MinimalPlugins,
@@ -816,8 +824,7 @@ fn regression_rejected_equivalent_publish_keeps_raw_draft() -> Result {
     Ok(())
 }
 
-#[test]
-fn regression_browse_reply_keeps_ime_commit_destination() -> Result {
+fn browsing_reply_during_preedit() -> Result<(App, Entity)> {
     use bevy::window::Ime;
     let (mut app, mut rx, outbox) = fixture_with_layout(true, true)?;
     click(&mut app, Kind::Browse(false))?;
@@ -842,10 +849,25 @@ fn regression_browse_reply_keeps_ime_commit_destination() -> Result {
         cursor: None,
     });
     app.update();
+    Ok((app, name))
+}
+
+fn assert_idle_composition(app: &App, name: Entity) -> Result {
     assert_eq!(app.world().resource::<InputFocus>().get(), Some(name));
     let editor = app.world().get::<EditableText>(name).ok_or("name editor")?;
     assert!(editor.is_composing());
     assert!(editor.pending_edits.is_empty());
+    Ok(())
+}
+
+#[test]
+fn regression_browse_reply_keeps_ime_commit_destination() -> Result {
+    use bevy::window::Ime;
+
+    let (mut app, name) = browsing_reply_during_preedit()?;
+    assert_idle_composition(&app, name)?;
+    app.update();
+    assert_idle_composition(&app, name)?;
     app.world_mut().write_message(Ime::Commit {
         window: Entity::PLACEHOLDER,
         value: "李".into(),
@@ -860,7 +882,26 @@ fn regression_browse_reply_keeps_ime_commit_destination() -> Result {
 }
 
 #[test]
-fn regression_selection_has_laid_out_controls_in_the_same_frame() -> Result {
+fn regression_close_survives_browse_reply_during_ime_composition() -> Result {
+    let (mut app, name) = browsing_reply_during_preedit()?;
+    app.update();
+    assert_idle_composition(&app, name)?;
+    click(&mut app, Kind::Close)?;
+    app.update();
+    assert!(app.world().resource::<State>().root.is_none());
+    assert_eq!(app.world().resource::<InputFocus>().get(), None);
+    Ok(())
+}
+
+#[test]
+fn regression_selection_has_pickable_controls_in_the_same_frame() -> Result {
+    use super::super::pointer_layout;
+    use bevy::{
+        camera::RenderTarget,
+        picking::pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput},
+        window::PrimaryWindow,
+    };
+
     let (mut app, mut rx, outbox) = fixture_with_layout(true, true)?;
     click(&mut app, Kind::Browse(false))?;
     command(&mut rx)?;
@@ -869,19 +910,54 @@ fn regression_selection_has_laid_out_controls_in_the_same_frame() -> Result {
         encode_result(&page(MemberStatus::None)).map_err(|error| format!("{error:?}"))?,
     );
     app.update();
+    let previous_root = app.world().resource::<State>().root;
     click(&mut app, Kind::Select(1))?;
     app.update();
     assert!(shown(&mut app, "> Second"));
-    let close = app
+    assert_ne!(app.world().resource::<State>().root, previous_root);
+    let (close, node, visibility) = app
         .world_mut()
-        .query::<(&Control, &ComputedNode)>()
+        .query::<(Entity, &Control, &ComputedNode, &InheritedVisibility)>()
         .iter(app.world())
-        .find_map(|(control, node)| (control.kind == Kind::Close).then_some(node))
+        .find_map(|(entity, control, node, visibility)| {
+            (control.kind == Kind::Close).then_some((entity, node, visibility))
+        })
         .ok_or("close button")?;
     assert!(
-        close.size().cmpgt(Vec2::ZERO).all(),
+        node.size().cmpgt(Vec2::ZERO).all(),
         "close size: {:?}",
-        close.size()
+        node.size()
     );
+    assert!(visibility.get(), "replacement close button is hidden");
+
+    let primary = app
+        .world_mut()
+        .query_filtered::<Entity, With<PrimaryWindow>>()
+        .single(app.world())?;
+    let location = Location {
+        target: RenderTarget::default()
+            .normalize(Some(primary))
+            .ok_or("primary target")?,
+        position: pointer_layout::center(&app, close)?,
+    };
+    for action in [
+        PointerAction::Move { delta: Vec2::ZERO },
+        PointerAction::Press(PointerButton::Primary),
+    ] {
+        app.world_mut().write_message(PointerInput::new(
+            PointerId::Mouse,
+            location.clone(),
+            action,
+        ));
+    }
+    app.update();
+    assert!(app.world().get::<bevy::ui::Pressed>(close).is_some());
+    app.world_mut().write_message(PointerInput::new(
+        PointerId::Mouse,
+        location,
+        PointerAction::Release(PointerButton::Primary),
+    ));
+    app.update();
+    assert!(app.world().resource::<State>().root.is_none());
     Ok(())
 }

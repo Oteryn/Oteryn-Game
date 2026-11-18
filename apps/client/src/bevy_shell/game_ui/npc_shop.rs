@@ -177,11 +177,12 @@ fn activate(
         }
     }
 }
-// Inventory affects offer rows only through the carried count in each caption.
+// Carried counts affect captions, search results and the only-owned filter.
 fn same_offer_inventory(
     previous: &mut LiveShop,
     current: &LiveShop,
     side: Option<NpcTradeSide>,
+    query: &str,
 ) -> bool {
     let before = previous
         .inventory
@@ -194,16 +195,19 @@ fn same_offer_inventory(
     if before == after {
         return true;
     }
-    let unchanged = before.is_some() == after.is_some()
-        && current
-            .window
-            .offers
-            .iter()
-            .filter(|offer| side.is_none_or(|side| offer.side == side))
-            .all(|offer| {
-                previous.owned(offer.item_definition_ref)
-                    == current.owned(offer.item_definition_ref)
-            });
+    let same_count =
+        |item| before.is_some() == after.is_some() && previous.owned(item) == current.owned(item);
+    let unchanged = current
+        .window
+        .offers
+        .iter()
+        .filter(|offer| side.is_none_or(|side| offer.side == side))
+        .all(|offer| same_count(offer.item_definition_ref))
+        || (!query.trim().is_empty() && {
+            let rows = current.filtered_quotes(side, query);
+            rows.iter().all(|row| same_count(row.item))
+                && rows == previous.filtered_quotes(side, query)
+        });
     if unchanged {
         previous.inventory.clone_from(&current.inventory);
     }
@@ -306,7 +310,7 @@ fn project(
                     && shown_side == side
                     && shown_query == query
                     && shown_selection == selection
-                    && same_offer_inventory(shop, &panel.live, *side)
+                    && same_offer_inventory(shop, &panel.live, *side, query)
             })
         {
             let rows = panel.live.filtered_quotes(state.side, &state.query);
