@@ -307,10 +307,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(due) = lifecycle_now.checked_add(u64::from(delay) * 1_000) else {
                 return UseDisposition::Exhausted;
             };
-            projection = Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
-                due,
-                restore: before,
-            });
+            projection = if let Some(pickup) = callback
+                .effects
+                .use_chance
+                .as_ref()
+                .and_then(|chance| chance.pickup)
+            {
+                let Some(pickup) = super::use_chance::prepare_pickup(
+                    runtime,
+                    map,
+                    pos,
+                    key,
+                    expected_revision,
+                    cause,
+                    pickup,
+                    due,
+                ) else {
+                    return UseDisposition::Rejected;
+                };
+                Some(crate::map::facts::QuestCallbackProjection::TimedPickup {
+                    pickup,
+                    restore: before,
+                })
+            } else {
+                Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
+                    due,
+                    restore: before,
+                })
+            };
         }
         if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {
             let Some(crate::map::facts::QuestCallbackProjection::TimedTransform { due, restore }) =

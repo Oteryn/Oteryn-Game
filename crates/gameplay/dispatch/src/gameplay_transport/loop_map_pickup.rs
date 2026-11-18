@@ -48,6 +48,60 @@ pub(super) async fn move_map_item(
     let (Some(index), Some(at)) = (index, at) else {
         return refused(LoopMoveRefusal::NotSupported);
     };
+    if let ItemKey::MapAdded(id) = request.item {
+        let Some(item) = at.map.facts.quest_pickup(id, admission.owner_now().get()) else {
+            return refused(LoopMoveRefusal::Stale);
+        };
+        if door_origin.is_some()
+            || !matches!(request.target, LoopTarget::MainBackpack)
+            || !oteryn_gameplay_items::map_pickup::whole_quantity_requested(1, request.count)
+        {
+            return refused(LoopMoveRefusal::NotSupported);
+        }
+        let (Ok(x), Ok(y), Ok(floor)) = (
+            u16::try_from(at.at.x),
+            u16::try_from(at.at.y),
+            i8::try_from(at.at.floor),
+        ) else {
+            return LoopMoveResult::TooFar;
+        };
+        if !pickup::within_reach(TilePos { x, y, floor }, item.at) {
+            return LoopMoveResult::TooFar;
+        }
+        let Some(policy) = native
+            .item_policy_for_source_id(u32::from(item.facts.appearance_id))
+            .map(|policy| policy.record())
+            .filter(|policy| policy.admission.materializable)
+        else {
+            return refused(LoopMoveRefusal::NotSupported);
+        };
+        let definition = crate::durability::item_mint::TypedDefinitionRef {
+            family: policy.production_definition.family.clone(),
+            production_key: policy.production_definition.production_key.clone(),
+            revision_ref: policy.production_definition.revision_ref.clone(),
+        };
+        return match admission
+            .root
+            .claim_temporary_quest_pickup(
+                permit,
+                admission.character,
+                admission.holder,
+                fence,
+                CommandRef::new(command.game_session_id, command_id),
+                &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                item.occurrence,
+                definition,
+            )
+            .await
+        {
+            Ok(Ok(())) => {
+                at.map.facts.settle_quest_pickup(id, item.occurrence);
+                LoopMoveResult::Committed
+            }
+            Ok(Err(reason)) => refused(reason),
+            Err(_) => LoopMoveResult::Unknown,
+        };
+    }
     let ItemKey::MapBase {
         bundle_digest,
         placement_key,

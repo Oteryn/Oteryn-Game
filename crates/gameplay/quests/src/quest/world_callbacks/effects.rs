@@ -20,6 +20,8 @@ pub struct UseChance {
     pub failure_message: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub success_cue: Option<RelativeCue>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pickup: Option<RelativePickup>,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -28,6 +30,14 @@ pub struct RelativeCue {
     pub dx: i8,
     pub dy: i8,
     pub effect: u8,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct RelativePickup {
+    pub dx: i8,
+    pub dy: i8,
+    pub appearance: u16,
 }
 
 /// A once-only earned mount through the existing account appearance owner.
@@ -665,6 +675,13 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || chance.failure_hit.effect == 0
             || chance.success_cue.is_some_and(|cue| {
                 cue.effect == 0 || cue.dx.unsigned_abs().max(cue.dy.unsigned_abs()) > 1
+            })
+            || chance.pickup.is_some_and(|item| {
+                item.appearance == 0
+                    || item.dx.unsigned_abs().max(item.dy.unsigned_abs()) != 1
+                    || effects.reset_after_ms.is_none()
+                    || effects.passages_reset_after_ms.is_some()
+                    || effects.target_transform.is_some()
             })
             || chance.failure_message.is_empty()
             || chance.failure_message.len() > 256

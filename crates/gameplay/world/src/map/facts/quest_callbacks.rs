@@ -70,10 +70,33 @@ struct DynamicPortal {
     expires: Option<u64>,
 }
 
+/// The exact temporary item offered by one successful callback occurrence.
+#[derive(Clone, Copy)]
+pub struct QuestPickup {
+    pub occurrence: [u8; 32],
+    pub at: TilePos,
+    pub facts: EntryFacts,
+    pub expires: u64,
+}
+
+impl std::fmt::Debug for QuestPickup {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("QuestPickup")
+            .field("at", &self.at)
+            .field("expires", &self.expires)
+            .finish()
+    }
+}
+
 /// Already qualified facts for one atomic, Channel-local callback projection.
 pub enum QuestCallbackProjection {
     /// Restore exactly this revision at an original source deadline.
     TimedTransform { due: u64, restore: EntryFacts },
+    /// A temporary pickup and the source transform share the original timer.
+    TimedPickup {
+        pickup: QuestPickup,
+        restore: EntryFacts,
+    },
     /// Carry the source Item's two decay definitions through the existing scheduler.
     TimedDecayChain {
         next: (u64, EntryFacts),
@@ -162,6 +185,7 @@ pub(super) struct CallbackStates {
     pub(super) creature_visuals: std::collections::VecDeque<(u64, CreatureVisualKind)>,
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
+    pickups: BTreeMap<u64, QuestPickup>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
     batch_blockers: BTreeSet<TilePos>,
@@ -355,6 +379,49 @@ impl CallbackStates {
                     }
                 }
             }
+            QuestCallbackProjection::TimedPickup { pickup, restore } => {
+                if close
+                    || !pickup.facts.pickupable
+                    || self.position_reserved(pickup.at)
+                    || self
+                        .pickups
+                        .values()
+                        .any(|p| p.occurrence == pickup.occurrence)
+                {
+                    return false;
+                }
+                let Some(sequence) = self.movement_sequence.checked_add(1) else {
+                    return false;
+                };
+                let Some(id) = EntryId::callback(sequence) else {
+                    return false;
+                };
+                let Some(revision) = self
+                    .changed
+                    .get(&owner)
+                    .map_or(0, |(revision, _)| *revision)
+                    .checked_add(1)
+                else {
+                    return false;
+                };
+                self.movement_sequence = sequence;
+                self.movement_items
+                    .entry(pickup.at)
+                    .or_default()
+                    .push(view::ComposedEntry {
+                        source: view::EntrySource::Added(id),
+                        facts: pickup.facts,
+                    });
+                self.pickups.insert(id.get(), *pickup);
+                self.movement_decays.insert(
+                    (pickup.expires, owner),
+                    MovementDecay {
+                        revision,
+                        restore: *restore,
+                        overlay: None,
+                    },
+                );
+            }
             QuestCallbackProjection::TimedDecayChain { next, reset } => {
                 let Some(revision) = self
                     .changed
@@ -537,6 +604,21 @@ impl CallbackStates {
             })
         })
     }
+    fn remove_pickup(&mut self, id: u64) -> bool {
+        let Some(pickup) = self.pickups.remove(&id) else {
+            return false;
+        };
+        if let Some(entries) = self.movement_items.get_mut(&pickup.at) {
+            entries.retain(
+                |entry| !matches!(entry.source, view::EntrySource::Added(key) if key.get() == id),
+            );
+            if entries.is_empty() {
+                self.movement_items.remove(&pickup.at);
+            }
+        }
+        true
+    }
+
     pub(super) fn phase_has_dynamic_blocker(&self, pos: TilePos) -> bool {
         self.solid_items.contains(&pos) || self.batch_blockers.contains(&pos)
     }
@@ -551,6 +633,7 @@ impl CallbackStates {
             p.floor == -11 && (33415..=33445).contains(&p.x) && (31522..=31554).contains(&p.y)
         };
         self.movement_items.retain(|p, _| !cleared(p));
+        self.pickups.retain(|_, pickup| !cleared(&pickup.at));
         self.solid_items.retain(|p| !cleared(p));
         self.batch_blockers.retain(|p| !inside(*p));
         self.portals.retain(|p, _| !cleared(p));
@@ -568,6 +651,7 @@ impl CallbackStates {
             + self.actions.len()
             + self.hidden.len()
             + self.movement_decays.len()
+            + self.pickups.len()
             + self.movement_effects.len()
             + self.creature_visuals.len()
             + self.movement_speech.len()
@@ -865,6 +949,27 @@ impl BundleFacts {
         true
     }
 
+    /// A command MOVE may claim this exact live Added item through the Item owner.
+    pub fn quest_pickup(&self, id: u64, now: u64) -> Option<QuestPickup> {
+        self.callbacks
+            .lock()
+            .ok()?
+            .pickups
+            .get(&id)
+            .copied()
+            .filter(|p| now < p.expires)
+    }
+
+    pub fn settle_quest_pickup(&self, id: u64, occurrence: [u8; 32]) -> bool {
+        self.callbacks.lock().is_ok_and(|mut states| {
+            states
+                .pickups
+                .get(&id)
+                .is_some_and(|p| p.occurrence == occurrence)
+                && Arc::make_mut(&mut states).remove_pickup(id)
+        })
+    }
+
     pub fn next_movement_decay_time(&self) -> Option<u64> {
         let states = self.callbacks.lock().ok()?;
         states
@@ -874,6 +979,7 @@ impl BundleFacts {
             .map(|((due, _), _)| *due)
             .into_iter()
             .chain(states.portals.values().filter_map(|p| p.expires))
+            .chain(states.pickups.values().map(|p| p.expires))
             .min()
     }
 
@@ -885,6 +991,14 @@ impl BundleFacts {
         };
         let states = Arc::make_mut(&mut states);
         let mut changed = 0;
+        let pickups: Vec<_> = states
+            .pickups
+            .iter()
+            .filter_map(|(id, pickup)| (pickup.expires <= now).then_some(*id))
+            .collect();
+        for id in pickups {
+            changed += usize::from(states.remove_pickup(id));
+        }
         let expired: BTreeSet<_> = states
             .portals
             .values()
@@ -1261,6 +1375,7 @@ impl BundleFacts {
             states.movement_items.remove(&pos);
         }
         states.changed.remove(&key);
+        states.pickups.remove(&key);
         states.movement_decays.retain(|(_, entry), _| *entry != key);
         states.movement_sequence = sequence;
         true
@@ -1711,6 +1826,9 @@ impl BundleFacts {
                             states.position_reserved(*position)
                         }
                     })
+                }
+                QuestCallbackProjection::TimedPickup { pickup, .. } => {
+                    states.position_reserved(pickup.at)
                 }
                 QuestCallbackProjection::TimedTransform { .. }
                 | QuestCallbackProjection::TimedDecayChain { .. } => false,

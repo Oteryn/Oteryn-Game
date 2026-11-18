@@ -92,6 +92,7 @@ const KIND_INBOX: i16 = 6;
 /// A depot-search retrieval of an entry nested under a depot or Inbox root.
 const KIND_CUSTODY_NESTED: i16 = 7;
 #[path = "item_quick_loot.rs"]
+mod quest_pickup;
 mod quick_loot;
 pub use quick_loot::is_loot_coin;
 pub(super) use quick_loot::pouch_weight;
@@ -1912,7 +1913,9 @@ impl DurabilityRoot {
                     let row = sqlx::query(
                         "SELECT character_id::text FROM game_item_loop_move_receipts \
                           WHERE quick_loot_ordinal = 0 AND game_session_id = encode($1,'hex')::uuid \
-                            AND command_id = $2::text::numeric(20,0)",
+                            AND command_id = $2::text::numeric(20,0) \
+                         UNION ALL SELECT character_id::text FROM game_quest_temporary_pickups \
+                          WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric",
                     )
                     .bind(command.game_session_id().as_bytes().as_slice())
                     .bind(command.command_id().get().to_string())
