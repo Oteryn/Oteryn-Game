@@ -227,7 +227,7 @@ async fn use_claim(
 
 async fn socket_window(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &AdmittedSession,
+    admitted: &mut AdmittedSession,
     h: &Harness,
     name: &str,
 ) -> TestResult {
@@ -242,8 +242,8 @@ async fn socket_window(
         .map_err(|()| "socket fence unavailable")?.ok_or("socket fence")?;
     for (index, (position, appearance, gem, field)) in SOCKETS.into_iter().enumerate() {
         let phase = i64::try_from(index)? + 6;
-        let mut tool = json!({"item":format!("oteryn:item.tibia.i{gem}"),"count":1});
-        tool["selected_instance"] = json!(false);
+        // Crystal gems.lua:179-189 consumes the gem used on the socket.
+        let tool = json!({"item":format!("oteryn:item.tibia.i{gem}"),"count":1,"selected_instance":true});
         stages.push(json!({"key":format!("socket-{index}"),"completes":false,
             "trigger":{"kind":"map_use","callback":{
                 "key":format!("oteryn:quest-callback/qonce-dispatch-socket-{index}"),
@@ -292,10 +292,17 @@ async fn socket_window(
     owner.states.chat.admit(admitted.game_session_id, "Claimant", owner.owner_now());
     let _clock = owner.freeze_owner_clock_for_test();
     let centre = socket_key(CENTRE)?;
+    if name == SOCKET_WINDOW {
+        let wrong_gem = SOCKETS[1].2;
+        let before = super::qengine_voucher_stories::quantity(h, wrong_gem).await?;
+        assert_eq!(use_socket(owner, admitted, AT, wrong_gem).await?, UseDisposition::NothingToUse);
+        assert_eq!(super::qengine_voucher_stories::quantity(h, wrong_gem).await?, before);
+        assert_eq!(owner.bundle_map().ok_or("map")?.facts.next_movement_decay_time(), None);
+    }
     if repeat {
         h.root.set_test_quest_clock(PREVIOUS_CLAIM + DAILY_PERIOD - 1).map_err(debug)?;
         let before = super::qengine_voucher_stories::quantity(h, SOCKETS[0].2).await?;
-        assert_eq!(use_socket(owner, admitted, AT, 20).await?, UseDisposition::Rejected);
+        assert_eq!(use_socket(owner, admitted, AT, SOCKETS[0].2).await?, UseDisposition::Rejected);
         assert_eq!(super::qengine_voucher_stories::quantity(h, SOCKETS[0].2).await?, before);
         assert_eq!(owner.bundle_map().ok_or("map")?.facts.next_movement_decay_time(), None);
         h.root.advance_test_quest_clock(1).map_err(debug)?;
@@ -304,10 +311,11 @@ async fn socket_window(
     let count = if repeat { 3 } else { 4 };
     for (index, (position, _, gem, field)) in SOCKETS.into_iter().take(count).enumerate() {
         // Crystal gems.lua:179-188 stages a field two seconds after the paid USE.
-        let at = 5_000_000 + 3_000_000 * u64::try_from(index)?;
+        let spacing = if catchup { 400_000 } else { 3_000_000 };
+        let at = 5_000_000 + spacing * u64::try_from(index)?;
         owner.states.test_owner_time.store(at, Ordering::Relaxed);
         let before = super::qengine_voucher_stories::quantity(h, gem).await?;
-        assert_eq!(use_socket(owner, admitted, position, 21 + u64::try_from(index)?).await?, UseDisposition::Committed);
+        assert_eq!(use_socket(owner, admitted, position, gem).await?, UseDisposition::Committed);
         assert_eq!(super::qengine_voucher_stories::quantity(h, gem).await?, before - 1);
         assert_eq!(track_value(h, SOCKET_PHASE).await?, i64::try_from(index)? + 7);
         let map = owner.bundle_map().ok_or("socket map")?;
@@ -416,20 +424,49 @@ fn socket_key(at: Position) -> TestResult<u64> {
 
 async fn use_socket(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &AdmittedSession,
+    admitted: &mut AdmittedSession,
     at: Position,
-    command_id: u64,
+    gem: u16,
 ) -> TestResult<UseDisposition> {
+    use crate::foundation::{MessageType, decode_wire_envelope};
+    use oteryn_protocol_oteryn::item_view::{CAPABILITY_ITEM_EQUIP_DROP_V1,
+        STATE_DOMAIN_CHARACTER_INVENTORY, decode_character_inventory_with_equip_drop};
+    use oteryn_protocol_oteryn::world_object::{COMMAND_TYPE_USE_INTENT, MapUseTarget, UseIntent,
+        UseTarget, decode_use_result, encode_item_use_intent};
+
     advance_interaction(owner)?;
     let map = owner.bundle_map().ok_or("socket map")?;
-    let actor = admitted.runtime_actor.ok_or("claimant")?;
     let key = socket_key(at)?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     let target = WorldObjectTarget { placement, expected_revision: map.facts.object_revision(key) };
-    Ok(owner.use_quest_callback(actor, UseCommand {
-        game_session_id: admitted.game_session_id, command_id, item_fence: admitted.item_fence,
-    }, map, &target).await.ok_or("socket did not dispatch")?.disposition)
+    let definition = owner.active_generation.and_then(|generation| generation.native_gameplay())
+        .and_then(|native| native.item_index())
+        .and_then(|index| index.definition_ref("Item", &format!("oteryn:item.tibia.i{gem}"), "definition-r1"))
+        .ok_or("socket gem definition")?;
+    let equip_drop = admitted.continuity.selected_capabilities.contains(CAPABILITY_ITEM_EQUIP_DROP_V1);
+    let command_id = admitted.continuity.next_command_id;
+    let (status, reply, scope, _) = super::guild_wire::exchange_capture(owner, admitted, command_id,
+        COMMAND_TYPE_USE_INTENT, |frames| {
+            let mut handle = None;
+            for frame in frames {
+                let envelope = decode_wire_envelope(frame).map_err(debug)?;
+                if envelope.message_type() != MessageType::SnapshotChunk { continue; }
+                let (_, domains) = oteryn_protocol_oteryn::decode_snapshot_chunk(envelope.payload()).map_err(debug)?;
+                for domain in domains.into_iter().filter(|domain| domain.domain_id == STATE_DOMAIN_CHARACTER_INVENTORY) {
+                    let inventory = decode_character_inventory_with_equip_drop(domain.payload, equip_drop).map_err(debug)?;
+                    for entry in inventory.entries.into_iter().filter(|entry| entry.item_definition_ref == definition) {
+                        assert!(handle.replace(entry.handle).is_none(), "one carried copy of the selected gem");
+                    }
+                }
+            }
+            encode_item_use_intent(&UseIntent {target: UseTarget::Item(handle.ok_or("current carried gem handle")?),
+                use_with_map_item: Some(MapUseTarget::Object(target)), use_with: None,
+                use_with_position: None}).map_err(debug)
+        }, false, &mut Vec::new()).await?;
+    assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+    assert!(scope.is_none());
+    decode_use_result(&reply).map_err(|error| debug(error).into())
 }
 
 async fn contend_for_daily_claim(
