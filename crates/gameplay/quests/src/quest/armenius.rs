@@ -7,7 +7,7 @@ pub const MISSION: &str = "oteryn:quest-progress/quest/u8_4/blood_brothers/missi
 pub const NPC: &str = "oteryn:npc.armenius";
 pub const FINAL_TOPIC: u16 = 5;
 pub const RESOLVED_MISSION: i64 = 2;
-pub const CREATURE: &str = "oteryn:creature.armenius";
+pub const CREATURE: &str = "oteryn:creature.armenius_creature";
 pub const ACHIEVEMENT: &str = "His True Face";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
