@@ -109,6 +109,24 @@ impl EarlOsamEncounter {
         (now >= self.expires).then_some(&self.owner.participants)
     }
 
+    pub fn finish_push(
+        &self,
+        now: u64,
+    ) -> Option<(MovementLocalPosition, &[(ExactActorRef, GameSessionId)])> {
+        matches!(self.stage, Stage::End { due } if now >= due && now < self.expires)
+            .then_some((self.centre, &self.owner.participants))
+    }
+
+    pub fn retire(&self, runtime: &mut ChannelRuntimeV1) -> Result<(), CarrierError> {
+        self.owner.current(runtime)?;
+        for actor in std::iter::once(self.earl).chain(self.spheres.iter().copied()) {
+            if runtime.contains_live_creature(actor) {
+                runtime.remove_encounter_actor(actor)?;
+            }
+        }
+        Ok(())
+    }
+
     pub fn advance(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -122,11 +140,7 @@ impl EarlOsamEncounter {
     ) -> Result<bool, CarrierError> {
         self.owner.current(runtime)?;
         if self.timeout_participants(now).is_some() {
-            for actor in std::iter::once(self.earl).chain(self.spheres.iter().copied()) {
-                if runtime.contains_live_creature(actor) {
-                    runtime.remove_encounter_actor(actor)?;
-                }
-            }
+            self.retire(runtime)?;
             return Ok(false);
         }
         if !runtime.contains_live_creature(self.earl) {
@@ -185,7 +199,13 @@ impl EarlOsamEncounter {
                 }
             }
             Stage::Spheres { due } if now >= due => {
-                self.advance_spheres(runtime, &relocate)?;
+                let before = runtime.encounter_parts().0.clone();
+                let owned = self.spheres.clone();
+                if let Err(error) = self.advance_spheres(runtime, &relocate) {
+                    *runtime.encounter_parts_mut().0 = before;
+                    self.spheres = owned;
+                    return Err(error);
+                }
                 if self.spheres.is_empty() {
                     Stage::End {
                         due: now.saturating_add(CHANNEL_END_US),

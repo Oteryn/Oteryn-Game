@@ -24,6 +24,7 @@ pub(super) struct ActivePhase {
     frozen: Option<(ExactActorRef, Vec<super::quest_kills::Recipient>)>,
     cells: crate::content::NativeEntryMovementCells,
     timed_room: Option<TimedRoom>,
+    victory_exit_us: Option<u64>,
 }
 
 #[derive(Debug)]
@@ -32,6 +33,14 @@ struct TimedRoom {
     north_vortex: Option<(MovementLocalPosition, MovementLocalPosition)>,
     min: MovementLocalPosition,
     max: MovementLocalPosition,
+    lever: PhaseLever,
+}
+
+#[derive(Debug)]
+struct PhaseLever {
+    key: u64,
+    started_revision: u64,
+    reset: crate::map::view::EntryFacts,
 }
 
 impl TimedRoom {
@@ -111,6 +120,15 @@ impl Fight {
         }
     }
 
+    fn retire(&self, runtime: &mut ChannelRuntimeV1) -> Result<(), CarrierError> {
+        match self {
+            Self::Cults(_) => Err(CarrierError::PlanConflict),
+            Self::EarlOsam(fight) => fight.retire(runtime),
+            Self::Sirs(fight) => fight.retire(runtime),
+            Self::Zelos(fight) => fight.retire(runtime),
+        }
+    }
+
     fn advance(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -159,11 +177,13 @@ impl Registry {
             .lock()
             .ok()?
             .iter()
-            .filter_map(|phase| match &phase.fight {
-                Fight::EarlOsam(fight) => Some(fight.next_due_us()),
-                Fight::Sirs(fight) => Some(fight.next_due_us()),
-                Fight::Zelos(fight) => Some(fight.next_due_us()),
-                Fight::Cults(_) => None,
+            .filter_map(|phase| {
+                phase.victory_exit_us.or_else(|| match &phase.fight {
+                    Fight::Cults(_) => None,
+                    Fight::EarlOsam(fight) => Some(fight.next_due_us()),
+                    Fight::Sirs(fight) => Some(fight.next_due_us()),
+                    Fight::Zelos(fight) => Some(fight.next_due_us()),
+                })
             })
             .min()
     }
@@ -189,6 +209,14 @@ impl Registry {
         })
     }
 
+    pub(super) fn timed_lever_busy(&self, key: u64) -> bool {
+        self.active.lock().map_or(true, |active| {
+            active
+                .iter()
+                .any(|phase| phase.key == key && phase.timed_room.is_some())
+        })
+    }
+
     pub(super) fn reserve<'a>(
         &'a self,
         runtime: &mut ChannelRuntimeV1,
@@ -198,6 +226,9 @@ impl Registry {
         active.retain_mut(|phase| {
             if !phase.fight.is_current(runtime) {
                 return false;
+            }
+            if phase.victory_exit_us.is_some() {
+                return true;
             }
             match phase.fight.victors(runtime) {
                 Ok(Some(_)) => {
@@ -235,9 +266,20 @@ impl Registry {
             if phase.fight.timeout_participants(now).is_some() {
                 continue;
             }
-            if phase.fight.projected_death(runtime, actor).is_ok()
-                && matches!(phase.fight, Fight::Cults(_))
-            {
+            if phase.fight.projected_death(runtime, actor).is_err() {
+                continue;
+            }
+            if phase.timed_room.is_some() {
+                if phase
+                    .fight
+                    .victors(runtime)
+                    .is_ok_and(|group| group.is_some())
+                {
+                    phase
+                        .victory_exit_us
+                        .get_or_insert(now.saturating_add(60_000_000));
+                }
+            } else {
                 let ActivePhase { fight, cells, .. } = phase;
                 let _ = fight.advance(runtime, None, cells);
             }
@@ -318,15 +360,36 @@ pub(super) fn bind(
             y: i32::from(at.y),
             floor: -i16::from(at.floor),
         };
-    let make_room = |exit, north_vortex| TimedRoom {
-        exit: local(exit),
-        north_vortex,
-        min: local(encounter.room_min),
-        max: local(encounter.room_max),
+    let make_room = |exit, north_vortex| -> Result<TimedRoom, CarrierError> {
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            cells.index()
+        else {
+            return Err(CarrierError::PlanConflict);
+        };
+        let facts = &index.map().facts;
+        let [off, _] = callback.lever.ok_or(CarrierError::PlanConflict)?;
+        let reset = facts
+            .quest_callback_replacement(key, off)
+            .ok_or(CarrierError::PlanConflict)?;
+        let started_revision = facts
+            .object_revision(key)
+            .checked_add(1)
+            .ok_or(CarrierError::PlanConflict)?;
+        Ok(TimedRoom {
+            exit: local(exit),
+            north_vortex,
+            min: local(encounter.room_min),
+            max: local(encounter.room_max),
+            lever: PhaseLever {
+                key,
+                started_revision,
+                reset,
+            },
+        })
     };
     let timed = match encounter.phase {
         Some(EncounterPhase::GraveDangerEarlOsam { exit, centre }) => {
-            let room = make_room(exit, None);
+            let room = make_room(exit, None)?;
             let centre = local(centre);
             if room.contains(room.exit)
                 || !placement(&cells, runtime, room.exit)
@@ -344,7 +407,7 @@ pub(super) fn bind(
             ))
         }
         Some(EncounterPhase::GraveDangerSirs { exit, fight }) => {
-            let room = make_room(exit, None);
+            let room = make_room(exit, None)?;
             let fight = fight.map(local);
             if room.contains(room.exit)
                 || !placement(&cells, runtime, room.exit)
@@ -366,7 +429,7 @@ pub(super) fn bind(
         }) => {
             let gate = local(north_gate);
             let arrival = local(north_arrival);
-            let room = make_room(exit, Some((gate, arrival)));
+            let room = make_room(exit, Some((gate, arrival)))?;
             if room.contains(room.exit)
                 || !room.contains(gate)
                 || !room.contains(arrival)
@@ -392,6 +455,7 @@ pub(super) fn bind(
             frozen: None,
             cells,
             timed_room: Some(room),
+            victory_exit_us: None,
         });
     }
     if encounter.phase != Some(EncounterPhase::Cults) || actors.len() != 10 {
@@ -450,6 +514,7 @@ pub(super) fn bind(
         frozen: None,
         cells,
         timed_room: None,
+        victory_exit_us: None,
     })
 }
 
@@ -520,10 +585,21 @@ fn tick_phase_kind(
             fight,
             cells,
             timed_room,
+            victory_exit_us,
             ..
         } = phase;
         if timed != timed_room.is_some() {
             return true;
+        }
+        if let (Some(room), Some(due)) = (timed_room.as_ref(), *victory_exit_us) {
+            if now < due {
+                return true;
+            }
+            let Ok(Some(victors)) = fight.victors(runtime) else {
+                return false;
+            };
+            return !evacuate(runtime, cells, room, victors, &mut exits)
+                || fight.retire(runtime).is_err();
         }
         if let Some(room) = timed_room.as_ref()
             && let Some(participants) = fight.timeout_participants(now)
@@ -531,6 +607,12 @@ fn tick_phase_kind(
         {
             return true;
         }
+        let osam_push = match fight {
+            Fight::EarlOsam(osam) => osam
+                .finish_push(now)
+                .map(|(centre, group)| (centre, group.to_vec())),
+            _ => None,
+        };
         match fight.advance(runtime, Some(now), cells) {
             Ok(false) => return false,
             Ok(true) => {}
@@ -540,6 +622,9 @@ fn tick_phase_kind(
                 ));
                 return true;
             }
+        }
+        if let (Some(room), Some((centre, players))) = (timed_room.as_ref(), osam_push) {
+            push_osam_adjacent(runtime, cells, room, centre, &players, &mut exits);
         }
         fight
             .victors(runtime)
@@ -618,13 +703,86 @@ fn evacuate(
         moves.push((actor, session, before.position()));
         proofs.push(proof);
     }
-    let Ok(snapshots) = runtime.commit_quest_relocation(proofs, || true) else {
+    let lever = &exit.lever;
+    let Ok(snapshots) = runtime.commit_quest_relocation(proofs, || {
+        // A successful retry may find the previous ejection already published.
+        if map.facts.object_revision(lever.key) != lever.started_revision {
+            return true;
+        }
+        map.facts.apply_quest_callback(
+            lever.key,
+            lever.started_revision,
+            lever.reset,
+            &[],
+            &[],
+            true,
+            None,
+        )
+    }) else {
         return false;
     };
     for ((actor, session, before), after) in moves.into_iter().zip(snapshots) {
         exits.push((cells.clone(), actor, session, before, after.position()));
     }
     true
+}
+
+// Crystal 201189f grave_danger_earl_osam.lua:39–65.
+fn push_osam_adjacent(
+    runtime: &mut ChannelRuntimeV1,
+    cells: &crate::content::NativeEntryMovementCells,
+    room: &TimedRoom,
+    centre: MovementLocalPosition,
+    players: &[(ExactActorRef, GameSessionId)],
+    exits: &mut Vec<EvacuatedPlayer>,
+) {
+    let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+        cells.index()
+    else {
+        return;
+    };
+    let doors = crate::map::floor::BundleDoors(&index.map().facts);
+    for &(actor, session) in players {
+        let Ok(before) = runtime.read_actor_position(actor) else {
+            continue;
+        };
+        let at = before.position();
+        if at.floor != centre.floor
+            || at
+                .x
+                .abs_diff(centre.x)
+                .saturating_add(at.y.abs_diff(centre.y))
+                != 1
+        {
+            continue;
+        }
+        let landings = [
+            (0, 3),
+            (3, 0),
+            (0, -3),
+            (-3, 0),
+            (3, 3),
+            (-3, -3),
+            (4, -4),
+            (-4, 4),
+        ];
+        for (dx, dy) in landings {
+            let landing = MovementLocalPosition {
+                x: centre.x + dx,
+                y: centre.y + dy,
+                ..centre
+            };
+            if room.contains(landing)
+                && let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+                    runtime, cells, actor, session, before, landing, false, &doors,
+                )
+                && let Ok(after) = runtime.commit_source_step(proof)
+            {
+                exits.push((cells.clone(), actor, session, at, after.position()));
+                break;
+            }
+        }
+    }
 }
 
 impl super::ComposedFreshAdmission<'_, '_, '_> {

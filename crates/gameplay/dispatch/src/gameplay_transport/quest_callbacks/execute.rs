@@ -208,6 +208,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return UseDisposition::Rejected;
         }
+        if close
+            && callback.effects.encounter.is_some()
+            && states.encounter_phases.timed_lever_busy(key)
+        {
+            return UseDisposition::Occupied;
+        }
         if close && callback.lever.is_some() && !callback.reversible {
             return UseDisposition::NothingToUse;
         }

@@ -120,6 +120,16 @@ impl SirsEncounter {
         (now >= self.expires).then_some(&self.owner.participants)
     }
 
+    pub fn retire(&self, runtime: &mut ChannelRuntimeV1) -> Result<(), CarrierError> {
+        self.owner.current(runtime)?;
+        for actor in [self.nictros, self.baeloc] {
+            if runtime.contains_live_creature(actor) {
+                runtime.remove_encounter_actor(actor)?;
+            }
+        }
+        Ok(())
+    }
+
     pub fn advance(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -132,11 +142,7 @@ impl SirsEncounter {
     ) -> Result<bool, CarrierError> {
         self.owner.current(runtime)?;
         if self.timeout_participants(now).is_some() {
-            for actor in [self.nictros, self.baeloc] {
-                if runtime.contains_live_creature(actor) {
-                    runtime.remove_encounter_actor(actor)?;
-                }
-            }
+            self.retire(runtime)?;
             return Ok(false);
         }
         let below_sixty = |actor| {

@@ -286,6 +286,25 @@ impl ZelosEncounter {
         (now.saturating_sub(self.start_us) >= LIMIT_US).then_some(&self.phase.participants)
     }
 
+    pub fn retire(&self, runtime: &mut ChannelRuntimeV1) -> Result<(), CarrierError> {
+        self.phase.current(runtime)?;
+        for actor in self
+            .phase
+            .actors
+            .iter()
+            .copied()
+            .flatten()
+            .chain(self.fetters.iter().copied())
+            .chain(self.soldiers.iter().copied())
+            .chain(self.blood.iter().copied())
+        {
+            if runtime.contains_live_creature(actor) {
+                runtime.remove_encounter_actor(actor)?;
+            }
+        }
+        Ok(())
+    }
+
     pub fn advance(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -294,20 +313,7 @@ impl ZelosEncounter {
     ) -> Result<bool, CarrierError> {
         self.phase.current(runtime)?;
         if self.timeout_participants(now).is_some() {
-            for actor in self
-                .phase
-                .actors
-                .iter()
-                .copied()
-                .flatten()
-                .chain(self.fetters.iter().copied())
-                .chain(self.soldiers.iter().copied())
-                .chain(self.blood.iter().copied())
-            {
-                if runtime.contains_live_creature(actor) {
-                    runtime.remove_encounter_actor(actor)?;
-                }
-            }
+            self.retire(runtime)?;
             return Ok(false);
         }
         self.advance_rewar(runtime, now, &place)?;
