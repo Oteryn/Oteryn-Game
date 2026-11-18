@@ -583,7 +583,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(3) => Some(MovementFacing::West),
             Some(_) => return UseDisposition::Rejected,
         };
-        let teleport = if let Some(recipe) =
+        let mut teleport = if let Some(recipe) =
             oteryn_gameplay_quests::quest::carried_step::recipe(&callback.key)
         {
             let (Some(fence), QuestCause::Step(command), Some(native)) = (
@@ -1376,6 +1376,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return disposition;
         }
+        let mut projected_teleport = None;
         let flame = self
             .states
             .quest_callbacks
@@ -1540,6 +1541,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         );
                     }
                 }
+            } else if sphere_machine.is_some_and(|rule| rule.entering) {
+                let Some(proof) = teleport.take() else {
+                    return UseDisposition::Rejected;
+                };
+                let Ok(snapshot) = runtime.commit_source_step_and_project(proof, apply_scene)
+                else {
+                    return UseDisposition::Rejected;
+                };
+                projected_teleport = Some(snapshot);
             } else if !callback.is_read_only() && !personal_gift_preserves_object && !apply_scene()
             {
                 return UseDisposition::Rejected;
@@ -1607,10 +1617,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 states.owner_wake.notify_one();
             }
         }
-        if let Some(proof) = teleport {
+        let step = if let Some(proof) = teleport {
             let Ok(snapshot) = runtime.commit_source_step(proof) else {
                 return UseDisposition::Rejected;
             };
+            Some(snapshot)
+        } else {
+            projected_teleport
+        };
+        if let Some(snapshot) = step {
             // Crystal 201189f data-global/scripts/actions/other/dryad_garden.lua:18-19:
             // publish at the committed destination, never at the source or on refusal.
             if matches!(
