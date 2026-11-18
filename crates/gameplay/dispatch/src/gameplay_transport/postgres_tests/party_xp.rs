@@ -68,6 +68,7 @@ pub(super) enum Case {
     T94,
     CharmSecondary,
     CakeWorldBonus,
+    CakeWorldBonusExpired,
 }
 impl Case {
     fn forge(self) -> bool {
@@ -93,6 +94,7 @@ impl Case {
             self,
             Self::Shared
                 | Self::CakeWorldBonus
+                | Self::CakeWorldBonusExpired
                 | Self::Modifiers
                 | Self::Replay
                 | Self::Rollback
@@ -242,6 +244,8 @@ async fn scenario(
     controller: &crate::content::ContentActivationController,
     pin: &crate::content::NativeEntryContentPin,
 ) -> TestResult {
+    let cake_world_bonus = matches!(case, Case::CakeWorldBonus | Case::CakeWorldBonusExpired);
+    let cake_bonus_active = matches!(case, Case::CakeWorldBonus);
     let task_board_case = case;
     let t94_case = matches!(case, Case::T94);
     let case = match case {
@@ -341,7 +345,7 @@ async fn scenario(
         }
         let key = if matches!(case, Case::EngencHits) {
             "oteryn:creature.party_skeleton"
-        } else if matches!(case, Case::CakeWorldBonus) {
+        } else if cake_world_bonus {
             "oteryn:creature.cave_rat"
         } else if matches!(task_board_case, Case::TaskBoardOrdered) {
             "oteryn:creature.rat"
@@ -759,11 +763,14 @@ async fn scenario(
     }
     let first_id = first.current_character_lease().character_id();
     let second_id = second.current_character_lease().character_id();
-    if matches!(case, Case::CakeWorldBonus) {
+    if cake_world_bonus {
         sqlx::query("INSERT INTO game_cake_world_progress(world_id,event_year) VALUES(encode($1,'hex')::uuid,2026)")
             .bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
-        sqlx::query("INSERT INTO game_cake_phases(world_id,event_year,stage,layer,bonus_activated_at,bonus_until) VALUES(encode($1,'hex')::uuid,2026,3,4,statement_timestamp(),statement_timestamp()+interval '604800 seconds')")
-            .bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_cake_phases(world_id,event_year,stage,layer,bonus_activated_at,bonus_until)
+            SELECT encode($1,'hex')::uuid,2026,3,4,activated,activated+interval '604800 seconds'
+            FROM (SELECT statement_timestamp() - CASE WHEN $2 THEN interval '0 seconds'
+                ELSE interval '604801 seconds' END AS activated) sample")
+            .bind(world.as_bytes().as_slice()).bind(cake_bonus_active).execute(&h.pool).await?;
         let (actor, session) = players[0];
         let runtime = owner.runtime.lock().await;
         let mut states = owner.states.spell_states.lock().await;
@@ -1622,16 +1629,18 @@ async fn scenario(
             (first_award, second_award),
             if matches!(case, Case::Modifiers) {
                 (6, 4)
-            } else if matches!(case, Case::CakeWorldBonus) {
+            } else if cake_bonus_active {
                 // The Cave Rat's 10 base XP gives each member a share of 7.
                 // Cake rounds the Premium share to 10 before level and stamina.
                 (30, 14)
+            } else if cake_world_bonus {
+                (21, 14)
             } else {
                 (8, 8)
             }
         );
     }
-    if matches!(case, Case::CakeWorldBonus) {
+    if cake_world_bonus {
         use oteryn_gameplay_domain::domain::condition::{ConditionValues, ConflictKey};
         use oteryn_simulation_determinism::SemanticTimeMicros;
         for (index, (actor, session)) in players.iter().copied().enumerate() {
@@ -1643,10 +1652,12 @@ async fn scenario(
                 let state = states
                     .get_mut(&runtime, actor, session)
                     .ok_or("cake player state")?;
-                let effect = state
-                    .owned_conditions()
-                    .get(ConflictKey::Recovery)
-                    .ok_or("world regeneration applies to both premium and free players")?;
+                let effect = state.owned_conditions().get(ConflictKey::Recovery);
+                if !cake_bonus_active {
+                    assert!(effect.is_none(), "expired world window must not grant regeneration");
+                    continue;
+                }
+                let effect = effect.ok_or("world regeneration applies to both premium and free players")?;
                 let ConditionValues::SpellRegeneration {
                     sub_id: 0,
                     health_gain: 1,
