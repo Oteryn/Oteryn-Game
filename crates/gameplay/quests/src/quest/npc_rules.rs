@@ -4,6 +4,7 @@
 #[cfg(test)]
 mod achievement_tests;
 mod admission;
+pub(super) mod albinius_predecessor;
 mod bounds;
 mod calendar;
 mod equipped_storage;

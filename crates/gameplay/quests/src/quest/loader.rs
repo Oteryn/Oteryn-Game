@@ -375,6 +375,8 @@ pub(super) fn lower_embedded_quest_state(
             }
         }
     }
+    super::npc_rules::albinius_predecessor::register(&mut lowered.catalogue)
+        .map_err(QuestLoadError::Json)?;
     restrict_runtime_scope(lowered, content_revision)
 }
 
