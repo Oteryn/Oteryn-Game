@@ -110,6 +110,7 @@ def input_helpers(root, *, real_conditional=False):
         ("cake_bridge_reference", "extend_records"),
         ("encounter_loot_item_admissions", "apply_admissions"),
         ("itemhold_q", "apply_admissions"),
+        ("spike_tool_admissions", "apply_admissions"),
         ("tainted_talisman", "apply_admissions"),
         ("engclaim_item_profiles", "apply_admissions"),
     ):

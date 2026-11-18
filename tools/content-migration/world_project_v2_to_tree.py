@@ -300,6 +300,8 @@ def materialize_item_tree(reference, declarations, editor, sources):
     apply_encounter_loot_admissions(item_records, ROOT)
     from itemhold_q import apply_admissions as apply_quest_item_holds
     apply_quest_item_holds(item_records, ROOT)
+    from spike_tool_admissions import apply_admissions as apply_spike_tools
+    apply_spike_tools(item_records)
     from tainted_talisman import apply_admissions as apply_tainted_talisman
     apply_tainted_talisman(item_records, ROOT)
     from engclaim_item_profiles import apply_admissions as apply_engclaim_items

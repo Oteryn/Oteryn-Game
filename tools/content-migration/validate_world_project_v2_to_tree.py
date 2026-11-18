@@ -840,6 +840,8 @@ def _main() -> int:
     apply_encounter_loot_admissions(legacy_items, ROOT)
     from itemhold_q import apply_admissions as apply_quest_item_holds
     apply_quest_item_holds(legacy_items, ROOT)
+    from spike_tool_admissions import apply_admissions as apply_spike_tools
+    apply_spike_tools(legacy_items)
     from tainted_talisman import apply_admissions as apply_tainted_talisman
     apply_tainted_talisman(legacy_items, ROOT)
     from engclaim_item_profiles import apply_admissions as apply_engclaim_items
