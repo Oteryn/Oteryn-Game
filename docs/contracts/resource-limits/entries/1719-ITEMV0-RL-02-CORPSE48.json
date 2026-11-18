@@ -1,0 +1,25 @@
+{
+  "id": "ITEMV0-RL-02-CORPSE48",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md",
+  "resource": "Entries in one OPEN_CONTAINER view (domain 11 snapshot type 1 or delta type 1) of a session that selected capability 514 CORPSE_CONTAINER_48_V1",
+  "unit": "entries per view",
+  "hard_maximum": 48,
+  "configurable_range": {
+    "minimum": 48,
+    "maximum": 48
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The decoder refuses a 49th corpse entry before decoding it and any payload over 1499 bytes (the container handle and 48 entries of at most 31 bytes) before reading it; the encoder refuses the same view before emitting a byte. With capability 499 also selected, entry elements are at most 35 bytes and the bound is 1691 bytes. Live item handles grow by the 18 extra entries.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=48: a corpse with 48 entries round-trips within 1499 bytes",
+    "max+1=49: 49 entries are refused in both directions",
+    "capability 499: 48-entry views round-trip with 35-byte entry elements within 1691 bytes",
+    "without 514: 31 entries are still refused and the server shows only the first 30"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/item_view.rs MAX_CORPSE_CONTAINER_48_ENTRIES, MAX_OPEN_CONTAINER_CORPSE_48_BYTES",
+    "crates/gameplay/dispatch/src/gameplay_transport/item_view.rs SessionItemView::with_corpse_container_48"
+  ],
+  "notes": "CORPSE48 owner decision (2026-11-17): the corpse view capacity equals GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX (48). Within FND02-STATE-DELTA-PAYLOAD-BYTES and FND02-SNAPSHOT-CHUNK-BYTES."
+}

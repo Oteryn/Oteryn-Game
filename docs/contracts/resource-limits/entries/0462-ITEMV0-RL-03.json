@@ -17,7 +17,8 @@
   ],
   "consumers": [
     "crates/protocol-oteryn/src/item_view.rs MAX_LIVE_ITEM_HANDLES",
-    "the ITEM-VIEW-1b session handle table"
+    "the ITEM-VIEW-1b session handle table",
+    "crates/protocol-oteryn/src/item_view.rs MAX_CORPSE_CONTAINER_48_EXTRA_HANDLES"
   ],
-  "notes": "ITEM-MOVE-WIRE-0 \u00a74.1 and \u00a74.4. The codec test binds the derivation; the table enforcing it is ITEM-VIEW-1b's. Registered by OTV2-20261003-item-view-1a."
+  "notes": "ITEM-MOVE-WIRE-0 \u00a74.1 and \u00a74.4. The codec test binds the derivation; the table enforcing it is ITEM-VIEW-1b's. Registered by OTV2-20261003-item-view-1a. CORPSE48: capability 514 adds its 18 extra domain-11 entries (ITEMV0-RL-02-CORPSE48 less this row's 30) to this bound and to every ITEMV0-RL-03 variant the session selected; without 514 the bound is unchanged."
 }

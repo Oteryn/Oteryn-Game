@@ -58,9 +58,10 @@ fn world_reset_round_trips_both_locations_without_a_decay_deadline() {
 }
 
 #[test]
-fn legacy_ground_entry_retains_the_thirty_entry_corpse_capacity() {
-    assert_eq!(mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, 30);
-    for ordinal in [17, 30] {
+fn legacy_ground_entry_retains_the_forty_eight_entry_corpse_capacity() {
+    // CORPSE48 (owner 2026-11-17) raised the accepted corpse capacity from 30 to 48.
+    assert_eq!(mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, 48);
+    for ordinal in [17, 30, 31, 48] {
         let mut message = reset_message(true);
         message
             .ground_container_entry
@@ -82,7 +83,7 @@ fn legacy_ground_entry_retains_the_thirty_entry_corpse_capacity() {
             assert_eq!(decode_decay_retire_envelope(&wire).unwrap().1, message);
         }
     }
-    for ordinal in [0, 31] {
+    for ordinal in [0, 49] {
         let mut message = reset_message(true);
         message
             .ground_container_entry

@@ -2837,8 +2837,9 @@ async fn run_forged_entry(harness: &Harness, statements: Vec<String>) -> TestRes
     Ok(())
 }
 
-/// `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` = 30 (SUMMER owner decision 20): the
-/// 30th loot entry is admitted, the 31st is rejected by the database, and the
+/// `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` = 48 (CORPSE48 owner decision 2026-11-17; SUMMER
+/// owner decision 20 had 30): the 48th loot entry is admitted, the 49th is rejected by the
+/// database, and the
 /// parent-live-receipt check (the corpse must carry a live
 /// CORPSE_MATERIALIZATION receipt for the same death) is proven throughout.
 #[test]
@@ -2857,7 +2858,7 @@ fn corpse_container_entry_enforces_the_capacity_ceiling() -> TestResult {
 
         let corpse = mint_corpse(&harness, &authority, 1).await?;
 
-        for ordinal in 1..=30_u64 {
+        for ordinal in 1..=48_u64 {
             let seed = 20 + (ordinal as u8) * 4;
             let statements = forge_corpse_loot_entry_statements(
                 id(WORLD),
@@ -2871,30 +2872,30 @@ fn corpse_container_entry_enforces_the_capacity_ceiling() -> TestResult {
         }
         assert_eq!(
             harness.count("game_item_corpse_container_entries").await?,
-            30
+            48
         );
 
-        let seed31 = 20 + 31 * 4;
-        let statements31 = forge_corpse_loot_entry_statements(
+        let seed49 = 20 + 49 * 4;
+        let statements49 = forge_corpse_loot_entry_statements(
             id(WORLD),
             id(CHANNEL),
             1,
             corpse.item_instance_id,
-            31,
-            seed31,
+            49,
+            seed49,
         );
-        let rejected = run_forged_entry(&harness, statements31)
+        let rejected = run_forged_entry(&harness, statements49)
             .await
-            .expect_err("the 31st corpse container entry must be rejected");
+            .expect_err("the 49th corpse container entry must be rejected");
         assert!(
             rejected
                 .to_string()
                 .contains("corpse container entry ceiling exceeded"),
-            "the database capacity guard must reject entry 31: {rejected}"
+            "the database capacity guard must reject entry 49: {rejected}"
         );
         assert_eq!(
             harness.count("game_item_corpse_container_entries").await?,
-            30
+            48
         );
 
         drop(authority);

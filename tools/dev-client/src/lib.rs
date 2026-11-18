@@ -31,9 +31,10 @@ pub use oteryn_session::{
     DuplicateOutcome, EntityDetail, EntityKind, EntityRef, GuildChatLine, GuildRoomState,
     ItemEntry, ItemHandle, ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome,
     ItemMoveOutcomeResult, JoinSnapshot, MAX_CHARACTER_INVENTORY_ITEMS, MAX_CHAT_LOG_LINES,
-    MAX_CHAT_NAME_BYTES, MAX_CHAT_TEXT_BYTES, MAX_CHAT_WAIT_SECONDS, MAX_OPEN_CONTAINER_ENTRIES,
-    MAX_QUEUED_EVENTS, OpenContainer, SessionEvent, StepOutcome, UseOutcome, WorldEntities,
-    WorldSpatialEntitiesDelta, WorldSpatialEntity,
+    MAX_CHAT_NAME_BYTES, MAX_CHAT_TEXT_BYTES, MAX_CHAT_WAIT_SECONDS,
+    MAX_CORPSE_CONTAINER_48_ENTRIES, MAX_OPEN_CONTAINER_ENTRIES, MAX_QUEUED_EVENTS, OpenContainer,
+    SessionEvent, StepOutcome, UseOutcome, WorldEntities, WorldSpatialEntitiesDelta,
+    WorldSpatialEntity,
 };
 use oteryn_session_tcp::{TcpAdapterError, TcpConnect, TcpTlsStream};
 use rustls::pki_types::CertificateDer;

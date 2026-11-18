@@ -559,7 +559,7 @@ impl CreatureRewardTable {
                             &items,
                             race,
                             CorpseAdmission {
-                                maximum_corpse_capacity: 30,
+                                maximum_corpse_capacity: oteryn_gameplay_domain::domain::loot_data::CORPSE_CONTAINER_ENTRIES_MAX,
                                 verified_source_corpses,
                             },
                         )
@@ -1341,7 +1341,7 @@ mod source_48_corpse_tests {
         ));
         assert_eq!(
             oteryn_gameplay_domain::domain::loot_data::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX,
-            30,
+            48,
             "physical capacity never raises the existing loot/work bound"
         );
         Ok(())

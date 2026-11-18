@@ -298,7 +298,7 @@ class LootTablesTests(unittest.TestCase):
             self.assertTrue(items[f'oteryn:item.tibia.i{item}']['materializable'])
         for item in (52113, 52114, 52115):
             self.assertTrue(items[f'oteryn:item.tibia.i{item}']['materializable'])
-            self.assertEqual(30, items[f'oteryn:item.tibia.i{item}']['container_capacity'])
+            self.assertEqual(48, items[f'oteryn:item.tibia.i{item}']['container_capacity'])
         self.assertIsNone(items['oteryn:item.tibia.i52116']['container_capacity'])
         # Reference shards retain their identities and source admission. Only
         # the native projection supplies these production reward facts.

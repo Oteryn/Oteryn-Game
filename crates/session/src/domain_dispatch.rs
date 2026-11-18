@@ -420,9 +420,10 @@ impl<S: SessionStream> Session<S> {
                     item_view::DELTA_TYPE_OPEN_CONTAINER_V1,
                     self.container_revision,
                 )?;
-                let value = item_view::decode_open_container_with_appearances(
+                let value = item_view::decode_open_container_for(
                     delta.payload,
                     self.is_selected(item_view::CAPABILITY_ITEM_APPEARANCE_V1),
+                    self.is_selected(item_view::CAPABILITY_CORPSE_CONTAINER_48_V1),
                 )
                 .map_err(SessionError::ItemView)?;
                 self.open_container = Some(value.clone());

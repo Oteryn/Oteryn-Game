@@ -27,10 +27,11 @@ CORRUPTOR_ITEMS = {
 }
 APPEARANCE_TRANSLATIONS = {51166: 51119}
 # Crystal201189f8 items.xml:87366-84: source48 on the first three
-# containers. Owner-approved native30 projection; final stage has no container.
+# containers. CORPSE48 (owner 2026-11-17): corpses up to 48 keep their source
+# capacity; the final stage has no container.
 CORPSE_CHAIN = (52113, 52114, 52115, 52116)
 CORPSE_SOURCE_CAPACITY = 48
-CORPSE_NATIVE_CAPACITY = 30
+CORPSE_NATIVE_CAPACITY = CORPSE_SOURCE_CAPACITY
 # Already-admitted canonical ordinary loot needs an exact native carrying policy
 # too. Preserve all its source semantics, including stack100 and food108s.
 CANONICAL_LOOT_ITEMS = {3723: 'white mushroom'}

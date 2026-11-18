@@ -26,21 +26,21 @@ class CanonicalCorpseCandidatesTests(unittest.TestCase):
         self.assertEqual(s['temporal']['value']['consumption_mode'], c.UNKNOWN)
         self.assertEqual(s['temporal']['value']['decay_target'], c.UNKNOWN)
         self.assertFalse(r['admission_authorized']); self.assertFalse(r['canonical_item_contract_resolved'])
-        self.assertIn('SOURCE_CAPACITY_EXCEEDS_D3_30', [d['code'] for d in r['diagnostics']])
+        self.assertNotIn('SOURCE_CAPACITY_EXCEEDS_D3_48', [d['code'] for d in r['diagnostics']])
         self.assertNotIn('source_terminal_action', r)
         self.assertEqual(r['accepted_item_add_1_3a_preparation_action'], 'remove')
         self.assertTrue(all(set(row['decoder_row']) == {'field_path', 'native_key', 'source_item_id', 'source_value', 'typed_value'} for row in r['promotion_candidates']))
 
     def test_summer_capacity_boundary_preserves_values_without_admission(self):
-        for capacity in (30, 31):
+        for capacity in (36, 48, 49):
             xml = ('<items><item id="10" name="corpse"><attribute key="containersize" '
                    f'value="{capacity}"/></item></items>').encode()
             result = self.prepare(self.fixture(xml))
             self.assertEqual(result['native_fragment']['semantics']['container']['value']['capacity']['value'], capacity)
-            over = [d for d in result['diagnostics'] if d['code'] == 'SOURCE_CAPACITY_EXCEEDS_D3_30']
-            self.assertEqual(bool(over), capacity > 30)
+            over = [d for d in result['diagnostics'] if d['code'] == 'SOURCE_CAPACITY_EXCEEDS_D3_48']
+            self.assertEqual(bool(over), capacity > 48)
             if over:
-                self.assertEqual(over[0]['accepted_runtime_ceiling'], 30)
+                self.assertEqual(over[0]['accepted_runtime_ceiling'], 48)
             self.assertFalse(result['admission_authorized'])
             self.assertFalse(result['materializable_authorized'])
 
