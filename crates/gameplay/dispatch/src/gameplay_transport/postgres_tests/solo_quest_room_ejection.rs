@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
 use super::fixture::{Harness, debug, id, run};
-use super::quest_world_callbacks::{local, wire, world_with_cells};
+use super::quest_world_callbacks::{local, wire, wire_with_feedback, world_with_cells};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::foundation::ChannelRuntimeV1;
@@ -45,6 +45,9 @@ const ROOM_VISITOR: Position = Position {
     ..ROOM
 };
 const AFTER_MS: u32 = 5 * 60 * 1_000;
+const ROOM_OCCUPIED_TEXT: &str = "There's someone fighting with Rat.";
+const LEVEL_TEXT: &str = "All the players need to be level 250 or higher.";
+const COOLDOWN_TEXT: &str = "You have to wait 10 hours to face Rat again!";
 
 #[test]
 fn solo_quest_room_ejects_the_admitted_player_after_the_last_monster_dies() -> TestResult {
@@ -150,6 +153,12 @@ async fn exercise_world(
         callback_json["effects"]["encounter"]["minimum_level"] =
             serde_json::json!(room.minimum_level);
         callback_json["effects"]["encounter"]["boss_cooldown_seconds"] = serde_json::json!(36_000);
+        callback_json["effects"]["encounter"]["boss_feedback"] = serde_json::json!({
+            "occupied":ROOM_OCCUPIED_TEXT,
+            "below_level":(room.minimum_level > 1).then_some(LEVEL_TEXT),
+            "on_cooldown":COOLDOWN_TEXT,
+            "return_effect":11
+        });
         callback_json["failure_teleport"] = serde_json::Value::Null;
         if room.reenter_before_timeout {
             // The fixture's adjacent western tile is reachable by STEP and
@@ -275,6 +284,9 @@ async fn exercise_world(
 
     let mut admitted = deps.admitted;
     admitted.first_entry = FirstEntryOutcome::Positioned;
+    if boss.is_some() {
+        owner.states.chat.admit(admitted.game_session_id, "Grimvale visitor", owner.owner_now());
+    }
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
@@ -442,7 +454,7 @@ async fn exercise_world(
             .states
             .test_owner_time
             .store(1_000_001, Ordering::Relaxed);
-        let reply = wire(
+        let (reply, feedback) = wire_with_feedback(
             &owner,
             &mut admitted,
             1,
@@ -456,6 +468,13 @@ async fn exercise_world(
         );
         assert_eq!(cooldown().await?, previous_cooldown);
         assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), None);
+        if boss.is_some() {
+            use oteryn_protocol_oteryn::chat::{ChatLine, ChatSpeechMode};
+            let mut feedback = feedback;
+            feedback.extend(owner.states.chat.drain(admitted.game_session_id));
+            assert!(matches!(feedback.as_slice(), [ChatLine::Local { text, mode: ChatSpeechMode::MonsterSay, .. }] if text == ROOM_OCCUPIED_TEXT), "{feedback:?}");
+            assert_return_effect(&owner, start)?;
+        }
         if keep_cave_monsters {
             let awarded = sqlx::query_scalar::<_, bool>(
                 "SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND value=10)",
@@ -516,7 +535,7 @@ async fn exercise_world(
         .states
         .test_owner_time
         .store(enter_at + 1, Ordering::Relaxed);
-    let reply = wire(
+    let (reply, feedback) = wire_with_feedback(
         &owner,
         &mut admitted,
         command,
@@ -528,7 +547,13 @@ async fn exercise_world(
         oteryn_protocol_oteryn::world_spatial::decode_step_result(&reply).map_err(debug)?,
         StepDisposition::Moved
     );
-    if boss.is_some_and(|room| !room.allowed) {
+    if let Some(room) = boss.filter(|room| !room.allowed) {
+        use oteryn_protocol_oteryn::chat::ChatLine;
+        let expected = if room.already_fought { COOLDOWN_TEXT } else { LEVEL_TEXT };
+        let mut feedback = feedback;
+        feedback.extend(owner.states.chat.drain(admitted.game_session_id));
+        assert!(matches!(feedback.as_slice(), [ChatLine::Private { text, .. }] if text == expected), "{feedback:?}");
+        assert_return_effect(&owner, start)?;
         let runtime = deps.runtime.lock().await;
         assert_eq!(
             runtime
@@ -755,6 +780,21 @@ async fn exercise_world(
     if boss.is_none() {
         assert_eq!(read_progress().await?, 10);
     }
+    Ok(())
+}
+
+fn assert_return_effect(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    start: crate::foundation::MovementLocalPosition,
+) -> TestResult {
+    let map = owner.bundle_map().ok_or("room map")?;
+    let effects = map.facts.movement_effects_since(0);
+    let at = crate::map::overlay::TilePos {
+        x: u16::try_from(start.x)?,
+        y: u16::try_from(start.y)?,
+        floor: -i8::try_from(start.floor)?,
+    };
+    assert_eq!(effects.iter().filter(|(_, position, effect)| *position == at && *effect == 11).count(), 1);
     Ok(())
 }
 

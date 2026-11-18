@@ -1171,7 +1171,19 @@ pub(super) async fn wire(
     kind: u32,
     payload: Vec<u8>,
 ) -> TestResult<Vec<u8>> {
+    let (payload, _) = wire_with_feedback(owner, admitted, id, kind, payload).await?;
+    Ok(payload)
+}
+
+pub(super) async fn wire_with_feedback(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    id: u64,
+    kind: u32,
+    payload: Vec<u8>,
+) -> TestResult<(Vec<u8>, Vec<oteryn_protocol_oteryn::chat::ChatLine>)> {
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
+    use oteryn_protocol_oteryn::chat;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     let frame = oteryn_protocol_oteryn::encode_client_command(
         1,
@@ -1191,6 +1203,7 @@ pub(super) async fn wire(
     // before the result correctly disconnects a real client before the queued step runs.
     let receiving = async move {
         let mut result = None;
+        let mut feedback = Vec::new();
         loop {
             let mut prefix = [0; 4];
             match client.read_exact(&mut prefix).await {
@@ -1207,9 +1220,14 @@ pub(super) async fn wire(
                 assert_eq!(command.command_id, id);
                 result = Some(command.payload.to_vec());
                 client.shutdown().await?;
+            } else if envelope.message_type() == MessageType::StateDelta {
+                let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
+                if delta.domain_id == chat::STATE_DOMAIN_CHAT && delta.delta_type == chat::DELTA_TYPE_CHAT_LINE_V1 {
+                    feedback.push(chat::decode_chat_line(delta.payload).map_err(debug)?);
+                }
             }
         }
-        result.ok_or_else(|| "no command result".into())
+        Ok((result.ok_or("no command result")?, feedback))
     };
     let reader = tokio::spawn(async move {
         let result: TestResult<_> = receiving.await;
