@@ -1280,8 +1280,56 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let entered = self
             .step_dynamic_quest_portal(permit, actor, session, entered)
             .await;
+        self.step_faceless_tile(actor, session, entered).await;
         self.step_quest_trigger(permit, actor, session, origin, entered, Trigger::StepIn)
             .await
+    }
+
+    async fn step_faceless_tile(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        entered: MovementPositionSnapshot,
+    ) {
+        use oteryn_gameplay_encounters::bosses::phase_controller::faceless::TileEffect;
+        let Some(map) = self.bundle_map() else { return };
+        let Some(at) = native(entered.position()) else {
+            return;
+        };
+        let Some(tile) = map.overlay.base().tile(at.x, at.y, at.floor) else {
+            return;
+        };
+        let key = (0..tile.depths().iter().filter(|d| **d == 0).count())
+            .filter_map(|ordinal| placement_key(at, u8::try_from(ordinal).ok()?))
+            .find(|key| {
+                !map.facts.base_hidden(*key)
+                    && map
+                        .facts
+                        .quest_callback_matches(*key, None, Some(23108), None)
+            });
+        let Some(key) = key else { return };
+        let mut runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        if runtime.read_actor_position(actor).ok() != Some(entered)
+            || states.is_dead(actor)
+            || !runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            return;
+        }
+        let effect = states.encounter_phases.step_faceless_tile(
+            &mut runtime,
+            (actor, session),
+            at,
+            key,
+            self.owner_now().get(),
+        );
+        match effect {
+            TileEffect::None => {}
+            TileEffect::Charged => map.facts.emit_movement_effect(at, 49),
+            TileEffect::Released => map.facts.emit_movement_effect(at, 50),
+        }
     }
 
     #[allow(

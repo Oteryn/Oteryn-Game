@@ -154,12 +154,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
                 // These source levers collect whoever stands on the staging tiles.
-                if encounter.weekday_monsters.is_some()
-                    || encounter.phase
-                        == Some(
-                            oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults,
-                        )
-                {
+                if encounter.weekday_monsters.is_some() || encounter.phase.is_some() {
                     continue;
                 }
                 return UseDisposition::Rejected;
@@ -303,7 +298,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None
         };
         let prepared = if let (Some(capture), Some(hash)) = (capture.as_mut(), scoped_hash) {
-            match capture.prepare_encounter(runtime, &callback.key, hash, &party) {
+            let damagers_only = encounter.weekday_monsters.is_some()
+                || encounter.phase == Some(world_callbacks::EncounterPhase::FacelessBane);
+            match capture.prepare_encounter(runtime, &callback.key, hash, &party, damagers_only) {
                 Ok(prepared) => Some(prepared),
                 Err(_) => return UseDisposition::Rejected,
             }

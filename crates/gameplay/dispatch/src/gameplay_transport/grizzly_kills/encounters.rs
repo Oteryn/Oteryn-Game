@@ -18,12 +18,14 @@ pub(super) struct EncounterRun {
     pub(super) definition_hash: [u8; 32],
     pub(super) participants: Vec<Participant>,
     pub(super) roster: EncounterDefenders,
+    damagers_only: bool,
 }
 
 pub(in crate::gameplay_transport) struct PreparedEncounter {
     source: String,
     definition_hash: [u8; 32],
     participants: Vec<Participant>,
+    damagers_only: bool,
 }
 impl GrizzlyCaptureCache {
     /// Every allocation, lease and active source check precedes physical publication.
@@ -33,6 +35,7 @@ impl GrizzlyCaptureCache {
         source: &str,
         definition_hash: [u8; 32],
         selected: &[(ExactActorRef, GameSessionId)],
+        damagers_only: bool,
     ) -> Result<PreparedEncounter, ()> {
         self.encounters.retain(|run| {
             run.participants.iter().any(|participant| {
@@ -93,6 +96,7 @@ impl GrizzlyCaptureCache {
             source: source.into(),
             definition_hash,
             participants,
+            damagers_only,
         })
     }
     /// Capacity was reserved by prepare_encounter under this same cache guard.
@@ -106,6 +110,7 @@ impl GrizzlyCaptureCache {
             definition_hash: prepared.definition_hash,
             participants: prepared.participants,
             roster,
+            damagers_only: prepared.damagers_only,
         });
     }
 }
@@ -168,6 +173,16 @@ pub(super) fn capture(
             continue;
         }
         for participant in &run.participants {
+            if run.damagers_only
+                && !entry.damage_shares.iter().any(|share| {
+                    share.total > 0
+                        && share.character.as_bytes() == &participant.character
+                        && share.session == Some(participant.session)
+                        && share.lease_generation == Some(participant.lease_generation)
+                })
+            {
+                continue;
+            }
             let Some(snapshot) = snapshots.iter().find(|snapshot| {
                 snapshot.actor == participant.actor
                     && snapshot.session == participant.session
@@ -250,6 +265,7 @@ mod tests {
                 admission_revision: 10,
             }],
             roster: EncounterDefenders::new(&[participant], &[target]).map_err(checked)?,
+            damagers_only: false,
         });
         assert!(!cache.encounter_door_allowed("source-room", hash, participant, session, 2));
         assert!(cache.encounter_door_allowed("other-room", hash, participant, session, 2));
@@ -274,6 +290,7 @@ mod tests {
                 admission_revision: 11,
             }],
             roster: EncounterDefenders::new(&[participant], &[target]).map_err(checked)?,
+            damagers_only: false,
         });
         assert!(!cache.encounter_door_allowed("source-room", hash, participant, session, 2));
         Ok(())

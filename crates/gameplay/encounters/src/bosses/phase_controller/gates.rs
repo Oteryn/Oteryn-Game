@@ -46,6 +46,18 @@ pub fn protect(
     })
 }
 
+/// Release the gate for the exact live encounter actor.
+pub(super) fn unprotect(
+    runtime: &mut ChannelRuntimeV1,
+    actor: ExactActorRef,
+) -> Result<(), CarrierError> {
+    runtime.owner_fence()?;
+    runtime.with_encounter_hooks::<DamageGates, _, CarrierError>(|_, gates| {
+        gates.actors.retain(|candidate| *candidate != actor);
+        Ok(())
+    })
+}
+
 impl EncounterHooks for DamageGates {
     fn clone_hooks(&self) -> Box<dyn EncounterHooks> {
         Box::new(self.clone())

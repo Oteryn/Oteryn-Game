@@ -3,8 +3,12 @@ use super::{actor_spell::ChannelSpellStates, grizzly_kills, kill_reward::Pending
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
-use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
-use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
+use crate::map::overlay::TilePos;
+use oteryn_gameplay_encounters::bosses::phase_controller::{
+    cults::{self, CultsEncounter},
+    faceless::{FacelessBane, TileEffect},
+};
+use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase, Position};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
 
@@ -13,10 +17,69 @@ const MAX_ENCOUNTERS: usize = 64;
 #[derive(Debug)]
 pub(super) struct ActivePhase {
     key: u64,
-    fight: CultsEncounter,
+    fight: Fight,
+    room: [Position; 2],
     credits: Vec<grizzly_kills::EncounterCredit>,
     frozen: Option<(ExactActorRef, Vec<super::quest_kills::Recipient>)>,
     cells: crate::content::NativeEntryMovementCells,
+}
+
+#[derive(Debug)]
+enum Fight {
+    Cults(CultsEncounter),
+    Faceless(FacelessBane),
+}
+
+impl Fight {
+    fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
+        match self {
+            Self::Cults(fight) => fight.is_current(runtime),
+            Self::Faceless(fight) => fight.is_current(runtime),
+        }
+    }
+
+    fn contains(&self, actor: ExactActorRef) -> bool {
+        match self {
+            Self::Cults(fight) => fight.contains(actor),
+            Self::Faceless(fight) => fight.contains(actor),
+        }
+    }
+
+    fn contains_terminal(&self, actor: ExactActorRef) -> bool {
+        match self {
+            Self::Cults(fight) => fight.contains_terminal(actor),
+            Self::Faceless(fight) => fight.contains(actor),
+        }
+    }
+
+    fn projected_death(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        actor: ExactActorRef,
+    ) -> Result<bool, CarrierError> {
+        match self {
+            Self::Cults(fight) => fight.projected_death(runtime, actor),
+            Self::Faceless(fight) => fight.projected_death(runtime, actor),
+        }
+    }
+
+    fn is_complete(&self, runtime: &ChannelRuntimeV1) -> Result<bool, CarrierError> {
+        match self {
+            Self::Cults(fight) => Ok(fight.victors(runtime)?.is_some()),
+            Self::Faceless(fight) => Ok(fight.victors(runtime)?.is_some()),
+        }
+    }
+
+    fn advance(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        map_admits: impl Fn(&ChannelRuntimeV1, MovementLocalPosition) -> bool,
+    ) -> Result<(), CarrierError> {
+        match self {
+            Self::Cults(fight) => fight.advance(runtime, map_admits),
+            Self::Faceless(fight) => fight.advance(runtime, map_admits),
+        }
+    }
 }
 
 #[derive(Default, Debug)]
@@ -35,8 +98,8 @@ impl Registry {
             if !phase.fight.is_current(runtime) {
                 return false;
             }
-            match phase.fight.victors(runtime) {
-                Ok(Some(_)) => {
+            match phase.fight.is_complete(runtime) {
+                Ok(true) => {
                     // Credit was captured in the lethal turn. Release the lever
                     // only after exact terminal decorations retire; tick retries failures.
                     let ActivePhase { fight, cells, .. } = phase;
@@ -44,7 +107,7 @@ impl Registry {
                         .advance(runtime, |runtime, at| placement(cells, runtime, at))
                         .is_err()
                 }
-                Ok(None) => phase
+                Ok(false) => phase
                     .frozen
                     .as_ref()
                     .is_none_or(|(actor, _)| runtime.retains_corpse_projection(*actor)),
@@ -82,13 +145,39 @@ impl Registry {
     pub(super) fn has_terminal(&self, runtime: &ChannelRuntimeV1, actor: ExactActorRef) -> bool {
         self.active.lock().is_ok_and(|active| {
             active.iter().any(|phase| {
-                phase.fight.contains_terminal(actor)
-                    && phase
-                        .fight
-                        .victors(runtime)
-                        .is_ok_and(|victors| victors.is_some())
+                phase.fight.contains_terminal(actor) && phase.fight.is_complete(runtime) == Ok(true)
             })
         })
+    }
+
+    pub(super) fn step_faceless_tile(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        player: (ExactActorRef, GameSessionId),
+        tile: TilePos,
+        key: u64,
+        now: u64,
+    ) -> TileEffect {
+        let Ok(mut active) = self.active.lock() else {
+            return TileEffect::None;
+        };
+        for phase in &mut *active {
+            let [min, max] = phase.room;
+            if tile.floor != min.floor
+                || !(min.x..=max.x).contains(&tile.x)
+                || !(min.y..=max.y).contains(&tile.y)
+            {
+                continue;
+            }
+            if let Fight::Faceless(fight) = &mut phase.fight
+                && fight.is_current(runtime)
+            {
+                return fight
+                    .step_tile(runtime, player.0, player.1, key, now)
+                    .unwrap_or(TileEffect::None);
+            }
+        }
+        TileEffect::None
     }
 
     pub(super) fn capture_terminal(
@@ -105,7 +194,9 @@ impl Registry {
             .iter_mut()
             .find(|p| p.fight.contains_terminal(target))
         {
-            if phase.fight.victors(runtime).ok().flatten().is_none() {
+            if !matches!(phase.fight, Fight::Cults(_))
+                || phase.fight.is_complete(runtime) != Ok(true)
+            {
                 return;
             }
             let (_, recipients) = phase.frozen.get_or_insert_with(|| {
@@ -139,6 +230,20 @@ pub(super) fn bind(
         .encounter
         .as_ref()
         .ok_or(CarrierError::PlanConflict)?;
+    let room = [encounter.room_min, encounter.room_max];
+    if encounter.phase == Some(EncounterPhase::FacelessBane) {
+        let [boss] = actors else {
+            return Err(CarrierError::PlanConflict);
+        };
+        return Ok(ActivePhase {
+            key,
+            fight: Fight::Faceless(FacelessBane::bind(runtime, players, *boss)?),
+            room,
+            credits,
+            frozen: None,
+            cells,
+        });
+    }
     if encounter.phase != Some(EncounterPhase::Cults) || actors.len() != 10 {
         return Err(CarrierError::PlanConflict);
     }
@@ -188,7 +293,10 @@ pub(super) fn bind(
     }
     Ok(ActivePhase {
         key,
-        fight: CultsEncounter::bind(runtime, players, pillars, stops, centre)?,
+        fight: Fight::Cults(CultsEncounter::bind(
+            runtime, players, pillars, stops, centre,
+        )?),
+        room,
         credits,
         frozen: None,
         cells,
@@ -248,8 +356,6 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates) 
             ));
             return true;
         }
-        fight
-            .victors(runtime)
-            .is_ok_and(|victors| victors.is_none())
+        fight.is_complete(runtime) == Ok(false)
     });
 }

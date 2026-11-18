@@ -333,6 +333,8 @@ impl Encounter {
 pub enum EncounterPhase {
     #[serde(rename = "cults_boss_phase_closures")]
     Cults,
+    #[serde(rename = "faceless_bane")]
+    FacelessBane,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -856,7 +858,16 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_from: BTreeSet<_> = encounter.players.iter().map(|p| p.from).collect();
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let rotating = encounter.weekday_monsters.is_some();
-        let source_party = encounter.phase == Some(EncounterPhase::Cults);
+        let source_party = encounter.phase.is_some();
+        let faceless = encounter.phase == Some(EncounterPhase::FacelessBane);
+        if faceless
+            && (encounter.players.len() > 5
+                || encounter.minimum_level < 250
+                || encounter.monsters.len() != 1
+                || encounter.monsters[0].creature != "oteryn:creature.faceless_bane")
+        {
+            return false;
+        }
         let valid_roster = |monsters: &[EncounterMonster]| {
             let positions: BTreeSet<_> = monsters.iter().map(|m| m.position).collect();
             (1..=if rotating || encounter.phase.is_some() {
