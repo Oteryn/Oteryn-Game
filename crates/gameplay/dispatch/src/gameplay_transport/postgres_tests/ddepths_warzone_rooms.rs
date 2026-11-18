@@ -183,9 +183,12 @@ async fn paced_entry_and_exit(
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&harness.pool)
             .await?;
+    harness.root.set_test_quest_clock(entry_clock)?;
     let mut entrants = Vec::new();
-    for (source, arrival) in [(first, entry_clock), (second, entry_clock + 1)] {
-        harness.root.set_test_quest_clock(arrival)?;
+    for (index, source) in [first, second].into_iter().enumerate() {
+        if index == 1 {
+            assert_eq!(harness.root.advance_test_quest_clock(1)?, entry_clock + 1);
+        }
         let actor = source.runtime_actor.ok_or("current Channel actor")?;
         let (outcome, _) = owner
             .paced_step(actor, source.game_session_id, StepDirection::West)
