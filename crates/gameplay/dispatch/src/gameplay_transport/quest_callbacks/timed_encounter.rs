@@ -51,22 +51,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(summon) = &callback.effects.step_summon else {
             return UseDisposition::Rejected;
         };
-        let Some(native) = self
-            .active_generation
-            .and_then(|active| active.native_gameplay())
-        else {
-            return UseDisposition::Rejected;
-        };
-        if runtime.owner_fence().is_err()
-            || native.install_companion_policies(runtime).is_err()
-            || map.facts.object_revision(key) != revision
-        {
+        if runtime.owner_fence().is_err() || map.facts.object_revision(key) != revision {
             return UseDisposition::StaleState;
         }
-        let Ok(policy) = runtime.companion_policy(&summon.creature) else {
-            return UseDisposition::Rejected;
-        };
-        let health = policy.maximum_health;
         let now = self.owner_now().get();
         let scope = runtime.encounter_owner_scope();
         let content = runtime.content_pin().server_artifact_digest();
@@ -88,6 +75,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if pending.len() >= MAX_TIMED_ENCOUNTERS || pending.try_reserve(1).is_err() {
             return UseDisposition::Exhausted;
         }
+        let Some(native) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+        else {
+            return UseDisposition::Rejected;
+        };
+        if native.install_companion_policies(runtime).is_err() {
+            return UseDisposition::Rejected;
+        }
+        let Ok(policy) = runtime.companion_policy(&summon.creature) else {
+            return UseDisposition::Rejected;
+        };
+        let health = policy.maximum_health;
         let [minimum, maximum] = summon.cooldown_minutes.map(u16::from);
         let span = maximum - minimum + 1;
         let random = loop {
@@ -246,6 +246,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             if now < memo.next_due_us() {
                 index += 1;
+                continue;
+            }
+            if memo.callback.effects.step_summon.is_some() {
+                // Crystal re-arms the tile without removing the monster.
+                pending.remove(index);
                 continue;
             }
             let Some(encounter) = &memo.callback.effects.encounter else {

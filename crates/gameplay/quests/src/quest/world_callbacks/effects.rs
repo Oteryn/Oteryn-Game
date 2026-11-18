@@ -411,6 +411,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && !callback.return_on_failure
             && !callback.reversible
             && callback.teleport.is_none()
+            && callback.remote_teleport.is_none()
+            && callback.disguise.is_none()
+            && callback.world_requirements.is_empty()
             && callback.selector.action.is_some_and(|action| action != 0)
             && (1..=maximum).contains(&minimum)
             && maximum <= 60

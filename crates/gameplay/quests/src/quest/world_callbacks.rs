@@ -2387,6 +2387,17 @@ mod tests {
             &callbacks,
         )?;
         assert!(catalogue.transition(&callbacks[0].key).is_none());
+        let mut invalid = callbacks[0].clone();
+        invalid.trigger = Trigger::Use;
+        assert!(validate_callbacks(&[invalid]).is_err());
+        let mut invalid = callbacks[0].clone();
+        invalid
+            .effects
+            .step_summon
+            .as_mut()
+            .ok_or("step summon")?
+            .cooldown_minutes = [10, 1];
+        assert!(validate_callbacks(&[invalid]).is_err());
         Ok(())
     }
 
