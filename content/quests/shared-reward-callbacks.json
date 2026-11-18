@@ -8674,6 +8674,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ongulf.lua:235-248:sha256:707bcd4bee3727dc0a0af77d4e67f562835689bd2976041c0864d8381c458f61",
         "https://tibia.fandom.com/?curid=41756&oldid=1099208"
       ],
+      "requires_premium": true,
       "experience": 8000,
       "completes": true
     },
@@ -8718,7 +8719,8 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chrak.lua:72-80:sha256:c750161e3e48bf3921fc85535d3dafb0ee722f1dde6b2bcfea306c4e07f578c9",
         "https://tibia.fandom.com/?curid=41756&oldid=1099208"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/qcx51-frontier-start",
@@ -8756,7 +8758,8 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ongulf.lua:104-111:sha256:707bcd4bee3727dc0a0af77d4e67f562835689bd2976041c0864d8381c458f61",
         "https://tibia.fandom.com/?curid=41756&oldid=1099208"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "key": "oteryn:quest-reward/sam-backpack",

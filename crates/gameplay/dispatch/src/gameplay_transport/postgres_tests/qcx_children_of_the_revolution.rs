@@ -27,6 +27,8 @@ const WRATH: &str = "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/missi
 const RECRUITMENT: &str = "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission00";
 const ACCESS: &str = "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/teleport_access";
 const ZALAMON: &str = "oteryn:npc.zalamon";
+// Crystal 201189f8, data-global/world/world-npc.xml:2442-2444.
+const ZALAMON_CELL: (u16, u16, u8) = (33354, 31410, 8);
 const MISSION: &str = "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission05";
 
 #[test]
@@ -48,8 +50,51 @@ fn recruitment_battle_access_and_finale_reward() -> TestResult {
     Ok(())
 }
 
+fn published_zalamon() -> TestResult<Position> {
+    use oteryn_world_bundle_compiler::{bundle, compile, source};
+    let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../.."));
+    let (x, y, floor) = ZALAMON_CELL;
+    let project = source::project_regions(root, &[(x / 256, y / 256)])?;
+    let (resolver, palette) = source::registry(root, &project)?;
+    let input = compile::Input {
+        regions: &project.regions,
+        palette: &palette,
+        identity: bundle::Identity::default(),
+        world: source::world_extent(root)?,
+        build_class: bundle::BuildClass::NonProduction,
+        draft_areas: Vec::new(),
+        families: &project.families,
+    };
+    let (spawns, _) = compile::realize_spawns(&input, &resolver)?;
+    let (table, report) = compile::realize_npcs(&input, &resolver, &spawns)?;
+    let Some(npc) = table.npcs.iter().find(|npc| npc.key == ZALAMON) else {
+        return Err(format!(
+            "Zalamon missing from bundle: {:?}",
+            report
+                .held
+                .iter()
+                .filter(|row| row.npc == ZALAMON)
+                .collect::<Vec<_>>()
+        )
+        .into());
+    };
+    let [placement] = npc.placements.as_slice() else {
+        return Err("expected one published Zalamon placement".into());
+    };
+    assert_eq!(
+        (placement.x, placement.y, placement.floor),
+        (x, y, -i8::try_from(floor)?)
+    );
+    Ok(Position {
+        x: placement.x,
+        y: placement.y,
+        floor: placement.floor,
+    })
+}
+
 fn scenario() -> TestResult {
     run(async |admin| {
+        let placement = published_zalamon()?;
         let h =
             Harness::create_with_admission_seed(admin, "qcx57_phantom_army", false, false).await?;
         prepare_current_session(&h).await?;
@@ -64,7 +109,6 @@ fn scenario() -> TestResult {
                 super::fence(1)?.runtime_scope.world_id(),
                 "content-1",
             )?;
-        let entry = activated.entry_start();
         let frame_digest = activated.frame_binding().digest();
         let room = activated.qualified_room().clone();
         let mut deps = Dependencies::with_content(
@@ -77,9 +121,9 @@ fn scenario() -> TestResult {
             .initialize_pinned_test_position(
                 deps.actor,
                 MovementLocalPosition {
-                    x: entry.x,
-                    y: entry.y,
-                    floor: entry.floor,
+                    x: i32::from(placement.x) + 1,
+                    y: i32::from(placement.y),
+                    floor: i16::from(placement.floor.unsigned_abs()),
                 },
             )
             .map_err(debug)?;
@@ -195,17 +239,8 @@ fn scenario() -> TestResult {
         owner.admit_premium(id(40), admitted.game_session_id);
         owner.admit_quest_session(&admitted).await;
 
-        let [zalamon] = super::questl2_fixture::install_at(
-            &owner,
-            &admitted,
-            [ZALAMON],
-            [Position {
-                x: u16::try_from(entry.x)?,
-                y: u16::try_from(entry.y + 1)?,
-                floor: -i8::try_from(entry.floor)?,
-            }],
-        )
-        .await?;
+        let [zalamon] =
+            super::questl2_fixture::install_at(&owner, &admitted, [ZALAMON], [placement]).await?;
         assert_eq!(
             talk(&mut owner, &admitted, zalamon, 1, "hi").await?.0,
             NpcIntentDisposition::Ok

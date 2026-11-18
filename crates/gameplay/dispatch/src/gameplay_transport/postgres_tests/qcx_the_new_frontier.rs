@@ -6,6 +6,9 @@ use super::{
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+use crate::gameplay_transport::spell_premium_coordinator::{
+    SpellPremiumCoordinator, purchase_fixture,
+};
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestTransition,
     loader::load_embedded_quest_state,
@@ -80,10 +83,36 @@ async fn npc_journey(h: &Harness, entry: Option<&str>) -> TestResult {
         .await
         .initialize_first_entry_position(deps.actor)
         .map_err(debug)?;
+    let (consumer, clock, activation, premium) = purchase_fixture::current(super::fixture::id(40));
+    h.root
+        .latch_premium_activation(
+            &activation.activation_id,
+            activation.switch_over_us,
+            activation.switch_over_us + 60_000_000,
+        )
+        .await
+        .map_err(debug)?;
+    let entitlement = SpellPremiumCoordinator::new(
+        Arc::clone(&consumer),
+        Some(clock),
+        Some(activation),
+        Some(h.root.clone()),
+    );
+    let mut expired = premium.clone();
+    expired.effective_until_us = expired.authority_issued_at_us;
+    expired.state = crate::durability::premium_fence::EntitlementState::Expired;
     let mut admitted = deps.admitted;
     let mut owner = deps.owner(h, &authority);
     owner.active_generation = Some(controller.active().ok_or("content generation")?);
+    owner.premium_coordinator = Some(&entitlement);
+    owner.admit_premium(super::fixture::id(40), admitted.game_session_id);
     deps.initialize(&owner).await;
+    assert!(
+        owner
+            .session_premium_gate(admitted.game_session_id)
+            .await
+            .premium_current()
+    );
 
     let source = load_embedded_quest_state("content-1").map_err(debug)?;
     // Only the finished arena and claimed wardrobe are arranged.
@@ -122,7 +151,33 @@ async fn npc_journey(h: &Harness, entry: Option<&str>) -> TestResult {
     talk(&mut owner, &admitted, ongulf, 102, "mission").await?;
     assert_eq!(stage(h, QUESTLINE).await?, None);
     if let Some(story) = entry {
-        for (id, text) in [(103, story), (104, "mission")] {
+        let offer = talk(&mut owner, &admitted, ongulf, 103, story).await?;
+        assert!(
+            offer.iter().any(|line| line.contains("missions")),
+            "{offer:?}"
+        );
+        consumer.prove_for_test(expired.clone());
+        assert!(
+            !owner
+                .session_premium_gate(admitted.game_session_id)
+                .await
+                .premium_current()
+        );
+        talk(&mut owner, &admitted, ongulf, 104, "mission").await?;
+        assert_eq!(
+            stage(h, QUESTLINE).await?,
+            None,
+            "Premium expired after the opening offer"
+        );
+        consumer.prove_for_test(premium.clone());
+        // Re-establish the topic in case a refusal closed the conversation.
+        for (id, text) in [
+            (105, "bye"),
+            (106, "hi"),
+            (107, "project"),
+            (108, story),
+            (109, "mission"),
+        ] {
             talk(&mut owner, &admitted, ongulf, id, text).await?;
         }
         assert_eq!(stage(h, QUESTLINE).await?, Some(1));
@@ -172,18 +227,47 @@ async fn npc_journey(h: &Harness, entry: Option<&str>) -> TestResult {
         "report victory to Chrak first"
     );
     talk(&mut owner, &admitted, chrak, 105, "hi").await?;
+    consumer.prove_for_test(expired.clone());
+    assert!(
+        !owner
+            .session_premium_gate(admitted.game_session_id)
+            .await
+            .premium_current()
+    );
     talk(&mut owner, &admitted, chrak, 106, "mission").await?;
+    assert_eq!(
+        stage(h, QUESTLINE).await?,
+        Some(27),
+        "Premium expired before Chrak's report"
+    );
+    consumer.prove_for_test(premium.clone());
+    talk(&mut owner, &admitted, chrak, 107, "mission").await?;
     assert_eq!(stage(h, QUESTLINE).await?, Some(28));
     assert_eq!(stage(h, MORTAL_COMBAT).await?, Some(3));
     assert_eq!(stage(h, MISSION).await?, Some(1));
-    talk(&mut owner, &admitted, chrak, 107, "bye").await?;
-    talk(&mut owner, &admitted, ongulf, 108, "hi").await?;
-    talk(&mut owner, &admitted, ongulf, 109, "mission").await?;
+    talk(&mut owner, &admitted, chrak, 108, "bye").await?;
+    talk(&mut owner, &admitted, ongulf, 109, "hi").await?;
+    consumer.prove_for_test(expired);
+    assert!(
+        !owner
+            .session_premium_gate(admitted.game_session_id)
+            .await
+            .premium_current()
+    );
+    talk(&mut owner, &admitted, ongulf, 110, "mission").await?;
+    assert_eq!(
+        experience(h).await?,
+        before,
+        "Premium expired before the finale"
+    );
+    assert_eq!(stage(h, QUESTLINE).await?, Some(28));
+    consumer.prove_for_test(premium);
+    talk(&mut owner, &admitted, ongulf, 111, "mission").await?;
     assert_eq!(experience(h).await?, before + 8000);
     for (track, expected) in [(QUESTLINE, 29), (MISSION, 2), (CARPET, 1)] {
         assert_eq!(stage(h, track).await?, Some(expected));
     }
-    talk(&mut owner, &admitted, ongulf, 110, "mission").await?;
+    talk(&mut owner, &admitted, ongulf, 112, "mission").await?;
     assert_eq!(experience(h).await?, before + 8000);
     Ok(())
 }
@@ -211,7 +295,7 @@ async fn talk(
     npc: EntityRef,
     id: u64,
     text: &str,
-) -> TestResult {
+) -> TestResult<Vec<String>> {
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
@@ -236,7 +320,10 @@ async fn talk(
         )
         .await;
     assert!(!outcome.unknown, "{text}: NPC dispatch outcome unknown");
-    Ok(())
+    Ok(outcome
+        .conversation
+        .map(|reply| reply.lines)
+        .unwrap_or_default())
 }
 
 // Wiki quest page (curid 41754, oldid 1058656), reward list.

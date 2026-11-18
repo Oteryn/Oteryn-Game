@@ -7,6 +7,13 @@ import qengine_rewards as q
 
 
 class QuestRewards(unittest.TestCase):
+    def test_frontier_commits_require_current_premium(self):
+        callbacks = {row['key']: row for row in self.callbacks['callbacks']}
+        for name in ('start', 'report-victory', 'finish'):
+            with self.subTest(callback=name):
+                row = callbacks['oteryn:quest-reward/qcx51-frontier-' + name]
+                self.assertIs(row.get('requires_premium'), True)
+
     def test_royal_costume_completes_only_after_crown_exchange(self):
         rows = {row['key'].split('/')[-1]: row for row in self.callbacks['callbacks']}
         for name, before, after in [('base', -1, 1), ('shield', 1, 2), ('crown', 2, 3)]:
@@ -495,12 +502,26 @@ class QuestRewards(unittest.TestCase):
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks'] + self.l13_callbacks['callbacks']
+        frontier_sources = {
+            'qcx51-frontier-start': 'ongulf.lua:104-111',
+            'qcx51-frontier-report-victory': 'chrak.lua:72-80',
+            'qcx51-frontier-finish': 'ongulf.lua:235-248',
+        }
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-','l12-','l13-','m36-'))},
-                         {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
+                         {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'}
+                         | set(frontier_sources))
         self.assertEqual(sum(c['outfit'] is not None for c in callbacks),91)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),123)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),126)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
-        self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
+        for callback in callbacks:
+            key = callback['key'].rsplit('/', 1)[-1]
+            source = callback['sources'][0]
+            if key in frontier_sources:
+                expected = ('crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/'
+                            + frontier_sources[key] + ':sha256:')
+                self.assertTrue(source.startswith(expected), key)
+            else:
+                self.assertIn(q.PIN, source, key)
 
     def test_l1_handins_preserve_source_crest_identity_and_exclusive_sides(self):
         callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}

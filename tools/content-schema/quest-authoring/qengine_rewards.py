@@ -112,21 +112,22 @@ def frontier_ongulf(add, callbacks, offers):
                        'reply': replies[line]})
     add('qcx51-frontier-start', quest, 'ongulf', ['mission', 'missions'],
         [state('questline', 0, 1), state('mission01', 0, 1)], topic=2)
-    callbacks[-1].update(reply=replies[104], sources=[
+    callbacks[-1].update(requires_premium=True, reply=replies[104], sources=[
         f"crystal:{capture['source_revision']}:{npc['path']}:104-111:sha256:{npc['blob_sha256']}",
         'https://tibia.fandom.com/?curid=41756&oldid=1099208',
     ])
     chrak = next(row for row in capture['npcs'] if row['npc'] == 'chrak')
     add('qcx51-frontier-report-victory', quest, 'chrak', ['mission'],
         [state('questline', 27, 28), state('mission09_1', 2, 3), state('mission10_1', 0, 1)])
-    callbacks[-1].update(reply=next(row['literal_messages'] for row in chrak['replies'] if row['line'] == 72),
+    callbacks[-1].update(requires_premium=True,
+        reply=next(row['literal_messages'] for row in chrak['replies'] if row['line'] == 72),
         sources=[f"crystal:{capture['source_revision']}:{chrak['path']}:72-80:sha256:{chrak['blob_sha256']}",
                  'https://tibia.fandom.com/?curid=41756&oldid=1099208'])
     # Mission 10 of the same spoiler gives 8,000 XP and carpet access.
     add('qcx51-frontier-finish', quest, 'ongulf', ['mission'],
         [state('questline', 28, 29), state('mission10_1', 1, 2),
          state('mission10/magic_carpet_door', 0, 1)])
-    callbacks[-1].update(reply=replies[235], experience=8000, completes=True, sources=[
+    callbacks[-1].update(requires_premium=True, reply=replies[235], experience=8000, completes=True, sources=[
         f"crystal:{capture['source_revision']}:{npc['path']}:235-248:sha256:{npc['blob_sha256']}",
         'https://tibia.fandom.com/?curid=41756&oldid=1099208',
     ])

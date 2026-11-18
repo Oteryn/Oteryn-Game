@@ -569,7 +569,18 @@ mod main_native_contract {
         assert_eq!(baseline.counts(), explicit.counts());
         let before = baseline.catalogue();
         let after = explicit.catalogue();
-        assert_eq!(before.tracks.len(), 2123);
+        assert_eq!(before.tracks.len(), 2124);
+        let faction = "oteryn:quest-progress/secret-service/faction";
+        assert_eq!(
+            before.tracks.get(faction),
+            Some(&QuestTrack {
+                key: faction.into(),
+                quest: "oteryn:quest.secret_service_quest".into(),
+                initial: 0,
+                min: 0,
+                max: 3,
+            })
+        );
         for (key, value) in &before.tracks {
             assert_eq!(after.tracks.get(key), Some(value), "legacy track {key}");
         }
