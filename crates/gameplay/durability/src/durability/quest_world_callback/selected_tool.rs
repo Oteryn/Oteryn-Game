@@ -15,6 +15,8 @@ pub struct QuestWorldToolContext {
 pub(super) struct SelectedQuestTool {
     pub source: [u8; 16],
     pub intent: Vec<u8>,
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub direct: bool,
 }
 
 impl From<QuestWorldContext> for QuestWorldToolContext {
@@ -49,6 +51,16 @@ impl QuestWorldContext {
         source: [u8; 16],
         intent: Vec<u8>,
     ) -> Option<QuestWorldToolContext> {
+        self.with_selected_tool_for_use(source, intent, false)
+    }
+
+    /// The closed direct-use callback already resolved its authored native focus.
+    pub fn with_selected_tool_for_use(
+        self,
+        source: [u8; 16],
+        intent: Vec<u8>,
+        allow_direct: bool,
+    ) -> Option<QuestWorldToolContext> {
         if source == [0; 16] || intent.is_empty() || intent.len() > 4096 {
             return None;
         }
@@ -61,16 +73,21 @@ impl QuestWorldContext {
             &intent,
         )
         .ok()?;
+        let direct = decoded.use_with_map_item.is_none() && allow_direct;
         if matches!(decoded.target, UseTarget::WorldObject(_))
             || decoded.use_with.is_some()
             || decoded.use_with_position.is_some()
-            || !matches!(decoded.use_with_map_item, Some(MapUseTarget::Object(_)))
+            || (!direct && !matches!(decoded.use_with_map_item, Some(MapUseTarget::Object(_))))
         {
             return None;
         }
         Some(QuestWorldToolContext {
             world: self,
-            selected_tool: Some(SelectedQuestTool { source, intent }),
+            selected_tool: Some(SelectedQuestTool {
+                source,
+                intent,
+                direct,
+            }),
         })
     }
 }

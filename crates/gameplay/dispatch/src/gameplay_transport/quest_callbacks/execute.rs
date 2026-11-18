@@ -1071,7 +1071,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let (context, selected_tool) = context;
             let context = if let Some((source, intent)) = selected_tool {
-                let Some(context) = context.with_selected_tool(source, intent) else {
+                let Some(context) = context.with_selected_tool_for_use(
+                    source,
+                    intent,
+                    callback.effects.direct_item_use,
+                ) else {
                     return UseDisposition::Rejected;
                 };
                 context
