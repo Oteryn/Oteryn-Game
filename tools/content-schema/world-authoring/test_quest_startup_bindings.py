@@ -18,6 +18,8 @@ EXPECTED = (
     ((33190, 31684, 14), 5102, "action", 1070),
     ((33195, 31684, 14), 5102, "action", 1070),
     ((32573, 32121, 7), 2772, "unique", 30034),
+    ((33290, 31785, 13), 776, "action", 9715),
+    ((33498, 32613, 8), 10840, "unique", 35020),
 )
 
 
@@ -67,9 +69,10 @@ class QuestStartupBindingsTests(unittest.TestCase):
         # Literal source shapes; CI must not depend on a worker's local donor cache.
         sources = {
             "data-global/startup/tables/tile.lua": "TileAction = {[50022] = {itemId=4634, itemPos={{x=32966,y=32626,z=5}}}}",
-            "data-global/startup/tables/teleport.lua": "TeleportAction = {[50022] = {{itemId=1720,itemPos={{x=32968,y=32630,z=7}}},{itemId=1949,itemPos={{x=32968,y=32629,z=7},{x=32967,y=32630,z=8}}}}}",
+            "data-global/startup/tables/teleport.lua": "TeleportAction = {[50022] = {{itemId=1720,itemPos={{x=32968,y=32630,z=7}}},{itemId=1949,itemPos={{x=32968,y=32629,z=7},{x=32967,y=32630,z=8}}}}} TeleportUnique = {[35020] = {itemId=10840,itemPos={x=33498,y=32613,z=8}}}",
             "data-global/startup/tables/door_level.lua": "LevelDoorAction = {[1070] = {itemId=false,itemPos={{x=33190,y=31684,z=14},{x=33195,y=31684,z=14}}}}",
             "data-global/startup/tables/lever.lua": "LeverUnique = {[30034] = {itemId=2772,itemPos={x=32573,y=32121,z=7}}}",
+            "data-global/startup/tables/item.lua": "ItemAction = {[9715] = {itemId=776,itemPos={{x=33290,y=31785,z=13}}}}",
             "data/libs/tables/doors.lua": "LevelDoorTable = {{closedDoor=5102,openDoor=5103}}",
         }
         with tempfile.TemporaryDirectory() as temporary:

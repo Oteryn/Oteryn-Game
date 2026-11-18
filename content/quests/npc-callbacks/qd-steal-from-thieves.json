@@ -1,0 +1,99 @@
+{
+ "schema": 1,
+ "tracks": [
+  {
+   "key": "oteryn:quest-progress/qd/steal_from_thieves/state",
+   "quest": "oteryn:quest.steal_from_thieves_quest",
+   "initial": 0,
+   "min": 0,
+   "max": 2,
+   "writable": true,
+   "sources": [
+    "https://tibia.fandom.com/wiki/Steal_From_Thieves_Quest/Spoiler (curid 22844, oldid 1057227): Ahmet mission/yes, Darama oasis box, Quest/yes reward",
+    "https://tibia.fandom.com/wiki/Steal_From_Thieves_Quest (curid 20034, oldid 842913): Premium, 100 Brown Mushrooms and 100 gold coins",
+    "content/quests/definitions/quests-00200-00299.json#/records/10/definition/oteryn_recipe"
+   ]
+  }
+ ],
+ "callbacks": [
+  {
+   "key": "oteryn:quest-reward/qd-steal-from-thieves-start",
+   "quest": "oteryn:quest.steal_from_thieves_quest",
+   "npc": "oteryn:npc.ahmet",
+   "keywords": [
+    "yes"
+   ],
+   "topic": 21,
+   "next_topic": 0,
+   "storage": [
+    {
+     "track": "oteryn:quest-progress/qd/steal_from_thieves/state",
+     "minimum": 0,
+     "maximum": 0,
+     "set": 1
+    }
+   ],
+   "requires_premium": true,
+   "take": [],
+   "give": null,
+   "outfit": null,
+   "achievement": null,
+   "reply": [
+    "Of course you do! Go hunt down the thieves and bring back the stuff they have stolen from me. I saw them running out of town and then to the north. Maybe they hide at the oasis."
+   ],
+   "sources": [
+    "https://tibia.fandom.com/wiki/Steal_From_Thieves_Quest/Spoiler (curid 22844, oldid 1057227): Ahmet mission/yes, Darama oasis box, Quest/yes reward",
+    "https://tibia.fandom.com/wiki/Steal_From_Thieves_Quest (curid 20034, oldid 842913): Premium, 100 Brown Mushrooms and 100 gold coins",
+    "content/quests/definitions/quests-00200-00299.json#/records/10/definition/oteryn_recipe"
+   ]
+  },
+  {
+   "key": "oteryn:quest-reward/qd-steal-from-thieves-return",
+   "quest": "oteryn:quest.steal_from_thieves_quest",
+   "npc": "oteryn:npc.ahmet",
+   "keywords": [
+    "yes"
+   ],
+   "topic": 22,
+   "next_topic": 0,
+   "storage": [
+    {
+     "track": "oteryn:quest-progress/qd/steal_from_thieves/state",
+     "minimum": 1,
+     "maximum": 1,
+     "set": 2
+    }
+   ],
+   "completes": true,
+   "requires_premium": true,
+   "take": [
+    {
+     "item": "oteryn:item.tibia.i235",
+     "count": 1
+    }
+   ],
+   "give": {
+    "premium": true,
+    "item": "oteryn:item.tibia.i3725",
+    "count": 100,
+    "contents": [],
+    "additional": [
+     {
+      "item": "oteryn:item.tibia.i3031",
+      "count": 100
+     }
+    ]
+   },
+   "outfit": null,
+   "achievement": null,
+   "reply": [
+    "GREAT! If you ever need a job as my personal security guard, let me know. Here is the reward I promised you."
+   ],
+   "sources": [
+    "https://tibia.fandom.com/wiki/Steal_From_Thieves_Quest/Spoiler (curid 22844, oldid 1057227): Ahmet mission/yes, Darama oasis box, Quest/yes reward",
+    "https://tibia.fandom.com/wiki/Steal_From_Thieves_Quest (curid 20034, oldid 842913): Premium, 100 Brown Mushrooms and 100 gold coins",
+    "content/quests/definitions/quests-00200-00299.json#/records/10/definition/oteryn_recipe"
+   ]
+  }
+ ]
+}

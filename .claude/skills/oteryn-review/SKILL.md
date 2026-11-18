@@ -81,15 +81,15 @@ with CI and never blocks or delays it.
   report to the owner instead of a third round.
 - Who (owner decision 2026-11-11): whoever owns the branch or PR runs the
   review, also when it works alone without the coordinator: a Claude session,
-  a child session or a PC lane named as owner in its packet. On the PC that is
-  `bash ~/oteryn-cache/codex-review.sh <worktree> <tag>`. The owner puts
+  a child session or a PC lane named as owner in its packet. It runs in Codex
+  Cloud (owner rule 2026-11-17), never with `codex exec` on the PC. The owner puts
   "Codex review <head SHA>: N findings, M fixed" in its report and, when it
   opens the PR, in one PR comment; a head that already has that line is not
-  reviewed again. A session without Codex (no PC, no `codex` binary) reports
-  "not reviewed" and the coordinator runs it. A Codex lane never reviews its
+  reviewed again. A session without the PC still runs it in Codex Cloud;
+  "not reviewed, no PC" is not an accepted result. A Codex lane never reviews its
   own code.
-- How: the review owner starts it with `codex exec`
-  in a read-only sandbox, model gpt-6.1-sol, reasoning effort high, or, from a
+- How: the review owner starts it in Codex Cloud, read-only, model
+  gpt-6.2-sol, reasoning effort high, or, from a
   session without the PC, with one native `@codex review` PR comment naming the
   exact head (it answers again since 2026-11-15; check that no review is already
   requested for that head first). Either way it is one round of parallel lens
@@ -108,7 +108,7 @@ with CI and never blocks or delays it.
   edits code. After you verify each finding (§6), write only the confirmed ones,
   one per line as `P1|P2 path:line - problem - failure path`, to a file and hand
   them, with every instance the pattern sweep found, to one code-writing
-  Codex run at reasoning effort `medium` (one run for the whole batch, never
+  Codex run, model gpt-6.2-sol at reasoning effort `medium` (one run for the whole batch, never
   one per finding): on the PC
   `bash ~/oteryn-cache/codex-review.sh <worktree> <tag> --fix-confirmed <file>`
   (it runs `codex-task.sh` as `fix-<tag>`); elsewhere a Codex Cloud packet with
