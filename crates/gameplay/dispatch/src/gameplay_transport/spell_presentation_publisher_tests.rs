@@ -134,6 +134,16 @@ fn current_index_positions_and_actor_generations_are_independently_checked() {
 #[test]
 fn native_floors_rank_like_their_tibia_floors() {
     let at = |x, y, floor| MovementLocalPosition { x, y, floor };
+    let wire = wire_position(at(100, 100, -7)).unwrap();
+    assert_eq!(
+        wire,
+        ActorPosition {
+            x: 100,
+            y: 100,
+            floor: 7
+        }
+    );
+    assert_eq!(wire_position(at(0, 0, -16)), None);
     // Native -7 sees native -6 one floor up: Tibia 7 sees 6, projected one tile south-east.
     assert_eq!(
         plane_distance(at(100, 100, -7), at(101, 101, -6)).unwrap(),
