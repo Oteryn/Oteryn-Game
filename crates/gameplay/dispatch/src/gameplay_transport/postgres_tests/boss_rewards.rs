@@ -122,7 +122,12 @@ fn scenario(case: Case) -> TestResult {
             .map_err(|error| format!("W03 fixture Character authority: {error:?}"))?;
         let mut deps = Dependencies::new()
             .map_err(|error| format!("W03 fixture native dependencies: {error:?}"))?;
-        let (controller, pin) = if matches!(case, Case::LargePrivateCorpse) {
+        let (controller, pin) = if matches!(case, Case::AtomicDeathFault) {
+            super::death_ml_loss_composed::production_generation_with_pin(
+                deps.admitted.world_id,
+                "content-1",
+            )?
+        } else if matches!(case, Case::LargePrivateCorpse) {
             crate::content::native_gameplay::test_support::activated_reward_boss_corpse_capacity_fixture(
                 deps.admitted.world_id, None, Some(64),
             )
@@ -269,6 +274,15 @@ fn scenario(case: Case) -> TestResult {
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
+        if matches!(case, Case::AtomicDeathFault) {
+            owner.admit_progression_session(&mut admitted).await;
+            assert!(
+                owner
+                    .progression_binding(admitted.game_session_id)
+                    .is_some(),
+                "the fault case enters the real XP owner"
+            );
+        }
         // ITEM_VIEW_MOVE_V1 (4) requires WORLD_SPATIAL_ENTITIES (6). Omitting 6
         // legitimately prunes both 4 and its dependent BOSS_REWARDS_V1 (224).
         let supported = [4, 6, 117, CAPABILITY_BOSS_REWARDS_V1];
