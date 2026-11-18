@@ -1,4 +1,4 @@
-"""Native custody for the five items named by Crystal Arkulius's final exchange."""
+"""Native custody for Crystal chamber admission and Arkulius's final exchange."""
 import json
 
 import encounter_loot_item_admissions as loot
@@ -6,7 +6,18 @@ import qengine_reward_item_profiles as rewards
 
 # Crystal 201189f8 data-global/npc/arkulius.lua:162-165 selects these identities.
 # The retained Item source supplies corroborated physical values only.
-WEIGHTS = {954: 250, 8025: 15000, 8039: 2850, 8041: 2850, 8055: 12000}
+WEIGHTS = {
+    # Crystal actions_lever.lua checks these three carried items. Ice crystal
+    # (942), the fourth carried item, already has canonical custody.
+    946: 250,
+    947: 250,
+    948: 250,
+    954: 250,
+    8025: 15000,
+    8039: 2850,
+    8041: 2850,
+    8055: 12000,
+}
 KEYS = {f'oteryn:item.tibia.i{item}': item for item in WEIGHTS}
 
 

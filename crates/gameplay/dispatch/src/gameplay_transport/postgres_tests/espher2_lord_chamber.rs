@@ -36,6 +36,18 @@ fn espher2_lord_death_loot_window_and_shared_ashes_postgres() -> TestResult {
     chamber(ChamberCase::Ashes)
 }
 
+#[test]
+fn espher2_lord_four_vocations_enter_with_carried_spheres_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    chamber(ChamberCase::Entry)
+}
+
+#[path = "espher2_lord_chamber/entry.rs"]
+mod entry;
+
 #[path = "espher2_lord_chamber/ashes.rs"]
 mod ashes;
 
@@ -44,6 +56,7 @@ enum ChamberCase {
     OneSwitch,
     Timeout,
     Ashes,
+    Entry,
 }
 
 fn chamber(case: ChamberCase) -> TestResult {
@@ -65,7 +78,16 @@ fn chamber(case: ChamberCase) -> TestResult {
                 y: p.y,
                 floor: p.floor,
             };
-            let start = world_tile(station.stand);
+            let entry = matches!(case, ChamberCase::Entry)
+                .then(entry::callback)
+                .transpose()?;
+            let start = world_tile(
+                entry
+                    .as_ref()
+                    .and_then(|callback| callback.effects.party_transfer.as_ref())
+                    .and_then(|party| party.initiator_at)
+                    .unwrap_or(station.stand),
+            );
             let mut deps = Dependencies::new()?;
             let (controller, activated) =
                 super::death_ml_loss_composed::production_generation_with_pin(
@@ -74,6 +96,13 @@ fn chamber(case: ChamberCase) -> TestResult {
                 )?;
             let generation = controller.active().ok_or("active generation")?;
             let native = generation.native_gameplay().ok_or("native profiles")?;
+            for item in [946, 947, 948] {
+                let key = format!("oteryn:item.tibia.i{item}");
+                assert!(
+                    native.item_policy(&key, "definition-r1").is_some(),
+                    "chamber admission needs native custody for {key}"
+                );
+            }
             // The compiler loads all floors of the region. The actual USE and
             // relocation assertions below qualify the other physical cells.
             let world = super::source_world_crop::compiled_region(start, start, start, native)?;
@@ -90,7 +119,7 @@ fn chamber(case: ChamberCase) -> TestResult {
                     crate::content::NativeEntryStart {
                         x: i32::from(start.x),
                         y: i32::from(start.y),
-                        floor: 12,
+                        floor: -i16::from(start.floor),
                     },
                 )
                 .ok_or("chamber room")?;
@@ -101,7 +130,11 @@ fn chamber(case: ChamberCase) -> TestResult {
                 generation.identity().client_artifact_digest(),
                 frame,
                 world.map_revision_digest(),
-                (i32::from(start.x), i32::from(start.y), 12),
+                (
+                    i32::from(start.x),
+                    i32::from(start.y),
+                    -i16::from(start.floor),
+                ),
             );
             let mut runtime = ChannelRuntimeV1::from_committed_assignment(
                 deps.admitted.world_id,
@@ -150,6 +183,9 @@ fn chamber(case: ChamberCase) -> TestResult {
                 .ok_or("fence")?;
             admitted.item_fence = Some(fence.item_fence());
             owner.admit_progression_session(&mut admitted).await;
+            if let Some(callback) = entry {
+                return entry::exercise(&h, &mut owner, admitted, &callback).await;
+            }
             deps.initialize(&owner).await;
             let map = owner.bundle_map().ok_or("map")?;
             let at = world_tile(station.lever);
