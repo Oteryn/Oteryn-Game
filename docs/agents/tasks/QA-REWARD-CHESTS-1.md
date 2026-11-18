@@ -10,10 +10,10 @@ issue: 1622
 base_branch: main
 base_sha: e2152d050038cecdb3728c222af2ac184e1cac5a
 branch: claude/happy-davinci-ijz3wy-qa
-pr: null
+pr: 3282
 needs_migration: false
 needs_registry: false
-needs_content_regeneration: true
+needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
@@ -62,8 +62,9 @@ quests whose claims match the wiki totals.
 ## Validation state
 
 - `test_reward_claim_authoring.py::test_committed_content_carries_tibia_global_corrections`: red on the old content, green now.
-- PostgreSQL: `qready1_*` (captain 2 salmon), `qa_global_reward_corrections.rs`, `m35_fire_axe_*` and `quest_catalogue_chests` must run on a machine that can build the dispatch tests (the cloud container OOMs at ~14 GB); then refresh `reward-use-proofs/qready1.json` with `qready1_reward_use_proofs.py --log`, run `regenerate_content.py --resolve` and `pin-check`.
-- `test_container_native.py`: 3 failures already exist on `origin/main@e2152d05`; none added.
+- PostgreSQL: all 35 cases passed through the local shard (17 m35, 17 qready1 and 1 QA Power Ring). The qready1 run refreshed `reward-use-proofs/qready1.json`. The Fire Axe bag, Fire Axe two-floor and Power Ring USE cases reproduced the missing placements and passed with the generated overlay.
+- The chest-binding overlay, Item spell registrations and World pins were regenerated. `pin-check` and the World Project v2 tree equivalence validator passed.
+- Reward-claim authoring passed 121 tests, including `test_container_native.py`.
 
 ## Batches 3 and 4
 

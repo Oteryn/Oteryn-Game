@@ -15,7 +15,7 @@ fn qa_power_ring_quest_first_box_grants_power_ring_once() -> TestResult {
             super::qready1_reward_claims::claim_case(
                 "oteryn:reward-claim.kv.powerring1",
                 (32599, 31776, -9),
-                &[(32599, 6151)],
+                &[],
                 2473,
                 "oteryn:item.tibia.i3050",
                 1,

@@ -9,7 +9,7 @@ use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 // Compile the retained repository regions without injecting chest UIDs or appearances.
-fn retained_world(
+pub(super) fn retained_world(
     chest: (u16, u16, i8),
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
@@ -125,10 +125,9 @@ pub(super) fn claim_case(
             )?;
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
-        // Doublet binds the real ground entry (ordinal zero). Other source
-        // chests reuse the production dispatch fixture; the companion Python
-        // check verifies every UID/appearance against the shipped region files.
-        let world = if claim == "oteryn:reward-claim.kv.doublet" {
+        // An empty choice list requests the shipped region. Doublet also uses
+        // the shipped ground entry (ordinal zero).
+        let world = if choices.is_empty() || claim == "oteryn:reward-claim.kv.doublet" {
             retained_world(chest, native)?
         } else {
             super::quest_callbacks::source_world_choices(chest, choices, appearance)?
