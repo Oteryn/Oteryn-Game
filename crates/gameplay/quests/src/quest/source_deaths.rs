@@ -127,6 +127,9 @@ const DOCUMENTS: &[&[u8]] = &[
         "../../../../../content/quests/native-death-bindings/qmech-m24-a_piece_of_cake.json"
     ),
     include_bytes!(
+        "../../../../../content/quests/native-death-bindings/qmech-m24-an_uneasy_alliance.json"
+    ),
+    include_bytes!(
         "../../../../../content/quests/native-death-bindings/qmech-m24-ancient_tombs.json"
     ),
     include_bytes!(

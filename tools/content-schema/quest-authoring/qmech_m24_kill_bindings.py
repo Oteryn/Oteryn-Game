@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[3]
 INPUT = 'content/quests/missions/quest-state-completion-candidate.json'
 OUTPUT = 'content/quests/native-death-bindings/'
 HERALD_INPUT = 'content/quests/definitions/quests-00200-00299.json'
+ALLIANCE_OUTPUT = 'qmech-m24-an_uneasy_alliance.json'
 HERALD_OUTPUT = 'qmech-m24-targuna-herald.json'
 HERALD_QUEST = 'oteryn:quest.targuna_quest'
 HERALD_PREFIX = 'oteryn:quest-transition/crystalserver/targuna/herald-death/'
@@ -65,8 +66,35 @@ def generate(root: Path):
             'inputs': [{'path': INPUT, 'sha256': hashlib.sha256(raw).hexdigest()}],
             'tracks': [{field: tracks[name][field] for field in ('key', 'initial', 'min', 'max')} for name in sorted(used)],
             'rules': rules}
+    outputs[ALLIANCE_OUTPUT] = renegade_orc_binding(root)
     outputs[HERALD_OUTPUT] = herald_binding(root)
     return outputs
+
+
+def renegade_orc_binding(root: Path):
+    quest_key = 'oteryn:quest.an_uneasy_alliance_quest'
+    prefix = 'oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/'
+    script = 'scripts/quests/an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua'
+    quest = next(q for q in lowering.read(root, lowering.OUTPUT)['quests'] if q['quest'] == quest_key)
+    source = next(t for t in quest['transitions'] if t['source']['script'] == script)
+    door = {'track': prefix + 'quest_door', 'from': {'op': 'EQ', 'value': 0},
+            'from_exact': True, 'effect': {'kind': 'SET', 'value': 1}}
+    lowering.require(source['effects'] == [door], 'Renegade Orc source death transition changed')
+    defaults = {track['key']: track['initial'] for track in quest['tracks']}
+    # An unassigned Crystal character has unset QuestDoor. Oteryn lowers its
+    # default to zero, so Curos's Questline assignment disambiguates that zero.
+    stage = prefix + 'questline'
+    effects = [
+        {'track': stage, 'default': defaults[stage], 'from': {'kind': 'eq', 'value': 1}, 'set': 1},
+        {'track': door['track'], 'default': defaults[door['track']],
+         'from': {'kind': 'eq', 'value': door['from']['value']}, 'set': door['effect']['value']},
+    ]
+    crystal = 'crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/'
+    return {'schema': 1, 'runtime_enabled': True, 'quest': quest_key, 'tracks': [],
+            'rules': [{'creature': 'oteryn:creature.renegade_orc',
+                       'transition': 'oteryn:quest-transition/an-uneasy-alliance/renegade-orc-death',
+                       'define_transition': True, 'room': None, 'effects': effects,
+                       'sources': [crystal + script + ':3-8', crystal + 'npc/curos.lua:81-85']}]}
 
 
 def herald_binding(root: Path):
@@ -127,7 +155,7 @@ def main():
                 raise ValueError('Stale M24 death bindings: ' + name)
         else:
             target.write_bytes(expected)
-    print('PASS M24: exact 20-Cake-Golem stage, seven pharaoh kill stages and qualified Herald death')
+    print('PASS M24: exact 20-Cake-Golem stage, seven pharaoh kill stages, qualified Herald death, and Renegade Orc damage credit')
 
 if __name__ == '__main__':
     main()
