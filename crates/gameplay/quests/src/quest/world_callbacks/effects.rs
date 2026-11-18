@@ -667,6 +667,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
         || effects
             .requirement_failure_magic
             .is_some_and(|effect| !(1..=255).contains(&effect) || !callback.guarded_switch())
+        || effects
+            .sequence_prime
+            .as_ref()
+            .is_some_and(|key| !super::super::valid_quest_key(key) || !callback.guarded_switch())
         || (effects.visual_passages
             && (callback.actor_kind != ActorKind::Player
                 || callback.reversible

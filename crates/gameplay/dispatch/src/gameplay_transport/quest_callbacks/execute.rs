@@ -217,7 +217,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return UseDisposition::NothingToUse;
             }
-            match map.facts.prime_quest_switch_sequence(sequence) {
+            match map
+                .facts
+                .prime_quest_switch_sequence(&callback.quest, sequence)
+            {
                 Some(true) => {}
                 Some(false) => return UseDisposition::Committed,
                 None => return UseDisposition::Exhausted,
