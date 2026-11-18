@@ -1274,6 +1274,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             entered
         };
         let entered = self
+            .step_arena_entrance(permit, actor, session, origin, entered)
+            .await;
+        let entered = self
             .step_arena_concession(permit, actor, session, origin, entered)
             .await;
         let entered = self

@@ -9,6 +9,8 @@ use crate::gameplay_transport::connection::{
 use oteryn_protocol_oteryn::arena::{self as wire, ArenaAction as A, ArenaDisposition as D};
 #[path = "arena_match/fixture.rs"]
 pub(super) mod fixture;
+#[path = "arena_match/halvar.rs"]
+mod halvar;
 
 #[test]
 fn arena_match_real_connection_status_and_full_match() -> TestResult {
@@ -155,6 +157,7 @@ fn barbarian_arena_chest_and_command_share_weapon_entitlement() -> TestResult {
 
 #[derive(Clone, Copy)]
 enum NativeScenario {
+    Admission,
     Concession,
     Portals,
     RecreatedPillars,
@@ -236,6 +239,8 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
             fixture::bundle_with_pillar_floors(native)?
         } else if matches!(route, Some(NativeScenario::SharedReward)) {
             fixture::bundle_with_reward_chests(native)?
+        } else if matches!(route, Some(NativeScenario::Admission)) {
+            fixture::bundle_with_admission(native)?
         } else if native_portals {
             fixture::bundle_with_pillars(native)?
         } else {
@@ -259,10 +264,10 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                 let index = native.item_index()?;
                 Some(crate::map::facts::ItemDefinition {
                     reference: index.definition_ref("Item", key, "definition-r1")?,
-                    solid: Some(key.ends_with(".i1841")),
+                    solid: Some(key.ends_with(".i1841") || key.ends_with(".i5131")),
                     blocks_projectile: false,
                     pickupable: false,
-                    door: false,
+                    door: key.ends_with(".i5131") || key.ends_with(".i5132"),
                 })
             },
         )
@@ -414,6 +419,9 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                 .await
                 .is_none()
         );
+        if matches!(route, Some(NativeScenario::Admission)) {
+            return halvar::verify_admission(&harness, &owner, admitted, deps.actor).await;
+        }
         if matches!(route, Some(NativeScenario::SharedReward)) {
             return verify_shared_reward(&harness, &owner, &mut admitted, deps.actor).await;
         }

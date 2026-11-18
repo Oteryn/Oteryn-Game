@@ -12,9 +12,9 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-#[path = "arena_match/pit_exit.rs"]
-mod pit_exit;
-
+#[path = "arena_match/admission.rs"]
+mod admission;
+pub(super) use admission::HalvarPrompt;
 #[path = "arena_match/concession_step.rs"]
 mod concession_step;
 #[path = "arena_match/death_poll.rs"]
@@ -23,6 +23,8 @@ mod death_poll;
 mod departure_poll;
 #[path = "arena_match/pillar.rs"]
 mod pillar;
+#[path = "arena_match/pit_exit.rs"]
+mod pit_exit;
 #[path = "arena_match/pit_reset.rs"]
 mod pit_reset;
 #[path = "arena_match/portal_step.rs"]
@@ -56,6 +58,12 @@ macro_rules! composed_methods {
     };
 }
 pub(super) use composed_methods;
+
+enum ArenaIngress<'a> {
+    Command,
+    Halvar(&'a admission::HalvarProof),
+    Step(crate::foundation::MovementPositionSnapshot),
+}
 
 struct ArenaCaller {
     actor: ExactActorRef,
@@ -308,7 +316,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let bytes = self.arena_match_native(
             ArenaCaller { actor, supplied, world: admitted.world_id, channel: admitted.channel_id },
-            command.into(), action, payload, None,
+            command.into(), action, payload, ArenaIngress::Command,
         ).await?;
         let result = wire::decode_match_result(&bytes).ok()?;
         if result.state.completed_rank == 3 && result.state.claimed_masks.iter().all(|mask| mask & 8 != 0) {
@@ -350,7 +358,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         cause: durable::MatchCause,
         action: A,
         payload: &[u8],
-        expected: Option<crate::foundation::MovementPositionSnapshot>,
+        ingress: ArenaIngress<'_>,
     ) -> Option<Vec<u8>> {
         let actor = caller.actor;
         let supplied = caller.supplied;
@@ -358,13 +366,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let session = command.game_session_id();
         // Native STEP already holds the spell lane. Arena metadata and pending
         // combat settlement serialize on the same Character revision slot.
-        if matches!(cause, durable::MatchCause::Command(_)) && !matches!(
+        let native_step = matches!(ingress, ArenaIngress::Step(_));
+        if !native_step && !matches!(
             self.drain_kill_rewards(session).await,
             super::kill_reward::DrainOutcome::Drained
         ) {
             return None;
         }
-        let _gate = arena_command_gate(&self.states.arena_matches.command, matches!(cause, durable::MatchCause::Step { .. })).await?;
+        let _gate = arena_command_gate(&self.states.arena_matches.command, native_step).await?;
         let mut fence = self
             .current_quest_fence(session)
             .await
@@ -397,10 +406,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return None;
             }
             tick(self, &mut runtime);
-            if let Some(expected) = expected
-                && (runtime.read_actor_position(actor) != Ok(expected)
-                    || !pit_exit::owns_exit(self, actor, session, expected.position()))
-            { return None; }
+            match ingress {
+                ArenaIngress::Command => {}
+                ArenaIngress::Halvar(proof) if proof.is_current(self, &runtime, actor, session) => {}
+                ArenaIngress::Step(expected) if runtime.read_actor_position(actor) == Ok(expected)
+                    && match action {
+                        A::Enter => admission::entrance_forcefield(self, expected.position()),
+                        A::Advance => pit_exit::owns_exit(self, actor, session, expected.position()),
+                        _ => false,
+                    } => {}
+                _ => return None,
+            }
         }
         let read = self
             .root
@@ -464,21 +480,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 A::Enter if self.runtime.lock().await.is_tibiadrome(actor) => {
                     disposition = D::WrongState;
                 }
+                A::Enter if matches!(cause, durable::MatchCause::Halvar { .. }) => {
+                    let durable::MatchCause::Halvar { rank, .. } = cause else { return None; };
+                    if (after.rank == 0 || after.phase == 3)
+                        && after.paid_rank == 0 && rank == after.completed + 1 && rank <= 3
+                    {
+                        after = after.idle();
+                        after.paid_rank = rank;
+                    } else {
+                        disposition = D::WrongState;
+                    }
+                }
                 A::Enter if after.rank == 0 && after.completed < 3 => {
                     let rank = after.completed + 1;
                     let runtime = self.runtime.lock().await;
                     let at = runtime.read_actor_position(actor).ok()?.position();
-                    if !at_entrance(at) {
+                    if (native_step && after.paid_rank != rank)
+                        || !(at_entrance(at) || native_step && admission::entrance_forcefield(self, at))
+                    {
                         disposition = D::WrongState;
                     } else if !self.arena_pit_ready(&runtime, rank, 1, session) {
                         disposition = D::Busy;
                     } else {
                         after = MatchState {
                             completed: after.completed,
+                            paid_rank: 0,
                             entry_revision: fence
                                 .expected_character_revision
                                 .get()
-                                .checked_add(1)?,
+                                .checked_add(u64::from(after.paid_rank == 0))?,
                             rank,
                             pit: 1,
                             phase: 1,
@@ -583,7 +613,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 _ => disposition = D::WrongState,
             }
         }
-        if spawn.is_some() && before.rank == 0 {
+        if (spawn.is_some() && before.rank == 0 && before.paid_rank == 0)
+            || after.paid_rank > before.paid_rank
+        {
             let bag = self
                 .root
                 .read_character_backpack(self.character, fence.character_id)
@@ -727,7 +759,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let _ = pillar::project(self, state, PillarProjection::Fighting);
             let current = runtime.read_actor_position(actor).ok()?.position();
-            if !at_entrance(current) && !(1..=10).any(|pit| in_pit(current, pit)) {
+            if !(at_entrance(current)
+                || admission::entrance_forcefield(self, current)
+                || (1..=10).any(|pit| in_pit(current, pit)))
+            {
                 return None;
             }
             pit_reset::reset_monsters(&mut runtime, actor, session, state)?;

@@ -25,7 +25,7 @@ mod native_origin;
 mod native_step;
 mod native_timeout;
 pub use native_death::NativeArenaDeath;
-pub use native_departure::{NativeArenaDeparture, concession_position};
+pub use native_departure::NativeArenaDeparture;
 pub use native_origin::NativeArenaOrigin;
 pub use native_step::NativeArenaStep;
 pub use native_timeout::NativeArenaTimeout;
@@ -36,6 +36,8 @@ pub(in crate::durability) mod terminal;
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MatchState {
     pub completed: u8,
+    #[serde(default, skip_serializing_if = "unpaid")]
+    pub paid_rank: u8,
     pub entry_revision: u64,
     pub rank: u8,
     pub pit: u8,
@@ -45,6 +47,10 @@ pub struct MatchState {
     pub scope_generation: u64,
     pub run: [u8; 16],
 }
+fn unpaid(rank: &u8) -> bool {
+    *rank == 0
+}
+
 impl MatchState {
     /// Crystal svargrond_arena.lua:259-313: victory does not renew the pit's
     /// kick timer. Recovery must retain its original deadline in either phase.
@@ -128,6 +134,7 @@ pub struct MatchRead {
 #[derive(Clone, Copy, Debug)]
 pub enum MatchCause {
     Command(CommandRef),
+    Halvar { command: CommandRef, rank: u8 },
     Step {
         command: CommandRef,
         actor: [u8; 16],
@@ -143,7 +150,7 @@ impl From<CommandRef> for MatchCause {
 impl MatchCause {
     pub fn command(self) -> CommandRef {
         match self {
-            Self::Command(command) | Self::Step { command, .. } => command,
+            Self::Command(command) | Self::Halvar { command, .. } | Self::Step { command, .. } => command,
         }
     }
     fn ordinal(self) -> String {
@@ -157,6 +164,10 @@ impl MatchCause {
     }
     fn bind(self, payload: &[u8]) -> Vec<u8> {
         let mut bytes = payload.to_vec();
+        if let Self::Halvar { rank, .. } = self {
+            bytes.extend_from_slice(b"oteryn:svargrond-halvar");
+            bytes.push(rank);
+        }
         if let Self::Step {
             actor,
             revision,
@@ -185,6 +196,29 @@ pub struct MatchTransition {
 }
 
 impl DurabilityRoot {
+    pub async fn read_arena_admission(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+    ) -> Result<MatchState, CharacterProgressionError> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {
+                return Ok(Err(error));
+            }
+            let state = load_state(&mut tx, fence).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(state))
+        })).await?
+    }
+
     pub async fn read_arena_match(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -293,10 +327,13 @@ impl DurabilityRoot {
         request: MatchTransition,
     ) -> Result<Vec<u8>, CharacterProgressionError> {
         let command = request.cause.command();
+        use oteryn_protocol_oteryn::arena::{ArenaAction, decode_match_request};
+        let action = decode_match_request(&request.payload).ok();
         if command.game_session_id() != fence.game_session_id
             || (matches!(request.cause, MatchCause::Step { .. })
-                && oteryn_protocol_oteryn::arena::decode_match_request(&request.payload).ok()
-                    != Some(oteryn_protocol_oteryn::arena::ArenaAction::Advance))
+                && !matches!(action, Some(ArenaAction::Advance | ArenaAction::Enter)))
+            || (matches!(request.cause, MatchCause::Halvar { .. })
+                && action != Some(ArenaAction::Enter))
         {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
@@ -344,7 +381,20 @@ impl DurabilityRoot {
                     .bind(fence.character_id.as_bytes().as_slice()).bind(prior.run.as_slice()).bind(i16::from(prior.rank)).bind(i16::from(prior.pit)).bind(death_key).execute(&mut **tx).await?;
                 ready.phase=2;
             }
-            if !valid_transition(&prior,&ready,&request.after,request.disposition,&request.payload,fence,command,now_ms) {return Err(DurabilityError::InvalidStoredState);}
+            let valid = match request.cause {
+                MatchCause::Halvar { rank, .. } => {
+                    let mut paid = prior.idle();
+                    paid.paid_rank = rank;
+                    request.victory.is_none() && (request.after == prior
+                        || (request.disposition == ArenaDisposition::Applied && (prior.rank == 0 || prior.phase == 3)
+                            && prior.paid_rank == 0 && rank <= 3 && rank == prior.completed + 1
+                            && request.after == paid))
+                }
+                MatchCause::Step { .. } if action == Some(ArenaAction::Enter) && prior.paid_rank == 0 =>
+                    request.after == prior && request.disposition != ArenaDisposition::Applied,
+                _ => valid_transition(&prior,&ready,&request.after,request.disposition,&request.payload,fence,command,now_ms),
+            };
+            if !valid {return Err(DurabilityError::InvalidStoredState);}
             let mut after=request.after;
             let mut disposition=request.disposition;
             // Claim shared custody before charging an entry fee or moving to the
@@ -354,14 +404,16 @@ impl DurabilityRoot {
                 after=ready.clone();
                 disposition=ArenaDisposition::Busy;
             }
-            let entering=disposition==ArenaDisposition::Applied && after.phase==1 && prior.rank==0;
+            let entering=disposition==ArenaDisposition::Applied && after.phase==1 && prior.rank==0 && prior.paid_rank==0;
+            let paying=disposition==ArenaDisposition::Applied && prior.paid_rank==0 && after.paid_rank>0;
             let mut fee_occurrence=None;
-            if entering {
-                if after.rank!=prior.completed+1 || after.pit!=1 || after.rank>3 {return Err(DurabilityError::InvalidStoredState);}
+            let fee_rank = if paying { after.paid_rank } else { after.rank };
+            if entering || paying {
+                if fee_rank!=prior.completed+1 || fee_rank>3 || (entering && after.pit!=1) {return Err(DurabilityError::InvalidStoredState);}
                 let Some(change)=request.change else {return Err(DurabilityError::InvalidStoredState);};
                 let occurrence=identity(command,b"fee");
                 let fee=FeeBurnRequest{cause:FeeBurnCause::ArenaEntry{occurrence},
-                    fee_gold_units:donor::FEES[usize::from(after.rank-1)],
+                    fee_gold_units:donor::FEES[usize::from(fee_rank-1)],
                     transaction_id:identity(command,b"fee-tx"),event_id:identity(command,b"fee-event"),
                     occurred_at_unix_ms:now_ms,server_build_id:super::character_authority::SERVER_BUILD_ID.into(),change};
                 match burn_fee_in_transaction(&mut tx,&fence,&fee).await {
@@ -392,7 +444,7 @@ impl DurabilityRoot {
             if let Some(occurrence)=fee_occurrence {
                 let next=root.revision.checked_add(1).ok_or(DurabilityError::InvalidStoredState)?;
                 sqlx::query("INSERT INTO game_arena_entry_receipts(character_id,game_session_id,command_id,fee_occurrence,rank,original_character_revision,committed_character_revision,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision) SELECT character_id,encode($2,'hex')::uuid,$3::text::numeric,encode($4,'hex')::uuid,$5,character_revision,$6::text::numeric,level,level,total_experience,total_experience,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
-                    .bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(occurrence.as_slice()).bind(i16::from(after.rank)).bind(next.to_string()).execute(&mut **tx).await?;
+                    .bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(occurrence.as_slice()).bind(i16::from(fee_rank)).bind(next.to_string()).execute(&mut **tx).await?;
                 for query in ["UPDATE game_character_roots SET character_revision=$2::text::numeric WHERE character_id=encode($1,'hex')::uuid AND character_revision=$3::text::numeric", "UPDATE game_character_progression_state SET character_revision=$2::text::numeric WHERE character_id=encode($1,'hex')::uuid AND character_revision=$3::text::numeric"] {
                     if sqlx::query(query).bind(fence.character_id.as_bytes().as_slice()).bind(next.to_string()).bind(root.revision.to_string()).execute(&mut **tx).await?.rows_affected()!=1 {return Err(DurabilityError::InvalidStoredState);}
                 }
@@ -559,7 +611,8 @@ fn valid_transition(
         A::Enter if before.rank == 0 && before.completed < 3 => {
             expected = MatchState {
                 completed: before.completed,
-                entry_revision: fence.expected_character_revision.get().saturating_add(1),
+                paid_rank: 0,
+                entry_revision: fence.expected_character_revision.get().saturating_add(u64::from(before.paid_rank == 0)),
                 rank: before.completed + 1,
                 pit: 1,
                 phase: 1,

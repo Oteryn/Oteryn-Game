@@ -45,7 +45,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let cause = durable::MatchCause::Step { command, actor: actor.placement_identity(), revision: entered.revision(), epoch: self.reset_epoch };
         let Ok(payload) = wire::encode_match_request(A::Advance) else { return entered; };
-        let _ = self.arena_match_native(caller, cause, A::Advance, &payload, Some(entered)).await;
+        let _ = self.arena_match_native(caller, cause, A::Advance, &payload, ArenaIngress::Step(entered)).await;
         self.runtime.lock().await.read_actor_position(actor).unwrap_or(entered)
     }
 }

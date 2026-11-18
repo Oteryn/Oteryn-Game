@@ -109,7 +109,7 @@ impl NativeArenaDeparture {
 }
 
 /// The retained south forcefields are one tile west of the pit centerline.
-pub fn concession_position(pit: u8) -> Option<MovementLocalPosition> {
+fn concession_position(pit: u8) -> Option<MovementLocalPosition> {
     let layout = oteryn_gameplay_quests::quest::barbarian_arena::Pit::new(pit)?.layout();
     let [x, _, floor] = layout.center;
     Some(MovementLocalPosition {

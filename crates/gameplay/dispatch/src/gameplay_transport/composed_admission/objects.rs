@@ -137,6 +137,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &crate::map::boot::BundleMap,
         target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> UseOutcome {
+        let arena_permission = self.arena_door_permission(session, map, target).await;
         let mut runtime = self.runtime.lock().await;
         // Read the canonical actor-local Character facts through their owner, after taking the
         // runtime lock. `ChannelSpellStates::get` re-proves this exact actor/session against the
@@ -163,7 +164,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_or(0, |state| state.character_facts().level);
         // Quest doors read only this admitted session's copy of the durable quest owner. A
         // missing/failed copy cannot grant access. The action id is authored in the bundle.
-        let quest_storage_met = map
+        let quest_storage_met = arena_permission.unwrap_or_else(|| map
             .facts
             .action_at(
                 target
@@ -186,7 +187,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .and_then(|quest| quest.copy.as_ref())
                             .is_some_and(|copy| copy.meets_door_storage(action))
                     })
-            });
+            }));
         // Admission is taken under the owner lock that also covers the commit below, and the
         // owner pass resets the turn cap under the same lock, so an act is counted in the turn
         // that commits it and its order is the owner lock's.

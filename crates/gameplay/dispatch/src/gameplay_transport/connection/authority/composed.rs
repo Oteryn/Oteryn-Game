@@ -572,7 +572,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         intent: oteryn_protocol_oteryn::npc_service::NpcTalkIntent,
     ) -> npc_command::NpcTalkOutcome {
-        let mut outcome = self.vocation_talk(actor, command, intent).await;
+        let ordinary = self.vocation_talk(actor, command, intent.clone()).await;
+        let mut outcome = self.halvar_talk(actor, command, &intent, ordinary).await;
         if let Some(name) = self.states.chat.speaker_name(command.game_session_id)
             && let Some(conversation) = &mut outcome.conversation
         {

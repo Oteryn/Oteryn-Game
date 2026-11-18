@@ -5,7 +5,10 @@ use crate::foundation::{
     ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionValues,
     MovementPositionSnapshot,
 };
-use crate::map::{overlay::TilePos, view::placement_key};
+use crate::map::{
+    overlay::TilePos,
+    view::{MapFacts, placement_key},
+};
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 
 impl ComposedFreshAdmission<'_, '_, '_> {

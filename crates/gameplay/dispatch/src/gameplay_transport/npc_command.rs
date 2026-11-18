@@ -81,6 +81,7 @@ pub(super) use premium_purchase::resume_npc_talk;
 struct SessionNpc {
     recent: RecentIntents,
     healing_command: Option<u64>,
+    halvar_prompt: Option<super::arena_match::HalvarPrompt>,
     /// The NPC whose trade window the session was shown (domain 8).
     window: Option<EntityRef>,
     /// The exact bounded offer list shown in this window, including its rank filter.
@@ -222,6 +223,22 @@ impl NpcConversations {
             state.vocation = None;
         }
     }
+    pub(super) fn set_halvar_prompt(
+        &self,
+        session: GameSessionId,
+        prompt: super::arena_match::HalvarPrompt,
+    ) -> Option<()> {
+        self.sessions.lock().ok()?.get_mut(&session)?.halvar_prompt = Some(prompt);
+        Some(())
+    }
+
+    pub(super) fn take_halvar_prompt(
+        &self,
+        session: GameSessionId,
+    ) -> Option<super::arena_match::HalvarPrompt> {
+        self.sessions.lock().ok()?.get_mut(&session)?.halvar_prompt.take()
+    }
+
     pub fn cancel_bank(&self, session: GameSessionId) {
         if let Ok(mut sessions) = self.sessions.lock()
             && let Some(state) = sessions.get_mut(&session)

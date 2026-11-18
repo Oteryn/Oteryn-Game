@@ -447,6 +447,14 @@ impl NpcTalkBook {
                     Some("Ask me about tasks, points, rank, promotion or bosses.".into()),
                     Vec::new(),
                 )
+            } else if reference.key == "oteryn:npc.halvar" {
+                // Crystal 201189f8 halvar.lua:119. The native arena owns the fee conversation.
+                (
+                    "Welcome, competitor. Ask me about fighting in the arena.".into(),
+                    "Farewell.".into(),
+                    None,
+                    Vec::new(),
+                )
             } else if reference.key == "oteryn:npc.lynda" {
                 // Crystal201189f lynda.lua:307-309; only the native marriage caller opens.
                 (

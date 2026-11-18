@@ -9,25 +9,31 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 pub(in super::super) fn bundle(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false, false)
+    bundle_layout(native, true, false, false, false)
 }
 
 pub(in super::super) fn bundle_with_pillars(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false, false)
+    bundle_layout(native, true, false, false, false)
 }
 
 pub(in super::super) fn bundle_with_pillar_floors(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, false, true, false)
+    bundle_layout(native, false, true, false, false)
 }
 
 pub(in super::super) fn bundle_with_reward_chests(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false, true)
+    bundle_layout(native, true, false, true, false)
+}
+
+pub(in super::super) fn bundle_with_admission(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+    bundle_layout(native, true, false, false, true)
 }
 
 fn bundle_layout(
@@ -35,6 +41,7 @@ fn bundle_layout(
     with_pillars: bool,
     pillar_floors_only: bool,
     reward_chests: bool,
+    admission: bool,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::writer::{Extent, Sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
@@ -51,7 +58,8 @@ fn bundle_layout(
     bundle.manifest.palette[0].key = ground.into();
     bundle.manifest.palette[0].family = oteryn_world_bundle::bundle::Family::Item;
     bundle.manifest.palette[0].id = reference.get() - 1;
-    for source in [1841, 1949, 5022] {
+    let admission_appearances = admission.then_some([5131, 5132]).into_iter().flatten();
+    for source in [1841, 1949, 5022].into_iter().chain(admission_appearances) {
         let key = format!("oteryn:item.tibia.i{source}");
         let reference = native
             .item_index()
@@ -151,6 +159,31 @@ fn bundle_layout(
             tile.x = at.0;
             tile.y = at.1;
             tiles.insert(at, tile);
+        }
+    }
+    if admission {
+        let door_palette = u32::try_from(
+            bundle.manifest.palette.iter()
+                .position(|entry| entry.key == "oteryn:item.tibia.i5131")
+                .ok_or("sealed door palette")?,
+        )?;
+        for (x, y, item) in [
+            (32232, 31098, None),
+            (32233, 31098, Some((door_palette, Some(41152)))),
+            (32238, 31100, None),
+            (32238, 31101, Some((portal_palette, None))),
+        ] {
+            let mut tile = bundle.sectors[0].tiles[0].clone();
+            tile.x = x;
+            tile.y = y;
+            if let Some((palette, action)) = item {
+                tile.items.push(oteryn_world_bundle::sector::Item {
+                    palette,
+                    depth: 0,
+                    attrs: oteryn_world_bundle::sector::Attrs { action, ..Default::default() },
+                });
+            }
+            tiles.insert((x, y, -7), tile);
         }
     }
     if reward_chests {
