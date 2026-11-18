@@ -56,6 +56,7 @@ pub(super) struct CommitStep {
     fallback_lines: Vec<String>,
     teleport: Option<oteryn_gameplay_quests::quest::npc_rules::NpcRulePosition>,
     magic: usize,
+    teleport_gate: Option<oteryn_gameplay_quests::quest::npc_rules::teleport::NpcTeleportGate>,
     supersedes_topic: bool,
 }
 
@@ -69,7 +70,7 @@ pub(super) async fn inventory(
         let runtime = admission.runtime.lock().await;
         let npc =
             service_context::live_npc(&runtime, actor, command.game_session_id, intent.npc_actor)?;
-        let source = NpcRuleCatalog::runtime()
+        let source = NpcRuleCatalog::runtime_for(admission.quest_catalogue.as_ref()?)
             .ok()?
             .admitted_for_npc(&npc.key, admission.quest_catalogue.as_ref()?)
             .ok()??;
@@ -120,7 +121,7 @@ pub(super) async fn appearance(
         // read-only; prepare rechecks the engaged NPC before using the snapshot.
         let npc =
             service_context::live_npc(&runtime, actor, command.game_session_id, intent.npc_actor)?;
-        NpcRuleCatalog::runtime()
+        NpcRuleCatalog::runtime_for(admission.quest_catalogue.as_ref()?)
             .ok()?
             .programs()
             .iter()
@@ -190,7 +191,7 @@ pub(super) fn prepare(
         intent,
     )?;
     let catalogue = admission.quest_catalogue.as_ref()?;
-    let source = NpcRuleCatalog::runtime()
+    let source = NpcRuleCatalog::runtime_for(catalogue)
         .ok()?
         .admitted_for_npc(&context.2, catalogue)
         .ok()??;
@@ -348,10 +349,11 @@ pub(super) fn prepare(
             .ok()
             .flatten();
     if teleport.as_ref().is_some_and(|p| {
-        !matches!(
-            p.source.quest.as_str(),
-            "oteryn:quest.the_paradox_tower_quest" | "oteryn:quest.in_service_of_yalahar_quest"
-        )
+        p.gate.is_none()
+            && !matches!(
+                p.source.quest.as_str(),
+                "oteryn:quest.the_paradox_tower_quest" | "oteryn:quest.in_service_of_yalahar_quest"
+            )
     }) {
         return Some(Step::Refused);
     }
@@ -398,6 +400,24 @@ pub(super) fn prepare(
         npc_actor: admission.states.chat.engaged(command.game_session_id)?,
         topic: plan.next_topic,
     };
+    if let Some(gate) = teleport.as_ref().and_then(|travel| travel.gate.as_ref())
+        && !teleport::condition_present(
+            admission,
+            runtime,
+            actor,
+            command.game_session_id,
+            gate.condition,
+        )
+    {
+        return Some(Step::Reply(Box::new(ReplyStep {
+            lines: vec![gate.refusal.clone()],
+            end: true,
+            end_delay_ms: 0,
+            previous,
+            next,
+            supersedes_topic: true,
+        })));
+    }
     let has_track_mutation = super::catalogue_track_mutation::has_mutation(&plan);
     if !has_track_mutation
         && !plan.completes
@@ -470,6 +490,7 @@ pub(super) fn prepare(
         fallback_lines,
         supersedes_topic,
         magic: teleport.as_ref().map_or(0, |p| p.magic.len()),
+        teleport_gate: teleport.as_ref().and_then(|p| p.gate.clone()),
         teleport: teleport.map(|p| p.destination),
     })))
 }
@@ -590,6 +611,7 @@ pub(super) async fn apply(
         fallback_lines,
         teleport,
         magic,
+        teleport_gate,
         supersedes_topic,
     } = match step {
         Step::Reply(step) => {
@@ -740,6 +762,7 @@ pub(super) async fn apply(
                     intent,
                     context: next.context.clone(),
                     magic,
+                    gate: teleport_gate,
                 },
                 destination,
                 &mut runtime,

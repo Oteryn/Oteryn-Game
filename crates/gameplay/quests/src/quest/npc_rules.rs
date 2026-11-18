@@ -252,6 +252,8 @@ pub enum NpcRuleEffect {
     },
     Teleport {
         position: NpcRulePosition,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        gate: Option<teleport::NpcTeleportGate>,
     },
     MagicEffect {
         effect: String,
@@ -336,13 +338,13 @@ fn npc_false(value: &bool) -> bool {
     !*value
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcRuleProgram {
     pub document: NpcRuleDocument,
     pub digest: [u8; 32],
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct NpcRuleCatalog {
     programs: Vec<NpcRuleProgram>,
 }
@@ -521,6 +523,8 @@ impl NpcRuleCatalog {
                 validate::catalogue(&catalogue)?;
                 catalogue.programs.retain(|p| {
                     p.document.program_key.as_deref() == Some(hidden_threats::PROGRAM)
+                        || p.document.program_key.as_deref()
+                            == Some("oteryn:quest-npc-program.ancient-tombs-cobra-greeting")
                         || p.document.program_key.as_deref() == Some(questpc2_oldrak_source::PROGRAM)
                         || p.document.program_key.as_deref() == Some(questpc2_albinius_source::PROGRAM)
                         || p.document.program_key.as_deref() == Some(questpc2_gerimor_source::PROGRAM)
@@ -579,6 +583,24 @@ impl NpcRuleCatalog {
             })
             .as_ref()
             .map_err(Clone::clone)
+    }
+
+    pub fn runtime_for(_catalogue: &super::QuestStateCatalogue) -> Result<&Self, NpcRuleError> {
+        #[cfg(any(test, feature = "test-support"))]
+        if let Some(source) = &_catalogue.npc_fixture {
+            return Ok(source);
+        }
+        Self::runtime()
+    }
+
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn attach_fixture(
+        self,
+        catalogue: &super::QuestStateCatalogue,
+    ) -> Result<super::QuestStateCatalogue, String> {
+        let mut active = extend_with_source(catalogue.clone(), &BTreeMap::new(), &self)?;
+        active.npc_fixture = Some(self);
+        Ok(active)
     }
 
     #[must_use]
@@ -758,6 +780,14 @@ pub(super) fn extend(
     source_tracks: &BTreeMap<String, String>,
 ) -> Result<super::QuestStateCatalogue, String> {
     let source = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
+    extend_with_source(catalogue, source_tracks, source)
+}
+
+fn extend_with_source(
+    catalogue: super::QuestStateCatalogue,
+    source_tracks: &BTreeMap<String, String>,
+    source: &NpcRuleCatalog,
+) -> Result<super::QuestStateCatalogue, String> {
     let mut legacy = catalogue.npc_legacy.clone();
     let predecessors = catalogue.predecessors.clone();
     for program in source.programs() {

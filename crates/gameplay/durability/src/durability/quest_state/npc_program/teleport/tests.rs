@@ -263,7 +263,7 @@ async fn exercise_peter(h: &f::Harness) -> f::TestResult {
                 catalogue.clone(),
                 &NoItems,
                 &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
-                NpcTeleportAdmission { arrival }
+                NpcTeleportAdmission { observed_condition: None,  arrival }
             )
             .await
             .is_err()
@@ -281,7 +281,7 @@ async fn exercise_peter(h: &f::Harness) -> f::TestResult {
                 catalogue.clone(),
                 &NoItems,
                 &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
-                NpcTeleportAdmission { arrival: other_world },
+                NpcTeleportAdmission { observed_condition: None,  arrival: other_world },
             )
             .await
             .is_err()
@@ -299,7 +299,7 @@ async fn exercise_peter(h: &f::Harness) -> f::TestResult {
                 catalogue.clone(),
                 &NoItems,
                 &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
-                NpcTeleportAdmission { arrival: wrong }
+                NpcTeleportAdmission { observed_condition: None,  arrival: wrong }
             )
             .await
             .is_err()
@@ -317,7 +317,7 @@ async fn exercise_peter(h: &f::Harness) -> f::TestResult {
             catalogue.clone(),
             &NoItems,
             &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
-            NpcTeleportAdmission { arrival },
+            NpcTeleportAdmission { observed_condition: None,  arrival },
         )
         .await
         .map_err(f::debug)?;
@@ -343,7 +343,7 @@ async fn exercise_peter(h: &f::Harness) -> f::TestResult {
             catalogue.clone(),
             &NoItems,
             &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
-            NpcTeleportAdmission { arrival },
+            NpcTeleportAdmission { observed_condition: None,  arrival },
         )
         .await
         .map_err(f::debug)?;
@@ -365,7 +365,7 @@ async fn exercise_peter(h: &f::Harness) -> f::TestResult {
             catalogue.clone(),
             &NoItems,
             &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
-            NpcTeleportAdmission { arrival },
+            NpcTeleportAdmission { observed_condition: None,  arrival },
         )
         .await
         .map_err(f::debug)?;
@@ -402,7 +402,7 @@ async fn exercise_peter(h: &f::Harness) -> f::TestResult {
                 catalogue.clone(),
                 &NoItems,
                 &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
-                NpcTeleportAdmission { arrival: changed_arrival },
+                NpcTeleportAdmission { observed_condition: None,  arrival: changed_arrival },
             ).await,
             Err(crate::durability::character_progression::CharacterProgressionError::ConflictingOccurrence)
         ), "replay cannot substitute its admitted arrival");
@@ -420,7 +420,7 @@ async fn exercise_peter(h: &f::Harness) -> f::TestResult {
                 catalogue,
                 &NoItems,
                 &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
-                NpcTeleportAdmission { arrival }
+                NpcTeleportAdmission { observed_condition: None,  arrival }
             )
             .await
             .is_err()
@@ -550,10 +550,10 @@ async fn exercise_riddler(h: &f::Harness) -> f::TestResult {
     let permit = SpellLanePermit::of_fresh_scope(fence.runtime_scope).await.map_err(f::debug)?;
     let mut wrong = arrival;
     wrong.destination.x += 1;
-    assert!(h.root.commit_character_npc_teleport(&authority,&h.node,&permit,fence,request.clone(),catalogue.clone(),&NoItems,&crate::durability::quest_state::grizzly::NoGrizzlyPremium, NpcTeleportAdmission {arrival:wrong}).await.is_err());
+    assert!(h.root.commit_character_npc_teleport(&authority,&h.node,&permit,fence,request.clone(),catalogue.clone(),&NoItems,&crate::durability::quest_state::grizzly::NoGrizzlyPremium, NpcTeleportAdmission { observed_condition: None, arrival:wrong}).await.is_err());
     assert_eq!(h.root_revision().await?,"2");
     assert!(h.root.read_npc_pending_arrival(&authority,&h.node,fence).await.map_err(f::debug)?.is_none());
-    let commit = h.root.commit_character_npc_teleport(&authority,&h.node,&permit,fence,request.clone(),catalogue.clone(),&NoItems,&crate::durability::quest_state::grizzly::NoGrizzlyPremium, NpcTeleportAdmission {arrival}).await.map_err(f::debug)?;
+    let commit = h.root.commit_character_npc_teleport(&authority,&h.node,&permit,fence,request.clone(),catalogue.clone(),&NoItems,&crate::durability::quest_state::grizzly::NoGrizzlyPremium, NpcTeleportAdmission { observed_condition: None, arrival}).await.map_err(f::debug)?;
     assert!(!commit.read_only);
     assert!(matches!(commit.transition,QuestTransitionOutcome::Committed(_)));
     assert_eq!(h.root_revision().await?,"3");
@@ -562,7 +562,7 @@ async fn exercise_riddler(h: &f::Harness) -> f::TestResult {
     assert_eq!(h.root.read_npc_pending_arrival(&authority,&h.node,f::fence(3)?).await.map_err(f::debug)?,Some(arrival));
     let paired:bool = sqlx::query_scalar("SELECT t.quest_changed AND t.created_xact_id=q.created_xact_id AND t.xmin=a.xmin FROM game_quest_npc_teleport_receipts t JOIN game_character_quest_receipts q USING(character_id) JOIN game_character_pending_arrivals a USING(character_id) WHERE t.command_id=9801 AND q.transition_key=t.transition_key").fetch_one(&h.pool).await?;
     assert!(paired,"progress receipt and arrival share a transaction");
-    let replay = h.root.commit_character_npc_teleport(&authority,&h.node,&permit,fence,request,catalogue,&NoItems,&crate::durability::quest_state::grizzly::NoGrizzlyPremium, NpcTeleportAdmission {arrival}).await.map_err(f::debug)?;
+    let replay = h.root.commit_character_npc_teleport(&authority,&h.node,&permit,fence,request,catalogue,&NoItems,&crate::durability::quest_state::grizzly::NoGrizzlyPremium, NpcTeleportAdmission { observed_condition: None, arrival}).await.map_err(f::debug)?;
     assert_eq!(replay.reply,commit.reply);
     assert_eq!(h.root_revision().await?,"3");
     Ok(())

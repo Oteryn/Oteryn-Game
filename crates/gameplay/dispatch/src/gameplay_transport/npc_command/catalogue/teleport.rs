@@ -8,7 +8,13 @@ use crate::gameplay_transport::{
     npc_travel::{FrozenTravel, TravelCapture, TravelHoldSlot},
 };
 use crate::map::view::MapFacts;
-use oteryn_gameplay_quests::quest::{QuestStateCatalogue, npc_rules::NpcRulePosition};
+use oteryn_gameplay_quests::quest::{
+    QuestStateCatalogue,
+    npc_rules::{
+        NpcRulePosition,
+        teleport::{NpcTeleportCondition, NpcTeleportGate},
+    },
+};
 
 #[derive(Clone)]
 pub(in crate::gameplay_transport) struct DepartureProof {
@@ -17,6 +23,31 @@ pub(in crate::gameplay_transport) struct DepartureProof {
     pub intent: NpcTalkIntent,
     pub context: Context,
     pub magic: usize,
+    pub gate: Option<NpcTeleportGate>,
+}
+
+// Crystal 201189f8 data-global/npc/cobra.lua:48-69 observes the live poison condition.
+pub(super) fn condition_present(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: crate::foundation::GameSessionId,
+    condition: NpcTeleportCondition,
+) -> bool {
+    admission
+        .states
+        .spell_states
+        .try_lock()
+        .is_ok_and(|states| {
+            states.get(runtime, actor, session).is_some_and(|state| {
+                let element = match condition {
+                    NpcTeleportCondition::Poison => crate::domain::condition::DotElement::Poison,
+                };
+                state
+                    .owned_conditions()
+                    .has_dot(element, admission.owner_now().get())
+            })
+        })
 }
 
 pub(super) fn start(
@@ -37,6 +68,13 @@ pub(super) fn start(
         session,
         &proof.intent,
     ) != Some(proof.context.clone())
+    {
+        return None;
+    }
+    if proof
+        .gate
+        .as_ref()
+        .is_some_and(|gate| !condition_present(admission, runtime, actor, session, gate.condition))
     {
         return None;
     }
@@ -157,8 +195,16 @@ pub(in crate::gameplay_transport) async fn commit(
         .revision_sequencer
         .acquire(fence.character_id)
         .await;
+    let observed_condition = proof.gate.as_ref().map(|gate| gate.condition);
     {
         let runtime = admission.runtime.lock().await;
+        if observed_condition.is_some_and(|condition| {
+            !condition_present(admission, &runtime, actor, fence.game_session_id, condition)
+        }) {
+            return Some(Err(
+                crate::durability::character_progression::CharacterProgressionError::InvalidInput,
+            ));
+        }
         let states = admission.states.spell_states.try_lock().ok()?;
         let position = runtime.read_actor_position(actor).ok()?;
         if position.context() != capture.content
@@ -191,7 +237,10 @@ pub(in crate::gameplay_transport) async fn commit(
             &super::super::super::item_ref_admission::NativeItemWeights(native)
                 .with_wheel(admission.premium_coordinator),
             &admission.premium_coordinator,
-            NpcTeleportAdmission { arrival },
+            NpcTeleportAdmission {
+                arrival,
+                observed_condition,
+            },
         )
         .await;
     match result {

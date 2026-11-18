@@ -46,6 +46,12 @@ fn source_lines(line: &str) -> bool {
     line.parse::<u32>().is_ok_and(|number| number > 0)
 }
 
+fn valid_position(position: &super::NpcRulePosition) -> bool {
+    (0..=65535).contains(&position.x)
+        && (0..=65535).contains(&position.y)
+        && (-15..=0).contains(&position.floor)
+}
+
 fn comparison(op: NpcComparison, value: i64, maximum: Option<i64>) -> bool {
     match op {
         NpcComparison::Between => maximum.is_some_and(|high| value <= high),
@@ -350,12 +356,20 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                     | NpcRuleEffect::OutfitAddon { look_type, addon } => {
                         *look_type > 0 && *addon <= 3
                     }
-                    NpcRuleEffect::Teleport { position }
-                    | NpcRuleEffect::MapMark { position, .. } => {
-                        (0..=65535).contains(&position.x)
-                            && (0..=65535).contains(&position.y)
-                            && (-15..=0).contains(&position.floor)
+                    NpcRuleEffect::Teleport { position, gate } => {
+                        valid_position(position)
+                            && gate.as_ref().is_none_or(|gate| {
+                                rule.trigger == NpcRuleTrigger::Greet
+                                    && rule.effects.iter().any(|effect| matches!(
+                                        effect, NpcRuleEffect::EndConversation { delay_ms: 0 }
+                                    ))
+                                    && [&gate.refusal, &gate.success].into_iter().all(|line| {
+                                        !line.is_empty() && line.len() <= 512
+                                            && !line.chars().any(char::is_control)
+                                    })
+                            })
                     }
+                    NpcRuleEffect::MapMark { position, .. } => valid_position(position),
                     NpcRuleEffect::MagicEffect { effect } => effect.starts_with("CONST_ME_"),
                     NpcRuleEffect::EndConversation { delay_ms } => *delay_ms <= 60_000,
                 };

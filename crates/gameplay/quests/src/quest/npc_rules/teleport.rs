@@ -9,6 +9,24 @@ pub struct NpcTeleportPlan {
     pub source: NpcRulePlan,
     pub destination: NpcRulePosition,
     pub magic: Vec<String>,
+    pub gate: Option<NpcTeleportGate>,
+}
+
+/// A native condition checked by dispatch on the current actor before a held departure.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum NpcTeleportCondition {
+    Poison,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct NpcTeleportGate {
+    pub condition: NpcTeleportCondition,
+    pub refusal: String,
+    pub success: String,
+    #[serde(default, skip_serializing_if = "super::is_false")]
+    pub origin_effect: bool,
 }
 
 impl NpcRuleCatalog {
@@ -22,9 +40,14 @@ impl NpcRuleCatalog {
         };
         let mut destination = None;
         let mut magic = Vec::new();
+        let mut gate = None;
         for effect in &source.effects {
             match effect {
-                NpcRuleEffect::Teleport { position } => {
+                NpcRuleEffect::Teleport {
+                    position,
+                    gate: required,
+                } => {
+                    gate = required.clone();
                     if destination.replace(*position).is_some() {
                         return Err(NpcRuleError::Invalid(
                             "multiple NPC teleport destinations".into(),
@@ -53,6 +76,7 @@ impl NpcRuleCatalog {
             source,
             destination,
             magic,
+            gate,
         }))
     }
 }

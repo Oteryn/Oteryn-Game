@@ -882,6 +882,14 @@ impl<S: Clone> ConditionStore<S> {
             .is_some_and(|instance| instance.ends_at.is_some_and(|end| now < end))
     }
 
+    /// The condition remains live while it has periodic damage left and has not expired.
+    pub fn has_dot(&self, element: DotElement, now: u64) -> bool {
+        self.get(ConflictKey::Element(element))
+            .is_some_and(|instance| {
+                instance.remaining_total > 0 && instance.ends_at.is_none_or(|end| now < end)
+            })
+    }
+
     pub fn instances(&self) -> &[ConditionInstance<S>] {
         &self.instances
     }

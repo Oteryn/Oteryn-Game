@@ -954,6 +954,9 @@ pub(super) async fn exercise(
         ))
         .await;
     }
+    if name == super::thalas_greeting::NAME {
+        return Box::pin(super::thalas_greeting::exercise(owner, admitted, h, authority)).await;
+    }
     if name == "qengine-rewards-m37-peter" {
         return Box::pin(super::questpc8_npc_teleport_story::exercise(
             owner, admitted, h, authority,

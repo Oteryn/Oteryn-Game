@@ -260,6 +260,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
             {
                 // Crystal utils_definitions.hpp:66, CONST_ME_TELEPORT; emit only at first placement.
+                if let Some(gate) = &proof.gate {
+                    if gate.origin_effect
+                        && let Some(origin) = crate::content::bundle_spell_tiles::tile_pos(
+                            crate::content::LogicalCell {
+                                x: position.position().x,
+                                y: position.position().y,
+                                z: i32::from(position.position().floor),
+                            },
+                        )
+                    {
+                        let _ = map.facts.emit_movement_effect(origin, 11);
+                    }
+                    self.states.chat.push_quest_feedback(session, &gate.success);
+                }
                 for _ in 0..proof.magic {
                     let _ = map.facts.emit_movement_effect(tile, 11);
                 }
