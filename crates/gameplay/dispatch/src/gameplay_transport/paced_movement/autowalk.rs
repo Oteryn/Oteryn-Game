@@ -142,14 +142,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         content_generation: runtime.content_pin().client_artifact_digest(),
                         reset_epoch: self.reset_epoch,
                     };
-                    let pos = match target {
+                    let (pos, placement_key) = match target {
                         AutoWalkTarget::Item(key) => {
                             match world_map::resolve_map_handle(&source, key) {
+                                Ok(world_map::MapHandleTarget::Base {
+                                    pos, placement_key, ..
+                                }) => (pos, Some(placement_key)),
                                 Ok(
-                                    world_map::MapHandleTarget::Base { pos, .. }
-                                    | world_map::MapHandleTarget::Added { pos, .. }
+                                    world_map::MapHandleTarget::Added { pos, .. }
                                     | world_map::MapHandleTarget::Ground { pos, .. },
-                                ) => pos,
+                                ) => (pos, None),
                                 Err(_) => return Ok(None),
                             }
                         }
@@ -164,21 +166,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             else {
                                 return Ok(None);
                             };
-                            // Extended-range quest callbacks use the player's chosen position.
-                            // A failed reach check must not walk into range and apply the callback.
-                            if self.callback_content().iter().any(|callback| {
-                                callback.use_range > 1
-                                    && super::super::quest_callbacks::matches(
-                                        map,
-                                        callback,
-                                        target.placement_key,
-                                    )
-                            }) {
-                                return Ok(None);
-                            }
-                            target.pos
+                            (target.pos, Some(target.placement_key))
                         }
                     };
+                    // Extended-range quest callbacks use the player's chosen position.
+                    // A failed reach check must not walk into range and apply the callback.
+                    if placement_key.is_some_and(|key| {
+                        self.callback_content().iter().any(|callback| {
+                            callback.use_range > 1
+                                && super::super::quest_callbacks::matches(map, callback, key)
+                        })
+                    }) {
+                        return Ok(None);
+                    }
                     native(pos)
                 } else if let AutoWalkTarget::Object(target) = target {
                     if let Some(chest) = Self::chest_target(self.chest, &target.placement) {
