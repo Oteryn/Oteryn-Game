@@ -294,6 +294,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // which the ordinary rod does not recognize.
         let mechanical_water = target_id.is_some_and(|id| {
             oteryn_gameplay_items::fishing::MECHANICAL_FISHING_WATER.contains(&id)
+                || oteryn_gameplay_items::fishing::MECHANICAL_FISHING_SPENT_WATER.contains(&id)
         });
         request.station = Some(station);
         let mut catch_roll = 1;
@@ -348,6 +349,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     entry.item.definition.production_key == oteryn_gameplay_items::fishing::NAIL
                 })
                 .map(|entry| entry.item.item_instance_id);
+            if mechanical_sewer
+                && oteryn_gameplay_items::fishing::MECHANICAL_FISHING_SPENT_WATER
+                    .contains(&target_id)
+            {
+                if nail.is_some() && !map_target.2 {
+                    self.project_sewer_fishing_failure(actor, command, native, map_target, None)
+                        .await;
+                }
+                return disposition(UseDisposition::NothingToUse);
+            }
             let now = u64::try_from(self.clock_origin.elapsed().as_micros()).unwrap_or(u64::MAX);
             let skill = {
                 let runtime = self.runtime.lock().await;
@@ -400,8 +411,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 oteryn_gameplay_items::fishing::catches(skill, roll)
             };
             if mechanical_sewer && consumable.is_some() && !caught && !map_target.2 {
-                self.project_sewer_fishing_miss(actor, command, native, map_target, occurrence)
-                    .await;
+                self.project_sewer_fishing_failure(
+                    actor,
+                    command,
+                    native,
+                    map_target,
+                    Some(occurrence),
+                )
+                .await;
             }
             if !caught || consumable.is_none() {
                 return disposition(UseDisposition::NothingToUse);

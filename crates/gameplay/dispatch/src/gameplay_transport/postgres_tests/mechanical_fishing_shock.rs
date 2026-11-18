@@ -31,6 +31,18 @@ fn mechanical_fishing_shock_reaches_sewer_water_exclusive_to_the_mechanical_rod(
     })
 }
 
+#[test]
+fn mechanical_fishing_on_spent_sewer_water_shows_energy_without_training_or_consuming() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    // Crystal mechanical_fishing.lua:203-218 returns after the energy effect.
+    super::kill_reward_e2e::scenario_thread::run("mechanical-fishing-spent-sewer-water", || {
+        super::standard_fishing::gathering_scenario(9306, 4609, Some(4609), None, false, true, None)
+    })
+}
+
 pub(super) fn is_shock_draw(digest: [u8; 32], occurrence: [u8; 16]) -> bool {
     deterministic_decision_u64(
         &GameplayDecisionRoot::from_bytes(digest),

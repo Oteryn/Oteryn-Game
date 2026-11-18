@@ -5,16 +5,18 @@ use crate::foundation::{
     ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionValues,
 };
 use crate::map::overlay::TilePos;
-use oteryn_gameplay_items::fishing::{MechanicalSewerAttempt, mechanical_sewer_attempt};
+use oteryn_gameplay_items::fishing::{
+    MECHANICAL_FISHING_SPENT_WATER, MechanicalSewerAttempt, mechanical_sewer_attempt,
+};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) async fn project_sewer_fishing_miss(
+    pub(super) async fn project_sewer_fishing_failure(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
         native: &NativeGameplayState,
         (key, revision, _, position): (MapEntryKey, u64, bool, TilePos),
-        occurrence: [u8; 16],
+        occurrence: Option<[u8; 16]>,
     ) {
         let MapEntryKey::Base(key) = key else {
             return;
@@ -52,6 +54,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .find(|entry| entry.source.key() == MapEntryKey::Base(key))
             })
         else {
+            return;
+        };
+        let Some(occurrence) = occurrence else {
+            if MECHANICAL_FISHING_SPENT_WATER.contains(&water.facts.appearance_id) {
+                map.facts.emit_movement_effect(position, 2);
+            }
             return;
         };
         let root = GameplayDecisionRoot::from_bytes(native.source_digest());

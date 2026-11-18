@@ -401,9 +401,10 @@ pub(super) fn gathering_scenario(
             );
         }
         let reference = |key: &str| index.definition_ref("Item", key, "definition-r1");
-        let sewer = in_sewers
-            && tool == 9306
-            && oteryn_gameplay_items::fishing::MECHANICAL_FISHING_WATER.contains(&target_id);
+        let spent_sewer = in_sewers && tool == 9306
+            && oteryn_gameplay_items::fishing::MECHANICAL_FISHING_SPENT_WATER.contains(&target_id);
+        let sewer = spent_sewer || (in_sewers && tool == 9306
+            && oteryn_gameplay_items::fishing::MECHANICAL_FISHING_WATER.contains(&target_id));
         let bait_key = if sewer {
             oteryn_gameplay_items::fishing::NAIL
         } else {
@@ -517,7 +518,7 @@ pub(super) fn gathering_scenario(
         owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let skill = shock_skill.unwrap_or(10);
-        if shock_skill.is_some() {
+        if shock_skill.is_some() || spent_sewer {
             use crate::durability::character_build::DurableBuildState;
             use oteryn_gameplay_progression::hit_training::SkillFamily;
             let mut skills = [(10, 0); 7];
@@ -689,7 +690,7 @@ pub(super) fn gathering_scenario(
             .ok_or("deterministic handle history exists")?;
         admitted.continuity.item_view.handle_counter = counter;
         let command_id = 1;
-        let before = if shock_skill.is_some() {
+        let before = if shock_skill.is_some() || spent_sewer {
             Some(super::mechanical_fishing_shock::health(&owner, &admitted).await?)
         } else {
             None
@@ -713,7 +714,19 @@ pub(super) fn gathering_scenario(
                 UseDisposition::NothingToUse
             }
         );
-        if let Some(before) = before {
+        if spent_sewer {
+            let (_, replay, _) = exchange(&owner, next, command_id, &actual, None).await?;
+            assert_eq!(replay, UseDisposition::NothingToUse);
+            assert_eq!(Some(super::mechanical_fishing_shock::health(&owner, &next).await?), before);
+            let map = owner.bundle_map().ok_or("spent water map")?;
+            let effects = map.facts.movement_effects_since(0);
+            assert_eq!(effects.iter().map(|(_, at, effect)| (*at, *effect)).collect::<Vec<_>>(), [(target_pos, 2)]);
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            let state = states.get(&runtime, next.runtime_actor.ok_or("fishing actor")?, next.game_session_id)
+                .ok_or("fishing spell state")?;
+            assert!(!state.has_training_to_flush());
+        } else if let Some(before) = before {
             super::mechanical_fishing_shock::assert_shock(&owner, &next, target_pos, before).await?;
             let (_, replay, _) = exchange(&owner, next, command_id, &actual, None).await?;
             assert_eq!(replay, UseDisposition::NothingToUse);

@@ -9,9 +9,10 @@ pub const MECHANICAL_FISHING_WATER: [u16; 13] = [
     4597, 4598, 4599, 4600, 4601, 4602, 629, 630, 631, 632, 633, 634, 21312,
 ];
 
-pub const MECHANICAL_FISHING_SPENT_WATER: [u16; 13] = [
-    4609, 4610, 4611, 4612, 4613, 4614, 4809, 4810, 4811, 4812, 4813, 4814, 21314,
-];
+// Crystal mechanical_fishing.lua:1,26-42,203-218 checks waterIds before
+// the spent lists, so 4809..=4814 and 21314 never reach this branch.
+pub const MECHANICAL_FISHING_SPENT_WATER: [u16; 9] =
+    [4609, 4610, 4611, 4612, 4613, 4614, 12558, 12559, 12560];
 
 /// Result of the Yalahar-sewer branch in Crystal's mechanical rod action.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -60,7 +61,7 @@ pub fn mechanical_sewer_attempt(
 
 /// Crystal mechanical_fishing.lua:85-97,203-248.
 pub fn is_yalahar_sewer_water(target: u16, x: u16, y: u16, floor: i8) -> bool {
-    MECHANICAL_FISHING_WATER.contains(&target)
+    (MECHANICAL_FISHING_WATER.contains(&target) || MECHANICAL_FISHING_SPENT_WATER.contains(&target))
         && (32736..=32854).contains(&x)
         && (31142..=31260).contains(&y)
         && floor == -8
