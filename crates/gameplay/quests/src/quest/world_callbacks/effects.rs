@@ -362,6 +362,12 @@ pub struct Encounter {
     pub boss_phases: Option<BossPhases>,
 }
 
+impl Encounter {
+    pub fn collects_staged_party(&self) -> bool {
+        self.phase == Some(EncounterPhase::Cults) || self.boss_phases.is_some()
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct BossPhases {
@@ -1113,7 +1119,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || (encounter.phase.is_some() && encounter.timing.is_some())
             || (callback.reversible && !source_party)
             || unique_from.len() != encounter.players.len()
-            || (unique_to.len() != encounter.players.len() && !source_party)
+            || (unique_to.len() != encounter.players.len() && !encounter.collects_staged_party())
             || unique_monsters.len() != encounter.monsters.len()
             || !unique_to.is_disjoint(&unique_monsters)
             || !pos(encounter.room_min)

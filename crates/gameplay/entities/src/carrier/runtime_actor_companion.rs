@@ -376,6 +376,7 @@ impl ChannelRuntimeV1 {
         *target_identity = prepared.target_identity;
         *companion = Some(replacement);
         *health = prepared.resulting.health;
+        spell_combat.boss_speech_shield = None;
         spell_combat.maximum_health = prepared.resulting.maximum_health;
         spell_combat.soul_war_health = prepared.health_metadata.health_callback;
         spell_combat.mirror_births = prepared.health_metadata.mirror_births;

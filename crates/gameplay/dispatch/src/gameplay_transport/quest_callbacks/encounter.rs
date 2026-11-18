@@ -328,10 +328,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .iter()
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
-                // Cults collects whoever stands on the five source staging tiles.
-                if encounter.phase
-                    == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults)
-                {
+                // Source boss levers collect whoever stands on the staging tiles.
+                if encounter.collects_staged_party() {
                     continue;
                 }
                 return UseDisposition::Rejected;
@@ -423,6 +421,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
+        }
+        if super::super::encounter_phases::bosses::qualify(runtime, encounter).is_err() {
+            return UseDisposition::Rejected;
         }
         if preflight {
             return if runtime

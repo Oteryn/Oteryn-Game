@@ -831,7 +831,10 @@ impl ChannelActorCarrier {
         // Resolve Crystal's onHealthChange callback after replay, from the real HP slot.
         // The receipt retains the original request: retrying at a new HP fraction cannot
         // change the already committed hit or its damage attribution.
+        let speech_shielded = matches!(&self.slots[index], Slot::CreatureOccupied { spell_combat, .. }
+            if spell_combat.boss_speech_shield.is_some());
         let effective_damage = match &self.slots[index] {
+            _ if speech_shielded => 0,
             Slot::CreatureOccupied { spell_combat, .. } => match spell_combat.soulpit {
                 Some(tag) => {
                     tag.incoming_health_change(damage, *health, spell_combat.maximum_health)?
@@ -846,12 +849,13 @@ impl ChannelActorCarrier {
         let mut prepared_w01_conditions = None;
         // Source prepareDeath can cancel the complete hit while healing or
         // transforming HP. This fact is independent of before/after HP deltas.
-        let mut source_damage_canceled = false;
+        let mut source_damage_canceled = speech_shielded;
         if let Slot::CreatureOccupied {
             spell_combat,
             companion: Some(companion),
             ..
         } = &self.slots[index]
+            && !speech_shielded
             && let Some(policy) = spell_combat.soul_war_health.as_deref()
             && policy.kind() != oteryn_gameplay_content::content::native_soul_war_callbacks::SoulWarHealthCallbackKind::PassiveHealth
         {

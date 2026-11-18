@@ -863,7 +863,6 @@ async fn wardrobe(
         reply: vec![],
         failure_reply: vec![],
 
-
         sources: vec![],
     };
     super::qengine_rewards::seed(owner, admitted, &seed, 9000).await?;

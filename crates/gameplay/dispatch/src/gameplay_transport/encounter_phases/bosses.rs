@@ -26,6 +26,34 @@ struct Shield {
     next_reply_us: u64,
 }
 
+pub(in crate::gameplay_transport) fn qualify(
+    runtime: &ChannelRuntimeV1,
+    room: &Encounter,
+) -> Result<(), CarrierError> {
+    let Some(phases) = &room.boss_phases else {
+        return Ok(());
+    };
+    if let Some(rule) = &phases.transformation {
+        let source = runtime.companion_policy(&rule.creature)?;
+        let replacement = runtime.companion_policy(&rule.replacement)?;
+        if replacement.is_familiar
+            || i128::from(replacement.maximum_health) * 100
+                < i128::from(source.maximum_health) * i128::from(rule.at_percent)
+        {
+            return Err(CarrierError::InvalidSpawnDefinition);
+        }
+    }
+    if let Some(rule) = &phases.death_replacement {
+        let _ = runtime.companion_policy(&rule.replacement)?;
+    }
+    if let Some(rule) = &phases.speech_shield {
+        for summon in &rule.summons {
+            let _ = runtime.companion_policy(summon)?;
+        }
+    }
+    Ok(())
+}
+
 impl BossFight {
     pub(in crate::gameplay_transport) fn bind(
         runtime: &ChannelRuntimeV1,
@@ -47,26 +75,17 @@ impl BossFight {
         let transformation = phases
             .transformation
             .as_ref()
-            .map(|rule| {
-                let _ = runtime.companion_policy(&rule.replacement)?;
-                exact(&rule.creature)
-            })
+            .map(|rule| exact(&rule.creature))
             .transpose()?;
         let replacement = phases
             .death_replacement
             .as_ref()
-            .map(|rule| {
-                let _ = runtime.companion_policy(&rule.replacement)?;
-                exact(&rule.creature)
-            })
+            .map(|rule| exact(&rule.creature))
             .transpose()?;
         let shield = phases
             .speech_shield
             .as_ref()
             .map(|rule| {
-                for summon in &rule.summons {
-                    let _ = runtime.companion_policy(summon)?;
-                }
                 Ok::<_, CarrierError>(Shield {
                     actor: exact(&rule.creature)?,
                     prompt: None,
@@ -107,6 +126,7 @@ impl BossFight {
         if let Some(rule) = &phases.transformation
             && let Some(actor) = self.transformation
             && let Ok(before) = runtime.companion_snapshot(actor)
+            && before.state.policy.definition_key == rule.creature
             && below(&before, rule.at_percent)
             && let Ok(change) =
                 runtime.prepare_creature_profile_transformation(&before, &rule.replacement)
@@ -129,7 +149,7 @@ impl BossFight {
         let Ok(before) = runtime.companion_snapshot(shield.actor) else {
             return;
         };
-        if !below(&before, rule.at_percent) {
+        if before.state.policy.definition_key != rule.creature || !below(&before, rule.at_percent) {
             return;
         }
         let draw = |label, count| choose(shield.actor, shield.lives_used, label, count);
@@ -199,7 +219,9 @@ impl BossFight {
         let Ok(before) = runtime.companion_snapshot(shield.actor) else {
             return;
         };
-        if !same_speech_area(speaker, before.position) {
+        if before.state.policy.definition_key != rule.creature
+            || !same_speech_area(speaker, before.position)
+        {
             return;
         }
         // Crystal grand_master_oberon.lua:138-158 throttles all same-boss SAY
@@ -229,8 +251,7 @@ impl BossFight {
 }
 
 fn same_speech_area(speaker: MovementLocalPosition, listener: MovementLocalPosition) -> bool {
-    use oteryn_gameplay_foundation::foundation::speech::{ChatPosition, SpeechMode};
-    use oteryn_gameplay_social::chat::line::local_listeners;
+    use oteryn_gameplay_foundation::foundation::speech::{ChatPosition, SpeechMode, hears};
     let position = |p: MovementLocalPosition| {
         Some(ChatPosition {
             x: p.x,
@@ -241,7 +262,7 @@ fn same_speech_area(speaker: MovementLocalPosition, listener: MovementLocalPosit
     let (Some(speaker), Some(listener)) = (position(speaker), position(listener)) else {
         return false;
     };
-    !local_listeners(SpeechMode::Say, speaker, [((), listener)]).is_empty()
+    hears(SpeechMode::Say, speaker, listener).is_some()
 }
 
 fn below(actor: &CompanionSnapshot, percent: u8) -> bool {

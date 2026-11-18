@@ -739,6 +739,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     continue;
                 };
+                if let Some(effect) = runtime.boss_speech_shield_effect(target) {
+                    if let Some(map) = self.bundle_map()
+                        && let (Ok(x), Ok(y), Ok(floor)) = (
+                            u16::try_from(snapshot.position.x),
+                            u16::try_from(snapshot.position.y),
+                            i8::try_from(-snapshot.position.floor),
+                        )
+                    {
+                        map.facts.emit_movement_effect(
+                            crate::map::overlay::TilePos { x, y, floor },
+                            u16::from(effect),
+                        );
+                    }
+                    continue;
+                }
                 let race_key = snapshot.state.policy.definition_key.clone();
                 let Some(talisman) = talismans.get(&entry.session) else {
                     continue;
