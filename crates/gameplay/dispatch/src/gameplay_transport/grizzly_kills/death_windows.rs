@@ -163,21 +163,6 @@ impl DeathWindows {
         }
         exit.opened_by
     }
-
-    pub(in crate::gameplay_transport) fn consume(
-        &mut self,
-        key: &str,
-        rule: &DeathWindow,
-        opened_by: ExactActorRef,
-    ) {
-        if let Some(exit) = self.exits.get_mut(key)
-            && &exit.rule == rule
-            && exit.opened_by == Some(opened_by)
-        {
-            exit.count = 0;
-            exit.opened_by = None;
-        }
-    }
 }
 
 impl Exit {

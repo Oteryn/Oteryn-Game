@@ -25,29 +25,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> UseDisposition {
         let window_source = if let Some(window) = &callback.effects.death_window {
             // Keep the exact opening death across durable acknowledgement replay.
-            // A consumable opening must not admit a competing pending step.
-            let mut replay = None;
-            if let Ok(records) = self.states.quest_callbacks.records.lock() {
-                if window.consume_on_progress
-                    && records.values().any(|pending| {
-                        pending.session != session
-                            && pending.callback == callback.key
-                            && pending.window_source.is_some()
-                    })
-                {
-                    return UseDisposition::Rejected;
-                }
-                replay = records
-                    .get(&session)
-                    .filter(|pending| {
-                        pending.actor == actor
-                            && pending.cause == cause
-                            && pending.callback == callback.key
-                            && pending.key == key
-                            && pending.revision == expected_revision
-                    })
-                    .and_then(|pending| pending.window_source);
-            }
+            let replay = self
+                .states
+                .quest_callbacks
+                .records
+                .lock()
+                .ok()
+                .and_then(|records| {
+                    records
+                        .get(&session)
+                        .filter(|pending| {
+                            pending.actor == actor
+                                && pending.cause == cause
+                                && pending.callback == callback.key
+                                && pending.key == key
+                                && pending.revision == expected_revision
+                        })
+                        .and_then(|pending| pending.window_source)
+                });
             let Some(source) = replay.or_else(|| {
                 let attack = self.states.attack.try_lock().ok()?;
                 attack.kills().1.lock().ok()?.death_windows.open_source(
@@ -1263,16 +1258,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | QuestTransitionOutcome::AlreadyCommitted(ref committed),
                 ) => {
                     fresh_effects = fresh;
-                    if let (Some(source), Some(window)) = (window_source, callback.effects.death_window.as_ref())
-                        && window.consume_on_progress
-                        && committed.changes.iter().any(|change| change.before != change.after)
-                    {
-                        let attack = self.states.attack.lock().await;
-                        let Ok(mut capture) = attack.kills().1.lock() else {
-                            return UseDisposition::Rejected;
-                        };
-                        capture.death_windows.consume(&callback.key, window, source);
-                    }
                     if fresh {
                         success_message = callback.committed_message(&committed.changes).map(str::to_owned);
                         // Crystal action_mead.lua:8-11 says both lines on the winning sip.

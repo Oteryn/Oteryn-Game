@@ -167,10 +167,6 @@ pub struct DeathWindow {
     pub open_appearance: Option<u16>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub open_effect: Option<u16>,
-    /// Crystal 201189f8 movements_teleport_main.lua:191-196 consumes
-    /// the shared boss state only when a player advances EnterTeleport.
-    #[serde(default, skip_serializing_if = "is_false")]
-    pub consume_on_progress: bool,
 }
 
 impl DeathWindow {

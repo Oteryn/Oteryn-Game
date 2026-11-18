@@ -27,7 +27,6 @@ enum Case {
     Top,
     Time,
     Window,
-    WindowConsumed,
     WindowStateless,
     WindowVisual,
     Area,
@@ -101,14 +100,6 @@ fn two_players_share_the_timed_boss_exit_and_return_on_expiry() -> TestResult {
 }
 
 #[test]
-fn advancing_a_ward_exit_consumes_it_for_the_other_player() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    run(admin, Case::WindowConsumed)
-}
-
-#[test]
 fn stateless_seal_exit_moves_both_players_without_a_quest_write() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -128,7 +119,7 @@ impl Case {
     fn is_window(self) -> bool {
         matches!(
             self,
-            Self::Window | Self::WindowConsumed | Self::WindowStateless | Self::WindowVisual
+            Self::Window | Self::WindowStateless | Self::WindowVisual
         )
     }
     fn is_stateless_window(self) -> bool {
@@ -152,8 +143,7 @@ fn window_callback(at: MovementLocalPosition, case: Case) -> TestResult<Callback
             "creatures":[RAT,CAVE_RAT],
             "area":{"minimum":[x+2,y,at.floor],"maximum":[x+2,y,at.floor]},
             "required_deaths":2,
-            "duration_ms":600_000,
-            "consume_on_progress":case == Case::WindowConsumed
+            "duration_ms":600_000
         }},
         "storage":[{"track":EXIT, "minimum":0,"maximum":1,"set":1}],
         "offerings":[],
@@ -210,7 +200,7 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
             counter["damage_credit"]["recent_damage_ms"] = json!(60_000);
             "Crystal201189f the_inquisition_quest/creaturescripts_inquisition_ungreez.lua:2-10"
         }
-        Case::Window | Case::WindowConsumed => {
+        Case::Window => {
             "Crystal201189f creaturescripts_inquisition_boss.lua:19-29 and movements_teleport_main.lua:191-201"
         }
         Case::Time => {
@@ -498,7 +488,7 @@ fn run(admin: String, case: Case) -> TestResult {
                 assert!((before..=after).contains(&actual));
                 [actual, actual, 0]
             }
-            Case::Window | Case::WindowConsumed | Case::WindowStateless | Case::WindowVisual => {
+            Case::Window | Case::WindowStateless | Case::WindowVisual => {
                 return Err("timed exit requires bundle cells".into());
             }
         };
@@ -562,16 +552,8 @@ async fn exercise_window(
     }
     assert_eq!(enter_exit(owner, players[0], portal).await?, landing);
     move_to(owner, players[0], original[0]).await?;
-    if case == Case::WindowConsumed {
-        assert_eq!(enter_exit(owner, players[1], portal).await?, original[1]);
-        set_clock(203_000);
-        death(owner, players, RAT, ward, case, 103).await?;
-        set_clock(204_000);
-        death(owner, players, CAVE_RAT, ward, case, 104).await?;
-        // An already-earned stage may use the open exit without consuming it.
-        assert_eq!(enter_exit(owner, players[0], portal).await?, landing);
-        move_to(owner, players[0], original[0]).await?;
-    }
+    // Crystal movements_teleport_main.lua:191-201 reads the shared boss flag
+    // but writes personal progress, so the second player can take the same exit.
     assert_eq!(enter_exit(owner, players[1], portal).await?, landing);
     move_to(owner, players[1], original[1]).await?;
     let passed: i64 = sqlx::query_scalar(
