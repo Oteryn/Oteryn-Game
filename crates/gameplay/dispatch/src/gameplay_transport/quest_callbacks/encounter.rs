@@ -2,6 +2,7 @@
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::view::EntryFacts;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 pub(in crate::gameplay_transport) fn room_contains(
     encounter: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
@@ -361,6 +362,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 expected_revision,
                 after,
             );
+        }
+        if self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .is_none_or(|native| native.install_companion_policies(runtime).is_err())
+        {
+            return UseDisposition::Rejected;
         }
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
