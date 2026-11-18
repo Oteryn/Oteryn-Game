@@ -35,6 +35,14 @@ fn scenario() -> TestResult {
 }
 
 pub(super) fn scenario_with_bindings(prove_bindings: bool) -> TestResult {
+    scenario_with_moon_dates(prove_bindings, 11, 13)
+}
+
+pub(super) fn scenario_with_moon_dates(
+    prove_bindings: bool,
+    inactive_day: i32,
+    active_day: i32,
+) -> TestResult {
     // Fixture state is the real encounter's already-open source portal. This does not
     // assert that a full moon fires Feroxa or fabricate the donor's five-percent draw.
     let callback: Callback = serde_json::from_value(serde_json::json!({
@@ -46,7 +54,7 @@ pub(super) fn scenario_with_bindings(prove_bindings: bool) -> TestResult {
         "sources":["crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/lib/quests/grimvale.lua:34-45"]
     }))?;
     let world = super::quest_world_callbacks::world(&callback, TRIGGER)?;
-    run(async |admin| {
+    run(async move |admin| {
         let start = std::time::Instant::now();
         let h =
             Harness::create_with_admission_seed(admin, "worldchg_grimvale", false, false).await?;
@@ -196,7 +204,7 @@ pub(super) fn scenario_with_bindings(prove_bindings: bool) -> TestResult {
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
         let world_id = admitted.world_id;
-        for (epoch, day) in [(0_i64, 12_i32), (1, 13), (2, 13)] {
+        for (epoch, day) in [(0_i64, inactive_day), (1, active_day), (2, active_day)] {
             sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2,$3,'map-1',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,make_timestamptz(2031,6,$4,12,0,0,'UTC'),'2031-06')")
                 .bind(world_id.as_bytes().as_slice()).bind(epoch).bind([1_u8;32].as_slice()).bind(day).execute(&h.pool).await?;
         }
