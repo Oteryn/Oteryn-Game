@@ -375,16 +375,17 @@ pub(super) async fn exercise_mission(
     Ok(())
 }
 
-async fn use_net(
+pub(super) async fn use_quest_tool(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     pos: TilePos,
+    ordinal: u8,
     command_id: u64,
     source: u8,
 ) -> TestResult<UseDisposition> {
     let actor = admitted.runtime_actor.ok_or("net player")?;
     let map = owner.bundle_map().ok_or("map")?;
-    let key = crate::map::view::placement_key(pos, 0).ok_or("net site")?;
+    let key = crate::map::view::placement_key(pos, ordinal).ok_or("tool target site")?;
     let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     let target = WorldObjectTarget {
@@ -453,19 +454,19 @@ pub(super) async fn exercise_wave(
             .quest_callback_blocked(map.overlay.base(), entrance, false)
     );
     assert_eq!(
-        use_net(owner, admitted, ordinary_ground, 69, 71).await?,
+        use_quest_tool(owner, admitted, ordinary_ground, 0, 69, 71).await?,
         UseDisposition::NothingToUse,
         "the selected net requires the authored trap ground"
     );
     assert!(map.facts.movement_items(ordinary_ground).is_empty());
     assert_eq!(
-        use_net(owner, admitted, early, 1, 70).await?,
+        use_quest_tool(owner, admitted, early, 0, 1, 70).await?,
         UseDisposition::NothingToUse,
         "the selected backpack cannot stand in for a carried net"
     );
     assert!(map.facts.movement_items(early).is_empty());
     assert_eq!(
-        use_net(owner, admitted, early, 2, 71).await?,
+        use_quest_tool(owner, admitted, early, 0, 2, 71).await?,
         UseDisposition::Committed
     );
     assert_eq!(
@@ -480,7 +481,7 @@ pub(super) async fn exercise_wave(
             .is_none()
     );
     assert_eq!(
-        use_net(owner, admitted, pos, 3, 72).await?,
+        use_quest_tool(owner, admitted, pos, 0, 3, 72).await?,
         UseDisposition::Committed
     );
     assert!(

@@ -31,6 +31,10 @@ const EXHAUSTED: u8 = 7;
 
 /// Grass 0..=12 x 0..=8 on floor 7 (Tibia-keyed, so every tile has spell facts); a wall at (5, 2); every tile with x >= 8 is a protection zone.
 pub(super) fn bundle(trap: Option<u16>) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+    bundle_for(trap, false)
+}
+
+fn bundle_for(trap: Option<u16>, repair: bool) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     use oteryn_world_bundle::writer::{
         self as writer, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
@@ -130,6 +134,16 @@ pub(super) fn bundle(trap: Option<u16>) -> TestResult<(Vec<u8>, crate::map::Bund
             Some(true),
         ));
     }
+    if repair {
+        for (id, appearance) in [(7, 12183), (8, 6474)] {
+            manifest.palette.push(PaletteEntry {
+                key: format!("oteryn:item.tibia.i{appearance}"),
+                family: Family::Item,
+                id,
+                terrain: None,
+            });
+        }
+    }
     let mut tiles = Vec::new();
     for y in 0..=8 {
         for x in 0..=12 {
@@ -146,6 +160,9 @@ pub(super) fn bundle(trap: Option<u16>) -> TestResult<(Vec<u8>, crate::map::Bund
                 && (x, y) == (4, 2)
             {
                 palettes.push(if trap == 12368 { 5 } else { 3 });
+            }
+            if repair && (x, y) == (3, 2) {
+                palettes.push(7);
             }
             if (x, y) == (5, 2) {
                 palettes.push(1);
@@ -212,13 +229,14 @@ pub(super) fn scenario(
     trap: Option<u16>,
 ) -> Result<(), String> {
     run(async |admin| {
+        let repair = seed == "rottin_repairs";
         let merchant_loot = seed == "rottin_merchant_loot";
         let blocked_merchant_spawn = seed == "rottin_merchant_wave_blocked";
         let merchant_wave = seed == "rottin_merchant_wave" || blocked_merchant_spawn;
         let repeat_reward = seed == "rottin_weighted_repeat";
         let short_reward = seed == "rottin_weighted_short";
         let weighted_reward = seed == "rottin_weighted_reward" || repeat_reward || short_reward;
-        let h = if merchant_loot || merchant_wave || weighted_reward {
+        let h = if merchant_loot || merchant_wave || weighted_reward || repair {
             Harness::create_quest_reward(admin, seed, false).await?
         } else {
             Harness::create_with_admission_seed(admin, seed, true, false).await?
@@ -227,6 +245,8 @@ pub(super) fn scenario(
             super::rottin_rewards::seed_inventory(&h, if short_reward { 6 } else { 7 }).await?;
         } else if merchant_wave {
             super::item_look::seed_main_backpack(&h, &[("oteryn:item.tibia.i12186", 1); 2]).await?;
+        } else if repair {
+            super::item_look::seed_main_backpack(&h, &[("oteryn:item.tibia.i3460", 1)]).await?;
         } else if merchant_loot {
             super::item_look::seed_main_backpack(&h, &[]).await?;
         }
@@ -247,7 +267,7 @@ pub(super) fn scenario(
         )?;
         let active = controller.active().ok_or("active")?;
         deps.room = pin.qualified_room().clone();
-        let (bytes, pins) = bundle(trap)?;
+        let (bytes, pins) = bundle_for(trap, repair)?;
         let base = crate::map::load(&bytes, &pins).map_err(debug)?;
         let world = boot(
             &bytes,
@@ -272,6 +292,8 @@ pub(super) fn scenario(
                         "oteryn:item.tibia.i12187" => 8,
                         "oteryn:item.tibia.i12189" => 9,
                         "oteryn:item.tibia.i3682" => 10,
+                        "oteryn:item.tibia.i12183" => 11,
+                        "oteryn:item.tibia.i6474" => 12,
                         _ => return None,
                     })?,
                     solid: Some(false),
@@ -298,7 +320,7 @@ pub(super) fn scenario(
                 },
             )
             .ok_or("push combat room")?;
-        if merchant_loot || merchant_wave {
+        if merchant_loot || merchant_wave || repair {
             sqlx::query(
                 "INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)",
             )
@@ -376,10 +398,13 @@ pub(super) fn scenario(
             admitted.continuity.selected_capabilities.as_slice(),
             &[4, 6, 13, 82]
         );
-        if weighted_reward || merchant_loot || merchant_wave {
+        if weighted_reward || merchant_loot || merchant_wave || repair {
             if weighted_reward {
                 owner.quest_catalogue =
                     Some(std::sync::Arc::new(super::rottin_rewards::catalogue(repeat_reward)?));
+            }
+            if repair {
+                owner.quest_catalogue = Some(std::sync::Arc::new(super::rottin_repairs::catalogue()?));
             }
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
@@ -391,6 +416,8 @@ pub(super) fn scenario(
                 ).await?;
             } else if merchant_loot {
                 super::rottin_bushwhacking::exercise_mission(&mut owner, admitted, &h).await?;
+            } else if repair {
+                super::rottin_repairs::exercise(&mut owner, admitted, &h).await?;
             } else if short_reward {
                 super::rottin_rewards::refuse_short_hand_in(&mut owner, &admitted, &h).await?;
             } else {
