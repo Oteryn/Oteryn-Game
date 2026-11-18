@@ -93,6 +93,9 @@ fn static_element(
         return Some(None);
     };
     let top = tile.top_source_ids();
+    if top.is_empty() {
+        return Some(None);
+    }
     let classify = |id| {
         let Some(policy) = source.item_policy_for_source_id(id) else {
             return StaticItemFact::NoPolicy;
