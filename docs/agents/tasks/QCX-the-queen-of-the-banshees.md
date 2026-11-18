@@ -26,7 +26,11 @@ Crystal `201189f871d23597b82caf88fd611454a2ddefb8` supplies numeric source bindi
 
 The claim plan is 1 Boots of Haste (3079), 1 Giant Sword (3281), 1 Tower Shield (3428), 1 Stealth Ring (3049), 1 Stone Skin Amulet (3081), and 100 Platinum Coins (3035). The Stone Skin Amulet already has a native exact partial-charge projection despite its historical source-readiness hold. The two sources establish one amulet and the donor separately supplies the existing one-charge operand.
 
+The active shared callback document had three Banshee callbacks and the inspected held callback directory had no Banshee row. The original door overlay binds actions 10074, 10076, 10078, 10081, 10083, 10086, 10088 and 10089 to the eight donor door tracks.
+
 ## Blockers and open facts
+
+The existing callback engine has timed target resets and encounter effects. Its timed passage reset excludes reversible circuits, and the group encounter owner has different admission semantics from shared-room per-player ambushes. The NPC program catalogue supports level predicates and recoverable teleport, but the current classic transcript owner lacks the combat-lock-aware handoff for the final confirmation.
 
 ```text
 BLOCKER Hidden Seal wall and trapdoor puzzle shared paired toggles and delayed reset composition data-global/scripts/quests/the_queen_of_the_banshees/action-1-first_seal_lever.lua:3-45
@@ -40,7 +44,12 @@ BLOCKER Queen kiss classic conversation handoff to level/combat-guarded teleport
 ```
 
 - OPEN-FACTS Exact Global switch and path layouts, pick-hole tiles, reset timings, pearl pedestal coordinates and combat-lock behavior. The text snapshot references images for several layouts.
-- OPEN-FACTS Exact Global inner-seal and kiss destinations, the Queen’s placement cell, level-refusal wording, monastery fee and entry-place selectors, and exact final-room spawn cells.
+- OPEN-FACTS Exact Global inner-seal and kiss destinations, level-refusal wording, monastery fee and entry-place selectors, and exact final-room spawn cells.
+- OPEN-FACTS Queen placement. The retained candidate is (32260, 31866, 14). The repository’s BR cross-check records (32260, 31863, 14). The supplied Global quest text gives relative directions. [BR NPC capture, curid 11674 and oldid 421546](https://www.tibiawiki.com.br/index.php?curid=11674&oldid=421546)
 - OPEN-FACTS Global Stone Skin Amulet charge count. The current donor-backed one-charge projection is preserved.
 
 PARTIAL Hidden through Logic complete puzzle routes, Queen placement, kiss and final-room access from fresh progress, final-room spawn parity, Isle of the Kings routing and restriction, source approximation and quest-log completion.
+
+## Corrections
+
+The six final-room chests now bind through the existing native placement alias owner. The aliases join the donor chest rows and canonical claims to the decoded native B3 stack at ordinal 1. The claim identities, once-per-character behavior, item IDs and counts stay exact. The amulet uses the pre-existing one-charge plan.

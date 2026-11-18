@@ -5,12 +5,112 @@
       "claim": "oteryn:reward-claim.kv.mintwallincyclops",
       "expected_revision": "reward-claim-r1",
       "expected_source_uid": 6138,
-      "project_position": { "x": 32591, "y": 32097, "z": 14 },
+      "project_position": {
+        "x": 32591,
+        "y": 32097,
+        "z": 14
+      },
       "appearance": 2472,
       "ordinal": 1,
       "sources": [
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua",
         "Committed region-z14-x127-y125.b3: ground351 and chest2472 at32591,32097,14; both entries have no retained unique tag. Original source identity, reward and claim policy are unchanged."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.boots_of_haste",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6060,
+      "project_position": {
+        "x": 32218,
+        "y": 31912,
+        "z": 15
+      },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L1028-L1033",
+        "content/world/placements/region-z15-x125-y124.b3 at (32218, 31912, 15), top-level ordinal 1; no retained unique tag."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.giant_sword",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6059,
+      "project_position": {
+        "x": 32226,
+        "y": 31910,
+        "z": 15
+      },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L1021-L1026",
+        "content/world/placements/region-z15-x125-y124.b3 at (32226, 31910, 15), top-level ordinal 1; no retained unique tag."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.platinum_coin",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6061,
+      "project_position": {
+        "x": 32220,
+        "y": 31912,
+        "z": 15
+      },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L1035-L1040",
+        "content/world/placements/region-z15-x125-y124.b3 at (32220, 31912, 15), top-level ordinal 1; no retained unique tag."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.stealth_ring",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6057,
+      "project_position": {
+        "x": 32226,
+        "y": 31896,
+        "z": 15
+      },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L1007-L1012",
+        "content/world/placements/region-z15-x125-y124.b3 at (32226, 31896, 15), top-level ordinal 1; no retained unique tag."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.stone_skin_amulet",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6056,
+      "project_position": {
+        "x": 32212,
+        "y": 31896,
+        "z": 15
+      },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L1000-L1005",
+        "content/world/placements/region-z15-x125-y124.b3 at (32212, 31896, 15), top-level ordinal 1; no retained unique tag."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.tower_shield",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6058,
+      "project_position": {
+        "x": 32212,
+        "y": 31910,
+        "z": 15
+      },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L1014-L1019",
+        "content/world/placements/region-z15-x125-y124.b3 at (32212, 31910, 15), top-level ordinal 1; no retained unique tag."
       ]
     }
   ]
