@@ -103,7 +103,7 @@ impl PendingReset {
             .character_reset
             .iter()
             .filter(|_| self.map_applied)
-            .flat_map(|reset| {
+            .flat_map(move |reset| {
                 self.damagers.iter().map(move |hit| ReadyReset {
                     callback: self.callback.clone(),
                     quest: self.quest.clone(),
