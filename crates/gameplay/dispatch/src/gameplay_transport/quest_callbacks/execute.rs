@@ -101,34 +101,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
-        let (pos, mut after) =
-            if oteryn_gameplay_items::event_planting::world_change_item_source(key).is_some() {
-                let Some(source) = shared_added_source(map, callback, key) else {
-                    return UseDisposition::Rejected;
-                };
-                source
-            } else {
-                let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
-                    return UseDisposition::Rejected;
-                };
-                let Some(base) = map.overlay.base().tile(pos.x, pos.y, pos.floor) else {
-                    return UseDisposition::Rejected;
-                };
-                let Some(id) = base
-                    .ids()
-                    .iter()
-                    .zip(base.depths())
-                    .filter(|(_, d)| **d == 0)
-                    .nth(usize::from(ordinal))
-                    .map(|(id, _)| *id)
-                else {
-                    return UseDisposition::Rejected;
-                };
-                let Some(after) = map.facts.base_entry(pos, ordinal, id) else {
-                    return UseDisposition::Rejected;
-                };
-                (pos, after)
+        let (pos, mut after) = if callback.effects.loot_merchant
+            || oteryn_gameplay_items::event_planting::world_change_item_source(key).is_some()
+        {
+            let Some(source) = shared_added_source(map, callback, key) else {
+                return UseDisposition::Rejected;
             };
+            source
+        } else {
+            let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
+                return UseDisposition::Rejected;
+            };
+            let Some(base) = map.overlay.base().tile(pos.x, pos.y, pos.floor) else {
+                return UseDisposition::Rejected;
+            };
+            let Some(id) = base
+                .ids()
+                .iter()
+                .zip(base.depths())
+                .filter(|(_, d)| **d == 0)
+                .nth(usize::from(ordinal))
+                .map(|(id, _)| *id)
+            else {
+                return UseDisposition::Rejected;
+            };
+            let Some(after) = map.facts.base_entry(pos, ordinal, id) else {
+                return UseDisposition::Rejected;
+            };
+            (pos, after)
+        };
         if map.facts.object_revision(key) != expected_revision {
             // A known-commit source visual batch may have published its first
             // fixed object before a retry. Only that retained exact post-CAS
@@ -293,6 +294,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 remove: Some(key),
                 create: None,
             });
+        }
+        if callback.effects.loot_merchant {
+            if projection.is_some() {
+                return UseDisposition::Rejected;
+            }
+            projection =
+                Some(crate::map::facts::QuestCallbackProjection::ReleaseMerchant { position: pos });
         }
         if let Some(appearance) = callback.effects.place_item {
             let Some(facts) = map.facts.movement_item_facts(appearance) else {

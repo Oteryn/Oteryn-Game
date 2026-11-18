@@ -105,6 +105,8 @@ pub struct CallbackEffects {
     pub place_item: Option<u16>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub merchant_entrance: Option<Position>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub loot_merchant: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
     pub encounter: Option<Encounter>,
@@ -763,8 +765,38 @@ pub(super) fn valid(callback: &Callback) -> bool {
     {
         return false;
     }
+    if effects.loot_merchant
+        && (callback.trigger != Trigger::Use
+            || callback.actor_kind != ActorKind::Player
+            || !callback.requires_world_admission
+            || !callback.has_state_writes()
+            || callback.selector.appearance != Some(12189)
+            || callback.selector.native.is_some()
+            || callback.selector.ordinal.is_some()
+            || callback.selector.unique.is_some()
+            || callback.selector.action.is_some()
+            || callback.item_on_target.is_some()
+            || !callback.offerings.is_empty()
+            || callback.teleport.is_some()
+            || callback.lever.is_some()
+            || callback.reversible
+            || effects.place_item.is_some()
+            || !callback
+                .storage
+                .iter()
+                .any(|track| track.add == Some(1) && track.set == 5)
+            || callback.item_reward().is_none_or(|reward| {
+                reward.item != "oteryn:item.tibia.i3035"
+                    || reward.count != 1
+                    || !reward.contents.is_empty()
+                    || !reward.additional.is_empty()
+                    || !reward.backpack_outputs.is_empty()
+            }))
+    {
+        return false;
+    }
     if effects.place_item.is_some_and(|appearance| {
-        appearance == 0
+        appearance != 12187
             || callback.trigger != Trigger::Use
             || callback.actor_kind != ActorKind::Player
             || !callback.requires_world_admission
@@ -772,7 +804,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || callback.reversible
             || callback.opening_only
             || callback.item_on_target.as_ref().is_none_or(|item| {
-                !item.selected_instance
+                item.item != "oteryn:item.tibia.i12186"
+                    || !item.selected_instance
                     || item.reusable
                     || item.count != 1
                     || item.replacement.is_some()

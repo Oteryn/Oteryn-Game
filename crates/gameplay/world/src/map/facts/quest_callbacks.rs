@@ -73,7 +73,10 @@ struct DynamicPortal {
 /// Already qualified facts for one atomic, Channel-local callback projection.
 pub enum QuestCallbackProjection {
     /// Restore exactly this revision at an original source deadline.
-    TimedTransform { due: u64, restore: EntryFacts },
+    TimedTransform {
+        due: u64,
+        restore: EntryFacts,
+    },
     /// A source glyph and its native portal share one revision-fenced deadline.
     TimedEntrance {
         due: u64,
@@ -115,6 +118,9 @@ pub enum QuestCallbackProjection {
     ItemPresence {
         position: TilePos,
         entry: EntryFacts,
+    },
+    ReleaseMerchant {
+        position: TilePos,
     },
     MerchantTrap {
         position: TilePos,
@@ -456,6 +462,23 @@ impl CallbackStates {
                         });
                     self.presences.insert(owner, (*position, entry));
                 }
+            }
+            QuestCallbackProjection::ReleaseMerchant { position } => {
+                let Some(entries) = self.movement_items.get_mut(position) else {
+                    return false;
+                };
+                let before = entries.len();
+                entries.retain(|entry| {
+                    !matches!(entry.source, view::EntrySource::Added(id)
+                    if id.get() == owner && entry.facts.appearance_id == 12189)
+                });
+                if before == entries.len() {
+                    return false;
+                }
+                if entries.is_empty() {
+                    self.movement_items.remove(position);
+                }
+                self.changed.remove(&owner);
             }
             QuestCallbackProjection::MerchantTrap {
                 position,
@@ -1717,7 +1740,8 @@ impl BundleFacts {
                 QuestCallbackProjection::ReadsetTransforms { entries, .. } => {
                     entries.iter().any(|(key, _, _)| states.key_reserved(*key))
                 }
-                QuestCallbackProjection::ItemPresence { position, .. }
+                QuestCallbackProjection::ReleaseMerchant { position }
+                | QuestCallbackProjection::ItemPresence { position, .. }
                 | QuestCallbackProjection::ItemCycle { position, .. } => {
                     states.position_reserved(*position)
                 }
@@ -1797,7 +1821,12 @@ impl BundleFacts {
             states.changed.insert(entry, (revision, facts));
             states.passable.insert(entry, passable);
         }
-        states.changed.insert(key, (expected + 1, after));
+        if !matches!(
+            projection,
+            Some(QuestCallbackProjection::ReleaseMerchant { .. })
+        ) {
+            states.changed.insert(key, (expected + 1, after));
+        }
         true
     }
 
@@ -1882,7 +1911,11 @@ impl BundleFacts {
             return false;
         };
         if !tile.walkable()
-            || states.phase_has_dynamic_blocker(pos)
+            || states.solid_items.contains(&pos)
+            || states
+                .merchant_barricades
+                .values()
+                .any(|(at, _)| *at == pos)
             || states.changed.contains_key(&key)
             || states.hidden.contains(&key)
             || states.passable.contains_key(&key)
