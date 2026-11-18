@@ -174,6 +174,50 @@ async fn use_claim(
     ).await.ok_or("claim callback did not dispatch")?.disposition)
 }
 
+async fn contend_for_daily_claim(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    h: &Harness,
+) -> TestResult<[UseDisposition; 2]> {
+    let mut blocker = h.pool.begin().await?;
+    sqlx::query("LOCK TABLE game_character_quest_receipts IN ACCESS EXCLUSIVE MODE")
+        .execute(&mut *blocker)
+        .await?;
+    let blocker_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+        .fetch_one(&mut *blocker)
+        .await?;
+
+    let first = use_claim(owner, admitted, 21);
+    tokio::pin!(first);
+    // Observe the first USE inside the durable writer before dispatching the second.
+    let writer_waiting = tokio::time::timeout(std::time::Duration::from_secs(5), async {
+        loop {
+            let blocked: bool = sqlx::query_scalar(
+                "SELECT EXISTS (SELECT 1 FROM pg_stat_activity \
+                 WHERE datname=current_database() AND $1=ANY(pg_blocking_pids(pid)))",
+            )
+            .bind(blocker_pid)
+            .fetch_one(&h.pool)
+            .await?;
+            if blocked {
+                return Ok::<(), sqlx::Error>(());
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+        }
+    });
+    tokio::select! {
+        result = &mut first => return Err(format!("first claim finished before receipt wait: {result:?}").into()),
+        waiting = writer_waiting => waiting??,
+    }
+
+    // Poll the second USE while the first is still waiting on the receipt table.
+    let (first, second, released) = tokio::join!(biased;
+        first, use_claim(owner, admitted, 22), blocker.rollback(),
+    );
+    released?;
+    Ok([first?, second?])
+}
+
 async fn tame_noble_lion(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
@@ -635,8 +679,13 @@ pub(super) async fn exercise(
     }
     let before_hearts = super::qengine_voucher_stories::quantity(h, LIONS_HEART).await?;
     let before_red_gems = super::qengine_voucher_stories::quantity(h, 3039).await?;
-    let (first, second) = tokio::join!(use_claim(owner, *admitted, 21), use_claim(owner, *admitted, 22));
-    let committed = [first?, second?].into_iter().filter(|outcome| *outcome == UseDisposition::Committed).count();
+    let outcomes = if name == DAILY {
+        Box::pin(contend_for_daily_claim(owner, *admitted, h)).await?
+    } else {
+        let (first, second) = tokio::join!(use_claim(owner, *admitted, 21), use_claim(owner, *admitted, 22));
+        [first?, second?]
+    };
+    let committed = outcomes.into_iter().filter(|outcome| *outcome == UseDisposition::Committed).count();
     assert_eq!(committed, 1);
     assert_eq!(receipts(h).await?, 1);
     assert_eq!(super::qengine_voucher_stories::quantity(h, 3031).await?, before + 2);
