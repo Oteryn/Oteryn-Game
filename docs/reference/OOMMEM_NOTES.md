@@ -28,3 +28,14 @@ source tree has 4,238 test attributes and 29 direct lifted-test mounts in
 for the same test crate. The PostgreSQL subtree contains 2,171 test
 attributes, including nested helper files. The mount-count experiment
 will quantify the contribution of that subtree.
+
+## Local mount ablation
+
+An empty generated mount list (0 mounted files, 0 PostgreSQL test
+attributes) reached 4,281,120 KiB after 120.644 s with two Cargo jobs.
+This run failed at compile time. Existing test modules import helpers from
+ten of the removed modules, including `inspection`,
+`scheduled_event_rates`, and `appearance_change_postgres`. Its peak is
+therefore a failed type-check measurement, rather than a complete test build.
+The test sources and build script were untouched. All ablations use temporary
+generated mount lists.
