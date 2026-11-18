@@ -15,6 +15,11 @@ const EXIT: Position = Position {
     y: 100,
     floor: -7,
 };
+const CAPTAIN: Position = Position {
+    x: 116,
+    y: 112,
+    floor: -7,
+};
 const LANDING: MovementLocalPosition = MovementLocalPosition {
     x: 116,
     y: 117,
@@ -62,7 +67,7 @@ pub(super) fn bind(callback: &mut Callback) -> TestResult {
     let mut json = serde_json::to_value(&*callback)?;
     json["effects"]["battlefield"] = serde_json::json!({
         "exit": EXIT,
-        "captain": {"x":116,"y":112,"floor":-7},
+        "captain": CAPTAIN,
         "boss": {"x":116,"y":113,"floor":-7},
         "timeout_ms":1_200_000,
     });
@@ -133,6 +138,9 @@ pub(super) async fn exercise(
         owner, MovementLocalPosition { x: 102, y: 102, floor: 7 },
         MovementLocalPosition { x: 117, ..LANDING },
     ).await?;
+    if spawn_boss {
+        set_captain_tile_passable(owner, 0, false)?;
+    }
     let species = if spawn_boss { USURPER } else { LION };
     for command in 100..103 {
         let target = list(owner, species)
@@ -149,6 +157,17 @@ pub(super) async fn exercise(
     }
     assert!(list(owner, species).await?.is_empty());
     if spawn_boss {
+        assert!(list(owner, DRUME).await?.is_empty());
+        assert!(list(owner, KESAR).await?.is_empty());
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            let now = owner.owner_now().get();
+            crate::gameplay_transport::encounter_phases::tick(&mut runtime, &states, now);
+            set_captain_tile_passable(owner, 1, true)?;
+            crate::gameplay_transport::encounter_phases::tick(&mut runtime, &states, now + 1);
+            crate::gameplay_transport::encounter_phases::tick(&mut runtime, &states, now + 2);
+        }
         assert_eq!(list(owner, DRUME).await?.len(), 1);
         let captains = list(owner, KESAR).await?;
         assert_eq!(captains.len(), 1);
@@ -222,6 +241,43 @@ pub(super) async fn exercise(
         })
         .count();
     assert_eq!(exit_effects, usize::from(!spawn_boss));
+    Ok(())
+}
+
+fn set_captain_tile_passable(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    revision: u64,
+    passable: bool,
+) -> TestResult {
+    use crate::map::overlay::TilePos;
+    use crate::map::view::{EntrySource, compose_tile};
+
+    let map = owner.bundle_map().ok_or("battlefield map")?;
+    let at = TilePos {
+        x: CAPTAIN.x,
+        y: CAPTAIN.y,
+        floor: CAPTAIN.floor,
+    };
+    let tile = compose_tile(&map.overlay, &map.facts, at)
+        .map_err(debug)?
+        .ok_or("captain tile")?;
+    let ground = tile.entries.first().ok_or("captain tile ground")?;
+    let EntrySource::Base { placement_key, .. } = ground.source else {
+        return Err("captain tile must have base ground".into());
+    };
+    assert!(map.facts.apply_quest_callback(
+        placement_key,
+        revision,
+        ground.facts,
+        &[],
+        &[(placement_key, ground.facts, passable)],
+        false,
+        None,
+    ));
+    assert_eq!(
+        map.facts.quest_callback_blocked(map.overlay.base(), at, false),
+        !passable,
+    );
     Ok(())
 }
 
