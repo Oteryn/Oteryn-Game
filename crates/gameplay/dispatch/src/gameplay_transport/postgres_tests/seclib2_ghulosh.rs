@@ -83,11 +83,16 @@ fn run_ghulosh(admin: &str, expire: bool) -> TestResult {
                         "/../../../content/world/placements/region-z13-x127-y127.b3"
                     )),
                     region: (13, 127, 127),
-                    bounds: (32660, 32711, 32666, 32713),
+                    bounds: (32660, 32711, 32666, 32714),
                     start: (32664, 32711),
-                    expected: vec![ExpectedTile {
-                        position: (32664,32711), ids: vec![11421], counted_entry: None,
-                    }],
+                    expected: vec![
+                        ExpectedTile {
+                            position: (32664, 32711), ids: vec![11421], counted_entry: None,
+                        },
+                        ExpectedTile {
+                            position: (32660, 32713), ids: vec![28318], counted_entry: None,
+                        },
+                    ],
                 },
             ], &[])?;
             let cells = world.movement_cells(activated.qualified_room().movement_cells()).map_err(debug)?;
