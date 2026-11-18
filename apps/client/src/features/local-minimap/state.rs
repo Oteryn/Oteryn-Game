@@ -71,6 +71,15 @@ impl Drop for EditorOwner {
         close_editor(&self.0);
     }
 }
+type CellPosition = (i16, i32, i32);
+
+#[derive(Debug)]
+enum CellChange {
+    Discover,
+    Set(u8),
+    Clear,
+}
+
 type Binding = ([u8; 32], [u8; 32], u64);
 const MAX_CELLS: usize = 1_048_576;
 const MAX_MARKERS: usize = 512;
@@ -98,7 +107,7 @@ struct Saved {
 }
 #[derive(Debug)]
 pub struct Minimap {
-    pub cells: BTreeMap<(i16, i32, i32), u8>,
+    pub cells: BTreeMap<CellPosition, u8>,
     pub markers: Vec<Marker>,
     /// Current Character facts; never serialized into the World-only local cache.
     pub quest_marks: oteryn_client_ui::personal_map_marks::PersonalMapMarks,
@@ -118,7 +127,7 @@ pub struct Minimap {
     root: Option<PathBuf>,
     world: Option<String>,
     binding: Option<Binding>,
-    dirty: bool,
+    cell_changes: BTreeMap<CellPosition, CellChange>,
     load_failed: bool,
     saved_at: Instant,
 }
@@ -144,7 +153,7 @@ impl Default for Minimap {
                 .or_else(|| crate::play::PreferenceStore::configuration_path("minimap")),
             world: None,
             binding: None,
-            dirty: false,
+            cell_changes: BTreeMap::new(),
             load_failed: false,
             saved_at: Instant::now(),
         }
@@ -201,7 +210,7 @@ impl Minimap {
             self.binding = None;
             self.cells.clear();
             self.markers.clear();
-            self.dirty = false;
+            self.cell_changes.clear();
             self.tracking = true;
             self.zoom = 1;
             self.quest_marks = Default::default();
@@ -217,6 +226,7 @@ impl Minimap {
             self.binding = None;
             self.cells.clear();
             self.markers.clear();
+            self.cell_changes.clear();
         }
     }
     pub fn replace_quest_marks(
@@ -260,7 +270,7 @@ impl Minimap {
             }
             self.cells.clear();
             self.markers.clear();
-            self.dirty = false;
+            self.cell_changes.clear();
             self.binding = Some(binding);
             self.load_failed = false;
             if let Err(error) = self.load() {
@@ -306,7 +316,7 @@ impl Minimap {
                         };
                         let key = (floor, x, y);
                         if !observed.contains(&key) && self.cells.remove(&key).is_some() {
-                            self.dirty = true;
+                            self.cell_changes.insert(key, CellChange::Clear);
                         }
                     }
                 }
@@ -320,15 +330,14 @@ impl Minimap {
             }
             if let std::collections::btree_map::Entry::Vacant(entry) = self.cells.entry(key) {
                 entry.insert(55);
-                self.dirty = true;
+                self.cell_changes.insert(key, CellChange::Discover);
             }
-        }
-        for (&key, &colour) in colours {
-            if let Some(current) = self.cells.get_mut(&key)
-                && *current != colour
+            if let Some(&colour) = colours.get(&key)
+                && let Some(&current) = self.cells.get(&key)
+                && (current != colour
+                    || matches!(self.cell_changes.get(&key), Some(CellChange::Discover)))
             {
-                *current = colour;
-                self.dirty = true;
+                self.set_cell_colour(key, colour);
             }
         }
         if self.saved_at.elapsed() >= Duration::from_secs(5)
@@ -337,6 +346,11 @@ impl Minimap {
             self.feedback = lfmt!("Could not save minimap: {error}", error = error);
         }
     }
+    fn set_cell_colour(&mut self, key: CellPosition, colour: u8) {
+        self.cells.insert(key, colour);
+        self.cell_changes.insert(key, CellChange::Set(colour));
+    }
+
     pub fn follow(&mut self, x: i32, y: i32, floor: i16) {
         self.own = (x, y, floor);
         if self.tracking {
@@ -469,7 +483,7 @@ impl Minimap {
     }
 
     pub fn save(&mut self) -> io::Result<()> {
-        if self.dirty {
+        if !self.cell_changes.is_empty() {
             self.update_cache(|_| Ok(true))?;
         }
         Ok(())
@@ -483,25 +497,38 @@ impl Minimap {
             if self.world.is_some() {
                 return Err(io::Error::other("Minimap storage is unavailable"));
             }
-            let changed = change(&mut self.markers)?;
-            self.dirty |= changed;
-            return Ok(changed);
+            return change(&mut self.markers);
         };
         if self.load_failed {
             return Err(io::Error::other(tr!("Invalid minimap file")));
         }
         let _lock = Saved::lock_cache(&path)?;
-        // An autosave also reads the current markers, so stale exploration cannot
-        // erase edits made by another client after this view loaded.
-        let mut markers = Saved::read_from(&path)?.map_or_else(Vec::new, |saved| saved.markers);
+        // Apply only local changes to the latest cache. The view may have loaded
+        // before another client explored, cleared a cell, or edited a marker.
+        let (cells, mut markers) = Saved::read_from(&path)?
+            .map(|saved| (saved.cells, saved.markers))
+            .unwrap_or_default();
         if !change(&mut markers)? {
             self.markers = markers;
             return Ok(false);
         }
+        let mut cells = saved_cells(cells);
+        for (&key, change) in &self.cell_changes {
+            match *change {
+                CellChange::Discover => {
+                    cells.entry(key).or_insert(55);
+                }
+                CellChange::Set(colour) => {
+                    cells.insert(key, colour);
+                }
+                CellChange::Clear => {
+                    cells.remove(&key);
+                }
+            }
+        }
         let saved = Saved {
             version: 1,
-            cells: self
-                .cells
+            cells: cells
                 .iter()
                 .map(|(&(f, x, y), &c)| [i32::from(f), x, y, i32::from(c)])
                 .collect(),
@@ -509,8 +536,9 @@ impl Minimap {
         };
         saved.validate()?;
         saved.write_to(&path)?;
+        self.cells = cells;
         self.markers = saved.markers;
-        self.dirty = false;
+        self.cell_changes.clear();
         self.saved_at = Instant::now();
         Ok(true)
     }
@@ -524,14 +552,17 @@ impl Minimap {
         };
         // Version 1 uses the same value for old item-only cells and real gray terrain.
         // Only an authoritative observation can tell which remembered cells to clear.
-        self.cells = saved
-            .cells
-            .into_iter()
-            .map(|[f, x, y, c]| ((f as i16, x, y), c as u8))
-            .collect();
+        self.cells = saved_cells(saved.cells);
         self.markers = saved.markers;
         Ok(())
     }
+}
+
+fn saved_cells(cells: Vec<[i32; 4]>) -> BTreeMap<CellPosition, u8> {
+    cells
+        .into_iter()
+        .map(|[f, x, y, c]| ((f as i16, x, y), c as u8))
+        .collect()
 }
 
 impl Saved {

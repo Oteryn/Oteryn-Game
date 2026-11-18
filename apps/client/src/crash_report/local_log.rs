@@ -507,3 +507,39 @@ fn review_crash_redacts_adjacent_urls_and_multiline_json() {
         [true, true]
     );
 }
+
+#[cfg(test)]
+#[test]
+fn review_crash_redacts_structured_and_spaced_credentials() {
+    let cases = [
+        (
+            r#"{"pass\u0077ord":"example-one"}"#,
+            r#"{"pass\u0077ord":"[redacted]"}"#,
+        ),
+        (
+            r#"{"credentials":["example-two",{"nested":"another-secret"}],"name":"Bob"}"#,
+            r#"{"credentials":"[redacted]","name":"Bob"}"#,
+        ),
+        (
+            r#"{"credentials":{"url":"postgres://example.test/a\"value","value":"secret"}}"#,
+            r#"{"credentials":"[redacted]"}"#,
+        ),
+        ("Bearer  example-three", "Bearer  [redacted]"),
+        ("Bearer\texample-four", "Bearer\t[redacted]"),
+    ];
+    assert_eq!(
+        cases.map(|(message, expected)| {
+            crash_text(
+                &Crash {
+                    message,
+                    location: "test",
+                    thread: "test",
+                    backtrace: "",
+                },
+                SystemTime::now(),
+            )
+            .contains(expected)
+        }),
+        [true; 5]
+    );
+}

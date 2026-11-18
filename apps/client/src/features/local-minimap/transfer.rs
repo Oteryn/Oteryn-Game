@@ -24,7 +24,13 @@ impl Saved {
             .create(true)
             .truncate(false)
             .open(path.with_extension("lock"))?;
-        lock.lock()?;
+        lock.try_lock().map_err(|error| match error {
+            std::fs::TryLockError::WouldBlock => io::Error::new(
+                io::ErrorKind::WouldBlock,
+                "The minimap is busy in another client",
+            ),
+            std::fs::TryLockError::Error(error) => error,
+        })?;
         Ok(lock)
     }
 
@@ -111,15 +117,10 @@ impl Minimap {
         portable.saved.validate()?;
         let _lock = Saved::lock_cache(&active)?;
         portable.saved.write_to(&active)?;
-        self.cells = portable
-            .saved
-            .cells
-            .into_iter()
-            .map(|[f, x, y, c]| ((f as i16, x, y), c as u8))
-            .collect();
+        self.cells = saved_cells(portable.saved.cells);
         self.markers = portable.saved.markers;
         self.load_failed = false;
-        self.dirty = false;
+        self.cell_changes.clear();
         self.saved_at = Instant::now();
         Ok(())
     }

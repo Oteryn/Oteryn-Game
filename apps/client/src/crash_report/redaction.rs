@@ -34,8 +34,9 @@ const VALUE_END: &[u8] = b" \t\r\n\"'&#,;)]}<>";
 
 /// Returns `text` with every secret value replaced by `[redacted]`.
 pub fn redact(text: &str) -> String {
-    let text = redact_urls(text);
-    let text = redact_pairs(&text);
+    // Read structured values before URL masking can change their JSON syntax.
+    let text = redact_pairs(text);
+    let text = redact_urls(&text);
     redact_bearer(&text)
 }
 
@@ -136,6 +137,24 @@ fn redact_urls(text: &str) -> String {
     out
 }
 
+/// Decode a JSON member name so escaped characters participate in secret-key matching.
+fn json_key(text: &str, start: usize) -> Option<(String, usize)> {
+    let bytes = text.as_bytes();
+    let end = quoted_end(bytes, start + 1, b'"');
+    if bytes.get(skip_json_space(bytes, end + 1)) != Some(&b':') {
+        return None;
+    }
+    let key: String = serde_json::from_str(&text[start..=end]).ok()?;
+    Some((key.to_ascii_lowercase(), end))
+}
+
+fn json_container_end(text: &str, start: usize) -> Option<usize> {
+    let mut values =
+        serde_json::Deserializer::from_str(&text[start..]).into_iter::<serde::de::IgnoredAny>();
+    values.next()?.ok()?;
+    Some(start + values.byte_offset())
+}
+
 /// `token=...`, `"password": "..."`, `Authorization: Bearer ...` and `?code=...` values.
 fn redact_pairs(text: &str) -> String {
     let bytes = text.as_bytes();
@@ -143,19 +162,28 @@ fn redact_pairs(text: &str) -> String {
     let mut copied = 0;
     let mut index = 0;
     while index < bytes.len() {
-        if !identifier(bytes[index]) || (index > 0 && identifier(bytes[index - 1])) {
-            index += 1;
-            continue;
-        }
         let key_start = index;
-        while index < bytes.len() && identifier(bytes[index]) {
-            index += 1;
-        }
-        let key = text[key_start..index].to_ascii_lowercase();
+        let key = if bytes[index] == b'"'
+            && (index == 0 || bytes[index - 1] != b'\\')
+            && let Some((key, end)) = json_key(text, index)
+        {
+            index = end;
+            key
+        } else {
+            if !identifier(bytes[index]) || (index > 0 && identifier(bytes[index - 1])) {
+                index += 1;
+                continue;
+            }
+            while index < bytes.len() && identifier(bytes[index]) {
+                index += 1;
+            }
+            text[key_start..index].to_ascii_lowercase()
+        };
         let in_query = key_start > 0 && matches!(bytes[key_start - 1], b'?' | b'&');
         let secret = SECRET_SUFFIXES.iter().any(|suffix| key.ends_with(suffix))
             || (in_query && QUERY_SECRETS.contains(&key.as_str()));
         if !secret {
+            index += usize::from(bytes[key_start] == b'"');
             continue;
         }
         let mut cursor = index;
@@ -179,6 +207,18 @@ fn redact_pairs(text: &str) -> String {
         } else {
             skip_horizontal_space(bytes, cursor + 1)
         };
+        if quoted_key
+            && matches!(bytes.get(cursor), Some(b'[' | b'{'))
+            && let Some(end) = json_container_end(text, cursor)
+        {
+            out.push_str(&text[copied..cursor]);
+            out.push('"');
+            out.push_str(MASK);
+            out.push('"');
+            copied = end;
+            index = end;
+            continue;
+        }
         let end = if header && key.ends_with("cookie") {
             line_end(bytes, cursor)
         } else if let Some(&quote @ (b'"' | b'\'')) = bytes.get(cursor) {
@@ -226,16 +266,20 @@ fn redact_bearer(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     let mut copied = 0;
     let mut search = 0;
-    while let Some(found) = lower[search..].find("bearer ") {
+    while let Some(found) = lower[search..].find("bearer") {
         let start = search + found;
-        let value = start + "bearer ".len();
+        let after_scheme = start + "bearer".len();
+        let value = skip_horizontal_space(bytes, after_scheme);
+        if value == after_scheme || (start > 0 && identifier(bytes[start - 1])) {
+            search = after_scheme;
+            continue;
+        }
         if text[value..].starts_with(MASK) {
             search = value + MASK.len();
             continue;
         }
         let end = value_end(bytes, value);
-        let bounded = start == 0 || !identifier(bytes[start - 1]);
-        if bounded && end > value {
+        if end > value {
             out.push_str(&text[copied..value]);
             out.push_str(MASK);
             copied = end;

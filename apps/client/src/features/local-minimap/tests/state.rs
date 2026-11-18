@@ -33,8 +33,7 @@ fn exploration_and_markers_survive_reopen_and_bindings_stay_separate()
     map.observe(&snapshot);
     map.edit_marker(100, 200, -7, "Home".into(), 1)?;
     // A live window clears a legacy item-only cell when it confirms no ground there.
-    map.cells.insert((-7, 103, 200), 86);
-    map.dirty = true;
+    map.set_cell_colour((-7, 103, 200), 86);
     map.save()?;
     let binding = map.binding;
     let mut restored = Minimap::default();
@@ -271,7 +270,7 @@ fn review_minimap_live_window_preserves_cached_palette() -> Result<(), Box<dyn s
     map.bind_world(world);
     let snapshot = joined_window(0, 0);
     map.observe(&snapshot);
-    map.cells.insert((-7, 0, 0), 86);
+    map.set_cell_colour((-7, 0, 0), 86);
     map.edit_marker(0, 0, -7, "Home".into(), 1)?;
 
     let mut reopened = Minimap::default();

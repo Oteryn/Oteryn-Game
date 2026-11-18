@@ -68,14 +68,9 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
     // Publish the admission queue before any query can append a new scope's
     // snapshot with the same initial sequence and revisions.
     publish(&mut session, &outbox, &mut held);
-    if let Some(command) = outbox.returner_initial_request() {
-        match session.feature(&command).await {
-            Ok(result) => outbox.daily_reward_returner_result(command.kind, &result),
-            Err(_) => outbox.returner_unavailable(),
-        }
-    }
     let mut personal_marks_refresh = std::time::Instant::now();
-    let mut read_spell_info = true;
+    let mut read_initial_features = !super::mailbox::lock(&outbox.0).scope_pending;
+    let mut query_returner = true;
     'session: loop {
         if outbox.session_cancelled() {
             return;
@@ -85,9 +80,19 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 outbox.end(public_class(&error));
                 return;
             }
-            read_spell_info = true;
+            read_initial_features = true;
         }
-        if std::mem::take(&mut read_spell_info) {
+        if std::mem::take(&mut read_initial_features) {
+            // An initial recovery receipt clears the admission mailbox. Wait for
+            // the destination to be presented and initialized before querying.
+            if std::mem::take(&mut query_returner)
+                && let Some(command) = outbox.returner_initial_request()
+            {
+                match session.feature(&command).await {
+                    Ok(result) => outbox.daily_reward_returner_result(command.kind, &result),
+                    Err(_) => outbox.returner_unavailable(),
+                }
+            }
             for command in outbox.server_info_initial_commands() {
                 let Some(query) = oteryn_session::server_info::Query::decode(&command.payload)
                 else {

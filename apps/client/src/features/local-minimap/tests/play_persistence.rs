@@ -268,11 +268,17 @@ fn review_stale_minimap_clients_preserve_each_others_markers()
         play.set_live_map(&snapshot)?;
         Ok(play)
     };
-    let (first, second, autosave) = (open()?, open()?, open()?);
+    let (mut first, second, autosave) = (open()?, open()?, open()?);
+    let mut distant = snapshot.clone();
+    distant.header.origin.x = 1000;
+    distant.tiles[0].position.x = 1000;
+    first.set_live_map(&distant)?;
+    lock(&first.minimap).save()?;
     assert!(lock(&first.minimap).create_mark_at((100, 200, -7))?);
     assert!(lock(&second.minimap).create_mark_at((101, 200, -7))?);
     lock(&autosave.minimap).save()?;
     let reopened = open()?;
+    assert!(lock(&reopened.minimap).cells.contains_key(&(-7, 1000, 200)));
     assert_eq!(
         lock(&reopened.minimap)
             .markers
@@ -282,9 +288,13 @@ fn review_stale_minimap_clients_preserve_each_others_markers()
         [100, 101]
     );
     lock(&reopened.minimap).remove_marker(100, 200, -7)?;
+    distant.tiles.clear();
+    first.set_live_map(&distant)?;
+    lock(&first.minimap).save()?;
     lock(&second.minimap).edit_marker(101, 200, -7, "Gate".into(), 2)?;
     let final_view = open()?;
     let map = lock(&final_view.minimap);
+    assert!(!map.cells.contains_key(&(-7, 1000, 200)));
     assert_eq!(map.markers.len(), 1);
     assert_eq!(map.markers[0].label, "Gate");
     std::fs::remove_dir_all(root)?;
@@ -296,6 +306,7 @@ fn review_truncated_live_map_preserves_cached_minimap_palette()
 -> Result<(), Box<dyn std::error::Error>> {
     check_live_map_palette(
         false,
+        false,
         "review_truncated_live_map_preserves_cached_minimap_palette",
     )
 }
@@ -305,12 +316,24 @@ fn review_resolved_top_item_sets_minimap_palette_above_unknown_appearance()
 -> Result<(), Box<dyn std::error::Error>> {
     check_live_map_palette(
         true,
+        false,
         "review_resolved_top_item_sets_minimap_palette_above_unknown_appearance",
+    )
+}
+
+#[test]
+fn review_hidden_floor_preserves_cached_minimap_palette() -> Result<(), Box<dyn std::error::Error>>
+{
+    check_live_map_palette(
+        false,
+        true,
+        "review_hidden_floor_preserves_cached_minimap_palette",
     )
 }
 
 fn check_live_map_palette(
     unresolved_lower: bool,
+    hidden_floor: bool,
     test: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_session::world_map::{MapDefinition, MapItem, MapOrigin};
@@ -340,17 +363,23 @@ fn check_live_map_palette(
         y: 200,
         floor: -7,
     };
+    let floor = if hidden_floor { -6 } else { -7 };
+    let visible = ActorPosition {
+        x: position.x + i32::from(floor - position.floor),
+        y: position.y + i32::from(floor - position.floor),
+        floor,
+    };
     let lower = if unresolved_lower { 0 } else { ground };
     let mut snapshot = WorldMapViewSnapshot {
         header: MapViewHeader {
             origin: position,
-            first_visible_floor: -7,
+            first_visible_floor: floor,
             content_generation: [1; 32],
             bundle_digest: [2; 32],
             reset_epoch: 1,
         },
         tiles: vec![MapTile {
-            position,
+            position: visible,
             ground_speed: 100,
             more: false,
             items: vec![item(lower), item(top)],
@@ -364,9 +393,22 @@ fn check_live_map_palette(
     };
     let mut view = open()?;
     view.set_live_map(&snapshot)?;
-    assert_eq!(lock(&view.minimap).cells.get(&(-7, 100, 200)), Some(&86));
+    let key = (floor, visible.x, visible.y);
+    assert_eq!(lock(&view.minimap).cells.get(&key), Some(&86));
     lock(&view.minimap).save()?;
-    if lower == ground {
+    if hidden_floor {
+        snapshot.header.first_visible_floor = -7;
+        snapshot.tiles[0].items = vec![item(ground)];
+        lock(&view.minimap).saved_at -= Duration::from_secs(5);
+        view.set_live_map(&snapshot)?;
+        let mut rejoined = open()?;
+        rejoined.set_live_map(&snapshot)?;
+        assert_eq!(lock(&rejoined.minimap).cells.get(&key), Some(&86));
+        snapshot.header.first_visible_floor = floor;
+        rejoined.set_live_map(&snapshot)?;
+        assert_eq!(lock(&rejoined.minimap).cells.get(&key), Some(&24));
+        lock(&rejoined.minimap).save()?;
+    } else if lower == ground {
         snapshot.tiles[0].items = std::iter::once(item(ground))
             .chain(std::iter::repeat_n(item(plain), 9))
             .collect();
@@ -381,6 +423,65 @@ fn check_live_map_palette(
             Some(&86)
         );
     }
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+
+#[test]
+fn review_busy_cache_returns_from_live_map_and_marker_creation()
+-> Result<(), Box<dyn std::error::Error>> {
+    let root = std::env::temp_dir().join(format!("minimap-busy-{}", std::process::id()));
+    let world = "11111111-1111-4111-8111-111111111111";
+    let position = ActorPosition {
+        x: 100,
+        y: 200,
+        floor: -7,
+    };
+    let snapshot = WorldMapViewSnapshot {
+        header: MapViewHeader {
+            content_generation: [1; 32],
+            bundle_digest: [2; 32],
+            reset_epoch: 1,
+            origin: position,
+            first_visible_floor: -7,
+        },
+        tiles: vec![MapTile {
+            position,
+            ground_speed: 100,
+            more: false,
+            items: vec![],
+        }],
+    };
+    let mut view = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+    lock(&view.minimap).root = Some(root.clone());
+    view.bind_minimap_world(world);
+    view.set_live_map(&snapshot)?;
+    let path = lock(&view.minimap).path().ok_or("missing cache path")?;
+    let held = Saved::lock_cache(&path)?;
+    let (send, receive) = std::sync::mpsc::channel();
+    let worker = std::thread::spawn(
+        move || -> Result<_, Box<dyn std::error::Error + Send + Sync>> {
+            lock(&view.minimap).saved_at -= Duration::from_secs(5);
+            view.set_live_map(&snapshot)?;
+            let dirty = !lock(&view.minimap).cell_changes.is_empty();
+            let mark = lock(&view.minimap).create_mark_at((100, 200, -7));
+            send.send((dirty, mark))?;
+            Ok((view, snapshot))
+        },
+    );
+    let result = receive.recv_timeout(Duration::from_secs(2));
+    drop(held);
+    let worker_result = worker.join().map_err(|_| "live map worker panicked")?;
+    let (dirty, mark) = result?;
+    assert!(dirty);
+    assert_eq!(
+        mark.err().map(|error| error.kind()),
+        Some(io::ErrorKind::WouldBlock)
+    );
+    let (mut view, snapshot) = worker_result.map_err(|error| error.to_string())?;
+    view.set_live_map(&snapshot)?;
+    assert!(lock(&view.minimap).cell_changes.is_empty());
+    assert!(lock(&view.minimap).create_mark_at((100, 200, -7))?);
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
