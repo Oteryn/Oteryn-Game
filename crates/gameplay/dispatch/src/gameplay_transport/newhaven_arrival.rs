@@ -251,6 +251,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .ok()?;
             held.placed = Some(record);
             if let newhaven_travel::Departure::Quest(proof) = &held.route
+                && let Some(oteryn_gameplay_quests::quest::armenius::Outcome::Confrontation {
+                    spawn,
+                    ..
+                }) = oteryn_gameplay_quests::quest::armenius::teleport_route(
+                    &proof.request.transition_key,
+                )
+                && let Some(cell) = crate::durability::quest_state::npc_program::teleport::NpcTeleportAdmission::runtime_destination(spawn)
+            {
+                let _ = super::primal_menace::spawn_creature(
+                    self,
+                    &mut runtime,
+                    oteryn_gameplay_quests::quest::armenius::CREATURE,
+                    crate::foundation::MovementLocalPosition {
+                        x: cell.x,
+                        y: cell.y,
+                        floor: cell.floor,
+                    },
+                );
+            }
+            if let newhaven_travel::Departure::Quest(proof) = &held.route
                 && let Some(map) = self.bundle_map()
                 && let Some(tile) =
                     crate::content::bundle_spell_tiles::tile_pos(crate::content::LogicalCell {
