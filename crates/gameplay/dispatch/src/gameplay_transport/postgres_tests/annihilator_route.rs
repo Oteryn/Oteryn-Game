@@ -24,6 +24,7 @@ fn annihilator_source_route_earned_reward_exit_and_reentry() -> TestResult {
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Route {
+    BansheeWindows,
     Entry,
     TimedGroup,
     TimedPassage,
@@ -66,6 +67,10 @@ pub(super) fn elvenbane_source_complete() -> TestResult {
 
 pub(super) fn elvenbane_source_exploration() -> TestResult {
     run(Route::ElvenbaneExploration)
+}
+
+pub(super) fn banshee_windows(admin: String) -> TestResult {
+    run_with_admin(Route::BansheeWindows, admin)
 }
 
 pub(super) fn timed_group_transfer(admin: String) -> TestResult {
@@ -114,7 +119,8 @@ fn run(route: Route) -> TestResult {
 fn run_with_admin(route: Route, admin: String) -> TestResult {
     let combat = !matches!(
         route,
-        Route::Entry
+        Route::BansheeWindows
+            | Route::Entry
             | Route::TimedGroup
             | Route::TimedPassage
             | Route::Ashmunrah
@@ -125,7 +131,9 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
             | Route::Lord
             | Route::LordEntry
     );
-    let start = if route == Route::LordEntry {
+    let start = if route == Route::BansheeWindows {
+        super::quest_banshee_windows::START
+    } else if route == Route::LordEntry {
         super::quest_lord_entry::START
     } else if route == Route::Lord {
         super::quest_switch_windows::LORD_START
@@ -197,7 +205,11 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
                     route,
                     Route::ElvenbaneCombat | Route::ElvenbaneDefenders | Route::ElvenbaneComplete
                 ),
-                if route == Route::Demonrage { &[(126,124)] } else { &[] },
+                match route {
+                    Route::BansheeWindows => &[(125,124)],
+                    Route::Demonrage => &[(126,124)],
+                    _ => &[],
+                },
             )?
         };
         let now: i64 =
@@ -208,7 +220,7 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         let mut operations = Vec::new();
         let participants = match route {
             Route::CathedralNote | Route::Logic | Route::TimedPassage => 1,
-            Route::Ashmunrah | Route::CoalBasin | Route::Demonrage | Route::Lord => 2,
+            Route::Ashmunrah | Route::BansheeWindows | Route::CoalBasin | Route::Demonrage | Route::Lord => 2,
             _ => 4,
         };
         for index in 0..participants {
@@ -542,6 +554,14 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
         let map = index.map();
         if route == Route::CoalBasin {
             let result = super::quest_coal_basin::exercise(&mut owner, &mut admitted, &h.pool).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
+        }
+        if route == Route::BansheeWindows {
+            let result = super::quest_banshee_windows::exercise(&mut owner, &mut admitted, map).await;
             drop(owner);
             drop(authority);
             drop(seal);
