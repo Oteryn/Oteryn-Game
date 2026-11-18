@@ -15,13 +15,17 @@ fn m25_ahau_player_push_exit_returns_only_pushed_participant_postgres() -> TestR
     scenario(true)
 }
 fn scenario(push: bool) -> TestResult {
-    scenario_case(push, false)
+    scenario_case(push, false, false)
 }
 /// The pushed grace participant's own source-ground equipment read.
 pub(super) fn push_equipment_scenario() -> TestResult {
-    scenario_case(true, true)
+    scenario_case(true, true, false)
 }
-fn scenario_case(push: bool, equipment_read: bool) -> TestResult {
+pub(super) fn vanguard_scenario() -> TestResult {
+    scenario_case(true, false, true)
+}
+
+fn scenario_case(push: bool, equipment_read: bool, vanguard: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
@@ -29,11 +33,12 @@ fn scenario_case(push: bool, equipment_read: bool) -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("m25-ahau-native-exit", move || {
         run(async |admin| {
             reset();
-            let scene = super::srx3_soul_war_world_fixture::source_world(MovementLocalPosition {
-                x: 34037,
-                y: 31714,
-                floor: 10,
-            })?;
+            let origin = if vanguard {
+                MovementLocalPosition { x: 34049, y: 31431, floor: 11 }
+            } else {
+                MovementLocalPosition { x: 34037, y: 31714, floor: 10 }
+            };
+            let scene = super::srx3_soul_war_world_fixture::source_world(origin)?;
             let active = scene.controller.active().ok_or("actual active World")?;
             let native = active
                 .native_gameplay()
@@ -43,7 +48,7 @@ fn scenario_case(push: bool, equipment_read: bool) -> TestResult {
                 .into_iter()
                 .find(|row| row.creature_key.as_deref() == Some("oteryn:creature.mitmah_vanguard"))
                 .ok_or("actual Mitmah source candidate")?;
-            scene
+            let mitmah_template = scene
                 .controller
                 .qualify_activity_template(
                     &scene.room,
@@ -78,7 +83,7 @@ fn scenario_case(push: bool, equipment_read: bool) -> TestResult {
                     "actual published Ahau source placement {x},{y},{z}"
                 );
             }
-            let template = scene
+            let ahau_template = scene
                 .controller
                 .qualify_activity_template(
                     &scene.room,
@@ -90,7 +95,7 @@ fn scenario_case(push: bool, equipment_read: bool) -> TestResult {
                     &candidate,
                 )
                 .map_err(debug)?;
-            let exit = template
+            let exit = ahau_template
                 .exit_teleporter()
                 .ok_or("actual sealed Ahau exit")?;
             assert_eq!(
@@ -105,6 +110,7 @@ fn scenario_case(push: bool, equipment_read: bool) -> TestResult {
                 ),
                 (34036, 31717, 10)
             );
+            let template = if vanguard { mitmah_template } else { ahau_template };
             let deps: Dependencies = scene.dependencies()?;
             let h =
                 Harness::create_with_admission_seed(admin, "m25_ahau_native", false, false).await?;
@@ -183,7 +189,9 @@ fn scenario_case(push: bool, equipment_read: bool) -> TestResult {
             let mut view = owner.runtime_view(&registered);
             let actor = admitted.runtime_actor.ok_or("current Instance actor")?;
             if let Some(peer) = peer {
-                if equipment_read {
+                if vanguard {
+                    super::galthen_vanguard_exit::exercise(&h, &owner, &mut view, admitted, peer).await?;
+                } else if equipment_read {
                     super::m25_forced_equipment_read::exercise(&owner, &mut view, admitted, peer)
                         .await?;
                 } else {
