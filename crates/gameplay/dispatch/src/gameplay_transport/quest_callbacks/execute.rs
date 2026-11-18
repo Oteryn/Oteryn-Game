@@ -1067,6 +1067,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 context.into()
             };
+            let (context, repaired_vitals) = if callback.effects.restore_vitals {
+                let Some(current) = states.get(runtime, actor, session) else {
+                    return UseDisposition::Rejected;
+                };
+                let vitals = current.vitals();
+                let repaired = if (vitals.health, vitals.mana) != (vitals.max_health, vitals.max_mana) {
+                    let mut next = current.clone();
+                    next.restore_saved_vitals(vitals.max_health, vitals.max_mana);
+                    if next.advance_batch_revision().is_err() {
+                        return UseDisposition::Exhausted;
+                    }
+                    Some(next)
+                } else {
+                    None
+                };
+                (
+                    context.with_vital_refill_sequence(self.states.last_positions.next_sequence()),
+                    repaired,
+                )
+            } else {
+                (context, None)
+            };
             let reward_weights = self
                 .active_generation
                 .and_then(|g| g.native_gameplay())
@@ -1238,6 +1260,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         && callback.native_rule == Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::BarbarianMead)
                         && let QuestCause::Use(command) = cause {
                         self.project_mead_blackout(runtime,states,actor,command,&committed.changes,map);
+                    }
+                    if let Some(next) = repaired_vitals
+                        && !states.commit(runtime, actor, session, next)
+                    {
+                        return UseDisposition::Rejected;
                     }
                     self.apply_committed_quest_copy(session, fresh, committed);
                     if callback.effects.encounter.is_some()

@@ -2039,6 +2039,22 @@ impl DurabilityRoot {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
                     }
+                    if callback.as_ref().is_some_and(|world| world.effects.restore_vitals) {
+                        let sequence = context.as_ref()
+                            .and_then(|(_, world, _)| world.vital_refill_sequence)
+                            .filter(|sequence| *sequence > 0)
+                            .ok_or(DurabilityError::InvalidStoredState)?;
+                        // A saved row without explicit vitals restores a living actor at its
+                        // current maxima. The runtime sequence orders it after older captures.
+                        sqlx::query(
+                            "UPDATE game_character_last_positions SET health=NULL, mana=NULL,
+                                 character_lease_generation=$2::text::numeric, write_sequence=$3::text::numeric
+                             WHERE character_id=encode($1,'hex')::uuid
+                               AND (character_lease_generation, write_sequence)
+                                   < ($2::text::numeric, $3::text::numeric)"
+                        ).bind(id).bind(fence.character_lease_generation.to_string())
+                            .bind(sequence.to_string()).execute(&mut *tx).await?;
+                    }
                     if let Some(world) = &callback && !world.achievements.is_empty() {
                         let (cause, ordinal) = request.cause.key();
                         let occurrence = serde_json::to_vec(&(cause, ordinal, &world.key)).map_err(|_| DurabilityError::InvalidStoredState)?;

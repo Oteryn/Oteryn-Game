@@ -61,6 +61,9 @@ pub struct CallbackEffects {
     pub requires_item_disguise: Option<ItemDisguiseRequirement>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub restore_disguise: bool,
+    /// Refill the living actor's health and mana with a singular fenced USE receipt.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub restore_vitals: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mount_reward: Option<MountReward>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -450,6 +453,28 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
 
+    if effects.restore_vitals
+        && !(callback.trigger == Trigger::Use
+            && callback.actor_kind == ActorKind::Player
+            && callback.requires_world_admission
+            && callback.selector.native.is_some()
+            && callback.lever.is_none()
+            && !callback.reversible
+            && callback.storage.is_empty()
+            && callback.state_ops.is_empty()
+            && matches!(callback.state_operations.as_slice(), [
+                super::super::reward_callbacks::StateOperation {
+                    from: super::super::reward_callbacks::StateCondition::Between {
+                        minimum: -1,
+                        maximum: -1,
+                    },
+                    effect: super::super::reward_callbacks::StateMutation::SetNow,
+                    ..
+                }
+            ]))
+    {
+        return false;
+    }
     if effects.scripted_teleport
         && (callback.teleport.is_none()
             || callback.selector.native.is_none()

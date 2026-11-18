@@ -7,6 +7,9 @@ use serde::Serialize;
 pub struct QuestWorldToolContext {
     #[serde(flatten)]
     world: QuestWorldContext,
+    /// Runtime snapshot ordering does not change the identity of a retried USE.
+    #[serde(skip)]
+    pub(crate) vital_refill_sequence: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) selected_tool: Option<SelectedQuestTool>,
 }
@@ -21,11 +24,17 @@ impl From<QuestWorldContext> for QuestWorldToolContext {
     fn from(world: QuestWorldContext) -> Self {
         Self {
             world,
+            vital_refill_sequence: None,
             selected_tool: None,
         }
     }
 }
 impl QuestWorldToolContext {
+    pub fn with_vital_refill_sequence(mut self, sequence: u64) -> Self {
+        self.vital_refill_sequence = Some(sequence);
+        self
+    }
+
     /// The replay identity of a legacy World claim. Like main's RewardClaim
     /// chest owner, its receipt is keyed by cause and claim; the actor's
     /// movement proof is re-derived by a rebuilt owner and is checked live.
@@ -70,6 +79,7 @@ impl QuestWorldContext {
         }
         Some(QuestWorldToolContext {
             world: self,
+            vital_refill_sequence: None,
             selected_tool: Some(SelectedQuestTool { source, intent }),
         })
     }

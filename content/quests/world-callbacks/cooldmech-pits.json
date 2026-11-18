@@ -2,6 +2,63 @@
   "schema": 1,
   "callbacks": [
     {
+      "key": "oteryn:quest-callback/cooldmech/fountain",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32805,
+          "y": 32318,
+          "floor": -11
+        },
+        "unique": null,
+        "action": 8815,
+        "appearance": 1922,
+        "native": {
+          "position": {
+            "x": 32805,
+            "y": 32318,
+            "floor": -11
+          },
+          "ordinal": 1,
+          "appearance": 1922
+        }
+      },
+      "requires_world_admission": true,
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "effects": {
+        "restore_vitals": true
+      },
+      "storage": [],
+      "state_operations": [
+        {
+          "track": "oteryn:quest-progress/pits-of-inferno/fountain-used-at",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": -1
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
+      "achievements": [
+        "oteryn:achievement/fountain_of_life"
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "Sorry, not possible.",
+      "success_message": "The water restores your health and mana.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/actions_fountain.lua:2-16",
+        "content/world/placements/region-z11-x128-y126.b3"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/cooldmech/shrine-north",
       "quest": "oteryn:quest.the_pits_of_inferno_quest",
       "trigger": "step_in",
