@@ -818,9 +818,9 @@ fn bytes<'a>(input: &'a [u8], at: &mut usize) -> TestResult<&'a [u8]> {
     *at = end;
     Ok(value)
 }
-type CooldownPage = (u64, Vec<(String, u64)>, String);
+pub(super) type CooldownPage = (u64, Vec<(String, u64)>, String);
 
-fn page(payload: &[u8]) -> TestResult<CooldownPage> {
+pub(super) fn page(payload: &[u8]) -> TestResult<CooldownPage> {
     let mut at = 0;
     assert_eq!(varint(payload, &mut at)?, 8);
     let now = varint(payload, &mut at)?;

@@ -7,7 +7,8 @@ use super::quest_world_callbacks::{local, wire, wire_with_feedback, world_with_c
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::foundation::ChannelRuntimeV1;
-use crate::gameplay_transport::connection::FirstEntryOutcome;
+use crate::gameplay_transport::capabilities::SelectedCapabilities;
+use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
@@ -17,6 +18,7 @@ use oteryn_gameplay_quests::quest::{
 use oteryn_protocol_oteryn::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition,
 };
+use oteryn_protocol_oteryn::boss_encounter::{CAPABILITY_BOSS_ENCOUNTER_V1, COMMAND_TYPE_BOSS_COOLDOWNS};
 
 const QUEST: &str = "oteryn:quest.fixture_solo_room";
 const TRACK: &str = "oteryn:quest-progress/fixture/solo-room";
@@ -285,6 +287,10 @@ async fn exercise_world(
     let mut admitted = deps.admitted;
     admitted.first_entry = FirstEntryOutcome::Positioned;
     if boss.is_some() {
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &[CAPABILITY_BOSS_ENCOUNTER_V1],
+        ).ok_or("boss cooldown capability")?;
         owner.states.chat.admit(admitted.game_session_id, "Grimvale visitor", owner.owner_now());
     }
     let fence = owner
@@ -572,6 +578,7 @@ async fn exercise_world(
         );
         drop(runtime);
         assert_eq!(cooldown().await?, previous_cooldown);
+        assert_boss_cooldown_on_wire(&owner, &mut admitted, previous_cooldown).await?;
         return Ok(());
     }
     if boss.is_some() {
@@ -591,6 +598,10 @@ async fn exercise_world(
         .fetch_one(&h.pool)
         .await?;
         assert!((time_before + 36_000_000..=time_after + 36_000_000).contains(&expiry));
+        // Crystal actions_portal_minis_grimvale.lua:126-127 publishes the
+        // newly set clock to Bosstiary. Check the existing cooldown query
+        // before leaving this room and independently of raw SQL reads.
+        assert_boss_cooldown_on_wire(&owner, &mut admitted, Some(expiry)).await?;
     }
     let read_progress = || async {
         sqlx::query_scalar::<_, i64>(
@@ -663,10 +674,11 @@ async fn exercise_world(
             .states
             .test_owner_time
             .store(enter_at + 2_000_001, Ordering::Relaxed);
+        let step_command = admitted.continuity.next_command_id;
         let reply = wire(
             &owner,
             &mut admitted,
-            command + 1,
+            step_command,
             COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
             oteryn_protocol_oteryn::world_spatial::encode_step_intent(StepDirection::West),
         )
@@ -704,10 +716,11 @@ async fn exercise_world(
         assert_eq!(expired.rows_affected(), 1);
         let reentry = enter_at + 5_000_000;
         owner.states.test_owner_time.store(reentry + 1, Ordering::Relaxed);
+        let step_command = admitted.continuity.next_command_id;
         let reply = wire(
             &owner,
             &mut admitted,
-            command + 2,
+            step_command,
             COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
             oteryn_protocol_oteryn::world_spatial::encode_step_intent(StepDirection::East),
         )
@@ -790,6 +803,32 @@ async fn exercise_world(
     }
     if boss.is_none() {
         assert_eq!(read_progress().await?, 10);
+    }
+    Ok(())
+}
+
+async fn assert_boss_cooldown_on_wire(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut super::AdmittedSession,
+    expiry: Option<i64>,
+) -> TestResult {
+    let command = admitted.continuity.next_command_id;
+    let (status, reply) = super::boss_encounter::exchange_kind(
+        owner,
+        admitted,
+        command,
+        COMMAND_TYPE_BOSS_COOLDOWNS,
+        &[],
+    ).await?;
+    assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+    let (now, rows, cursor) = super::boss_encounter::page(&reply)?;
+    assert!(cursor.is_empty());
+    if let Some(expiry) = expiry {
+        let expiry = u64::try_from(expiry)?;
+        assert!(now < expiry);
+        assert_eq!(rows, [("oteryn:creature.rat".into(), expiry)]);
+    } else {
+        assert!(rows.is_empty());
     }
     Ok(())
 }
