@@ -139,6 +139,9 @@ python3 tools/content-migration/regenerate_content.py --resolve   # = tools/merg
 - Bring `main` in with a merge commit: it keeps every other checkout valid.
 - Only a real edit-versus-edit conflict in hand-written logic stops for a
   person.
+- After merging `main` into an older PR, run the architecture check
+  (`local-checks.md`, step 4) before pushing: ratchets added on `main` later,
+  such as the client size baseline, turn an old green PR red.
 
 ## Before every push
 

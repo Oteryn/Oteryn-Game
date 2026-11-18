@@ -153,19 +153,30 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
         {
             return Err(invalid("M41 Alyxo source custody"));
         }
-        // Crystal 201189f data-global/npc/tamoril.lua:45-111: the calendar gate
-        // and all unconditional acceptance resets belong to this exact source.
+        // Crystal 201189f Tamoril and Gelidrazah's Thirst callbacks.
         if document.program_key.as_deref() == Some("oteryn:quest-npc-program.first-dragon-calendar")
             && (document.quest != "oteryn:quest.the_first_dragon_quest"
-                || document.source_files.len() != 1
-                || document.source_files.iter().any(|file| {
-                    file.revision != "201189f871d23597b82caf88fd611454a2ddefb8"
-                        || file.path != "data-global/npc/tamoril.lua"
-                        || file.sha256
-                            != "d5d55a74c2bb9ade413c23442924b46ee6e5b05c9daf73ed8259e67f04576969"
-                }))
+                || document.source_files.len() != 2
+                || document
+                    .source_files
+                    .iter()
+                    .zip([
+                        (
+                            "data-global/npc/tamoril.lua",
+                            "d5d55a74c2bb9ade413c23442924b46ee6e5b05c9daf73ed8259e67f04576969",
+                        ),
+                        (
+                            "data-global/npc/gelidrazahs_thirst.lua",
+                            "e376c7ae56eaef9dcc7ffb63904dea469ae39fbfe2e821f739cdfb4edbfc5de8",
+                        ),
+                    ])
+                    .any(|(file, (path, hash))| {
+                        file.revision != "201189f871d23597b82caf88fd611454a2ddefb8"
+                            || file.path != path
+                            || file.sha256 != hash
+                    }))
         {
-            return Err(invalid("Tamoril source custody"));
+            return Err(invalid("First Dragon NPC source custody"));
         }
         if !super::hidden_threats::custody(document) {
             return Err(invalid("Corym source custody"));
