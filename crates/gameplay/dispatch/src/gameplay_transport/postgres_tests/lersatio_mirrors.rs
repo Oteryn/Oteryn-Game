@@ -1,7 +1,7 @@
 //! Crystal 201189f8 data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua:3-79.
-use super::fixture::{Harness, debug, id};
+use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
-use crate::foundation::GameSessionId;
+use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::world_callbacks::{self, Callback, Position};
@@ -30,6 +30,10 @@ const DESTINATION: Position = Position {
     x: 32967,
     y: 31459,
     floor: -1,
+};
+const EXIT: Position = Position {
+    y: 31463,
+    ..DESTINATION
 };
 
 #[test]
@@ -87,13 +91,14 @@ pub(super) fn callback() -> TestResult<Callback> {
 }
 
 pub(super) fn world(row: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
-    super::quest_world_callbacks::world_ordinal(row, MIRROR, 8667, 2)
+    super::quest_world_callbacks::world_with_blood_brothers_exit(row, MIRROR, EXIT)
 }
 
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
     let base = owner.quest_catalogue.as_deref().ok_or("quest catalogue")?;
     let fixture = json!({"schema":1,"callbacks":[binding(false), binding(true)]}).to_string();
@@ -101,23 +106,21 @@ pub(super) async fn exercise(
         world_callbacks::with_fixture_callbacks(base.clone(), &fixture)?,
     ));
     let actor = admitted.runtime_actor.ok_or("player actor")?;
-    let peer_start = super::quest_world_callbacks::local(Position { x: 32966, ..MIRROR });
-    let (start, peer) = {
-        let mut runtime = owner.runtime.lock().await;
-        let session = GameSessionId::decode(&id(238)).map_err(debug)?;
-        let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
-        let peer = runtime.commit_fresh_session(reservation).map_err(debug)?;
-        runtime
-            .initialize_pinned_test_position(peer, peer_start)
-            .map_err(debug)?;
-        (
-            runtime
-                .read_actor_position(actor)
-                .map_err(debug)?
-                .position(),
-            peer,
-        )
-    };
+    let (peer, peer_session) = super::arthei_ghost_tear::admit_peer(
+        owner,
+        admitted,
+        h,
+        authority,
+        Position { x: 32966, ..MIRROR },
+    )
+    .await?;
+    let start = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?
+        .position();
     assert_eq!(
         use_mirror(owner, admitted, 1).await?,
         UseDisposition::Committed
@@ -198,7 +201,14 @@ pub(super) async fn exercise(
             count
         );
     }
-    Ok(())
+    drop(runtime);
+    super::arthei_ghost_tear::leave_room(
+        owner,
+        [(actor, admitted.game_session_id), (peer, peer_session)],
+        DESTINATION,
+        EXIT,
+    )
+    .await
 }
 
 fn placement(at: Position, ordinal: u8) -> TestResult<u64> {

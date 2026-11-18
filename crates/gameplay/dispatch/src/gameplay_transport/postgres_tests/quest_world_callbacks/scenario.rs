@@ -3360,11 +3360,11 @@ fn scenario_case(
             ))
             .await?;
         } else if arthei_tear {
-            Box::pin(super::super::arthei_ghost_tear::exercise(&mut owner, &mut admitted, &h)).await?;
+            Box::pin(super::super::arthei_ghost_tear::exercise(&mut owner, &mut admitted, &h, &authority)).await?;
         } else if castle_rite {
             Box::pin(super::super::castle_crystal_rite::exercise(&mut owner, &mut admitted, &h, &authority)).await?;
         } else if lersatio_mirrors {
-            Box::pin(super::super::lersatio_mirrors::exercise(&mut owner, &admitted, &h)).await?;
+            Box::pin(super::super::lersatio_mirrors::exercise(&mut owner, &admitted, &h, &authority)).await?;
         } else if marziel_blood {
             Box::pin(super::super::marziel_blood_step::exercise(
                 &mut owner, &mut admitted, &h, &authority, name.ends_with("-female"),

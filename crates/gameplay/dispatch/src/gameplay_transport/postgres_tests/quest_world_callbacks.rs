@@ -331,6 +331,7 @@ fn world_with_extra(
         appearances,
         native_items,
         &[],
+        None,
     )
 }
 
@@ -348,6 +349,32 @@ pub(super) fn world_with_cells(
         &[],
         None,
         cells,
+        None,
+    )
+}
+
+pub(super) const BLOOD_BROTHERS_EXIT_DESTINATION: Position = Position {
+    x: 32967,
+    y: 31480,
+    floor: -1,
+};
+
+pub(super) fn world_with_blood_brothers_exit(
+    callback: &Callback,
+    trigger: Position,
+    exit: Position,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    let selector = callback.selector.native.as_ref().ok_or("native selector")?;
+    world_cells(
+        callback,
+        trigger,
+        selector.appearance,
+        selector.ordinal,
+        &[],
+        &[],
+        None,
+        &[],
+        Some(exit),
     )
 }
 
@@ -367,6 +394,7 @@ fn world_cells(
         &[(Position, u32)],
     )>,
     extra: &[Position],
+    blood_brothers_exit: Option<Position>,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
@@ -456,7 +484,13 @@ fn world_cells(
     if let Some(rite) = &callback.effects.party_rite {
         effect_positions.extend(rite.stations.iter().flat_map(|s| [s.from, s.to]));
     }
-    effect_positions.extend(callback.effects.stationary_encounter.iter().map(|m| m.position));
+    effect_positions.extend(
+        callback
+            .effects
+            .stationary_encounter
+            .iter()
+            .map(|m| m.position),
+    );
     for p in effect_positions {
         for x in p.x - 1..=p.x + 1 {
             for y in p.y - 1..=p.y + 1 {
@@ -1015,6 +1049,52 @@ fn world_cells(
         cells
             .entry((-i8::try_from(destination.2)?, destination.0, destination.1))
             .or_default();
+    }
+    if let Some(exit) = blood_brothers_exit {
+        // Crystal 201189f8 data-global/world/world.otbm: the two Vengoth
+        // chambers use native item 1959 with the same destination.
+        let landing = callback
+            .effects
+            .encounter_group
+            .as_ref()
+            .ok_or("encounter group")?
+            .destination;
+        let destination = BLOOD_BROTHERS_EXIT_DESTINATION;
+        let palette = u32::try_from(data.manifest.palette.len())?;
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: "oteryn:terrain.tibia.i1959".into(),
+            family: bundle::Family::Terrain,
+            id: palette,
+            terrain: Some(bundle::Terrain {
+                kind: bundle::TerrainKind::Common,
+                walkable: None,
+                ground_speed: None,
+                blocks_projectile: None,
+            }),
+        });
+        for y in landing.y..=exit.y {
+            cells.entry((exit.floor, exit.x, y)).or_default();
+        }
+        for x in destination.x..=destination.x + 1 {
+            cells
+                .entry((destination.floor, x, destination.y))
+                .or_default();
+        }
+        cells
+            .entry((exit.floor, exit.x, exit.y))
+            .or_default()
+            .push(sector::Item {
+                palette,
+                depth: 0,
+                attrs: sector::Attrs {
+                    teleport: Some((
+                        destination.x,
+                        destination.y,
+                        destination.floor.to_ne_bytes()[0],
+                    )),
+                    ..Default::default()
+                },
+            });
     }
     // Explicit test objects add physical hit targets, without inventing donor attributes.
     // Existing callers retain the original blocked-passage fixture behavior.
