@@ -927,7 +927,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         }
     }
     let personal_encounter = effects.encounter.as_ref().is_some_and(|encounter| {
-        callback.has_personal_state()
+        (callback.has_personal_state() || callback.standalone_solo_room())
             && callback.requires_world_admission
             && callback.actor_kind == ActorKind::Player
             && matches!(callback.trigger, Trigger::Use | Trigger::StepIn)

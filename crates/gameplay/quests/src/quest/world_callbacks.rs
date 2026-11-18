@@ -19,6 +19,7 @@ pub const MAX_CALLBACKS: usize = 512;
 pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1024;
 pub const MAX_EFFECTS: usize = 8;
 pub const GROUND_CLEANUP_PREFIX: &str = "oteryn:quest-callback/ground-cleanup/";
+pub const SOLO_ROOM_PREFIX: &str = "oteryn:quest-callback/solo-room/";
 pub const MAX_SELECTOR_POSITIONS: usize = 8;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -552,6 +553,18 @@ pub struct Callback {
 }
 
 impl Callback {
+    pub fn standalone_solo_room(&self) -> bool {
+        !self.has_personal_state()
+            && self.key.starts_with(SOLO_ROOM_PREFIX)
+            && self.requires_world_admission
+            && self.selector.native.is_some()
+            && self.effects.encounter.as_ref().is_some_and(|room| room.solo_expiry.is_some())
+    }
+
+    pub fn uses_empty_world_transition(&self) -> bool {
+        self.effects.cleanup_offerings || self.standalone_solo_room()
+    }
+
     pub fn operations(&self) -> impl Iterator<Item = &super::reward_callbacks::StateOperation> {
         self.state_ops.iter().chain(&self.state_operations)
     }
@@ -642,7 +655,7 @@ impl Callback {
             return None;
         };
         (self.requires_world_admission
-            && self.has_personal_state()
+            && (self.has_personal_state() || self.standalone_solo_room())
             && self.actor_kind == ActorKind::Player
             && self.trigger == Trigger::StepIn
             && encounter.timing.is_none()
@@ -1028,7 +1041,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     .world_requirements
                     .iter()
                     .any(|r| r.ground.is_some()))
-                && ((!callback.has_state_writes() && !callback.effects.cleanup_offerings)
+                && ((!callback.has_state_writes() && !callback.uses_empty_world_transition())
                     || callback.native_rule.is_some()))
             || (callback.opening_only
                 && (callback.trigger != Trigger::Use

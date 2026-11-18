@@ -357,6 +357,8 @@ fn scenario_case(
     let dreamers_wall = matches!(name, dreamers_wall_portal::BLOCKED | dreamers_wall_portal::CLEAR);
     use super::super::lucifuga_bait_spawn;
     let lucifuga = name == lucifuga_bait_spawn::NAME;
+    use super::super::feaster_solo_rooms;
+    let feaster_solo = matches!(name, feaster_solo_rooms::IRGIX | feaster_solo_rooms::UNAZ | feaster_solo_rooms::VOK);
     use super::super::kroazur_solo_room;
     let kroazur = name == kroazur_solo_room::NAME;
     use super::super::{dreamers_board_exit, dreamers_board_portal};
@@ -370,6 +372,8 @@ fn scenario_case(
     let zarganash = name == zarganash_linked_boss::NAME;
     let mut callback = if zarganash {
         zarganash_linked_boss::binding()?
+    } else if feaster_solo {
+        feaster_solo_rooms::binding(name)?
     } else if board_exit {
         dreamers_board_exit::binding()?
     } else if board_portal {
@@ -684,6 +688,8 @@ fn scenario_case(
     }
     let world = if zarganash {
         zarganash_linked_boss::world(&callback)?
+    } else if feaster_solo {
+        feaster_solo_rooms::world(&callback, name)?
     } else if board_exit {
         dreamers_board_exit::world(&callback)?
     } else if board_portal {
@@ -1428,7 +1434,8 @@ fn scenario_case(
             "questpc7-grave" => Some(250),
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
-            zarganash_linked_boss::NAME => Some(250),
+            zarganash_linked_boss::NAME | feaster_solo_rooms::IRGIX
+            | feaster_solo_rooms::UNAZ | feaster_solo_rooms::VOK => Some(250),
             _ => None,
         };
         if let Some(initial_level) = initial_level {
@@ -1740,6 +1747,11 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
+        if feaster_solo {
+            owner.quest_catalogue = Some(feaster_solo_rooms::catalogue(
+                owner.quest_catalogue.as_ref().ok_or("quest catalogue")?, &callback,
+            )?);
+        }
         if kroazur {
             owner.quest_catalogue = Some(kroazur_solo_room::catalogue(
                 owner.quest_catalogue.as_ref().ok_or("quest catalogue")?,
@@ -2967,6 +2979,8 @@ fn scenario_case(
             .await?;
         } else if zarganash {
             Box::pin(zarganash_linked_boss::exercise(&mut owner, &mut admitted)).await?;
+        } else if feaster_solo {
+            Box::pin(feaster_solo_rooms::exercise(&mut owner, &mut admitted, &h, fence, name)).await?;
         } else if board_exit {
             Box::pin(dreamers_board_exit::exercise(
                 &owner, &mut admitted, &h, fence, &callback,
