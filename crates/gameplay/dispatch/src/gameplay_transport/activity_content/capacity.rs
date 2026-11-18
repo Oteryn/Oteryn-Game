@@ -12,6 +12,12 @@ pub(super) fn for_template(
         .room()
         .source_world()
         .map_or(1, |world| world.cell_count().max(1));
+    let creatures =
+        if template.source_path() == "content/encounters/bosses/selected-first-dragon.json" {
+            creatures.max(101)
+        } else {
+            creatures
+        };
     template
         .maximum_players()
         .checked_add(creatures)

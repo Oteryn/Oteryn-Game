@@ -278,7 +278,11 @@ pub fn captured_boss_levers() -> Result<Vec<BossLeverCandidate>, ActivityTemplat
         return Err(ActivityTemplateRefusal::InvalidSourceCapture);
     }
     let mut records = document.records;
-    records.push(first_dragon::candidate()?);
+    let donor = records
+        .iter()
+        .find(|candidate| candidate.path == first_dragon::LEVER_PATH)
+        .ok_or(ActivityTemplateRefusal::InvalidSourceCapture)?;
+    records.push(first_dragon::candidate(donor)?);
     records.sort_by(|left, right| left.path.cmp(&right.path));
     Ok(records)
 }
@@ -784,7 +788,7 @@ impl ContentActivationController {
             boss_key: candidate.boss_key().ok_or(R::InvalidSourceCapture)?,
             template_key: format!("oteryn:room.boss.{suffix}"),
             template_revision: if candidate.path == first_dragon::PATH {
-                format!("selected-{}", candidate.sha256)
+                format!("finale-{}-201189f", candidate.sha256)
             } else {
                 format!("crystal-{}", candidate.sha256)
             },

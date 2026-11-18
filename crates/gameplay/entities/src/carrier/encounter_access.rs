@@ -402,6 +402,35 @@ impl ChannelRuntimeV1 {
         result
     }
 
+    /// Retire the surviving members and publish the terminal creature atomically.
+    pub fn replace_quest_encounter_group(
+        &mut self,
+        members: &[ExactActorRef],
+        successor: (&str, i64, MovementLocalPosition),
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        let before = self.carrier.clone();
+        let result = (|| {
+            for actor in members
+                .iter()
+                .filter(|actor| self.contains_live_creature(**actor))
+                .copied()
+                .collect::<Vec<_>>()
+            {
+                self.remove_encounter_actor(actor)?;
+            }
+            if !self.native_summon_cell_free(successor.2) {
+                return Err(CarrierError::InvalidSpawnDefinition);
+            }
+            self.commit_quest_creature_spawn(&[successor])?;
+            Ok(())
+        })();
+        if result.is_err() {
+            self.carrier = before;
+        }
+        result
+    }
+
     /// Replace one exact wild encounter creature at its current tile. Refusing
     /// a tile projection leaves the old actor, including its health, intact.
     pub fn replace_quest_creature_at(

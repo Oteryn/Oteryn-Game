@@ -1,4 +1,4 @@
-//! Explicit chosen s5 adapter; the full Spirit of Fertility source capture stays closed.
+//! The selected quest terminal uses the captured First Dragon staging layout.
 //! Crystal9f5a72c creaturescripts_death_dragon_essence.lua:11 and death_fallen.lua:12
 //! supply the final creature and portal landing; actions_lever.lua:6 supplies cooldown.
 use super::{ActivityTemplateRefusal, BossLeverCandidate};
@@ -7,6 +7,7 @@ use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
 pub(super) const PATH: &str = "content/encounters/bosses/selected-first-dragon.json";
+pub(super) const LEVER_PATH: &str = "data-global/scripts/quests/the_first_dragon/actions_lever.lua";
 const QUEST: &str = "oteryn:quest.the_first_dragon_quest";
 
 #[derive(Deserialize)]
@@ -32,7 +33,9 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-pub(super) fn candidate() -> Result<BossLeverCandidate, ActivityTemplateRefusal> {
+pub(super) fn candidate(
+    donor: &BossLeverCandidate,
+) -> Result<BossLeverCandidate, ActivityTemplateRefusal> {
     let invalid = || ActivityTemplateRefusal::InvalidSourceCapture;
     let bytes =
         include_bytes!("../../../../../../../content/encounters/bosses/selected-first-dragon.json");
@@ -70,7 +73,13 @@ pub(super) fn candidate() -> Result<BossLeverCandidate, ActivityTemplateRefusal>
     {
         return Err(invalid());
     }
-    Ok(document.candidate)
+    let mut candidate = document.candidate;
+    candidate.entry_positions.clone_from(&donor.entry_positions);
+    candidate.zone_from = donor.zone_from;
+    // The source spectator sweep ends at y=31032. Two legal staging cells
+    // are at y=31035, so the bounded private map also includes those cells.
+    candidate.zone_to = donor.zone_to.map(|[x, y, z]| [x, y.max(31035), z]);
+    Ok(candidate)
 }
 
 pub(super) struct Closure;
@@ -83,7 +92,7 @@ pub(super) fn qualify(
     native: &NativeGameplayState,
     selected: &BossLeverCandidate,
 ) -> Option<Closure> {
-    if candidate().ok().as_ref() != Some(selected) {
+    if selected.path != PATH {
         return None;
     }
     // Execution belongs to the existing native death/QuestState owners. The

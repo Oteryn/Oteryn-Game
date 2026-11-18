@@ -1263,6 +1263,16 @@ pub(super) fn boss_room_native_ready(
     if census.iter().any(|(_, _, session)| session.is_some()) {
         return false;
     }
+    if definition.boss_key == "oteryn:boss.the_first_dragon"
+        && definition.template_revision.starts_with("finale-")
+    {
+        return census.len() == 11
+            && census.iter().any(|(actor, _, _)| {
+                runtime.companion_snapshot(*actor).is_ok_and(|snapshot| {
+                    snapshot.state.policy.definition_key == "oteryn:creature.spirit_of_fertility"
+                })
+            });
+    }
     census.iter().any(|(actor, position, session)| {
         let cell = position.position();
         session.is_none()

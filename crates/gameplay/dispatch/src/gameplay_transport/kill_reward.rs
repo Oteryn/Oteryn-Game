@@ -1989,6 +1989,11 @@ pub fn record_creature_kill(
         refuse("no_loot_binding", "unknown");
         return;
     };
+    if wild && let Some(states) = sink.prey {
+        states
+            .encounter_phases
+            .first_dragon_death(runtime, target, &creature);
+    }
     // Retain room victory independently of loot admission. If a personal reward
     // plan is admitted, its existing atomic settlement consumes the room death;
     // otherwise the nonreward descendant still needs this sealed occurrence.

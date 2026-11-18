@@ -457,9 +457,18 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 runtime
                     .install_companion_policies(native.policies().clone())
                     .map_err(|_| ActivityRefusal::ContentUnavailable)?;
-                runtime
-                    .realize_activity_boss(template, active)
+                if template.source_path() == "content/encounters/bosses/selected-first-dragon.json"
+                {
+                    super::first_dragon_encounter::spawn_initial(
+                        &mut runtime,
+                        template.room().movement_cells(),
+                    )
                     .map_err(|_| ActivityRefusal::ContentUnavailable)?;
+                } else {
+                    runtime
+                        .realize_activity_boss(template, active)
+                        .map_err(|_| ActivityRefusal::ContentUnavailable)?;
+                }
                 let RuntimeScopeRefV1::Instance { instance_id, .. } = allocation.scope else {
                     continue;
                 };

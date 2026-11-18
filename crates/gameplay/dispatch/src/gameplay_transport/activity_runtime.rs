@@ -1124,6 +1124,19 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             return Err(ActivityRuntimeRegistrationError);
         }
         let mut states = self.states.for_activity();
+        if template.key == "oteryn:room.boss.the_first_dragon"
+            && template.revision.starts_with("finale-")
+        {
+            *states
+                .spell_states
+                .get_mut()
+                .encounter_phases
+                .first_dragon
+                .get_mut()
+                .map_err(|_| ActivityRuntimeRegistrationError)? = Some(
+                super::first_dragon_encounter::Phase::new(room.movement_cells().clone()),
+            );
+        }
         if let Some(callbacks) = source_callbacks {
             states.spell_states.get_mut().soul_war_callbacks = callbacks;
         }

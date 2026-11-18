@@ -22,6 +22,7 @@ pub(super) struct ActivePhase {
 #[derive(Default, Debug)]
 pub(super) struct Registry {
     pub(super) active: Mutex<Vec<ActivePhase>>,
+    pub(super) first_dragon: Mutex<Option<super::first_dragon_encounter::Phase>>,
     first_dragon_plants: Mutex<Vec<ExactActorRef>>,
     first_dragon_portals: Mutex<Vec<(ExactActorRef, MovementLocalPosition, u64)>>,
 }
@@ -105,6 +106,19 @@ impl Registry {
                     && runtime.bound_corpse(actor.corpse_identity()).is_some()
             })
         })
+    }
+
+    pub(super) fn first_dragon_death(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        actor: ExactActorRef,
+        creature: &str,
+    ) {
+        if let Ok(mut phase) = self.first_dragon.lock()
+            && let Some(phase) = phase.as_mut()
+        {
+            phase.death(runtime, actor, creature);
+        }
     }
 
     pub(super) fn reserve<'a>(
@@ -316,6 +330,11 @@ fn placement(
 }
 
 pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates) {
+    if let Ok(mut phase) = states.encounter_phases.first_dragon.lock()
+        && let Some(phase) = phase.as_mut()
+    {
+        phase.advance(runtime);
+    }
     let Ok(mut active) = states.encounter_phases.active.lock() else {
         return;
     };
