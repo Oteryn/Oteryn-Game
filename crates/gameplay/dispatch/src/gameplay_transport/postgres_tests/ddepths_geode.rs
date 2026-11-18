@@ -7,6 +7,7 @@ use crate::map::view::{MapFacts, placement_key};
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
 };
+use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
 const FRAGMENT: &str = "oteryn:item.tibia.i27509";
 const GEODE: TilePos = TilePos {
@@ -142,10 +143,26 @@ async fn exercise(
         );
     }
     let map = owner.bundle_map().ok_or("published World")?;
+    assert!(
+        !map.facts
+            .quest_callback_blocked(map.overlay.base(), ENTRANCE, true),
+        "the live portal removes the stalagmite's movement collision"
+    );
+    owner.clock_origin -= std::time::Duration::from_secs(8);
+    let now = owner.owner_now().get();
+    let map = owner.bundle_map().ok_or("published World")?;
     assert_eq!(
-        map.facts
-            .quest_portal_destination(ENTRANCE, owner.owner_now().get() + 8_000_000),
+        map.facts.quest_portal_destination(ENTRANCE, now),
         None
+    );
+    map.facts.expire_movement_items(now);
+    let (step, _) = owner
+        .paced_step(actor, admitted.game_session_id, StepDirection::North)
+        .await;
+    assert_eq!(
+        step.disposition,
+        StepDisposition::Blocked,
+        "the expired portal restores the stalagmite's movement collision"
     );
     let remainder: i64 = sqlx::query_scalar(
         "SELECT quantity FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1",
