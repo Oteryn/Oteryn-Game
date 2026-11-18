@@ -9,8 +9,11 @@ use oteryn_gameplay_quests::quest::world_callbacks::{
 
 use super::*;
 use crate::{
-    durability::{item_loop_move::CoalBasinTarget, npc_travel::ArrivalConsume},
-    foundation::MovementLocalPosition,
+    durability::{
+        item_loop_move::CoalBasinTarget, npc_travel::ArrivalConsume,
+        spell_owner_commit::SpellLanePermit,
+    },
+    foundation::{GameSessionId, MovementLocalPosition},
     map::view::{MapFacts, placement_key},
 };
 
@@ -136,24 +139,36 @@ pub(super) async fn reconcile(
     if bindings(admission).is_empty() {
         return true;
     }
-    let Ok(landing) = admission
+    let Some(permit) = admission.spell_lane_permit().await else {
+        return false;
+    };
+    let result = realize(admission, &permit, depositor, command).await;
+    drop(permit);
+    match result {
+        Ok(Some(session)) => admission.refresh_quest_session(session, false).await,
+        Ok(None) => {}
+        Err(()) => return false,
+    }
+    true
+}
+
+pub(super) async fn realize(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    permit: &SpellLanePermit,
+    depositor: crate::domain::CharacterId,
+    command: CommandRef,
+) -> Result<Option<GameSessionId>, ()> {
+    let landing = admission
         .root
         .read_coal_basin_landing(admission.character, depositor, command)
         .await
-    else {
-        return false;
-    };
+        .map_err(|_| ())?;
     let Some(landing) = landing else {
-        return true;
-    };
-    let Some(_permit) = admission.spell_lane_permit().await else {
-        return false;
+        return Ok(None);
     };
     let transfer = {
         let runtime = admission.runtime.lock().await;
-        let Ok(census) = runtime.positioned_melee_census() else {
-            return false;
-        };
+        let census = runtime.positioned_melee_census().map_err(|_| ())?;
         census.into_iter().find_map(|(actor, _, session)| {
             let session = session?;
             let lease = runtime.bound_attacker_lease(actor, session).ok()?;
@@ -162,29 +177,30 @@ pub(super) async fn reconcile(
     };
     let Some((actor, session)) = transfer else {
         // The normal first-entry owner consumes the retained landing on reconnect.
-        return true;
+        return Ok(None);
     };
-    let Ok(Some(mut fence)) = admission.current_quest_fence(session).await else {
-        return false;
-    };
+    let mut fence = admission
+        .current_quest_fence(session)
+        .await
+        .map_err(|_| ())?
+        .ok_or(())?;
     if fence.character_id.as_bytes() != &landing.recipient
         || fence.runtime_scope.world_id() != landing.arrival.world_id
     {
-        return false;
+        return Err(());
     }
+    permit.check_scope(fence.runtime_scope).map_err(|_| ())?;
     let mut slot = admission
         .revision_sequencer
         .acquire(fence.character_id)
         .await;
     // The item transaction may have advanced this independent Character root.
     slot.observe_home_town();
-    let Ok(revision) = slot.cursor(admission.root, admission.character).await else {
-        return false;
-    };
-    fence.expected_character_revision = revision;
-    let Some(map) = admission.bundle_map() else {
-        return false;
-    };
+    fence.expected_character_revision = slot
+        .cursor(admission.root, admission.character)
+        .await
+        .map_err(|_| ())?;
+    let map = admission.bundle_map().ok_or(())?;
     let destination = landing.arrival.destination;
     let destination = MovementLocalPosition {
         x: destination.x,
@@ -195,16 +211,14 @@ pub(super) async fn reconcile(
         let mut runtime = admission.runtime.lock().await;
         let states = admission.states.spell_states.lock().await;
         if states.is_dead(actor) || runtime.bound_attacker_lease(actor, session).is_err() {
-            return true;
+            return Ok(None);
         }
-        let Ok(current) = runtime.read_actor_position(actor) else {
-            return false;
-        };
+        let current = runtime.read_actor_position(actor).map_err(|_| ())?;
         if current.position() != destination {
             let closed = crate::map::floor::BundleDoors(&map.facts);
             let blocked =
                 super::super::pvp_live::pz_blocked(&states, actor, session, admission.owner_now());
-            let Ok(proof) = crate::map::floor::prepare_scripted_quest_teleport_facing(
+            let proof = crate::map::floor::prepare_scripted_quest_teleport_facing(
                 &runtime,
                 admission.movement_cells(),
                 actor,
@@ -215,12 +229,9 @@ pub(super) async fn reconcile(
                 &closed,
                 current.facing(),
                 false,
-            ) else {
-                return false;
-            };
-            if runtime.commit_source_step(proof).is_err() {
-                return false;
-            }
+            )
+            .map_err(|_| ())?;
+            runtime.commit_source_step(proof).map_err(|_| ())?;
             if let Some(tile) =
                 crate::content::bundle_spell_tiles::tile_pos(crate::content::LogicalCell {
                     x: destination.x,
@@ -253,10 +264,8 @@ pub(super) async fn reconcile(
         .await;
     slot.observe_home_town();
     drop(slot);
-    if matches!(outcome, Ok(ArrivalConsume::Consumed)) {
+    if outcome.map_err(|_| ())? == ArrivalConsume::Consumed {
         admission.track_respawned(session, actor, &placed, fence);
     }
-    drop(_permit);
-    admission.refresh_quest_session(session, false).await;
-    outcome.is_ok()
+    Ok(Some(session))
 }

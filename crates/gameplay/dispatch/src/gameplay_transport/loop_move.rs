@@ -1170,7 +1170,6 @@ pub(super) async fn move_loop_item_with_house_capacity(
     if touches_ground && !matches!(committed, Ok(Err(_))) {
         admission.states.loop_ground.invalidate();
     }
-    drop(permit);
     #[cfg(test)]
     if at_basin
         && committed.as_ref().is_ok_and(|result| {
@@ -1186,11 +1185,18 @@ pub(super) async fn move_loop_item_with_house_capacity(
     {
         return LoopMoveResult::Unknown;
     }
-    if at_basin
-        && matches!(committed, Ok(Ok(_)))
-        && !coal_basin::reconcile(admission, fence.character_id, command_ref).await
-    {
-        return LoopMoveResult::Unknown;
+    // Carry the same Channel lane from the captured flame occupant through
+    // the paid move and live landing. Replays take a new lane and use the receipt.
+    let landing = if at_basin && matches!(committed, Ok(Ok(_))) {
+        coal_basin::realize(admission, &permit, fence.character_id, command_ref).await
+    } else {
+        Ok(None)
+    };
+    drop(permit);
+    match landing {
+        Ok(Some(session)) => admission.refresh_quest_session(session, false).await,
+        Ok(None) => {}
+        Err(()) => return LoopMoveResult::Unknown,
     }
     if touches_ground && matches!(committed, Ok(Ok(_))) {
         admission.refresh_terrain_tools().await;
