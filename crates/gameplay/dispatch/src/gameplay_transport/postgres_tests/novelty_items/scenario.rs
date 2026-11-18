@@ -5,9 +5,13 @@ const BRIDGE_ROBBERY_SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2d
 const NURIK: &str = "oteryn:npc.nurik";
 const NURIK_WELCOME: &str = "It's .. It's YOU! At last!! So what's this special proposal you would like to make, my friend?";
 const NURIK_REFUSAL: &str = "Excuse me, but I'm waiting for someone important!";
+const READY_TO_SELL: &str = "oteryn:quest-callback/fixture/bridge-ready-to-sell";
 
 fn nurik_catalogue() -> TestResult<oteryn_gameplay_quests::quest::QuestStateCatalogue> {
-    use oteryn_gameplay_quests::quest::{QuestStateCatalogue, npc_rules::NpcRuleCatalog};
+    use oteryn_gameplay_quests::quest::{
+        QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
+        QuestTransition, npc_rules::NpcRuleCatalog,
+    };
     use serde_json::json;
     const CRYSTAL: &str =
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nurik.lua:53-63,105";
@@ -15,7 +19,7 @@ fn nurik_catalogue() -> TestResult<oteryn_gameplay_quests::quest::QuestStateCata
     const MISSION: &str = "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission04";
     let program = json!({
         "schema":1,"quest":QUEST,
-        "tracks":[{"key":MISSION,"quest":QUEST,"initial":6,"min":-1,"max":7,"sources":[CRYSTAL]}],
+        "tracks":[{"key":MISSION,"quest":QUEST,"initial":5,"min":-1,"max":7,"sources":[CRYSTAL]}],
         "rules":[
             {"key":"oteryn:quest-npc/thieves-guild/nurik/disguised","quest":QUEST,"npc":NURIK,
              "trigger":"greet","keywords":["hi","hello"],
@@ -27,7 +31,24 @@ fn nurik_catalogue() -> TestResult<oteryn_gameplay_quests::quest::QuestStateCata
              "effects":[{"kind":"end_conversation","delay_ms":0}],"sources":[CRYSTAL]}
         ]
     }).to_string();
-    let native = QuestStateCatalogue::new("content-1", vec![], vec![]).map_err(debug)?;
+    let native = QuestStateCatalogue::new(
+        "content-1",
+        vec![QuestTrack {
+            key: MISSION.into(), quest: QUEST.into(), initial: 5, min: -1, max: 7,
+        }],
+        vec![QuestTransition {
+            key: READY_TO_SELL.into(),
+            quest: QUEST.into(),
+            effects: vec![QuestEffect {
+                track: MISSION.into(),
+                from: QuestComparison::Eq(5),
+                effect: QuestEffectKind::Set(6),
+            }],
+            completes: false,
+            experience: None,
+            world_change: None,
+        }],
+    ).map_err(debug)?;
     Ok(NpcRuleCatalog::from_json_documents(&[&program])?.bind_fixture(native)?)
 }
 
@@ -485,7 +506,9 @@ pub(super) fn scenario(case: Case) -> TestResult {
         let nurik = if case == Case::BridgeRobberyDisguise {
             owner.quest_catalogue = Some(std::sync::Arc::new(nurik_catalogue()?));
             owner.refresh_quest_session(admitted.game_session_id, false).await;
-            let [npc] = super::super::classic_quests::install(&owner, &admitted, [NURIK]).await?;
+            let [npc] = super::super::classic_quests::install_with_offsets(
+                &owner, &admitted, [NURIK], Some([(1, 0)]),
+            ).await?;
             let reply = super::super::classic_quests::talk(&mut owner, &admitted, npc, 7865, "hi").await?;
             assert_eq!(reply, [NURIK_REFUSAL]);
             Some(npc)
@@ -776,12 +799,15 @@ pub(super) fn scenario(case: Case) -> TestResult {
         }
         if let Some(npc) = nurik {
             let talk = super::super::classic_quests::talk;
-            assert_eq!(talk(&mut owner, &end, npc, 7866, "hi").await?, [NURIK_WELCOME]);
-            talk(&mut owner, &end, npc, 7867, "bye").await?;
+            assert_eq!(talk(&mut owner, &end, npc, 7866, "hi").await?, [NURIK_REFUSAL]);
+            super::super::qengine_outfit_stories::commit_fixture(&owner, &end, READY_TO_SELL, 7867).await?;
+            owner.refresh_quest_session(end.game_session_id, false).await;
+            assert_eq!(talk(&mut owner, &end, npc, 7868, "hi").await?, [NURIK_WELCOME]);
+            talk(&mut owner, &end, npc, 7869, "bye").await?;
             owner.clock_origin = owner.clock_origin
                 .checked_sub(std::time::Duration::from_secs(300))
                 .ok_or("disguise clock")?;
-            assert_eq!(talk(&mut owner, &end, npc, 7868, "hi").await?, [NURIK_REFUSAL]);
+            assert_eq!(talk(&mut owner, &end, npc, 7870, "hi").await?, [NURIK_REFUSAL]);
         }
         if case.trumpet() {
             let (duration, delta): (i64, i64) = sqlx::query_as("SELECT p.duration_millis,p.expires_at_unix_ms-r.occurred_at FROM game_spell_item_temporal_schedules p JOIN game_item_consume_transform_records r ON r.transaction_id=p.source_transaction_id").fetch_one(&harness.pool).await?;
