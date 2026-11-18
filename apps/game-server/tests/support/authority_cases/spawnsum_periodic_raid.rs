@@ -1,5 +1,6 @@
 //! The World scheduler admits one deterministic boss on each due interval.
 use crate::bestiary_postgres_harness as fixture;
+use crate::durability::raid_runner::{CommittedRaidAction, RaidPlacementOutcome};
 use crate::durability::raid_schedule::{RaidScheduleCandidate, RaidSchedulerCheck};
 use crate::foundation::{ChannelId, ScopeOwnershipGeneration};
 use oteryn_gameplay_content::content::ProductionKey;
@@ -51,15 +52,9 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
     let raid = catalogue
         .get(&key)
         .ok_or("missing periodic Pits of Inferno schedule")?;
-    let firing_id = fixture::id(88);
-    let selected = raid.select(digest, firing_id).map_err(fixture::debug)?;
     assert_eq!(raid.variants.len(), 7);
-    assert_eq!(selected.definition.waves.len(), 1);
-    assert_eq!(selected.definition.waves[0].entries.len(), 1);
-    assert_eq!(selected.definition.waves[0].entries[0].count, 1);
-
     let generation = ScopeOwnershipGeneration::new(1).map_err(fixture::debug)?;
-    let tick = |now_ms: i64| {
+    let tick = |now_ms, firing_id, definition| {
         h.root.check_raid_schedules(
             &authority,
             &h.node,
@@ -72,7 +67,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                 bundle_digest: digest,
                 candidates: vec![RaidScheduleCandidate {
                     key: key.clone(),
-                    definition: selected.definition.clone(),
+                    definition,
                     eligible: true,
                     calendar: None,
                     firing_id,
@@ -83,12 +78,82 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             },
         )
     };
-    assert!(tick(0).await?.firings.is_empty());
+    let firing_id = fixture::id(88);
+    let selected = raid.select(digest, firing_id).map_err(fixture::debug)?;
+    let definition = selected.definition;
+    assert!(
+        tick(0, firing_id, definition.clone())
+            .await?
+            .firings
+            .is_empty()
+    );
     let early = advance_clock(Duration::from_millis(46_799_999)).await?;
-    assert!(tick(early).await?.firings.is_empty());
+    assert!(
+        tick(early, firing_id, definition.clone())
+            .await?
+            .firings
+            .is_empty()
+    );
     let due = early + advance_clock(Duration::from_millis(1)).await?;
-    assert_eq!(tick(due).await?.firings, [(firing_id, key.clone())]);
-    assert!(tick(due).await?.firings.is_empty());
+    assert_eq!(
+        tick(due, firing_id, definition.clone()).await?.firings,
+        [(firing_id, key.clone())]
+    );
+    let wave = h
+        .root
+        .advance_raid_run(
+            &h.node,
+            firing_id,
+            channel,
+            generation,
+            definition.clone(),
+            due,
+        )
+        .await?
+        .ok_or("periodic boss wave")?;
+    let CommittedRaidAction::Wave { creatures, .. } = &wave.action else {
+        return Err("periodic raid must start with its summon wave".into());
+    };
+    let [boss] = creatures.as_slice() else {
+        return Err("periodic wave must summon exactly one boss".into());
+    };
+    assert_eq!(boss.creature, definition.waves[0].entries[0].creature);
+    h.root
+        .acknowledge_raid_effect(
+            &h.node,
+            wave.identity,
+            vec![RaidPlacementOutcome {
+                identity: boss.identity,
+                placed: true,
+            }],
+            due,
+        )
+        .await?;
+    let end = h
+        .root
+        .advance_raid_run(
+            &h.node,
+            firing_id,
+            channel,
+            generation,
+            definition.clone(),
+            due,
+        )
+        .await?
+        .ok_or("periodic wave completion")?;
+    assert!(matches!(end.action, CommittedRaidAction::Complete { .. }));
+    h.root
+        .acknowledge_raid_effect(&h.node, end.identity, vec![], due)
+        .await?;
+
+    assert!(tick(due, firing_id, definition).await?.firings.is_empty());
+    let next_id = fixture::id(89);
+    let next = raid.select(digest, next_id).map_err(fixture::debug)?;
+    let second = due + advance_clock(Duration::from_secs(13 * 60 * 60)).await?;
+    assert_eq!(
+        tick(second, next_id, next.definition).await?.firings,
+        [(next_id, key.clone())]
+    );
     Ok(())
 }
 
