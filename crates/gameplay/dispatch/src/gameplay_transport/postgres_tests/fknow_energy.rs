@@ -211,7 +211,7 @@ pub(super) async fn exercise(
     let before = golden_receipts().await?;
 
     sqlx::query(
-        "UPDATE game_forgotten_knowledge_replica_windows SET expires_at = statement_timestamp() + interval '10 minutes', kills=4
+        "UPDATE game_forgotten_knowledge_replica_windows SET expires_at = statement_timestamp() + interval '10 minutes', kills=3
          WHERE world_id=encode($1,'hex')::uuid AND replica_kind=2",
     )
     .bind(admitted.world_id.as_bytes().as_slice())
@@ -225,6 +225,24 @@ pub(super) async fn exercise(
     )
     .await?;
     assert_eq!(golden_receipts().await?, before);
+    let pending = super::qengine_kill_stories::queue_death(
+        owner,
+        admitted,
+        "oteryn:creature.golden_servant_replica",
+        221,
+    )
+    .await?;
+    // The connection cleanup path discards personal rewards, while the scope
+    // owner must still settle the native World death.
+    owner
+        .states
+        .attack
+        .lock()
+        .await
+        .kills()
+        .discard_gone(admitted.game_session_id, None);
+    super::qengine_kill_stories::drain_deaths(owner, admitted, &[pending]).await?;
+    assert_eq!(golden_receipts().await?, before);
     let credit: (i32, i32) = sqlx::query_as(
         "SELECT kills, cardinality(credited_deaths)
          FROM game_forgotten_knowledge_replica_windows
@@ -233,7 +251,7 @@ pub(super) async fn exercise(
     .bind(admitted.world_id.as_bytes().as_slice())
     .fetch_one(&harness.pool)
     .await?;
-    assert_eq!(credit, (5, 1));
+    assert_eq!(credit, (5, 2));
     assert_eq!(
         map.facts.quest_portal_destination(
             crate::map::overlay::TilePos {

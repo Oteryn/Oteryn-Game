@@ -35,6 +35,7 @@ use crate::durability::bestiary_progress::{BestiaryKillOutcome, BestiaryProgress
 use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::cyclopedia_tracker::TrackerKind;
 use crate::durability::item_mint::ItemMintError;
+use crate::durability::quest_world_callback::replica_window::ReplicaKind;
 use crate::foundation::runtime_actor_spell_types::CombatBatchReceipt;
 use {
     crate::foundation::{
@@ -391,8 +392,6 @@ struct RefusedSourceDrop {
     death: CreatureDeathOccurrenceKey,
     reason: SourceDropRefusalReason,
 }
-
-use crate::durability::quest_world_callback::replica_window::ReplicaKind;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct ReplicaWorldDeath {
