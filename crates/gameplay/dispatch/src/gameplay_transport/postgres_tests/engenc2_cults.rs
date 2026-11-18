@@ -500,7 +500,7 @@ pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResu
                         assert!(!runtime.contains_live_creature(actor));
                     }
                 } else {
-                    super::drume_battlefield::exercise(&owner, &admitted, (second_actor, second_session), spawn_boss)
+                    super::drume_battlefield::exercise(&owner, &h, &admitted, (second_actor, second_session), spawn_boss)
                         .await?;
                 }
                 drop(owner);

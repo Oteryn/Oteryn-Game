@@ -95,6 +95,22 @@ pub(super) async fn admit_second(
     harness: &Harness,
     leader: &AdmittedSession,
 ) -> TestResult<(ExactActorRef, GameSessionId)> {
+    let member = admit_fixture_player(
+        owner,
+        harness,
+        [60, 63, 71],
+        MovementLocalPosition { x: 100, y: 101, floor: 7 },
+    ).await?;
+    assert_ne!(member.1, leader.game_session_id);
+    Ok(member)
+}
+
+async fn admit_fixture_player(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    [character, account, session]: [u8; 3],
+    at: MovementLocalPosition,
+) -> TestResult<(ExactActorRef, GameSessionId)> {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&harness.pool)
@@ -105,26 +121,18 @@ pub(super) async fn admit_second(
             node: harness.node.clone(),
             recovery: &harness.recovery,
         },
-        60,
-        63,
-        71,
+        character,
+        account,
+        session,
         now,
     )
     .await?;
     let session = member.current_game_session_id();
-    assert_ne!(session, leader.game_session_id);
     let mut runtime = owner.runtime.lock().await;
     let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
     let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
     runtime
-        .initialize_pinned_test_position(
-            actor,
-            MovementLocalPosition {
-                x: 100,
-                y: 101,
-                floor: 7,
-            },
-        )
+        .initialize_pinned_test_position(actor, at)
         .map_err(debug)?;
     runtime
         .bind_attacker_lease(actor, session, member.current_character_lease())
@@ -134,6 +142,7 @@ pub(super) async fn admit_second(
 
 pub(super) async fn exercise(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
     leader: &AdmittedSession,
     (second, second_session): (ExactActorRef, GameSessionId),
     spawn_boss: bool,
@@ -208,20 +217,7 @@ pub(super) async fn exercise(
             .next()
             .ok_or("Drume")?;
         kill(owner, leader, target, DRUME, 103).await?;
-        {
-            let mut runtime = owner.runtime.lock().await;
-            let states = owner.states.spell_states.lock().await;
-            crate::gameplay_transport::encounter_phases::tick(
-                &mut runtime,
-                &states,
-                owner.owner_now().get() + 1_200_000_000,
-            );
-            crate::gameplay_transport::encounter_phases::tick(
-                &mut runtime,
-                &states,
-                owner.owner_now().get() + 1_201_000_000,
-            );
-        }
+        exercise_busy_timeout(owner, harness, [(first, leader.game_session_id), (second, second_session)]).await?;
         for session in [leader.game_session_id, second_session] {
             assert_feedback(owner, session, "Your time is over.");
         }
@@ -250,6 +246,73 @@ pub(super) async fn exercise(
         })
         .count();
     assert_eq!(exit_effects, usize::from(!spawn_boss));
+    Ok(())
+}
+
+async fn exercise_busy_timeout(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    players: [(ExactActorRef, GameSessionId); 2],
+) -> TestResult {
+    use crate::foundation::runtime_actor_spell_types::{
+        OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect, SpellOccurrenceBinding,
+    };
+    use crate::gameplay_transport::encounter_phases::tick;
+
+    // The caster stays outside the battlefield, so only retirement, not
+    // either player's relocation proof, can encounter the reservation.
+    let (caster, session) = admit_fixture_player(
+        owner, harness, [61, 64, 72], MovementLocalPosition { x: 104, y: 100, floor: 7 },
+    ).await?;
+    let lions = list(owner, LION).await?;
+    let target = *lions.last().ok_or("surviving lion commander")?;
+    let now = owner.owner_now();
+    let deadline = now.get() + 1_200_000_000;
+    let staged = {
+        let mut runtime = owner.runtime.lock().await;
+        let lease = runtime.bound_attacker_lease(caster, session).map_err(debug)?;
+        let batch = OwnerCombatBatch {
+            caster,
+            attacker: lease.character_id(),
+            current_lease_generation: lease.generation(),
+            command: CommandRef::new(session, CommandId::new(105).map_err(debug)?),
+            occurrence: SpellOccurrenceBinding {
+                id: "drume-timeout-pending-target".into(),
+                revisions: std::array::from_fn(|_| "fixture:1".into()),
+            },
+            binding: b"{\"drume_timeout_target\":true}".to_vec(),
+            anchor: None,
+            now_us: Some(now),
+            now_ms: now.get() / 1_000,
+            effects: vec![OwnerCombatEffect {
+                target,
+                sub_ordinal: 0,
+                change: OwnerCombatChange::Damage {
+                    target_atom: runtime.creature_spell_target_atom(target).map_err(debug)?,
+                    magnitude: 1,
+                },
+            }],
+            deferred: None,
+        };
+        let mut staged = runtime.stage_spell_batch(&batch).map_err(debug)?;
+        runtime.reserve_spell_batch(&mut staged).map_err(debug)?;
+        assert!(runtime.actor_spell_reserved(target));
+        let states = owner.states.spell_states.lock().await;
+        tick(&mut runtime, &states, deadline);
+        staged
+    };
+    assert_positions(owner, players.map(|(actor, _)| actor), LANDING).await?;
+    assert_eq!(list(owner, LION).await?, lions);
+    assert_eq!(list(owner, KESAR).await?.len(), 1);
+    for (_, session) in players {
+        assert!(owner.states.chat.drain(session).is_empty());
+    }
+
+    let mut runtime = owner.runtime.lock().await;
+    runtime.release_definitely_uncommitted_spell_batch(&staged).map_err(debug)?;
+    let states = owner.states.spell_states.lock().await;
+    tick(&mut runtime, &states, deadline + 1);
+    tick(&mut runtime, &states, deadline + 2);
     Ok(())
 }
 
