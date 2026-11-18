@@ -8,6 +8,8 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
 
+mod linked;
+
 const MAX_ENCOUNTERS: usize = 64;
 
 #[derive(Debug)]
@@ -24,6 +26,7 @@ pub(super) struct ActivePhase {
 #[derive(Default, Debug)]
 pub(super) struct Registry {
     pub(super) active: Mutex<Vec<ActivePhase>>,
+    links: Mutex<Vec<linked::Link>>,
 }
 
 impl Registry {

@@ -389,7 +389,21 @@ pub struct Encounter {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phase: Option<EncounterPhase>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub linked_arrival: Option<LinkedArrival>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub solo_expiry: Option<SoloEncounterExpiry>,
+}
+
+/// One delayed member of an existing boss encounter. Its lethal event can
+/// finish the encounter's original boss within the source link radius.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct LinkedArrival {
+    pub monster: EncounterMonster,
+    pub after_ms: u32,
+    pub radius: u8,
+    pub arrival_effect: u16,
+    pub death_effect: u16,
 }
 
 /// A solo STEP room keeps its own visit deadline and uses the existing boss cooldown ledger.
@@ -928,6 +942,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
     if operations > 1
         || (operations > 0
             && ((!personal_encounter
+                && !effects.encounter.as_ref().is_some_and(|encounter| encounter.linked_arrival.is_some())
                 && !super::personal_trial::admitted(callback)
                 && (!lever
                     || (effects.scene.is_none()
@@ -988,7 +1003,33 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_from: BTreeSet<_> = encounter.players.iter().map(|p| p.from).collect();
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
-        let source_party = encounter.phase == Some(EncounterPhase::Cults);
+        let source_party = encounter.phase == Some(EncounterPhase::Cults)
+            || encounter.linked_arrival.is_some();
+        if encounter.linked_arrival.as_ref().is_some_and(|link| {
+            callback.trigger != Trigger::Use
+                || callback.actor_kind != ActorKind::Player
+                || callback.selector.position.is_none()
+                || callback.lever.is_some()
+                || callback.reversible
+                || callback.has_personal_state()
+                || encounter.phase.is_some()
+                || encounter.timing.is_some()
+                || encounter.solo_expiry.is_some()
+                || encounter.monsters.len() != 1
+                || !link.monster.creature.starts_with("oteryn:creature.")
+                || !super::super::valid_quest_key(&link.monster.creature)
+                || !in_room(link.monster.position)
+                || encounter.monsters.iter().any(|boss| {
+                    boss.creature == link.monster.creature || boss.position == link.monster.position
+                })
+                || unique_to.contains(&link.monster.position)
+                || !(1..=60_000).contains(&link.after_ms)
+                || !(1..=32).contains(&link.radius)
+                || !(1..=255).contains(&link.arrival_effect)
+                || !(1..=255).contains(&link.death_effect)
+        }) {
+            return false;
+        }
         if encounter.solo_expiry.is_some_and(|expiry| {
             callback.personal_room_entry().is_none()
                 || encounter.phase.is_some()
@@ -1000,7 +1041,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || !callback.effects.carried_inputs.is_empty()
                 || !callback.offerings.is_empty()
                 || callback.item_on_target.is_some()
-        }) || (encounter.minimum_level == 0 && !source_party && encounter.solo_expiry.is_none())
+        }) || (encounter.minimum_level == 0
+            && encounter.phase != Some(EncounterPhase::Cults)
+            && encounter.solo_expiry.is_none())
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()

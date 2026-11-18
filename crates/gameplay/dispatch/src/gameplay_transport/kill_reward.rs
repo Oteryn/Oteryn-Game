@@ -1955,6 +1955,31 @@ pub fn record_creature_kill(
         native_room_placement_context: pin.frame_binding_digest().to_vec(),
     };
     let daily_boost = runtime.daily_boost().cloned();
+    if let Some(linked) = sink.prey.and_then(|states| {
+        states.encounter_phases.finish_link(
+            runtime,
+            target,
+            observed_at.map_or(now_ms.saturating_mul(1_000), |at| at.get()),
+        )
+    }) {
+        let top = runtime.borrow_combat_death().top_damage_contributor(linked);
+        if let Ok(top) = top
+            && let Some(winner) = top.present()
+        {
+            record_creature_kill(runtime, sink, linked, CapturedRewardPrincipal {
+                character: winner.character,
+                lease_generation: winner.lease_generation,
+                session: winner.session,
+                actor: winner.actor,
+            }, now_ms, observed_at);
+        } else {
+            // The script's hit carries no Character attribution. With no
+            // contributor, publish its physical death without assigning credit.
+            let _ = crate::combat::project_fixed_one_creature_death(
+                &mut runtime.borrow_combat_death(), linked,
+            );
+        }
+    }
     // Freeze the principal's Prey boost on the death turn, before any command can reroll it.
     if crate::combat::project_fixed_one_creature_death(&mut runtime.borrow_combat_death(), target)
         .is_err()

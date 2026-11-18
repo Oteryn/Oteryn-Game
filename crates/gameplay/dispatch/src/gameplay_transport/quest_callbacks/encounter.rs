@@ -17,6 +17,11 @@ pub(super) struct EncounterVisit {
     participants: Vec<(ExactActorRef, GameSessionId)>,
     creatures: Vec<ExactActorRef>,
     expires: Option<VisitExpiry>,
+    arrival_due: Option<u64>,
+    owner_scope: (
+        crate::foundation::RuntimeScopeRefV1,
+        crate::foundation::ScopeOwnershipGeneration,
+    ),
 }
 
 struct VisitExpiry {
@@ -31,17 +36,17 @@ struct VisitExpiry {
 
 impl EncounterVisit {
     pub(super) fn next_due_us(&self) -> Option<u64> {
-        self.expires.as_ref().map(|expiry| expiry.due)
+        self.arrival_due.into_iter().chain(self.expires.as_ref().map(|expiry| expiry.due)).min()
     }
 
     fn active(&self, runtime: &ChannelRuntimeV1) -> bool {
-        self.expires
+        self.owner_scope == runtime.encounter_owner_scope() && (self.arrival_due.is_some() || self.expires
             .as_ref()
             .is_some_and(|expiry| expiry.scope == runtime.encounter_owner_scope())
             || self
                 .creatures
                 .iter()
-                .any(|actor| runtime.contains_live_creature(*actor))
+                .any(|actor| runtime.contains_live_creature(*actor)))
     }
 }
 
@@ -89,6 +94,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let scope = runtime.encounter_owner_scope();
         let digest = map.overlay.base().digest();
         visits.retain_mut(|visit| {
+            if visit.owner_scope != scope {
+                return false;
+            }
+            if visit.arrival_due.is_some_and(|due| due <= now) {
+                visit.arrival_due = None;
+                if let Some(link) = visit.room.linked_arrival.as_ref()
+                    && let Some(original) = visit.creatures.first().copied()
+                    && let Some(delayed) = self.spawn_linked_arrival(runtime, states, map, original, link)
+                {
+                    visit.creatures.push(delayed);
+                }
+            }
             let Some(expiry) = &visit.expires else {
                 return visit.active(runtime);
             };
@@ -157,6 +174,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             super::personal_trial::cleanup(runtime, &mut visit.creatures);
             false
         });
+    }
+
+    fn spawn_linked_arrival(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &ChannelSpellStates,
+        map: &BundleMap,
+        original: ExactActorRef,
+        link: &world_callbacks::LinkedArrival,
+    ) -> Option<ExactActorRef> {
+        let at = local(link.monster.position);
+        if self.movement_cells.index().lookup(
+            self.movement_cells.scope(),
+            LogicalCell { x: at.x, y: at.y, z: i32::from(at.floor) },
+        ) != Ok(CollisionClass::Walkable)
+            || map.facts.quest_callback_blocked(map.overlay.base(), tile(link.monster.position), false)
+            || runtime.positioned_melee_census().ok()?.iter().any(|(_, position, _)| position.position() == at)
+        {
+            return None;
+        }
+        let health = runtime.companion_policy(&link.monster.creature).ok()?.maximum_health;
+        let delayed = *runtime.commit_quest_creature_spawn(&[(link.monster.creature.as_str(), health, at)]).ok()?.first()?;
+        if states.encounter_phases.link(
+            runtime, delayed, original, link.radius, link.death_effect, self.movement_cells().clone(),
+        ).is_err() {
+            let _ = runtime.remove_encounter_actor(delayed);
+            return None;
+        }
+        map.facts.emit_movement_effect(tile(link.monster.position), link.arrival_effect);
+        Some(delayed)
     }
 
     #[allow(
@@ -304,6 +351,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Cults collects whoever stands on the five source staging tiles.
                 if encounter.phase
                     == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults)
+                    || encounter.linked_arrival.is_some()
                 {
                     continue;
                 }
@@ -423,6 +471,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
         } else {
             None
+        };
+        let arrival_due = match &encounter.linked_arrival {
+            Some(link) => {
+                if runtime.companion_policy(&link.monster.creature).is_err() {
+                    return UseDisposition::Rejected;
+                }
+                let Some(due) = self.owner_now().get().checked_add(u64::from(link.after_ms) * 1_000) else {
+                    return UseDisposition::Exhausted;
+                };
+                Some(due)
+            }
+            None => None,
         };
         if preflight {
             return if runtime
@@ -548,9 +608,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 participants: party,
                 creatures: actors.clone(),
                 expires: expiration,
+                arrival_due,
+                owner_scope: runtime.encounter_owner_scope(),
             });
         }
-        if encounter.solo_expiry.is_some() {
+        if encounter.solo_expiry.is_some() || arrival_due.is_some() {
             states.owner_wake.notify_one();
         }
         drop(visits);
