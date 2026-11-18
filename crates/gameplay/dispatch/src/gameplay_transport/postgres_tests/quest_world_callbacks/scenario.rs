@@ -351,7 +351,9 @@ fn scenario_case(
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
     let mut callback = if name == "qengine-rewards-ddepths-pump" {
-        callback("dangerous-depth-pump-buried_the_baron-00")?
+        let mut pump = callback("dangerous-depth-pump-buried_the_baron-00")?;
+        pump.selector.appearance = Some(27500);
+        pump
     } else if m03_use {
         super::super::qengine_m03_use::callback()?
     } else if qd_world {
