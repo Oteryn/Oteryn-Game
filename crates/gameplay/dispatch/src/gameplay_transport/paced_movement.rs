@@ -7,6 +7,7 @@ pub use autowalk::{AutoWalkRoute, AutoWalkTarget};
 pub(super) mod monster_trap;
 pub(super) mod special_movement;
 pub(super) mod underwater_drown;
+mod warzone_portal;
 
 fn snowbunny_progress_operation(
     snow_origin: bool,
@@ -430,6 +431,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     None => snapshot,
                 };
+                if let Some(portal) = self
+                    .bundle_map()
+                    .and_then(|map| warzone_portal::at(map, snapshot.position()))
+                {
+                    drop(permit);
+                    let result = self
+                        .enter_warzone_portal(actor, session, snapshot, portal)
+                        .await;
+                    return (
+                        self.finish_warzone_portal_step(actor, session, origin, snapshot, result)
+                            .await,
+                        Some(duration),
+                    );
+                }
                 self.cyclopedia_step(actor, session, snapshot).await;
                 self.refresh_cyclopedia_speed(actor, session).await;
                 let runtime = self.runtime.lock().await;

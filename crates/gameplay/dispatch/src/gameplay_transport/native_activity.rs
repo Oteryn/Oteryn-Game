@@ -21,6 +21,7 @@ use crate::foundation::{
     ActivityTransferMember, ActivityTransferReservation, ActivityTransferredActor, CharacterLease,
     GameSessionId, GameSessionState, MovementLocalPosition, RuntimeScopeRefV1,
 };
+use std::num::NonZeroU32;
 use std::sync::Arc;
 
 pub(super) async fn refresh_activity_accounts(
@@ -68,6 +69,7 @@ pub(super) struct NativeActivityAttempt<'a> {
     destination: RegisteredRuntime<'a>,
     request: ActivityEnterRequest,
     boss_room: bool,
+    boss_window: Option<NonZeroU32>,
     soulpit: Option<crate::durability::soulpit::SoulpitEntryRequest>,
     boss_pad_wire: Option<[u8; 32]>,
     pub(super) boss_pad_prefix:
@@ -390,7 +392,16 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         request: ActivityEnterRequest,
         wire: [u8; 32],
     ) -> Result<NativeActivityOutcome, ()> {
-        self.enter_native_activity_inner(request, true, None, Some(wire))
+        self.enter_native_activity_inner(request, true, None, Some(wire), None)
+            .await
+    }
+
+    pub(super) async fn enter_native_boss_window(
+        &self,
+        request: ActivityEnterRequest,
+        window: NonZeroU32,
+    ) -> Result<NativeActivityOutcome, ()> {
+        self.enter_native_activity_inner(request, true, None, None, Some(window))
             .await
     }
 
@@ -399,7 +410,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         request: ActivityEnterRequest,
         entry: crate::durability::soulpit::SoulpitEntryRequest,
     ) -> Result<NativeActivityOutcome, ()> {
-        self.enter_native_activity_inner(request, false, Some(entry), None)
+        self.enter_native_activity_inner(request, false, Some(entry), None, None)
             .await
     }
     pub(super) async fn retry_native_soulpit(
@@ -418,11 +429,13 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         boss_room: bool,
         soulpit: Option<crate::durability::soulpit::SoulpitEntryRequest>,
         boss_pad_wire: Option<[u8; 32]>,
+        boss_window: Option<NonZeroU32>,
     ) -> Result<NativeActivityOutcome, ()> {
         let refuse = |reason| Ok(NativeActivityOutcome::Refused(reason));
         if request.command_id == 0
             || request.participants.is_empty()
             || request.participants.len() > 15
+            || (boss_window.is_some() && request.participants.len() != 1)
         {
             return refuse(ActivityRefusal::InvalidInput);
         }
@@ -469,6 +482,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             let attempt = pending.lock().await;
             if attempt.request.activity_key != request.activity_key
                 || attempt.boss_room != boss_room
+                || attempt.boss_window != boss_window
                 || attempt.soulpit != soulpit
                 || attempt.boss_pad_wire != boss_pad_wire
                 || attempt
@@ -525,17 +539,29 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         };
         let boss_definition = if boss_room {
             let owner = ActivityHandoffOwner::new(self.root.clone());
-            let Some(definition) = owner
-                .read_boss_room_with_pin(
-                    self.character,
-                    self.holder,
-                    initiator.source,
-                    &request.activity_key,
-                    origin_pin,
-                )
-                .await
-                .map_err(|_| ())?
-            else {
+            let definition = if boss_window.is_some() {
+                owner
+                    .read_portal_boss_room(
+                        self.character,
+                        self.holder,
+                        initiator.source,
+                        &request.activity_key,
+                        origin_pin,
+                    )
+                    .await
+            } else {
+                owner
+                    .read_boss_room_with_pin(
+                        self.character,
+                        self.holder,
+                        initiator.source,
+                        &request.activity_key,
+                        origin_pin,
+                    )
+                    .await
+            }
+            .map_err(|_| ())?;
+            let Some(definition) = definition else {
                 return refuse(ActivityRefusal::ContentUnavailable);
             };
             if destination.template.as_ref().is_none_or(|template| {
@@ -635,10 +661,9 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         if request.destination_content != actual_pin {
             return refuse(ActivityRefusal::ContentChanged);
         }
-        if boss_definition
-            .as_ref()
-            .is_some_and(|definition| !boss_room_native_ready(&to, definition))
-        {
+        if boss_definition.as_ref().is_some_and(|definition| {
+            boss_window.is_none() && !boss_room_native_ready(&to, definition)
+        }) {
             return refuse(ActivityRefusal::ContentUnavailable);
         }
         let doors = destination.door.lock().await;
@@ -829,7 +854,9 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                         return refuse(ActivityRefusal::AuthorityRejected);
                     }
                 };
-            let prepared = if boss_room {
+            let prepared = if boss_window.is_some() {
+                from.prepare_activity_portal_entry(&mut to, &members[0])
+            } else if boss_room {
                 from.prepare_activity_group_entry(&mut to, &members)
             } else {
                 from.prepare_activity_transfer(&mut to, &members)
@@ -848,6 +875,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 destination: destination.clone(),
                 request,
                 boss_room,
+                boss_window,
                 soulpit,
                 boss_pad_wire,
                 boss_pad_prefix,
@@ -960,6 +988,15 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                         attempt.request.clone(),
                         entry,
                         native,
+                    )
+                    .await
+            } else if let Some(window) = attempt.boss_window {
+                owner
+                    .enter_boss_admission_window(
+                        self.character,
+                        self.holder,
+                        attempt.request.clone(),
+                        window,
                     )
                     .await
             } else if attempt.boss_room {

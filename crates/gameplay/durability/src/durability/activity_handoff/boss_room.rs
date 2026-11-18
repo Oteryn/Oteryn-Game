@@ -74,7 +74,7 @@ impl ActivityHandoffOwner {
         fence: CurrentCharacterItemFence,
         boss_key: &str,
     ) -> Result<Option<BossRoomDefinition>> {
-        self.read_boss_room_inner(authority, node, fence, boss_key, None)
+        self.read_boss_room_inner(authority, node, fence, boss_key, None, false)
             .await
     }
 
@@ -89,8 +89,73 @@ impl ActivityHandoffOwner {
         boss_key: &str,
         origin_pin: ActivityContentPin,
     ) -> Result<Option<BossRoomDefinition>> {
-        self.read_boss_room_inner(authority, node, fence, boss_key, Some(origin_pin))
+        self.read_boss_room_inner(authority, node, fence, boss_key, Some(origin_pin), false)
             .await
+    }
+
+    pub async fn read_portal_boss_room(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        boss_key: &str,
+        origin_pin: ActivityContentPin,
+    ) -> Result<Option<BossRoomDefinition>> {
+        self.read_boss_room_inner(authority, node, fence, boss_key, Some(origin_pin), true)
+            .await
+    }
+
+    /// Routing advice only. Admission rechecks the assignment and window under locks.
+    pub async fn open_portal_room(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        source: CurrentCharacterItemFence,
+        boss_key: &str,
+    ) -> Result<Option<([u8; 16], ActivityReadyAllocation)>> {
+        let RuntimeScopeRefV1::Channel { world_id, channel_id } = source.runtime_scope else {
+            return Ok(None);
+        };
+        let recovery = authority.record_for(&self.root).map_err(|_| DurabilityError::Unavailable)?;
+        let key = boss_key.to_owned();
+        let node = node.clone();
+        self.root.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            if assert_item_only_fence(&mut tx, &source, &node).await?.is_err() {
+                return Ok(None);
+            }
+            let row = sqlx::query(
+                "SELECT uuid_send(g.handoff_id) AS handoff, uuid_send(g.instance_id) AS instance,
+                        g.ownership_generation::text AS generation, e.assignment_source_revision::text AS revision,
+                        a.decision_identity
+                 FROM game_activity_handoff_groups g
+                 JOIN game_activity_runtime_entries e USING(handoff_id)
+                 JOIN game_boss_room_activities b ON b.admission=g.handoff_id
+                 JOIN game_runtime_scope_assignments a
+                   ON a.scope_key=game_activity_scope_key(g.world_id,g.instance_id)
+                 WHERE g.world_id=encode($1,'hex')::uuid AND b.origin_channel_id=encode($2,'hex')::uuid
+                   AND b.boss_key=$3 AND b.state=1 AND g.state=2 AND g.admission_closes_at>clock_timestamp()
+                   AND a.state=1 AND a.source_revision=e.assignment_source_revision
+                   AND a.ownership_generation=g.ownership_generation
+                 ORDER BY g.handoff_id LIMIT 1",
+            )
+            .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice()).bind(key)
+            .fetch_optional(&mut *tx).await?;
+            let result = row.map(|row| -> Result<_> {
+                Ok((bytes16(row.try_get("handoff")?)?, ActivityReadyAllocation {
+                    scope: RuntimeScopeRefV1::instance(world_id, bytes16(row.try_get("instance")?)?)
+                        .map_err(|_| DurabilityError::InvalidStoredState)?,
+                    generation: ScopeOwnershipGeneration::new(parse_u64(row.try_get("generation")?)?)
+                        .map_err(|_| DurabilityError::InvalidStoredState)?,
+                    source_revision: parse_u64(row.try_get("revision")?)?,
+                    decision_identity: row.try_get("decision_identity")?,
+                }))
+            }).transpose()?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(result)
+        })).await
     }
 
     async fn read_boss_room_inner(
@@ -100,6 +165,7 @@ impl ActivityHandoffOwner {
         fence: CurrentCharacterItemFence,
         boss_key: &str,
         origin_pin: Option<ActivityContentPin>,
+        window: bool,
     ) -> Result<Option<BossRoomDefinition>> {
         if boss_key.is_empty() || boss_key.len() > 512 {
             return Ok(None);
@@ -137,7 +203,7 @@ impl ActivityHandoffOwner {
                             server_artifact_digest: bytes32(row.try_get("server_artifact_digest")?)?,
                         })
                     } else { origin_pin };
-                    let result = read_definition(&mut tx, &key, fence.runtime_scope.world_id(), &current.content_revision, origin_pin, false).await?;
+                    let result = read_definition(&mut tx, &key, fence.runtime_scope.world_id(), &current.content_revision, origin_pin, window).await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(result)
                 })

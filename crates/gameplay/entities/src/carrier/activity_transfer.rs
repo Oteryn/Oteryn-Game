@@ -139,6 +139,27 @@ impl ScopeRuntimeV1 {
         self.prepare_activity_transfer_inner(destination, members, true)
     }
 
+    /// Reserve one fenced portal entrant on the authored destination cell.
+    pub fn prepare_activity_portal_entry(
+        &mut self,
+        destination: &mut Self,
+        member: &ActivityTransferMember,
+    ) -> Result<ActivityTransferReservation, CarrierError> {
+        if !matches!(
+            (
+                self.binding.runtime_scope,
+                destination.binding.runtime_scope
+            ),
+            (
+                RuntimeScopeRefV1::Channel { .. },
+                RuntimeScopeRefV1::Instance { .. }
+            )
+        ) {
+            return Err(CarrierError::WrongScope);
+        }
+        self.prepare_activity_transfer_inner(destination, std::slice::from_ref(member), true)
+    }
+
     /// The retained boss-room participant proof selects an exact authored exit.
     /// Crystal internalTeleport uses FLAG_NOLIMIT for it, including occupants.
     /// Map/door qualification remains with the caller before this reservation.
