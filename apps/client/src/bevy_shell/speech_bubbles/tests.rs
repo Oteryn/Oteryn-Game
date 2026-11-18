@@ -310,6 +310,31 @@ fn speech_tracks_the_walk_camera_before_layout() -> Result<(), Box<dyn std::erro
         .get::<Transform>(entity)
         .ok_or("transform")?
         .translation;
+    // The speaker stays on its tile while the own actor steps; the view recentres on the actor.
+    let speaker = oteryn_renderer::TileCoord::new(10, 2);
+    let view_of = |app: &App| -> Result<f32, Box<dyn std::error::Error>> {
+        let host = app.world().non_send::<super::super::owner::HostOwner>();
+        Ok(host
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .view
+            .scene()
+            .view()
+            .tile_to_screen(speaker)[0])
+    };
+    let glide_at =
+        |app: &App, at: std::time::Instant| -> Result<Option<f32>, Box<dyn std::error::Error>> {
+            let host = app.world().non_send::<super::super::owner::HostOwner>();
+            Ok(host
+                .play
+                .as_ref()
+                .ok_or("play")?
+                .view
+                .camera_offset(at)
+                .map(|[x, _]| x))
+        };
+    let tile_before = view_of(&app)?;
     {
         let mut host = app
             .world_mut()
@@ -341,15 +366,30 @@ fn speech_tracks_the_walk_camera_before_layout() -> Result<(), Box<dyn std::erro
                 gate_message_id: None,
             })?;
     }
+    let tile_after = view_of(&app)?;
+    // The projector reads the wall clock inside the update, so the camera offset it used lies
+    // between the offsets just before and just after that update.
+    let started = std::time::Instant::now();
+    let early =
+        glide_at(&app, started)?.ok_or("the own step must still glide during the update")?;
     app.update();
+    let late = glide_at(&app, std::time::Instant::now())?.unwrap_or(0.);
     let after = app
         .world()
         .get::<Transform>(entity)
         .ok_or("transform")?
         .translation;
+    let scale = app
+        .world_mut()
+        .query::<&Window>()
+        .single(app.world())?
+        .scale_factor();
+    let jump = tile_after - tile_before;
+    let (low, high) = ((jump + early) / scale, (jump + late) / scale);
+    let moved = after.x - before.x;
     assert!(
-        (after.x - before.x).abs() < 2.,
-        "bubble must glide with speaker: {before:?} -> {after:?}"
+        moved >= low.min(high) - 0.01 && moved <= low.max(high) + 0.01,
+        "bubble must glide with speaker: {before:?} -> {after:?}, camera bracket {low}..{high}"
     );
     Ok(())
 }
