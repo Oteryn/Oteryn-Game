@@ -653,7 +653,7 @@ def main() -> int:
                 "    if: needs.candidate.outputs.server_qualification != 'false'\n",
                 "EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
                 "python3 tools/qualification/node_boot/matrix.py plan --set pr > \"$RUNNER_TEMP/shards.json\"",
-                "\"$RUNNER_TEMP/shards.json\")\" = 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05\n",
+                "\"$RUNNER_TEMP/shards.json\")\" = 6d04b52a16145723eedb0c56640ad052dbd26e94\n",
             ),
             "node_boot_shard": (
                 "    name: Merge Queue / Node boot / ${{ matrix.shard.name }}\n",
