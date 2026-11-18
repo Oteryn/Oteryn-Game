@@ -189,7 +189,7 @@ fn scenario() -> TestResult {
             (5, "yes", "201"),
             (6, "trade", "100"),
             (7, "3", "2 clusters"),
-            (8, "2", "1 inquisition gold"),
+            (8, "2.0", "1 inquisition gold"),
         ] {
             owner.clock_origin = owner
                 .clock_origin
@@ -215,6 +215,7 @@ fn scenario() -> TestResult {
                 )
                 .await;
             assert_eq!(outcome.disposition, NpcIntentDisposition::Ok, "{message}");
+            assert_eq!(outcome.inventory_changed, command_id == 8, "{message}");
             assert!(
                 outcome
                     .conversation
@@ -225,6 +226,14 @@ fn scenario() -> TestResult {
         let balance: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/roshamuul/gold-record'")
             .bind(character.as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(balance, 1);
+        let outstanding: i64 = sqlx::query_scalar(
+            "SELECT coalesce(sum(value),0)::bigint FROM game_character_quest_tracks              WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2              AND track_key IN ('oteryn:quest-progress/roshamuul/mortar','oteryn:quest-progress/roshamuul/silencers')",
+        )
+        .bind(character.as_slice())
+        .bind(quest)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(outstanding, 0);
         let minted: i64 = sqlx::query_scalar("SELECT coalesce(sum(m.quantity),0)::bigint FROM game_reward_claim_mint_receipts m JOIN game_item_instances i USING(item_instance_id) WHERE m.character_id=encode($1,'hex')::uuid AND i.definition_production_key='oteryn:item.tibia.i20062'")
             .bind(character.as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(minted, 2);
