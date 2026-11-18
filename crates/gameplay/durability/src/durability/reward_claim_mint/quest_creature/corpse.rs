@@ -9,7 +9,7 @@ use crate::durability::spell_items_abi::SpellGroundTarget;
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::durability::{DurabilityError, DurabilityRoot};
 use oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback;
-use oteryn_protocol_oteryn::world_object::{MapUseTarget, decode_use_intent_target};
+use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseTarget, decode_use_intent_target};
 
 /// UUID and cell resolved by the runtime's existing current map-handle owner.
 #[derive(Clone, Debug)]
@@ -45,13 +45,16 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
         permit: &'runtime SpellLanePermit,
     ) -> Option<Self> {
         if !callback.fresh_corpse
-            || callback.carried_item.is_none()
             || command.game_session_id() != fence.game_session_id
             || operand.item == [0; 16]
             || permit.check_scope(fence.runtime_scope).is_err()
             || intent.use_with.is_some()
             || intent.use_with_position.is_some()
-            || !matches!(intent.use_with_map_item, Some(MapUseTarget::Item(_)))
+            || if callback.direct_corpse_use() {
+                intent.use_with_map_item.is_some() || !matches!(intent.target, UseTarget::Item(_))
+            } else {
+                !matches!(intent.use_with_map_item, Some(MapUseTarget::Item(_)))
+            }
         {
             return None;
         }
@@ -86,7 +89,7 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
         fence: CurrentCharacterGameplayFence,
         request: &QuestTransitionRequest,
         callback: &RewardCallback,
-        carried: &super::super::QuestCarriedUse,
+        carried: Option<&super::super::QuestCarriedUse>,
         native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
     ) -> Result<bool, DurabilityError> {
         let Some(corpse) = &self.corpse else {
@@ -97,10 +100,12 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             || request.cause != QuestCause::Command(self.command)
             || request.transition_key != self.callback
             || callback.creature_target.as_deref() != self.key.as_deref()
-            || decode_use_intent_target(&[4, 11, 15], &carried.intent)
-                .ok()
-                .as_ref()
-                != Some(&self.intent)
+            || if callback.direct_corpse_use() {
+                carried.is_some()
+            } else {
+                carried.and_then(|use_| decode_use_intent_target(&[4, 11, 15], &use_.intent).ok())
+                    .as_ref() != Some(&self.intent)
+            }
         {
             return Ok(false);
         }

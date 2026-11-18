@@ -1191,6 +1191,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             && intent.use_with_map_item.is_none()
             && intent.use_with_position.is_none()
         {
+            if matches!(
+                intent.target,
+                oteryn_protocol_oteryn::world_object::UseTarget::Item(_)
+            ) {
+                return self
+                    .use_wrath_keeper_corpse(actor, command, &intent, source)
+                    .await;
+            }
             return self
                 .use_carried_item_disguise(actor, command, &intent, source)
                 .await;

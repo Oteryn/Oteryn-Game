@@ -398,6 +398,11 @@ impl RewardCallback {
             (None, None) => true,
         }
     }
+    /// The selected ground corpse is the USE subject and no carried item is debited.
+    pub fn direct_corpse_use(&self) -> bool {
+        self.fresh_corpse && self.carried_item.is_none()
+    }
+
     pub fn cosmetic_targets(&self) -> impl Iterator<Item = &OutfitReward> {
         self.outfit.iter().chain(&self.outfits)
     }
@@ -526,6 +531,9 @@ fn embedded_document() -> Result<Document, String> {
     document
         .callbacks
         .extend(super::world_change_journals::npc_callbacks()?);
+    document
+        .callbacks
+        .push(super::wrath_keeper::tail_callback()?);
     validate_document_with_capacity(document, 256 * DOCUMENTS.len())
 }
 
@@ -831,9 +839,16 @@ fn validate_document_with_capacity(
                 .as_ref()
                 .is_some_and(|target| !target.valid(c))
             || (c.fresh_corpse && c.creature_target.is_none())
+            || (c.direct_corpse_use()
+                && (c.world_claim.is_some()
+                    || c.give.is_none()
+                    || !c.keywords.is_empty()
+                    || !c.take.is_empty()
+                    || c.fee.is_some()
+                    || !c.requires_actor_conditions.is_empty()))
             || (c.capture_creature && (c.fresh_corpse || c.creature_target.is_none()))
             || c.creature_target.as_ref().is_some_and(|key| {
-                c.carried_item.is_none()
+                (c.carried_item.is_none() && !c.direct_corpse_use())
                     || c.peer_requires.is_some()
                     || c.give.as_ref().is_some_and(|give| {
                         give.count != 1 || !give.contents.is_empty() || !give.additional.is_empty()
@@ -1031,7 +1046,7 @@ fn validate_document_with_capacity(
                 != c.cosmetic_targets().count()
             || c.cosmetic_targets()
                 .any(|r| !slug(&r.outfit, "oteryn:outfit.", b"_", 160) || r.addons > 3)
-            || (c.keywords.is_empty() && c.world_claim.is_none())
+            || (c.keywords.is_empty() && c.world_claim.is_none() && !c.direct_corpse_use())
             || c.keywords.len() > 8
             || c.keywords.iter().collect::<BTreeSet<_>>().len() != c.keywords.len()
             || c.keywords.iter().any(|s| {
@@ -1059,7 +1074,7 @@ fn validate_document_with_capacity(
             || c.failure_reply.iter().any(|line| {
                 line.is_empty() || line.len() > 512 || line.chars().any(char::is_control)
             })
-            || c.reply.is_empty()
+            || (c.reply.is_empty() && !c.direct_corpse_use())
             || c.achievement_progress.len() > 8
             || c.achievement_progress
                 .iter()

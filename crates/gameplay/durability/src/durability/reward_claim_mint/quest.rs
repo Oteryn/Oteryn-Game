@@ -148,7 +148,7 @@ pub(crate) async fn apply(
         admission.carried_use,
     ) {
         (false, None, _) => {}
-        (true, Some(proof), Some(carried)) if callback.fresh_corpse => {
+        (true, Some(proof), carried) if callback.fresh_corpse => {
             if !proof
                 .permits_corpse(
                     tx,

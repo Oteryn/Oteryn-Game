@@ -520,6 +520,30 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                         .is_some_and(|(view, key)| view.is_backpack_entry(&key)
                             || (carried_entry && !view.is_main_backpack(&key)
                                 && view.equipped_slot(&key).is_none()));
+                if !consumable
+                    && matches!(key, Some(ItemKey::Instance(_)))
+                    && let Some(outcome) = tokio::time::timeout(
+                        std::time::Duration::from_secs(10),
+                        authority.use_quest_tool(
+                            actor,
+                            UseCommand {
+                                game_session_id: admitted.game_session_id,
+                                command_id: command.command_id,
+                                item_fence: admitted.item_fence,
+                            },
+                            UseIntent {
+                                target: UseTarget::Item(handle),
+                                use_with: None,
+                                use_with_map_item: None,
+                                use_with_position: None,
+                            },
+                            key,
+                            None,
+                        ),
+                    ).await.ok()?.ok()?
+                {
+                    return Some(Dispatch::Use(outcome));
+                }
                 let observation = match key.filter(|_| container.is_none() && !consumable) {
                     Some(key) => authority.observe_item_target(actor, key).await,
                     None => None,
