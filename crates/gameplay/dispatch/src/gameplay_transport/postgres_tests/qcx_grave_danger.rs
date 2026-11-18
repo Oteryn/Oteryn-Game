@@ -5,7 +5,8 @@ use super::{
 };
 use crate::content::{NpcDataCatalogue, npc_catalogue_preproduction_limits};
 use crate::foundation::{
-    CharacterId, CharacterLease, MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements,
+    CharacterId, CharacterLease, MovementFacing, MovementLocalPosition, NpcPlacement,
+    NpcPlacementTable, NpcPlacements,
 };
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::gameplay_transport::npc_talk::NpcTalkBook;
