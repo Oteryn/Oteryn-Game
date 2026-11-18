@@ -302,6 +302,43 @@ pub struct PresenceWindow {
     pub count: u8,
     /// A previously set claim clock can change the number of required fields.
     pub repeat: Option<PresenceWindowRepeat>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub on_open: Option<PresenceProgress>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct PresenceProgress {
+    pub track: String,
+    pub minimum: i64,
+    pub value: i64,
+    pub message: String,
+}
+
+pub const PRESENCE_PROGRESS_PREFIX: &str = "oteryn:quest-timed-presence/";
+
+impl Callback {
+    pub fn presence_progress(&self) -> Option<&PresenceProgress> {
+        self.effects.timed_presence.as_ref()?.window.as_ref()?.on_open.as_ref()
+    }
+
+    pub fn presence_progress_transition(&self) -> Option<QuestTransition> {
+        let progress = self.presence_progress()?;
+        let digest = Sha256::digest(self.key.as_bytes());
+        let suffix: String = digest.iter().map(|byte| format!("{byte:02x}")).collect();
+        Some(QuestTransition {
+            key: format!("{PRESENCE_PROGRESS_PREFIX}{suffix}"),
+            quest: self.quest.clone(),
+            world_change: None,
+            effects: vec![QuestEffect {
+                track: progress.track.clone(),
+                from: QuestComparison::Between(progress.minimum, progress.value),
+                effect: QuestEffectKind::Set(progress.value),
+            }],
+            completes: false,
+            experience: None,
+        })
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -804,6 +841,14 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     || window.from == window.to
                     || window.effect == 0
                     || !(1..=8).contains(&window.count)
+                    || window.on_open.as_ref().is_some_and(|progress| {
+                        progress.minimum >= progress.value
+                            || progress.message.is_empty() || progress.message.len() > 512
+                            || !callback.storage.iter().any(|guard| {
+                                guard.track == progress.track && !guard.preserve && !guard.read_only
+                                    && (progress.minimum..=progress.value).contains(&guard.set)
+                            })
+                    })
                     || window.repeat.as_ref().is_some_and(|repeat| {
                         use crate::quest::reward_callbacks::{StateCondition, StateMutation};
                         !(1..=8).contains(&repeat.count)

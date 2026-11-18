@@ -87,7 +87,7 @@ pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPhase,
     EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence,
     MagicEffect, MountReward, PartyStation, PartyTransfer, Portal, PortalPair, PresenceWindow,
-    QuestCompletion, RewardDoor, TargetTransform, TimedPresence,
+    PRESENCE_PROGRESS_PREFIX, PresenceProgress, QuestCompletion, RewardDoor, TargetTransform, TimedPresence,
 };
 pub use ground_stack::{
     GroundStackEntry, GroundStackFact, ground_stack_matches, ground_stack_matches_at,

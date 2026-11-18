@@ -686,6 +686,10 @@ impl DurabilityRoot {
         if required_mint.is_some() && !matches!(request.cause, QuestCause::ClaimObligation(_)) {
             return Err(CharacterProgressionError::InvalidInput);
         }
+        let presence_input = matches!(&source_action, Some(super::QuestSourceAction::Presence(_)));
+        if presence_input != request.transition_key.starts_with(oteryn_gameplay_quests::quest::world_callbacks::PRESENCE_PROGRESS_PREFIX) {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let hit_key = request
             .transition_key
             .starts_with(oteryn_gameplay_quests::quest::authored_bindings::hits::PREFIX);
@@ -835,7 +839,7 @@ impl DurabilityRoot {
             return Err(CharacterProgressionError::InvalidInput);
         }
         // Ownership survives a caller removing or renaming a bound effect.
-        if let Some(transition) = catalogue.transition(&request.transition_key) {
+        if !presence_input && let Some(transition) = catalogue.transition(&request.transition_key) {
             oteryn_gameplay_quests::quest::admission_binding::validate_resolved_world(
                 &catalogue,
                 transition,
@@ -1260,6 +1264,10 @@ impl DurabilityRoot {
                         }
                         if let Some(super::QuestSourceAction::RottenArea(input))=&source_action
                             && !input.validate_current_in_transaction(&mut tx,fence).await? {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                        if let Some(super::QuestSourceAction::Presence(input))=&source_action
+                            && !input.paid(&mut tx,character).await? {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
                         tx.into_inner()

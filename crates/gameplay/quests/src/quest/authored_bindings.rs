@@ -512,6 +512,11 @@ impl Stage {
         quest: &str,
     ) -> Result<Vec<QuestTransition>, String> {
         let mut transitions = vec![self.transition(quest)?];
+        if let Trigger::MapUse { callback } = &self.trigger
+            && let Some(opening) = callback.presence_progress_transition()
+        {
+            transitions.push(opening);
+        }
         if let Trigger::NpcDialogue { alternatives, .. } = &self.trigger {
             for callback in alternatives {
                 let mut transition = super::reward_callbacks::primary_transition(callback)?;

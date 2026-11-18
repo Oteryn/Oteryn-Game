@@ -65,6 +65,7 @@ use crate::foundation::{CommandId, CommandRef, GameSessionId, RuntimeScopeRefV1}
 
 mod counter_alias;
 mod map_marks;
+mod presence_progress;
 pub use map_marks::{PersonalQuestMapMark, QuestMapMarksSnapshot};
 pub mod npc_program;
 
@@ -775,18 +776,21 @@ pub mod server_timer;
 /// Private closed source union: causes alone never grant autonomous mutations.
 #[derive(Debug, Clone)]
 pub(super) enum QuestSourceAction {
+    Presence(presence_progress::PresenceProgress),
     SoulWar(Box<soul_war_source::SoulWarSourceAction>),
     RottenArea(rotten_area::QualifiedRottenAreaThink),
 }
 impl QuestSourceAction {
     fn request(&self, fence: &CurrentCharacterGameplayFence) -> Result<QuestTransitionRequest> {
         match self {
+            Self::Presence(x) => x.request(fence),
             Self::SoulWar(x) => x.request(fence),
             Self::RottenArea(x) => x.request(fence),
         }
     }
     fn binding(&self, character: CharacterId, request: &QuestTransitionRequest) -> [u8; 33] {
         match self {
+            Self::Presence(_) => storage::request_binding(character, request),
             Self::SoulWar(x) => x.binding(character, request),
             Self::RottenArea(x) => x.binding(character, request),
         }
