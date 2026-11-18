@@ -72,12 +72,16 @@ fn scenario() -> TestResult {
                 .open_character_authority(&seal)
                 .await
                 .map_err(debug)?;
-            let deps = Dependencies::new()?;
-            let mut owner = deps.owner(&h, &authority);
-            let (controller, _) = super::death_ml_loss_composed::production_generation_with_pin(
-                deps.admitted.world_id,
-                "content-1",
+            let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+            let (controller, pin) =
+                super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+            let room = pin.qualified_room().clone();
+            let deps = Dependencies::with_content(
+                pin.into_channel_pin(),
+                room,
+                crate::spell::cast::v1_spell_book().map_err(debug)?,
             )?;
+            let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(controller.active().ok_or("active generation")?);
             let loaded = loader::load_embedded_quest_state("content-1").map_err(debug)?;
             let canonical = loaded.catalogue();

@@ -20,3 +20,13 @@ BLOCKER Wrath of the Kahn Renegade Orc damaging-player death-to-quest credit bin
 OPEN-FACTS Exact minimum level (the infobox says 0?), daily assignment weights and storage IDs, carving odds, flute outcome odds and reset delay, daily target item and placement identities, and remaining mission door identities. The wiki establishes the 20-hour delay and Curse duration, and the pinned Crystal Curos source has no daily implementation to resolve the missing details.
 
 PARTIAL Live kill credit, melee wall and tower door approach verification, the full Maw turn-in reply, and the daily-task loop including its inactive approximation metadata. The Curos dispatch case uses durable prerequisite fixture transitions because the live upstream credit chain is outside this slice.
+
+## Dispatch validation
+
+The test now creates the Channel with the pin issued by its active content generation. The world pin generator reproduced the existing digest.
+
+PG via shard (pgsplit build files applied on `f8066f5674c9404393416ec95b83e5b357272017` with the Channel pin fixture edit).
+
+- Base placement failed at the missing Curos assertion in 29.22 s (RC 101).
+- Updated placement and mission progression passed in 37.33 s (RC 0).
+- Strict dispatch library Clippy passed with the shard files removed (RC 0). The same test executable returned successfully without the PostgreSQL admin URL in 0.00 s (RC 0).
