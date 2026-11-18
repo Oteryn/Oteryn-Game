@@ -1186,9 +1186,14 @@ fn palette_facts(
                         .is_some_and(|terrain| terrain.kind == TerrainKind::Wall),
             );
         facts.pickupable = definition.pickupable;
-        solid = definition
-            .solid
-            .unwrap_or_else(|| !walkable_floor_change(&entry.key) && !terrain_floor(entry));
+        // Crystal 201189f8 data/items/appearances.dat, object 17396: clip and
+        // unmove are set; unpass is absent. Retain the source carpet's movement
+        // fact while its general Item record has no physical profile.
+        solid = definition.solid.unwrap_or_else(|| {
+            entry.key != "oteryn:item.tibia.i17396"
+                && !walkable_floor_change(&entry.key)
+                && !terrain_floor(entry)
+        });
         door = palette_door(&entry.key, item);
     }
     Ok(PaletteFacts {
