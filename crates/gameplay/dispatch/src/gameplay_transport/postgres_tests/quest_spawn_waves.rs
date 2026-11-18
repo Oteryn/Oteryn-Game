@@ -419,7 +419,9 @@ fn scenario(admin: String, case: Case) -> TestResult {
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
         if !matches!(case, Case::Periodic | Case::PeriodicMissingCenter | Case::PeriodicOccupiedCenter) {
-            assert!(owner.states.quest_callbacks.periodic_boss_fixture.set(Vec::new()).is_ok());
+            assert!(
+                owner.states.quest_callbacks.periodic_boss_fixture.set(Vec::new()).is_ok()
+            );
         }
         if matches!(case, Case::Waves | Case::Victory | Case::VictoryWithoutProgress | Case::SurvivalStep | Case::Stations | Case::UnreachableExit | Case::UnknownAchievement | Case::WorldCredit) {
             owner.quest_catalogue = Some(std::sync::Arc::new(credit_catalogue(&callback, matches!(case, Case::WorldCredit))?));
@@ -1255,7 +1257,8 @@ async fn advance(owner: &ComposedFreshAdmission<'_, '_, '_>, millis: u64) {
 
 async fn next_spawn_delay(owner: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Duration> {
     let runtime = owner.runtime.lock().await;
-    owner.states.quest_callbacks.next_spawn_deadline(&runtime)
+    owner.states.quest_callbacks
+        .next_spawn_deadline(&runtime)
         .map(|due| due.saturating_duration_since(tokio::time::Instant::now()))
 }
 

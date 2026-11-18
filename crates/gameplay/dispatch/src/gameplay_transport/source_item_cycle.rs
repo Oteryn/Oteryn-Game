@@ -71,13 +71,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         let remaining = due.saturating_duration_since(tokio::time::Instant::now());
                         u64::try_from(remaining.as_micros()).unwrap_or(u64::MAX)
                     });
-                match owner_due.into_iter().chain(spawn_due).min() {
-                    // An unavailable due producer cannot cause a busy loop.
-                    // A newly committed schedule wakes this pass immediately.
-                    Some(0) => 50_000,
-                    Some(remaining) => remaining.min(1_000_000),
-                    None => 1_000_000,
-                }
+                owner_due
+                    .into_iter()
+                    .chain(spawn_due)
+                    // Back off an overdue producer without delaying a future
+                    // deadline from the other clock domain.
+                    .map(|remaining| if remaining == 0 { 50_000 } else { remaining })
+                    .min()
+                    .unwrap_or(1_000_000)
+                    .min(1_000_000)
             };
             let mut stopping = pin!(shutdown.cancelled());
             let mut delay = pin!(tokio::time::sleep(std::time::Duration::from_micros(
