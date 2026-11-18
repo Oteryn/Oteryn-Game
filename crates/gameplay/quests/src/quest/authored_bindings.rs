@@ -25,7 +25,7 @@ pub use kills::KillCounter;
 
 use super::reward_callbacks::RewardCallback;
 use super::world_callbacks::Callback;
-use super::{QuestStateCatalogue, QuestTrack, QuestTransition};
+use super::{NpcDefinitionPredecessor, QuestStateCatalogue, QuestTrack, QuestTransition};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
@@ -102,6 +102,40 @@ pub struct BoundQuest {
     pub sources: Vec<String>,
 }
 
+impl BoundQuest {
+    /// The reservoir actions extend the live Rotten Blood charge counter and
+    /// must use the same quest identity as its existing entrance lever.
+    fn supplements_putrefactory_reservoirs(&self) -> bool {
+        use super::reward_callbacks::{StateCondition, StateMutation};
+        use super::rotten_blood::{QUEST, putrefactory};
+
+        self.quest == QUEST
+            && self.admission.is_none()
+            && self.occurrence.is_none()
+            && self.stages.iter().all(|stage| {
+                let Trigger::MapUse { callback } = &stage.trigger else {
+                    return false;
+                };
+                !stage.completes
+                    && !callback.completes
+                    && callback.experience.is_none()
+                    && callback.world_change.is_none()
+                    && !callback.effects.completes_quest
+                    && callback.effects.quest_completion.is_none()
+                    && callback.selector.position.is_some()
+                    && callback.selector.action == Some(putrefactory::RESERVOIR_ACTION)
+                    && callback.effects.recharge_cooldown_message.is_some()
+                    && matches!(callback.state_operations.as_slice(), [clock, charge]
+                        if clock.track.starts_with(putrefactory::RESERVOIR_CLOCK_PREFIX)
+                            && clock.from == (StateCondition::ElapsedAtLeast { seconds: 20 })
+                            && clock.effect == StateMutation::SetNow
+                            && charge.track == putrefactory::CHARGE_TRACK
+                            && charge.from == (StateCondition::Between { minimum: -1, maximum: 99 })
+                            && charge.effect == (StateMutation::Recharge { amount: 20, empty: 0, capacity: 100 }))
+            })
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default)]
 #[serde(deny_unknown_fields)]
 pub struct Bindings {
@@ -158,7 +192,8 @@ impl Bindings {
         let mut transitions = BTreeSet::new();
         for quest in &self.quests {
             if !super::valid_quest_key(&quest.quest)
-                || !quest.quest.starts_with("oteryn:quest.")
+                || !(quest.quest.starts_with("oteryn:quest.")
+                    || quest.supplements_putrefactory_reservoirs())
                 || !quests.insert(&quest.quest)
                 || quest.tracks.is_empty()
                 || quest.tracks.len() > 128
@@ -445,6 +480,21 @@ impl Bindings {
             }
             digest.update(serde_json::to_vec(quest).map_err(|e| e.to_string())?);
             *before = digest.finalize().into();
+            if quest.supplements_putrefactory_reservoirs() {
+                // Existing progress and the lever retain their meanings. Only
+                // the new reservoir clocks are absent from earlier saves.
+                if let Some(hash) = base.definition_hash(&quest.quest) {
+                    catalogue
+                        .predecessors
+                        .entry(quest.quest.clone())
+                        .or_default()
+                        .push(NpcDefinitionPredecessor {
+                            hash,
+                            defaults: Default::default(),
+                        });
+                }
+                continue;
+            }
             // Replacing the route requires its new binding witness. Keep the
             // legacy migration owners only for unrelated, retained quests.
             catalogue.npc_legacy.remove(&quest.quest);

@@ -10,6 +10,10 @@ pub const CHARGE_TRACK: &str =
 pub const PASSIVE_CLOCK: &str = "oteryn:quest-progress/rotten-blood/putrefactory/last-passive-tick";
 pub const PASSIVE_TICK: &str = "oteryn:quest-transition/rotten-blood/putrefactory/passive-tick";
 pub const PASSIVE_PERIOD_SECONDS: u64 = 20;
+// Crystal creaturescripts_putrefactory-x.lua:158-171,195-224.
+pub const RESERVOIR_ACTION: u16 = 47953;
+pub(crate) const RESERVOIR_CLOCK_PREFIX: &str =
+    "oteryn:quest-progress/rotten-blood/putrefactory/reservoir-";
 
 /// Crystal creaturescripts_putrefactory-x.lua:41-51,140-153.
 #[must_use]

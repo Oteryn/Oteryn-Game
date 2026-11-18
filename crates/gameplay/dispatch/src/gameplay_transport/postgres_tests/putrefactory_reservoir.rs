@@ -4,7 +4,7 @@ use super::quest_world_callbacks::{scenario, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::ExactActorRef;
 use oteryn_gameplay_quests::quest::rotten_blood::putrefactory::{
-    CHARGE_TRACK as CHARGE, PASSIVE_CLOCK, PASSIVE_TICK,
+    CHARGE_TRACK as CHARGE, PASSIVE_CLOCK, PASSIVE_TICK, RESERVOIR_ACTION,
 };
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
@@ -70,7 +70,7 @@ pub(super) fn callback() -> TestResult<Callback> {
         "quest":QUEST,
         "trigger":"use",
         "actor_kind":"player",
-        "selector":{"position":AT,"action":47953},
+        "selector":{"position":AT,"action":RESERVOIR_ACTION},
         "passages":[],
         "storage":[],
         "offerings":[],
@@ -125,7 +125,12 @@ pub(super) async fn exercise(
     } else {
         QuestStateCatalogue::empty("content-1").ok_or("test catalogue")?
     };
-    owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
+    let attached = bindings.attach(&base)?;
+    if let Some(previous) = base.definition_hash(QUEST) {
+        assert_ne!(attached.definition_hash(QUEST), Some(previous));
+        assert!(oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(&attached, QUEST, &previous).is_some());
+    }
+    owner.quest_catalogue = Some(Arc::new(attached));
     h.root.set_test_quest_clock(STARTED_AT).map_err(debug)?;
     let session = admitted.game_session_id;
     owner.refresh_quest_session(session, true).await;
