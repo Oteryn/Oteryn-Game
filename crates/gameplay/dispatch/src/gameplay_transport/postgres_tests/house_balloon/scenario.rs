@@ -131,9 +131,20 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     } else {
         None
     };
-    let (controller, native_pin) = activated_with_optional_cosmetics(
-        base.admitted.world_id, None, cosmetics.as_ref().map(|(bytes, _)| bytes.as_slice()),
-    );
+    let (controller, native_pin) = if matches!(
+        case,
+        Case::ResidentTimedEquip(super::super::house_resident_reads::ClockCase::Logout)
+    ) {
+        // Terminal training commits against the seeded Character interpretation.
+        super::super::death_ml_loss_composed::production_generation_with_pin(
+            base.admitted.world_id,
+            "content-1",
+        )?
+    } else {
+        activated_with_optional_cosmetics(
+            base.admitted.world_id, None, cosmetics.as_ref().map(|(bytes, _)| bytes.as_slice()),
+        )
+    };
     // Cell collision and gameplay must use the same activated artifact. Native
     // House exit independently checks this generation before admitting a tile.
     let room = native_pin.qualified_room().clone();
