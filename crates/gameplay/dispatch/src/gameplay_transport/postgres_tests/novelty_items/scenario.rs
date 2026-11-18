@@ -4,14 +4,19 @@ pub(super) fn scenario(case: Case) -> TestResult {
     run(async |admin| {
         let key = case.key();
         let origin = case.origin();
-        let ground_origin = MovementLocalPosition { x: origin.x - i32::from(case.feroxa()), ..origin };
+        let ground_origin = MovementLocalPosition {
+            x: origin.x - i32::from(case.feroxa()),
+            ..origin
+        };
         let harness =
             Harness::create_with_admission_seed(admin, "novelty_items", true, false).await?;
         super::super::reset();
         prepare_current_session(&harness).await?;
         if case.feroxa() {
-            let version: i32 = sqlx::query_scalar("SELECT current_setting('server_version_num')::int")
-                .fetch_one(&harness.pool).await?;
+            let version: i32 =
+                sqlx::query_scalar("SELECT current_setting('server_version_num')::int")
+                    .fetch_one(&harness.pool)
+                    .await?;
             eprintln!("QN5_FEROXA_TRAP_POSTGRES_READY version={version}");
         }
 
@@ -22,11 +27,14 @@ pub(super) fn scenario(case: Case) -> TestResult {
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) =
+        let (controller, pin) = if case == Case::HauntedCellarDisguise {
+            haunted_cellar_fixture(deps.admitted.world_id)?
+        } else {
             crate::content::native_gameplay::test_support::activated_with_loot_tables(
                 deps.admitted.world_id,
                 None,
-            );
+            )
+        };
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("index")?;
@@ -45,16 +53,31 @@ pub(super) fn scenario(case: Case) -> TestResult {
             let mut grouped = std::collections::BTreeMap::new();
             for sector in data.sectors.drain(..) {
                 for mut tile in sector.tiles {
-                    tile.x += dx; tile.y += dy; tile.items.truncate(1);
-                    grouped.entry((tile.y / 32, tile.x / 32)).or_insert_with(Vec::new).push(tile);
+                    tile.x += dx;
+                    tile.y += dy;
+                    tile.items.truncate(1);
+                    grouped
+                        .entry((tile.y / 32, tile.x / 32))
+                        .or_insert_with(Vec::new)
+                        .push(tile);
                 }
             }
-            data.manifest.world.min_x += dx; data.manifest.world.max_x += dx;
-            data.manifest.world.min_y += dy; data.manifest.world.max_y += dy;
+            data.manifest.world.min_x += dx;
+            data.manifest.world.max_x += dx;
+            data.manifest.world.min_y += dy;
+            data.manifest.world.max_y += dy;
             data.manifest.world.floors = vec![floor];
-            let sectors: Vec<_> = grouped.into_iter().map(|((sy, sx), tiles)|
-                oteryn_world_bundle::bundle::Sector { floor, sx, sy, tiles }).collect();
-            bytes = oteryn_world_bundle::writer::write(&data.manifest, &sectors, &Default::default())?;
+            let sectors: Vec<_> = grouped
+                .into_iter()
+                .map(|((sy, sx), tiles)| oteryn_world_bundle::bundle::Sector {
+                    floor,
+                    sx,
+                    sy,
+                    tiles,
+                })
+                .collect();
+            bytes =
+                oteryn_world_bundle::writer::write(&data.manifest, &sectors, &Default::default())?;
             pins.digest = oteryn_world_bundle::bundle::read(&bytes)?.digest;
         }
         let base = crate::map::load(&bytes, &pins).map_err(debug)?;
@@ -124,10 +147,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
             .map_err(debug)?;
         deps.actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
         runtime
-            .initialize_pinned_test_position(
-                deps.actor,
-                origin,
-            )
+            .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         runtime
             .bind_attacker_lease(
@@ -160,6 +180,20 @@ pub(super) fn scenario(case: Case) -> TestResult {
             super::super::item_look::seed_main_backpack(&harness, &[(key, 1), (bag, 1)]).await?;
         } else {
             super::super::item_look::seed_main_backpack(&harness, &[(key, 1)]).await?;
+        }
+        if case == Case::HauntedCellarDisguise {
+            let mut seed = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *seed)
+                .await?;
+            sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision)
+                SELECT character_id,$2,'oteryn:quest.the_dream_courts_quest',1,greatest(character_revision,2)
+                FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id(41).as_slice())
+                .bind(oteryn_gameplay_items::haunted_cellar::QUESTLINE)
+                .execute(&mut *seed)
+                .await?;
+            seed.commit().await?;
         }
         let used = crate::gameplay_transport::item_look::typed_definition(
             index,
@@ -256,13 +290,21 @@ pub(super) fn scenario(case: Case) -> TestResult {
             tx.commit().await?;
         }
         let expected = if case.feroxa() {
-            let output = &native.item_policy_for_source_id(22059).ok_or("open trap policy")?.record().production_definition;
+            let output = &native
+                .item_policy_for_source_id(22059)
+                .ok_or("open trap policy")?
+                .record()
+                .production_definition;
             novelty_items::NoveltyPlan {
                 recipe: "oteryn:feroxa-silvered-trap.v1".into(),
-                outputs: vec![(crate::domain::item_definition::TypedDefinitionRef {
-                    family: output.family.clone(), production_key: output.production_key.clone(),
-                    revision_ref: output.revision_ref.clone(),
-                }, 1)],
+                outputs: vec![(
+                    crate::domain::item_definition::TypedDefinitionRef {
+                        family: output.family.clone(),
+                        production_key: output.production_key.clone(),
+                        revision_ref: output.revision_ref.clone(),
+                    },
+                    1,
+                )],
                 consume_source: true,
                 effects: serde_json::json!({
                     "kind":"transform", "source_item_id":22074,
@@ -288,6 +330,8 @@ pub(super) fn scenario(case: Case) -> TestResult {
                 false,
             )
             .ok_or("ground source admitted")?
+        } else if case == Case::HauntedCellarDisguise {
+            novelty_items::haunted_cellar_disguise(native, &used).ok_or("full bucket plan")?
         } else {
             novelty_items::plan(
                 native,
@@ -328,7 +372,11 @@ pub(super) fn scenario(case: Case) -> TestResult {
         };
         let target = if matches!(
             case,
-            Case::VoodooSuccess | Case::VoodooFailure | Case::GroundVoodoo | Case::VoodooFarTarget
+            Case::VoodooSuccess
+                | Case::VoodooFailure
+                | Case::GroundVoodoo
+                | Case::VoodooFarTarget
+                | Case::HauntedCellarDisguise
         ) {
             let runtime = owner.runtime.lock().await;
             let entities = runtime.visible_entities();
@@ -740,4 +788,54 @@ pub(super) fn scenario(case: Case) -> TestResult {
         drop(seal);
         harness.cleanup().await
     })
+}
+
+fn haunted_cellar_fixture(
+    world: crate::foundation::WorldId,
+) -> TestResult<(
+    crate::content::ContentActivationController,
+    crate::content::NativeEntryContentPin,
+)> {
+    use crate::content::native_gameplay::{NativeGameplayInput, test_support::try_activate_input};
+    use sha2::{Digest, Sha256};
+
+    let mut input = NativeGameplayInput::from_manifest(
+        &std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/spells.manifest.json"),
+    )?;
+    let profiles = input.item_profiles.as_mut().ok_or("native item profiles")?;
+    let mut document: serde_json::Value = serde_json::from_slice(&profiles.bytes)?;
+    let records = document["records"]
+        .as_array_mut()
+        .ok_or("native item records")?;
+    let template = records
+        .iter()
+        .find(|record| {
+            record["production_definition"]["production_key"] == "oteryn:item.tibia.i653"
+        })
+        .ok_or("nonstackable inventory fixture template")?
+        .clone();
+    for id in [29309, 29310] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        if records
+            .iter()
+            .any(|record| record["production_definition"]["production_key"] == key)
+        {
+            continue;
+        }
+        let mut record = template.clone();
+        record["authoring"]["item"]["key"] = format!("candidate:item/{id}").into();
+        record["production_binding"]["external_id"] = id.to_string().into();
+        record["production_binding"]["target"]["key"] = key.clone().into();
+        record["production_definition"]["production_key"] = key.into();
+        records.push(record);
+    }
+    records.sort_by(|a, b| {
+        a["production_definition"]["production_key"]
+            .as_str()
+            .cmp(&b["production_definition"]["production_key"].as_str())
+    });
+    profiles.bytes = serde_json::to_vec(&document)?;
+    profiles.sha256 = format!("{:x}", Sha256::digest(&profiles.bytes));
+    try_activate_input(world, &input).map_err(Into::into)
 }
