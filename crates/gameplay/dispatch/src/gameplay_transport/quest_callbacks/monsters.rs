@@ -4,7 +4,7 @@ use crate::map::facts::QuestCallbackProjection;
 use crate::map::view::MapFacts;
 
 /// Crystal 201189f8, ferumbras_ascension/movements_lovely_monsters.lua:14-28
-/// and the_first_dragon/movements_flower_bowl.lua:3-13.
+/// and the_first_dragon/movements_heaven_blossom.lua:3-14.
 pub(in crate::gameplay_transport) fn settle_monster_step(
     runtime: &mut ChannelRuntimeV1,
     map: &BundleMap,
@@ -23,15 +23,18 @@ pub(in crate::gameplay_transport) fn settle_monster_step(
     {
         return false;
     }
-    let Some(effect) = registry.iter().find_map(|callback| {
+    let Some((effect, key, before)) = registry.iter().find_map(|callback| {
         let effect = callback.effects.monster_step.as_ref()?;
-        (callback.selector.position.map(tile) == Some(position)
-            && runtime.matches_live_creature_identity(step.actor, effect.creature.as_bytes())
-            && entries
-                .iter()
-                .any(|(key, _)| !map.facts.base_hidden(*key) && matches(map, callback, *key))
-            && world_requirements_match(map, callback))
-        .then_some(effect)
+        if callback.selector.position.map(tile) != Some(position)
+            || !runtime.matches_live_creature_identity(step.actor, effect.creature.as_bytes())
+            || !world_requirements_match(map, callback)
+        {
+            return None;
+        }
+        let &(key, before) = entries
+            .iter()
+            .find(|(key, _)| !map.facts.base_hidden(*key) && matches(map, callback, *key))?;
+        Some((effect, key, before))
     }) else {
         return false;
     };
@@ -41,11 +44,26 @@ pub(in crate::gameplay_transport) fn settle_monster_step(
     let Ok(policy) = runtime.companion_policy(next) else {
         return false;
     };
+    let revision = map.facts.object_revision(key);
     runtime
         .commit_quest_creature_replacement(
             &[step.actor],
             &[(next, policy.maximum_health, step.to)],
-            || true,
+            || {
+                !effect.consume_source
+                    || map.facts.apply_quest_callback(
+                        key,
+                        revision,
+                        before,
+                        &[],
+                        &[],
+                        false,
+                        Some(&QuestCallbackProjection::Scene {
+                            mutations: Vec::new(),
+                            remove_self: true,
+                        }),
+                    )
+            },
         )
         .is_ok()
 }

@@ -316,6 +316,8 @@ pub struct MonsterStepEffect {
     pub creature: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub replace_with: Option<String>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub consume_source: bool,
 }
 
 impl MonsterStepEffect {
@@ -327,6 +329,7 @@ impl MonsterStepEffect {
             && !callback.reversible
             && (callback.selector.action.is_some() || callback.selector.unique.is_some())
             && creature(&self.creature)
+            && (!self.consume_source || self.replace_with.is_some())
             && self
                 .replace_with
                 .as_ref()

@@ -4,8 +4,18 @@ use crate::foundation::ExactActorRef;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 
 pub(super) const CASE: &str = "ferumbras-zamulosh-lovely-monster-step";
+pub(super) const BLOSSOM: &str = "first-dragon-fertility-blossom-step";
 const FRAZZLEMAW: &str = "oteryn:creature.lovely_frazzlemaw";
 const DEER: &str = "oteryn:creature.lovely_deer";
+const SPIRIT: &str = "oteryn:creature.spirit_of_fertility";
+const PLANT: &str = "oteryn:creature.angry_plant";
+// Mount the source UID on a tile in the finale fixture. Crystal selects its
+// appearance and UID, while the map asset determines the coordinates.
+const FLOWER: Position = Position {
+    x: 33625,
+    y: 31022,
+    floor: -14,
+};
 // Crystal config selects AID 34315 and checks its original creature. The mounted
 // World places that AID beside its source spectator centre (33618, 32666, 12).
 const PORTAL: Position = Position {
@@ -25,16 +35,41 @@ fn zamulosh_monster_step_retires_only_the_creature_paired_with_the_portal() -> T
     })
 }
 
-pub(super) fn callback() -> TestResult<Callback> {
-    let data = serde_json::json!({"schema":1,"callbacks":[{
-        "key":"oteryn:quest-callback/ferumbras/zamulosh/lovely-frazzlemaw",
-        "quest":"oteryn:quest.ferumbras_ascension_quest",
-        "trigger":"step_in","actor_kind":"monster",
-        "selector":{"position":PORTAL,"action":34315},
-        "reversible":false,"passages":[],"storage":[],"offerings":[],"return_on_failure":false,
-        "effects":{"monster_step":{"creature":FRAZZLEMAW}},
-        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/movements_lovely_monsters.lua:1-28"]
-    }]});
+#[test]
+fn spirit_of_fertility_replaces_itself_and_consumes_only_the_source_dry_flower() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(BLOSSOM, || {
+        super::quest_world_callbacks::scenario(BLOSSOM, FLOWER, false)
+    })
+}
+
+pub(super) fn callback(name: &str) -> TestResult<Callback> {
+    // Crystal 201189f8, the_first_dragon/movements_heaven_blossom.lua:3-20.
+    let row = if name == BLOSSOM {
+        serde_json::json!({
+            "key":"oteryn:quest-callback/first-dragon/fertility-blossom",
+            "quest":"oteryn:quest.the_first_dragon_quest",
+            "trigger":"step_in","actor_kind":"monster",
+            "selector":{"position":FLOWER,"unique":1066,"appearance":3657},
+            "reversible":false,"passages":[],"storage":[],"offerings":[],"return_on_failure":false,
+            "effects":{"monster_step":{"creature":SPIRIT,"replace_with":PLANT,"consume_source":true}},
+            "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_heaven_blossom.lua:3-20"]
+        })
+    } else {
+        serde_json::json!({
+            "key":"oteryn:quest-callback/ferumbras/zamulosh/lovely-frazzlemaw",
+            "quest":"oteryn:quest.ferumbras_ascension_quest",
+            "trigger":"step_in","actor_kind":"monster",
+            "selector":{"position":PORTAL,"action":34315},
+            "reversible":false,"passages":[],"storage":[],"offerings":[],"return_on_failure":false,
+            "effects":{"monster_step":{"creature":FRAZZLEMAW}},
+            "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/movements_lovely_monsters.lua:1-28"]
+        })
+    };
+    let data = serde_json::json!({"schema":1,"callbacks":[row]});
     let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&data.to_string())?
         .try_into()
         .map_err(|_| "one Zamulosh callback")?;
@@ -47,6 +82,7 @@ pub(super) async fn exercise(
     callback: Callback,
 ) -> TestResult {
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+    let position = callback.selector.position.ok_or("source tile")?;
     owner
         .states
         .quest_callbacks
@@ -61,10 +97,15 @@ pub(super) async fn exercise(
         .install_companion_policies(&mut *owner.runtime.lock().await)
         .map_err(debug)?;
     let approach = super::quest_world_callbacks::local(Position {
-        y: PORTAL.y - 1,
-        ..PORTAL
+        y: position.y - 1,
+        ..position
     });
-    for (creature, survives) in [(DEER, true), (FRAZZLEMAW, false)] {
+    let candidates = if position == FLOWER {
+        [(DEER, true), (SPIRIT, false)]
+    } else {
+        [(DEER, true), (FRAZZLEMAW, false)]
+    };
+    for (creature, survives) in candidates {
         let actor = {
             let mut runtime = owner.runtime.lock().await;
             let policy = runtime.companion_policy(creature).map_err(debug)?;
@@ -76,12 +117,38 @@ pub(super) async fn exercise(
                 .map_err(debug)?;
             actor
         };
-        step_monster(owner, h, actor).await?;
+        step_monster(owner, h, actor, position).await?;
         let mut runtime = owner.runtime.lock().await;
         assert_eq!(runtime.contains_live_creature(actor), survives);
         if survives {
             runtime.remove_encounter_actor(actor).map_err(debug)?;
         }
+    }
+    if position == FLOWER {
+        use crate::map::view::MapFacts;
+        let map = owner.bundle_map().ok_or("map")?;
+        let tile = crate::map::overlay::TilePos {
+            x: FLOWER.x,
+            y: FLOWER.y,
+            floor: FLOWER.floor,
+        };
+        let key = crate::map::view::placement_key(tile, 1).ok_or("dry flower key")?;
+        assert!(map.facts.base_hidden(key));
+        let runtime = owner.runtime.lock().await;
+        let plants: Vec<_> = runtime
+            .current_live_creature_census()
+            .map_err(debug)?
+            .into_iter()
+            .filter(|actor| runtime.matches_live_creature_identity(*actor, PLANT.as_bytes()))
+            .collect();
+        let [plant] = plants.try_into().map_err(|_| "one angry plant")?;
+        assert_eq!(
+            runtime
+                .read_actor_position(plant)
+                .map_err(debug)?
+                .position(),
+            super::quest_world_callbacks::local(FLOWER)
+        );
     }
     Ok(())
 }
@@ -90,6 +157,7 @@ async fn step_monster(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
     actor: ExactActorRef,
+    position: Position,
 ) -> TestResult {
     use crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction;
     use crate::movement::{CardinalStep, monster_map::CurrentMonsterMap};
@@ -118,7 +186,7 @@ async fn step_monster(
     .await
     .map_err(debug)?;
     let mut map = CurrentMonsterMap::new(&mut tx, &authority, &runtime, room, &objects, native);
-    let to = super::quest_world_callbacks::local(PORTAL);
+    let to = super::quest_world_callbacks::local(position);
     assert_eq!(map.read(&runtime, to).await, Some(true));
     let moved = map
         .view()

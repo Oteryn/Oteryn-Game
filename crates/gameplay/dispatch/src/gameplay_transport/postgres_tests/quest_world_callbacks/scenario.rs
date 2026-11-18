@@ -353,8 +353,9 @@ fn scenario_case(
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
     let death_replacement = matches!(name, super::super::encounter_death_replacements::EARTH | super::super::encounter_death_replacements::ENERGY | super::super::encounter_death_replacements::ESSENCE | super::super::encounter_death_replacements::LORE | super::super::encounter_death_replacements::VICTORY);
-    let mut callback = if name == super::super::zamulosh_monster_step::CASE {
-        super::super::zamulosh_monster_step::callback()?
+    let monster_step = matches!(name, super::super::zamulosh_monster_step::CASE | super::super::zamulosh_monster_step::BLOSSOM);
+    let mut callback = if monster_step {
+        super::super::zamulosh_monster_step::callback(name)?
     } else if name == super::super::warzone_portal_cooldown::CASE {
         super::super::warzone_portal_cooldown::callback()?
     } else if death_replacement {
@@ -1891,7 +1892,7 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if name == super::super::zamulosh_monster_step::CASE {
+        if monster_step {
             Box::pin(super::super::zamulosh_monster_step::exercise(&owner, &h, callback.clone())).await?;
         } else if name == super::super::warzone_portal_cooldown::CASE {
             Box::pin(super::super::warzone_portal_cooldown::exercise(&owner, &mut admitted, &h)).await?;
