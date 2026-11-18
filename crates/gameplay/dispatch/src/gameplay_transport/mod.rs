@@ -247,6 +247,7 @@ mod tutorial_session;
 mod viola_book;
 mod vip_presence;
 mod vocation_choice;
+mod warzone_callbacks;
 pub mod weapon_proficiency;
 mod wire_position;
 mod world_event;

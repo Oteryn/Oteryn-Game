@@ -354,6 +354,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let periodic_pass = !retained_work && now.get() >= states.next_monster_ai_pass_us;
         if periodic_pass {
             super::encounter_phases::tick(&mut runtime, &states);
+            super::warzone_callbacks::tick(self, &mut runtime);
         }
         if !periodic_pass
             && !source_due
