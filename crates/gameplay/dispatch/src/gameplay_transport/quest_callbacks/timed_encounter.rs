@@ -128,9 +128,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(in crate::gameplay_transport) async fn drain_quest_encounter_deadlines(&self) {
-        let Some(_permit) = self.spell_lane_permit().await else {
+        let Some(permit) = self.spell_lane_permit().await else {
             return;
         };
+        self.drain_survival_encounter(&permit).await;
         let mut runtime = self.runtime.lock().await;
         let Some(map) = self.bundle_map() else { return };
         if runtime.owner_fence().is_err()

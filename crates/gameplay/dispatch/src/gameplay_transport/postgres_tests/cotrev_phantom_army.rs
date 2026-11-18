@@ -78,7 +78,7 @@ fn scenario(admin: String) -> TestResult {
         let mut sectors = BTreeMap::<_, Vec<_>>::new();
         let mut add = |floor: i8, x: u16, y: u16, ids: &[u32]| {
             sectors
-                .entry((floor, x / 32, y / 32))
+                .entry((floor, y / 32, x / 32))
                 .or_default()
                 .push(Tile {
                     x,
@@ -115,7 +115,7 @@ fn scenario(admin: String) -> TestResult {
         }
         let sectors = sectors
             .into_iter()
-            .map(|((floor, sx, sy), mut tiles)| {
+            .map(|((floor, sy, sx), mut tiles)| {
                 tiles.sort_by_key(|tile| (tile.y, tile.x));
                 Sector {
                     floor,

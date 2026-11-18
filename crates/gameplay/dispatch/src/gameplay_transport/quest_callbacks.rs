@@ -33,6 +33,7 @@ mod scene_items;
 mod shared_gate;
 mod soul_war_reward;
 mod source_transforms;
+mod survival_encounter;
 mod timed_encounter;
 mod timed_passages;
 
@@ -100,6 +101,7 @@ pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     personal: personal_encounter::Cohorts,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
+    survival: std::sync::Mutex<Option<survival_encounter::SurvivalRun>>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
     carrot_refusal:
         std::sync::Mutex<Option<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>>,
@@ -150,6 +152,7 @@ impl PendingCallbacks {
             .ok()?
             .iter()
             .map(|pending| pending.next_due_us())
+            .chain(self.survival.lock().ok()?.as_ref().map(|run| run.next_due()))
             .min()
     }
 }
@@ -1280,6 +1283,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let entered = self
             .step_dynamic_quest_portal(permit, actor, session, entered)
             .await;
+        if origin.position() != entered.position() {
+            self.step_phantom_army(actor, session, entered).await;
+        }
         self.step_quest_trigger(permit, actor, session, origin, entered, Trigger::StepIn)
             .await
     }
