@@ -8,8 +8,10 @@ pub(super) async fn item_forge(client: &mut oteryn_dev_client::DevClientSession)
         .contains(&CAPABILITY_ITEM_FORGE_V1)
     {
         // Even QueryHistory needs the active native generation and its pinned Item index.
-        evidence("mechanic=item_forge status=FAIL unproven=entry_room_has_no_native_item_content");
-        return Err("item_forge capability unavailable".into());
+        return skip_unavailable_seam_mechanic(
+            "item_forge",
+            "entry_room_has_no_native_item_content",
+        );
     }
     let mut panel = client_ui::item_forge::ItemForgePanel {
         selected: true,

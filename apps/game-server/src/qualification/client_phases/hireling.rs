@@ -4,10 +4,10 @@ pub(super) async fn hireling(client: &mut oteryn_dev_client::DevClientSession) -
         .selected_capabilities()
         .contains(&oteryn_protocol_oteryn::hireling::CAPABILITY_HIRELING_V1)
     {
-        evidence(
-            "mechanic=hireling status=FAIL unproven=capability_165_not_selected source=crates/gameplay/dispatch/src/gameplay_transport/world_required_capabilities.rs:126",
+        return skip_unavailable_seam_mechanic(
+            "hireling",
+            "capability_165_not_selected source=crates/gameplay/dispatch/src/gameplay_transport/world_required_capabilities.rs:126",
         );
-        return Err("hireling capability unavailable".into());
     }
     // The journey admits a Channel character. command220 resolves House custody before Query;
     // neither a town coordinate nor negotiating staff establishes that authority.
