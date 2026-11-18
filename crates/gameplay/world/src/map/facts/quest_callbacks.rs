@@ -2,6 +2,49 @@
 use super::*;
 use sha2::{Digest, Sha256};
 
+/// Reservation for the exact lever revision owned by a prepared encounter.
+#[must_use]
+pub struct QuestEncounterLever {
+    callbacks: Arc<Mutex<Arc<CallbackStates>>>,
+    expected: u64,
+    after: EntryFacts,
+    key: Option<u64>,
+}
+
+impl QuestEncounterLever {
+    pub fn publish(mut self) -> bool {
+        let Some(key) = self.key else {
+            return false;
+        };
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        if !states.reserved.contains(&key)
+            || states.changed.get(&key).map_or_else(
+                || states.phase_revision(key).unwrap_or(0),
+                |(revision, _)| *revision,
+            ) != self.expected
+        {
+            return false;
+        }
+        let states = Arc::make_mut(&mut states);
+        states.changed.insert(key, (self.expected + 1, self.after));
+        states.reserved.remove(&key);
+        self.key = None;
+        true
+    }
+}
+
+impl Drop for QuestEncounterLever {
+    fn drop(&mut self) {
+        if let Some(key) = self.key
+            && let Ok(mut states) = self.callbacks.lock()
+        {
+            Arc::make_mut(&mut states).reserved.remove(&key);
+        }
+    }
+}
+
 // A committed callback can replace or remove one exact native door. Keep every
 // other door on the tile authoritative; an overlay never opens its neighbours.
 impl crate::map::floor::CellBlocker for BundleFacts {
@@ -1534,6 +1577,34 @@ impl BundleFacts {
                     && p.attrs.teleport
                         == Some((destination.x, destination.y, destination.floor as u8))
             })
+    }
+
+    /// Reserve the plain revisioned lever change used by native encounter entry.
+    pub fn reserve_quest_encounter_lever(
+        &self,
+        key: u64,
+        expected: u64,
+        after: EntryFacts,
+    ) -> Option<QuestEncounterLever> {
+        let mut states = self.callbacks.lock().ok()?;
+        let observed = states.changed.get(&key).map_or_else(
+            || states.phase_revision(key).unwrap_or(0),
+            |(revision, _)| *revision,
+        );
+        if expected == u64::MAX
+            || observed != expected
+            || states.key_reserved(key)
+            || !states.has_capacity(1)
+        {
+            return None;
+        }
+        Arc::make_mut(&mut states).reserved.insert(key);
+        Some(QuestEncounterLever {
+            callbacks: Arc::clone(&self.callbacks),
+            expected,
+            after,
+            key: Some(key),
+        })
     }
 
     /// Reserve no durable inputs unless the bounded local projection can be installed.

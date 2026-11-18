@@ -1153,6 +1153,13 @@ async fn exercise_outcome(
                 use_lever(&mut runtime, &mut states, revision.checked_add(1).ok_or("stale revision")?),
                 oteryn_protocol_oteryn::world_object::UseDisposition::Rejected
             );
+            let competing_lever = map.facts.reserve_quest_encounter_lever(key, revision, after)
+                .ok_or("competing lever reservation")?;
+            assert_eq!(
+                use_lever(&mut runtime, &mut states, revision),
+                oteryn_protocol_oteryn::world_object::UseDisposition::Rejected
+            );
+            drop(competing_lever);
             assert_eq!(map.facts.object_revision(key), revision);
             assert_eq!(runtime.visible_entities().creatures.len(), creature_count);
             for (member, origin) in players.iter().zip(origins) {

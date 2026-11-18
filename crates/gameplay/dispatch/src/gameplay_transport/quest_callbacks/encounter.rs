@@ -443,10 +443,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) else {
             return UseDisposition::Rejected;
         };
-        let Ok((snapshots, (phase, actors, roster, prepared_outcome))) = admission.publish(|| {
-            map.facts
-                .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
-        }) else {
+        let Some(lever) = map
+            .facts
+            .reserve_quest_encounter_lever(key, expected_revision, after)
+        else {
+            return UseDisposition::Rejected;
+        };
+        let Ok((snapshots, (phase, actors, roster, prepared_outcome))) =
+            admission.publish(|| lever.publish())
+        else {
             return UseDisposition::Rejected;
         };
         if let (Some(capture), Some(prepared), Some(roster)) = (capture.as_mut(), prepared, roster)
