@@ -475,6 +475,10 @@ async fn exercise_logic(
         },
     )
     .await?;
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("use clock")?;
     let map = owner.bundle_map().ok_or("bundle map")?;
     let mut lever_facts = map
         .facts
@@ -487,10 +491,6 @@ async fn exercise_logic(
     );
     let lever_revision = map.facts.object_revision(lever_key);
     let campfire_revision = map.facts.object_revision(campfire_key);
-    owner.clock_origin = owner
-        .clock_origin
-        .checked_sub(std::time::Duration::from_secs(2))
-        .ok_or("use clock")?;
     let outcome = owner
         .use_object(
             actor,
