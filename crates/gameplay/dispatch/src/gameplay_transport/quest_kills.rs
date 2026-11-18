@@ -35,7 +35,7 @@ pub(super) async fn settle(
                 death.scope_ownership_generation(),
                 (
                     kind,
-                    super::boss_reward_settlement::personal_death_id(death),
+                    super::kill_reward::personal_death_id(death),
                     entry.facts.died_at_unix_ms,
                 ),
             )
