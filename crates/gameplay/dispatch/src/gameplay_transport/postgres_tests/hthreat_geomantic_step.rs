@@ -97,7 +97,41 @@ fn scenario() -> TestResult {
             let catalogue = QuestStateCatalogue::empty("content-1").ok_or("empty catalogue")?;
             owner.quest_catalogue = Some(Arc::new(bindings()?.attach(&catalogue)?));
             owner.refresh_quest_session(session, false).await;
-            assert_eq!(step_west(&mut owner, actor, session).await?.x, 9);
+            let start = owner.owner_now().get() + 2_000_000;
+            let at = |offset| {
+                owner
+                    .states
+                    .test_owner_time
+                    .store(start + offset + 1, std::sync::atomic::Ordering::Relaxed);
+            };
+            at(0);
+            {
+                let runtime = owner.runtime.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
+                let current = states.get(&runtime, actor, session).ok_or("spell state")?;
+                let old = crate::spell::actor_conditions::stage_item_costume(
+                    current,
+                    307,
+                    3_000,
+                    start / 1_000,
+                )
+                .map_err(debug)?;
+                assert!(states.commit(&runtime, actor, session, old));
+            }
+            let _ = owner.paced_step(actor, session, StepDirection::West).await;
+            assert_eq!(position(&owner, actor).await?.x, 10);
+            let before: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1",
+            )
+            .bind(QUEST)
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(before, 0, "existing outfit blocks the pending charge too");
+
+            at(4_000_000);
+            let (moved, _) = owner.paced_step(actor, session, StepDirection::West).await;
+            assert_eq!(moved.disposition, StepDisposition::Moved);
+            assert_eq!(position(&owner, actor).await?.x, 9);
 
             let durable = owner
                 .root
@@ -132,10 +166,10 @@ fn scenario() -> TestResult {
             let now = owner.owner_now().get();
             assert_eq!(disguise(now + 119_000_000).await?, Some(307));
             assert_eq!(disguise(now + 120_000_000).await?, None);
-            owner.clock_origin -= Duration::from_secs(2);
+            at(6_000_000);
             let (outcome, _) = owner.paced_step(actor, session, StepDirection::East).await;
             assert_eq!(outcome.disposition, StepDisposition::Moved);
-            owner.clock_origin -= Duration::from_secs(2);
+            at(8_000_000);
             let _ = owner.paced_step(actor, session, StepDirection::West).await;
             assert_eq!(
                 position(&owner, actor).await?.x,
@@ -150,6 +184,15 @@ fn scenario() -> TestResult {
                     .movement_effects_since(0),
                 effects
             );
+            at(124_000_000);
+            let (moved, _) = owner.paced_step(actor, session, StepDirection::West).await;
+            assert_eq!(moved.disposition, StepDisposition::Moved);
+            assert_eq!(
+                position(&owner, actor).await?.x,
+                9,
+                "expired outfit permits the nest-only step"
+            );
+            assert_eq!(disguise(owner.owner_now().get()).await?, Some(307));
             let receipts: i64 = sqlx::query_scalar(
                 "SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1",
             )
