@@ -1082,6 +1082,29 @@ def build():
     callbacks = [c for c in callbacks if c not in programme_callbacks]
     l13_callbacks.sort(key=lambda c:c['key'])
     programme_callbacks.sort(key=lambda c:c['key'])
+    # What a Foolish Quest/Spoiler (19801/1056289), Mission 1.
+    foolish = prefix + 'u8_1/what_afoolish_quest/'
+    join_guard = storage(foolish + 'questline', 0, 0, preserve=True)
+    bozo = 'oteryn:npc.bozo'
+    offers.extend([
+        {'npc': bozo, 'keywords': ['join'], 'topic': 0, 'next_topic': 1,
+         'storage': [join_guard],
+         'reply': ['Do you wish to become a jester and join the fools guild?']},
+        {'npc': bozo, 'keywords': ['yes'], 'topic': 1, 'next_topic': 2,
+         'storage': [join_guard],
+         'reply': [
+             'So you want to make a total fool of yourself? Fine with me, but note that becoming a real fool means more than being just an ordinary fool ...',
+             'You will have to master a whole series of challenging, lengthy and, above all, totally foolish quests ...',
+             'Are you sure you want to waste a part of your limited lifetime on a quest that makes a fool of yourself and which might award you with the prestigious title of a grand fool in a far away future?',
+         ]},
+    ])
+    # Crystal201189f:data-global/npc/bozo.lua:779-781,800.
+    for topic in (1, 2):
+        offers.append({
+            'npc': bozo, 'keywords': ['no'], 'topic': topic, 'next_topic': 0,
+            'storage': [join_guard],
+            'reply': ["Too bad, I'm convinced you have it in you."],
+        })
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     item_disguises = load_module('quest_item_disguises', 'tools/content-schema/quest-authoring/quest_item_disguises.py').build(ROOT)

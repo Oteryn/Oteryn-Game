@@ -77,9 +77,19 @@ fn proof(definition: &Value, digest: &str, revision: &Value) -> Option<Proof> {
 }
 
 pub(super) fn resolves(quest: &Value, hold: &Value) -> bool {
-    if hold["code"] != "claim_item_semantics_missing" {
-        return false;
-    }
+    hold["code"] == "claim_item_semantics_missing" && matches_projection(quest, hold)
+}
+
+/// UID 6269 already uses the native container reward owner. Preserve the
+/// original variant's authoring hold while admitting this quest's entry.
+pub(super) fn resolves_foolish_bag(quest: &Value, hold: &Value) -> bool {
+    quest["identity"]["key"] == "oteryn:quest.what_a_foolish_quest"
+        && hold["code"] == "claim_native_lowering_missing"
+        && hold["source_key"] == "canary:reward-claim/quest/u8_1/what_afoolish_quest/bag_book_knife"
+        && matches_projection(quest, hold)
+}
+
+fn matches_projection(quest: &Value, hold: &Value) -> bool {
     static PROOFS: OnceLock<Vec<Proof>> = OnceLock::new();
     let proofs = PROOFS.get_or_init(|| {
         let digest: String = Sha256::digest(SOURCE.as_bytes())
