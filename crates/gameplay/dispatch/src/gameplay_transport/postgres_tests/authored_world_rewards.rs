@@ -99,7 +99,27 @@ pub(super) async fn exercise_warzone_portal_cooldown(
     Ok(())
 }
 
-pub(super) const WARZONE_PUMP: Position = Position { x: 33673, y: 32304, floor: -15 };
+pub(super) fn warzone_pump(name: &str) -> Option<(Position, &'static str, bool)> {
+    let (x, y, award, combined) = match name {
+        "qengine-rewards-ddepths-pump" => (33673, 32304, "buried_the_baron", false),
+        "qengine-rewards-ddepths-pump-count" => (33679, 32310, "his_days_are_counted", false),
+        "qengine-rewards-ddepths-pump-duke" => (33685, 32304, "duked_it_out", true),
+        _ => return None,
+    };
+    Some((Position { x, y, floor: -15 }, award, combined))
+}
+
+#[test]
+fn ddepths_warzone_other_pumps_and_combined_award_native_use_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("empty PostgreSQL admin URL".into());
+    }
+    super::qengine_rewards::scenario("qengine-rewards-ddepths-pump-count")?;
+    super::qengine_rewards::scenario("qengine-rewards-ddepths-pump-duke")
+}
 
 #[test]
 fn ddepths_warzone_pump_native_use_postgres() -> TestResult {
@@ -116,8 +136,26 @@ pub(super) async fn exercise_warzone_pump(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    (pos, award, combined): (Position, &str, bool),
 ) -> TestResult {
-    let pos = WARZONE_PUMP;
+    if combined {
+        let fence = admitted.item_fence.ok_or("pump Character fence")?;
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx).await?;
+        for key in ["the_baron_from_below_achiev", "the_count_of_the_core_achiev"] {
+            sqlx::query(
+                "INSERT INTO game_character_quest_tracks
+                (character_id, track_key, quest_key, value, committed_character_revision)
+                SELECT character_id, $2, 'oteryn:quest.dangerous_depths_quest', 1, character_revision
+                FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+            )
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(format!("oteryn:quest-progress/quest/u11_50/dangerous_depths/bosses/{key}"))
+            .execute(&mut *tx).await?;
+        }
+        tx.commit().await?;
+    }
     let key = oteryn_world_bundle::bundle::placement_key(pos.floor, pos.x, pos.y, 1)
         .ok_or("pump placement")?;
     let map = owner.bundle_map().ok_or("pump map")?;
@@ -129,11 +167,14 @@ pub(super) async fn exercise_warzone_pump(
     }).map_err(debug)?;
     let result = super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload).await?;
     assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?, UseDisposition::Committed);
+    let award = format!("oteryn:achievement/{award}");
+    let combined_key = "oteryn:achievement/death_in_the_depths";
     let awards: Vec<String> = sqlx::query_scalar(
-        "SELECT achievement_key FROM game_account_achievements WHERE achievement_key IN
-            ('oteryn:achievement/buried_the_baron','oteryn:achievement/death_in_the_depths') ORDER BY achievement_key",
-    ).fetch_all(&h.pool).await?;
-    assert_eq!(awards, ["oteryn:achievement/buried_the_baron"]);
+        "SELECT achievement_key FROM game_account_achievements WHERE achievement_key IN ($1,$2)
+         ORDER BY achievement_key",
+    ).bind(&award).bind(combined_key).fetch_all(&h.pool).await?;
+    let expected = if combined { vec![combined_key.to_owned(), award] } else { vec![award] };
+    assert_eq!(awards, expected);
     Ok(())
 }
 

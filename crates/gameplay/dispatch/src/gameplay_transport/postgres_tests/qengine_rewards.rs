@@ -30,8 +30,8 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
                 super::qworld_phase_steps::SOURCE
             } else if name == "qengine-rewards-ddepths-portal" {
                 super::authored_world_rewards::WARZONE_PORTAL
-            } else if name == "qengine-rewards-ddepths-pump" {
-                super::authored_world_rewards::WARZONE_PUMP
+            } else if let Some((position, _, _)) = super::authored_world_rewards::warzone_pump(name) {
+                position
             } else if name == "qengine-rewards-l2-white-raven" {
                 Position {
                     x: 32248,
@@ -1127,9 +1127,9 @@ pub(super) async fn exercise(
         ))
         .await;
     }
-    if name == "qengine-rewards-ddepths-pump" {
+    if let Some(pump) = super::authored_world_rewards::warzone_pump(name) {
         return Box::pin(super::authored_world_rewards::exercise_warzone_pump(
-            owner, admitted, h,
+            owner, admitted, h, pump,
         ))
         .await;
     }

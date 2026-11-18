@@ -356,8 +356,8 @@ fn scenario_case(
         portal.selector.action = Some(57243);
         portal.selector.appearance = Some(1949);
         portal
-    } else if name == "qengine-rewards-ddepths-pump" {
-        let mut pump = callback("dangerous-depth-pump-buried_the_baron-00")?;
+    } else if let Some((_, achievement, _)) = super::super::authored_world_rewards::warzone_pump(name) {
+        let mut pump = callback(&format!("dangerous-depth-pump-{achievement}-00"))?;
         pump.selector.appearance = Some(27500);
         pump
     } else if m03_use {
