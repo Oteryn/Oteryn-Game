@@ -127,12 +127,7 @@ impl Registry {
                 // A new party may replace a vacated same-key battlefield. It
                 // must remove the previous roster before admitting a new one.
                 return phase.key != key
-                    || runtime.positioned_melee_census().map_or(true, |census| {
-                        census.into_iter().any(|(_, at, session)| {
-                            session.is_some()
-                                && super::quest_callbacks::room_contains(&phase.room, at.position())
-                        })
-                    })
+                    || drume::Skirmish::has_players(runtime, &phase.room).unwrap_or(true)
                     || fight.eject(runtime, &phase.room, &phase.cells).is_err();
             }
             match phase.fight.victors(runtime) {

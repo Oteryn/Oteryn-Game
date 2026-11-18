@@ -43,6 +43,17 @@ fn drume_final_lion_death_clears_squads_and_ejects_both_players() -> TestResult 
     encounter_scenario(false, Some(false))
 }
 
+#[test]
+fn drume_phase_tick_retires_vacated_battlefield_before_timeout() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("empty PostgreSQL admin URL".into());
+    }
+    encounter_scenario(true, Some(true))
+}
+
 pub(super) fn bind(callback: &mut Callback) -> TestResult {
     let mut json = serde_json::to_value(&*callback)?;
     json["effects"]["battlefield"] = serde_json::json!({
@@ -155,6 +166,57 @@ pub(super) async fn exercise(
         assert_positions(owner, actors, super::quest_world_callbacks::local(EXIT)).await?;
     }
     Ok(())
+}
+
+pub(super) async fn vacate(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    players: [(ExactActorRef, GameSessionId); 2],
+) -> TestResult {
+    let actors = players.map(|(actor, _)| actor);
+    assert_positions(owner, actors, LANDING).await?;
+    assert_eq!(list(owner, LION).await?.len(), 3);
+    assert_eq!(list(owner, USURPER).await?.len(), 3);
+    let destination = super::quest_world_callbacks::local(EXIT);
+    {
+        let map = owner.bundle_map().ok_or("battlefield map")?;
+        let closed = crate::map::floor::BundleDoors(&map.facts);
+        let mut runtime = owner.runtime.lock().await;
+        let mut proofs = Vec::new();
+        for (actor, session) in players {
+            proofs.push(
+                crate::map::floor::prepare_quest_encounter_ejection(
+                    &runtime,
+                    owner.movement_cells(),
+                    actor,
+                    session,
+                    runtime.read_actor_position(actor).map_err(debug)?,
+                    destination,
+                    &closed,
+                )
+                .map_err(debug)?,
+            );
+        }
+        runtime
+            .commit_quest_relocation(proofs, || true)
+            .map_err(debug)?;
+        let states = owner.states.spell_states.lock().await;
+        crate::gameplay_transport::encounter_phases::tick(
+            &mut runtime,
+            &states,
+            owner.owner_now().get(),
+        );
+        assert!(
+            states
+                .encounter_phases
+                .active
+                .lock()
+                .map_err(|_| "phases")?
+                .is_empty()
+        );
+    }
+    assert!(list(owner, LION).await?.is_empty());
+    assert!(list(owner, USURPER).await?.is_empty());
+    assert_positions(owner, actors, destination).await
 }
 
 async fn list(

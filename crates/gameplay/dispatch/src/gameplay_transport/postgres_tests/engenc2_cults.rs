@@ -85,6 +85,7 @@ pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResu
         run(async |admin| {
             reset();
             let tag = match drume {
+                Some(true) if reenter => "drume_vacated",
                 Some(true) => "drume_usurpers",
                 Some(false) => "drume_lions",
                 None => "engenc2_cults",
@@ -376,13 +377,20 @@ pub(super) fn encounter_scenario(reenter: bool, drume: Option<bool>) -> TestResu
                 1
             );
             if let Some(spawn_boss) = drume {
-                super::drume_battlefield::exercise(
-                    &owner,
-                    &admitted,
-                    second.ok_or("second player")?.0,
-                    spawn_boss,
-                )
-                .await?;
+                let (second_actor, second_session) = second.ok_or("second player")?;
+                if reenter {
+                    super::drume_battlefield::vacate(
+                        &owner,
+                        [
+                            (deps.actor, admitted.game_session_id),
+                            (second_actor, second_session),
+                        ],
+                    )
+                    .await?;
+                } else {
+                    super::drume_battlefield::exercise(&owner, &admitted, second_actor, spawn_boss)
+                        .await?;
+                }
                 drop(owner);
                 drop(authority);
                 drop(seal);

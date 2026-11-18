@@ -135,12 +135,25 @@ impl Skirmish {
     ) -> Result<(), CarrierError> {
         // Crystal action_drume.lua:16-17,21-32,115-120 schedules physical teardown
         // even when the boss has fallen and normal terminal credit already settled.
-        if now_us >= self.deadline {
+        if now_us >= self.deadline || !Self::has_players(runtime, room)? {
             self.eject(runtime, room, cells)?;
             self.ejected = true;
             return Ok(());
         }
         self.advance(runtime, room, cells)
+    }
+
+    pub(super) fn has_players(
+        runtime: &ChannelRuntimeV1,
+        room: &Encounter,
+    ) -> Result<bool, CarrierError> {
+        Ok(runtime
+            .positioned_melee_census()?
+            .into_iter()
+            .any(|(_, at, session)| {
+                session.is_some()
+                    && super::super::quest_callbacks::room_contains(room, at.position())
+            }))
     }
 
     pub(super) fn eject(
