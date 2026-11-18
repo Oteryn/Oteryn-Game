@@ -24,7 +24,7 @@ impl GrizzlyPremiumGate for Premium {
 
 #[test]
 fn qm03_world_admission_live_blessings_promotion_premium_fences_and_replay() -> f::TestResult {
-    let Some(admin) = f::configured_admin() else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
     std::thread::Builder::new()
@@ -448,7 +448,7 @@ mod native_binding {
     }
 
     fn run_admission(production: bool) -> f::TestResult {
-        let Some(admin) = f::configured_admin() else {
+        let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
             return Ok(());
         };
         std::thread::Builder::new()
