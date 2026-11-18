@@ -45,7 +45,7 @@ fn catalogue(
         "effects":{"encounter":{
             "minimum_level":250,
             "players":players,
-            "partial_party":pale_worm,
+            "partial_party":true,
             "monsters":[{"position":cell(2),"creature":boss}],
             "room_min":cell(0),"room_max":cell(2)
         }},

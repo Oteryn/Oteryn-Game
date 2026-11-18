@@ -826,6 +826,32 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && effects.outfit_reward.is_none()
     });
     let timed_room = effects.encounter.as_ref().and_then(|e| e.timing?.admission);
+    // The movement/USE owner can admit a native room without quest value or an
+    // appearance swap. The detailed encounter checks below still bind its geometry.
+    let stateless_party = effects.encounter.as_ref().is_some_and(|encounter| {
+        encounter.allows_partial_party()
+            && encounter.timing.is_none()
+            && callback.trigger == Trigger::Use
+            && callback.actor_kind == ActorKind::Player
+            && (callback.selector.position.is_some() || callback.selector.native.is_some())
+            && !callback.requires_durable_commit()
+            && !callback.reversible
+            && callback.passages.is_empty()
+            && callback.offerings.is_empty()
+            && callback.item_on_target.is_none()
+            && callback.teleport.is_none()
+            && callback.remote_teleport.is_none()
+            && callback.disguise.is_none()
+            && callback.experience.is_none()
+            && callback.monk_reward.is_none()
+            && callback.native_rule.is_none()
+            && callback.item_reward().is_none()
+            && *effects
+                == CallbackEffectSet::from_shared(CallbackEffects {
+                    encounter: Some(encounter.clone()),
+                    ..CallbackEffects::default()
+                })
+    });
     if operations > 1
         || (operations > 0
             && ((!personal_encounter
@@ -836,6 +862,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         && callback.has_state())))
                 || !callback.passages.is_empty()
                 || callback.teleport.is_some())
+            && timed_room.is_none()
+            && !stateless_party
             && !(effects.encounter.is_some() && super::asura_authored::admitted(callback)))
     {
         return false;
@@ -916,6 +944,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
             if *effects != allowed_effects
                 || callback.stateless_step_minimum_level() != Some(encounter.minimum_level)
                 || callback.lever.is_some()
+                || callback.disguise.is_some()
+                || callback.facing.is_some()
+                || callback.remote_teleport.is_some()
                 || !callback.passages.is_empty()
                 || !callback.world_requirements.is_empty()
                 || !callback.teleport.is_some_and(in_room)
@@ -1246,6 +1277,36 @@ mod phase_tests {
 #[cfg(test)]
 mod timed_room_tests {
     use super::*;
+
+    #[test]
+    fn feaster_timed_step_in_validates_without_a_lever_or_quest_value() -> Result<(), String> {
+        let callback = serde_json::json!({
+            "key":"oteryn:quest-callback/feaster/brain-head-portal",
+            "quest":"oteryn:quest.feaster_of_souls_quest",
+            "trigger":"step_in",
+            "selector":{"position":{"x":31937,"y":32325,"floor":-10}},
+            "teleport":{"x":31963,"y":32324,"floor":-10},
+            "passages":[],"offerings":[],"storage":[],"reversible":false,
+            "return_on_failure":true,"minimum_level":250,
+            "effects":{"encounter":{
+                "minimum_level":250,"players":[],
+                "monsters":[{"position":{"x":31954,"y":32325,"floor":-10},"creature":"oteryn:creature.brain_head"}],
+                "room_min":{"x":31937,"y":32308,"floor":-10},
+                "room_max":{"x":31970,"y":32341,"floor":-10},
+                "timing":{"spawn_after_ms":50,"reset_after_ms":300000,"admission":{
+                    "capacity":5,"join_for_ms":30000,"cooldown_s":36000,
+                    "exit":{"x":31971,"y":32325,"floor":-10}
+                }}
+            }},
+            "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_brain_head.lua:53-93"]
+        });
+        let packet = |callback| serde_json::json!({"schema":1,"callbacks":[callback]}).to_string();
+        super::super::parse(&packet(callback.clone()))?;
+        let mut mixed = callback;
+        mixed["effects"]["magic"] = 11.into();
+        assert!(super::super::parse(&packet(mixed)).is_err());
+        Ok(())
+    }
 
     #[test]
     fn timed_room_admission_enforces_capacity_and_join_deadline() {
