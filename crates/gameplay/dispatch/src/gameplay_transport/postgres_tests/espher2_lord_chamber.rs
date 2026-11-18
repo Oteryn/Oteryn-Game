@@ -118,11 +118,23 @@ fn espher2_lord_switch_use_closes_its_wall_without_starting_early_postgres() -> 
             deps.initialize(&owner).await;
             let map = owner.bundle_map().ok_or("map")?;
             let at = world_tile(station.lever);
-            let key = (0..=8)
-                .filter_map(|ordinal| crate::map::view::placement_key(at, ordinal))
-                .find(|key| {
-                    map.facts
-                        .quest_callback_matches(*key, None, None, Some(2772))
+            let tile = map
+                .overlay
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .ok_or("switch tile")?;
+            let key = tile
+                .ids()
+                .iter()
+                .zip(tile.depths())
+                .filter(|(_, depth)| **depth == 0)
+                .enumerate()
+                .find_map(|(ordinal, (id, _))| {
+                    let ordinal = u8::try_from(ordinal).ok()?;
+                    let facts = map.facts.base_entry(at, ordinal, *id)?;
+                    (facts.appearance_id == 2772)
+                        .then(|| crate::map::view::placement_key(at, ordinal))
+                        .flatten()
                 })
                 .ok_or("source lever placement")?;
             let mut placement = world.base().digest().to_vec();
