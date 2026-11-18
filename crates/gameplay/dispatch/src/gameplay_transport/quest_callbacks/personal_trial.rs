@@ -25,7 +25,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if pending.len() >= super::timed_encounter::MAX_TIMED_ENCOUNTERS
             || pending
                 .iter()
-                .any(|p| p.source_key() == key || p.overlaps_merchant_wave(callback))
+                .any(|p| p.holds_source_key(key) || p.overlaps_merchant_wave(callback))
         {
             return false;
         }

@@ -24,8 +24,8 @@ pub(super) struct TimedEncounter {
     merchant_loot: Option<(u64, Vec<(TilePos, u64)>)>,
 }
 impl TimedEncounter {
-    pub(super) fn source_key(&self) -> u64 {
-        self.key
+    pub(super) fn holds_source_key(&self, key: u64) -> bool {
+        self.key == key && self.merchant_loot.is_none()
     }
 
     pub(super) fn overlaps_merchant_wave(&self, callback: &Callback) -> bool {
@@ -135,9 +135,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Rejected;
         };
         if pending.len() >= MAX_TIMED_ENCOUNTERS
-            || pending
-                .iter()
-                .any(|pending| pending.key == key || pending.overlaps_merchant_wave(callback))
+            || pending.iter().any(|pending| {
+                pending.holds_source_key(key) || pending.overlaps_merchant_wave(callback)
+            })
             || pending.try_reserve(1).is_err()
         {
             return UseDisposition::Exhausted;
@@ -196,7 +196,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if memo.content != runtime.content_pin().server_artifact_digest()
                 || memo.map != map.overlay.base().digest()
                 || memo.scope != runtime.encounter_owner_scope()
-                || map.facts.object_revision(memo.key) != memo.revision
+                || (memo.merchant_loot.is_none()
+                    && map.facts.object_revision(memo.key) != memo.revision)
             {
                 pending.remove(index);
                 continue;
