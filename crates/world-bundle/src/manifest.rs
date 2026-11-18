@@ -160,6 +160,7 @@ mod tests {
         assert_eq!(decoded, manifest);
         assert!(layers.is_empty());
         let text = String::from_utf8(bytes).map_err(|e| Error::Format(e.to_string()))?;
+        assert!(text.contains("\"floors\":[7]"));
         let duplicate = format!("{{\"format\":\"duplicate\",{}", &text[1..]);
         assert!(decode(duplicate.as_bytes()).is_err());
         let duplicate = format!("{{\"layers\":[],\"layers\":[],{}", &text[1..]);

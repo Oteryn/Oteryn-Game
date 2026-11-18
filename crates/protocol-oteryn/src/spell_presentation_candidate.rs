@@ -130,10 +130,16 @@ impl<'a> Read<'a> {
         ))
     }
     fn pos(&mut self) -> Result<ActorPosition, Error> {
+        let x = self.u32()? as i32;
+        let y = self.u32()? as i32;
+        let floor = self.u16()?;
+        if floor > 15 {
+            return Err(Error::Malformed);
+        }
         Ok(ActorPosition {
-            x: self.u32()? as i32,
-            y: self.u32()? as i32,
-            floor: self.u16()? as i16,
+            x,
+            y,
+            floor: floor as i16,
         })
     }
     fn entity(&mut self) -> Result<EntityRef, Error> {
@@ -184,10 +190,14 @@ impl<'a> Read<'a> {
         }
     }
 }
-fn pos(out: &mut Vec<u8>, p: ActorPosition) {
+fn pos(out: &mut Vec<u8>, p: ActorPosition) -> Result<(), Error> {
+    if !(0..=15).contains(&p.floor) {
+        return Err(Error::Malformed);
+    }
     out.extend(p.x.to_le_bytes());
     out.extend(p.y.to_le_bytes());
     out.extend(p.floor.to_le_bytes());
+    Ok(())
 }
 fn entity(out: &mut Vec<u8>, e: EntityRef) -> Result<(), Error> {
     if e.identity == [0; 16] || e.generation == 0 {
@@ -249,7 +259,7 @@ fn encode_event(event: &Event) -> Result<Vec<u8>, Error> {
             source: s,
         } => {
             out.push(1);
-            pos(&mut out, position);
+            pos(&mut out, position)?;
             out.extend(id.to_le_bytes());
             out.push(source(s));
         }
@@ -260,8 +270,8 @@ fn encode_event(event: &Event) -> Result<Vec<u8>, Error> {
             source: s,
         } => {
             out.push(2);
-            pos(&mut out, from);
-            pos(&mut out, to);
+            pos(&mut out, from)?;
+            pos(&mut out, to)?;
             out.extend(id.to_le_bytes());
             out.push(source(s));
         }
@@ -275,7 +285,7 @@ fn encode_event(event: &Event) -> Result<Vec<u8>, Error> {
             }
             out.push(3);
             entity(&mut out, caster)?;
-            pos(&mut out, position);
+            pos(&mut out, position)?;
             out.extend(spell.to_le_bytes());
         }
         Body::Value {
@@ -288,7 +298,7 @@ fn encode_event(event: &Event) -> Result<Vec<u8>, Error> {
         } => {
             out.push(4);
             out.push(kind(k));
-            pos(&mut out, position);
+            pos(&mut out, position)?;
             entity(&mut out, target)?;
             out.push(u8::from(attacker.is_some()));
             if let Some(a) = attacker {
@@ -304,7 +314,7 @@ fn encode_event(event: &Event) -> Result<Vec<u8>, Error> {
             secondary,
         } => {
             out.push(5);
-            pos(&mut out, position);
+            pos(&mut out, position)?;
             out.extend(id.to_le_bytes());
             out.push(source(s));
             out.push(u8::from(secondary.is_some()));
@@ -592,7 +602,7 @@ mod tests {
                 position: ActorPosition {
                     x: i32::MIN,
                     y: i32::MAX,
-                    floor: i16::MIN,
+                    floor: 15,
                 },
                 id: 0,
                 source: Source::Global,

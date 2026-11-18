@@ -155,11 +155,11 @@ already writes canonical varints.
 A placement key names one top-level base entry of the bundle (ADR-0021 §4.2 and §4.4):
 
 ```text
-placement_key = x << 32 | y << 16 | (−floor) << 8 | ordinal        (u64)
+placement_key = x << 32 | y << 16 | z << 8 | ordinal        (u64)
 ```
 
 `ordinal` is the index of the entry among the top-level entries (depth 0) of its tile in
-payload order, below 64 (`MAP01-TILE-BASE-ENTRIES`). A floor outside `-15..0` or an ordinal of
+payload order, below 64 (`MAP01-TILE-BASE-ENTRIES`). A Global z outside `0..15` or an ordinal of
 64 or more has no key. Contents of a container have no key of
 their own; they belong to their top-level entry.
 
@@ -260,7 +260,7 @@ and closes OPEN-4; MAP-BUNDLE-1b-2 implements OPEN-1 and OPEN-2 (key resolution)
   palette is regenerated with them, those ids stay provisional donor keys (below).
 - **OPEN-3, orphan teleports. Answered (Q3 split) and implemented (1b-1).** A teleport
   attribute is compared with the Transition.Teleport record from its tile (project frame):
-  - a record to the same destination: kept, with the destination floor mapped to native;
+  - a record to the same destination: kept, with the destination floor mapped to Global z;
   - destination (0,0,0): not a teleport. The attribute is dropped with a diagnostic, and the
     entry's placement key goes into `dropped_teleports` (§3). The tile keeps its `action` and
     `unique` bindings. The list is a production release parity report, not a release blocker;
@@ -301,8 +301,8 @@ and closes OPEN-4; MAP-BUNDLE-1b-2 implements OPEN-1 and OPEN-2 (key resolution)
   every nonzero house id must be in the House family, every source entry must resolve (a key the
   resolver does not know fails even inside a skipped subtree), and every entry must keep its depth,
   attributes and palette key. The only exceptions are the rules above: subtrees under keys the
-  resolver calls provisional are skipped, (0,0,0) teleports are dropped, and teleport floors are
-  native. Every teleport is checked again against the Transition.Teleport family, and every
+  resolver calls provisional are skipped, (0,0,0) teleports are dropped, and teleport floors use
+  Global z. Every teleport is checked again against the Transition.Teleport family, and every
   record must meet its attribute. The bundle holds no other tile, `skipped_provisional_keys` is
   exactly the set of provisional keys met, and `dropped_teleports` is exactly the set of
   placement keys derived from the source. The run on #1170 head `2ffba017` (with #1160 `ee19179e` merged in) stops, as it
@@ -398,8 +398,8 @@ the sources:
 
 - `creature_count`, then per creature, strictly ascending by key: `key` (varint length and
   ASCII `0x21..=0x7E` bytes, at most 128) and `period` u8 (`0` All, `1` Night).
-- `source_count`, then per source, strictly ascending by key: `key` (as above), `floor` i8
-  (native), centre `x` and `y` (varints), `point_count` (at least 1), and per point in authored
+- `source_count`, then per source, strictly ascending by key: `key` (as above), `floor` u8
+  (Global z), centre `x` and `y` (varints), `point_count` (at least 1), and per point in authored
   order: `creature` (varint index into the creature table), `dx` and `dy` (zigzag varints, point
   minus centre), `direction` u8 (`0` north, `1` east, `2` south, `3` west) and `respawn_ms`
   (varint).
@@ -490,7 +490,7 @@ empty table.
 
 - `npc_count`, then per NPC, strictly ascending by key: `key` (varint length and ASCII
   `0x21..=0x7E` bytes, at most 128, starting `oteryn:npc.`) and `placement_count` (at least 1).
-- Per placement, strictly ascending by (`floor`, `y`, `x`): `floor` i8 (native, one of
+- Per placement, deepest floor first, then ascending by (`y`, `x`): `floor` u8 (Global z, one of
   `world.floors`), `y` and `x` (varints) and `direction` u8 (`0` north, `1` east, `2` south, `3`
   west).
 - Every placement is inside the World extent. No two placements of the bundle share a cell; the
@@ -575,7 +575,7 @@ Admission re-decodes the existing framed LZMA/BMP assets, verifies the compresse
 and decoded hashes and raw import dimensions/anchor/provenance, and requires exact
 agreement with the candidate's nonzero 32-bit pixel runs. BMP top-down and bottom-up
 orientation are handled explicitly. The source frame maps x/y unchanged and z to
-native floor `-z`. All 209 existing masks are at source z=7; no vertical projection,
+Global z. All 209 existing masks are at source z=7; no vertical projection,
 underground approximation, rectangle replacement or fallback id is admitted.
 
 Source masks must be disjoint. Native admission intersects each mask with served,
@@ -588,7 +588,7 @@ dropped at compile time. This is reachability from a subarea entry, not a promis
 that every region is reachable from the World's starting town without quest gates.
 
 Native membership is a list of half-open horizontal runs `{floor,y,begin,end,subarea}`
-sorted by `(floor,y,begin)`, disjoint across all masks. Reader and writer reject
+sorted deepest floor first, then by `(y,begin)`, disjoint across all masks. Reader and writer reject
 bad order, overlaps, out-of-world runs, unknown ids, malformed hashes, bad parents,
 and counts that disagree with the runs. Lookup is a binary search over these runs;
 unknown coverage remains unknown. The empty/default table is only for synthetic
@@ -640,7 +640,7 @@ a committed claim. It adds no wire payload or Platform authority.
 ## 16. Format v6 (C20d-W23)
 
 Version 6 carries each area's `town_id` (the source engine town id or null),
-`hometown` flag, and `temple` (native `{x,y,floor}` or null). Hometowns require
+`hometown` flag, and `temple` (Global `{x,y,floor}` or null). Hometowns require
 a positive unique town id and a temple; other areas carry neither. The catalogue
 retains the 19 hometowns admitted by the city content and the default starter
 town from the committed OTBM town sample. Runtime compatibility
