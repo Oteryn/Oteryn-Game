@@ -1,5 +1,6 @@
 //! Crystal 201189f8 moviment_trap.lua: a real creature push delivers merchant StepIn.
 use super::autowalk::at;
+use super::classic_quests::{install, talk};
 use super::creature_push::{prepare, reference, scenario, spawn};
 use super::fixture::{Harness, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
@@ -35,10 +36,13 @@ fn rottin_merchant_step_in_postgres() -> TestResult {
 const MISSION: &str =
     "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission03";
 const CAPTURES: &str = "oteryn:quest-progress/crystalserver/kv/rottinwood-corpsecount";
+const ROTTIN: &str = "oteryn:npc.rottin_wood";
+const TURN_IN: &str = "oteryn:quest-reward/rottin-wood/bushwhacking";
+const MERRY_ADVENTURES: &str = "oteryn:achievement/merry_adventures";
 const LOOT: &str = "oteryn:quest-callback/rottin-wood/loot-merchant";
 
 #[test]
-fn rottin_merchant_step_then_loot_use_postgres() -> TestResult {
+fn rottin_merchant_step_loot_and_mission_turn_in_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -79,7 +83,7 @@ pub(super) fn catalogue(wave: bool) -> TestResult<QuestStateCatalogue> {
             "recipe_sha256": Sha256::digest(source.as_bytes()).iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
             "tracks": [
                 {"key": MISSION, "initial": 1, "minimum": 0, "maximum": 2},
-                {"key": CAPTURES, "initial": 0, "minimum": 0, "maximum": 5}
+                {"key": CAPTURES, "initial": if wave { 0 } else { 4 }, "minimum": 0, "maximum": 5}
             ],
             "sources": [source],
             "stages":[{
@@ -100,6 +104,25 @@ pub(super) fn catalogue(wave: bool) -> TestResult<QuestStateCatalogue> {
             }]
         }]
     });
+    if !wave {
+        let donor =
+            "201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:117-127";
+        authored["quests"][0]["stages"]
+            .as_array_mut()
+            .ok_or("fixture stages")?
+            .push(json!({
+                "key": "bushwhacking-turn-in", "completes": false,
+                "trigger": {"kind": "npc_dialogue", "callback": {
+                    "key": TURN_IN, "quest": quest, "npc": ROTTIN,
+                    "keywords": ["mission"], "topic": 0, "next_topic": 0,
+                    "storage": [{"track": MISSION, "minimum": 1, "maximum": 1, "set": 2}],
+                    "requires": [{"track": CAPTURES, "minimum": 5, "maximum": 5}],
+                    "take": [], "give": {"item": "oteryn:item.tibia.i3035", "count": 5},
+                    "outfit": null, "achievement": MERRY_ADVENTURES, "experience": 1000,
+                    "reply": ["Thanks for helping us."], "sources": [donor]
+                }}
+            }));
+    }
     if wave {
         let donor = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rottin_wood_and_married_men/actions_trap.lua:65-123";
         let track = json!({"key":NETS,"initial":3,"minimum":0,"maximum":5});
@@ -233,12 +256,56 @@ pub(super) async fn exercise(
                 .bind(CAPTURES)
                 .fetch_one(&h.pool)
                 .await?;
-        assert_eq!(progress, 1);
+        assert_eq!(progress, 5);
         let payouts: i64 = sqlx::query_scalar(
             "SELECT count(*) FROM game_quest_reward_sources WHERE transition_key=$1 AND mint_transaction_id IS NOT NULL"
         ).bind(LOOT).fetch_one(&h.pool).await?;
         assert_eq!(payouts, 1);
     }
+    Ok(())
+}
+
+pub(super) async fn exercise_mission(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    let [npc] = install(owner, &admitted, [ROTTIN]).await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    talk(owner, &admitted, npc, 1701, "hi").await?;
+    assert_ne!(
+        talk(owner, &admitted, npc, 1702, "mission").await?,
+        ["Thanks for helping us."]
+    );
+    let before_xp = super::rottin_rewards::experience(h).await?;
+
+    exercise(None, owner, admitted, Some(h)).await?;
+
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    assert_eq!(
+        talk(owner, &admitted, npc, 1703, "mission").await?,
+        ["Thanks for helping us."]
+    );
+    assert_eq!(
+        super::rottin_rewards::experience(h).await?,
+        before_xp + 1000
+    );
+    let (stage, platinum, achievement): (i64, i64, bool) = sqlx::query_as(
+        "SELECT
+         (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),
+         (SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances
+          WHERE definition_production_key='oteryn:item.tibia.i3035' AND lifecycle=1),
+         EXISTS(SELECT 1 FROM game_account_achievements WHERE achievement_key=$2)",
+    )
+    .bind(MISSION)
+    .bind(MERRY_ADVENTURES)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!((stage, platinum, achievement), (2, 6, true));
     Ok(())
 }
 

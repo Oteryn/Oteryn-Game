@@ -385,7 +385,7 @@ pub(super) fn scenario(
             if merchant_wave {
                 super::rottin_bushwhacking::exercise_wave(&mut owner, admitted, &h).await?;
             } else if merchant_loot {
-                super::rottin_bushwhacking::exercise(None, &owner, admitted, Some(&h)).await?;
+                super::rottin_bushwhacking::exercise_mission(&mut owner, admitted, &h).await?;
             } else {
                 super::rottin_rewards::exercise(&mut owner, &mut admitted, &h, repeat_reward)
                     .await?;

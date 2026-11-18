@@ -23,9 +23,10 @@ const DONOR: &str =
 
 #[test]
 fn rottin_lucky_loop_talk_mints_one_weighted_bundle_postgres() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    drop(admin);
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(|| scenario("rottin_weighted_reward", false, None))?
@@ -36,9 +37,10 @@ fn rottin_lucky_loop_talk_mints_one_weighted_bundle_postgres() -> TestResult {
 
 #[test]
 fn rottin_lucky_loop_talk_mints_after_cooldown_postgres() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    drop(admin);
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(|| scenario("rottin_weighted_repeat", false, None))?
@@ -191,7 +193,7 @@ pub(super) async fn exercise(
     Ok(())
 }
 
-async fn experience(h: &Harness) -> TestResult<i64> {
+pub(super) async fn experience(h: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar(
         "SELECT total_experience FROM game_character_progression_state
          WHERE character_id=encode($1,'hex')::uuid",
