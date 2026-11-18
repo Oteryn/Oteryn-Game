@@ -13,10 +13,15 @@ pub(super) async fn run(
     world: &BundleWorld,
     towns: &oteryn_world_bundle::subarea::Table,
 ) {
+    let mut profiles_confirmed = false;
     verdict::indexed(
         "MP01.full",
-        mp01_party_pvp::run(core, packets, world, towns),
+        mp01_party_pvp::run(core, packets, world, towns, &mut profiles_confirmed),
     )
     .await;
-    verdict::indexed("MP09.full", mp09_party_xp::run(core, packets, world)).await;
+    verdict::indexed(
+        "MP09.full",
+        mp09_party_xp::run(core, packets, world, profiles_confirmed),
+    )
+    .await;
 }

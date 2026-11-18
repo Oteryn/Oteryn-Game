@@ -3,7 +3,7 @@
 //! base XP per target is the authored creature `experience` in content/creatures/definitions (see HUNT_TARGET);
 //! src/creatures/players/grouping/party.cpp:548-594 (level, distance, activity);
 //! config.lua.dist:302 (share range multiplier 1.5, hence the 2/3 level rule).
-use super::observations::committed_swing;
+use super::observations::{committed_swing, prepare_mp09_profiles};
 use super::*;
 use bots::{Bot, attack_target, party};
 use oteryn_dev_client::{
@@ -53,9 +53,12 @@ pub(super) async fn run(
     core: &SeamClients<'_>,
     packets: &SeamClients<'_>,
     world: &BundleWorld,
+    mp01_profiles_confirmed: bool,
 ) -> TestResult {
     let started = std::time::Instant::now();
-    let (mut bots, setup) = match profile_roles(core, packets).await {
+    let profiles =
+        prepare_mp09_profiles(mp01_profiles_confirmed, profile_roles(core, packets)).await;
+    let (mut bots, setup) = match profiles {
         Ok(profiles) => {
             let (bots, setup) = bots::connect_bots(&[
                 (core, 0, None),
@@ -291,12 +294,8 @@ pub(super) async fn run(
     }
 }
 
-/// MP01 normally profiles these roles, but an aborted MP01 admission leaves later roles
-/// fresh. The fixture provisions only fresh Characters
-/// (apps/game-server/src/qualification_spell_character.rs:234-269), so each role is
-/// read from durable build state and a fresh one is provisioned with no other bot online: another
-/// session's admission churn closed MP01's waiting leader
-/// (crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:412).
+/// If MP01 did not confirm its profiles, ensure the fixtures with one bot online at a time.
+/// The fixture owner reuses its exact retained progression/build receipts when present.
 async fn profile_roles(core: &SeamClients<'_>, packets: &SeamClients<'_>) -> TestResult<String> {
     let mut confirmed = Vec::new();
     for (pair, index, profile) in [

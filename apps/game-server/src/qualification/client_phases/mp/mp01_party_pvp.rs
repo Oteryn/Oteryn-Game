@@ -32,6 +32,7 @@ pub(super) async fn run(
     packets: &SeamClients<'_>,
     world: &BundleWorld,
     towns: &oteryn_world_bundle::subarea::Table,
+    profiles_confirmed: &mut bool,
 ) -> TestResult {
     let started = std::time::Instant::now();
     let mut failures = Vec::new();
@@ -48,13 +49,12 @@ pub(super) async fn run(
     .unwrap_or_else(|_| (Vec::new(), Err("MP01 admission/provision deadline".into())));
     // Keep the exact source error in the step rather than translating it into an incomplete row.
     let ready = check("admissions", setup, &mut failures);
-    if ready {
-        check(
+    let profiled = ready
+        && check(
             "profiles",
             bounded("profiles", 30, profiles(&mut bots, &NOPVP_VOCATIONS)).await,
             &mut failures,
         );
-    }
     let joined = if ready {
         check(
             "party",
@@ -108,11 +108,12 @@ pub(super) async fn run(
             &mut failures,
         );
     }
-    check(
+    let released = check(
         "release",
         bounded("release", 1800, bots::release_all(&mut bots, core, packets)).await,
         &mut failures,
     );
+    *profiles_confirmed = profiled && released;
     // The no-PvP bots are released; the Open PvP World runs next on its own node.
     pvp_world_rows(core, world, towns, &mut failures).await;
     let status = if failures.is_empty() { "PASS" } else { "FAIL" };

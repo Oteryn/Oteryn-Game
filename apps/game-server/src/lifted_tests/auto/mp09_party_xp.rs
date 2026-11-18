@@ -25,6 +25,29 @@ use observations::{committed_swing, is_temple_arrival, while_servicing_liveness}
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 #[test]
+fn mp09_reuses_confirmed_mp01_profiles_without_provision_logout() {
+    use std::future::{Future, ready};
+    use std::task::{Context, Poll, Waker};
+
+    let mut context = Context::from_waker(Waker::noop());
+    let mut reused = std::pin::pin!(observations::prepare_mp09_profiles(
+        true,
+        ready(Err("logout-after-provision refused".into())),
+    ));
+    assert!(matches!(reused.as_mut().poll(&mut context), Poll::Ready(Ok(_))));
+
+    let mut standalone = std::pin::pin!(observations::prepare_mp09_profiles(
+        false,
+        ready(Ok("standalone provisioning completed".into())),
+    ));
+    assert!(matches!(
+        standalone.as_mut().poll(&mut context),
+        Poll::Ready(Ok(detail)) if detail == "standalone provisioning completed"
+    ));
+}
+
+
+#[test]
 fn mp09_one_distant_or_underlevel_member_disables_the_whole_share() {
     let mut members = [1, 2, 3].map(|id| SharedExperienceMember {
         character: [id; 16],

@@ -35,6 +35,16 @@ pub(super) async fn while_servicing_liveness<T>(
     Ok(result)
 }
 
+pub(super) async fn prepare_mp09_profiles(
+    mp01_profiles_confirmed: bool,
+    provision: impl std::future::Future<Output = TestResult<String>>,
+) -> TestResult<String> {
+    if mp01_profiles_confirmed {
+        return Ok("reused confirmed MP01 knight, druid and paladin profiles".into());
+    }
+    provision.await
+}
+
 pub(super) fn is_temple_arrival(event: &SessionEvent, after: u64, temple: ActorPosition) -> bool {
     let (sequence, position) = match event {
         SessionEvent::WorldSpatial(delta) => (delta.server_sequence, delta.value.actor_position),
