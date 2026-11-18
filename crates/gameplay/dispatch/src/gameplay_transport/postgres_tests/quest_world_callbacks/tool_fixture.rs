@@ -287,6 +287,16 @@ pub(in super::super) async fn use_tool(
         true,
     )
     .await?;
+    use_held_tool(owner, admitted, tool, at, ordinal).await
+}
+
+pub(in super::super) async fn use_held_tool(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    tool: &str,
+    at: Position,
+    ordinal: u8,
+) -> TestResult<(AdmittedSession, UseDisposition)> {
     let mut admitted = admitted;
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(
