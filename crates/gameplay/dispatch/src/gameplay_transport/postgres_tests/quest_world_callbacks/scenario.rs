@@ -1572,6 +1572,8 @@ fn scenario_case(
                 4
             } else if name == super::super::encounter_death_replacements::ESSENCE {
                 24 // Space for three spectator waves, the opening roster and the boundary probes.
+            } else if name == super::super::ferumbras_crystal_reset::CASE {
+                104 // Retain the 81 Rift Invader slots while opening and completing the later phases.
             } else if callback.effects.encounter.is_some() {
                 16
             } else {

@@ -6,6 +6,7 @@ use crate::foundation::{
 use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
+use std::collections::BTreeSet;
 use std::sync::Mutex;
 
 mod crystal_circuit;
@@ -91,6 +92,7 @@ pub(super) struct ActivePhase {
 #[derive(Default, Debug)]
 pub(super) struct Registry {
     pub(super) active: Mutex<Vec<ActivePhase>>,
+    projected_deaths: Mutex<BTreeSet<ExactActorRef>>,
 }
 
 impl Registry {
@@ -207,7 +209,14 @@ impl Registry {
         let Ok(mut active) = self.active.lock() else {
             return;
         };
+        if active.is_empty() {
+            return;
+        }
+        let Ok(mut projected) = self.projected_deaths.lock() else {
+            return;
+        };
         if !active.iter().any(|phase| phase.fight.contains(actor))
+            && !projected.contains(&actor)
             && let Some(creature) = creature
             && let Ok((_, at)) = runtime.borrow_combat_death().projected_death(actor)
         {
@@ -230,14 +239,19 @@ impl Registry {
             }
         }
         for phase in active.iter_mut().filter(|p| p.fight.contains(actor)) {
-            if phase
+            if let Ok(first) = phase
                 .fight
                 .projected_death(runtime, actor, now_us, &phase.cells)
-                .is_ok()
             {
                 let ActivePhase { fight, cells, .. } = phase;
                 let _ = fight.advance(runtime, cells);
                 if let Fight::Replacements(fight) = fight {
+                    if first {
+                        // Once a slot generation retires, its exact ref cannot be projected again.
+                        projected
+                            .retain(|previous| runtime.encounter_actor_index(*previous).is_ok());
+                        projected.insert(actor);
+                    }
                     fight.project_portal(cells, now_us);
                     if let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(
                         index,

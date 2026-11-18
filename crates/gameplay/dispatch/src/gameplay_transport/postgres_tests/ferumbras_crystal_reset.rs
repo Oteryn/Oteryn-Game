@@ -316,11 +316,14 @@ pub(super) async fn exercise(
         y: VORTEX_TILE.y,
         floor: VORTEX_TILE.floor,
     };
-    assert!(
+    assert_eq!(
         map.facts
             .movement_items(vortex_pos)
             .iter()
-            .any(|entry| entry.facts.appearance_id == VORTEX)
+            .filter(|entry| entry.facts.appearance_id == VORTEX)
+            .count(),
+        usize::from(CHARGE_COUNT),
+        "a replay of a Rift Invader death must not add a second vortex",
     );
     let mut commands = (command + 1)..;
     for (used, &splinter) in splinters.iter().take(VORTEX_THRESHOLD).enumerate() {
