@@ -350,7 +350,7 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if name == "qengine-rewards-ddepths-portal" {
+    let mut callback = if super::super::authored_world_rewards::warzone_portal(name).is_some() {
         let mut portal = super::super::authored_world_rewards::placeholder(trigger)?;
         portal.selector.unique = None;
         portal.selector.action = Some(57243);

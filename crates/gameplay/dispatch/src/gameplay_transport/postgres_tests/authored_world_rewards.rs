@@ -45,7 +45,21 @@ fn ddepths_disjoint_achievement_use_routes_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-authored-achievement-routes")
 }
 
-pub(super) const WARZONE_PORTAL: Position = Position { x: 33460, y: 32267, floor: -15 };
+const WARZONE_PORTAL_CASES: [&str; 3] = [
+    "qengine-rewards-ddepths-portal-baron",
+    "qengine-rewards-ddepths-portal-count",
+    "qengine-rewards-ddepths-portal-duke",
+];
+
+pub(super) fn warzone_portal(name: &str) -> Option<(Position, &'static str)> {
+    let (x, y, boss) = match name {
+        "qengine-rewards-ddepths-portal-baron" => (33460, 32267, "oteryn:boss.the_baron_from_below"),
+        "qengine-rewards-ddepths-portal-count" => (33324, 32109, "oteryn:boss.the_count_of_the_core"),
+        "qengine-rewards-ddepths-portal-duke" => (33275, 32316, "oteryn:boss.the_duke_of_the_depths"),
+        _ => return None,
+    };
+    Some((Position { x, y, floor: -15 }, boss))
+}
 
 #[test]
 fn ddepths_warzone_portal_paced_step_checks_cooldown_postgres() -> TestResult {
@@ -55,13 +69,18 @@ fn ddepths_warzone_portal_paced_step_checks_cooldown_postgres() -> TestResult {
     if admin.is_empty() {
         return Err("empty PostgreSQL admin URL".into());
     }
-    super::qengine_rewards::scenario("qengine-rewards-ddepths-portal")
+    for name in WARZONE_PORTAL_CASES {
+        super::qengine_rewards::scenario(name)?;
+    }
+    Ok(())
 }
 
 pub(super) async fn exercise_warzone_portal_cooldown(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    portal: Position,
+    boss: &str,
 ) -> TestResult {
     use crate::gameplay_transport::capabilities::{BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities};
     use oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1;
@@ -76,16 +95,17 @@ pub(super) async fn exercise_warzone_portal_cooldown(
 
     let until: i64 = sqlx::query_scalar(
         "INSERT INTO game_character_boss_cooldowns(character_id,boss_key,available_at,admission,reset_epoch)
-         VALUES(encode($1,'hex')::uuid,'oteryn:boss.the_baron_from_below',
+         VALUES(encode($1,'hex')::uuid,$3,
             floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint + 36000000,
             encode($2,'hex')::uuid,0) RETURNING available_at"
     )
     .bind(fence.character_id.as_bytes().as_slice())
     .bind(super::fixture::id(92).as_slice())
+    .bind(boss)
     .fetch_one(&h.pool).await?;
 
     let origin = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?;
-    assert_eq!((origin.position().x,origin.position().y,origin.position().floor), (33459,32267,15));
+    assert_eq!((origin.position().x,origin.position().y,origin.position().floor), (i32::from(portal.x) - 1, i32::from(portal.y), 15));
     let (outcome, _) = owner.ordinary_paced_step(actor, session, StepDirection::East, Some(origin), None).await;
     assert_eq!(outcome.disposition, StepDisposition::Moved);
     let returned = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?;
@@ -93,8 +113,8 @@ pub(super) async fn exercise_warzone_portal_cooldown(
     assert!(returned.revision() > origin.revision());
     let preserved: i64 = sqlx::query_scalar(
         "SELECT available_at FROM game_character_boss_cooldowns WHERE character_id=encode($1,'hex')::uuid
-           AND boss_key='oteryn:boss.the_baron_from_below'",
-    ).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+           AND boss_key=$2",
+    ).bind(fence.character_id.as_bytes().as_slice()).bind(boss).fetch_one(&h.pool).await?;
     assert_eq!(preserved, until);
     Ok(())
 }
