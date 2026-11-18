@@ -18,5 +18,5 @@ pub fn resolve_house_step(
     {
         return Err(MovementError::CoordinateOverflow);
     }
-    destination(cells, table, origin, direction, pz_blocked, blocked)
+    destination(false, cells, table, origin, direction, pz_blocked, blocked)
 }
