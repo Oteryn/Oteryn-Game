@@ -26,6 +26,24 @@ fn questpc7_ferumbras_full_native_seals_and_reward_bundle() -> TestResult {
     );
     result
 }
+
+pub(super) const PREDECESSOR_CASE: &str = "questpc7-ferumbras-predecessor";
+
+#[test]
+fn ferumbras_chest_claims_on_an_in_progress_predecessor_pin() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(PREDECESSOR_CASE, || {
+        super::quest_world_callbacks::scenario(
+            PREDECESSOR_CASE,
+            pos((33275, 32390, -8)),
+            false,
+        )
+    })
+}
+
 const TRACK: &str = "oteryn:quest-progress/questpc7/ferumbras/programme";
 const PORTALS: &str = "oteryn:quest-progress/questpc7/ferumbras/passages";
 type ArenaPosition = (u16, u16, i8);
@@ -305,6 +323,7 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     a: &mut AdmittedSession,
     h: &Harness,
+    predecessor: bool,
 ) -> TestResult {
     use crate::gameplay_transport::connection::FreshAdmissionAuthority;
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
@@ -507,6 +526,27 @@ pub(super) async fn exercise(
     let sources:i64=sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources WHERE transition_key='oteryn:quest-callback/questpc7-ferumbras-reward'").fetch_one(&h.pool).await?;
     assert_eq!(sources, 0);
     super::questpc7_outfit_items::use_token(owner, a, 3578).await?;
+
+    if predecessor {
+        use oteryn_gameplay_quests::quest::{
+            QuestComparison, QuestEffect, QuestEffectKind, QuestTransition,
+        };
+        // Crystal 201189f8, ferumbras_ascension/actions_reward.lua:13-38.
+        // Switch definitions after earning the chest gate but before its literal USE.
+        super::quest_definition_predecessors::install_successor(owner, QuestTransition {
+            quest: "oteryn:quest.ferumbras_ascension_quest".into(),
+            key: "oteryn:quest-transition/fixture/ferumbras-final-arena-binding".into(),
+            effects: vec![QuestEffect {
+                track: TRACK.into(),
+                from: QuestComparison::Eq(2),
+                effect: QuestEffectKind::Set(2),
+            }],
+            completes: false,
+            experience: None,
+            world_change: None,
+        })?;
+        owner.refresh_quest_session(a.game_session_id, false).await;
+    }
     let claim_command = a.continuity.next_command_id;
     let claim_payload = super::questpc7_hoist_story::target(owner, chest, 4073)?;
     assert_eq!(

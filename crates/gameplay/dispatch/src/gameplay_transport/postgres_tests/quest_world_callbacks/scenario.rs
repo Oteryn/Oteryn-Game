@@ -281,7 +281,7 @@ fn scenario_case(
     let qengine_reward = name.starts_with("qengine-rewards-");
     let outfit_world = name.starts_with("l1-") && name.ends_with("-wardrobe");
     let shared_rewards = name == "questpc7-grave"
-        || name == "questpc7-ferumbras"
+        || matches!(name, "questpc7-ferumbras" | super::super::questpc7_ferumbras::PREDECESSOR_CASE)
         || name == "questpc7-hero"
         || name == "questpc7-hydra"
         || name == "questpc7-hoist-story"
@@ -391,7 +391,7 @@ fn scenario_case(
         callback("questpc7-grimvale-entry")?
     } else if name == "questpc7-grave" {
         callback("questpc7-grave-entry")?
-    } else if name == "questpc7-ferumbras" {
+    } else if matches!(name, "questpc7-ferumbras" | super::super::questpc7_ferumbras::PREDECESSOR_CASE) {
         callback("questpc7-ferumbras-entry")?
     } else if name == "questpc7-hero" {
         callback("questpc7-hero-entry")?
@@ -792,7 +792,7 @@ fn scenario_case(
             &super::super::questpc7_grave::objects()?,
             &[],
         )?
-    } else if name == "questpc7-ferumbras" {
+    } else if matches!(name, "questpc7-ferumbras" | super::super::questpc7_ferumbras::PREDECESSOR_CASE) {
         world_with_objects(
             &callback,
             trigger,
@@ -1377,7 +1377,7 @@ fn scenario_case(
             "catalogue-npc-calendar" | "catalogue-npc-scoped" => Some(35),
             "questpc7-eligibility-high" => Some(1000),
             "qengine-rewards-feaster-prefix" | "qengine-rewards-feaster-thaian" => Some(250),
-            "questpc7-ferumbras" | "qengine-rewards-heart-story" => Some(150),
+            "questpc7-ferumbras" | super::super::questpc7_ferumbras::PREDECESSOR_CASE | "qengine-rewards-heart-story" => Some(150),
             "questpc7-grave" => Some(250),
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
@@ -1642,7 +1642,7 @@ fn scenario_case(
             || name == "qengine-rewards-heart-story"
             || name == "qengine-rewards-grimvale-story"
             || name == "questpc7-grave"
-            || name == "questpc7-ferumbras"
+            || matches!(name, "questpc7-ferumbras" | super::super::questpc7_ferumbras::PREDECESSOR_CASE)
             || name == "questpc7-hero"
             || name == "questpc7-hydra"
             || name == "questpc7-hoist-story"
@@ -2619,8 +2619,8 @@ fn scenario_case(
             super::super::questpc7_grimvale::contacts(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-grave" {
             super::super::questpc7_grave::exercise(&mut owner, &mut admitted, &h).await?;
-        } else if name == "questpc7-ferumbras" {
-            super::super::questpc7_ferumbras::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if matches!(name, "questpc7-ferumbras" | super::super::questpc7_ferumbras::PREDECESSOR_CASE) {
+            Box::pin(super::super::questpc7_ferumbras::exercise(&mut owner, &mut admitted, &h, name == super::super::questpc7_ferumbras::PREDECESSOR_CASE)).await?;
         } else if name == "questpc7-hero" {
             super::super::questpc7_hero::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-hydra" {
