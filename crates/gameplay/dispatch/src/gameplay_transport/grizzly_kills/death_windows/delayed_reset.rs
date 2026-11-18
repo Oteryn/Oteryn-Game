@@ -73,6 +73,10 @@ impl PendingReset {
                 == Some(&self.rule)
     }
 
+    pub(super) fn next_map_due_ms(&self) -> Option<u64> {
+        (!self.map_applied).then_some(self.due_ms)
+    }
+
     /// Return whether the pending map write should be retried.
     pub(super) fn advance_if_live(&mut self, runtime: &ChannelRuntimeV1, map: &BundleMap) -> bool {
         let scope = runtime.binding();

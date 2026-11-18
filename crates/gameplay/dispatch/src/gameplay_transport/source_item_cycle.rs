@@ -49,6 +49,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .and_then(|map| map.facts.next_movement_decay_time()),
                     )
                     .chain(self.states.quest_callbacks.next_encounter_due_us())
+                    .chain(self.next_quest_death_map_reset_us())
                     .chain(
                         self.rooms()
                             .gate_monster_ai()
@@ -246,8 +247,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
+    fn next_quest_death_map_reset_us(&self) -> Option<u64> {
+        let attack = self.states.attack.try_lock().ok()?;
+        let cache = attack.kills().1.lock().ok()?;
+        cache.death_windows.next_map_reset_due_us()
+    }
+
     pub(super) async fn drain_quest_death_character_resets(&self) {
-        let queue = self.states.attack.lock().await.kills().clone();
+        let queue = {
+            let Ok(attack) = self.states.attack.try_lock() else {
+                return;
+            };
+            attack.kills().clone()
+        };
         let ready = {
             let Ok(cache) = queue.1.lock() else {
                 return;

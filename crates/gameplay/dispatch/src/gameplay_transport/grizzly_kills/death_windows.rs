@@ -205,6 +205,14 @@ impl DeathWindows {
             .collect()
     }
 
+    pub(in crate::gameplay_transport) fn next_map_reset_due_us(&self) -> Option<u64> {
+        self.resets
+            .iter()
+            .filter_map(delayed_reset::PendingReset::next_map_due_ms)
+            .min()
+            .map(|ms| ms.saturating_mul(1_000))
+    }
+
     pub(in crate::gameplay_transport) fn acknowledge_character_reset(
         &mut self,
         job: &delayed_reset::ReadyReset,
