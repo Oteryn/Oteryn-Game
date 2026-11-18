@@ -46,3 +46,12 @@ fn overlordcr_non_overlord_does_not_set_flag_postgres() -> TestResult {
     assert!(started.elapsed().as_secs_f64() > 0.01);
     Ok(())
 }
+
+#[test]
+fn overlordcr_non_overlord_retains_anti_leech_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::boss_rewards::run_case(super::boss_rewards::Case::NonOverlordHealing)
+}

@@ -45,6 +45,7 @@ pub(super) enum Case {
     Collection,
     Expiry,
     NativeDeath,
+    NonOverlordHealing,
     ProductionNativeDeath,
     OfflineReward,
     LivePrivacy,
@@ -308,12 +309,21 @@ fn scenario(case: Case) -> TestResult {
             | Case::ProductionNativeDeath
             | Case::OfflineReward
             | Case::LivePrivacy
+            | Case::NonOverlordHealing
             | Case::ConcurrentCollection => now,
             Case::Expiry => now - 604_800_000 + 1_000,
         };
         let contribution = RewardParticipation {
-            damage_dealt: 100,
-            damage_received: 20,
+            damage_dealt: if matches!(case, Case::NonOverlordHealing) {
+                0
+            } else {
+                100
+            },
+            damage_received: if matches!(case, Case::NonOverlordHealing) {
+                0
+            } else {
+                20
+            },
             healing_others: 10,
         };
         // The concurrent case isolates one live ordinal; all original cases retain four.
@@ -346,6 +356,33 @@ fn scenario(case: Case) -> TestResult {
                 ],
             }],
         };
+        if matches!(case, Case::NonOverlordHealing) {
+            let result = h
+                .root
+                .settle_boss_reward_chests(
+                    &authority,
+                    &h.node,
+                    fence.runtime_scope,
+                    fence.scope_ownership_generation,
+                    plan,
+                )
+                .await;
+            assert!(
+                matches!(
+                    result,
+                    Err(crate::durability::DurabilityError::CommitRejected)
+                ),
+                "an unrelated reward boss must reject healing-only loot: {result:?}"
+            );
+            let counts: (i64, i64, i64) = sqlx::query_as(
+                "SELECT (SELECT count(*) FROM game_boss_reward_deaths), (SELECT count(*) FROM game_character_boss_reward_chests), (SELECT count(*) FROM game_boss_reward_items)"
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(counts, (0, 0, 0));
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         let mut wrong_source_lease = plan.clone();
         wrong_source_lease.contributors[0].lease_generation += 1;
         wrong_source_lease.chests[0].lease_generation += 1;
@@ -444,7 +481,10 @@ fn scenario(case: Case) -> TestResult {
             )
             .await
             .map_err(|error| format!("W03 expiry scenario: {error}"))?,
-            Case::NativeDeath | Case::ProductionNativeDeath | Case::LargePrivateCorpse => {
+            Case::NativeDeath
+            | Case::ProductionNativeDeath
+            | Case::LargePrivateCorpse
+            | Case::NonOverlordHealing => {
                 return Err("native scenario already returned".into());
             }
             Case::OfflineReward => {
