@@ -1503,21 +1503,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // A tree event is ambient. The map CAS above publishes its original
         // receipt once, including when the first database acknowledgement was lost.
-        if let Some(tree) = oteryn_gameplay_quests::quest::frontier_tree::for_callback(&callback.key) {
+        if let Some(tree) =
+            oteryn_gameplay_quests::quest::frontier_tree::for_callback(&callback.key)
+        {
             let center = local(tree.position);
             let nearby = [
-                (0, 0), (-1, -1), (0, -1), (1, -1), (-1, 0),
-                (1, 0), (-1, 1), (0, 1), (1, 1),
+                (0, 0),
+                (-1, -1),
+                (0, -1),
+                (1, -1),
+                (-1, 0),
+                (1, 0),
+                (-1, 1),
+                (0, 1),
+                (1, 1),
             ];
             for &(creature, count) in tree.creatures {
                 for _ in 0..count {
-                    let _ = nearby.iter().copied()
+                    let _ = nearby
+                        .iter()
+                        .copied()
                         .map(|(dx, dy)| MovementLocalPosition {
                             x: center.x + dx,
                             y: center.y + dy,
                             ..center
                         })
-                        .find_map(|at| super::super::primal_menace::spawn_creature(self, runtime, creature, at));
+                        .find_map(|at| {
+                            super::super::primal_menace::spawn_creature(self, runtime, creature, at)
+                        });
                     map.facts.emit_movement_effect(pos, 11);
                 }
             }
