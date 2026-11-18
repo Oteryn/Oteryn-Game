@@ -188,6 +188,7 @@ fn scenario() -> TestResult {
             sqlx::query("UPDATE game_character_progression_state SET level=80,total_experience=7915800 WHERE character_id=encode($1,'hex')::uuid")
                 .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *setup).await?;
             setup.commit().await?;
+            owner.refresh_quest_session(session, true).await;
             let count = async || -> TestResult<i64> {
                 Ok(sqlx::query_scalar("SELECT coalesce((SELECT value FROM game_character_quest_tracks WHERE track_key=$1),0)")
                     .bind(COUNT).fetch_one(&h.pool).await?)

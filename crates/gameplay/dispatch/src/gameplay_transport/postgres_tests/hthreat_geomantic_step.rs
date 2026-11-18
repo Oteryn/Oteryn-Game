@@ -97,7 +97,7 @@ fn scenario() -> TestResult {
                 .execute(&h.pool).await?;
             let catalogue = QuestStateCatalogue::empty("content-1").ok_or("empty catalogue")?;
             owner.quest_catalogue = Some(Arc::new(bindings()?.attach(&catalogue)?));
-            owner.refresh_quest_session(session, false).await;
+            owner.refresh_quest_session(session, true).await;
             let start = owner.owner_now().get() + 2_000_000;
             let at = |offset| {
                 owner
