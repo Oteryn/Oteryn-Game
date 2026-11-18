@@ -1,0 +1,49 @@
+# qcx60 · The Ice Islands Quest
+
+Base commit `871c1dec7d9963420d455210e4cddc0c9df80d26`. Quest `oteryn:quest.the_ice_islands_quest`. The source priority is the fetched quest page and spoiler, then Crystal `201189f871d23597b82caf88fd611454a2ddefb8`. The Formorgar Mines hoist and its two claims belong to #3259. [Quest, curid 16660 oldid 1071550](https://tibia.fandom.com/?curid=16660&oldid=1071550) · [Spoiler, curid 17076 oldid 1138714](https://tibia.fandom.com/?curid=17076&oldid=1138714)
+
+## Audit
+
+| Part | Global and comparison with origin/main |
+| --- | --- |
+| Requirements | Level 0 and premium agree with the quest definition. Level 130+ is a recommendation. The spoiler requires Barbarian Test completion. The chosen recipe has an empty prerequisite list. Prepared Iskan dialogue checks Barbarian Test questline 8, but its file declares `loaded_by_current_runtime: false`. |
+| Befriending the Musher | Report back to Iskan after feeding Sniffler one meat. Prepared Iskan dialogue includes assignment and reporting. No active Sniffler feed or corresponding passage gate was identified. Crystal `npc/a_starving_dog.lua` owns the dog exchange, and `npc/iskan.lua:72–125` owns the prerequisite, handoff and passage. |
+| Breaking the Ice | Use the pick on three cracks. Each spawns Chakoyas and closes after about five minutes. The chosen definition counts three uses and the prepared Hjaern rules include assignment and report. No active equivalent for the cracks and spawns was identified. Crystal's pick action 60000 transforms 7185 to 7186 and resets in 60 seconds, which differs from the wiki. |
+| Ecological Terrorism | Siflind gives a jug and opens travel to Tyrsung. The jug collects ants at an ant hill and the filled jug is used on the west mast. A replacement costs 1,000 gold. Crystal `actions_anthill.lua:4–19` binds 7243 to 7244 against 1079 and uses 7244 at mast 4940. Crystal removes 7243 at the mast despite requiring 7244. The chosen recipe records the mast use only, and the prepared Siflind data leaves the initial jug grant out of runtime. Buddel's 50-gold alternative, ring choice and possible wrong destination also lack a verified active quest binding. |
+| Artful Sabotage | Global allows three paintings of one seal after successive resets. Main credits only distinct seals. A quest-only counter change accepted an already-painted seal through live dispatch, so it was withdrawn. Existing item, 198 native placements, 7178 to 7252 transform, 30-second reset, green effect and final consumption agree with the retained Crystal action. The Siflind grant of one 7253 exists. Its active reply still says “three different baby seals,” whereas the global and Crystal transcript say “as many pelts of baby seals as possible.” |
+| Berserk Brewery | The spoiler and Crystal `npc/siflind.lua:147–186` agree on 5 × 5894, 4 × 5896, 3 × 5898, 2 × 5895 and 1 × 5920 in order. The chosen recipe omits the mission. Prepared prompts and progress do not deliver the active item exchanges. |
+| Cure the Dogs | The chosen recipe omits this mission. The inactive Nilsor dialogue names each ingredient, but the active chain for item collection, trades, hand-in and access was not identified. Crystal `npc/nilsor.lua:147–211` binds 25 gold for waterskin 7286 and one each of 7245 cactus, 7246 water, 7247 sulphur, 7248 herb, 7249 blossom, 7250 tongue and 7251 spores. Crystal `npc/rose.lua:67–69` charges 100 gold for the tongue. Crystal `actions_cure.lua:2–15` fills the waterskin on 7106. The global collection cooldown is five minutes. Frostbite Herb has a night condition and Purple Kiss Blossom a day condition in the spoiler. Crystal's retained spoon/knife action uses personal one-time flags instead. The Inukaya movement gate follows cure completion and Crystal also consumes one ham, which the global page does not specify. |
+| Secret of Helheim | The chosen recipe omits the mission. Hjaern dialogue is prepared. Buddel transport, the altar proximity credit and the mission report remain unverified in live assembly. Global allows passing the Elder Bonelord and Braindeath alive. Crystal `movements_helheim.lua:8–33` credits entry by unique 1061. |
+| The Contact | The chosen recipe lists crystal 7281. Global requires Nor's grant, Lurik's turn-in, five minutes of evaluation and a fresh mission request. Crystal `npc/nor.lua:65` grants one and `npc/lurik.lua:108–145` takes one and records the wait. The separate Waterskin of Mead companion callback references this quest's progress but does not implement the Contact sequence. The NPC reward framework supports clock guards, so the wait itself is not an engine blocker. |
+| Formorgar Mines 1–3 | Global has Lurik open the route after evaluating the crystal, the paper on the skeleton north of the ghost, Hjaern's Tylaf conversation and the ghost's story. The chosen recipe collapses the story to the ghost and places a different reward skeleton after obelisks. Prepared Hjaern and ghost rules have no live admission. The paper's placement and claim still need a verified native binding. The separate hoist claims are unique 6214 (one 2820) and 6213 (2853 container). Neither is the global paper step established by the supplied spoiler. |
+| Formorgar Mines 4 and final reward | Global has Hjaern issue one Frost Charm and credit four marked obelisks before granting the base Norseman outfit on report. The chosen recipe has four obelisk uses, but no live obelisk/issue chain was identified. The active Hjaern base reward checks all four marks, takes one 7289, grants base Norseman and opens Yakchal as in Crystal `npc/hjaern.lua:94–124`. It advances questline to 40 without setting the engine completion flag. Canonical completion is consumed by downstream gates. Frostheart shard add-on exchanges exist separately under Hjaern and the fetched pages do not specify their counts. |
+| Other rewards and access | The wiki lists Formorgar Mines, Helheim, Tyrsung, Nibelor-to-Inukaya dogsleds, and eligibility for Svargrond citizenship and its NPCs. The chosen recipe records only Formorgar Mines and Norseman. The citizenship-related features follow the Barbarian Test prerequisite rather than the final outfit turn-in. There is no global XP or achievement award stated. |
+
+### Placement cross-check
+
+Decoded the indexed native placement regions at the donor coordinates. All three 7185 cracks are present at (32399, 31051, z7), (32394, 31062, z7), and (32393, 31072, z7), without the donor action 60000 attribute. Mast 4940 is at (32360, 31365, z7), and all four 1841 obelisks are present at (32138, 31113, z14), (32119, 30992, z14), (32180, 31069, z14), and (32210, 31027, z14). Both Inukaya sled platforms 7266 are present at (32367, 31058, z7) and (32409, 31066, z7). These appearances are canonical palette entries, and their presence alone does not qualify a world callback. No Ice Islands callback was found in the held callback directory. The service records for Buddel and Siflind are trade catalogues, and the travel catalogue contains no Buddel, Iskan or Nilsor route.
+
+## BLOCKER
+
+BLOCKER Breaking the Ice quest-owned Chakoya spawning from a pick/transform occurrence `data-global/scripts/lib/register_actions.lua:721` (retained as `qlane-meta/questpc2/reference/register_actions.lua:721`).
+
+BLOCKER Ecological Terrorism, medicine gathering and Retaliation carried-tool world dispatch admission for new quest callbacks `data-global/scripts/quests/the_ice_islands_quest/actions_anthill.lua:6`, `actions_cure.lua:2`, `actions_charm.lua:3`. The existing carried-tool route is a closed match on Targuna and Ice Seal Paint. It would take a shared dispatch change to admit these new callbacks.
+
+BLOCKER Artful Sabotage fenced ready-appearance check on the live native callback `data-global/scripts/quests/the_ice_islands_quest/actions_paint.lua:9–28`. The shared readiness check protects selected-instance callbacks. Switching this native callback to that mode requires World admission and changes pinned value identity. A quest-only planner receives the seal index and stored progress and cannot tell whether its world occurrence has reset.
+
+## OPEN-FACTS
+
+- Numeric global item and placement identifiers, exact crack reset in milliseconds, Chakoya composition per crack, mast jug disposition, dogsled fare, and the exact Tylaf paper item and placement identity.
+- Global XP and achievement grants, add-on counts, Yakchal access details, optional husky penalty, and any acquisition or travel behavior beyond the fetched pages.
+
+## PARTIAL
+
+- The inactive recipe and dialogue records still need live admission and dispatch proofs for the prerequisite, Sniffler, travel/access, brewery, cure, Helheim, Contact, Tylaf and Retaliation.
+- Enable safe repeat painting after reset. Align Siflind's active grant reply with the transcript. Add canonical completion to the final Hjaern turn-in while preserving add-on exchanges and compatibility with saved quest progress. The completion bit contributes to the reward value hash, and the quest writer rejects a mismatched hash for incomplete saves unless it has a qualified predecessor.
+- Qualify source-backed native placement and gate bindings for the remaining stages. Hoist work belongs to #3259.
+
+## Verification
+
+- PG via shard (pgsplit build files applied on `fa7880b2e965f62812e994f6d11bbf3bade341b9`). The baseline run used the base quest-specific planner and the new case. Artful Sabotage failed in 56.74 s at the second use after reset, with `Rejected` in place of `Committed`.
+- Quest authoring passed all 44 checks, including 269/269 schema cases.
+- The attempted rule failed in 49.89 s by accepting a use while the seal was still painted. The final candidate restores the credit and callback rules from the base. The retained PostgreSQL case exercises the current reset, custody, and duplicate-credit protections. It is a baseline safety case, and compatibility remains open.

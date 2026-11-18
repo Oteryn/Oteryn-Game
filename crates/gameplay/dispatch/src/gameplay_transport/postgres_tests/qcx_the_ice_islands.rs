@@ -1,8 +1,8 @@
-//! Global Ice Islands quest compatibility through the carried-use dispatch route.
+//! Existing Ice Islands reset and custody behavior through the carried-use dispatch route.
 use super::TestResult;
 
 #[test]
-fn artful_sabotage_accepts_repainting_after_the_seal_resets() -> TestResult {
+fn artful_sabotage_native_reset_and_credit_safety() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }

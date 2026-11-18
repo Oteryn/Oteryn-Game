@@ -1,10 +1,10 @@
-//! Ice Islands, Nibelor 3: three paintings of source-qualified map seals.
+//! Ice Islands, Nibelor 3: three distinct source-qualified map seals.
 //!
 //! Source: crystalserver@201189f871d23597b82caf88fd611454a2ddefb8,
 //! data-global/scripts/quests/the_ice_islands_quest/actions_paint.lua:15-21.
-//! TibiaWiki spoiler 17076/1138714 permits repainting after the map reset.
-//! The caller owns tool custody and enforces the unpainted map appearance.
-use super::QuestRefusal;
+//! The chosen quest recipe additionally requires distinct targets. This planner
+//! changes progress only; its caller owns tool custody and map-object authority.
+use super::{QuestRefusal, distinct_targets};
 
 pub mod callbacks;
 pub(crate) mod catalogue;
@@ -30,30 +30,10 @@ pub fn paint(seal: u16, mut snapshot: Snapshot) -> Result<Snapshot, QuestRefusal
     if snapshot.questline != 8 {
         return Err(QuestRefusal::StageMismatch);
     }
-    if seal >= targets::TARGET_COUNT || snapshot.targets < 0 || snapshot.targets >> 48 != 0 {
-        return Err(QuestRefusal::OutOfRange);
-    }
-
-    // Preserve the sorted, one-based slots in existing saves. Equal slots
-    // record separate successful paintings of the same physical seal.
-    let mut slots = [0_u16; 3];
-    for (index, slot) in slots.iter_mut().enumerate() {
-        *slot = ((snapshot.targets >> (index * 16)) & 0xffff) as u16;
-    }
-    let count = slots.iter().take_while(|&&slot| slot != 0).count();
-    if slots[count..].iter().any(|&slot| slot != 0)
-        || slots[..count].iter().any(|&slot| slot > targets::TARGET_COUNT)
-        || slots[..count].windows(2).any(|pair| pair[0] > pair[1])
-    {
-        return Err(QuestRefusal::OutOfRange);
-    }
-    let slot = slots.get_mut(count).ok_or(QuestRefusal::StageMismatch)?;
-    *slot = seal + 1;
-    slots[..=count].sort_unstable();
-    snapshot.targets = i64::from(slots[0])
-        | (i64::from(slots[1]) << 16)
-        | (i64::from(slots[2]) << 32);
-    if count == 2 {
+    let (targets, complete) =
+        distinct_targets::record_three(snapshot.targets, seal, targets::TARGET_COUNT)?;
+    snapshot.targets = targets;
+    if complete {
         snapshot.questline = 9;
         snapshot.mission04 = 2;
     }
@@ -77,7 +57,7 @@ mod tests {
                 (state.questline, state.mission04),
                 if index == 2 { (9, 2) } else { (8, 1) }
             );
-
+            assert!(paint(seal, state).is_err());
         }
         assert_eq!(state.targets, 3 | (64 << 16) | (184 << 32));
         assert_eq!(paint(1, state), Err(QuestRefusal::StageMismatch));
@@ -97,7 +77,7 @@ mod tests {
                 Err(QuestRefusal::StageMismatch)
             );
         }
-        assert!(paint(u16::MAX, base).is_err());
+        assert!(paint(distinct_targets::MAX_TARGETS, base).is_err());
         assert!(paint(targets::TARGET_COUNT, base).is_err());
         assert!(
             paint(

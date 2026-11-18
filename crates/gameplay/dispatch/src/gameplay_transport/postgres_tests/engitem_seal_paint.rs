@@ -1,4 +1,4 @@
-//! Native seal paintings retain custody, replay and revision-fenced reset.
+//! Three distinct native seals retain custody, replay and revision-fenced reset.
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::gameplay_transport::FreshAdmissionAuthority;
@@ -166,10 +166,8 @@ pub(super) async fn exercise(
         .and_then(|n| n.item_index())
         .and_then(|i| i.definition_ref("Item", "oteryn:item.tibia.i7253", "definition-r1"))
         .ok_or("paint reference")?;
-    // TibiaWiki spoiler 17076/1138714, Artful Sabotage: a seal can
-    // contribute again after it returns to its unpainted appearance.
-    let packed = [123_i64, 123 | (123 << 16), 122 | (123 << 16) | (123 << 32)];
-    for (phase, seal) in [SEALS[0], SEALS[0], SEALS[2]].into_iter().enumerate() {
+    let packed = [123_i64, 121 | (123 << 16), 121 | (122 << 16) | (123 << 32)];
+    for (phase, seal) in SEALS.into_iter().enumerate() {
         let target = position(seal)?;
         let binding = source::targets::target(seal).ok_or("native seal")?;
         let key = oteryn_world_bundle::bundle::placement_key(
@@ -186,7 +184,7 @@ pub(super) async fn exercise(
         let map = owner.bundle_map().ok_or("map")?;
         assert_eq!(
             source_appearances(map, target)?,
-            vec![6685, [4737, 4737, 4736][phase], 7178]
+            vec![6685, [4737, 4734, 4736][phase], 7178]
         );
         let mut placement = map.overlay.base().digest().to_vec();
         placement.extend_from_slice(&key.to_be_bytes());
@@ -327,6 +325,34 @@ pub(super) async fn exercise(
                 .appearance_id,
             7178
         );
+        if phase < 2 {
+            // A physical 30-second reset does not erase personal distinct-target credit.
+            let mut repeated = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
+                &[4, 11, 15],
+                &actual,
+            )
+            .map_err(debug)?;
+            if let Some(MapUseTarget::Object(t)) = &mut repeated.use_with_map_item {
+                t.expected_revision = map.facts.object_revision(key);
+            }
+            let bytes = encode_item_use_intent(&repeated).map_err(debug)?;
+            let (next, refused, _) = super::item_craft::exchange(
+                owner,
+                *admitted,
+                admitted.continuity.next_command_id,
+                &bytes,
+                Some(reference),
+            )
+            .await?;
+            *admitted = next;
+            assert_eq!(refused, UseDisposition::Rejected, "same seal after reset");
+            let after = owner
+                .root
+                .read_character_quest_state(owner.character, fence.character_id)
+                .await
+                .map_err(debug)?;
+            assert_eq!(after.tracks(), snapshot.tracks());
+        }
     }
     let snapshot = owner
         .root
@@ -346,7 +372,7 @@ pub(super) async fn exercise(
     assert_eq!(
         counts,
         (3, 1, 0),
-        "three painting quest receipts, one final source-tool BURN"
+        "three distinct quest receipts, one final source-tool BURN"
     );
     let atomic: bool = sqlx::query_scalar(
         "SELECT count(*)=1 AND bool_and(c.xmin=q.xmin) \
