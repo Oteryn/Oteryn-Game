@@ -9,6 +9,7 @@ use crate::gameplay_transport::{
     ComposedFreshAdmission,
     connection::{AdmittedSession, FreshAdmissionAuthority, UseCommand},
 };
+use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestTransition, world_callbacks,
 };
