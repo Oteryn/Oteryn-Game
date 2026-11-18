@@ -1,7 +1,9 @@
 //! Two independent characters use one Channel poison counter and one native corpse.
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult};
-use crate::gameplay_transport::capabilities::SelectedCapabilities;
+use crate::gameplay_transport::{
+    capabilities::SelectedCapabilities, connection::FreshAdmissionAuthority,
+};
 use oteryn_gameplay_quests::quest::{
     world_callbacks::{Callback, Offering, Position},
     wrath_keeper::{CORPSE, CREATURE, POISON_USE, SPAWN, TAIL_HANDOFF},
@@ -68,6 +70,25 @@ pub(super) async fn exercise(
         .active_generation
         .and_then(|generation| generation.native_gameplay())
         .ok_or("native gameplay")?;
+    let second_fence = second.item_fence.ok_or("second item fence")?;
+    let template = crate::durability::starter_grant::StarterTemplate {
+        definition: crate::durability::item_mint::TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: "oteryn:item.tibia.i2854".into(),
+            revision_ref: "definition-r1".into(),
+        },
+        ..crate::durability::starter_grant::StarterTemplate::main()
+    };
+    h.root
+        .grant_starter_items(
+            owner.character,
+            &h.node,
+            &second_fence,
+            &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native),
+            &template,
+        )
+        .await
+        .map_err(debug)?;
     let definition = native
         .item_index()
         .and_then(|index| index.definition_ref("Item", "oteryn:item.tibia.i11364", "definition-r1"))
@@ -82,6 +103,17 @@ pub(super) async fn exercise(
         admitted.item_fence.ok_or("item fence")?,
         &offering,
         71,
+        true,
+    )
+    .await?;
+    input_item(
+        owner,
+        second_fence,
+        &Offering {
+            position: SECOND,
+            ..offering
+        },
+        72,
         true,
     )
     .await?;
@@ -109,10 +141,15 @@ pub(super) async fn exercise(
     .map_err(debug)?;
     for count in 1..=6 {
         owner.clock_origin -= std::time::Duration::from_secs(2);
+        let player = if count == 6 {
+            &mut second
+        } else {
+            &mut *admitted
+        };
         let result = wire(
             owner,
-            admitted,
-            admitted.continuity.next_command_id,
+            player,
+            player.continuity.next_command_id,
             2,
             use_poison.clone(),
         )
@@ -124,7 +161,7 @@ pub(super) async fn exercise(
         );
         assert_eq!(
             super::questpc7_outfit_items::quantity(h, 11364).await?,
-            if count < 6 { 1 } else { 0 }
+            if count < 6 { 2 } else { 1 }
         );
     }
     let keeper = owner
@@ -149,6 +186,15 @@ pub(super) async fn exercise(
         "SELECT count(DISTINCT character_id) FROM game_character_quest_receipts WHERE transition_key=$1"
     ).bind(TAIL_HANDOFF).fetch_one(&h.pool).await?;
     assert_eq!(grants, 2);
+    let final_tracks: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_tracks
+         WHERE (track_key=$1 AND value=8) OR (track_key=$2 AND value=2)",
+    )
+    .bind(oteryn_gameplay_quests::quest::wrath_sleeping_dragon::QUESTLINE)
+    .bind(oteryn_gameplay_quests::quest::wrath_keeper::MISSION)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(final_tracks, 4);
     assert_eq!(super::questpc7_outfit_items::quantity(h, 11367).await?, 2);
     Ok(())
 }
@@ -159,7 +205,7 @@ async fn claim_tail(
     h: &Harness,
     corpse: [u8; 16],
 ) -> TestResult {
-    use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+    use crate::gameplay_transport::connection::UseCommand;
     use crate::gameplay_transport::item_view::ItemKey;
     use oteryn_protocol_oteryn::item_view::ItemHandle;
     let fence = owner
