@@ -448,11 +448,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ) else {
                     return UseDisposition::Rejected;
                 };
-                replacements.push((
-                    *passage,
-                    facts,
-                    passage_definition.replacement_passable.unwrap_or(!close),
-                ));
+                if sphere_machine.is_some() {
+                    let revision = map.facts.object_revision(*passage);
+                    if !map.facts.quest_callback_capacity(*passage, revision, 0) {
+                        return UseDisposition::Exhausted;
+                    }
+                    projection = Some(
+                        crate::map::facts::QuestCallbackProjection::ReadsetTransforms {
+                            entries: vec![(*passage, revision, Some(facts))],
+                            reset: None,
+                        },
+                    );
+                } else {
+                    replacements.push((
+                        *passage,
+                        facts,
+                        passage_definition.replacement_passable.unwrap_or(!close),
+                    ));
+                }
             } else {
                 if tree_reset && map.facts.base_hidden(*passage) {
                     restored_trees.push(p);
@@ -481,6 +494,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 entries.first().map(|entry| entry.key)
             }
+            Some(crate::map::facts::QuestCallbackProjection::ReadsetTransforms {
+                entries, ..
+            }) if sphere_machine.is_some() => entries.first().map(|entry| entry.0),
             _ => None,
         };
         if let Some(target) = projection_target
@@ -723,6 +739,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
                 if source_flame {
                     3
+                } else if sphere_machine.is_some() && projection.is_some() {
+                    8
                 } else {
                     callback.passages.len()
                 },
