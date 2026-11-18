@@ -15,6 +15,7 @@ mod dreamer_carrot;
 mod effects;
 mod encounter;
 mod execute;
+mod ferumbras_cooldown;
 mod goblin_elevator;
 mod ground_stack;
 mod mead;
@@ -1326,6 +1327,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await;
         let entered = self.step_arena_exit(actor, session, entered).await;
         let entered = self
+            .step_ferumbras_seal(permit, actor, session, entered)
+            .await;
+        let entered = self
             .step_dynamic_quest_portal(permit, actor, session, entered)
             .await;
         self.step_quest_trigger(permit, actor, session, origin, entered, Trigger::StepIn)
@@ -1748,7 +1752,9 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
         }) else {
             return false;
         };
-        if map.facts.projected_native_quest_portal(at) {
+        if map.facts.projected_native_quest_portal(at)
+            || ferumbras_cooldown::seal_at(map, at).is_some()
+        {
             return true;
         }
         if !self.callbacks.iter().any(|c| {

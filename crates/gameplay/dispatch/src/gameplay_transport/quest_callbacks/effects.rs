@@ -153,6 +153,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return entered;
         };
+        self.step_qualified_quest_portal(permit, actor, session, entered, to, |map| {
+            map.facts
+                .quest_portal_destination(pos, self.owner_now().get())
+                == Some(to)
+        })
+        .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(super) async fn step_qualified_quest_portal(
+        &self,
+        permit: &SpellLanePermit,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        entered: MovementPositionSnapshot,
+        to: crate::map::overlay::TilePos,
+        current: impl FnOnce(&BundleMap) -> bool,
+    ) -> MovementPositionSnapshot {
+        let Some(map) = self.bundle_map() else {
+            return entered;
+        };
+        let Some(pos) = native(entered.position()) else {
+            return entered;
+        };
         let optional_pvp = self.special_movement_policy(permit, actor, session).await;
         let locks = tokio::time::timeout(std::time::Duration::from_secs(10), async {
             loop {
@@ -179,11 +203,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // The policy lookup awaited outside the owner. A lever/expiry may have
         // removed the pair while it was in flight; never teleport through that stale read.
-        if map
-            .facts
-            .quest_portal_destination(pos, self.owner_now().get())
-            != Some(to)
-        {
+        if !current(map) {
             return entered;
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);

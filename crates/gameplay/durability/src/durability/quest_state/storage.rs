@@ -1,6 +1,34 @@
 use super::*;
 
 impl DurabilityRoot {
+    /// Compare a committed quest timestamp with the database clock in one read.
+    pub async fn quest_cooldown_active(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character: CharacterId,
+        track: &'static str,
+        seconds: i64,
+    ) -> Result<bool> {
+        let recovery = authority.record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let test_clock = self.quest_test_clock_handle();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            let (defeated, now): (Option<i64>, i64) = sqlx::query_as(
+                "SELECT (SELECT value FROM game_character_quest_tracks                 WHERE character_id=encode($1,'hex')::uuid AND track_key=$2),                 floor(extract(epoch FROM statement_timestamp()))::bigint",
+            )
+            .bind(character.as_bytes().as_slice()).bind(track)
+            .fetch_one(&mut *tx).await?;
+            let now = test_clock.and_then(|clock| {
+                let value = clock.load(std::sync::atomic::Ordering::Acquire);
+                (value >= 0).then_some(value)
+            }).unwrap_or(now);
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(defeated.is_some_and(|value| value > 0 && now.saturating_sub(value) < seconds)))
+        })).await?
+    }
+
     /// Historical carried USE is answered only by the immutable consumed-instance
     /// proof and its exact ingress; this never reacquires gameplay authority.
     pub async fn reconcile_quest_carried_use(
