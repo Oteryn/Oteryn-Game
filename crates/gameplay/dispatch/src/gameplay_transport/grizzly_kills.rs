@@ -13,6 +13,7 @@ use super::{
     ComposedFreshAdmission,
     kill_reward::{KillSettlementQueue, PendingKillSettlement, SettleReport, SettleVerdict},
 };
+use crate::durability::quest_state::native_kills::NativeDeathSource;
 use crate::durability::{
     character_progression::{CharacterProgressionError, ExperienceRewardOccurrence},
     quest_state::{QuestCause, QuestTransitionOutcome},
@@ -40,6 +41,7 @@ struct NativeCounterCapture {
     creature: String,
     definition_hash: Option<[u8; 32]>,
     death_area: Option<oteryn_gameplay_quests::quest::authored_bindings::kills::DeathArea>,
+    death_areas: Vec<oteryn_gameplay_quests::quest::authored_bindings::kills::DeathArea>,
     encounter_source: Option<String>,
 }
 
@@ -62,6 +64,7 @@ fn capture_native(
                 creature: counter.creature.into(),
                 definition_hash,
                 death_area: counter.death_area,
+                death_areas: counter.death_areas.to_vec(),
                 encounter_source: counter.encounter_source.map(str::to_owned),
             })
         })
@@ -189,6 +192,27 @@ fn freeze_at(
                     death_position.is_some_and(|position| area.contains(position))
                 })
             {
+                let source = if counter.death_areas.is_empty() {
+                    NativeDeathSource::Party(Arc::clone(&native_source))
+                } else {
+                    let Some([x, y, floor]) = death_position.filter(|position| {
+                        counter
+                            .death_areas
+                            .iter()
+                            .any(|area| area.contains(*position))
+                    }) else {
+                        continue;
+                    };
+                    let (Ok(x), Ok(y), Ok(floor)) =
+                        (u16::try_from(x), u16::try_from(y), i8::try_from(-floor))
+                    else {
+                        continue;
+                    };
+                    NativeDeathSource::PositionedParty {
+                        source: Arc::clone(&native_source),
+                        position: (x, y, floor),
+                    }
+                };
                 native.push(super::quest_kills::Recipient {
                     actor: snapshot.actor,
                     session: snapshot.session,
@@ -199,10 +223,7 @@ fn freeze_at(
                         definition_hash: counter.definition_hash,
                         creature: creature.into(),
                         observed_revision: snapshot.observed_revision,
-                        source:
-                            crate::durability::quest_state::native_kills::NativeDeathSource::Party(
-                                Arc::clone(&native_source),
-                            ),
+                        source,
                     },
                 });
             }
@@ -416,7 +437,6 @@ pub(super) fn capture(
                 ) {
                     return false;
                 }
-                use crate::durability::quest_state::native_kills::NativeDeathSource;
                 let (NativeDeathSource::Party(source), Some(position)) =
                     (&recipient.death.source, origin)
                 else {

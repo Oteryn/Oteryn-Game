@@ -137,6 +137,7 @@ mod tests {
     fn counter() -> native_kills::CounterRef<'static> {
         native_kills::CounterRef {
             death_area: None,
+            death_areas: &[],
             encounter_source: None,
             transition: "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragon",
             creature: "oteryn:creature.dragon",

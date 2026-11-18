@@ -67,6 +67,7 @@ pub(super) enum Case {
     CharmParry,
     T94,
     CharmSecondary,
+    DhuntDeathAreas,
 }
 impl Case {
     fn forge(self) -> bool {
@@ -239,7 +240,7 @@ async fn scenario(
     let task_board_case = case;
     let t94_case = matches!(case, Case::T94);
     let case = match case {
-        Case::T94 => Case::Shared,
+        Case::T94 | Case::DhuntDeathAreas => Case::Shared,
         Case::CharmCarnage
         | Case::TaskBoardParty
         | Case::TaskBoardUnbound
@@ -524,6 +525,9 @@ async fn scenario(
     }
     .build();
     owner.active_generation = Some(active);
+    if matches!(task_board_case, Case::DhuntDeathAreas) {
+        super::dhunt_death_areas::install(&mut owner)?;
+    }
     owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&room));
     owner.clock_origin = std::time::Instant::now()
         .checked_sub(Duration::from_secs(60))
@@ -575,6 +579,11 @@ async fn scenario(
                 .is_some()
         );
         assert!(states.load_owned_build(&runtime, actor, session, &build));
+    }
+    if matches!(task_board_case, Case::DhuntDeathAreas) {
+        for (_, session) in &players {
+            owner.refresh_quest_session(*session, true).await;
+        }
     }
     for (actor, session) in &players {
         assert!(owner.refresh_source_party_presence(*actor, *session).await);
@@ -730,6 +739,9 @@ async fn scenario(
         matches!(owner.states.chat.next(players[0].1),Some(oteryn_protocol_oteryn::chat::ChatLine::Private{speaker_name,text})
         if speaker_name=="Game" && text.starts_with("Party spell"))
     );
+    if matches!(task_board_case, Case::DhuntDeathAreas) {
+        return super::dhunt_death_areas::exercise(&owner, h, &players).await;
+    }
     if matches!(task_board_case, Case::TaskBoardOrdered) {
         return task_board::qualify_ordered_deaths(&mut owner, h, &players).await;
     }

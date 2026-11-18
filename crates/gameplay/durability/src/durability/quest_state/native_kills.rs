@@ -53,6 +53,11 @@ impl NativeQuestDeath {
                     .is_some_and(|counter| {
                         counter.creature == self.creature
                             && counter.encounter_source.is_none()
+                            && (counter.death_areas.is_empty() || position.is_some_and(|(x, y, floor)| {
+                                counter.death_areas.iter().any(|area| area.contains([
+                                    i32::from(x), i32::from(y), -i32::from(floor),
+                                ]))
+                            }))
                             && if oteryn_gameplay_quests::quest::native_kills::counter(
                                 &self.transition,
                             )

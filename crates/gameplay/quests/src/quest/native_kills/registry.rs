@@ -14,6 +14,7 @@ pub struct CounterRef<'a> {
     pub minimum: i64,
     pub maximum: i64,
     pub death_area: Option<crate::quest::authored_bindings::kills::DeathArea>,
+    pub death_areas: &'a [crate::quest::authored_bindings::kills::DeathArea],
     pub encounter_source: Option<&'a str>,
 }
 
@@ -29,6 +30,7 @@ impl Counter {
             minimum: 0,
             maximum: self.maximum,
             death_area: None,
+            death_areas: &[],
             encounter_source: None,
         }
     }

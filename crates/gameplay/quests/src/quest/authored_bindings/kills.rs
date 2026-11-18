@@ -42,6 +42,9 @@ pub struct KillCounter {
     pub advance_gate_to: Option<i64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub death_area: Option<DeathArea>,
+    /// Any of these disjoint or overlapping regions can qualify a single death.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub death_areas: Vec<DeathArea>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub world_change: Option<String>,
     /// Exact native encounter callback; absent for ordinary party hunts.
@@ -61,6 +64,10 @@ impl KillCounter {
             || self.track == self.gate
             || self.minimum >= self.maximum
             || self.death_area.is_some_and(|area| !area.valid())
+            || self.death_areas.len() > 8
+            || (!self.death_areas.is_empty()
+                && (self.death_area.is_some() || self.encounter_source.is_some()))
+            || self.death_areas.iter().any(|area| !area.valid())
             || count
                 .is_none_or(|track| track.minimum > self.minimum || track.maximum < self.maximum)
             || gate.is_none_or(|track| {
@@ -148,6 +155,7 @@ impl KillCounter {
             minimum: self.minimum,
             maximum: self.maximum,
             death_area: self.death_area,
+            death_areas: &self.death_areas,
             encounter_source: self.encounter_source.as_deref(),
         }
     }
@@ -190,6 +198,27 @@ mod tests {
         assert_eq!(
             catalogue.evaluate(transition, &state, 0),
             Err(QuestRefusal::StageMismatch)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn disjoint_death_areas_are_part_of_the_definition_hash() -> Result<(), String> {
+        let mut document = serde_json::to_value(binding()?).map_err(|e| e.to_string())?;
+        let base = QuestStateCatalogue::empty("kill-area-fixture").ok_or("revision")?;
+        let unrestricted = binding()?.attach(&base)?;
+        document["quests"][0]["stages"][1]["trigger"]["counter"]["death_areas"] = serde_json::json!([
+            {"minimum": [33061, 32646, 6], "maximum": [33081, 32665, 6]},
+            {"minimum": [33027, 32634, 7], "maximum": [33081, 32658, 7]}
+        ]);
+        let bound = super::super::Bindings::parse(
+            &serde_json::to_vec(&document).map_err(|e| e.to_string())?,
+        )?;
+        let catalogue = bound.attach(&base)?;
+        let quest = &bound.quests[0].quest;
+        assert_ne!(
+            unrestricted.definition_hash(quest),
+            catalogue.definition_hash(quest)
         );
         Ok(())
     }
