@@ -6,7 +6,7 @@ use crate::foundation::{
 use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 use std::sync::Mutex;
 
 mod crystal_circuit;
@@ -92,7 +92,7 @@ pub(super) struct ActivePhase {
 #[derive(Default, Debug)]
 pub(super) struct Registry {
     pub(super) active: Mutex<Vec<ActivePhase>>,
-    projected_deaths: Mutex<BTreeSet<ExactActorRef>>,
+    projected_deaths: Mutex<BTreeMap<u32, ExactActorRef>>,
 }
 
 impl Registry {
@@ -216,7 +216,7 @@ impl Registry {
             return;
         };
         if !active.iter().any(|phase| phase.fight.contains(actor))
-            && !projected.contains(&actor)
+            && projected.get(&actor.actor_local_id()) != Some(&actor)
             && let Some(creature) = creature
             && let Ok((_, at)) = runtime.borrow_combat_death().projected_death(actor)
         {
@@ -248,9 +248,8 @@ impl Registry {
                 if let Fight::Replacements(fight) = fight {
                     if first {
                         // Once a slot generation retires, its exact ref cannot be projected again.
-                        projected
-                            .retain(|previous| runtime.encounter_actor_index(*previous).is_ok());
-                        projected.insert(actor);
+                        // Keep at most one exact observation per physical carrier slot.
+                        projected.insert(actor.actor_local_id(), actor);
                     }
                     fight.project_portal(cells, now_us);
                     if let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(
