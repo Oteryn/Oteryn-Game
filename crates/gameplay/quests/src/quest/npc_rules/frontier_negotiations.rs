@@ -133,3 +133,28 @@ pub(super) fn pre_tree_definition(
         defaults: BTreeMap::new(),
     }))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::BTreeSet;
+
+    #[test]
+    fn frontier_keyword_draws_cover_every_independent_combination() {
+        let previous = BTreeMap::from([(KEYWORDS[0].0.to_owned(), 2)]);
+        let combinations = (0..64)
+            .map(|entropy| {
+                assign_keywords(entropy, &previous)
+                    .zip(KEYWORDS)
+                    .map(|(change, (key, options))| {
+                        assert_eq!(change.key, key);
+                        assert_eq!(change.before, previous.get(key).copied().unwrap_or(0));
+                        assert!((1..=i64::from(options)).contains(&change.after));
+                        change.after
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .collect::<BTreeSet<_>>();
+        assert_eq!(combinations.len(), 64);
+    }
+}
