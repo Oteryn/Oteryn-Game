@@ -46,9 +46,10 @@ fn phantom_army_step_preserves_main_era_quest_save() -> TestResult {
     assert!(!admin.is_empty());
     super::kill_reward_e2e::scenario_thread::run("phantom-army-main-era-step", || {
         // Crystal movements_teleport.lua:8-25 checks teleportAccess == 1 in both directions.
-        for (suffix, from, to) in [
-            (1, (33356, 31124, -7), (33261, 31077, -8)),
-            (2, (33261, 31076, -8), (33356, 31126, -7)),
+        // Both retained B3 placements select the object at top-level ordinal 1.
+        for (suffix, appearance, from, to) in [
+            (1, 1959, (33356, 31124, -7), (33261, 31077, -8)),
+            (2, 775, (33261, 31076, -8), (33356, 31126, -7)),
         ] {
             let passage = callback(&format!(
                 "children-of-the-revolution-battle-passage-{suffix}"
@@ -60,8 +61,8 @@ fn phantom_army_step_preserves_main_era_quest_save() -> TestResult {
                 return Err("expected a single Phantom Army access guard".into());
             };
             assert_eq!((guard.minimum, guard.maximum), (1, 1));
-            literal_uses::exercise(passage.clone(), 100, 0, Some(0), true)?;
-            literal_uses::exercise(passage, 100, 0, Some(1), true)?;
+            literal_uses::exercise(passage.clone(), appearance, 1, Some(0), true)?;
+            literal_uses::exercise(passage, appearance, 1, Some(1), true)?;
         }
         Ok(())
     })
