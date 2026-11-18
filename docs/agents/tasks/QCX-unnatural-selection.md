@@ -15,7 +15,10 @@ The canonical definition has six main journal missions and no quest-owned
 claim. The base has ten live world callbacks, including nine dance tiles
 and one Ray of Light crystal. The quest has no records in
 `world-callbacks-held`. The Tome claim and Cael offer are independently owned
-records used by this quest.
+records used by this quest. A census of 1,209 native placement regions and
+31,120 sectors found zero occurrences of UIDs 1052, 6293 and 9259 and AID
+12333. The native crystal, Tome chest and nine dance stacks are present at
+their donor coordinates.
 
 | Part | Global and Crystal | Baseline and disposition |
 | --- | --- | --- |
@@ -26,9 +29,9 @@ records used by this quest.
 | M4 Bits and Pieces | Ulala takes five Orc Teeth (10196), five Minotaur Leather (5878) and five Lizard Leather (5876). | Source and progress tracks exist. The live offer and atomic 5/5/5 turn-in are missing. The material profiles exist on main. |
 | M5 Ray of Light | Use the red Large Crystal and report to Ulala. Crystal sets Mission05 1 to 2 and Questline to 11, with a holy-area effect and spoken success text. | The existing callback targeted UID 1052, which is absent on the retained red crystal. Crystal's exact 7807 object exists at (32982, 31431, -1), top-level ordinal 2, adjacent to the spoiler marker. The generated native counterpart binds that object and retains the legacy UID callback under its original identity. The briefing, Ulala report and exact VFX/speech still need qualification. |
 | M5 Tome | One Tome of Knowledge (10217) from the chest one floor below and north of the crystal. Crystal has chest appearance 2472, UID 6293, at (32978, 31427, -2). | The physical chest, one-shot reward claim and native callback already exist under **Tomes of Knowledge**. A second claim would duplicate the reward. |
-| M6 Firewater Burn | Ulala sends the player back to Lazaran. He takes one Pot of Beer (3465, beer subtype 3) for one Tribal Crest (10198). | The Lazaran and Ulala sources and quest tracks exist. The live briefing and subtype-sensitive exchange are absent. The crest now has native item facts, while the pot lacks them. |
+| M6 Firewater Burn | Ulala sends the player back to Lazaran. He takes one Pot of Beer (3465, beer subtype 3) for one Tribal Crest (10198). | The Lazaran and Ulala sources and quest tracks exist. Crystal reuses the skull-tour reply at this hand-in, where the Global transcript gives a party-specific reply. The live briefing and subtype-sensitive exchange are absent. The crest now has native item facts, while the pot lacks them. |
 | Warmaster addon | Cael trades one Tribal Crest for Warmaster addon 2 in Crystal. Crystal checks the base outfit and carried crest at the offer and checks for an already-owned addon on confirmation. | The live Cael callback consumes 10198 ×1 and grants addon 2. The offer uses New Frontier questline 27 and its addon track where Crystal reads outfit ownership and carried items. The existing Warmaster wardrobe writes questline 27. The wiki excerpt does not specify the full independent Cael eligibility rules. |
-| Daily XP | Colour Me Good pays 500 XP. Magic Mushrooms pays 50 XP per brown mushroom up to ten (500 XP) and takes only those mushrooms. Two Orcs with One Stone pays 10 XP per orc. | No Unnatural Selection daily offer, task state, harvest or XP exchange was found. The pinned Lazaran script has no daily branch. Other quests' XP owners and kill objectives do not establish this quest's repeat eligibility, reward formula or target list. |
+| Daily XP | Colour Me Good pays 500 XP. The stated possible requests are a Bucket of Blood, Orange Star, 100 Blueberries, Goat Grass and Some Leaves, with additional colours left open. Magic Mushrooms pays 50 XP per brown mushroom up to ten (500 XP) and takes only those mushrooms. Two Orcs with One Stone pays 10 XP per orc. | No Unnatural Selection daily offer, task state, harvest or XP exchange was found. The pinned Lazaran script has no daily branch. Other quests' XP owners and kill objectives do not establish this quest's repeat eligibility, reward formula or target list. |
 | Access and placements | The quest requires Zao access and uses the M1 and M5 quest doors. The spoiler gives Lazaran and Ulala map markers. | The definition retains the two door references. Neither quest NPC is in the production NPC placement scope. Crystal places Lazaran at (32992, 31471, 3) and Ulala at (32995, 31469, 1). Both positions have retained native tiles. Cael is already in the placement scope. No quest-wide new area unlock is specified in the wiki excerpt. |
 
 Crystal line witnesses for the table:
@@ -43,7 +46,8 @@ Crystal line witnesses for the table:
 ```text
 BLOCKER M1 bone pile and skull custody missing UID9259 placement and native item 10159 data-global/scripts/actions/other/others/quest_system2.lua:119
 BLOCKER M2 skull tour explicit carried-skull use requires admitted item 10159 and Global target geometry data-global/scripts/quests/unnatural_selection/movements_mission2_all_around_the_world.lua:73
-BLOCKER M3 plant hints and M5 crystal VFX stage-dependent presentation and source talk channel data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:49
+BLOCKER M3 plant hints stage-dependent presentation data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:49
+BLOCKER M5 crystal feedback holy-area VFX and source speech channel data-global/scripts/quests/unnatural_selection/actions_mission5_ray_of_light.lua:6
 BLOCKER M6 Tribal Crest beer-subtype intake lacks a native pot profile data-global/npc/lazaran.lua:153
 ```
 
@@ -57,3 +61,11 @@ PARTIAL: production Lazaran and Ulala placement, sealed door and skull route,
 Ulala briefings and materials exchange, dance presentation and live map
 collision qualification, M5 report and presentation, M6 beer exchange and
 daily tasks. The entry dispatch test uses a test NPC placement.
+
+## Verification
+
+- PG via shard (pgsplit build files applied on `a323a43012e17f791a74abe2bddacc7dfca737eb`). PostgreSQL 18.6 ran two cases. Skulled passed in 31.82 seconds and Ray of Light passed in 30.27 seconds.
+- Skulled failed before admission in 28.17 seconds when Lazaran's final confirmation returned no quest reply. Ray of Light failed before the native selector in 27.99 seconds with `NothingToUse` from the retained B3 crystal. The passing crystal case checks both durable stage writes.
+- The same filter without `OTERYN_TEST_POSTGRES_ADMIN_URL` returned `Ok` in both cases in 0.00 seconds. Those cases exercise the route-less guard.
+- Quest authoring passed 44 checks, including 27 Python test cases. The reward and native scene generators reproduced the committed output. World pin refresh reproduced the existing digest and pin-check verified the one world. Formatting passed.
+- Dispatch library Clippy passed with all features and `-D warnings`.
