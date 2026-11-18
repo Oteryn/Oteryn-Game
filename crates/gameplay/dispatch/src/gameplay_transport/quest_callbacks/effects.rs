@@ -286,7 +286,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::super::pvp_live::pz_blocked(&states, actor, session, self.owner_now());
-        let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+        // Crystal 201189f8, FallenDeath:10-13 binds a native Teleport corpse.
+        // Its addThing path (src/game/movement/teleport.cpp:97-100) places
+        // players on the shared landing even while another player is there.
+        let Ok(proof) = crate::map::floor::prepare_quest_encounter_landing(
             &runtime,
             &self.movement_cells,
             actor,
@@ -295,6 +298,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             to,
             blocked,
             &closed,
+            corpse.is_some(),
         ) else {
             return entered;
         };

@@ -591,7 +591,6 @@ async fn fallen_portals(
             .position(),
         local(FINALE)
     );
-    super::questpc7_ferumbras::step(owner, admitted, StepDirection::East).await?;
 
     for _ in 0..4 {
         let (outcome, pace) = owner
@@ -603,10 +602,16 @@ async fn fallen_portals(
         }
     }
     let mut runtime = owner.runtime.lock().await;
-    assert_eq!(
-        runtime.read_actor_position(peer).map_err(debug)?.position(),
-        local(FINALE)
-    );
+    // Crystal teleport.cpp:97-100 moves both creatures directly to the same tile.
+    for actor in [primary, peer] {
+        assert_eq!(
+            runtime
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            local(FINALE)
+        );
+    }
     runtime.retain_live_corpse_items(&[]).map_err(debug)?;
     for at in CHALLENGERS {
         assert_eq!(runtime.quest_corpse_portal_at(local(at)), None);
