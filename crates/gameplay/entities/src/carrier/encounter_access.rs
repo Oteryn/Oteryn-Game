@@ -190,6 +190,23 @@ impl ChannelRuntimeV1 {
             .map(|_| ())
     }
 
+    /// Validate phase binding against staged actors while retaining the Channel owner.
+    pub fn preflight_quest_encounter_with_phase<P: SourceStepCommitProof, T>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        bind: impl FnOnce(&mut Self, &[ExactActorRef]) -> Result<T, CarrierError>,
+    ) -> Result<(), CarrierError> {
+        self.quest_encounter_with_phase(
+            players,
+            monsters,
+            |runtime, actors, _| bind(runtime, actors),
+            || true,
+            false,
+        )
+        .map(|_| ())
+    }
+
     pub fn commit_quest_encounter_entry_with_roster<P: SourceStepCommitProof>(
         &mut self,
         players: Vec<P>,

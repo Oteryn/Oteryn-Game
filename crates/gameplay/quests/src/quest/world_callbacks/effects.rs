@@ -308,7 +308,7 @@ pub struct Encounter {
     /// A value-free source switch schedules native monsters without moving a party.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub timing: Option<EncounterTiming>,
-    /// A personal STEP room spawns immediately and ejects its entrant at the deadline.
+    /// An immediate room admission ejects its roster at the deadline.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub room_timeout: Option<EncounterRoomTimeout>,
     /// Source phases run on the shared encounter owner after atomic party admission.

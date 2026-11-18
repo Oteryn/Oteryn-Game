@@ -332,14 +332,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
         }
-        if preflight {
+        if preflight && preview_party.is_none() {
             return if runtime
                 .preflight_quest_encounter_entry(proofs, &monsters)
                 .is_ok()
             {
-                if let Some(preview) = preview_party {
-                    preview.extend(players.iter().map(|&(actor, session, _)| (actor, session)));
-                }
                 UseDisposition::Committed
             } else {
                 UseDisposition::Occupied
@@ -401,34 +398,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let Ok((snapshots, (phase, actors, roster))) = runtime.commit_quest_encounter_with_phase(
-            proofs,
-            &monsters,
-            |runtime, actors| {
-                let roster = if prepared.is_some() {
-                    Some(oteryn_gameplay_entities::carrier::encounter_access::EncounterDefenders::from_admission(
+        let bind = |runtime: &mut ChannelRuntimeV1, actors: &[ExactActorRef]| {
+            let roster = if prepared.is_some() {
+                Some(oteryn_gameplay_entities::carrier::encounter_access::EncounterDefenders::from_admission(
                         party.iter().map(|(actor, _)| *actor).collect(), actors.to_vec(),
                     )?)
-                } else { None };
-                credits
-                    .map(|credits| {
-                        super::super::encounter_phases::bind(
-                            runtime,
-                            callback,
-                            key,
-                            actors,
-                            &party,
-                            credits,
-                            self.movement_cells().clone(),
-                        )
-                    })
-                    .transpose().map(|phase| (phase, actors.to_vec(), roster))
-            },
-            || {
+            } else {
+                None
+            };
+            credits
+                .map(|credits| {
+                    super::super::encounter_phases::bind(
+                        runtime,
+                        callback,
+                        key,
+                        actors,
+                        &party,
+                        credits,
+                        self.movement_cells().clone(),
+                    )
+                })
+                .transpose()
+                .map(|phase| (phase, actors.to_vec(), roster))
+        };
+        if let Some(preview) = preview_party {
+            if !map.facts.quest_callback_capacity(key, expected_revision, 0)
+                || runtime
+                    .preflight_quest_encounter_with_phase(proofs, &monsters, bind)
+                    .is_err()
+            {
+                return UseDisposition::Rejected;
+            }
+            preview.extend(party);
+            return UseDisposition::Committed;
+        }
+        let Ok((snapshots, (phase, actors, roster))) =
+            runtime.commit_quest_encounter_with_phase(proofs, &monsters, bind, || {
                 map.facts
                     .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
-            },
-        ) else {
+            })
+        else {
             return UseDisposition::Rejected;
         };
         if let (Some(capture), Some(prepared), Some(roster)) = (capture.as_mut(), prepared, roster)
