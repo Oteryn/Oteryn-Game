@@ -491,11 +491,8 @@ pub fn encode_npc_trade_window_for(window: &NpcTradeWindow, details: bool) -> Wi
         push_message_field(&mut output, 3, &encode_offer(offer)?);
     }
     if details {
-        if !window.details.is_empty() && window.details.len() != window.offers.len() {
-            return malformed();
-        }
+        check_quote_details(window)?;
         for detail in &window.details {
-            check_quote_detail(detail)?;
             let mut body = Vec::new();
             push_message_field(&mut body, 1, detail.name.as_bytes());
             push_varint_field(&mut body, 2, u64::from(detail.maximum_quantity));
@@ -505,13 +502,18 @@ pub fn encode_npc_trade_window_for(window: &NpcTradeWindow, details: bool) -> Wi
     Ok(output)
 }
 
-fn check_quote_detail(detail: &crate::trade_details::NpcQuoteDetails) -> WireResult<()> {
-    if detail.name.is_empty()
-        || detail.name.len() > 128
-        || detail.name.contains('\0')
-        || detail.maximum_quantity > 10_000
-    {
+fn check_quote_details(window: &NpcTradeWindow) -> WireResult<()> {
+    if !window.details.is_empty() && window.details.len() != window.offers.len() {
         return malformed();
+    }
+    for (offer, detail) in window.offers.iter().zip(&window.details) {
+        if detail.name.is_empty()
+            || detail.name.len() > 128
+            || detail.name.contains('\0')
+            || detail.maximum_quantity.saturating_mul(offer.count) > 10_000
+        {
+            return malformed();
+        }
     }
     Ok(())
 }
@@ -567,7 +569,6 @@ pub fn decode_npc_trade_window_for(
                     name: name.ok_or(NpcServiceWireError::Malformed)?,
                     maximum_quantity: maximum.unwrap_or_default(),
                 };
-                check_quote_detail(&detail)?;
                 details.push(detail);
                 Ok(())
             }
@@ -584,9 +585,7 @@ pub fn decode_npc_trade_window_for(
         offers,
     };
     check_window(&window)?;
-    if !window.details.is_empty() && window.details.len() != window.offers.len() {
-        return malformed();
-    }
+    check_quote_details(&window)?;
     Ok(window)
 }
 

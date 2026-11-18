@@ -544,12 +544,17 @@ fn scenario_with_premium(
         } else {
             Vec::new()
         };
+        let page_fixture_start = 5;
+        if mode == Mode::ManualSort {
+            deps.initialize(&owner).await;
+        }
+        let mut first_page_item = None;
         let seeded: u32 = if mode == Mode::List {
             5
         } else if retrieve {
             22
         } else if mode == Mode::ManualSort {
-            4
+            page_fixture_start + oteryn_gameplay_items::depot::DEPOT_PAGE_ENTRIES
         } else if stash || ground_container || mail {
             3
         } else {
@@ -669,14 +674,41 @@ fn scenario_with_premium(
                 .await
                 .map_err(debug)?;
             drop(permit);
-            if ordinal > 0 {
+            if mode == Mode::ManualSort && ordinal >= page_fixture_start {
+                let slot = if ordinal == page_fixture_start {
+                    first_page_item = Some(backpack);
+                    None
+                } else if ordinal == page_fixture_start + 1
+                    && backpack > first_page_item.ok_or("first page fixture item")?
+                {
+                    // Retrieval takes the lowest UUID. Keep the oldest entry
+                    // (the sole page-1 item) above at least one other UUID.
+                    Some(1)
+                } else {
+                    None
+                };
+                manual_sort_cases::deposit_page_fixture(
+                    &owner,
+                    deps.actor,
+                    UseCommand {
+                        game_session_id: session,
+                        command_id: 1_000 + u64::from(ordinal),
+                        item_fence: Some(fence),
+                    },
+                    backpack,
+                    slot,
+                )
+                .await?;
+            } else if ordinal > 0 {
                 stacks.push(backpack);
             }
             if ordinal == 1 {
                 carried = Some(backpack);
             }
         }
-        deps.initialize(&owner).await;
+        if mode != Mode::ManualSort {
+            deps.initialize(&owner).await;
+        }
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);

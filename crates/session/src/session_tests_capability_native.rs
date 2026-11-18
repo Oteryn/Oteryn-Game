@@ -654,6 +654,11 @@ fn stash_reply_mirrored_into_domain_27_is_applied_not_rejected() -> Result<(), B
 #[test]
 fn npc_quote_details_deliver_large_windows_and_reject_overlimit_quantities() -> Result<(), BoxError>
 {
+    npc_quote_boundary(1, 10_000, [0x90, 0x4e])?;
+    npc_quote_boundary(2, 5_000, [0x88, 0x27])
+}
+
+fn npc_quote_boundary(count: u32, maximum_quantity: u32, boundary: [u8; 2]) -> Result<(), BoxError> {
     block_on(async {
         use oteryn_protocol_oteryn::{npc_service, trade_details::NpcQuoteDetails};
         let capabilities = &[3, 4, 6, 501];
@@ -683,7 +688,7 @@ fn npc_quote_details_deliver_large_windows_and_reject_overlimit_quantities() -> 
                 npc_service::NpcOffer {
                     item_definition_ref: 5,
                     side: NpcTradeSide::Buy,
-                    count: 1,
+                    count,
                     unit_price: 12,
                 };
                 200
@@ -691,7 +696,7 @@ fn npc_quote_details_deliver_large_windows_and_reject_overlimit_quantities() -> 
             details: vec![
                 NpcQuoteDetails {
                     name: "a".repeat(128),
-                    maximum_quantity: 10_000
+                    maximum_quantity
                 };
                 200
             ],
@@ -705,8 +710,8 @@ fn npc_quote_details_deliver_large_windows_and_reject_overlimit_quantities() -> 
             SessionEvent::NpcTradeWindow(delta) if delta.value == window
         ));
         let quantity = bytes.len() - 2;
-        assert_eq!(&bytes[quantity..], &[0x90, 0x4e]);
-        bytes[quantity] = 0x91;
+        assert_eq!(&bytes[quantity..], &boundary);
+        bytes[quantity] += 1;
         let frame = encode_state_delta(1, 42, 8, 2, 3, 1, &bytes)?;
         assert!(matches!(
             session.apply_state_delta(42, decode_wire_envelope(&frame)?.payload()),

@@ -268,8 +268,8 @@ fn admission_rejects_each_missing_extension_prerequisite() -> Result<(), BoxErro
             (507, &[9][..], &[9][..]),
             (508, &[4, 6][..], &[4, 6][..]),
             (509, &[6][..], &[6][..]),
-            (510, &[4, 12, 14][..], &[14][..]),
-            (511, &[4, 115][..], &[4, 115][..]),
+            (510, &[4, 6, 12, 14][..], &[14][..]),
+            (511, &[4, 6, 115][..], &[4, 115][..]),
         ] {
             let mut advertised = complete.to_vec();
             advertised.push(extension);

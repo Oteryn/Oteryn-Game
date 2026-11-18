@@ -952,6 +952,28 @@ fn npc_quote_maximum_respects_bulk_transaction_limit() {
             Err(NpcServiceWireError::Malformed)
         )
     );
+    window.offers[0].count = 2;
+    window.details[0].maximum_quantity = 5_000;
+    let bytes = encode_npc_trade_window_for(&window, true).expect("multi-unit bulk quote");
+    assert_eq!(
+        decode_npc_trade_window_for(&bytes, true),
+        Ok(window.clone())
+    );
+    let mut invalid = bytes;
+    let quantity = invalid.len() - 2;
+    assert_eq!(&invalid[quantity..], &[0x88, 0x27]);
+    invalid[quantity] = 0x89;
+    window.details[0].maximum_quantity = 5_001;
+    assert_eq!(
+        (
+            encode_npc_trade_window_for(&window, true),
+            decode_npc_trade_window_for(&invalid, true)
+        ),
+        (
+            Err(NpcServiceWireError::Malformed),
+            Err(NpcServiceWireError::Malformed)
+        )
+    );
 }
 
 #[test]

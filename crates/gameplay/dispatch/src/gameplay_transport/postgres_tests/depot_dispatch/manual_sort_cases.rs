@@ -5,12 +5,15 @@
 use super::*;
 use oteryn_protocol_oteryn::item_view::ItemHandle;
 
-/// Box 17's items, newest first.
-async fn order(pool: &sqlx::PgPool) -> TestResult<Vec<String>> {
+const PAGE_FIXTURE_BOX: u8 = 16;
+
+/// Items in display order.
+async fn order(pool: &sqlx::PgPool, box_number: u8) -> TestResult<Vec<String>> {
     Ok(sqlx::query_scalar(
         "SELECT item_instance_id::text FROM game_item_character_depot_locations \
-         WHERE town_id=0 AND box_number=17 ORDER BY ordinal DESC",
+         WHERE town_id=0 AND box_number=$1 ORDER BY ordinal DESC",
     )
+    .bind(i16::from(box_number))
     .fetch_all(pool)
     .await?)
 }
@@ -66,19 +69,19 @@ pub(super) async fn exercise(
         )
     };
     assert_eq!(outcome(101, a_handle, a, None).await?, DepotOutcome::Moved);
-    assert_eq!(order(pool).await?, vec![text(a)]);
+    assert_eq!(order(pool, 17).await?, vec![text(a)]);
     // A slot past the last entry places the deposit last.
     assert_eq!(
         outcome(102, b_handle, b, Some(5)).await?,
         DepotOutcome::Moved
     );
-    assert_eq!(order(pool).await?, vec![text(a), text(b)]);
+    assert_eq!(order(pool, 17).await?, vec![text(a), text(b)]);
     // The third deposit takes slot 1, between the earlier two.
     assert_eq!(
         outcome(103, c_handle, c, Some(1)).await?,
         DepotOutcome::Moved
     );
-    assert_eq!(order(pool).await?, vec![text(a), text(c), text(b)]);
+    assert_eq!(order(pool, 17).await?, vec![text(a), text(c), text(b)]);
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_item_container_sort_receipts \
          WHERE permutation @> '[{\"depot\":{\"town\":0,\"box\":17}}]'",
@@ -98,7 +101,7 @@ pub(super) async fn exercise(
         outcome(103, c_handle, c, Some(0)).await?,
         DepotOutcome::Rejected
     );
-    assert_eq!(order(pool).await?, vec![text(a), text(c), text(b)]);
+    assert_eq!(order(pool, 17).await?, vec![text(a), text(c), text(b)]);
     // The receipt triggers admit no ordinal change outside a current depot move.
     let forged = sqlx::query(
         "UPDATE game_item_character_depot_locations SET ordinal=ordinal \
@@ -111,6 +114,32 @@ pub(super) async fn exercise(
         forged.is_err(),
         "an ordinal update without its receipt is refused"
     );
+    Ok(())
+}
+
+pub(super) async fn deposit_page_fixture(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    command: UseCommand,
+    item: [u8; 16],
+    slot: Option<u32>,
+) -> TestResult {
+    let moved = owner
+        .depot_at(
+            actor,
+            command,
+            DepotIntent {
+                town: Some(0),
+                box_number: PAGE_FIXTURE_BOX,
+                page: 0,
+                action: DepotAction::Deposit(ItemHandle::MIN),
+            },
+            slot,
+            Some(ItemKey::Instance(item)),
+        )
+        .await
+        .ok_or("page fixture deposit")?;
+    assert_eq!(moved.reply.outcome, DepotOutcome::Moved);
     Ok(())
 }
 
@@ -166,6 +195,7 @@ pub(super) async fn stale_withdrawal(
         text(stacks[1].1),
         text(added),
     ];
+    let search_session = admitted;
     tokio::time::timeout(
         std::time::Duration::from_secs(30),
         exchange(owner, &mut admitted, async |client| {
@@ -188,7 +218,7 @@ pub(super) async fn stale_withdrawal(
             )
             .await?;
             assert_eq!(read_reply(client, 2).await?.outcome, DepotOutcome::Moved);
-            assert_eq!(order(pool).await?, reordered);
+            assert_eq!(order(pool, 17).await?, reordered);
             assert_eq!(storage_ordinal(added).await?, previous_ordinal);
             send(
                 client,
@@ -201,7 +231,7 @@ pub(super) async fn stale_withdrawal(
             .await?;
             let stale = read_reply(client, 3).await?;
             assert_eq!(stale.outcome, DepotOutcome::Stale);
-            assert_eq!(order(pool).await?, reordered);
+            assert_eq!(order(pool, 17).await?, reordered);
             let current = stale.entries.last().ok_or("the added entry")?.ordinal;
             send(
                 client,
@@ -213,9 +243,58 @@ pub(super) async fn stale_withdrawal(
             )
             .await?;
             assert_eq!(read_reply(client, 4).await?.outcome, DepotOutcome::Moved);
-            assert_eq!(order(pool).await?, reordered[..3]);
-            Ok(())
+            assert_eq!(order(pool, 17).await?, reordered[..3]);
+            stale_withdrawal_after_search(owner, actor, search_session, client, pool).await
         }),
     )
     .await?
+}
+
+async fn stale_withdrawal_after_search(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+    client: &mut tokio::io::DuplexStream,
+    pool: &sqlx::PgPool,
+) -> TestResult {
+    use super::write_text_depot_session::{read_reply, send};
+    use oteryn_gameplay_items::depot::DEPOT_PAGE_ENTRIES;
+    use oteryn_protocol_oteryn::depot_search::{Outcome, Request};
+
+    let browse = DepotIntent {
+        town: Some(0),
+        box_number: PAGE_FIXTURE_BOX,
+        page: 1,
+        action: DepotAction::Browse,
+    };
+    let before = order(pool, PAGE_FIXTURE_BOX).await?;
+    let page_size = usize::try_from(DEPOT_PAGE_ENTRIES)?;
+    assert_eq!(before.len(), page_size + 1);
+    let target = &before[page_size];
+    send(client, 5, browse).await?;
+    let page = read_reply(client, 5).await?;
+    assert_eq!(page.outcome, DepotOutcome::Opened);
+    assert_eq!(page.entries.len(), 1);
+    let ordinal = page.entries[0].ordinal;
+
+    // Search retrieval changes custody without refreshing the connection's command-36 view.
+    let search = owner
+        .depot_search_command(actor, admitted, 2_000, Request::Retrieve {
+            client_id: 3031,
+            all: false,
+        })
+        .await;
+    assert_eq!((search.outcome, search.retrieved), (Outcome::Retrieved, 100));
+    let shifted = order(pool, PAGE_FIXTURE_BOX).await?;
+    assert_eq!(shifted.len(), page_size);
+    assert_eq!(shifted.last(), Some(target));
+
+    send(client, 6, DepotIntent {
+        action: DepotAction::Withdraw(ordinal),
+        ..browse
+    })
+    .await?;
+    assert_eq!(read_reply(client, 6).await?.outcome, DepotOutcome::Stale);
+    assert_eq!(order(pool, PAGE_FIXTURE_BOX).await?, shifted);
+    Ok(())
 }
