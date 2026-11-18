@@ -9,25 +9,32 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 pub(in super::super) fn bundle(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false)
+    bundle_layout(native, true, false, false)
 }
 
 pub(in super::super) fn bundle_with_pillars(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false)
+    bundle_layout(native, true, false, false)
 }
 
 pub(in super::super) fn bundle_with_pillar_floors(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, false, true)
+    bundle_layout(native, false, true, false)
+}
+
+pub(super) fn bundle_with_ice_islands(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+    bundle_layout(native, true, false, true)
 }
 
 fn bundle_layout(
     native: &crate::content::native_gameplay::NativeGameplayState,
     with_pillars: bool,
     pillar_floors_only: bool,
+    with_ice_islands: bool,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::writer::{Extent, Sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
@@ -61,10 +68,10 @@ fn bundle_layout(
             });
     }
     bundle.manifest.world = Extent {
-        min_x: 32021,
+        min_x: if with_ice_islands { 32021 } else { 32160 },
         min_y: 31045,
-        max_x: 32462,
-        max_y: 31381,
+        max_x: if with_ice_islands { 32462 } else { 32260 },
+        max_y: if with_ice_islands { 31381 } else { 31105 },
         floors: vec![-7, -6],
     };
     let mut tiles = std::collections::BTreeMap::new();
@@ -86,11 +93,13 @@ fn bundle_layout(
             }
         }
     }
-    for (x, y) in [(32021, 31294), (32225, 31381), (32325, 31049), (32333, 31227), (32462, 31174)] {
-        let mut tile = bundle.sectors[0].tiles[0].clone();
-        tile.x = x;
-        tile.y = y;
-        tiles.insert((x, y, -7), tile);
+    if with_ice_islands {
+        for (x, y) in [(32021, 31294), (32225, 31381), (32325, 31049), (32333, 31227), (32462, 31174)] {
+            let mut tile = bundle.sectors[0].tiles[0].clone();
+            tile.x = x;
+            tile.y = y;
+            tiles.insert((x, y, -7), tile);
+        }
     }
     // M51 source pillars and portal Item facts, without changing production
     // definitions. Crystal svargrond_arena.lua:25-115,207-246.
@@ -409,5 +418,28 @@ pub(in super::super) async fn train_character(
         )
         .await
         .map_err(debug)?;
+    Ok(())
+}
+
+
+pub(super) async fn seed_ice_islands_tracks(
+    harness: &super::Harness,
+    values: &[(&str, i64)],
+) -> TestResult {
+    let mut tx = harness.pool.begin().await?;
+    // The fixture starts with progress earned before this conversation.
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    for &(track, stage) in values {
+        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,2)")
+            .bind(id(41).as_slice())
+            .bind(track)
+            .bind(oteryn_gameplay_quests::quest::ice_islands_seals::QUEST)
+            .bind(stage)
+            .execute(&mut *tx)
+            .await?;
+    }
+    tx.commit().await?;
     Ok(())
 }

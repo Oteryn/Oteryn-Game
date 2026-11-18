@@ -275,6 +275,8 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         let native = active.native_gameplay().ok_or("native")?;
         let (bytes, pins) = if matches!(route, Some(NativeScenario::RecreatedPillars)) {
             fixture::bundle_with_pillar_floors(native)?
+        } else if matches!(route, Some(NativeScenario::Buddel | NativeScenario::BuddelFare | NativeScenario::Iskan)) {
+            fixture::bundle_with_ice_islands(native)?
         } else if native_portals {
             fixture::bundle_with_pillars(native)?
         } else {
@@ -518,12 +520,10 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
             assert_eq!(after.position(), before.position(), "unfinished Barbarian Test must return the player to the entrance origin");
             assert_eq!(command(&owner, &mut admitted, A::Enter).await?.disposition, D::WrongState);
         }
-        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,8,2)")
-            .bind(id(41).as_slice())
-            .bind(oteryn_gameplay_quests::quest::barbarian_mead::TRACKS[0])
-            .bind(oteryn_gameplay_quests::quest::barbarian_mead::QUEST)
-            .execute(&harness.pool)
-            .await?;
+        fixture::seed_ice_islands_tracks(
+            &harness,
+            &[(oteryn_gameplay_quests::quest::barbarian_mead::TRACKS[0], 8)],
+        ).await?;
         if gate_case {
             crate::gameplay_transport::connection::regression_routed_step(
                 &owner,

@@ -1,5 +1,5 @@
 use super::super::{Dependencies, TestResult};
-use super::{ComposedFreshAdmission, Harness, NativeScenario, debug, id};
+use super::{ComposedFreshAdmission, Harness, NativeScenario, debug};
 use crate::content::{NpcDataCatalogue, npc_catalogue_preproduction_limits};
 use crate::foundation::{MovementFacing, NpcPlacement};
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
@@ -75,10 +75,7 @@ pub(super) async fn exercise(
             2,
         ),
     ];
-    for (track, value) in tracks {
-        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,'oteryn:quest.the_ice_islands_quest',$3,2)")
-            .bind(id(41).as_slice()).bind(track).bind(value).execute(&harness.pool).await?;
-    }
+    super::fixture::seed_ice_islands_tracks(harness, &tracks).await?;
     owner.refresh_quest_session(session, true).await;
     let mut command_id = 44000;
     let greeting = talk(&mut owner, deps, npc_actor, &mut command_id, "hi").await?;
