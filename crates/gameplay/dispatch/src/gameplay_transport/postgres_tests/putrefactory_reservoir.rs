@@ -5,7 +5,7 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::ExactActorRef;
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::rotten_blood::putrefactory::{
-    CHARGE_TRACK as CHARGE, PASSIVE_CLOCK, PASSIVE_TICK, RESERVOIR_ACTION,
+    CHARGE_TRACK as CHARGE, PASSIVE_CLOCK, PASSIVE_TICK, RESERVOIR_ACTION, RESERVOIR_EFFECT,
 };
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
@@ -93,7 +93,7 @@ pub(super) async fn exercise(
 ) -> TestResult {
     let cap = name == CAP;
     let mut reservoir = serde_json::to_value(callback()?)?;
-    reservoir["effects"]["magic"] = json!({"position":AT,"effect":241});
+    reservoir["effects"]["magic"] = json!({"position":AT,"effect":RESERVOIR_EFFECT});
     reservoir["effects"]["recharge_cooldown_message"] = json!(EXHAUSTED);
     reservoir["state_operations"] = json!([
         {"track":CLOCK,"from":{"kind":"elapsed_at_least","seconds":20},
@@ -101,7 +101,7 @@ pub(super) async fn exercise(
         {"track":CHARGE,"from":{"kind":"between","minimum":-1,"maximum":99},
             "effect":{"kind":"recharge","amount":20,"empty":0,"capacity":100}}
     ]);
-    let bindings = Bindings::parse(&serde_json::to_vec(&json!({
+    let document = json!({
         "schema":1,
         "quests":[{
             "quest":QUEST,
@@ -114,8 +114,25 @@ pub(super) async fn exercise(
             "stages":[{"key":"reservoir-1","completes":false,
                 "trigger":{"kind":"map_use","callback":reservoir}}]
         }]
-    }))?)?;
+    });
+    let bindings = Bindings::parse(&serde_json::to_vec(&document)?)?;
     bindings.verify_embedded_recipe_evidence()?;
+    if name == LEGACY {
+        let mut other = document;
+        let second_position = json!({"x": 34013, "y": 31744, "floor": -14});
+        let callback = &mut other["quests"][0]["stages"][0]["trigger"]["callback"];
+        callback["selector"]["position"] = second_position.clone();
+        callback["effects"]["magic"]["position"] = second_position;
+        assert!(
+            Bindings::parse(&serde_json::to_vec(&other)?).is_err(),
+            "the second reservoir cannot keep the first reservoir's clock",
+        );
+        let second_clock = "oteryn:quest-progress/rotten-blood/putrefactory/reservoir-2-used-at";
+        other["quests"][0]["tracks"][1]["key"] = json!(second_clock);
+        other["quests"][0]["stages"][0]["trigger"]["callback"]["state_operations"][0]["track"] =
+            json!(second_clock);
+        Bindings::parse(&serde_json::to_vec(&other)?)?.verify_embedded_recipe_evidence()?;
+    }
     let base = if name == PASSIVE {
         let active = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
         QuestStateCatalogue::new(

@@ -116,17 +116,27 @@ impl BoundQuest {
                 let Trigger::MapUse { callback } = &stage.trigger else {
                     return false;
                 };
+                let Some(position) = callback.selector.position else {
+                    return false;
+                };
+                let Some(clock_key) = putrefactory::reservoir_clock_key(position) else {
+                    return false;
+                };
                 !stage.completes
                     && !callback.completes
                     && callback.experience.is_none()
                     && callback.world_change.is_none()
                     && !callback.effects.completes_quest
                     && callback.effects.quest_completion.is_none()
-                    && callback.selector.position.is_some()
+                    && callback.selector.position_aliases.is_empty()
+                    && callback.selector.native.is_none()
                     && callback.selector.action == Some(putrefactory::RESERVOIR_ACTION)
+                    && callback.effects.magic.as_ref().is_some_and(|effect| {
+                        effect.position == position && effect.effect == putrefactory::RESERVOIR_EFFECT
+                    })
                     && callback.effects.recharge_cooldown_message.is_some()
                     && matches!(callback.state_operations.as_slice(), [clock, charge]
-                        if clock.track.starts_with(putrefactory::RESERVOIR_CLOCK_PREFIX)
+                        if clock.track == clock_key
                             && clock.from == (StateCondition::ElapsedAtLeast { seconds: 20 })
                             && clock.effect == StateMutation::SetNow
                             && charge.track == putrefactory::CHARGE_TRACK

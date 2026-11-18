@@ -2,7 +2,7 @@
 
 use crate::quest::{
     NpcDefinitionPredecessor, QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue,
-    QuestTrack, QuestTransition,
+    QuestTrack, QuestTransition, world_callbacks::Position,
 };
 
 pub const CHARGE_TRACK: &str =
@@ -12,9 +12,27 @@ pub const PASSIVE_TICK: &str = "oteryn:quest-transition/rotten-blood/putrefactor
 pub const PASSIVE_PERIOD_SECONDS: u64 = 20;
 // Crystal creaturescripts_putrefactory-x.lua:158-171,195-224.
 pub const RESERVOIR_ACTION: u16 = 47953;
+pub const RESERVOIR_EFFECT: u16 = 241;
 pub(crate) const CANONICAL_QUEST: &str = "oteryn:quest.rotten_blood_quest";
-pub(crate) const RESERVOIR_CLOCK_PREFIX: &str =
-    "oteryn:quest-progress/rotten-blood/putrefactory/reservoir-";
+
+/// Crystal uses an independent exhaustion counter for each position, keyed by
+/// its one-based index in creaturescripts_putrefactory-x.lua:156-171,174-192.
+pub(crate) fn reservoir_clock_key(position: Position) -> Option<String> {
+    let index = [
+        (34081, 31704, -14),
+        (34013, 31744, -14),
+        (34044, 31712, -14),
+        (34051, 31706, -15),
+        (34060, 31735, -15),
+        (34095, 31684, -15),
+    ]
+    .iter()
+    .position(|&(x, y, floor)| (position.x, position.y, position.floor) == (x, y, floor))?;
+    Some(format!(
+        "oteryn:quest-progress/rotten-blood/putrefactory/reservoir-{}-used-at",
+        index + 1
+    ))
+}
 
 /// Crystal creaturescripts_putrefactory-x.lua:41-51,140-153.
 #[must_use]
