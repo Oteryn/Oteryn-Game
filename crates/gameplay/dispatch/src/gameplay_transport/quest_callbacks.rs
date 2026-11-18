@@ -855,6 +855,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         optional_pvp,
                         None,
                         pending.selected_tool.as_ref(),
+                        None,
                     ))
                     .await
                 }
@@ -1246,6 +1247,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 optional_pvp,
                 read_only_gate.as_ref(),
                 selected_tool.as_ref(),
+                None,
             ))
             .await;
             drop(states);
@@ -1514,6 +1516,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await;
             let optional_pvp = self.special_movement_policy(permit, actor, session).await;
+            let grid_ground = if callback.effects.color_grid.is_some() {
+                super::loop_move::loop_ground(
+                    self,
+                    map.overlay.base(),
+                    self.active_generation
+                        .and_then(|active| active.native_gameplay())
+                        .and_then(|native| native.item_index()),
+                )
+                .await
+            } else {
+                None
+            };
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             if runtime.read_actor_position(actor) != Ok(entered) {
@@ -1538,6 +1552,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         optional_pvp,
                         read_only_gate.as_ref(),
                         None,
+                        grid_ground.as_deref(),
                     ))
                     .await
                 }

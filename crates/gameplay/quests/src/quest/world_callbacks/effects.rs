@@ -198,7 +198,7 @@ impl StepSpawn {
         callback.trigger == Trigger::StepIn
             && callback.actor_kind == ActorKind::Player
             && callback.is_read_only()
-            && callback.requires_world_admission
+            && !callback.requires_world_admission
             && callback.selector.action.is_some()
             && !callback.return_on_failure
             && callback.teleport.is_none()

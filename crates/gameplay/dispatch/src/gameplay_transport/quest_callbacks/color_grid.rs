@@ -15,12 +15,16 @@ struct Cell {
     entry: EntryFacts,
 }
 
-fn read(map: &BundleMap, position: TilePos) -> Option<Cell> {
+fn read(
+    map: &BundleMap,
+    ground: &super::super::loop_move::LoopGroundOverlay,
+    position: TilePos,
+) -> Option<Cell> {
     if map.facts.house_tile(position) {
         return None;
     }
     let facts = map.facts.pinned();
-    let stack = compose_tile(&map.overlay, &facts, position).ok()??;
+    let stack = compose_tile(ground.overlay(), &ground.facts(&facts), position).ok()??;
     // Crystal addresses stack index 1 (the first item after the ground).
     let entry = stack.entries.get(1)?;
     let EntrySource::Base {
@@ -29,8 +33,9 @@ fn read(map: &BundleMap, position: TilePos) -> Option<Cell> {
     else {
         return None;
     };
-    // A portable instance stays under the Ground/custody owner.
-    (!entry.facts.pickupable && entry.facts.count == 1).then(|| Cell {
+    // The base slot retains custody. The item loop resolves the current
+    // projected definition at pickup, and the Ground overlay hides taken slots.
+    (!entry.facts.bound && entry.facts.count == 1).then(|| Cell {
         key,
         entry: entry.facts,
         revision: facts.object_revision(key),
@@ -48,7 +53,7 @@ fn replacement(
         Some(
             map.facts
                 .quest_callback_replacement(cell.key, appearance)
-                .filter(|facts| !facts.pickupable && facts.count == 1)?,
+                .filter(|facts| facts.pickupable == cell.entry.pickupable && facts.count == 1)?,
         )
     };
     Some((cell.key, cell.revision, after))
@@ -56,6 +61,7 @@ fn replacement(
 
 pub(super) fn prepare(
     map: &BundleMap,
+    ground: &super::super::loop_move::LoopGroundOverlay,
     source: TilePos,
     grid: &ColorGrid,
     command: CommandRef,
@@ -77,7 +83,7 @@ pub(super) fn prepare(
                         GridAxis::Y => &mut at.y,
                     };
                     *coordinate = coordinate.checked_add(distance)?;
-                    let cell = read(map, at)?;
+                    let cell = read(map, ground, at)?;
                     colors.contains(&cell.entry.appearance_id).then_some(cell)
                 })
                 .collect::<Option<Vec<_>>>()
@@ -95,7 +101,7 @@ pub(super) fn prepare(
             for group in groups {
                 let start = cells.len();
                 for position in &group.cells {
-                    cells.push(read(map, tile(*position)).ok_or(refused)?);
+                    cells.push(read(map, ground, tile(*position)).ok_or(refused)?);
                 }
                 let observed = cells.get(start).ok_or(refused)?.entry.appearance_id;
                 if !group.colors.contains(&observed)

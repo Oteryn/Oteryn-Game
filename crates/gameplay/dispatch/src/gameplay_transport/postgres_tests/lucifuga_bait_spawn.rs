@@ -27,7 +27,6 @@ pub(super) fn binding() -> TestResult<Callback> {
         "quest":QUEST,
         "trigger":"step_in",
         "selector":{"position":TRIGGER,"action":23120,"appearance":100},
-        "requires_world_admission":true,
         "reversible":false,"passages":[],"offerings":[],
         "storage":[{"track":BAIT,"minimum":1,"maximum":1,"set":1,"read_only":true}],
         "effects":{"step_spawn":{"creature":SPIDER,"rearm_step_ms":60000,"rearm_steps":10}},

@@ -22,6 +22,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         optional_pvp: Option<bool>,
         read_only_gate: Option<&ReadOnlyGate>,
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
+        grid_ground: Option<&super::super::loop_move::LoopGroundOverlay>,
     ) -> UseDisposition {
         if callback.effects.encounter.is_none()
             && let Some(catalogue) = self.quest_catalogue.as_deref()
@@ -268,7 +269,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if projection.is_some() {
                 return UseDisposition::Rejected;
             }
-            projection = match super::color_grid::prepare(map, pos, grid, command) {
+            let Some(ground) = grid_ground else {
+                return UseDisposition::Rejected;
+            };
+            projection = match super::color_grid::prepare(map, ground, pos, grid, command) {
                 Ok(projection) => Some(projection),
                 Err(disposition) => return disposition,
             };
