@@ -202,7 +202,7 @@
     "oteryn:npc.rhargu": {
       "basis": "CHOSEN_OTERYN_APPROXIMATION",
       "recipe_path": "tools/content-schema/quest-authoring/samples/completion242/recipes.json",
-      "recipe_sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
+      "recipe_sha256": "f96b17880f181ce0ece696533a861d642692d700208178f3ca447f1c1e02f0b1",
       "recipe_title": "Grimvale Quest",
       "placements": [
         {
@@ -218,7 +218,7 @@
     "oteryn:npc.domizian": {
       "basis": "CHOSEN_OTERYN_APPROXIMATION",
       "recipe_path": "tools/content-schema/quest-authoring/samples/completion242/recipes.json",
-      "recipe_sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
+      "recipe_sha256": "f96b17880f181ce0ece696533a861d642692d700208178f3ca447f1c1e02f0b1",
       "recipe_title": "Grimvale Quest",
       "placements": [
         {
@@ -234,7 +234,7 @@
     "oteryn:npc.para_norbert": {
       "basis": "CHOSEN_OTERYN_APPROXIMATION",
       "recipe_path": "tools/content-schema/quest-authoring/samples/completion242/recipes.json",
-      "recipe_sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
+      "recipe_sha256": "f96b17880f181ce0ece696533a861d642692d700208178f3ca447f1c1e02f0b1",
       "recipe_title": "Feaster of Souls Quest",
       "placements": [
         {

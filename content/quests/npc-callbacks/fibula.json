@@ -119,8 +119,8 @@
         "You have completed the deeper Fibula expedition. The recovered equipment is yours."
       ],
       "sources": [
-        "owner:questpc6:chosen-recipe:tools/content-schema/quest-authoring/samples/completion242/recipes.json:6863-7011:sha256:6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
-        "game:content/quests/definitions/quests-00000-00099.json:1#/records/20/definition/claims:sha256:e8d3cb8c77fdcb23ee20579ef1a66e07e6d89af14055ae43782124e187e18c91"
+        "owner:questpc6:chosen-recipe:tools/content-schema/quest-authoring/samples/completion242/recipes.json:6863-7011:sha256:f96b17880f181ce0ece696533a861d642692d700208178f3ca447f1c1e02f0b1",
+        "game:content/quests/definitions/quests-00000-00099.json:1#/records/20/definition/claims:sha256:fc3414a4c32e5f3ec021b2818d1e97a4c88c03b8d6c1be0da268f21bb9a0c624"
       ]
     }
   ]

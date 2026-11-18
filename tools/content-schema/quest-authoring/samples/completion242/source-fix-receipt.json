@@ -1,7 +1,7 @@
 {
   "approval": {
     "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-approval.json",
-    "sha256": "d1f07305657b6eba68d115ca347fafc1ec992eccecef844dc879a0fff45c0554"
+    "sha256": "dc6283ebd2dc8427d12bfa58088edf1b20513e1eb5f88a6906cb90334bb001c5"
   },
   "changes": [
     {
@@ -315005,7 +315005,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/completion242/recipes.json",
-      "sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321"
+      "sha256": "f96b17880f181ce0ece696533a861d642692d700208178f3ca447f1c1e02f0b1"
     }
   ],
   "native_runtime_admission": false,

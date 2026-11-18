@@ -54397,14 +54397,14 @@
         "revision": "quest-r1"
       },
       "wiki_title": "Spike Task",
-      "recipe_sha256": "c739281dff9d29c082682e6fb85d72a1197f79beee7995b5ef6ef1536f56ff48",
-      "projected_stages_sha256": "5be16bcdb15d8b1aec44a731ef227a537e7bed554bd9af17f2520cecd694f18a",
+      "recipe_sha256": "13293ebecd814ab279f1ea6c513a2ef0383c483958d5f1150fb0bfe87731e4d4",
+      "projected_stages_sha256": "b6bb0dc0a7eefac66a253f33896c81f627eb21eaac921515e9638f02a7ef19e8",
       "typed_progress_source": "content/quests/missions/quest-state-completion-candidate.json",
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/7/definition",
-        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
-        "record_sha256": "cf2c299ee4432f87e615e6e8c0114ee5933da4d43bad4ff535d5932167db1d50"
+        "file_sha256": "6180db401f21dccf6a95cc38222348bcde0d8a70becedefa21fa995876e3ff84",
+        "record_sha256": "1a5c7f7b62951ff1985126180c1b1b49753125cad04db1a42007361ecbee61de"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION",
       "stages": [
@@ -54696,7 +54696,7 @@
         {
           "stage_key": "s7",
           "kind": "use",
-          "count": 3,
+          "count": 8,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
           "targets": [
             {

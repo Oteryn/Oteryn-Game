@@ -30437,13 +30437,13 @@
           },
           {
             "key": "s7",
-            "objective": "Przyjmij postać Mutated Bat i zniszcz wybrane trzy nests.",
+            "objective": "Przyjmij postać Mutated Bat i zniszcz osiem nests.",
             "kind": "use",
             "targets": [
               "Mutated Bat disguise",
               "Middle Spike nest"
             ],
-            "count": 3,
+            "count": 8,
             "next": [
               "s8"
             ],
@@ -30586,7 +30586,7 @@
         },
         "adaptations": [
           "Wybrano jednokrotną kampanię trzech bracketów z level 80, bez orzekania zgodności źródłowych level gates.",
-          "Wybrano trzy nests i cztery udane release, bez zmyślonej gwarancji każdego losowego spawn. Światowy hotspot zachowuje osobny SOURCE hold.",
+          "Wybrano cztery udane release, bez zmyślonej gwarancji każdego losowego spawn. Światowy hotspot zachowuje osobny SOURCE hold.",
           "Wybrano skończoną kolejność i liczby działań tego przepisu; to uzupełnienie istniejących danych SOURCE, bez usuwania ich konfliktów lub blokad.",
           "Reward intents opisują jedno wydanie wybranej nagrody; istniejące Source/Reward Claim nie są drugim równoległym nadaniem. Ilości niewymienione liczbowo w źródle przyjęto jako wybór Oteryn, zwykle 1."
         ],

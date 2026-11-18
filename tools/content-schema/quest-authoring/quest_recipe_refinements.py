@@ -6,7 +6,7 @@ from pathlib import Path
 
 DIRECTORY = 'tools/content-schema/quest-authoring/samples/refinements242/'
 PACKET = DIRECTORY + 'refinements.json'
-APPROVED_SHA256 = 'b69dbe6d580221b089d03e8952329c54a7e117abc02f11d476f56f18818254cf'
+APPROVED_SHA256 = '8c830b418232eae112e18201b6acc78adbea7c3d5cf0eb6abdb0f6855caae683'
 
 
 def digest(value):

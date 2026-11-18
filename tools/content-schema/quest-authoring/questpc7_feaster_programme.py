@@ -9,7 +9,7 @@ PHASE_ROUTE_KEYS = frozenset({
 })
 # The complete definition at 2caf6670 is unchanged; the moving shard also holds
 # unrelated quests. Only these two closed routes retain that historical witness.
-PHASE_DEFINITION_SHA256 = 'e2b60e02a8e07240b63cf05d88567ff18f0b3b7cb595228d3747f48bf9cd9bbe'
+PHASE_DEFINITION_SHA256 = '2e3fa4cfe0578f09bad00fb38be101ca191bc310b69bb1eaaa408a8c028f9051'
 PHASE_SOURCE = 'canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:57af470e521006a832fbc046639ee4a5a5a455b2c6552335afff0a0131783f2c'
 def track(name):return 'oteryn:quest-progress/questpc7/feaster/'+name
 def pos(p):return dict(x=p[0],y=p[1],floor=p[2])
