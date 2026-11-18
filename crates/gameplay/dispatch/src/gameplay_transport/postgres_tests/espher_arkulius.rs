@@ -305,6 +305,13 @@ async fn accept_with_eleven_item_identities(
             "{receipt:?}"
         );
     }
+    assert_eq!(
+        source
+            .item_exchange_keys(ARKULIUS)
+            .ok_or("exchange keys")?
+            .len(),
+        11
+    );
     Ok(())
 }
 

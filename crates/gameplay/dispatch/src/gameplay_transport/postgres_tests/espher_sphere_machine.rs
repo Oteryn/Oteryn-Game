@@ -326,9 +326,17 @@ async fn exercise(h: &Harness) -> TestResult {
         .quest_callbacks
         .interrupt_after_commit
         .store(true, std::sync::atomic::Ordering::Release);
-    assert_eq!(
-        click(&mut owner, &admitted, 745, right).await?,
-        UseDisposition::Rejected
+    owner.clock_origin -= std::time::Duration::from_secs(2);
+    let fence = super::death_ml_loss_composed::current_fence(&owner, session).await?;
+    admitted.item_fence = Some(fence.item_fence());
+    admitted.continuity.next_command_id = 745;
+    let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&target(&owner, right)?)
+        .map_err(debug)?;
+    assert!(
+        super::quest_world_callbacks::wire(&owner, &mut admitted, 745, 2, payload)
+            .await
+            .is_err(),
+        "a commit with unknown acknowledgement closes the connection"
     );
     assert!(owner.has_pending_quest_callback(session));
     assert_eq!(gems(h).await?, 3);
