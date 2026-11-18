@@ -120,6 +120,7 @@ fn house_list_window() -> TestResult {
             String::new(),
             String::new(),
         ],
+        [None; 7],
         &oteryn_client_ui::house::Panel::default(),
         "",
     );
@@ -165,6 +166,31 @@ fn house_list_window() -> TestResult {
 }
 
 #[test]
+fn house_query_rejects_identical_panel_from_new_activity() {
+    let (link, mut receiver, _) = crate::play::play_channel();
+    link.bevy_house_list_fixture();
+    let expected = link.house_panel();
+    link.bevy_house_list_fixture();
+    let current = link.house_panel();
+    assert_ne!(expected.activity_revision, current.activity_revision);
+    assert_eq!(expected.model, current.model);
+    assert_eq!(expected.fields, current.fields);
+    let mut drafts = expected.fields.clone();
+    drafts[4] = "origin member".into();
+    drafts[6] = "CONFIRM".into();
+    assert!(!super::super::houses::submit(
+        &link,
+        expected.activity_revision,
+        &expected.model,
+        &expected.fields,
+        drafts,
+        0
+    ));
+    assert_eq!(link.house_panel().fields, current.fields);
+    assert!(receiver.try_recv().is_err());
+}
+
+#[test]
 fn house_list_window_sends_existing_list_intent() -> TestResult {
     use crate::{combat_input::PlayCommand, play::play_channel};
     use oteryn_protocol_oteryn::house as wire;
@@ -174,7 +200,14 @@ fn house_list_window_sends_existing_list_intent() -> TestResult {
     let mut fields = expected.fields.clone();
     fields[4] = "02020202-0202-7202-8202-020202020202\n03030303-0303-7303-8303-030303030303".into();
     fields[6] = "CONFIRM".into();
-    super::super::houses::submit(&link, &expected.model, &expected.fields, fields, 3);
+    super::super::houses::submit(
+        &link,
+        expected.activity_revision,
+        &expected.model,
+        &expected.fields,
+        fields,
+        3,
+    );
     let PlayCommand::Feature(command) = receiver.try_recv()? else {
         return Err("list intent".into());
     };
@@ -187,6 +220,7 @@ fn house_list_window_sends_existing_list_intent() -> TestResult {
     // A response invalidates the old descriptor; it cannot submit a second mutation.
     super::super::houses::submit(
         &link,
+        expected.activity_revision,
         &expected.model,
         &expected.fields,
         expected.fields.clone(),
@@ -221,10 +255,113 @@ fn house_acl_reply_replaces_pending_member_draft() -> TestResult {
     house_window_action("Load guests", 4, "")
 }
 #[test]
+fn house_acl_reply_restores_requested_house_after_map() -> TestResult {
+    house_window_action_with_map("Load guests", 4, "", ReplyTiming::AfterMapProjection)
+}
+#[test]
+fn house_acl_refused_door_read_restores_requested_house_after_map() -> TestResult {
+    refused_door_read(ReplyTiming::AfterMapProjection)
+}
+#[test]
+fn house_acl_refused_door_read_routes_before_map_projection() -> TestResult {
+    refused_door_read(ReplyTiming::BeforeMapProjection)
+}
+
+fn refused_door_read(timing: ReplyTiming) -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            house_window_action_with_map("Load door", 5, "101 110 -7", timing)
+                .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "house ACL scenario panicked")??;
+    Ok(())
+}
+
+struct MissingDoor;
+
+impl crate::play::Stepper for MissingDoor {
+    fn feature_selected(&self, capability: u32) -> bool {
+        capability == 49
+    }
+
+    async fn feature(
+        &mut self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+    ) -> Result<oteryn_session::GatedCommandResult, oteryn_session::SessionError> {
+        use oteryn_session::property_services::house;
+        assert_eq!((command.capability, command.kind), (49, 57));
+        Ok(oteryn_session::GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: house::encode_house_result(house::HouseDisposition::Rejected, 0),
+        })
+    }
+
+    async fn serve(&mut self, _: std::time::Duration) -> Result<(), oteryn_session::SessionError> {
+        // Let the test advance the real session exactly once between Bevy frames.
+        tokio::task::yield_now().await;
+        Ok(())
+    }
+
+    fn drain(&mut self) -> Vec<oteryn_session::SessionEvent> {
+        Vec::new()
+    }
+
+    async fn step(
+        &mut self,
+        _: oteryn_session::StepDirection,
+    ) -> Result<oteryn_session::StepOutcome, oteryn_session::SessionError> {
+        Err(oteryn_session::SessionError::SessionUnusable)
+    }
+
+    async fn combat(
+        &mut self,
+        _: crate::combat_input::CombatCommand,
+    ) -> Result<crate::combat_input::CombatReport, oteryn_session::SessionError> {
+        Err(oteryn_session::SessionError::SessionUnusable)
+    }
+
+    async fn logout(
+        &mut self,
+    ) -> Result<Option<oteryn_session::LogoutResult>, oteryn_session::SessionError> {
+        Ok(None)
+    }
+}
+
+#[test]
+fn house_acl_reply_preserves_unrelated_draft_and_pending_paste() -> TestResult {
+    house_window_action("Load subowners", 4, "")
+}
+#[test]
 fn house_handoff_clears_unsent_access_drafts() -> TestResult {
     house_window_action("Handoff", 4, "old member")
 }
+#[test]
+fn rejected_house_member_edit_sends_nothing() -> TestResult {
+    house_window_action("Save guests", 4, &"é".repeat(4097))
+}
 fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestResult {
+    house_window_action_with_map(caption, field_index, value, ReplyTiming::WithoutMap)
+}
+
+#[derive(PartialEq)]
+enum ReplyTiming {
+    WithoutMap,
+    AfterMapProjection,
+    BeforeMapProjection,
+}
+
+fn house_window_action_with_map(
+    caption: &str,
+    field_index: usize,
+    value: &str,
+    timing: ReplyTiming,
+) -> TestResult {
+    let map_during_read = timing != ReplyTiming::WithoutMap;
+    let reply_before_map_projection = timing == ReplyTiming::BeforeMapProjection;
     use crate::{
         combat_input::PlayCommand,
         play::{PlayView, play_channel},
@@ -232,7 +369,27 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
     use bevy::input::keyboard::{Key as LogicalKey, KeyboardInput};
     let (link, mut receiver, outbox) = play_channel();
     link.use_shared_frontend();
-    link.bevy_house_list_fixture();
+    let advance_session = |session: std::pin::Pin<&mut _>| {
+        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+        assert!(std::future::Future::poll(session, &mut context).is_pending());
+    };
+    let routed = if caption == "Load door" {
+        let (send, incoming) = tokio::sync::mpsc::unbounded_channel();
+        let mut session = Box::pin(crate::play::run_session(
+            MissingDoor,
+            incoming,
+            outbox.clone(),
+        ));
+        advance_session(session.as_mut());
+        Some((send, session))
+    } else {
+        None
+    };
+    if map_during_read {
+        link.bevy_house_map_fixture();
+    } else {
+        link.bevy_house_list_fixture();
+    }
     if caption == "Handoff" {
         link.house_edit(2, String::new());
     }
@@ -320,7 +477,11 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
         .release(KeyCode::AltLeft);
     press_h(&mut app);
     for expected in [
-        "Edit House List — oteryn:house.test",
+        if map_during_read {
+            "Edit House List — Home"
+        } else {
+            "Edit House List — oteryn:house.test"
+        },
         "Enter one member UUID per line.",
     ] {
         assert!(
@@ -382,50 +543,69 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
         id[8] = 0x80;
         let mut successor = id;
         successor[15] = 2;
-        let payload = encode_activity_scope(&ActivityScopeSnapshot {
-            handoff: id,
-            source_session: id,
-            session: successor,
-            scope: ActivityScope::Instance {
-                world: id,
-                instance: id,
-            },
-            scope_generation: 1,
-            connection_generation: 1,
-            lease_generation: 2,
-            selection: vec![49, 117],
-            requires_ack: false,
-        })
-        .map_err(|e| format!("{e:?}"))?;
-        outbox.push(vec![SessionEvent::GatedSnapshotReplaced(AppliedDelta {
-            server_sequence: 1,
-            base_revision: 0,
-            new_revision: 1,
-            value: GatedSnapshot {
-                domain_id: 99,
-                snapshot_type: 1,
-                revision: 1,
-                payload,
-            },
-        })]);
-        app.update();
-        let mut cleared = Vec::new();
-        for (field, text) in app
-            .world_mut()
-            .query::<(&super::super::houses::Field, &EditableText)>()
-            .iter(app.world())
-        {
-            if matches!(field.0, 2 | 4 | 6) {
-                assert_eq!(text.value(), "");
-                cleared.push(field.0);
+        for generation in 1..=2 {
+            if generation == 2 {
+                for (field, mut text) in app
+                    .world_mut()
+                    .query::<(&super::super::houses::Field, &mut EditableText)>()
+                    .iter_mut(app.world_mut())
+                {
+                    if matches!(field.0, 2 | 4 | 6) {
+                        text.editor_mut().set_text("old draft");
+                    }
+                }
+                id = successor;
+                successor[15] += 1;
             }
+            let payload = encode_activity_scope(&ActivityScopeSnapshot {
+                handoff: id,
+                source_session: id,
+                session: successor,
+                scope: ActivityScope::Instance {
+                    world: id,
+                    instance: id,
+                },
+                scope_generation: generation,
+                connection_generation: 1,
+                lease_generation: generation + 1,
+                selection: vec![49, 117],
+                requires_ack: false,
+            })
+            .map_err(|e| format!("{e:?}"))?;
+            outbox.push(vec![SessionEvent::GatedSnapshotReplaced(AppliedDelta {
+                server_sequence: generation,
+                base_revision: generation - 1,
+                new_revision: generation,
+                value: GatedSnapshot {
+                    domain_id: 99,
+                    snapshot_type: 1,
+                    revision: generation,
+                    payload,
+                },
+            })]);
+            app.update();
+            let mut cleared = Vec::new();
+            for (field, text) in app
+                .world_mut()
+                .query::<(&super::super::houses::Field, &EditableText)>()
+                .iter(app.world())
+            {
+                if matches!(field.0, 2 | 4 | 6) {
+                    assert_eq!(text.value(), "");
+                    cleared.push(field.0);
+                }
+            }
+            cleared.sort_unstable();
+            assert_eq!(cleared, [2, 4, 6]);
         }
-        cleared.sort_unstable();
-        assert_eq!(cleared, [2, 4, 6]);
         return Ok(());
     }
     app.world_mut().trigger(Activate { entity: save });
     app.update();
+    if value.len() > 8192 {
+        assert!(receiver.try_recv().is_err());
+        return Ok(());
+    }
     if caption == "Review move-out" {
         let has_error = |app: &mut App| {
             app.world_mut()
@@ -515,19 +695,194 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
     let PlayCommand::Feature(command) = receiver.try_recv()? else {
         return Err("house intent".into());
     };
-    if caption == "Load guests" {
-        use oteryn_client_runtime::{
-            house,
-            raw_feature::{CommandStatus, GatedCommandResult},
-        };
+    if matches!(caption, "Load guests" | "Load subowners" | "Load door") {
+        use oteryn_client_runtime::raw_feature::{CommandStatus, GatedCommandResult};
+        use oteryn_session::property_services::house;
+        use std::sync::{Arc, Mutex};
+        let clipboard = Arc::new(Mutex::new(None));
         app.update();
+        let mut door_editor = None;
+        for (entity, field, mut text) in app
+            .world_mut()
+            .query::<(Entity, &super::super::houses::Field, &mut EditableText)>()
+            .iter_mut(app.world_mut())
+        {
+            if field.0 == 2 {
+                text.editor_mut().set_text("2");
+            }
+            if field.0 == 4 && !reply_before_map_projection {
+                text.editor_mut().set_text("intervening edit");
+            }
+            if field.0 == 5 && caption == "Load subowners" {
+                text.editor_mut().set_text("2027-01-20");
+                text.pending_paste = Some(bevy::clipboard::ClipboardRead::Pending(Arc::clone(
+                    &clipboard,
+                )));
+                door_editor = Some(entity);
+            }
+        }
+        if map_during_read {
+            let entity = button(&mut app, "Show entrance map")?;
+            app.world_mut().trigger(Activate { entity });
+            app.update();
+            if !reply_before_map_projection {
+                app.update();
+                assert!(
+                    app.world_mut()
+                        .query::<&Text>()
+                        .iter(app.world())
+                        .any(|text| text.0 == "◆ 2: Harbour Home\n120,130,7")
+                );
+            }
+        }
+        let door_refused = caption == "Load door";
+        if let Some((send, mut session)) = routed {
+            let query =
+                house::decode_house_query(&command.payload).map_err(|e| format!("{e:?}"))?;
+            assert_eq!(
+                query.acl,
+                Some(house::HouseAclRead {
+                    house: "oteryn:house.test".into(),
+                    selector: house::HouseAclSelector::Door {
+                        x: 101,
+                        y: 110,
+                        floor: -7,
+                    },
+                })
+            );
+            let owner = app.world().non_send::<HostOwner>();
+            let link = &owner.play.as_ref().ok_or("active play")?.link;
+            let selected = link.house_panel().model;
+            assert_eq!(selected.index, 1);
+            assert_eq!(selected.pending.as_ref(), Some(&command));
+            send.send(PlayCommand::Feature(command))?;
+            advance_session(session.as_mut());
+            let restored = link.house_panel().model;
+            assert!(
+                !restored.pending_acl_read,
+                "the session must route the door refusal"
+            );
+            assert!(restored.pending.is_none());
+            assert!(restored.acl_snapshot.is_none());
+            assert_eq!(restored.index, 0);
+        } else {
+            let payload = house::encode_house_acl_snapshot(&house::HouseAclSnapshot {
+                revision: 8,
+                members: vec![],
+            })
+            .map_err(|e| format!("{e:?}"))?;
+            outbox.bevy_properties_result(
+                &command,
+                &GatedCommandResult {
+                    command_id: 1,
+                    server_sequence: 1,
+                    status: CommandStatus::Accepted,
+                    payload,
+                },
+            );
+        }
+        app.update();
+        assert!(
+            app.world_mut()
+                .query::<(&super::super::houses::Field, &EditableText)>()
+                .iter(app.world())
+                .any(|(field, text)| field.0 == 4 && text.value() == "")
+        );
+        if !reply_before_map_projection {
+            assert!(
+                app.world_mut()
+                    .query::<(&super::super::houses::Field, &EditableText)>()
+                    .iter(app.world())
+                    .any(|(field, text)| field.0 == 2 && text.value() == "1")
+            );
+        }
+        if caption == "Load subowners" {
+            let entity = door_editor.ok_or("door editor")?;
+            let draft = app
+                .world()
+                .get::<EditableText>(entity)
+                .ok_or("door editor was replaced")?;
+            assert_eq!(draft.value(), "2027-01-20");
+            assert!(matches!(&draft.pending_paste,
+                Some(bevy::clipboard::ClipboardRead::Pending(pending))
+                    if Arc::ptr_eq(pending, &clipboard)
+            ));
+        }
+        if map_during_read {
+            let title = app
+                .world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .find(|text| text.0.starts_with("Edit House List — "))
+                .ok_or("house title")?
+                .0
+                .clone();
+            let close = button(&mut app, "Close map")?;
+            app.world_mut().trigger(Activate { entity: close });
+            app.update();
+            for (field, mut text) in app
+                .world_mut()
+                .query::<(&super::super::houses::Field, &mut EditableText)>()
+                .iter_mut(app.world_mut())
+            {
+                if field.0 == 6 {
+                    text.editor_mut().set_text("CONFIRM");
+                }
+            }
+            let entity = button(&mut app, "Save guests")?;
+            app.world_mut().trigger(Activate { entity });
+            app.update();
+            let PlayCommand::Feature(save) = receiver.try_recv()? else {
+                return Err("save guests".into());
+            };
+            let intent = oteryn_protocol_oteryn::house::decode_house_intent(&save.payload)
+                .map_err(|error| format!("{error:?}"))?;
+            assert_eq!(intent.house, "oteryn:house.test");
+            assert_eq!(
+                title, "Edit House List — Home",
+                "title for {}",
+                intent.house
+            );
+            let expected_revision = if door_refused { 7 } else { 8 };
+            assert!(matches!(
+                intent.action,
+                oteryn_protocol_oteryn::house::HouseAction::Acl {
+                    subowners: false,
+                    revision,
+                    ..
+                } if revision == expected_revision
+            ));
+        }
+        return Ok(());
+    }
+    if matches!(caption, "Bid" | "Save guests") {
+        app.update();
+        assert!(
+            app.world_mut()
+                .query::<(&super::super::houses::Field, &EditableText)>()
+                .iter(app.world())
+                .any(|(field, text)| field.0 == 6 && text.value() == "")
+        );
+    }
+    if caption == "Bid" {
+        use std::sync::{Arc, Mutex};
+        app.init_resource::<bevy::text::FontCx>()
+            .init_resource::<bevy::text::LayoutCx>()
+            .init_resource::<bevy::clipboard::Clipboard>()
+            .add_systems(PostUpdate, bevy::text::apply_text_edits);
+        let clipboard = Arc::new(Mutex::new(None));
         for (field, mut text) in app
             .world_mut()
             .query::<(&super::super::houses::Field, &mut EditableText)>()
             .iter_mut(app.world_mut())
         {
             if field.0 == 4 {
-                text.editor_mut().set_text("intervening edit");
+                text.pending_paste = Some(bevy::clipboard::ClipboardRead::Pending(Arc::clone(
+                    &clipboard,
+                )));
+            }
+            if matches!(field.0, 2 | 4 | 6) {
+                text.editor_mut().set_text("new draft");
             }
         }
         app.world()
@@ -538,33 +893,35 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
             .link
             .bevy_house_ownership_result(
                 &command,
-                &GatedCommandResult {
+                &oteryn_session::GatedCommandResult {
                     command_id: 1,
                     server_sequence: 1,
-                    status: CommandStatus::Accepted,
-                    payload: house::encode_house_acl_snapshot(&house::HouseAclSnapshot {
-                        revision: 8,
-                        members: vec![],
-                    })
-                    .map_err(|e| format!("{e:?}"))?,
+                    status: oteryn_session::CommandStatus::Rejected,
+                    payload: vec![],
                 },
             );
         app.update();
-        assert!(
-            app.world_mut()
-                .query::<(&super::super::houses::Field, &EditableText)>()
-                .iter(app.world())
-                .any(|(field, text)| field.0 == 4 && text.value() == "")
-        );
-        return Ok(());
-    }
-    if matches!(caption, "Bid" | "Save guests") {
+        for (field, text) in app
+            .world_mut()
+            .query::<(&super::super::houses::Field, &EditableText)>()
+            .iter(app.world())
+        {
+            if matches!(field.0, 2 | 4 | 6) {
+                if field.0 == 4 {
+                    assert!(text.pending_paste.is_some());
+                }
+                assert_eq!(text.value(), "new draft");
+            }
+        }
+        *clipboard.lock().map_err(|_| "clipboard lock")? = Some(Ok("pasted member".into()));
+        app.update();
         app.update();
         assert!(
             app.world_mut()
                 .query::<(&super::super::houses::Field, &EditableText)>()
                 .iter(app.world())
-                .any(|(field, text)| field.0 == 6 && text.value() == "")
+                .any(|(field, text)| field.0 == 4
+                    && text.value().to_string().contains("pasted member"))
         );
     }
     let expected_kind = if matches!(caption, "Owned / incoming" | "Review transfer") {
@@ -835,7 +1192,15 @@ fn house_list_window_uses_selected_house_name() -> TestResult {
     model.index = 1;
     let mut queue = bevy::ecs::world::CommandQueue::default();
     let mut commands = Commands::new(&mut queue, app.world());
-    super::super::houses::build(&mut commands, &skin, 1, &Default::default(), &model, "");
+    super::super::houses::build(
+        &mut commands,
+        &skin,
+        1,
+        &Default::default(),
+        [None; 7],
+        &model,
+        "",
+    );
     queue.apply(app.world_mut());
     let world = app.world_mut();
     assert!(
@@ -862,11 +1227,25 @@ fn house_browser_bid_sends_existing_auction_intent() -> TestResult {
     let expected = link.house_panel();
     let mut fields = expected.fields.clone();
     fields[3] = "1250".into();
-    super::super::houses::submit(&link, &expected.model, &expected.fields, fields.clone(), 2);
+    super::super::houses::submit(
+        &link,
+        expected.activity_revision,
+        &expected.model,
+        &expected.fields,
+        fields.clone(),
+        2,
+    );
     assert!(receiver.try_recv().is_err());
     let expected = link.house_panel();
     fields[6] = "CONFIRM".into();
-    super::super::houses::submit(&link, &expected.model, &expected.fields, fields, 2);
+    super::super::houses::submit(
+        &link,
+        expected.activity_revision,
+        &expected.model,
+        &expected.fields,
+        fields,
+        2,
+    );
     let PlayCommand::Feature(command) = receiver.try_recv()? else {
         return Err("auction intent".into());
     };

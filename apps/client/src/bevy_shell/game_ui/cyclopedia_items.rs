@@ -421,20 +421,10 @@ fn finish(
         Action::Details => play.link.item_catalogue_request(6),
         Action::DropSources => play.link.item_catalogue_request(7),
         Action::NextDropSources => {
-            if let Some(query @ catalogue::Query::Drops { reference, .. }) =
+            if let Some(catalogue::Query::Drops { reference, after }) =
                 drop_query(&panel, control.generation, state.drop_owner)
             {
-                if matches!(
-                    panel.last_request,
-                    Some(Request::CatalogueQuery(catalogue::Query::Drops { .. }))
-                ) {
-                    play.link.item_catalogue_request(8);
-                } else {
-                    // Item Details replaced last_request. Consume the retained row cursor
-                    // before submitting it so a refused reply cannot leave it reusable.
-                    play.link.item_catalogue_select(reference);
-                    play.link.inspect(Request::CatalogueQuery(query));
-                }
+                play.link.item_catalogue_continue_drops(reference, after);
             }
         }
         Action::Prices => {
@@ -459,11 +449,12 @@ fn finish(
                     return;
                 }
                 let value = search.value().to_string();
-                if catalogue::items(0, 0, &value).is_err() {
+                let value = value.trim();
+                if catalogue::items(0, 0, value).is_err() {
                     return;
                 }
-                changed = value != panel.search;
-                play.link.item_catalogue_filter(&value, &panel.category);
+                changed = value != panel.search.trim();
+                play.link.item_catalogue_filter(value, &panel.category);
             }
             let action = match control.action {
                 Action::Next if !changed => 1,

@@ -1,6 +1,6 @@
 //! House catalogue, auctions, access lists and reviewed ownership transfers.
 use super::*;
-use crate::play::PlayLink;
+
 use bevy::{
     input::keyboard::KeyboardInput,
     input_focus::tab_navigation::{TabGroup, TabIndex},
@@ -25,6 +25,7 @@ struct HouseWindow {
     root: Option<Entity>,
     redraw: bool,
     model: Option<Panel>,
+    activity_revision: u64,
     fields: [String; 7],
     request: Option<usize>,
     ownership: Option<oteryn_client_ui::house::sale::OwnershipPanel>,
@@ -90,7 +91,7 @@ fn project(
     skin: Res<Skins>,
     mut state: ResMut<HouseWindow>,
     mut focus: ResMut<InputFocus>,
-    fields: Query<(&Field, &EditableText)>,
+    fields: Query<(Entity, &Field)>,
 ) {
     if state.generation != Some(owner.generation()) || owner.play.is_none() {
         state.open = false;
@@ -108,21 +109,72 @@ fn project(
         .map(|play| play.link.house_panel());
     if let Some(panel) = &projected
         && !state.redraw
+        && state.activity_revision == panel.activity_revision
         && state.model.as_ref() == Some(&panel.model)
         && state.fields == panel.fields
         && state.ownership == ownership
     {
         return;
     }
-    // Ownership review and map controls can redraw the same form. Only carry its
-    // editors across that presentation change while the underlying house is unchanged.
-    let rebuilding = state.root.is_some();
-    let same_house = projected
-        .as_ref()
-        .is_some_and(|panel| state.model.as_ref() == Some(&panel.model));
+    let same_house = projected.as_ref().is_some_and(|panel| {
+        state.activity_revision == panel.activity_revision
+            && state.model.as_ref().is_some_and(|old| {
+                let new = &panel.model;
+                old.world == new.world
+                    && old.town == new.town
+                    && old.index == new.index
+                    && old.page.rows.get(old.index).map(|row| &row.house)
+                        == new.page.rows.get(new.index).map(|row| &row.house)
+            })
+    });
+    let acl_read_finished = state.model.as_ref().is_some_and(|old| old.pending_acl_read)
+        && projected
+            .as_ref()
+            .is_some_and(|panel| !panel.model.pending_acl_read);
+    let acl_loaded = acl_read_finished
+        && projected
+            .as_ref()
+            .is_some_and(|panel| panel.model.acl_snapshot.is_some());
+    // Only a door list binds the shared door/date editor to the reply.
+    let door_loaded = acl_loaded
+        && state
+            .model
+            .as_ref()
+            .and_then(|model| model.pending.as_ref())
+            .and_then(|command| {
+                oteryn_session::property_services::house::decode_house_query(&command.payload).ok()
+            })
+            .and_then(|query| query.acl)
+            .is_some_and(|read| {
+                matches!(
+                    read.selector,
+                    oteryn_client_runtime::house::HouseAclSelector::Door { .. }
+                )
+            });
+    let retain = |index: usize| {
+        projected.as_ref().is_some_and(|panel| {
+            state.activity_revision == panel.activity_revision
+                && (same_house || !matches!(index, 2 | 4 | 6))
+                // Even a refusal restores the requested row before any snapshot is loaded.
+                && !(acl_read_finished && index == 2)
+                && !(acl_loaded && matches!(index, 4 | 6))
+                && !(door_loaded && index == 5)
+                && panel.fields[index] == state.fields[index]
+        })
+    };
+    let mut retained = [None; 7];
+    for (entity, field) in &fields {
+        if retain(field.0) {
+            retained[field.0] = Some(entity);
+            commands.entity(entity).remove::<ChildOf>();
+        }
+    }
     state.redraw = false;
     if let Some(root) = state.root.take() {
-        if focus.get().is_some_and(|entity| fields.contains(entity)) {
+        if focus
+            .get()
+            .is_some_and(|entity| fields.contains(entity) && !retained.contains(&Some(entity)))
+        {
             focus.clear();
         }
         commands.entity(root).despawn();
@@ -133,6 +185,11 @@ fn project(
         state.feedback.clear();
         return;
     };
+    if state.activity_revision != panel.activity_revision {
+        state.feedback.clear();
+        state.review = None;
+        state.map = false;
+    }
     let mut message = oteryn_client_ui::house::panel_text(&panel.model);
     if let Some(model) = &ownership {
         message.push_str("\nOwnership / incoming transfers:\n");
@@ -147,22 +204,14 @@ fn project(
         message.push_str(review.text());
     }
     message.push_str(&state.feedback);
+    state.activity_revision = panel.activity_revision;
     state.ownership = ownership;
-    let mut editors = panel.fields.clone();
-    if rebuilding {
-        for (field, text) in &fields {
-            if (same_house || !matches!(field.0, 2 | 4 | 6))
-                && panel.fields[field.0] == state.fields[field.0]
-            {
-                editors[field.0] = text.value().to_string();
-            }
-        }
-    }
     let root = build(
         &mut commands,
         &skin,
         owner.generation(),
-        &editors,
+        &panel.fields,
+        retained,
         &panel.model,
         &message,
     );
@@ -232,7 +281,9 @@ fn finish(
     let (Some(play), Some(model)) = (&owner.play, &state.model) else {
         return;
     };
-    if play.view.gameplay_input_blocked(&play.link) {
+    if play.view.gameplay_input_blocked(&play.link)
+        || play.link.house_panel().activity_revision != state.activity_revision
+    {
         return;
     }
     let mut values = state.fields.clone();
@@ -240,12 +291,10 @@ fn finish(
         values[field.0] = text.value().to_string();
     }
     if selection == 10 {
-        if play.link.house_panel().model.pending.is_none() {
-            for (index, value) in values.iter().enumerate() {
-                play.link.house_edit(index, value.clone());
-            }
-        }
-        state.map = !play.link.house_map(&values[2]).is_empty();
+        state.map = !play
+            .link
+            .house_map(state.activity_revision, model, values)
+            .is_empty();
         state.review = None;
         state.redraw = true;
         return;
@@ -306,29 +355,28 @@ fn finish(
         }
         state.redraw = true;
     } else {
-        submit(&play.link, model, &state.fields, values, selection);
-        state.model = None;
+        if submit(
+            &play.link,
+            state.activity_revision,
+            model,
+            &state.fields,
+            values,
+            selection,
+        ) {
+            state.model = None;
+        }
         state.review = None;
     }
 }
 pub(super) fn submit(
-    link: &PlayLink,
+    link: &crate::play::PlayLink,
+    revision: u64,
     expected: &Panel,
     expected_fields: &[String; 7],
     fields: [String; 7],
     selection: usize,
-) {
-    let current = link.house_panel();
-    if current.model != *expected
-        || current.fields != *expected_fields
-        || current.model.pending.is_some()
-    {
-        return;
-    }
-    for (index, value) in fields.into_iter().enumerate() {
-        link.house_edit(index, value);
-    }
-    link.house_request(selection);
+) -> bool {
+    link.house_submit(revision, expected, expected_fields, fields, selection)
 }
 
 pub(super) fn build(
@@ -336,6 +384,7 @@ pub(super) fn build(
     skin: &Skins,
     generation: u64,
     fields: &[String; 7],
+    retained: [Option<Entity>; 7],
     model: &Panel,
     message: &str,
 ) -> Entity {
@@ -427,6 +476,10 @@ pub(super) fn build(
                 content,
                 "Names cannot be resolved by this server for access lists; an empty list removes all members. For transfers, enter the recipient character name here.",
             );
+        }
+        if let Some(field) = retained[index] {
+            commands.entity(content).add_child(field);
+            continue;
         }
         let mut editable = EditableText::new(&fields[index]);
         editable.allow_newlines = index == 4;

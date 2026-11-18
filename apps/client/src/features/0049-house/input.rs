@@ -144,7 +144,49 @@ pub(in crate::play) fn submit(
         Err(message) => panel.model.feedback = message,
     }
 }
+#[cfg(all(test, bevy_shell))]
+std::thread_local! {
+    static SUBMIT_HANDOFF: std::cell::Cell<Option<fn(&PlayLink)>> = const { std::cell::Cell::new(None) };
+}
+
 impl PlayLink {
+    #[cfg(bevy_shell)]
+    pub(crate) fn house_submit(
+        &self,
+        revision: u64,
+        expected: &oteryn_client_ui::house::Panel,
+        expected_fields: &[String; 7],
+        fields: [String; 7],
+        selection: usize,
+    ) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        let current = &mut mailbox.properties.house;
+        if current.activity_revision != revision
+            || current.model != *expected
+            || current.fields != *expected_fields
+            || fields
+                .iter()
+                .any(|value| !oteryn_client_ui::modal_dialogs::TextEditor::accepts(value, 8192))
+            || current.model.pending.is_some()
+        {
+            return false;
+        }
+        #[cfg(test)]
+        self.probe_house_handoff();
+        current.fields = fields;
+        #[cfg(test)]
+        self.probe_house_handoff();
+        submit(&mut mailbox, &self.commands, selection);
+        true
+    }
+    #[cfg(all(test, bevy_shell))]
+    fn probe_house_handoff(&self) {
+        SUBMIT_HANDOFF.with(|hook| {
+            if let Some(handoff) = hook.get() {
+                handoff(self);
+            }
+        });
+    }
     pub(crate) fn house_world(&self, world: &str) {
         lock(&self.mailbox).properties.house.fields[0] = world.into();
     }
@@ -174,4 +216,48 @@ impl PlayLink {
     pub fn house_open(&self) {
         lock(&self.mailbox).properties.house.model.open = true;
     }
+}
+
+#[cfg(all(test, bevy_shell))]
+#[test]
+fn house_query_serializes_handoff_with_draft_and_dispatch() -> Result<(), Box<dyn std::error::Error>>
+{
+    let (link, mut receiver, _) = crate::play::play_channel();
+    link.bevy_house_list_fixture();
+    let expected = link.house_panel();
+    let mut fields = expected.fields.clone();
+    fields[4] = "source activity draft".into();
+
+    // Exercise the handoff's real invalidation at each boundary if the mailbox can be acquired.
+    SUBMIT_HANDOFF.set(Some(|link| {
+        std::thread::scope(|scope| {
+            let mailbox = &link.mailbox;
+            scope.spawn(move || match mailbox.try_lock() {
+                Ok(mut mailbox) => mailbox.cancel_activity_requests(),
+                Err(std::sync::TryLockError::WouldBlock) => {}
+                Err(std::sync::TryLockError::Poisoned(error)) => {
+                    error.into_inner().cancel_activity_requests();
+                }
+            });
+        });
+    }));
+    let submitted = link.house_submit(
+        expected.activity_revision,
+        &expected.model,
+        &expected.fields,
+        fields.clone(),
+        0,
+    );
+    SUBMIT_HANDOFF.set(None);
+
+    assert!(submitted);
+    let current = link.house_panel();
+    assert_eq!(current.activity_revision, expected.activity_revision);
+    assert_eq!(current.fields, fields);
+    let PlayCommand::Feature(command) = receiver.try_recv()? else {
+        return Err("house query".into());
+    };
+    assert_eq!(command.kind, 57);
+    assert_eq!(current.model.pending, Some(command));
+    Ok(())
 }

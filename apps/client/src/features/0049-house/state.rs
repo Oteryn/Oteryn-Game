@@ -2,6 +2,8 @@
 pub mod ownership;
 #[derive(Clone, Debug, Default)]
 pub struct Panel {
+    /// Distinguishes successive activity resets even when their empty panels are identical.
+    pub activity_revision: u64,
     pub model: oteryn_client_ui::house::Panel,
     pub fields: [String; 7],
     pub ownership: ownership::Ownership,
@@ -18,7 +20,13 @@ impl Panel {
         }
         let acl_read = self.model.pending_acl_read && self.model.pending.as_ref() == Some(command);
         self.model.apply(command, result);
-        if acl_read && let Some(snapshot) = &self.model.acl_snapshot {
+        if !acl_read {
+            return;
+        }
+        // The map can select a different entrance while the list is loading.
+        self.model.index = self.model.pending_index;
+        self.fields[2] = (self.model.index + 1).to_string();
+        if let Some(snapshot) = &self.model.acl_snapshot {
             self.fields[4] = snapshot
                 .members
                 .iter()
@@ -39,6 +47,7 @@ impl Panel {
         }
     }
     pub(in crate::play) fn invalidate(&mut self) {
+        self.activity_revision = self.activity_revision.wrapping_add(1);
         self.ownership.model.admitted(if self.model.selected {&[49]} else {&[]});
         self.ownership.navigation=None;self.ownership.fields=Default::default();
         self.model.pending = None;
@@ -56,7 +65,10 @@ impl Panel {
     pub(in crate::play) fn initialize(&mut self, selected: bool) {
         let world = std::mem::take(&mut self.fields[0]);
         let context=self.ownership.context.clone();
-        *self = Self::default();
+        *self = Self {
+            activity_revision: self.activity_revision.wrapping_add(1),
+            ..Self::default()
+        };
         self.model.selected = selected;
         self.ownership.context=context;
         self.ownership.model.admitted(if selected {&[49]} else {&[]});

@@ -140,6 +140,9 @@ fn bosstiary_hazard_buttons_query_and_raise_the_server_hazard_level()
     .init_asset::<Font>()
     .insert_non_send(owner)
     .add_systems(Startup, crate::bevy_shell::ui::setup);
+    app.init_resource::<bevy::input_focus::InputFocus>();
+    crate::bevy_shell::ui::window_layout::install(&mut app);
+    super::super::bestiary::install(&mut app);
     install(&mut app);
     app.update();
     let press = |app: &mut App, intent: Intent| -> Result<(), Box<dyn std::error::Error>> {
@@ -152,8 +155,33 @@ fn bosstiary_hazard_buttons_query_and_raise_the_server_hazard_level()
         app.world_mut().trigger(Activate { entity });
         Ok(())
     };
+    let layers = |app: &mut App, id| {
+        app.world_mut()
+            .query::<(Entity, &crate::bevy_shell::ui::window_layout::WindowLayer)>()
+            .iter(app.world())
+            .find_map(|(entity, layer)| (layer.0 == id).then_some(entity))
+            .ok_or("window missing")
+    };
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .charm_progression_open();
+    app.update();
+    let bestiary = layers(&mut app, "bestiary")?;
     app.world_mut()
-        .spawn((super::super::GameModal, Node::default(), GlobalZIndex(149)));
+        .resource_mut::<bevy::input_focus::InputFocus>()
+        .set(bestiary, bevy::input_focus::FocusCause::Navigated);
+    app.update();
+    press(&mut app, Intent::HazardQuery)?;
+    assert!(commands.try_recv().is_err());
+    let boss = layers(&mut app, "bosstiary")?;
+    app.world_mut()
+        .resource_mut::<bevy::input_focus::InputFocus>()
+        .set(boss, bevy::input_focus::FocusCause::Navigated);
+    app.update();
     press(&mut app, Intent::HazardQuery)?;
     let PlayCommand::Feature(query) = commands.try_recv()? else {
         return Err("hazard query missing".into());

@@ -255,9 +255,14 @@ fn podium_preview_artwork_is_shown_in_the_podium_window() -> TestResult {
     press(&mut app, 19, ctrl().with(Modifier::Alt))?;
     assert!(form_open(&app, "House podium")?);
     drain(&mut commands);
+    with_link(&app, |link| link.house_podium_edit(3, "citizen".into()))?;
     for (index, value) in [(1, "1"), (2, "1"), (3, "citizen")] {
         set(&mut app, index, value);
     }
+    set(&mut app, 3, &"x".repeat(8000));
+    click(&mut app, Some(7))?;
+    assert!(commands.try_recv().is_err());
+    set(&mut app, 3, "citizen");
     click(&mut app, Some(7))?;
     let PlayCommand::Feature(command) = commands.try_recv()? else {
         return Err("preview request missing".into());
@@ -674,6 +679,61 @@ fn hireling_management_buttons_map_to_configuration_purchases() -> TestResult {
         assert_eq!(quote.offer_key, format!("store:hireling:{offer}"));
         outbox.bevy_feature_forms_answered();
         app.update();
+    }
+    Ok(())
+}
+
+#[test]
+fn oversized_replacements_reject_the_entire_form_action() -> TestResult {
+    use crate::play::PlayLink;
+    for (title, open, length, actions) in [
+        (
+            "Guild bank",
+            PlayLink::guild_bank_open as fn(&PlayLink),
+            8000,
+            &[1, 2][..],
+        ),
+        ("Timed items", PlayLink::timed_item_open, 65, &[0]),
+        ("House move-out", PlayLink::house_move_out_open, 513, &[1]),
+        ("Training", PlayLink::training_open, 8000, &[1]),
+        (
+            "Character information",
+            PlayLink::character_info_open,
+            8000,
+            &[0],
+        ),
+        ("Guild wars", PlayLink::guild_war_open, 8000, &[0]),
+        ("Staff authorized actions", PlayLink::staff_open, 8193, &[0]),
+    ] {
+        let (mut app, mut commands, _) = capable()?;
+        with_link(&app, |link| {
+            if title == "Guild bank" {
+                link.guild_bank_edit(1, "100".into());
+            }
+            open(link);
+        })?;
+        app.update();
+        let form = with_link(&app, |link| {
+            FeatureForm::all()
+                .iter()
+                .copied()
+                .find(|form| form.title(link) == title)
+        })?
+        .ok_or("missing form")?;
+        let before = with_link(&app, |link| link.feature_form_view(form))?;
+        assert!(before.open && !before.pending, "{title}");
+        drain(&mut commands);
+        // A valid sibling draft makes partial application observable even when
+        // the feature would refuse the command for a separate reason.
+        set(&mut app, 0, "01010101010171018101010101010101");
+        set(&mut app, 1, &"9".repeat(length));
+        for &action in actions {
+            click(&mut app, Some(action))?;
+            assert!(commands.try_recv().is_err(), "{title} action {action}");
+            let after = with_link(&app, |link| link.feature_form_view(form))?;
+            assert_eq!(after.fields, before.fields, "{title} action {action}");
+            assert_eq!(after.text, before.text, "{title} action {action}");
+        }
     }
     Ok(())
 }

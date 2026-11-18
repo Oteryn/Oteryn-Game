@@ -633,3 +633,42 @@ fn cyclopedia_map_donate_preserves_pending_edits_when_the_snapshot_changes()
     assert!(rx.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn rejected_gold_draft_does_not_donate() -> Result<(), Box<dyn std::error::Error>> {
+    let (mut app, mut rx, _) = ready()?;
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .cyclopedia_map_edit(0, "100".into());
+    app.update();
+    app.world_mut()
+        .query_filtered::<&mut EditableText, With<Donation>>()
+        .single_mut(app.world_mut())?
+        .editor_mut()
+        .set_text(&"é".repeat(33));
+    press(&mut app, Kind::Explore(Intent::Donate))?;
+    assert!(rx.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn next_floor_requests_selected_footprint() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::cyclopedia_map::geometry;
+    let (mut app, mut rx, _) = ready()?;
+    let entity = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| (text.0 == "Next floor").then_some(parent.parent()))
+        .ok_or("Next floor")?;
+    app.world_mut().trigger(Activate { entity });
+    app.update();
+    let request =
+        geometry::decode_request(&feature(&mut rx)?.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!((request.area, request.floor), (1, -6));
+    Ok(())
+}

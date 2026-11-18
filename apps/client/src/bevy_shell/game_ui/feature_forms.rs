@@ -276,6 +276,19 @@ fn finish(
             *value = text.value().to_string();
         }
     }
+    let limit = match shown.layout.title {
+        "Timed items" => 64,
+        "House move-out" => 512,
+        "Training" | "Character information" | "Guild bank" | "Guild wars" | "House podium" => 7996,
+        "Staff authorized actions" => 8192,
+        _ => usize::MAX,
+    };
+    if values
+        .iter()
+        .any(|value| !oteryn_client_ui::modal_dialogs::TextEditor::accepts(value, limit))
+    {
+        return;
+    }
     play.link.feature_form_submit(*entry, action, values);
 }
 
