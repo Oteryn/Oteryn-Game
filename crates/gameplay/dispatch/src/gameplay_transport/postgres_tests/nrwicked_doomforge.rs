@@ -62,14 +62,20 @@ fn run_case(
     destination: TilePos,
     hard_win: bool,
 ) -> TestResult {
-    std::thread::Builder::new()
+    let started = std::time::Instant::now();
+    let result = std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
             scenario(admin, fixture_name, destination, hard_win).map_err(|error| error.to_string())
         })?
         .join()
-        .map_err(|_| "Doomforge scenario thread panicked")?
-        .map_err(Into::into)
+        .map_err(|_| "Doomforge scenario thread panicked")?;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED {fixture_name} duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result.map_err(Into::into)
 }
 
 fn scenario(
@@ -571,6 +577,11 @@ async fn two_player_exit(
             rows.tracks()
                 .get(&format!("{track}/kill_arbaziloth/questline")),
             Some(&2)
+        );
+        assert_eq!(rows.tracks().get(&format!("{track}/questlog")), Some(&1));
+        assert_eq!(
+            rows.tracks().get(&format!("{track}/forgemaster_door/questline")),
+            Some(&1)
         );
     }
     for (actor, session) in players {
