@@ -15,6 +15,118 @@
   ],
   "rules": [
     {
+      "key": "oteryn:quest-npc/elemental_spheres/arkulius/alverus",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "npc": "oteryn:npc.arkulius",
+      "trigger": "say",
+      "keywords": [
+        "alverus"
+      ],
+      "guards": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "It happened while he carried out an experiment concerning the creation of the elemental shrines. I still get goose bumps just by thinking of it. ...",
+        "You need to know about the process of creating an elemental shrine to understand it completely, but I don't want to go into detail now. ...",
+        "Anyway, his spell had a different outcome than he had planned. He accidentally created an Ice Overlord, pure living elemental ice, who froze him in a blink of an eye."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:87-89"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/elemental_spheres/arkulius/shrines",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "npc": "oteryn:npc.arkulius",
+      "trigger": "say",
+      "keywords": [
+        "shrine",
+        "shrines"
+      ],
+      "guards": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "The creation of the elemental shrines is a really complex matter. They are actually nodes, locations where the matching elemental sphere is very close. ...",
+        "The shrine itself is like a portal between our world and the elemental sphere and enables us to use the elemental energy emerging from it."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:94-95"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/elemental_spheres/arkulius/sphere",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "npc": "oteryn:npc.arkulius",
+      "trigger": "say",
+      "keywords": [
+        "sphere"
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 80
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "There are four spheres we know of: ice, fire, earth and energy. ....<mumbles> Hmmm, should I ask or not?....The heck with it! Now that you know about the spheres ...",
+        "I found a way to visit them. It's VERY dangerous and there is a decent chance that you won't come back BUT if you succeed you'll write history!!! Ask me about that mission if you're interested."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:100-101"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/elemental_spheres/arkulius/level-refusal",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "npc": "oteryn:npc.arkulius",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "quest"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "level",
+          "op": "lt",
+          "value": 80
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "I'm sorry this task is highly dangerous and I need experienced people for it."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:138"
+      ]
+    },
+    {
       "key": "oteryn:quest-npc/elemental_spheres/arkulius/sorcerer-offer",
       "quest": "oteryn:quest.elemental_spheres_quest",
       "npc": "oteryn:npc.arkulius",

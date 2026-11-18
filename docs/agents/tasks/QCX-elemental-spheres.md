@@ -22,6 +22,13 @@ Crystal `201189f871d23597b82caf88fd611454a2ddefb8` is OTS_HYPOTHESIS_ONLY. The r
 | Final reward | Crystal NPC turn-in consumes one Neutral Matter (954) and declares one of Dragon Robe (8039), Greenwood Coat (8041), The Ironworker (8025) or Windborn Colossus Armor (8055). These four selections already exist in the live NPC rules, which set stage 3 without a canonical completion flag. The canonical Item tree marks their records and Neutral Matter nonmaterializable. The effective spell-native profile shard also lacks their carried item policies. No separate record in `content/interactions/reward_claims` is linked to the quest. The chosen definition lists only Dragon Robe. Global adds Spirit Bind for Monk (client identity 51294 in the Item tree, currently nonmaterializable) and Lord of the Elements for everyone (canonical achievement already exists). Global lists no quest XP or outfit. |
 | Arkulius shop | Global transcript limits Arkulius to buying Neutral Matter at 5,000 gold. The repository listed that plus nine older or Spirit offers. Crystal lists the classic soils and boss drops in addition to Neutral Matter. Global controls the projected offer list. |
 
+## Corrections
+
+- The Arkulius NPC programme adds the captured lore topics and the under-80 mission response. Its catalogue registers the exact previous Elemental Spheres definition so persisted quest state remains readable.
+- The Edron placement scope now includes the retained Arkulius candidate at 33280,31845,3. The placement converter generated the new NPC row and its index.
+- The Arkulius trade authoring retains Neutral Matter at 5,000 gold per item and removes nine extra offers. The native model census changed from 12,687 to 12,678 admitted offers, with all held counts identical.
+- The trade declaration was staged with the quest’s authoring tool (`questpc2_live_eligibility.py --shop-world`), resealed with `questpc7_world_seal.refresh`, and emitted by `oteryn-world-project-canonicalize`. The WorldProject-to-tree converter generated the service shard and its derived registries from that canonical source. The unrelated spell, raid and Prey outputs were excluded from this change.
+
 ## BLOCKER and OPEN-FACTS
 
 `BLOCKER Arkulius start exclusion shared inventory planner cap of eight distinct items versus eleven required including the turn-in item data-global/npc/arkulius.lua:104-145`
@@ -41,3 +48,8 @@ Crystal `201189f871d23597b82caf88fd611454a2ddefb8` is OTS_HYPOTHESIS_ONLY. The r
 OPEN-FACTS. Global does not give numeric selectors or map cells for the Monk route, the selector-to-cell mapping of the exits, the Monk role in the four-shrine final sequence, spirit altar/corpse bindings, the exact achievement grant event, the precise re-entry clock anchor, loot probabilities or tie-breaking for equal highest damage. The captured wiki pages name quest items and rewards without giving client IDs. Numeric identities in the table are from the retained donor and canonical Item tree.
 
 PARTIAL. Chosen quest definition, start inventory exclusion, machine and realm admission/return, Spirit branch, highest-damage credit, exact altar timing, chamber encounter and placement tags, ashes distribution, native reward/Neutral Matter custody and achievement trigger.
+
+
+## Dispatch regression evidence
+
+Against the original shop, the real trade window exposed ten offers (18.108 s). After correcting a test-only Druid fixture that supplied Monk state, the baseline rerun reproduced an absent Edron placement (17.148 s), missing introduction (33.366 s), and missing level refusal (31.872 s). The baseline rerun used the already-corrected shop declaration for the independent shop case.

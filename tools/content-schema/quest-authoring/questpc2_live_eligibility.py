@@ -45,14 +45,32 @@ def elemental():
         return [json.loads(line.strip().removesuffix(',')) for line in lines[first-1:last]
                 if line.strip().startswith('"')]
 
-    def rule(key, line, guards, actions, reply, topics=None):
+    def rule(key, line, guards, actions, reply, topics=None, *, keywords=None, premium=True):
+        if premium:
+            guards = guards + [{'kind': 'premium', 'value': True}]
         row = {'key': f'oteryn:quest-npc/elemental_spheres/arkulius/{key}',
                'quest': quest, 'npc': 'oteryn:npc.arkulius', 'trigger': 'say',
-               'keywords': ['mission', 'quest'], 'guards': guards + [{'kind':'premium','value':True}],
+               'keywords': keywords or ['mission', 'quest'], 'guards': guards,
                'effects': actions, 'reply': reply, 'sources': [ref(line)]}
         if topics is not None:
             row['keywords'] = ['yes']; row['topics'] = topics
         rules.append(row)
+
+    # TibiaWiki Elemental Spheres Quest/Spoiler, curid 25641, oldid 1179410.
+    # Crystal retains the same dialogue and the level gate on the sphere topic.
+    reset_topic = [{'kind': 'set_topic', 'value': 0}]
+    level_80 = {'kind': 'level', 'op': 'ge', 'value': 80}
+    for keywords, first, last, guards in [
+        (['alverus'], 87, 89, []),
+        (['shrine', 'shrines'], 94, 95, []),
+        (['sphere'], 100, 101, [level_80]),
+    ]:
+        rule(keywords[-1], f'{first}-{last}', guards, reset_topic,
+             [line.replace('{', '').replace('}', '') for line in say(first, last)],
+             keywords=keywords, premium=False)
+
+    rule('level-refusal', 138, [storage('lt', 1), {'kind': 'level', 'op': 'lt', 'value': 80}],
+         reset_topic, [json.loads(re.search(r'"[^"]+"', lines[137]).group())], premium=False)
 
     for vocation, first, soil, reward in [('sorcerer',110,946,8039), ('druid',117,947,8041),
                                           ('paladin',124,942,8025), ('knight',131,948,8055)]:
@@ -76,6 +94,26 @@ def elemental():
                               'revision':'201189f871d23597b82caf88fd611454a2ddefb8'}]}
 
 
+def elemental_shop(world):
+    """Apply the Global Arkulius offer to the staged WorldProject declarations."""
+    path = world / 'definitions/declarations.json'
+    original = path.read_text()
+    records = json.loads(original)['records']
+    shop, = (row for row in records if row['identity']['key'] == 'oteryn:service.trade.arkulius')
+    before = json.dumps(shop, ensure_ascii=False, separators=(',', ':'))
+    # Elemental Spheres Quest/Spoiler, curid 25641 oldid 1179410, trade transcript.
+    neutral_matter, = (offer for offer in shop['offers']
+                       if offer['item']['key'] == 'oteryn:item.tibia.i954')
+    if neutral_matter['direction'] != 'BuyFromPlayer' or neutral_matter['unit_price'] != 5000:
+        raise ValueError('Arkulius Neutral Matter offer drifted')
+    shop['offers'] = [neutral_matter]
+    after = json.dumps(shop, ensure_ascii=False, separators=(',', ':'))
+    if original.count(before) != 1:
+        raise ValueError('Arkulius declaration is absent from canonical WorldProject')
+    if before != after:
+        path.write_text(original.replace(before, after))
+
+
 def run(check=False):
     outputs = {}
     for name in ['hot_cuisine', 'the_hidden_city_of_beregar']:
@@ -96,4 +134,11 @@ def run(check=False):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
-    run(parser.parse_args().check)
+    parser.add_argument('--shop-world', type=Path, help='stage the Arkulius offer in this WorldProject')
+    args = parser.parse_args()
+    if args.shop_world is not None:
+        if args.check:
+            parser.error('--shop-world stages the WorldProject and cannot be used with --check')
+        elemental_shop(args.shop_world)
+    else:
+        run(args.check)
