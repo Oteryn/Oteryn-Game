@@ -213,6 +213,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return UseDisposition::NothingToUse;
             }
+            if callback.guarded_switch()
+                && read_only_gate.is_some_and(|gate| {
+                    gate.actor == actor
+                        && gate.session == session
+                        && gate.callback == callback.key
+                        && runtime.read_actor_position(actor) == Ok(gate.expected)
+                })
+                && let Some(effect) = callback.effects.requirement_failure_magic
+            {
+                map.facts.emit_movement_effect(pos, effect);
+                return UseDisposition::Committed;
+            }
             return UseDisposition::Rejected;
         }
         if close && callback.lever.is_some() && !callback.reversible {
@@ -463,6 +475,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 passages.push(*passage);
             }
+        }
+        if callback.effects.visual_passages {
+            if projection.is_some() || !passages.is_empty() {
+                return UseDisposition::Rejected;
+            }
+            projection = Some(
+                crate::map::facts::QuestCallbackProjection::ReadsetTransforms {
+                    entries: replacements
+                        .drain(..)
+                        .map(|(key, after, _)| (key, map.facts.object_revision(key), Some(after)))
+                        .collect(),
+                    reset: None,
+                },
+            );
         }
         if !close {
             projection = match super::timed_passages::prepare(
@@ -1514,7 +1540,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         );
                     }
                 }
-            } else if !callback.is_read_only() && !personal_gift_preserves_object && !apply_scene()
+            } else if (!callback.is_read_only() || callback.guarded_switch())
+                && !personal_gift_preserves_object
+                && !apply_scene()
             {
                 return UseDisposition::Rejected;
             }

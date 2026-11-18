@@ -407,7 +407,10 @@ impl Bindings {
                 transitions.push(occurrence.transition()?);
             }
             for stage in &quest.stages {
-                if stage.is_native_encounter() {
+                if stage.is_native_encounter()
+                    || matches!(&stage.trigger, Trigger::MapUse { callback } | Trigger::StepIn { callback }
+                        if callback.is_read_only())
+                {
                     continue;
                 }
                 for mut transition in stage.transitions(&quest.quest)? {

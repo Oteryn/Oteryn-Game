@@ -587,6 +587,22 @@ impl Callback {
             && actor.y.abs_diff(target.y) <= u16::from(self.use_range)
     }
 
+    /// A shared switch may inspect personal progress without advancing it.
+    pub fn guarded_switch(&self) -> bool {
+        self.is_read_only()
+            && self.requires_world_admission
+            && self.actor_kind == ActorKind::Player
+            && self.trigger == Trigger::Use
+            && self.lever.is_some()
+            && !self.reversible
+            && !self.opening_only
+            && self.teleport.is_none()
+            && self.world_change.is_none()
+            && !self.world_requirements.is_empty()
+            && self.world_requirements.iter().all(WorldRequirement::is_map)
+            && (self.passages.is_empty() || self.effects.visual_passages)
+    }
+
     /// A pure quest-state predicate, with no Quest mutation or receipt.
     #[must_use]
     pub fn is_read_only(&self) -> bool {
@@ -1003,7 +1019,8 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     .world_requirements
                     .iter()
                     .any(|r| r.ground.is_some()))
-                && ((!callback.has_state_writes() && !callback.guarded_ground_step())
+                && ((!callback.has_state_writes() && !callback.guarded_ground_step()
+                        && !callback.guarded_switch())
                     || callback.native_rule.is_some()))
             || (callback.opening_only
                 && (callback.trigger != Trigger::Use
@@ -1105,10 +1122,11 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             })
             || (callback.storage.iter().any(|storage| storage.read_only)
                 && (!callback.is_read_only()
-                    || callback.teleport.is_none()
-                    || (callback.trigger == Trigger::StepIn && !callback.return_on_failure)
-                    || callback.lever.is_some()
-                    || !callback.passages.is_empty()
+                    || (!callback.guarded_switch()
+                        && (callback.teleport.is_none()
+                            || (callback.trigger == Trigger::StepIn && !callback.return_on_failure)
+                            || callback.lever.is_some()
+                            || !callback.passages.is_empty()))
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
                     || callback.minimum_level.is_some()

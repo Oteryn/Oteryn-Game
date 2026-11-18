@@ -93,6 +93,12 @@ pub struct CallbackEffects {
     /// Restore remote passage objects independently of the source object.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub passages_reset_after_ms: Option<u32>,
+    /// Transform the listed objects without overriding their native collision.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub visual_passages: bool,
+    /// Cue emitted at a guarded switch when the shared readset does not match.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub requirement_failure_magic: Option<u16>,
     /// A pressure tile restores the listed passage objects after this delay.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub passages_close_after_ms: Option<u32>,
@@ -655,6 +661,28 @@ pub(super) fn valid(callback: &Callback) -> bool {
                                 .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
                     })
         })
+        || effects
+            .requirement_failure_magic
+            .is_some_and(|effect| !(1..=255).contains(&effect) || !callback.guarded_switch())
+        || (effects.visual_passages
+            && (callback.actor_kind != ActorKind::Player
+                || callback.reversible
+                || callback.passages.is_empty()
+                || callback.passages.iter().any(|passage| {
+                    passage.replacement.is_none()
+                        || passage.replacement_passable.is_some()
+                        || passage.create_on_close.is_some()
+                        || passage.if_present
+                })
+                || effects.reset_after_ms.is_some()
+                || effects.passages_reset_after_ms.is_some()
+                || effects.passages_close_after_ms.is_some()
+                || effects.target_transform.is_some()
+                || effects.scene.is_some()
+                || effects.portals.is_some()
+                || effects.item_presence.is_some()
+                || effects.item_cycle.is_some()
+                || effects.encounter.is_some()))
         || effects.reset_after_ms.is_some_and(|delay| {
             !(1..=3_600_000).contains(&delay)
                 || callback.actor_kind != ActorKind::Player
