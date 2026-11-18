@@ -9,14 +9,18 @@ pub(super) async fn scenario(
     replay_only: bool,
     missing_child: bool,
 ) -> TestResult {
-    scenario_with_resume(harness, replay_only, missing_child, false).await
+    scenario_with_resume(harness, replay_only, missing_child, false, false).await
 }
 
 pub(super) async fn resumed_budget(harness: &Harness) -> TestResult {
-    scenario_with_resume(harness, false, false, true).await
+    scenario_with_resume(harness, false, false, true, false).await
 }
 
-async fn scenario_with_resume(harness: &Harness, replay_only: bool, missing_child: bool, resumed: bool) -> TestResult {
+pub(super) async fn checkout_window(harness: &Harness) -> TestResult {
+    scenario_with_resume(harness, false, false, true, true).await
+}
+
+async fn scenario_with_resume(harness: &Harness, replay_only: bool, missing_child: bool, resumed: bool, sql_window: bool) -> TestResult {
     prepare_current_session(harness).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
     let authority = harness
@@ -69,7 +73,35 @@ async fn scenario_with_resume(harness: &Harness, replay_only: bool, missing_chil
         // A real player path admission advances the shared ledger between owner turns.
         assert!(owner.states.attack.lock().await.path_budget.admits(50_000, true, false));
     }
-    owner.drain_monster_melee().await;
+    if sql_window {
+        let mut blocker = harness.pool.begin().await?;
+        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'),33))")
+            .bind(deps.admitted.world_id.as_bytes().as_slice())
+            .bind(deps.admitted.channel_id.as_bytes().as_slice())
+            .execute(&mut *blocker).await?;
+        let execution = owner.owner_now();
+        let release = async {
+            let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(1);
+            loop {
+                let waiting: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND wait_event='advisory')")
+                    .fetch_one(&harness.pool).await?;
+                if waiting { break; }
+                if tokio::time::Instant::now() >= deadline { return Err("checkout never waited on its real SQL scope lock".into()); }
+                tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+            }
+            // Cross at least one ledger window while the checkout awaits SQL.
+            tokio::time::sleep(std::time::Duration::from_millis(60)).await;
+            blocker.rollback().await?;
+            Ok::<(), Box<dyn std::error::Error>>(())
+        };
+        let (_, released) = super::super::fixture::join_two(owner.drain_monster_melee_at(execution), release).await;
+        released?;
+        assert!(owner.owner_now().get() / 50_000 > execution.get() / 50_000);
+        assert!(owner.states.attack.lock().await.path_budget.admits(execution.get(), false, false),
+            "summon SQL must not advance the ledger beyond movement and physical timer preparation in the same checkout");
+    } else {
+        owner.drain_monster_melee().await;
+    }
     let first_report = owner
         .states
         .spell_states

@@ -128,7 +128,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         #[cfg(test)]
         native_owner_turn(room, "profile_start", "entered");
-        let execution_now = now;
+        // One resource/physical execution clock for the whole exclusive checkout,
+        // including SQL waits, summons, movement, windups and chain preparation.
+        let execution_now = attack.path_budget.checkout_time(now);
         let native_pending = states.native_profile_pass.pending();
         let primal_pending = states.primal_callbacks.normal_pending();
         let _ = states
@@ -397,7 +399,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 } else {
                     objects.collision_cells()
                 };
-                let player_waiting = attack.players_waiting(now);
+                let player_waiting = attack.players_waiting(execution_now);
                 if native_pending.is_none() && primal_pending.is_none() {
                 // Carried creature requests precede player chase and fresh thinks.
                 table
@@ -422,10 +424,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 attack.drain_chase_searches(
                     runtime,
                     room,
-                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now),
+                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(execution_now),
                     &|at| super::attack::chase_path_tile(room.movement_cells(), doors, at),
                 );
-                let player_waiting_now = attack.players_waiting(now);
+                let player_waiting_now = attack.players_waiting(execution_now);
                 if runtime.rotten_movement_pending() {
                     #[cfg(test)]
                     native_owner_turn(room, "profile_guard", "movement_pending");
@@ -453,7 +455,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                 }
                 }
-                let player_waiting_now = attack.players_waiting(now);
+                let player_waiting_now = attack.players_waiting(execution_now);
                 // Crystal game.cpp:7051-7053 runs source onThink before onAttacking.
                 // Reserve the existing bounded occurrences, release the table borrow,
                 // then re-read physical type/HP before their native schedules run.
@@ -590,9 +592,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     map,
                     native,
                     &mut attack.path_budget,
-                    // Resource work uses the current clock while the attack
-                    // guard is held; the reservation's semantic clock stays `now`.
-                    execution_now.max(owner.owner_now().get()),
+                    execution_now,
                     player_waiting_now,
                 );
                 // Native spell proposals carry the source closure's actual formula revision.

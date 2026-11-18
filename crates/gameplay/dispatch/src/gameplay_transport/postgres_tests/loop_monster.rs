@@ -177,3 +177,8 @@ fn current_owner_summon_registration_failure_rolls_back_and_replays_the_refusal(
 fn resumed_summon_uses_current_path_budget_window() -> TestResult {
     run_case(async |harness| summon_transaction::resumed_budget(harness).await)
 }
+
+#[test]
+fn checkout_paths_keep_one_window_across_sql_wait() -> TestResult {
+    run_case(async |harness| summon_transaction::checkout_window(harness).await)
+}
