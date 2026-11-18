@@ -115,6 +115,8 @@ pub(super) struct PendingCallbacks {
     #[cfg(test)]
     pub(super) interrupt_after_commit: std::sync::atomic::AtomicBool,
     #[cfg(test)]
+    pub(super) interrupt_cooldown_retry: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
     pub(super) shared_switch_occurred_test: std::sync::Mutex<Option<i64>>,
 }
 

@@ -211,6 +211,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }) {
             return UseDisposition::Occupied;
         }
+        let cooldown_bound = callback
+            .effects
+            .encounter_outcome
+            .as_ref()
+            .is_some_and(|outcome| outcome.cooldown_seconds.is_some());
+        let Ok(initiator_position) = runtime.read_actor_position(actor) else {
+            return UseDisposition::Rejected;
+        };
+        let original = match self.states.quest_callbacks.records.lock() {
+            Ok(records) => records
+                .get(&session)
+                .filter(|record| {
+                    pending_encounter_matches(
+                        record,
+                        actor,
+                        session,
+                        initiator_position,
+                        &callback.key,
+                        key,
+                        expected_revision,
+                        cause,
+                    )
+                })
+                .cloned(),
+            Err(_) => return UseDisposition::Rejected,
+        };
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let mut players = Vec::new();
         let mut proofs = Vec::new();
@@ -241,34 +267,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || runtime.bound_attacker_lease(who, member_session).is_err()
                 || !self.states.player_trades.physical(member_session, None)
                 || (self.has_pending_quest_callback(member_session)
-                    && !(who == actor
-                        && member_session == session
-                        && !self.states.grizzly_boss.has_pending(session)
-                        && self
-                            .states
-                            .quest_callbacks
-                            .soul_rewards
-                            .lock()
-                            .is_ok_and(|pending| !pending.contains_key(&session))
-                        && self
-                            .states
-                            .quest_callbacks
-                            .records
-                            .lock()
-                            .is_ok_and(|pending| {
-                                pending.get(&session).is_some_and(|record| {
-                                    pending_encounter_matches(
-                                        record,
-                                        actor,
-                                        member_session,
-                                        expected,
-                                        &callback.key,
-                                        key,
-                                        expected_revision,
-                                        cause,
-                                    )
-                                })
-                            })))
+                    && (self.party_member_has_foreign_pending(member_session, session)
+                        || original.as_ref().is_none_or(|record| {
+                            (who != actor || member_session != session)
+                                && !(cooldown_bound
+                                    && record.participants.contains(&member_session))
+                        })))
             {
                 return UseDisposition::Rejected;
             }
@@ -354,6 +358,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let QuestCause::Use(cause) = cause else {
                 return UseDisposition::Rejected;
             };
+            if original.as_ref().is_some_and(|record| {
+                !record
+                    .participants
+                    .iter()
+                    .copied()
+                    .eq(party.iter().map(|(_, session)| *session))
+            }) {
+                return UseDisposition::Rejected;
+            }
             let mut fences = Vec::with_capacity(party.len());
             for &(actor, session) in &party {
                 let Ok(Some(fence)) = self.current_quest_fence(session).await else {
@@ -485,6 +498,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Rejected;
         };
         if let Some(cooldown) = cooldown {
+            // Reserve the original command before its first possible durable write.
+            // The existing reconciliation entry point can safely drive it again.
+            {
+                let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
+                    return UseDisposition::Rejected;
+                };
+                records.entry(session).or_insert_with(|| Pending {
+                    actor,
+                    session,
+                    expected: initiator_position,
+                    callback: callback.key.clone(),
+                    key,
+                    revision: expected_revision,
+                    cause,
+                    origin: None,
+                    context: None,
+                    flame: None,
+                    ingress_settled: true,
+                    participants: party.iter().map(|(_, session)| *session).collect(),
+                    projection_target: None,
+                    window_source: None,
+                    flame_effect_sent: false,
+                    selected_tool: None,
+                });
+            }
             let decision = self
                 .root
                 .commit_channel_boss_cooldown(self.character, self.holder, permit, cooldown.clone())
@@ -501,29 +539,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 decision
             };
-            let decision = match decision {
-                Err(
-                    DurabilityError::CommitOutcomeUnknown
-                    | DurabilityError::RootPassDeadlineExceeded,
-                ) => {
-                    // Resolve a lost COMMIT against the same command, revision and full roster.
-                    self.root
-                        .commit_channel_boss_cooldown(self.character, self.holder, permit, cooldown)
-                        .await
-                }
-                decision => decision,
+            let interrupted = matches!(
+                &decision,
+                Err(DurabilityError::CommitOutcomeUnknown
+                    | DurabilityError::RootPassDeadlineExceeded)
+            );
+            let retry = interrupted;
+            #[cfg(test)]
+            let retry = retry
+                && !self
+                    .states
+                    .quest_callbacks
+                    .interrupt_cooldown_retry
+                    .swap(false, std::sync::atomic::Ordering::SeqCst);
+            let decision = if retry {
+                // Resolve a lost COMMIT against the same command, revision and full roster.
+                self.root
+                    .commit_channel_boss_cooldown(self.character, self.holder, permit, cooldown)
+                    .await
+            } else {
+                decision
             };
-            match decision {
-                Ok(ChannelBossCooldownDecision::Admitted) => {}
-                Ok(ChannelBossCooldownDecision::OnCooldown) => {
-                    if let Some(message) = &callback.failure_message {
-                        self.states.chat.push_quest_feedback(session, message);
-                    }
-                    return UseDisposition::Rejected;
+            if !matches!(&decision, Ok(ChannelBossCooldownDecision::Admitted)) {
+                let hold = decision.is_err() && (interrupted || original.is_some());
+                if !hold && let Ok(mut records) = self.states.quest_callbacks.records.lock() {
+                    records.remove(&session);
                 }
-                Ok(ChannelBossCooldownDecision::Rejected) | Err(_) => {
-                    return UseDisposition::Rejected;
+                if matches!(decision, Ok(ChannelBossCooldownDecision::OnCooldown))
+                    && let Some(message) = &callback.failure_message
+                {
+                    self.states.chat.push_quest_feedback(session, message);
                 }
+                return UseDisposition::Rejected;
             }
         }
         // The runtime borrow still excludes all competing admissions. Reacquire short

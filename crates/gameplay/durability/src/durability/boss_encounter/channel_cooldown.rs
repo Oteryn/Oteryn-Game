@@ -102,7 +102,6 @@ impl DurabilityRoot {
         for member in &request.party {
             digest.update(member.character_id.as_bytes());
             digest.update(member.game_session_id.as_bytes());
-            digest.update(member.connection_generation.get().to_be_bytes());
             digest.update(member.character_lease_generation.to_be_bytes());
             digest.update(member.scope_ownership_generation.get().to_be_bytes());
         }

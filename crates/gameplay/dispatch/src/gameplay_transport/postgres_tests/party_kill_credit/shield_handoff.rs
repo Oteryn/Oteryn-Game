@@ -167,6 +167,10 @@ pub(super) async fn exercise(
             true,
             std::sync::atomic::Ordering::SeqCst,
         );
+        owner.states.quest_callbacks.interrupt_cooldown_retry.store(
+            true,
+            std::sync::atomic::Ordering::SeqCst,
+        );
         Some(database_ms(pool).await?)
     } else {
         None
@@ -174,9 +178,18 @@ pub(super) async fn exercise(
     let result = owner.use_quest_callback(player.actor, command(501), map, &WorldObjectTarget {
         placement:placement.clone(), expected_revision:map.facts.object_revision(key),
     }).await.ok_or("lever result")?;
-    assert_eq!(result.disposition, UseDisposition::Committed);
-
     let cooldowns = if let Some(before_ms) = before_ms {
+        assert_eq!(result.disposition, UseDisposition::Rejected);
+        for member in players {
+            assert!(owner.has_pending_quest_callback(member.session));
+        }
+        assert_eq!(map.facts.object_revision(key), revision_before_entry);
+        assert!(owner.runtime.lock().await.visible_entities().creatures.is_empty());
+        assert!(owner.reconcile_quest_callbacks(players[1].session).await);
+        for member in players {
+            assert!(!owner.has_pending_quest_callback(member.session));
+        }
+        assert_eq!(map.facts.object_revision(key), revision_before_entry + 1);
         assert!(!owner.states.quest_callbacks.interrupt_after_commit.load(
             std::sync::atomic::Ordering::SeqCst,
         ), "the first acknowledgement was interrupted");
@@ -191,6 +204,7 @@ pub(super) async fn exercise(
         assert!((before_ms + delta..=after_ms + delta).contains(&rows[0].1));
         Some(rows)
     } else {
+        assert_eq!(result.disposition, UseDisposition::Committed);
         None
     };
 
