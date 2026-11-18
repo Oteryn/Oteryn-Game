@@ -41,23 +41,59 @@ fn wrathm1_relay_switch_reverses_without_extending_shared_light_timer() -> TestR
 }
 
 pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot::BundleWorld> {
-    super::questpc8_native_slice::world(
-        native,
-        &[
-            (SOURCE.x - 1, SOURCE.y, SOURCE.x, SOURCE.y, SOURCE.floor),
-            (LAMP_X[0], LAMP_Y, LAMP_X[2], LAMP_Y, LAMP_FLOOR),
-            (
-                WALL_SWITCH.x,
-                WALL_SWITCH.y,
-                WALL_SWITCH.x,
-                WALL_SWITCH.y,
-                WALL_SWITCH.floor,
-            ),
-            (WALL_X, WALL_Y, WALL_X, WALL_Y + 3, SOURCE.floor),
-        ],
-        &[9126, 10479],
-        tile(SOURCE),
-    )
+    let patches = [
+        (
+            SOURCE.x - 1,
+            SOURCE.y - 1,
+            SOURCE.x + 1,
+            SOURCE.y + 1,
+            SOURCE.floor,
+        ),
+        (LAMP_X[0], LAMP_Y, LAMP_X[2], LAMP_Y, LAMP_FLOOR),
+        (
+            WALL_SWITCH.x - 1,
+            WALL_SWITCH.y - 1,
+            WALL_SWITCH.x + 1,
+            WALL_SWITCH.y + 1,
+            WALL_SWITCH.floor,
+        ),
+        (WALL_X, WALL_Y, WALL_X, WALL_Y + 3, SOURCE.floor),
+    ];
+    for start in neighbours(SOURCE) {
+        match super::questpc8_native_slice::world(native, &patches, &[9126, 10479], tile(start)) {
+            Err(error) if error.to_string() == "StartNotEnterable" => continue,
+            result => return result,
+        }
+    }
+    Err("the retained relay switch has no enterable adjacent tile".into())
+}
+
+fn neighbours(source: Position) -> impl Iterator<Item = Position> {
+    (source.y - 1..=source.y + 1)
+        .flat_map(move |y| (source.x - 1..=source.x + 1).map(move |x| Position { x, y, ..source }))
+}
+
+async fn approach(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    source: Position,
+) -> TestResult {
+    use crate::content::{CollisionClass, LogicalCell};
+
+    let cells = &owner.movement_cells;
+    let at = neighbours(source)
+        .find(|pos| {
+            cells.index().lookup(
+                cells.scope(),
+                LogicalCell {
+                    x: i32::from(pos.x),
+                    y: i32::from(pos.y),
+                    z: -i32::from(pos.floor),
+                },
+            ) == Ok(CollisionClass::Walkable)
+        })
+        .ok_or("no walkable approach to the relay")?;
+    super::questpc8_mystery_geometry::arrive(owner, admitted, tile(at)).await
 }
 
 fn tile(at: Position) -> TilePos {
@@ -143,7 +179,7 @@ pub(super) async fn exercise(
         .fixture
         .set(vec![callback, wall])
         .map_err(|_| "relay callback fixture already set")?;
-    super::questpc8_mystery_geometry::arrive(owner, admitted, tile(SOURCE)).await?;
+    approach(owner, admitted, SOURCE).await?;
     let map = owner.bundle_map().ok_or("relay map")?;
     let source = placement_key(tile(SOURCE), 2).ok_or("lever key")?;
     let target = |key: u64| {
@@ -179,7 +215,7 @@ pub(super) async fn exercise(
     };
 
     use_switch(owner, admitted, &placement, 1).await?;
-    super::questpc8_mystery_geometry::arrive(owner, admitted, tile(WALL_SWITCH)).await?;
+    approach(owner, admitted, WALL_SWITCH).await?;
     use_switch(owner, admitted, &wall_placement, 0).await?;
 
     let map = owner.bundle_map().ok_or("relay map")?;
