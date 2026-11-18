@@ -964,15 +964,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             super::world_map::resolve_map_target(&source, target, |_| None::<()>).ok()?
         };
+        let incarnation = |callback: &Callback| {
+            callback
+                .effects
+                .encounter
+                .as_ref()
+                .is_some_and(|encounter| {
+                    encounter.phase == Some(world_callbacks::EncounterPhase::WrathIncarnation)
+                })
+        };
         let mut selected = self
             .callback_content()
             .iter()
             .filter(|c| {
                 c.actor_kind == world_callbacks::ActorKind::Player
                     && c.trigger == Trigger::Use
-                    && (!c.effects.encounter.as_ref().is_some_and(|encounter| {
-                        encounter.phase == Some(world_callbacks::EncounterPhase::WrathIncarnation)
-                    }) || selected_tool.is_some())
+                    && (!incarnation(c) || selected_tool.is_some())
                     && !oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&c.key)
                     && matches(map, c, resolved.placement_key)
                     && c.activation.as_ref().is_none_or(|activation| {
@@ -997,22 +1004,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && conditional_cells::matches(map, c)
             })
             .collect::<Vec<_>>();
-        if selected_tool.is_some()
-            && selected.iter().any(|callback| {
-                callback
-                    .effects
-                    .encounter
-                    .as_ref()
-                    .is_some_and(|encounter| {
-                        encounter.phase == Some(world_callbacks::EncounterPhase::WrathIncarnation)
-                    })
-            })
+        if selected.len() > 1
+            && selected.iter().copied().any(incarnation)
+            && let Some((source, _)) = selected_tool.as_ref()
         {
+            // The chosen Snake Sceptre and the source replica share a map
+            // placement. This advisory read only chooses the recipe. The
+            // fenced action writer rechecks its exact selected source.
+            let Some(fence) = command.item_fence else {
+                return Some(UseOutcome::rejected());
+            };
+            let Ok(inventory) = self
+                .root
+                .read_item_use_inventory(self.character, self.holder, fence)
+                .await
+            else {
+                return Some(UseOutcome::rejected());
+            };
+            let tool = inventory
+                .backpack
+                .iter()
+                .flat_map(|bag| bag.entries.iter().map(|entry| &entry.item))
+                .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
+                .find(|item| item.item_instance_id == *source);
             selected.retain(|callback| {
-                callback
-                    .item_on_target
-                    .as_ref()
-                    .is_some_and(|tool| tool.selected_instance)
+                tool.is_some_and(|tool| {
+                    callback
+                        .item_on_target
+                        .as_ref()
+                        .is_some_and(|rule| rule.item == tool.definition.production_key)
+                })
             });
         }
         let source_trial = selected
