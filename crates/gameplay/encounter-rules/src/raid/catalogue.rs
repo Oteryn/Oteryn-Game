@@ -11,6 +11,8 @@ use oteryn_gameplay_content::content::ProductionKey;
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
 
+mod pits_of_inferno;
+
 const CATALOGUE: &str = include_str!("../../../../../content/encounters/raids/catalogue.json");
 const SCHEMA: &str = "OTERYN_RAID_CATALOGUE/v1";
 const COORDINATE_FRAME: &str = "global-target-2026-09-27";
@@ -105,6 +107,9 @@ pub enum CatalogueSchedule {
         interval_ms: Option<u32>,
         #[serde(default)]
         repeat: bool,
+    },
+    Periodic {
+        interval_ms: u32,
     },
     Unknown,
 }
@@ -289,7 +294,21 @@ pub struct SelectedRaid {
 
 impl RaidCatalogue {
     pub fn embedded() -> Result<Self, RaidError> {
-        Self::from_json(CATALOGUE)
+        let mut catalogue = Self::from_json(CATALOGUE)?;
+        let periodic = pits_of_inferno::raid(&catalogue)?;
+        if catalogue.records.len() >= MAX_CANDIDATES
+            || catalogue
+                .records
+                .iter()
+                .any(|record| record.key == periodic.key)
+        {
+            return Err(RaidError::InvalidDefinition);
+        }
+        let at = catalogue
+            .records
+            .partition_point(|record| record.key < periodic.key);
+        catalogue.records.insert(at, periodic);
+        Ok(catalogue)
     }
 
     pub fn from_json(source: &str) -> Result<Self, RaidError> {
@@ -525,6 +544,7 @@ impl CatalogueRaid {
             CatalogueSchedule::Lua { .. } | CatalogueSchedule::Calendar { .. } => {
                 RaidPolicy::SourceScheduled
             }
+            CatalogueSchedule::Periodic { interval_ms } => RaidPolicy::Periodic { interval_ms },
             CatalogueSchedule::Unknown => return Err(RaidError::InvalidDefinition),
         };
         let definition = RaidDefinition {
@@ -558,8 +578,8 @@ mod tests {
         // 160 Crystal XML definitions + Sugar Mommy + 78 unresolved wiki identities,
         // plus Crystal a_piece_of_cake_config.lua:394-400's seasonal raid.
         // Regenerate pins: tools/content-migration/refresh_season_creature_inventory.py.
-        assert_eq!(catalogue.records().len(), 240);
-        assert_eq!(catalogue.active().count(), 137);
+        assert_eq!(catalogue.records().len(), 241);
+        assert_eq!(catalogue.active().count(), 138);
         for record in catalogue.records() {
             if record.active {
                 record.select([7; 32], [9; 16])?.definition.validate()?;

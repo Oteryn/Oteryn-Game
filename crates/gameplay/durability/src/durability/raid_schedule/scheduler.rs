@@ -149,8 +149,10 @@ impl DurabilityRoot {
                     && !world_changes.as_ref().is_some_and(|day| oteryn_gameplay_world_change::owner::is_active(day, required)) {
                     continue;
                 }
+                let periodic = matches!(candidate.definition.policy, RaidPolicy::Periodic { .. });
+                // Calendar and periodic clocks both run independently of the legacy queue.
                 let source_kind: i16 = if candidate.lua.is_some() { 2 }
-                    else if candidate.calendar_window.is_some() { 3 } else { 1 };
+                    else if periodic || candidate.calendar_window.is_some() { 3 } else { 1 };
                 let legacy = source_kind == 1 && candidate.key.as_str() != super::FEROXA_KEY;
                 if (legacy && legacy_running)
                     || (!legacy && !candidate.eligible)
@@ -161,7 +163,7 @@ impl DurabilityRoot {
                     .map_err(|_| DurabilityError::InvalidStoredState)? {
                     Some(before) => before,
                     None => {
-                        let initial = RaidSchedule::initial(request.reset_epoch, request.now_ms)
+                        let initial = RaidSchedule::initial_for_policy(request.reset_epoch, request.now_ms, candidate.definition.policy)
                             .map_err(|_| DurabilityError::InvalidStoredState)?;
                         storage::insert_schedule(&mut tx, request.world, &candidate.key, &initial).await
                             .map_err(|_| DurabilityError::Unavailable)?;
@@ -222,6 +224,11 @@ impl DurabilityRoot {
                     };
                     RaidAction::ResolvedCheck {
                         now_ms: request.now_ms, selected,
+                        firing_id: candidate.firing_id, bundle_digest: request.bundle_digest,
+                    }
+                } else if periodic {
+                    RaidAction::ResolvedCheck {
+                        now_ms: request.now_ms, selected: true,
                         firing_id: candidate.firing_id, bundle_digest: request.bundle_digest,
                     }
                 } else if let Some(window) = &candidate.calendar_window {

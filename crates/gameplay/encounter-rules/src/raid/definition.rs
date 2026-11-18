@@ -9,6 +9,9 @@ pub enum RaidPolicy {
     /// RAIDS-GLOBAL: execution-only definition; the typed source catalogue and
     /// node scheduler own its Lua/calendar eligibility, never a made-up interval.
     SourceScheduled,
+    Periodic {
+        interval_ms: u32,
+    },
     Random {
         mean_interval_s: u32,
         min_gap_s: u32,
@@ -59,6 +62,11 @@ impl RaidDefinition {
             RaidPolicy::Random {
                 mean_interval_s: 0, ..
             } => return Err(RaidError::InvalidDefinition),
+            RaidPolicy::Periodic { interval_ms }
+                if i64::from(interval_ms) < super::CHECK_INTERVAL_MS =>
+            {
+                return Err(RaidError::InvalidDefinition);
+            }
             RaidPolicy::Fixed { selector, .. } => selector.validate()?,
             _ => {}
         }

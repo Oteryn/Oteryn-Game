@@ -101,6 +101,21 @@ impl RaidSchedule {
         Self::initial_at_world_epoch(reset_epoch, now_ms)
     }
 
+    pub fn initial_for_policy(
+        reset_epoch: u64,
+        now_ms: i64,
+        policy: RaidPolicy,
+    ) -> Result<Self, RaidError> {
+        let mut state = Self::initial(reset_epoch, now_ms)?;
+        if let RaidPolicy::Periodic { interval_ms } = policy {
+            state.next_check_at_ms = now_ms
+                .checked_add(i64::from(interval_ms))
+                .ok_or(RaidError::Exhausted)?;
+            state.validate()?;
+        }
+        Ok(state)
+    }
+
     /// Source STEP raids also run in the canonical initial World epoch, zero.
     /// The durable writer independently proves that exact current reset.
     pub fn initial_at_world_epoch(reset_epoch: u64, now_ms: i64) -> Result<Self, RaidError> {
@@ -209,7 +224,9 @@ impl RaidSchedule {
                     // One native deterministic draw for each due random check,
                     // including blocked checks. All variable-length parts are framed.
                     let selected = match definition.policy {
-                        RaidPolicy::SourceScheduled => return Err(RaidError::InvalidDefinition),
+                        RaidPolicy::SourceScheduled | RaidPolicy::Periodic { .. } => {
+                            return Err(RaidError::InvalidDefinition);
+                        }
                         RaidPolicy::Random {
                             mean_interval_s,
                             min_gap_s,
@@ -271,16 +288,17 @@ impl RaidSchedule {
                 firing_id,
                 bundle_digest,
             } => {
-                if definition.policy != RaidPolicy::SourceScheduled {
-                    return Err(RaidError::InvalidDefinition);
-                }
+                let interval = match definition.policy {
+                    RaidPolicy::SourceScheduled => CHECK_INTERVAL_MS,
+                    RaidPolicy::Periodic { interval_ms } => i64::from(interval_ms),
+                    _ => return Err(RaidError::InvalidDefinition),
+                };
                 if now_ms < 0 {
                     return Err(RaidError::InvalidTime);
                 }
                 if !self.retired && now_ms >= self.next_check_at_ms {
-                    after.next_check_at_ms = now_ms
-                        .checked_add(CHECK_INTERVAL_MS)
-                        .ok_or(RaidError::Exhausted)?;
+                    after.next_check_at_ms =
+                        now_ms.checked_add(interval).ok_or(RaidError::Exhausted)?;
                     after.check_ordinal = self
                         .check_ordinal
                         .checked_add(1)
@@ -305,7 +323,16 @@ impl RaidSchedule {
                             firing_id,
                             reset_epoch: self.reset_epoch,
                             fired_at_ms: now_ms,
-                            deadline_ms: definition.deadline(now_ms)?,
+                            deadline_ms: match definition.policy {
+                                // A concurrent scheduler check must leave the channel time
+                                // to claim the zero-delay wave. The runner can finish sooner.
+                                RaidPolicy::Periodic { .. } => definition.deadline(now_ms)?.max(
+                                    now_ms
+                                        .checked_add(CHECK_INTERVAL_MS)
+                                        .ok_or(RaidError::Exhausted)?,
+                                ),
+                                _ => definition.deadline(now_ms)?,
+                            },
                             bundle_digest,
                             state: FiringState::Running,
                         });
@@ -327,17 +354,23 @@ impl RaidSchedule {
                 reset_epoch,
                 now_ms,
             } => {
+                let interval = match definition.policy {
+                    RaidPolicy::Periodic { interval_ms } => i64::from(interval_ms),
+                    _ => CHECK_INTERVAL_MS,
+                };
                 if reset_epoch <= self.reset_epoch
                     || now_ms < 0
-                    || now_ms < self.next_check_at_ms - CHECK_INTERVAL_MS
+                    || now_ms < self.next_check_at_ms - interval
                     || self.last_fired_at_ms.is_some_and(|at| at > now_ms)
                 {
                     return Err(RaidError::InvalidState);
                 }
                 after.reset_epoch = reset_epoch;
-                after.next_check_at_ms = now_ms
-                    .checked_add(CHECK_INTERVAL_MS)
-                    .ok_or(RaidError::Exhausted)?;
+                if !matches!(definition.policy, RaidPolicy::Periodic { .. }) {
+                    after.next_check_at_ms = now_ms
+                        .checked_add(CHECK_INTERVAL_MS)
+                        .ok_or(RaidError::Exhausted)?;
+                }
                 cancel_running(&mut after);
             }
             RaidAction::Retire => {
