@@ -34,6 +34,7 @@ fn bootstrap_v4_every_vocation_first_entry_without_progression_postgres() -> Tes
                 let seal = h.recovery.seal_current().map_err(debug)?;
                 let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
                 assert!(h.root.read_character_progression(&authority, character).await?.is_none());
+                assert!(h.root.read_character_familiar_state(&authority, character).await?.committed_character_revision().is_none());
                 let mut source = fresh_fixture::fresh::Source::new(now)?;
                 source.current.character_id = crate::foundation::CharacterId::decode(character.as_bytes()).map_err(debug)?;
                 for row in &mut source.rows {
@@ -52,16 +53,13 @@ fn bootstrap_v4_every_vocation_first_entry_without_progression_postgres() -> Tes
                 let request = source.activity_room_request(session, transport, &uuid(character.as_bytes()), [60;32], now)?;
                 let committed = FreshAdmissionStore::from_root(h.root.clone()).commit(&request).await?;
                 assert!(matches!(committed, crate::foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1::Committed(_)), "{committed:?}");
-                let (consumer, clock, activation, _) = crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
-                h.root.latch_premium_activation(&activation.activation_id, activation.switch_over_us, activation.switch_over_us + 60_000_000).await.map_err(debug)?;
-                let premium = crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(consumer, Some(clock), Some(activation), Some(h.root.clone()));
                 let mut owner = deps.owner(&h, &authority);
-                owner.premium_coordinator = Some(&premium);
-                owner.admit_premium(id(40), session);
                 owner.active_generation = Some(active);
                 assert!(owner.active_familiar_index(&vocation.to_lowercase()).is_some(), "{vocation}");
-                let (outcome, _, _) = Box::pin(owner.initialize_first_entry(&request, session, transport, deps.actor)).await;
+                let budget = crate::gameplay_transport::AdmissionRetryBudget::for_root(&session, &h.root);
+                let (outcome, _, _) = Box::pin(owner.enter_committed_actor(&budget, &request, session, transport, deps.actor)).await;
                 assert_eq!(outcome, FirstEntryOutcome::Positioned, "{vocation}");
+                assert!(h.root.read_character_familiar_state(&authority, character).await?.committed_character_revision().is_none());
                 let loaded = crate::gameplay_transport::load_character_cast_facts(&h.root, &authority, character).await;
                 let crate::gameplay_transport::CastFactsLoad::Ready { facts, .. } = loaded else { return Err(format!("{vocation}: {loaded:?}").into()); };
                 assert_eq!(facts.level, 1);
