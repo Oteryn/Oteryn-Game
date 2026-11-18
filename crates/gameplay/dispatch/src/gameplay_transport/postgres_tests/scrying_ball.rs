@@ -1,12 +1,13 @@
 //! The selected base object is removed and restored by its Channel decay deadline.
 use super::TestResult;
-use super::fixture::debug;
+use super::fixture::{debug, join_two};
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::{
     QuestTrack,
     world_callbacks::{Callback, Position},
 };
 use oteryn_protocol_oteryn::world_object::UseDisposition;
+use std::{sync::atomic::Ordering, time::Duration};
 
 const TRACK: &str = "oteryn:quest-progress/quest/u8_1/to_blind_the_enemy/questline";
 const QUEST: &str = "oteryn:quest.to_blind_the_enemy_quest";
@@ -76,7 +77,7 @@ fn scenario(admin: String) -> TestResult {
             owner
                 .states
                 .test_owner_time
-                .store(2_000_000, std::sync::atomic::Ordering::Relaxed);
+                .store(2_000_000, Ordering::Relaxed);
             let (_, result) = use_tool(owner, admitted, fence, MIRROR, trigger, 2).await?;
             assert_eq!(result, UseDisposition::Committed);
             assert!(map.facts.base_hidden(key));
@@ -86,9 +87,24 @@ fn scenario(admin: String) -> TestResult {
             assert_eq!(map.facts.next_movement_decay_time(), Some(62_000_000));
             assert_eq!(map.facts.expire_movement_items(61_999_999), 0);
             assert!(map.facts.base_hidden(key));
-            assert_eq!(map.facts.expire_movement_items(62_000_000), 1);
+            // Use the same Channel owner cycle as serving, without a connection tick.
+            owner.states.test_owner_time.store(62_000_000, Ordering::Relaxed);
+            let stop = oteryn_foundation::CancellationToken::new();
+            let observe = async {
+                while map.facts.base_hidden(key) {
+                    tokio::time::sleep(Duration::from_millis(10)).await;
+                }
+                stop.cancel();
+            };
+            tokio::time::timeout(
+                Duration::from_secs(15),
+                join_two(owner.run_source_owner_cycles(&stop), observe),
+            ).await.map_err(|_| "Channel cycle did not restore the Scrying Ball at its deadline")?;
             assert!(!map.facts.base_hidden(key));
+            assert!(!map.facts.base_hidden(decoy_key));
             assert_eq!(map.facts.object_revision(key), 2);
+            assert_eq!(map.facts.object_revision(decoy_key), 0);
+            assert_eq!(map.facts.next_movement_decay_time(), None);
             assert_eq!(map.facts.expire_movement_items(62_000_001), 0);
             let copy = owner
                 .root
