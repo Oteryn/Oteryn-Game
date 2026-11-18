@@ -25,6 +25,10 @@ pub(super) struct ActivePhase {
 }
 
 #[derive(Debug)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "the bounded registry reserves inline phase storage before admission commits"
+)]
 enum Fight {
     Cults(CultsEncounter),
     Faceless(FacelessBane),
