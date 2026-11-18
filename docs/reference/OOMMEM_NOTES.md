@@ -33,6 +33,14 @@ identical 48 direct archive inputs by size. The fresh verbose command also
 confirmed line tables and an active incremental cache. Neither nightly nor
 `cargo llvm-lines` is installed in the retained environment.
 
+The historical change associated with the first CI symptoms, #3056
+(`e2152d050`), grew the generated mount list from 541 to 730 roots.
+Lexical test attributes in the mounted subtree grew from 1,701 to 2,145,
+and dispatch-wide attributes grew from 3,595 to 4,212. On the pinned
+base the same inventory is 735 roots, 2,171 mounted test attributes and
+4,238 across dispatch. These source counts exclude externally mounted
+files and are distinct from libtest's registered test count.
+
 ## Local mount ablation
 
 An empty generated mount list (0 mounted files, 0 PostgreSQL test
