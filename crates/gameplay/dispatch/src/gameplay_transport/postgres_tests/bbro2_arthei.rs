@@ -97,14 +97,14 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
             NativeCrop {
                 bytes: ROOM,
                 region: (1, 128, 122),
-                bounds: (32951, 31440, 32955, 31446),
+                bounds: (32951, 31440, 32956, 31447),
                 start: (32953, 31444),
                 expected: Vec::new(),
             },
             NativeCrop {
                 bytes: ROOM,
                 region: (1, 128, 122),
-                bounds: (32966, 31479, 32968, 31481),
+                bounds: (32966, 31479, 32969, 31482),
                 start: (32967, 31480),
                 expected: Vec::new(),
             },

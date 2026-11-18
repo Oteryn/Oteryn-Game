@@ -120,7 +120,7 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
             NativeCrop {
                 bytes: FLOOR_1,
                 region: (1, 128, 122),
-                bounds: (32965, 31458, 32969, 31463),
+                bounds: (32965, 31458, 32970, 31464),
                 start: (32967, 31459),
                 expected: vec![ExpectedTile {
                     position: (32967, 31463),
@@ -131,7 +131,7 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
             NativeCrop {
                 bytes: FLOOR_1,
                 region: (1, 128, 122),
-                bounds: (32966, 31479, 32968, 31481),
+                bounds: (32966, 31479, 32969, 31482),
                 start: (32967, 31480),
                 expected: Vec::new(),
             },
