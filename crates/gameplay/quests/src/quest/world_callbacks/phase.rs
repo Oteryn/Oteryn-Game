@@ -62,9 +62,11 @@ pub fn select_storage_phase<'a>(
 
 pub fn exclusive(left: &Callback, right: &Callback) -> bool {
     let source_trial = left.trigger == Trigger::Use
-        && left.effects.target_transform.is_some()
-        && left.effects.target_transform == right.effects.target_transform
-        && left.item_on_target == right.item_on_target;
+        && left.item_on_target == right.item_on_target
+        && ((left.effects.target_transform.is_some()
+            && left.effects.target_transform == right.effects.target_transform)
+            || (left.effects.timed_presence.is_some()
+                && left.effects.timed_presence == right.effects.timed_presence));
     left.actor_kind == ActorKind::Player
         && right.actor_kind == ActorKind::Player
         && (source_trial || matches!(left.trigger, Trigger::StepIn | Trigger::StepOut))
