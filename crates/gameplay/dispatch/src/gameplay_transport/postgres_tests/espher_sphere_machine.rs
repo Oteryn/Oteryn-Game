@@ -229,6 +229,7 @@ async fn exercise(h: &Harness) -> TestResult {
     drop(slot);
     let left = machine_key(&owner, LEFT, 842)?;
     let right = machine_key(&owner, RIGHT, 843)?;
+    let stale_right = target(&owner, right)?;
     assert_ne!(
         charge(&mut owner, &admitted, 713, left, RUBY).await?,
         UseDisposition::Committed
@@ -273,8 +274,20 @@ async fn exercise(h: &Harness) -> TestResult {
         assert_eq!(gems(h).await?, i64::try_from(count)?);
         assert_eq!(carried(h, EMERALD).await?, 24 - i64::try_from(count)?);
     }
+    assert_ne!(
+        use_machine(&mut owner, &admitted, 744, stale_right).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(gems(h).await?, 23);
     assert_eq!(
-        click(&mut owner, &admitted, 744, right).await?,
+        (
+            machine_appearance(&owner, left)?,
+            machine_appearance(&owner, right)?
+        ),
+        (842, 843)
+    );
+    assert_eq!(
+        click(&mut owner, &admitted, 745, right).await?,
         UseDisposition::Committed
     );
     assert_eq!(gems(h).await?, 3);
@@ -362,8 +375,17 @@ async fn click(
     id: u64,
     key: u64,
 ) -> TestResult<UseDisposition> {
-    owner.clock_origin -= std::time::Duration::from_secs(2);
     let target = target(owner, key)?;
+    use_machine(owner, admitted, id, target).await
+}
+
+async fn use_machine(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    id: u64,
+    target: WorldObjectTarget,
+) -> TestResult<UseDisposition> {
+    owner.clock_origin -= std::time::Duration::from_secs(2);
     let fence =
         super::death_ml_loss_composed::current_fence(owner, admitted.game_session_id).await?;
     Ok(owner
