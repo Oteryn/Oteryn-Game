@@ -277,7 +277,7 @@ async fn live(
         .ok_or_else(|| "current live state".into())
 }
 
-async fn kill(
+pub(in crate::gameplay_transport) async fn commit_lethal_boss_hit(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     policy: &CompiledCreaturePolicy,
@@ -426,7 +426,7 @@ pub(super) async fn assert_award_follows_return(
     let before_live = live(instance, admitted).await?;
     assert_eq!(before_live.character_facts().level, before.level);
     assert_eq!(before_live.soul_window(), None);
-    let batch = kill(instance, admitted, policy).await?;
+    let batch = commit_lethal_boss_hit(instance, admitted, policy).await?;
     assert_eq!(
         instance.drain_kill_rewards(admitted.game_session_id).await,
         DrainOutcome::Drained

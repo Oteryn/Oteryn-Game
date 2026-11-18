@@ -58,6 +58,8 @@ mod state_continuity;
 #[path = "boss_activity/state_effects.rs"]
 mod state_effects;
 
+pub(super) use state_effects::commit_lethal_boss_hit;
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Case {
     SecurityDead,
