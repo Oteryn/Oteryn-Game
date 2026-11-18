@@ -50,6 +50,10 @@
       ],
       "effects": {
         "transform": 9126
+      },
+      "track_initials": {
+        "oteryn:quest-progress/ferumbras-ascension/habitat/corrupted": 0,
+        "oteryn:quest-progress/ferumbras-ascension/habitats": 0
       }
     },
     {
@@ -138,6 +142,10 @@
       ],
       "effects": {
         "transform": 9126
+      },
+      "track_initials": {
+        "oteryn:quest-progress/ferumbras-ascension/habitat/desert": 0,
+        "oteryn:quest-progress/ferumbras-ascension/habitats": 0
       }
     },
     {
@@ -226,6 +234,10 @@
       ],
       "effects": {
         "transform": 9126
+      },
+      "track_initials": {
+        "oteryn:quest-progress/ferumbras-ascension/habitat/dimension": 0,
+        "oteryn:quest-progress/ferumbras-ascension/habitats": 0
       }
     },
     {
@@ -314,6 +326,10 @@
       ],
       "effects": {
         "transform": 9126
+      },
+      "track_initials": {
+        "oteryn:quest-progress/ferumbras-ascension/habitat/grass": 0,
+        "oteryn:quest-progress/ferumbras-ascension/habitats": 0
       }
     },
     {
@@ -402,6 +418,10 @@
       ],
       "effects": {
         "transform": 9126
+      },
+      "track_initials": {
+        "oteryn:quest-progress/ferumbras-ascension/habitat/ice": 0,
+        "oteryn:quest-progress/ferumbras-ascension/habitats": 0
       }
     },
     {
@@ -490,6 +510,10 @@
       ],
       "effects": {
         "transform": 9126
+      },
+      "track_initials": {
+        "oteryn:quest-progress/ferumbras-ascension/habitat/mushroom": 0,
+        "oteryn:quest-progress/ferumbras-ascension/habitats": 0
       }
     },
     {
@@ -578,6 +602,10 @@
       ],
       "effects": {
         "transform": 9126
+      },
+      "track_initials": {
+        "oteryn:quest-progress/ferumbras-ascension/habitat/roshamuul": 0,
+        "oteryn:quest-progress/ferumbras-ascension/habitats": 0
       }
     },
     {
@@ -666,6 +694,10 @@
       ],
       "effects": {
         "transform": 9126
+      },
+      "track_initials": {
+        "oteryn:quest-progress/ferumbras-ascension/habitat/venom": 0,
+        "oteryn:quest-progress/ferumbras-ascension/habitats": 0
       }
     },
     {
