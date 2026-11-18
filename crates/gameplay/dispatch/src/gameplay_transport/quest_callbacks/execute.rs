@@ -211,9 +211,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if let Some(sequence) = &callback.effects.sequence_prime {
             if !current_read_only_gate()
-                || !callback
+                || callback
                     .lever
-                    .is_some_and(|pair| pair[0] == after.appearance_id)
+                    .is_none_or(|pair| pair[0] != after.appearance_id)
             {
                 return UseDisposition::NothingToUse;
             }

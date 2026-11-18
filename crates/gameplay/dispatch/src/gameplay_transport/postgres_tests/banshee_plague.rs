@@ -243,16 +243,25 @@ fn scenario() -> TestResult {
                 assert_eq!(quantity(&h, &second).await?, 1);
             }
         }
-        let track_count: i64 = sqlx::query_scalar(
-            "SELECT count(*) FROM game_character_quest_tracks WHERE quest_key=$1",
+        let (track_count, state_count): (i64, i64) = sqlx::query_as(
+            "SELECT (SELECT count(*) FROM game_character_quest_tracks WHERE quest_key=$1), \
+                    (SELECT count(*) FROM game_character_quest_states WHERE quest_key=$1)",
         )
         .bind(QUEST)
         .fetch_one(&h.pool)
         .await?;
         assert_eq!(
-            track_count, 0,
-            "the endpoint charges admission without changing seal progress"
+            (track_count, state_count),
+            (0, 0),
+            "the endpoint charges admission without writing seal progress"
         );
+        let receipt_guards: Vec<bool> = sqlx::query_scalar(
+            "SELECT guard_only FROM game_character_quest_receipts WHERE quest_key=$1",
+        )
+        .bind(QUEST)
+        .fetch_all(&h.pool)
+        .await?;
+        assert_eq!(receipt_guards, [true]);
         let consumption_counts: Vec<i32> = sqlx::query_scalar("SELECT quantity FROM game_quest_callback_consumptions WHERE transition_key='oteryn:quest-callback/banshee/plague-entrance' ORDER BY item_instance_id")
             .fetch_all(&h.pool).await?;
         assert_eq!(consumption_counts, [1, 1]);

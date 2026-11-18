@@ -267,13 +267,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
         }
         if spawn_only {
+            let Some(reservation) = reservation else {
+                return UseDisposition::Rejected;
+            };
             let Ok(actors) = runtime.commit_quest_creature_spawn_with_projection(&monsters, || {
                 map.facts
                     .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
             }) else {
-                return UseDisposition::Rejected;
-            };
-            let Some(reservation) = reservation else {
                 return UseDisposition::Rejected;
             };
             if let Err(disposition) = reservation.publish(runtime, actors) {
