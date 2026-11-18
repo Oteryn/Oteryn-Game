@@ -24,6 +24,7 @@ const WELL: &str = "qengine-rewards-qonce-well";
 const WELL_LOST_ACK: &str = "qengine-rewards-qonce-well-lost-ack";
 const DAILY: &str = "qengine-rewards-qonce-daily";
 const ANNUAL: &str = "qengine-rewards-qonce-annual";
+const FULL_BACKPACK: &str = "qengine-rewards-qonce-full-backpack";
 const HOARD: &str = "qengine-rewards-qonce-hoard";
 const STEP: &str = "qengine-rewards-qonce-step";
 const QUEST: &str = "oteryn:quest.authored.draccoon_herald_outfits_quest";
@@ -66,6 +67,13 @@ fn annual_claim_delivers_backpack_and_refuses_until_period_expires_postgres() ->
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     drop(admin);
     super::qengine_rewards::scenario(ANNUAL)
+}
+
+#[test]
+fn full_backpack_rolls_back_bundle_and_cooldown_until_claim_retry_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::qengine_rewards::scenario(FULL_BACKPACK)
 }
 
 #[test]
@@ -201,6 +209,93 @@ async fn tame_noble_lion(
     Ok(())
 }
 
+async fn full_backpack_retry(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use crate::durability::item_loop_move::{LoopDestination, LoopGround, LoopMoveRequest};
+    use crate::durability::item_mint::TypedDefinitionRef;
+    use crate::foundation::{CommandId, CommandRef};
+    use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, generation_item_facts};
+    use oteryn_protocol_oteryn::world_object::{decode_use_result, encode_use_intent};
+
+    let native = owner.active_generation.and_then(|generation| generation.native_gameplay())
+        .ok_or("native item policies")?;
+    let bag = generation_item_facts(native, &TypedDefinitionRef {
+        family:"Item".into(), production_key:"oteryn:item.tibia.i2854".into(),
+        revision_ref:"definition-r1".into(),
+    }).map_err(debug)?;
+    let capacity = i64::from(bag.container_capacity.ok_or("backpack capacity")?);
+    let occupied: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries")
+        .fetch_one(&h.pool).await?;
+    assert!(occupied < capacity);
+    let mut ordinal = 89_000;
+    for _ in occupied..capacity {
+        super::qengine_voucher_stories::mint(owner, admitted, 3031, 100, &mut ordinal).await?;
+    }
+    let occupied: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries")
+        .fetch_one(&h.pool).await?;
+    assert_eq!(occupied, capacity);
+    let before = super::qengine_voucher_stories::quantity(h, 2854).await?;
+    let before_red = super::qengine_voucher_stories::quantity(h, 3039).await?;
+    let before_yellow = super::qengine_voucher_stories::quantity(h, 3037).await?;
+    let payload = encode_use_intent(&claim_target(owner)?).map_err(debug)?;
+    let reply = super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload).await?;
+    assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Rejected);
+    assert_eq!(receipts(h).await?, 0);
+    let (tracks, mints): (i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM game_character_quest_tracks WHERE track_key IN ($1,$2)),                 (SELECT count(*) FROM game_reward_claim_mint_receipts                  WHERE game_session_id=encode($3,'hex')::uuid AND command_id=1)",
+    ).bind(LEDGER).bind(CHOICE).bind(admitted.game_session_id.as_bytes().as_slice())
+        .fetch_one(&h.pool).await?;
+    assert_eq!((tracks, mints), (0, 0), "failed delivery leaves no claim or cooldown");
+    assert_eq!(super::qengine_voucher_stories::quantity(h, 2854).await?, before);
+    assert_eq!(super::qengine_voucher_stories::quantity(h, 3039).await?, before_red);
+    assert_eq!(super::qengine_voucher_stories::quantity(h, 3037).await?, before_yellow);
+
+    let filler: sqlx::types::Uuid = sqlx::query_scalar(
+        "SELECT i.item_instance_id FROM game_item_container_entries e          JOIN game_item_instances i USING (item_instance_id)          WHERE i.definition_production_key='oteryn:item.tibia.i3031' AND i.quantity=100          ORDER BY i.item_instance_id LIMIT 1",
+    ).fetch_one(&h.pool).await?;
+    let fence = admitted.item_fence.ok_or("item fence")?;
+    let (digest, frame) = {
+        let runtime = owner.runtime.lock().await;
+        (runtime.content_pin().server_artifact_digest(), runtime.content_pin().frame_binding_digest())
+    };
+    let revision: String = digest.iter().map(|byte| format!("{byte:02x}")).collect();
+    let map = owner.bundle_map().ok_or("claim map")?;
+    let permit = owner.spell_lane_permit().await.ok_or("item lane")?;
+    let moved = owner.root.commit_item_loop_move(
+        &permit, owner.character, owner.holder, &fence,
+        CommandRef::new(admitted.game_session_id, CommandId::new(89_990).map_err(debug)?),
+        &NativeItemWeights(native),
+        LoopMoveRequest {
+            item:*filler.as_bytes(), count:None, pickup_cell:None,
+            destination:LoopDestination::Ground(LoopGround {
+                spatial_position:crate::durability::map_item_mint_audit::map_item_spatial_position(
+                    AT.x - 1, AT.y, AT.floor,
+                ),
+                map_revision:crate::map::overlay::map_revision(map.overlay.base()),
+                content_revision:format!("sha256:{revision}"),
+                placement_context:frame.to_vec(),
+            }),
+        },
+    ).await.map_err(debug)?;
+    assert!(moved.is_ok(), "the production move frees a backpack slot: {moved:?}");
+    drop(permit);
+
+    advance_interaction(owner)?;
+    let payload = encode_use_intent(&claim_target(owner)?).map_err(debug)?;
+    let reply = super::quest_world_callbacks::wire(owner, admitted, 2, 2, payload).await?;
+    assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Committed);
+    assert_eq!(receipts(h).await?, 1);
+    assert_eq!(track_value(h, LEDGER).await?, 100_000_000);
+    assert_eq!(track_value(h, CHOICE).await?, 1);
+    assert_eq!(super::qengine_voucher_stories::quantity(h, 2854).await?, before + 1);
+    assert_eq!(super::qengine_voucher_stories::quantity(h, 3039).await?, before_red + 1);
+    assert_eq!(super::qengine_voucher_stories::quantity(h, 3037).await?, before_yellow + 1);
+    Ok(())
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -228,7 +323,7 @@ pub(super) async fn exercise(
     let mut effects;
     let period = match name {
         DAILY => Some((86_401_i64, DAILY_REFUSAL)),
-        ANNUAL => Some((31_536_001_i64, ANNUAL_REFUSAL)),
+        ANNUAL | FULL_BACKPACK => Some((31_536_001_i64, ANNUAL_REFUSAL)),
         _ => None,
     };
     if let Some((seconds, refusal)) = period {
@@ -241,11 +336,14 @@ pub(super) async fn exercise(
             "effect":{"kind":"set_now"}
         }]);
         callback["failure_message"] = json!(refusal);
-        let give = if name == ANNUAL {
-            json!({"item":"oteryn:item.tibia.i2854","count":1,
-                "contents":[{"item":"oteryn:item.tibia.i3031","count":2}]})
-        } else {
-            json!({"item":"oteryn:item.tibia.i3031","count":2})
+        let give = match name {
+            ANNUAL => json!({"item":"oteryn:item.tibia.i2854","count":1,
+                "contents":[{"item":"oteryn:item.tibia.i3031","count":2}]}),
+            FULL_BACKPACK => json!({"item":"oteryn:item.tibia.i2854","count":1,"contents":[
+                {"item":"oteryn:item.tibia.i3039","count":1},
+                {"item":"oteryn:item.tibia.i3037","count":1}
+            ]}),
+            _ => json!({"item":"oteryn:item.tibia.i3031","count":2}),
         };
         let mut rewards = vec![json!({"give":give})];
         if name == DAILY {
@@ -413,6 +511,9 @@ pub(super) async fn exercise(
     }
 
     h.root.set_test_quest_clock(100_000_000).map_err(debug)?;
+    if name == FULL_BACKPACK {
+        return Box::pin(full_backpack_retry(owner, admitted, h)).await;
+    }
     if name == DAILY {
         tame_noble_lion(owner, admitted, h).await?;
     }
