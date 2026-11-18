@@ -29,7 +29,7 @@ pub(super) struct ActivePhase {
 #[derive(Debug)]
 enum Fight {
     Cults(Box<CultsEncounter>),
-    Linear(LinearEncounter),
+    Linear(Box<LinearEncounter>),
 }
 
 impl Fight {
@@ -266,9 +266,9 @@ pub(super) fn bind(
     if let Some(chain) = &encounter.linear_phases {
         return Ok(ActivePhase {
             key,
-            fight: Fight::Linear(LinearEncounter::bind(
+            fight: Fight::Linear(Box::new(LinearEncounter::bind(
                 runtime, chain, players, actors, now_us,
-            )?),
+            )?)),
             room: encounter.clone(),
             participants: players.to_vec(),
             credits,
