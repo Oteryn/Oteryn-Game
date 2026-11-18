@@ -13,6 +13,8 @@ pub struct Entrance {
     /// The closed door's exact USE target is the scripted landing.
     #[serde(default, skip_serializing_if = "super::is_false")]
     pub teleport_to_source: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub on_admit_speech: Option<Speech>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -138,6 +140,8 @@ pub struct Refusal {
     #[serde(default, skip_serializing_if = "MessageKind::is_default")]
     pub message_kind: MessageKind,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub speech_position: Option<Position>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub push_back: Option<PushBack>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub effect: Option<u8>,
@@ -159,6 +163,23 @@ impl MessageKind {
     fn is_default(&self) -> bool {
         *self == Self::default()
     }
+
+    pub fn monster_talk_type(self) -> Option<u8> {
+        match self {
+            Self::MonsterSay => Some(36),
+            Self::MonsterYell => Some(37),
+            Self::Advance | Self::Status => None,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Speech {
+    pub message: String,
+    pub message_kind: MessageKind,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
 }
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
@@ -253,6 +274,12 @@ pub(super) fn valid(callback: &Callback) -> bool {
     callback.actor_kind == ActorKind::Player
         && (is_step || callback.trigger == Trigger::Use)
         && (!gate.intercept_teleport || is_step && callback.selector.position.is_some())
+        && gate.on_admit_speech.as_ref().is_none_or(|speech| {
+            is_step
+                && speech.message_kind.monster_talk_type().is_some()
+                && valid_text(&speech.message, 255)
+                && speech.position.is_none_or(valid_position)
+        })
         && (!gate.teleport_to_source
             || callback.trigger == Trigger::Use
                 && callback.teleport.is_none()
@@ -276,6 +303,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         && failure.effect != Some(0)
                         && (failure.effect_at.is_default() || failure.effect.is_some())
                         && (failure.message.is_some() || failure.message_kind.is_default())
+                        && failure.speech_position.is_none_or(|position| {
+                            failure.message_kind.monster_talk_type().is_some()
+                                && valid_position(position)
+                        })
                         && match failure.push_back {
                             Some(PushBack::From { dx, dy }) => {
                                 is_step && dx.abs_diff(0) <= 1 && dy.abs_diff(0) <= 1

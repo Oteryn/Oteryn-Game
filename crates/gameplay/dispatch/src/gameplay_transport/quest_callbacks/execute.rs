@@ -1666,6 +1666,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .chat
                 .publish_quest_speech(runtime, actor, session, speech);
         }
+        // Crystal the_isle_of_evil_quest/movements_isle_enter.lua:18-20.
+        if fresh_effects
+            && let Some(speech) = callback
+                .effects
+                .conditional_entrance
+                .as_ref()
+                .and_then(|gate| gate.on_admit_speech.as_ref())
+            && let Some(talk_type) = speech.message_kind.monster_talk_type()
+        {
+            let position = speech.position.map(tile).or_else(|| {
+                runtime
+                    .read_actor_position(actor)
+                    .ok()
+                    .and_then(|at| native(at.position()))
+            });
+            let _ = map
+                .facts
+                .emit_movement_speech(crate::map::facts::MovementSpeech {
+                    speaker: actor,
+                    position: position.unwrap_or(pos),
+                    talk_type,
+                    text: speech.message.clone(),
+                    captured_name: None,
+                });
+        }
         if let Some(message) = success_message {
             self.states.chat.push_quest_feedback(session, &message);
         }

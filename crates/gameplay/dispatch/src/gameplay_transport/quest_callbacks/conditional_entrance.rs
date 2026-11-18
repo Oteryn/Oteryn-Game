@@ -424,8 +424,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 message.push('\n');
                 message.push_str(label);
             }
-            match refusal.map_or(MessageKind::Status, |r| r.message_kind) {
-                MessageKind::Advance | MessageKind::Status => {
+            let kind = refusal.map_or(MessageKind::Status, |r| r.message_kind);
+            match kind.monster_talk_type() {
+                None => {
                     let notice = if refusal.is_some_and(|r| r.message_kind == MessageKind::Advance)
                     {
                         ServerMessage::Advance(message.clone())
@@ -436,17 +437,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         self.states.chat.push_quest_feedback(session, &message);
                     }
                 }
-                kind @ (MessageKind::MonsterSay | MessageKind::MonsterYell) => {
+                Some(talk_type) => {
+                    let position = refusal
+                        .and_then(|r| r.speech_position)
+                        .map(tile)
+                        .or(actor_tile)
+                        .unwrap_or(source);
                     let _ = map
                         .facts
                         .emit_movement_speech(crate::map::facts::MovementSpeech {
                             speaker: actor,
-                            position: actor_tile.unwrap_or(source),
-                            talk_type: if kind == MessageKind::MonsterSay {
-                                36
-                            } else {
-                                37
-                            },
+                            position,
+                            talk_type,
                             text: message,
                             captured_name: None,
                         });

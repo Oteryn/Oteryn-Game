@@ -12,7 +12,10 @@ use crate::map::{
     overlay::TilePos,
     view::{MapFacts, placement_key},
 };
-use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Offering, Position};
+use oteryn_gameplay_quests::quest::{
+    isle_of_evil,
+    world_callbacks::{Callback, Offering, Position},
+};
 use oteryn_protocol_oteryn::{
     world_object::{
         COMMAND_TYPE_USE_INTENT, UseDisposition, WorldObjectTarget, decode_use_result,
@@ -32,6 +35,8 @@ const GATE: Position = Position {
 };
 const LANDING: Position = Position { x: 32792, ..GATE };
 const HOLY_TIBLE: &str = "oteryn:item.tibia.i2836";
+const ISLE_REFUSAL: &str = "You better talk to Rapanaio before leave the safety of the ship!";
+const ISLE_ADMITTED: &str = "You hear evil laughter from afar.";
 const VISITOR: &str = "oteryn:quest-progress/quest/u9_4/liquid_black_quest/visitor";
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -41,6 +46,7 @@ pub(super) enum Case {
     Flags,
     Carried,
     Door,
+    Isle { travel: bool },
     Level,
     Premium,
     Occupied,
@@ -61,6 +67,14 @@ impl Case {
             Self::Storage | Self::Door => json!({"kind":"any","predicates":[
                 {"kind":"storage","range":{"source":{"kind":"track","track":VISITOR},"minimum":1,"maximum":1}},
                 {"kind":"storage","range":{"source":{"kind":"track","track":VISITOR},"minimum":10,"maximum":10}}
+            ]}),
+            // Isle of Evil movements_isle_enter.lua:18-24. Either native writer
+            // is sufficient, and admission leaves the player on the gangway.
+            Self::Isle { .. } => json!({"kind":"any","predicates":[
+                {"kind":"storage","range":{
+                    "source":{"kind":"track","track":isle_exit_track(false)},"minimum":1,"maximum":i64::MAX}},
+                {"kind":"storage","range":{
+                    "source":{"kind":"track","track":isle_exit_track(true)},"minimum":1,"maximum":1}}
             ]}),
             // Soul War moveevent-teleport_entrance_reward.lua:9-22.
             Self::Completion => json!({"kind":"storage","range":{
@@ -115,6 +129,17 @@ impl Case {
             row["teleport"] = serde_json::Value::Null;
             row["effects"]["transform"] = json!(9875);
             row["effects"]["conditional_entrance"]["teleport_to_source"] = json!(true);
+        }
+        if matches!(self, Self::Isle { .. }) {
+            row["quest"] = json!(isle_of_evil::QUEST);
+            row["teleport"] = serde_json::Value::Null;
+            row["sources"] = json!(["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_isle_of_evil_quest/movements_isle_enter.lua:18-24"]);
+            let entrance = &mut row["effects"]["conditional_entrance"];
+            entrance["guards"][0]["refusal"]["message"] = json!(ISLE_REFUSAL);
+            entrance["guards"][0]["refusal"]["message_kind"] = json!("monster_say");
+            entrance["on_admit_speech"] = json!({
+                "message": ISLE_ADMITTED, "message_kind": "monster_say"
+            });
         }
         Ok(serde_json::from_value::<Callback>(row)?)
     }
@@ -216,6 +241,22 @@ impl Case {
                     }, catalogue).await.map_err(debug)?;
                 assert!(matches!(seeded, QuestTransitionOutcome::Committed(_)));
             }
+            Self::Isle { travel } => {
+                let track = isle_exit_track(travel);
+                let catalogue = owner.quest_catalogue.as_deref().ok_or("quest catalogue")?;
+                assert!(catalogue.track(&track).is_some(), "native Isle track {track}");
+                sqlx::query(
+                    "INSERT INTO game_character_quest_tracks
+                        (character_id,track_key,quest_key,value,committed_character_revision)
+                     SELECT character_id,$2,$3,1,character_revision FROM game_character_roots
+                     WHERE character_id=encode($1,'hex')::uuid",
+                )
+                .bind(fence.character_id.as_bytes().as_slice())
+                .bind(track)
+                .bind(isle_of_evil::QUEST)
+                .execute(&h.pool)
+                .await?;
+            }
             Self::Completion => {
                 sqlx::query("INSERT INTO game_character_soul_war(character_id,megalomania_completed) VALUES(encode($1,'hex')::uuid,true)")
                     .bind(id(41).as_slice()).execute(&h.pool).await?;
@@ -271,7 +312,21 @@ impl Case {
         }
 
         assert!(self.attempt(owner, admitted, callback, 2).await?);
-        let landing = if self == Self::Door { GATE } else { LANDING };
+        let landing = if matches!(self, Self::Door | Self::Isle { .. }) {
+            GATE
+        } else {
+            LANDING
+        };
+        if matches!(self, Self::Isle { .. }) {
+            let map = owner.bundle_map().ok_or("fixture map")?;
+            let speech = map.facts.movement_speech_since(0);
+            for (message, x) in [(ISLE_REFUSAL, GATE.x - 1), (ISLE_ADMITTED, GATE.x)] {
+                assert!(speech.iter().any(|(_, line)| {
+                    line.speaker == actor && line.text == message && line.talk_type == 36
+                        && line.position == TilePos { x, y: GATE.y, floor: GATE.floor }
+                }), "expected speech at x={x}: {message}");
+            }
+        }
         if self == Self::Door {
             let map = owner.bundle_map().ok_or("fixture map")?;
             let key = placement_key(
@@ -374,8 +429,17 @@ impl Case {
                 .read_actor_position(actor)
                 .map_err(debug)?
                 .position();
-            Ok(position == local(LANDING))
+            let destination = if matches!(self, Self::Isle { .. }) { GATE } else { LANDING };
+            Ok(position == local(destination))
         }
+    }
+}
+
+fn isle_exit_track(travel: bool) -> String {
+    if travel {
+        format!("{}rapanaio-travel", isle_of_evil::KV_PREFIX)
+    } else {
+        format!("{}mission07", isle_of_evil::PREFIX)
     }
 }
 
@@ -483,4 +547,14 @@ fn conditional_use_moves_through_and_transforms_the_exact_door() -> TestResult {
     };
     drop(admin);
     scenario(Case::Door)
+}
+
+#[test]
+fn conditional_step_accepts_either_native_isle_ship_exit_track() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    scenario(Case::Isle { travel: false })?;
+    scenario(Case::Isle { travel: true })
 }
