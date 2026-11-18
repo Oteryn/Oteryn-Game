@@ -614,7 +614,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 use_with_position: None,
             }) => Dispatch::Use(
                 authority
-                    .use_object(
+                    .use_object_checked(
                         actor,
                         UseCommand {
                             game_session_id: admitted.game_session_id,
@@ -623,7 +623,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                         },
                         target,
                     )
-                    .await,
+                    .await
+                    .ok()?,
             ),
             Err(_) => Dispatch::Use(UseOutcome::rejected()),
         }

@@ -1493,6 +1493,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.use_world_object(actor, command, target).await
     }
 
+    async fn use_object_checked(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> Result<UseOutcome, ()> {
+        let result = self.use_world_object(actor, command, target).await;
+        if self.has_unresolved_cooldown_use(actor, command) {
+            return Err(());
+        }
+        Ok(result)
+    }
+
     async fn observe_spell_catalog(
         &self,
         actor: ExactActorRef,

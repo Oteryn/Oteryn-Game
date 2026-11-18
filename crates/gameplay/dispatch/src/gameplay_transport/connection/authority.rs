@@ -620,6 +620,17 @@ pub trait FreshAdmissionAuthority {
         async { UseOutcome::rejected() }
     }
 
+    /// A receipt-backed object use can still be unresolved when storage loses its response.
+    /// Return an error so the transport does not acknowledge an unproven outcome.
+    fn use_object_checked(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> impl Future<Output = Result<UseOutcome, ()>> {
+        async move { Ok(self.use_object(actor, command, target).await) }
+    }
+
     /// A live map handle can reach a specific world owner without being treated as carried.
     /// Unknown map uses retain the ordinary fail-closed container/item path.
     fn use_map_item(

@@ -610,6 +610,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         true
     }
 
+    pub(super) fn has_unresolved_cooldown_use(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+    ) -> bool {
+        let Ok(id) = CommandId::new(command.command_id) else {
+            return false;
+        };
+        self.states
+            .quest_callbacks
+            .records
+            .lock()
+            .map_or(true, |records| {
+                records
+                    .get(&command.game_session_id)
+                    .is_some_and(|pending| {
+                        pending.actor == actor
+                            && pending.cooldown_lever.is_some()
+                            && pending.cause
+                                == QuestCause::Use(CommandRef::new(command.game_session_id, id))
+                    })
+            })
+    }
+
     pub(super) fn has_pending_quest_callback(&self, session: GameSessionId) -> bool {
         if self.states.grizzly_boss.has_pending(session) {
             return true;

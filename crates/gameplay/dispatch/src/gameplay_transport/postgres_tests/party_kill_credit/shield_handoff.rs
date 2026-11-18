@@ -175,11 +175,12 @@ pub(super) async fn exercise(
     } else {
         None
     };
-    let result = owner.use_quest_callback(player.actor, command(501), map, &WorldObjectTarget {
-        placement:placement.clone(), expected_revision:map.facts.object_revision(key),
-    }).await.ok_or("lever result")?;
+    let target = WorldObjectTarget {
+        placement: placement.clone(), expected_revision: map.facts.object_revision(key),
+    };
+    let result = FreshAdmissionAuthority::use_object_checked(owner, player.actor, command(501), target).await;
     let cooldowns = if let Some(before_ms) = before_ms {
-        assert_eq!(result.disposition, UseDisposition::Rejected);
+        assert!(result.is_err(), "transport must close without acknowledging an unknown entry");
         for member in players {
             assert!(owner.has_pending_quest_callback(member.session));
         }
@@ -207,7 +208,7 @@ pub(super) async fn exercise(
         assert!((before_ms + delta..=after_ms + delta).contains(&rows[0].1));
         Some(rows)
     } else {
-        assert_eq!(result.disposition, UseDisposition::Committed);
+        assert_eq!(result.map_err(|_| "known entry")?.disposition, UseDisposition::Committed);
         None
     };
 
