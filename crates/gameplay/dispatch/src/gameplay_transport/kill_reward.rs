@@ -1966,7 +1966,7 @@ pub fn record_creature_kill(
         return;
     }
     if let Some(position) = slime_death {
-        super::warzone_callbacks::slime_death(runtime, target, position);
+        super::warzone_callbacks::slime_death(runtime, target, position, sink.prey);
     }
     if let Some(states) = sink.prey {
         states

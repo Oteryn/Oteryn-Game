@@ -228,10 +228,45 @@ pub(super) fn is_slime(key: &str) -> bool {
     key == SLIME
 }
 
+#[derive(Debug, Default)]
+pub(super) struct SlimeExplosions(std::sync::Mutex<Vec<MovementLocalPosition>>);
+
+impl SlimeExplosions {
+    pub(super) fn publish(&self, owner: &ComposedFreshAdmission<'_, '_, '_>) {
+        const EXPLOSION_HIT: u16 = 6;
+        let Some(map) = owner.bundle_map() else {
+            return;
+        };
+        let Ok(mut pending) = self.0.lock() else {
+            return;
+        };
+        for center in pending.drain(..) {
+            for cell in slime_area(center).filter_map(super::soul_war_scene::wire_position) {
+                map.facts.emit_movement_effect(cell, EXPLOSION_HIT);
+            }
+        }
+    }
+}
+
+fn slime_area(center: MovementLocalPosition) -> impl Iterator<Item = MovementLocalPosition> {
+    // Crystal's AREA_CIRCLE2X2 is a five-by-five square without the corners.
+    (-2_i32..=2)
+        .flat_map(|dy| (-2_i32..=2).map(move |dx| (dx, dy)))
+        .filter(|(dx, dy)| dx.abs() != 2 || dy.abs() != 2)
+        .filter_map(move |(dx, dy)| {
+            Some(MovementLocalPosition {
+                x: center.x.checked_add(dx)?,
+                y: center.y.checked_add(dy)?,
+                ..center
+            })
+        })
+}
+
 pub(super) fn slime_death(
     runtime: &mut ChannelRuntimeV1,
     slime: ExactActorRef,
     center: MovementLocalPosition,
+    states: Option<&super::actor_spell::ChannelSpellStates>,
 ) {
     use oteryn_simulation_determinism::{
         DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
@@ -244,18 +279,14 @@ pub(super) fn slime_death(
     let root = GameplayDecisionRoot::from_bytes(digest);
     let occurrence = DecisionOccurrenceId::from_bytes(slime.placement_identity());
     let mut heals = Vec::new();
-    // Crystal's AREA_CIRCLE2X2 is a five-by-five square without the corners.
-    for (ordinal, (dx, dy)) in (-2_i32..=2)
-        .flat_map(|dy| (-2_i32..=2).map(move |dx| (dx, dy)))
-        .filter(|(dx, dy)| dx.abs() != 2 || dy.abs() != 2)
-        .enumerate()
+    if let Some(states) = states
+        && let Ok(mut pending) = states.warzone_explosions.0.lock()
+        && pending.len() < 64
     {
-        let (Some(x), Some(y)) = (center.x.checked_add(dx), center.y.checked_add(dy)) else {
-            continue;
-        };
-        let Ok(Some(actor)) =
-            runtime.current_top_actor_on_cell(MovementLocalPosition { x, y, ..center })
-        else {
+        pending.push(center);
+    }
+    for (ordinal, cell) in slime_area(center).enumerate() {
+        let Ok(Some(actor)) = runtime.current_top_actor_on_cell(cell) else {
             continue;
         };
         if actor == slime {
