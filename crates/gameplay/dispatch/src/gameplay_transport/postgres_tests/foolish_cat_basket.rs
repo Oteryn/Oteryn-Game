@@ -1,7 +1,12 @@
 //! Real basket USE creates portable Ground custody and one exact timed creature.
 use super::quest_world_callbacks::{self, tool_fixture};
 use super::{TestResult, fixture::debug};
-use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+use crate::gameplay_transport::{
+    connection::{FreshAdmissionAuthority, UseCommand},
+    item_move::{LoopMove, LoopMoveResult, LoopTarget},
+    item_view::ItemKey,
+    loop_move::move_loop_item,
+};
 use oteryn_gameplay_quests::quest::{
     QuestTrack,
     world_callbacks::{Callback, Position},
@@ -112,8 +117,8 @@ fn scenario(admin: String) -> TestResult {
                 );
                 *kitty
             };
-            let (quantity, at, pickup_qualified, same_transaction): (i64, Vec<u8>, bool, bool) = sqlx::query_as(
-            "SELECT i.quantity,g.spatial_position,game_item_loop_map_mint_source(i.item_instance_id), \
+            let (toy_id, quantity, at, pickup_qualified, same_transaction): (Vec<u8>, i64, Vec<u8>, bool, bool) = sqlx::query_as(
+            "SELECT uuid_send(i.item_instance_id),i.quantity,g.spatial_position,game_item_loop_map_mint_source(i.item_instance_id), \
              q.xmin::text::numeric=mod(r.created_xact_id::text::numeric,4294967296) \
              FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id) \
              JOIN game_native_map_item_receipts r USING(item_instance_id) \
@@ -139,6 +144,37 @@ fn scenario(admin: String) -> TestResult {
                 same_transaction,
                 "the Quest and floor item share one commit"
             );
+
+            let toy_id: [u8; 16] = toy_id.try_into().map_err(|_| "floor toy item UUID")?;
+            let pickup = move_loop_item(
+                owner,
+                admitted.runtime_actor.ok_or("actor")?,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: 52,
+                    item_fence: Some(fence.item_fence()),
+                },
+                LoopMove {
+                    item: ItemKey::Instance(toy_id),
+                    count: None,
+                    target: LoopTarget::MainBackpack,
+                },
+            )
+            .await;
+            assert_eq!(pickup, LoopMoveResult::Committed);
+            let custody: (bool, bool) = sqlx::query_as(
+                "SELECT EXISTS(SELECT 1 FROM game_item_ground_locations
+                    WHERE item_instance_id=encode($1,'hex')::uuid),
+                 EXISTS(SELECT 1 FROM game_item_container_entries
+                    WHERE item_instance_id=encode($1,'hex')::uuid
+                    AND character_id=encode($2,'hex')::uuid)",
+            )
+            .bind(toy_id.as_slice())
+            .bind(fence.character_id.as_bytes().as_slice())
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(custody, (false, true), "the same toy enters the Character backpack");
+
             owner
                 .states
                 .test_owner_time
