@@ -129,7 +129,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
             63,
             171,
             now,
-            Some("platform-test"),
+            None,
         )
         .await
         .map_err(|error| format!("second Fresh admission: {error}"))?;
