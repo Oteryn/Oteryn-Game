@@ -14,7 +14,7 @@ fn dark_trails_npc_flow_commits_once_and_fences_conversation_topics() -> TestRes
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("dark-trails-npc", || scenario(None))
+    super::kill_reward_e2e::scenario_thread::run("dark-trails-npc", || scenario(None, false))
 }
 
 const VOTES: &str = "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points";
@@ -34,6 +34,7 @@ fn dark_trails_marvin_spends_one_oramond_vote_and_credits_archives() -> TestResu
                 &["funding", "archives", "1", "yes", "yes"],
                 1,
             )),
+            false,
         )
     })
 }
@@ -53,6 +54,7 @@ fn dark_trails_sholley_requires_fifty_available_votes_without_spending_them() ->
                 &["friend"],
                 49,
             )),
+            false,
         )?;
         scenario(
             Some((
@@ -63,8 +65,17 @@ fn dark_trails_sholley_requires_fifty_available_votes_without_spending_them() ->
                 &["friend"],
                 50,
             )),
+            false,
         )
     })
+}
+
+#[test]
+fn dark_trails_barnabas_refuses_unavailable_self_harvest_credit() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("dark-trails-barnabas", || scenario(None, true))
 }
 
 type VoteScenario = (
@@ -76,7 +87,7 @@ type VoteScenario = (
     i64,
 );
 
-fn scenario(vote_case: Option<VoteScenario>) -> TestResult {
+fn scenario(vote_case: Option<VoteScenario>, check_self_harvest: bool) -> TestResult {
     let trigger = Position {
         x: 33294,
         y: 31677,
@@ -237,6 +248,27 @@ fn scenario(vote_case: Option<VoteScenario>) -> TestResult {
             return Ok(());
         }
         owner.admit_quest_session(&admitted).await;
+
+        if check_self_harvest {
+            let [barnabas] = install(&owner, &admitted, ["oteryn:npc.barnabas_dee"]).await?;
+            talk(&mut owner, &admitted, barnabas, 3000, "hi").await?;
+            talk(&mut owner, &admitted, barnabas, 3001, "mission").await?;
+            assert_eq!(
+                talk(&mut owner, &admitted, barnabas, 3002, "seance").await?,
+                ["Sorry, not possible."]
+            );
+            assert_eq!(
+                progress(
+                    &owner,
+                    &admitted,
+                    &authority,
+                    &format!("{}mission16", quest::TRACK_PREFIX)
+                )
+                .await?,
+                0,
+            );
+            return Ok(());
+        }
 
         let [ezebeth, beggar, rapanaio] = install(
             &owner,

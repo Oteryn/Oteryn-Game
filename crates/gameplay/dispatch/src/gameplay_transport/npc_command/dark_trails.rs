@@ -4,6 +4,10 @@ use super::quest_dialogue::{self, Choice, Step, Topic};
 use super::*;
 use oteryn_gameplay_quests::quest::dark_trails as quest;
 
+const POLLEN_MISSION: &str =
+    "oteryn:quest-progress/quest/u10_50/oramond_quest/the_powder_of_the_stars/mission";
+const SEANCE_COMPLETE: &str = "oteryn:quest-progress/quest/u10_50/dark_trails/mission16";
+
 pub(super) fn prepare(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -24,6 +28,19 @@ pub(super) fn prepare(
             }
             if context.2 == quest::SHOLLEY && quest::message_contains(&intent.text, "friend") {
                 return sholley(&book, tracks);
+            }
+            if context.2 == "oteryn:npc.barnabas_dee"
+                && !quest::message_contains(&intent.text, "mission")
+                && quest::message_contains(&intent.text, "seance")
+                && tracks.get(POLLEN_MISSION) == Some(&1)
+                && tracks.get(SEANCE_COMPLETE).copied().unwrap_or(-1) < 1
+            {
+                // Crystal's hand-in checks carried pollen. It records no personal harvest credit.
+                return Some(Choice {
+                    transition: None,
+                    next_topic: Some(0.into()),
+                    reply: vec!["Sorry, not possible.".into()],
+                });
             }
             let rule = book.select(&context.2, &intent.text, topic.number, tracks)?;
             if rule.greeting_only && !fresh {
