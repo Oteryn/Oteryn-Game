@@ -23,6 +23,7 @@ pub(super) const PASSIVE: &str = "putrefactory-passive-charge";
 const QUEST: &str = "oteryn:quest/rotten-blood";
 const CLOCK: &str = "oteryn:quest-progress/rotten-blood/putrefactory/reservoir-1-used-at";
 const STARTED_AT: i64 = 1_800_000_000;
+const SAVED_CHARGE: i64 = 12;
 // Crystal creaturescripts_putrefactory-x.lua:195-199.
 const EXHAUSTED: &str = "You already exhausted this reservoir.";
 const AT: Position = Position {
@@ -129,6 +130,7 @@ pub(super) async fn exercise(
     if let Some(previous) = base.definition_hash(QUEST) {
         assert_ne!(attached.definition_hash(QUEST), Some(previous));
         assert!(oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(&attached, QUEST, &previous).is_some());
+        seed_previous_charge(h, previous).await?;
     }
     owner.quest_catalogue = Some(Arc::new(attached));
     h.root.set_test_quest_clock(STARTED_AT).map_err(debug)?;
@@ -156,7 +158,12 @@ pub(super) async fn exercise(
     assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Committed);
     let values = tracks().await?;
     assert_eq!(values.len(), 2);
-    assert_eq!(values[0], (CHARGE.to_owned(), if cap { 100 } else { 20 }));
+    let first_charge = match name {
+        CAP => 100,
+        PASSIVE => SAVED_CHARGE + 20,
+        _ => 20,
+    };
+    assert_eq!(values[0], (CHARGE.to_owned(), first_charge));
     assert_eq!(values[1].0, CLOCK);
     assert_eq!(values[1].1, STARTED_AT);
     let view = owner.observe_channel_entities(actor).await.ok_or("entity view")?;
@@ -166,7 +173,7 @@ pub(super) async fn exercise(
         .find(|entry| entry.identity == actor.placement_identity())
         .ok_or("player entity")?;
     assert!(entry.source_icons.iter().any(|icon| {
-        icon.category == 0 && icon.id == 2 && icon.count == if cap { 100 } else { 20 }
+        icon.category == 0 && icon.id == 2 && i64::from(icon.count) == first_charge
     }));
 
     if name == PASSIVE {
@@ -179,7 +186,7 @@ pub(super) async fn exercise(
         assert_eq!(
             charged,
             vec![
-                (CHARGE.to_owned(), 21),
+                (CHARGE.to_owned(), first_charge + 1),
                 (PASSIVE_CLOCK.to_owned(), STARTED_AT + 20),
                 (CLOCK.to_owned(), STARTED_AT),
             ]
@@ -190,7 +197,7 @@ pub(super) async fn exercise(
         assert_eq!(tracks().await?, charged);
         // The containing item clock checks once per second.
         owner.tick_timed_items_at(41_000).await;
-        assert_eq!(tracks().await?[0], (CHARGE.to_owned(), 22));
+        assert_eq!(tracks().await?[0], (CHARGE.to_owned(), first_charge + 2));
         let receipts: i64 = sqlx::query_scalar(
             "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1 AND cause_kind='source_think'",
         )
@@ -227,5 +234,38 @@ pub(super) async fn exercise(
             vec![(CHARGE.to_owned(), 40), (CLOCK.to_owned(), STARTED_AT + 20)]
         );
     }
+    Ok(())
+}
+
+async fn seed_previous_charge(h: &Harness, definition_hash: [u8; 32]) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let character = super::fixture::id(41);
+    sqlx::query(
+        "INSERT INTO game_character_quest_states(character_id, quest_key, pinned_content_revision,
+         definition_hash, started_character_revision, committed_character_revision)
+         SELECT character_id, $2, 'content-1', $3, character_revision, character_revision
+         FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(character.as_slice())
+    .bind(QUEST)
+    .bind(definition_hash.as_slice())
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_character_quest_tracks(character_id, track_key, quest_key, value,
+         committed_character_revision)
+         SELECT character_id, $2, $3, $4, character_revision
+         FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(character.as_slice())
+    .bind(CHARGE)
+    .bind(QUEST)
+    .bind(SAVED_CHARGE)
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
     Ok(())
 }
