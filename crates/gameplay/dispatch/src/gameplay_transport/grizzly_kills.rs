@@ -974,6 +974,7 @@ mod encounter_credit_tests {
                 observed_revision: 1,
                 source,
                 counters: vec!["oteryn:quest-transition/native-kills/cults-essence"],
+                hard_counter: None,
             });
         }
         let shares: Vec<_> = credits

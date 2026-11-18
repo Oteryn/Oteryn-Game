@@ -425,3 +425,21 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
     )
     .map_err(|error| format!("{error:?}"))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn arbaziloth_hard_win_selects_one_counter_operation() {
+        let mut tracks = BTreeMap::from([(HARD_KILLS.into(), 8), (DOOR.into(), 1)]);
+        assert_eq!(arbaziloth_hard_counter(&tracks), Some(HARD_INCREMENT));
+        tracks.insert(HARD_KILLS.into(), 9);
+        assert_eq!(arbaziloth_hard_counter(&tracks), Some(HARD_UNLOCK));
+        assert!(!active(&tracks).contains(&HARD_UNLOCK));
+        tracks.insert(DOOR.into(), 2);
+        assert_eq!(arbaziloth_hard_counter(&tracks), None);
+        tracks.insert(HARD_KILLS.into(), 10);
+        assert_eq!(arbaziloth_hard_counter(&tracks), None);
+    }
+}
