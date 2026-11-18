@@ -44,7 +44,6 @@ pub(super) async fn exercise(
     step_callback.selector.unique = None;
     step_callback.selector.appearance = None;
     step_callback.return_on_failure = true;
-    step_callback.storage[0].preserve = true;
     step_callback.storage[0].set = 0;
     let window = serde_json::json!({"start_month":4,"start_day":1,"end_month":5,"end_day":1});
     let mut use_callback = serde_json::to_value(use_callback)?;
