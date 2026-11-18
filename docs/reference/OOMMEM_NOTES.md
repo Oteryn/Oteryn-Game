@@ -151,7 +151,7 @@ investigation report only.
 +          done
 +          CARGO_BUILD_JOBS=1 cargo +1.100.0 nextest archive --locked "${args[@]}" --lib "${pg_targets[@]}" \
              --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
- 
+
 --- a/.github/workflows/merge-gate.yml
 +++ b/.github/workflows/merge-gate.yml
 @@ -1006,5 +1006,9 @@
@@ -172,7 +172,7 @@ investigation report only.
            set -euo pipefail
 -          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
 +          CARGO_BUILD_JOBS=1 cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --test dispatch-pg-1 --test dispatch-pg-2 --test dispatch-pg-3 --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
- 
+
        - name: Record archive digests and candidate
 --- a/.github/workflows/integration-regressions.yml
 +++ b/.github/workflows/integration-regressions.yml
