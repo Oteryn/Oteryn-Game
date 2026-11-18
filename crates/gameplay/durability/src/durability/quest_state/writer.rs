@@ -4,6 +4,7 @@ mod world_fixture;
 use super::super::db::begin_type2_transaction;
 use super::super::reward_claim_mint::quest::QuestRewardAdmission;
 use super::*;
+use oteryn_gameplay_quests::quest::world_callbacks;
 
 #[cfg(feature = "test-support")]
 #[path = "writer/ground_fixture.rs"]
