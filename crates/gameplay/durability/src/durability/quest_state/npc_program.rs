@@ -129,6 +129,7 @@ pub fn preview_with_appearance(
         eligibility,
         player_name,
         appearance,
+        earned_achievements: None,
     };
     let Some(source) = NpcRuleCatalog::for_catalogue(catalogue)?.admitted_for_npc(&request.npc, catalogue)? else {
         return Ok(None);
@@ -217,7 +218,29 @@ pub fn preview_with_inventory(
         return Ok(None);
     };
     evaluate_source(&source, request, tracks, catalogue, now,
-        NpcEvaluationFacts { eligibility, player_name, appearance }, Some(inventory))
+        NpcEvaluationFacts { eligibility, player_name, appearance, earned_achievements: None }, Some(inventory))
+}
+
+/// Foreground TALK read using a fenced snapshot of the authored achievement keys.
+pub fn preview_achievement_greeting(
+    request: &NpcProgramRequest,
+    tracks: &BTreeMap<String, i64>,
+    source: &NpcRuleCatalog,
+    catalogue: &QuestStateCatalogue,
+    now: i64,
+    eligibility: &NpcEligibility,
+    earned: &std::collections::BTreeSet<String>,
+) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError> {
+    evaluate_source(
+        source, request, tracks, catalogue, now,
+        NpcEvaluationFacts {
+            eligibility,
+            player_name: None,
+            appearance: (&BTreeMap::new(), 0),
+            earned_achievements: Some(earned),
+        },
+        None,
+    )
 }
 
 #[derive(Clone, Copy)]
@@ -225,6 +248,7 @@ struct NpcEvaluationFacts<'a> {
     eligibility: &'a NpcEligibility,
     player_name: Option<&'a str>,
     appearance: (&'a BTreeMap<u16, u8>, u8),
+    earned_achievements: Option<&'a std::collections::BTreeSet<String>>,
 }
 
 fn evaluate_source(
@@ -286,7 +310,9 @@ fn evaluate_source(
         sex: facts.appearance.1,
         outfits: facts.appearance.0,
     };
-    if hot_cuisine_m42::owns(request) {
+    if let Some(earned) = facts.earned_achievements {
+        source.plan_achievement_greeting(&input, earned)
+    } else if hot_cuisine_m42::owns(request) {
         hot_cuisine_m42::plan(source, &input)
     } else if inventory.is_some() && marlin_trophy::owns(request) {
         source.plan_marlin_items(&input)
@@ -304,6 +330,42 @@ fn evaluate_source(
 }
 
 impl DurabilityRoot {
+    /// Read only the achievement facts requested by the admitted NPC greeting.
+    pub async fn read_npc_greeting_achievements(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        keys: Vec<String>,
+    ) -> Result<std::collections::BTreeSet<String>, CharacterProgressionError> {
+        if !(1..=128).contains(&keys.len()) {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {
+                return Ok(Err(error));
+            }
+            let earned: Vec<String> = sqlx::query_scalar(
+                "SELECT a.achievement_key FROM game_character_roots c
+                 JOIN game_account_achievements a USING (account_id)
+                 WHERE c.character_id=encode($1,'hex')::uuid AND a.achievement_key=ANY($2)",
+            )
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(&keys)
+            .fetch_all(&mut *tx)
+            .await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(earned.into_iter().collect()))
+        })).await?
+    }
+
     /// Replay a bound NPC response without granting current gameplay authority.
     pub async fn reconcile_npc_program(
         &self,
@@ -516,7 +578,7 @@ impl DurabilityRoot {
                 Some(super::super::character_chat_name::read_character_name_for_share_in_transaction(
                     &mut tx, character.as_bytes()).await?)
             } else { None };
-            let facts = NpcEvaluationFacts { eligibility: &eligibility, player_name: player_name.as_deref(), appearance: (&outfits,sex) };
+            let facts = NpcEvaluationFacts { eligibility: &eligibility, player_name: player_name.as_deref(), appearance: (&outfits,sex), earned_achievements: None };
             let teleport_plan = if teleport.is_some() {
                 match teleport::evaluate(&source, &request, &effective_tracks, now, facts, inventory.as_ref()) {
                     Ok(Some(plan)) => Some(plan),

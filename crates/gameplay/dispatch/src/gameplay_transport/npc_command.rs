@@ -713,6 +713,9 @@ pub(super) async fn npc_bank_talk(
     };
     let source_appearance = catalogue::appearance(admission, actor, command, &intent).await;
     let source_inventory = catalogue::inventory(admission, actor, command, &intent).await;
+    let Ok(source_achievements) = catalogue::greeting_achievements(admission, actor, command, &intent).await else {
+        return rejected();
+    };
     let mut runtime = admission.runtime.lock().await;
     let points = admission
         .states
@@ -967,6 +970,7 @@ pub(super) async fn npc_bank_talk(
         stag_beaks.as_ref(),
         source_appearance.as_ref(),
         source_inventory.as_ref(),
+        source_achievements.as_ref(),
     ) {
         drop(runtime);
         drop(_trade_permit);

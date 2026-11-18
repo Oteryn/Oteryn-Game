@@ -80,8 +80,12 @@ impl<'a> Staged<'a> {
         &mut self,
         guard: &NpcRuleGuard,
         input: &NpcRuleInput<'_>,
+        earned: Option<&BTreeSet<String>>,
     ) -> Result<bool, NpcRuleError> {
         Ok(match guard {
+            NpcRuleGuard::Achievement { key } => earned
+                .ok_or_else(|| NpcRuleError::MissingNativeResolution(key.clone()))?
+                .contains(key),
             NpcRuleGuard::Storage {
                 track,
                 op,
@@ -308,22 +312,38 @@ pub(super) fn plan(
     resolutions: &BTreeMap<String, Vec<NpcRuleEffect>>,
     storage_only: bool,
 ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
-    plan_with_teleport(catalogue, input, resolutions, storage_only, false)
+    plan_internal(catalogue, input, resolutions, storage_only, false, None)
 }
 
 pub(super) fn plan_teleport(
     catalogue: &NpcRuleCatalog,
     input: &NpcRuleInput<'_>,
 ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
-    plan_with_teleport(catalogue, input, &BTreeMap::new(), true, true)
+    plan_internal(catalogue, input, &BTreeMap::new(), true, true, None)
 }
 
-fn plan_with_teleport(
+pub(super) fn plan_greeting(
+    catalogue: &NpcRuleCatalog,
+    input: &NpcRuleInput<'_>,
+    earned: &BTreeSet<String>,
+) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+    plan_internal(
+        catalogue,
+        input,
+        &BTreeMap::new(),
+        true,
+        false,
+        Some(earned),
+    )
+}
+
+fn plan_internal(
     catalogue: &NpcRuleCatalog,
     input: &NpcRuleInput<'_>,
     resolutions: &BTreeMap<String, Vec<NpcRuleEffect>>,
     storage_only: bool,
     allow_teleport: bool,
+    earned: Option<&BTreeSet<String>>,
 ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
     if input.topic < 0 || input.message.len() > 4096 || input.inventory.items.len() > 4096 {
         return Err(NpcRuleError::Invalid("invalid NPC input".into()));
@@ -366,11 +386,12 @@ fn plan_with_teleport(
                             | NpcRuleGuard::Vocation { .. }
                             | NpcRuleGuard::Premium { .. }
                             | NpcRuleGuard::CalendarWindow { .. }
+                            | NpcRuleGuard::Achievement { .. }
                     )
                 {
                     return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));
                 }
-                if !state.guard(guard, input)? {
+                if !state.guard(guard, input, earned)? {
                     eligible = false;
                     break;
                 }

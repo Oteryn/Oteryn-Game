@@ -1,6 +1,9 @@
 //! Crystal 201189f8 data-global/npc/iskan.lua:53-127 through fenced NPC dispatch.
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, classic_quests};
+use crate::durability::account_achievement::{
+    AchievementGrantOutcome, AchievementGrantRequest, AchievementSourceEvent,
+};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue, npc_rules::NpcRuleCatalog, world_callbacks::Position,
@@ -13,6 +16,8 @@ const QUEST: &str = "oteryn:quest.the_ice_islands_quest";
 const BARBARIAN: &str = "oteryn:quest-progress/quest/u8_0/barbarian_test/questline";
 const QUESTLINE: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline";
 const MISSION: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission01";
+const HUSKY: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/husky_kill";
+const WARLORD: &str = "oteryn:achievement/warlord_of_svargrond";
 const LANDING: Position = Position {
     x: 32325,
     y: 31049,
@@ -20,7 +25,7 @@ const LANDING: Position = Position {
 };
 
 #[test]
-fn iskan_requires_barbarian_completion_and_musher_report_before_nibelor_passage() -> TestResult {
+fn iskan_greets_earned_warlords_and_requires_the_musher_report_for_passage() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -55,7 +60,14 @@ pub(super) fn catalogue(native: &QuestStateCatalogue) -> TestResult<QuestStateCa
             "guards": guards, "reply": reply, "effects": effects, "sources": [source]
         })
     };
-    let tracks = [QUESTLINE, MISSION]
+    let greet = |key, guards: Vec<Value>, reply: &str| {
+        json!({
+            "key": format!("oteryn:quest-npc-rule.ice-islands-iskan.{key}"),
+            "quest": QUEST, "npc": NPC, "trigger": "greet", "keywords": [],
+            "guards": guards, "reply": [reply], "effects": [], "sources": [source]
+        })
+    };
+    let tracks = [QUESTLINE, MISSION, HUSKY]
         .into_iter()
         .map(|key| {
             let track = native.track(key).ok_or("Iskan progress track")?;
@@ -75,6 +87,11 @@ pub(super) fn catalogue(native: &QuestStateCatalogue) -> TestResult<QuestStateCa
             "sha256":"d9169860bba1568a08460744b49630a94e4ca00a83072544cca9eed863a6f5ad"
         }],
         "rules":[
+            greet("greet-unqualified", vec![guard(BARBARIAN, "lt", 8)], "Barbarian test required."),
+            greet("greet-husky", vec![admitted(), guard(HUSKY, "ge", 1)], "Husky debt is due."),
+            greet("greet-warlord", vec![admitted(), json!({"kind":"achievement","key":WARLORD})],
+                "Welcome, Warlord |PLAYERNAME|."),
+            greet("greet-qualified", vec![guard(BARBARIAN, "eq", 8)], "Welcome, honorary barbarian."),
             rule("passage-ready", &["passage"], None, vec![admitted(), guard(QUESTLINE, "ge", 3)],
                 &["So, do you want a passage to Nibelor my friend?"], vec![topic(2)]),
             rule("passage-before-report", &["passage"], None, vec![admitted(), guard(QUESTLINE, "lt", 3)],
@@ -120,7 +137,10 @@ pub(super) async fn exercise(
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
 
-    classic_quests::talk(owner, admitted, iskan, 19200, "hi").await?;
+    assert_eq!(
+        classic_quests::talk(owner, admitted, iskan, 19200, "hi").await?,
+        ["Barbarian test required."]
+    );
     classic_quests::talk(owner, admitted, iskan, 19201, "mission").await?;
     assert_eq!(
         classic_quests::progress(owner, admitted, authority, QUESTLINE).await?,
@@ -132,8 +152,62 @@ pub(super) async fn exercise(
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
 
-    classic_quests::talk(owner, admitted, iskan, 19202, "passage").await?;
-    let refused = classic_quests::talk(owner, admitted, iskan, 19203, "yes").await?;
+    classic_quests::talk(owner, admitted, iskan, 19210, "bye").await?;
+    assert_eq!(
+        classic_quests::talk(owner, admitted, iskan, 19211, "hi").await?,
+        ["Welcome, honorary barbarian."]
+    );
+    let gameplay = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
+    let granted = owner
+        .root
+        .commit_test_achievement_grants(
+            authority,
+            owner.holder,
+            gameplay,
+            vec![AchievementGrantRequest {
+                catalogue: owner.achievements.lookup(WARLORD),
+                achievement_key: WARLORD.into(),
+                source: AchievementSourceEvent {
+                    kind: "oteryn:qcx62-iskan-test".into(),
+                    event_id: vec![1],
+                },
+            }],
+        )
+        .await
+        .map_err(debug)?;
+    assert!(matches!(
+        granted.as_slice(),
+        [AchievementGrantOutcome::Granted(_)]
+    ));
+    classic_quests::talk(owner, admitted, iskan, 19212, "bye").await?;
+    let warlord = classic_quests::talk(owner, admitted, iskan, 19213, "hi").await?;
+    let name = owner
+        .states
+        .chat
+        .speaker_name(admitted.game_session_id)
+        .ok_or("speaker name")?;
+    assert_eq!(warlord, [format!("Welcome, Warlord {name}.")]);
+
+    import_track(h, fence.character_id.as_bytes().as_slice(), HUSKY, 1).await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    classic_quests::talk(owner, admitted, iskan, 19214, "bye").await?;
+    assert_eq!(
+        classic_quests::talk(owner, admitted, iskan, 19215, "hi").await?,
+        ["Husky debt is due."]
+    );
+    import_track(h, fence.character_id.as_bytes().as_slice(), HUSKY, 0).await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+
+    classic_quests::talk(owner, admitted, iskan, 19220, "passage").await?;
+    let refused = classic_quests::talk(owner, admitted, iskan, 19221, "yes").await?;
     assert!(refused.iter().any(|line| line.contains("first time")));
     let receipts = "SELECT count(*) FROM game_quest_npc_teleport_receipts";
     assert_eq!(
@@ -143,9 +217,9 @@ pub(super) async fn exercise(
         0
     );
 
-    let request = classic_quests::talk(owner, admitted, iskan, 19204, "mission").await?;
+    let request = classic_quests::talk(owner, admitted, iskan, 19222, "mission").await?;
     assert!(request.iter().any(|line| line.contains("run away")));
-    let instructions = classic_quests::talk(owner, admitted, iskan, 19205, "yes").await?;
+    let instructions = classic_quests::talk(owner, admitted, iskan, 19223, "yes").await?;
     assert!(instructions.iter().any(|line| line.contains("Sniffler")));
     assert_eq!(
         classic_quests::progress(owner, admitted, authority, MISSION).await?,
@@ -157,7 +231,7 @@ pub(super) async fn exercise(
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
-    let report = classic_quests::talk(owner, admitted, iskan, 19206, "mission").await?;
+    let report = classic_quests::talk(owner, admitted, iskan, 19224, "mission").await?;
     assert!(report.iter().any(|line| line.contains("friend of mine")));
     assert_eq!(
         classic_quests::progress(owner, admitted, authority, QUESTLINE).await?,
@@ -167,8 +241,8 @@ pub(super) async fn exercise(
         classic_quests::progress(owner, admitted, authority, MISSION).await?,
         3
     );
-    classic_quests::talk(owner, admitted, iskan, 19207, "passage").await?;
-    classic_quests::talk(owner, admitted, iskan, 19208, "yes").await?;
+    classic_quests::talk(owner, admitted, iskan, 19225, "passage").await?;
+    classic_quests::talk(owner, admitted, iskan, 19226, "yes").await?;
 
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let placed = owner

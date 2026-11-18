@@ -7,7 +7,8 @@ use crate::durability::quest_state::{
     npc_program::{self, NpcProgramRequest},
 };
 use crate::foundation::{CommandId, CommandRef};
-use oteryn_gameplay_quests::quest::npc_rules::{NpcRuleCatalog, NpcRuleEffect, NpcRuleTrigger};
+use oteryn_gameplay_quests::quest::npc_rules::{NpcRuleCatalog, NpcRuleEffect, NpcRuleGuard, NpcRuleTrigger};
+use std::collections::BTreeSet;
 use std::sync::Arc;
 
 pub(in crate::gameplay_transport) mod teleport;
@@ -83,6 +84,57 @@ pub(super) struct CommitStep {
     teleport: Option<oteryn_gameplay_quests::quest::npc_rules::NpcRulePosition>,
     magic: usize,
     supersedes_topic: bool,
+}
+
+fn greeting_word(message: &str) -> bool {
+    message
+        .split(|c: char| !c.is_ascii_alphabetic())
+        .any(|word| ["hi", "hello", "hail"].iter().any(|g| word.eq_ignore_ascii_case(g)))
+}
+
+pub(super) async fn greeting_achievements(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+) -> Result<Option<BTreeSet<String>>, ()> {
+    if !greeting_word(&intent.text) {
+        return Ok(None);
+    }
+    let keys = {
+        let runtime = admission.runtime.lock().await;
+        let (Some(npc), Some(catalogue)) = (
+            service_context::live_npc(&runtime, actor, command.game_session_id, intent.npc_actor),
+            admission.quest_catalogue.as_ref(),
+        ) else {
+            return Ok(None);
+        };
+        let Some(source) = NpcRuleCatalog::for_catalogue(catalogue)
+            .and_then(|source| source.admitted_for_npc(&npc.key, catalogue))
+            .map_err(|_| ())?
+        else {
+            return Ok(None);
+        };
+        source.programs().iter()
+            .flat_map(|program| &program.document.rules)
+            .filter(|rule| rule.npc == npc.key && rule.trigger == NpcRuleTrigger::Greet)
+            .flat_map(|rule| &rule.guards)
+            .filter_map(|guard| match guard {
+                NpcRuleGuard::Achievement { key } => Some(key.clone()),
+                _ => None,
+            })
+            .collect::<BTreeSet<_>>()
+    };
+    if keys.is_empty() {
+        return Ok(None);
+    }
+    let fence = admission.current_quest_fence(command.game_session_id).await?.ok_or(())?;
+    if command.item_fence != Some(fence.item_fence()) {
+        return Err(());
+    }
+    admission.root.read_npc_greeting_achievements(
+        admission.character, admission.holder, fence, keys.into_iter().collect(),
+    ).await.map(Some).map_err(|_| ())
 }
 
 pub(super) async fn inventory(
@@ -212,6 +264,7 @@ pub(super) fn prepare(
     stag_beaks: Option<&crate::durability::stag_beaks::StagBeakPreview>,
     appearance: Option<&(std::collections::BTreeMap<u16, u8>, u8)>,
     inventory: Option<&npc_program::NpcProgramInventory>,
+    greeting_achievements: Option<&BTreeSet<String>>,
 ) -> Option<Step> {
     let context = admission.states.npc_conversations.current_npc(
         &admission.states.chat,
@@ -276,14 +329,7 @@ pub(super) fn prepare(
     if previous.is_none() {
         state.catalogue = None;
     }
-    let greeting = intent
-        .text
-        .split(|c: char| !c.is_ascii_alphabetic())
-        .any(|word| {
-            ["hi", "hello", "hail"]
-                .iter()
-                .any(|g| word.eq_ignore_ascii_case(g))
-        })
+    let greeting = greeting_word(&intent.text)
         && !source
             .matches_player_name_message(
                 &context.2,
@@ -411,7 +457,11 @@ pub(super) fn prepare(
         .as_ref()
         .map(|p| Ok(Some(p.source.clone())))
         .unwrap_or_else(|| {
-            if let Some(inventory) = inventory {
+            if let Some(earned) = greeting_achievements.filter(|_| greeting) {
+                npc_program::preview_achievement_greeting(
+                    &request, &tracks, &source, catalogue, now, &eligibility, earned,
+                )
+            } else if let Some(inventory) = inventory {
                 npc_program::preview_with_inventory(
                     &request,
                     &tracks,

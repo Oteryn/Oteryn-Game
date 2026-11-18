@@ -123,6 +123,10 @@ pub struct NpcRulePosition {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum NpcRuleGuard {
+    /// Read-only greeting predicate, Crystal data-global/npc/iskan.lua:53-61.
+    Achievement {
+        key: String,
+    },
     Storage {
         track: String,
         op: NpcComparison,
@@ -645,6 +649,22 @@ impl NpcRuleCatalog {
         input: &NpcRuleInput<'_>,
     ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
         evaluate::plan(self, input, &BTreeMap::new(), true)
+    }
+
+    /// Only presentation may consume a prefetched account achievement.
+    pub fn plan_achievement_greeting(
+        &self,
+        input: &NpcRuleInput<'_>,
+        earned: &std::collections::BTreeSet<String>,
+    ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+        if input.trigger != NpcRuleTrigger::Greet {
+            return Err(NpcRuleError::Invalid("achievement guard requires greeting".into()));
+        }
+        let plan = evaluate::plan_greeting(self, input, earned)?;
+        if plan.as_ref().is_some_and(|plan| plan.completes || !plan.effects.is_empty()) {
+            return Err(NpcRuleError::Invalid("achievement greeting must be read-only".into()));
+        }
+        Ok(plan)
     }
 
     /// Inventory recipes own exact carried items and UTC calendar facts. Other

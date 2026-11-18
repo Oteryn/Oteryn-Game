@@ -52,6 +52,7 @@ fn m42_locked_source_selects_all_fifteen_utc_recipes() -> std::result::Result<()
                     &catalogue,
                     1_785_542_400,
                     NpcEvaluationFacts { appearance: (&BTreeMap::new(), 0),
+                        earned_achievements: None,
                         eligibility: &eligibility,
                         player_name: None
                     },
@@ -68,6 +69,7 @@ fn m42_locked_source_selects_all_fifteen_utc_recipes() -> std::result::Result<()
             &catalogue,
             1_785_542_400,
             NpcEvaluationFacts { appearance: (&BTreeMap::new(), 0),
+                earned_achievements: None,
                 eligibility: &NpcEligibility {
                     level: 35,
                     premium_current: true,
@@ -106,6 +108,7 @@ fn m42_locked_source_selects_all_fifteen_utc_recipes() -> std::result::Result<()
                 &catalogue,
                 1_785_542_400,
                 NpcEvaluationFacts { appearance: (&BTreeMap::new(), 0),
+                    earned_achievements: None,
                     eligibility: &NpcEligibility {
                         level: 35,
                         premium_current: true,

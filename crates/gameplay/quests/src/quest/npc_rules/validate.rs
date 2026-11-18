@@ -289,6 +289,15 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
             }
             for guard in &rule.guards {
                 let valid = match guard {
+                    NpcRuleGuard::Achievement { key } => {
+                        rule.trigger == NpcRuleTrigger::Greet
+                            && rule.effects.is_empty()
+                            && !rule.completes
+                            && valid_quest_key(key)
+                            && key
+                                .strip_prefix("oteryn:achievement/")
+                                .is_some_and(|name| !name.is_empty())
+                    }
                     NpcRuleGuard::Storage {
                         track,
                         op,
