@@ -23,9 +23,9 @@ ITEMHOLD_ADMISSIONS = frozenset({
     "oteryn:reward-claim.kv.goblintemple2",
     "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine",
 })
-# Canonical merged coverage retains 336 source claims: 313 have named PG
-# witnesses, two remain not playable and these 21 retain qualification holds.
-EXPECTED_DENOMINATOR = 21
+# Of 336 source claims, 333 have named PG witnesses, one retains a
+# qualification hold, and two remain not playable.
+EXPECTED_DENOMINATOR = 1
 BLOCKERS = {
     "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING": "QUEST-QUAL-1",
     "LEVER_STEP_IN_OR_OFFERING_CALLBACK_MISSING": "QUEST-CALLBACKS-2",

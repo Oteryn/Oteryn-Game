@@ -31,14 +31,14 @@ class QualificationTests(unittest.TestCase):
         self.assertEqual(errors, [])
         # Keep the exact outstanding denominator; qualified and not-playable
         # source claims remain in their separate coverage categories.
-        self.assertEqual(sum(counts.values()), 21)
+        self.assertEqual(sum(counts.values()), 1)
 
-        # 313 source claims have focused dispatch PG proof; only the
-        # two Dawnport claims are excluded. Keep exact denominator detection.
+        # 333 source claims have dispatch PG proof. One Wrath of the Emperor
+        # claim remains held, and two Dawnport claims are not playable.
         self.assertEqual(sum(counts.values()), qualification.EXPECTED_DENOMINATOR)
         coverage = qualification.read_json(qualification.COVERAGE)
         self.assertEqual(coverage['counts'], {
-            'dispatch_pg_qualified': 313, 'not_playable': 2, 'supported_unqualified': 21})
+            'dispatch_pg_qualified': 333, 'not_playable': 2, 'supported_unqualified': 1})
         self.assertEqual(sum(coverage['counts'].values()), 336)
         selected = {
             'oteryn:reward-claim.kv.nightmare_teddy_quest',

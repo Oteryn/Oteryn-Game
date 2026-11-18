@@ -438,6 +438,50 @@ QUALIFIED.update({
 
 
 QUALIFIED.update({
+    "oteryn:reward-claim.quest.key.id3301":
+        "quest_catalogue_chests_qchk4_outlaw_camp_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.key.id3302":
+        "quest_catalogue_chests_qchk4_outlaw_camp_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.key.id3303":
+        "quest_catalogue_chests_qchk4_outlaw_camp_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.key.id3304":
+        "quest_catalogue_chests_qchk4_outlaw_camp_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.key.id3899":
+        "quest_catalogue_chests_qchk4_paradox_tower_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_24.the_paradox_tower.reward.egg":
+        "quest_catalogue_chests_qchk4_paradox_tower_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_24.the_paradox_tower.reward.gold":
+        "quest_catalogue_chests_qchk4_paradox_tower_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_24.the_paradox_tower.reward.talon":
+        "quest_catalogue_chests_qchk4_paradox_tower_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u7_24.the_paradox_tower.reward.wand":
+        "quest_catalogue_chests_qchk4_paradox_tower_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.bpthe_undeath_stare":
+        "quest_catalogue_chests_qchk4_beregar_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.corpse_gold_ingot":
+        "quest_catalogue_chests_qchk4_beregar_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.corpse_rusted_armor":
+        "quest_catalogue_chests_qchk4_beregar_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.corpse_small_topazes":
+        "quest_catalogue_chests_qchk4_beregar_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots":
+        "quest_catalogue_chests_qchk4_beregar_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.prison_cell_key":
+        "quest_catalogue_chests_qchk4_beregar_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_54.the_new_frontier.chest_tome_of_knowledge1":
+        "quest_catalogue_chests_qchk4_new_frontier_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_54.the_new_frontier.chest_tome_of_knowledge2":
+        "quest_catalogue_chests_qchk4_new_frontier_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_54.the_new_frontier.reward.gold_ingot":
+        "quest_catalogue_chests_qchk4_new_frontier_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_54.the_new_frontier.reward.pig_bank":
+        "quest_catalogue_chests_qchk4_new_frontier_use_replay_and_refusal",
+    "oteryn:reward-claim.quest.u8_54.the_new_frontier.reward.potions":
+        "quest_catalogue_chests_qchk4_new_frontier_use_replay_and_refusal",
+})
+
+
+QUALIFIED.update({
     "oteryn:reward-claim.kv.bananafree":
         "quest_catalogue_chests_qchk6_studded_shield_use_replay_and_refusal",
     "oteryn:reward-claim.kv.bananapremium":
