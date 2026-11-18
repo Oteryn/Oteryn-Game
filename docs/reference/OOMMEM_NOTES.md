@@ -1,6 +1,8 @@
 # Dispatch library test build memory
 
-Base verified against origin/main at `2c1e9158c30b411de28ec064bc7198ea4f87dd44`.
+The requested base, `2c1e9158c30b411de28ec064bc7198ea4f87dd44`, is an ancestor
+of the fetched `origin/main` at `f64e785ee1e3c81361bbe4b958e5b2ee8ba13c2a`.
+The base and the resubmitted branch have identical build inputs.
 Rust 1.100.0, 16 GiB cgroup, no swap. Linux `wait4` supplied peak RSS and
 wall time because `/usr/bin/time` was unavailable. RSS records the largest
 individual process peak. Concurrent processes also contribute to cgroup usage.
@@ -79,6 +81,18 @@ cgroup killed both rustc and Cargo. Wall time was 644.269 s. The verbose
 command confirmed `-C codegen-units=256` and omitted `-C incremental`.
 No linker ran. The package override did not produce a usable binary.
 The clean half-mount link replay used 4,898,860 KiB in 9.891 s.
+
+## Hosted build scope
+
+The PR PostgreSQL archive selects the dispatch, game-server and durability
+library targets through `tools/ci/select_postgres_packages.py`. On the
+pinned base, that job installs mold and enables 8 GiB of swap. The unit
+shards enable 16 GiB of swap and set `CARGO_BUILD_JOBS=1`. The PR #3287
+commit message describes serializing the PR PostgreSQL archive, but the
+pinned `pr-postgres-harness.yml` lacks that setting. The one-job dispatch
+measurement still reaches the local memory limit before linking. Serial
+Cargo scheduling limits overlapping dependency builds while one large
+dispatch compiler process can still exhaust the available RAM.
 
 ## Proposed structural fix
 
