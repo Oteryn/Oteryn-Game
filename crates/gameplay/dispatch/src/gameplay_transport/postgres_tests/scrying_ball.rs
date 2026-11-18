@@ -189,16 +189,30 @@ async fn admit_rival(
         .fetch_one(&h.pool)
         .await?;
     let (current, operation) = committed_fresh_player_with_operation(
-        &FreshPlayerOwners { root: h.root.clone(), node: h.node.clone(), recovery: &h.recovery },
-        60, 63, 171, now,
-    ).await?;
+        &FreshPlayerOwners {
+            root: h.root.clone(),
+            node: h.node.clone(),
+            recovery: &h.recovery,
+        },
+        60,
+        63,
+        171,
+        now,
+    )
+    .await?;
     let fence = item_fence_of(current).ok_or("rival item fence")?;
     let actor = {
         let mut runtime = owner.runtime.lock().await;
-        let reservation = runtime.reserve_fresh_session(fence.game_session_id).map_err(debug)?;
+        let reservation = runtime
+            .reserve_fresh_session(fence.game_session_id)
+            .map_err(debug)?;
         let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
-        runtime.bind_attacker_lease(actor, fence.game_session_id, current.current_character_lease()).map_err(debug)?;
-        runtime.initialize_pinned_test_position(actor, super::quest_world_callbacks::local(position)).map_err(debug)?;
+        runtime
+            .bind_attacker_lease(actor, fence.game_session_id, current.current_character_lease())
+            .map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(actor, super::quest_world_callbacks::local(position))
+            .map_err(debug)?;
         actor
     };
     let mut rival = AdmittedSession {
@@ -212,19 +226,50 @@ async fn admit_rival(
         item_fence: Some(fence),
         ..admitted
     };
-    let native = owner.active_generation.and_then(|g| g.native_gameplay()).ok_or("native items")?;
-    h.root.initialize_admission_equipment(owner.character, owner.holder, &fence, native.source_digest(), &operation).await.map_err(debug)?;
-    h.root.grant_starter_items(
-        owner.character, owner.holder, &fence, &NativeItemWeights(native),
-        &StarterTemplate {
-            definition: TypedDefinitionRef { family: "Item".into(), production_key: "oteryn:item.tibia.i2854".into(), revision_ref: "definition-r1".into() },
-            ..StarterTemplate::main()
-        },
-    ).await.map_err(debug)?;
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native items")?;
+    h.root
+        .initialize_admission_equipment(
+            owner.character,
+            owner.holder,
+            &fence,
+            native.source_digest(),
+            &operation,
+        )
+        .await
+        .map_err(debug)?;
+    h.root
+        .grant_starter_items(
+            owner.character,
+            owner.holder,
+            &fence,
+            &NativeItemWeights(native),
+            &StarterTemplate {
+                definition: TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: "oteryn:item.tibia.i2854".into(),
+                    revision_ref: "definition-r1".into(),
+                },
+                ..StarterTemplate::main()
+            },
+        )
+        .await
+        .map_err(debug)?;
     owner.admit_progression_session(&mut rival).await;
     owner.admit_quest_session(&rival).await;
     super::quest_world_callbacks::input_item(
-        owner, fence, &Offering { position, item: MIRROR.into(), count: 1 }, 3303, true,
-    ).await?;
+        owner,
+        fence,
+        &Offering {
+            position,
+            item: MIRROR.into(),
+            count: 1,
+        },
+        3303,
+        true,
+    )
+    .await?;
     Ok(rival)
 }
