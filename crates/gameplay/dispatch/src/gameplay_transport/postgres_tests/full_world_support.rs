@@ -281,11 +281,17 @@ pub(super) async fn relogin_as(
 // Shared lexical fixture: the controller, authority and owner borrow each other. Keeping
 // their setup in one macro preserves those lifetimes without copying setup into each case.
 macro_rules! world_scenario {
-    ($tag:literal, |$h:ident, $request:ident, $seal:ident, $authority:ident, $world_id:ident, $native:ident, $world:ident, $cells:ident, $room:ident, $pin:ident, $deps:ident, $actor:ident, $session:ident, $owner:ident, $fence:ident, $admitted:ident| $body:block) => {{
+    (@character $admin:ident, $tag:literal) => {
+        Harness::create_with_admission_seed($admin, $tag, false, false)
+    };
+    (@character $admin:ident, $tag:literal, appearance) => {
+        Harness::create_quest_reward($admin, $tag, false)
+    };
+    ($tag:literal $(; $character:ident)?, |$h:ident, $request:ident, $seal:ident, $authority:ident, $world_id:ident, $native:ident, $world:ident, $cells:ident, $room:ident, $pin:ident, $deps:ident, $actor:ident, $session:ident, $owner:ident, $fence:ident, $admitted:ident| $body:block) => {{
         use $crate::gameplay_transport::monk_save::postgres_tests::full_world_support::*;
         run(async |admin| {
         reset();
-        let $h = Harness::create_with_admission_seed(admin, $tag, false, false).await?;
+        let $h = $crate::gameplay_transport::monk_save::postgres_tests::full_world_support::world_scenario!(@character admin, $tag $(, $character)?).await?;
         let version: String = sqlx::query_scalar("SHOW server_version").fetch_one(&$h.pool).await?;
         eprintln!("POSTGRES_DATABASE_STARTED {} version={version}", $tag);
         let $request = prepare_current_session(&$h).await?;

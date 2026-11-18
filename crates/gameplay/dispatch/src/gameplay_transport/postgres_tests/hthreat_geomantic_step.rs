@@ -71,10 +71,10 @@ fn hthreat_geomantic_step_commits_charge_and_two_minute_disguise() -> TestResult
 
 fn scenario() -> TestResult {
     world_scenario!(
-        "hthreat_geomantic",
+        "hthreat_geomantic"; appearance,
         |h,
          _request,
-         _seal,
+         seal,
          authority,
          world_id,
          native,
@@ -204,7 +204,7 @@ fn scenario() -> TestResult {
             assert_eq!(receipts, 1);
             drop(owner);
             drop(authority);
-            drop(_seal);
+            drop(seal);
             h.cleanup().await
         }
     )

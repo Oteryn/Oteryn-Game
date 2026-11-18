@@ -156,7 +156,7 @@ fn scenario() -> TestResult {
         "hthreat_spike_kills",
         |h,
          _request,
-         _seal,
+         seal,
          authority,
          world_id,
          native,
@@ -207,8 +207,14 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
             let catalogue = Arc::new(bindings.attach(&base)?);
             owner.quest_catalogue = Some(catalogue.clone());
+            // Provision the actor's level before calling the normal death owner.
+            let mut setup = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *setup)
+                .await?;
             sqlx::query("UPDATE game_character_progression_state SET level=80,total_experience=7915800 WHERE character_id=encode($1,'hex')::uuid")
-                .bind(fence.character_id.as_bytes().as_slice()).execute(&h.pool).await?;
+                .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *setup).await?;
+            setup.commit().await?;
             let count = async || -> TestResult<i64> {
                 Ok(sqlx::query_scalar("SELECT coalesce((SELECT value FROM game_character_quest_tracks WHERE track_key=$1),0)")
                     .bind(COUNT).fetch_one(&h.pool).await?)
@@ -269,7 +275,7 @@ fn scenario() -> TestResult {
             assert_eq!(receipts, 7, "one durable credit per qualified death");
             drop(owner);
             drop(authority);
-            drop(_seal);
+            drop(seal);
             h.cleanup().await
         }
     )
