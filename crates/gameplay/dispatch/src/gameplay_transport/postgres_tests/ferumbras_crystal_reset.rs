@@ -12,6 +12,8 @@ const BOSS_AT: Position = at(33392, 31473);
 const ROOM_MIN: Position = at(33379, 31460);
 const ROOM_MAX: Position = at(33405, 31485);
 const OUTSIDE: Position = at(33392, 31486);
+const VORTEX_TILE: Position = at(33388, 31471);
+const VORTEX_APPROACH: Position = at(33388, 31470);
 const CRYSTALS: [Position; 8] = [
     at(33390, 31468),
     at(33394, 31468),
@@ -33,13 +35,17 @@ const DORMANT_CRYSTAL: u16 = 14955;
 const CHARGED_CRYSTAL: u16 = 14961;
 const CHARGE_COUNT: u16 = 10;
 const CRYSTAL_EFFECT: u16 = 74; // Crystal src/utils/utils_definitions.hpp:129.
+const VORTEX: u16 = 20121;
+const VORTEX_MS: u32 = 10_000;
+const VORTEX_THRESHOLD: usize = 7;
+const POOF: u16 = 3; // Crystal CONST_ME_POFF.
 
 const fn at(x: u16, y: u16) -> Position {
     Position { x, y, floor: -14 }
 }
 
 #[test]
-fn ferumbras_last_crystal_charge_replaces_the_boss_and_later_deaths_advance_phases() -> TestResult {
+fn ferumbras_crystal_charges_and_seven_vortex_steps_reach_the_mortal_shell() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -93,7 +99,9 @@ pub(super) fn callback() -> TestResult<Callback> {
                     "defeated":RIFT_INVADER,"charges_per_crystal":CHARGE_COUNT,
                     "dormant_appearance":DORMANT_CRYSTAL,"charged_appearance":CHARGED_CRYSTAL,
                     "crystals":crystals,"retire":BOSS,"spawn":SPLINTER,
-                    "boss_position":BOSS_AT,"charged_effect":CRYSTAL_EFFECT
+                    "boss_position":BOSS_AT,"charged_effect":CRYSTAL_EFFECT,
+                    "vortex":{"appearance":VORTEX,"duration_ms":VORTEX_MS,
+                        "consume_creature":ESSENCE,"consume_effect":POOF,"threshold":VORTEX_THRESHOLD,"spawn":DESTABILIZED}
                 },"replacements":[
                     {"defeated":SPLINTER,"observe_deaths_in":late_area,"spawn":[{"creature":ESSENCE}]},
                     {"defeated":DESTABILIZED,"observe_deaths_in":late_area,"spawn":[{"creature":SHELL,"position":BOSS_AT}]}
@@ -104,7 +112,9 @@ pub(super) fn callback() -> TestResult<Callback> {
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_ferumbras_lever.lua:1-62",
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/creaturescripts_rift_invader_death.lua:1-10,23-45",
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/creaturescripts_ferumbras_soul_splinter.lua:3-9",
-            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/creaturescripts_ferumbras_mortal_shell_death.lua:5-16"
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/creaturescripts_ferumbras_mortal_shell_death.lua:5-16",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/movements_vortex.lua:5-18",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/scripts/lib/register_lever_tables.lua:1-14"
         ]
     }]});
     let [callback] = oteryn_gameplay_quests::quest::world_callbacks::parse(&document.to_string())?
@@ -118,12 +128,12 @@ pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleW
         .iter()
         .map(|position| at(position.x + 1, position.y))
         .collect();
-    cells.push(OUTSIDE);
+    cells.extend([OUTSIDE, VORTEX_APPROACH]);
     super::quest_world_callbacks::world_with_scene_cells(
         callback,
         LEVER,
         &CRYSTALS.map(|position| (position, CHARGED_CRYSTAL)),
-        &[DORMANT_CRYSTAL],
+        &[DORMANT_CRYSTAL, VORTEX],
         &cells,
     )
 }
@@ -298,48 +308,85 @@ pub(super) async fn exercise(
         8
     );
     let local = super::quest_world_callbacks::local;
-    let [first, second] = [splinters[0], splinters[1]];
     let outside = spawn_late(owner, SPLINTER, OUTSIDE).await?;
-    // The preceding vortex callback owns this summon.
-    let destabilized = spawn_late(owner, DESTABILIZED, ARRIVAL).await?;
-    {
-        let mut runtime = owner.runtime.lock().await;
-        let expected = runtime.read_actor_position(second).map_err(debug)?;
-        runtime
-            .borrow_movement_position()
-            .commit_creature_relocation(second, expected, local(ARRIVAL))
-            .map_err(debug)?;
-    }
     super::engenc2_cults::kill(owner, admitted, outside, SPLINTER, command).await?;
-    super::engenc2_cults::kill(owner, admitted, first, SPLINTER, command + 1).await?;
-    {
-        let runtime = owner.runtime.lock().await;
-        assert!(runtime.contains_live_creature(second));
-    }
-    super::engenc2_cults::kill(owner, admitted, second, SPLINTER, command + 2).await?;
-    super::engenc2_cults::kill(owner, admitted, destabilized, DESTABILIZED, command + 3).await?;
-    {
-        let runtime = owner.runtime.lock().await;
-        let positions = |key: &str| -> TestResult<Vec<_>> {
+    assert!(actors(owner, ESSENCE).await?.is_empty());
+    let vortex_pos = crate::map::overlay::TilePos {
+        x: VORTEX_TILE.x,
+        y: VORTEX_TILE.y,
+        floor: VORTEX_TILE.floor,
+    };
+    assert!(
+        map.facts
+            .movement_items(vortex_pos)
+            .iter()
+            .any(|entry| entry.facts.appearance_id == VORTEX)
+    );
+    let mut commands = (command + 1)..;
+    for (used, &splinter) in splinters.iter().take(VORTEX_THRESHOLD).enumerate() {
+        assert_eq!(actors(owner, SPLINTER).await?.len(), splinters.len() - used);
+        super::engenc2_cults::kill(
+            owner,
+            admitted,
+            splinter,
+            SPLINTER,
+            commands.next().ok_or("kill command")?,
+        )
+        .await?;
+        let [essence] = actors(owner, ESSENCE)
+            .await?
+            .try_into()
+            .map_err(|_| "one Essence from the slain Splinter")?;
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let expected = runtime.read_actor_position(essence).map_err(debug)?;
+            assert_eq!(expected.position(), local(BOSS_AT));
             runtime
-                .current_live_creature_census()
-                .map_err(debug)?
-                .into_iter()
-                .filter(|actor| runtime.matches_live_creature_identity(*actor, key.as_bytes()))
-                .map(|actor| {
-                    runtime
-                        .read_actor_position(actor)
-                        .map(|at| at.position())
-                        .map_err(debug)
-                        .map_err(Into::into)
-                })
-                .collect()
-        };
-        let essences = positions(ESSENCE)?;
-        assert_eq!(essences.len(), 2);
-        assert!(essences.contains(&local(BOSS_AT)) && essences.contains(&local(ARRIVAL)));
-        assert_eq!(positions(SHELL)?, vec![local(BOSS_AT)]);
+                .borrow_movement_position()
+                .commit_creature_relocation(essence, expected, local(VORTEX_APPROACH))
+                .map_err(debug)?;
+        }
+        super::zamulosh_monster_step::step_monster(owner, h, essence, VORTEX_TILE).await?;
+        assert!(actors(owner, ESSENCE).await?.is_empty());
+        assert_eq!(
+            actors(owner, DESTABILIZED).await?.len(),
+            usize::from(used + 1 == VORTEX_THRESHOLD)
+        );
     }
+    let [destabilized] = actors(owner, DESTABILIZED)
+        .await?
+        .try_into()
+        .map_err(|_| "one Destabilized Ferumbras")?;
+    super::engenc2_cults::kill(
+        owner,
+        admitted,
+        destabilized,
+        DESTABILIZED,
+        commands.next().ok_or("kill command")?,
+    )
+    .await?;
+    let [shell] = actors(owner, SHELL)
+        .await?
+        .try_into()
+        .map_err(|_| "one Mortal Shell")?;
+    let position = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(shell)
+        .map_err(debug)?;
+    assert_eq!(position.position(), local(BOSS_AT));
+    assert_eq!(
+        map.facts
+            .movement_effects_since(0)
+            .iter()
+            .filter(|(_, pos, fx)| *pos == vortex_pos && *fx == POOF)
+            .count(),
+        VORTEX_THRESHOLD
+    );
+    map.facts
+        .expire_movement_items(owner.owner_now().get() + u64::from(VORTEX_MS) * 1000);
+    assert!(map.facts.movement_items(vortex_pos).is_empty());
     Ok(())
 }
 
