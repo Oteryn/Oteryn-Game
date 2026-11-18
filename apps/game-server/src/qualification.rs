@@ -103,6 +103,18 @@ fn journey_group_completed(group: &str, before: usize) {
     evidence(&format!("e2e_group name={group} verdicts={count}"));
 }
 
+fn skip_unavailable_seam_mechanic(mechanic: &str, reason: &str) -> TestResult {
+    evidence(&format!("mechanic={mechanic} skipped={reason}"));
+    Ok(())
+}
+
+#[test]
+fn qualification_reference_limits_are_skipped_without_failing_the_seam() -> TestResult {
+    skip_unavailable_seam_mechanic("hireling", "capability_165_not_selected")?;
+    skip_unavailable_seam_mechanic("item_forge", "entry_room_has_no_native_item_content")?;
+    skip_unavailable_seam_mechanic("store", "pinned_platform_has_no_store_api")
+}
+
 fn evidence(line: &str) {
     if let Some(line) = client_world::verdict::indexed_evidence(e2e_result_line(line)) {
         if line.starts_with("e2e_all scenario=") || line.starts_with("e2e_capture scenario=") {
