@@ -42,6 +42,7 @@ pub(super) fn capture(
     runtime: &mut ChannelRuntimeV1,
     entry: &PendingKillSettlement,
     snapshots: &[TaskSnapshot],
+    outcome: Option<&super::encounter_outcomes::Run>,
 ) -> Vec<super::super::quest_kills::Recipient> {
     let mut recipients = Vec::new();
     if !snapshots.iter().any(|snapshot| {
@@ -136,6 +137,16 @@ pub(super) fn capture(
             {
                 continue;
             }
+            let outcome_source = if let Some(required) = &counter.required_outcome {
+                let Some(source) = outcome.and_then(|run| {
+                    run.credit_source(required, (snapshot.actor, snapshot.session))
+                }) else {
+                    continue;
+                };
+                Some(source.to_owned())
+            } else {
+                None
+            };
             let candidates = if credit.summon_owner {
                 &attributed
             } else {
@@ -172,6 +183,7 @@ pub(super) fn capture(
                         hit_at_ms: hit.last_hit,
                         death_at_ms: entry.facts.death_at_ms,
                         died_at_unix_ms: entry.facts.died_at_unix_ms,
+                        outcome_source,
                     },
                 },
             });

@@ -1971,6 +1971,7 @@ pub fn record_creature_kill(
         return;
     };
     if wild && let Ok(mut cache) = sink.queue.1.lock() {
+        cache.outcomes.observe(runtime, target);
         let projected = cache
             .death_windows
             .observe(runtime, target, &creature, now_ms);

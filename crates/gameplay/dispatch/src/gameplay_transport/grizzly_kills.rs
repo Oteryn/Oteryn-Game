@@ -4,6 +4,7 @@
 
 use std::sync::Arc;
 mod death_windows;
+mod encounter_outcomes;
 mod encounters;
 mod guardians;
 pub(super) mod native_goals;
@@ -44,6 +45,7 @@ struct NativeCounterCapture {
     death_area: Option<oteryn_gameplay_quests::quest::authored_bindings::kills::DeathArea>,
     death_areas: Vec<oteryn_gameplay_quests::quest::authored_bindings::kills::DeathArea>,
     damage_credit: Option<oteryn_gameplay_quests::quest::authored_bindings::kills::DamageCredit>,
+    required_outcome: Option<oteryn_gameplay_quests::quest::world_callbacks::OutcomeRequirement>,
     encounter_source: Option<String>,
 }
 
@@ -68,6 +70,7 @@ fn capture_native(
                 death_area: counter.death_area,
                 death_areas: counter.death_areas.to_vec(),
                 damage_credit: counter.damage_credit,
+                required_outcome: counter.required_outcome.cloned(),
                 encounter_source: counter.encounter_source.map(str::to_owned),
             })
         })
@@ -111,6 +114,7 @@ impl FrozenGrizzlyDeath {
 #[derive(Debug, Default)]
 pub(super) struct GrizzlyCaptureCache {
     pub(super) death_windows: death_windows::DeathWindows,
+    pub(super) outcomes: encounter_outcomes::Outcomes,
     guardians: Vec<guardians::GuardianSlot>,
     sessions: Vec<TaskSnapshot>,
     deaths: Vec<(ExactActorRef, [u8; 16], Arc<FrozenGrizzlyDeath>)>,
@@ -382,6 +386,7 @@ pub(super) fn capture(
         .flatten()
         .filter(|source| source.world == *runtime.binding().world_id().as_bytes())
         .cloned();
+    let outcome = cache.outcomes.for_death(entry.facts.death);
     entry.grizzly = Some(
         cache.remember(entry.target, entry.facts.occurrence, |snapshots, runs| {
             let live: Vec<_> = snapshots
@@ -404,7 +409,7 @@ pub(super) fn capture(
                 Some(entry.facts.corpse),
                 &live,
             );
-            frozen.native.extend(party_credit::capture(runtime, entry, &live));
+            frozen.native.extend(party_credit::capture(runtime, entry, &live, outcome.as_ref()));
             if matches!(entry.facts.death.runtime_scope(), crate::foundation::RuntimeScopeRefV1::Instance { .. }) {
                 for recipient in &mut frozen.native {
                     if recipient.death.transition != "oteryn:quest-transition/native-kills/first-dragon-selected" { continue; }

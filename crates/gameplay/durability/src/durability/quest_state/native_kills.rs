@@ -23,6 +23,7 @@ pub enum NativeDeathSource {
         hit_at_ms: Option<u64>,
         death_at_ms: u64,
         died_at_unix_ms: u64,
+        outcome_source: Option<String>,
     },
     DelayedReset {
         death: crate::foundation::CreatureDeathOccurrenceKey,
@@ -111,7 +112,7 @@ impl NativeQuestDeath {
                             }
                     })
                 }
-                NativeDeathSource::Damage { position: (x, y, z), hit_at_ms, death_at_ms, died_at_unix_ms, .. } => {
+                NativeDeathSource::Damage { position: (x, y, z), hit_at_ms, death_at_ms, died_at_unix_ms, outcome_source, .. } => {
                     oteryn_gameplay_quests::quest::native_kills::counter_for(catalogue, &self.transition)
                         .is_some_and(|counter| {
                             counter.creature == self.creature
@@ -119,6 +120,18 @@ impl NativeQuestDeath {
                                 && (!counter.record_defeat_time || *died_at_unix_ms >= 1_000)
                                 && self.definition_hash.is_some_and(|hash| catalogue.definition_hash(counter.quest) == Some(hash))
                                 && counter.damage_credit.is_some_and(|credit| credit.admits_hit(*hit_at_ms, *death_at_ms))
+                                && match (counter.required_outcome, outcome_source.as_deref()) {
+                                    (None, None) => true,
+                                    (Some(required), Some(source)) => catalogue.authored_bindings().is_some_and(|bindings| {
+                                        bindings.world_callbacks().any(|callback| {
+                                            callback.key == source && callback.quest == counter.quest
+                                                && callback.effects.encounter_outcome.as_ref().is_some_and(|outcome| {
+                                                    &outcome.outcome == required && outcome.terminal == self.creature
+                                                })
+                                        })
+                                    }),
+                                    _ => false,
+                                }
                                 && oteryn_gameplay_quests::quest::native_kills::admits_death_position(
                                     counter.death_area, counter.death_areas,
                                     Some([i32::from(*x), i32::from(*y), i32::from(*z)]),
@@ -224,8 +237,8 @@ impl NativeQuestDeath {
             }
             NativeDeathSource::Source(source) => source.bind(binding),
             NativeDeathSource::Encounter(source) => source.bind(binding),
-            NativeDeathSource::Damage { death, session, character, lease_generation, position: (x, y, z), hit_at_ms, death_at_ms, died_at_unix_ms } => {
-                let digest = Sha256::new()
+            NativeDeathSource::Damage { death, session, character, lease_generation, position: (x, y, z), hit_at_ms, death_at_ms, died_at_unix_ms, outcome_source } => {
+                let mut digest = Sha256::new()
                     .chain_update(*binding)
                     .chain_update(b"native-damage-credit-v1")
                     .chain_update(death.native_bytes())
@@ -238,9 +251,12 @@ impl NativeQuestDeath {
                     .chain_update([u8::from(hit_at_ms.is_some())])
                     .chain_update(hit_at_ms.unwrap_or_default().to_be_bytes())
                     .chain_update(death_at_ms.to_be_bytes())
-                    .chain_update(died_at_unix_ms.to_be_bytes())
-                    .finalize();
-                binding[1..].copy_from_slice(&digest);
+                    .chain_update(died_at_unix_ms.to_be_bytes());
+                if let Some(source) = outcome_source {
+                    digest.update(b"encounter-outcome-source-v1");
+                    digest.update(source.as_bytes());
+                }
+                binding[1..].copy_from_slice(&digest.finalize());
             }
             NativeDeathSource::DelayedReset { death, session, character, lease_generation, position: (x, y, z), death_at_ms, .. } => {
                 let digest = Sha256::new()

@@ -23,6 +23,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         read_only_gate: Option<&ReadOnlyGate>,
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
     ) -> UseDisposition {
+        if let Some(required) = &callback.effects.require_encounter_outcome
+            && !self.states.attack.try_lock().is_ok_and(|attack| {
+                attack
+                    .kills()
+                    .1
+                    .lock()
+                    .is_ok_and(|cache| cache.outcomes.permits_exit(runtime, required))
+            })
+        {
+            return UseDisposition::Rejected;
+        }
         let window_source = if let Some(window) = &callback.effects.death_window {
             // Keep the exact opening death across durable acknowledgement replay.
             let replay = self

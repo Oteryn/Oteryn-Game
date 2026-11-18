@@ -319,7 +319,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         if counter.encounter_source.as_deref() == Some(callback.key.as_str()))))
                 .and_then(|quest| catalogue.definition_hash(&quest.quest))
         });
-        let attack = if scoped_hash.is_some() {
+        let outcome = callback.effects.encounter_outcome.as_ref();
+        let attack = if scoped_hash.is_some() || outcome.is_some() {
             match self.states.attack.try_lock() {
                 Ok(attack) => Some(attack),
                 Err(_) => return UseDisposition::Rejected,
@@ -335,6 +336,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        if let (Some(capture), Some(outcome)) = (capture.as_mut(), outcome)
+            && !capture.outcomes.can_start(runtime, outcome)
+        {
+            return UseDisposition::Occupied;
+        }
         let prepared = if let (Some(capture), Some(hash)) = (capture.as_mut(), scoped_hash) {
             match capture.prepare_encounter(runtime, &callback.key, hash, &party) {
                 Ok(prepared) => Some(prepared),
@@ -375,7 +381,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let Ok((snapshots, (phase, actors, roster))) = runtime.commit_quest_encounter_with_phase(
+        let Ok((snapshots, (phase, actors, roster, terminal))) = runtime.commit_quest_encounter_with_phase(
             proofs,
             &monsters,
             |runtime, actors| {
@@ -384,6 +390,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         party.iter().map(|(actor, _)| *actor).collect(), actors.to_vec(),
                     )?)
                 } else { None };
+                let terminal = outcome.map(|outcome| {
+                    actors.iter().copied().find(|actor| {
+                        runtime.matches_live_creature_identity(*actor, outcome.terminal.as_bytes())
+                    }).ok_or(crate::foundation::CarrierError::CreatureTargetMismatch)
+                }).transpose()?;
                 credits
                     .map(|credits| {
                         super::super::encounter_phases::bind(
@@ -396,7 +407,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             self.movement_cells().clone(),
                         )
                     })
-                    .transpose().map(|phase| (phase, actors.to_vec(), roster))
+                    .transpose().map(|phase| (phase, actors.to_vec(), roster, terminal))
             },
             || {
                 map.facts
@@ -408,6 +419,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let (Some(capture), Some(prepared), Some(roster)) = (capture.as_mut(), prepared, roster)
         {
             capture.publish_encounter(prepared, roster);
+        }
+        if let (Some(capture), Some(outcome), Some(terminal)) =
+            (capture.as_mut(), outcome, terminal)
+        {
+            capture
+                .outcomes
+                .start(&callback.key, outcome, terminal, &party);
         }
         if let (Some(phases), Some(phase)) = (&mut phases, phase) {
             phases.push(phase);
