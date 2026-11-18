@@ -275,7 +275,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
         && (is_step || callback.trigger == Trigger::Use)
         && (!gate.intercept_teleport
             || is_step
-                && (callback.selector.position.is_some() || callback.selector.native.is_some()))
+                && (callback.selector.position.is_some()
+                    || callback.selector.native.is_some()
+                    || callback.selector.action.is_some()
+                    || callback.selector.unique.is_some()))
         && gate.on_admit_speech.as_ref().is_none_or(|speech| {
             is_step
                 && speech.message_kind.monster_talk_type().is_some()

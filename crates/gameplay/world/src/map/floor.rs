@@ -395,9 +395,9 @@ fn follow(
     step_resolution: &impl Fn(Cell) -> StepResolution,
 ) -> Result<(Cell, bool), Refusal> {
     let mut changed_floor = false;
-    let land = |cell: Cell, changed_floor: bool| match ground(cell) {
+    let land = |cell: Cell, resolved, changed_floor| match ground(cell) {
         Ground::Walkable => {
-            let target = if step_resolution(cell) != StepResolution::Native {
+            let target = if resolved != StepResolution::Native {
                 cell
             } else {
                 teleported(ground, landable, teleport, cell)
@@ -413,12 +413,13 @@ fn follow(
         // Crystal Bounac action-bounac_entrance.lua:24-25 binds two
         // different source floors. Resolve that exact selector before a
         // native down step can silently replace the entered position.
-        if step_resolution(next) == StepResolution::Callback {
-            return land(next, changed_floor);
+        let resolved = step_resolution(next);
+        if resolved == StepResolution::Callback {
+            return land(next, resolved, changed_floor);
         }
         let mask = floor_mask(next);
         if mask == 0 {
-            return land(next, changed_floor);
+            return land(next, resolved, changed_floor);
         }
         let target = if mask & DOWN != 0 {
             let below = (next.0, next.1, next.2 + 1);
@@ -444,7 +445,7 @@ fn follow(
                 }
                 shifted(offset.0, offset.1)
             } else {
-                return land(next, changed_floor);
+                return land(next, resolved, changed_floor);
             }
         } else {
             let mut offset = (0, 0);
@@ -463,7 +464,7 @@ fn follow(
             (next.0 + offset.0, next.1 + offset.1, next.2 - 1)
         };
         if ground(target) == Ground::Absent {
-            return land(next, changed_floor);
+            return land(next, resolved, changed_floor);
         }
         changed_floor |= target.2 != next.2;
         next = target;

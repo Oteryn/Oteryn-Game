@@ -1764,7 +1764,7 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
     }
 
     fn suppresses_native_teleport(&self, cell: crate::content::LogicalCell) -> bool {
-        self.entry(cell, |callback, at| {
+        self.entry(cell, |_, callback, at| {
             oteryn_gameplay_quests::quest::carried_step::native_binding(&callback.key)
                 .is_some_and(|binding| tile(binding.position) == at)
         })
@@ -1782,7 +1782,8 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
     }
 
     fn stops_at_step_callback(&self, cell: crate::content::LogicalCell) -> bool {
-        self.entry(cell, |callback, at| {
+        let source_bound = std::cell::OnceCell::new();
+        self.entry(cell, |map, callback, at| {
             let position = Position {
                 x: at.x,
                 y: at.y,
@@ -1795,6 +1796,10 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
                 .as_ref()
                 .is_some_and(|gate| gate.intercept_teleport)
                 && (selector.position.is_some() && selector.matches_position(position)
+                    || selector.position.is_none()
+                        && (selector.action.is_some() || selector.unique.is_some())
+                        && *source_bound
+                            .get_or_init(|| map.facts.quest_callback_tile_source_bound(at))
                     || selector
                         .native
                         .as_ref()
@@ -1814,7 +1819,7 @@ impl CallbackPortals<'_> {
     fn entry(
         &self,
         cell: crate::content::LogicalCell,
-        could_match: impl Fn(&Callback, TilePos) -> bool,
+        could_match: impl Fn(&BundleMap, &Callback, TilePos) -> bool,
     ) -> Option<(&BundleMap, &Callback, u64)> {
         let map = self.map?;
         let at = native(MovementLocalPosition {
@@ -1825,7 +1830,7 @@ impl CallbackPortals<'_> {
         if !self
             .callbacks
             .iter()
-            .any(|callback| could_match(callback, at))
+            .any(|callback| could_match(map, callback, at))
         {
             return None;
         }

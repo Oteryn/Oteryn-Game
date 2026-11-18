@@ -1475,6 +1475,20 @@ impl BundleFacts {
             })
     }
 
+    /// Whether this tile has any retained source IDs that can select a StepIn callback.
+    pub fn quest_callback_tile_source_bound(&self, pos: TilePos) -> bool {
+        let Some(first) = view::placement_key(pos, 0) else {
+            return false;
+        };
+        let start = self.placements.partition_point(|(key, _)| *key < first);
+        self.placements[start..]
+            .iter()
+            .take_while(|(key, _)| *key >> 8 == first >> 8)
+            .any(|(_, placement)| {
+                placement.attrs.unique.is_some() || placement.attrs.action.is_some()
+            })
+    }
+
     /// Match an exact authored counterpart only while the retained base object is bare.
     /// Sparse placements and plain palette entries share the same original appearance proof.
     pub fn quest_callback_native_object(&self, key: u64, id: u32, appearance: u16) -> bool {

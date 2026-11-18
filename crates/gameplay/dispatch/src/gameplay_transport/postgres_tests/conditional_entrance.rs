@@ -144,6 +144,19 @@ impl Case {
             "effects":{"conditional_entrance":{"guards":[{"when":predicate,"refusal":refusal}]}},
             "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_holy_tible_tile.lua:14-20"]
         });
+        if self == Self::Premium {
+            // The Spike donor registers AID 4226. A native floor change at
+            // the fixture tile would otherwise skip that StepIn altogether.
+            row["selector"] = json!({"action":4226,"appearance":293});
+            let entrance = &mut row["effects"]["conditional_entrance"];
+            entrance["intercept_teleport"] = json!(true);
+            entrance["guards"][0]["refusal"] = json!({
+                "message":"Only premium accounts can use this teleporter.",
+                "push_back":{"kind":"fixed","position":Position { x: source.x - 1, ..source }},
+                "effect":11,"effect_at":"both"
+            });
+            row["sources"] = json!(["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:2-3,35-46,54-55"]);
+        }
         if self == Self::Stair {
             row["selector"]["position"] = serde_json::Value::Null;
             row["selector"]["appearance"] = json!(293);
@@ -624,7 +637,7 @@ fn conditional_step_reads_live_level_after_progression_changes() -> TestResult {
 }
 
 #[test]
-fn conditional_step_checks_current_premium_on_the_account() -> TestResult {
+fn conditional_step_uses_spike_action_before_native_floor_routing() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
