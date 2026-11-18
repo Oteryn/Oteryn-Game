@@ -6,9 +6,13 @@ use super::{
     AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session,
 };
 use crate::content::channel_content_pin::ChannelContentPin;
-use crate::foundation::ChannelRuntimeV1;
+use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
+use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef};
 use crate::gameplay_transport::connection::FirstEntryOutcome;
-use oteryn_gameplay_quests::quest::{loader, world_callbacks::Position};
+use oteryn_gameplay_quests::quest::{
+    QuestComparison, QuestEffect, QuestEffectKind, QuestTransition, loader,
+    world_callbacks::Position,
+};
 use oteryn_gameplay_world::map::view::MapFacts;
 use oteryn_protocol_oteryn::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
@@ -221,24 +225,8 @@ fn run(name: &'static str, rewards: bool) -> TestResult {
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         if !rewards {
-            // A restored character has all seven flames and a value above the door's stage.
-            let mut tx = h.pool.begin().await?;
-            sqlx::query("SET LOCAL session_replication_role=replica")
-                .execute(&mut *tx)
-                .await?;
-            sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT encode($1,'hex')::uuid,$2||'morguthis_blue_flame_storage'||n::text,$3,1,2 FROM generate_series(1,7) n")
-            .bind(id(41).as_slice()).bind(PREFIX).bind(QUEST).execute(&mut *tx).await?;
-            sqlx::query(
-                "INSERT INTO game_character_quest_tracks VALUES(encode($1,'hex')::uuid,$2,$3,3,2)",
-            )
-            .bind(id(41).as_slice())
-            .bind(&treasure)
-            .bind(QUEST)
-            .execute(&mut *tx)
-            .await?;
-            tx.commit().await?;
+            seed_morguthis_progress(&mut owner, &admitted, &treasure).await?;
         }
-
         owner.admit_quest_session(&admitted).await;
         if rewards {
             return claim_parts(&mut owner, &mut admitted, &h, deps.actor).await;
@@ -282,6 +270,65 @@ fn run(name: &'static str, rewards: bool) -> TestResult {
         result.is_ok()
     );
     result
+}
+
+async fn seed_morguthis_progress(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    treasure: &str,
+) -> TestResult {
+    const SEED: &str = "oteryn:quest-transition/qcx42-morguthis-restored";
+    let effect = |track, value| QuestEffect {
+        track,
+        from: QuestComparison::Any,
+        effect: QuestEffectKind::Set(value),
+    };
+    let effects = (1..=7)
+        .map(|n| effect(format!("{PREFIX}morguthis_blue_flame_storage{n}"), 1))
+        .chain(std::iter::once(effect(treasure.into(), 3)))
+        .collect();
+    // A restored character's progress must have a matching durable receipt.
+    let catalogue = Arc::new(
+        owner
+            .quest_catalogue
+            .as_ref()
+            .ok_or("quest catalogue")?
+            .with_fixture_transition(QuestTransition {
+                key: SEED.into(),
+                quest: QUEST.into(),
+                effects,
+                completes: false,
+                experience: None,
+                world_change: None,
+            })
+            .map_err(debug)?,
+    );
+    owner.quest_catalogue = Some(Arc::clone(&catalogue));
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "quest fence")?
+        .ok_or("quest fence")?;
+    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+    let result = slot
+        .commit_quest_transition(
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence,
+            QuestTransitionRequest {
+                transition_key: SEED.into(),
+                cause: QuestCause::Command(CommandRef::new(
+                    admitted.game_session_id,
+                    CommandId::new(9000).map_err(debug)?,
+                )),
+            },
+            catalogue,
+        )
+        .await
+        .map_err(debug)?;
+    assert!(matches!(result, QuestTransitionOutcome::Committed(_)));
+    Ok(())
 }
 
 // Spoiler curid 5073 oldid 1174796 links each pharaoh to one distinct part.
