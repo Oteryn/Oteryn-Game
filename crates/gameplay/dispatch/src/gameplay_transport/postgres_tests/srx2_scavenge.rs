@@ -159,11 +159,13 @@ fn scenario(rabbit: bool) -> TestResult {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        super::item_look::seed_main_backpack(
-            &harness,
-            &[(tool, 1), ("oteryn:item.tibia.i5942", 1)],
-        )
-        .await?;
+        let tools = [
+            (tool, 1),
+            ("oteryn:item.tibia.i5942", 1),
+            ("oteryn:item.tibia.i3469", 1),
+        ];
+        super::item_look::seed_main_backpack(&harness, if rabbit { &tools } else { &tools[..2] })
+            .await?;
 
         if rabbit {
             return exercise_rabbit(&owner, &harness, native, fence, deps.actor).await;
@@ -1036,12 +1038,12 @@ async fn exercise_rabbit(
         item_fence: Some(fence),
     };
     let intent = skinning_intent()?;
-    let attempt = || {
+    let attempt = |tool| {
         owner.use_cooking_conversion(
             actor,
             command,
             intent.clone(),
-            Some(ItemKey::Instance(id(71))),
+            Some(ItemKey::Instance(id(tool))),
             Some(ItemKey::Instance(corpse)),
         )
     };
@@ -1050,7 +1052,7 @@ async fn exercise_rabbit(
             .bind(corpse.as_slice()).fetch_one(&h.pool).await
     };
     assert_eq!(
-        attempt().await.ok_or("rabbit refusal")?.disposition,
+        attempt(71).await.ok_or("rabbit refusal")?.disposition,
         UseDisposition::NothingToUse
     );
     assert_eq!(body().await?, "oteryn:item.tibia.i6017");
@@ -1059,7 +1061,7 @@ async fn exercise_rabbit(
     owner.drain_source_item_deadlines().await;
     assert_eq!(body().await?, "oteryn:item.tibia.i4301");
     assert_eq!(
-        attempt().await.ok_or("rabbit refusal")?.disposition,
+        attempt(71).await.ok_or("rabbit refusal")?.disposition,
         UseDisposition::NothingToUse
     );
 
@@ -1076,8 +1078,9 @@ async fn exercise_rabbit(
     tx.commit().await?;
     for _ in 0..2 {
         assert_eq!(
-            attempt().await.ok_or("rabbit USE")?.disposition,
-            UseDisposition::Committed
+            attempt(73).await.ok_or("kitchen knife rabbit USE")?.disposition,
+            UseDisposition::Committed,
+            "Crystal's kitchen knife action can skin a mature rabbit"
         );
     }
     assert_eq!(body().await?, "oteryn:item.tibia.i4302");
@@ -1090,7 +1093,7 @@ async fn exercise_rabbit(
             actor,
             retry,
             intent,
-            Some(ItemKey::Instance(id(71))),
+            Some(ItemKey::Instance(id(73))),
             Some(ItemKey::Instance(corpse)),
         )
         .await;
