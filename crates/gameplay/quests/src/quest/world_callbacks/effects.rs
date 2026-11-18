@@ -514,6 +514,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || callback.actor_kind != ActorKind::Player
             || !callback.return_on_failure
             || callback.failure_teleport.is_some()
+            || callback.teleport.is_some()
             || callback.storage.is_empty()
             || callback.disguise.is_some()
             || effects.restore_disguise

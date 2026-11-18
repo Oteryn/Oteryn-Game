@@ -498,6 +498,10 @@ impl Stage {
         &self,
         quest: &str,
     ) -> Result<Vec<QuestTransition>, String> {
+        if matches!(&self.trigger, Trigger::StepIn { callback } if callback.effects.timed_disguise.is_some() && callback.is_read_only())
+        {
+            return Ok(Vec::new());
+        }
         let mut transitions = vec![self.transition(quest)?];
         if let Trigger::NpcDialogue { alternatives, .. } = &self.trigger {
             for callback in alternatives {

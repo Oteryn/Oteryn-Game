@@ -1347,26 +1347,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if selected.iter().any(|(_, key)| *key != selected[0].1) {
                 return entered;
             }
-            let Some(catalogue) = self.quest_catalogue.as_ref() else {
-                return entered;
-            };
-            let Ok(Some(fence)) = self.current_quest_fence(session).await else {
-                return entered;
-            };
-            let Ok(state) = self
-                .root
-                .read_character_quest_state(self.character, fence.character_id)
-                .await
-            else {
-                return entered;
-            };
             let candidates = selected
                 .iter()
                 .map(|(callback, _)| *callback)
                 .collect::<Vec<_>>();
-            match world_callbacks::select_storage_phase(&candidates, state.tracks(), catalogue) {
-                Ok(Some(chosen)) => vec![(chosen, selected[0].1)],
-                Ok(None) => {
+            let chosen = async {
+                let catalogue = self.quest_catalogue.as_ref()?;
+                let fence = self.current_quest_fence(session).await.ok()??;
+                let state = self
+                    .root
+                    .read_character_quest_state(self.character, fence.character_id)
+                    .await
+                    .ok()?;
+                world_callbacks::select_storage_phase(&candidates, state.tracks(), catalogue)
+                    .ok()?
+            }
+            .await;
+            match chosen {
+                Some(chosen) => vec![(chosen, selected[0].1)],
+                None => {
                     let Some(refusal) = candidates
                         .iter()
                         .find(|callback| callback.effects.timed_disguise.is_some())
@@ -1391,7 +1390,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     return runtime.read_actor_position(actor).unwrap_or(entered);
                 }
-                _ => return entered,
             }
         } else {
             selected

@@ -1,6 +1,6 @@
 //! Crystal 201189f8 movements_geomantic_charges.lua:13–38 through paced movement.
-use super::full_world_support::world_scenario;
 use super::TestResult;
+use super::full_world_support::world_scenario;
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
 use serde_json::json;
 
@@ -11,17 +11,18 @@ const CHARGE: &str = "oteryn:quest-progress/spike-task/middle-charge";
 fn bindings() -> TestResult<Bindings> {
     let mut stages = Vec::new();
     for (key, nest, charge, disguise, advances) in [
+        ("charge-only", (8, 8), (1, 1), false, true),
+        ("charge-unassigned-nest", (-1, -1), (1, 1), false, true),
         ("combined", (0, 7), (1, 1), true, true),
         ("nest-ready", (0, 7), (2, 2), true, false),
         ("nest-uncharged", (0, 7), (-1, 0), true, false),
-        ("charge-unassigned-nest", (-1, -1), (1, 1), false, true),
-        ("charge-only", (8, 8), (1, 1), false, true),
     ] {
         let position = json!({"x":9,"y":0,"floor":-7});
         let mut effects = json!({});
         if disguise {
             effects["timed_disguise"] = json!({"look_type":307,"duration_ms":120000,"magic_effect":11});
         }
+        let success_message = advances.then_some("You have charged your body with geomantic energy and can report about it.");
         if advances {
             effects["magic"] = json!({"position":position,"effect":12});
         }
@@ -30,7 +31,7 @@ fn bindings() -> TestResult<Bindings> {
             "quest":QUEST,"trigger":"step_in","selector":{"position":position,"ordinal":0},
             "reversible":false,"passages":[],"return_on_failure":true,"offerings":[],
             "requires_world_admission":advances,
-            "effects":effects,
+            "effects":effects,"success_message":success_message,
             "storage":[
                 {"track":NEST,"minimum":nest.0,"maximum":nest.1,"set":nest.0,"preserve":advances,"read_only":!advances},
                 {"track":CHARGE,"minimum":charge.0,"maximum":charge.1,"set":if advances {2} else {charge.0},"read_only":!advances}
