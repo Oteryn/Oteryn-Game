@@ -233,6 +233,22 @@ fn scenario(admin: String) -> TestResult {
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = super::FirstEntryOutcome::Positioned;
+        let mut guest_admission = super::AdmittedSession {
+            game_session_id: guest_session,
+            runtime_actor: None,
+            first_entry: super::FirstEntryOutcome::NotApplicable,
+            controller: None,
+            ..admitted
+        };
+        owner.admit_progression_session(&mut admitted).await;
+        owner.admit_progression_session(&mut guest_admission).await;
+        assert!(
+            owner
+                .progression_binding(admitted.game_session_id)
+                .is_some()
+        );
+        assert!(owner.progression_binding(guest_session).is_some());
+
         const SEED: &str = "oteryn:quest-transition/cotrev-fixture/army-started";
         let loaded = loader::load_embedded_quest_state("content-1").map_err(debug)?;
         let catalogue = std::sync::Arc::new(
