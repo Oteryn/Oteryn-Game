@@ -177,6 +177,7 @@ pub(super) async fn request(
             ticket: None,
             return_origin: None,
             world_change: None,
+            conditional: None,
         },
         fee: FeeBurnRequest {
             cause: FeeBurnCause::NpcTravel {

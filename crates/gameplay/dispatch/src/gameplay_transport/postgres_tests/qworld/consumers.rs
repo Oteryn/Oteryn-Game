@@ -58,6 +58,7 @@ pub(crate) async fn qualify(
         completes: true,
         experience: None,
         world_change: Some(key.into()),
+        conditional: None,
     };
     let catalogue = std::sync::Arc::new(
         QuestStateCatalogue::new(revision, vec![track], vec![transition]).map_err(debug)?,

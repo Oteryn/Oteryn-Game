@@ -1,6 +1,6 @@
 //! Ship/carpet confirmations feed the same travel hold and relocation used by Newhaven.
 use super::*;
-use crate::content::npc_catalogue::travel::TravelRoute;
+use crate::content::npc_catalogue::travel::{TravelCell, TravelRoute};
 use crate::durability::item_fee_burn::{FeeBurnCause, FeeBurnRequest, FeeChangeFacts};
 use crate::durability::npc_travel::{PaidTravelRequest, TravelRefusal};
 use crate::map::view::MapFacts;
@@ -169,7 +169,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
             {
                 Ok(Ok(fare)) => fare,
-                Ok(Err(cause)) => return refusal(intent, cause),
+                Ok(Err(cause)) => {
+                    if cause == TravelRefusal::UnavailableRoute
+                        && let Some(line) = route
+                            .conditional
+                            .as_ref()
+                            .and_then(|policy| policy.unavailable_reply.as_ref())
+                    {
+                        return npc_command::NpcConversations::bank_reply(intent, line.clone());
+                    }
+                    return refusal(intent, cause);
+                }
                 Err(_) => {
                     return npc_command::NpcTalkOutcome {
                         unknown: true,
@@ -177,9 +187,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     };
                 }
             };
-            let line = format!(
-                "Do you seek a passage to {} for {fare} gold?",
-                route.keyword
+            let line = route.conditional.as_ref().map_or_else(
+                || {
+                    format!(
+                        "Do you seek a passage to {} for {fare} gold?",
+                        route.keyword
+                    )
+                },
+                |policy| policy.offer_reply.clone(),
             );
             if let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock() {
                 prompts.insert(
@@ -196,8 +211,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return npc_command::NpcConversations::bank_reply(intent, line);
         };
+        let destination = &prompt.route.route.destination;
+        let preferred = TravelCell {
+            x: destination.x,
+            y: destination.y,
+            floor: destination.floor,
+        };
+        let selected = if let Some(policy) = &prompt.route.conditional {
+            let digest = self
+                .runtime
+                .lock()
+                .await
+                .content_pin()
+                .server_artifact_digest();
+            let mut ordinal = 0;
+            let Some(selected) = policy.diversion.select(preferred, |bound| {
+                let value = route_draw(digest, command, intent.npc_actor, bound, ordinal);
+                ordinal += 1;
+                value
+            }) else {
+                return ordinary;
+            };
+            selected
+        } else {
+            preferred
+        };
         let Some(request) = self
-            .paid_travel_request(actor, command, intent, &prompt)
+            .paid_travel_request(actor, command, intent, &prompt, selected)
             .await
         else {
             return refusal(intent, TravelRefusal::UnavailableRoute);
@@ -305,6 +345,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         intent: &NpcTalkIntent,
         prompt: &Prompt,
+        destination: TravelCell,
     ) -> Option<PaidTravelRequest> {
         let current = self
             .current_quest_fence(command.game_session_id)
@@ -321,7 +362,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             command.game_session_id,
             intent,
         )?;
-        let destination = &prompt.route.route.destination;
         let cell = crate::foundation::MovementLocalPosition {
             x: destination.x,
             y: destination.y,
@@ -375,7 +415,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
         };
         let occurrence = TravelOccurrence::from_bytes(derive(0)).ok()?;
-        let destination = &prompt.route.route.destination;
         Some(PaidTravelRequest {
             command: crate::foundation::CommandRef::new(
                 command.game_session_id,
@@ -411,4 +450,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
         })
     }
+}
+
+fn route_draw(
+    digest: [u8; 32],
+    command: connection::UseCommand,
+    npc: EntityRef,
+    bound: u8,
+    ordinal: u64,
+) -> Option<u8> {
+    use oteryn_simulation_determinism::{
+        DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+    };
+    use sha2::{Digest, Sha256};
+    let hash = Sha256::new()
+        .chain_update(b"oteryn:npc-route-diversion:v1")
+        .chain_update(command.game_session_id.as_bytes())
+        .chain_update(command.command_id.to_be_bytes())
+        .chain_update(npc.identity)
+        .finalize();
+    let occurrence = DecisionOccurrenceId::from_bytes(hash[..16].try_into().ok()?);
+    let root = GameplayDecisionRoot::from_bytes(digest);
+    let draw =
+        deterministic_decision_u64(&root, occurrence, "npc.route.diversion", ordinal).ok()?;
+    u8::try_from(crate::spell::uniform_draw(draw, 0, i64::from(bound) - 1)).ok()
 }

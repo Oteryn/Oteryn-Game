@@ -11,6 +11,11 @@ use std::sync::OnceLock;
 mod return_policy;
 pub use return_policy::TravelReturnRequirement;
 
+#[path = "travel_conditional.rs"]
+mod conditional;
+pub use conditional::{ConditionalTravel, Diversion, ProgressWindow, TravelCell};
+include!(concat!(env!("OUT_DIR"), "/conditional_npc_travel.rs"));
+
 /// A paid ticket's purchase time is a Quest-owned Unix-second track.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -35,6 +40,7 @@ pub struct TravelRoute {
     pub ticket: Option<TravelTicketRequirement>,
     pub return_origin: Option<TravelReturnRequirement>,
     pub world_change: Option<String>,
+    pub conditional: Option<ConditionalTravel>,
 }
 
 #[derive(Deserialize)]
@@ -65,11 +71,21 @@ struct Correction {
     return_origin: Option<TravelReturnRequirement>,
     #[serde(default)]
     world_change: Option<String>,
+    #[serde(default)]
+    conditional: Option<ConditionalTravel>,
 }
 
 /// Bind route corrections to the same revision as their production conversation book.
 pub fn revision_material() -> &'static str {
     include_str!("travel_routes.json")
+}
+
+pub fn conditional_revision_material() -> &'static str {
+    if CONDITIONAL_ROUTES == "[]" {
+        ""
+    } else {
+        CONDITIONAL_ROUTES
+    }
 }
 
 pub fn resolve(
@@ -78,8 +94,28 @@ pub fn resolve(
     services: &[ProjectV2DefinitionRef],
 ) -> Vec<TravelRoute> {
     static CORRECTIONS: OnceLock<Vec<Correction>> = OnceLock::new();
-    let corrections =
-        CORRECTIONS.get_or_init(|| serde_json::from_str(revision_material()).unwrap_or_default());
+    let corrections = CORRECTIONS.get_or_init(|| {
+        let mut rows: Vec<Correction> =
+            serde_json::from_str(revision_material()).unwrap_or_default();
+        if let Ok(extra) = serde_json::from_str::<Vec<Correction>>(CONDITIONAL_ROUTES) {
+            for row in extra
+                .into_iter()
+                .filter(|row| {
+                    row.native_addition
+                        && row
+                            .conditional
+                            .as_ref()
+                            .is_some_and(ConditionalTravel::valid)
+                })
+                .take(128)
+            {
+                if !rows.iter().any(|existing| existing.key == row.key) {
+                    rows.push(row);
+                }
+            }
+        }
+        rows
+    });
     let native_service = format!(
         "oteryn:service.travel.{}",
         npc_key.trim_start_matches("oteryn:npc.")
@@ -142,6 +178,7 @@ pub fn resolve(
                 ticket: correction.ticket.clone(),
                 return_origin: correction.return_origin.clone(),
                 world_change: correction.world_change.clone(),
+                conditional: correction.conditional.clone(),
             })
         })
         .collect()

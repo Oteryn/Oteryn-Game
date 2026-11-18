@@ -63,6 +63,24 @@ async fn quote(
     {
         return Ok(Err(TravelRefusal::UnavailableRoute));
     }
+    if let Some(conditional) = &route.conditional {
+        if !conditional.valid() {
+            return Ok(Err(TravelRefusal::UnavailableRoute));
+        }
+        for guard in &conditional.progress {
+            let value: Option<i64> = sqlx::query_scalar(
+                "SELECT value FROM game_character_quest_tracks
+                 WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+            )
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(&guard.track)
+            .fetch_optional(&mut ***tx)
+            .await?;
+            if !(guard.minimum..=guard.maximum).contains(&value.unwrap_or(guard.absent)) {
+                return Ok(Err(TravelRefusal::UnavailableRoute));
+            }
+        }
+    }
     if let Some(requirement) = &route.return_origin {
         let last =
             super::return_port::latest(tx, *fence.character_id.as_bytes(), requirement).await?;
@@ -203,10 +221,17 @@ impl DurabilityRoot {
             let route = &request.route;
             let key = format!("{}/{}", route.service, route.route.key);
             let destination = &route.route.destination;
+            let arrival_cell = oteryn_gameplay_content::content::npc_catalogue::travel::TravelCell {
+                x: arrival.destination.x, y: arrival.destination.y, floor: arrival.destination.floor,
+            };
+            let preferred = (destination.x,destination.y,destination.floor)
+                == (arrival_cell.x, arrival_cell.y, arrival_cell.floor);
             if request.command.game_session_id()!=fence.game_session_id
                 || arrival.world_id!=fence.runtime_scope.world_id()
                 || route.return_origin.as_ref().is_some_and(|requirement| !requirement.is_valid())
-                || (arrival.destination.x,arrival.destination.y,arrival.destination.floor)!=(destination.x,destination.y,destination.floor)
+                || (!preferred && route.conditional.as_ref().is_none_or(|policy| {
+                    !policy.valid() || !policy.diversion.alternatives.contains(&arrival_cell)
+                }))
                 || request.fee.cause != (crate::durability::item_fee_burn::FeeBurnCause::NpcTravel { service: route.service.clone(), occurrence: arrival.occurrence.as_bytes() })
             {return Ok(Err(CharacterProgressionError::InvalidInput));}
             let mut hash = Sha256::new();
@@ -215,6 +240,12 @@ impl DurabilityRoot {
                 hash.update(b"world-change");
                 hash.update((change.len() as u64).to_be_bytes());
                 hash.update(change.as_bytes());
+            }
+            if let Some(policy) = &route.conditional {
+                let bytes = serde_json::to_vec(policy).map_err(|_| DurabilityError::InvalidStoredState)?;
+                hash.update(b"conditional-npc-travel:v1");
+                hash.update((bytes.len() as u64).to_be_bytes());
+                hash.update(bytes);
             }
             for text in [&route.service, &route.route.key, &route.keyword, &route.route.destination.coordinate_frame] {
                 hash.update((text.len() as u64).to_be_bytes());
