@@ -113,6 +113,10 @@ impl BasicArea {
             && !value.name.is_empty())
         .then_some(value)
     }
+    pub fn max_pool_len(&self) -> usize {
+        self.pool_limit * 2
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn apply(
         &self,
@@ -124,7 +128,7 @@ impl BasicArea {
         occurrence: &[u8; 16],
     ) -> Result<bool, MapRefusal> {
         if pool.iter().enumerate().any(|(i, p)| pool[..i].contains(p))
-            || pool.len() > self.pool_limit
+            || pool.len() > self.max_pool_len()
             || state.exploration.as_ref().is_some_and(|e| {
                 !matches!(e.points.len(), 7 | 8)
                     || e.points

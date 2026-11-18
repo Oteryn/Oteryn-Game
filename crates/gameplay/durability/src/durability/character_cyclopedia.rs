@@ -64,7 +64,8 @@ impl DurabilityRoot {
             let mut tx = begin_type2_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
-            if request.command.game_session_id() != fence.game_session_id || !(1..=1024).contains(&request.area) || !(1..=1024).contains(&request.legacy_area) || request.subarea.is_none_or(|id| !request.subareas.contains(&(request.area,id))) || request.subareas.len() > 512 || request.pool.len() > 128 || request.pool.len() < 7 || request.now <= 0 {
+            let area=BasicArea::embedded().ok_or(DurabilityError::InvalidStoredState)?;
+            if request.command.game_session_id() != fence.game_session_id || !(1..=1024).contains(&request.area) || !(1..=1024).contains(&request.legacy_area) || request.subarea.is_none_or(|id| !request.subareas.contains(&(request.area,id))) || request.subareas.len() > 512 || request.pool.len() > area.max_pool_len() || request.pool.len() < area.generated_count || request.now <= 0 {
                 return Ok(Err(CharacterProgressionError::InvalidInput));
             }
             // Current authority is checked even on replay; a retained receipt grants no custody.
@@ -89,7 +90,6 @@ impl DurabilityRoot {
             if !epoch.as_ref().is_some_and(|r| numeric_u64(r,"reset_epoch").ok()==Some(request.epoch) && r.try_get::<Vec<u8>,_>("target_digest").ok().as_deref()==Some(request.bundle.as_slice())) {
                 return Ok(Err(CharacterProgressionError::AuthorityRejected));
             }
-            let area=BasicArea::embedded().ok_or(DurabilityError::InvalidStoredState)?;
             let mut progress=storage::load(&mut tx,&fence,&request).await?;
             let changed = match area.apply(&mut progress,request.action,&request.pool,request.at,false,&request.occurrence) {
                 Ok(changed)=>changed,

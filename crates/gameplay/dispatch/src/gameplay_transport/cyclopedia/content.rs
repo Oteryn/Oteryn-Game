@@ -77,20 +77,46 @@ pub(super) fn admit_at(
         .iter()
         .filter_map(|a| a.parent.map(|parent| (parent, a.id)))
         .collect();
-    let mut pool = Vec::new();
-    'candidates: for run in table.runs.iter().filter(|run| run.subarea == subarea) {
-        for x in run.begin..run.end {
-            if pool.len() == sampling.pool_limit {
-                break 'candidates;
-            }
-            let point = Point {
+    let mask = table
+        .masks
+        .binary_search_by_key(&subarea, |mask| mask.subarea)
+        .ok()?;
+    let runs = || table.runs.iter().filter(|run| run.subarea == subarea);
+    let mut examined = 0;
+    let mut pool: Vec<_> = runs()
+        .flat_map(|run| {
+            (run.begin..run.end).map(move |x| Point {
                 x: i32::from(x),
                 y: i32::from(run.y),
                 floor: i16::from(run.floor),
-            };
-            if walkable(point) {
-                pool.push(point);
+            })
+        })
+        .inspect(|_| examined += 1)
+        .filter(|point| walkable(*point))
+        .take(sampling.pool_limit)
+        .collect();
+    // Preserve saved POIs from the original prefix. Crystal discovery_system.lua:436-470
+    // samples across the entire footprint, so also sample later mask runs within the
+    // same probe budget as the walkable prefix. Skip unsampled tiles by run length.
+    let remaining = table.masks[mask].admitted_tiles as usize - examined;
+    if remaining > 0 {
+        let stride = remaining.div_ceil(sampling.pool_limit);
+        let mut sample = examined;
+        let mut offset = 0;
+        for run in runs() {
+            let end = offset + usize::from(run.end - run.begin);
+            while sample < end {
+                let point = Point {
+                    x: i32::from(run.begin) + (sample - offset) as i32,
+                    y: i32::from(run.y),
+                    floor: i16::from(run.floor),
+                };
+                if walkable(point) {
+                    pool.push(point);
+                }
+                sample += stride;
             }
+            offset = end;
         }
     }
     if pool.len() < sampling.generated_count {

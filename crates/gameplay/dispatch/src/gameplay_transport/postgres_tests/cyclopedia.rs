@@ -479,6 +479,32 @@ fn scenario(canonical: bool) -> TestResult {
                 activation_pin.frame_binding().digest(),
             )
             .await?;
+            // This admitted row lies beyond the legacy prefix of 128 walkable tiles.
+            // A normal query must preserve its unfinished seven-point exploration.
+            let late_points: Vec<_> = [(12, 7), (16, 7), (20, 7), (24, 7), (28, 7), (24, 0), (28, 0)]
+                .into_iter()
+                .map(|(x, y)| serde_json::json!({"x":x,"y":y,"floor":-7}))
+                .collect();
+            let progress = serde_json::json!({"legacy":{"discovered":false,"exploration":null},"subareas":{
+                "2":{"discovered":false,"exploration":{"points":late_points,"found":1}},
+                "3":{"discovered":true,"exploration":null}
+            }});
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query("UPDATE game_character_cyclopedia SET progress=$1")
+                .bind(progress)
+                .execute(&mut *tx)
+                .await?;
+            tx.commit().await?;
+            let query_id = admitted.continuity.next_command_id;
+            let (status, view) =
+                support::exchange(&owner, &mut admitted, query_id, 72, &[]).await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!(view[0], 0);
+            assert_eq!(count(&view), 1, "query retains discoveries on later mask rows");
+
             drop(owner);
             drop(authority);
             drop(seal);
