@@ -265,7 +265,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                 Some(crate::map::facts::ItemDefinition {
                     reference: index.definition_ref("Item", key, "definition-r1")?,
                     solid: Some(key.ends_with(".i1841") || key.ends_with(".i5131")),
-                    blocks_projectile: false,
+                    blocks_projectile: key.ends_with(".i5131"),
                     pickupable: false,
                     door: key.ends_with(".i5131") || key.ends_with(".i5132"),
                 })
@@ -1041,7 +1041,9 @@ async fn verify_shared_reward(
         .bind(&state).bind(reply).execute(&mut *tx).await?;
     sqlx::query(
         "INSERT INTO game_character_arena_matches(character_id,body,game_session_id,command_id)
-        VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,999999)",
+        VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,999999)
+        ON CONFLICT(character_id) DO UPDATE SET
+            body=EXCLUDED.body,game_session_id=EXCLUDED.game_session_id,command_id=EXCLUDED.command_id",
     )
     .bind(fence.character_id.as_bytes().as_slice())
     .bind(&state)
