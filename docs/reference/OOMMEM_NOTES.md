@@ -27,6 +27,16 @@ individual process peak. Concurrent processes also contribute to cgroup usage.
 | Dispatch lib test, jemalloc preload | 2 | 16,529,876 | 711.561 | rustc SIGKILL before link |
 | Game-server lib test | 2 | 4,824,940 | 941.839 | Built and listed 861 tests (863 output lines) |
 | Game-server LLD replay | — | 3,328,964 | 4.970 | Linked |
+| Dispatch PG mount isolation, scratch replay | 2 | 14,623,808 | 714.308 | Linked and listed 2,455 tests (2,457 output lines) |
+| Dispatch complementary lib mount, scratch replay | 2 | 15,228,376 | 1038.778 | Linked and listed 2,102 tests (2,104 output lines) |
+| Dispatch PG mount isolation, LLD replay | — | 4,136,800 | 9.687 | Linked |
+
+The two scratch binaries' name lists overlap on 218 tests. Their union
+has 4,339 names and matches the full compiler registry. The proposed
+target ownership is 2,238 generated PG tests and 2,101 other lib tests
+with one registration per name. The scratch measurements estimate
+the split's peak and use cached dependencies. Their wall times exclude
+the dependency compilation in the independent pinned-base run.
 
 The game-server build peaked in the production dispatch compiler process
 with the test-support feature. The game-server executable is 868,769,624
