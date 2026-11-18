@@ -9,11 +9,11 @@ Splitting the generated PostgreSQL mount offers more headroom. Its
 two scratch executables cover the complete test registry and peak at
 14.52 GiB per process.
 
-The requested base, `2c1e9158c30b411de28ec064bc7198ea4f87dd44`, is an ancestor
-of the fetched `origin/main` at `fe9a5a18a58abfb779b0196579acb1b3c83a0c7f`.
-The base is the merge base of the resubmitted branch and fetched main.
-The resubmitted head, `5faf34c3327c3cf2b641ceac5a2c12d0ca295ffa`, differs
-from the pinned base only in this report.
+The measurement base, `2c1e9158c30b411de28ec064bc7198ea4f87dd44`, is the
+merge base of the delivery branch and the fetched `origin/main` at
+`3ffe8d05116b56d752944370a7c43341e0ca8bc8`. The delivery branch was
+resumed at `cc23b6d21828ea53f9f6f0e602d091c433535aa5`. Its compile inputs
+differ from the measurement base only in the dispatch test profile.
 Rust 1.100.0, 16 GiB cgroup, no swap. Linux `wait4` supplied peak RSS and
 wall time because `/usr/bin/time` was unavailable. RSS records the largest
 individual process peak. Concurrent processes also contribute to cgroup usage.
@@ -317,6 +317,14 @@ The exact diff below preserves the existing test commands and timeout
 values. It applies to the pinned base and parses as YAML. Changing the
 Merge Queue workflow requires rotating its protected-base blob pin with
 owner approval.
+
+The resubmission checked the diff in a scratch Git index at the measurement
+base. The new Merge Queue workflow blob matched the proposed audit pin.
+All four affected shell blocks passed `bash -n` and matched the original
+commands. The PR selector returned full scope for the root manifest change
+and selected the dispatch, durability and game-server libraries. The PR
+unit shards already use one Cargo job, so the patch targets the archive
+steps and the two Merge Queue library shards.
 
 ```diff
 diff --git a/.github/workflows/merge-authority-audit.yml b/.github/workflows/merge-authority-audit.yml
