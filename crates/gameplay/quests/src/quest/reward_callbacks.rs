@@ -1152,6 +1152,7 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
         && callback.peer_requires.is_none()
         && callback.creature_target.is_none()
         && callback.map_mark.is_none()
+        && callback.weighted_rewards.is_empty()
         && !(callback.repeatable && callback.is_paid_exchange() && !callback.storage.is_empty())
         && callback.carried_target.is_none()
         && !temporal_payment::guarded(callback)
@@ -2857,6 +2858,7 @@ mod lane_counter_tests {
         let platinum = "oteryn:item.tibia.i3035";
         callback.give = Some(bundle(platinum, 5, vec![]));
         let baseline = value_plan(&callback)?;
+        let fixed_transition = primary_transition(&callback)?;
         callback.weighted_rewards = vec![
             WeightedReward {
                 chance: 9,
@@ -2877,6 +2879,7 @@ mod lane_counter_tests {
         ];
         assert!(callback.valid_weighted_rewards());
         assert_ne!(value_plan(&callback)?, baseline);
+        assert_ne!(primary_transition(&callback)?, fixed_transition);
         assert!(published_markers::needs_marker(
             &callback,
             &published_markers::keys()?
@@ -2893,6 +2896,9 @@ mod lane_counter_tests {
             }
         }
         assert!(callback.reward_for_percentile(100).is_none());
+        let weighted_transition = primary_transition(&callback)?;
+        callback.weighted_rewards[0].chance = 8;
+        assert_ne!(primary_transition(&callback)?, weighted_transition);
         callback.weighted_rewards[0].chance = 99;
         assert!(!callback.valid_weighted_rewards());
         Ok(())
