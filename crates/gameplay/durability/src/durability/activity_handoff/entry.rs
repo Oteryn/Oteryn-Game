@@ -292,7 +292,12 @@ pub(super) async fn enter_in_transaction<
         .transpose().map_err(|_| DurabilityError::InvalidStoredState)?;
     let joining = if let Some(duration) = window_ms {
         let now = quest_activity_now_ms(tx, root).await?;
-        open_enrollment(tx, r, duration, now).await?
+        lock_boss_portal(tx, r).await?;
+        let joining = open_enrollment(tx, r, duration, now).await?;
+        if !joining && boss_portal_occupied(tx, r, now).await? {
+            return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::NoCapacity));
+        }
+        joining
     } else {
         false
     };
@@ -443,6 +448,46 @@ pub(super) async fn enter_in_transaction<
     Ok(ActivityEnterOutcome::Entered(
         load_receipt(tx, r.handoff_id, mode.window_ms().map(|_| r.initiating_character_id)).await?,
     ))
+}
+
+// A new group cannot race an existing room for the same channel portal.
+async fn lock_boss_portal(tx: &mut Transaction<'_, Postgres>, r: &ActivityEnterRequest) -> Result<()> {
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended(
+            'oteryn:boss-portal:' || encode($1,'hex') || ':' || $2, 0))",
+    )
+    .bind(assignment_scope_key(r.participants[0].source.runtime_scope).as_slice())
+    .bind(&r.activity_key)
+    .execute(&mut **tx)
+    .await?;
+    Ok(())
+}
+
+async fn boss_portal_occupied(
+    tx: &mut Transaction<'_, Postgres>,
+    r: &ActivityEnterRequest,
+    now: i64,
+) -> Result<bool> {
+    let RuntimeScopeRefV1::Channel { world_id, channel_id } = r.participants[0].source.runtime_scope
+    else {
+        return Err(DurabilityError::InvalidStoredState);
+    };
+    Ok(sqlx::query_scalar(
+        "SELECT EXISTS (
+            SELECT 1 FROM game_boss_room_activities b
+            JOIN game_activity_handoff_groups g ON g.handoff_id=b.admission
+            WHERE b.world_id=encode($1,'hex')::uuid
+              AND b.origin_channel_id=encode($2,'hex')::uuid
+              AND b.boss_key=$3 AND b.deadline>$4
+              AND g.admission_window_ms IS NOT NULL
+        )",
+    )
+    .bind(world_id.as_bytes().as_slice())
+    .bind(channel_id.as_bytes().as_slice())
+    .bind(&r.activity_key)
+    .bind(now)
+    .fetch_one(&mut **tx)
+    .await?)
 }
 
 async fn open_enrollment(
