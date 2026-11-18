@@ -1,13 +1,18 @@
+fn character_release_need(clients: &SeamClients<'_>, index: usize) -> verdict::Need {
+    verdict::Need::Fixture { world: clients.world, character: clients.characters[index] }
+}
+
 // A journey can lose its socket before logout, or be cancelled by its deadline.
 // Fresh admission must observe the owning server's terminal release, including
 // control-loss detection and grace; qualification never edits session state.
 // The first timeout per fixture is the root; later waits on it fail at once.
 async fn wait_character_released(clients: &SeamClients<'_>, index: usize) -> TestResult {
     let harness = verdict::Harness::global();
-    harness.fixture_gate(index)?;
+    let need = character_release_need(clients, index);
+    harness.fixture_gate(need, index)?;
     wait_fixture_released(clients, index)
         .await
-        .map_err(|error| harness.fixture_failed(index, error.as_ref()))
+        .map_err(|error| harness.fixture_failed(need, index, error.as_ref()))
 }
 
 async fn wait_fixture_released(clients: &SeamClients<'_>, index: usize) -> TestResult {

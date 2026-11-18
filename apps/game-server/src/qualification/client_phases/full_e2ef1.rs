@@ -13,6 +13,16 @@ pub(super) fn item_reference(
 ) -> TestResult<std::num::NonZeroU32> {
     original::item_reference(index, id)
 }
+/// The fixture provisioning alone, without the E2EF1 movement journey; for
+/// groups (creature sweep) that provision a character more than once.
+pub(super) async fn provision_fixture(
+    client: oteryn_dev_client::DevClientSession,
+    clients: &SeamClients<'_>,
+    index: usize,
+    expected_level: u32,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    original::provision_at_level(client, clients, index, expected_level).await
+}
 pub(super) async fn provision(
     mut client: oteryn_dev_client::DevClientSession,
     clients: &SeamClients<'_>,

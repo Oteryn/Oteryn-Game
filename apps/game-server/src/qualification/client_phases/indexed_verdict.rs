@@ -177,7 +177,7 @@ mod tests {
             let harness = Box::leak(Box::new(Harness::new(true, None)));
             let watch = new_watch(harness);
             let active = watch.enter();
-            let first = harness.fixture_failed(1, &std::io::Error::other("release expired"));
+            let first = harness.fixture_failed(test_fixture(1), 1, &std::io::Error::other("release expired"));
             watch.remember(first.as_ref());
             watch.remember(&std::io::Error::other("cleanup transport closed"));
             let (cause, root) = watch.failure();
@@ -199,7 +199,7 @@ mod tests {
             assert_eq!(lines, vec!["e2e_all scenario=C03.full status=FAIL seconds=1 cause=precondition root=C03.full/fixture1-released"]);
             drop(active);
             let second = new_watch(harness);
-            let blocked = harness.fixture_gate(1);
+            let blocked = harness.fixture_gate(test_fixture(1), 1);
             let error = blocked.as_ref().err().ok_or("expected fixture block")?;
             second.remember(error.as_ref());
             assert_eq!(second.failure().0, Cause::BlockedBy { root });
@@ -236,7 +236,11 @@ mod tests {
                     // The bounded diagnostic after release expiry may finish before
                     // fixture_failed records health and its originating row.
                     tokio::time::sleep(Duration::from_secs(2)).await;
-                    Err(harness.fixture_failed(0, &std::io::Error::other("release expired")))
+                    Err(harness.fixture_failed(
+                        test_fixture(0),
+                        0,
+                        &std::io::Error::other("release expired"),
+                    ))
                 })
                 .await;
             assert_eq!(started.elapsed(), Duration::from_secs(162));
@@ -244,7 +248,7 @@ mod tests {
                 error.as_ref().err().map(|error| classify(error.as_ref())),
                 Some(Cause::Precondition { .. })
             ));
-            assert!(harness.fixture_gate(0).is_err());
+            assert!(harness.fixture_gate(test_fixture(0), 0).is_err());
             let idle = new_watch(harness);
             let error = idle
                 .run(None, "no wall bound", std::future::pending::<TestResult>())

@@ -2,9 +2,18 @@
 use super::*;
 
 pub(super) async fn provision(
+    client: oteryn_dev_client::DevClientSession,
+    clients: &SeamClients<'_>,
+    index: usize,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    provision_at_level(client, clients, index, 100).await
+}
+
+pub(super) async fn provision_at_level(
     mut client: oteryn_dev_client::DevClientSession,
     clients: &SeamClients<'_>,
     index: usize,
+    expected_level: u32,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
     let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sorcerer".into());
@@ -15,7 +24,7 @@ pub(super) async fn provision(
     };
     let (max_health, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
         vocation,
-        100,
+        expected_level,
         oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
         oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
     )
@@ -59,6 +68,7 @@ pub(super) async fn provision(
             inventory
                 .entries
                 .iter()
+                .chain(inventory.equipment.iter().map(|slot| &slot.item))
                 .any(|item| item.item_definition_ref == reference && item.count.get() == 1)
         }) {
             return Err(format!("fresh admission missing provisioned Item {id}").into());
@@ -66,14 +76,21 @@ pub(super) async fn provision(
     }
     let reference = item_reference(&definitions, 3276)?;
     // Fenced provisioning installs an unforged copy; the session owns selected 485 encoding.
-    let response = client
-        .session_mut()
-        .equip_item_definition(reference)
-        .await?;
-    if response.status != CommandStatus::Accepted
-        || response.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
-    {
-        return Err("provisioned axe equip refused".into());
+    if !client.inventory().is_some_and(|inventory| {
+        inventory
+            .equipment
+            .iter()
+            .any(|entry| entry.item.item_definition_ref == reference)
+    }) {
+        let response = client
+            .session_mut()
+            .equip_item_definition(reference)
+            .await?;
+        if response.status != CommandStatus::Accepted
+            || response.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
+        {
+            return Err("provisioned axe equip refused".into());
+        }
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
@@ -91,7 +108,9 @@ pub(super) async fn provision(
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
     }
-    evidence("provisioning build=fenced level=100 items=axe,rope,shovel reload=fresh_admission");
+    evidence(&format!(
+        "provisioning build=fenced level={expected_level} items=axe,rope,shovel reload=fresh_admission"
+    ));
     Ok(client)
 }
 

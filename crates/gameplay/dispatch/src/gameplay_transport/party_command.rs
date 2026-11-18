@@ -80,6 +80,11 @@ impl SessionPartyView {
 fn bytes(disposition: PartyDisposition) -> Option<Vec<u8>> {
     encode_party_result(&PartyResult::refused(disposition)).ok()
 }
+fn unavailable(step: &'static str) -> Option<Vec<u8>> {
+    super::operator_event(&format!("event=party_refused step={step}"));
+    bytes(PartyDisposition::Unavailable)
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn party_wire_command(
         &self,
@@ -88,6 +93,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command_type: u32,
         payload: &[u8],
         view: &mut SessionPartyView,
+    ) -> Option<Vec<u8>> {
+        let retry = super::AdmissionRetryBudget::for_command(self.root);
+        loop {
+            let mut busy = false;
+            let reply = self
+                .party_wire_attempt(admitted, command_id, command_type, payload, view, &mut busy)
+                .await;
+            // The attempt owns all runtime/spell guards. They are dropped before
+            // waiting; no SQL ran when holder checkout returned RootUnavailable.
+            if !busy {
+                return reply;
+            }
+            if !retry
+                .retries_unavailable(super::AdmissionRefusal::Unavailable)
+                .await
+            {
+                return unavailable("holder_busy_deadline");
+            }
+        }
+    }
+
+    async fn party_wire_attempt(
+        &self,
+        admitted: AdmittedSession,
+        command_id: u64,
+        command_type: u32,
+        payload: &[u8],
+        view: &mut SessionPartyView,
+        busy: &mut bool,
     ) -> Option<Vec<u8>> {
         if !admitted
             .continuity
@@ -115,7 +149,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return bytes(PartyDisposition::Rejected);
         };
         let Some(fence) = admitted.item_fence else {
-            return bytes(PartyDisposition::Unavailable);
+            return unavailable("item_fence");
         };
         if fence.game_session_id != admitted.game_session_id
             || fence.connection_generation.get() != admitted.continuity.connection_generation
@@ -124,7 +158,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let command = CommandId::new(command_id).ok()?;
         let Some(permit) = self.spell_lane_permit().await else {
-            return bytes(PartyDisposition::Unavailable);
+            return unavailable("spell_lane_permit");
         };
         let mut runtime = self.runtime.lock().await;
         if runtime.assert_actor_spell_unreserved(actor).is_err()
@@ -158,7 +192,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return bytes(PartyDisposition::NotVisible);
             };
             let Ok(census) = runtime.positioned_actor_census() else {
-                return bytes(PartyDisposition::Unavailable);
+                return unavailable("invite_census");
             };
             let Some(target_session) = census
                 .into_iter()
@@ -199,19 +233,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             binding_bytes.extend_from_slice(&encode_party_intent(intent).ok()?);
         }
         let binding: [u8; 32] = Sha256::digest(binding_bytes).into();
-        let Ok(pass) = self.root.try_issue_semantic_pass() else {
-            return bytes(PartyDisposition::Unavailable);
+        let pass = match self.root.try_issue_semantic_pass() {
+            Ok(pass) => pass,
+            Err(DurabilityError::RootUnavailable) => {
+                *busy = true;
+                return bytes(PartyDisposition::Unavailable);
+            }
+            Err(_) => return unavailable("holder_acquire"),
         };
-        let mut ctx = (self, &permit, &runtime, &attack);
+        let mut failed_step = "transaction_begin";
+        let mut ctx = (self, &permit, &runtime, &attack, &mut failed_step);
         let outcome = pass.run_with_context(&mut ctx, move |holder, deadline, ctx| {
             Box::pin(async move {
-                let (owner, permit, runtime, attack) = ctx;
+                let (owner, permit, runtime, attack, step) = ctx;
                 let mut tx = item_tx::begin_spell_owner_transaction(holder, deadline).await?;
+                **step = "item_authority";
                 let authority = item_tx::assert_spell_item_authority_in_transaction(&mut tx, permit, owner.root, owner.character, owner.holder, &fence, CommandRef::new(admitted.game_session_id, command), binding).await.map_err(|_| DurabilityError::Unavailable)?;
+                **step = "invite_target_proof";
                 let visible = if let Some((target, session)) = invite_target {
                     crate::durability::admission_journal::party_target_binding::prove_visible_party_target_in_transaction(&mut tx, owner.root, &authority, runtime, actor, target, session).await?
                 } else { None };
                 let action = visible.as_ref().map(|v| PartyAction::Invite { target: v.character() }).or(action);
+                **step = "party_apply";
                 let receipt = if let Some(action) = action {
                     let receipt = if matches!(action, PartyAction::Leave) {
                         world_party::ingress::leave_in_transaction(&mut tx, &authority, runtime, actor, attack.party_attack_state(actor, admitted.game_session_id), now).await
@@ -222,7 +265,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 } else { None };
                 // Never turn a failed visibility proof into a successful query result.
                 let refused = invite_target.is_some() && visible.is_none();
+                **step = "party_view_read";
                 let view = world_party::ingress::read_in_transaction(&mut tx, &authority).await.map_err(|_| DurabilityError::Unavailable)?;
+                **step = "transaction_commit";
                 crate::durability::party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
                 Ok((receipt, view, refused))
             })
@@ -233,7 +278,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .project_world_party(actor, admitted.game_session_id, source.source.clone())
                     .is_err()
                 {
-                    return bytes(PartyDisposition::Unavailable);
+                    return unavailable("runtime_projection");
                 }
                 if refused {
                     return bytes(PartyDisposition::NotVisible);
@@ -260,7 +305,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .contains(CAPABILITY_PARTY_MEMBER_EFFECTS_V1)
                 {
                     let Ok(census) = runtime.positioned_actor_census() else {
-                        return bytes(PartyDisposition::Unavailable);
+                        return unavailable("member_effects_census");
                     };
                     let now = self.owner_now().get();
                     for (member_actor, _, member_session) in census {
@@ -298,7 +343,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 let Some(mut projected) = view.project(admitted, source, &effects, &mut lists)
                 else {
-                    return bytes(PartyDisposition::Unavailable);
+                    return unavailable("session_view_projection");
                 };
                 if hunt
                     && let Some(index) =
@@ -383,9 +428,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 encode_party_result_for_peer(&projected, list_selected)
                     .ok()
-                    .or_else(|| bytes(PartyDisposition::Unavailable))
+                    .or_else(|| unavailable("result_encoding"))
             }
-            Err(_) => bytes(PartyDisposition::Unavailable),
+            Err(_) => unavailable(failed_step),
         }
     }
 }
