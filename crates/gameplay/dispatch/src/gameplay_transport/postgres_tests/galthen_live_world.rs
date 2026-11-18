@@ -301,14 +301,17 @@ async fn exercise_targeted_use(
     .map_err(debug)?;
     let command_id = admitted.continuity.next_command_id;
     let outcome = if hotkey {
-        let reply = wire(
-            owner,
-            admitted,
-            command_id,
-            COMMAND_TYPE_USE_INTENT,
-            payload,
+        let reply = tokio::time::timeout(
+            std::time::Duration::from_secs(30),
+            Box::pin(wire(
+                owner,
+                admitted,
+                command_id,
+                COMMAND_TYPE_USE_INTENT,
+                payload,
+            )),
         )
-        .await?;
+        .await??;
         let (result, detail) = split_refusal_detail(&reply).map_err(debug)?;
         assert_eq!(
             detail.map(RefusalDetail::reference_message),
@@ -316,9 +319,14 @@ async fn exercise_targeted_use(
         );
         decode_use_result(result).map_err(debug)?
     } else {
-        let (next, outcome, _) =
-            super::item_craft::exchange(owner, *admitted, command_id, &payload, Some(reference))
-                .await?;
+        let (next, outcome, _) = Box::pin(super::item_craft::exchange(
+            owner,
+            *admitted,
+            command_id,
+            &payload,
+            Some(reference),
+        ))
+        .await?;
         *admitted = next;
         outcome
     };
