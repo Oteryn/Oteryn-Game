@@ -150,6 +150,7 @@ CREATE TABLE game_quest_world_action_proofs (
     scope_generation NUMERIC(20,0) NOT NULL CHECK(scope_generation>0),
     request_binding BYTEA NOT NULL CHECK(octet_length(request_binding)=33),
     callback JSONB NOT NULL CHECK(jsonb_typeof(callback)='object' AND octet_length(callback::text)<=16384),
+    source_face INTEGER CHECK(source_face BETWEEN 1 AND 65535),
     created_xact_id XID8 NOT NULL DEFAULT pg_current_xact_id(),
     PRIMARY KEY(character_id,cause_id,cause_ordinal,transition_key),
     FOREIGN KEY(character_id,cause_id,cause_ordinal,transition_key)
@@ -186,7 +187,29 @@ DECLARE
           AND (
             (NEW.cause_kind='use' AND p.callback->>'trigger'='use' AND (
                 (NEW.transition_key LIKE 'oteryn:quest-callback/ground-supply/%'
-                    AND jsonb_typeof(p.callback #> '{effects,ground_supply}')='array')
+                    AND jsonb_typeof(p.callback #> '{effects,ground_supply}')='array'
+                    AND (SELECT count(*) FROM game_native_map_item_receipts n
+                         WHERE n.world_id=p.world_id AND n.channel_id=p.channel_id
+                           AND n.created_xact_id=p.created_xact_id AND n.source_binding=NEW.request_binding
+                           AND n.source_attributes #>> '{quest_supply,transition}'=p.transition_key)
+                        = CASE p.source_face
+                           WHEN (p.callback #>> '{lever,0}')::integer THEN 0
+                           WHEN (p.callback #>> '{lever,1}')::integer THEN jsonb_array_length(p.callback #> '{effects,ground_supply}')
+                           ELSE -1 END
+                    AND NOT EXISTS (
+                        SELECT 1 FROM game_native_map_item_receipts n
+                        WHERE n.world_id=p.world_id AND n.channel_id=p.channel_id
+                          AND n.created_xact_id=p.created_xact_id AND n.source_binding=NEW.request_binding
+                          AND n.source_attributes #>> '{quest_supply,transition}'=p.transition_key
+                          AND NOT EXISTS (
+                            SELECT 1 FROM jsonb_array_elements(p.callback #> '{effects,ground_supply}')
+                                WITH ORDINALITY d(item,ordinal)
+                            WHERE (d.ordinal-1)::text=n.source_attributes #>> '{quest_supply,index}'
+                              AND d.item->>'item'=n.definition_key AND (d.item->>'count')::bigint=n.quantity
+                              AND n.spatial_position=int4send((d.item #>> '{position,x}')::integer)
+                                  ||int4send((d.item #>> '{position,y}')::integer)
+                                  ||int2send((d.item #>> '{position,floor}')::smallint)
+                          )))
                 OR (NEW.transition_key LIKE 'oteryn:quest-callback/offering-portal/%'
                     AND jsonb_typeof(p.callback #> '{effects,offering_portal}')='object')))
             OR (NEW.cause_kind='step' AND p.callback->>'trigger'='step_in' AND (

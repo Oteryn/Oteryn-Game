@@ -2210,8 +2210,9 @@ impl DurabilityRoot {
                     }
                     if changes.is_empty() && let Some(callback) = &callback
                         && callback.uses_empty_world_transition() {
+                        let Some((_,context,_)) = &context else {return Err(DurabilityError::InvalidStoredState);};
                         super::super::quest_world_callback::action_proofs::record(
-                            &mut tx, fence, &request, callback, &binding,
+                            &mut tx, fence, &request, callback, context, &binding,
                         ).await?;
                     }
                     // The same native receipt that owns shared Hive/Deeplings credit
