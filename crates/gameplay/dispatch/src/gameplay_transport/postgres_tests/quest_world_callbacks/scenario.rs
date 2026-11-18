@@ -352,7 +352,9 @@ fn scenario_case(
     let draconia_escape = name.starts_with("draconia-escape-");
     let vestibule = matches!(
         name,
-        super::super::step_health_loss::NAME | super::super::step_health_loss::HEALTH_FLOOR
+        super::super::step_health_loss::NAME
+            | super::super::step_health_loss::HEALTH_FLOOR
+            | super::super::step_health_loss::PAID
     );
     let reservoir = matches!(name,
         super::super::putrefactory_reservoir::CAP |
@@ -1040,7 +1042,13 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if m03_use {
+        let world = if vestibule {
+            super::world_with_cells(
+                &callback,
+                trigger,
+                &[super::super::step_health_loss::DESTINATION],
+            )?
+        } else if m03_use {
             super::super::qengine_m03_use::world(
                 generation
                     .native_gameplay()

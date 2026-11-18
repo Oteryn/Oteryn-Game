@@ -6,20 +6,7 @@ use crate::quest::QuestStateCatalogue;
 use std::collections::BTreeMap;
 
 pub(super) fn disjoint(a: &Callback, b: &Callback) -> bool {
-    a.quest == b.quest
-        && a.selector == b.selector
-        && a.trigger == b.trigger
-        && matches!(a.trigger, Trigger::StepIn | Trigger::StepOut)
-        && a.actor_kind == ActorKind::Player
-        && b.actor_kind == ActorKind::Player
-        && a.storage.iter().any(|left| {
-            left.preserve
-                && b.storage.iter().any(|right| {
-                    right.preserve
-                        && left.track == right.track
-                        && (left.maximum < right.minimum || right.maximum < left.minimum)
-                })
-        })
+    matches!(a.trigger, Trigger::StepIn | Trigger::StepOut) && exclusive(a, b)
 }
 
 /// Select by current Character state, never registry order. The ordinary fenced
@@ -72,12 +59,13 @@ pub fn exclusive(left: &Callback, right: &Callback) -> bool {
         && left.selector == right.selector
         && left.quest == right.quest
         && left.storage.iter().any(|a| {
-            (a.preserve || source_trial)
-                && right.storage.iter().any(|b| {
-                    (b.preserve || source_trial)
-                        && a.track == b.track
-                        && (a.maximum < b.minimum || b.maximum < a.minimum)
-                })
+            right.storage.iter().any(|b| {
+                // Crystal 201189f8, movements_blood_entrance.lua:26-37:
+                // the unpaid and paid relocations share one StepIn tile.
+                (source_trial || (a.preserve && b.preserve) || (a.read_only && b.read_only))
+                    && a.track == b.track
+                    && (a.maximum < b.minimum || b.maximum < a.minimum)
+            })
         })
 }
 
