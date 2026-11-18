@@ -17,7 +17,7 @@ use oteryn_protocol_oteryn::{
 };
 use std::sync::Arc;
 
-const AT: Position = Position {
+pub(super) const AT: Position = Position {
     x: 32201,
     y: 31154,
     floor: -7,
@@ -64,7 +64,7 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     let base = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
-    // Arrange Sven's external accepted state with one sip left and the winning streak at 8.
+    // Sven has accepted a honeycomb. The first round has no prior streak.
     let catalogue = Arc::new(
         QuestStateCatalogue::new(
             base.content_revision(),
@@ -79,7 +79,7 @@ pub(super) async fn exercise(
     owner.quest_catalogue = Some(catalogue.clone());
     let prerequisites = mead::TRACKS
         .into_iter()
-        .zip([2, 2, 8, 20])
+        .zip([2, 2, -1, 0])
         .map(|(key, value)| (key.to_owned(), value))
         .collect::<Vec<_>>();
     super::qengine_outfit_stories::seed_quest_prerequisites(
@@ -105,10 +105,23 @@ pub(super) async fn exercise(
     owner.states.chat.admit(session, "Mead", owner.owner_now());
     let mut failed = false;
     let mut won = false;
-    // Randomness stays server-owned. Exercise both branches with a bounded number of real uses.
+    let mut ninth_stayed_active = false;
+    let mut first_counted = false;
+    // Check the first, ninth and tenth successes against TibiaWiki 16983/1086713.
     for attempt in 0..128 {
+        let (streak_before, total_before, success) = match attempt % 3 {
+            0 => (-1, 0, [2, 2, 1, 1]),
+            1 => (8, 19, [2, 2, 9, 20]),
+            _ => (9, 19, [3, 3, 10, 20]),
+        };
         if attempt > 0 {
-            super::qm47_mead::seed_sven_state(h, owner, admitted, [2, 2, 8, 20]).await?;
+            super::qm47_mead::seed_sven_state(
+                h,
+                owner,
+                admitted,
+                [2, 2, streak_before, total_before],
+            )
+            .await?;
         }
         let command = attempt + 1;
         let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget {
@@ -173,21 +186,24 @@ pub(super) async fn exercise(
                     .ok_or("source track")
             })
             .collect::<Result<_, _>>()?;
+        let completed = draw > 1 && streak_before == 9;
         assert_eq!(
             values,
             if draw == 1 {
-                vec![2, 2, 0, 21]
+                [2, 2, 0, total_before + 1]
             } else {
-                vec![3, 3, 9, 20]
+                success
             }
         );
         let expected: Vec<_> = if draw == 1 {
             vec!["The mead was too strong. You passed out for a moment."]
-        } else {
+        } else if completed {
             vec![
                 "The world seems to spin but you manage to stay on your feet.",
                 "10 sips in a row. Yeah!",
             ]
+        } else {
+            vec!["The world seems to spin but you manage to stay on your feet."]
         }
         .into_iter()
         .map(|text| ChatLine::Private {
@@ -220,9 +236,13 @@ pub(super) async fn exercise(
                     .definition_key(),
                 "oteryn:item.tibia.i111"
             );
-            failed = true;
-        } else {
+            failed |= streak_before > 0;
+        } else if completed {
             won = true;
+        } else if streak_before == 8 {
+            ninth_stayed_active = true;
+        } else {
+            first_counted = true;
         }
         drop(states);
         drop(runtime);
@@ -260,7 +280,7 @@ pub(super) async fn exercise(
                     None
                 })
         );
-        if failed && won {
+        if failed && won && ninth_stayed_active && first_counted {
             round_states(owner, admitted, h, fence, receipt).await?;
             eprintln!(
                 "M47_NATIVE_POSTGRES_EXECUTED failed={failed} won={won} uses={}",
@@ -269,7 +289,7 @@ pub(super) async fn exercise(
             return Ok(());
         }
     }
-    Err("native mead did not exercise both outcomes in 128 uses".into())
+    Err("native mead did not exercise all sip outcomes in 128 uses".into())
 }
 
 async fn round_states(
@@ -296,6 +316,17 @@ async fn round_states(
             [3, 3, 9, 17],
             "You already passed the test, no need to torture yourself anymore.",
         ),
+        (
+            [3, 3, 10, 20],
+            [3, 3, 10, 20],
+            "You already passed the test, no need to torture yourself anymore.",
+        ),
+        (
+            [3, 3, 9, 21],
+            [3, 3, 9, 21],
+            "You already passed the test, no need to torture yourself anymore.",
+        ),
+        ([2, 2, 4, 20], [1, 1, 4, 20], "Ask Sven for another round."),
         ([2, 2, 4, 21], [1, 1, 4, 21], "Ask Sven for another round."),
     ] {
         let command = admitted.continuity.next_command_id;

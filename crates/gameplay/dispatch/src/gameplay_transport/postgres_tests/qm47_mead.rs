@@ -187,17 +187,15 @@ pub(super) async fn exercise(
         .iter()
         .find(|c| c.track == mead::TRACKS[2])
         .ok_or("streak receipt")?;
-    assert_eq!((streak.before, streak.after), (-1, 0));
-    assert!(
-        (1..=5).contains(
-            &receipt
-                .changes
-                .iter()
-                .find(|c| c.track == mead::DRAW)
-                .ok_or("receipt draw")?
-                .after
-        )
-    );
+    let draw = receipt
+        .changes
+        .iter()
+        .find(|c| c.track == mead::DRAW)
+        .ok_or("receipt draw")?
+        .after;
+    assert!((1..=5).contains(&draw));
+    // TibiaWiki Barbarian Test/Spoiler (16983, rev 1086713): first success counts.
+    assert_eq!((streak.before, streak.after), (-1, i64::from(draw > 1)));
     assert_eq!(
         receipt
             .changes
