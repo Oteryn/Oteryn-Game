@@ -184,6 +184,7 @@ pub(super) async fn exercise(
     assert_eq!(after[0].source, before[0].source);
     assert_eq!(after[0].facts.appearance_id, 12189);
     if let Some(h) = loot {
+        super::autowalk::place(owner, admitted, at(3, 2)).await?;
         let crate::map::view::EntrySource::Added(id) = after[0].source else {
             return Err("captured merchant exact handle".into());
         };
