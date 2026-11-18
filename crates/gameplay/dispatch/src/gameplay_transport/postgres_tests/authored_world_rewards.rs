@@ -139,7 +139,23 @@ pub(super) async fn exercise_warzone_pump(
     (pos, award, combined): (Position, &str, bool),
 ) -> TestResult {
     if combined {
-        let fence = admitted.item_fence.ok_or("pump Character fence")?;
+        use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
+        use crate::foundation::{CommandId, CommandRef};
+        let fence = owner.current_quest_fence(admitted.game_session_id)
+            .await.map_err(debug)?.ok_or("pump Character fence")?;
+        let catalogue = owner.quest_catalogue.clone().ok_or("pump catalogue")?;
+        // Commit a real quest transition to establish the first Character revision
+        // before staging the previously earned pump flags for this isolated case.
+        let result = owner.revision_sequencer.acquire(fence.character_id).await
+            .commit_quest_transition(
+                owner.root, owner.character, owner.holder, fence,
+                QuestTransitionRequest {
+                    transition_key: "oteryn:quest-transition/quest/u11_50/dangerous_depths/gnomes/measurements/npc_2".into(),
+                    cause: QuestCause::Command(CommandRef::new(admitted.game_session_id, CommandId::new(8001).map_err(debug)?)),
+                },
+                catalogue,
+            ).await.map_err(debug)?;
+        assert!(matches!(result, QuestTransitionOutcome::Committed(_)), "{result:?}");
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx).await?;
