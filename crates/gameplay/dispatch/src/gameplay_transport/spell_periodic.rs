@@ -335,20 +335,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> Option<(u64, ActorVitals)> {
-        self.tick_spell_periodic_at(actor, session, self.owner_now())
+        self.tick_spell_periodic_with_clock(actor, session, || self.owner_now())
             .await
     }
 
-    // The transport samples wall time once; tests can drive the same owner at an
-    // exact condition deadline without changing the Channel's clock origin.
+    // Tests can drive the same owner at an exact condition deadline.
+    #[cfg(test)]
     pub(in crate::gameplay_transport) async fn tick_spell_periodic_at(
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
         now: oteryn_simulation_determinism::SemanticTimeMicros,
     ) -> Option<(u64, ActorVitals)> {
-        // Lock order (§1.2): the lane before any Channel guard.
+        self.tick_spell_periodic_with_clock(actor, session, || now)
+            .await
+    }
+
+    async fn tick_spell_periodic_with_clock(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        clock: impl FnOnce() -> oteryn_simulation_determinism::SemanticTimeMicros,
+    ) -> Option<(u64, ActorVitals)> {
+        // Sample the condition clock after the world lookup so its latency
+        // does not subtract time from the newly applied condition.
         let cake_remaining = self.cake_regeneration_remaining_ms().await;
+        let now = clock();
+        // Lock order (§1.2): the lane before any Channel guard.
         let mut permit = self.spell_lane_permit().await?;
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
