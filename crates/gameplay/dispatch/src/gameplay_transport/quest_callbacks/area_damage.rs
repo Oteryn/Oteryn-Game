@@ -18,7 +18,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         self.step_five_ways(actor, session, map, entered, &entries)
             .await;
-        self.step_demon_oak_area(actor, session, map, entered, &entries)
+        self.step_demon_oak_area(actor, session, entered, &entries)
             .await;
     }
 
@@ -86,7 +86,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
-        map: &BundleMap,
         entered: MovementPositionSnapshot,
         entries: &TileEntries,
     ) {
