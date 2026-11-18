@@ -231,6 +231,21 @@ fn cults_source_hook_replaces_stops_and_retries_refused_native_spawn() {
     assert!(runtime.contains_live_creature(stops[0]));
     assert!(replacement.pending().any(|(role, _)| role == 0));
 
+    assert!(
+        replacement
+            .spawn_role(
+                &mut runtime,
+                0,
+                essence_at,
+                &[stops[0], player],
+                None,
+                |_, _| true,
+            )
+            .is_err()
+    );
+    assert!(runtime.contains_live_creature(stops[0]));
+    assert!(runtime.player_control_facts(player, session).is_ok());
+
     let mut encounter =
         cults::CultsEncounter::bind(&mut runtime, &party, pillars, stops, essence_at).unwrap();
     let stop_key = format!("{}_stop", keys.roles[5].creature);

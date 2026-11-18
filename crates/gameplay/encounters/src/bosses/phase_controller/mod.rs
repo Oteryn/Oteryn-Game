@@ -254,6 +254,9 @@ impl NativePhaseOwner {
         let before = runtime.encounter_parts().0.clone();
         let result = (|| {
             for &actor in remove {
+                if !runtime.contains_live_creature(actor) {
+                    return Err(CarrierError::CreatureTargetMismatch);
+                }
                 runtime.remove_encounter_actor(actor)?;
             }
             let actors = runtime.commit_quest_creature_spawn(&spawns)?;
