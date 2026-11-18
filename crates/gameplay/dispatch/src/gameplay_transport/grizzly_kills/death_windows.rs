@@ -9,11 +9,14 @@ use crate::map::{
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, DeathWindow};
 use std::collections::BTreeMap;
 
+mod delayed_reset;
+
 #[derive(Debug, Default)]
 pub(in crate::gameplay_transport) struct DeathWindows {
     exits: BTreeMap<String, Exit>,
     seen: Vec<ExactActorRef>,
     map: Option<BundleCollisionIndex>,
+    resets: Vec<delayed_reset::PendingReset>,
 }
 
 #[derive(Debug)]
@@ -35,11 +38,9 @@ impl DeathWindows {
         let map = match index {
             NativeMovementCollisionIndex::Bundle(index)
                 if callbacks.iter().any(|callback| {
-                    callback
-                        .effects
-                        .death_window
-                        .as_ref()
-                        .is_some_and(|rule| rule.open_appearance.is_some())
+                    callback.effects.death_window.as_ref().is_some_and(|rule| {
+                        rule.open_appearance.is_some() || rule.delayed_reset.is_some()
+                    })
                 }) =>
             {
                 Some(index)
@@ -48,6 +49,7 @@ impl DeathWindows {
         };
         if self.map.as_ref() != map {
             self.exits.retain(|_, exit| exit.visual.is_none());
+            self.resets.clear();
             self.map = map.cloned();
         }
         self.exits.retain(|key, exit| {
@@ -57,6 +59,8 @@ impl DeathWindows {
                     && exit.visual.as_ref().is_none_or(|old| old == callback)
             })
         });
+        self.resets
+            .retain(|reset| callbacks.iter().any(|callback| reset.matches(callback)));
         for callback in callbacks {
             if let Some(rule) = &callback.effects.death_window {
                 self.exits
@@ -103,13 +107,22 @@ impl DeathWindows {
 
         let mut projected = false;
         let map = self.map.as_ref().map(BundleCollisionIndexExt::map);
-        for exit in self.exits.values_mut().filter(|exit| {
+        for (key, exit) in self.exits.iter_mut().filter(|(_, exit)| {
             exit.rule.creatures.iter().any(|key| key == creature)
                 && exit
                     .rule
                     .area
                     .is_none_or(|area| area.contains([point.x, point.y, i32::from(point.floor)]))
         }) {
+            if map.is_some()
+                && self.resets.len() < 256
+                && let Some(rule) = &exit.rule.delayed_reset
+                && let Some(reset) =
+                    delayed_reset::PendingReset::capture(runtime, target, key, rule, when)
+            {
+                self.resets.push(reset);
+                projected = true;
+            }
             if !exit.current(runtime) || exit.due != 0 && when >= exit.due {
                 exit.count = 0;
                 exit.due = 0;
@@ -143,6 +156,27 @@ impl DeathWindows {
             }
         }
         projected
+    }
+
+    pub(in crate::gameplay_transport) fn drain_map_resets(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        now_ms: u64,
+    ) {
+        let Some(map) = self.map.as_ref().map(BundleCollisionIndexExt::map) else {
+            return;
+        };
+        if runtime.owner_fence().is_err() {
+            return;
+        }
+        let mut remaining = 16;
+        self.resets.retain(|reset| {
+            if reset.due_ms > now_ms || remaining == 0 {
+                return true;
+            }
+            remaining -= 1;
+            reset.apply_if_live(runtime, map)
+        });
     }
 
     pub(in crate::gameplay_transport) fn open_source(

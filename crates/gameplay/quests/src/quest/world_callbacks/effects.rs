@@ -167,6 +167,31 @@ pub struct DeathWindow {
     pub open_appearance: Option<u16>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub open_effect: Option<u16>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub delayed_reset: Option<DeathMapReset>,
+}
+
+/// Crystal 201189f8 creaturescripts_bosses_kill.lua:58-86 and 136-144.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DeathMapReset {
+    pub delay_ms: u32,
+    pub from: u16,
+    pub to: u16,
+    pub positions: Vec<Position>,
+}
+
+impl DeathMapReset {
+    fn valid(&self) -> bool {
+        (1..=3_600_000).contains(&self.delay_ms)
+            && self.from != 0
+            && self.to != 0
+            && self.from != self.to
+            && (1..=8).contains(&self.positions.len())
+            && self.positions.iter().enumerate().all(|(index, position)| {
+                (-15..=0).contains(&position.floor) && !self.positions[..index].contains(position)
+            })
+    }
 }
 
 impl DeathWindow {
@@ -195,6 +220,9 @@ impl DeathWindow {
             && self
                 .open_effect
                 .is_none_or(|effect| self.open_appearance.is_some() && (1..=255).contains(&effect))
+            && self.delayed_reset.as_ref().is_none_or(|reset| {
+                self.required_deaths == 1 && self.creatures.len() == 1 && reset.valid()
+            })
             && self.area.is_none_or(|area| area.valid())
             && self.creatures.iter().enumerate().all(|(index, key)| {
                 key.starts_with("oteryn:creature.")

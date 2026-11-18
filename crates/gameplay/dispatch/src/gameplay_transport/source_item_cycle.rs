@@ -104,6 +104,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if let Some(map) = self.bundle_map() {
                     map.facts.expire_movement_items(self.owner_now().get());
                 }
+                self.drain_quest_death_map_resets(&runtime);
                 if let Ok(mut gate) = self.states.world_gate.lock() {
                     gate.begin_turn();
                 }
@@ -222,6 +223,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if let Some(cycle) = npc_voices.as_mut() {
                 self.emit_npc_voices(cycle, self.owner_now().get()).await;
             }
+        }
+    }
+
+    pub(super) fn drain_quest_death_map_resets(
+        &self,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+    ) {
+        if let Ok(attack) = self.states.attack.try_lock()
+            && let Ok(mut cache) = attack.kills().1.lock()
+        {
+            cache
+                .death_windows
+                .drain_map_resets(runtime, self.owner_now().get() / 1_000);
         }
     }
 
