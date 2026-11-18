@@ -1,28 +1,55 @@
-//! Spike Tasks return travel through the real STEP dispatch path.
+//! The retained Kazordoon sign is on a decorative crystal, so the return callback
+//! must keep its source action binding until a walkable source placement is qualified.
 use super::TestResult;
-use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
 #[test]
-fn spike_return_portal_reaches_kazordoon_without_quest_mutation() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
-        return Ok(());
-    }
-    let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("qcx-spike-return", || {
-        super::quest_world_callbacks::stateless_scenario(
-            "spike-portal-4227",
-            Position {
-                x: 32242,
-                y: 32597,
-                floor: -8,
-            },
-            Position {
-                x: 32624,
-                y: 31855,
-                floor: -11,
-            },
-        )
-    });
-    eprintln!("spike_return_portal elapsed: {:.2?}", started.elapsed());
-    result
+fn spike_return_selector_requires_its_source_action() -> TestResult {
+    use oteryn_gameplay_quests::quest::world_callbacks::{Position, load};
+
+    let callback = load()?
+        .into_iter()
+        .find(|callback| callback.key == "oteryn:quest-callback/spike-portal-4227")
+        .ok_or("Spike return callback")?;
+    assert_eq!(callback.selector.position, None);
+    assert_eq!(callback.selector.action, Some(4227));
+    assert_eq!(
+        callback.teleport,
+        Some(Position {
+            x: 32624,
+            y: 31855,
+            floor: -11,
+        })
+    );
+
+    let bytes = include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../content/world/placements/region-z08-x125-y127.b3"
+    ));
+    let region = oteryn_world_bundle_compiler::b3::decode_region(
+        bytes,
+        oteryn_world_bundle::bundle::TILE_LIMITS,
+        &mut oteryn_world_bundle::sector::Budget {
+            tiles: 65536,
+            entries: 1_000_000,
+        },
+    )?;
+    let sign_tile = region
+        .sectors
+        .iter()
+        .flat_map(|(_, _, tiles)| tiles)
+        .find(|tile| (tile.x, tile.y) == (32242, 32597))
+        .ok_or("To: Kazordoon sign tile")?;
+    assert!(
+        sign_tile
+            .items
+            .iter()
+            .any(|item| item.attrs.text.as_deref() == Some("To: Kazordoon"))
+    );
+    assert!(
+        sign_tile
+            .items
+            .iter()
+            .all(|item| item.attrs.action != Some(4227))
+    );
+    Ok(())
 }
