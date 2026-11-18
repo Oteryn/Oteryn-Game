@@ -42,6 +42,60 @@ pub struct ItemDisguiseRequirement {
     pub condition: String,
 }
 
+/// A beneficial tile effect authorized by a per-character STEP clock receipt.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct StepBuff {
+    pub magic_effect: u16,
+    pub benefit: StepBenefit,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum StepBenefit {
+    Heal {
+        amount: u16,
+    },
+    Speed {
+        duration_ms: u32,
+        slope_per_thousand: i16,
+        intercept: i16,
+    },
+}
+
+impl StepBuff {
+    fn valid(self, callback: &Callback) -> bool {
+        let only_buff = CallbackEffects {
+            step_buff: Some(self),
+            ..CallbackEffects::default()
+        };
+        callback.trigger == Trigger::StepIn
+            && callback.actor_kind == ActorKind::Player
+            && callback.selector.native.is_some()
+            && callback.requires_world_admission
+            && callback.operation_count() == 1
+            && callback.has_repeating_clock()
+            && callback.storage.is_empty()
+            && callback.teleport.is_none()
+            && callback.passages.is_empty()
+            && !callback.return_on_failure
+            && !callback.completes
+            && callback.effects.shared == only_buff
+            && self.magic_effect != 0
+            && match self.benefit {
+                StepBenefit::Heal { amount } => amount > 0,
+                StepBenefit::Speed {
+                    duration_ms,
+                    slope_per_thousand,
+                    ..
+                } => {
+                    (1..=3_600_000).contains(&duration_ms)
+                        && (-4_000..=4_000).contains(&slope_per_thousand)
+                }
+            }
+    }
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
@@ -103,6 +157,8 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
     pub encounter: Option<Encounter>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub step_buff: Option<StepBuff>,
 }
 
 /// The original wire shapes retain distinct owners: a child quest or the current quest.
@@ -407,6 +463,9 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects.step_buff.is_some_and(|buff| !buff.valid(callback)) {
+        return false;
+    }
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
     if inputs.len() > 8

@@ -239,6 +239,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Both lifecycle deadlines belong to this operation, even when preparing
         // its remote object read set takes time.
         let lifecycle_now = self.owner_now().get();
+        let step_buff = if let Some(buff) = callback.effects.step_buff {
+            let Some(next) = states.get(runtime, actor, session).and_then(|current| {
+                super::step_buff::prepare(runtime, current, callback, buff.benefit, lifecycle_now)
+            }) else {
+                return UseDisposition::Rejected;
+            };
+            Some((buff, next))
+        } else {
+            None
+        };
         if !close && let Some(delay) = callback.effects.reset_after_ms {
             let Some(due) = lifecycle_now.checked_add(u64::from(delay) * 1_000) else {
                 return UseDisposition::Exhausted;
@@ -1674,6 +1684,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && let Some(destination) = callback.teleport
         {
             map.facts.emit_movement_effect(tile(destination), effect);
+        }
+        if let Some((buff, next)) = step_buff {
+            if let Some(next) = next {
+                if !states.commit(runtime, actor, session, next) {
+                    return UseDisposition::Rejected;
+                }
+                states.owner_wake.notify_one();
+            }
+            map.facts.emit_movement_effect(pos, buff.magic_effect);
         }
         if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
             pending.remove(&session);

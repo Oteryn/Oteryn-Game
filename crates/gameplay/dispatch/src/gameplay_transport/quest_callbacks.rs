@@ -34,6 +34,7 @@ mod scene_items;
 mod shared_gate;
 mod soul_war_reward;
 mod source_transforms;
+mod step_buff;
 mod timed_encounter;
 mod timed_passages;
 

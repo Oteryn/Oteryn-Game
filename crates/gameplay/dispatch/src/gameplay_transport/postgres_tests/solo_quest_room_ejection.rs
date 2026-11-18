@@ -12,7 +12,7 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
     authored_bindings::Bindings,
-    world_callbacks::{Callback, Position},
+    world_callbacks::{Callback, Position, StepBenefit, StepBuff},
 };
 use oteryn_protocol_oteryn::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition,
@@ -74,10 +74,21 @@ pub(super) struct BossRoom {
 }
 
 pub(super) async fn exercise(h: &Harness, boss: Option<BossRoom>) -> TestResult {
-    let source = boss.map_or(
+    exercise_world(h, boss, None).await
+}
+
+pub(super) async fn exercise_step_buff(h: &Harness, buff: StepBuff) -> TestResult {
+    exercise_world(h, None, Some(buff)).await
+}
+
+async fn exercise_world(h: &Harness, boss: Option<BossRoom>, buff: Option<StepBuff>) -> TestResult {
+    let mut source = boss.map_or(
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hidden_threats/movement-cave_spider_room.lua:31-58",
         |room| room.source
     );
+    if buff.is_some() {
+        source = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grimvale/movements_strangely_glowing_mark.lua:1-28";
+    }
     let after_ms = if boss.is_some() { 600_000 } else { AFTER_MS };
     let mut callback_json = serde_json::json!({
         "key":"oteryn:quest-callback/fixture/solo-room", "quest":QUEST, "trigger":"step_in",
@@ -101,12 +112,21 @@ pub(super) async fn exercise(h: &Harness, boss: Option<BossRoom>) -> TestResult 
         callback_json["effects"]["encounter"]["boss_cooldown_seconds"] = serde_json::json!(36_000);
         callback_json["failure_teleport"] = serde_json::Value::Null;
     }
+    if let Some(buff) = buff {
+        callback_json["storage"] = serde_json::json!([]);
+        callback_json["state_operations"] = serde_json::json!([{
+            "track":TRACK,"from":{"kind":"elapsed_at_least","seconds":61},"effect":{"kind":"set_now"}
+        }]);
+        callback_json["effects"] = serde_json::json!({"step_buff":buff});
+        callback_json["return_on_failure"] = serde_json::json!(false);
+        callback_json["failure_teleport"] = serde_json::Value::Null;
+    }
     let callback: Callback = serde_json::from_value(callback_json.clone())?;
     let bindings: Bindings = serde_json::from_value(serde_json::json!({
         "schema":1,"quests":[{
             "quest":QUEST,
             "recipe_sha256":<sha2::Sha256 as sha2::Digest>::digest(source).iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
-            "tracks":[{"key":TRACK,"initial":9,"minimum":9,"maximum":10}],
+            "tracks":[{"key":TRACK,"initial":9,"minimum":9,"maximum":if buff.is_some() { i64::MAX } else { 10 }}],
             "stages":[{"key":"s1","completes":false,"trigger":{"kind":"step_in","callback":callback_json}}],
             "sources":[source]
         }]
@@ -250,6 +270,81 @@ pub(super) async fn exercise(h: &Harness, boss: Option<BossRoom>) -> TestResult 
     owner.admit_progression_session(&mut admitted).await;
     deps.initialize(&owner).await;
     owner.admit_quest_session(&admitted).await;
+
+    if let Some(buff) = buff {
+        let session = admitted.game_session_id;
+        {
+            let runtime = deps.runtime.lock().await;
+            owner
+                .states
+                .spell_states
+                .lock()
+                .await
+                .get_mut(&runtime, deps.actor, session)
+                .ok_or("mark actor")?
+                .set_health_for_test(1);
+        }
+        for (command, direction, now) in [
+            (1, StepDirection::East, 1_000_000),
+            (2, StepDirection::West, 31_000_000),
+            (3, StepDirection::East, 33_000_000),
+        ] {
+            owner
+                .states
+                .test_owner_time
+                .store(now + 1, Ordering::Relaxed);
+            let reply = wire(
+                &owner,
+                &mut admitted,
+                command,
+                COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+                oteryn_protocol_oteryn::world_spatial::encode_step_intent(direction),
+            )
+            .await?;
+            assert_eq!(
+                oteryn_protocol_oteryn::world_spatial::decode_step_result(&reply).map_err(debug)?,
+                StepDisposition::Moved
+            );
+            let runtime = deps.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            let current = states
+                .get_mut(&runtime, deps.actor, session)
+                .ok_or("mark actor")?;
+            if command == 2 {
+                current.set_health_for_test(1);
+                continue;
+            }
+            assert_eq!(
+                runtime
+                    .read_actor_position(deps.actor)
+                    .map_err(debug)?
+                    .position(),
+                local(ENTRY)
+            );
+            match buff.benefit {
+                StepBenefit::Heal { amount } => {
+                    let vitals = current.vitals();
+                    let expected = if command == 1 {
+                        (1 + u32::from(amount)).min(vitals.max_health)
+                    } else {
+                        1
+                    };
+                    assert_eq!(vitals.health, expected);
+                }
+                StepBenefit::Speed { .. } => {
+                    assert_eq!(
+                        current.owned_conditions().effective_speed(now).is_some(),
+                        command == 1
+                    );
+                }
+            }
+        }
+        let count = sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND value>9",
+        ).bind(id(41).as_slice()).bind(TRACK).fetch_one(&h.pool).await?;
+        assert_eq!(count, 1);
+        return Ok(());
+    }
 
     let cooldown = || async {
         sqlx::query_scalar::<_, i64>(
