@@ -1,6 +1,7 @@
 //! LOOP-MAP-1: admitted command bytes -> native fenced durable state -> result bytes.
 use super::fixture::{self as harness_fixture, Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
+use crate::domain::cyclopedia::Point;
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
@@ -32,6 +33,16 @@ fn pool(bytes: &[u8]) -> u64 {
 }
 fn percentage(bytes: &[u8]) -> u8 {
     bytes[11]
+}
+fn visible_points(points: &[Point], at: Point) -> u8 {
+    // Crystal discovery_system.lua:16-17,643 credits each POI inside this window.
+    points.iter().enumerate().fold(0, |found, (index, point)| {
+        if point.floor == at.floor && point.x.abs_diff(at.x) <= 7 && point.y.abs_diff(at.y) <= 5 {
+            found | (1 << index)
+        } else {
+            found
+        }
+    })
 }
 #[test]
 fn cyclopedia_postgres_real_dispatch() -> TestResult {
@@ -259,8 +270,8 @@ fn scenario(canonical: bool) -> TestResult {
                         owner.owner_now(),
                     )
                     .map_err(debug)?,
-                195,
-                "T187: one fully discovered area contributes the content maximum"
+                0,
+                "Crystal grants no active speed contribution for legacy discovery credit"
             );
             let (_, donated) =
                 support::exchange_inventory(&owner, &mut admitted, 4, 73, &request(4, 1)).await?;
@@ -420,12 +431,17 @@ fn scenario(canonical: bool) -> TestResult {
             assert_eq!(
                 status,
                 CommandStatus::Accepted,
-                "a canonical subarea with exactly7candidates is admitted by the durable writer"
+                "a canonical subarea with exactly seven candidates is admitted by the durable writer"
             );
             assert_eq!(
                 small[9], 1,
                 "seven-candidate subarea retains its completed state"
             );
+            let (status, no_hidden_points) =
+                support::exchange(&owner, &mut admitted, 8, 73, &request(2, 0)).await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!(no_hidden_points[0], 5, "all seven candidates are in view");
+            assert_eq!(no_hidden_points[9], 1, "a refused reset keeps completion");
             speed::completed_discovery_keeps_step_pace_and_speed_query_refuses(
                 &mut owner,
                 &deps,
@@ -462,6 +478,22 @@ fn scenario(canonical: bool) -> TestResult {
         let progress: crate::domain::cyclopedia::MapProgress = serde_json::from_str(&progress)?;
         let first_points = progress.exploration.ok_or("durable exploration")?.points;
         assert_eq!(first_points.len(), 7);
+        assert!(
+            first_points.iter().all(|p| {
+                p.floor == -7
+                    && (p.x.abs_diff(1) > 8 || p.y.abs_diff(0) > 6)
+                    && world
+                        .base()
+                        .subareas
+                        .resolve(p.x as u16, p.y as u16, p.floor as i8)
+                        == Some((1, 2))
+                    && world
+                        .base()
+                        .tile(p.x as u16, p.y as u16, p.floor as i8)
+                        .is_some_and(|tile| tile.walkable())
+            }),
+            "all seven points are hidden, walkable tiles in the active subarea"
+        );
         assert!(first_points.iter().enumerate().all(|(index, point)| {
             first_points[..index].iter().all(|other| {
                 point.floor != other.floor
@@ -548,7 +580,8 @@ fn scenario(canonical: bool) -> TestResult {
         let progress: crate::domain::cyclopedia::MapProgress = serde_json::from_str(&progress)?;
         let points = progress.exploration.ok_or("shuffled exploration")?.points;
         assert_ne!(points, first_points);
-        for (index, point) in points.iter().take(7).enumerate() {
+        let mut expected_found: u8 = 0;
+        for (index, point) in points.iter().enumerate() {
             {
                 let mut runtime = owner.runtime.lock().await;
                 let mut movement = runtime.borrow_movement_position();
@@ -579,24 +612,28 @@ fn scenario(canonical: bool) -> TestResult {
                 support::exchange(&owner, &mut admitted, 6 + index as u64, 73, &request(3, 0))
                     .await?;
             assert_eq!(found[0], 0);
-            assert_eq!(count(&found), index as u8 + 1);
-            assert_eq!(found[9], u8::from(index == 6));
-            assert_eq!(percentage(&found), if index == 6 { 50 } else { 0 });
+            let was_complete = expected_found.count_ones() == 7;
+            expected_found |= visible_points(&points, *point);
+            let complete = expected_found.count_ones() == 7;
+            let just_completed = complete && !was_complete;
+            assert_eq!(u32::from(count(&found)), expected_found.count_ones());
+            assert_eq!(found[9], u8::from(complete));
+            assert_eq!(percentage(&found), if complete { 50 } else { 0 });
             assert_eq!(
                 owner
                     .states
                     .tutorial_sessions
                     .take(admitted.game_session_id),
-                (index == 6).then(|| {
+                just_completed.then(|| {
                     oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(
                         "Subarea discovered! All seven points of interest found.".into(),
                     )
                 }),
-                "T187: only a committed seventh Find emits a discovery notice"
+                "T187: only the Find that completes the seven POIs emits a discovery notice"
             );
-            if index == 6 {
+            if just_completed {
                 let GuildReply::Payload(replay) = owner
-                    .cyclopedia_command(before_find, 12, 73, &request(3, 0))
+                    .cyclopedia_command(before_find, 6 + index as u64, 73, &request(3, 0))
                     .await
                 else {
                     return Err("seventh Find receipt".into());
@@ -608,7 +645,7 @@ fn scenario(canonical: bool) -> TestResult {
                         .tutorial_sessions
                         .take(admitted.game_session_id)
                         .is_none(),
-                    "T187: replaying a committed Find cannot repeat the banner"
+                    "T187: replaying the completing Find cannot repeat the banner"
                 );
             }
         }
@@ -827,7 +864,7 @@ fn scenario(canonical: bool) -> TestResult {
             serde_json::from_value(reset_progress)?;
         assert!(
             !reset_progress.discovered,
-            "T187: reset removes completion and speed eligibility"
+            "T187: reset removes completion"
         );
         let points = reset_progress
             .exploration
@@ -852,23 +889,21 @@ fn scenario(canonical: bool) -> TestResult {
             )
             .await
             .map_err(debug)?;
-        for (index, point) in points.iter().enumerate() {
-            let from_left = point.x > 0
-                && world
-                    .base()
-                    .tile((point.x - 1) as u16, point.y as u16, point.floor as i8)
-                    .is_some_and(|tile| tile.walkable());
-            let direction = if from_left {
-                oteryn_protocol_oteryn::world_spatial::StepDirection::East
+        let mut expected_found: u8 = 0;
+        for point in &points {
+            use oteryn_protocol_oteryn::world_spatial::StepDirection;
+            // Land beside the POI, with a walkable adjacent origin on the same row.
+            let (offset, direction) = if point.x <= 29 {
+                (1, StepDirection::West)
             } else {
-                oteryn_protocol_oteryn::world_spatial::StepDirection::West
+                (-1, StepDirection::East)
             };
             {
                 let mut runtime = owner.runtime.lock().await;
                 let mut movement = runtime.borrow_movement_position();
                 let mut current = movement.read(deps.actor).map_err(debug)?;
                 let target = MovementLocalPosition {
-                    x: point.x + if from_left { -1 } else { 1 },
+                    x: point.x + 2 * offset,
                     y: point.y,
                     floor: -point.floor,
                 };
@@ -911,19 +946,24 @@ fn scenario(canonical: bool) -> TestResult {
             let found: Option<i32> = sqlx::query_scalar(
                 "SELECT (progress->'subareas'->'2'->'exploration'->>'found')::integer FROM game_character_cyclopedia",
             ).fetch_one(&h.pool).await?;
-            if index == 6 {
-                assert_eq!(
-                    found, None,
-                    "T186: real STEP completes exploration without Find"
-                );
-            } else {
-                assert_eq!(
-                    found.map(|bits| bits & (1 << index)),
-                    Some(1 << index),
-                    "T186: real STEP discovers a POI without Find"
-                );
+            expected_found |= visible_points(
+                &points,
+                Point {
+                    x: point.x + offset,
+                    ..*point
+                },
+            );
+            let complete = expected_found.count_ones() == 7;
+            assert_eq!(
+                found,
+                (!complete).then_some(i32::from(expected_found)),
+                "T186: real STEP credits all POIs in view without landing on their tiles"
+            );
+            if complete {
+                break;
             }
         }
+        assert_eq!(expected_found.count_ones(), 7);
         assert_eq!(
             owner
                 .states
@@ -934,7 +974,7 @@ fn scenario(canonical: bool) -> TestResult {
                     "Subarea discovered! All seven points of interest found.".into(),
                 )
             ),
-            "T187: the seventh real STEP queues the completion banner"
+            "T187: the STEP that completes the seven POIs queues the banner"
         );
         atlas::verify(&owner, &mut admitted).await?;
         // A stale socket reserves its command before the Bank prelude refuses it, so its
