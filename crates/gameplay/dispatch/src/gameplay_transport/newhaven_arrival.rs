@@ -100,6 +100,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 held.placed,
             )
         };
+        let ring_exchange = matches!(&route, newhaven_travel::Departure::Paid(request)
+            if crate::durability::npc_travel::svargrond::pays_ring(&request.route));
+        let _ring_permit = if ring_exchange {
+            Some(self.spell_lane_permit().await?)
+        } else {
+            None
+        };
         if !committed {
             let result = match route {
                 newhaven_travel::Departure::Tutorial(route) => self
@@ -130,11 +137,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                 }
                 newhaven_travel::Departure::Paid(request) => {
-                    let _ring_permit = if request.ring.is_some() {
-                        Some(self.spell_lane_permit().await?)
-                    } else {
-                        None
-                    };
                     let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
                     slot.commit_npc_travel(
                         self.root,
@@ -177,6 +179,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         if placed.is_none() {
+            if ring_exchange {
+                let effects = self.read_admission_effects(session).await.ok()?;
+                let runtime = self.runtime.lock().await;
+                self.install_admission_suppressions(&runtime, actor, session, effects)
+                    .await?;
+            }
             let current = self.current_quest_fence(session).await.ok()??;
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;

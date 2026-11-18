@@ -220,8 +220,12 @@ pub(super) async fn seed_ring(harness: &Harness, route: NativeScenario) -> TestR
                 .bind(id(child).as_slice()).bind(id(42).as_slice()).bind(id(parent).as_slice()).bind(id(204).as_slice()).execute(&mut *tx).await?;
         }
     } else {
-        sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,9,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
+        sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,8,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
             .bind(id(41).as_slice()).bind(id(201).as_slice()).bind(id(42).as_slice()).bind(id(204).as_slice()).execute(&mut *tx).await?;
+    }
+    if !nested {
+        sqlx::query("INSERT INTO game_item_timed_states(item_instance_id,remaining_ms,state_revision) VALUES(encode($1,'hex')::uuid,3500000,1)")
+            .bind(id(201).as_slice()).execute(&mut *tx).await?;
     }
     tx.commit().await?;
     Ok(())

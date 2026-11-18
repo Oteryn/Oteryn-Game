@@ -129,12 +129,9 @@ pub(super) async fn permitted(
         return Ok(track(tx, fence, BARBARIAN).await? == 8);
     }
     sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM game_item_container_slots s
-           JOIN game_item_container_entries e ON e.character_id=s.character_id
-             AND e.parent_item_instance_id=s.item_instance_id AND e.world_id=s.world_id
-           JOIN game_item_instances i ON i.item_instance_id=e.item_instance_id
-           WHERE s.character_id=encode($1,'hex')::uuid AND s.world_id=encode($2,'hex')::uuid
-             AND i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$3)",
+        "SELECT EXISTS(SELECT 1 FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c
+           JOIN game_item_instances i ON i.item_instance_id=c.item
+           WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$3)",
     )
     .bind(fence.character_id.as_bytes().as_slice())
     .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
@@ -142,4 +139,76 @@ pub(super) async fn permitted(
     .fetch_one(&mut ***tx)
     .await
     .map_err(Into::into)
+}
+
+/// Take one ring before issuing the corresponding travel receipt.
+/// Crystal's Player::removeItemOfType walks carried containers and includes equipment.
+pub(super) async fn exchange_ring(
+    tx: &mut Type2Transaction<'_>,
+    fence: CurrentCharacterGameplayFence,
+    command: crate::foundation::CommandRef,
+    occurrence: super::TravelOccurrence,
+    binding: &[u8],
+) -> Result<bool, DurabilityError> {
+    let character = fence.character_id.as_bytes();
+    let world = fence.runtime_scope.world_id();
+    let source = sqlx::query(
+        "SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind
+         FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c
+         JOIN game_item_instances i ON i.item_instance_id=c.item
+         WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$3
+         ORDER BY CASE c.kind WHEN 'container' THEN 0 WHEN 'nested' THEN 1 ELSE 2 END,
+           (c.location->>'placement_ordinal')::numeric, (c.location->>'slot')::smallint, i.item_instance_id LIMIT 1 FOR UPDATE OF i",
+    )
+    .bind(character.as_slice())
+    .bind(world.as_bytes().as_slice())
+    .bind(RING)
+    .fetch_optional(&mut ***tx)
+    .await?;
+    let Some(source) = source else {
+        return Ok(false);
+    };
+    let item: String = source.try_get("item")?;
+    let before: serde_json::Value = source.try_get("before_item")?;
+    let location: serde_json::Value = source.try_get("location")?;
+    let kind: String = source.try_get("kind")?;
+    let equipment_revision: Option<String> = if kind == "equipment" {
+        Some(sqlx::query_scalar(
+            "SELECT revision::text FROM game_character_equipment_state
+             WHERE character_id=encode($1,'hex')::uuid FOR UPDATE",
+        )
+        .bind(character.as_slice())
+        .fetch_one(&mut ***tx)
+        .await?)
+    } else {
+        None
+    };
+    let transaction: String = sqlx::query_scalar(
+        "INSERT INTO game_quest_callback_consumptions(transaction_id,item_instance_id,character_id,
+           cause_id,cause_ordinal,quantity,before_item,before_location,location_kind,proof,proof_sha256,
+           travel_occurrence,travel_equipment_revision)
+         SELECT game_character_uuid_v7(),$1::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,
+           $4::text::numeric,1,$5,$6,$7,p.proof,sha256(p.proof),encode($9,'hex')::uuid,$10::text::numeric
+         FROM (SELECT convert_to(jsonb_build_object('travel_binding',encode($8,'hex'))::text,'UTF8') AS proof) p
+         RETURNING transaction_id::text",
+    )
+    .bind(&item)
+    .bind(character.as_slice())
+    .bind(command.game_session_id().as_bytes().as_slice())
+    .bind(command.command_id().get().to_string())
+    .bind(before)
+    .bind(location)
+    .bind(&kind)
+    .bind(binding)
+    .bind(occurrence.as_bytes().as_slice())
+    .bind(equipment_revision)
+    .fetch_one(&mut ***tx)
+    .await?;
+    super::super::quest_world_callback::retire_carried_item(tx, &item, &kind, &transaction)
+        .await?;
+    if kind == "equipment" {
+        sqlx::query("UPDATE game_character_equipment_state SET revision=revision+1,last_transaction_id=$2::uuid WHERE character_id=encode($1,'hex')::uuid")
+            .bind(character.as_slice()).bind(transaction).execute(&mut ***tx).await?;
+    }
+    Ok(true)
 }

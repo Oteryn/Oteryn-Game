@@ -1026,6 +1026,38 @@ fn location_queries(kind: &str) -> Result<(&'static str, &'static str), Durabili
     }
 }
 
+pub(super) async fn retire_carried_item(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    item: &str,
+    kind: &str,
+    transaction: &str,
+) -> Result<(), DurabilityError> {
+    let changed = sqlx::query(
+        "UPDATE game_item_instances SET quantity=0,lifecycle=2,last_transaction_id=$2::uuid
+         WHERE item_instance_id=$1::uuid AND lifecycle=1 AND quantity=1",
+    )
+    .bind(item)
+    .bind(transaction)
+    .execute(&mut **tx)
+    .await?;
+    if changed.rows_affected() != 1 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    remove_input_location(tx, item, location_queries(kind)?.1).await
+}
+
+async fn remove_input_location(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    item: &str,
+    query: &str,
+) -> Result<(), DurabilityError> {
+    let removed = sqlx::query(query).bind(item).execute(&mut **tx).await?;
+    if removed.rows_affected() != 1 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(())
+}
+
 async fn lock_location(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     input: &Input,
@@ -1091,13 +1123,7 @@ async fn apply_input_in_scope(
         } else {
             location_queries(&input.kind)?.1
         };
-        let removed = sqlx::query(query)
-            .bind(&input.item)
-            .execute(&mut **tx)
-            .await?;
-        if removed.rows_affected() != 1 {
-            return Err(DurabilityError::InvalidStoredState);
-        }
+        remove_input_location(tx, &input.item, query).await?;
     }
     Ok(())
 }

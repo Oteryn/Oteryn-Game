@@ -79,7 +79,6 @@ const REQUEST_BINDING_VERSION: u8 = 1;
 mod hireling;
 mod quest_access;
 pub(super) mod sell_hireling;
-pub(super) mod svargrond;
 pub use hireling::{HirelingPackageSelection, HirelingTradeSelection};
 
 #[derive(Default)]

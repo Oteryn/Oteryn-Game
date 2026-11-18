@@ -33,7 +33,7 @@ pub(super) struct Invocation {
 impl Invocation {
     fn inventory_changed(&self) -> bool {
         self.frozen.fare > 0
-            || matches!(&self.route, Departure::Paid(request) if request.ring.is_some())
+            || matches!(&self.route, Departure::Paid(request) if crate::durability::npc_travel::svargrond::pays_ring(&request.route))
     }
 }
 

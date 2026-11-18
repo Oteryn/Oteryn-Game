@@ -11,7 +11,7 @@ mod quest_confirmation;
 mod svargrond;
 
 use crate::durability::npc_travel::svargrond::{
-    BUDDEL, ISKAN, Payment, RING, pays_ring, route as source_route,
+    BUDDEL, ISKAN, Payment, pays_ring, route as source_route,
 };
 
 #[derive(Clone)]
@@ -285,7 +285,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return refusal(intent, TravelRefusal::UnavailableRoute);
         };
-        let inventory_changed = request.ring.is_some() || prompt.fare > 0;
+        let inventory_changed = pays_ring(&request.route) || prompt.fare > 0;
         let frozen = FrozenTravel {
             command: request.command,
             npc: context.2,
@@ -441,7 +441,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let (gold, platinum, crystal) = npc_command::bank_coin_definitions(self, &runtime)?;
-        let ring_key = pays_ring(&prompt.route).then_some(RING);
         let index =
             super::super::item_ref_admission::pinned_index(&runtime, self.active_generation)?;
         let backpack = crate::durability::item_mint::TypedDefinitionRef {
@@ -476,52 +475,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             command.game_session_id,
             crate::foundation::CommandId::new(command.command_id).ok()?,
         );
-        let ring = if let Some(key) = ring_key {
-            use crate::durability::npc_trade::{
-                NpcTradeCause, NpcTradeCoins, NpcTradeRequest, NpcTradeSide,
-            };
-            let item = super::super::item_ref_admission::generation_item_facts(
-                native,
-                &crate::durability::item_mint::TypedDefinitionRef {
-                    family: "Item".into(),
-                    production_key: key.into(),
-                    revision_ref: native.item_index()?.revision(key)?.into(),
-                },
-            )
-            .ok()?;
-            Some(Box::new(NpcTradeRequest {
-                fluid_subtype: None,
-                full_charges: None,
-                cause: NpcTradeCause {
-                    npc_key: BUDDEL.into(),
-                    catalogue_revision: prompt.context.0,
-                    offer_index: 1,
-                    side: NpcTradeSide::Sell,
-                    occurrence: occurrence.as_bytes(),
-                },
-                command: reference,
-                quantity: 1,
-                unit_price: 0,
-                offer_count: 1,
-                item,
-                transaction_id: derive(1),
-                event_id: derive(2),
-                occurred_at_unix_ms: super::super::npc_trade_command::unix_ms_now(),
-                output_item_instance_ids: [derive(3), derive(4), derive(5)],
-                coins: NpcTradeCoins {
-                    gold: gold.clone(),
-                    platinum: platinum.clone(),
-                    crystal: crystal.clone(),
-                },
-                backpack: backpack.clone(),
-            }))
-        } else {
-            None
-        };
         let destination = &prompt.route.route.destination;
         Some(PaidTravelRequest {
             command: reference,
-            ring,
             arrival: PendingArrival {
                 occurrence,
                 world_id: self.world_id,
