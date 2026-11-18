@@ -240,9 +240,15 @@ async fn write_with_skinning<C: ItemLoopContent>(
         return Ok(UseDisposition::NothingToUse);
     }
     let skinning = if let Some(attempt) = skinning {
-        let Some(prepared) =
-            skinning::prepare(tx, fence, attempt.request, &definition, native, attempt.catalogue)
-                .await?
+        let Some(prepared) = skinning::prepare(
+            tx,
+            fence,
+            attempt.request,
+            &definition,
+            native,
+            attempt.catalogue,
+        )
+        .await?
         else {
             return Ok(UseDisposition::NothingToUse);
         };

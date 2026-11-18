@@ -1071,8 +1071,7 @@ async fn exercise_rabbit(
             if text == "You have to wait a bit before you can skin this animal."
     ));
 
-    age_rabbit_fixture(h, corpse, 11_000).await?;
-    owner.drain_source_item_deadlines().await;
+    advance_rabbit_decay(owner, h, corpse, 11_000).await?;
     assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4301");
     assert_eq!(
         attempt(corpse, command, obsidian_knife)
@@ -1151,14 +1150,7 @@ async fn exercise_rabbit(
     assert_eq!(schedules, [10_000, 310_000, 610_000]);
 
     // The third stage must accept the real skinning receipt as its predecessor.
-    age_rabbit_fixture(h, corpse, 600_000).await?;
-    owner
-        .states
-        .spell_states
-        .lock()
-        .await
-        .next_item_deadline_pass_us = 0;
-    owner.drain_source_item_deadlines().await;
+    advance_rabbit_decay(owner, h, corpse, 600_000).await?;
     assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4303");
     // With the mission finished, only the active Lucky Loop track admits skinning.
     let mut tx = h.pool.begin().await?;
@@ -1180,14 +1172,7 @@ async fn exercise_rabbit(
     tx.commit().await?;
 
     let corpse = mint_corpse(owner, h, native, 6017, Some(race), 901).await?;
-    age_rabbit_fixture(h, corpse, 11_000).await?;
-    owner
-        .states
-        .spell_states
-        .lock()
-        .await
-        .next_item_deadline_pass_us = 0;
-    owner.drain_source_item_deadlines().await;
+    advance_rabbit_decay(owner, h, corpse, 11_000).await?;
     assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4301");
     let failure = UseCommand {
         command_id: draw_command(
@@ -1221,7 +1206,12 @@ async fn exercise_rabbit(
 }
 
 /// Move the fixture's original clock, leaving the real deadline worker to produce receipts.
-async fn age_rabbit_fixture(h: &Harness, corpse: [u8; 16], millis: i64) -> TestResult {
+async fn advance_rabbit_decay(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    corpse: [u8; 16],
+    millis: i64,
+) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
@@ -1231,5 +1221,12 @@ async fn age_rabbit_fixture(h: &Harness, corpse: [u8; 16], millis: i64) -> TestR
     sqlx::query("UPDATE game_spell_field_temporal_schedules SET expires_at_unix_ms=expires_at_unix_ms-$2 WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(corpse.as_slice()).bind(millis).execute(&mut *tx).await?;
     tx.commit().await?;
+    owner
+        .states
+        .spell_states
+        .lock()
+        .await
+        .next_item_deadline_pass_us = 0;
+    owner.drain_source_item_deadlines().await;
     Ok(())
 }
