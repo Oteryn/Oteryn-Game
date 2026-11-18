@@ -10,6 +10,7 @@ mod placement;
 mod runner;
 mod schedule;
 pub mod source_claustrophobic;
+pub mod source_silencer_plateau;
 
 pub use calendar::{CalendarDay, CalendarSelector};
 pub use catalogue::{
