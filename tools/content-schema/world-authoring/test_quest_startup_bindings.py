@@ -34,6 +34,32 @@ class QuestStartupBindingsTests(unittest.TestCase):
         ]
         return {p: (ROOT / p).read_bytes() for p in paths}
 
+    def test_deepling_coral_and_chest_selectors_are_on_shipped_tiles(self):
+        outputs = self.outputs()
+        index = json.loads(outputs[startup.doors.INDEX.as_posix()])
+        selectors = set()
+        for path, raw in outputs.items():
+            if not path.endswith(".b3"):
+                continue
+            z, _, _, sectors = codec.decode_region(raw)
+            for _, tiles in sectors:
+                for x, y, _, _, _, items in tiles:
+                    for palette, depth, attributes in items:
+                        if depth or not attributes:
+                            continue
+                        item = index["palette"][palette]["source_item_id"]
+                        selectors.add((x, y, z, item, attributes.get("action"), attributes.get("unique")))
+        capture = json.loads((ROOT / startup.CAPTURE).read_bytes())
+        expected = {
+            (*row["position"], row["item"],
+             row["action"] if row["attribute"] == "action" else None,
+             row["action"] if row["attribute"] == "unique" else None)
+            for row in capture["bindings"]
+            if row["action"] in {28572, 1106, 9302, 9303, 9304}
+        }
+        self.assertEqual(len(expected), 25)
+        self.assertEqual(expected - selectors, set())
+
     def test_startup_overlay_is_idempotent_and_rejects_ambiguous_items(self):
         outputs = self.outputs()
         before = outputs.copy()

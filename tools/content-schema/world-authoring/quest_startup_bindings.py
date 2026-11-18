@@ -29,13 +29,22 @@ SPECS = (
     ("teleport.lua", "TeleportUnique", 35020, "unique"),
 )
 
+# Deeplings Coral Mine stages, ramp, and boss reward chests.
+DEEPLING_SPECS = (
+    ("item.lua", "ItemAction", 28572, "action"),
+    ("item.lua", "ItemUnique", 1106, "unique"),
+    ("chest.lua", "ChestUnique", 9302, "unique"),
+    ("chest.lua", "ChestUnique", 9303, "unique"),
+    ("chest.lua", "ChestUnique", 9304, "unique"),
+)
 
-def capture(source):
+
+def capture(source, specs=SPECS):
     sys.path.insert(0, str(ROOT / "tools/content-schema/quest-authoring"))
     import lua_tables
 
     rows, sources = [], []
-    for filename, table, selector, attribute in SPECS:
+    for filename, table, selector, attribute in specs:
         path = "data-global/startup/tables/" + filename
         raw = (source / path).read_bytes()
         source_row = {"path": path, "sha256": hashlib.sha256(raw).hexdigest()}
@@ -217,7 +226,7 @@ def main():
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     if args.crystal_root:
-        data = (json.dumps(capture(args.crystal_root), indent=2) + "\n").encode()
+        data = (json.dumps(capture(args.crystal_root, SPECS + DEEPLING_SPECS), indent=2) + "\n").encode()
         if args.check:
             if (ROOT / CAPTURE).read_bytes() != data:
                 raise ValueError("startup source capture changed")
