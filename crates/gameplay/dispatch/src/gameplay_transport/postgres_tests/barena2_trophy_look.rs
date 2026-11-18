@@ -53,8 +53,8 @@ pub(super) async fn check_trophy_look(
         let key = ItemKey::Instance(item.as_slice().try_into()?);
         let mut views = SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
         let handle = views.map_view(&[key], |handles| {
-            handles.handle(&key).ok_or(crate::gameplay_transport::item_view::ItemViewError::LimitExceeded)
-        }).map_err(debug)?;
+            Ok(handles.handle(&key))
+        }).map_err(debug)?.ok_or("arena trophy handle")?;
         let looked = crate::gameplay_transport::item_look::look_item(
             owner, actor, session, Some(fence), &views, handle,
         ).await;

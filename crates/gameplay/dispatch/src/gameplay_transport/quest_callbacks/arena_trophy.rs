@@ -65,12 +65,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(policy) = native.item_policy_for_source_id(source) else {
             return Ok(());
         };
-        let Ok(item) =
-            crate::durability::spell_items_abi::QualifiedItemDefinition::from_native_policy(policy)
-        else {
-            return Ok(());
+        let definition = &policy.record().production_definition;
+        let item = crate::durability::item_mint::TypedDefinitionRef {
+            family: definition.family.clone(),
+            production_key: definition.production_key.clone(),
+            revision_ref: definition.revision_ref.clone(),
         };
-        if !item.ground_destination {
+        if oteryn_gameplay_items::item_ref_admission::generation_ground_item_facts(native, &item)
+            .is_err()
+        {
             return Ok(());
         }
         let Some(fence) = self.current_quest_fence(session).await.ok().flatten() else {
@@ -120,7 +123,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .collect::<String>()
                     ),
                     frame,
-                    item: item.definition,
+                    item,
                 },
             )
             .await?
