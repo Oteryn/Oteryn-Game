@@ -11,6 +11,17 @@ pub(super) const FIRE: u16 = 49362;
 const ROD: &str = "oteryn:item.tibia.i3483";
 const SUPPORT: &str = "oteryn:creature.wolf";
 const DEMON: &str = "oteryn:creature.overcharged_demon";
+// Crystal 201189f8 arbaziloth_lever.lua:6.
+const COOLDOWN_SECONDS: u32 = 20 * 60 * 60;
+const COOLDOWN_REFUSAL: &str = "Someone in your team must wait before facing Arbaziloth again.";
+
+#[test]
+fn two_player_cooldown_refuses_the_full_party_then_survives_the_hard_exit() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::ShieldCooldown)
+}
 
 #[test]
 fn two_players_break_four_shields_and_credit_the_enraged_death_and_exit() -> TestResult {
@@ -63,6 +74,10 @@ pub(super) fn lever(at: MovementLocalPosition, case: Case) -> TestResult<Callbac
         roster.push(json!({"position":tile(7,1),"creature":DEMON}));
     }
     lever["reversible"] = json!(true);
+    if case == Case::ShieldCooldown {
+        lever["effects"]["encounter_outcome"]["cooldown_seconds"] = json!(COOLDOWN_SECONDS);
+        lever["failure_message"] = json!(COOLDOWN_REFUSAL);
+    }
     lever["effects"]["encounter_outcome"]["shield_handoff"] = json!({
         "support":SUPPORT,"terminal":CAVE_RAT,"thresholds_percent":[80,60,40,20],
         "fire_min":tile(4,0),"fire_max":tile(5,0),"fire_appearance":FIRE,
@@ -117,10 +132,59 @@ pub(super) async fn exercise(
         assert_eq!(enter_exit(owner, *member, portal).await?, origin);
         assert_forge_feedback(owner, *member, FORGE_COLD);
     }
+    let cooldown_case = case == Case::ShieldCooldown;
+    let revision_before_entry = map.facts.object_revision(key);
+    if cooldown_case {
+        // A prior admission for the second character must stop the whole party.
+        sqlx::query(
+            "INSERT INTO game_character_boss_cooldowns(character_id,boss_key,available_at,admission,reset_epoch)
+             VALUES(encode($1,'hex')::uuid,$2,(extract(epoch FROM clock_timestamp())*1000)::bigint+72000000,
+                    game_character_uuid_v7(),$3::text::numeric)",
+        ).bind(id(61).as_slice()).bind(OUTCOME_GROUP).bind(owner.reset_epoch.to_string())
+            .execute(pool).await?;
+        let blocked = owner.use_quest_callback(player.actor, command(500), map, &WorldObjectTarget {
+            placement:placement.clone(), expected_revision:revision_before_entry,
+        }).await.ok_or("cooldown refusal")?;
+        assert_eq!(blocked.disposition, UseDisposition::Rejected);
+        assert_forge_feedback(owner, player, COOLDOWN_REFUSAL);
+        let prior = party_cooldowns(pool).await?;
+        assert_eq!(prior.len(), 1);
+        assert_eq!(prior[0].0, sqlx::types::Uuid::from_bytes(id(61)));
+        assert_eq!(map.facts.object_revision(key), revision_before_entry);
+        {
+            let runtime = owner.runtime.lock().await;
+            assert!(runtime.visible_entities().creatures.is_empty());
+            assert_eq!(runtime.read_actor_position(player.actor).map_err(debug)?.position(), at);
+            assert_eq!(runtime.read_actor_position(players[1].actor).map_err(debug)?.position(),
+                MovementLocalPosition { x: at.x + 1, y: at.y - 1, ..at });
+        }
+        sqlx::query("UPDATE game_character_boss_cooldowns SET available_at=0 WHERE boss_key=$1")
+            .bind(OUTCOME_GROUP).execute(pool).await?;
+    }
+    let before_ms = if cooldown_case {
+        Some(database_ms(pool).await?)
+    } else {
+        None
+    };
     let result = owner.use_quest_callback(player.actor, command(501), map, &WorldObjectTarget {
         placement:placement.clone(), expected_revision:map.facts.object_revision(key),
     }).await.ok_or("lever result")?;
     assert_eq!(result.disposition, UseDisposition::Committed);
+
+    let cooldowns = if let Some(before_ms) = before_ms {
+        let after_ms = database_ms(pool).await?;
+        let rows = party_cooldowns(pool).await?;
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[0].0, sqlx::types::Uuid::from_bytes(id(60)));
+        assert_eq!(rows[1].0, sqlx::types::Uuid::from_bytes(id(61)));
+        assert_eq!(rows[0].1, rows[1].1);
+        assert_eq!(rows[0].2, rows[1].2);
+        let delta = i64::from(COOLDOWN_SECONDS) * 1_000;
+        assert!((before_ms + delta..=after_ms + delta).contains(&rows[0].1));
+        Some(rows)
+    } else {
+        None
+    };
 
     let room = MovementLocalPosition { x: at.x + 3, ..at };
     let landing = MovementLocalPosition { x: at.x + 8, ..at };
@@ -257,6 +321,18 @@ pub(super) async fn exercise(
             .bind(id(character).as_slice()).bind(HARD_TRACK).fetch_one(pool).await?;
         assert_eq!(hard_wins, i64::from(hard));
     }
+    if let Some(expected) = cooldowns {
+        move_to(owner, players[0], at).await?;
+        move_to(owner, players[1], MovementLocalPosition { x: at.x + 1, y: at.y - 1, ..at }).await?;
+        let revision = map.facts.object_revision(key);
+        let blocked = owner.use_quest_callback(player.actor, command(551), map, &WorldObjectTarget {
+            placement:placement.clone(), expected_revision:revision,
+        }).await.ok_or("repeat cooldown refusal")?;
+        assert_eq!(blocked.disposition, UseDisposition::Rejected);
+        assert_forge_feedback(owner, player, COOLDOWN_REFUSAL);
+        assert_eq!(map.facts.object_revision(key), revision);
+        assert_eq!(party_cooldowns(pool).await?, expected);
+    }
     if let Some(adds) = adds {
         move_to(owner, players[0], at).await?;
         move_to(owner, players[1], MovementLocalPosition { x: at.x + 1, y: at.y - 1, ..at }).await?;
@@ -270,6 +346,18 @@ pub(super) async fn exercise(
             .filter(|(actor, _, _)| runtime.matches_live_creature_identity(*actor, DEMON.as_bytes())).count(), 2);
     }
     Ok(())
+}
+
+async fn party_cooldowns(pool: &sqlx::PgPool) -> TestResult<Vec<(sqlx::types::Uuid, i64, sqlx::types::Uuid)>> {
+    Ok(sqlx::query_as(
+        "SELECT character_id,available_at,admission FROM game_character_boss_cooldowns
+         WHERE boss_key=$1 ORDER BY character_id",
+    ).bind(OUTCOME_GROUP).fetch_all(pool).await?)
+}
+
+async fn database_ms(pool: &sqlx::PgPool) -> TestResult<i64> {
+    Ok(sqlx::query_scalar("SELECT (extract(epoch FROM clock_timestamp())*1000)::bigint")
+        .fetch_one(pool).await?)
 }
 
 fn assert_forge_feedback(
