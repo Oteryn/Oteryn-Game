@@ -3,7 +3,7 @@ use crate::{
     combat_input::PlayCommand,
     play::{Outbox, PlayView, play_channel},
 };
-use bevy::ui::InteractionDisabled;
+use bevy::ui::{InteractionDisabled, UiTransform};
 use oteryn_client_runtime::server_mechanic::{ServerMechanicCommand, ServerMechanicResponse};
 use oteryn_client_ui::team_finder::*;
 use oteryn_client_ui::team_finder_leader::{LeaderListing, TeamTarget};
@@ -29,6 +29,10 @@ fn fixture_with_layout(selected: bool, layout: bool) -> Result<Fixture> {
     let mut app = App::new();
     if layout {
         super::super::pointer_layout::install(&mut app, UVec2::new(1200, 900));
+        app.add_systems(
+            Startup,
+            configure_shell_camera.after(crate::bevy_shell::ui::setup),
+        );
         app.add_message::<bevy::window::Ime>()
             .add_message::<bevy::window::WindowEvent>()
             .add_message::<bevy::window::WindowFocused>()
@@ -45,6 +49,7 @@ fn fixture_with_layout(selected: bool, layout: bool) -> Result<Fixture> {
                 bevy::picking::InteractionPlugin,
                 bevy::ui_widgets::ButtonPlugin,
                 bevy::ui_widgets::TextInputPlugin,
+                oteryn_client_ui_bevy::GlobalUiPlugin,
             ));
     } else {
         app.add_plugins((
@@ -69,6 +74,24 @@ fn fixture_with_layout(selected: bool, layout: bool) -> Result<Fixture> {
     app.update();
     Ok((app, rx, outbox))
 }
+fn configure_shell_camera(
+    mut commands: Commands,
+    mut cameras: Query<(Entity, &mut Camera), With<IsDefaultUiCamera>>,
+    window: Single<&Window, With<bevy::window::PrimaryWindow>>,
+) {
+    for (entity, mut camera) in &mut cameras {
+        if camera.computed.target_info.is_some() {
+            // The fixture camera is superseded by the production shell camera.
+            commands.entity(entity).despawn();
+        } else {
+            camera.computed.target_info = Some(bevy::camera::RenderTargetInfo {
+                physical_size: window.physical_size(),
+                scale_factor: window.scale_factor(),
+            });
+        }
+    }
+}
+
 fn test_font(mut skins: ResMut<Skins>, mut fonts: ResMut<Assets<Font>>) {
     let font = Font::from_bytes(
         include_bytes!(concat!(
@@ -80,11 +103,12 @@ fn test_font(mut skins: ResMut<Skins>, mut fonts: ResMut<Assets<Font>>) {
     skins.font = fonts.add(font);
 }
 fn click(app: &mut App, kind: Kind) -> Result {
+    let key = app.world().resource::<State>().key;
     let entity = app
         .world_mut()
         .query::<(Entity, &Control)>()
         .iter(app.world())
-        .find(|(_, c)| c.kind == kind)
+        .find(|(_, c)| c.key == key && c.kind == kind)
         .map(|(e, _)| e)
         .ok_or("team control absent")?;
     app.world_mut().trigger(Activate { entity });
@@ -893,12 +917,12 @@ fn regression_close_survives_browse_reply_during_ime_composition() -> Result {
         .iter(app.world())
         .find_map(|(entity, control)| (control.kind == Kind::Close).then_some(entity))
         .ok_or("close button")?;
-    let location = press_close(&mut app, close)?;
+    let location = press_button(&mut app, close)?;
     assert_eq!(app.world().resource::<InputFocus>().get(), Some(close));
     for _ in 0..4 {
         app.update();
     }
-    release_close(&mut app, location);
+    release_button(&mut app, location);
     assert!(app.world().resource::<State>().root.is_none());
     assert_eq!(app.world().resource::<InputFocus>().get(), None);
     Ok(())
@@ -918,7 +942,7 @@ fn regression_selection_has_pickable_controls_in_the_same_frame() -> Result {
     click(&mut app, Kind::Select(1))?;
     app.update();
     assert!(shown(&mut app, "> Second"));
-    assert_ne!(app.world().resource::<State>().root, previous_root);
+    assert_eq!(app.world().resource::<State>().root, previous_root);
     let (close, node, visibility) = app
         .world_mut()
         .query::<(Entity, &Control, &ComputedNode, &InheritedVisibility)>()
@@ -932,15 +956,15 @@ fn regression_selection_has_pickable_controls_in_the_same_frame() -> Result {
         "close size: {:?}",
         node.size()
     );
-    assert!(visibility.get(), "replacement close button is hidden");
+    assert!(visibility.get(), "retained close button is hidden");
 
-    let location = press_close(&mut app, close)?;
-    release_close(&mut app, location);
+    let location = press_button(&mut app, close)?;
+    release_button(&mut app, location);
     assert!(app.world().resource::<State>().root.is_none());
     Ok(())
 }
 
-fn press_close(app: &mut App, close: Entity) -> Result<bevy::picking::pointer::Location> {
+fn press_button(app: &mut App, button: Entity) -> Result<bevy::picking::pointer::Location> {
     use super::super::pointer_layout;
     use bevy::{
         camera::RenderTarget,
@@ -956,8 +980,10 @@ fn press_close(app: &mut App, close: Entity) -> Result<bevy::picking::pointer::L
         target: RenderTarget::default()
             .normalize(Some(primary))
             .ok_or("primary target")?,
-        position: pointer_layout::center(app, close)?,
+        position: pointer_layout::center(app, button)?,
     };
+    let computed = app.world().get::<ComputedNode>(button).copied();
+    let visible = app.world().get::<InheritedVisibility>(button).copied();
     for action in [
         PointerAction::Move { delta: Vec2::ZERO },
         PointerAction::Press(PointerButton::Primary),
@@ -969,11 +995,20 @@ fn press_close(app: &mut App, close: Entity) -> Result<bevy::picking::pointer::L
         ));
     }
     app.update();
-    assert!(app.world().get::<bevy::ui::Pressed>(close).is_some());
+    assert!(
+        app.world().get::<bevy::ui::Pressed>(button).is_some(),
+        "button {button} at {:?}, size {:?}, visibility {:?}, hover {:?}",
+        location.position,
+        computed.map(|node| node.size()),
+        visible,
+        app.world()
+            .resource::<bevy::picking::hover::HoverMap>()
+            .get(&PointerId::Mouse)
+    );
     Ok(location)
 }
 
-fn release_close(app: &mut App, location: bevy::picking::pointer::Location) {
+fn release_button(app: &mut App, location: bevy::picking::pointer::Location) {
     use bevy::picking::pointer::{PointerAction, PointerButton, PointerId, PointerInput};
 
     app.world_mut().write_message(PointerInput::new(
@@ -1043,11 +1078,11 @@ fn regression_pending_browse_projects_during_mouse_press() -> Result {
     transform.translation = bevy::ui::Val2::px(160., 20.);
     app.update();
     let close = close_button(&mut app)?;
-    let location = press_close(&mut app, close)?;
+    let location = press_button(&mut app, close)?;
     complete_browse(&outbox)?;
     app.update();
     assert_browse_projected(&mut app);
-    release_close(&mut app, location);
+    release_button(&mut app, location);
     assert!(app.world().resource::<State>().root.is_none());
     Ok(())
 }
@@ -1104,6 +1139,78 @@ fn regression_pending_browse_projects_after_touch_cancel() -> Result {
     complete_browse(&outbox)?;
     app.update();
     assert_browse_projected(&mut app);
+    assert!(app.world().get::<bevy::ui::Pressed>(close).is_none());
+    let images = app
+        .world()
+        .get::<oteryn_client_ui_bevy::ButtonImages>(close)
+        .ok_or("button images")?;
+    assert_eq!(
+        app.world()
+            .get::<ImageNode>(close)
+            .ok_or("button image")?
+            .image,
+        images.up
+    );
+    Ok(())
+}
+
+#[test]
+fn regression_tab_switch_keeps_keyboard_edit() -> Result {
+    use bevy::input::{
+        ButtonState,
+        keyboard::{Key, KeyboardInput},
+    };
+    let (mut app, mut rx, outbox) = fixture_with_layout(true, true)?;
+    let manage = app
+        .world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find_map(|(entity, name)| (name.as_str() == "Team Finder: Manage Team").then_some(entity))
+        .ok_or("manage tab")?;
+    let location = press_button(&mut app, manage)?;
+    let window = primary_window(&mut app)?;
+    let name = app
+        .world_mut()
+        .query::<(Entity, &Field)>()
+        .iter(app.world())
+        .find_map(|(entity, field)| (*field == Field::Name).then_some(entity))
+        .ok_or("name editor")?;
+    app.world_mut().write_message(KeyboardInput {
+        key_code: KeyCode::Tab,
+        logical_key: Key::Tab,
+        state: ButtonState::Pressed,
+        text: None,
+        repeat: false,
+        window,
+    });
+    app.update();
+    assert_eq!(app.world().resource::<InputFocus>().get(), Some(name));
+    app.world_mut().write_message(KeyboardInput {
+        key_code: KeyCode::KeyA,
+        logical_key: Key::Character("a".into()),
+        state: ButtonState::Pressed,
+        text: Some("a".into()),
+        repeat: false,
+        window,
+    });
+    release_button(&mut app, location);
+    command(&mut rx)?;
+    reply(
+        &outbox,
+        encode_result(&applicants_page(None)).map_err(|error| format!("{error:?}"))?,
+    );
+    app.update();
+    click(&mut app, Kind::Browse(false))?;
+    command(&mut rx)?;
+    complete_browse(&outbox)?;
+    app.update();
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(name)
+            .ok_or("retained name editor")?
+            .value(),
+        "a"
+    );
     Ok(())
 }
 
@@ -1165,7 +1272,7 @@ fn regression_pending_browse_projects_after_window_focus_loss() -> Result {
     };
     let (mut app, _, outbox) = pending_browse()?;
     let close = close_button(&mut app)?;
-    press_close(&mut app, close)?;
+    press_button(&mut app, close)?;
     let window = primary_window(&mut app)?;
     app.world_mut()
         .get_mut::<Window>(window)

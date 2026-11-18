@@ -13,9 +13,9 @@ use super::{
 use crate::play::feature_0232_team_finder_members::input::{
     TeamControl as Kind, listing_from_fields,
 };
-use bevy::platform::collections::HashMap;
 use bevy::{
-    input_focus::InputFocus, prelude::*, text::EditableText, ui::UiTransform, ui_widgets::Activate,
+    input_focus::InputFocus, picking::events::PointerState, prelude::*, text::EditableText,
+    ui::InteractionDisabled, ui_widgets::Activate,
 };
 use oteryn_client_ui::{
     localization::{Language, translate},
@@ -32,7 +32,7 @@ struct Control {
     key: Key,
     kind: Kind,
 }
-#[derive(Component, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Component, Clone, Copy, PartialEq, Eq)]
 enum Field {
     Name,
     Level,
@@ -44,24 +44,17 @@ type Snapshot = (u64, Panel, Leader);
 #[derive(Resource, Default)]
 struct State {
     snapshot: Option<Snapshot>,
-    search: [String; 2],
     submission: Option<Submission>,
     pending_editor_action: Option<DeferredAction>,
     root: Option<Entity>,
+    widgets: Option<widgets::Widgets>,
     key: Key,
     /// The listing editor values used to detect changes to the local draft.
     shown: [String; widgets::LISTING_FIELDS],
     listing_sync: [bool; widgets::LISTING_FIELDS],
-    /// The leader's unpublished listing edits, kept across rebuilds until a reply confirms them.
+    /// The leader's unpublished listing edits, kept across tabs until a reply confirms them.
     draft: Option<[String; widgets::LISTING_FIELDS]>,
 }
-#[derive(Default)]
-struct RetainedWidgets {
-    dialog_transform: UiTransform,
-    close: Option<(Entity, Entity)>,
-    fields: HashMap<Field, Entity>,
-}
-
 struct DeferredAction {
     control: Control,
     snapshot: Snapshot,
@@ -75,13 +68,13 @@ struct Submission {
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
-        // Rebuild before PostUpdate propagates visibility and lays out the replacement.
-        .add_systems(Update, (keyboard, project).chain())
+        .add_systems(Update, (keyboard, project, widgets::captions).chain())
         // Wait for text edits and the modal guard's end-of-frame snapshot.
         .add_systems(Last, finish_edit);
 }
-// Refresh the dialog while keeping the controls that own ongoing input alive.
-#[allow(clippy::too_many_arguments)]
+
+// The dialog and its editors live for the session's entire open window.
+#[allow(clippy::too_many_arguments)] // Projection reads the session, focus, and live widget state.
 fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
@@ -89,9 +82,9 @@ fn project(
     mut state: ResMut<State>,
     mut focus: ResMut<InputFocus>,
     parents: Query<&ChildOf>,
-    dialogs: Query<(&ChildOf, &UiTransform), With<crate::bevy_shell::window_drag::DraggableDialog>>,
-    editors: Query<(Entity, &Field, &EditableText)>,
-    controls: Query<(Entity, &Control, &Children)>,
+    tabs: Query<&widgets::Tab>,
+    mut editors: Query<(Entity, &Field, &mut EditableText)>,
+    pointers: Option<Res<PointerState>>,
 ) {
     let panel = owner
         .play
@@ -108,10 +101,12 @@ fn project(
             .as_ref()
             .is_some_and(|(_, _, leader)| !leader.pending);
     let listing_settled = state.listing_sync.contains(&true)
-        && editors.iter().any(|(_, field, text)| {
-            matches!(field, Field::Listing(index) if state.listing_sync[*index] && !editing(text))
+        && editors.iter().any(|(entity, field, text)| {
+            matches!(field, Field::Listing(index) if state.listing_sync[*index]
+                && focus.get() != Some(entity) && !editing(text))
         });
-    if state.snapshot == snapshot && !submission_finished && !listing_settled {
+    let changed = state.snapshot != snapshot;
+    if !changed && !submission_finished && !listing_settled {
         return;
     }
     let same_view =
@@ -129,28 +124,30 @@ fn project(
     state.key = key;
     if !same_view {
         state.pending_editor_action = None;
+        if let Some(root) = state.root
+            && let Some(entity) = focus.get()
+            && (!same_session && entity == root
+                || parents
+                    .iter_ancestors(entity)
+                    .any(|parent| !same_session && parent == root || tabs.contains(parent)))
+        {
+            focus.clear();
+        }
     } else if let Some(action) = &mut state.pending_editor_action {
-        // Keep the original mailbox binding even though this widget revision was replaced.
+        // Keep the original mailbox binding when the control's revision advances.
         action.control.key = key;
     }
-    if state.root.is_some() {
+
+    if same_session {
         let mut typed = state.shown.clone();
-        let mut editing = false;
         for (_, field, text) in &editors {
-            match field {
-                Field::Name => state.search[0] = text.value().to_string(),
-                Field::Level => state.search[1] = text.value().to_string(),
-                Field::Listing(index) => {
-                    typed[*index] = text.value().to_string();
-                    editing = true;
-                }
+            if let Field::Listing(index) = *field {
+                typed[index] = text.value().to_string();
             }
         }
-        if editing && typed != state.shown {
+        if typed != state.shown {
             state.draft = Some(typed);
         }
-    }
-    if same_session {
         if let Some((_, _, after)) = &snapshot
             && !after.pending
             && let Some(submission) = state.submission.take()
@@ -164,94 +161,66 @@ fn project(
             state.draft = None;
         }
     } else {
-        state.search = snapshot
-            .as_ref()
-            .map(|(_, panel, _)| {
-                [
-                    panel.filter.name.clone(),
-                    panel
-                        .filter
-                        .level
-                        .map(|level| level.to_string())
-                        .unwrap_or_default(),
-                ]
-            })
-            .unwrap_or_default();
+        if let Some(root) = state.root.take() {
+            commands.entity(root).despawn();
+        }
+        state.widgets = None;
         state.draft = None;
         state.submission = None;
     }
-    let mut retained = RetainedWidgets::default();
-    if same_session {
-        if let Some((_, transform)) = dialogs
-            .iter()
-            .find(|(parent, _)| Some(parent.parent()) == state.root)
-        {
-            retained.dialog_transform = *transform;
-        }
-        retained.close = controls.iter().find_map(|(entity, control, children)| {
-            let caption = *children.first()?;
-            (control.kind == Kind::Close).then_some((entity, caption))
-        });
-    }
-    let previous_root = state.root.take();
+
     state.listing_sync.fill(false);
-    if let Some((_, panel, leader)) = &snapshot {
-        let listing = state
+    if let Some(snapshot @ (_, panel, leader)) = &snapshot {
+        let mut listing = state
             .draft
             .clone()
             .unwrap_or_else(|| widgets::listing_values(leader.confirmed));
-        state.shown.clone_from(&listing);
-        if same_view {
-            for (entity, field, text) in &editors {
-                if editing(text) {
-                    retained.fields.insert(*field, entity);
-                    if let Field::Listing(index) = *field {
-                        // Reconcile this field with the confirmed listing after any local edit settles.
-                        state.shown[index] = text.value().to_string();
-                        state.listing_sync[index] = state.shown[index] != listing[index];
-                    }
-                } else if focus.get() == Some(entity)
-                    && match *field {
-                        Field::Listing(index) => text.value().to_string() == listing[index],
-                        Field::Name | Field::Level => true,
-                    }
-                {
-                    retained.fields.insert(*field, entity);
+        if same_session {
+            for (entity, field, mut text) in &mut editors {
+                let Field::Listing(index) = *field else {
+                    continue;
+                };
+                if text.value() == listing[index].as_str() {
+                    continue;
+                }
+                if focus.get() == Some(entity) || editing(&text) {
+                    listing[index] = text.value().to_string();
+                    state.listing_sync[index] = true;
+                } else {
+                    text.editor_mut().set_text(&listing[index]);
+                    text.queue_edit(bevy::text::TextEdit::TextEnd(false));
                 }
             }
+        } else {
+            let level = panel
+                .filter
+                .level
+                .map(|level| level.to_string())
+                .unwrap_or_default();
+            let (root, widgets) = widgets::build(
+                &mut commands,
+                &skins,
+                [&panel.filter.name, &level],
+                &listing,
+            );
+            state.root = Some(root);
+            state.widgets = Some(widgets);
         }
-        state.root = Some(widgets::build(
-            &mut commands,
-            &skins,
-            state.key,
-            panel,
-            leader,
-            &listing,
-            &state.search,
-            &retained,
-        ));
-    }
-    if let Some(root) = previous_root {
-        let focused = focus.get();
-        let keeping_focus = focused.is_some_and(|entity| {
-            retained.close.is_some_and(|(close, _)| close == entity)
-                || retained.fields.values().any(|&editor| editor == entity)
-        });
-        if !keeping_focus {
-            let mut ancestor = focused;
-            while let Some(entity) = ancestor {
-                if entity == root {
-                    focus.clear();
-                    break;
-                }
-                ancestor = parents.get(entity).ok().map(ChildOf::parent);
-            }
+        state.shown = listing;
+        if let Some(widgets) = &mut state.widgets {
+            widgets.project(
+                &mut commands,
+                &skins,
+                key,
+                snapshot,
+                changed,
+                pointers.as_deref(),
+            );
         }
-        // The replacement has already reparented the retained widgets.
-        commands.entity(root).despawn();
     }
     state.snapshot = snapshot;
 }
+
 fn perform(
     owner: &HostOwner,
     state: &State,
@@ -279,7 +248,7 @@ fn perform(
 }
 fn activate(
     event: On<Activate>,
-    controls: Query<&Control>,
+    controls: Query<(&Control, Has<InteractionDisabled>)>,
     fields: Query<(&Field, &EditableText)>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
@@ -288,7 +257,7 @@ fn activate(
     if !guard.allows(event.entity) {
         return;
     }
-    if let Ok(control) = controls.get(event.entity) {
+    if let Ok((control, false)) = controls.get(event.entity) {
         state.pending_editor_action = None;
         if control.key != state.key || owner.modal_active() {
             return;
