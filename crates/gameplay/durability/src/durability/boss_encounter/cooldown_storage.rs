@@ -1,6 +1,6 @@
-//! Shared Character boss cooldown storage, used only inside a fully fenced
-//! activity admission transaction. Extracted from the existing preparation owner;
-//! Character-order locks, full-group preflight and exact admission replay remain.
+//! Shared Character boss cooldown storage for activity assignments and source
+//! levers. Fenced admission transactions lock Characters in order and preflight
+//! the entire group before writing cooldowns.
 use super::super::DurabilityError;
 use crate::content::ProductionKey;
 use crate::domain::CharacterId;
