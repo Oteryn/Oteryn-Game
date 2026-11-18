@@ -13,6 +13,7 @@ individual process peak. Concurrent processes also contribute to cgroup usage.
 | Dispatch lib test, fresh resubmission on the same source | 2 | 16,590,240 | 1428.314 | rustc SIGKILL before link |
 | Dispatch lib test, dependencies cached | 1 | 16,559,372 | 392.963 | rustc SIGKILL before link |
 | Dispatch lib test, 32 codegen units, dependencies cached | 1 | 16,551,756 | 622.273 | rustc SIGKILL before link |
+| Dispatch MIR-only replay, incremental retained | 1 | 16,660,920 | 688.945 | emitted MIR, then OOM-killed |
 | Dispatch lib test, incremental off | 2 | 16,581,872 | 306.471 | rustc SIGKILL before link |
 | Dispatch lib test, debug = 0 | 2 | 16,567,508 | 398.737 | rustc SIGKILL before link |
 | Dispatch lib test, jemalloc preload | 2 | 16,529,876 | 711.561 | rustc SIGKILL before link |
@@ -26,7 +27,8 @@ bytes. Its link used 239 rlibs (1,953,996,922 bytes) and 263 objects
 (1,163,839,310 bytes). The baseline never produced a test executable or
 invoked a linker. A stable `rustc --test --emit=mir` replay of the same
 verbose command recovered 4,339 unique registered test names and a
-4,339-entry libtest descriptor array. Of those registrations, 2,238
+4,339-entry libtest descriptor array. The output was emitted before
+rustc was OOM-killed, without LLVM object generation. Of those registrations, 2,238
 belong to the generated PG mounts and 2,101 to all other mounts and
 modules. The retained offline-death retry is registered exactly once.
 The MIR inventory gives an exact baseline for comparing names after a
