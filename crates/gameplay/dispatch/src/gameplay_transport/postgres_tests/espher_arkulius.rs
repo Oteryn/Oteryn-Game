@@ -60,24 +60,7 @@ async fn exercise(h: &Harness) -> TestResult {
         2,
     )?;
     let mut admitted = deps.admitted;
-    use crate::gameplay_transport::spell_premium_coordinator::{
-        SpellPremiumCoordinator, purchase_fixture,
-    };
-    let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
-    h.root
-        .latch_premium_activation(
-            &activation.activation_id,
-            activation.switch_over_us,
-            activation.switch_over_us + 60_000_000,
-        )
-        .await
-        .map_err(debug)?;
-    let premium = SpellPremiumCoordinator::new(
-        consumer,
-        Some(clock),
-        Some(activation),
-        Some(h.root.clone()),
-    );
+    let premium = premium_fixture(h).await?;
     let mut owner = deps.owner(h, &authority);
     owner.premium_coordinator = Some(&premium);
     owner.active_generation = Some(active);
@@ -97,78 +80,7 @@ async fn exercise(h: &Harness) -> TestResult {
         },
     )
     .await?;
-    let level = 80;
-    use crate::durability::character_build::{
-        BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildOccurrence, DurableBuildState,
-        convert_vocation,
-    };
-    use crate::durability::character_progression::{
-        ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
-    };
-    owner.admit_progression_session(&mut admitted).await;
-    let progression = owner
-        .progression_binding(admitted.game_session_id)
-        .ok_or("native progression")?;
-    let experience = progression
-        .policy
-        .thresholds
-        .iter()
-        .find(|entry| entry.level == level)
-        .ok_or("level threshold")?
-        .minimum_experience
-        .get();
-    let formula = active
-        .native_gameplay()
-        .and_then(|native| native.training_formula())
-        .ok_or("native training formula")?;
-    let before = DurableBuildState::default();
-    let after = convert_vocation(formula, &before, "druid").map_err(debug)?;
-    let fence =
-        super::death_ml_loss_composed::current_fence(&owner, admitted.game_session_id).await?;
-    let build = h
-        .root
-        .commit_character_build(
-            &authority,
-            &h.node,
-            fence,
-            BuildChangeRequest {
-                occurrence: BuildOccurrence::from_bytes(id(90)).map_err(debug)?,
-                cause: BuildCause::VocationChoice,
-                before,
-                after,
-                pruned_stance: None,
-            },
-            formula,
-        )
-        .await
-        .map_err(debug)?;
-    assert!(
-        matches!(build, BuildCommitOutcome::Committed(_)),
-        "{build:?}"
-    );
-    let fence =
-        super::death_ml_loss_composed::current_fence(&owner, admitted.game_session_id).await?;
-    let award = h
-        .root
-        .commit_character_experience(
-            &authority,
-            &h.node,
-            fence,
-            ExperienceAwardRequest {
-                occurrence: ExperienceRewardOccurrence::from_bytes(id(91)).map_err(debug)?,
-                amount: oteryn_simulation_determinism::ExactI64::new(i64::try_from(experience)?),
-                context: progression.context.clone(),
-                policy_revision: progression.policy_revision.clone(),
-                reward_revision: progression.reward_revision.clone(),
-                policy: progression.policy.clone(),
-            },
-        )
-        .await
-        .map_err(debug)?;
-    assert!(
-        matches!(award, ExperienceCommitOutcome::Committed(_)),
-        "{award:?}"
-    );
+    admit_level_80_druid(&owner, &mut admitted, h, &authority).await?;
     owner.quest_catalogue = Some(std::sync::Arc::new(
         oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
             .map_err(debug)?
@@ -190,7 +102,7 @@ async fn exercise(h: &Harness) -> TestResult {
                 deps.actor,
                 admitted.game_session_id,
                 crate::spell::cast::CharacterCastFacts {
-                    level,
+                    level: 80,
                     vocation: crate::spell::Vocation::Druid,
                     ..crate::gameplay_transport::actor_spell::tests::FACTS
                 },
@@ -235,6 +147,111 @@ async fn exercise(h: &Harness) -> TestResult {
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(stage, 1);
+    Ok(())
+}
+
+pub(super) async fn premium_fixture(
+    h: &Harness,
+) -> TestResult<crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator> {
+    use crate::gameplay_transport::spell_premium_coordinator::{
+        SpellPremiumCoordinator, purchase_fixture,
+    };
+    let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
+    h.root
+        .latch_premium_activation(
+            &activation.activation_id,
+            activation.switch_over_us,
+            activation.switch_over_us + 60_000_000,
+        )
+        .await
+        .map_err(debug)?;
+    Ok(SpellPremiumCoordinator::new(
+        consumer,
+        Some(clock),
+        Some(activation),
+        Some(h.root.clone()),
+    ))
+}
+
+pub(super) async fn admit_level_80_druid(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult {
+    let level = 80;
+    use crate::durability::character_build::{
+        BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildOccurrence, DurableBuildState,
+        convert_vocation,
+    };
+    use crate::durability::character_progression::{
+        ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
+    };
+    owner.admit_progression_session(admitted).await;
+    let progression = owner
+        .progression_binding(admitted.game_session_id)
+        .ok_or("native progression")?;
+    let experience = progression
+        .policy
+        .thresholds
+        .iter()
+        .find(|entry| entry.level == level)
+        .ok_or("level threshold")?
+        .minimum_experience
+        .get();
+    let formula = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .and_then(|native| native.training_formula())
+        .ok_or("native training formula")?;
+    let before = DurableBuildState::default();
+    let after = convert_vocation(formula, &before, "druid").map_err(debug)?;
+    let fence =
+        super::death_ml_loss_composed::current_fence(owner, admitted.game_session_id).await?;
+    let build = h
+        .root
+        .commit_character_build(
+            authority,
+            &h.node,
+            fence,
+            BuildChangeRequest {
+                occurrence: BuildOccurrence::from_bytes(id(90)).map_err(debug)?,
+                cause: BuildCause::VocationChoice,
+                before,
+                after,
+                pruned_stance: None,
+            },
+            formula,
+        )
+        .await
+        .map_err(debug)?;
+    assert!(
+        matches!(build, BuildCommitOutcome::Committed(_)),
+        "{build:?}"
+    );
+    let fence =
+        super::death_ml_loss_composed::current_fence(owner, admitted.game_session_id).await?;
+    let award = h
+        .root
+        .commit_character_experience(
+            authority,
+            &h.node,
+            fence,
+            ExperienceAwardRequest {
+                occurrence: ExperienceRewardOccurrence::from_bytes(id(91)).map_err(debug)?,
+                amount: oteryn_simulation_determinism::ExactI64::new(i64::try_from(experience)?),
+                context: progression.context.clone(),
+                policy_revision: progression.policy_revision.clone(),
+                reward_revision: progression.reward_revision.clone(),
+                policy: progression.policy.clone(),
+            },
+        )
+        .await
+        .map_err(debug)?;
+    assert!(
+        matches!(award, ExperienceCommitOutcome::Committed(_)),
+        "{award:?}"
+    );
     Ok(())
 }
 

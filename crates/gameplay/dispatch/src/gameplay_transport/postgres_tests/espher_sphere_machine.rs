@@ -118,7 +118,11 @@ async fn exercise(h: &Harness) -> TestResult {
     let mut admitted = deps.admitted;
     let actor = deps.actor;
     let session = admitted.game_session_id;
+    let premium = super::espher_arkulius::premium_fixture(h).await?;
     let mut owner = deps.owner(h, &authority);
+    owner.premium_coordinator = Some(&premium);
+    owner.admit_premium(id(40), session);
+    assert!(owner.session_premium_gate(session).await.premium_current());
     owner.active_generation = Some(active);
     owner.rooms = crate::gameplay_transport::SeamRooms::new(Some(&room), Some(&room));
     owner.movement_cells = (&cells).into();
@@ -170,6 +174,7 @@ async fn exercise(h: &Harness) -> TestResult {
                 actor,
                 session,
                 crate::spell::cast::CharacterCastFacts {
+                    level: 80,
                     vocation: crate::spell::Vocation::Druid,
                     ..crate::gameplay_transport::actor_spell::tests::FACTS
                 },
@@ -178,7 +183,7 @@ async fn exercise(h: &Harness) -> TestResult {
             )
             .ok_or("druid projection")?;
     }
-    owner.admit_progression_session(&mut admitted).await;
+    super::espher_arkulius::admit_level_80_druid(&owner, &mut admitted, h, &authority).await?;
     let left = machine_key(&owner, LEFT, 842)?;
     let right = machine_key(&owner, RIGHT, 843)?;
     assert_eq!(
@@ -207,7 +212,7 @@ async fn exercise(h: &Harness) -> TestResult {
     let fence = super::death_ml_loss_composed::current_fence(&owner, session).await?;
     let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
     let seeded = slot
-        .commit_quest_transition(
+        .commit_quest_transition_with_admission(
             owner.root,
             &authority,
             owner.holder,
@@ -220,6 +225,7 @@ async fn exercise(h: &Harness) -> TestResult {
                 )),
             },
             catalogue,
+            &owner.premium_coordinator,
         )
         .await
         .map_err(debug)?;
