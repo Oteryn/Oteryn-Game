@@ -2,8 +2,11 @@
 use super::Callback;
 
 impl Callback {
-    /// The native amphora ring is a fenced physical STEP reward, never a command grant.
+    /// Map step rewards are bound to a physical source and a fenced movement occurrence.
     pub fn has_fenced_step_reward(&self) -> bool {
+        if self.trigger == super::Trigger::StepIn && super::per_use_reward::admitted(self) {
+            return true;
+        }
         self.trigger == super::Trigger::StepIn
             && self.actor_kind == super::ActorKind::Player
             && self.requires_world_admission
