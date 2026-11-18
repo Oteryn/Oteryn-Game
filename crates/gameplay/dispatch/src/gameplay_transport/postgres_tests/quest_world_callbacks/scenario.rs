@@ -79,8 +79,10 @@ fn scenario_case(
     let last_creep = name == "qengine-rewards-m23-last-creep";
     let wrath_prison = name == super::super::wrathm1_prison_release::NAME;
     let wrath_relay = name == super::super::wrathm1_relay::NAME;
+    let wrath_trapdoors = name == super::super::wrathm1_trapdoors::NAME;
     let wrath_zumtah = name == super::super::wrathm1_zumtah::NAME;
-    let native_crop = wrath_zumtah || wrath_relay
+    let native_crop = wrath_trapdoors
+        || wrath_zumtah || wrath_relay
         || wrath_prison
         || m03_use
         || qd_world
@@ -120,7 +122,7 @@ fn scenario_case(
         || native_upper;
     let start = if wrath_zumtah {
         super::super::wrathm1_zumtah::START
-    } else if wrath_prison {
+    } else if wrath_prison || wrath_trapdoors {
         super::super::wrathm1_prison_release::START
     } else if wrath_relay {
         super::super::wrathm1_relay::SOURCE
@@ -1277,7 +1279,11 @@ fn scenario_case(
         } else {
             world
         };
-        let world = if wrath_zumtah {
+        let world = if wrath_trapdoors {
+            super::super::wrathm1_trapdoors::world(
+                generation.native_gameplay().ok_or("native trapdoor geometry")?,
+            )?
+        } else if wrath_zumtah {
             super::super::wrathm1_zumtah::world(generation.native_gameplay().ok_or("native Zumtah geometry")?)?
         } else if wrath_prison {
             super::super::wrathm1_prison_release::world(

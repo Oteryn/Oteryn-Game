@@ -256,6 +256,7 @@ pub mod world_required_capabilities;
 mod world_required_field_guard;
 mod world_respawns;
 pub mod world_spatial;
+mod wrath_trapdoors;
 // End sorted module declarations.
 
 use crate::map::boot::BundleCollisionIndexExt;

@@ -6,6 +6,13 @@ use std::pin::pin;
 use std::task::Poll;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) fn drain_world_movement_timers(&self, now: u64) {
+        if let Some(map) = self.bundle_map() {
+            map.facts.expire_movement_items(now);
+            super::wrath_trapdoors::tick(map, now);
+        }
+    }
+
     pub(super) async fn run_source_owner_cycles(
         &self,
         shutdown: &oteryn_foundation::CancellationToken,
@@ -101,9 +108,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if runtime.owner_fence().is_err() {
                     return;
                 }
-                if let Some(map) = self.bundle_map() {
-                    map.facts.expire_movement_items(self.owner_now().get());
-                }
+                self.drain_world_movement_timers(self.owner_now().get());
                 if let Ok(mut gate) = self.states.world_gate.lock() {
                     gate.begin_turn();
                 }

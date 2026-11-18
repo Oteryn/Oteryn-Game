@@ -159,6 +159,7 @@ pub(super) struct CallbackStates {
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
     timed_passage_switches: BTreeMap<u64, u64>,
+    wrath_trapdoor_cycle: u64,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
     batch_blockers: BTreeSet<TilePos>,
@@ -855,6 +856,19 @@ impl BundleFacts {
     }
 
     /// The current Channel owner drains this even while no player is walking.
+    /// Advances Crystal's ten-second trapdoor clock once per shared Channel map.
+    pub fn advance_wrath_trapdoor_cycle(&self, now: u64) -> u64 {
+        let Ok(mut state) = self.callbacks.lock() else {
+            return 0;
+        };
+        let cycle = now / 10_000_000;
+        let elapsed = cycle.saturating_sub(state.wrath_trapdoor_cycle);
+        if elapsed != 0 {
+            Arc::make_mut(&mut state).wrath_trapdoor_cycle = cycle;
+        }
+        elapsed
+    }
+
     /// An intervening transform invalidates the old timer's exact object revision.
     pub fn expire_movement_items(&self, now: u64) -> usize {
         let Ok(mut states) = self.callbacks.lock() else {
