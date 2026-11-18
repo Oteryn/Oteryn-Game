@@ -261,7 +261,7 @@ pub(in super::super) fn exercise(
                 QuestTransition,
             };
             let storage = callback.storage.first().ok_or("guard storage")?;
-            let seed = "oteryn:quest-transition/fixture/stag-stage";
+            let seed = "oteryn:quest-transition/fixture/passage-stage";
             let catalogue = std::sync::Arc::new(
                 QuestStateCatalogue::new(
                     "content-1",
@@ -382,29 +382,49 @@ pub(in super::super) fn exercise(
                 stage
             );
         }
-        let receipt_snapshot = "SELECT to_jsonb(receipt) FROM game_character_quest_receipts receipt ORDER BY 1";
-        let receipts_before: Vec<serde_json::Value> =
-            sqlx::query_scalar(receipt_snapshot).fetch_all(&h.pool).await?;
-        let allowed = callback
-            .storage
-            .first()
-            .is_none_or(|storage| stage.is_some_and(|stage| stage >= storage.minimum));
-        let reply = wire(
-            &owner,
-            &mut admitted,
-            1,
-            2,
-            oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?,
-        )
-        .await?;
-        assert_eq!(
-            oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
-            if allowed {
-                UseDisposition::Committed
-            } else {
-                UseDisposition::Rejected
-            }
-        );
+        let receipt_snapshot =
+            "SELECT to_jsonb(receipt) FROM game_character_quest_receipts receipt ORDER BY 1";
+        let receipts_before: Vec<serde_json::Value> = sqlx::query_scalar(receipt_snapshot)
+            .fetch_all(&h.pool)
+            .await?;
+        let allowed = callback.storage.first().is_none_or(|storage| {
+            stage.is_some_and(|stage| (storage.minimum..=storage.maximum).contains(&stage))
+        });
+        if callback.trigger == oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn {
+            use oteryn_protocol_oteryn::world_spatial::{
+                COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition,
+                decode_step_result, encode_step_intent,
+            };
+            let reply = wire(
+                &owner,
+                &mut admitted,
+                1,
+                COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+                encode_step_intent(StepDirection::East),
+            )
+            .await?;
+            assert_eq!(
+                decode_step_result(&reply).map_err(debug)?,
+                StepDisposition::Moved
+            );
+        } else {
+            let reply = wire(
+                &owner,
+                &mut admitted,
+                1,
+                2,
+                oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?,
+            )
+            .await?;
+            assert_eq!(
+                oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
+                if allowed {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::Rejected
+                }
+            );
+        }
         assert_eq!(
             owner
                 .runtime
@@ -417,7 +437,9 @@ pub(in super::super) fn exercise(
                 local(callback.teleport.ok_or("destination")?)
             } else {
                 origin
-            }
+            },
+            "{} stage {stage:?}",
+            callback.key,
         );
         let messages = owner.states.chat.drain(admitted.game_session_id);
         let expected_message = if allowed {
@@ -434,12 +456,13 @@ pub(in super::super) fn exercise(
             .read_character_quest_state(&authority, fence.character_id)
             .await
             .map_err(debug)?;
-        assert_eq!(before, after, "literal USE changed durable quest state");
-        let receipts: Vec<serde_json::Value> =
-            sqlx::query_scalar(receipt_snapshot).fetch_all(&h.pool).await?;
-        assert_eq!(receipts, receipts_before, "literal USE changed quest receipts");
+        assert_eq!(before, after, "passage changed durable quest state");
+        let receipts: Vec<serde_json::Value> = sqlx::query_scalar(receipt_snapshot)
+            .fetch_all(&h.pool)
+            .await?;
+        assert_eq!(receipts, receipts_before, "passage changed quest receipts");
         eprintln!(
-            "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED {} stage={stage:?} allowed={allowed} tracks_unchanged receipts_unchanged revision_unchanged duration={:?}",
+            "QUEST_CALLBACK_PASSAGE_POSTGRES_CASE_COMPLETED {} stage={stage:?} allowed={allowed} tracks_unchanged receipts_unchanged revision_unchanged duration={:?}",
             callback.key,
             started.elapsed()
         );
