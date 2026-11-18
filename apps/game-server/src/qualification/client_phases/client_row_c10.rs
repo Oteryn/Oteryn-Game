@@ -62,8 +62,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("C10 client cooldown changed state: {refused:?}").into());
     }
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-    client_hunt::hunt(&mut client)
+    let target = travel_to_spawn_target(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    client_hunt::hunt_target(&mut client, Some(target))
         .await
         .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("C10 client hunt: {error}"), error) })?;
     let regenerated = wait_soul(&mut client, |soul| soul == debit.value.soul + 1, Duration::from_secs(130)).await?;

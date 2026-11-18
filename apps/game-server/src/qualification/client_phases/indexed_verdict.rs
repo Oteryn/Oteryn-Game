@@ -87,6 +87,11 @@ impl Watch {
     }
 }
 
+#[cfg(test)]
+async fn run_indexed(watch: &Watch, journey: impl Future<Output = TestResult>) -> TestResult {
+    watch.run_indexed(journey).await
+}
+
 /// Enroll the dispatch boundary without changing any row's coverage assertions.
 pub(crate) fn indexed(
     scenario: &'static str,
@@ -94,7 +99,7 @@ pub(crate) fn indexed(
 ) -> impl Future<Output = bool> {
     // Each row owns its future on the heap; hundreds of inline row temporaries
     // otherwise accumulate in journeys' debug-build poll frame.
-    Box::pin(async move {
+    Box::pin(crate::qualification::client_world::FIXTURE_WORKERS.scope(Default::default(), async move {
         let mut watch = Watch::new(scenario, Harness::global());
         watch.scenario = Some(scenario);
         let result = watch.run_indexed(journey).await;
@@ -115,8 +120,9 @@ pub(crate) fn indexed(
         for line in lines {
             evidence(&line);
         }
+        crate::qualification::client_world::await_fixture_workers().await;
         passed
-    })
+    }))
 }
 
 /// Called after legacy line normalization, before output. Buffer only this
@@ -195,6 +201,64 @@ mod tests {
     }
 
     #[test]
+    fn qualification_indexed_progress_cannot_outlive_wall_deadline() -> TestResult {
+        runtime()?.block_on(async {
+            let harness = Box::leak(Box::new(Harness::new(true, None)));
+            let watch = new_watch(harness);
+            let journey = async {
+                for _ in 0..=100 {
+                    tokio::time::sleep(Duration::from_secs(30)).await;
+                    watch.touch("active-search");
+                }
+                Ok(())
+            };
+            let error = run_indexed(&watch, journey)
+                .await
+                .err()
+                .ok_or("indexed row completed past deadline")?;
+            assert_eq!(
+                classify(error.as_ref()),
+                Cause::Deadline {
+                    phase: "active-search"
+                }
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn qualification_indexed_deadline_precedes_fixture_cleanup() -> TestResult {
+        use crate::qualification::client_world::{
+            FIXTURE_WORKERS, FixtureCommand, await_fixture_workers,
+        };
+        runtime()?.block_on(FIXTURE_WORKERS.scope(Default::default(), async {
+            let harness = Box::leak(Box::new(Harness::new(true, None)));
+            let watch = new_watch(harness);
+            let (release, gate) = std::sync::mpsc::sync_channel(1);
+            let error = run_indexed(&watch, async {
+                let _worker = FixtureCommand::start(move || {
+                    gate.recv_timeout(Duration::from_secs(2))
+                        .map_err(|error| error.to_string())
+                })?;
+                std::future::pending::<TestResult>().await
+            })
+            .await
+            .err()
+            .ok_or("missing row deadline")?;
+            assert!(matches!(classify(error.as_ref()), Cause::Deadline { .. }));
+            let mut cleanup = Box::pin(await_fixture_workers());
+            tokio::select! {
+                biased;
+                () = &mut cleanup => return Err("worker escaped row cleanup".into()),
+                () = tokio::task::yield_now() => {}
+            }
+            release.send(())?;
+            cleanup.await;
+            Ok(())
+        }))
+    }
+
+    #[test]
     fn indexed_wall_clock_bounds_a_journey_reporting_progress() -> TestResult {
         runtime()?.block_on(async {
             let harness = Box::leak(Box::new(Harness::new(true, Some(Duration::from_secs(90)))));
@@ -270,6 +334,30 @@ mod tests {
             second.remember(error.as_ref());
             assert_eq!(second.failure().0, Cause::BlockedBy { root });
             Ok(())
+        })
+    }
+
+    #[test]
+    fn qualification_spawn_wait_renews_watchdog_exemption_after_walk() -> TestResult {
+        runtime()?.block_on(async {
+            let harness = Box::leak(Box::new(Harness::new(true, Some(Duration::from_secs(10)))));
+            let watch = new_watch(harness);
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(95);
+            watch
+                .bound(Duration::from_secs(100), "row deadline", async {
+                    harness.bounded_wait(deadline, "spawn observation");
+                    harness.progress("walk");
+                    crate::qualification::client_world::wait_for_spawn_observation(
+                        harness,
+                        deadline,
+                        async {
+                            tokio::time::sleep(Duration::from_secs(90)).await;
+                            Ok(())
+                        },
+                    )
+                    .await
+                })
+                .await
         })
     }
 

@@ -34,6 +34,7 @@ pub(super) async fn provision(
         async { Ok(run_fixture_command(&mut command).await?) },
         async || {
             client.service_liveness(Duration::from_millis(100)).await?;
+            client.take_events();
             Ok(())
         },
     )

@@ -386,6 +386,9 @@ pub struct Session<S> {
     entities: Option<WorldEntities>,
     appearance: Option<appearance_state::AppearanceState>,
     chat_revision: u64,
+    map_tiles: Option<
+        std::collections::BTreeMap<(i32, i32, i16), oteryn_protocol_oteryn::world_map::MapTile>,
+    >,
     map_header: Option<oteryn_protocol_oteryn::world_map::MapViewHeader>,
     inventory_revision: u64,
     container_revision: u64,

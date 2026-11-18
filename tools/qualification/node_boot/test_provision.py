@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import MagicMock, patch
 
 
 SPEC = importlib.util.spec_from_file_location(
@@ -19,6 +20,38 @@ SESSION = "01890f4c-3b2a-7c01-8d11-9a321b7c0004"
 
 
 class ProvisionTests(unittest.TestCase):
+    def test_control_reply_can_arrive_after_twenty_seconds(self):
+        with patch.object(PROVISION.socket, "socket") as socket_factory, patch.object(
+            PROVISION.time, "monotonic", side_effect=[0, 0, 0, 0, 0, 0, 0, 25, 25]
+        ):
+            control = MagicMock()
+            socket_factory.return_value.__enter__.return_value = control
+            control.recv.side_effect = [b"!", b"qualified\n", b""]
+            PROVISION.provision("fixture.sock", SESSION, "knight")
+            control.recv.assert_called()
+
+    def test_queued_request_gets_full_reply_budget_after_readiness(self):
+        now = [0]
+        with patch.object(PROVISION.socket, "socket") as factory, patch.object(
+            PROVISION.time, "monotonic", side_effect=lambda: now[0]
+        ):
+            control = MagicMock()
+            factory.return_value.__enter__.return_value = control
+
+            def recv(_limit):
+                if now[0] == 0:
+                    control.sendall.assert_called_once_with(b"!")
+                    now[0] = 25
+                    return b"!"
+                if now[0] == 25:
+                    control.sendall.assert_called_with(f"qualify {SESSION} knight\n".encode())
+                    now[0] = 64
+                    return b"qualified\n"
+                return b""
+
+            control.recv.side_effect = recv
+            PROVISION.provision("fixture.sock", SESSION, "knight")
+
     def exchange(self, answer):
         with tempfile.TemporaryDirectory() as directory:
             path = str(Path(directory) / "control.sock")
@@ -30,6 +63,8 @@ class ProvisionTests(unittest.TestCase):
                 def serve():
                     with listener.accept()[0] as connection:
                         connection.settimeout(3)
+                        self.assertEqual(connection.recv(1), b"!")
+                        connection.sendall(b"!")
                         request = bytearray()
                         while chunk := connection.recv(128):
                             request.extend(chunk)
@@ -111,6 +146,8 @@ class SpawnTests(unittest.TestCase):
                 def serve():
                     with listener.accept()[0] as connection:
                         connection.settimeout(3)
+                        self.assertEqual(connection.recv(1), b"!")
+                        connection.sendall(b"!")
                         request = bytearray()
                         while chunk := connection.recv(128):
                             request.extend(chunk)

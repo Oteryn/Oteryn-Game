@@ -73,9 +73,9 @@ async fn align_levels(
             (&mut *peer, &mut *client)
         };
         while_serving(idle, async {
-            super::super::travel_to_spawn(lower, world, &metadata.spawns, "oteryn:creature.rat")
+            let target = super::super::travel_to_spawn_target(lower, world, &metadata.spawns, "oteryn:creature.rat")
                 .await?;
-            client_hunt::hunt(lower).await
+            client_hunt::hunt_target(lower, Some(target)).await
         })
         .await?;
     }

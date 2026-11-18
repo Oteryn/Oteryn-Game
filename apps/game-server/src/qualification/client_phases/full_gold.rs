@@ -328,7 +328,6 @@ pub(super) async fn earn(
     needed: u64,
 ) -> TestResult<u64> {
     let started = tokio::time::Instant::now();
-    let url = required("NODE_BOOT_DATABASE_URL")?;
     let start_gold = coin_value(client)?;
     let level = level(client).await?;
     let ranked = candidates(spawns, level)?;
@@ -355,6 +354,7 @@ pub(super) async fn earn(
             return Ok(observed);
         }
         let mut picked = None;
+        let mut route_deadline = None;
         for (index, candidate) in ranked.iter().enumerate() {
             if unreachable.contains(&index) {
                 continue;
@@ -379,11 +379,21 @@ pub(super) async fn earn(
                         candidate.key
                     ));
                     unreachable.insert(index);
+                    if route_deadline.is_none()
+                        && matches!(verdict::classify(error.as_ref()), verdict::Cause::Deadline { .. })
+                    {
+                        route_deadline = Some(error);
+                    }
                 }
             }
         }
-        let (candidate, limit, budget, target) =
-            picked.ok_or_else(|| format!("{row}: no reachable gold creature at level {level}"))?;
+        let Some((candidate, limit, budget, target)) = picked else {
+            let message = format!("{row}: no reachable gold creature at level {level}");
+            return Err(match route_deadline {
+                Some(error) => verdict::context(format!("{message}; {error}"), error),
+                None => message.into(),
+            });
+        };
         if deadline.is_none() {
             deadline = Some(limit);
             evidence(&format!(
@@ -396,7 +406,7 @@ pub(super) async fn earn(
             ));
         }
         let hunted = client_readmission::within_retry_budget(limit, async {
-            match client_hunt::hunt_target(client, Some(target), &url).await {
+            match client_hunt::hunt_target(client, Some(target)).await {
                 Err(error) if error.is::<client_hunt::EmptyLoot>() => Ok(()),
                 result => {
                     result?;

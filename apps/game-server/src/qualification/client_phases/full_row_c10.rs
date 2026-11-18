@@ -136,9 +136,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("cooldown-refusal", refused.disposition);
 
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    let target = travel_to_spawn_target(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let xp_before = progress(&mut client).await?.0;
-    client_hunt::hunt(&mut client).await.map_err(|e| { verdict::record_error(verdict::IndexedError::as_error(&e)); verdict::context(format!("step kill window: combat reply={e}"), e) })?;
+    client_hunt::hunt_target(&mut client, Some(target)).await.map_err(|e| { verdict::record_error(verdict::IndexedError::as_error(&e)); verdict::context(format!("step kill window: combat reply={e}"), e) })?;
     let xp_after = progress(&mut client).await?.0;
     if xp_after <= xp_before {
         return Err(format!("step kill window: no XP delta {xp_before}->{xp_after}").into());

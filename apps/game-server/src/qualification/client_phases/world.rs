@@ -395,7 +395,7 @@ mod travel {
     const MARGIN: u16 = 160;
     /// The search gives up after this many settled tiles instead of exhausting memory.
     const SEARCH_LIMIT: usize = 2_000_000;
-    const MAX_REPLANS: usize = 12;
+    pub(super) const MAX_REPLANS: usize = 12;
     const STEP_COST: u32 = 10;
     /// A closed door costs a USE and may be refused, so an open way round is preferred.
     const DOOR_COST: u32 = 40;
@@ -504,7 +504,7 @@ mod travel {
     }
 
     pub(super) struct Planner<'a> {
-        world: &'a BundleWorld,
+        pub(super) world: &'a BundleWorld,
         /// Door tile -> (placement key, authored action id).
         doors: HashMap<TilePos, (u64, u16)>,
         ladders: HashMap<TilePos, u8>,
@@ -1012,7 +1012,7 @@ mod travel {
     }
 
     /// The first tile of `OFFSETS` around `spot`, one floor up, that `free` accepts.
-    fn first_landing(spot: TilePos, free: impl Fn(TilePos) -> bool) -> Option<TilePos> {
+    pub(super) fn first_landing(spot: TilePos, free: impl Fn(TilePos) -> bool) -> Option<TilePos> {
         let floor = spot.floor.checked_add(1).filter(|floor| *floor <= 0)?;
         OFFSETS.iter().find_map(|&(dx, dy)| {
             let at = TilePos {
@@ -1022,6 +1022,20 @@ mod travel {
             };
             free(at).then_some(at)
         })
+    }
+
+    pub(super) fn missing_tool_error(tool: u32, context: &str) -> Box<dyn std::error::Error> {
+        verdict::HarnessError::boxed(
+            verdict::Cause::Precondition {
+                name: format!("fixture-tool-{tool}"),
+            },
+            format!("{} {context}", missing_fixture_tool(tool)),
+        )
+    }
+
+    // The Naginata owner requires object revision to equal the channel hit count.
+    fn remaining_pick_hits(hits: u8, revision: u64) -> u8 {
+        hits.saturating_sub(u8::try_from(revision).unwrap_or(u8::MAX))
     }
 
     fn missing_fixture_tool(tool: u32) -> String {
@@ -1279,30 +1293,95 @@ mod travel {
         segments.chunks(24).map(|chunk| chunk.join(" ")).collect()
     }
 
-    fn tool_revision(events: &[SessionEvent], spot: TilePos, ordinal: u8) -> Option<Option<u64>> {
+    fn base_ordinal_revision(
+        tiles: &[oteryn_protocol_oteryn::world_map::MapTile],
+        spot: TilePos,
+        ordinal: u8,
+    ) -> Option<u64> {
         use oteryn_protocol_oteryn::world_map::MapOrigin;
+        let position = ActorPosition {
+            x: i32::from(spot.x),
+            y: i32::from(spot.y),
+            floor: i16::from(spot.floor),
+        };
+        tiles
+            .iter()
+            .find(|tile| tile.position == position)?
+            .items
+            .iter()
+            .find_map(|item| match item.origin {
+                MapOrigin::BaseOrdinal {
+                    ordinal: actual,
+                    object_revision,
+                } if actual == ordinal => Some(object_revision),
+                _ => None,
+            })
+    }
+
+    const NAGINATA_PICK_HITS: u64 = 6;
+
+    fn initial_pick_revision(revision: Option<u64>, complete: bool) -> Option<u64> {
+        revision.or(complete.then_some(NAGINATA_PICK_HITS))
+    }
+
+    fn pick_observation(revision: Option<u64>, complete: bool, before: u64) -> Option<u64> {
+        match revision {
+            Some(revision) if revision > before => Some(revision),
+            None if complete => Some(NAGINATA_PICK_HITS),
+            _ => None,
+        }
+    }
+
+    fn projected_pick_revision(
+        tile: &oteryn_protocol_oteryn::world_map::MapTile,
+        spot: TilePos,
+        ordinal: u8,
+        before: u64,
+    ) -> Option<u64> {
+        pick_observation(
+            base_ordinal_revision(std::slice::from_ref(tile), spot, ordinal),
+            !tile.more,
+            before,
+        )
+    }
+
+    fn tool_revision(events: &[SessionEvent], spot: TilePos, ordinal: u8) -> Option<u64> {
         events.iter().rev().find_map(|event| {
             let tiles = match event {
                 SessionEvent::WorldMap(delta) => &delta.value.tiles,
                 SessionEvent::WorldMapSnapshot(snapshot) => &snapshot.value.tiles,
                 _ => return None,
             };
-            let tile = tiles.iter().find(|tile| {
-                tile.position
-                    == (ActorPosition {
-                        x: i32::from(spot.x),
-                        y: i32::from(spot.y),
-                        floor: -i16::from(spot.floor),
-                    })
-            })?;
-            Some(tile.items.iter().find_map(|item| match item.origin {
-                MapOrigin::BaseOrdinal {
-                    ordinal: actual,
-                    object_revision,
-                } if actual == ordinal => Some(object_revision),
-                _ => None,
-            }))
+            base_ordinal_revision(tiles, spot, ordinal)
         })
+    }
+
+    pub(super) fn observed_revision(
+        client: &mut DevClientSession,
+        placement: &[u8],
+        at: TilePos,
+        ordinal: u8,
+    ) -> TestResult<u64> {
+        let position = ActorPosition {
+            x: i32::from(at.x),
+            y: i32::from(at.y),
+            floor: i16::from(at.floor),
+        };
+        let view_revision = client
+            .session_mut()
+            .world_map_tile(position)
+            .and_then(|tile| base_ordinal_revision(&[tile], at, ordinal));
+        let overlay = client
+            .world_object_overlay()
+            .iter()
+            .find(|entry| entry.placement == placement);
+        view_revision
+            .into_iter()
+            .chain(overlay.map(|entry| entry.revision))
+            .max()
+            .ok_or_else(|| {
+                format!("no current map revision for {} ordinal {ordinal}", show(at)).into()
+            })
     }
 
     fn overlay_revision(client: &DevClientSession, placement: &[u8]) -> u64 {
@@ -1411,12 +1490,47 @@ mod travel {
                     hits,
                     direction,
                 } => {
-                    let mut revision = overlay_revision(client, &self.placement(spot, ordinal)?);
+                    let open_pick = tool == Some(3456) && {
+                        let position = ActorPosition {
+                            x: i32::from(spot.x),
+                            y: i32::from(spot.y),
+                            floor: i16::from(spot.floor),
+                        };
+                        client
+                            .session_mut()
+                            .world_map_tile(position)
+                            .is_some_and(|tile| {
+                                let complete = !tile.more;
+                                initial_pick_revision(
+                                    base_ordinal_revision(&[tile], spot, ordinal),
+                                    complete,
+                                ) == Some(NAGINATA_PICK_HITS)
+                            })
+                    };
+                    let mut revision = if open_pick {
+                        NAGINATA_PICK_HITS
+                    } else if tool.is_some() {
+                        observed_revision(client, &self.placement(spot, ordinal)?, spot, ordinal)?
+                    } else {
+                        0
+                    };
+                    let hits = if tool == Some(3456) {
+                        remaining_pick_hits(hits, revision)
+                    } else {
+                        hits
+                    };
                     for hit in 1..=hits {
                         verdict::Harness::global().progress("travel descent");
                         let reply = if let Some(tool) = tool {
-                            self.use_tool(client, spot, ordinal, tool, &mut revision)
-                                .await?
+                            self.use_tool(
+                                client,
+                                spot,
+                                ordinal,
+                                tool,
+                                &mut revision,
+                                tool == 3456 || hit < hits,
+                            )
+                            .await?
                         } else {
                             use_map_object(client, &self.placement(spot, ordinal)?).await?
                         };
@@ -1440,6 +1554,9 @@ mod travel {
                                 show(spot)
                             )
                             .into());
+                        }
+                        if tool == Some(3456) && revision >= NAGINATA_PICK_HITS {
+                            break;
                         }
                     }
                     if let Some(direction) = direction {
@@ -1476,9 +1593,13 @@ mod travel {
                     let reply = if kind == "ladder" {
                         use_map_object(client, &self.placement(spot, ordinal)?).await?
                     } else {
-                        let mut revision =
-                            overlay_revision(client, &self.placement(spot, ordinal)?);
-                        self.use_tool(client, spot, ordinal, ROPE_ITEM, &mut revision)
+                        let mut revision = observed_revision(
+                            client,
+                            &self.placement(spot, ordinal)?,
+                            spot,
+                            ordinal,
+                        )?;
+                        self.use_tool(client, spot, ordinal, ROPE_ITEM, &mut revision, false)
                             .await?
                     };
                     evidence(&format!(
@@ -1527,6 +1648,7 @@ mod travel {
             ordinal: u8,
             tool: u32,
             revision: &mut u64,
+            needs_revision: bool,
         ) -> TestResult<UseDisposition> {
             use oteryn_protocol_oteryn::world_object::*;
             let reference = provisioning::item_reference(&provisioning::item_index()?, tool)?;
@@ -1541,11 +1663,7 @@ mod travel {
                             .find(|entry| entry.item_definition_ref == reference)
                     })
                     .ok_or_else(|| {
-                        format!(
-                            "MISSING {} required at {}",
-                            missing_fixture_tool(tool),
-                            show(spot)
-                        )
+                        missing_tool_error(tool, &format!("required at {}", show(spot)))
                     })?
                     .handle;
                 let intent = UseIntent {
@@ -1559,32 +1677,65 @@ mod travel {
                 };
                 let payload = encode_item_use_intent(&intent)
                     .map_err(|error| format!("tool {tool} USE encode: {error:?}"))?;
+                client.take_events();
                 let response = client.session_mut().world_context_use(&payload).await?;
                 if response.status != CommandStatus::Accepted {
                     return Err(format!("tool {tool} USE command refused: {response:?}").into());
                 }
                 let disposition = decode_use_result(&response.payload)
                     .map_err(|error| format!("tool {tool} USE result: {error:?}"))?;
-                if disposition == UseDisposition::Committed && tool != ROPE_ITEM {
-                    // Bundle revisions are published in MapOrigin::BaseOrdinal. A pick hit
-                    // increments this revision even while the same stone remains visible.
+                let pick = tool == 3456;
+                if pick
+                    && disposition == UseDisposition::Committed
+                    && *revision + 1 == NAGINATA_PICK_HITS
+                {
+                    *revision = NAGINATA_PICK_HITS;
+                    return Ok(disposition);
+                }
+                if (disposition == UseDisposition::Committed && needs_revision)
+                    || (pick && disposition == UseDisposition::StaleState)
+                {
                     let before = *revision;
                     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
                     loop {
                         verdict::Harness::global().progress("travel tool map update");
-                        if let Some(observed) = tool_revision(&client.take_events(), spot, ordinal)
-                            && observed != Some(before)
-                        {
-                            if let Some(observed) = observed {
-                                *revision = observed;
+                        let events = client.take_events();
+                        let observed = if pick {
+                            let position = ActorPosition {
+                                x: i32::from(spot.x),
+                                y: i32::from(spot.y),
+                                floor: i16::from(spot.floor),
+                            };
+                            client
+                                .session_mut()
+                                .world_map_tile(position)
+                                .and_then(|tile| {
+                                    projected_pick_revision(&tile, spot, ordinal, before)
+                                })
+                        } else {
+                            tool_revision(&events, spot, ordinal)
+                                .filter(|&revision| revision > before)
+                        };
+                        if let Some(observed) = observed {
+                            *revision = observed;
+                            if pick && observed >= NAGINATA_PICK_HITS {
+                                return Ok(UseDisposition::NothingToUse);
                             }
-                            return Ok(disposition);
+                            break;
                         }
                         if tokio::time::Instant::now() >= deadline {
-                            return Err(format!("tool {tool} USE at {} committed but no revised map entry was published", show(spot)).into());
+                            return Err(format!(
+                                "tool {tool} USE at {} published no usable map update",
+                                show(spot)
+                            )
+                            .into());
                         }
                         client.service_liveness(Duration::from_millis(50)).await?;
                     }
+                    if disposition == UseDisposition::StaleState {
+                        continue;
+                    }
+                    return Ok(disposition);
                 }
                 if disposition != UseDisposition::Exhausted {
                     return Ok(disposition);
@@ -1598,11 +1749,36 @@ mod travel {
         }
     }
 
+    fn conversation_lines(
+        delta: oteryn_dev_client::AppliedDelta<service::NpcConversation>,
+        after: u64,
+        npc: EntityRef,
+        paid_confirmation: bool,
+    ) -> Option<Vec<String>> {
+        let named_reply = delta.value.open.is_some_and(|(actor, _)| actor == npc);
+        // A successful paid passage closes the focus in the same publication.
+        // Other anonymous closes do not carry a correlatable reply.
+        let passage_committed = paid_confirmation
+            && delta.value.open.is_none()
+            && delta.value.lines == ["Set the sails!"];
+        (delta.server_sequence > after && (named_reply || passage_committed))
+            .then_some(delta.value.lines)
+    }
+
     /// One line to the NPC through the production dialogue protocol, and the lines it answers.
     pub(super) async fn converse(
         client: &mut DevClientSession,
         npc: EntityRef,
         text: &str,
+    ) -> TestResult<Vec<String>> {
+        converse_with(client, npc, text, false).await
+    }
+
+    async fn converse_with(
+        client: &mut DevClientSession,
+        npc: EntityRef,
+        text: &str,
+        paid_confirmation: bool,
     ) -> TestResult<Vec<String>> {
         client.take_events();
         let payload = service::encode_npc_talk_intent(&service::NpcTalkIntent {
@@ -1633,9 +1809,10 @@ mod travel {
         loop {
             for event in client.take_events() {
                 if let SessionEvent::NpcConversation(delta) = event
-                    && delta.server_sequence > reply.server_sequence
+                    && let Some(lines) =
+                        conversation_lines(delta, reply.server_sequence, npc, paid_confirmation)
                 {
-                    return Ok(delta.value.lines);
+                    return Ok(lines);
                 }
             }
             if tokio::time::Instant::now() >= deadline {
@@ -1698,10 +1875,10 @@ mod travel {
         if !quote.iter().any(|line| line.contains("passage")) {
             return Err(format!("{} refused: {quote:?}", need()).into());
         }
-        let reply = converse(client, npc, "yes").await.unwrap_or_default();
+        let reply = converse_with(client, npc, "yes", true).await?;
         evidence(&format!("TRAVEL_NPC {label} say=\"yes\" reply={reply:?}"));
-        if let Some(line) = reply.iter().find(|line| !line.contains("sails")) {
-            return Err(format!("{} refused: {line}", need()).into());
+        if reply.is_empty() || reply.iter().any(|line| !line.contains("sails")) {
+            return Err(format!("{} refused: {reply:?}", need()).into());
         }
         let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
         loop {
@@ -1763,12 +1940,16 @@ mod travel {
                 return Ok(());
             }
             verdict::Harness::global().progress("walk");
+            client.take_events();
             let mut service_error = None;
             let planned = planner
                 .plan_serviced(from, target, goal, rope, passages, async || {
                     verdict::Harness::global().progress("travel session liveness");
                     match client.service_liveness(Duration::from_millis(25)).await {
-                        Ok(()) => Ok(()),
+                        Ok(()) => {
+                            client.take_events();
+                            Ok(())
+                        }
                         Err(error) => {
                             let reason = error.to_string();
                             service_error = Some(error);
@@ -1779,6 +1960,15 @@ mod travel {
                 .await;
             if let Some(error) = service_error {
                 return Err(error.into());
+            }
+            let observed = tile(client.world_spatial().actor_position)?;
+            if observed != from {
+                evidence(&format!(
+                    "TRAVEL_REPLAN {label} origin={} observed={}",
+                    show(from),
+                    show(observed)
+                ));
+                continue;
             }
             let route = planned.map_err(|reason| {
                 format!(
@@ -1807,12 +1997,10 @@ mod travel {
                 } = leg
                     && !carries(client, tool)?
                 {
-                    return Err(format!(
-                        "MISSING {} required for descent at {}",
-                        missing_fixture_tool(tool),
-                        show(spot)
-                    )
-                    .into());
+                    return Err(missing_tool_error(
+                        tool,
+                        &format!("required for descent at {}", show(spot)),
+                    ));
                 }
             }
             let mut at = from;
@@ -1883,6 +2071,120 @@ mod travel {
 
     #[cfg(test)]
     mod tests {
+        #[test]
+        fn qualification_dialogue_ignores_other_npcs_and_anonymous_closes() {
+            let npc = EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            };
+            let other = EntityRef {
+                identity: [2; 16],
+                generation: 1,
+            };
+            let delta = |server_sequence, actor: Option<EntityRef>, line: &str| {
+                oteryn_dev_client::AppliedDelta {
+                    server_sequence,
+                    base_revision: 1,
+                    new_revision: 2,
+                    value: service::NpcConversation {
+                        open: actor.map(|id| (id, service::NpcConversationState::Open)),
+                        lines: vec![line.into()],
+                    },
+                }
+            };
+            assert_eq!(
+                conversation_lines(delta(8, Some(other), "wrong"), 7, npc, false),
+                None
+            );
+            assert_eq!(
+                conversation_lines(delta(8, None, "farewell"), 7, npc, true),
+                None
+            );
+            assert_eq!(
+                conversation_lines(delta(7, Some(npc), "stale"), 7, npc, false),
+                None
+            );
+            assert_eq!(
+                conversation_lines(delta(8, Some(npc), "hello"), 7, npc, false),
+                Some(vec!["hello".into()])
+            );
+            assert_eq!(
+                conversation_lines(delta(8, None, "Set the sails!"), 7, npc, true),
+                Some(vec!["Set the sails!".into()])
+            );
+        }
+
+        #[test]
+        fn qualification_tool_revision_requires_matching_ordinal() {
+            use oteryn_protocol_oteryn::world_map::*;
+            let spot = TilePos {
+                x: 100,
+                y: 100,
+                floor: -8,
+            };
+            let position = ActorPosition {
+                x: 100,
+                y: 100,
+                floor: -8,
+            };
+            let event = |ordinal, object_revision| {
+                SessionEvent::WorldMapSnapshot(oteryn_dev_client::AppliedDelta {
+                    server_sequence: 2,
+                    base_revision: 1,
+                    new_revision: 2,
+                    value: WorldMapViewSnapshot {
+                        header: MapViewHeader {
+                            content_generation: [0; 32],
+                            bundle_digest: [0; 32],
+                            reset_epoch: 1,
+                            origin: position,
+                            first_visible_floor: -8,
+                        },
+                        tiles: vec![MapTile {
+                            position,
+                            items: vec![MapItem {
+                                definition: MapDefinition::Terrain(std::num::NonZeroU32::MIN),
+                                count: 1,
+                                sub_type: 0,
+                                appearance_id: 0,
+                                origin: MapOrigin::BaseOrdinal {
+                                    ordinal,
+                                    object_revision,
+                                },
+                            }],
+                            more: false,
+                            ground_speed: 150,
+                        }],
+                    },
+                })
+            };
+            assert_eq!(tool_revision(&[event(2, 9)], spot, 1), None);
+            assert_eq!(tool_revision(&[event(1, 4), event(2, 9)], spot, 1), Some(4));
+        }
+
+        #[test]
+        fn qualification_partial_pick_remaining_hits() {
+            assert_eq!(remaining_pick_hits(6, 0), 6);
+            assert_eq!(remaining_pick_hits(6, 1), 5);
+            assert_eq!(remaining_pick_hits(6, 5), 1);
+            assert_eq!(remaining_pick_hits(6, 6), 0);
+        }
+
+        #[test]
+        fn shared_pick_missing_ordinal_can_mark_open_passage() {
+            assert_eq!(pick_observation(None, false, 4), None);
+            assert_eq!(pick_observation(Some(4), true, 4), None);
+            assert_eq!(pick_observation(Some(5), true, 4), Some(5));
+            assert_eq!(pick_observation(None, true, 4), Some(6));
+        }
+
+        #[test]
+        fn qualification_initial_pick_accepts_only_complete_open_projection() {
+            assert_eq!(initial_pick_revision(None, false), None);
+            assert_eq!(initial_pick_revision(Some(4), true), Some(4));
+            assert_eq!(initial_pick_revision(None, true), Some(6));
+        }
+
         include!("travel_tests.rs");
     }
 }
@@ -2178,7 +2480,7 @@ pub(super) async fn reach_route(
 ) -> TestResult<Result<Vec<StepDirection>, ReachFailure>> {
     let mut origin = from;
     let mut budget = ReachBudget::default();
-    loop {
+    for attempt in 0..=travel::MAX_REPLANS {
         client.service_liveness(Duration::from_millis(1)).await?;
         client.take_events(); // Canonical session stores retain the applied observations.
         let observed = tile(client.world_spatial().actor_position)?;
@@ -2202,10 +2504,15 @@ pub(super) async fn reach_route(
             return Err(format!("actor moved during final route search from={origin:?} observed={observed:?} search_cap={REACH_SEARCH_NODES}").into());
         }
         evidence(&format!(
-            "route_search replan=true from={origin:?} observed={observed:?}"
+            "route_search replan=true attempt={attempt} from={origin:?} observed={observed:?}"
         ));
         origin = observed;
     }
+    Err(format!(
+        "reachability origin kept changing after {} replans",
+        travel::MAX_REPLANS
+    )
+    .into())
 }
 
 // Keep the search shared with the offline production-bundle regression. Live
@@ -2457,15 +2764,20 @@ pub(super) async fn logout_retrying_busy_observed(
     let mut attempts = 0;
     loop {
         attempts += 1;
-        let outcome = client_readmission::within_retry_budget(deadline, async {
-            Ok(client.session_mut().logout().await?)
-        })
-        .await
+        let outcome = logout_observation(
+            client_readmission::within_retry_budget(deadline, async {
+                Ok(client.session_mut().logout().await?)
+            })
+            .await,
+            &mut observe,
+            attempts,
+            "command",
+        )
         .map_err(|error| {
-            if let Some(observe) = observe.as_mut() {
-                observe(attempts, &format!("command_error={error}"));
-            }
-            verdict::context(format!("logout attempt {attempts} failed: {error}"), error)
+            verdict::context(
+                format!("logout command attempt {attempts} failed: {error}"),
+                error,
+            )
         })?;
         if let Some(observe) = observe.as_mut() {
             observe(attempts, &format!("reply={outcome:?}"));
@@ -2477,16 +2789,71 @@ pub(super) async fn logout_retrying_busy_observed(
             return Ok((outcome.result, format!("{outcome:?}"), attempts, true));
         }
         let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
-        client_readmission::within_retry_budget(deadline, async {
-            Ok(client.service_liveness(remaining.min(Duration::from_millis(250))).await?)
-        }).await
-            .map_err(|error| {
-                if let Some(observe) = observe.as_mut() {
-                    observe(attempts, &format!("busy_liveness_error={error}"));
-                }
-                verdict::context(format!("logout Busy retry liveness failed after attempt {attempts}: {outcome:?}; error={error}"), error)
-            })?;
+        logout_observation(
+            client_readmission::within_retry_budget(deadline, async {
+                Ok(client
+                    .service_liveness(remaining.min(Duration::from_millis(250)))
+                    .await?)
+            })
+            .await,
+            &mut observe,
+            attempts,
+            "busy_liveness",
+        )
+        .map_err(|error| {
+            verdict::context(
+                format!("logout busy_liveness attempt {attempts} failed: {error}"),
+                error,
+            )
+        })?;
     }
+}
+
+fn logout_observation<T, E: std::fmt::Display>(
+    result: Result<T, E>,
+    observe: &mut Option<&mut LogoutObserver<'_>>,
+    attempt: usize,
+    phase: &str,
+) -> Result<T, E> {
+    result.inspect_err(|error| {
+        if let Some(observe) = observe.as_mut() {
+            observe(attempt, &format!("{phase}_error={error}"));
+        }
+    })
+}
+
+#[test]
+fn qualification_logout_retains_server_close_for_indexed_classifier() -> TestResult {
+    use oteryn_dev_client::SessionError;
+    use verdict::Cause;
+
+    let trace = [0xab; 16];
+    let mut messages = Vec::new();
+    let mut observe = |attempt, message: &str| messages.push((attempt, message.to_owned()));
+    let error = logout_observation(
+        Err::<(), _>(SessionError::ServerProtocolError {
+            code: 1200,
+            connection_trace: Some(trace),
+        }),
+        &mut Some(&mut observe),
+        2,
+        "command",
+    )
+    .err()
+    .ok_or("expected transport error")?;
+    assert_eq!(
+        verdict::classify(&error),
+        Cause::Transport {
+            code: Some(1200),
+            trace: Some("ab".repeat(16)),
+            phase: None,
+            last_frame: None,
+        }
+    );
+    assert_eq!(messages.len(), 1);
+    assert_eq!(messages[0].0, 2);
+    assert!(messages[0].1.contains("command_error="));
+    Ok(())
 }
 
 pub(super) async fn logout_trade_character(
@@ -4953,7 +5320,7 @@ pub(super) async fn journeys(
             let rat =
                 travel_to_spawn_target(&mut client, world, &metadata.spawns, "oteryn:creature.rat")
                     .await?;
-            match client_hunt::hunt_target(&mut client, Some(rat), clients.url).await {
+            match client_hunt::hunt_target(&mut client, Some(rat)).await {
                 Err(error) if error.is::<client_hunt::EmptyLoot>() => {}
                 result => break result,
             }
@@ -4990,7 +5357,7 @@ pub(super) async fn journeys(
     }
     drop(client);
     client = connect_world(clients, 0x73).await?;
-    let persistence: TestResult = async {
+    let snapshot_result: TestResult = (|| {
         if client.join_snapshot().game_session_id == old_session
             || client.world_spatial().actor_position != respawn
             || client
@@ -5007,8 +5374,7 @@ pub(super) async fn journeys(
         ));
 
         Ok(())
-    }
-    .await;
+    })();
     let logout_result: TestResult = async {
         let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
         if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
@@ -5020,7 +5386,7 @@ pub(super) async fn journeys(
     finish_after_terminal_release(
         profile_result
             .and(coverage)
-            .and(persistence)
+            .and(snapshot_result)
             .and(logout_result),
         wait_character_released(clients, 1),
     )
@@ -5209,13 +5575,13 @@ const FIXTURE_COMMAND_DEADLINE: Duration = Duration::from_secs(30);
 fn fixture_command() -> tokio::process::Command {
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
-    let mut command = tokio::process::Command::new("sudo");
+    let mut command = tokio::process::Command::new("timeout");
     command.kill_on_drop(true).stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         // Run the inner timeout with the same credentials as Python so its
         // signal reaches the privileged child even if the outer probe drops.
-        .args(["-n", "timeout", "--kill-after=2s", "25s", "python3"])
+        .args(["--kill-after=2s", "30s", "sudo", "-n", "timeout", "--kill-after=2s", "25s", "python3"])
         .arg(script).arg("--watch-stdin");
     command
 }
@@ -5228,7 +5594,21 @@ async fn run_fixture_command(
         .stdin
         .take()
         .ok_or_else(|| io::Error::other("fixture cancellation pipe missing"))?;
-    let output = child.wait_with_output().await;
+    if FIXTURE_WORKERS.try_with(|_| ()).is_err() {
+        let output = child.wait_with_output().await;
+        drop(parent_pipe);
+        return output;
+    }
+    let (done, worker_done) = tokio::sync::oneshot::channel();
+    FIXTURE_WORKERS.with(|workers| workers.borrow_mut().push(worker_done));
+    // A cancelled row closes the child's parent pipe while its cleanup still
+    // waits for process exit through the registered completion receiver.
+    let task = tokio::spawn(async move {
+        let output = child.wait_with_output().await;
+        let _ = done.send(());
+        output
+    });
+    let output = task.await?;
     drop(parent_pipe);
     output
 }
@@ -5273,6 +5653,94 @@ pub(super) async fn observed_item_instance(
     crate::node::uuid_bytes(id)
         .map(Some)
         .ok_or_else(|| "invalid observed item UUID".into())
+}
+
+tokio::task_local! {
+    pub(super) static FIXTURE_WORKERS: std::cell::RefCell<Vec<tokio::sync::oneshot::Receiver<()>>>;
+}
+
+pub(super) async fn await_fixture_workers() {
+    std::future::poll_fn(|cx| {
+        FIXTURE_WORKERS.with(|workers| {
+            let mut workers = workers.borrow_mut();
+            while let Some(worker) = workers.last_mut() {
+                if std::future::Future::poll(std::pin::Pin::new(worker), cx).is_pending() {
+                    return std::task::Poll::Pending;
+                }
+                workers.pop();
+            }
+            std::task::Poll::Ready(())
+        })
+    })
+    .await;
+}
+
+async fn fixture_timeout<T>(
+    limit: Duration,
+    operation: impl std::future::Future<Output = T>,
+) -> Result<T, tokio::time::error::Elapsed> {
+    let run = async {
+        let result = tokio::time::timeout(limit, operation).await;
+        await_fixture_workers().await;
+        result
+    };
+    if FIXTURE_WORKERS.try_with(|_| ()).is_ok() {
+        run.await
+    } else {
+        FIXTURE_WORKERS.scope(Default::default(), run).await
+    }
+}
+
+#[test]
+fn qualification_encounter_timeout_waits_for_fixture_completion() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()?
+        .block_on(async {
+            let (release, gate) = std::sync::mpsc::sync_channel(1);
+            let mut encounter = Box::pin(fixture_timeout(Duration::from_secs(1), async {
+                let _task = FixtureCommand::start(move || {
+                    gate.recv_timeout(Duration::from_secs(2)).map_err(|error| error.to_string())
+                })?;
+                std::future::pending::<TestResult>().await
+            }));
+            tokio::select! {
+                biased;
+                _ = &mut encounter => return Err("encounter completed before deadline".into()),
+                () = tokio::task::yield_now() => {}
+            }
+            tokio::time::advance(Duration::from_secs(2)).await;
+            tokio::select! {
+                biased;
+                _ = &mut encounter => return Err("encounter released a pending fixture worker".into()),
+                () = tokio::task::yield_now() => {}
+            }
+            release.send(())?;
+            assert!(encounter.await.is_err());
+            Ok(())
+        })
+}
+
+#[cfg(test)]
+pub(super) struct FixtureCommand<T> {
+    result: tokio::sync::oneshot::Receiver<Result<T, String>>,
+}
+
+#[cfg(test)]
+impl<T: Send + 'static> FixtureCommand<T> {
+    pub(super) fn start(
+        command: impl FnOnce() -> Result<T, String> + Send + 'static,
+    ) -> std::io::Result<Self> {
+        let (send, result) = tokio::sync::oneshot::channel();
+        let (done, worker_done) = tokio::sync::oneshot::channel();
+        std::thread::Builder::new().spawn(move || {
+            let _ = send.send(command());
+            let _ = done.send(());
+        })?;
+        let _ = FIXTURE_WORKERS.try_with(|workers| workers.borrow_mut().push(worker_done));
+        Ok(Self { result })
+    }
 }
 
 async fn wait_fixture_command<T>(
@@ -5335,13 +5803,13 @@ fn qualification_fixture_command_services_liveness_and_joins_after_loss() -> Tes
             let finished = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
             let writer_finished = finished.clone();
             let (release, gate) = std::sync::mpsc::sync_channel(1);
-            let task = tokio::task::spawn_blocking(move || -> Result<(), String> {
+            let task = FixtureCommand::start(move || -> Result<(), String> {
                 gate.recv().map_err(|error| error.to_string())?;
                 writer_finished.store(true, std::sync::atomic::Ordering::SeqCst);
                 Ok(())
-            });
+            })?;
             let mut serviced = 0;
-            let result = wait_fixture_command(async { Ok(task.await??) }, async || {
+            let result = wait_fixture_command(async { Ok(task.result.await??) }, async || {
                 serviced += 1;
                 release.send(())?;
                 Err("transport lost".into())
@@ -5399,6 +5867,74 @@ pub(super) async fn connect_character(
     .await?;
     verdict::Harness::global().progress("admission");
     Ok(client)
+}
+
+pub(super) fn has_display_name(
+    entity: &oteryn_dev_client::WorldSpatialEntity,
+    expected: &str,
+) -> bool {
+    entity
+        .display_name
+        .as_ref()
+        .and_then(|name| name.as_str().ok())
+        == Some(expected)
+}
+
+fn nearest_spawn<'a>(
+    entities: impl Iterator<Item = &'a oteryn_dev_client::WorldSpatialEntity>,
+    here: ActorPosition,
+    name: &str,
+) -> Option<&'a oteryn_dev_client::WorldSpatialEntity> {
+    entities
+        .filter(|entry| {
+            entry.kind == oteryn_dev_client::EntityKind::Creature
+                && entry.position.floor == here.floor
+                && has_display_name(entry, name)
+        })
+        .min_by_key(|entry| {
+            entry
+                .position
+                .x
+                .abs_diff(here.x)
+                .max(entry.position.y.abs_diff(here.y))
+        })
+}
+
+#[test]
+fn qualification_spawn_prefers_requested_species_over_nearer_creature() -> TestResult {
+    use oteryn_dev_client::{EntityDetail, EntityKind, EntityRef, WorldSpatialEntity};
+    use oteryn_protocol_oteryn::entity_names::EntityDisplayName;
+    let here = ActorPosition {
+        x: 100,
+        y: 100,
+        floor: 7,
+    };
+    let entity = |id, name, x| -> TestResult<WorldSpatialEntity> {
+        Ok(WorldSpatialEntity {
+            entity: EntityRef {
+                identity: [id; 16],
+                generation: 1,
+            },
+            kind: EntityKind::Creature,
+            display_name: Some(
+                EntityDisplayName::new(name).map_err(|error| format!("test name: {error:?}"))?,
+            ),
+            position: ActorPosition { x, ..here },
+            detail: EntityDetail::Actor {
+                direction: StepDirection::North,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        })
+    };
+    let other = entity(1, "Poison Spider", 101)?;
+    let rat = entity(2, "Rat", 102)?;
+    assert_eq!(
+        nearest_spawn([&other, &rat].into_iter(), here, "Rat"),
+        Some(&rat)
+    );
+    assert_eq!(nearest_spawn([&other].into_iter(), here, "Rat"), None);
+    Ok(())
 }
 
 async fn travel_to_spawn(
@@ -5570,30 +6106,158 @@ pub(super) async fn travel_to_spawn_target(
     .await?;
     let respawn_wait =
         Duration::from_millis(u64::from(respawn)).saturating_add(Duration::from_secs(5));
-    let mut target = match first {
-        Some(target) => target,
-        None if approached => {
-            wait_visible_species(client, &name, respawn_wait.min(Duration::from_secs(120)))
-                .await?
-                .ok_or_else(|| {
-                    format!("no visible {name} at the reachable spawn points or after respawn")
-                })?
+    if first.is_none() && !approached {
+        return Err(format!("no walkable route to an authored {name} spawn point").into());
+    }
+    approach_spawn_target(
+        client,
+        world,
+        &name,
+        tokio::time::Instant::now() + spawn_observation_budget(std::iter::once(respawn)),
+        None,
+    )
+    .await
+}
+
+fn spawn_observation_budget(respawn_ms: impl Iterator<Item = u32>) -> Duration {
+    let authored = Duration::from_millis(u64::from(respawn_ms.max().unwrap_or_default()));
+    // Leave room for spawn admission and the next visibility update.
+    Duration::from_secs(75).max(authored + Duration::from_secs(5))
+}
+
+struct PendingExchange<'a, T, F: FnOnce(&mut T)> {
+    client: &'a mut T,
+    invalidate: Option<F>,
+}
+
+impl<T, F: FnOnce(&mut T)> Drop for PendingExchange<'_, T, F> {
+    fn drop(&mut self) {
+        if let Some(invalidate) = self.invalidate.take() {
+            invalidate(self.client);
         }
-        None => return Err(format!("no walkable route to an authored {name} spawn point").into()),
+    }
+}
+
+fn action_deadline(deadline: tokio::time::Instant, phase: &'static str) -> TestResult {
+    if tokio::time::Instant::now() >= deadline {
+        return Err(verdict::HarnessError::boxed(
+            verdict::Cause::Deadline { phase },
+            format!("{phase} deadline expired"),
+        ));
+    }
+    Ok(())
+}
+
+async fn timed_exchange<T, R>(
+    client: &mut T,
+    deadline: tokio::time::Instant,
+    phase: &'static str,
+    invalidate: impl FnOnce(&mut T),
+    operation: impl AsyncFnOnce(&mut T) -> R,
+) -> TestResult<R> {
+    action_deadline(deadline, phase)?;
+    let mut pending = PendingExchange {
+        client,
+        invalidate: Some(invalidate),
     };
-    for _ in 0..32 {
+    let result = tokio::time::timeout_at(deadline, operation(&mut *pending.client)).await;
+    if result.is_ok() {
+        pending.invalidate = None;
+    }
+    // The operation can complete on the same poll as the timer. In that case the
+    // exchange is complete, but its result arrived too late for qualification.
+    action_deadline(deadline, phase)?;
+    Ok(result?)
+}
+
+async fn approach_action<R>(
+    client: &mut oteryn_dev_client::DevClientSession,
+    deadline: tokio::time::Instant,
+    phase: &'static str,
+    operation: impl AsyncFnOnce(&mut oteryn_dev_client::DevClientSession) -> TestResult<R>,
+) -> TestResult<R> {
+    timed_exchange(
+        client,
+        deadline,
+        phase,
+        |client| client.session_mut().invalidate_interrupted_exchange(),
+        operation,
+    )
+    .await?
+}
+
+fn account_for_spawn_wait(work_deadline: &mut tokio::time::Instant, started: tokio::time::Instant) {
+    *work_deadline += started.elapsed();
+}
+
+async fn wait_for_spawn_observation(
+    harness: &verdict::Harness,
+    deadline: tokio::time::Instant,
+    operation: impl std::future::Future<Output = TestResult>,
+) -> TestResult {
+    harness.bounded_wait(deadline, "spawn observation");
+    operation.await
+}
+
+async fn approach_spawn_target(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    name: &str,
+    deadline: tokio::time::Instant,
+    mut work_deadline: Option<&mut tokio::time::Instant>,
+) -> TestResult<oteryn_dev_client::EntityRef> {
+    let mut steps = 0;
+    let mut phase = "spawn-observation";
+    loop {
+        action_deadline(deadline, phase)?;
         let here = client.world_spatial().actor_position;
-        let identity = target.entity;
-        let position = tile(target.position)?;
-        let path = route(world, tile(here)?, |at| spawn_adjacent(at, position))
-            .ok_or("visible creature unreachable")?;
-        let Some(direction) = path.first() else {
-            return Ok(identity);
+        let Some(target) = client
+            .world_entities()
+            .and_then(|entities| nearest_spawn(entities.iter(), here, name))
+        else {
+            if steps == 32 {
+                break;
+            }
+            phase = "spawn-observation";
+            let started = tokio::time::Instant::now();
+            wait_for_spawn_observation(
+                verdict::Harness::global(),
+                deadline,
+                approach_action(client, deadline, phase, async |client| {
+                    client.service_liveness(Duration::from_millis(100)).await?;
+                    Ok(())
+                }),
+            )
+            .await?;
+            if let Some(work_deadline) = work_deadline.as_deref_mut() {
+                account_for_spawn_wait(work_deadline, started);
+            }
+            client.take_events();
+            continue;
         };
-        walk(client, world, &[*direction]).await?;
-        target = wait_visible_species(client, &name, Duration::from_secs(2))
-            .await?
-            .ok_or_else(|| format!("{name} disappeared during the approach"))?;
+        let entity = target.entity;
+        let target = tile(target.position)?;
+        let path = route(world, tile(here)?, |at| {
+            at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1
+        })
+        .ok_or("visible creature unreachable")?;
+        let Some(direction) = path.first() else {
+            verdict::Harness::global().progress("spawn target ready");
+            return Ok(entity);
+        };
+        if steps == 32 {
+            break;
+        }
+        let step_deadline = work_deadline
+            .as_deref()
+            .map_or(deadline, |work| deadline.min(*work));
+        phase = "spawn-approach-step";
+        verdict::Harness::global().progress(phase);
+        approach_action(client, step_deadline, phase, async |client| {
+            walk(client, world, &[*direction]).await
+        })
+        .await?;
+        steps += 1;
     }
     Err("could not approach a live creature within the route budget".into())
 }
@@ -5797,7 +6461,7 @@ async fn shop_journey(
         evidence(
             "mechanic=npc_shop status=FAIL unproven=authored_shop_npc_missing content_id=oteryn:npc.sam source=content/npcs/definitions/index.json:1",
         );
-        return Err("authored shop NPC absent".into());
+        return Err("mechanic=npc_shop reason=authored_shop_npc_missing content_id=oteryn:npc.sam source=content/npcs/definitions/index.json:1".into());
     };
     let from = tile(client.world_spatial().actor_position)?;
     let Some(path) = route(world, from, |at| {
@@ -5809,7 +6473,7 @@ async fn shop_journey(
         evidence(
             "mechanic=npc_shop status=FAIL unproven=no_route_to_authored_shop_within_town_budget content_id=oteryn:npc.sam source=apps/game-server/src/qualification/client_phases/world.rs:126",
         );
-        return Err("authored shop NPC unreachable".into());
+        return Err("mechanic=npc_shop reason=no_route_to_authored_shop_within_town_budget content_id=oteryn:npc.sam source=apps/game-server/src/qualification/client_phases/world.rs:126".into());
     };
     walk(client, world, &path).await?;
     let target = client
@@ -5829,7 +6493,7 @@ async fn shop_journey(
         evidence(
             "mechanic=npc_shop status=FAIL unproven=authored_shop_has_no_visible_actor_at_placement content_id=oteryn:npc.sam source=crates/protocol-oteryn/src/world_spatial_entities.rs:105",
         );
-        return Err("authored shop NPC not visible".into());
+        return Err("mechanic=npc_shop reason=authored_shop_has_no_visible_actor_at_placement content_id=oteryn:npc.sam source=crates/protocol-oteryn/src/world_spatial_entities.rs:105".into());
     };
     client_npc_shop::transact(client, target.entity, clients).await
 }
@@ -6088,7 +6752,7 @@ fn qualification_q01_bundle_route_reaches_noble_armor_door() -> TestResult {
 
 #[cfg(test)]
 #[test]
-fn qualification_flr2_q03a_descends_to_adjacent_reward() -> TestResult {
+fn qualification_flr2_q03a_town_route_currently_exhausts_search() -> TestResult {
     flr2_reward_route(
         "Q03a",
         TilePos {
@@ -6147,8 +6811,8 @@ fn flr2_reward_route(label: &'static str, target: TilePos) -> TestResult {
             if label == "Q03a" {
                 let reason = planned.err().ok_or("Q03a unexpectedly has a route")?;
                 assert_eq!(reason, "every reachable tile of the search box exhausted (114052 settled); closest tile reached 32305,32254,7");
-                let result: TestResult = Err(full_row_q01::Q03A_MISSING.into());
-                assert_eq!(full_row_q01::row_status(&result), "MISSING");
+                let result: TestResult = Err(reason.into());
+                assert_eq!(full_row_q01::row_status(&result), "FAIL");
                 return Ok(());
             }
             let route = planned?;
@@ -6398,4 +7062,454 @@ fn flr2_catalogue_admission() -> TestResult {
         "catalogue blocking stone must block movement"
     );
     Ok(())
+}
+
+#[test]
+fn qualification_core_shop_requires_all_preconditions() -> TestResult {
+    let world = include_str!("world.rs");
+    let between = |start, end| -> TestResult<&str> {
+        Ok(world
+            .split_once(start)
+            .ok_or("start")?
+            .1
+            .split_once(end)
+            .ok_or("end")?
+            .0)
+    };
+    let shop = between("async fn shop_journey(", "fn qualification_nbtown_checks")?;
+    assert_eq!(shop.matches("return Err(").count(), 3, "shop preconditions");
+    Ok(())
+}
+
+#[test]
+fn qualification_paid_confirmation_propagates_failure() {
+    let world = include_str!("world.rs")
+        .split_once("fn qualification_paid_confirmation_propagates_failure")
+        .map_or("", |(implementation, _)| implementation);
+    let reference = include_str!("travel.rs");
+    assert!(world.contains("converse_with(client, npc, \"yes\", true).await?"));
+    assert!(reference.contains("converse(client, npc, \"yes\").await?"));
+}
+
+#[test]
+fn qualification_map_tool_uses_command_owning_capability() {
+    for source in [include_str!("map_journey.rs"), include_str!("travel.rs")] {
+        assert!(source.contains(".world_context_use(&payload)"));
+    }
+}
+
+#[test]
+fn qualification_q03a_successful_preflight_admits_client() -> TestResult {
+    let source = include_str!("full_row_q01.rs");
+    let after_preflight = source
+        .split_once("from_town(planner, chest, &label)?;")
+        .ok_or("preflight")?
+        .1;
+    assert!(
+        after_preflight
+            .trim_start()
+            .starts_with("let mut client = connect_character(")
+    );
+    Ok(())
+}
+
+#[test]
+fn qualification_travel_replans_before_executing_stale_route() -> TestResult {
+    let source = include_str!("world.rs");
+    let after_search = source
+        .split_once("if let Some(error) = service_error {")
+        .ok_or("search result")?
+        .1;
+    let before_actions = after_search
+        .split_once("planner.execute(client")
+        .ok_or("route execution")?
+        .0;
+    assert!(before_actions.contains("if observed != from {"));
+    Ok(())
+}
+
+#[test]
+fn qualification_reachability_replans_are_bounded() -> TestResult {
+    let source = include_str!("world.rs");
+    let search = source
+        .split_once("pub(super) async fn reach_route(")
+        .ok_or("reachability entry")?
+        .1;
+    let search = search
+        .split_once("async fn reach_route_serviced(")
+        .ok_or("offline search")?
+        .0;
+    assert!(search.contains("for attempt in 0..=travel::MAX_REPLANS"));
+    Ok(())
+}
+
+#[test]
+fn qualification_death_relog_awaits_fixture_release_on_mismatch() -> TestResult {
+    let source = include_str!("world.rs");
+    let relog = source
+        .split_once("client = connect_world(clients, 0x73).await?;")
+        .ok_or("death relog")?
+        .1;
+    let relog = relog
+        .split_once("async fn profile_journey")
+        .ok_or("journey end")?
+        .0;
+    assert!(relog.contains("wait_character_released(clients, 1)"));
+    assert!(relog.contains(".and(snapshot_result)"));
+    assert!(relog.contains("finish_after_terminal_release("));
+    Ok(())
+}
+
+#[test]
+fn qualification_serviced_search_and_provisioning_drain_observations() -> TestResult {
+    let travel = include_str!("world.rs")
+        .split_once(".plan_serviced(from, target, goal, rope, passages, async ||")
+        .ok_or("search callback")?
+        .1;
+    assert!(
+        travel
+            .split_once("if let Some(error) = service_error")
+            .ok_or("search callback end")?
+            .0
+            .contains("client.take_events()")
+    );
+    for source in [
+        include_str!("full_row_q01.rs"),
+        include_str!("provision.rs"),
+    ] {
+        let callback = source
+            .split_once("wait_fixture_command(")
+            .ok_or("fixture wait")?
+            .1;
+        assert!(
+            callback
+                .split_once("Ok(())")
+                .ok_or("fixture service end")?
+                .0
+                .contains("client.take_events()")
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn qualification_fixture_command_joins_writer_when_wait_is_cancelled() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(FIXTURE_WORKERS.scope(Default::default(), async {
+            let (release, gate) = std::sync::mpsc::sync_channel(1);
+            let task = FixtureCommand::start(move || {
+                gate.recv_timeout(Duration::from_secs(2))
+                    .map_err(|error| error.to_string())?;
+                Ok(())
+            })?;
+            drop(task);
+            let mut cleanup = Box::pin(await_fixture_workers());
+            tokio::select! {
+                biased;
+                () = &mut cleanup => return Err("cleanup completed before writer release".into()),
+                () = tokio::task::yield_now() => {}
+            }
+            release.send(())?;
+            cleanup.await;
+            Ok(())
+        }))
+}
+
+#[test]
+fn qualification_missing_pick_is_classified_as_fixture_precondition() {
+    let error = travel::missing_tool_error(3456, "required for descent");
+    assert_eq!(
+        verdict::classify(error.as_ref()),
+        verdict::Cause::Precondition {
+            name: "fixture-tool-3456".into()
+        }
+    );
+    let result = Err(error);
+    assert_eq!(
+        e2e_result_line(&format!(
+            "e2e_all scenario=Q03i.full status={} seconds=0",
+            full_row_q01::row_status(&result)
+        )),
+        "e2e_all scenario=Q03i.full status=FAIL seconds=0",
+    );
+}
+
+#[test]
+fn qualification_spawn_and_fixture_command_have_outer_process_deadlines() -> TestResult {
+    let command = fixture_command();
+    let command = command.as_std();
+    let args: Vec<_> = command.get_args().collect();
+    assert_eq!(command.get_program(), "timeout");
+    assert_eq!(
+        args[..9],
+        [
+            "--kill-after=2s",
+            "30s",
+            "sudo",
+            "-n",
+            "timeout",
+            "--kill-after=2s",
+            "25s",
+            "python3",
+        ]
+    );
+    assert_eq!(args.len(), 11);
+    assert!(Path::new(args[9]).ends_with("tools/qualification/node_boot/provision.py"));
+    assert_eq!(args[10], "--watch-stdin");
+    let source = include_str!("world.rs");
+    let spawn = source
+        .split_once("async fn request_spawn(")
+        .ok_or("spawn")?
+        .1;
+    let spawn = spawn.split_once("async fn walk(").ok_or("spawn end")?.0;
+    assert!(spawn.contains("fixture_command()"));
+    for source in [
+        include_str!("full_row_q01.rs"),
+        include_str!("provision.rs"),
+    ] {
+        assert!(source.contains("fixture_command()"));
+    }
+    Ok(())
+}
+
+#[test]
+fn qualification_round_two_caller_contracts() {
+    let checks = [
+        (include_str!("npc_shop.rs"), "require_buy_funds(before_gold"),
+        (include_str!("full_row_p03.rs"), "hunt_target("),
+        (include_str!("full_gold.rs"), "hunt_target("),
+        (include_str!("world.rs"), "world_map_tile(position)"),
+        (
+            include_str!("world.rs"),
+            "disposition == UseDisposition::Committed && needs_revision",
+        ),
+        (
+            include_str!("indexed_verdict.rs"),
+            "await_fixture_workers().await",
+        ),
+        (
+            include_str!("../../../../../tools/qualification/node_boot/provision.py"),
+            "CONTROL_REPLY_TIMEOUT = 40",
+        ),
+    ];
+    let implementation = |source: &'static str| {
+        source
+            .split("#[test]\nfn qualification_round_two_caller_contracts")
+            .next()
+            .unwrap_or_default()
+    };
+    let missing: Vec<_> = checks
+        .into_iter()
+        .filter_map(|(source, needle)| (!implementation(source).contains(needle)).then_some(needle))
+        .collect();
+    assert!(missing.is_empty(), "missing contracts: {missing:?}");
+}
+
+#[test]
+fn qualification_retries_and_encounter_cleanup_keep_their_owners() {
+    let q02 = include_str!("full_row_q02.rs");
+    let s10 = include_str!("full_row_s10.rs");
+    let c09 = include_str!("client_row_c09.rs");
+    let mp09 = include_str!("mp/mp09_party_xp.rs");
+    let combat = c09
+        .split_once("for _ in 0..3 {")
+        .map_or("", |(_, combat)| combat);
+    let missing: Vec<_> = [
+        ("Q02", q02.contains("hunt_target(client, Some(target))")),
+        ("S10", s10.contains("hunt_target(client, Some(target))")),
+        (
+            "C09",
+            combat.contains("let target = travel_to_spawn_target("),
+        ),
+        ("MP09", mp09.contains("fixture_timeout(")),
+    ]
+    .into_iter()
+    .filter_map(|(name, ok)| (!ok).then_some(name))
+    .collect();
+    assert!(missing.is_empty(), "missing caller behavior: {missing:?}");
+}
+
+#[test]
+fn qualification_cancelled_fixture_drain_keeps_pending_worker() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(FIXTURE_WORKERS.scope(Default::default(), async {
+            let (release, gate) = std::sync::mpsc::sync_channel(1);
+            let _worker = FixtureCommand::start(move || {
+                gate.recv_timeout(Duration::from_secs(2))
+                    .map_err(|error| error.to_string())
+            })?;
+            for _ in 0..2 {
+                let mut drain = Box::pin(await_fixture_workers());
+                tokio::select! {
+                    biased;
+                    () = &mut drain => return Err("pending worker escaped fixture cleanup".into()),
+                    () = tokio::task::yield_now() => {}
+                }
+                drop(drain);
+            }
+            release.send(())?;
+            await_fixture_workers().await;
+            Ok(())
+        }))
+}
+
+#[test]
+fn qualification_routed_hunts_service_empty_spawns_and_approach_live_targets() {
+    let q02 = include_str!("full_row_q02.rs");
+    let s10 = include_str!("full_row_s10.rs");
+    let world = include_str!("world.rs");
+    let spawn = world
+        .split_once("async fn travel_to_spawn_target")
+        .map_or("", |(_, body)| body);
+    let spawn = spawn
+        .split_once("pub(crate) fn smoke")
+        .map_or("", |(body, _)| body);
+    let missing: Vec<_> = [
+        ("Q02 approach", q02.contains("approach_spawn_target(")),
+        (
+            "S10 approach and wait",
+            s10.contains("approach_spawn_target("),
+        ),
+        (
+            "C09 approach and wait",
+            spawn.contains("approach_spawn_target("),
+        ),
+    ]
+    .into_iter()
+    .filter_map(|(name, ok)| (!ok).then_some(name))
+    .collect();
+    assert!(missing.is_empty(), "missing caller behavior: {missing:?}");
+}
+
+#[test]
+fn qualification_timeout_invalidates_interrupted_exchange() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()?
+        .block_on(async {
+            let start = tokio::time::Instant::now();
+            let budget = Duration::from_secs(1);
+            let mut usable = true;
+            let result = timed_exchange(
+                &mut usable,
+                start + budget,
+                "spawn-approach-step",
+                |usable| *usable = false,
+                async |_| {
+                    tokio::time::sleep(Duration::from_secs(10)).await;
+                },
+            )
+            .await;
+            assert!(result.is_err());
+            assert!(!usable);
+            assert_eq!(start.elapsed(), budget);
+            usable = true;
+            let outer = tokio::time::timeout(
+                budget,
+                timed_exchange(
+                    &mut usable,
+                    start + Duration::from_secs(30),
+                    "spawn-approach-step",
+                    |usable| *usable = false,
+                    async |_| std::future::pending::<()>().await,
+                ),
+            )
+            .await;
+            assert!(outer.is_err());
+            assert!(!usable);
+            Ok(())
+        })
+}
+
+#[test]
+fn qualification_ready_exchange_at_deadline_is_rejected() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()?
+        .block_on(async {
+            let mut usable = true;
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(1);
+            let phase = "earn-fare-combat-and-loot";
+            let result = timed_exchange(
+                &mut usable,
+                deadline,
+                phase,
+                |usable| *usable = false,
+                async |_| tokio::time::sleep_until(deadline).await,
+            )
+            .await;
+            let Err(error) = result else {
+                return Err("exchange completed at its deadline".into());
+            };
+            assert_eq!(
+                verdict::classify(error.as_ref()),
+                verdict::Cause::Deadline { phase }
+            );
+            assert!(
+                usable,
+                "a completed exchange leaves the session synchronized"
+            );
+            Ok(())
+        })
+}
+
+#[test]
+fn qualification_spawn_deadline_keeps_last_action() -> TestResult {
+    for phase in ["spawn-observation", "spawn-approach-step", "earn-fare-work"] {
+        let Err(error) = action_deadline(tokio::time::Instant::now(), phase) else {
+            return Err(format!("{phase} accepted an expired deadline").into());
+        };
+        assert_eq!(
+            verdict::classify(error.as_ref()),
+            verdict::Cause::Deadline { phase }
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn qualification_two_respawns_preserve_fare_work_budget() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()?
+        .block_on(async {
+            let start = tokio::time::Instant::now();
+            let (mut work_deadline, hard_deadline) =
+                full_row_s10::fare_deadlines(start, [90_000].into_iter());
+            let work = Duration::from_secs(180);
+            for _ in 0..2 {
+                let waiting = tokio::time::Instant::now();
+                tokio::time::sleep(Duration::from_secs(90)).await;
+                account_for_spawn_wait(&mut work_deadline, waiting);
+            }
+            assert_eq!(work_deadline - tokio::time::Instant::now(), work);
+            let mut usable = true;
+            let combat = timed_exchange(
+                &mut usable,
+                work_deadline.min(hard_deadline),
+                "earn-fare-combat-and-loot",
+                |usable| *usable = false,
+                async |_| tokio::time::sleep(Duration::from_secs(120)).await,
+            )
+            .await;
+            assert!(combat.is_ok());
+            assert_eq!(
+                tokio::time::Instant::now() - start,
+                Duration::from_secs(300)
+            );
+            assert!(hard_deadline >= work_deadline);
+            Ok(())
+        })
+}
+
+#[test]
+fn qualification_spawn_budget_covers_authored_ninety_seconds() {
+    assert!(spawn_observation_budget([90_000].into_iter()) > Duration::from_secs(90));
 }

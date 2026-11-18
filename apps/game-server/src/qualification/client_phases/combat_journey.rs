@@ -75,6 +75,7 @@ pub(super) async fn combat_journey(
                 .await?;
                 melee_damage(
                     client,
+                    "Rat",
                     FightModes {
                         fight_mode,
                         chase,
@@ -94,6 +95,7 @@ pub(super) async fn combat_journey(
 
 async fn melee_damage(
     client: &mut DevClientSession,
+    name: &str,
     modes: FightModes,
     wanted: oteryn_dev_client::EntityRef,
     url: &str,
@@ -119,6 +121,7 @@ async fn melee_damage(
         .and_then(|entities| {
             entities.iter().find(|entity| {
                 entity.kind == EntityKind::Creature
+                    && client_world::has_display_name(entity, name)
                     && entity.entity == wanted
                     && entity.position.floor == here.floor
                     && entity

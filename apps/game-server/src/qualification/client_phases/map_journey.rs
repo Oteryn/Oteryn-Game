@@ -7,7 +7,24 @@ pub(super) async fn run(
     model: &MapModel<'_>,
 ) -> TestResult {
     let start = tile(client.world_spatial().actor_position)?;
-    let mut totals: BTreeMap<&str, [usize; 3]> = BTreeMap::new();
+    let mut totals: BTreeMap<&str, [usize; 3]> = [
+        "blocking_item",
+        "closed_door",
+        "field",
+        "hole_down",
+        "ladder",
+        "monster_spawn",
+        "npc",
+        "pz_border",
+        "rope_spot",
+        "shovel_hole",
+        "stairs_down",
+        "stairs_up",
+        "teleport",
+    ]
+    .into_iter()
+    .map(|kind| (kind, [0; 3]))
+    .collect();
     for sample in model.samples(start, 1) {
         let result = check(client, model, &sample, start).await;
         let (index, reason) = match result {
@@ -63,13 +80,30 @@ pub(super) async fn run(
 fn map_coverage(totals: &BTreeMap<&str, [usize; 3]>) -> TestResult {
     let failures: usize = totals.values().map(|counts| counts[1]).sum();
     let skipped: usize = totals.values().map(|counts| counts[2]).sum();
-    if failures != 0 || skipped != 0 || !totals.keys().any(|kind| *kind != "return") {
+    if totals
+        .values()
+        .copied()
+        .any(|counts| incomplete_checks(counts) != 0)
+        || !totals.keys().any(|kind| *kind != "return")
+    {
         return Err(format!(
             "map journey coverage incomplete: failed={failures} unproven={skipped}"
         )
         .into());
     }
     Ok(())
+}
+
+fn incomplete_checks([pass, fail, skipped]: [usize; 3]) -> usize {
+    fail + skipped + usize::from(pass + fail + skipped == 0)
+}
+
+#[test]
+fn qualification_map_skipped_or_absent_kind_fails_coverage() {
+    assert_eq!(incomplete_checks([0, 0, 1]), 1);
+    assert_eq!(incomplete_checks([0, 0, 0]), 1);
+    assert_eq!(incomplete_checks([1, 0, 0]), 0);
+    assert_eq!(incomplete_checks([1, 1, 1]), 2);
 }
 
 #[test]
@@ -167,6 +201,19 @@ async fn check(
         client.take_events();
         return Ok(None);
     }
+    if sample.kind == "ladder" && !transition {
+        let ordinal = model.tiles[&target]
+            .ladder_ordinal
+            .ok_or("catalogue ladder has no supported immovable USE target")?;
+        let placement = map_placement(model.world, target, ordinal)?;
+        let expected = upstairs_landing(client, model, target)?;
+        if travel::use_map_object(client, &placement).await?
+            != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+        {
+            return Err("immovable ladder USE did not commit".into());
+        }
+        return observe_ascent(client, expected).await.map(|()| None);
+    }
     if matches!(sample.kind, "rope_spot" | "shovel_hole") {
         use oteryn_protocol_oteryn::world_object::*;
         let rope = sample.kind == "rope_spot";
@@ -189,26 +236,21 @@ async fn check(
             facts.shovel_ordinal
         }
         .ok_or("map tool target ordinal missing")?;
-        let key = crate::map::view::placement_key(target, ordinal)
-            .ok_or("map tool target placement missing")?;
-        let mut placement = model.world.base().digest().to_vec();
-        placement.extend_from_slice(&key.to_be_bytes());
+        let placement = map_placement(model.world, target, ordinal)?;
+        let expected_revision = travel::observed_revision(client, &placement, target, ordinal)?;
         let intent = UseIntent {
             target: UseTarget::Item(source),
             use_with: None,
             use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
                 placement,
-                expected_revision: 0,
+                expected_revision,
             })),
             use_with_position: None,
         };
         let payload = encode_item_use_intent(&intent)
             .map_err(|error| format!("map tool encode: {error:?}"))?;
         let before = tile(client.world_spatial().actor_position)?;
-        let response = client
-            .session_mut()
-            .gated_command(CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, &payload)
-            .await?;
+        let response = client.session_mut().world_context_use(&payload).await?;
         if response.status != CommandStatus::Accepted
             || decode_use_result(&response.payload)
                 .map_err(|error| format!("map tool result: {error:?}"))?
@@ -253,6 +295,11 @@ async fn check(
         } else {
             oteryn_dev_client::EntityKind::Creature
         };
+        let name = sample
+            .content
+            .as_ref()
+            .and_then(|key| model.actor_names.get(key))
+            .ok_or("sampled actor has no authored display name")?;
         let key = sample
             .content
             .as_deref()
@@ -265,6 +312,7 @@ async fn check(
         if !client.world_entities().is_some_and(|entities| {
             entities.iter().any(|entity| {
                 entity.kind == kind
+                    && has_display_name(entity, name)
                     && entity
                         .display_name
                         .as_ref()
@@ -303,6 +351,50 @@ async fn check(
         compare_protection_zone(client, model.tiles[expected].protection_zone).await?;
     }
     Ok(None)
+}
+
+fn map_placement(world: &BundleWorld, at: TilePos, ordinal: u8) -> TestResult<Vec<u8>> {
+    let key = crate::map::view::placement_key(at, ordinal).ok_or("map placement missing")?;
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    Ok(placement)
+}
+
+fn upstairs_landing(
+    client: &oteryn_dev_client::DevClientSession,
+    model: &MapModel<'_>,
+    spot: TilePos,
+) -> TestResult<TilePos> {
+    travel::first_landing(spot, |at| {
+        model.tiles.get(&at).is_some_and(|facts| facts.walkable)
+            && !client.world_entities().is_some_and(|entities| {
+                entities.iter().any(|entity| {
+                    matches!(
+                        entity.kind,
+                        oteryn_dev_client::EntityKind::Player
+                            | oteryn_dev_client::EntityKind::Creature
+                            | oteryn_dev_client::EntityKind::Npc
+                    ) && tile(entity.position).ok() == Some(at)
+                })
+            })
+    })
+    .ok_or_else(|| "map ascent has no predicted free landing".into())
+}
+
+async fn observe_ascent(
+    client: &mut oteryn_dev_client::DevClientSession,
+    expected: TilePos,
+) -> TestResult {
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            if tile(client.world_spatial().actor_position)? == expected {
+                return Ok(());
+            }
+            client.take_events();
+            client.service_liveness(Duration::from_millis(50)).await?;
+        }
+    })
+    .await?
 }
 
 async fn compare_protection_zone(

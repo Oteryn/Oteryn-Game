@@ -137,7 +137,18 @@ fn depot_exchange(container_only: bool) -> Result<(), BoxError> {
                                     origin: at(1, 0),
                                     ..header
                                 },
-                                tiles: vec![],
+                                tiles: vec![MapTile {
+                                    position: at(1, 0),
+                                    items: vec![MapItem {
+                                        definition: MapDefinition::Terrain(std::num::NonZeroU32::MIN),
+                                        count: 1,
+                                        sub_type: 0,
+                                        origin: MapOrigin::BaseOrdinal { ordinal: 0, object_revision: 7 },
+                                        appearance_id: 0,
+                                    }],
+                                    more: false,
+                                    ground_speed: 150,
+                                }],
                                 cleared: vec![],
                             },
                         )
@@ -197,6 +208,17 @@ fn depot_exchange(container_only: bool) -> Result<(), BoxError> {
                 .take_events()
                 .iter()
                 .any(|event| matches!(event, SessionEvent::WorldMap(_)))
+        );
+        assert_eq!(
+            session
+                .world_map_tile(at(1, 0))
+                .ok_or("latest map tile lost after drain")?
+                .items[0]
+                .origin,
+            MapOrigin::BaseOrdinal {
+                ordinal: 0,
+                object_revision: 7
+            },
         );
         // The map path needed by depot access cannot accept a new reset binding as a delta.
         let binding = session.map_header.ok_or("map binding")?;

@@ -103,7 +103,7 @@ pub(super) async fn run(
     let mut earned = None;
     if enabled {
         let encounter =
-            tokio::time::timeout(Duration::from_secs(240), encounter(&mut bots, world)).await;
+            fixture_timeout(Duration::from_secs(240), encounter(&mut bots, world)).await;
         let result = match encounter { Ok(result) => result, Err(_) => Err("encounter deadline;source:crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs:1905".into()) };
         match result {
             Ok((start, end, hits, pool)) => {

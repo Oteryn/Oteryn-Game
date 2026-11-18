@@ -76,8 +76,6 @@ pub(super) const CHESTS: [Chest; 16] = [
     chest("Q03k", "six_rubies", (32371, 32262, 12), 6156, 3030, 0, 0x1c),
 ];
 
-pub(super) const Q03A_MISSING: &str = "MISSING no confirmed descent into Q03a reward room: 32302,32257,8 ground 355 without action 101; rope spot 386 at 32302,32257,9; search exhausted 114052 settled; closest 32305,32254,7";
-
 pub(super) fn row_status(result: &TestResult) -> &'static str {
     match result {
         Ok(()) => "PASS",
@@ -138,9 +136,6 @@ async fn journey(clients: &SeamClients<'_>, chest: &Chest) -> TestResult {
     }
     let reference = provisioning::item_reference(&provisioning::item_index()?, chest.item)?;
     from_town(planner, chest, &label)?;
-    if chest.row == "Q03a" {
-        return Err(Q03A_MISSING.into());
-    }
     let mut client = connect_character(clients, chest.tag, chest.character).await?;
     let result = match setup(clients, planner, chest, &label, &mut client).await {
         Ok(()) => claim(&mut client, planner, chest, &label, ordinal, reference).await,
@@ -269,6 +264,7 @@ pub(super) async fn provision(
         async { Ok(run_fixture_command(&mut command).await?) },
         async || {
             client.service_liveness(Duration::from_millis(100)).await?;
+            client.take_events();
             Ok(())
         },
     ).await?;
@@ -306,7 +302,6 @@ fn from_town(planner: &travel::Planner<'_>, chest: &Chest, label: &str) -> TestR
         Err(reason) => {
             evidence(&format!("TRAVEL_ROUTE {label} from-town {TOWN:?} unreached: {reason}"));
             match chest.row {
-                "Q03a" => return Err(Q03A_MISSING.into()),
                 "Q01a" | "Q01b" => {
                     let entries = [(32558,31960,7), (32546,31969,8), (32411,32008,7),
                         (32441,32016,8), (32453,32039,9), (32453,32040,8), (32448,32042,8)]

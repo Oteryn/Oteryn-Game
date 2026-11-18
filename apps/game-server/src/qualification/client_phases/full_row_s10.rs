@@ -73,10 +73,13 @@ impl Row {
     }
 }
 
+// Keep the original 85 seconds for admission and the checks after fare earning.
+const ROW_BUDGET: Duration = Duration::from_secs(455);
+
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(&mut row, clients))).await;
-    row.finish(match result { Ok(result) => result, Err(_) => Err("step deadline: no server reply within 360s; need the server to complete the pending NPC/travel command".into()) });
+    let result = verdict::indexed_timeout(ROW_BUDGET, verdict::observe(journey(&mut row, clients))).await;
+    row.finish(match result { Ok(result) => result, Err(_) => Err("step deadline: no server reply within 455s; need the server to complete the pending NPC/travel command".into()) });
 }
 
 async fn talk(
@@ -206,6 +209,14 @@ fn utc_rashid_destination() -> TestResult<RashidDestination> {
     ))
 }
 
+pub(super) fn fare_deadlines(
+    now: tokio::time::Instant,
+    respawns: impl Iterator<Item = u32>,
+) -> (tokio::time::Instant, tokio::time::Instant) {
+    let work_deadline = now + Duration::from_secs(180);
+    (work_deadline, work_deadline + 2 * spawn_observation_budget(respawns))
+}
+
 async fn earn(
     client: &mut DevClientSession,
     world: &crate::map::boot::BundleWorld,
@@ -218,26 +229,47 @@ async fn earn(
         .flat_map(|source| {
             source.points.iter().filter_map(|point| {
                 (spawns.creatures[point.creature as usize].key == "oteryn:creature.rat")
-                    .then_some((point.x, point.y, source.floor))
+                    .then_some((point.x, point.y, source.floor, point.respawn_ms))
             })
         })
         .collect();
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
-    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
+    let (mut fare_work_deadline, deadline) = fare_deadlines(
+        tokio::time::Instant::now(),
+        rats.iter().map(|&(_, _, _, respawn_ms)| respawn_ms),
+    );
     while carried_gold(client)? < needed {
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("step earn-fare: combat/loot budget expired; observed carried_gold={}, required={needed}; need sufficient authored player-obtainable loot", carried_gold(client)?).into());
-        }
+        action_deadline(fare_work_deadline.min(deadline), "earn-fare-work").map_err(|error| {
+            verdict::context(
+                format!("step earn-fare: {error}; required carried_gold={needed}"),
+                error,
+            )
+        })?;
         let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            rats.iter().any(|&(x, y, floor)| {
+            rats.iter().any(|&(x, y, floor, _)| {
                 at.x.abs_diff(x).max(at.y.abs_diff(y)) <= 1 && at.floor == floor
             })
         })
         .ok_or("step earn-fare: no legitimate route to an authored rat spawn")?;
-        walk(client, world, &path).await?;
-        client_hunt::hunt(client)
-            .await
-            .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step earn-fare: real combat/loot failed: {error}"), error) })?;
+        approach_action(
+            client,
+            fare_work_deadline.min(deadline),
+            "earn-fare-walk",
+            async |client| walk(client, world, &path).await,
+        )
+        .await?;
+        let target = approach_spawn_target(client, world, "Rat", deadline, Some(&mut fare_work_deadline))
+            .await?;
+        approach_action(
+            client,
+            fare_work_deadline.min(deadline),
+            "earn-fare-combat-and-loot",
+            async |client| client_hunt::hunt_target(client, Some(target)).await,
+        )
+        .await
+        .map_err(|error| {
+            verdict::record_error(verdict::IndexedError::as_error(&error));
+            verdict::context(format!("step earn-fare: real combat/loot failed: {error}"), error)
+        })?;
     }
     Ok(())
 }
