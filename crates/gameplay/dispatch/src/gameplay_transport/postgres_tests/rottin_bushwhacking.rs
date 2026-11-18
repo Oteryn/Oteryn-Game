@@ -7,6 +7,7 @@ use crate::gameplay_transport::connection::UseCommand;
 use crate::gameplay_transport::item_view::ItemKey;
 use crate::map::overlay::TilePos;
 use crate::map::view::MapFacts;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
 use oteryn_protocol_oteryn::creature_push::{CreaturePushDisposition, CreaturePushIntent};
 use oteryn_protocol_oteryn::world_object::{
@@ -136,12 +137,22 @@ pub(super) fn catalogue(wave: bool) -> TestResult<QuestStateCatalogue> {
 }
 
 pub(super) async fn exercise(
-    client: &mut DuplexStream,
+    client: Option<&mut DuplexStream>,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     loot: Option<&Harness>,
 ) -> TestResult {
-    prepare(client, owner).await?;
+    if let Some(client) = client {
+        prepare(client, owner).await?;
+    } else {
+        let mut runtime = owner.runtime.lock().await;
+        owner
+            .active_generation
+            .and_then(|generation| generation.native_gameplay())
+            .ok_or("active creature policies")?
+            .install_companion_policies(&mut runtime)
+            .map_err(super::fixture::debug)?;
+    }
     let actor = admitted.runtime_actor.ok_or("pusher")?;
     let merchant = spawn(owner, "oteryn:creature.travelling_merchant", at(3, 2)).await?;
     let map = owner.bundle_map().ok_or("bundle")?;
@@ -207,12 +218,10 @@ pub(super) async fn exercise(
 }
 
 pub(super) async fn exercise_wave(
-    client: &mut DuplexStream,
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     h: &Harness,
 ) -> TestResult {
-    prepare(client, owner).await?;
     let actor = admitted.runtime_actor.ok_or("net player")?;
     let map = owner.bundle_map().ok_or("map")?;
     let pos = TilePos {
@@ -290,5 +299,51 @@ pub(super) async fn exercise_wave(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(receipts, 1);
+    drain_next(owner).await?;
+    let runtime = owner.runtime.lock().await;
+    let live = runtime
+        .current_live_creature_census()
+        .map_err(super::fixture::debug)?;
+    assert_eq!(
+        live.iter()
+            .filter(|actor| runtime
+                .matches_live_creature_identity(**actor, b"oteryn:creature.travelling_merchant"))
+            .count(),
+        7
+    );
+    drop(runtime);
+    drain_next(owner).await?;
+    let map = owner.bundle_map().ok_or("map")?;
+    assert!(
+        map.facts
+            .movement_items(TilePos {
+                x: 4,
+                y: 2,
+                floor: -7
+            })
+            .is_empty()
+    );
+    assert!(
+        map.facts
+            .movement_items(pos)
+            .iter()
+            .any(|entry| entry.facts.appearance_id == 12189)
+    );
+    drain_next(owner).await?;
+    let map = owner.bundle_map().ok_or("map")?;
+    assert!(map.facts.movement_items(pos).is_empty());
+    Ok(())
+}
+
+async fn drain_next(owner: &mut ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
+    let due = owner
+        .states
+        .quest_callbacks
+        .next_encounter_due_us()
+        .ok_or("merchant scene deadline")?;
+    owner.clock_origin = std::time::Instant::now()
+        .checked_sub(std::time::Duration::from_micros(due))
+        .ok_or("scene clock")?;
+    owner.drain_quest_encounter_deadlines().await;
     Ok(())
 }

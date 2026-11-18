@@ -354,12 +354,21 @@ pub(super) fn scenario(
             admitted.continuity.selected_capabilities.as_slice(),
             &[4, 6, 13, 82]
         );
-        if weighted_reward {
-            owner.quest_catalogue = Some(std::sync::Arc::new(super::rottin_rewards::catalogue()?));
+        if weighted_reward || merchant_loot || merchant_wave {
+            if weighted_reward {
+                owner.quest_catalogue =
+                    Some(std::sync::Arc::new(super::rottin_rewards::catalogue()?));
+            }
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             owner.admit_quest_session(&admitted).await;
-            super::rottin_rewards::exercise(&mut owner, &mut admitted, &h).await?;
+            if merchant_wave {
+                super::rottin_bushwhacking::exercise_wave(&mut owner, admitted, &h).await?;
+            } else if merchant_loot {
+                super::rottin_bushwhacking::exercise(None, &owner, admitted, Some(&h)).await?;
+            } else {
+                super::rottin_rewards::exercise(&mut owner, &mut admitted, &h).await?;
+            }
             drop(owner);
             drop(authority);
             drop(seal);
@@ -367,16 +376,9 @@ pub(super) fn scenario(
         }
         let (mut server, mut client) = tokio::io::duplex(1 << 20);
         let client_flow = async {
-            let result = if merchant_wave {
-                super::rottin_bushwhacking::exercise_wave(&mut client, &owner, admitted, &h).await
-            } else if trap == Some(12187) {
-                super::rottin_bushwhacking::exercise(
-                    &mut client,
-                    &owner,
-                    admitted,
-                    merchant_loot.then_some(&h),
-                )
-                .await
+            let result = if trap == Some(12187) {
+                super::rottin_bushwhacking::exercise(Some(&mut client), &owner, admitted, None)
+                    .await
             } else if let Some(trap) = trap {
                 relocation_tiles_scenario(&mut client, &owner, admitted, trap).await
             } else if unpushable {
