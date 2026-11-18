@@ -1,7 +1,8 @@
 //! Crystal 201189f8, creaturescripts_putrefactory-x.lua:1-38,55-68,216.
 
 use crate::quest::{
-    QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
+    NpcDefinitionPredecessor, QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue,
+    QuestTrack, QuestTransition,
 };
 
 pub const CHARGE_TRACK: &str =
@@ -51,9 +52,15 @@ pub(crate) fn passive_transition() -> QuestTransition {
     }
 }
 
-pub(crate) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
-    let mut tracks: Vec<_> = catalogue.tracks.into_values().collect();
-    let mut transitions: Vec<_> = catalogue.transitions.into_values().collect();
+pub(crate) fn extend(catalogue: &mut QuestStateCatalogue) -> Result<(), String> {
+    if !crate::quest::in_runtime_scope(super::QUEST) {
+        return Ok(());
+    }
+    let previous = catalogue
+        .definition_hash(super::QUEST)
+        .ok_or("missing Rotten Blood definition")?;
+    let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
+    let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
     tracks.push(QuestTrack {
         key: PASSIVE_CLOCK.into(),
         quest: super::QUEST.into(),
@@ -62,6 +69,24 @@ pub(crate) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
         max: i64::MAX,
     });
     transitions.push(passive_transition());
-    QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
-        .map_err(|error| format!("{error:?}"))
+    let extended =
+        QuestStateCatalogue::new(catalogue.content_revision.clone(), tracks, transitions)
+            .map_err(|error| format!("{error:?}"))?;
+    let current = extended
+        .definition_hash(super::QUEST)
+        .ok_or("missing updated Rotten Blood definition")?;
+    catalogue.tracks = extended.tracks;
+    catalogue.transitions = extended.transitions;
+    catalogue.hashes.insert(super::QUEST.into(), current);
+    // Retain the immediately preceding production definition for characters
+    // whose quest is already underway. Existing tracks keep their meanings.
+    catalogue
+        .predecessors
+        .entry(super::QUEST.into())
+        .or_default()
+        .push(NpcDefinitionPredecessor {
+            hash: previous,
+            defaults: Default::default(),
+        });
+    Ok(())
 }

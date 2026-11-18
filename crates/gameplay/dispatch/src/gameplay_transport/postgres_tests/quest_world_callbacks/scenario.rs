@@ -350,7 +350,11 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let reservoir = matches!(name, super::super::putrefactory_reservoir::CAP | super::super::putrefactory_reservoir::LEGACY);
+    let reservoir = matches!(name,
+        super::super::putrefactory_reservoir::CAP |
+        super::super::putrefactory_reservoir::LEGACY |
+        super::super::putrefactory_reservoir::PASSIVE
+    );
     let mut callback = if reservoir {
         super::super::putrefactory_reservoir::callback()?
     } else if name == super::super::step_health_loss::NAME {
@@ -2056,7 +2060,7 @@ fn scenario_case(
             )
             .await?;
         } else if reservoir {
-            Box::pin(super::super::putrefactory_reservoir::exercise(&mut owner, &mut admitted, &h, deps.actor, name == super::super::putrefactory_reservoir::CAP)).await?;
+            Box::pin(super::super::putrefactory_reservoir::exercise(&mut owner, &mut admitted, &h, deps.actor, name)).await?;
         } else if name == super::super::step_health_loss::NAME {
             Box::pin(super::super::step_health_loss::exercise(&mut owner, &mut admitted, deps.actor)).await?;
         } else if failure_landing {

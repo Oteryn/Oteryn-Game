@@ -293,8 +293,6 @@ pub(super) fn lower_embedded_quest_state(
         super::rotten_blood::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::rotten_blood::area_icons::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
-    lowered.catalogue = super::rotten_blood::putrefactory::extend(lowered.catalogue)
-        .map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::soul_war::source_items::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
@@ -377,7 +375,10 @@ pub(super) fn lower_embedded_quest_state(
             }
         }
     }
-    restrict_runtime_scope(lowered, content_revision)
+    let mut lowered = restrict_runtime_scope(lowered, content_revision)?;
+    super::rotten_blood::putrefactory::extend(&mut lowered.catalogue)
+        .map_err(QuestLoadError::Json)?;
+    Ok(lowered)
 }
 
 fn restrict_runtime_scope(

@@ -3,7 +3,9 @@ use super::fixture::{Harness, debug};
 use super::quest_world_callbacks::{scenario, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::ExactActorRef;
-use oteryn_gameplay_quests::quest::rotten_blood::putrefactory::CHARGE_TRACK as CHARGE;
+use oteryn_gameplay_quests::quest::rotten_blood::putrefactory::{
+    CHARGE_TRACK as CHARGE, PASSIVE_CLOCK, PASSIVE_TICK,
+};
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
     authored_bindings::Bindings,
@@ -14,9 +16,11 @@ use oteryn_protocol_oteryn::world_object::{
 };
 use serde_json::json;
 use std::sync::Arc;
+use std::time::Duration;
 
 pub(super) const LEGACY: &str = "putrefactory-reservoir-legacy";
 pub(super) const CAP: &str = "putrefactory-reservoir-cap";
+pub(super) const PASSIVE: &str = "putrefactory-passive-charge";
 const QUEST: &str = "oteryn:quest/rotten-blood";
 const CLOCK: &str = "oteryn:quest-progress/rotten-blood/putrefactory/reservoir-1-used-at";
 const STARTED_AT: i64 = 1_800_000_000;
@@ -50,6 +54,17 @@ fn putrefactory_reservoir_caps_charge_without_restarting_clock_when_full() -> Te
     super::kill_reward_e2e::scenario_thread::run(CAP, || scenario(CAP, AT, false))
 }
 
+#[test]
+fn putrefactory_passive_charge_ticks_from_the_channel_clock() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("empty PostgreSQL admin URL".into());
+    }
+    super::kill_reward_e2e::scenario_thread::run(PASSIVE, || scenario(PASSIVE, AT, false))
+}
+
 pub(super) fn callback() -> TestResult<Callback> {
     Ok(serde_json::from_value(json!({
         "key":"oteryn:quest-callback/fixture/putrefactory-reservoir-1",
@@ -72,8 +87,9 @@ pub(super) async fn exercise(
     admitted: &mut AdmittedSession,
     h: &Harness,
     actor: ExactActorRef,
-    cap: bool,
+    name: &str,
 ) -> TestResult {
+    let cap = name == CAP;
     let mut reservoir = serde_json::to_value(callback()?)?;
     reservoir["effects"]["magic"] = json!({"position":AT,"effect":241});
     reservoir["effects"]["recharge_cooldown_message"] = json!(EXHAUSTED);
@@ -97,7 +113,19 @@ pub(super) async fn exercise(
                 "trigger":{"kind":"map_use","callback":reservoir}}]
         }]
     }))?)?;
-    let base = QuestStateCatalogue::empty("content-1").ok_or("test catalogue")?;
+    let base = if name == PASSIVE {
+        let active = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
+        QuestStateCatalogue::new(
+            "content-1",
+            [CHARGE, PASSIVE_CLOCK]
+                .into_iter()
+                .map(|key| active.track(key).cloned().ok_or("passive track"))
+                .collect::<Result<Vec<_>, _>>()?,
+            vec![active.transition(PASSIVE_TICK).cloned().ok_or("passive transition")?],
+        ).map_err(debug)?
+    } else {
+        QuestStateCatalogue::empty("content-1").ok_or("test catalogue")?
+    };
     owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
     h.root.set_test_quest_clock(STARTED_AT).map_err(debug)?;
     let session = admitted.game_session_id;
@@ -136,6 +164,37 @@ pub(super) async fn exercise(
     assert!(entry.source_icons.iter().any(|icon| {
         icon.category == 0 && icon.id == 2 && icon.count == if cap { 100 } else { 20 }
     }));
+
+    if name == PASSIVE {
+        owner.clock_origin = std::time::Instant::now() - Duration::from_secs(19);
+        h.root.advance_test_quest_clock(19).map_err(debug)?;
+        owner.tick_timed_items().await;
+        assert_eq!(tracks().await?, values);
+        owner.clock_origin -= Duration::from_millis(1_100);
+        h.root.advance_test_quest_clock(1).map_err(debug)?;
+        owner.tick_timed_items().await;
+        let charged = tracks().await?;
+        assert_eq!(
+            charged,
+            vec![
+                (CHARGE.to_owned(), 21),
+                (PASSIVE_CLOCK.to_owned(), STARTED_AT + 20),
+                (CLOCK.to_owned(), STARTED_AT),
+            ]
+        );
+        // Another clock pass in the same period keeps the current value.
+        owner.clock_origin -= Duration::from_millis(1_100);
+        owner.tick_timed_items().await;
+        assert_eq!(tracks().await?, charged);
+        let receipts: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1 AND cause_kind='source_think'",
+        )
+        .bind(PASSIVE_TICK)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(receipts, 1);
+        return Ok(());
+    }
 
     assert_eq!(wire(owner, admitted, 1, 2, payload.clone()).await?, reply);
     h.root.advance_test_quest_clock(19).map_err(debug)?;
