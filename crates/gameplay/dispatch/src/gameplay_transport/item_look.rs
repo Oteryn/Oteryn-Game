@@ -484,9 +484,9 @@ async fn observe_look_item(
             )
             .await
             .map_err(|_| unavailable)?;
-        let (current, _, _) = observe_item(admission, actor, session, fence, views, target).await?;
+        let current = observe_item(admission, actor, session, fence, views, target).await?;
         let runtime = admission.runtime.lock().await;
-        if current != definition
+        if current != (definition, count, distance)
             || content_generation(&runtime) != pin
             || runtime.owner_fence().is_err()
             || !runtime
