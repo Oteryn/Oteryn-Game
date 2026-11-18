@@ -1531,6 +1531,8 @@ fn scenario_case(
             "runtime-scope-assignment:1",
             if m07_realm || name == "qengine-rewards-questpc4-native-tower-third" {
                 4_104 // Quest callbacks must tolerate >4096 unrelated live creatures.
+            } else if bosscred_ferumbras || bosscred_zamulosh || bosscred_habitat || bosscred_forge {
+                4 // The two players and their native room creatures.
             } else if name == "qengine-rewards-qnpcfx-m10-inquisition" {
                 7 // One player and the six source NPCs for the full interview story.
             } else if qm50 {
