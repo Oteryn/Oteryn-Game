@@ -87,7 +87,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
-        if callback.effects.party_transfer.is_some()
+        // A committed-but-unacknowledged USE still owns this captured merchant
+        // until the original receipt can publish its removal.
+        if (callback.effects.party_transfer.is_some() || callback.effects.loot_merchant)
             && self
                 .states
                 .quest_callbacks
@@ -95,7 +97,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .lock()
                 .map_or(true, |records| {
                     records.iter().any(|(owner, pending)| {
-                        *owner != session && pending.key == key && !pending.participants.is_empty()
+                        *owner != session
+                            && pending.key == key
+                            && (callback.effects.loot_merchant || !pending.participants.is_empty())
                     })
                 })
         {

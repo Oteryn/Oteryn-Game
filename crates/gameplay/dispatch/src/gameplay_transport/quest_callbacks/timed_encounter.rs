@@ -9,6 +9,7 @@ use crate::map::{
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 pub(super) const MAX_TIMED_ENCOUNTERS: usize = 64;
+const MERCHANT_LOOT_RETRY_US: u64 = 100_000;
 
 pub(super) struct TimedEncounter {
     callback: Callback,
@@ -213,11 +214,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 pending.remove(index);
                 continue;
             };
-            if let Some((_, loot)) = memo.merchant_loot.take() {
-                for (pos, key) in loot {
-                    map.facts.remove_movement_item(pos, key, 12189);
+            if let Some((due, loot)) = &mut memo.merchant_loot {
+                let Ok(records) = self.states.quest_callbacks.records.lock() else {
+                    return;
+                };
+                loot.retain(|&(pos, key)| {
+                    if records.values().any(|record| record.key == key) {
+                        return true;
+                    }
+                    !map.facts.remove_movement_item(pos, key, 12189)
+                        && super::captured_merchant(map, key).is_some()
+                });
+                if loot.is_empty() {
+                    pending.remove(index);
+                } else {
+                    *due = now.saturating_add(MERCHANT_LOOT_RETRY_US);
+                    index += 1;
                 }
-                pending.remove(index);
                 continue;
             }
             if memo.callback.starts_merchant_wave() && now >= memo.reset_at {
