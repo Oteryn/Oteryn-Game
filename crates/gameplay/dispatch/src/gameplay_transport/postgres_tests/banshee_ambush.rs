@@ -45,7 +45,7 @@ const SKELETON: TilePos = TilePos {
     ..TRIGGER
 };
 const WITNESS: TilePos = TilePos {
-    x: 32274,
+    x: TRIGGER.x + 1,
     ..TRIGGER
 };
 
@@ -88,7 +88,7 @@ fn bindings() -> TestResult<Bindings> {
                 {"creature":"oteryn:creature.demon_skeleton","position":position(SKELETON)}
             ],
             "room_min":position(GHOST_WEST),
-            "room_max":position(TilePos {x:TRIGGER.x,..SKELETON})
+            "room_max":position(TilePos {x:WITNESS.x,..SKELETON})
         }},
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-1-first_seal_flame.lua:3-20"]
     });
@@ -112,8 +112,8 @@ fn scenario() -> TestResult {
     use super::appearance_change_postgres::observer_visibility_tests as observer;
     use super::banshee_circuit::{local, scene_world};
     run(async |admin| {
-        let h = Harness::create_with_admission_seed(admin, "banshee_hidden_flame", true, false)
-            .await?;
+        let h =
+            Harness::create_with_admission_seed(admin, "banshee_hidden_flame", true, false).await?;
         prepare_current_session(&h).await?;
         h.seed_pvp_target().await?;
         observer::admit(&h).await?;
@@ -258,17 +258,23 @@ fn scenario() -> TestResult {
                     .map_err(debug)?;
                     origin = runtime.commit_source_step(proof).map_err(debug)?;
                 }
-                let proof = crate::map::floor::prepare_quest_callback_teleport(
+                let direction = if start.x < TRIGGER.x {
+                    crate::movement::CardinalStep::East
+                } else {
+                    crate::movement::CardinalStep::West
+                };
+                let proof = crate::map::floor::prepare_bundle_step(
                     &runtime,
                     owner.movement_cells(),
                     actor,
                     session,
                     origin,
-                    local(TRIGGER),
+                    direction,
                     false,
                     &closed,
                 )
                 .map_err(debug)?;
+                assert_eq!(proof.destination(), local(TRIGGER));
                 let entered = runtime.commit_source_step(proof).map_err(debug)?;
                 (origin, entered)
             };
@@ -304,7 +310,10 @@ fn scenario() -> TestResult {
         let progress: Vec<(String,i64,i64)> = sqlx::query_as(
             "SELECT track_key, value, count(*) FROM game_character_quest_tracks WHERE quest_key=$1 GROUP BY track_key,value ORDER BY track_key"
         ).bind(QUEST).fetch_all(&h.pool).await?;
-        assert_eq!(progress, [(FIRST.to_owned(), 1, 2), (DOOR.to_owned(), 1, 2)]);
+        assert_eq!(
+            progress,
+            [(FIRST.to_owned(), 1, 2), (DOOR.to_owned(), 1, 2)]
+        );
         drop(owner);
         drop(authority);
         drop(seal);
