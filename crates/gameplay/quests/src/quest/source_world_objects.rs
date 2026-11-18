@@ -428,22 +428,25 @@ mod tests {
 
 /// Crystal 201189f actions_crude_lava_pump_achievements.lua:24–64.
 pub(crate) fn dangerous_depth_pumps() -> Vec<Callback> {
-    const PUMPS: [(u16, u16, &str, &str); 3] = [
+    const PUMPS: [(u16, u16, u8, &str, &str); 3] = [
         (
             33673,
             32304,
+            2,
             "the_baron_from_below_achiev",
             "buried_the_baron",
         ),
         (
             33679,
             32310,
+            1,
             "the_count_of_the_core_achiev",
             "his_days_are_counted",
         ),
         (
             33685,
             32304,
+            4,
             "the_duke_of_the_depths_achiev",
             "duked_it_out",
         ),
@@ -461,23 +464,29 @@ pub(crate) fn dangerous_depth_pumps() -> Vec<Callback> {
         read_only: false,
     };
     let mut callbacks = Vec::new();
-    for (index, (x, y, progress, achievement)) in PUMPS.into_iter().enumerate() {
+    for (index, (x, y, ordinal, progress, achievement)) in PUMPS.into_iter().enumerate() {
         let others: Vec<_> = PUMPS
             .iter()
             .enumerate()
-            .filter_map(|(other, pump)| (other != index).then_some(pump.2))
+            .filter_map(|(other, pump)| (other != index).then_some(pump.3))
             .collect();
         for (left, right) in [(0, 0), (0, 1), (1, 0), (1, 1)] {
             let mut callback = uneasy_crystal();
             callback.key =
                 format!("oteryn:quest-callback/dangerous-depth-pump-{achievement}-{left}{right}");
             callback.quest = "oteryn:quest.dangerous_depths_quest".into();
+            let position = Position { x, y, floor: -15 };
             callback.selector = Selector {
-                position: Some(Position { x, y, floor: -15 }),
+                position: Some(position),
                 action: Some(57303),
                 unique: None,
                 appearance: None,
-                native: None,
+                // The retained World keeps the pump's lower half without a legacy AID.
+                native: Some(NativeSelector {
+                    position,
+                    ordinal,
+                    appearance: 27501,
+                }),
                 ordinal: None,
                 position_aliases: Vec::new(),
             };
