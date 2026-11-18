@@ -17,7 +17,6 @@ use crate::foundation::CommandRef;
 use oteryn_protocol_oteryn::cyclopedia::{MapResult, encode_result};
 use sqlx::Row;
 
-mod speed;
 mod storage;
 mod world;
 pub use world::CyclopediaWorldBinding;

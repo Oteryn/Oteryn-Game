@@ -35,9 +35,9 @@ fn percentage(bytes: &[u8]) -> u8 {
 }
 #[test]
 fn cyclopedia_postgres_real_dispatch() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| scenario(false).map_err(|e| e.to_string()))?
@@ -47,9 +47,9 @@ fn cyclopedia_postgres_real_dispatch() -> TestResult {
 }
 #[test]
 fn cyclopedia_postgres_canonical_conversion_preserves_completed_legacy_progress() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| scenario(true).map_err(|e| e.to_string()))?
@@ -191,7 +191,11 @@ fn scenario(canonical: bool) -> TestResult {
             owner.cyclopedia_available(),
         );
         admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(&offers, &[4, 6, 57]).ok_or("capability selection")?;
+            SelectedCapabilities::select(
+                &offers,
+                if canonical { &[4, 6, 13, 57] } else { &[4, 6, 57] },
+            )
+            .ok_or("capability selection")?;
         // Unnegotiated clients cannot enter the handler or observe private map facts.
         let mut old = admitted;
         old.continuity.selected_capabilities = SelectedCapabilities::NONE;
@@ -422,7 +426,7 @@ fn scenario(canonical: bool) -> TestResult {
                 small[9], 1,
                 "seven-candidate subarea retains its completed state"
             );
-            speed::verify(
+            speed::completed_discovery_keeps_step_pace_and_speed_query_refuses(
                 &mut owner,
                 &deps,
                 &mut admitted,

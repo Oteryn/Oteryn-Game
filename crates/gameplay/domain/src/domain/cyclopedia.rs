@@ -91,6 +91,3 @@ mod tests {
 
 mod basic;
 pub use basic::{BasicArea, Exploration, MapAction, MapProgress, MapRefusal, Point};
-
-mod speed;
-pub use speed::DiscoverySpeed;

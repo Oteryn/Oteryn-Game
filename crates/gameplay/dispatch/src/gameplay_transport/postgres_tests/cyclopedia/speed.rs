@@ -1,14 +1,17 @@
-//! T187: persisted completion -> actual STEP router -> one runtime contribution.
+//! W12: persisted discovery completion leaves the routed STEP pace unchanged.
 use super::*;
-use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+use oteryn_protocol_oteryn::world_spatial::{
+    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition,
+    decode_step_result_receipt, encode_step_intent,
+};
 
 async fn step(
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     deps: &Dependencies,
-    admitted: AdmittedSession,
+    admitted: &mut AdmittedSession,
     origin: MovementLocalPosition,
     direction: StepDirection,
-) -> TestResult {
+) -> TestResult<u32> {
     {
         let mut runtime = owner.runtime.lock().await;
         let mut movement = runtime.borrow_movement_position();
@@ -32,31 +35,23 @@ async fn step(
     owner.clock_origin -= std::time::Duration::from_secs(2);
     deps.initialize(owner).await;
     super::super::maintain_ready(owner.root).await?;
-    let outcome = crate::gameplay_transport::connection::regression_routed_step(
-        owner, admitted, deps.actor, direction,
+    let command_id = admitted.continuity.next_command_id;
+    let (status, reply) = support::exchange(
+        owner,
+        admitted,
+        command_id,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        &encode_step_intent(direction),
     )
     .await?;
-    assert_eq!(outcome.disposition, StepDisposition::Moved);
-    Ok(())
-}
-async fn bonus(
-    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    deps: &Dependencies,
-    admitted: AdmittedSession,
-) -> TestResult<i64> {
-    owner
-        .runtime
-        .lock()
-        .await
-        .actor_active_speed_delta(
-            deps.actor,
-            Some(admitted.game_session_id),
-            owner.owner_now(),
-        )
-        .map_err(debug)
+    assert_eq!(status, CommandStatus::Accepted);
+    let receipt = decode_step_result_receipt(&reply, true).map_err(debug)?;
+    assert_eq!(receipt.disposition, StepDisposition::Moved);
+    assert!(receipt.step_wait_ms > 0, "STEP must return a negotiated pacing receipt");
+    Ok(receipt.step_wait_ms)
 }
 
-pub(super) async fn verify(
+pub(super) async fn completed_discovery_keeps_step_pace_and_speed_query_refuses(
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     deps: &Dependencies,
     admitted: &mut AdmittedSession,
@@ -90,98 +85,31 @@ pub(super) async fn verify(
         .await
         .map_err(debug)?;
 
-    step(
-        owner,
-        deps,
-        *admitted,
-        MovementLocalPosition {
-            x: 20,
-            y: 7,
-            floor: 7,
-        },
-        StepDirection::South,
-    )
-    .await?;
-    assert_eq!(
-        bonus(owner, deps, *admitted).await?,
-        0,
-        "T187: leaving completed area removes contribution"
-    );
-    step(
-        owner,
-        deps,
-        *admitted,
-        MovementLocalPosition {
-            x: 20,
-            y: 8,
-            floor: 7,
-        },
-        StepDirection::North,
-    )
-    .await?;
-    assert_eq!(
-        bonus(owner, deps, *admitted).await?,
-        195,
-        "T187: entering completed area applies contribution"
-    );
-    step(
-        owner,
-        deps,
-        *admitted,
-        MovementLocalPosition {
-            x: 20,
-            y: 7,
-            floor: 7,
-        },
-        StepDirection::East,
-    )
-    .await?;
-    assert_eq!(
-        bonus(owner, deps, *admitted).await?,
-        195,
-        "T187: repeated movement does not stack with itself"
-    );
-    owner
-        .runtime
-        .lock()
-        .await
-        .set_player_discovery_speed(deps.actor, admitted.game_session_id, 0)
-        .map_err(debug)?;
-    step(
-        owner,
-        deps,
-        *admitted,
-        MovementLocalPosition {
-            x: 21,
-            y: 7,
-            floor: 7,
-        },
-        StepDirection::East,
-    )
-    .await?;
-    assert_eq!(
-        bonus(owner, deps, *admitted).await?,
-        195,
-        "T187: contribution reloads from PostgreSQL"
-    );
-    let query_id = admitted.continuity.next_command_id;
-    let (status, value) = support::exchange(owner, admitted, query_id, 6178, &[]).await?;
-    assert_eq!(status, CommandStatus::Accepted);
-    assert_eq!(value, 195u16.to_le_bytes());
+    owner.test_step_wait_receipts = Some(true);
+    let origin = MovementLocalPosition {
+        x: 20,
+        y: 7,
+        floor: 7,
+    };
+    let completed_pace = step(owner, deps, admitted, origin, StepDirection::East).await?;
     let reset_id = admitted.continuity.next_command_id;
     let (_, reset) = support::exchange(owner, admitted, reset_id, 73, &request(2, 0)).await?;
     assert_eq!(reset[0], 0);
+    let incomplete_pace = step(owner, deps, admitted, origin, StepDirection::East).await?;
     assert_eq!(
-        bonus(owner, deps, *admitted).await?,
-        0,
-        "T187: reset immediately removes bonus"
+        completed_pace, incomplete_pace,
+        "Crystal discovery completion contributes no speed to STEP"
     );
+    let query_id = admitted.continuity.next_command_id;
+    let (status, value) = support::exchange(owner, admitted, query_id, 6178, &[]).await?;
+    assert_eq!(status, CommandStatus::Rejected);
+    assert_eq!(value, b"Sorry, not possible.");
     let stored: bool = sqlx::query_scalar(
         "SELECT (progress->'subareas'->'2'->>'discovered')::boolean FROM game_character_cyclopedia",
     )
     .fetch_one(&h.pool)
     .await?;
-    assert!(!stored, "T187: reset eligibility loss persists");
+    assert!(!stored, "reset clears the durable subarea completion");
     let points: serde_json::Value = sqlx::query_scalar(
         "SELECT progress->'subareas'->'2'->'exploration' FROM game_character_cyclopedia",
     )
@@ -200,7 +128,7 @@ pub(super) async fn verify(
         step(
             owner,
             deps,
-            *admitted,
+            admitted,
             MovementLocalPosition {
                 x: point.x + if left { -1 } else { 1 },
                 y: point.y,
@@ -214,10 +142,16 @@ pub(super) async fn verify(
         )
         .await?;
     }
+    let stored: bool = sqlx::query_scalar(
+        "SELECT (progress->'subareas'->'2'->>'discovered')::boolean FROM game_character_cyclopedia",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert!(stored, "the seventh POI still restores subarea completion through STEP");
     assert_eq!(
-        bonus(owner, deps, *admitted).await?,
-        195,
-        "T187: seventh POI restores completed-area bonus through STEP"
+        step(owner, deps, admitted, origin, StepDirection::East).await?,
+        incomplete_pace,
+        "rediscovery through STEP leaves the pacing receipt unchanged"
     );
     Ok(())
 }
