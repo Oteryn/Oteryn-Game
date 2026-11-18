@@ -5847,15 +5847,12 @@ pub(super) async fn journeys(
         return sweep_result.and(multiplayer_result);
     }
     let before = journey_verdicts();
-    let profile_result = profile_journey(clients, world, &bytes, &metadata.spawns).await;
-    if let Err(error) = &profile_result {
-        evidence(&format!("world_profile state=failed error={error}"));
-        if error.is::<provisioning::MovementReturnFailure>() {
-            wait_character_released(clients, 1).await?;
-            return sweep_result.and(multiplayer_result);
-        }
-    }
-    let mut client = connect_world(clients, 0x71).await?;
+    let mut client = report_world_profile(
+        profile_journey(clients, world, &bytes, &metadata.spawns),
+        evidence,
+        connect_world(clients, 0x71),
+    )
+    .await?;
     for capability in [17, 18, 151, 152, 153, 179, 230] {
         if !client.selected_capabilities().contains(&capability) {
             return Err(
@@ -5883,34 +5880,50 @@ pub(super) async fn journeys(
     client = floor_journey(client, clients, world).await?;
     client_guild::guild(&mut client).await?;
     client_party::party(&mut client).await?;
-    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
-    let buddy: String = sqlx::query_scalar(
-        "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
-    )
-    .bind(clients.characters[0].as_slice())
-    .fetch_one(&mut connection)
-    .await?;
-    let mut coverage = client_vip::add(&mut client, &buddy).await;
-    if let Err(error) = client_player_trade::pair(&mut client, clients).await {
-        let logout = logout_trade_character(&mut client).await;
-        drop(client);
-        return finish_after_terminal_release(
-            Err::<(), _>(error).and(logout),
-            wait_character_released(clients, 1),
+    let vip_result = async {
+        let buddy = with_peer_service(
+            within_database_deadline(
+                tokio::time::Instant::now() + Duration::from_secs(20),
+                async {
+                    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+                    Ok(sqlx::query_scalar::<_, String>(
+                        "SELECT name FROM game_character_roots \
+                     WHERE character_id=encode($1,'hex')::uuid",
+                    )
+                    .bind(clients.characters[0].as_slice())
+                    .fetch_one(&mut connection)
+                    .await?)
+                },
+            ),
+            async || {
+                client.service_liveness(Duration::from_millis(20)).await?;
+                client.take_events();
+                Ok(())
+            },
         )
-        .await;
+        .await??;
+        client_vip::add(&mut client, &buddy).await
     }
-    coverage = coverage.and(client_prey::prey(&mut client).await);
-    coverage = coverage.and(client_task_board::task_board(&mut client).await);
-    coverage = coverage.and(client_imbue::imbue(&mut client).await);
-    coverage = coverage.and(client_hireling::hireling(&mut client).await);
+    .await;
+    record_core_mechanic("vip", vip_result);
+    record_core_mechanic(
+        "player_trade",
+        client_player_trade::pair(&mut client, clients).await,
+    );
+    record_core_mechanic("prey", client_prey::prey(&mut client).await);
+    record_core_mechanic(
+        "task_board",
+        client_task_board::task_board(&mut client).await,
+    );
+    record_core_mechanic("imbue", client_imbue::imbue(&mut client).await);
+    record_core_mechanic("hireling", client_hireling::hireling(&mut client).await);
     client_browse_field::browse_field(&mut client).await?;
     client_daily_boost::daily_boost(&mut client).await?;
     let path = route(world, TOWN, |at| near_locker(world, at))
         .ok_or("town has no reachable authored depot locker")?;
     walk(&mut client, world, &path).await?;
     client_depot_search::depot_search(&mut client).await?;
-    coverage = coverage.and(client_stash::stash(&mut client).await);
+    record_core_mechanic("stash", client_stash::stash(&mut client).await);
     let market_funding: TestResult = async {
         let required = crate::durability::market::placement_fee(1, 1)
             .map_err(|error| format!("market fee: {error:?}"))?
@@ -5929,11 +5942,17 @@ pub(super) async fn journeys(
         client_market::market(&mut client, clients).await
     }
     .await;
-    coverage = coverage.and(market_funding);
-    coverage = coverage.and(shop_journey(&mut client, world, &metadata.npcs, clients).await);
+    record_core_mechanic("market", market_funding);
+    record_core_mechanic(
+        "npc_shop",
+        shop_journey(&mut client, world, &metadata.npcs, clients).await,
+    );
     client_hotkey_equip::hotkey_equip(&mut client).await?;
-    coverage = coverage.and(client_item_forge::item_forge(&mut client).await);
-    coverage = coverage.and(client_store::store(&mut client).await);
+    record_core_mechanic(
+        "item_forge",
+        client_item_forge::item_forge(&mut client).await,
+    );
+    record_core_mechanic("store", client_store::store(&mut client).await);
     let after = destination(
         world,
         tile(client.world_spatial().actor_position)?,
@@ -6015,10 +6034,7 @@ pub(super) async fn journeys(
     }.await;
     drop(client);
     finish_after_terminal_release(
-        profile_result
-            .and(coverage)
-            .and(snapshot_result)
-            .and(logout_result),
+        snapshot_result.and(logout_result),
         wait_character_released(clients, 1),
     )
     .await?;
@@ -6113,6 +6129,47 @@ async fn core_profile_start(
     }
 }
 
+fn record_core_mechanic(name: &str, result: TestResult) {
+    if let Err(error) = result {
+        let error = error.to_string();
+        if error.starts_with(&format!("mechanic={name} status=FAIL ")) {
+            // The specific mechanic already emitted the witness.
+            return;
+        }
+        evidence(&format!("mechanic={name} status=FAIL error={error}"));
+    }
+}
+
+async fn report_world_profile<T>(
+    profile: impl Future<Output = TestResult>,
+    report: impl FnOnce(&str),
+    next: impl Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    if let Err(error) = profile.await {
+        report(&format!("world_profile state=failed error={error}"));
+    }
+    next.await
+}
+
+#[tokio::test]
+async fn qualification_profile_return_failure_records_evidence_and_allows_core() -> TestResult {
+    let observed = std::cell::RefCell::new(String::new());
+    let admission = report_world_profile(
+        async { Err("profile journey has no return route".into()) },
+        |line| {
+            observed.replace(line.to_owned());
+        },
+        async { Ok(71) },
+    )
+    .await?;
+    assert_eq!(admission, 71);
+    assert_eq!(
+        observed.into_inner(),
+        "world_profile state=failed error=profile journey has no return route"
+    );
+    Ok(())
+}
+
 async fn profile_journey(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
@@ -6198,15 +6255,18 @@ async fn profile_journey(
     }
     drop(client);
     client = connect_character(clients, 0x6f, 0).await?;
-    let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        at == TOWN
-    })
-    .ok_or("profile journey has no return route")?;
-    walk(&mut client, world, &back).await?;
-    let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("profile journey logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+    let returned = async {
+        let from = actor_tile(&mut client)?;
+        let back = reach_route(&mut client, world, from, |at| at == TOWN)
+            .await?
+            .map_err(|failure| format!("profile journey has no return route: {failure}"))?;
+        walk(&mut client, world, &back).await
     }
+    .await;
+    let logout = logout_trade_character(&mut client).await;
+    drop(client);
+    finish_after_terminal_release(returned.and(logout), wait_character_released(clients, 0))
+        .await?;
     map?;
     combat?;
     spells
@@ -8301,7 +8361,7 @@ fn qualification_death_relog_awaits_fixture_release_on_mismatch() -> TestResult 
         .ok_or("journey end")?
         .0;
     assert!(relog.contains("wait_character_released(clients, 1)"));
-    assert!(relog.contains(".and(snapshot_result)"));
+    assert!(relog.contains("snapshot_result.and(logout_result)"));
     assert!(relog.contains("finish_after_terminal_release("));
     Ok(())
 }

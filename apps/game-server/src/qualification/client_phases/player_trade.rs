@@ -110,11 +110,14 @@ pub(super) async fn pair(
     else {
         return Err("core trade has no carried offer item".into());
     };
-    let partner = client_world::connect_character(clients, 0x74, 0).await?;
+    let partner =
+        with_trade_peer(client, client_world::connect_character(clients, 0x74, 0)).await??;
     with_trade_partner(
+        client,
         partner,
-        async |partner| exchange_pair(client, partner, clients, item).await,
+        async |client, partner| exchange_pair(client, partner, clients, item).await,
         client_world::logout_trade_character,
+        service_trade_peer,
         client_world::wait_character_released(clients, 0),
     )
     .await
@@ -177,20 +180,25 @@ async fn exchange_pair(
         ),
     )
     .await???;
-    let offered_instances = [
-        client_world::observed_item_instance(
-            *client.join_snapshot().game_session_id.as_bytes(),
-            item.handle,
-        )
-        .await?
-        .ok_or("offered handle is not bound to a durable Instance")?,
-        client_world::observed_item_instance(
-            *partner.join_snapshot().game_session_id.as_bytes(),
-            counter.handle,
-        )
-        .await?
-        .ok_or("counter-offer handle is not bound to a durable Instance")?,
+    let [session, partner_session] = [
+        *client.join_snapshot().game_session_id.as_bytes(),
+        *partner.join_snapshot().game_session_id.as_bytes(),
     ];
+    let offered_instances: TestResult<[[u8; 16]; 2]> = with_trade_peer(
+        client,
+        with_trade_peer(partner, async {
+            Ok([
+                client_world::observed_item_instance(session, item.handle)
+                    .await?
+                    .ok_or("offered handle is not bound to a durable Instance")?,
+                client_world::observed_item_instance(partner_session, counter.handle)
+                    .await?
+                    .ok_or("counter-offer handle is not bound to a durable Instance")?,
+            ])
+        }),
+    )
+    .await??;
+    let offered_instances = offered_instances?;
     if durable_instances != offered_instances {
         return Err("trade wire handles and durable offer identities disagree".into());
     }
@@ -313,7 +321,14 @@ async fn exchange_pair(
             counter,
         ),
     ];
-    prove_durable_exchange(clients.url, accepts, offered_instances).await?;
+    with_trade_peer(
+        client,
+        with_trade_peer(
+            partner,
+            prove_durable_exchange(clients.url, accepts, offered_instances),
+        ),
+    )
+    .await???;
     let received_instances = with_trade_peer(
         client,
         with_trade_peer(
@@ -441,12 +456,13 @@ async fn with_trade_peer<T>(
     peer: &mut oteryn_dev_client::DevClientSession,
     action: impl std::future::Future<Output = T>,
 ) -> TestResult<T> {
-    client_world::with_peer_service(action, async || {
-        peer.service_liveness(Duration::from_millis(20)).await?;
-        peer.take_events();
-        Ok(())
-    })
-    .await
+    client_world::with_peer_service(action, async || service_trade_peer(peer).await).await
+}
+
+async fn service_trade_peer(peer: &mut oteryn_dev_client::DevClientSession) -> TestResult {
+    peer.service_liveness(Duration::from_millis(20)).await?;
+    peer.take_events();
+    Ok(())
 }
 
 fn trade_revision(client: &mut oteryn_dev_client::DevClientSession) -> u64 {
@@ -592,16 +608,71 @@ mod tests {
     }
 }
 
-async fn with_trade_partner<C>(
+async fn with_trade_partner<P, C>(
+    primary: &mut P,
     mut partner: C,
-    body: impl AsyncFnOnce(&mut C) -> TestResult,
+    body: impl AsyncFnOnce(&mut P, &mut C) -> TestResult,
     logout: impl AsyncFnOnce(&mut C) -> TestResult,
+    mut service: impl AsyncFnMut(&mut P) -> TestResult,
     release: impl Future<Output = TestResult>,
 ) -> TestResult {
-    let trade = body(&mut partner).await;
-    let logged_out = logout(&mut partner).await;
+    let trade = body(primary, &mut partner).await;
+    let mut service_error = None;
+    let mut tick = async || {
+        if service_error.is_none() {
+            service_error = service(primary).await.err();
+        }
+        if service_error.is_some() {
+            // Release still has to finish if the primary socket has already failed.
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+        Ok(())
+    };
+    let logged_out = client_world::with_peer_service(logout(&mut partner), &mut tick).await?;
     drop(partner);
-    finish_after_terminal_release(trade.and(logged_out), release).await
+    let released = client_world::with_peer_service(release, tick).await?;
+    trade
+        .and(logged_out)
+        .and(released)
+        .and(service_error.map_or(Ok(()), Err))
+}
+
+#[tokio::test(start_paused = true)]
+async fn failed_trade_services_primary_until_partner_release() -> TestResult {
+    let serviced = std::cell::Cell::new(false);
+    let result = with_trade_partner(
+        &mut (),
+        (),
+        async |_, _| Err("trade refused".into()),
+        async |_| {
+            tokio::time::sleep(Duration::from_secs(30)).await;
+            assert!(
+                serviced.get(),
+                "primary probe went unanswered during partner logout"
+            );
+            serviced.set(false);
+            Ok(())
+        },
+        async |_| {
+            tokio::time::sleep(Duration::from_millis(20)).await;
+            serviced.set(true);
+            Ok(())
+        },
+        async {
+            tokio::time::sleep(Duration::from_secs(30)).await;
+            assert!(
+                serviced.get(),
+                "primary probe went unanswered during partner release"
+            );
+            Ok(())
+        },
+    )
+    .await;
+    assert_eq!(
+        result.err().as_deref().map(ToString::to_string).as_deref(),
+        Some("trade refused")
+    );
+    Ok(())
 }
 
 #[tokio::test]
@@ -616,12 +687,14 @@ async fn failed_trade_observation_still_releases_partner() {
     let logged_out = std::cell::Cell::new(false);
     let released = std::cell::Cell::new(false);
     let result = with_trade_partner(
+        &mut (),
         Partner(&dropped),
-        async |_| Err("item observation error".into()),
+        async |_, _| Err("item observation error".into()),
         async |_| {
             logged_out.set(true);
             Err("invalid frame".into())
         },
+        async |_| Ok(()),
         async {
             assert!(dropped.get());
             released.set(true);
