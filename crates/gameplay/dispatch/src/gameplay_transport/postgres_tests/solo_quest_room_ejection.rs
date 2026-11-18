@@ -80,6 +80,7 @@ pub(super) struct BossRoom {
     pub player_level: Option<i64>,
     pub already_fought: bool,
     pub with_occupant: bool,
+    pub replace_visit: bool,
     pub allowed: bool,
     pub source: &'static str,
 }
@@ -122,6 +123,12 @@ async fn exercise_world(h: &Harness, boss: Option<BossRoom>, buff: Option<StepBu
             serde_json::json!(room.minimum_level);
         callback_json["effects"]["encounter"]["boss_cooldown_seconds"] = serde_json::json!(36_000);
         callback_json["failure_teleport"] = serde_json::Value::Null;
+        if room.replace_visit {
+            // The fixture's adjacent western tile is reachable by STEP and
+            // lies beyond the room boundary.
+            callback_json["effects"]["encounter"]["room_min"]["x"] =
+                serde_json::json!(ROOM.x);
+        }
     }
     if let Some(buff) = buff {
         callback_json["storage"] = serde_json::json!([]);
@@ -537,11 +544,80 @@ async fn exercise_world(h: &Harness, boss: Option<BossRoom>, buff: Option<StepBu
             None
         }
     };
-    let due = enter_at + u64::from(after_ms) * 1_000;
+    let mut due = enter_at + u64::from(after_ms) * 1_000;
     assert_eq!(
         owner.states.quest_callbacks.next_encounter_due_us(),
         Some(due)
     );
+    if boss.is_some_and(|room| room.replace_visit) {
+        let session = admitted.game_session_id;
+        owner
+            .states
+            .test_owner_time
+            .store(enter_at + 2_000_001, Ordering::Relaxed);
+        let reply = wire(
+            &owner,
+            &mut admitted,
+            command + 1,
+            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+            oteryn_protocol_oteryn::world_spatial::encode_step_intent(StepDirection::West),
+        )
+        .await?;
+        assert_eq!(
+            oteryn_protocol_oteryn::world_spatial::decode_step_result(&reply).map_err(debug)?,
+            StepDisposition::Moved
+        );
+        let old_boss = {
+            let map = owner.bundle_map().ok_or("room map")?;
+            let doors = crate::map::floor::BundleDoors(map.facts.doors());
+            let mut runtime = deps.runtime.lock().await;
+            let expected = runtime.read_actor_position(deps.actor).map_err(debug)?;
+            assert_eq!(
+                expected.position(),
+                local(Position { x: ROOM.x - 1, ..ROOM })
+            );
+            let [old_boss] = runtime.current_live_creature_census().map_err(debug)?
+                .try_into().map_err(|_| "first visit boss")?;
+            let proof = crate::map::floor::prepare_quest_callback_teleport(
+                &runtime, owner.movement_cells(), deps.actor, session, expected, start, false, &doors,
+            )
+            .map_err(debug)?;
+            runtime.commit_source_step(proof).map_err(debug)?;
+            old_boss
+        };
+        // Advance the fixture's persisted character cooldown independently of
+        // its encounter clock, modeling the next eligible entrant.
+        let expired = sqlx::query(
+            "UPDATE game_character_boss_cooldowns SET available_at=0 WHERE character_id=encode($1,'hex')::uuid AND boss_key='oteryn:creature.rat'",
+        )
+        .bind(id(41).as_slice())
+        .execute(&h.pool)
+        .await?;
+        assert_eq!(expired.rows_affected(), 1);
+        let reentry = enter_at + 5_000_000;
+        owner.states.test_owner_time.store(reentry + 1, Ordering::Relaxed);
+        let reply = wire(
+            &owner,
+            &mut admitted,
+            command + 2,
+            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+            oteryn_protocol_oteryn::world_spatial::encode_step_intent(StepDirection::East),
+        )
+        .await?;
+        assert_eq!(
+            oteryn_protocol_oteryn::world_spatial::decode_step_result(&reply).map_err(debug)?,
+            StepDisposition::Moved
+        );
+        let prior_due = due;
+        due = reentry + u64::from(after_ms) * 1_000;
+        assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), Some(due));
+        owner.states.test_owner_time.store(prior_due + 1, Ordering::Relaxed);
+        owner.drain_quest_encounter_deadlines().await;
+        let runtime = deps.runtime.lock().await;
+        assert_eq!(runtime.read_actor_position(deps.actor).map_err(debug)?.position(), local(ROOM));
+        assert!(!runtime.contains_live_creature(old_boss));
+        assert_eq!(runtime.current_live_creature_census().map_err(debug)?.len(), 1);
+    }
     owner.states.test_owner_time.store(due, Ordering::Relaxed);
     owner.drain_quest_encounter_deadlines().await;
     assert_eq!(

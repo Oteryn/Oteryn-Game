@@ -3,6 +3,7 @@ use super::fixture::{Harness, run};
 use super::solo_quest_room_ejection::{BossRoom, exercise};
 
 const ANCIENT_FEUD: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grimvale/actions_portal_minis_ancient_feud.lua:1-126";
+const CURSE_SPREADS: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grimvale/actions_portal_minis_grimvale.lua:90-134";
 
 #[test]
 fn ancient_feud_step_admits_at_level_250_and_refuses_the_active_boss_cooldown() -> TestResult {
@@ -14,6 +15,7 @@ fn ancient_feud_step_admits_at_level_250_and_refuses_the_active_boss_cooldown() 
         player_level: Some(250),
         already_fought: false,
         with_occupant: false,
+        replace_visit: false,
         allowed: true,
         source: ANCIENT_FEUD,
     };
@@ -34,8 +36,6 @@ fn curse_spreads_step_records_the_boss_cooldown_and_refuses_early_reentry() -> T
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    // Crystal actions_portal_minis_grimvale.lua:102-134.
-    let source = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grimvale/actions_portal_minis_grimvale.lua:102-134";
     case(
         admin.clone(),
         "curse_spreads_step",
@@ -44,8 +44,9 @@ fn curse_spreads_step_records_the_boss_cooldown_and_refuses_early_reentry() -> T
             player_level: None,
             already_fought: false,
             with_occupant: false,
+            replace_visit: false,
             allowed: true,
-            source,
+            source: CURSE_SPREADS,
         },
     )?;
     case(
@@ -56,8 +57,9 @@ fn curse_spreads_step_records_the_boss_cooldown_and_refuses_early_reentry() -> T
             player_level: None,
             already_fought: true,
             with_occupant: false,
+            replace_visit: false,
             allowed: false,
-            source,
+            source: CURSE_SPREADS,
         },
     )
 }
@@ -75,6 +77,7 @@ fn ancient_feud_step_refuses_the_level_gate_without_writing_a_cooldown() -> Test
             player_level: Some(249),
             already_fought: false,
             with_occupant: false,
+            replace_visit: false,
             allowed: false,
             source: ANCIENT_FEUD,
         },
@@ -86,7 +89,6 @@ fn occupied_boss_room_refuses_entry_then_ejects_current_players_without_removing
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    let source = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grimvale/actions_portal_minis_grimvale.lua:102-134";
     case(
         admin,
         "curse_spreads_room_occupied",
@@ -95,8 +97,29 @@ fn occupied_boss_room_refuses_entry_then_ejects_current_players_without_removing
             player_level: None,
             already_fought: false,
             with_occupant: true,
+            replace_visit: false,
             allowed: true,
-            source,
+            source: CURSE_SPREADS,
+        },
+    )
+}
+
+#[test]
+fn reentered_boss_room_restarts_the_timer_and_replaces_the_previous_boss() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    case(
+        admin,
+        "curse_spreads_reentered_room",
+        BossRoom {
+            minimum_level: 1,
+            player_level: None,
+            already_fought: false,
+            with_occupant: false,
+            replace_visit: true,
+            allowed: true,
+            source: CURSE_SPREADS,
         },
     )
 }
