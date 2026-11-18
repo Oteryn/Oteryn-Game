@@ -4,7 +4,7 @@ use super::fixture::{Harness, debug, id};
 use super::quest_world_callbacks::{local, wire};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{CharacterId, CharacterLease, GameSessionId, MovementLocalPosition};
-use crate::gameplay_transport::connection::FirstEntryOutcome;
+use crate::gameplay_transport::connection::{AdmittedSession, FirstEntryOutcome};
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue, authored_bindings::Bindings, world_callbacks::Position,
 };
@@ -73,7 +73,7 @@ fn wanted_step_sets_boss_cooldown_and_ejects_both_current_occupants_at_deadline(
 }
 
 #[test]
-fn defiances_step_ejects_only_the_challenger_after_five_minutes() -> TestResult {
+fn defiances_step_checks_five_tiles_and_preserves_each_challengers_deadline() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -107,6 +107,7 @@ fn catalogue(room: &Room) -> TestResult<QuestStateCatalogue> {
                     "room_min": room.min, "room_max": room.max, "minimum_level": 1,
                     "solo_timeout": {"after_ms": room.timeout_ms, "exit": room.exit,
                         "eject_room": room.wanted,
+                        "reset_radius": (!room.wanted).then_some(5),
                         "boss_cooldown_seconds": room.wanted.then_some(36_000)}
                 }},
                 "reversible": false, "passages": [], "offerings": [], "return_on_failure": true,
@@ -229,14 +230,13 @@ async fn exercise(admin: String, room: Room) -> TestResult {
             .map_err(debug)?;
         assert!(state.tracks().get(CLOCK).is_some_and(|time| *time > 0));
     }
-    let peer_position = Position {
-        x: room.landing.x + 1,
-        ..room.landing
-    };
-    let peer_session = GameSessionId::decode(&id(51)).map_err(debug)?;
-    // The entry portal admits one challenger. Populate the already active room
-    // with a later occupant to exercise the source's deadline selection policy.
-    let peer = {
+    let mut current_boss = boss;
+    let (peer, first_position, peer_position) = if room.wanted {
+        let peer_position = Position {
+            x: room.landing.x + 1,
+            ..room.landing
+        };
+        let peer_session = GameSessionId::decode(&id(51)).map_err(debug)?;
         let mut runtime = owner.runtime.lock().await;
         let reservation = runtime.reserve_fresh_session(peer_session).map_err(debug)?;
         let peer = runtime.commit_fresh_session(reservation).map_err(debug)?;
@@ -251,15 +251,58 @@ async fn exercise(admin: String, room: Room) -> TestResult {
         runtime
             .initialize_pinned_test_position(peer, local(peer_position))
             .map_err(debug)?;
-        peer
+        drop(runtime);
+        deps.initialize_player(&owner, peer, peer_session).await;
+        (peer, room.landing, peer_position)
+    } else {
+        let (peer, mut peer_session) =
+            super::grizzly_boss::second_player(&owner, &deps, &h, start).await?;
+        set_time(entered_at + 2_000_000);
+        step(&owner, &mut admitted, 2, StepDirection::West).await?;
+        set_time(entered_at + 4_000_000);
+        step(&owner, &mut admitted, 3, StepDirection::West).await?;
+        set_time(entered_at + 6_000_000);
+        step(&owner, &mut peer_session, 1, StepDirection::East).await?;
+        {
+            let runtime = owner.runtime.lock().await;
+            assert_eq!(
+                runtime.read_actor_position(peer).map_err(debug)?.position(),
+                start
+            );
+            assert!(runtime.contains_live_creature(boss));
+        }
+        set_time(entered_at + 8_000_000);
+        step(&owner, &mut admitted, 4, StepDirection::East).await?;
+        set_time(entered_at + 10_000_000);
+        step(&owner, &mut peer_session, 2, StepDirection::East).await?;
+        let runtime = owner.runtime.lock().await;
+        assert!(!runtime.contains_live_creature(boss));
+        assert_eq!(
+            runtime.read_actor_position(peer).map_err(debug)?.position(),
+            local(room.landing)
+        );
+        current_boss = runtime
+            .current_live_creature_census()
+            .map_err(debug)?
+            .into_iter()
+            .find(|actor| runtime.matches_live_creature_identity(*actor, room.boss.as_bytes()))
+            .ok_or("replacement scorpion")?;
+        assert_ne!(current_boss, boss);
+        (
+            peer,
+            Position {
+                x: room.landing.x - 1,
+                ..room.landing
+            },
+            room.landing,
+        )
     };
-    deps.initialize_player(&owner, peer, peer_session).await;
     let due = entered_at + u64::from(room.timeout_ms) * 1_000;
     set_time(due - 1);
     owner.drain_quest_encounter_deadlines().await;
     {
         let runtime = owner.runtime.lock().await;
-        assert!(runtime.contains_live_creature(boss));
+        assert!(runtime.contains_live_creature(current_boss));
         assert_eq!(
             runtime.read_actor_position(peer).map_err(debug)?.position(),
             local(peer_position)
@@ -269,14 +312,14 @@ async fn exercise(admin: String, room: Room) -> TestResult {
                 .read_actor_position(deps.actor)
                 .map_err(debug)?
                 .position(),
-            local(room.landing)
+            local(first_position)
         );
     }
     set_time(due);
     owner.drain_quest_encounter_deadlines().await;
     {
         let runtime = owner.runtime.lock().await;
-        assert!(!runtime.contains_live_creature(boss));
+        assert_eq!(runtime.contains_live_creature(current_boss), !room.wanted);
         assert_eq!(
             runtime.read_actor_position(peer).map_err(debug)?.position(),
             local(if room.wanted {
@@ -323,6 +366,15 @@ async fn exercise(admin: String, room: Room) -> TestResult {
                 .position(),
             start
         );
+    } else {
+        set_time(due + 10_000_000);
+        owner.drain_quest_encounter_deadlines().await;
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(
+            runtime.read_actor_position(peer).map_err(debug)?.position(),
+            local(room.exit)
+        );
+        assert!(!runtime.contains_live_creature(current_boss));
     }
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
@@ -330,9 +382,30 @@ async fn exercise(admin: String, room: Room) -> TestResult {
     .bind(KEY)
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!(receipts, 1);
+    assert_eq!(receipts, if room.wanted { 1 } else { 2 });
     drop(owner);
     drop(authority);
     drop(seal);
     h.cleanup().await
+}
+
+async fn step(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    command: u64,
+    direction: StepDirection,
+) -> TestResult {
+    let reply = wire(
+        owner,
+        admitted,
+        command,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        encode_step_intent(direction),
+    )
+    .await?;
+    assert_eq!(
+        decode_step_result(&reply).map_err(debug)?,
+        StepDisposition::Moved
+    );
+    Ok(())
 }
