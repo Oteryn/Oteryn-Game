@@ -85,6 +85,7 @@ pub(super) fn apply_world_cake_regeneration(
     content_digest: [u8; 32],
     session: crate::foundation::GameSessionId,
 ) -> Option<()> {
+    use crate::spell::Vocation;
     use oteryn_gameplay_domain::domain::condition::{ConditionValues, ConflictKey};
     use oteryn_gameplay_foundation::foundation::condition::{
         ApplicationFacts, ConditionDefinition, ConditionSourceKind,
@@ -105,11 +106,10 @@ pub(super) fn apply_world_cake_regeneration(
     // condition. Nonzero vocation gains yield at least one additional point.
     let vocation = state.source_party_vocation();
     let rate = crate::spell::food_regeneration::rate(vocation);
-    // Crystal data/XML/vocations.xml:139,151 supplies distinct Monk health
-    // periods for the Cake condition. Ordinary regeneration uses the native rate.
+    // Crystal data/XML/vocations.xml:139,151 supplies the Cake condition's Monk intervals.
     let health_interval_ms = match vocation {
-        crate::spell::Vocation::Monk => 7_000,
-        crate::spell::Vocation::ExaltedMonk => 5_000,
+        Vocation::Monk => 7_000,
+        Vocation::ExaltedMonk => 5_000,
         _ => rate.health_period_ms,
     };
     let extra = |gain: u32| if gain == 0 { 0 } else { (gain / 4).max(1) };
