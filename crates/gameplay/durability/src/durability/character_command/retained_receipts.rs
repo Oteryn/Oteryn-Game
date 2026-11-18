@@ -4,7 +4,7 @@ use crate::native_admission_source::character_commands::RetainedCreateReceipt;
 
 impl DurabilityRoot {
     /// Read the next committed create receipt under current recovery and node fences.
-    /// Keep the operation identity when validation fails so replay can skip that row.
+    /// Keep the operation identity when validation fails so the publisher can durably stop that row.
     pub async fn next_retained_create_receipt(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -28,7 +28,11 @@ impl DurabilityRoot {
                 if !prove_current_incarnation(&mut tx, &proof).await? {
                     return Err(DurabilityError::Unavailable);
                 }
-                let row = sqlx::query("SELECT operation_id::text AS operation,receipt,character_id::text AS character,account_id::text AS account,world_id::text AS world,recovery_generation::text AS generation,decided_at FROM game_character_command_receipts WHERE command='CreateCharacter' AND outcome=1 AND ($1::text IS NULL OR operation_id>$1::uuid) ORDER BY operation_id LIMIT 1")
+                let row = sqlx::query("SELECT operation_id::text AS operation,receipt,character_id::text AS character,account_id::text AS account,world_id::text AS world,recovery_generation::text AS generation,decided_at FROM game_character_command_receipts AS r
+                    WHERE command='CreateCharacter' AND outcome=1
+                    AND ($1::text IS NULL OR r.operation_id>$1::uuid)
+                    AND NOT EXISTS (SELECT 1 FROM game_character_retained_create_receipt_stops AS s WHERE s.operation_id=r.operation_id)
+                    ORDER BY r.operation_id LIMIT 1")
                     .bind(after).fetch_optional(&mut *tx).await?;
                 let result = if let Some(row) = row {
                     let operation: String = row.try_get("operation")?;
@@ -78,5 +82,43 @@ impl DurabilityRoot {
                 Ok(result)
             })
         }).await
+    }
+
+    /// Record a terminal disposition without modifying the immutable receipt.
+    pub async fn stop_retained_create_receipt(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        proof: &NodeIncarnationProof,
+        operation: &str,
+    ) -> Result<(), DurabilityError> {
+        if !uuid_v7(operation) {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let proof = proof.clone();
+        let operation = operation.to_owned();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    if !prove_current_incarnation(&mut tx, &proof).await? {
+                        return Err(DurabilityError::Unavailable);
+                    }
+                    sqlx::query(
+                        "INSERT INTO game_character_retained_create_receipt_stops (operation_id)
+                         SELECT operation_id FROM game_character_command_receipts
+                         WHERE operation_id=$1::uuid AND command='CreateCharacter' AND outcome=1
+                         ON CONFLICT (operation_id) DO NOTHING",
+                    )
+                    .bind(operation)
+                    .execute(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await
+                })
+            })
+            .await
     }
 }

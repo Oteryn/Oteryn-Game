@@ -17,7 +17,7 @@ use super::{
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::{BTreeMap, BTreeSet, HashSet},
+    collections::{BTreeMap, BTreeSet},
     future::Future,
     time::Duration,
 };
@@ -484,6 +484,14 @@ pub trait Decider: Send {
         _after: Option<&str>,
     ) -> impl Future<Output = Result<Option<RetainedCreateReceipt>, SourceError>> + Send {
         async { Ok(None) }
+    }
+
+    /// Durably stop publication while retaining the immutable v1 create receipt.
+    fn stop_retained_create_receipt(
+        &mut self,
+        _operation_id: &str,
+    ) -> impl Future<Output = Result<(), SourceError>> + Send {
+        async { Err(SourceError::Unavailable) }
     }
 
     /// Legacy implementations have no v2 receipt to stop.
@@ -1041,55 +1049,56 @@ pub async fn run_account_closure_publications<C: ReportClock, S: CommandSource, 
 ) {
     let mut backoff = POLL;
     let mut create_cursor: Option<String> = None;
-    let mut stopped_creates = HashSet::new();
+    let mut pending_create_stop: Option<String> = None;
     loop {
-        match decider
-            .next_retained_create_receipt(create_cursor.as_deref())
-            .await
-        {
-            Ok(Some(receipt)) if stopped_creates.contains(&receipt.operation_id) => {
-                create_cursor = Some(receipt.operation_id);
-            }
-            Ok(Some(RetainedCreateReceipt { operation_id, body })) => {
-                let published = match body
-                    .as_deref()
-                    .and_then(|body| std::str::from_utf8(body).ok())
-                {
-                    Some(body) => source
-                        .exchange(Operation::PublishCharacterCommandReceiptV1, body)
-                        .await
-                        .and_then(|raw| {
-                            decode_receipt_response(&raw).map_err(|_| Failure::InvalidResponse)
-                        }),
-                    None => Err(Failure::InvalidResponse),
-                };
-                let settlement = match published {
-                    Ok(()) => Settle::Done,
-                    Err(
-                        failure
-                        @ (Failure::NotFound | Failure::Conflict | Failure::InvalidResponse),
-                    ) => {
+        if pending_create_stop.is_none() {
+            match decider
+                .next_retained_create_receipt(create_cursor.as_deref())
+                .await
+            {
+                Ok(Some(RetainedCreateReceipt { operation_id, body })) => {
+                    let stop_reason = match body
+                        .as_deref()
+                        .and_then(|body| std::str::from_utf8(body).ok())
+                    {
+                        Some(body) => {
+                            let published = source
+                                .exchange(Operation::PublishCharacterCommandReceiptV1, body)
+                                .await
+                                .and_then(|raw| {
+                                    decode_receipt_response(&raw)
+                                        .map_err(|_| Failure::InvalidResponse)
+                                });
+                            match published {
+                                Err(failure @ (Failure::NotFound | Failure::Conflict)) => {
+                                    Some(failure.label())
+                                }
+                                _ => None,
+                            }
+                        }
+                        None => Some("invalid_stored_state"),
+                    };
+                    if let Some(reason) = stop_reason {
                         (event)(&format!(
-                            "event=character_commands operation=PublishCharacterCommandReceiptV1 command=CreateCharacter receipt={} alarm=receipt_refused",
-                            if body.is_none() {
-                                "invalid_stored_state"
-                            } else {
-                                failure.label()
-                            },
+                            "event=character_commands operation=PublishCharacterCommandReceiptV1 command=CreateCharacter receipt={reason} alarm=receipt_refused"
                         ));
-                        Settle::Stopped
+                        pending_create_stop = Some(operation_id);
+                    } else {
+                        // Retry an unknown acceptance on the next pass, after later rows.
+                        create_cursor = Some(operation_id);
                     }
-                    Err(_) => Settle::Retry,
-                };
-                if settlement == Settle::Stopped {
-                    stopped_creates.insert(operation_id.clone());
                 }
-                if settlement != Settle::Retry {
-                    create_cursor = Some(operation_id);
-                }
+                Ok(None) => create_cursor = None,
+                Err(_) => {}
             }
-            Ok(None) => create_cursor = None,
-            Err(_) => {}
+        }
+        if let Some(operation_id) = pending_create_stop.as_deref()
+            && decider
+                .stop_retained_create_receipt(operation_id)
+                .await
+                .is_ok()
+        {
+            create_cursor = pending_create_stop.take();
         }
 
         let mut delay = POLL;

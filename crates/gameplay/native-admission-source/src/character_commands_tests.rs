@@ -900,90 +900,164 @@ fn closure_publisher_is_independent_of_pending_list_and_quarantines_conflicts() 
     }
 }
 
-#[test]
-fn retained_create_refusal_alarms_and_does_not_block_later_receipts() {
-    struct Retained {
-        reads: usize,
-        valid_first: bool,
+#[derive(Default)]
+struct RetainedCreateStore {
+    stopped: Vec<String>,
+}
+
+struct RetainedCreates {
+    store: Arc<Mutex<RetainedCreateStore>>,
+    reads: usize,
+    read_limit: usize,
+    valid_first: bool,
+}
+
+impl Decider for RetainedCreates {
+    async fn decide(&mut self, _: &str, _: &str, _: Input<'_>) -> Decision {
+        Decision::Transient
     }
 
-    impl Decider for Retained {
-        async fn decide(&mut self, _: &str, _: &str, _: Input<'_>) -> Decision {
-            Decision::Transient
+    async fn next_retained_create_receipt(
+        &mut self,
+        after: Option<&str>,
+    ) -> Result<Option<RetainedCreateReceipt>, SourceError> {
+        self.reads += 1;
+        if self.reads > self.read_limit {
+            return std::future::pending().await;
         }
-
-        async fn next_retained_create_receipt(
-            &mut self,
-            after: Option<&str>,
-        ) -> Result<Option<RetainedCreateReceipt>, SourceError> {
-            self.reads += 1;
-            if self.reads > 4 + usize::from(self.valid_first) {
-                return std::future::pending().await;
-            }
-            Ok(match after {
-                None => Some(RetainedCreateReceipt {
-                    operation_id: op(1),
-                    body: self.valid_first.then(|| b"receipt-a".to_vec()),
-                }),
-                Some(id) if id == OP1 => Some(RetainedCreateReceipt {
-                    operation_id: op(2),
-                    body: Some(b"receipt-b".to_vec()),
-                }),
-                Some(_) => None,
+        let store = self.store.lock().unwrap();
+        Ok([("receipt-a", op(1)), ("receipt-b", op(2))]
+            .into_iter()
+            .find(|(_, id)| {
+                after.is_none_or(|cursor| id.as_str() > cursor) && !store.stopped.contains(id)
             })
-        }
+            .map(|(body, operation_id)| RetainedCreateReceipt {
+                body: (operation_id != OP1 || self.valid_first).then(|| body.as_bytes().to_vec()),
+                operation_id,
+            }))
     }
 
+    async fn stop_retained_create_receipt(
+        &mut self,
+        operation_id: &str,
+    ) -> Result<(), SourceError> {
+        self.store.lock().unwrap().stopped.push(operation_id.into());
+        Ok(())
+    }
+}
+
+fn poll_retained_create_publisher(
+    store: Arc<Mutex<RetainedCreateStore>>,
+    read_limit: usize,
+    valid_first: bool,
+    script: VecDeque<Result<Vec<u8>, Failure>>,
+    event: fn(&str),
+) -> Vec<(Operation, String)> {
+    let sent = Arc::new(Mutex::new(Vec::new()));
+    let mut run = pin!(run_account_closure_publications(
+        Clock::default(),
+        Source {
+            script: Arc::new(Mutex::new(script)),
+            sent: sent.clone(),
+        },
+        RetainedCreates {
+            store,
+            reads: 0,
+            read_limit,
+            valid_first
+        },
+        event,
+    ));
+    assert!(
+        run.as_mut()
+            .poll(&mut Context::from_waker(Waker::noop()))
+            .is_pending()
+    );
+    sent.lock().unwrap().clone()
+}
+
+fn retained_create_ack() -> Vec<u8> {
+    br#"{"contract_version":1,"result":"accepted"}"#.to_vec()
+}
+
+#[test]
+fn retained_create_refusal_alarms_and_does_not_block_later_receipts_after_restart() {
     thread_local! {
         static LOG: std::cell::RefCell<Vec<String>> = const { std::cell::RefCell::new(Vec::new()) };
     }
-
-    let ack = br#"{"contract_version":1,"result":"accepted"}"#.to_vec();
+    let event = |event: &str| LOG.with_borrow_mut(|log| log.push(event.into()));
+    let operation = Operation::PublishCharacterCommandReceiptV1;
     for (refusal, label) in [
-        (Some(Err(Failure::Conflict)), "conflict"),
-        (Some(Err(Failure::NotFound)), "not_found"),
-        (
-            Some(Ok(b"invalid acknowledgement".to_vec())),
-            "invalid_response",
-        ),
+        (Some(classify(409, b"")), "conflict"),
+        (Some(classify(404, b"")), "not_found"),
         (None, "invalid_stored_state"),
     ] {
         LOG.with_borrow_mut(Vec::clear);
-        let sent = Arc::new(Mutex::new(Vec::new()));
-        let operation = Operation::PublishCharacterCommandReceiptV1;
-        let valid_first = refusal.is_some();
-        let mut script = VecDeque::new();
-        let mut expected: Vec<(Operation, String)> = Vec::new();
-        if let Some(refusal) = refusal {
-            script.extend([Err(Failure::Unavailable), refusal]);
-            expected.extend([
-                (operation, "receipt-a".into()),
-                (operation, "receipt-a".into()),
-            ]);
+        let store = Arc::new(Mutex::new(RetainedCreateStore::default()));
+        let mut script: VecDeque<_> = refusal.into_iter().map(Err).collect();
+        script.push_back(Ok(retained_create_ack()));
+        let sent =
+            poll_retained_create_publisher(store.clone(), 3, refusal.is_some(), script, event);
+        let mut expected = Vec::new();
+        if refusal.is_some() {
+            expected.push((operation, "receipt-a".into()));
         }
-        script.push_back(Ok(ack.clone()));
         expected.push((operation, "receipt-b".into()));
-        let publisher = run_account_closure_publications(
-            Clock::default(),
-            Source {
-                script: Arc::new(Mutex::new(script)),
-                sent: sent.clone(),
-            },
-            Retained {
-                reads: 0,
-                valid_first,
-            },
-            |event| LOG.with_borrow_mut(|log| log.push(event.into())),
+        assert_eq!(sent, expected);
+        assert_eq!(store.lock().unwrap().stopped, [OP1]);
+
+        let sent = poll_retained_create_publisher(
+            store,
+            2,
+            refusal.is_some(),
+            VecDeque::from([Ok(retained_create_ack())]),
+            event,
         );
-        let mut run = pin!(publisher);
-        assert!(matches!(
-            run.as_mut().poll(&mut Context::from_waker(Waker::noop())),
-            Poll::Pending
-        ));
-        assert_eq!(*sent.lock().unwrap(), expected);
+        assert_eq!(sent, [(operation, "receipt-b".into())]);
         LOG.with_borrow(|log| {
             assert_eq!(log.len(), 1);
             assert!(log[0].contains(&format!("receipt={label} alarm=receipt_refused")));
         });
     }
+}
+
+fn retained_create_retry_allows_later_receipts(first: Result<Vec<u8>, Failure>) {
+    let store = Arc::new(Mutex::new(RetainedCreateStore::default()));
+    let sent = poll_retained_create_publisher(
+        store.clone(),
+        4,
+        true,
+        VecDeque::from([first, Ok(retained_create_ack()), Ok(retained_create_ack())]),
+        |event| assert!(!event.contains("alarm="), "{event}"),
+    );
+    let operation = Operation::PublishCharacterCommandReceiptV1;
+    assert_eq!(
+        sent,
+        [
+            (operation, "receipt-a".into()),
+            (operation, "receipt-b".into()),
+            (operation, "receipt-a".into()),
+        ],
+    );
+    assert!(store.lock().unwrap().stopped.is_empty());
+}
+
+#[test]
+fn retained_create_rate_limit_retries_after_later_receipt() {
+    retained_create_retry_allows_later_receipts(Err(classify(429, b"")));
+}
+
+#[test]
+fn retained_create_malformed_success_retries_after_later_receipt() {
+    retained_create_retry_allows_later_receipts(Ok(b"invalid acknowledgement".to_vec()));
+}
+
+#[test]
+fn retained_create_empty_bad_request_retries_after_later_receipt() {
+    retained_create_retry_allows_later_receipts(Err(classify(400, b"")));
+}
+
+#[test]
+fn retained_create_transport_failure_retries_after_later_receipt() {
+    retained_create_retry_allows_later_receipts(Err(Failure::Unavailable));
 }

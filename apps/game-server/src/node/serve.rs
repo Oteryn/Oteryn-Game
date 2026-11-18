@@ -1525,6 +1525,21 @@ impl Decider for CommandDecider<'_, '_, '_> {
             .map_err(|_| crate::native_admission_source::SourceError::Unavailable)
     }
 
+    async fn stop_retained_create_receipt(
+        &mut self,
+        operation_id: &str,
+    ) -> Result<(), crate::native_admission_source::SourceError> {
+        self.root
+            .stop_retained_create_receipt(self.authority, self.proof, operation_id)
+            .await
+            .map_err(|_| {
+                event(
+                    "event=character_commands state=pending reason=retained_create_stop_dependency",
+                );
+                crate::native_admission_source::SourceError::Unavailable
+            })
+    }
+
     async fn stop_services_receipt(&mut self, operation: &str, receipt: &[u8]) {
         if self
             .root

@@ -76,11 +76,9 @@ pub(super) async fn exercise(
         Err(Failure::Unavailable)
     ));
     let decoded: serde_json::Value = serde_json::from_slice(receipt)?;
-    let read = native_admission_source::character_commands::encode_read(
-        SOURCE,
-        CREATE_COMMAND,
-        decoded["operation_id"].as_str().ok_or("operation")?,
-    )?;
+    let operation_id = decoded["operation_id"].as_str().ok_or("operation")?;
+    let read =
+        native_admission_source::character_commands::encode_read(SOURCE, CREATE_COMMAND, operation_id)?;
     assert!(matches!(
         peer.exchange(Operation::ReadCharacterCommandIntentV1, &read)
             .await,
@@ -101,11 +99,21 @@ pub(super) async fn exercise(
         () = publisher => return Err("receipt publisher stopped".into()),
         () = tokio::time::sleep(std::time::Duration::from_secs(20)) => return Err("retained receipt was not recovered".into()),
     }
-    let calls = calls.lock().map_err(|_| "publication calls poisoned")?;
-    assert_eq!(calls.len(), 3);
-    assert_eq!(calls[0].1.as_bytes(), receipt);
-    assert_eq!(calls[2].0, Operation::PublishCharacterCommandReceiptV1);
-    assert_eq!(calls[2].1.as_bytes(), receipt);
+    {
+        let calls = calls.lock().map_err(|_| "publication calls poisoned")?;
+        assert_eq!(calls.len(), 3);
+        assert_eq!(calls[0].1.as_bytes(), receipt);
+        assert_eq!(calls[2].0, Operation::PublishCharacterCommandReceiptV1);
+        assert_eq!(calls[2].1.as_bytes(), receipt);
+    }
+    root.stop_retained_create_receipt(authority, node, operation_id).await?;
+    root.stop_retained_create_receipt(authority, node, operation_id).await?;
+    assert!(
+        root.next_retained_create_receipt(authority, node, SOURCE, None)
+            .await?
+            .is_none(),
+        "a fresh scan excludes the durably stopped receipt"
+    );
     eprintln!("RETAINED_CREATE_RECEIPT_PG_EXECUTED publish_failure=1 read_404=1 recovered=1");
     Ok(())
 }
