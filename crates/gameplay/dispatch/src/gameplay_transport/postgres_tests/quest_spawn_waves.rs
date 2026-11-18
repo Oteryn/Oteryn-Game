@@ -633,16 +633,7 @@ async fn wave_scenario(
     assert_eq!(position(owner, player).await?, local(START));
     let peer = stage_peer(h, owner, admitted).await?;
     let peer_actor = peer.runtime_actor.ok_or("staged peer actor")?;
-    let blocker = {
-        let mut runtime = owner.runtime.lock().await;
-        let session = GameSessionId::decode(&id(58)).map_err(debug)?;
-        let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
-        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
-        runtime
-            .initialize_pinned_test_position(actor, local(SECOND))
-            .map_err(debug)?;
-        actor
-    };
+    let blocker = position_session_before_lease(owner, SECOND).await?;
     assert_eq!(
         use_room(owner, admitted, 2).await?,
         UseDisposition::Occupied
@@ -959,10 +950,14 @@ async fn stations_scenario(
     assert_eq!(hatch_appearance(), Some(1897));
     advance(owner, 6_999).await;
     assert_eq!(position(owner, player).await?, local(LANDING));
+
+    let arriving = position_session_before_lease(owner, PEER_LANDING).await?;
     advance(owner, 1).await;
-    assert!(creatures(owner).await?.is_empty());
     assert_eq!(position(owner, player).await?, local(EXIT));
     assert_eq!(position(owner, peer_actor).await?, local(PEER_START));
+    assert_eq!(position(owner, arriving).await?, local(PEER_LANDING));
+    assert!(!creatures(owner).await?.is_empty());
+
     tokio::time::resume();
     owner.drain_quest_encounter_deadlines().await;
     for (staged, credit) in [(admitted.item_fence, 1), (peer.item_fence, 0)] {
@@ -974,7 +969,25 @@ async fn stations_scenario(
             .map_err(debug)?;
         assert_eq!(state.tracks().get(TRACK).copied().unwrap_or(0), credit);
     }
+
+    owner.runtime.lock().await.remove_test_actor(arriving).map_err(debug)?;
+    owner.drain_quest_encounter_deadlines().await;
+    assert!(creatures(owner).await?.is_empty());
     Ok(())
+}
+
+async fn position_session_before_lease(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    position: Position,
+) -> TestResult<ExactActorRef> {
+    let mut runtime = owner.runtime.lock().await;
+    let session = GameSessionId::decode(&id(58)).map_err(debug)?;
+    let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+    let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+    runtime
+        .initialize_pinned_test_position(actor, local(position))
+        .map_err(debug)?;
+    Ok(actor)
 }
 
 async fn guarded_wave_step(

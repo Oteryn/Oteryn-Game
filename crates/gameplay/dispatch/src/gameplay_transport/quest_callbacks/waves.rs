@@ -461,6 +461,17 @@ fn eject(
             more = true;
             break;
         }
+        let lease = if credit.is_some() {
+            let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {
+                // A positioned session can still be acquiring its character
+                // lease. Revisit it without holding up the other survivors.
+                more = true;
+                continue;
+            };
+            Some(lease)
+        } else {
+            None
+        };
         let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
             runtime,
             owner.movement_cells(),
@@ -472,19 +483,11 @@ fn eject(
         ) else {
             return false;
         };
-        let lease = if credit.is_some() {
-            let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {
-                return false;
-            };
-            Some(lease)
-        } else {
-            None
-        };
         players.push((actor, session, position.position(), lease));
         proofs.push(proof);
     }
     if proofs.is_empty() {
-        return true;
+        return !more;
     }
     let mut credits = if credit.is_some() {
         let Ok(mut queue) = owner.states.quest_callbacks.wave_credits.lock() else {
