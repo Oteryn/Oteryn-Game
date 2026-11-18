@@ -361,6 +361,8 @@ fn scenario_case(
     let lucifuga = name == lucifuga_bait_spawn::NAME;
     use super::super::faceless_bane_phase;
     let faceless_bane = name == faceless_bane_phase::NAME;
+    use super::super::feaster_brain_head;
+    let brain_head = name == feaster_brain_head::NAME;
     use super::super::feaster_solo_rooms;
     let feaster_solo = matches!(name, feaster_solo_rooms::IRGIX | feaster_solo_rooms::IRGIX_RETURN | feaster_solo_rooms::UNAZ | feaster_solo_rooms::VOK);
     use super::super::haunted_cellar_disguise;
@@ -394,6 +396,8 @@ fn scenario_case(
         dream_scar_izcandar_forms::binding()?
     } else if faceless_bane {
         faceless_bane_phase::binding()?
+    } else if brain_head {
+        feaster_brain_head::binding()?
     } else if feaster_solo {
         feaster_solo_rooms::binding(name)?
     } else if haunted_tomb {
@@ -728,6 +732,8 @@ fn scenario_case(
         dream_scar_izcandar_forms::world(&callback)?
     } else if faceless_bane {
         faceless_bane_phase::world(&callback)?
+    } else if brain_head {
+        super::world_with_cells(&callback, trigger, &[feaster_brain_head::EXIT])?
     } else if feaster_solo {
         feaster_solo_rooms::world(&callback, name)?
     } else if haunted_tomb {
@@ -1488,7 +1494,7 @@ fn scenario_case(
             "questpc7-grave" => Some(250),
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
-            dream_scar_izcandar_forms::NAME | faceless_bane_phase::NAME | feaster_solo_rooms::IRGIX
+            dream_scar_izcandar_forms::NAME | faceless_bane_phase::NAME | feaster_brain_head::NAME | feaster_solo_rooms::IRGIX
             | feaster_solo_rooms::IRGIX_RETURN | feaster_solo_rooms::UNAZ | feaster_solo_rooms::VOK
             | zarganash_linked_boss::NAME | zarganash_linked_boss::OCCUPIED_ARRIVAL => Some(250),
             _ => None,
@@ -1840,7 +1846,7 @@ fn scenario_case(
                 owner.quest_catalogue.as_ref().ok_or("quest catalogue")?, &callback, name,
             )?);
         }
-        if feaster_solo {
+        if brain_head || feaster_solo {
             owner.quest_catalogue = Some(feaster_solo_rooms::catalogue(
                 owner.quest_catalogue.as_ref().ok_or("quest catalogue")?, &callback,
             )?);
@@ -3075,6 +3081,8 @@ fn scenario_case(
             Box::pin(dream_scar_izcandar_forms::exercise(&mut owner, &mut admitted)).await?;
         } else if faceless_bane {
             Box::pin(faceless_bane_phase::exercise(&mut owner, &mut admitted)).await?;
+        } else if brain_head {
+            Box::pin(feaster_brain_head::exercise(&mut owner, &mut admitted, &h, fence)).await?;
         } else if feaster_solo {
             Box::pin(feaster_solo_rooms::exercise(&mut owner, &mut admitted, &h, fence, name)).await?;
         } else if haunted_tomb {

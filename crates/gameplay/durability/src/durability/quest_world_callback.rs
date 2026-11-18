@@ -616,7 +616,7 @@ pub(super) async fn consume(
     if let Some(encounter) = &callback.effects.encounter
         && let Some(expiry) = encounter.solo_expiry
     {
-        let [monster] = encounter.monsters.as_slice() else {
+        let Some(monster) = encounter.monsters.first() else {
             return Ok(false);
         };
         return super::boss_encounter::cooldown_storage::admit_solo_quest_room(

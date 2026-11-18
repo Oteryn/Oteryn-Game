@@ -5,6 +5,8 @@ use crate::map::view::EntryFacts;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use sha2::{Digest, Sha256};
 
+mod shared_room;
+
 pub(in crate::gameplay_transport) fn room_contains(
     encounter: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
     at: MovementLocalPosition,
@@ -20,6 +22,7 @@ pub(super) struct EncounterVisit {
     creatures: Vec<ExactActorRef>,
     expires: Option<VisitExpiry>,
     arrival_due: Option<u64>,
+    join_until: Option<u64>,
     threshold: Option<super::super::encounter_phases::threshold::Threshold>,
     forms: Option<super::super::encounter_phases::position_forms::Forms>,
     owner_scope: (
@@ -193,6 +196,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if visit.owner_scope != scope {
                 return false;
             }
+            if visit
+                .expires
+                .as_ref()
+                .is_some_and(|expiry| expiry.scope != scope || expiry.bundle_digest != digest)
+            {
+                return false;
+            }
             if visit.arrival_due.is_some_and(|due| due <= now) {
                 visit.arrival_due = None;
                 if let Some(link) = visit.room.linked_arrival.as_ref()
@@ -206,9 +216,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(expiry) = &visit.expires else {
                 return visit.active(runtime);
             };
-            if expiry.scope != scope || expiry.bundle_digest != digest {
-                return false;
-            }
             if expiry.due > now {
                 let occupied = visit.participants.iter().any(|&(actor, session)| {
                     runtime.player_control_facts(actor, session).is_ok()
@@ -538,6 +545,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };
+        if let Some(expiry) = encounter.solo_expiry
+            && expiry.shared.is_some()
+        {
+            return self.shared_quest_room(
+                runtime,
+                states,
+                actor,
+                session,
+                map,
+                callback,
+                encounter,
+                expiry,
+                key,
+                expected_revision,
+                after,
+                preflight,
+                &census,
+            );
+        }
         let personal_entry = callback.personal_room_entry().map(local);
         if census.iter().any(|(who, pos, occupant_session)| {
             occupant_session.is_some()
@@ -883,6 +909,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 creatures: actors.clone(),
                 expires: expiration,
                 arrival_due,
+                join_until: None,
                 forms: callback.effects.position_forms.as_ref().map(|spec| {
                     super::super::encounter_phases::position_forms::Forms::new(
                         encounter.monsters[0].creature.clone(),

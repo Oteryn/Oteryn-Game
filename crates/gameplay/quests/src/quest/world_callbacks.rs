@@ -104,8 +104,8 @@ pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPhase,
     EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence,
     LinkedArrival, MagicEffect, MountReward, PartyStation, PartyTransfer, Portal, PortalPair,
-    QuestCompletion, RewardDoor, SolidTeleport, SoloEncounterExpiry, StepSpawn, TargetTransform,
-    ThresholdRearm,
+    QuestCompletion, RewardDoor, SharedEncounterAdmission, SolidTeleport, SoloEncounterExpiry,
+    StepSpawn, TargetTransform, ThresholdRearm,
 };
 pub use ground_stack::{
     GroundStackEntry, GroundStackFact, ground_stack_matches, ground_stack_matches_at,
@@ -571,12 +571,20 @@ impl Callback {
         !self.has_personal_state()
             && self.key.starts_with(SOLO_ROOM_PREFIX)
             && self.requires_world_admission
-            && self.selector.native.is_some()
             && self
                 .effects
                 .encounter
                 .as_ref()
-                .is_some_and(|room| room.solo_expiry.is_some())
+                .and_then(|room| room.solo_expiry)
+                .is_some_and(|expiry| {
+                    self.selector.native.is_some()
+                        || (expiry.shared.is_some()
+                            && self.selector.position.is_some()
+                            && self.selector.ordinal == Some(0)
+                            && self.selector.action.is_none()
+                            && self.selector.unique.is_none()
+                            && self.selector.appearance.is_none())
+                })
     }
 
     pub fn uses_empty_world_transition(&self) -> bool {

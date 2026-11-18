@@ -441,6 +441,17 @@ pub struct SoloEncounterExpiry {
     pub exit: Position,
     pub time_limit_ms: u32,
     pub cooldown_seconds: u64,
+    /// Crystal actions_portal_brain_head.lua:50-126 admits a bounded group
+    /// during the opening stage, then locks the running visit.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shared: Option<SharedEncounterAdmission>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct SharedEncounterAdmission {
+    pub capacity: u8,
+    pub join_window_ms: u32,
 }
 
 /// Crystal 201189f the_dream_courts/creaturescripts_faceless_bane.lua:11-28.
@@ -1226,7 +1237,16 @@ pub(super) fn valid(callback: &Callback) -> bool {
         if encounter.solo_expiry.is_some_and(|expiry| {
             callback.personal_room_entry().is_none()
                 || encounter.phase.is_some()
-                || encounter.monsters.len() != 1
+                || match expiry.shared {
+                    None => encounter.monsters.len() != 1,
+                    Some(shared) => {
+                        !callback.standalone_solo_room()
+                            || callback.failure_teleport != Some(expiry.exit)
+                            || !(2..=16).contains(&shared.capacity)
+                            || shared.join_window_ms == 0
+                            || shared.join_window_ms >= expiry.time_limit_ms
+                    }
+                }
                 || !pos(expiry.exit)
                 || in_room(expiry.exit)
                 || !(1..=3_600_000).contains(&expiry.time_limit_ms)
@@ -1257,7 +1277,15 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                     .contains(&encounter.players.len())
             }
-            || !(1..=if encounter.phase.is_some() { 16 } else { 8 })
+            || !(1..=if encounter.phase.is_some()
+                || encounter
+                    .solo_expiry
+                    .is_some_and(|expiry| expiry.shared.is_some())
+            {
+                16
+            } else {
+                8
+            })
                 .contains(&encounter.monsters.len())
             || (encounter.phase.is_some() && encounter.timing.is_some())
             || (callback.reversible && !source_party)
