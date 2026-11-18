@@ -8,6 +8,7 @@ use crate::foundation::{
 use crate::gameplay_transport::connection::{
     FirstEntryOutcome, FreshAdmissionAuthority, UseCommand,
 };
+use crate::map::view::MapFacts;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 

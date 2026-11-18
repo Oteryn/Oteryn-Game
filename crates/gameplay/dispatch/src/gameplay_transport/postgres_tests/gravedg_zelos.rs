@@ -3,7 +3,7 @@ use super::{
     AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult,
     fixture::{Harness, debug},
 };
-use crate::foundation::{ExactActorRef, MovementLocalPosition};
+use crate::foundation::MovementLocalPosition;
 use oteryn_gameplay_quests::quest::world_callbacks::{
     Callback, EncounterPhase, Position, ZelosPassages,
 };
