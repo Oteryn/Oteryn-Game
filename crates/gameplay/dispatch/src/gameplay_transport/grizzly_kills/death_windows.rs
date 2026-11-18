@@ -116,11 +116,9 @@ impl DeathWindows {
                 exit.opened_by = None;
             }
             exit.last = Some(target);
-            exit.count = if exit.rule.required_deaths == 1 {
-                1
-            } else {
-                exit.count.saturating_add(1)
-            };
+            // Keep a completed count eligible for projection if the portal was
+            // unavailable on the death that first met the threshold.
+            exit.count = exit.count.saturating_add(1).min(exit.rule.required_deaths);
             if exit.count == exit.rule.required_deaths {
                 let due = when.saturating_add(u64::from(exit.rule.duration_ms));
                 // A repeat kill cannot extend the original scheduled reset.
