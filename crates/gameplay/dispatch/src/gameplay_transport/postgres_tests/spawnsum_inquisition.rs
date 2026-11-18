@@ -124,6 +124,12 @@ async fn exercise(h: &Harness) -> TestResult {
     deps.runtime = tokio::sync::Mutex::new(runtime);
     let mut owner = deps.owner(h, &authority);
     owner.active_generation = Some(active);
+    owner.quest_catalogue = Some(std::sync::Arc::new(
+        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(debug)?
+            .catalogue()
+            .clone(),
+    ));
     owner.movement_cells = (&cells).into();
     deps.initialize(&owner).await;
 
@@ -141,6 +147,17 @@ async fn exercise(h: &Harness) -> TestResult {
         .map_err(debug)?
         .ok_or("current USE fence")?
         .item_fence();
+    let lease = CharacterLease::new(
+        CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+        fence.character_lease_generation,
+    )
+    .map_err(debug)?;
+    owner
+        .runtime
+        .lock()
+        .await
+        .bind_attacker_lease(deps.actor, session, lease)
+        .map_err(debug)?;
     let use_water = |command_id| {
         owner.tame_mount(
             deps.actor,
@@ -207,7 +224,51 @@ async fn exercise(h: &Harness) -> TestResult {
     assert_eq!(map.facts.expire_movement_items(50_000_100), 0);
     assert_eq!(map.facts.expire_movement_items(60_000_101), 1);
     assert_eq!(appearance(), Some(7929));
-    assert_eq!(map.facts.expire_movement_items(80_000_101), 1);
+    owner
+        .states
+        .test_owner_time
+        .store(60_000_102, Ordering::Relaxed);
+    assert_eq!(
+        use_water(4)
+            .await
+            .map_err(debug)?
+            .ok_or("USE not routed")?
+            .disposition,
+        UseDisposition::Committed
+    );
+    assert_eq!(appearance(), Some(7930));
+    assert_eq!(map.facts.expire_movement_items(90_000_102), 1);
+    assert_eq!(appearance(), Some(7931));
+    owner
+        .states
+        .test_owner_time
+        .store(90_000_103, Ordering::Relaxed);
+    assert_eq!(
+        use_water(5)
+            .await
+            .map_err(debug)?
+            .ok_or("USE not routed")?
+            .disposition,
+        UseDisposition::Committed
+    );
+    let saved = h
+        .root
+        .read_character_quest_state(&authority, fence.character_id)
+        .await
+        .map_err(debug)?;
+    assert_eq!(
+        saved
+            .tracks()
+            .get("oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline"),
+        Some(&22)
+    );
+    assert_eq!(
+        saved
+            .tracks()
+            .get("oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission07"),
+        Some(&2)
+    );
+    assert_eq!(map.facts.expire_movement_items(110_000_102), 1);
     assert_eq!(appearance(), Some(7925));
     Ok(())
 }
