@@ -331,10 +331,13 @@ pub(in super::super) fn exercise(
                 sqlx::query("SET LOCAL session_replication_role = replica")
                     .execute(&mut *save)
                     .await?;
-                sqlx::query("UPDATE game_character_quest_states SET pinned_content_revision='content-main-era', definition_hash=$1 WHERE quest_key=$2")
-                    .bind(hash.as_slice()).bind(&callback.quest).execute(&mut *save).await?;
-                sqlx::query("UPDATE game_character_quest_receipts SET pinned_content_revision='content-main-era', definition_hash=$1 WHERE quest_key=$2")
-                    .bind(hash.as_slice()).bind(&callback.quest).execute(&mut *save).await?;
+                let character = fence.character_id.as_bytes().as_slice();
+                let state = sqlx::query("UPDATE game_character_quest_states SET pinned_content_revision='content-main-era', definition_hash=$1 WHERE quest_key=$2 AND character_id=encode($3,'hex')::uuid")
+                    .bind(hash.as_slice()).bind(&callback.quest).bind(character).execute(&mut *save).await?;
+                let receipt = sqlx::query("UPDATE game_character_quest_receipts SET pinned_content_revision='content-main-era', definition_hash=$1 WHERE quest_key=$2 AND character_id=encode($3,'hex')::uuid")
+                    .bind(hash.as_slice()).bind(&callback.quest).bind(character).execute(&mut *save).await?;
+                assert_eq!(state.rows_affected(), 1);
+                assert_eq!(receipt.rows_affected(), 1);
                 save.commit().await?;
                 historical_hash = Some(hash);
                 owner.quest_catalogue = Some(std::sync::Arc::new(active));
@@ -379,10 +382,9 @@ pub(in super::super) fn exercise(
                 stage
             );
         }
-        let receipts_before: i64 =
-            sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
-                .fetch_one(&h.pool)
-                .await?;
+        let receipt_snapshot = "SELECT to_jsonb(receipt) FROM game_character_quest_receipts receipt ORDER BY 1";
+        let receipts_before: Vec<serde_json::Value> =
+            sqlx::query_scalar(receipt_snapshot).fetch_all(&h.pool).await?;
         let allowed = callback
             .storage
             .first()
@@ -433,11 +435,9 @@ pub(in super::super) fn exercise(
             .await
             .map_err(debug)?;
         assert_eq!(before, after, "literal USE changed durable quest state");
-        let receipts: i64 =
-            sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
-                .fetch_one(&h.pool)
-                .await?;
-        assert_eq!(receipts, receipts_before);
+        let receipts: Vec<serde_json::Value> =
+            sqlx::query_scalar(receipt_snapshot).fetch_all(&h.pool).await?;
+        assert_eq!(receipts, receipts_before, "literal USE changed quest receipts");
         eprintln!(
             "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED {} stage={stage:?} allowed={allowed} tracks_unchanged receipts_unchanged revision_unchanged duration={:?}",
             callback.key,
