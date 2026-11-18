@@ -515,7 +515,7 @@ async fn seed_scavenge(harness: &Harness, stage: i16, race: &str) -> TestResult 
     Ok(())
 }
 
-async fn mint_corpse(
+pub(super) async fn mint_corpse(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     harness: &Harness,
     native: &crate::content::native_gameplay::NativeGameplayState,

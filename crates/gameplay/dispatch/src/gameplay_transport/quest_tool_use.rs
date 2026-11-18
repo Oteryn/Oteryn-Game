@@ -98,13 +98,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(None);
         };
         let callbacks = reward_callbacks::load_for(catalogue).map_err(|_| ())?;
-        let bound = callbacks
+        let mut bound = callbacks
             .iter()
             .filter(|c| c.carried_item.as_deref() == Some(&item.definition.production_key))
             // Selected two-input recipes retain their own M20 admission owner.
             .filter(|c| c.carried_target.is_none() && !c.fresh_corpse)
             .filter(|c| c.corpse_target.is_some() == corpse.is_some())
             .collect::<Vec<_>>();
+        if let Some(corpse) = corpse
+            && bound.iter().any(|callback| {
+                callback
+                    .corpse_target
+                    .as_ref()
+                    .is_some_and(|target| target.reusable_tool)
+            })
+        {
+            let appearance = self
+                .root
+                .read_ground_action_source(self.character, item_fence, corpse)
+                .await
+                .map_err(|_| ())?
+                .and_then(|ground| {
+                    ground
+                        .definition()
+                        .production_key
+                        .strip_prefix("oteryn:item.tibia.i")?
+                        .parse::<u32>()
+                        .ok()
+                });
+            bound.retain(|callback| {
+                callback.corpse_target.as_ref().is_none_or(|target| {
+                    !target.reusable_tool || appearance == Some(target.appearance)
+                })
+            });
+        }
         if bound.is_empty() {
             return Ok(None);
         }
@@ -232,6 +259,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut creature_runtime = if callback.creature_target.is_some()
             || callback.self_target.is_some()
             || callback.server_save_hotspot.is_some()
+            || callback.carried_tracker.is_some()
         {
             Some(CreatureTurn {
                 runtime: self.runtime.lock().await,
@@ -266,9 +294,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let location =
             if callback.server_save_hotspot.is_some() || callback.carried_tracker.is_some() {
                 let runtime = &creature_runtime.as_ref().ok_or(())?.runtime;
-                runtime
+                let control = runtime
                     .player_control_facts(actor, command.game_session_id)
                     .map_err(|_| ())?;
+                if control.control_loss.is_some() {
+                    return Ok(Some(outcome(UseDisposition::Rejected)));
+                }
                 let position = runtime
                     .read_actor_position(actor)
                     .map_err(|_| ())?
