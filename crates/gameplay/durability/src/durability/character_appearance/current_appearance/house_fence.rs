@@ -2,22 +2,20 @@
 use super::*;
 use crate::durability::character_progression::FencedCharacterRoot;
 
-pub(super) async fn assert_read_fence(
+pub(super) async fn observe_house_root(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: &CurrentCharacterGameplayFence,
     node: &NodeIncarnationProof,
-    scope: ReadScope,
+    origin_channel: [u8; 16],
 ) -> Result<Result<FencedCharacterRoot, CharacterProgressionError>, DurabilityError> {
-    let ReadScope::House { origin_channel } = scope else {
-        return assert_gameplay_fence(tx, fence, node).await;
-    };
-    if !crate::durability::house_hireling::fence::assert_house_inventory_fence(
+    if crate::durability::house_hireling::fence::observe_house_custody_fence(
         tx,
         node,
         &fence.item_fence(),
         origin_channel,
     )
     .await?
+    .is_none()
     {
         return Ok(Err(CharacterProgressionError::AuthorityRejected));
     }

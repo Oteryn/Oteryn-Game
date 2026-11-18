@@ -192,13 +192,37 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         house: HouseId,
     ) -> Result<u32, DurabilityError> {
+        self.expire_house_furniture_inner(node, fence, house, false).await
+    }
+
+    /// Periodic expiry retries on the next tick when admission owns the relations.
+    pub async fn try_expire_house_furniture(
+        &self,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        house: HouseId,
+    ) -> Result<u32, DurabilityError> {
+        self.expire_house_furniture_inner(node, fence, house, true).await
+    }
+
+    async fn expire_house_furniture_inner(
+        &self,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        house: HouseId,
+        periodic: bool,
+    ) -> Result<u32, DurabilityError> {
         if fence.runtime_scope != house.runtime_scope()? {
             return Ok(0);
         }
         let node = node.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
-            lock_admission_relations(&mut tx).await?;
+            if periodic {
+                super::db::try_lock_admission_relations(&mut tx).await?;
+            } else {
+                lock_admission_relations(&mut tx).await?;
+            }
             if !prove_current_incarnation(&mut tx,&node).await? { return Ok(0); }
             let fact=node.fact();
             let count:i32=sqlx::query_scalar("SELECT game_house_furniture_destroy_expire(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5::text::numeric,encode($6,'hex')::uuid,$7::text::numeric,encode($8,'hex')::uuid,$9)")

@@ -317,8 +317,12 @@ impl Turn<'_, '_, '_, '_> {
                 facing,
             )
             .map_err(MovementError::Actor)?;
-        self.runtime
-            .record_house_walk(self.actor, self.session, &moved, duration);
+        // The resolver flags both a floor change and a successful bundle teleport.
+        // Keep STEP pacing, but leave the new translation revision without a walk.
+        if !stairhop {
+            self.runtime
+                .record_house_walk(self.actor, self.session, &moved, duration);
+        }
         if let Some(cooldowns) = cooldowns {
             state.cooldowns = cooldowns;
         }

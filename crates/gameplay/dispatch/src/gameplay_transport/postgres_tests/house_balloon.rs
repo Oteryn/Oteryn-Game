@@ -166,6 +166,7 @@ pub(super) enum Case {
     Placed,
     Carried,
     ResidentTick,
+    ResidentExpiryTick,
     ResidentLetter,
     ResidentMail,
     ResidentEquip,
@@ -295,7 +296,7 @@ pub(super) fn run_case(case: Case) -> TestResult {
         .spawn(move || {
             run(async |admin| {
                 let started = std::time::Instant::now();
-                let h = if case == Case::ResidentMount {
+                let h = if matches!(case, Case::ResidentMount | Case::ResidentTick) {
                     Harness::create_appearance(admin, "house_balloon").await?
                 } else {
                     Harness::create_with_admission_seed(admin, "house_balloon", true, false).await?

@@ -4,7 +4,9 @@ use super::house_balloon::{Case, run_case};
 use crate::foundation::{MessageType, decode_wire_envelope};
 use crate::gameplay_transport::{
     ComposedFreshAdmission,
-    connection::{AdmittedSession, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted},
+    connection::{
+        AdmittedSession, ConnectionEnd, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
+    },
 };
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
@@ -12,11 +14,16 @@ use oteryn_protocol_oteryn::{
 use oteryn_protocol_oteryn::{item_inscription, item_view, world_spatial_entities as entities};
 use oteryn_protocol_oteryn::{actor_motion, appearance};
 use oteryn_protocol_oteryn::mail::{self, MailIntent, MailOutcome};
-use tokio::io::AsyncWriteExt;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[test]
 fn house_resident_tick_postgres() -> TestResult {
     run_case(Case::ResidentTick)
+}
+
+#[test]
+fn house_resident_tick_with_due_furniture_postgres() -> TestResult {
+    run_case(Case::ResidentExpiryTick)
 }
 
 #[test]
@@ -74,7 +81,7 @@ pub(super) async fn presentation_exchange(
                 break;
             }
         }
-        for (command_id, mounted, look) in [(1, true, 139), (3, false, 0)] {
+        for (command_id, mounted, look) in [(1, true, 139), (3, false, 0), (5, true, 139)] {
             let frame = encode_client_command(
                 admitted.continuity.connection_generation,
                 &ClientCommandValue {
@@ -131,7 +138,20 @@ pub(super) async fn presentation_exchange(
             }
             let walked = next_motion(&mut client, admitted).await?;
             assert!(walked.translation_revision > motion.translation_revision);
-            assert!(walked.step_duration_ms > 0, "a House step must animate");
+            if command_id == 5 {
+                let position = owner
+                    .runtime
+                    .lock()
+                    .await
+                    .read_house_movement(actor, admitted.game_session_id)
+                    .map_err(debug)?
+                    .state()
+                    .position;
+                assert_eq!((position.x, position.y), (32311, 32803));
+                assert_eq!(walked.step_duration_ms, 0, "an adjacent teleport must snap");
+            } else {
+                assert!(walked.step_duration_ms > 0, "a House step must animate");
+            }
             assert_eq!(walked.mount_look_type, look);
         }
         client.shutdown().await?;
@@ -252,8 +272,27 @@ pub(super) async fn exchange(
     .bind(id(41).as_slice())
     .execute(&mut *tx)
     .await?;
+    if case == Case::ResidentExpiryTick {
+        let house = super::house_balloon::HOUSE;
+        let position = [32310_i32, 32804, 7].map(i32::to_be_bytes).concat();
+        sqlx::query("INSERT INTO game_house_tiles VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING")
+            .bind(id(42).as_slice()).bind(house).bind(&position).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i35949','definition-r1',1,1,encode($1,'hex')::uuid)")
+            .bind(id(80).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_house_interior_locations VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,1,encode($1,'hex')::uuid)")
+            .bind(id(80).as_slice()).bind(id(42).as_slice()).bind(house).bind(&position).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_house_reclaim_provenance(item_instance_id,world_id,house_key,reclaim_subject_character_id,placement_transaction_id,provenance_revision) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($1,'hex')::uuid,1)")
+            .bind(id(80).as_slice()).bind(id(42).as_slice()).bind(house).bind(id(101).as_slice()).execute(&mut *tx).await?;
+        sqlx::query(
+            "INSERT INTO game_item_timed_states VALUES(encode($1,'hex')::uuid,NULL,200000,1,1)",
+        )
+        .bind(id(80).as_slice())
+        .execute(&mut *tx)
+        .await?;
+    }
     tx.commit().await?;
-    if case == Case::ResidentTick {
+    let tick = matches!(case, Case::ResidentTick | Case::ResidentExpiryTick);
+    if tick {
         use std::time::Duration;
         let mut writer = h.pool.begin().await?;
         sqlx::query("LOCK TABLE game_durability_reconnect_sessions IN EXCLUSIVE MODE")
@@ -277,11 +316,19 @@ pub(super) async fn exchange(
             let raw = super::item_look::read_frame(&mut client).await?;
             let envelope = decode_wire_envelope(&raw).map_err(debug)?;
             match envelope.message_type() {
-                MessageType::SnapshotCommit if case == Case::ResidentTick => {
+                MessageType::SnapshotCommit if tick => {
                     let mut lock = h.pool.begin().await?;
                     sqlx::query("LOCK TABLE game_durability_reconnect_sessions IN EXCLUSIVE MODE")
                         .execute(&mut *lock)
                         .await?;
+                    if case == Case::ResidentExpiryTick {
+                        let house = crate::durability::house_scope_handoff::HouseId::new(
+                            admitted.world_id,
+                            super::house_balloon::HOUSE,
+                        )
+                        .ok_or("fixture House")?;
+                        assert!(owner.root.observe_due_house_furniture(&house).await?);
+                    }
                     writer = Some((lock, tokio::time::Instant::now()));
                 }
                 MessageType::SnapshotCommit
@@ -423,7 +470,7 @@ pub(super) async fn exchange(
                     client.write_u32(u32::try_from(frame.len())?).await?;
                     client.write_all(&frame).await?;
                 }
-                MessageType::StateDelta if case == Case::ResidentTick => {
+                MessageType::StateDelta if tick => {
                     let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())
                         .map_err(debug)?;
                     if delta.domain_id != 1 || delta.delta_type != 2 {
@@ -460,8 +507,22 @@ pub(super) async fn exchange(
                             started.elapsed() < std::time::Duration::from_secs(2),
                             "House tick waited for admission writer"
                         );
+                        // An ACK for an unsent probe yields a distinct ingress error.
+                        // Keep the writer held until the connection handles it.
+                        let ack = oteryn_protocol_oteryn::encode_liveness_ack(
+                            admitted.continuity.connection_generation,
+                            u64::MAX,
+                            0,
+                        )
+                        .map_err(debug)?;
+                        crate::gameplay_transport::tcp_tls::write_frame(&mut client, &ack).await?;
+                        tokio::time::timeout(
+                            std::time::Duration::from_secs(1),
+                            client.read_to_end(&mut Vec::new()),
+                        )
+                        .await??;
                         lock.rollback().await?;
-                        break;
+                        return Ok::<_, Box<dyn std::error::Error>>(());
                     }
                 }
                 _ => (),
@@ -470,7 +531,7 @@ pub(super) async fn exchange(
         client.shutdown().await?;
         Ok::<_, Box<dyn std::error::Error>>(())
     };
-    let (_, result) = tokio::time::timeout(std::time::Duration::from_secs(12), async {
+    let (end, result) = tokio::time::timeout(std::time::Duration::from_secs(12), async {
         tokio::join!(
             async move {
                 let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
@@ -482,6 +543,18 @@ pub(super) async fn exchange(
     })
     .await?;
     result?;
+    if tick {
+        assert!(
+            matches!(
+                end,
+                ConnectionEnd::AdmittedThenClosed(
+                    _,
+                    oteryn_protocol_oteryn::FoundationProtocolError::InvalidWireIdentifier,
+                )
+            ),
+            "House tick must service the queued ACK while the writer is held"
+        );
+    }
     if matches!(case, Case::ResidentLetter | Case::ResidentMail) {
         let text: String = sqlx::query_scalar(
             "SELECT text FROM game_item_texts WHERE item_instance_id=encode($1,'hex')::uuid",

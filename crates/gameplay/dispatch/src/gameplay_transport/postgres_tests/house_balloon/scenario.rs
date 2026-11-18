@@ -11,6 +11,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             ),
         ),
         Case::ResidentTick
+        | Case::ResidentExpiryTick
         | Case::ResidentLetter
         | Case::ResidentMail
         | Case::ResidentMount
@@ -88,7 +89,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             base.admitted.world_id,
             base.admitted.channel_id,
         )?
-    } else if case == Case::ResidentMount {
+    } else if matches!(case, Case::ResidentMount | Case::ResidentTick) {
         super::super::house_wrap::walkable_house_bundle(
             base.admitted.world_id,
             base.admitted.channel_id,
@@ -104,7 +105,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     use crate::content::native_gameplay::test_support::cosmetics_fixture::{
         activated_with_optional_cosmetics, cosmetics_test_packet,
     };
-    let cosmetics = if case == Case::ResidentMount {
+    let cosmetics = if matches!(case, Case::ResidentMount | Case::ResidentTick) {
         let mut packet = cosmetics_test_packet();
         packet["authoring"]["document"]["content_revision"] = "content-1".into();
         let mount = packet["authoring"]["document"]["mounts"][0]["key"].as_str().ok_or("mount key")?.to_owned();
@@ -178,11 +179,18 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     if matches!(
         case,
-        Case::ResidentLetter | Case::ResidentMail | Case::ResidentEquip | Case::ResidentMount
+        Case::ResidentLetter
+            | Case::ResidentMail
+            | Case::ResidentEquip
+            | Case::ResidentMount
+            | Case::ResidentTick
     ) {
         super::super::tutorial_vitals_fixture::publish_native_activation(h, &native_pin).await?;
     }
-    if matches!(case, Case::ResidentEquip | Case::ResidentMount) {
+    if matches!(
+        case,
+        Case::ResidentEquip | Case::ResidentMount | Case::ResidentTick
+    ) {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
             .bind(id(41).as_slice()).execute(&h.pool).await?;
     }
@@ -293,7 +301,10 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             &[4, 6, 11, 15, 18, 49, 86]
         }
         Case::Nested => &[4, 6, 12, 14, 15, 49, 86],
-        Case::ResidentTick => &[3, 4, 6, 15, 49, 51, 86, 115, 165, 508, 509, 511],
+        Case::ResidentTick => &[
+            3, 4, 6, 13, 15, 25, 49, 51, 86, 115, 165, 502, 508, 509, 511,
+        ],
+        Case::ResidentExpiryTick => &[3, 4, 6, 15, 49, 51, 86, 115, 165, 508, 509, 511],
         Case::ResidentLetter => &[4, 6, 15, 49, 86, 115, 508, 509, 511],
         Case::ResidentMail => &[4, 6, 86, 115],
         Case::ResidentEquip => &[4, 6, 12, 15, 86],
@@ -302,7 +313,8 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         Case::Carried | Case::Foreign => &[4, 6, 15, 49, 86],
     };
     let offered = crate::gameplay_transport::appearance_change::offer::offered(
-        owner.offered_capabilities(), case == Case::ResidentMount,
+        owner.offered_capabilities(),
+        matches!(case, Case::ResidentMount | Case::ResidentTick),
     );
     let offered = crate::gameplay_transport::server_info::offered(&offered, true);
     admitted.continuity.selected_capabilities =
@@ -344,6 +356,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     if !matches!(
         case,
         Case::ResidentTick
+            | Case::ResidentExpiryTick
             | Case::ResidentLetter
             | Case::ResidentMail
             | Case::ResidentEquip
@@ -402,11 +415,15 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         "the actual House handoff creates a new session"
     );
     if case == Case::ResidentMount {
-        for x in POSITION[0]..=POSITION[0] + 2 {
-            let position: Vec<u8> = [x, POSITION[1], POSITION[2]]
-                .iter()
-                .flat_map(|v| v.to_be_bytes())
-                .collect();
+        let floor = POSITION[2];
+        let y = POSITION[1];
+        for at in [
+            [POSITION[0], y, floor],
+            [32311, y, floor],
+            [32312, y, floor],
+            [32311, y - 1, floor],
+        ] {
+            let position: Vec<u8> = at.iter().flat_map(|v| v.to_be_bytes()).collect();
             sqlx::query("INSERT INTO game_house_tiles VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING")
                 .bind(id(42).as_slice()).bind(HOUSE).bind(position).execute(&h.pool).await?;
         }
@@ -416,7 +433,11 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     if matches!(
         case,
-        Case::ResidentTick | Case::ResidentLetter | Case::ResidentMail | Case::ResidentEquip
+        Case::ResidentTick
+            | Case::ResidentExpiryTick
+            | Case::ResidentLetter
+            | Case::ResidentMail
+            | Case::ResidentEquip
     ) {
         return super::super::house_resident_reads::exchange(h, &owner, admitted, before_ref, case)
             .await;

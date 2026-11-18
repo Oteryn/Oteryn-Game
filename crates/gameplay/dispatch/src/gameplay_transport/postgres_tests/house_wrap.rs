@@ -613,12 +613,18 @@ fn wrap_bundle_with_static_decorations(
     let flags=seed.flags;
     // Clear only the fixture seed before placing actual native decorations.
     if adjacent_ground {
+        let portal = seed.items.last().ok_or("teleport appearance")?.clone();
         let mut ground_tile = seed.clone();
         ground_tile.house = 3437;
         ground_tile.items.truncate(1);
         for offset in [1, 2] {
             let mut adjacent = ground_tile.clone();
             adjacent.x += offset;
+            if offset == 2 {
+                let mut portal = portal.clone();
+                portal.attrs.teleport = Some((32311, 32803, (-7_i8).to_ne_bytes()[0]));
+                adjacent.items.push(portal);
+            }
             sector.tiles.push(adjacent);
         }
     }
@@ -653,6 +659,16 @@ fn wrap_bundle_with_static_decorations(
         }
         tile.x += 32303;
         tile.y += 32804;
+    }
+    if adjacent_ground {
+        let mut landing = sector
+            .tiles
+            .iter()
+            .find(|tile| tile.x == 32311)
+            .ok_or("east ground")?
+            .clone();
+        landing.y -= 1;
+        sector.tiles.push(landing);
     }
     entrance.x = 32309;
     entrance.y = 32805;

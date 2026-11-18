@@ -247,9 +247,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .ok()??
             .item_fence();
-        let _permit = self.spell_lane_permit().await?;
+        // The expiry transaction locks and rechecks the House property and item
+        // custody itself. A periodic pass must not queue behind a gameplay writer.
         self.root
-            .expire_house_furniture(self.holder, fence, house)
+            .try_expire_house_furniture(self.holder, fence, house)
             .await
             .ok()?;
         Some(())
