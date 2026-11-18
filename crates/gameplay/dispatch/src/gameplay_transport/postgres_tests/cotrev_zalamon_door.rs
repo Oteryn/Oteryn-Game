@@ -3,6 +3,7 @@ use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::connection::UseCommand;
+use crate::map::view::MapFacts;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 #[test]
@@ -140,6 +141,15 @@ fn scenario(admin: String) -> TestResult {
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = super::FirstEntryOutcome::Positioned;
         let key = crate::map::boot::tests::door_key();
+        let (door_tile, ordinal) = crate::map::view::placement_of(key).ok_or("door tile")?;
+        let door_id = reference(door).ok_or("door definition")?.get() - 1;
+        let appearance = || -> TestResult<u16> {
+            Ok(map
+                .facts()
+                .base_entry(door_tile, ordinal, door_id)
+                .ok_or("door facts")?
+                .appearance_id)
+        };
         let mut placement = map.base().digest().to_vec();
         placement.extend_from_slice(&key.to_be_bytes());
         let target = WorldObjectTarget {
@@ -211,12 +221,45 @@ fn scenario(admin: String) -> TestResult {
                 .await
                 .read_actor_position(deps.actor)
                 .map_err(debug)?;
+            assert_eq!(appearance()?, if command_id == 4 { 9875 } else { 9874 });
             assert_eq!(position.position().x, if command_id == 4 { 6 } else { 7 });
             assert_eq!(
                 map.facts().doors().revision(key),
                 u64::from(command_id == 4)
             );
         }
+        let opened_at = deps
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(deps.actor)
+            .map_err(debug)?;
+        owner.clock_origin -= std::time::Duration::from_secs(1);
+        let result = owner
+            .use_world_object(
+                deps.actor,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: 5,
+                    item_fence: None,
+                },
+                WorldObjectTarget {
+                    expected_revision: 1,
+                    ..target
+                },
+            )
+            .await;
+        assert_eq!(result.disposition, UseDisposition::Committed);
+        assert_eq!(appearance()?, 9875);
+        assert_eq!(map.facts().doors().revision(key), 1);
+        assert_eq!(
+            deps.runtime
+                .lock()
+                .await
+                .read_actor_position(deps.actor)
+                .map_err(debug)?,
+            opened_at
+        );
         drop(owner);
         drop(authority);
         drop(seal);
