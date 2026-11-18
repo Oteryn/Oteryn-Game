@@ -217,7 +217,8 @@ pub(super) fn scenario(
     trap: Option<u16>,
 ) -> Result<(), String> {
     run(async |admin| {
-        let repair = seed == "rottin_repairs";
+        let handyman = seed == "rottin_handyman";
+        let repair = seed == "rottin_repairs" || handyman;
         let merchant_loot = seed == "rottin_merchant_loot";
         let blocked_merchant_spawn = seed == "rottin_merchant_wave_blocked";
         let merchant_wave = seed == "rottin_merchant_wave" || blocked_merchant_spawn;
@@ -392,7 +393,7 @@ pub(super) fn scenario(
                     Some(std::sync::Arc::new(super::rottin_rewards::catalogue(repeat_reward)?));
             }
             if repair {
-                owner.quest_catalogue = Some(std::sync::Arc::new(super::rottin_repairs::catalogue()?));
+                owner.quest_catalogue = Some(std::sync::Arc::new(super::rottin_repairs::catalogue(handyman)?));
             }
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
@@ -405,7 +406,7 @@ pub(super) fn scenario(
             } else if merchant_loot {
                 super::rottin_bushwhacking::exercise_mission(&mut owner, admitted, &h).await?;
             } else if repair {
-                super::rottin_repairs::exercise(&mut owner, admitted, &h).await?;
+                super::rottin_repairs::exercise(&mut owner, admitted, &h, handyman).await?;
             } else if short_reward {
                 super::rottin_rewards::refuse_short_hand_in(&mut owner, &admitted, &h).await?;
             } else {

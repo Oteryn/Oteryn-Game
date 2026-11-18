@@ -16,7 +16,9 @@ const ROTTIN: &str = "oteryn:npc.rottin_wood";
 const WALLS: &str = oteryn_gameplay_quests::quest::classic_talk::ROTTIN_WALLCOUNT;
 const HAMMER: &str = "oteryn:item.tibia.i3460";
 const REPAIR: &str = "oteryn:quest-callback/rottin-wood/repair-wall";
-const TURN_IN: &str = "oteryn:quest-reward/rottin-wood/disrepair";
+const DISREPAIR: &str = "oteryn:quest-reward/rottin-wood/disrepair";
+const HANDYMAN: &str = "oteryn:quest-reward/rottin-wood/handyman";
+const COOLDOWN: &str = "oteryn:quest-progress/crystalserver/kv/handyman-task";
 
 #[test]
 fn rottin_hammer_use_satisfies_disrepair_turn_in_postgres() -> TestResult {
@@ -32,14 +34,50 @@ fn rottin_hammer_use_satisfies_disrepair_turn_in_postgres() -> TestResult {
         .map_err(Into::into)
 }
 
-pub(super) fn catalogue() -> TestResult<QuestStateCatalogue> {
+#[test]
+fn rottin_hammer_use_satisfies_handyman_turn_in_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| scenario("rottin_handyman", false, None))?
+        .join()
+        .map_err(|_| "Handyman PostgreSQL thread panicked")?
+        .map_err(Into::into)
+}
+
+pub(super) fn catalogue(handyman: bool) -> TestResult<QuestStateCatalogue> {
     let repair_source = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/hammer.lua:64-101";
-    let reward_source =
-        "201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:180-194";
     let questline =
         "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline";
-    let mission =
-        "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission02";
+    let (turn_in, reward_source, track, quest_stage) = if handyman {
+        (
+            HANDYMAN,
+            "201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:277-291",
+            "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/task02",
+            4,
+        )
+    } else {
+        (
+            DISREPAIR,
+            "201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rottin_wood.lua:180-194",
+            "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission02",
+            3,
+        )
+    };
+    let questline_write = if handyman {
+        json!({"track": questline, "minimum": 4, "maximum": 6, "set": 4, "preserve": true})
+    } else {
+        json!({"track": questline, "minimum": 3, "maximum": 3, "set": 4})
+    };
+    let cooldown = if handyman {
+        json!([{"track": COOLDOWN, "from": {"kind": "elapsed_at_least", "seconds": 72001},
+                "effect": {"kind": "set_now"}}])
+    } else {
+        json!([])
+    };
     let digest = Sha256::digest(repair_source.as_bytes())
         .iter()
         .map(|byte| format!("{byte:02x}"))
@@ -50,8 +88,9 @@ pub(super) fn catalogue() -> TestResult<QuestStateCatalogue> {
             "quest": QUEST, "recipe_sha256": digest, "sources": [repair_source, reward_source],
             "tracks": [
                 {"key": WALLS, "initial": 5, "minimum": 0, "maximum": 6},
-                {"key": mission, "initial": 1, "minimum": 0, "maximum": 2},
-                {"key": questline, "initial": 3, "minimum": 0, "maximum": 6}
+                {"key": track, "initial": 1, "minimum": 0, "maximum": 2},
+                {"key": questline, "initial": quest_stage, "minimum": 0, "maximum": 6},
+                {"key": COOLDOWN, "initial": 1, "minimum": 0, "maximum": i64::MAX}
             ],
             "stages": [{
                 "key": "repair-wall", "completes": false,
@@ -68,12 +107,13 @@ pub(super) fn catalogue() -> TestResult<QuestStateCatalogue> {
             }, {
                 "key": "disrepair-turn-in", "completes": false,
                 "trigger": {"kind": "npc_dialogue", "callback": {
-                    "key": TURN_IN, "quest": QUEST, "npc": ROTTIN,
+                    "key": turn_in, "quest": QUEST, "npc": ROTTIN,
                     "keywords": ["yes"], "topic": 0, "next_topic": 0,
                     "storage": [
-                        {"track": mission, "minimum": 1, "maximum": 1, "set": 2},
-                        {"track": questline, "minimum": 3, "maximum": 3, "set": 4}
+                        {"track": track, "minimum": 1, "maximum": 1, "set": 2},
+                        questline_write
                     ],
+                    "state_ops": cooldown, "per_occurrence_mint": handyman,
                     "requires": [{"track": WALLS, "minimum": 6, "maximum": 6}],
                     "take": [], "give": {"item": "oteryn:item.tibia.i3035", "count": 5},
                     "outfit": null, "achievement": null, "experience": 500,
@@ -89,6 +129,7 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     h: &Harness,
+    handyman: bool,
 ) -> TestResult {
     let [npc] = install(owner, &admitted, [ROTTIN]).await?;
     talk(owner, &admitted, npc, 1601, "hi").await?;
@@ -129,10 +170,21 @@ pub(super) async fn exercise(
     let paid: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_quest_reward_sources WHERE transition_key=$1 AND mint_transaction_id IS NOT NULL",
     )
-    .bind(TURN_IN)
+    .bind(if handyman { HANDYMAN } else { DISREPAIR })
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(paid, 1);
+    if handyman {
+        let stamp: i64 =
+            sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+                .bind(COOLDOWN)
+                .fetch_one(&h.pool)
+                .await?;
+        assert!(
+            stamp > 1,
+            "reward advances Handyman's shared cooldown clock"
+        );
+    }
     let map = owner.bundle_map().ok_or("repair map")?;
     assert_eq!(map.facts.expire_movement_items(due), 1);
     assert_eq!(
