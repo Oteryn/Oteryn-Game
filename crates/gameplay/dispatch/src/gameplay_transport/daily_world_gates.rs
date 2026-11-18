@@ -12,9 +12,33 @@ use crate::map::{
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Gate {
+    DemonForge,
     FuryEntry,
     To(u16, u16, i16),
 }
+
+// Crystal 201189f8 the_inquisition_quest/movements_entrance.lua:1–45.
+const DEMON_FORGE_ENTRY: MovementLocalPosition = MovementLocalPosition {
+    x: 33192,
+    y: 31691,
+    floor: 14,
+};
+const DEMON_FORGE_DESTINATION: MovementLocalPosition = MovementLocalPosition {
+    x: 33168,
+    y: 31683,
+    floor: 15,
+};
+const INQUISITION_QUESTLINE: &str =
+    "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline";
+const THRONE_TRACKS: [(&str, i64); 7] = [
+    ("oteryn:quest-progress/storage/41020", 1),
+    ("oteryn:quest-progress/storage/41021", 1),
+    ("oteryn:quest-progress/storage/41022", 1),
+    ("oteryn:quest-progress/storage/41023", 1),
+    ("oteryn:quest-progress/storage/41024", 1),
+    ("oteryn:quest-progress/storage/41025", 1),
+    ("oteryn:quest-progress/storage/41026", 10),
+];
 
 // Crystal 201189f fury_gates.lua:5–15; values are legacy z, as in movement's sealed proof.
 const FURY_EXITS: [(&str, u16, u16); 10] = [
@@ -77,6 +101,9 @@ fn gate(map: &BundleMap, at: MovementLocalPosition) -> Option<Gate> {
         floor: i8::try_from(at.floor).ok()?.checked_neg()?,
     };
     let tile = map.overlay.base().tile(pos.x, pos.y, pos.floor)?;
+    if at == DEMON_FORGE_ENTRY && !map.facts.house_tile(pos) {
+        return Some(Gate::DemonForge);
+    }
     let active = map.overlay.base().active_layers();
     let fury = selected_exit(active, "fury_gates/", &FURY_EXITS);
     let fury_exit = selected_exit(map.overlay.base().exit_layers(), "fury_gates/", &FURY_EXITS);
@@ -154,6 +181,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             (None, false)
         };
+        let forge_fence = if selected == Gate::DemonForge {
+            self.current_quest_fence(session).await.ok().flatten()
+        } else {
+            None
+        };
+        let _forge_slot = match forge_fence {
+            Some(fence) => Some(self.revision_sequencer.acquire(fence.character_id).await),
+            None => None,
+        };
+        let forge_admitted = if let Some(fence) = forge_fence {
+            self.root
+                .read_character_quest_state(self.character, fence.character_id)
+                .await
+                .is_ok_and(|copy| {
+                    let tracks = copy.tracks();
+                    tracks
+                        .get(INQUISITION_QUESTLINE)
+                        .is_some_and(|value| *value >= 20)
+                        && THRONE_TRACKS
+                            .iter()
+                            .any(|(track, value)| tracks.get(*track) == Some(value))
+                })
+        } else {
+            false
+        };
         let policy = self.special_movement_policy(permit, actor, session).await;
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
@@ -166,6 +218,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let now = self.owner_now();
         let destination = match selected {
+            Gate::DemonForge => {
+                let current = forge_fence.is_some_and(|fence| {
+                    runtime
+                        .bound_attacker_lease(actor, session)
+                        .is_ok_and(|lease| {
+                            lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                                && lease.generation() == fence.character_lease_generation
+                        })
+                });
+                if forge_admitted
+                    && current
+                    && states
+                        .get(&runtime, actor, session)
+                        .is_some_and(|state| state.character_facts().level >= 100)
+                {
+                    DEMON_FORGE_DESTINATION
+                } else {
+                    origin.position()
+                }
+            }
             Gate::To(x, y, floor) => MovementLocalPosition {
                 x: i32::from(x),
                 y: i32::from(y),
@@ -235,6 +307,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 snapshot.position(),
             ),
         );
+        if selected == Gate::DemonForge {
+            for position in [entered.position(), snapshot.position()] {
+                if let Some(at) = super::native(position) {
+                    map.facts.emit_movement_effect(at, 11);
+                }
+            }
+        }
         if selected == Gate::FuryEntry && destination == origin.position() {
             self.states.chat.push_quest_feedback(session,"Only Premium promoted players of level 60 or higher are able to enter this portal.");
         }
