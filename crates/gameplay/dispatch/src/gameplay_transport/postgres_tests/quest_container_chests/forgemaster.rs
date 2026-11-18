@@ -93,7 +93,7 @@ pub(super) fn claim_shard() -> String {
     })).collect();
     json!({"records":[{"definition":{
         "definition_profile":"native_authored_v1",
-        "identity":{"key":CLAIM,"revision":"fixture-r1"},
+        "identity":{"key":CLAIM,"revision":"nrwicked-r1"},
         "readiness":"ready",
         "claim":{"per":"character","repeat":{"kind":"once"}},
         "placements":placements
@@ -110,7 +110,7 @@ pub(super) fn catalogue(
         "key":format!("claim-{uid}"),"completes":false,"trigger":{
             "kind":"npc_dialogue","callback":{
                 "key":callback_key(uid),"quest":QUEST,"npc":"","keywords":[],"topic":0,"next_topic":0,
-                "world_claim":{"key":CLAIM,"revision":"fixture-r1","authority_sha256":digest},
+                "world_claim":{"key":CLAIM,"revision":"nrwicked-r1","authority_sha256":digest},
                 "requires":[{"track":ACCESS,"minimum":1,"maximum":1}],
                 "storage":[{"track":CLAIMED,"minimum":0,"maximum":0,"set":1}],
                 "give":{"item":key(reward),"count":1,"contents":[]},
