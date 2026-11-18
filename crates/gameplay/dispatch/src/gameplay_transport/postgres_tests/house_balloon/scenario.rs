@@ -679,7 +679,6 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     // now-obsolete handle and must replay the receipt before resolving it.
     drop(owner);
     let mut owner = deps.owner(h, &authority);
-    let entry_cells = owner.movement_cells.clone();
     owner.movement_cells = (&cells).into();
     owner.evidence = &evidence.evidence;
     owner.active_generation = Some(active);
