@@ -168,6 +168,7 @@ fn window_callback(at: MovementLocalPosition, case: Case) -> TestResult<Callback
         callback["effects"]["death_window"]["required_deaths"] = json!(1);
     }
     if case == Case::WindowVisual {
+        callback["failure_teleport"] = json!({"x":x+4,"y":y,"floor":floor});
         callback["effects"]["death_window"]["open_appearance"] = json!(22761);
     }
     Ok(serde_json::from_value(callback)?)
@@ -516,6 +517,8 @@ async fn exercise_window(
     let portal = MovementLocalPosition { x: at.x + 1, ..at };
     let ward = MovementLocalPosition { x: at.x + 2, ..at };
     let landing = MovementLocalPosition { x: at.x + 3, ..at };
+    // Crystal 201189f8 creaturescripts_bosses_kill.lua:134 restores a distinct exit.
+    let closed_landing = MovementLocalPosition { x: at.x + 4, ..at };
     let original = [
         at,
         MovementLocalPosition {
@@ -530,7 +533,12 @@ async fn exercise_window(
             .store(ms * 1_000 + 1, std::sync::atomic::Ordering::Relaxed);
     };
     for (player, origin) in players.iter().zip(original) {
-        assert_eq!(enter_exit(owner, *player, portal).await?, origin);
+        if case == Case::WindowVisual {
+            assert_eq!(enter_exit(owner, *player, portal).await?, closed_landing);
+            move_to(owner, *player, origin).await?;
+        } else {
+            assert_eq!(enter_exit(owner, *player, portal).await?, origin);
+        }
     }
     if case == Case::WindowVisual {
         assert_eq!(portal_appearance(owner, portal)?, 1949);
@@ -575,9 +583,6 @@ async fn exercise_window(
     } else {
         801_000
     });
-    for (player, origin) in players.iter().zip(original) {
-        assert_eq!(enter_exit(owner, *player, portal).await?, origin);
-    }
     if case == Case::WindowVisual {
         // The same decay owner runs on the live source cycle.
         let map = owner.bundle_map().ok_or("seal bundle map")?;
@@ -585,6 +590,14 @@ async fn exercise_window(
         assert_eq!(map.facts.expire_movement_items(259_999_999), 0);
         assert_eq!(map.facts.expire_movement_items(260_000_000), 1);
         assert_eq!(portal_appearance(owner, portal)?, 1949);
+    }
+    for (player, origin) in players.iter().zip(original) {
+        if case == Case::WindowVisual {
+            assert_eq!(enter_exit(owner, *player, portal).await?, closed_landing);
+            move_to(owner, *player, origin).await?;
+        } else {
+            assert_eq!(enter_exit(owner, *player, portal).await?, origin);
+        }
     }
     Ok(())
 }
