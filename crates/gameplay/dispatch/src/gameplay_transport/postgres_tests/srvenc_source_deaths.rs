@@ -441,10 +441,38 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             .definition_hash(&rule.quest)
             .ok_or("existing Elemental Spheres pin")?;
         assert_ne!(Some(hash), catalogue.definition_hash(&rule.quest));
-        // Persist the real predecessor's definition, not a random hash or an
-        // invented quest. This models a character saved before the additive callback.
-        sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid ON CONFLICT(character_id,quest_key) DO UPDATE SET definition_hash=EXCLUDED.definition_hash")
-            .bind(id(41).as_slice()).bind(&rule.quest).bind(previous.content_revision()).bind(hash.as_slice()).execute(&h.pool).await?;
+        let fence = owner
+            .current_quest_fence(session)
+            .await
+            .map_err(|_| "old pin fence")?
+            .ok_or("old pin fence")?;
+        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+        let outcome = slot
+            .commit_quest_transition(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                QuestTransitionRequest {
+                    transition_key:
+                        "oteryn:quest-transition/quest/u8_2/elemental_spheres/boss_room/action_1"
+                            .into(),
+                    cause: QuestCause::Command(CommandRef::new(
+                        session,
+                        CommandId::new(1).map_err(debug)?,
+                    )),
+                },
+                Arc::new(previous),
+            )
+            .await
+            .map_err(debug)?;
+        assert!(
+            matches!(outcome, QuestTransitionOutcome::Committed(_)),
+            "existing pin seed: {outcome:?}"
+        );
+        drop(slot);
+        let stored: Vec<u8> = sqlx::query_scalar("SELECT definition_hash FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(&rule.quest).fetch_one(&h.pool).await?;
+        assert_eq!(stored, hash);
     }
     let drain_session = if mode == "overlordcr_fallback" {
         overlord_peers[0].1
