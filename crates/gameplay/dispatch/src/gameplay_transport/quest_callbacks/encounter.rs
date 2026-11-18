@@ -57,6 +57,60 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
     }
 
+    pub(super) async fn admit_phase_cooldown(
+        &self,
+        permit: &SpellLanePermit,
+        runtime: &ChannelRuntimeV1,
+        callback: &Callback,
+        command: QuestCause,
+    ) -> bool {
+        let (Some(encounter), Some(cooldown), QuestCause::Use(command)) = (
+            &callback.effects.encounter,
+            &callback.effects.encounter_cooldown,
+            command,
+        ) else {
+            return false;
+        };
+        let Ok(census) = runtime.positioned_melee_census() else {
+            return false;
+        };
+        let mut party = Vec::new();
+        for (actor, position, session) in census {
+            if !encounter
+                .players
+                .iter()
+                .any(|member| local(member.from) == position.position())
+            {
+                continue;
+            }
+            let Some(session) = session else { return false };
+            let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+                return false;
+            };
+            let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {
+                return false;
+            };
+            if lease.character_id().as_bytes() != fence.character_id.as_bytes()
+                || lease.generation() != fence.character_lease_generation
+            {
+                return false;
+            }
+            party.push(fence.item_fence());
+        }
+        self.root
+            .commit_quest_encounter_cooldown(
+                self.character,
+                self.holder,
+                permit,
+                command,
+                cooldown.clone(),
+                self.reset_epoch,
+                party,
+            )
+            .await
+            .is_ok_and(|committed| committed)
+    }
+
     #[allow(
         clippy::too_many_arguments,
         reason = "one owner turn binds party, native carrier, map and exact lever revision"

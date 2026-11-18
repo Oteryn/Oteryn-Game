@@ -1348,6 +1348,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
         }
         if callback.effects.encounter.is_some() && !close {
+            if callback.effects.encounter_cooldown.is_some() {
+                let ready = self.execute_quest_encounter(
+                    runtime,
+                    states,
+                    actor,
+                    session,
+                    map,
+                    callback,
+                    key,
+                    expected_revision,
+                    after,
+                    true,
+                    cause,
+                    None,
+                );
+                if ready != UseDisposition::Committed {
+                    return ready;
+                }
+                if !self
+                    .admit_phase_cooldown(permit, runtime, callback, cause)
+                    .await
+                {
+                    return UseDisposition::Rejected;
+                }
+            }
             let disposition = self.execute_quest_encounter(
                 runtime,
                 states,

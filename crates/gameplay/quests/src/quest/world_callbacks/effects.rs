@@ -147,6 +147,9 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
     pub encounter: Option<Encounter>,
+    /// Writes the fixed lockout for all players admitted by the native encounter.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub encounter_cooldown: Option<EncounterCooldown>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub vocation_step_damage: Option<VocationStepDamage>,
     /// Reads the named Character cooldown written by boss admission.
@@ -204,6 +207,13 @@ impl From<&str> for QuestCompletion {
 pub struct BossCooldownGate {
     pub boss: String,
     pub name: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct EncounterCooldown {
+    pub boss: String,
+    pub seconds: u32,
 }
 
 /// An exact carried fluid poured onto the selected map object relocates its staging tile.
@@ -579,6 +589,22 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && !gate.name.is_empty()
             && gate.name.len() <= 96
             && !gate.name.chars().any(char::is_control);
+    }
+    if effects.encounter_cooldown.as_ref().is_some_and(|cooldown| {
+        callback.trigger != Trigger::Use
+            || callback.actor_kind != ActorKind::Player
+            || callback.lever.is_none()
+            || callback.requires_durable_commit()
+            || effects.encounter.as_ref().is_none_or(|encounter| {
+                encounter.phase.is_none()
+                    || encounter.timing.is_some()
+                    || encounter.players.is_empty()
+            })
+            || !cooldown.boss.starts_with("oteryn:boss.")
+            || !super::super::valid_quest_key(&cooldown.boss)
+            || !(1..=2_592_000).contains(&cooldown.seconds)
+    }) {
+        return false;
     }
     if effects.use_summon.as_ref().is_some_and(|summon| {
         callback.trigger != Trigger::Use
