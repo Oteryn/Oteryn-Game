@@ -635,6 +635,10 @@ async fn initialize_peer(
     {
         crate::gameplay_transport::spell_character_facts::CastFactsLoad::Ready {
             facts, ..
+        }
+        | crate::gameplay_transport::spell_character_facts::CastFactsLoad::NoVocation {
+            facts,
+            ..
         } => facts,
         _ => return Err("peer cast facts".into()),
     };
