@@ -145,23 +145,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .flat_map(|bag| &bag.entries)
             .chain(inventory.nested.iter().map(|(_, entry)| entry))
-            .find(|entry| {
-                (entry.item.definition.production_key == required.item
+            .map(|entry| &entry.item)
+            .chain(&inventory.equipment)
+            .find(|item| {
+                (item.definition.production_key == required.item
                     || required
                         .alternatives
-                        .contains(&entry.item.definition.production_key))
+                        .contains(&item.definition.production_key))
                     && quest_objects::matches_source(
                         &intent.target,
                         source,
-                        entry.item.item_instance_id,
+                        item.item_instance_id,
                         self.active_generation
                             .and_then(crate::content::ActiveGeneration::native_gameplay)
                             .and_then(|native| native.item_index())
                             .and_then(|index| {
                                 index.definition_ref(
-                                    &entry.item.definition.family,
-                                    &entry.item.definition.production_key,
-                                    &entry.item.definition.revision_ref,
+                                    &item.definition.family,
+                                    &item.definition.production_key,
+                                    &item.definition.revision_ref,
                                 )
                             }),
                     )
@@ -179,7 +181,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 target,
                 required
                     .selected_instance
-                    .then_some((selected.item.item_instance_id, intent)),
+                    .then_some((selected.item_instance_id, intent)),
             )
             .await)
     }

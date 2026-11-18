@@ -4,7 +4,7 @@
 //! MagmaBubbleDeath: creaturescripts_magma_bubble_death.lua:12-23 (damage map);
 //! GoblinLeaderDeath: creaturescripts_goblin_leader_kill.lua:3-8 (damaging players).
 //! Herald: Crystal 9f5a72c creaturescripts_herald_of_fire.lua:43-45, local top-damage recipient.
-mod falcon;
+pub(super) mod falcon;
 
 use super::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
@@ -150,7 +150,7 @@ const DOCUMENTS: &[&[u8]] = &[
     ),
 ];
 fn documents() -> Result<Vec<Document>, String> {
-    let mut documents: Vec<_> = DOCUMENTS
+    DOCUMENTS
         .iter()
         .map(|bytes| {
             let doc: Document = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
@@ -159,16 +159,17 @@ fn documents() -> Result<Vec<Document>, String> {
             }
             Ok(doc)
         })
-        .collect::<Result<_, String>>()?;
-    documents.push(falcon::document());
-    Ok(documents)
+        .collect()
 }
 pub fn rules() -> Result<&'static [Rule], &'static str> {
     static RULES: OnceLock<Result<Vec<Rule>, String>> = OnceLock::new();
     RULES
         .get_or_init(|| {
             let mut rules = Vec::new();
-            for doc in documents()? {
+            for doc in documents()?
+                .into_iter()
+                .chain(std::iter::once(falcon::document()))
+            {
                 for mut rule in doc.rules {
                     // Already owned atomically by character_hazard/primal.rs; never issue it twice.
                     if rule.creature == "oteryn:creature.the_primal_menace" {
@@ -239,7 +240,11 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
             }
         }
     }
-    for rule in rules().map_err(str::to_owned)? {
+    for rule in rules()
+        .map_err(str::to_owned)?
+        .iter()
+        .filter(|rule| rule.quest != falcon::QUEST)
+    {
         if rule.define_transition {
             let candidate = rule.transition()?;
             if let Some(existing) = transitions.insert(rule.transition.clone(), candidate.clone())
