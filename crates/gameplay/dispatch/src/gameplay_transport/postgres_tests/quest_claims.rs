@@ -328,7 +328,8 @@ async fn socket_window(
         // Crystal gems.lua:179-188 stages a field two seconds after the paid USE.
         let spacing = if catchup { 400_000 } else { 3_000_000 };
         let at = 5_000_000 + spacing * u64::try_from(index)?;
-        owner.states.test_owner_time.store(at, Ordering::Relaxed);
+        // The fixture stores owner time plus one because zero enables the real clock.
+        owner.states.test_owner_time.store(at + 1, Ordering::Relaxed);
         let before = super::qengine_voucher_stories::quantity(h, gem).await?;
         assert_eq!(use_socket(owner, admitted, position, gem).await?, UseDisposition::Committed);
         assert_eq!(super::qengine_voucher_stories::quantity(h, gem).await?, before - 1);
@@ -359,7 +360,7 @@ async fn socket_window(
     if catchup {
         // The scheduler first runs after even the last field's visible lifetime.
         let last_expiry = expiry.last().ok_or("socket deadlines")?.0;
-        owner.states.test_owner_time.store(last_expiry, Ordering::Relaxed);
+        owner.states.test_owner_time.store(last_expiry + 1, Ordering::Relaxed);
         assert_eq!(map.facts.expire_movement_items(last_expiry), count * 2);
         assert!(map.facts.next_movement_decay_time().is_none());
         for (_, tile) in expiry.drain(..) {
