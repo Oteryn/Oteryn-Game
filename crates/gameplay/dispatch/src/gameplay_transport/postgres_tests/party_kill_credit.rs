@@ -35,6 +35,18 @@ enum Case {
     DefeatTime,
     Summon,
     Ordered,
+    Outcome,
+}
+
+const OUTCOME_GROUP: &str = "oteryn:encounter.qcredit-mode";
+const HARD_TRACK: &str = "oteryn:quest-progress/qcredit-fixture/hard-wins";
+
+#[test]
+fn two_players_receive_only_the_admitted_mode_and_use_the_hard_exit() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::Outcome)
 }
 
 const CRYSTAL_RESET: &str = "oteryn:quest-transition/native-kills/qcredit-fixture-crystals-reset";
@@ -144,7 +156,8 @@ impl Case {
     fn is_window(self) -> bool {
         matches!(
             self,
-            Self::Window
+            Self::Outcome
+                | Self::Window
                 | Self::WindowStateless
                 | Self::WindowVisual
                 | Self::WindowReset
@@ -215,6 +228,37 @@ fn window_callback(at: MovementLocalPosition, case: Case) -> TestResult<Callback
     Ok(serde_json::from_value(callback)?)
 }
 
+fn mode_lever(at: MovementLocalPosition, hard: bool) -> TestResult<Callback> {
+    let x = u16::try_from(at.x)?;
+    let y = u16::try_from(at.y)?;
+    let floor = i8::try_from(-at.floor)?;
+    let mode = if hard { "hard" } else { "easy" };
+    let pos = |x, y| json!({"x":x,"y":y,"floor":floor});
+    Ok(serde_json::from_value(json!({
+        "key":format!("oteryn:quest-callback/qcredit-fixture/{mode}-entrance"),
+        "quest":QUEST,"trigger":"use","selector":{"position":pos(x+1+u16::from(hard),y),"appearance":1945},
+        "lever":[1945,1946],"reversible":false,"passages":[],"storage":[],"offerings":[],
+        "effects":{"encounter_outcome":{"outcome":{"group":OUTCOME_GROUP,"mode":mode},"terminal":RAT},
+            "encounter":{"minimum_level":1,"room_min":pos(x+3,y-1),"room_max":pos(x+7,y+1),
+              "players":[{"from":pos(x,y),"to":pos(x+3,y)},{"from":pos(x+1,y-1),"to":pos(x+3,y-1)}],
+              "monsters":[{"position":pos(x+5,y+1),"creature":RAT}]}},
+        "return_on_failure":false,"sources":["Crystal 201189f8 arbaziloth_death.lua:18-27"]
+    }))?)
+}
+
+fn mode_exit(at: MovementLocalPosition) -> TestResult<Callback> {
+    let x = u16::try_from(at.x)?;
+    let y = u16::try_from(at.y)?;
+    let floor = i8::try_from(-at.floor)?;
+    Ok(serde_json::from_value(json!({
+        "key":"oteryn:quest-callback/qcredit-fixture/forge-exit","quest":QUEST,"trigger":"step_in",
+        "selector":{"position":{"x":x+6,"y":y,"floor":floor},"appearance":37000},
+        "teleport":{"x":x+8,"y":y,"floor":floor},"reversible":false,"passages":[],"storage":[],"offerings":[],
+        "effects":{"require_encounter_outcome":{"group":OUTCOME_GROUP,"mode":"hard"}},
+        "return_on_failure":true,"sources":["Crystal 201189f8 forge_teleport.lua:17-34"]
+    }))?)
+}
+
 fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCatalogue> {
     let mut counter = json!({
         "key": "oteryn:quest-transition/native-kills/qcredit-fixture-rat",
@@ -273,6 +317,7 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
             counter["maximum"] = json!(1);
             "Crystal201189f the_secret_library_quest/creaturescripts_kill.lua:10-39"
         }
+        Case::Outcome => "Crystal 201189f8 arbaziloth_death.lua:18-55 and forge_teleport.lua:17-34",
     };
     let stage = |name: &str, counter: &Value| json!({"key":name, "completes":false, "trigger":{"kind":"kill","counter":counter}});
     let mut stages = vec![stage("rat", &counter)];
@@ -282,7 +327,23 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
         counter["maximum"] = json!(3);
         stages.push(stage("cave-rat", &counter));
     }
-    if case.is_window() {
+    if case == Case::Outcome {
+        for (mode, hard) in [("easy", false), ("hard", true)] {
+            stages.push(json!({"key":mode,"completes":false,"trigger":{"kind":"map_use","callback":mode_lever(at, hard)?}}));
+        }
+        stages.push(json!({"key":"forge-exit","completes":false,"trigger":{"kind":"step_in","callback":mode_exit(at)?}}));
+        let ordinary = stages[0]["trigger"]["counter"]
+            .as_object_mut()
+            .ok_or("counter")?;
+        ordinary.insert(
+            "required_outcome".into(),
+            json!({"group":OUTCOME_GROUP,"mode":"easy"}),
+        );
+        counter["required_outcome"] = json!({"group":OUTCOME_GROUP,"mode":"hard"});
+        counter["key"] = json!("oteryn:quest-transition/native-kills/qcredit-fixture-hard");
+        counter["track"] = json!(HARD_TRACK);
+        stages.push(stage("hard-kill", &counter));
+    } else if case.is_window() {
         stages.push(json!({
             "key":"timed-exit", "completes":false,
             "trigger":{"kind":"step_in","callback":window_callback(at, case)?}
@@ -312,6 +373,14 @@ fn catalogue(case: Case, at: MovementLocalPosition) -> TestResult<QuestStateCata
                 "key":track,"initial":1,"minimum":0,"maximum":1
             })
         }));
+    }
+    if case == Case::Outcome {
+        definition["quests"][0]["tracks"]
+            .as_array_mut()
+            .ok_or("mode tracks")?
+            .push(json!({
+                "key":HARD_TRACK,"initial":0,"minimum":0,"maximum":5
+            }));
     }
     let base = QuestStateCatalogue::empty("content-1").ok_or("fixture content revision")?;
     Ok(Bindings::parse(&serde_json::to_vec(&definition)?)?.attach(&base)?)
@@ -343,7 +412,20 @@ fn run(admin: String, case: Case) -> TestResult {
             y: start.y,
             floor: start.floor,
         };
-        let world = if case.is_window() {
+        let world = if case == Case::Outcome {
+            let easy = mode_lever(at, false)?;
+            let hard = mode_lever(at, true)?;
+            let exit = mode_exit(at)?;
+            Some(super::quest_world_callbacks::world_with_objects(
+                &easy,
+                easy.selector.position.ok_or("easy lever")?,
+                &[
+                    (hard.selector.position.ok_or("hard lever")?, 1945),
+                    (exit.selector.position.ok_or("exit")?, 37000),
+                ],
+                &[1946],
+            )?)
+        } else if case.is_window() {
             let callback = window_callback(at, case)?;
             let position = callback.selector.position.ok_or("exit tile")?;
             Some(if case == Case::WindowVisual {
@@ -466,11 +548,19 @@ fn run(admin: String, case: Case) -> TestResult {
             owner.movement_cells = cells.into();
         }
         for player in &players {
+            if case == Case::Outcome {
+                deps.initialize_player(&owner, player.actor, player.session)
+                    .await;
+            }
             owner.refresh_quest_session(player.session, true).await;
         }
 
         if cells.is_some() {
-            exercise_window(&owner, &players, at, &h.pool, case).await?;
+            if case == Case::Outcome {
+                exercise_outcome(&owner, &players, at, &h.pool).await?;
+            } else {
+                exercise_window(&owner, &players, at, &h.pool, case).await?;
+            }
             drop(owner);
             drop(authority);
             drop(seal);
@@ -571,7 +661,8 @@ fn run(admin: String, case: Case) -> TestResult {
             | Case::WindowStateless
             | Case::WindowVisual
             | Case::WindowReset
-            | Case::WindowResetDeparted => {
+            | Case::WindowResetDeparted
+            | Case::Outcome => {
                 return Err("timed exit requires bundle cells".into());
             }
         };
@@ -735,6 +826,153 @@ async fn exercise_window(
     Ok(())
 }
 
+async fn exercise_outcome(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    players: &[Player],
+    at: MovementLocalPosition,
+    pool: &sqlx::PgPool,
+) -> TestResult {
+    use crate::map::view::{MapFacts, placement_key};
+    let lobby = [
+        at,
+        MovementLocalPosition {
+            x: at.x + 1,
+            y: at.y - 1,
+            ..at
+        },
+    ];
+    let room = [
+        MovementLocalPosition { x: at.x + 3, ..at },
+        MovementLocalPosition {
+            x: at.x + 3,
+            y: at.y - 1,
+            ..at
+        },
+    ];
+    let portal = MovementLocalPosition { x: at.x + 6, ..at };
+    let landing = MovementLocalPosition { x: at.x + 8, ..at };
+    let map = owner.bundle_map().ok_or("encounter bundle map")?;
+    for (index, hard) in [false, true].into_iter().enumerate() {
+        let callback = mode_lever(at, hard)?;
+        let tile = callback.selector.position.ok_or("lever tile")?;
+        let key = placement_key(
+            crate::map::overlay::TilePos {
+                x: tile.x,
+                y: tile.y,
+                floor: tile.floor,
+            },
+            1,
+        )
+        .ok_or("lever key")?;
+        let terminal = {
+            let mut runtime = owner.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            let player = players[0];
+            let command = CommandRef::new(
+                player.session,
+                CommandId::new(500 + u64::try_from(index)?).map_err(debug)?,
+            );
+            let after = map
+                .facts
+                .quest_callback_replacement(key, 1946)
+                .ok_or("lever appearance")?;
+            assert_eq!(
+                owner.execute_quest_encounter(
+                    &mut runtime,
+                    &mut states,
+                    player.actor,
+                    player.session,
+                    map,
+                    &callback,
+                    key,
+                    map.facts.object_revision(key),
+                    after,
+                    false,
+                    crate::durability::quest_state::QuestCause::Use(command),
+                    None,
+                ),
+                oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+            );
+            for (player, expected) in players.iter().zip(room) {
+                assert_eq!(
+                    runtime
+                        .read_actor_position(player.actor)
+                        .map_err(debug)?
+                        .position(),
+                    expected
+                );
+            }
+            runtime
+                .visible_entities()
+                .creatures
+                .iter()
+                .find(|creature| {
+                    runtime.matches_live_creature_identity(creature.actor, RAT.as_bytes())
+                })
+                .ok_or("admitted terminal")?
+                .actor
+        };
+        for (player, origin) in players.iter().zip(room) {
+            assert_eq!(enter_exit(owner, *player, portal).await?, origin);
+        }
+        if hard {
+            // A second actor of the same species cannot supply this run's outcome.
+            death(
+                owner,
+                players,
+                RAT,
+                MovementLocalPosition {
+                    x: at.x + 4,
+                    y: at.y + 1,
+                    ..at
+                },
+                Case::Outcome,
+                301,
+            )
+            .await?;
+            for (player, origin) in players.iter().zip(room) {
+                assert_eq!(enter_exit(owner, *player, portal).await?, origin);
+            }
+        }
+        settle_actor_death(
+            owner,
+            players,
+            RAT,
+            terminal,
+            Case::Outcome,
+            if hard { 302 } else { 300 },
+        )
+        .await?;
+        owner
+            .runtime
+            .lock()
+            .await
+            .remove_encounter_actor(terminal)
+            .map_err(debug)?;
+        for ((player, origin), lobby_cell) in players.iter().zip(room).zip(lobby) {
+            assert_eq!(
+                enter_exit(owner, *player, portal).await?,
+                if hard { landing } else { origin }
+            );
+            if hard {
+                move_to(owner, *player, lobby_cell).await?;
+            }
+        }
+        for character in [60, 61] {
+            assert_eq!(track_value(pool, character).await?, 1);
+            let hard_wins:i64 = sqlx::query_scalar("SELECT COALESCE((SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2),0)")
+                .bind(id(character).as_slice()).bind(HARD_TRACK).fetch_one(pool).await?;
+            assert_eq!(hard_wins, i64::from(hard));
+        }
+        if !hard {
+            for (player, origin) in players.iter().zip(lobby) {
+                move_to(owner, *player, origin).await?;
+            }
+        }
+    }
+    Ok(())
+}
+
 fn portal_appearance(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     portal: MovementLocalPosition,
@@ -842,12 +1080,6 @@ async fn death(
     case: Case,
     ordinal: u64,
 ) -> TestResult {
-    let native = owner
-        .active_generation
-        .and_then(|g| g.native_gameplay())
-        .ok_or("native")?;
-    let queue = owner.states.attack.lock().await.kills().clone();
-    let now_ms = 100_000 + ordinal * 1_000;
     let target = {
         let mut runtime = owner.runtime.lock().await;
         let policy = runtime.companion_policy(creature).map_err(debug)?;
@@ -858,6 +1090,35 @@ async fn death(
         runtime
             .install_creature_policy(target, creature)
             .map_err(debug)?;
+        target
+    };
+    settle_actor_death(owner, players, creature, target, case, ordinal).await?;
+    owner
+        .runtime
+        .lock()
+        .await
+        .remove_arena_opponent(target)
+        .map_err(debug)?;
+    Ok(())
+}
+
+async fn settle_actor_death(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    players: &[Player],
+    creature: &str,
+    target: ExactActorRef,
+    case: Case,
+    ordinal: u64,
+) -> TestResult {
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native")?;
+    let queue = owner.states.attack.lock().await.kills().clone();
+    let now_ms = 100_000 + ordinal * 1_000;
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let hp = runtime.companion_snapshot(target).map_err(debug)?.health;
         let shares = [hp - 1, 1];
         let age = if case == Case::Time || ordinal == 140 {
             60_000 + u64::from(matches!(ordinal, 130 | 140))
@@ -919,19 +1180,12 @@ async fn death(
                 Some(oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now_ms * 1000)),
             );
         }
-        target
-    };
+    }
     for player in players.iter().take(2) {
         assert_eq!(
             owner.drain_kill_rewards(player.session).await,
             DrainOutcome::Drained
         );
     }
-    owner
-        .runtime
-        .lock()
-        .await
-        .remove_arena_opponent(target)
-        .map_err(debug)?;
     Ok(())
 }
