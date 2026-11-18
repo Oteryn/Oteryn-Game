@@ -187,7 +187,7 @@ pub(super) fn run_rotten_world_case(case: RottenWorldCase) -> TestResult {
                 );
             }
             if matches!(case, RottenWorldCase::ChargeInterval) {
-                assert_global_charge_interval(&h, &owner, character.as_bytes(), player).await?;
+                assert_global_charge_interval(&h, &mut owner, character.as_bytes(), player).await?;
             }
             drop(owner);
             drop(authority);
@@ -204,7 +204,7 @@ pub(super) fn run_rotten_world_case(case: RottenWorldCase) -> TestResult {
 
 async fn assert_global_charge_interval(
     h: &Harness,
-    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     character: &[u8; 16],
     player: crate::foundation::ExactActorRef,
 ) -> TestResult {
@@ -223,6 +223,15 @@ async fn assert_global_charge_interval(
     let first = read_clock().await?;
     let deadline = std::time::Instant::now() + Duration::from_secs(25);
     let second = loop {
+        let wall: i64 =
+            sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+                .fetch_one(&h.pool)
+                .await?;
+        if wall >= first + 19 {
+            // Let the native minion Think at each probe near the boundary.
+            // The persisted charge still uses PostgreSQL's real wall clock.
+            owner.clock_origin -= Duration::from_secs(1);
+        }
         owner.drain_monster_melee().await;
         let current = read_clock().await?;
         if current > first {
