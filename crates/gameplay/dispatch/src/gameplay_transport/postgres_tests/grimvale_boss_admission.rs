@@ -1,6 +1,6 @@
 //! The actual source portals through ordinary STEP and Character PostgreSQL.
 use super::fixture::{Harness, debug, id, run};
-use super::{Dependencies, TestResult, prepare_current_session, reset};
+use super::{Dependencies, TestResult, fresh_fixture, prepare_current_session, reset};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::foundation::{ChannelRuntimeV1, CharacterLease, GameSessionId, MovementLocalPosition};
@@ -10,6 +10,9 @@ use crate::gameplay_transport::{
 };
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+
+#[path = "appearance_change_postgres/observer_admission_fixture.rs"]
+mod observer_admission_fixture;
 
 #[test]
 fn curse_spreads_step_admits_bloodback_and_spends_cooldown_postgres() -> TestResult {
@@ -366,17 +369,22 @@ fn scenario(admin: String, trial: bool) -> TestResult {
             y: spawn.1,
             floor,
         };
+        let landing = MovementLocalPosition {
+            x: landing.0,
+            y: landing.1,
+            floor,
+        };
         let occupant = if trial {
             None
         } else {
-            let mut runtime = deps.runtime.lock().await;
-            let session = GameSessionId::decode(&id(51)).map_err(debug)?;
-            let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
-            let player = runtime.commit_fresh_session(reservation).map_err(debug)?;
-            runtime
-                .initialize_pinned_test_position(player, spawn)
-                .map_err(debug)?;
-            Some(player)
+            let second = second_player(&owner, &deps, &h, exit).await?;
+            step(&mut owner, &second, StepDirection::North).await?;
+            assert_eq!(
+                position(&owner, &second).await?,
+                landing,
+                "the first entrant owns the solo room"
+            );
+            Some(second)
         };
         step(&mut owner, &admitted, entry_direction).await?;
         assert_eq!(
@@ -389,17 +397,18 @@ fn scenario(admin: String, trial: bool) -> TestResult {
             origin,
             "an occupied Curse Spreads room or under-level Ancient Feud trial must turn the player back"
         );
-        let cooldowns: i64 =
-            sqlx::query_scalar("SELECT count(*) FROM game_character_boss_cooldowns")
-                .fetch_one(&h.pool)
-                .await?;
+        let cooldowns: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_character_boss_cooldowns WHERE character_id=encode($1,'hex')::uuid"
+        ).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(cooldowns, 0);
         if let Some(occupant) = occupant {
-            deps.runtime
-                .lock()
-                .await
-                .remove_test_actor(occupant)
-                .map_err(debug)?;
+            let second_cooldowns: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_character_boss_cooldowns WHERE character_id=encode($1,'hex')::uuid AND boss_key='oteryn:boss.bloodback'"
+            ).bind(id(101).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(second_cooldowns, 1);
+            expire_room(&owner).await?;
+            assert_eq!(position(&owner, &occupant).await?, exit);
+            assert_eq!(position(&owner, &admitted).await?, origin);
         } else {
             earn_level(&owner, &admitted, &authority, 250).await?;
         }
@@ -409,14 +418,7 @@ fn scenario(admin: String, trial: bool) -> TestResult {
             .read_actor_position(deps.actor)
             .map_err(debug)?
             .position();
-        assert_eq!(
-            arrived,
-            MovementLocalPosition {
-                x: landing.0,
-                y: landing.1,
-                floor
-            }
-        );
+        assert_eq!(arrived, landing);
         let spawned = runtime
             .positioned_melee_census()
             .map_err(debug)?
@@ -431,9 +433,10 @@ fn scenario(admin: String, trial: bool) -> TestResult {
         );
         drop(runtime);
         let cooldown: i64 = sqlx::query_scalar(
-            "SELECT available_at FROM game_character_boss_cooldowns WHERE boss_key=$1",
+            "SELECT available_at FROM game_character_boss_cooldowns WHERE boss_key=$1 AND character_id=encode($2,'hex')::uuid",
         )
         .bind(format!("oteryn:boss.{boss}"))
+        .bind(id(41).as_slice())
         .fetch_one(&h.pool)
         .await?;
         let now = i64::try_from(
@@ -442,13 +445,7 @@ fn scenario(admin: String, trial: bool) -> TestResult {
                 .as_millis(),
         )?;
         assert!((35_950_000..=36_000_000).contains(&(cooldown - now)));
-        tokio::time::pause();
-        tokio::time::advance(std::time::Duration::from_secs(601)).await;
-        owner
-            .boss_spawn_pass(&mut Default::default())
-            .await
-            .map_err(debug)?;
-        tokio::time::resume();
+        expire_room(&owner).await?;
         assert_eq!(
             deps.runtime
                 .lock()
@@ -469,9 +466,10 @@ fn scenario(admin: String, trial: bool) -> TestResult {
             exit
         );
         let after: i64 = sqlx::query_scalar(
-            "SELECT available_at FROM game_character_boss_cooldowns WHERE boss_key=$1",
+            "SELECT available_at FROM game_character_boss_cooldowns WHERE boss_key=$1 AND character_id=encode($2,'hex')::uuid",
         )
         .bind(format!("oteryn:boss.{boss}"))
+        .bind(id(41).as_slice())
         .fetch_one(&h.pool)
         .await?;
         assert_eq!(after, cooldown);
@@ -564,4 +562,86 @@ async fn step(
         .await;
     assert_eq!(result.disposition, StepDisposition::Moved);
     Ok(())
+}
+
+async fn second_player(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    deps: &Dependencies,
+    h: &Harness,
+    origin: MovementLocalPosition,
+) -> TestResult<AdmittedSession> {
+    h.seed_pvp_target().await?;
+    observer_admission_fixture::admit(h).await?;
+    let session = GameSessionId::decode(&id(110)).map_err(debug)?;
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|()| "second fence")?
+        .ok_or("second current fence")?;
+    let actor = {
+        let mut runtime = owner.runtime.lock().await;
+        let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(actor, origin)
+            .map_err(debug)?;
+        runtime
+            .bind_attacker_lease(
+                actor,
+                session,
+                CharacterLease::new(
+                    crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                        .map_err(debug)?,
+                    fence.character_lease_generation,
+                )
+                .map_err(debug)?,
+            )
+            .map_err(debug)?;
+        actor
+    };
+    let mut admitted = AdmittedSession {
+        game_session_id: session,
+        world_id: deps.admitted.world_id,
+        channel_id: deps.admitted.channel_id,
+        runtime_actor: Some(actor),
+        first_entry: FirstEntryOutcome::Positioned,
+        controller: Some(crate::gameplay_transport::connection::ControllerBinding {
+            transport: crate::foundation::AuthenticatedTransportRefV1::decode(&[8; 16])
+                .map_err(debug)?,
+            account_id: id(100),
+        }),
+        continuity: crate::gameplay_transport::connection::SessionContinuity::FRESH,
+        item_fence: Some(fence.item_fence()),
+    };
+    owner.admit_progression_session(&mut admitted).await;
+    deps.initialize_player(owner, actor, session).await;
+    assert!(owner.track_restored(
+        session,
+        actor,
+        &crate::gameplay_transport::last_position::AdmissionPosition::FirstLogin,
+        fence
+    ));
+    Ok(admitted)
+}
+
+async fn expire_room(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
+    tokio::time::pause();
+    tokio::time::advance(std::time::Duration::from_secs(601)).await;
+    let pass = owner.boss_spawn_pass(&mut Default::default()).await;
+    tokio::time::resume();
+    pass.map_err(debug)?;
+    Ok(())
+}
+
+async fn position(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+) -> TestResult<MovementLocalPosition> {
+    Ok(owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(admitted.runtime_actor.ok_or("runtime actor")?)
+        .map_err(debug)?
+        .position())
 }
