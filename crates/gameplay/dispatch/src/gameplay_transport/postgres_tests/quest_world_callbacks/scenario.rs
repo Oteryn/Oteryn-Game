@@ -373,7 +373,7 @@ fn scenario_case(
     let draconia_escape = name.starts_with("draconia-escape-");
     let mut callback = if m03_use {
         super::super::qengine_m03_use::callback()?
-    } else if name == super::super::qespike_geomantic_step::NAME {
+    } else if super::super::qespike_geomantic_step::matches(name) {
         super::super::qespike_geomantic_step::callback()?
     } else if machine_deposit {
         super::super::qespike_machine_deposit::callback()?
@@ -2513,8 +2513,8 @@ fn scenario_case(
             Box::pin(super::super::qespike_tracker::exercise(&mut owner, &mut admitted, &h, name)).await?;
         } else if name == super::super::qespike_hotspot::NAME {
             Box::pin(super::super::qespike_hotspot::exercise(&mut owner, &mut admitted, &h)).await?;
-        } else if name == super::super::qespike_geomantic_step::NAME {
-            Box::pin(super::super::qespike_geomantic_step::exercise(&mut owner, &mut admitted, &h, &callback)).await?;
+        } else if super::super::qespike_geomantic_step::matches(name) {
+            Box::pin(super::super::qespike_geomantic_step::exercise(&mut owner, &mut admitted, &h, &callback, name)).await?;
         } else if machine_deposit {
             Box::pin(super::super::qespike_machine_deposit::exercise(&mut owner, &admitted, &h, &callback, name)).await?;
         } else if sphere_machine {

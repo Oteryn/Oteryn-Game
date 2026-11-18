@@ -2,16 +2,20 @@
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use oteryn_gameplay_quests::quest::{
-    QuestStateCatalogue, QuestTrack,
+    QuestStateCatalogue, authored_bindings::Bindings,
     world_callbacks::{Callback, Position},
 };
 use oteryn_protocol_oteryn::world_spatial::{
-    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, encode_step_intent,
+    CAPABILITY_DIAGONAL_MOVEMENT_V1, CAPABILITY_PACED_MOVEMENT_V1,
+    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition,
+    decode_step_result_profile, encode_step_intent,
 };
 use serde_json::json;
+use sha2::{Digest, Sha256};
 use std::{sync::Arc, time::Duration};
 
 pub(super) const NAME: &str = "qespike-geomantic-step";
+const CHARGE_ONLY: &str = "qespike-geomantic-step-charge-only";
 const QUEST: &str = "oteryn:quest.spike_task";
 const NEST: &str = "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_nest_main";
 const CHARGE: &str = "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main";
@@ -37,6 +41,21 @@ fn spike_geomantic_step_checks_outfit_before_charge_then_applies_both() -> TestR
     })
 }
 
+#[test]
+fn spike_geomantic_step_charges_without_nest_and_refuses_after_charge() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(CHARGE_ONLY, || {
+        super::quest_world_callbacks::scenario(CHARGE_ONLY, CELL, false)
+    })
+}
+
+pub(super) fn matches(name: &str) -> bool {
+    matches!(name, NAME | CHARGE_ONLY)
+}
+
 pub(super) fn callback() -> TestResult<Callback> {
     Ok(serde_json::from_value(json!({
         "key":"oteryn:quest-callback/qespike/geomantic-nest-and-charge","quest":QUEST,
@@ -51,47 +70,89 @@ pub(super) fn callback() -> TestResult<Callback> {
     }))?)
 }
 
+fn phase_catalogue(revision: &str, combined: &Callback, nest: i64) -> TestResult<QuestStateCatalogue> {
+    let mut phases = vec![combined.clone()];
+    // Crystal movements_geomantic_charges.lua:13-38 treats the two tasks
+    // independently. Split the inactive values into disjoint intervals.
+    for (suffix, minimum, maximum) in [("unstarted", -1, 0), ("charged", 2, 2)] {
+        let mut phase = combined.clone();
+        phase.key = format!("oteryn:quest-callback/qespike/geomantic-nest-{suffix}");
+        phase.storage[1].minimum = minimum;
+        phase.storage[1].maximum = maximum;
+        phase.storage[1].set = minimum;
+        phase.storage[1].preserve = true;
+        phase.effects.step_effect = None;
+        phase.success_message = None;
+        phases.push(phase);
+    }
+    for (suffix, inactive) in [("unstarted", -1), ("finished", 8)] {
+        let mut phase = combined.clone();
+        phase.key = format!("oteryn:quest-callback/qespike/geomantic-charge-{suffix}");
+        phase.storage[0].minimum = inactive;
+        phase.storage[0].maximum = inactive;
+        phase.storage[0].set = inactive;
+        phase.effects.timed_outfit = None;
+        phases.push(phase);
+    }
+    let stages: Vec<_> = phases
+        .iter()
+        .map(|phase| json!({
+            "key": phase.key,
+            "completes": false,
+            "trigger": {"kind": "step_in", "callback": phase}
+        }))
+        .collect();
+    let digest = Sha256::digest(serde_json::to_vec(&stages)?)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    let input = serde_json::to_vec(&json!({"schema": 1, "quests": [{
+        "quest": QUEST, "recipe_sha256": digest, "sources": combined.sources,
+        "tracks": [
+            {"key": NEST, "initial": nest, "minimum": -1, "maximum": 8},
+            {"key": CHARGE, "initial": 1, "minimum": -1, "maximum": 2}
+        ],
+        "stages": stages
+    }]}))?;
+    let base = QuestStateCatalogue::empty(revision).ok_or("geomantic base catalogue")?;
+    Ok(Bindings::parse(&input)?.attach(&base)?)
+}
+
+async fn step(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    direction: StepDirection,
+) -> TestResult {
+    let command = admitted.continuity.next_command_id;
+    let result = super::quest_world_callbacks::wire(
+        owner, admitted, command, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        encode_step_intent(direction),
+    )
+    .await?;
+    let capabilities = admitted.continuity.selected_capabilities;
+    assert_eq!(
+        decode_step_result_profile(&result, capabilities.contains(CAPABILITY_PACED_MOVEMENT_V1),
+            capabilities.contains(CAPABILITY_DIAGONAL_MOVEMENT_V1)).map_err(debug)?.disposition,
+        StepDisposition::Moved,
+    );
+    Ok(())
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     harness: &Harness,
     callback: &Callback,
+    name: &str,
 ) -> TestResult {
     let revision = owner
         .quest_catalogue
         .as_ref()
         .ok_or("quest catalogue")?
         .content_revision();
-    owner.quest_catalogue = Some(Arc::new(
-        QuestStateCatalogue::new(
-            revision,
-            vec![
-                QuestTrack {
-                    key: NEST.into(),
-                    quest: QUEST.into(),
-                    initial: 0,
-                    min: -1,
-                    max: 8,
-                },
-                QuestTrack {
-                    key: CHARGE.into(),
-                    quest: QUEST.into(),
-                    initial: 1,
-                    min: -1,
-                    max: 2,
-                },
-            ],
-            Vec::new(),
-        )
-        .map_err(debug)?
-        .with_world_callback_fixture(callback.clone())?,
-    ));
-    owner
-        .states
-        .quest_callbacks
-        .fixture
-        .set(vec![callback.clone()])
-        .map_err(|_| "geomantic fixture")?;
+    let charge_only = name == CHARGE_ONLY;
+    let initial_nest = if charge_only { -1 } else { 0 };
+    owner.quest_catalogue = Some(Arc::new(phase_catalogue(revision, callback, initial_nest)?));
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
@@ -119,7 +180,6 @@ pub(super) async fn exercise(
         .await?)
     }
 
-    let command = admitted.continuity.next_command_id;
     let movement_effects = |admission: &ComposedFreshAdmission<'_, '_, '_>| {
         admission.bundle_map().map(|map| {
             map.facts
@@ -132,14 +192,26 @@ pub(super) async fn exercise(
                 .collect::<Vec<_>>()
         })
     };
-    super::quest_world_callbacks::wire(
-        owner,
-        admitted,
-        command,
-        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-        encode_step_intent(StepDirection::East),
-    )
-    .await?;
+    step(owner, admitted, StepDirection::East).await?;
+    if charge_only {
+        assert_eq!(charge(harness).await?, 2);
+        assert_eq!(movement_effects(owner), Some(vec![12]));
+        assert_eq!(
+            owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(),
+            super::quest_world_callbacks::local(CELL)
+        );
+        for direction in [StepDirection::West, StepDirection::East] {
+            owner.clock_origin -= Duration::from_secs(5);
+            step(owner, admitted, direction).await?;
+        }
+        assert_eq!(charge(harness).await?, 2);
+        assert_eq!(movement_effects(owner), Some(vec![12]));
+        assert_eq!(
+            owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(),
+            super::quest_world_callbacks::local(ORIGIN)
+        );
+        return Ok(());
+    }
     assert_eq!(charge(harness).await?, 1);
     assert_eq!(movement_effects(owner), Some(Vec::new()));
     assert_eq!(
@@ -154,15 +226,7 @@ pub(super) async fn exercise(
     );
 
     owner.clock_origin -= Duration::from_secs(5);
-    let command = admitted.continuity.next_command_id;
-    super::quest_world_callbacks::wire(
-        owner,
-        admitted,
-        command,
-        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-        encode_step_intent(StepDirection::East),
-    )
-    .await?;
+    step(owner, admitted, StepDirection::East).await?;
     assert_eq!(charge(harness).await?, 2);
     assert_eq!(movement_effects(owner), Some(vec![11, 12]));
     let runtime = owner.runtime.lock().await;
@@ -173,13 +237,22 @@ pub(super) async fn exercise(
             .position(),
         super::quest_world_callbacks::local(CELL)
     );
-    let spells = owner.states.spell_states.lock().await;
-    let conditions = spells
-        .get(&runtime, actor, session)
-        .ok_or("player state")?
-        .owned_conditions();
-    let now = owner.owner_now().get();
-    assert_eq!(conditions.outfit_at(now), Some(307));
-    assert_eq!(conditions.outfit_at(now + 120_000_000), None);
+    {
+        let spells = owner.states.spell_states.lock().await;
+        let conditions = spells
+            .get(&runtime, actor, session)
+            .ok_or("player state")?
+            .owned_conditions();
+        let now = owner.owner_now().get();
+        assert_eq!(conditions.outfit_at(now), Some(307));
+        assert_eq!(conditions.outfit_at(now + 120_000_000), None);
+    }
+    drop(runtime);
+    owner.clock_origin -= Duration::from_secs(120);
+    step(owner, admitted, StepDirection::West).await?;
+    owner.clock_origin -= Duration::from_secs(5);
+    step(owner, admitted, StepDirection::East).await?;
+    assert_eq!(charge(harness).await?, 2);
+    assert_eq!(movement_effects(owner), Some(vec![11, 12, 11]));
     Ok(())
 }
