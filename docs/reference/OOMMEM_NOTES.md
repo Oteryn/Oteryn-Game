@@ -231,7 +231,12 @@ forwarding their required features.
 
 The proposed patch selects the target after it exists and updates the
 merge-authority workflow pin and command assertion. It passes
-`git apply --check` against the pinned build tree. The workflow pins below represent the proposed blobs. The protected-base
+`git apply --check --whitespace=error` against the pinned build tree.
+Applying it to a scratch Git index verified both proposed workflow blob
+pins. All five updated YAML documents parsed and the six changed run
+blocks passed `bash -n`. The offline-death step preserved a simulated
+Cargo exit 17 through `tee` even when the output contained success markers.
+The protected-base
 audit rejects a candidate that modifies the audit itself and checks the
 other workflow blobs against its own pins. This patch therefore requires
 an owner-authorized audit rotation. The corresponding command assertions
