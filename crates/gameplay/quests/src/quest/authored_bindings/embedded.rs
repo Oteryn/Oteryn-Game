@@ -9,6 +9,10 @@ const INDEX: &str = include_str!("../../../../../../content/quests/definitions/i
 #[path = "native_claim_item_evidence.rs"]
 mod native_claim_item_evidence;
 
+pub(in crate::quest) fn native_death_rewards() -> impl Iterator<Item = &'static str> {
+    NATIVE_DEATH_REWARDS.iter().map(|(_, document)| *document)
+}
+
 impl Bindings {
     /// Combine a complete trusted binding snapshot; names never imply another source document.
     pub fn parse_documents(documents: &[&str]) -> Result<Self, String> {

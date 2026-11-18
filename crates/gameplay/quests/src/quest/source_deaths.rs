@@ -182,11 +182,7 @@ fn documents() -> Result<Vec<Document>, String> {
     DOCUMENTS
         .iter()
         .copied()
-        .chain(
-            super::authored_bindings::embedded::NATIVE_DEATH_REWARDS
-                .iter()
-                .map(|(_, document)| document.as_bytes()),
-        )
+        .chain(super::authored_bindings::embedded::native_death_rewards().map(str::as_bytes))
         .map(|bytes| {
             let doc: Document = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
             if doc.schema != 1 || !doc.runtime_enabled {
