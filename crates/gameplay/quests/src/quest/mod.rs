@@ -38,6 +38,7 @@ pub mod cults_of_tibia;
 pub mod dark_trails;
 pub mod death_objectives;
 pub mod deepling_boss_access;
+pub mod definition_predecessors;
 pub mod distinct_targets;
 pub mod dreamer_carrot;
 pub mod dreamer_death_ring;

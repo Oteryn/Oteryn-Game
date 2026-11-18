@@ -5,6 +5,7 @@ use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
 include!(concat!(env!("OUT_DIR"), "/authored_binding_documents.rs"));
+pub(crate) const QUEST_DEFINITION_PREDECESSORS: &[(&str, &str)] = DEFINITION_PREDECESSOR_DOCUMENTS;
 const INDEX: &str = include_str!("../../../../../../content/quests/definitions/index.json");
 #[path = "native_claim_item_evidence.rs"]
 mod native_claim_item_evidence;
