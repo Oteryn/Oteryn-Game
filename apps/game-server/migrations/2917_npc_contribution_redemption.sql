@@ -60,3 +60,24 @@ END $$;
 
 REVOKE ALL ON FUNCTION game_quest_npc_redemption_claim_key(JSONB,TEXT,UUID,NUMERIC) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION game_quest_npc_redemption_claim_key(JSONB,TEXT,UUID,NUMERIC) TO oteryn_game_runtime;
+
+-- Crystal 201189f data/items/items.xml:13001-13016,16567-16572.
+-- Scarab's death MINT uses the existing ground corpse scheduler. Its mature
+-- stage is the exact item Tonar accepts (data-global/npc/tonar.lua:73-81).
+DO $scarab_corpse_chain$
+DECLARE
+    body TEXT := pg_get_functiondef('game_summer_corpse_chain(text)'::regprocedure);
+    anchor CONSTANT TEXT := 'WHEN ''oteryn:item.tibia.i54678'' THEN';
+    root CONSTANT TEXT := 'oteryn:item.tibia.i6024';
+BEGIN
+    IF game_summer_corpse_chain(root) IS NOT NULL
+        OR (length(body)-length(replace(body,anchor,'')))/length(anchor) <> 1 THEN
+        RAISE EXCEPTION 'Scarab corpse registry ownership changed';
+    END IF;
+    EXECUTE replace(body, anchor,
+        'WHEN ''oteryn:item.tibia.i6024'' THEN ARRAY[6024,4194,4195,4196] ' || anchor);
+    IF game_summer_corpse_chain(root) IS DISTINCT FROM ARRAY[6024,4194,4195,4196]
+        OR game_source_corpse_durations_v1(root) IS DISTINCT FROM ARRAY[10000,300000,300000,60000]::BIGINT[] THEN
+        RAISE EXCEPTION 'Scarab corpse stages differ from the source';
+    END IF;
+END $scarab_corpse_chain$;
