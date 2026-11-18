@@ -16,11 +16,14 @@ Base `871c1dec7d9963420d455210e4cddc0c9df80d26`. Global evidence is the 2026-11-
 
 The chosen recipe serializes treasure before Ancient Enemy and Burning Heat, and lists only Reliable Ram and Adventurer Backpack as quest reward intents. It omits the pirate and egg counts, Camilla report and rewards, Sterling XP, and the Emiliana XP, achievement and replacement terms. The donor definition also includes five secondary journal tasks (daily reward, deposit, stash, unstash and withdrawal) whose presence in the global quest is unconfirmed.
 
+All five NPC identities exist in the NPC declarations. Their imported source quest links are marked runtime-ineligible. Sterling’s independently admitted offer and callback account for the working turn-in marker. The two new position-based travel records use the shared access generator. Its other callback records compare equal to origin/main.
+
 ## Blockers
 
 - BLOCKER Sterling 3,000 XP shared QuestState registration of the exact persisted predecessor hash `data-global/npc/sterling.lua:142–155`. The amount is from the wiki spoiler.
 - BLOCKER Ancient Enemy Lizard Commander kill donor party credit and native creature binding `data-global/scripts/quests/targuna/creaturescripts_lizard_commander.lua:5–16`.
 - BLOCKER Aragonia pirate kills donor party credit and native multi-creature counter binding `data-global/scripts/quests/targuna/creaturescripts_pirates.lua:5–27`.
+- BLOCKER Burning Heat Emiliana placement-aware dialogue branch selection `data-global/npc/emiliana.lua:72–84,209–225`.
 - BLOCKER Herald escape death-spawned portal publication `data-global/scripts/quests/targuna/creaturescripts_herald_of_fire.lua:37–63`.
 - BLOCKER Herald red plates compound arena reset removing fields and live summons `data-global/scripts/quests/targuna/movements_herald_red_floors.lua:31–87`.
 
@@ -33,3 +36,13 @@ Global item IDs (canonical Platinum Coin is 3035), ancillary chests and charges,
 Ancient Enemy still needs Lizzie’s start, marker and report, Commander credit and Camilla’s reward. Long Lost Treasure still needs Sterling’s level-10 admission and 3,000 XP, Matilda outbound travel, objective credit, Morla and the shovel/backpack claim. Burning Heat still needs level-12 admission, Crimson Court mission and portals, the arena path and Emiliana’s first and replacement rewards. The Ram binding is already present and depends on the missing NPC reward.
 
 The PG regression reuses the existing composed M16 scenario and checks the wiki opener and the existing marker receipt and replay. The forcefield and Matilda return cases use the shared production stateless STEP harness.
+
+## Validation
+
+PG via shard (pgsplit build files applied on `1ba81fcf36b79501fa62e9a826915d238a322265`) passed all three cases. Temple return took 55.69 s, Matilda return 41.96 s, and Sterling turn-in and replay 88.35 s. The no-URL run returned `Ok(())` for all three cases in 0.00 s. These timings are the complete fixture and case durations.
+
+The baseline travel cases failed at callback lookup for both missing registrations. The fixed cases drove framed STEP commands and verified the destination without quest track or receipt mutations.
+
+Quest authoring passed 44 checks, including all 269 schema cases. Workspace format checking and dispatch library Clippy with `-D warnings` passed. World pin refresh produced the same digest, and pin-check accepted it with its required output directory argument.
+
+A second Sterling red run used the final test and the base offer. It sent the framed turn-in, received no marker delta, and failed at EOF after 77.31 s. The fixed offer passed the same turn-in and replay assertions.
