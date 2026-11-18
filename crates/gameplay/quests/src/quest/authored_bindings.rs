@@ -329,6 +329,7 @@ impl Bindings {
                     || !transitions.insert(key)
                     || (storage.is_empty()
                         && !stage.is_native_encounter()
+                        && !stage.is_stateless_death_window()
                         && !matches!(&stage.trigger,
                             Trigger::MapUse { callback } | Trigger::StepIn { callback }
                             if callback.operation_count() > 0))
@@ -407,7 +408,7 @@ impl Bindings {
                 transitions.push(occurrence.transition()?);
             }
             for stage in &quest.stages {
-                if stage.is_native_encounter() {
+                if stage.is_native_encounter() || stage.is_stateless_death_window() {
                     continue;
                 }
                 for mut transition in stage.transitions(&quest.quest)? {
@@ -487,6 +488,16 @@ impl Bindings {
 }
 
 impl Stage {
+    fn is_stateless_death_window(&self) -> bool {
+        matches!(&self.trigger, Trigger::StepIn { callback }
+            if !self.completes && !callback.has_state()
+                && callback.effects.death_window.is_some()
+                && callback.item_reward().is_none()
+                && callback.effects.encounter.is_none()
+                && callback.offerings.is_empty()
+                && !callback.requires_durable_commit())
+    }
+
     /// Native entry mutates the physical owner atomically and grants no quest value.
     pub(in crate::quest) fn is_native_encounter(&self) -> bool {
         matches!(&self.trigger, Trigger::MapUse { callback }
