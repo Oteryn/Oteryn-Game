@@ -136,6 +136,10 @@ const INVENTORY_OFFERS: &[OfferedCapability] = &[
         requires: &[4],
     },
     OfferedCapability {
+        id: 165,
+        requires: &[3, 51],
+    },
+    OfferedCapability {
         id: 500,
         requires: &[],
     },

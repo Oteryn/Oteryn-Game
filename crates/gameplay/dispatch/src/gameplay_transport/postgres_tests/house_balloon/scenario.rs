@@ -305,8 +305,6 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         owner.offered_capabilities(), case == Case::ResidentMount,
     );
     let offered = crate::gameplay_transport::server_info::offered(&offered, true);
-    let offered =
-        crate::gameplay_transport::hireling::offered(&offered, case == Case::ResidentTick);
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(&offered, capabilities).ok_or("House USE offers")?;
     let contents = if matches!(case, Case::CarpetTile { .. }) {

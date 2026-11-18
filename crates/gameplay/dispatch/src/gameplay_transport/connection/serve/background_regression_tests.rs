@@ -273,6 +273,7 @@ fn committed_mail_and_trade_results_invalidate_capacity() -> TestResult {
                         let deadline =
                             tokio::time::Instant::now() + std::time::Duration::from_secs(5);
                         session.inventory_capacity_refresh_at = Some(deadline);
+                        session.sequence += 1;
                         let mut dispatch = Dispatch::Reply(CommandStatus::Accepted, payload);
                         result::encode(
                             &mut session,
