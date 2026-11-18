@@ -141,14 +141,14 @@ pub(super) async fn exercise_warzone_portal_cooldown(
     Ok(())
 }
 
-pub(super) fn warzone_pump(name: &str) -> Option<(Position, &'static str, bool)> {
-    let (x, y, award, combined) = match name {
-        "qengine-rewards-ddepths-pump" => (33673, 32304, "buried_the_baron", false),
-        "qengine-rewards-ddepths-pump-count" => (33679, 32310, "his_days_are_counted", false),
-        "qengine-rewards-ddepths-pump-duke" => (33685, 32304, "duked_it_out", true),
+pub(super) fn warzone_pump(name: &str) -> Option<(Position, &'static str, bool, u8)> {
+    let (x, y, award, combined, ordinal) = match name {
+        "qengine-rewards-ddepths-pump" => (33673, 32304, "buried_the_baron", false, 2),
+        "qengine-rewards-ddepths-pump-count" => (33679, 32310, "his_days_are_counted", false, 1),
+        "qengine-rewards-ddepths-pump-duke" => (33685, 32304, "duked_it_out", true, 4),
         _ => return None,
     };
-    Some((Position { x, y, floor: -15 }, award, combined))
+    Some((Position { x, y, floor: -15 }, award, combined, ordinal))
 }
 
 #[test]
@@ -178,7 +178,7 @@ pub(super) async fn exercise_warzone_pump(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
-    (pos, award, combined): (Position, &str, bool),
+    (pos, award, combined, ordinal): (Position, &str, bool, u8),
 ) -> TestResult {
     if combined {
         use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
@@ -214,7 +214,7 @@ pub(super) async fn exercise_warzone_pump(
         }
         tx.commit().await?;
     }
-    let key = oteryn_world_bundle::bundle::placement_key(pos.floor, pos.x, pos.y, 1)
+    let key = oteryn_world_bundle::bundle::placement_key(pos.floor, pos.x, pos.y, ordinal)
         .ok_or("pump placement")?;
     let map = owner.bundle_map().ok_or("pump map")?;
     let mut placement = map.overlay.base().digest().to_vec();

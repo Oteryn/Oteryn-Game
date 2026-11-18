@@ -83,28 +83,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let mut arrived = entered;
         self.states.chat.push_quest_feedback(session, message);
-            if let (Some(origin), Some(map), Some(_permit)) =
-                (origin, self.bundle_map(), self.spell_lane_permit().await)
-                && let Some((mut runtime, states)) = self.lock_quest_teleport_owners().await
-                && runtime.read_actor_position(actor) == Ok(entered)
+        if let (Some(origin), Some(map), Some(_permit)) =
+            (origin, self.bundle_map(), self.spell_lane_permit().await)
+            && let Some((mut runtime, states)) = self.lock_quest_teleport_owners().await
+            && runtime.read_actor_position(actor) == Ok(entered)
+        {
+            let blocked =
+                super::super::pvp_live::pz_blocked(&states, actor, session, self.owner_now());
+            let doors = crate::map::floor::BundleDoors(map.facts.doors());
+            if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+                &runtime,
+                self.movement_cells(),
+                actor,
+                session,
+                entered,
+                origin.position(),
+                blocked,
+                &doors,
+            ) && let Ok(returned) = runtime.commit_source_step(proof)
             {
-                let blocked =
-                    super::super::pvp_live::pz_blocked(&states, actor, session, self.owner_now());
-                let doors = crate::map::floor::BundleDoors(map.facts.doors());
-                if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
-                    &runtime,
-                    self.movement_cells(),
-                    actor,
-                    session,
-                    entered,
-                    origin.position(),
-                    blocked,
-                    &doors,
-                ) && let Ok(returned) = runtime.commit_source_step(proof)
-                {
-                    arrived = returned;
-                }
+                arrived = returned;
             }
+        }
         let runtime = self.runtime.lock().await;
         StepOutcome {
             disposition: StepDisposition::Moved,

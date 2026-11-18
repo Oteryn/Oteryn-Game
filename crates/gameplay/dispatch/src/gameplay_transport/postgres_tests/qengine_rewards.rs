@@ -30,7 +30,7 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
                 super::qworld_phase_steps::SOURCE
             } else if let Some((position, _)) = super::authored_world_rewards::warzone_portal(name) {
                 position
-            } else if let Some((position, _, _)) = super::authored_world_rewards::warzone_pump(name) {
+            } else if let Some((position, _, _, _)) = super::authored_world_rewards::warzone_pump(name) {
                 position
             } else if name == "qengine-rewards-l2-white-raven" {
                 Position {
