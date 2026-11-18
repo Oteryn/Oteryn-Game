@@ -234,7 +234,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .ok()
                         .and_then(|snapshot| native(snapshot.position()))
                     {
-                        map.facts.emit_movement_effect(tile(pos), 45);
+                        map.facts.emit_movement_effect(pos, 45);
                     }
                 }
                 super::personal_trial::cleanup(&mut runtime, &mut memo.spawned);
