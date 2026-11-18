@@ -13,7 +13,10 @@ use oteryn_protocol_oteryn::world_object::{
 };
 use serde_json::json;
 use sha2::{Digest, Sha256};
-use std::sync::Arc;
+use std::{
+    sync::{Arc, atomic::Ordering},
+    time::Duration,
+};
 
 const QUEST: &str = "oteryn:quest.fixture_yalahar_cannon";
 const CORE_SAFE: &str = "oteryn:quest-progress/fixture-yalahar/core-safe";
@@ -132,20 +135,28 @@ async fn exercise(admin: &str) -> TestResult {
     };
     let key = crate::map::view::placement_key(cannon, 1).ok_or("cannon")?;
     let guarded = crate::map::view::placement_key(column, 1).ok_or("column")?;
+    let adjacent = crate::map::view::placement_key(
+        crate::map::overlay::TilePos {
+            x: column.x + 1,
+            ..column
+        },
+        1,
+    )
+    .ok_or("adjacent column")?;
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
-    for (command, tick, expected) in [(1, 0, 0), (2, 10_000_000, 1)] {
-        owner.clock_origin = owner
-            .clock_origin
-            .checked_sub(std::time::Duration::from_secs(2))
-            .ok_or("use clock")?;
-        let map = owner.bundle_map().ok_or("world scheduler map")?;
-        {
-            let runtime = owner.runtime.lock().await;
-            runtime.owner_fence().map_err(debug)?;
-            owner.advance_quest_appearances(map, tick);
+    let map = owner.bundle_map().ok_or("world scheduler map")?;
+    for (command, tick, expected) in [(1, 2_000_000, 0), (2, 10_000_000, 1)] {
+        owner
+            .states
+            .test_owner_time
+            .store(tick + 1, Ordering::Relaxed);
+        if command == 2 {
+            // The Channel scheduler advances the bound column with no USE or movement in flight.
+            wait_for_column_revision(&owner, guarded, 1).await?;
         }
         assert_eq!(map.facts.object_revision(guarded), command - 1);
+        assert_eq!(map.facts.object_revision(adjacent), 0);
         let intent = encode_use_intent(&WorldObjectTarget {
             placement: placement.clone(),
             expected_revision: map.facts.object_revision(key),
@@ -185,8 +196,47 @@ async fn exercise(admin: &str) -> TestResult {
                 .collect::<Vec<_>>()
         );
     }
+    owner
+        .states
+        .test_owner_time
+        .store(20_000_001, Ordering::Relaxed);
+    wait_for_column_revision(&owner, guarded, 2).await?;
+    assert_eq!(map.facts.object_revision(adjacent), 0);
+    let receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE quest_key = $1",
+    )
+    .bind(QUEST)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(
+        receipts, 2,
+        "a scheduler turn never writes Character quest state"
+    );
     drop(owner);
     drop(authority);
     drop(seal);
     h.cleanup().await
+}
+
+async fn wait_for_column_revision(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    key: u64,
+    revision: u64,
+) -> TestResult {
+    let map = owner.bundle_map().ok_or("world scheduler map")?;
+    let stop = oteryn_foundation::CancellationToken::new();
+    let observe = async {
+        while map.facts.object_revision(key) < revision {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        stop.cancel();
+    };
+    tokio::time::timeout(
+        Duration::from_secs(10),
+        super::fixture::join_two(owner.run_source_owner_cycles(&stop), observe),
+    )
+    .await
+    .map_err(|_| "source owner did not cycle the cannon column")?;
+    assert_eq!(map.facts.object_revision(key), revision);
+    Ok(())
 }
