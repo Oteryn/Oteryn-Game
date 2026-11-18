@@ -284,6 +284,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
                 key, ..
             }) => Some(*key),
+            // Crystal 201189f8 mirror.lua:12-20 consumes the mirror only when
+            // the selected ball is removed. Reserve it through receipt recovery.
+            Some(crate::map::facts::QuestCallbackProjection::TimedRemoval { .. }) => Some(key),
             _ => None,
         };
         if let Some(target) =
