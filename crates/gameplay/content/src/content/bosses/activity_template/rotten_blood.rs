@@ -242,7 +242,13 @@ impl ActiveGeneration {
             } else {
                 72000
             },
-            time_limit_seconds: 1200,
+            // Rotten Blood Quest/Spoiler, curid 102953, oldid 1107075, Bakragore.
+            // Layout validation above still verifies the Crystal capture's 1200s.
+            time_limit_seconds: if source == PinnedActivitySourceRoom::Bakragore {
+                25 * 60
+            } else {
+                1200
+            },
             after_kill_seconds: 60,
             activation_sequence: self.activation_sequence(),
             server_digest: self.identity().server_artifact_digest(),
