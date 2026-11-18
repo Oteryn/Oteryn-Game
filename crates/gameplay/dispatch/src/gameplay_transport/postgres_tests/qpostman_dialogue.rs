@@ -167,7 +167,7 @@ async fn assert_fares(
             .find(|route| route.route.key == destination)
             .ok_or_else(|| format!("missing route {npc}/{destination}").into())
     };
-    let ship = resolve("oteryn:npc.captain_bluebear", "carlin")?;
+    let ship = resolve("oteryn:npc.captain_bluebear", "venore")?;
     let carpet = resolve("oteryn:npc.uzon", "edron")?;
     let cormaya = resolve("oteryn:npc.brodrosch", "cormaya")?;
     assert!(cormaya.postman && !cormaya.held);
@@ -175,9 +175,9 @@ async fn assert_fares(
 
     let mut command = 30;
     for (rank, mission06, ship_fare, carpet_fare, cormaya_fare) in [
-        (2_i64, 13_i64, 110, 50, 160),
-        (3, 12, 100, 60, 150),
-        (5, 13, 100, 50, 150),
+        (2_i64, 13_i64, 170, 50, 160),
+        (3, 12, 160, 60, 150),
+        (5, 13, 160, 50, 150),
     ] {
         // Seed the later missions that belong to the separate quest-content lane.
         let mut tx = h.pool.begin().await?;
