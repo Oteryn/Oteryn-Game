@@ -127,8 +127,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let required = callbacks.iter().find_map(|callback| {
             (quest_objects::accepts(callback)
                 && super::quest_callbacks::matches(map, callback, resolved.placement_key))
-                .then_some(callback.item_on_target.as_ref())
-                .flatten()
+            .then_some(callback.item_on_target.as_ref())
+            .flatten()
         });
         let item = match (nexus, required) {
             (true, _) => super::quest_callbacks::inquisition::HOLY_WATER,
@@ -171,7 +171,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if nexus {
             return Ok(self
-                .damage_shadow_nexus(actor, command, &map, target.expected_revision, &resolved)
+                .damage_shadow_nexus(actor, command, map, target.expected_revision, &resolved)
                 .await
                 .map(outcome));
         }

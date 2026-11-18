@@ -63,12 +63,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             first: (now.checked_add(30_000_000)?, ready),
             second: (now.checked_add(50_000_000)?, original),
         };
-        Some(if map.facts.apply_quest_callback(
-            key, revision, after, &[], &[], false, Some(&projection),
-        ) {
-            UseDisposition::Committed
-        } else {
-            UseDisposition::Rejected
-        })
+        Some(
+            if map.facts.apply_quest_callback(
+                key,
+                revision,
+                after,
+                &[],
+                &[],
+                false,
+                Some(&projection),
+            ) {
+                UseDisposition::Committed
+            } else {
+                UseDisposition::Rejected
+            },
+        )
     }
 }

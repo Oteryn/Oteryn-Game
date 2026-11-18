@@ -377,7 +377,11 @@ impl CallbackStates {
                 for ((due, restore), revision) in [(*first, current + 1), (*second, current + 2)] {
                     self.movement_decays.insert(
                         (due, owner),
-                        MovementDecay { revision, restore, overlay: None },
+                        MovementDecay {
+                            revision,
+                            restore,
+                            overlay: None,
+                        },
                     );
                 }
             }
