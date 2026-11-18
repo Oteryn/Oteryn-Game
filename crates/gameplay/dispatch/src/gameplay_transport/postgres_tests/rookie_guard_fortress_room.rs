@@ -12,8 +12,10 @@ use oteryn_protocol_oteryn::world_spatial::{StepDirection, encode_step_intent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
 pub(super) const NAME: &str = "rookie-guard-fortress-room";
+// Crystal 201189f8 data-global/startup/tables/item.lua:4877-4891.
+const PORTAL: u16 = 1959;
 const ENTRY: Position = Position {
-    x: 31954,
+    x: 31948,
     y: 32174,
     floor: -10,
 };
@@ -32,10 +34,18 @@ const EXIT_TILE: Position = Position {
     y: 32174,
     floor: -10,
 };
+const EXIT_LANDING: Position = Position {
+    x: 31954,
+    ..ENTRY
+};
 const TREASURE_TILE: Position = Position {
-    x: 31943,
-    y: 32174,
+    x: 31929,
+    y: 32171,
     floor: -10,
+};
+const TREASURE_APPROACH: Position = Position {
+    y: 32172,
+    ..TREASURE_TILE
 };
 const TREASURE: Position = Position {
     x: 31932,
@@ -48,6 +58,7 @@ const QUEST: &str = "oteryn:quest.the_rookie_guard_quest";
 const TRACK: &str = "oteryn:quest-progress/quest/u9_1/the_rookie_guard/mission12";
 const ENTER: &str = "oteryn:quest-callback/rookie-guard-fortress-room";
 const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua:513-647";
+const PORTALS_SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4877-4891";
 
 #[test]
 fn fortress_room_rejects_a_second_player_and_retires_exact_boss_on_exit_or_timeout() -> TestResult {
@@ -64,12 +75,12 @@ pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleW
     super::quest_world_callbacks::world_cells(
         callback,
         ENTRY,
-        100,
+        PORTAL,
         1,
-        &[(EXIT_TILE, 100), (TREASURE_TILE, 100)],
+        &[(EXIT_TILE, PORTAL), (TREASURE_TILE, PORTAL)],
         &[],
         None,
-        &[TREASURE],
+        &[TREASURE, TREASURE_APPROACH],
     )
 }
 
@@ -77,9 +88,9 @@ fn document() -> serde_json::Value {
     use serde_json::json;
     json!({"schema":1,"callbacks":[
         {"key":ENTER, "quest":QUEST, "trigger":"step_in",
-         "selector":{"position":ENTRY,"appearance":100},"requires_world_admission":true,
+         "selector":{"position":ENTRY,"appearance":PORTAL},"requires_world_admission":true,
          "passages":[],"offerings":[],"reversible":false,"return_on_failure":true,
-         "storage":[{"track":TRACK,"minimum":11,"maximum":12,"set":12}],
+         "storage":[{"track":TRACK,"minimum":11,"maximum":15,"set":12}],
          "effects":{
              "encounter":{"minimum_level":1,"players":[{"from":ENTRY,"to":LANDING}],
                  "monsters":[{"creature":"oteryn:creature.kraknaknork",
@@ -88,18 +99,18 @@ fn document() -> serde_json::Value {
                  "room_max":{"x":31945,"y":32175,"floor":-10}},
              "encounter_timeout":{"duration_ms":300000,"landing":TIMEOUT,"heal":true,
                  "message":"With his last energy, Kraknaknork pushes you out of his throne room. Hurry back and defeat him before he regains his power."}},
-         "sources":[SOURCE]},
+         "sources":[SOURCE,PORTALS_SOURCE]},
         {"key":"oteryn:quest-callback/rookie-guard-fortress-room-exit","quest":QUEST,
-         "trigger":"step_in","selector":{"position":EXIT_TILE,"appearance":100},
+         "trigger":"step_in","selector":{"position":EXIT_TILE,"appearance":PORTAL},
          "storage":[],"passages":[],"offerings":[],"reversible":false,"return_on_failure":false,
-         "teleport":ENTRY,"effects":{"encounter_exit":ENTER},"sources":[SOURCE]},
+         "teleport":EXIT_LANDING,"effects":{"encounter_exit":ENTER},"sources":[SOURCE,PORTALS_SOURCE]},
         {"key":"oteryn:quest-callback/rookie-guard-fortress-treasure","quest":QUEST,
-         "trigger":"step_in","selector":{"position":TREASURE_TILE,"appearance":100},
+         "trigger":"step_in","selector":{"position":TREASURE_TILE,"appearance":PORTAL},
          "requires_world_admission":true, "storage":[{"track":TRACK,"minimum":12,"maximum":12,"set":13}],
          "passages":[],"offerings":[],"reversible":false,"return_on_failure":true,
          "teleport":TREASURE,"effects":{"clear_area":{"minimum":{"x":31929,"y":32165,"floor":-10},
               "maximum":{"x":31945,"y":32175,"floor":-10},"creatures":["oteryn:creature.kraknaknork"]}},
-         "sources":[SOURCE]}
+         "sources":[SOURCE,PORTALS_SOURCE]}
     ]})
 }
 
@@ -119,7 +130,7 @@ pub(super) async fn exercise(
             quest: QUEST.into(),
             initial: 11,
             min: -1,
-            max: 13,
+            max: 15,
         }],
         vec![],
     )
@@ -189,8 +200,10 @@ pub(super) async fn exercise(
             1
         );
     }
+    relocate(owner, player, player_session, TREASURE_APPROACH).await?;
     advance_clock(owner, 2)?;
-    wire(owner, admitted, 2, 1, west.clone()).await?;
+    let north = encode_step_intent(StepDirection::North);
+    wire(owner, admitted, 2, 1, north.clone()).await?;
     assert_eq!(
         owner
             .runtime
@@ -199,15 +212,16 @@ pub(super) async fn exercise(
             .read_actor_position(player)
             .map_err(debug)?
             .position(),
-        local(LANDING),
+        local(TREASURE_APPROACH),
         "the live boss blocks the treasure teleporter"
     );
+    relocate(owner, player, player_session, LANDING).await?;
     advance_clock(owner, 2)?;
     wire(owner, admitted, 3, 1, east.clone()).await?;
     {
         let mut runtime = owner.runtime.lock().await;
         let current = runtime.read_actor_position(player).map_err(debug)?;
-        assert_eq!(current.position(), local(ENTRY));
+        assert_eq!(current.position(), local(EXIT_LANDING));
         assert_eq!(runtime.read_actor_position(peer).map_err(debug)?.position(), peer_outside);
         assert!(
             runtime
@@ -245,7 +259,7 @@ pub(super) async fn exercise(
     wire(owner, &mut second, 3, 1, east.clone()).await?;
     {
         let runtime = owner.runtime.lock().await;
-        assert_eq!(runtime.read_actor_position(peer).map_err(debug)?.position(), local(ENTRY));
+        assert_eq!(runtime.read_actor_position(peer).map_err(debug)?.position(), local(EXIT_LANDING));
         assert_eq!(runtime.read_actor_position(player).map_err(debug)?.position(), origin);
         assert!(runtime.current_live_creature_census().map_err(debug)?.is_empty());
     }
@@ -291,7 +305,7 @@ pub(super) async fn exercise(
         .execute(&h.pool).await?;
     defeat_boss(owner, admitted, player).await?;
     advance_clock(owner, 2)?;
-    wire(owner, admitted, 7, 1, west).await?;
+    wire(owner, admitted, 7, 1, north).await?;
     advance_clock(owner, 301)?;
     owner.drain_quest_encounter_deadlines().await;
     assert_eq!(
@@ -361,7 +375,7 @@ async fn defeat_boss(
         advance_clock(owner, 2)?;
     }
     assert!(defeated, "ordinary combat must defeat the room's exact boss");
-    relocate(owner, player, session, LANDING).await
+    relocate(owner, player, session, TREASURE_APPROACH).await
 }
 
 async fn relocate(
