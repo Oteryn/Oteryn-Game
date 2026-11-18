@@ -153,6 +153,55 @@ async fn seed_acl_owner(
     Ok(key)
 }
 
+fn biddable(state: u64) -> bool {
+    state == 2
+}
+fn guest_write(previous: &[[u8; 16]], guest: [u8; 16]) -> Vec<[u8; 16]> {
+    if previous == [guest] {
+        Vec::new()
+    } else {
+        vec![guest]
+    }
+}
+#[test]
+fn vacant_houses_are_excluded() {
+    assert!(!biddable(1));
+    assert!(biddable(2));
+}
+#[test]
+fn guest_write_can_be_repeated() {
+    assert!(guest_write(&[[1; 16]], [1; 16]).is_empty());
+    assert_eq!(guest_write(&[], [1; 16]), vec![[1; 16]]);
+}
+
+async fn seed_open_auction(clients: &SeamClients<'_>, house: &str) -> TestResult {
+    use sqlx::Connection as _;
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let opened = sqlx::query(
+        "WITH property AS (
+             UPDATE game_house_properties p SET state=2, revision=revision+1
+             WHERE p.world_id=encode($1,'hex')::uuid AND p.house_key=$2
+               AND p.kind='private_house' AND p.state=1 AND p.owner_character_id IS NULL
+               AND NOT EXISTS (SELECT 1 FROM game_house_auctions a
+                   WHERE a.world_id=p.world_id AND a.house_key=p.house_key AND NOT a.settled)
+             RETURNING p.world_id,p.house_key,p.rent_gold
+         )
+         INSERT INTO game_house_auctions(auction_id,world_id,house_key,first_rent,ends_at)
+         SELECT game_character_uuid_v7(),world_id,house_key,rent_gold,clock_timestamp()+interval '2 days'
+         FROM property",
+    )
+    .bind(clients.world.as_slice())
+    .bind(house)
+    .execute(&mut connection)
+    .await?;
+    if opened.rows_affected() != 1 {
+        return Err(
+            format!("step=bid-fixture could not open the vacant auction for {house}").into(),
+        );
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -164,19 +213,36 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let (initial, _) = first_page(&mut client, world_bytes).await?;
     let from = tile(client.world_spatial().actor_position)?;
     let mut chosen = None;
-    for row in initial
-        .rows
-        .iter()
-        .rev()
-        .filter(|row| row.kind == 1 && matches!(row.state, 1 | 2) && !row.owned)
-    {
-        let at = entrance(&row.house)?;
-        if let Some(path) = route(world, from, |candidate| candidate == at) {
-            chosen = Some((row.clone(), path));
+    for state in [2, 1] {
+        for row in initial
+            .rows
+            .iter()
+            .rev()
+            .filter(|row| row.kind == 1 && row.state == state && !row.owned)
+        {
+            let at = entrance(&row.house)?;
+            if let Some(path) = route(world, from, |candidate| candidate == at) {
+                chosen = Some((row.clone(), path));
+                break;
+            }
+        }
+        if chosen.is_some() {
             break;
         }
     }
-    let (private, path) = chosen.ok_or("no reachable private house on the first page")?;
+    let (mut private, path) = chosen.ok_or("no reachable private house on the first page")?;
+    if !biddable(private.state) {
+        // An isolated catalogue can contain only vacant anchors. Install the open
+        // auction fixture and require the fresh wire row before sending a bid.
+        seed_open_auction(clients, &private.house).await?;
+        private = first_page(&mut client, world_bytes)
+            .await?
+            .0
+            .rows
+            .into_iter()
+            .find(|row| row.house == private.house && biddable(row.state))
+            .ok_or("step=bid-fixture opened auction missing from catalogue")?;
+    }
     walk(&mut client, world, &path).await?;
     let minimum = private.price.max(private.rent).max(1);
     let maximum = private
@@ -226,13 +292,35 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     drop(client);
     let acl_house = seed_acl_owner(clients, &visible, &private.house).await?;
     let mut client = connect_character(clients, 0xac, 1).await?;
+    let guest = clients.characters[0];
+    let previous = read_guests(&mut client, world_bytes, &acl_house).await?;
+    if guest_write(&previous.members, guest).is_empty() {
+        let clear = house::mutation(
+            world_bytes,
+            &acl_house,
+            previous.revision,
+            &house::Action::Guests(Vec::new()),
+        )
+        .map_err(|error| format!("guest ACL setup encode: {error}"))?;
+        let response = send(&mut client, clear).await?;
+        let (disposition, revision) = house::result(&response.payload)
+            .map_err(|error| format!("guest ACL setup decode: {error}"))?;
+        let checked = read_guests(&mut client, world_bytes, &acl_house).await?;
+        if response.status != CommandStatus::Accepted
+            || disposition != 1
+            || revision <= previous.revision
+            || checked.revision != revision
+            || !checked.members.is_empty()
+        {
+            return Err(format!("guest ACL setup failed: {response:?}, {checked:?}").into());
+        }
+    }
     let (page, page_bytes) = first_page(&mut client, world_bytes).await?;
     let current = page
         .rows
         .iter()
         .find(|row| row.house == acl_house && row.owned)
         .ok_or("owner ACL house missing from the first page")?;
-    let guest = clients.characters[0];
     let previous_guests = read_guests(&mut client, world_bytes, &acl_house).await?;
     if previous_guests.revision != current.acl_revision || previous_guests.members == [guest] {
         return Err(
@@ -243,7 +331,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         world_bytes,
         &acl_house,
         current.acl_revision,
-        &house::Action::Guests(vec![guest]),
+        &house::Action::Guests(guest_write(&previous_guests.members, guest)),
     )
     .map_err(|error| format!("acl encode {error}"))?;
     let acl_request = acl.payload.clone();

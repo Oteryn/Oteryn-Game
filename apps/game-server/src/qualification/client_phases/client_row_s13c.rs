@@ -93,13 +93,13 @@ fn solo_gate_proven(
     status: CommandStatus,
     unchanged: bool,
 ) -> bool {
-    disposition == casts::SpellCastDisposition::TargetRequired
-        && status == CommandStatus::Accepted
+    disposition == casts::SpellCastDisposition::Rejected
+        && status == CommandStatus::Rejected
         && unchanged
 }
 
 #[test]
-fn solo_gate_rejects_cooldown_and_unrelated_refusals() {
+fn solo_gate_requires_wire_rejection_and_unchanged_vitals() {
     use casts::SpellCastDisposition as D;
     assert!(!solo_gate_proven(
         D::CoolingDown,
@@ -107,20 +107,16 @@ fn solo_gate_rejects_cooldown_and_unrelated_refusals() {
         true
     ));
     assert!(!solo_gate_proven(
-        D::Rejected,
-        CommandStatus::Rejected,
+        D::TargetRequired,
+        CommandStatus::Accepted,
         true
     ));
     assert!(!solo_gate_proven(
-        D::TargetRequired,
-        CommandStatus::Accepted,
+        D::Rejected,
+        CommandStatus::Rejected,
         false
     ));
-    assert!(solo_gate_proven(
-        D::TargetRequired,
-        CommandStatus::Accepted,
-        true
-    ));
+    assert!(solo_gate_proven(D::Rejected, CommandStatus::Rejected, true));
 }
 
 #[test]

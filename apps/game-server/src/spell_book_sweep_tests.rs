@@ -384,9 +384,9 @@ const GOLDEN: &[(&str, u32)] = &[
     ("Native/stance_cast AttackTarget Classified", 6),
     ("Native/stance_cast None Classified", 6),
     ("Native/stance_cast Position Classified", 6),
-    ("PartyBuff AttackTarget TargetRequired", 5),
-    ("PartyBuff None TargetRequired", 5),
-    ("PartyBuff Position TargetRequired", 5),
+    ("PartyBuff AttackTarget Rejected", 5),
+    ("PartyBuff None Rejected", 5),
+    ("PartyBuff Position Rejected", 5),
 ];
 
 #[test]

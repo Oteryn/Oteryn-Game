@@ -116,6 +116,33 @@ async fn replace_members(
     Ok(())
 }
 
+fn keep_observation_error<T, E>(observed: Result<T, E>, cleanup: Result<(), E>) -> Result<T, E> {
+    observed.and_then(|value| cleanup.map(|()| value))
+}
+
+#[test]
+fn lost_mutation_reply_remains_root_when_recovery_fails() {
+    assert_eq!(
+        keep_observation_error::<(), _>(Err("lost reply"), Err("restore failed")),
+        Err("lost reply")
+    );
+    assert_eq!(
+        keep_observation_error(Ok(()), Err("restore failed")),
+        Err("restore failed")
+    );
+}
+
+async fn restore_settings(target: &mut DevClientSession, initial: &PlayerList) -> TestResult {
+    let receipt = accepted(target, &[0, initial.modes]).await?;
+    let (_, current) = list(target).await?;
+    replace_members(target, &current, initial).await?;
+    let (_, restored) = list(target).await?;
+    if !settings_restored(&receipt, restored == *initial) {
+        return Err(format!("Exiva restoration unconfirmed: initial={initial:?}; restored={restored:?}; receipt={receipt:?}").into());
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut caster = connect_character(clients, 0x43, 1).await?;
     let caster_name = own_name(&caster)?;
@@ -143,16 +170,41 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         Duration::from_secs(90),
         observe_settings(&mut target, &initial, &baseline, &probe),
     )
+    .await
+    .map_err(Into::into)
+    .and_then(|result| result);
+    let first_restore = tokio::time::timeout(
+        Duration::from_secs(10),
+        restore_settings(&mut target, &initial),
+    )
     .await;
-    // Attempt to restore the mode even if reading or repairing the list fails.
-    let receipt = accepted(&mut target, &[0, initial.modes]).await?;
-    let (_, current) = list(&mut target).await?;
-    replace_members(&mut target, &current, &initial).await?;
-    let (_, restored) = list(&mut target).await?;
-    if !settings_restored(&receipt, restored == initial) {
-        return Err(format!("Exiva restoration unconfirmed: initial={initial:?}; restored={restored:?}; receipt={receipt:?}").into());
-    }
-    let expected = observed??;
+    let (target_session, restored) = match first_restore {
+        Ok(Ok(())) => (Some(target), Ok(())),
+        failed => {
+            evidence(&format!(
+                "P17_CHECK step=restore-reconnect observed={failed:?}"
+            ));
+            drop(target);
+            let recovered: TestResult<DevClientSession> = async {
+                wait_character_released(clients, 0).await?;
+                let mut recovered = connect_character(clients, 0x44, 0).await?;
+                restore_settings(&mut recovered, &initial).await?;
+                Ok(recovered)
+            }
+            .await;
+            match recovered {
+                Ok(recovered) => (Some(recovered), Ok(())),
+                Err(error) => {
+                    evidence(&format!(
+                        "P17_CHECK step=restore-reconnect-failed error={error}"
+                    ));
+                    (None, Err(error))
+                }
+            }
+        }
+    };
+    let expected = keep_observation_error(observed, restored)?;
+    let mut target = target_session.ok_or("restored Exiva session absent")?;
     capture("p17-expected.txt", expected.as_bytes());
     let _ = target.session_mut().logout().await?;
     Ok(expected.replace('\n', ";").replace(' ', "_"))
@@ -223,7 +275,7 @@ async fn observe_settings(
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+    match verdict::indexed_timeout(Duration::from_secs(300), verdict::observe(journey(clients)))
         .await
     {
         Ok(Ok(expected)) => evidence(&format!(

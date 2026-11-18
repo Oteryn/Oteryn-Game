@@ -24,8 +24,7 @@ pub struct CastContext<'a> {
     pub draw: &'a mut dyn FnMut(i64, i64) -> i64,
 }
 
-/// Maps core refusal reasons to the existing cast dispositions. A party cast
-/// without an eligible member is missing a target; authority failures remain rejected.
+/// Maps core refusal reasons to the cast dispositions in the protocol contract.
 pub const fn disposition(rejection: &CastRejection) -> SpellCastDisposition {
     match rejection {
         CastRejection::GroupCooling { .. } | CastRejection::SpellCooling { .. } => {
@@ -38,9 +37,7 @@ pub const fn disposition(rejection: &CastRejection) -> SpellCastDisposition {
         CastRejection::NotLearned
         | CastRejection::VocationCannotUse
         | CastRejection::PremiumRequired => SpellCastDisposition::NotAvailable,
-        CastRejection::TargetRequired | CastRejection::NoPartyMembers => {
-            SpellCastDisposition::TargetRequired
-        }
+        CastRejection::TargetRequired => SpellCastDisposition::TargetRequired,
         CastRejection::TargetNotAllowed => SpellCastDisposition::TargetIllegal,
         _ => SpellCastDisposition::Rejected,
     }

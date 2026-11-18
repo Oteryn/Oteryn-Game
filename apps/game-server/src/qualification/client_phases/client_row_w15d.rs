@@ -222,6 +222,15 @@ fn isolated_guidance_fixture_commits_an_unclaimed_pilgrimage() -> TestResult {
     })
 }
 
+fn needs_guidance_level(level: i64) -> bool {
+    level < 6
+}
+#[test]
+fn fresh_guidance_fixture_needs_progression() {
+    assert!(needs_guidance_level(1));
+    assert!(!needs_guidance_level(6));
+}
+
 async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<String> {
     use sqlx::Connection as _;
     let mut client = connect_character(clients, 0x88, 0).await?;
@@ -245,7 +254,11 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
             .position(|quest| quest.key == monk_shrines::QUEST)
             .ok_or("pilgrimage journal missing")?,
     )?;
-    let (level, questline, guidance) = shrine_progress(&mut connection, clients).await?;
+    let (mut level, questline, guidance) = shrine_progress(&mut connection, clients).await?;
+    if needs_guidance_level(level) {
+        client = provisioning::provision_fixture(client, clients, 0).await?;
+        level = shrine_progress(&mut connection, clients).await?.0;
+    }
     if level >= 6 && questline == 0 && guidance == 0 {
         let logout = client.session_mut().logout().await?;
         if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {

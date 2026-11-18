@@ -55,6 +55,117 @@ fn resting_mana_probe_excludes_food_and_equipment_credits() {
     assert!(resting_mana_observed(0, true, 10, 11, 100));
 }
 
+fn equipment_blocks_mana_probe(gain: i32, ticks: u64) -> bool {
+    gain > 0 && ticks > 0
+}
+
+#[test]
+fn harmless_equipment_does_not_block_mana_probe() {
+    assert!(!equipment_blocks_mana_probe(0, 0));
+    assert!(!equipment_blocks_mana_probe(1, 0));
+    assert!(equipment_blocks_mana_probe(1, 6_000));
+}
+
+fn mana_regenerating_equipment(
+    inventory: &oteryn_protocol_oteryn::item_view::CharacterInventory,
+) -> TestResult<bool> {
+    use crate::content::{
+        ReferenceItemField::Known, ReferenceModifierParameter, ReferenceSkillModifierKind,
+        ReferenceTransformKind, native_gameplay::ItemProfilesDocument,
+    };
+    if inventory.equipment.is_empty() {
+        return Ok(false);
+    }
+    let index = provisioning::item_index()?;
+    let profiles: ItemProfilesDocument = serde_json::from_slice(
+        &native_input()?
+            .item_profiles
+            .as_ref()
+            .ok_or("pinned item profiles absent")?
+            .bytes,
+    )?;
+    let find = |key: &str, revision: &str| {
+        profiles.records.iter().find(|record| {
+            record.production_definition.production_key == key
+                && record.production_definition.revision_ref == revision
+        })
+    };
+    for equipped in &inventory.equipment {
+        let (key, revision) = index
+            .definition_at(equipped.item.item_definition_ref)
+            .ok_or("equipped item definition absent from pinned index")?;
+        let record = find(key, revision)
+            .ok_or_else(|| format!("pinned equipment profile missing: {key}"))?;
+        let active = if let Known(transforms) = &record.semantics.use_transform {
+            transforms.targets.iter().find_map(|entry| {
+                if entry.kind == ReferenceTransformKind::Equip
+                    && let Known(target) = &entry.target
+                {
+                    return find(&target.key, &target.revision);
+                }
+                None
+            })
+        } else {
+            None
+        };
+        // Custody can retain the inactive definition. Check both forms to rule
+        // out regeneration even when the timed equip transformation is active.
+        for form in [Some(record), active].into_iter().flatten() {
+            if let Known(group) = &form.semantics.skill_modifiers
+                && let Known(modifiers) = &group.modifiers
+            {
+                let gain = modifiers
+                    .iter()
+                    .find_map(|modifier| match (&modifier.kind, &modifier.parameter) {
+                        (
+                            ReferenceSkillModifierKind::ManaGain,
+                            Known(ReferenceModifierParameter::SignedPoints(value)),
+                        ) => Some(value.0),
+                        _ => None,
+                    })
+                    .unwrap_or_default();
+                let ticks = modifiers
+                    .iter()
+                    .find_map(|modifier| match (&modifier.kind, &modifier.parameter) {
+                        (
+                            ReferenceSkillModifierKind::ManaTicks,
+                            Known(ReferenceModifierParameter::Milliseconds(value)),
+                        ) => Some(value.0),
+                        _ => None,
+                    })
+                    .unwrap_or_default();
+                if equipment_blocks_mana_probe(gain, ticks) {
+                    return Ok(true);
+                }
+            }
+        }
+    }
+    Ok(false)
+}
+
+#[derive(Debug)]
+struct MissingRestingCredit {
+    stat: &'static str,
+    spent: u32,
+    elapsed: tokio::time::error::Elapsed,
+}
+
+impl std::fmt::Display for MissingRestingCredit {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            formatter,
+            "step=resting-credit expected={} to rise above {}",
+            self.stat, self.spent
+        )
+    }
+}
+
+impl std::error::Error for MissingRestingCredit {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&self.elapsed)
+    }
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     use oteryn_protocol_oteryn::{
         actor_spell as spell, actor_spell_catalog as catalogue, rest_status,
@@ -134,9 +245,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
                 .is_some_and(|spell| !spell.aggressive && !spell.takes_target())
     });
     let use_soul = soul_spell.is_some();
-    let equipment_free = client
-        .inventory()
-        .is_some_and(|inventory| inventory.equipment.is_empty());
+    let equipment_free = use_soul
+        || !mana_regenerating_equipment(
+            client
+                .inventory()
+                .ok_or("step=resting inventory snapshot absent")?,
+        )?;
     if !use_soul && (status.food_remaining_ms != 0 || !equipment_free) {
         return Err(format!("step=resting mana probe requires a hungry character without equipped regeneration: {status:?}").into());
     }
@@ -193,7 +307,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             client.service_liveness(Duration::from_millis(100)).await?;
         }
     })
-    .await??;
+    .await
+    .map_err(|elapsed| MissingRestingCredit {
+        stat,
+        spent: pool(spent),
+        elapsed,
+    })??;
     for (name, vitals) in [("p10-spent.bin", spent), ("p10-restored.bin", restored)] {
         capture(
             name,

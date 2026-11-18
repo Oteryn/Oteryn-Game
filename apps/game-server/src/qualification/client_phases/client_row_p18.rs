@@ -120,6 +120,24 @@ async fn dust(
     Ok((u32::try_from(balance)?, u16::try_from(limit)?))
 }
 
+fn conversion_dust_matches(before: u32, after: u32, applied: bool, reason: &str) -> bool {
+    match before.checked_sub(60) {
+        Some(expected) => after == expected && applied && reason.is_empty(),
+        None => before == after && !applied && reason == "INSUFFICIENT_DUST",
+    }
+}
+#[test]
+fn funded_conversion_must_apply() {
+    assert!(conversion_dust_matches(100, 40, true, ""));
+    assert!(!conversion_dust_matches(
+        100,
+        100,
+        false,
+        "INSUFFICIENT_DUST"
+    ));
+    assert!(conversion_dust_matches(59, 59, false, "INSUFFICIENT_DUST"));
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0x44).await?;
     let session = client.join_snapshot().game_session_id;
@@ -172,6 +190,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
                 }
                 Err(error) => return Err(format!("dust limit plan: {error:?}").into()),
             }
+        } else if operation == Operation::DustToSlivers {
+            succeeded == applied
+                && before.1 == after.1
+                && conversion_dust_matches(before.0, after.0, applied, reason)
         } else {
             forge_outcome(name, succeeded, applied, reason) && after == before
         };

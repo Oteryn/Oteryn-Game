@@ -36,22 +36,32 @@ fn countdown_capture_requires_the_first_valid_notice() {
     assert!(countdown_observed(0, Some((0, 1, 9, 5))));
 }
 
-fn countdown_verdict(warning_due: bool, observed: bool) -> &'static str {
-    match (warning_due, observed) {
-        (_, true) => "CAPTURED",
-        (true, false) => "FAIL",
-        (false, false) => "UNAVAILABLE",
-    }
+fn next_observable_window(remaining: i64) -> Option<u64> {
+    (1..=5)
+        .rev()
+        .map(|minutes| minutes * 60_000)
+        .find(|opening| remaining > *opening + 5_000)
+        .map(|opening| remaining - opening)
+        .filter(|wait| *wait <= 65_000)
+        .and_then(|wait| u64::try_from(wait).ok())
 }
-
+fn packet_status(notice: bool) -> &'static str {
+    if notice { "CAPTURED" } else { "MISSING-SERVER" }
+}
 #[test]
-fn countdown_absence_is_unavailable_only_outside_the_warning_window() {
-    assert_eq!(countdown_verdict(false, false), "UNAVAILABLE");
-    assert_eq!(countdown_verdict(true, false), "FAIL");
-    assert_eq!(countdown_verdict(true, true), "CAPTURED");
+fn countdown_window_includes_poll_and_ignores_open_minutes() {
+    assert_eq!(next_observable_window(344_000), Some(44_000));
+    assert_eq!(next_observable_window(59_000), None);
+    assert_eq!(next_observable_window(260_000), Some(20_000));
+    assert_eq!(next_observable_window(302_000), Some(62_000));
+}
+#[test]
+fn absent_countdown_has_no_capture_verdict() {
+    assert_eq!(packet_status(false), "MISSING-SERVER");
+    assert_eq!(packet_status(true), "CAPTURED");
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+async fn journey(clients: &SeamClients<'_>) -> TestResult<(bool, String)> {
     let mut client = connect_world(clients, 0xfe).await?;
     if !client
         .selected_capabilities()
@@ -102,13 +112,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let planned = root
         .planned_world_reset(WorldId::decode(&clients.world)?)
         .await?;
-    let warning_due = planned.is_some_and(|reset| {
-        let remaining = reset
-            .reset_at_unix_ms
-            .saturating_sub(reset.database_now_unix_ms);
-        (1..=345_000).contains(&remaining)
+    // The owner ignores openings before its first serving poll. Wait for an opening
+    // after this observation with time for an initial poll, then allow two polls for delivery.
+    let next_opening = planned.and_then(|reset| {
+        next_observable_window(
+            reset
+                .reset_at_unix_ms
+                .saturating_sub(reset.database_now_unix_ms),
+        )
     });
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(45);
+    let wait_ms = next_opening.map_or(7_000, |wait| wait + 10_000);
+    let deadline = tokio::time::Instant::now() + Duration::from_millis(wait_ms);
     verdict::Harness::global().bounded_wait(deadline, "reset-countdown");
     let notice = tokio::time::timeout_at(deadline, async {
         loop {
@@ -128,7 +142,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     .await;
     let notice = match notice {
         Ok(result) => result?,
-        Err(elapsed) if countdown_verdict(warning_due, false) == "FAIL" => {
+        Err(elapsed) if next_opening.is_some() => {
             return Err(elapsed.into());
         }
         Err(_) => {
@@ -138,7 +152,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             );
             capture("w05a-snapshot.bin", &snapshot.payload);
             capture("w05a-expected.txt", expected.as_bytes());
-            return Ok("snapshot=validated;countdown=unavailable-outside-warning-window".into());
+            return Ok((
+                false,
+                "snapshot=validated;countdown=no-observable-reset-window".into(),
+            ));
         }
     };
     if !countdown_observed(
@@ -166,15 +183,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         notice.value.minutes_remaining,
     );
     capture("w05a-expected.txt", expected.as_bytes());
-    Ok(expected.replace('\n', ";"))
+    Ok((true, expected.replace('\n', ";")))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
         .await
     {
-        Ok(Ok(observed)) => evidence(&format!(
-            "e2e_all scenario=W05a.client status=CAPTURED evidence={observed}"
+        Ok(Ok((notice, observed))) => evidence(&format!(
+            "e2e_all scenario=W05a.client status={} evidence={observed}",
+            packet_status(notice)
         )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=W05a.client status=FAIL evidence={error}"

@@ -107,6 +107,52 @@ fn drome_commit_must_reach_the_requested_phase() {
     assert!(drome_phase_applied(1, 0, 0, 0));
 }
 
+fn drome_enter_expected(level: i64, outside: bool, disposition: u32) -> bool {
+    matches!(
+        (level >= 50, outside, disposition),
+        (_, _, 3) | (true, _, 4 | 6) | (true, false, 1)
+    )
+}
+
+fn stable_cooldown(before: u32, after: u32) -> bool {
+    after <= before
+}
+
+fn stable_refusal(before: DromeResult, after: DromeResult) -> bool {
+    stable_cooldown(before.cooldown, after.cooldown)
+        && DromeResult {
+            cooldown: before.cooldown,
+            disposition: before.disposition,
+            ..after
+        } == before
+}
+#[test]
+fn drome_respects_admitted_gates_and_geometry() {
+    assert!(drome_enter_expected(50, true, 6));
+    assert!(drome_enter_expected(50, true, 3));
+    assert!(!drome_enter_expected(50, true, 1));
+    assert!(!drome_enter_expected(50, true, 5));
+    assert!(drome_enter_expected(50, false, 1));
+    assert!(!drome_enter_expected(49, true, 6));
+}
+#[test]
+fn drome_refusal_cooldown_can_tick_down() {
+    assert!(stable_cooldown(3, 2));
+    assert!(!stable_cooldown(2, 3));
+}
+
+async fn durable_drome(
+    connection: &mut sqlx::PgConnection,
+    character: &[u8; 16],
+) -> TestResult<serde_json::Value> {
+    Ok(sqlx::query_scalar(
+        "SELECT body FROM game_character_tibiadrome WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(character.as_slice())
+    .fetch_one(connection)
+    .await?)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0x8d).await?;
     if !client
@@ -154,28 +200,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
     let level: i64 = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
         .bind(clients.characters[1].as_slice()).fetch_one(&mut connection).await?;
-    let account: Vec<u8> = sqlx::query_scalar("SELECT uuid_send($1::uuid)")
-        .bind(&clients.accounts[1])
-        .fetch_one(&mut connection)
-        .await?;
-    let account = <[u8; 16]>::try_from(account).map_err(|_| "invalid account UUID")?;
-    let root = crate::durability::DurabilityRoot::connect_test_runtime(clients.url)?;
-    let premium = root.load_premium_fence(account).await?;
-    let now: i64 =
-        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000000)::bigint")
-            .fetch_one(&mut connection)
-            .await?;
-    let premium_current = !premium.conflicting
-        && premium.fence.is_some_and(|fence| {
-            use crate::durability::premium_fence::EntitlementState;
-            let evidence = fence.latest;
-            evidence.state == EntitlementState::Active
-                && (evidence.effective_from_us..evidence.effective_until_us).contains(&now)
-                && now >= evidence.authority_issued_at_us
-                && now < evidence.authority_valid_until_us
-                && now < evidence.refresh_after_us
-        });
-    let eligible = level >= 50 && premium_current;
+    let at = tile(client.world_spatial().actor_position)?;
+    // Convert the wire position to the source map tile used by the hall gate.
+    let outside =
+        at.floor != 6 || !(32220..=32260).contains(&at.x) || !(31080..=31105).contains(&at.y);
+    let durable_before = durable_drome(&mut connection, &clients.characters[1]).await?;
     let drome_enter = action(
         &mut client,
         ArenaAction::Drome(DromeAction::Enter),
@@ -185,9 +214,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let entered = DromeResult::decode(&drome_enter)
         .map_err(|error| format!("step=drome-enter decode: {error:?}"))?;
     let entered_status = drome_status_now(&mut client).await?;
-    if eligible {
+    if !drome_enter_expected(level, outside, entered.disposition)
+        || (entered.disposition == 4 && before.cooldown == 0)
+        || entered_status.disposition != 1
+    {
+        return Err(format!("step=drome-enter level={level} outside={outside} before={before:?} observed={entered:?}").into());
+    }
+    if entered.disposition == 1 {
         if before.phase != 0
-            || entered_status.disposition != 1
             || !drome_phase_applied(entered.disposition, entered.phase, entered_status.phase, 1)
         {
             return Err(format!(
@@ -210,12 +244,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         {
             return Err(format!("step=drome-leave observed={left:?}").into());
         }
-    } else if entered_status != before
-        || entered.disposition != 3
-        || (DromeResult {
-            disposition: before.disposition,
-            ..entered
-        }) != before
+    } else if !stable_refusal(before, entered)
+        || !stable_refusal(entered, entered_status)
+        || durable_drome(&mut connection, &clients.characters[1]).await? != durable_before
     {
         return Err(format!("step=drome-enter before={before:?} observed={entered:?}").into());
     }
