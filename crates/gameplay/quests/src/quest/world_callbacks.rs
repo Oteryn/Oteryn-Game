@@ -812,6 +812,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
         return Err("callback bounds including djinn access".into());
     }
     counterparts::apply(&mut callbacks)?;
+    super::rotten_blood::register_putrefactory(&mut callbacks)?;
     validate_registry(&callbacks)?;
     callbacks.sort_by(|left, right| left.key.cmp(&right.key));
     Ok(callbacks)
@@ -1535,36 +1536,40 @@ pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String
         .map(|(index, state)| QuestEffect {
             track: state.track.clone(),
             from: QuestComparison::Between(state.minimum, state.maximum),
-            effect: match callback.native_rule {
-                Some(rule) => QuestEffectKind::Native(rule),
-                None if state.set_if.is_some() => QuestEffectKind::SetIf {
-                    equals: state.set_if.unwrap_or(state.minimum),
-                    value: state.set,
-                },
-                None if state.add.is_some() => QuestEffectKind::Add(state.add.unwrap_or(0)),
-                None if state.preserve => QuestEffectKind::Add(0),
-                None if state.at_least => match binding.filter(|_| Some(index) == bound_index) {
-                    Some(binding) => QuestEffectKind::RaiseToWithBinding {
+            effect: super::rotten_blood::putrefactory_effect(callback, state, binding)
+                .unwrap_or_else(|| match callback.native_rule {
+                    Some(rule) => QuestEffectKind::Native(rule),
+                    None if state.set_if.is_some() => QuestEffectKind::SetIf {
+                        equals: state.set_if.unwrap_or(state.minimum),
                         value: state.set,
-                        binding,
                     },
-                    None => QuestEffectKind::RaiseTo(state.set),
-                },
-                None if state.increment => match binding.filter(|_| Some(index) == bound_index) {
-                    Some(binding) => QuestEffectKind::AddWithBinding {
-                        delta: state.set,
-                        binding,
+                    None if state.add.is_some() => QuestEffectKind::Add(state.add.unwrap_or(0)),
+                    None if state.preserve => QuestEffectKind::Add(0),
+                    None if state.at_least => {
+                        match binding.filter(|_| Some(index) == bound_index) {
+                            Some(binding) => QuestEffectKind::RaiseToWithBinding {
+                                value: state.set,
+                                binding,
+                            },
+                            None => QuestEffectKind::RaiseTo(state.set),
+                        }
+                    }
+                    None if state.increment => match binding.filter(|_| Some(index) == bound_index)
+                    {
+                        Some(binding) => QuestEffectKind::AddWithBinding {
+                            delta: state.set,
+                            binding,
+                        },
+                        None => QuestEffectKind::Add(state.set),
                     },
-                    None => QuestEffectKind::Add(state.set),
-                },
-                None => match binding.filter(|_| Some(index) == bound_index) {
-                    Some(binding) => QuestEffectKind::SetWithBinding {
-                        value: state.set,
-                        binding,
+                    None => match binding.filter(|_| Some(index) == bound_index) {
+                        Some(binding) => QuestEffectKind::SetWithBinding {
+                            value: state.set,
+                            binding,
+                        },
+                        None => QuestEffectKind::Set(state.set),
                     },
-                    None => QuestEffectKind::Set(state.set),
-                },
-            },
+                }),
         })
         .collect();
     state_operations::append_effects(

@@ -125,6 +125,7 @@ pub fn validate(transition: &QuestTransition, world_context: bool) -> Result<(),
         matches!(
             effect.effect,
             QuestEffectKind::SetWithBinding { .. }
+                | QuestEffectKind::AddCappedWithBinding { .. }
                 | QuestEffectKind::AddWithBinding { .. }
                 | QuestEffectKind::RaiseToWithBinding { .. }
                 | QuestEffectKind::SetNowWithBinding { .. }

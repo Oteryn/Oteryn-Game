@@ -247,6 +247,8 @@ fn admit_native_bindings(
         super::completion_sets::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    super::rotten_blood::retain_putrefactory_predecessor(&mut lowered.catalogue)
+        .map_err(QuestLoadError::Json)?;
     Ok(lowered)
 }
 
@@ -687,6 +689,11 @@ mod tests {
         }
         assert!(expected.insert(crate::quest::schrodinger_island::callback().key));
         expected.insert(crate::quest::rotten_blood::altar_callback().key);
+        for index in 1..=6 {
+            assert!(expected.insert(format!(
+                "oteryn:quest-callback/rotten-putrefactory-reservoir/{index}"
+            )));
+        }
         // Collector main adds these exact native World cohorts; no donor
         // exclusion becomes an automatic admission through a loaded key.
         let before_native = expected.len();

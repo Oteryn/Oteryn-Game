@@ -8,6 +8,11 @@
 
 pub mod area_icons;
 pub mod flames;
+mod putrefactory;
+pub(super) use putrefactory::{
+    counter_effect as putrefactory_effect, register as register_putrefactory,
+    retain_predecessor as retain_putrefactory_predecessor,
+};
 
 use serde::{Deserialize, Serialize};
 

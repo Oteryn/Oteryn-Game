@@ -252,6 +252,12 @@ pub enum QuestEffectKind {
         delta: i64,
         binding: [u8; 32],
     },
+    /// Checked addition capped at the source counter's maximum, with a physical binding.
+    AddCappedWithBinding {
+        delta: i64,
+        maximum: i64,
+        binding: [u8; 32],
+    },
     /// The database transaction time, in Unix seconds.
     SetNow,
     /// The same database transaction clock, pinned to physical admission terms.
@@ -311,6 +317,16 @@ impl QuestEffectKind {
             Self::AddWithBinding { delta, binding } => {
                 out.push(8);
                 out.extend_from_slice(&delta.to_be_bytes());
+                out.extend_from_slice(&binding);
+            }
+            Self::AddCappedWithBinding {
+                delta,
+                maximum,
+                binding,
+            } => {
+                out.push(14);
+                out.extend_from_slice(&delta.to_be_bytes());
+                out.extend_from_slice(&maximum.to_be_bytes());
                 out.extend_from_slice(&binding);
             }
             Self::SetNow => out.push(3),
@@ -544,6 +560,9 @@ impl QuestStateCatalogue {
                         usize::from(other_effect) < transition.effects.len()
                             && usize::from(other_effect) != index
                             && (track.min..=track.max).contains(&value)
+                    }
+                    QuestEffectKind::AddCappedWithBinding { maximum, .. } => {
+                        (track.min..=track.max).contains(&maximum)
                     }
                     QuestEffectKind::AddAtLeast { minimum, .. } => {
                         (track.min..=track.max).contains(&minimum)
@@ -812,6 +831,10 @@ impl QuestStateCatalogue {
                     QuestEffectKind::Add(delta) | QuestEffectKind::AddWithBinding { delta, .. } => {
                         before.checked_add(delta)
                     }
+                    QuestEffectKind::AddCappedWithBinding { delta, maximum, .. } => before
+                        .max(0)
+                        .checked_add(delta)
+                        .map(|value| value.min(maximum)),
                     QuestEffectKind::AddAtLeast { delta, minimum } => {
                         before.checked_add(delta).map(|value| value.max(minimum))
                     }
