@@ -2903,13 +2903,18 @@ async fn while_control_peer_connected<T>(
     work: impl std::future::Future<Output = T>,
 ) -> Option<T> {
     let mut unexpected = [0];
-    tokio::select! {
-        biased;
-        _ = stream.read(&mut unexpected) => None,
-        result = work => Some(result),
-    }
+    let mut peer = pin!(stream.read(&mut unexpected));
+    let mut work = pin!(work);
+    poll_fn(|context| {
+        if peer.as_mut().poll(context).is_ready() {
+            return Poll::Ready(None);
+        }
+        work.as_mut().poll(context).map(Some)
+    })
+    .await
 }
 
+#[cfg(test)]
 #[tokio::test]
 async fn qualification_control_cancels_submitted_work_when_peer_disconnects()
 -> Result<(), Box<dyn std::error::Error>> {

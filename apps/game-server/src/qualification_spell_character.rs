@@ -381,6 +381,7 @@ fn preparation_stage(
     }
 }
 
+#[cfg(test)]
 #[test]
 fn qualification_build_resumes_at_the_matching_durable_receipts() -> TestResult {
     assert_eq!(
