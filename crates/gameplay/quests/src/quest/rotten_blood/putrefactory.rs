@@ -12,6 +12,7 @@ pub const PASSIVE_TICK: &str = "oteryn:quest-transition/rotten-blood/putrefactor
 pub const PASSIVE_PERIOD_SECONDS: u64 = 20;
 // Crystal creaturescripts_putrefactory-x.lua:158-171,195-224.
 pub const RESERVOIR_ACTION: u16 = 47953;
+pub(crate) const CANONICAL_QUEST: &str = "oteryn:quest.rotten_blood_quest";
 pub(crate) const RESERVOIR_CLOCK_PREFIX: &str =
     "oteryn:quest-progress/rotten-blood/putrefactory/reservoir-";
 

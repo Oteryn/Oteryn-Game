@@ -16,6 +16,7 @@ use oteryn_protocol_oteryn::world_object::{
     UseDisposition, WorldObjectTarget, decode_use_result, encode_use_intent,
 };
 use serde_json::json;
+use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
 pub(super) const LEGACY: &str = "putrefactory-reservoir-legacy";
@@ -104,7 +105,7 @@ pub(super) async fn exercise(
         "schema":1,
         "quests":[{
             "quest":QUEST,
-            "recipe_sha256":"2222222222222222222222222222222222222222222222222222222222222222",
+            "recipe_sha256":canonical_recipe_sha()?,
             "sources":["Crystal 201189f8, rotten_blood_quest/creaturescripts_putrefactory-x.lua:155-224"],
             "tracks":[
                 {"key":CHARGE,"initial":if cap { 93 } else { -1 },"minimum":-1,"maximum":2147483647},
@@ -114,6 +115,7 @@ pub(super) async fn exercise(
                 "trigger":{"kind":"map_use","callback":reservoir}}]
         }]
     }))?)?;
+    bindings.verify_embedded_recipe_evidence()?;
     let base = if name == PASSIVE {
         let active = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
         QuestStateCatalogue::new(
@@ -241,6 +243,24 @@ pub(super) async fn exercise(
         );
     }
     Ok(())
+}
+
+fn canonical_recipe_sha() -> TestResult<String> {
+    let shard: serde_json::Value = serde_json::from_slice(include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../content/quests/definitions/quests-00100-00199.json"
+    )))?;
+    let recipe = shard["records"]
+        .as_array()
+        .and_then(|records| {
+            records.iter().find(|record| {
+                record.pointer("/definition/identity/key").and_then(serde_json::Value::as_str)
+                    == Some("oteryn:quest.rotten_blood_quest")
+            })
+        })
+        .and_then(|record| record.pointer("/definition/oteryn_recipe/payload/recipe"))
+        .ok_or("canonical Rotten Blood recipe")?;
+    Ok(format!("{:x}", Sha256::digest(serde_json::to_vec(recipe)?)))
 }
 
 async fn seed_previous_charge(h: &Harness, definition_hash: [u8; 32]) -> TestResult {

@@ -209,7 +209,12 @@ impl RecipeEvidence {
     pub(crate) fn verify(&self, bindings: &Bindings) -> Result<(), String> {
         bindings.validate()?;
         for quest in &bindings.quests {
-            let recipe = self.recipes.get(&quest.quest).ok_or_else(|| {
+            let recipe_key = if quest.supplements_putrefactory_reservoirs() {
+                crate::quest::rotten_blood::putrefactory::CANONICAL_QUEST
+            } else {
+                &quest.quest
+            };
+            let recipe = self.recipes.get(recipe_key).ok_or_else(|| {
                 format!(
                     "authored binding has no canonical chosen recipe: {}",
                     quest.quest
