@@ -34,11 +34,12 @@ impl RankedToll {
             && callback.lever.is_none()
             && callback.offerings.is_empty()
             && callback.passages.is_empty()
-            && *callback.effects == super::CallbackEffects {
-                ranked_toll: Some(self.clone()),
-                teleport_effect: callback.effects.teleport_effect,
-                ..Default::default()
-            }
+            && *callback.effects
+                == super::CallbackEffects {
+                    ranked_toll: Some(self.clone()),
+                    teleport_effect: callback.effects.teleport_effect,
+                    ..Default::default()
+                }
             && callback.item_on_target.as_ref().is_some_and(|input| {
                 input.on_step
                     && !input.reusable

@@ -1486,9 +1486,9 @@ fn extend_callbacks(
     for callback in callbacks.iter().filter(|c| c.requires_durable_commit()) {
         if let Some(toll) = &callback.effects.ranked_toll
             && toll.tracks.iter().any(|key| {
-                catalogue.track(key).is_none_or(|track| {
-                    track.initial >= toll.minimum || track.max < toll.minimum
-                })
+                catalogue
+                    .track(key)
+                    .is_none_or(|track| track.initial >= toll.minimum || track.max < toll.minimum)
             })
         {
             return Err(format!("invalid ranked toll tracks for {}", callback.key));

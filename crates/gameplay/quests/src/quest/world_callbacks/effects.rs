@@ -508,7 +508,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
     let effects = &callback.effects;
-    if effects.ranked_toll.as_ref().is_some_and(|toll| !toll.valid(callback)) {
+    if effects
+        .ranked_toll
+        .as_ref()
+        .is_some_and(|toll| !toll.valid(callback))
+    {
         return false;
     }
     if effects
