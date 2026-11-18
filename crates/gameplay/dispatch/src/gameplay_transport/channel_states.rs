@@ -132,6 +132,9 @@ pub struct ChannelSessionStates {
             Option<oteryn_gameplay_progression::atelier::AtelierState>,
         >,
     >,
+    /// Serialize selection and handoff at a Channel's Warzone portals. The
+    /// handoff still owns the durable occupancy and enrollment checks.
+    pub(super) warzone_admission: Mutex<()>,
     /// The Wheel allocation of each admitted session (WHEEL-0 §4 "Load"), after the admission
     /// Wheel reset; `None` when the load failed. The allocation only, never an eligibility
     /// result. Never held across an await.

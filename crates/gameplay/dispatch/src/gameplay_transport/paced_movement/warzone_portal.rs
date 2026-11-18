@@ -76,32 +76,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 moved_to: None,
             };
         }
+        let message = if result == Some(Err(ActivityRefusal::Cooldown)) {
+            "You have to wait to face this boss again!"
+        } else {
+            "Sorry, not possible."
+        };
         let mut arrived = entered;
-        if result == Some(Err(ActivityRefusal::Cooldown)) {
-            self.states
-                .chat
-                .push_quest_feedback(session, "You have to wait to face this boss again!");
-            if let (Some(origin), Some(map), Some(_permit)) =
-                (origin, self.bundle_map(), self.spell_lane_permit().await)
-                && let Some((mut runtime, states)) = self.lock_quest_teleport_owners().await
-                && runtime.read_actor_position(actor) == Ok(entered)
+        self.states.chat.push_quest_feedback(session, message);
+        if let (Some(origin), Some(map), Some(_permit)) =
+            (origin, self.bundle_map(), self.spell_lane_permit().await)
+            && let Some((mut runtime, states)) = self.lock_quest_teleport_owners().await
+            && runtime.read_actor_position(actor) == Ok(entered)
+        {
+            let blocked =
+                super::super::pvp_live::pz_blocked(&states, actor, session, self.owner_now());
+            let doors = crate::map::floor::BundleDoors(map.facts.doors());
+            if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+                &runtime,
+                self.movement_cells(),
+                actor,
+                session,
+                entered,
+                origin.position(),
+                blocked,
+                &doors,
+            ) && let Ok(returned) = runtime.commit_source_step(proof)
             {
-                let blocked =
-                    super::super::pvp_live::pz_blocked(&states, actor, session, self.owner_now());
-                let doors = crate::map::floor::BundleDoors(map.facts.doors());
-                if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
-                    &runtime,
-                    self.movement_cells(),
-                    actor,
-                    session,
-                    entered,
-                    origin.position(),
-                    blocked,
-                    &doors,
-                ) && let Ok(returned) = runtime.commit_source_step(proof)
-                {
-                    arrived = returned;
-                }
+                arrived = returned;
             }
         }
         let runtime = self.runtime.lock().await;
@@ -126,6 +127,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
+        // The paced step has released the spell lane. The first entrant can
+        // now publish its room before a second entrant selects an allocation.
+        let _admission = self.states.warzone_admission.lock().await;
         let origin_pin = {
             let runtime = self.runtime.lock().await;
             if runtime.read_actor_position(actor) != Ok(entered) {

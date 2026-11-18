@@ -77,7 +77,9 @@ fn scenario_case(
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
-    let native_crop = m03_use
+    let warzone_pump = super::super::authored_world_rewards::warzone_pump(name);
+    let native_crop = warzone_pump.is_some()
+        || m03_use
         || qd_world
         || engenc_asura
         || m49
@@ -356,7 +358,7 @@ fn scenario_case(
         portal.selector.action = Some(57243);
         portal.selector.appearance = Some(1949);
         portal
-    } else if let Some((_, achievement, _)) = super::super::authored_world_rewards::warzone_pump(name) {
+    } else if let Some((_, achievement, _, _)) = warzone_pump {
         let mut pump = callback(&format!("dangerous-depth-pump-{achievement}-00"))?;
         pump.selector.appearance = Some(27500);
         pump
@@ -1255,7 +1257,20 @@ fn scenario_case(
         } else {
             world
         };
-        let world = if elvenbane {
+        let world = if warzone_pump.is_some() {
+            let at = crate::map::overlay::TilePos {
+                x: trigger.x,
+                y: trigger.y,
+                floor: trigger.floor,
+            };
+            let approach = crate::map::overlay::TilePos { x: start.x, ..at };
+            super::super::source_world_crop::world(
+                approach,
+                at,
+                approach,
+                generation.native_gameplay().ok_or("native pump policies")?,
+            )?
+        } else if elvenbane {
             super::super::source_world_crop::compiled_region(
                 crate::map::overlay::TilePos {
                     x: 32584,
