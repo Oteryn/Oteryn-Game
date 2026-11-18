@@ -11,7 +11,7 @@ use oteryn_protocol_oteryn::{
 
 pub(super) const NAME: &str = "unnatural-selection-ray-of-light";
 const HOLY_AREA: u16 = 50;
-const SPEECH: &str = "The crystal catches a ray of light.";
+const SPEECH: &str = "A ray of sunlight comes down from the heaven and hits the crystal. Wow. That probably means Fasuon is supporting.";
 
 #[test]
 fn quest_source_tile_magic_and_monster_say_follow_committed_use() -> TestResult {

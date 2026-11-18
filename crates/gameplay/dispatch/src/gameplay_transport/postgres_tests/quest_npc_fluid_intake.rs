@@ -19,8 +19,6 @@ const LAZARAN_INTAKE: &str =
     "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:100-103";
 const LAZARAN_BEER: &str =
     "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:153-162";
-const MISSING: &str = "You have not brought the requested drink.";
-const ACCEPTED: &str = "Thank you for the drink.";
 
 pub(super) enum FixtureItem {
     ChargedCrystal,
@@ -140,8 +138,12 @@ struct Intake {
     item: u16,
     subtype: u8,
     quantity: u8,
+    start_at: i64,
     complete_at: i64,
     reward: Option<u16>,
+    prompt: &'static str,
+    missing: &'static str,
+    accepted: &'static [&'static str],
 }
 
 impl Intake {
@@ -171,20 +173,20 @@ impl Intake {
                 "key":format!("{group}/prompt"),"quest":quest,"npc":npc,"trigger":"say",
                 "keywords":["mission"],"keyword_mode":"exact",
                 "guards":[{"kind":"storage","track":questline,"op":"eq","value":self.stage}],
-                "reply":["Have you brought the drink?"],"effects":[{"kind":"set_topic","value":topic}],
+                "reply":[self.prompt],"effects":[{"kind":"set_topic","value":topic}],
                 "sources":[prompt_source]
             }),
             json!({
                 "key":format!("{group}/accept"),"quest":quest,"npc":npc,"trigger":"say",
                 "keywords":["yes"],"keyword_mode":"exact","topics":[topic],
                 "guards":[{"kind":"item","item":item,"count":self.quantity,"subtype":self.subtype}],
-                "reply":[ACCEPTED],"effects":effects,"sources":[intake_source]
+                "reply":self.accepted,"effects":effects,"sources":[intake_source]
             }),
             json!({
                 "key":format!("{group}/refuse"),"quest":quest,"npc":npc,"trigger":"say",
                 "keywords":["yes"],"keyword_mode":"exact","topics":[topic],
                 "guards":[{"kind":"item","item":item,"count":self.quantity,"subtype":self.subtype,"op":"lt"}],
-                "reply":[MISSING],"effects":[{"kind":"set_topic","value":0}],"sources":[intake_source]
+                "reply":[self.missing],"effects":[{"kind":"set_topic","value":0}],"sources":[intake_source]
             }),
         ]
     }
@@ -210,8 +212,15 @@ pub(super) async fn exercise(
                     item: 2874,
                     subtype: 13,
                     quantity: 10,
+                    start_at: 1,
                     complete_at: 2,
                     reward: None,
+                    prompt: "Do you have the rum .. erm the fuel with you?",
+                    missing: "You dont have what I ask for.",
+                    accepted: &[
+                        "You did it! Ye Gods, what a temptation! But I will not give in! I will put it into the machine as soon as possible. Oh and if you happen to see a dwarf wearing a funnel, please ask him to return it to me. ...",
+                        "But now let's talk about your next mission.",
+                    ],
                 },
                 Intake {
                     mission: format!("{}mission03", isle_of_evil::PREFIX),
@@ -220,8 +229,16 @@ pub(super) async fn exercise(
                     item: 2874,
                     subtype: 14,
                     quantity: 1,
+                    start_at: 1,
                     complete_at: 2,
                     reward: None,
+                    prompt: "So you have brought me a vial of fruit juice?",
+                    missing: "You dont have what I ask for.",
+                    accepted: &[
+                        "Ahhhh that juice was just what I needed. I haven't had any fruit juice for ages! You can't fight evil the whole day without allowing yourself a small treat! ...",
+                        "Though I bet it would have tasted better in a glass with one of those amusing umbrellas on top! But I don't blame you. ...",
+                        "I fear we hunters of evil must be content with the small pleasures life grants us. Now where were we? Oh, yes you are probably eager to learn about your next mission as part of our big plan!",
+                    ],
                 },
             ],
         )
@@ -237,8 +254,14 @@ pub(super) async fn exercise(
                 item: 3465,
                 subtype: 3,
                 quantity: 1,
+                start_at: 2,
                 complete_at: 3,
                 reward: Some(10198),
+                prompt: "You bring us big pot of strange water from little men?",
+                missing: "You do not have the brown strange water!",
+                accepted: &[
+                    "We make big ritual soon and learn much about world outside. Me thank you many times for teaching us world. Very wise and adventurous you are!",
+                ],
             }],
         )
     };
@@ -273,7 +296,7 @@ pub(super) async fn exercise(
             admitted,
             &[
                 (questline.clone(), intake.stage),
-                (intake.mission.clone(), 1),
+                (intake.mission.clone(), intake.start_at),
             ],
             120 + intake.topic as u8,
         )
@@ -290,11 +313,8 @@ pub(super) async fn exercise(
         occurrence += 1;
         let snapshot = live_fluids(h, intake.item).await?;
 
-        for (words, expected) in [
-            (["hi", "mission", "yes"], MISSING),
-            (["hi", "mission", "yes"], ACCEPTED),
-        ] {
-            if expected == ACCEPTED {
+        for accept in [false, true] {
+            if accept {
                 for count in (0..intake.quantity)
                     .step_by(5)
                     .map(|n| (intake.quantity - n).min(5))
@@ -312,22 +332,29 @@ pub(super) async fn exercise(
                 }
             }
             let mut reply = Vec::new();
-            for word in words {
+            for word in ["hi", "mission", "yes"] {
                 reply =
                     super::classic_quests::talk(owner, admitted, actor, command_id, word).await?;
                 command_id += 1;
             }
-            assert_eq!(reply, [expected]);
+            if accept {
+                assert_eq!(reply, intake.accepted);
+            } else {
+                assert_eq!(reply, [intake.missing]);
+            }
             assert_eq!(live_fluids(h, intake.item).await?, snapshot);
             let mission = super::m39_bone_journey::stage(h, &intake.mission).await?;
             let stage = super::m39_bone_journey::stage(h, &questline).await?;
-            if expected == ACCEPTED {
+            if accept {
                 assert_eq!(
                     (mission, stage),
                     (Some(intake.complete_at), Some(intake.stage + 1))
                 );
             } else {
-                assert_eq!((mission, stage), (Some(1), Some(intake.stage)));
+                assert_eq!(
+                    (mission, stage),
+                    (Some(intake.start_at), Some(intake.stage))
+                );
             }
         }
         if let Some(id) = intake.reward {

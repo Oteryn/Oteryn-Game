@@ -53,6 +53,7 @@ fn rows() -> [Value; 2] {
             "item_on_target":null,"return_on_failure":false,"failure_message":null,
             "storage":[{"track":MISSION02,"minimum":1,"maximum":1,"set":2}],
             "present":[{"item":SKULL,"count":1}],
+            "effects":{"player_speech":"You hold the skull up high. You can resist the urge to have it look through a telescope though."},
             "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission2_all_around_the_world.lua:1-5","crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission2_all_around_the_world.lua:73-96"]
         }),
     ]
