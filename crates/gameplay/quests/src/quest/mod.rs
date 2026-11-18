@@ -430,6 +430,8 @@ pub struct QuestStateCatalogue {
     authored_bindings: Option<std::sync::Arc<authored_bindings::RuntimeBindings>>,
     #[cfg(any(test, feature = "test-support"))]
     npc_fixture: Option<npc_rules::NpcRuleCatalog>,
+    #[cfg(any(test, feature = "test-support"))]
+    world_fixture: Option<Vec<world_callbacks::Callback>>,
     npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
     predecessors: BTreeMap<String, Vec<NpcDefinitionPredecessor>>,
     native_recipe_evidence: Option<std::sync::Arc<authored_bindings::embedded::RecipeEvidence>>,
@@ -621,6 +623,8 @@ impl QuestStateCatalogue {
             completion_sets: BTreeMap::new(),
             #[cfg(any(test, feature = "test-support"))]
             npc_fixture: None,
+            #[cfg(any(test, feature = "test-support"))]
+            world_fixture: None,
             npc_legacy: BTreeMap::new(),
             predecessors: BTreeMap::new(),
             authored_bindings: None,
@@ -690,6 +694,19 @@ impl QuestStateCatalogue {
         Ok(updated)
     }
 
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn with_world_callback_fixture(
+        &self,
+        callback: world_callbacks::Callback,
+    ) -> Result<Self, String> {
+        world_callbacks::validate_callbacks(std::slice::from_ref(&callback))?;
+        let mut enabled = self
+            .with_fixture_transition(world_callbacks::primary_transition(&callback)?)
+            .map_err(|error| format!("{error:?}"))?;
+        enabled.world_fixture = Some(vec![callback]);
+        Ok(enabled)
+    }
+
     /// A catalogue with no quest: every transition request is unknown.
     #[must_use]
     pub fn empty(content_revision: impl Into<String>) -> Option<Self> {
@@ -698,6 +715,10 @@ impl QuestStateCatalogue {
 
     #[must_use]
     pub fn authored_world_callbacks(&self) -> Option<&[world_callbacks::Callback]> {
+        #[cfg(any(test, feature = "test-support"))]
+        if let Some(fixture) = &self.world_fixture {
+            return Some(fixture);
+        }
         self.authored_bindings
             .as_ref()
             .map(|runtime| runtime.world.as_slice())

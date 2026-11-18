@@ -402,6 +402,8 @@ fn scenario_case(
         callback("questpc7-formal-display")?
     } else if outfit_world {
         callback(name)?
+    } else if name == super::super::haunted_ruin::NAME {
+        super::super::haunted_ruin::callback(trigger)?
     } else if classic_npc {
         callback("behemoth")?
     } else if rotten_purchase {
@@ -646,7 +648,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if name == "authored-wrath-crystals" {
+    let world = if name == super::super::haunted_ruin::NAME {
+        world_with_objects(&callback, trigger, &[(super::super::haunted_ruin::DOOR, 7869)], &[7868])?
+    } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::world()?
     } else if name == "nx6-wayfarer" {
         super::super::questpc8_wrath_source_dragon::world()?
