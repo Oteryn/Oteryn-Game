@@ -342,6 +342,7 @@ fn scenario_case(
                 | "questpc2-albinius-portals-exact"
                 | "questpc2-albinius-portals-combined"
                 | "classic-rottin-disrepair"
+                | super::super::rookie_guard_level::NAME
                 | super::super::thieves_guild_uniform::NAME
                 | "threatened-dreams-npc"
                 | "conditional-quest-greetings"
@@ -1377,6 +1378,7 @@ fn scenario_case(
 
         let initial_level: Option<u32> = match name {
             "catalogue-npc-calendar" | "catalogue-npc-scoped" => Some(35),
+            super::super::rookie_guard_level::NAME => Some(8),
             "questpc7-eligibility-high" => Some(1000),
             "qengine-rewards-feaster-prefix" | "qengine-rewards-feaster-thaian" => Some(250),
             "questpc7-ferumbras" | "qengine-rewards-heart-story" => Some(150),
@@ -2527,6 +2529,8 @@ fn scenario_case(
                 &mut admitted,
             ))
             .await?;
+        } else if name == super::super::rookie_guard_level::NAME {
+            Box::pin(super::super::rookie_guard_level::exercise(&mut owner, &admitted, &h)).await?;
         } else if name == super::super::thieves_guild_uniform::NAME {
             Box::pin(super::super::thieves_guild_uniform::exercise(&mut owner, &admitted, &h)).await?;
         } else if name == "catalogue-npc-inventory" {
