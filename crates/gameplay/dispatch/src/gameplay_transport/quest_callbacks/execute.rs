@@ -298,16 +298,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(facts) = map.facts.movement_item_facts(appearance) else {
                 return UseDisposition::Rejected;
             };
-            if projection.is_some()
-                || facts.pickupable
-                || map.facts.house_tile(pos)
-                || map.facts.has_quest_item_presence(pos)
-            {
+            if projection.is_some() || facts.pickupable || map.facts.house_tile(pos) {
                 return UseDisposition::Rejected;
             }
-            projection = Some(crate::map::facts::QuestCallbackProjection::ItemPresence {
+            let barricade = if let Some(entrance) = callback.effects.merchant_entrance {
+                let at = tile(entrance);
+                let Some(tree) = map.facts.movement_item_facts(3682) else {
+                    return UseDisposition::Rejected;
+                };
+                if tree.pickupable
+                    || at == pos
+                    || map.facts.house_tile(at)
+                    || map
+                        .facts
+                        .quest_callback_blocked(map.overlay.base(), at, false)
+                {
+                    return UseDisposition::Rejected;
+                }
+                Some((at, tree))
+            } else {
+                None
+            };
+            projection = Some(crate::map::facts::QuestCallbackProjection::MerchantTrap {
                 position: pos,
                 entry: facts,
+                barricade,
             });
         }
         if let Some(appearance) = callback

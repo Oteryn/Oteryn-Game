@@ -91,7 +91,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let merchant = callback.starts_merchant_wave()
             && matches!(
                 projection,
-                Some(QuestCallbackProjection::ItemPresence { .. })
+                Some(QuestCallbackProjection::MerchantTrap {
+                    barricade: Some(_),
+                    ..
+                })
             );
         if callback.lever.is_none() && !personal && !merchant {
             return UseDisposition::Rejected;
@@ -196,7 +199,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if memo.content != runtime.content_pin().server_artifact_digest()
                 || memo.map != map.overlay.base().digest()
                 || memo.scope != runtime.encounter_owner_scope()
-                || (memo.merchant_loot.is_none()
+                || (!memo.callback.starts_merchant_wave()
                     && map.facts.object_revision(memo.key) != memo.revision)
             {
                 pending.remove(index);
@@ -218,6 +221,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             }
             if memo.callback.starts_merchant_wave() && now >= memo.reset_at {
+                if let Some((pos, key)) = map.facts.merchant_barricade(memo.key)
+                    && !map.facts.remove_movement_item(pos, key, 3682)
+                {
+                    index += 1;
+                    continue;
+                }
                 super::personal_trial::cleanup(&mut runtime, &mut memo.spawned);
                 let mut loot = Vec::new();
                 for x in encounter.room_min.x..=encounter.room_max.x {

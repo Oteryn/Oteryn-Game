@@ -116,6 +116,11 @@ pub enum QuestCallbackProjection {
         position: TilePos,
         entry: EntryFacts,
     },
+    MerchantTrap {
+        position: TilePos,
+        entry: EntryFacts,
+        barricade: Option<(TilePos, EntryFacts)>,
+    },
     Scene {
         mutations: Vec<QuestSceneMutation>,
         remove_self: bool,
@@ -159,6 +164,7 @@ pub(super) struct CallbackStates {
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
+    merchant_barricades: BTreeMap<u64, (TilePos, EntryId)>,
     batch_blockers: BTreeSet<TilePos>,
     presences: BTreeMap<u64, (TilePos, EntryId)>,
     naginata_picks: Vec<NaginataPick>,
@@ -451,6 +457,41 @@ impl CallbackStates {
                     self.presences.insert(owner, (*position, entry));
                 }
             }
+            QuestCallbackProjection::MerchantTrap {
+                position,
+                entry,
+                barricade,
+            } => {
+                if self.merchant_barricades.contains_key(&owner)
+                    || barricade.is_some_and(|(pos, _)| self.phase_has_dynamic_blocker(pos))
+                {
+                    return false;
+                }
+                for (pos, facts, blocking) in std::iter::once((*position, *entry, false))
+                    .chain(barricade.map(|(pos, facts)| (pos, facts, true)))
+                {
+                    let Some(sequence) = self.movement_sequence.checked_add(1) else {
+                        return false;
+                    };
+                    let Some(id) = EntryId::callback(sequence) else {
+                        return false;
+                    };
+                    if facts.pickupable {
+                        return false;
+                    }
+                    self.movement_sequence = sequence;
+                    self.movement_items
+                        .entry(pos)
+                        .or_default()
+                        .push(view::ComposedEntry {
+                            source: view::EntrySource::Added(id),
+                            facts,
+                        });
+                    if blocking {
+                        self.merchant_barricades.insert(owner, (pos, id));
+                    }
+                }
+            }
             QuestCallbackProjection::Scene {
                 mutations,
                 remove_self,
@@ -500,7 +541,9 @@ impl CallbackStates {
         })
     }
     pub(super) fn phase_has_dynamic_blocker(&self, pos: TilePos) -> bool {
-        self.solid_items.contains(&pos) || self.batch_blockers.contains(&pos)
+        self.solid_items.contains(&pos)
+            || self.batch_blockers.contains(&pos)
+            || self.merchant_barricades.values().any(|(at, _)| *at == pos)
     }
 
     pub(super) fn clear_feroxa_scenery(&mut self, inside: impl Fn(TilePos) -> bool) {
@@ -514,6 +557,7 @@ impl CallbackStates {
         };
         self.movement_items.retain(|p, _| !cleared(p));
         self.solid_items.retain(|p| !cleared(p));
+        self.merchant_barricades.retain(|_, (pos, _)| !cleared(pos));
         self.batch_blockers.retain(|p| !inside(*p));
         self.portals.retain(|p, _| !cleared(p));
         self.presences.retain(|_, (p, _)| !cleared(p));
@@ -535,6 +579,7 @@ impl CallbackStates {
             + self.movement_speech.len()
             + self.portals.len()
             + self.solid_items.len()
+            + self.merchant_barricades.len()
             + self.batch_blockers.len()
             + self.movement_items.values().map(Vec::len).sum::<usize>();
         used.saturating_add(additional) < super::super::overlay::OVERLAY_BUDGET_BYTES / 512
@@ -1203,10 +1248,11 @@ impl BundleFacts {
         true
     }
 
-    pub fn has_quest_item_presence(&self, pos: TilePos) -> bool {
-        self.callbacks.lock().map_or(true, |states| {
-            states.presences.values().any(|(at, _)| *at == pos)
-        })
+    /// Resolve the entrance created by this exact shared scene before removing it.
+    pub fn merchant_barricade(&self, owner: u64) -> Option<(TilePos, u64)> {
+        let states = self.callbacks.lock().ok()?;
+        let (pos, id) = states.merchant_barricades.get(&owner)?;
+        Some((*pos, id.get()))
     }
 
     /// Crystal data-global/scripts/systems/hazard_primal.lua:53,68 removes
@@ -1243,7 +1289,9 @@ impl BundleFacts {
         if entries.is_empty() {
             states.movement_items.remove(&pos);
         }
-        states.presences.retain(|_, (_, id)| id.get() != key);
+        states
+            .merchant_barricades
+            .retain(|_, (_, id)| id.get() != key);
         states.changed.remove(&key);
         states.movement_decays.retain(|(_, entry), _| *entry != key);
         states.movement_sequence = sequence;
@@ -1673,6 +1721,14 @@ impl BundleFacts {
                 | QuestCallbackProjection::ItemCycle { position, .. } => {
                     states.position_reserved(*position)
                 }
+                QuestCallbackProjection::MerchantTrap {
+                    position,
+                    barricade,
+                    ..
+                } => {
+                    states.position_reserved(*position)
+                        || barricade.is_some_and(|(position, _)| states.position_reserved(position))
+                }
                 QuestCallbackProjection::Portals { endpoints, .. } => endpoints
                     .iter()
                     .any(|(pos, _, _)| states.position_reserved(*pos)),
@@ -1826,7 +1882,7 @@ impl BundleFacts {
             return false;
         };
         if !tile.walkable()
-            || states.solid_items.contains(&pos)
+            || states.phase_has_dynamic_blocker(pos)
             || states.changed.contains_key(&key)
             || states.hidden.contains(&key)
             || states.passable.contains_key(&key)
@@ -1914,10 +1970,7 @@ impl BundleFacts {
         let Ok(states) = self.callbacks.lock() else {
             return true;
         };
-        if states.solid_items.contains(&pos)
-            || states.batch_blockers.contains(&pos)
-            || states.arena_pillar_closed_at(pos)
-        {
+        if states.phase_has_dynamic_blocker(pos) || states.arena_pillar_closed_at(pos) {
             return true;
         }
         if states.phase_entry(pos, 0).is_some() {

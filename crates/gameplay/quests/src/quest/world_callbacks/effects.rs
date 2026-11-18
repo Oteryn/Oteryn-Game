@@ -104,6 +104,8 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub place_item: Option<u16>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub merchant_entrance: Option<Position>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
     pub encounter: Option<Encounter>,
 }
@@ -400,6 +402,7 @@ impl Callback {
         self.effects.place_item == Some(12187)
             && self.trigger == Trigger::Use
             && self.teleport.is_some()
+            && self.effects.merchant_entrance.is_some()
             && self.effects.encounter.as_ref().is_some_and(|encounter| {
                 encounter.monsters.len() == 7
                     && encounter
@@ -752,6 +755,12 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || effects.item_cycle.is_some()
             || effects.encounter.is_some()
     }) {
+        return false;
+    }
+    if effects
+        .merchant_entrance
+        .is_some_and(|entrance| !pos(entrance) || !callback.starts_merchant_wave())
+    {
         return false;
     }
     if effects.place_item.is_some_and(|appearance| {
