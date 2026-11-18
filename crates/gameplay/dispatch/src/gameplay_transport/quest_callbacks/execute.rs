@@ -670,9 +670,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return UseDisposition::Rejected;
                 }
             }
-        } else {
-            match destination {
-                Some(to) => match crate::map::floor::prepare_scripted_quest_teleport_facing(
+        } else if let Some(to) = destination {
+            let facing = facing.or(callback.effects.facing.map(super::effects::facing));
+            // Crystal actions_mission09.lua:26-30 moves the folio reader with
+            // Creature:teleportTo, which accepts an occupied destination tile.
+            let proof = if callback.effects.random_use.is_some() && callback.teleport == Some(to) {
+                crate::map::floor::prepare_quest_teleport_to_present_tile(
+                    runtime,
+                    self.movement_cells(),
+                    actor,
+                    session,
+                    expected,
+                    local(to),
+                    facing,
+                )
+            } else {
+                crate::map::floor::prepare_scripted_quest_teleport_facing(
                     runtime,
                     self.movement_cells(),
                     actor,
@@ -681,14 +694,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     local(to),
                     blocked,
                     &closed,
-                    facing.or(callback.effects.facing.map(super::effects::facing)),
+                    facing,
                     callback.effects.scripted_teleport,
-                ) {
-                    Ok(proof) => Some(proof),
-                    Err(_) => return UseDisposition::NotPossible,
-                },
-                None => None,
+                )
+            };
+            match proof {
+                Ok(proof) => Some(proof),
+                Err(_) => return UseDisposition::NotPossible,
             }
+        } else {
+            None
         };
         let source_flame =
             oteryn_gameplay_quests::quest::rotten_blood::flames::by_key(&callback.key).is_some();

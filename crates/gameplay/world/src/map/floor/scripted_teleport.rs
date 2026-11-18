@@ -3,7 +3,8 @@
 //! retain current actor/session and map presence. Each source binds its landing policy.
 use super::*;
 
-struct ScriptedTeleport<'a> {
+/// A sealed source movement bound to the current player and pinned map.
+pub struct ScriptedTeleport<'a> {
     cells: &'a NativeEntryMovementCells,
     actor: ExactActorRef,
     session: GameSessionId,
@@ -34,7 +35,7 @@ pub fn prepare_scripted_quest_teleport_facing<'a>(
     closed: &'a dyn CellBlocker,
     facing: Option<MovementFacing>,
     scripted: bool,
-) -> Result<impl crate::foundation::SourceStepCommitProof + 'a, MovementError> {
+) -> Result<ScriptedTeleport<'a>, MovementError> {
     let proof = ScriptedTeleport {
         cells,
         actor,
@@ -53,23 +54,24 @@ pub fn prepare_scripted_quest_teleport_facing<'a>(
 }
 
 /// Pinned Crystal game.cpp:3167-3192 uses FLAG_NOLIMIT on an existing tile.
-/// Used by carried source relocation after its own actor and custody guards.
-pub fn prepare_carried_quest_relocation<'a>(
+/// Used by source callbacks that invoke Creature:teleportTo.
+pub fn prepare_quest_teleport_to_present_tile<'a>(
     runtime: &ChannelRuntimeV1,
     cells: &'a NativeEntryMovementCells,
     actor: ExactActorRef,
     session: GameSessionId,
     expected: MovementPositionSnapshot,
     destination: MovementLocalPosition,
-) -> Result<impl crate::foundation::SourceStepCommitProof + 'a, MovementError> {
+    facing: Option<MovementFacing>,
+) -> Result<ScriptedTeleport<'a>, MovementError> {
     // creature_functions.cpp:895-906 makes horizontal displacement take priority.
     let origin = expected.position();
-    let facing = match destination.x.cmp(&origin.x) {
+    let facing = facing.unwrap_or_else(|| match destination.x.cmp(&origin.x) {
         std::cmp::Ordering::Less => MovementFacing::West,
         std::cmp::Ordering::Greater => MovementFacing::East,
         std::cmp::Ordering::Equal if destination.y > origin.y => MovementFacing::South,
         std::cmp::Ordering::Equal => MovementFacing::North,
-    };
+    });
     let proof = ScriptedTeleport {
         cells,
         actor,

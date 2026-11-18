@@ -299,7 +299,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .destinations
                 .iter()
                 .map(|destination| {
-                    crate::map::floor::prepare_carried_quest_relocation(
+                    crate::map::floor::prepare_quest_teleport_to_present_tile(
                         runtime,
                         self.movement_cells(),
                         actor,
@@ -310,6 +310,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             y: i32::from(destination.y),
                             floor: -i16::from(destination.floor),
                         },
+                        None,
                     )
                 })
                 .collect::<Result<Vec<_>, _>>();
