@@ -5,7 +5,7 @@ use crate::gameplay_transport::{
     connection::{FreshAdmissionAuthority, UseCommand},
     item_move::{LoopMove, LoopMoveResult, LoopTarget},
     item_view::ItemKey,
-    loop_move::move_loop_item,
+    loop_move::{loop_ground, move_loop_item},
 };
 use oteryn_gameplay_quests::quest::{
     QuestTrack,
@@ -26,10 +26,20 @@ fn cat_basket_creates_a_portable_floor_toy_and_despawns_its_exact_kitty_after_te
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("foolish-cat-basket", move || scenario(admin))
+    super::kill_reward_e2e::scenario_thread::run("foolish-cat-basket", move || scenario(admin, false))
 }
 
-fn scenario(admin: String) -> TestResult {
+#[test]
+fn cat_basket_floor_reward_refreshes_ground_after_an_interrupted_use_acknowledgement() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("foolish-cat-basket-interrupted", move || {
+        scenario(admin, true)
+    })
+}
+
+fn scenario(admin: String, interrupted: bool) -> TestResult {
     // Crystal 201189f8 data-global/scripts/quests/what_a_foolish_quest/action_cat_basket.lua:18-39.
     let basket = Position {
         x: 32311,
@@ -78,7 +88,7 @@ fn scenario(admin: String) -> TestResult {
                 max: 1,
             },
         ],
-        async |owner, admitted, h, fence| {
+        async move |owner, admitted, h, fence| {
             let _clock = owner.freeze_owner_clock_for_test();
             let used_at = 2_000_000;
             let deadline = used_at + 10_000_000;
@@ -89,6 +99,18 @@ fn scenario(admin: String) -> TestResult {
                 .store(used_at + 1, Ordering::Relaxed);
             let map = owner.bundle_map().ok_or("basket map")?;
             let (_, target) = tool_fixture::placement(map, basket, 2)?;
+            let projection_before = if interrupted {
+                let index = owner.active_generation
+                    .and_then(|generation| generation.native_gameplay())
+                    .and_then(|content| content.item_index())
+                    .map(|index| index.as_ref());
+                let cached = loop_ground(owner, map.overlay.base(), index)
+                    .await.ok_or("pre-USE Ground projection")?;
+                owner.states.quest_callbacks.interrupt_after_commit.store(true, Ordering::Release);
+                Some((cached, index))
+            } else {
+                None
+            };
             let outcome = owner
                 .use_object(
                     admitted.runtime_actor.ok_or("actor")?,
@@ -100,6 +122,22 @@ fn scenario(admin: String) -> TestResult {
                     target,
                 )
                 .await;
+            if let Some((before, index)) = projection_before {
+                assert_eq!(outcome.disposition, UseDisposition::Rejected);
+                assert!(owner.has_pending_quest_callback(admitted.game_session_id));
+                let toy: Vec<u8> = sqlx::query_scalar(
+                    "SELECT uuid_send(g.item_instance_id) FROM game_item_ground_locations g
+                     JOIN game_native_map_item_receipts r USING(item_instance_id)
+                     WHERE r.definition_key=$1",
+                ).bind(TOY).fetch_one(&h.pool).await?;
+                let toy: [u8; 16] = toy.try_into().map_err(|_| "floor toy item UUID")?;
+                assert!(before.ground_entry(&toy).is_none());
+                let after = loop_ground(owner, map.overlay.base(), index)
+                    .await.ok_or("post-USE Ground projection")?;
+                let (at, _) = after.ground_entry(&toy).ok_or("committed toy in Ground projection")?;
+                assert_eq!((at.x, at.y, at.floor), (basket.x, basket.y, basket.floor));
+                return Ok(());
+            }
             assert_eq!(outcome.disposition, UseDisposition::Committed);
             let kitty = {
                 let runtime = owner.runtime.lock().await;

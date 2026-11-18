@@ -1169,6 +1169,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 } else {
                     None
                 };
+            // A floor reward may be committed even if USE acknowledgement is lost.
+            let floor_change = super::super::loop_move::GroundChange(
+                callback
+                    .effects
+                    .floor_reward
+                    .as_ref()
+                    .map(|_| &self.states.loop_ground),
+            );
             let outcome = if let Some(input) = &flame {
                 slot.commit_rotten_flame_use(
                     self.root,
@@ -1200,6 +1208,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
             };
+            drop(floor_change);
             if callback.key == oteryn_gameplay_quests::quest::dreamer_carrot::KEY
                 && matches!(&outcome,Ok(QuestTransitionOutcome::Refused(
                     oteryn_gameplay_quests::quest::QuestRefusal::SourceOfferingMissing
