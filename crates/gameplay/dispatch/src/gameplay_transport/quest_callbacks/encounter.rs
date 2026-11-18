@@ -152,21 +152,49 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let mut players = Vec::new();
         let mut proofs = Vec::new();
-        for member in &encounter.players {
-            let mut occupants = census
-                .iter()
-                .filter(|(_, pos, _)| pos.position() == local(member.from));
-            let Some(&(who, expected, Some(member_session))) = occupants.next() else {
-                // Cults collects whoever stands on the five source staging tiles.
-                if encounter.phase
-                    == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults)
-                {
+        let mut staging = Vec::new();
+        if let Some(area) = encounter.staging_area {
+            for &(who, expected, member_session) in &census {
+                let Some(member_session) = member_session else {
                     continue;
+                };
+                if native(expected.position()).is_some_and(|position| {
+                    area.contains(Position {
+                        x: position.x,
+                        y: position.y,
+                        floor: position.floor,
+                    })
+                }) {
+                    if staging.len() == 16 {
+                        return UseDisposition::Occupied;
+                    }
+                    staging.push((who, expected, member_session, area.destination));
                 }
-                return UseDisposition::Rejected;
-            };
-            if occupants.next().is_some()
-                || states.is_dead(who)
+            }
+        } else {
+            for member in &encounter.players {
+                let mut occupants = census
+                    .iter()
+                    .filter(|(_, pos, _)| pos.position() == local(member.from));
+                let Some(&(who, expected, Some(member_session))) = occupants.next() else {
+                    // Cults collects whoever stands on the five source staging tiles.
+                    if encounter.phase
+                        == Some(
+                            oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults,
+                        )
+                    {
+                        continue;
+                    }
+                    return UseDisposition::Rejected;
+                };
+                if occupants.next().is_some() {
+                    return UseDisposition::Rejected;
+                }
+                staging.push((who, expected, member_session, member.to));
+            }
+        }
+        for (who, expected, member_session, destination) in staging {
+            if states.is_dead(who)
                 || !states.spell_idle(runtime, who, member_session)
                 || states
                     .get(runtime, who, member_session)
@@ -207,15 +235,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let blocked =
                 super::super::pvp_live::pz_blocked(states, who, member_session, self.owner_now());
-            let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+            let Ok(proof) = crate::map::floor::prepare_quest_encounter_admission(
                 runtime,
                 &self.movement_cells,
                 who,
                 member_session,
                 expected,
-                local(member.to),
+                local(destination),
                 blocked,
                 &closed,
+                encounter.staging_area.is_some(),
             ) else {
                 return UseDisposition::NotPossible;
             };

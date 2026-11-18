@@ -32,7 +32,10 @@ pub struct TargetTransform {
     pub position: Position,
     pub from: u16,
     pub to: u16,
-    pub reset_after_ms: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reset_after_ms: Option<u32>,
+    #[serde(default, skip_serializing_if = "super::is_false")]
+    pub if_present: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -303,6 +306,9 @@ pub struct Encounter {
     pub minimum_level: u32,
     pub players: Vec<EncounterPlayer>,
     pub monsters: Vec<EncounterMonster>,
+    /// Gather the players currently standing within a source spectator area.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub staging_area: Option<EncounterStagingArea>,
     pub room_min: Position,
     pub room_max: Position,
     /// A value-free source switch schedules native monsters without moving a party.
@@ -311,6 +317,22 @@ pub struct Encounter {
     /// Source phases run on the shared encounter owner after atomic party admission.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phase: Option<EncounterPhase>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct EncounterStagingArea {
+    pub minimum: Position,
+    pub maximum: Position,
+    pub destination: Position,
+}
+
+impl EncounterStagingArea {
+    pub fn contains(self, position: Position) -> bool {
+        position.floor == self.minimum.floor
+            && (self.minimum.x..=self.maximum.x).contains(&position.x)
+            && (self.minimum.y..=self.maximum.y).contains(&position.y)
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -692,11 +714,25 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || target.from == 0
                 || target.to == 0
                 || target.from == target.to
-                || !(1..=3_600_000).contains(&target.reset_after_ms)
+                || target
+                    .reset_after_ms
+                    .is_some_and(|delay| !(1..=3_600_000).contains(&delay) || target.if_present)
                 || callback.actor_kind != ActorKind::Player
-                || (callback.trigger != Trigger::Use && !callback.has_fenced_step_reward())
                 || !callback.has_personal_state()
-                || (callback.item_on_target.is_none() && !callback.has_fenced_step_reward())
+                || if target.reset_after_ms.is_some() {
+                    (callback.trigger != Trigger::Use && !callback.has_fenced_step_reward())
+                        || (callback.item_on_target.is_none() && !callback.has_fenced_step_reward())
+                        || effects.transform.is_some()
+                        || effects.reset_after_ms.is_some()
+                        || effects.encounter.is_some()
+                } else {
+                    !callback.requires_world_admission
+                        || !matches!(callback.trigger, Trigger::Use | Trigger::StepIn)
+                        || effects
+                            .encounter
+                            .as_ref()
+                            .is_some_and(|encounter| encounter.timing.is_some())
+                }
                 || callback
                     .selector
                     .native
@@ -705,12 +741,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || callback.lever.is_some()
                 || callback.reversible
                 || !callback.passages.is_empty()
-                || effects.transform.is_some()
-                || effects.reset_after_ms.is_some()
                 || effects.portals.is_some()
                 || effects.item_presence.is_some()
                 || effects.item_cycle.is_some()
-                || effects.encounter.is_some()
         })
         || effects.transform == Some(0)
         || (effects.facing.is_some() && callback.teleport.is_none())
@@ -774,7 +807,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && !callback.reversible
             && callback.offerings.is_empty()
             && callback.item_on_target.is_none()
-            && encounter.players.len() == 1
+            && (encounter.players.len() == 1 || encounter.staging_area.is_some())
             && encounter.timing.is_none()
             && effects.item_reward.is_none()
             && effects.outfit_reward.is_none()
@@ -843,7 +876,21 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
-        if (encounter.minimum_level == 0 && !source_party)
+        let gathering = encounter.staging_area.is_some();
+        if encounter.staging_area.is_some_and(|area| {
+            !encounter.players.is_empty()
+                || encounter.timing.is_some()
+                || encounter.phase.is_some()
+                || !pos(area.minimum)
+                || !pos(area.maximum)
+                || area.minimum.floor != area.maximum.floor
+                || area.minimum.floor == encounter.room_min.floor
+                || area.minimum.x > area.maximum.x
+                || area.minimum.y > area.maximum.y
+                || area.maximum.x - area.minimum.x >= 64
+                || area.maximum.y - area.minimum.y >= 64
+                || !in_room(area.destination)
+        }) || (encounter.minimum_level == 0 && !source_party && !gathering)
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()
@@ -861,8 +908,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         * (u64::from(encounter.room_max.y.saturating_sub(encounter.room_min.y)) + 1)
                         > 4096
             } else {
-                !(1..=if encounter.phase.is_some() { 16 } else { 8 })
-                    .contains(&encounter.players.len())
+                !gathering
+                    && !(1..=if encounter.phase.is_some() { 16 } else { 8 })
+                        .contains(&encounter.players.len())
             }
             || !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                 .contains(&encounter.monsters.len())

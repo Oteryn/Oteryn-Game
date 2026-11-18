@@ -243,10 +243,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(due) = lifecycle_now.checked_add(u64::from(delay) * 1_000) else {
                 return UseDisposition::Exhausted;
             };
-            projection = Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
-                due,
-                restore: before,
-            });
+            if let Some(crate::map::facts::QuestCallbackProjection::ReadsetTransforms {
+                reset,
+                ..
+            }) = projection.as_mut()
+            {
+                *reset = Some((due, before));
+            } else {
+                projection = Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
+                    due,
+                    restore: before,
+                });
+            }
         }
         if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {
             let Some(crate::map::facts::QuestCallbackProjection::TimedTransform { due, restore }) =
@@ -269,6 +277,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
                 key, ..
             }) => Some(*key),
+            Some(crate::map::facts::QuestCallbackProjection::ReadsetTransforms {
+                entries, ..
+            }) if entries.len() == 1 => entries.first().map(|(key, _, _)| *key),
             _ => None,
         };
         if let Some(target) =
@@ -467,6 +478,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(result) => return result,
         };
         let projection_target = match &projection {
+            Some(crate::map::facts::QuestCallbackProjection::ReadsetTransforms {
+                entries, ..
+            }) if entries.len() == 1 => entries.first().map(|(key, _, _)| *key),
             Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
                 key, ..
             }) => Some(*key),
@@ -1348,6 +1362,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                     pending.remove(&session);
                 }
+                if fresh_effects {
+                    if let Some(magic) = &callback.effects.magic {
+                        map.facts
+                            .emit_movement_effect(tile(magic.position), magic.effect);
+                    }
+                    if let Some(speech) = &callback.effects.player_speech {
+                        let _ = map
+                            .facts
+                            .emit_movement_speech(crate::map::facts::MovementSpeech {
+                                speaker: actor,
+                                position: native(expected.position()).unwrap_or(pos),
+                                talk_type: 36,
+                                text: speech.clone(),
+                                captured_name: None,
+                            });
+                    }
+                }
                 if callback.has_personal_state()
                     && let Some(message) = success_message
                 {
@@ -1383,16 +1414,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 record.flame_effect_sent = true;
             }
         } else {
-            if let Some(target) = &callback.effects.target_transform
+            if let Some(delay) = callback
+                .effects
+                .target_transform
+                .as_ref()
+                .and_then(|target| target.reset_after_ms)
                 && let Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
                     due,
                     ..
                 }) = projection.as_mut()
             {
-                let Some(published_due) = self
-                    .owner_now()
-                    .get()
-                    .checked_add(u64::from(target.reset_after_ms) * 1_000)
+                let Some(published_due) =
+                    self.owner_now().get().checked_add(u64::from(delay) * 1_000)
                 else {
                     return UseDisposition::Exhausted;
                 };

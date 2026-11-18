@@ -92,7 +92,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 pub(super) fn prepare(
     map: &BundleMap,
     target: &TargetTransform,
-) -> Result<QuestCallbackProjection, UseDisposition> {
+) -> Result<Option<QuestCallbackProjection>, UseDisposition> {
     let at = tile(target.position);
     if map.facts.house_tile(at) {
         return Err(UseDisposition::Rejected);
@@ -117,7 +117,13 @@ pub(super) fn prepare(
                 && !before.pickupable)
                 .then_some((key, before))
         });
-    let (key, restore) = candidates.next().ok_or(UseDisposition::NothingToUse)?;
+    let Some((key, restore)) = candidates.next() else {
+        return if target.if_present {
+            Ok(None)
+        } else {
+            Err(UseDisposition::NothingToUse)
+        };
+    };
     if candidates.next().is_some() {
         return Err(UseDisposition::Rejected);
     }
@@ -130,11 +136,18 @@ pub(super) fn prepare(
         .quest_callback_replacement(key, target.to)
         .filter(|facts| !facts.pickupable)
         .ok_or(UseDisposition::Rejected)?;
-    Ok(QuestCallbackProjection::TimedTargetTransform {
-        key,
-        expected,
-        after,
-        restore,
-        due: 0,
-    })
+    Ok(Some(if target.reset_after_ms.is_some() {
+        QuestCallbackProjection::TimedTargetTransform {
+            key,
+            expected,
+            after,
+            restore,
+            due: 0,
+        }
+    } else {
+        QuestCallbackProjection::ReadsetTransforms {
+            entries: vec![(key, expected, Some(after))],
+            reset: None,
+        }
+    }))
 }
