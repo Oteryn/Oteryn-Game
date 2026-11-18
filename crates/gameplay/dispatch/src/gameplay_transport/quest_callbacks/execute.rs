@@ -1693,6 +1693,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 states.owner_wake.notify_one();
             }
             map.facts.emit_movement_effect(pos, buff.magic_effect);
+            // A lost acknowledgement can replay the SQL receipt before this step
+            // publishes the actor successor. Preserve the mark's message on that turn.
+            if !fresh_effects {
+                success_message = callback.success_message.clone();
+            }
         }
         if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
             pending.remove(&session);

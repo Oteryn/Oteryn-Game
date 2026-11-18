@@ -174,7 +174,7 @@ async fn exercise(h: &Harness) -> TestResult {
         assert_eq!(talk(owner, admitted, npc, 7, "1.5").await?, ["Give a whole positive quantity."]);
         assert_eq!(talk(owner, admitted, npc, 8, "4").await?, ["Your balance cannot cover that quantity."]);
         assert_eq!(amount(GOLD).await?, 303);
-        assert_eq!(talk(owner, admitted, npc, 9, "2").await?, ["Clusters delivered."]);
+        assert_eq!(talk(owner, admitted, npc, 9, "2.0").await?, ["Clusters delivered."]);
         assert_eq!(amount(GOLD).await?, 103);
         talk(owner, admitted, npc, 10, "trade").await?;
         assert_eq!(talk(owner, admitted, npc, 11, "1").await?, ["Clusters delivered."]);
