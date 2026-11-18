@@ -33,7 +33,7 @@ fn seclib1_isle_scythe_uses_selected_tool_and_exact_permission() -> TestResult {
             "teleport": DESTINATION,
             "storage": [{
                 "track":"oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
-                "minimum":7,"maximum":7,"set":7,"preserve":true
+                "minimum":7,"maximum":7,"set":7
             }],
             "offerings": [],
             "item_on_target": {

@@ -116,7 +116,7 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
     exercise_use(callback, appearance, ordinal, stage, None)
 }
 
-pub(in crate::gameplay_transport::monk_save_postgres_tests) fn exercise_selected_tool(
+pub(in crate::gameplay_transport::monk_save::postgres_tests) fn exercise_selected_tool(
     callback: Callback,
     appearance: u16,
     ordinal: u8,

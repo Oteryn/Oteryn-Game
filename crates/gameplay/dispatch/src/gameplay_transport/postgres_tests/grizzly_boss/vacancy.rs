@@ -219,7 +219,7 @@ async fn teleport(
     Ok(())
 }
 
-pub(in crate::gameplay_transport::monk_save_postgres_tests) async fn second_player(
+pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn second_player(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     deps: &Dependencies,
     h: &Harness,
