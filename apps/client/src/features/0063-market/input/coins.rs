@@ -6,6 +6,9 @@ use crate::{
     },
 };
 use tokio::sync::mpsc::UnboundedSender;
+#[cfg(bevy_shell)]
+#[path = "coins/bound.rs"]
+mod bound;
 impl PlayLink {
     pub fn coin_market_control(&self, action: usize, fields: [String; 3]) -> bool {
         let mut mailbox = lock(&self.mailbox);
@@ -67,50 +70,6 @@ fn submit(
     true
 }
 
-pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {
-    use crate::play::feature_0115_mail::view::form::Form;
-    Form {
-        title: "Coin market — Ctrl+Alt+F8",
-        labels: &[
-            "Coin amount",
-            "Gold per coin",
-            "Offer or transaction row number",
-        ],
-        buttons: &[
-            "Book",
-            "My Offers",
-            "Review sell",
-            "Review buy",
-            "Review take",
-            "Review cancel",
-            "Confirm reviewed terms",
-            "Retry confirmation",
-            "Coin history",
-            "Next history page",
-            "Transaction details",
-            "Coin balances",
-            "Refresh last operation",
-            "Dismiss review",
-            "Next offers",
-        ],
-        snapshot: |m| {
-            (
-                m.market.coins.open && !m.market_shutdown,
-                m.market.coins.pending.is_some(),
-                m.market.coins.fields.to_vec(),
-                oteryn_client_ui::market::coin_panel_text(&m.market),
-            )
-        },
-        set_open: |m, v| m.market.coins.open = v,
-        submit: |m, commands, action, fields| {
-            let mut values = [String::new(), String::new(), String::new()];
-            for (slot, value) in values.iter_mut().zip(fields) {
-                *slot = value;
-            }
-            submit(m, commands, action, values);
-        },
-    }
-}
 #[cfg(test)]
 #[path="coins/tests.rs"]
 mod tests;

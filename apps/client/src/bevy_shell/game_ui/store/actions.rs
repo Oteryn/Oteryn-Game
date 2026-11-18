@@ -125,6 +125,7 @@ pub(super) fn perform(
             );
             true
         }
+        Kind::RetryPurchase => link.store_retry_purchase_bound(panel),
         Kind::Search | Kind::ClearSearch | Kind::Sort(_) => {
             if action.kind == Kind::ClearSearch {
                 state.fields[3].clear();

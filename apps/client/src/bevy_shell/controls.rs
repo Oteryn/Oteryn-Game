@@ -261,7 +261,9 @@ impl HostOwner {
             return;
         }
         if oteryn_client_ui::market::coin_open_key(&routed) {
-            play.link.open_coin_market();
+            if !play.view.gameplay_input_blocked(&play.link) {
+                play.link.coin_market_open_bound();
+            }
             return;
         }
         if oteryn_client_ui::market::open_key(&routed) {

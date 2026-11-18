@@ -292,6 +292,7 @@ pub(super) fn render(
         (Kind::Intent(Intent::OwnOffers), "My Offers"),
         (Kind::Book(0), "Current Offers"),
         (Kind::Intent(Intent::History), "Offer History"),
+        (Kind::Coins, "Coin Market"),
         (Kind::Close, "Close"),
     ] {
         button(commands, skin, footer, key, kind, title, 75.);
@@ -473,6 +474,7 @@ pub(super) fn button(
             source::button(skin.buttons.clone(), width),
             Action { key, kind },
             Name::new(match kind {
+                Kind::Coins => "market.operations.coins",
                 Kind::Browse => "market.tab.browse",
                 Kind::Intent(Intent::OwnOffers) => "market.tab.own",
                 Kind::Intent(Intent::History) => "market.tab.history",

@@ -31,6 +31,7 @@ struct Action {
 #[derive(Clone, Copy)]
 enum Kind {
     Close,
+    Coins,
     Search,
     Category(usize),
     Item(usize),

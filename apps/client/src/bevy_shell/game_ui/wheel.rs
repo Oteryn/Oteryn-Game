@@ -57,6 +57,7 @@ fn project(
     skins: Res<Skins>,
     mut state: ResMut<State>,
     mut focus: ResMut<InputFocus>,
+    guard: ModalGuard,
     queries: (
         Query<&ChildOf>,
         Query<(&presets::Field, &bevy::text::EditableText)>,
@@ -64,7 +65,11 @@ fn project(
 ) {
     let (parents, fields) = queries;
     let panel = owner.play.as_ref().map(|play| {
-        play.link.wheel_poll_preview();
+        if !owner.modal_active()
+            && guard.allows_focus(state.widgets.as_ref().map(|widgets| widgets.overlay))
+        {
+            play.link.wheel_poll_preview();
+        }
         play.link.wheel_panel()
     });
     let Some(panel) = panel.filter(|p| p.open) else {

@@ -76,7 +76,6 @@ const FORMS: &[FeatureForm] = &[
     entry(crate::play::feature_0054_training::view::form, None),
     entry(crate::play::feature_0055_guild_bank::view::form, None),
     entry(crate::play::feature_0059_house_move_out::view::form, None),
-    entry(crate::play::feature_0063_market::input::coins::form, None),
     entry(
         crate::play::feature_0080_chat_private_channel::view::form,
         None,

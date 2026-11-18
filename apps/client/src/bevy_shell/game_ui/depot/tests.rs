@@ -189,6 +189,43 @@ fn depot_withdraw_uses_displayed_ordinal_and_rejects_changed_snapshot() -> TestR
     Ok(())
 }
 
+#[test]
+fn depot_withdraw_rejects_replacement_session_with_the_same_snapshot() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture()?;
+    let initial = commands.try_recv()?;
+    assert!(matches!(initial, PlayCommand::Depot(..)));
+    outbox.bevy_depot_result(Some(reply()));
+    app.update();
+    let kind = Kind::Request(Intent::Withdraw(0));
+    let stale = control(&mut app, kind)?;
+
+    let (replacement, mut replacement_commands, replacement_outbox) = play_channel();
+    replacement.use_shared_frontend();
+    replacement_outbox.bevy_depot_initialize(true);
+    replacement.open_depot();
+    let initial = replacement_commands.try_recv()?;
+    assert!(matches!(initial, PlayCommand::Depot(..)));
+    replacement_outbox.bevy_depot_result(Some(reply()));
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        let active = owner.play.as_mut().ok_or("missing depot session")?;
+        assert_eq!(active.link.depot_panel(), replacement.depot_panel());
+        active.link = replacement;
+        owner.enter_character(Some([7; 16]));
+    }
+
+    app.world_mut().trigger(Activate { entity: stale });
+    assert!(replacement_commands.try_recv().is_err());
+    assert!(commands.try_recv().is_err());
+    app.update();
+    click(&mut app, kind)?;
+    let PlayCommand::Depot(withdraw, None) = replacement_commands.try_recv()? else {
+        return Err("missing withdrawal from replacement session".into());
+    };
+    assert_eq!(withdraw.action, DepotAction::Withdraw(81));
+    Ok(())
+}
+
 /// Tibia Global's Manual Sort Mode (Shift+S, capability 510) in the depot: the deposit button
 /// holds the item, and the clicked box row sends the deposit with that row's box slot.
 #[test]

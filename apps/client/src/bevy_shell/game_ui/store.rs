@@ -43,6 +43,7 @@ enum Kind {
     Page(i8),
     Product(usize),
     Products,
+    RetryPurchase,
     Search,
     Sort(u8),
     TokenPayment,

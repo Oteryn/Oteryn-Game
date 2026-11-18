@@ -141,6 +141,45 @@ impl PlayLink {
     }
 }
 
+#[cfg(bevy_shell)]
+impl PlayLink {
+    pub(crate) fn store_retry_purchase_bound(
+        &self,
+        expected: &oteryn_client_ui::store::StorePanel,
+    ) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.activity_reset_commands
+            || mailbox.world_input_blocked()
+            || mailbox.server_modal.is_active()
+            || self.commands.is_closed()
+            || mailbox.store != *expected
+            || !expected.open
+            || !expected.selected
+            || expected.pending
+            || expected.gift.pending.is_some()
+            || expected.gift.confirmed.is_some()
+            || expected.hireling_modal_id.is_some()
+            || expected.confirmed_purchase.is_none()
+        {
+            return false;
+        }
+        let mut prepared = expected.clone();
+        prepared.purchase_confirmed = true;
+        let Some(command) = oteryn_client_ui::store::purchase(&mut prepared) else {
+            return false;
+        };
+        if self
+            .commands
+            .send(PlayCommand::ServerMechanic(command))
+            .is_err()
+        {
+            return false;
+        }
+        mailbox.store = prepared;
+        true
+    }
+}
+
 #[path = "input/gift.rs"]
 pub(in crate::play) mod gift;
 

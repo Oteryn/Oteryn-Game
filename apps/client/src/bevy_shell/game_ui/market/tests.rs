@@ -343,6 +343,7 @@ fn pending_search_is_cancelled_when_its_original_editor_is_removed() -> TestResu
     Ok(())
 }
 
+mod coins;
 mod lifecycle;
 
 mod offers;
@@ -401,6 +402,7 @@ fn market_window_has_global_geometry_bottom_row_and_category_icon_slots() -> Tes
             "My Offers",
             "Current Offers",
             "Offer History",
+            "Coin Market",
             "Close"
         ]
         .map(|caption| (caption.to_owned(), px(75.)))

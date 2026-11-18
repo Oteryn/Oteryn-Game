@@ -1,12 +1,13 @@
 //! Installation of the shared in-game presentations.
 mod tools;
 use super::{
-    actions, analyser, bestiary, bosstiary, bug_report, chat, cyclopedia, cyclopedia_items,
-    cyclopedia_map, cyclopedia_tracker, depot, feature_dialogs, feature_forms, forge, highscores,
-    hotkeys, hud, hud_panes, imbuement_tracker, imbuing, inventory, item_details, journal, layout,
-    market, minimap, modal, npc_shop, options, outfit, party, prey, proficiency, project,
-    projection, quick_loot, reward_wall, rule_violation, satellite_map, stash, store, store_inbox,
-    task_board, task_tracker, team_finder, trade, tutorial, unjustified_points, wheel,
+    actions, analyser, bestiary, bosstiary, bug_report, chat, coin_market, cyclopedia,
+    cyclopedia_items, cyclopedia_map, cyclopedia_tracker, depot, feature_dialogs, feature_forms,
+    forge, highscores, hotkeys, hud, hud_panes, imbuement_tracker, imbuing, inventory,
+    item_details, journal, layout, market, minimap, modal, npc_shop, options, outfit, party, prey,
+    proficiency, project, projection, quick_loot, reward_wall, rule_violation, satellite_map,
+    stash, store, store_inbox, task_board, task_tracker, team_finder, trade, tutorial,
+    unjustified_points, wheel,
 };
 use bevy::prelude::*;
 use tools::project_tools;
@@ -18,6 +19,7 @@ pub(in crate::bevy_shell) fn install(app: &mut App) {
     bestiary::install(app);
     bug_report::install(app);
     chat::install(app);
+    coin_market::install(app);
     install_container_tools(app);
     cyclopedia::install(app);
     cyclopedia_items::install(app);

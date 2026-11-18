@@ -122,6 +122,17 @@ pub(super) fn render(
         );
     }
     let ready = panel.selected && !panel.pending && panel.gift.pending.is_none();
+    if panel.confirmed_purchase.is_some() {
+        button(
+            commands,
+            skin,
+            root,
+            key,
+            Kind::RetryPurchase,
+            "Retry purchase",
+            ready && panel.gift.confirmed.is_none() && panel.hireling_modal_id.is_none(),
+        );
+    }
     let tabs = row(commands, root);
     for (kind, title) in [
         (Kind::Products, "Products"),
@@ -350,26 +361,24 @@ fn products(
                 ready,
             );
         }
-        button(
-            commands,
-            skin,
-            details,
-            key,
-            Kind::Buy,
-            if panel.confirmed_purchase.is_some() {
-                "Retry purchase…"
-            } else {
-                "Buy…"
-            },
-            buy_enabled(panel),
-        );
-        if !buy_enabled(panel) && !panel.pending {
-            label(
+        if panel.confirmed_purchase.is_none() {
+            button(
                 commands,
                 skin,
                 details,
-                "Purchase unavailable: check balance and payment currency",
+                key,
+                Kind::Buy,
+                "Buy…",
+                buy_enabled(panel),
             );
+            if !buy_enabled(panel) && !panel.pending {
+                label(
+                    commands,
+                    skin,
+                    details,
+                    "Purchase unavailable: check balance and payment currency",
+                );
+            }
         }
     }
 }

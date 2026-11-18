@@ -87,10 +87,17 @@ fn rolling_log_applies_lexical_record_redaction() -> Result<(), Box<dyn std::err
         let mut writer = sink.make_writer();
         writeln!(writer, "{record}")?;
         drop(writer);
-        let path = fs::read_dir(directory.path().join("logs"))?
-            .next()
-            .ok_or("missing rolling log")??
-            .path();
+        let mut logs =
+            fs::read_dir(directory.path().join("logs"))?.collect::<Result<Vec<_>, _>>()?;
+        logs.retain(|entry| {
+            let name = entry.file_name();
+            let name = name.to_string_lossy();
+            name.starts_with("client-") && name.ends_with(".log")
+        });
+        let [log] = logs.as_slice() else {
+            return Err("expected exactly one daily rolling log".into());
+        };
+        let path = log.path();
         if fs::read_to_string(&path)? != format!("{expected}\n") {
             failures.push(record);
         }

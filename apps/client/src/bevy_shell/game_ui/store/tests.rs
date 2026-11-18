@@ -172,6 +172,67 @@ fn store_purchase_confirm_sends_intent() -> ResultTest {
     Ok(())
 }
 #[test]
+fn store_unresolved_purchase_retries_with_original_bytes() -> ResultTest {
+    for status in [CommandStatus::Rejected, CommandStatus::Accepted] {
+        let (mut app, mut rx, outbox) = fixture(250)?;
+        click(&mut app, Kind::Buy)?;
+        click(&mut app, Kind::Confirm)?;
+        let original = command(&mut rx)?;
+        reply(&outbox, Vec::new(), status);
+        app.update();
+        let store_panel = |app: &App| -> Result<StorePanel, Box<dyn std::error::Error>> {
+            Ok(app
+                .world()
+                .non_send::<HostOwner>()
+                .play
+                .as_ref()
+                .ok_or("play")?
+                .link
+                .store_panel())
+        };
+        let unresolved = store_panel(&app)?;
+        assert!(!unresolved.pending);
+        assert_eq!(
+            unresolved.confirmed_purchase.as_ref(),
+            Some(&original.payload)
+        );
+        assert!(text(&mut app).contains("Retry purchase"));
+        let retry = app
+            .world_mut()
+            .query::<(Entity, &Action)>()
+            .iter(app.world())
+            .find_map(|(entity, action)| (action.kind == Kind::RetryPurchase).then_some(entity))
+            .ok_or("retry action missing")?;
+        app.world_mut().trigger(Activate { entity: retry });
+        assert_eq!(command(&mut rx)?, original);
+        app.world_mut().trigger(Activate { entity: retry });
+        assert!(rx.try_recv().is_err());
+        let request = wire::decode_purchase_request(&original.payload)
+            .map_err(|error| format!("{error:?}"))?;
+        reply(
+            &outbox,
+            wire::encode_purchase_result(&wire::StorePurchaseResult {
+                code: wire::StorePurchaseCode::Accepted,
+                order_id: Some([7, 7, 7, 7, 7, 7, 0x70, 7, 0x80, 7, 7, 7, 7, 7, 7, 7]),
+                operation_id: Some(request.purchase_request_id),
+            })
+            .map_err(|error| format!("{error:?}"))?,
+            CommandStatus::Accepted,
+        );
+        app.update();
+        assert!(store_panel(&app)?.confirmed_purchase.is_none());
+        assert!(!text(&mut app).contains("Retry purchase"));
+        app.world_mut().trigger(Activate { entity: retry });
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        assert!(!link.store_retry_purchase_bound(&unresolved));
+        assert!(!link.store_retry_purchase_bound(&link.store_panel()));
+        assert!(rx.try_recv().is_err());
+    }
+    Ok(())
+}
+
+#[test]
 fn store_gift_panel() -> ResultTest {
     let (mut app, mut rx, outbox) = fixture(250)?;
     click(&mut app, Kind::Gift)?;

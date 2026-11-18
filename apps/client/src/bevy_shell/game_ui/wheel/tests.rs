@@ -84,6 +84,12 @@ fn publish(outbox: &Outbox, mut p: WheelPanel) {
     outbox.bevy_wheel_state(p);
 }
 fn fixture(panel: WheelPanel) -> Result<Fixture, Box<dyn std::error::Error>> {
+    fixture_with_modal(panel, None)
+}
+fn fixture_with_modal(
+    panel: WheelPanel,
+    display: Option<Display>,
+) -> Result<Fixture, Box<dyn std::error::Error>> {
     let (link, commands, outbox) = play_channel();
     link.use_shared_frontend();
     publish(&outbox, panel);
@@ -101,6 +107,16 @@ fn fixture(panel: WheelPanel) -> Result<Fixture, Box<dyn std::error::Error>> {
         .add_systems(Startup, crate::bevy_shell::ui::setup);
     super::super::modal::install(&mut app);
     install(&mut app);
+    if let Some(display) = display {
+        app.world_mut().spawn((
+            GameModal,
+            GlobalZIndex(999),
+            Node {
+                display,
+                ..default()
+            },
+        ));
+    }
     app.update();
     Ok((app, commands, outbox))
 }
@@ -146,6 +162,26 @@ fn click(app: &mut App, index: usize, remove: bool) -> TestResult {
     });
     Ok(())
 }
+#[test]
+fn wheel_ignores_hidden_modals() -> TestResult {
+    for display in [Display::None, Display::Flex] {
+        let mut pending_preview = model();
+        pending_preview.diagram.reply = None;
+        pending_preview.diagram.last = None;
+        let (_app, mut commands, _outbox) = fixture_with_modal(pending_preview, Some(display))?;
+        if display == Display::None {
+            assert!(matches!(commands.try_recv()?, PlayCommand::Feature(_)));
+        }
+        assert!(commands.try_recv().is_err());
+        let (mut app, mut commands, _outbox) = fixture_with_modal(model(), Some(display))?;
+        let close = control(&mut app, Kind::Close)?;
+        app.world_mut().trigger(Activate { entity: close });
+        assert_eq!(panel(&app)?.open, display == Display::Flex);
+        assert!(commands.try_recv().is_err());
+    }
+    Ok(())
+}
+
 #[test]
 fn wheel_nodes_from_model() -> TestResult {
     let mut p = model();

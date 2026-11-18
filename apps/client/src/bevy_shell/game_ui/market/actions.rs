@@ -160,6 +160,11 @@ pub(super) fn perform(owner: &HostOwner, state: &mut State, action: Action, sear
             }
         }
         Kind::Close => return false,
+        Kind::Coins => {
+            return owner.phase == crate::bevy_shell::owner::Phase::Playing
+                && !play.view.gameplay_input_blocked(&play.link)
+                && play.link.coin_market_open_bound();
+        }
     };
     play.link.market_query(query)
 }
