@@ -1,7 +1,7 @@
 //! Crystal 201189f8 fluids.lua:36-48 and 151-184.
 use super::*;
 use crate::foundation::{MovementLocalPosition, MovementPositionSnapshot};
-use crate::map::{boot::BundleMap, overlay::TilePos, view::MapFacts};
+use crate::map::{boot::BundleMap, overlay::TilePos};
 use oteryn_protocol_oteryn::world_object::WorldObjectTarget;
 
 const BLOOD: u8 = 5;
