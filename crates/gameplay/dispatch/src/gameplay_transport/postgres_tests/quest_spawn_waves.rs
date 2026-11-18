@@ -11,7 +11,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::{
     Callback, Encounter, EncounterMonster, EncounterPlayer, Position, Storage, Trigger,
     periodic_bosses::{PeriodicBoss, WeightedBoss},
     reactive_waves::{Chance, EarthHit},
-    waves::{Wave, WaveRun, WaveSpawn},
+    waves::{Wave, WaveCredit, WaveCreditEffect, WaveRun, WaveSpawn, WaveVictory},
 };
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::time::Duration;
@@ -43,6 +43,7 @@ const PEER_LANDING: Position = Position {
 const FIRST: Position = row(3);
 const SECOND: Position = row(4);
 const EXIT: Position = row(6);
+const VICTORY_EXIT: Position = row(7);
 const RAT: &str = "oteryn:creature.rat";
 const CAVE_RAT: &str = "oteryn:creature.cave_rat";
 const CREDIT: &str = "oteryn:quest-transition/wave-egress/fixture";
@@ -79,6 +80,16 @@ fn quest_step_admits_guarded_survival_trial_and_credits_at_deadline() -> TestRes
 }
 
 #[test]
+fn quest_wave_victory_requires_the_terminal_spawn_and_uses_reward_egress() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("quest-victory-egress", move || {
+        scenario(admin, Case::Victory)
+    })
+}
+
+#[test]
 fn quest_step_earth_hit_updates_current_vitals_once() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -92,6 +103,7 @@ fn quest_step_earth_hit_updates_current_vitals_once() -> TestResult {
 enum Case {
     Periodic,
     Waves,
+    Victory,
     SurvivalStep,
     EarthStep,
 }
@@ -103,6 +115,17 @@ fn scenario(admin: String, case: Case) -> TestResult {
         callback.key = "oteryn:quest-callback/fixture/quest-spawn".into();
         let initial_storage = std::mem::take(&mut callback.storage);
         callback.requires_world_admission = false;
+        let credit = || WaveCredit::Bound {
+            key: CREDIT.into(),
+            effects: vec![WaveCreditEffect {
+                track: TRACK.into(),
+                minimum: 0,
+                maximum: 0,
+                set: 1,
+            }],
+        };
+        let first_creature = if matches!(case, Case::Victory) { CAVE_RAT } else { RAT };
+        let terminal_position = if matches!(case, Case::Victory) { LANDING } else { SECOND };
         callback.effects.encounter = Some(Encounter {
             minimum_level: 0,
             room_min: LANDING,
@@ -128,8 +151,13 @@ fn scenario(admin: String, case: Case) -> TestResult {
             wave_run: Some(WaveRun {
                 timeout_ms: 10_000,
                 timeout_exit: EXIT,
-                timeout_credit: Some(CREDIT.into()),
-                victory: None,
+                timeout_credit: (!matches!(case, Case::Victory)).then(credit),
+                // Crystal the_new_frontier/creaturescripts_tirecz_kill.lua:19-34.
+                victory: matches!(case, Case::Victory).then(|| WaveVictory {
+                    creature: CAVE_RAT.into(),
+                    exit: VICTORY_EXIT,
+                    credit: Some(credit()),
+                }),
                 eject_room: false,
                 stay_at_stations: false,
                 hatch: None,
@@ -141,7 +169,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
                         maximum: 0,
                     },
                 ),
-                waves: [(1_000, FIRST, RAT), (3_000, SECOND, CAVE_RAT)]
+                waves: [(1_000, FIRST, first_creature), (3_000, terminal_position, CAVE_RAT)]
                     .into_iter()
                     .map(|(at_ms, position, creature)| Wave {
                         at_ms,
@@ -256,7 +284,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
-        if matches!(case, Case::Waves | Case::SurvivalStep) {
+        if matches!(case, Case::Waves | Case::Victory | Case::SurvivalStep) {
             owner.quest_catalogue = Some(std::sync::Arc::new(credit_catalogue(&callback)?));
         } else if matches!(case, Case::EarthStep) {
             assert!(
@@ -305,7 +333,10 @@ fn scenario(admin: String, case: Case) -> TestResult {
         )
         .await?;
         match case {
-            Case::Waves => wave_scenario(&h, &owner, &mut admitted, deps.actor).await?,
+            Case::Waves | Case::Victory => {
+                wave_scenario(&h, &owner, &mut admitted, deps.actor, matches!(case, Case::Victory))
+                    .await?
+            }
             Case::SurvivalStep => survival_step_scenario(&owner, &mut admitted, deps.actor).await?,
             Case::Periodic => periodic_scenario(&owner).await?,
             Case::EarthStep => earth_step_scenario(&owner, &mut admitted, deps.actor).await?,
@@ -324,31 +355,11 @@ fn scenario(admin: String, case: Case) -> TestResult {
 fn credit_catalogue(
     callback: &Callback,
 ) -> TestResult<oteryn_gameplay_quests::quest::QuestStateCatalogue> {
-    use oteryn_gameplay_quests::quest::{
-        QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
-        QuestTransition, authored_bindings::Bindings,
-    };
+    use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
     let base = QuestStateCatalogue::new(
         "content-1",
-        vec![QuestTrack {
-            key: TRACK.into(),
-            quest: callback.quest.clone(),
-            initial: 0,
-            min: 0,
-            max: 1,
-        }],
-        vec![QuestTransition {
-            key: CREDIT.into(),
-            quest: callback.quest.clone(),
-            completes: false,
-            experience: None,
-            world_change: None,
-            effects: vec![QuestEffect {
-                track: TRACK.into(),
-                from: QuestComparison::Between(0, 0),
-                effect: QuestEffectKind::Set(1),
-            }],
-        }],
+        Vec::new(),
+        Vec::new(),
     )
     .map_err(debug)?;
     let kind = match callback.trigger {
@@ -413,6 +424,7 @@ async fn wave_scenario(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     player: ExactActorRef,
+    victory: bool,
 ) -> TestResult {
     assert_eq!(
         use_room(owner, admitted, 1).await?,
@@ -466,13 +478,33 @@ async fn wave_scenario(
     let first = creatures(owner).await?;
     assert_eq!(first.len(), 1);
     assert_eq!(first[0].1, local(FIRST));
+    if victory {
+        project_wave_death(owner, first[0].0, b"first-wave").await?;
+        owner.drain_quest_encounter_deadlines().await;
+        assert_eq!(position(owner, player).await?, local(LANDING));
+        assert_eq!(position(owner, peer_actor).await?, local(PEER_LANDING));
+    }
     advance(owner, 2_000).await;
-    let both = creatures(owner).await?;
-    assert_eq!(both.len(), 2);
-    assert!(both.iter().any(|(_, position)| *position == local(SECOND)));
-    advance(owner, 7_000).await;
-    assert_eq!(position(owner, player).await?, local(EXIT));
-    assert_eq!(position(owner, peer_actor).await?, local(EXIT));
+    let active = creatures(owner).await?;
+    assert_eq!(active.len(), if victory { 1 } else { 2 });
+    let exit = if victory {
+        let [(terminal, at)] = active.as_slice() else {
+            return Err("terminal wave spawn".into());
+        };
+        // Crystal map.cpp:272-307 tries adjacent cells when the bound center
+        // is occupied. Stay inside the room and clear of both staged players.
+        assert_eq!(at.x, local(FIRST).x);
+        assert!((local(FIRST).y..=local(PEER_LANDING).y).contains(&at.y));
+        project_wave_death(owner, *terminal, b"terminal-wave").await?;
+        owner.drain_quest_encounter_deadlines().await;
+        VICTORY_EXIT
+    } else {
+        assert!(active.iter().any(|(_, at)| *at == local(SECOND)));
+        advance(owner, 7_000).await;
+        EXIT
+    };
+    assert_eq!(position(owner, player).await?, local(exit));
+    assert_eq!(position(owner, peer_actor).await?, local(exit));
     assert!(creatures(owner).await?.is_empty());
     tokio::time::resume();
 
@@ -498,6 +530,28 @@ async fn wave_scenario(
     owner.drain_quest_encounter_deadlines().await;
     assert_eq!(read_credit(primary).await?, primary_after);
     assert_eq!(read_credit(partner).await?, partner_after);
+    Ok(())
+}
+
+async fn project_wave_death(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    occurrence: &[u8],
+) -> TestResult {
+    let mut runtime = owner.runtime.lock().await;
+    let health = runtime.companion_snapshot(actor).map_err(debug)?.health;
+    let hit = runtime
+        .borrow_exact_actor_commit_at_us(owner.owner_now().get())
+        .commit_damage(actor, crate::foundation::OwnerDamageCommand {
+            target: CAVE_RAT.as_bytes(),
+            occurrence,
+            binding: occurrence,
+            damage: health,
+        })
+        .map_err(debug)?;
+    assert!(hit.applied && hit.health_before > 0 && hit.health_after == 0);
+    crate::combat::project_fixed_one_creature_death(&mut runtime.borrow_combat_death(), actor)
+        .map_err(debug)?;
     Ok(())
 }
 

@@ -407,6 +407,12 @@ impl Bindings {
                 transitions.push(occurrence.transition()?);
             }
             for stage in &quest.stages {
+                if let Trigger::MapUse { callback } | Trigger::StepIn { callback } = &stage.trigger
+                {
+                    transitions.extend(super::world_callbacks::waves::authored_transitions(
+                        callback,
+                    ));
+                }
                 if stage.is_native_encounter() {
                     continue;
                 }

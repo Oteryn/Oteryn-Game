@@ -1449,6 +1449,7 @@ fn extend_callbacks(
     let inherited: BTreeSet<_> = catalogue.tracks.keys().cloned().collect();
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
+    transitions.extend(callbacks.iter().flat_map(waves::authored_transitions));
     let published = published_markers::keys()?;
     super::ice_islands_seals::catalogue::declare(&mut tracks, callbacks)?;
     for callback in callbacks.iter().filter(|c| c.requires_durable_commit()) {

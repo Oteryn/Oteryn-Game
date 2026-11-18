@@ -77,26 +77,30 @@ impl WaveEgress {
         request: &QuestTransitionRequest,
     ) -> bool {
         callbacks.iter().any(|callback| {
+            let Some(credit) = callback
+                .effects
+                .encounter
+                .as_ref()
+                .and_then(|room| room.wave_run.as_ref())
+                .and_then(|wave| wave.credit(self.victory))
+            else {
+                return false;
+            };
             callback.key == self.callback
-                && callback
-                    .effects
-                    .encounter
-                    .as_ref()
-                    .and_then(|room| room.wave_run.as_ref())
-                    .and_then(|wave| wave.credit_transition(self.victory))
-                    == Some(request.transition_key.as_str())
-                && catalogue
-                    .transition(&request.transition_key)
-                    .is_some_and(|transition| {
-                        transition.quest == callback.quest
-                            && !transition.completes
-                            && transition.experience.is_none()
-                            && transition.world_change.is_none()
-                            && oteryn_gameplay_quests::quest::admission_binding::validate(
-                                transition, false,
-                            )
-                            .is_ok()
-                    })
+                && credit.key() == request.transition_key
+                && catalogue.transition(credit.key()).is_some_and(|transition| {
+                    if let Some(authored) = credit.authored_transition(&callback.quest) {
+                        return &authored == transition;
+                    }
+                    transition.quest == callback.quest
+                        && !transition.completes
+                        && transition.experience.is_none()
+                        && transition.world_change.is_none()
+                        && oteryn_gameplay_quests::quest::admission_binding::validate(
+                            transition, false,
+                        )
+                        .is_ok()
+                })
         })
     }
 

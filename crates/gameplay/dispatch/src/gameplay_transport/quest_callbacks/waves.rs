@@ -1,5 +1,6 @@
 //! Timed waves use the same Channel source-owner turn as other quest encounters.
 use super::*;
+use crate::content::LogicalCell;
 use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::quest_state::wave_egress::WaveEgress;
 use crate::foundation::{CharacterLease, RuntimeScopeRefV1, ScopeOwnershipGeneration};
@@ -7,6 +8,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::{
     Encounter, EncounterMonster,
     waves::{Wave, WaveSpawn},
 };
+use oteryn_gameplay_world::movement::source_placement::SourcePlacementPlan;
 use std::collections::BTreeSet;
 use std::time::Duration;
 use tokio::time::Instant;
@@ -128,7 +130,15 @@ impl ActiveWaveRun {
             } else {
                 None
             };
-            self.terminal = spawn_wave(owner, runtime, map, wave, &mut self.creatures, terminal);
+            self.terminal = spawn_wave(
+                owner,
+                runtime,
+                map,
+                &self.room,
+                wave,
+                &mut self.creatures,
+                terminal,
+            );
             self.next += 1;
         }
         true
@@ -289,6 +299,7 @@ fn spawn_wave(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     runtime: &mut ChannelRuntimeV1,
     map: &BundleMap,
+    room: &Encounter,
     wave: &Wave,
     actors: &mut Vec<ExactActorRef>,
     terminal: Option<&str>,
@@ -303,20 +314,57 @@ fn spawn_wave(
         .collect();
     let mut places = Vec::new();
     let mut place = |creature: &str, at: Position| {
-        if !occupied.contains(&(at.x, at.y, at.floor))
+        let position = local(at);
+        let cell = LogicalCell {
+            x: position.x,
+            y: position.y,
+            z: i32::from(position.floor),
+        };
+        if super::room_contains(room, position)
+            && !occupied.contains(&(at.x, at.y, at.floor))
             && super::periodic_bosses::spawn_cell(owner, map, at)
+            && !crate::map::floor::is_teleport(owner.movement_cells(), cell)
+            && !map
+                .overlay
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| tile.protection_zone())
             && let Ok(policy) = runtime.companion_policy(creature)
         {
             occupied.insert((at.x, at.y, at.floor));
-            places.push((creature.to_owned(), policy.maximum_health, local(at)));
+            places.push((creature.to_owned(), policy.maximum_health, position));
             return true;
         }
         false
     };
+    let mut place_near = |creature: &str, center: Position| {
+        if place(creature, center) {
+            return true;
+        }
+        // Crystal action_arena.lua:34-35 and movements_click.lua:68-70 use the
+        // default Game.createMonster placement (map.cpp:272-307). Restrict its
+        // adjacent fallback to the room owned by this run.
+        let Ok(plan) = SourcePlacementPlan::prepare(local(center), false, false, |bound| {
+            super::periodic_bosses::random_below(bound).unwrap_or(bound)
+        }) else {
+            return false;
+        };
+        plan.candidates().iter().skip(1).copied().any(|candidate| {
+            let Some(at) = native(candidate) else {
+                return false;
+            };
+            let position = Position {
+                x: at.x,
+                y: at.y,
+                floor: at.floor,
+            };
+            place(creature, position)
+        })
+    };
     match &wave.spawn {
         WaveSpawn::Fixed { monsters } => {
             for EncounterMonster { creature, position } in monsters {
-                place(creature, *position);
+                place_near(creature, *position);
             }
         }
         WaveSpawn::Scatter {
@@ -339,7 +387,7 @@ fn spawn_wave(
                 else {
                     break;
                 };
-                if place(
+                if place_near(
                     creature,
                     Position {
                         x: min.x + x as u16,
