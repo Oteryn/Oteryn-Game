@@ -1,8 +1,8 @@
 {
   "counts": {
-    "dispatch_pg_qualified": 189,
+    "dispatch_pg_qualified": 192,
     "not_playable": 2,
-    "supported_unqualified": 145
+    "supported_unqualified": 142
   },
   "native_authored_claims": [
     {
@@ -6569,8 +6569,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk8_six_rubies_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/six_rubies_quest"
@@ -6602,8 +6602,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk8_spike_sword_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/spike_sword_quest"
@@ -6663,8 +6663,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_catalogue_chests_qchk8_stealth_ring_use_replay_and_refusal",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/stealth_ring_quest"
