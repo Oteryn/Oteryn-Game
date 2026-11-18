@@ -183,7 +183,7 @@ fn scenario() -> TestResult {
          owner,
          fence,
          admitted| {
-            let lowered = loader::load_embedded_quest_state("content-1")?;
+            let lowered = loader::load_embedded_quest_state("content-1").map_err(debug)?;
             let catalogue = lowered.catalogue();
             let spike = catalogue
                 .authored_bindings()
