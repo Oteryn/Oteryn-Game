@@ -675,7 +675,10 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                     Some(observed),
                 );
             }
-            if matches!(mode, "overlordcr" | "overlordcr_crash_replay" | "overlordcr_rowless") {
+            if matches!(
+                mode,
+                "overlordcr" | "overlordcr_crash_replay" | "overlordcr_rowless"
+            ) {
                 crash_replay = Some((target, observed));
             }
             if let Some((other_actor, other_session, other_character, other_lease)) =
