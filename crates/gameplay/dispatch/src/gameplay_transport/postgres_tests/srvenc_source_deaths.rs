@@ -36,6 +36,50 @@ native_case!(srvenc_m24_postgres_morguthis_stage, "morguthis");
 native_case!(srvenc_m24_postgres_rahemos_stage, "rahemos");
 native_case!(srvenc_m24_postgres_herald_top_damage, "herald_of_fire");
 
+#[test]
+fn nfront1_postgres_shard_of_corruption_stage_credit() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    let started = std::time::Instant::now();
+    let result = super::kill_reward_e2e::scenario_thread::run("nfront1-shard", move || {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        let scenario: std::pin::Pin<Box<dyn Future<Output = TestResult>>> = Box::pin(async move {
+            // The fight fixture supplies the expected source contract independently
+            // of the production registration, so an unbound death reaches settlement.
+            let mut rule: source_deaths::Rule = serde_json::from_str(
+                r#"{
+                "creature":"oteryn:creature.shard_of_corruption",
+                "transition":"oteryn:quest-transition/quest/u8_54/the_new_frontier/questline/creature_event_1",
+                "effects":[{
+                    "track":"oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                    "default":0,
+                    "from":{"kind":"eq","value":11},
+                    "set":12
+                }],
+                "define_transition":false
+            }"#,
+            )?;
+            rule.quest = "oteryn:quest.the_new_frontier_quest".into();
+            let h =
+                Harness::create_with_admission_seed(admin, "nfront1_shard", false, false).await?;
+            let result = exercise(&h, &rule).await;
+            let cleanup = h.cleanup().await;
+            result?;
+            cleanup
+        });
+        runtime.block_on(scenario)
+    });
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED nfront1_shard duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
 fn scenario(name: &'static str, creature: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -65,6 +109,31 @@ fn scenario(name: &'static str, creature: &'static str) -> TestResult {
 
 async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
     prepare_current_session(h).await?;
+    let shard = rule.creature == "oteryn:creature.shard_of_corruption";
+    let peer = if shard {
+        use crate::world_party_runtime_postgres_cases::{
+            FreshPlayerOwners, committed_fresh_player_from_source_owned,
+        };
+        let now = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+        let (peer, _) = committed_fresh_player_from_source_owned(
+            &FreshPlayerOwners {
+                root: h.root.clone(),
+                node: h.node.clone(),
+                recovery: &h.recovery,
+            },
+            60,
+            63,
+            171,
+            now,
+            Some("platform-test"),
+        )
+        .await?;
+        Some(peer)
+    } else {
+        None
+    };
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
@@ -120,6 +189,33 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
             },
         )
         .map_err(debug)?;
+    let contributor = if let Some(peer) = &peer {
+        let session = peer.current_game_session_id();
+        let lease = peer.current_character_lease();
+        let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(
+                actor,
+                MovementLocalPosition {
+                    x: position[0] - 1,
+                    y: position[1],
+                    floor: i16::try_from(-position[2])?,
+                },
+            )
+            .map_err(debug)?;
+        runtime
+            .bind_attacker_lease(actor, session, lease)
+            .map_err(debug)?;
+        Some((
+            actor,
+            session,
+            *lease.character_id().as_bytes(),
+            lease.generation(),
+        ))
+    } else {
+        None
+    };
     native
         .install_companion_policies(&mut runtime)
         .map_err(debug)?;
@@ -225,42 +321,42 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         // generic writer must not impersonate her protected quest operation.
         // Import only that predecessor, as the other native Quest fixtures do;
         // the death and all its rewards still use the real fenced owners.
-        super::qengine_outfit_stories::seed_quest_prerequisites(
-            h, &owner, &admitted, &seeds, 0xa6,
-        )
-        .await?;
+        super::qengine_outfit_stories::seed_quest_prerequisites(h, &owner, &admitted, &seeds, 0xa6)
+            .await?;
     } else if !seeds.is_empty() {
-        let fence = owner
-            .current_quest_fence(session)
-            .await
-            .map_err(|_| "fence")?
-            .ok_or("fence")?;
-        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-        let outcome = slot
-            .commit_quest_transition(
-                owner.root,
-                owner.character,
-                owner.holder,
-                fence,
-                QuestTransitionRequest {
-                    transition_key: seed_key,
-                    cause: QuestCause::Command(CommandRef::new(
-                        session,
-                        CommandId::new(1).map_err(debug)?,
-                    )),
-                },
-                Arc::clone(&catalogue),
-            )
-            .await
-            .map_err(debug)?;
-        assert!(
-            matches!(outcome, QuestTransitionOutcome::Committed(_)),
-            "seed: {outcome:?}"
-        );
+        for session in std::iter::once(session).chain(contributor.map(|peer| peer.1)) {
+            let fence = owner
+                .current_quest_fence(session)
+                .await
+                .map_err(|_| "fence")?
+                .ok_or("fence")?;
+            let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+            let outcome = slot
+                .commit_quest_transition(
+                    owner.root,
+                    owner.character,
+                    owner.holder,
+                    fence,
+                    QuestTransitionRequest {
+                        transition_key: seed_key.clone(),
+                        cause: QuestCause::Command(CommandRef::new(
+                            session,
+                            CommandId::new(1).map_err(debug)?,
+                        )),
+                    },
+                    Arc::clone(&catalogue),
+                )
+                .await
+                .map_err(debug)?;
+            assert!(
+                matches!(outcome, QuestTransitionOutcome::Committed(_)),
+                "seed: {outcome:?}"
+            );
+        }
     }
     // Neither a generic command nor a detached source-generation snapshot is
     // authority for progress, even at the correct source mission stage.
-    {
+    if source_deaths::tracks_creature(&rule.creature) {
         use crate::durability::character_progression::{
             CharacterProgressionError, ExperienceRewardOccurrence,
         };
@@ -337,6 +433,10 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
     }
     owner.admit_quest_session(&admitted).await;
     owner.refresh_quest_session(session, false).await;
+    if let Some((actor, session, _, _)) = contributor {
+        owner.refresh_quest_session(session, true).await;
+        assert!(owner.refresh_source_party_presence(actor, session).await);
+    }
     let actor = deps.actor;
     let queue = owner.states.attack.lock().await.kills().clone();
     // This second current native actor really deals damage. It remains an invalid
@@ -405,10 +505,12 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                 .bound_attacker_lease(actor, session)
                 .map_err(debug)?;
             let health = runtime.companion_snapshot(target).map_err(debug)?.health;
-            let damage = if let Some((other_actor, other_session, _, _)) = lesser_contributor {
+            let damage = if let Some((other_actor, other_session, _, _)) =
+                lesser_contributor.or(contributor)
+            {
                 assert!(
                     health > 2,
-                    "Herald has distinct most-damage and lesser contributors"
+                    "the fight has distinct most-damage and lesser contributors"
                 );
                 runtime
                     .borrow_exact_actor_commit_at(now)
@@ -540,8 +642,6 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         DrainOutcome::Drained
     );
     for effect in &rule.effects {
-        let value:Option<i64>=sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
-            .bind(id(41).as_slice()).bind(&effect.track).fetch_optional(&h.pool).await?;
         let before = seeds
             .iter()
             .find(|(track, _)| track == &effect.track)
@@ -549,13 +649,22 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         let expected = effect
             .set
             .unwrap_or(before + effect.add.unwrap_or(0) * i64::try_from(kills)?);
-        assert_eq!(
-            value,
-            Some(expected),
-            "native {} must commit {}",
-            rule.creature,
-            effect.track
-        );
+        for character in std::iter::once(id(41)).chain(contributor.map(|peer| peer.2)) {
+            let value: Option<i64> = sqlx::query_scalar(
+                "SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+            )
+            .bind(character.as_slice())
+            .bind(&effect.track)
+            .fetch_optional(&h.pool)
+            .await?;
+            assert_eq!(
+                value,
+                Some(expected),
+                "native {} must commit {} for contributor {character:?}",
+                rule.creature,
+                effect.track
+            );
+        }
     }
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
@@ -565,7 +674,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
     .await?;
     assert_eq!(
         receipts,
-        i64::try_from(kills)?,
+        i64::try_from(kills)? * if shard { 2 } else { 1 },
         "duplicate corpse projection must retain the first captured receipt"
     );
     Ok(())
