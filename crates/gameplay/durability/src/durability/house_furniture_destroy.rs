@@ -158,6 +158,33 @@ impl DurabilityRoot {
         Ok(false)
     }
 
+    /// Advisory deadline check for a resident's periodic service. The indexed
+    /// House floor is bounded by the interior owner. The expiry writer rechecks
+    /// actual custody, current authority and deadlines under its own locks.
+    pub async fn observe_due_house_furniture(&self, house: &HouseId) -> Result<bool, DurabilityError> {
+        let world = *house.world_id().as_bytes();
+        let house_key = house.house_key().to_owned();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = super::db::begin_observation_transaction(holder, deadline).await?;
+                    let due = sqlx::query_scalar(
+                        "SELECT EXISTS(SELECT 1 FROM game_item_house_interior_locations h
+                         JOIN game_item_timed_states t USING(item_instance_id)
+                         WHERE h.world_id=encode($1,'hex')::uuid AND h.house_key=$2
+                           AND t.deadline_at<=floor(extract(epoch FROM clock_timestamp())*1000)::bigint)",
+                    )
+                    .bind(world.as_slice())
+                    .bind(house_key)
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(due)
+                })
+            })
+            .await
+    }
+
     /// Bounded deadline work over the existing timed-state deadline index.
     pub async fn expire_house_furniture(
         &self,

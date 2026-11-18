@@ -34,7 +34,6 @@ use crate::chat::{
     ChatEgress, ChatLimiter, ChatPosition, ChatRefusal, ChatText, SpeechMode, YellGate, local_line,
     local_listeners, private_line, room_line,
 };
-use crate::domain;
 use crate::domain::character_name::CharacterName;
 use crate::domain::premium::PremiumGate;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
