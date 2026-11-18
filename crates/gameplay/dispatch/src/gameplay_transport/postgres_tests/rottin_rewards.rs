@@ -156,14 +156,19 @@ pub(super) async fn exercise(
          (SELECT count(*) FROM game_quest_reward_sources WHERE transition_key=$4 AND mint_transaction_id IS NOT NULL)"
     ).bind(CHARM).bind(PLATINUM).bind(RING).bind(payout_key(repeat)).fetch_one(&h.pool).await?;
     assert!(matches!(actual, (0, 5, 0, 1) | (0, 3, 1, 1)), "{actual:?}");
-    let (awarded_bundle, retained_odds): (serde_json::Value, i32) = sqlx::query_as(
-        "SELECT plan->'give', (plan #>> '{weighted_rewards,0,chance}')::integer
+    let (awarded_bundle, retained_odds, percentile): (serde_json::Value, i32, Option<i32>) =
+        sqlx::query_as(
+            "SELECT plan->'give', (plan #>> '{weighted_rewards,0,chance}')::integer,
+                (plan->>'reward_percentile')::integer
          FROM game_quest_reward_sources WHERE transition_key=$1",
-    )
-    .bind(payout_key(repeat))
-    .fetch_one(&h.pool)
-    .await?;
+        )
+        .bind(payout_key(repeat))
+        .fetch_one(&h.pool)
+        .await?;
     assert_eq!(retained_odds, 9);
+    let percentile = percentile.ok_or("weighted payout receipt lacks the recorded draw")?;
+    assert!((0..100).contains(&percentile));
+    assert_eq!(percentile < retained_odds, actual.2 == 1);
     assert_eq!(awarded_bundle["item"], PLATINUM);
     assert_eq!(awarded_bundle["count"], actual.1);
     if actual.2 == 1 {
