@@ -24,10 +24,20 @@ fn plain_incantation_scroll_use_consumes_the_altar_skull_and_summons_the_ritual_
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("gravedigger-ritual", move || scenario(admin))
+    super::kill_reward_e2e::scenario_thread::run("gravedigger-ritual", move || scenario(admin, false))
 }
 
-fn scenario(admin: String) -> TestResult {
+#[test]
+fn plain_incantation_scroll_summons_ritual_chicken_next_to_occupied_altar() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("gravedigger-occupied-altar", move || {
+        scenario(admin, true)
+    })
+}
+
+fn scenario(admin: String, occupied_altar: bool) -> TestResult {
     let altar = Position {
         x: 33015,
         y: 32418,
@@ -70,7 +80,7 @@ fn scenario(admin: String) -> TestResult {
         world,
         callback,
         tracks.into(),
-        async |owner, mut admitted, h, fence| {
+        async move |owner, mut admitted, h, fence| {
             let item = owner
                 .active_generation
                 .and_then(|g| g.native_gameplay())
@@ -123,6 +133,16 @@ fn scenario(admin: String) -> TestResult {
                 false,
             )
             .await?;
+            let center = quest_world_callbacks::local(altar);
+            if occupied_altar {
+                let actor = admitted.runtime_actor.ok_or("ritual caster")?;
+                let mut runtime = owner.runtime.lock().await;
+                let before = runtime.read_actor_position(actor).map_err(debug)?;
+                runtime
+                    .borrow_movement_position()
+                    .commit_cardinal(before, center)
+                    .map_err(debug)?;
+            }
             let (_, accepted, _) = super::item_craft::exchange(
                 owner,
                 admitted,
@@ -149,13 +169,22 @@ fn scenario(admin: String) -> TestResult {
             .await?;
             assert_eq!(achievements, 1);
             let runtime = owner.runtime.lock().await;
-            let count = runtime
+            let chickens: Vec<_> = runtime
                 .current_live_creature_census()
                 .map_err(debug)?
                 .into_iter()
                 .filter(|actor| runtime.matches_live_creature_identity(*actor, CHICKEN.as_bytes()))
-                .count();
-            assert_eq!(count, 1);
+                .collect();
+            let [chicken] = chickens.as_slice() else {
+                return Err("the ritual must summon exactly one chicken".into());
+            };
+            let position = runtime.read_actor_position(*chicken).map_err(debug)?.position();
+            // Crystal 201189f8 src/map/map.cpp:234-313 places the creature
+            // at the center when free, or within its one-tile ring when blocked.
+            assert_eq!(position == center, !occupied_altar);
+            assert_eq!(position.floor, center.floor);
+            assert!(position.x.abs_diff(center.x) <= 1);
+            assert!(position.y.abs_diff(center.y) <= 1);
             Ok(())
         },
     )
