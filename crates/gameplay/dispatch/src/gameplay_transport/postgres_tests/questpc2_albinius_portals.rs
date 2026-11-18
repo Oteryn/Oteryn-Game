@@ -138,6 +138,9 @@ pub(super) async fn exercise(
         1
     );
     assert_eq!(carried(h, "oteryn:item.tibia.i23986").await?, 0);
+    if name == super::quest_definition_predecessors::CASE {
+        super::quest_definition_predecessors::install_successor(owner)?;
+    }
     if combined {
         let result = talk(
             owner,

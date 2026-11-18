@@ -16,6 +16,16 @@ pub(super) struct EncounterVisit {
     room: oteryn_gameplay_quests::quest::world_callbacks::Encounter,
     participants: Vec<(ExactActorRef, GameSessionId)>,
     creatures: Vec<ExactActorRef>,
+    timeout: Option<PersonalTimeout>,
+}
+
+struct PersonalTimeout {
+    scope: (
+        crate::foundation::RuntimeScopeRefV1,
+        crate::foundation::ScopeOwnershipGeneration,
+    ),
+    exit: MovementLocalPosition,
+    due_us: u64,
 }
 
 impl EncounterVisit {
@@ -24,9 +34,96 @@ impl EncounterVisit {
             .iter()
             .any(|actor| runtime.contains_live_creature(*actor))
     }
+
+    pub(super) fn next_due_us(&self) -> Option<u64> {
+        self.timeout.as_ref().map(|timeout| timeout.due_us)
+    }
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Crystal 201189f8, the_first_dragon/movements_entrance_teleport.lua:82-87.
+    /// Retire only this opening's exact actor and roster on the owning Channel.
+    pub(super) fn drain_personal_encounter_deadlines(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        map: &BundleMap,
+        now: u64,
+    ) {
+        let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
+            return;
+        };
+        visits.retain_mut(|visit| {
+            let Some(timeout) = visit.timeout.as_mut() else {
+                return visit.active(runtime);
+            };
+            if timeout.scope != runtime.encounter_owner_scope() {
+                return false;
+            }
+            if now < timeout.due_us {
+                return true;
+            }
+            for &(actor, session) in &visit.participants {
+                let Ok(expected) = runtime.read_actor_position(actor) else {
+                    continue;
+                };
+                if !room_contains(&visit.room, expected.position()) || states.is_dead(actor) {
+                    continue;
+                }
+                let closed = crate::map::floor::BundleDoors(&map.facts);
+                let blocked =
+                    super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
+                let proof = crate::map::floor::prepare_quest_callback_teleport(
+                    runtime,
+                    self.movement_cells(),
+                    actor,
+                    session,
+                    expected,
+                    timeout.exit,
+                    blocked,
+                    &closed,
+                );
+                let Some(snapshot) = proof
+                    .ok()
+                    .and_then(|proof| runtime.commit_source_step(proof).ok())
+                else {
+                    timeout.due_us = now.saturating_add(250_000);
+                    return true;
+                };
+                states.stage_special_movement_step(
+                    runtime,
+                    map,
+                    actor,
+                    session,
+                    now,
+                    Some(expected.position()),
+                    snapshot.position(),
+                    None,
+                );
+                states.stage_underwater_step(
+                    runtime,
+                    actor,
+                    session,
+                    now,
+                    underwater(map, expected.position()),
+                    underwater(map, snapshot.position()),
+                );
+                if let Some(pos) = native(snapshot.position()) {
+                    map.facts.emit_movement_effect(pos, 11);
+                }
+            }
+            visit.creatures.retain(|actor| {
+                runtime.contains_live_creature(*actor)
+                    && runtime.remove_encounter_actor(*actor).is_err()
+            });
+            if visit.creatures.is_empty() {
+                return false;
+            }
+            timeout.due_us = now.saturating_add(250_000);
+            true
+        });
+    }
+
     pub(in crate::gameplay_transport) fn encounter_blocks_channel_switch(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -75,6 +172,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         preflight: bool,
         cause: QuestCause,
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
+        step_origin: Option<MovementLocalPosition>,
     ) -> UseDisposition {
         self.quest_encounter(
             runtime,
@@ -89,6 +187,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             preflight,
             cause,
             reservation,
+            step_origin,
         )
     }
 
@@ -105,6 +204,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         expected_revision: u64,
         after: EntryFacts,
         cause: QuestCause,
+        step_origin: Option<MovementLocalPosition>,
     ) -> UseDisposition {
         self.quest_encounter(
             runtime,
@@ -119,6 +219,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             true,
             cause,
             None,
+            step_origin,
         )
     }
 
@@ -137,9 +238,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         preflight: bool,
         cause: QuestCause,
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
+        step_origin: Option<MovementLocalPosition>,
     ) -> UseDisposition {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
+        };
+        let timeout = if let Some(ms) = encounter.personal_timeout_ms {
+            let Some(exit) = step_origin else {
+                return UseDisposition::Rejected;
+            };
+            let Some(due_us) = self.owner_now().get().checked_add(u64::from(ms) * 1_000) else {
+                return UseDisposition::Exhausted;
+            };
+            Some(PersonalTimeout {
+                scope: runtime.encounter_owner_scope(),
+                exit,
+                due_us,
+            })
+        } else {
+            None
         };
         if preflight && callback.has_personal_state() {
             if !callback.requires_world_admission {
@@ -183,7 +300,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let personal_entry = callback.personal_room_entry().map(local);
         if census.iter().any(|(who, pos, occupant_session)| {
-            occupant_session.is_some()
+            (occupant_session.is_some() || encounter.personal_cooldown_seconds.is_some())
                 && room_contains(encounter, pos.position())
                 && !(Some(pos.position()) == personal_entry
                     && *who == actor
@@ -365,7 +482,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
                 return UseDisposition::Rejected;
             };
-            visits.retain(|visit| visit.active(runtime));
+            visits.retain(|visit| {
+                visit.active(runtime)
+                    || visit
+                        .timeout
+                        .as_ref()
+                        .is_some_and(|timeout| timeout.scope == runtime.encounter_owner_scope())
+            });
             if visits.len() >= super::timed_encounter::MAX_TIMED_ENCOUNTERS
                 || visits.try_reserve(1).is_err()
             {
@@ -418,6 +541,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 room: encounter.clone(),
                 participants: party,
                 creatures: actors.clone(),
+                timeout,
             });
         }
         drop(visits);
@@ -448,6 +572,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if let Some(pos) = native(snapshot.position()) {
                 map.facts.emit_movement_effect(pos, 11);
             }
+        }
+        if encounter.personal_timeout_ms.is_some() {
+            states.owner_wake.notify_one();
         }
         UseDisposition::Committed
     }

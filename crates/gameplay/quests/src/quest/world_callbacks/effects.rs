@@ -311,6 +311,12 @@ pub struct Encounter {
     /// Source phases run on the shared encounter owner after atomic party admission.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phase: Option<EncounterPhase>,
+    /// Cooldown of the sole boss admitted by a fenced personal StepIn.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub personal_cooldown_seconds: Option<u32>,
+    /// Expire the visit and return the admitted participant to the original step tile.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub personal_timeout_ms: Option<u32>,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -841,7 +847,18 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
-        if (encounter.minimum_level == 0 && !source_party)
+        let personal_cooldown = encounter.personal_cooldown_seconds.is_some();
+        if (encounter.minimum_level == 0 && !source_party && !personal_cooldown)
+            || encounter.personal_cooldown_seconds.is_some_and(|seconds| {
+                !(1..=30 * 24 * 60 * 60).contains(&seconds)
+                    || callback.personal_room_entry().is_none()
+                    || !callback.return_on_failure
+                    || encounter.phase.is_some()
+                    || encounter.monsters.len() != 1
+            })
+            || encounter.personal_timeout_ms.is_some_and(|milliseconds| {
+                !(1..=3_600_000).contains(&milliseconds) || !personal_cooldown
+            })
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()

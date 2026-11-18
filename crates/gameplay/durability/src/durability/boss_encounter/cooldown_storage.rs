@@ -214,3 +214,56 @@ pub(crate) async fn set_boss_cooldowns_data(
     }
     Ok(BossCooldownChange::Applied)
 }
+
+/// Crystal 201189f8, data-global/scripts/quests/the_first_dragon/
+/// movements_entrance_teleport.lua:60-87. A cooldown is a participant in the
+/// fenced StepIn transaction, after live spawn and teleport preflight.
+pub(in crate::durability) async fn admit_personal_step(
+    tx: &mut Transaction<'_, Postgres>,
+    character: CharacterId,
+    cause: super::super::quest_state::QuestCause,
+    encounter: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
+    reset_epoch: u64,
+    seconds: u32,
+) -> Result<bool, DurabilityError> {
+    use sha2::{Digest, Sha256};
+    let super::super::quest_state::QuestCause::Step(command) = cause else {
+        return Ok(false);
+    };
+    let [boss] = encounter.monsters.as_slice() else {
+        return Ok(false);
+    };
+    let key = BossRewardKey::new(character, &boss.creature)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let digest = Sha256::new()
+        .chain_update(b"quest-boss-step-admission")
+        .chain_update(character.as_bytes())
+        .chain_update(command.game_session_id().as_bytes())
+        .chain_update(command.command_id().get().to_be_bytes())
+        .chain_update(boss.creature.as_bytes())
+        .finalize();
+    let mut admission = [0; 16];
+    admission.copy_from_slice(&digest[..16]);
+    admission[6] = (admission[6] & 0x0f) | 0x70;
+    admission[8] = (admission[8] & 0x3f) | 0x80;
+    let now = sqlx::query_scalar("SELECT floor(extract(epoch FROM now()) * 1000)::bigint")
+        .fetch_one(&mut **tx)
+        .await?;
+    let decision = set_boss_cooldowns_data(
+        tx,
+        &[key],
+        &BossCooldownAdmissionData {
+            admission,
+            now,
+            reset_epoch,
+            cooldown_s: u64::from(seconds),
+            boosted: false,
+        },
+    )
+    .await
+    .map_err(|error| match error {
+        BossRewardStateError::Unavailable(error) => error,
+        _ => DurabilityError::InvalidStoredState,
+    })?;
+    Ok(decision == BossCooldownChange::Applied)
+}

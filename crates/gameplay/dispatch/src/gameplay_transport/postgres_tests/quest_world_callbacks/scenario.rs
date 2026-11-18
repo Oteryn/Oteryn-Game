@@ -341,6 +341,7 @@ fn scenario_case(
                 | "questpc2-albinius-combined"
                 | "questpc2-albinius-portals-exact"
                 | "questpc2-albinius-portals-combined"
+                | super::super::quest_definition_predecessors::CASE
                 | "classic-rottin-disrepair"
                 | "threatened-dreams-npc"
                 | "conditional-quest-greetings"

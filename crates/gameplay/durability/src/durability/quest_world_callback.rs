@@ -469,6 +469,20 @@ pub(super) async fn consume(
     if !context_is_current(tx, permit, fence, context).await? {
         return Ok(false);
     }
+    if let Some(encounter) = &callback.effects.encounter
+        && let Some(seconds) = encounter.personal_cooldown_seconds
+        && !super::boss_encounter::cooldown_storage::admit_personal_step(
+            tx,
+            fence.character_id,
+            request.cause,
+            encounter,
+            context.reset_epoch,
+            seconds,
+        )
+        .await?
+    {
+        return Ok(false);
+    }
     if !completed_quests::require(tx, fence, &callback.required_completed_quests).await? {
         return Ok(false);
     }

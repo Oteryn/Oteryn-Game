@@ -147,12 +147,21 @@ impl PendingCallbacks {
 
 impl PendingCallbacks {
     pub(super) fn next_encounter_due_us(&self) -> Option<u64> {
-        self.timed
+        let timer = self
+            .timed
             .lock()
             .ok()?
             .iter()
             .map(|pending| pending.next_due_us())
-            .min()
+            .min();
+        let visit = self
+            .encounters
+            .lock()
+            .ok()?
+            .iter()
+            .filter_map(|visit| visit.next_due_us())
+            .min();
+        timer.into_iter().chain(visit).min()
     }
 }
 
@@ -841,6 +850,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         optional_pvp,
                         None,
                         pending.selected_tool.as_ref(),
+                        pending.origin.map(|origin| origin.position()),
                     ))
                     .await
                 }
@@ -1232,6 +1242,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 optional_pvp,
                 read_only_gate.as_ref(),
                 selected_tool.as_ref(),
+                None,
             ))
             .await;
             drop(states);
@@ -1524,6 +1535,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         optional_pvp,
                         read_only_gate.as_ref(),
                         None,
+                        Some(origin.position()),
                     ))
                     .await
                 }
