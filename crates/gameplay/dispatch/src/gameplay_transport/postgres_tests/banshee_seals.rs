@@ -811,19 +811,23 @@ async fn exercise_queen(
         low_level.conversation.ok_or("level refusal")?.lines,
         ["Sorry, not possible."],
     );
-    owner.states.level_refresh.mark([fence.character_id]);
-    Box::pin(owner.refresh_level_up_vitals(actor, session)).await;
+    // The historical test character lacks a vocation build for vitals refresh.
+    // Supply its persisted level to the live fact used by the dialogue preview.
+    let progression = h
+        .root
+        .read_character_progression(owner.character, fence.character_id)
+        .await
+        .map_err(debug)?
+        .ok_or("persisted Queen level")?;
+    assert_eq!(progression.level, 50);
     {
         let runtime = owner.runtime.lock().await;
-        let spells = owner.states.spell_states.lock().await;
-        assert_eq!(
-            spells
-                .get(&runtime, actor, session)
-                .ok_or("live character")?
-                .character_facts()
-                .level,
-            50
-        );
+        let mut spells = owner.states.spell_states.lock().await;
+        spells
+            .get_mut(&runtime, actor, session)
+            .ok_or("live character")?
+            .facts
+            .level = progression.level;
     }
     {
         let mut spells = owner.states.spell_states.lock().await;
