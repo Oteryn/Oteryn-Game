@@ -311,11 +311,46 @@ async fn exercise(h: &Harness) -> TestResult {
         ),
         (842, 843)
     );
-    assert_eq!(
-        click(&mut owner, &admitted, 745, right).await?,
-        UseDisposition::Committed
+    owner
+        .states
+        .quest_callbacks
+        .interrupt_after_commit
+        .store(true, std::sync::atomic::Ordering::Release);
+    owner.clock_origin -= std::time::Duration::from_secs(2);
+    let fence = super::death_ml_loss_composed::current_fence(&owner, session).await?;
+    admitted.item_fence = Some(fence.item_fence());
+    admitted.continuity.next_command_id = 745;
+    let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&target(&owner, right)?)
+        .map_err(debug)?;
+    assert!(
+        super::quest_world_callbacks::wire(&owner, &mut admitted, 745, 2, payload)
+            .await
+            .is_err(),
+        "a commit with unknown acknowledgement closes the connection"
     );
+    assert!(owner.has_pending_quest_callback(session));
     assert_eq!(gems(h).await?, 3);
+    assert_eq!(
+        (
+            machine_appearance(&owner, left)?,
+            machine_appearance(&owner, right)?
+        ),
+        (842, 843),
+        "a lost commit acknowledgement leaves both halves unchanged until reconciliation"
+    );
+    assert_eq!(
+        deps.runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        before_entry
+    );
+    assert!(owner.reconcile_quest_callbacks(session).await);
+    assert!(!owner.has_pending_quest_callback(session));
+    assert!(owner.reconcile_quest_callbacks(session).await);
+    assert_eq!(gems(h).await?, 3, "reconciliation cannot debit twice");
     assert_eq!(
         (
             machine_appearance(&owner, left)?,
