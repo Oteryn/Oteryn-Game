@@ -15,6 +15,8 @@ use oteryn_protocol_oteryn::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
     encode_step_intent,
 };
+use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget, encode_item_use_intent};
+use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
 pub(super) const NAME: &str = "haunted-cellar-disguise";
@@ -29,6 +31,7 @@ const EXIT: Position = Position {x:32727,..TRIGGER};
 // This fixture generation admits a portable vial. The production retained input
 // is the donor strange empty bucket i29310.
 const FIXTURE_CONTAINER: &str = "oteryn:item.tibia.i2874";
+const FULL_FIXTURE: &str = "oteryn:item.tibia.i3585";
 
 pub(super) fn binding() -> TestResult<Callback> {
     Ok(serde_json::from_value(serde_json::json!({
@@ -57,11 +60,26 @@ pub(super) fn catalogue(base:&QuestStateCatalogue, callback:&Callback) -> TestRe
     }).map_err(debug)?;
     let base = base.with_fixture_transition(world_callbacks::primary_transition(callback)?).map_err(debug)?;
     let document = serde_json::json!({"schema":1,"callbacks":[callback]}).to_string();
-    Ok(Arc::new(world_callbacks::with_fixture_world_document(&base,&document)?))
+    let base = world_callbacks::with_fixture_world_document(&base,&document)?;
+    let disguise = serde_json::json!({"schema":1,"tracks":[],"callbacks":[{
+        "key":"oteryn:quest-reward/dream-courts/haunted-cellar-disguise",
+        "quest":QUEST,"npc":"oteryn:npc.stricken_soul","keywords":["ectoplasm"],"topic":0,"next_topic":0,
+        "carried_item":FULL_FIXTURE,"temporary_outfit":{"look_type":19,"duration_ms":120000},
+        "repeatable":true,
+        "storage":[{"track":HAUNTED,"minimum":1,"maximum":6,"set":1,"preserve":true}],
+        "take":[{"item":FULL_FIXTURE,"count":1}],
+        "give":{"item":FIXTURE_CONTAINER,"count":1,"contents":[]},"outfit":null,"achievement":null,
+        "magic_effects":[{"effect":"CONST_ME_POFF"}],
+        "reply":["You pour all of the ectoplasm over yourself. Without the bucket you cannot stabilise it, you need to hurry until it dissolves!"],
+        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_dream_courts/actions_strange_bucket.lua:53-65"]
+    }]}).to_string();
+    Ok(Arc::new(oteryn_gameplay_quests::quest::reward_callbacks::with_fixture_item_self_document(
+        &base,&disguise,
+    )?))
 }
 
 #[test]
-fn haunted_cellar_step_requires_a_live_slime_look_and_keeps_the_empty_container() -> TestResult {
+fn haunted_cellar_self_use_applies_a_timed_slime_look_and_the_step_keeps_the_empty_container() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     drop(admin);
     super::kill_reward_e2e::scenario_thread::run(NAME, || scenario(NAME,TRIGGER,false))
@@ -72,7 +90,7 @@ pub(super) async fn exercise(
     harness:&Harness, fence:CurrentCharacterGameplayFence,
 ) -> TestResult {
     input_item(owner,fence.item_fence(),&Offering {
-        position:Position{x:TRIGGER.x-1,..TRIGGER},item:FIXTURE_CONTAINER.into(),count:1
+        position:Position{x:TRIGGER.x-1,..TRIGGER},item:FULL_FIXTURE.into(),count:1
     },39,true).await?;
     let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
     let outcome = slot.commit_quest_transition(
@@ -86,20 +104,15 @@ pub(super) async fn exercise(
     owner.refresh_quest_session(admitted.game_session_id,false).await;
 
     let actor = admitted.runtime_actor.ok_or("actor")?;
-    for (ordinal, direction, expected) in [
-        (1,StepDirection::East,TRIGGER),
-        (2,StepDirection::West,Position{x:TRIGGER.x-1,..TRIGGER}),
-        (3,StepDirection::East,EXIT),
+    for (direction, expected) in [
+        (StepDirection::East,TRIGGER),
+        (StepDirection::West,Position{x:TRIGGER.x-1,..TRIGGER}),
+        (StepDirection::East,EXIT),
     ] {
-        if ordinal == 3 {
-            let runtime = owner.runtime.lock().await;
-            let mut states = owner.states.spell_states.lock().await;
-            let current = states.get(&runtime,actor,admitted.game_session_id).ok_or("spell state")?;
-            let disguise = crate::spell::actor_conditions::stage_item_costume(
-                current,19,120_000,owner.owner_now().get()/1_000
-            ).map_err(debug)?;
-            assert!(states.commit(&runtime,actor,admitted.game_session_id,disguise));
+        if expected == EXIT {
+            apply_self_outfit(owner,admitted,actor).await?;
         }
+        let ordinal = admitted.continuity.next_command_id;
         let reply = wire(owner,admitted,ordinal,COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,encode_step_intent(direction)).await?;
         assert_eq!(decode_step_result(&reply).map_err(debug)?, StepDisposition::Moved);
         assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), local(expected));
@@ -114,5 +127,43 @@ pub(super) async fn exercise(
                 (SELECT count(*) FROM game_item_instances WHERE definition_production_key=$3 AND lifecycle=1)"
     ).bind(fence.character_id.as_bytes().as_slice()).bind(CELLAR).bind(FIXTURE_CONTAINER).fetch_one(&harness.pool).await?;
     assert_eq!((progress,retained),(1,1));
+    Ok(())
+}
+
+async fn apply_self_outfit(
+    owner:&ComposedFreshAdmission<'_, '_, '_>,admitted:&mut AdmittedSession,
+    actor:crate::foundation::ExactActorRef,
+) -> TestResult {
+    use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+    let target = {
+        let runtime = owner.runtime.lock().await;
+        let players = runtime.visible_entities();
+        let player = players.players.iter().find(|player| player.actor == actor).ok_or("visible self")?;
+        EntityRef {identity:actor.placement_identity(),generation:player.generation}
+    };
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(), &[4,6,11,15,18],
+        ).ok_or("USE capabilities")?;
+    let reference = owner.active_generation.and_then(|g|g.native_gameplay())
+        .and_then(|native|native.item_index()).ok_or("item index")?
+        .definition_ref("Item",FULL_FIXTURE,"definition-r1").ok_or("full container definition")?;
+    for (selected, should_commit) in [(EntityRef{generation:target.generation+1,..target},false),(target,true)] {
+        let payload = encode_item_use_intent(&UseIntent {
+            target:UseTarget::Item(std::num::NonZeroU64::MIN),use_with:Some(selected),
+            use_with_map_item:None,use_with_position:None,
+        }).map_err(debug)?;
+        let (next,result,_) = super::rust_lottery::exchange_latest_source(
+            owner,*admitted,admitted.continuity.next_command_id,&payload,Some(reference),
+        ).await?;
+        *admitted = next;
+        assert_eq!(result == UseDisposition::Committed,should_commit);
+    }
+    let runtime = owner.runtime.lock().await;
+    let states = owner.states.spell_states.lock().await;
+    let outfit = states.get(&runtime,actor,admitted.game_session_id).ok_or("spell state")?.owned_conditions();
+    let now = owner.owner_now().get();
+    assert_eq!(outfit.outfit_at(now),Some(19));
+    assert_eq!(outfit.outfit_at(now+120_000_000),None);
     Ok(())
 }

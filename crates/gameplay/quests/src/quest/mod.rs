@@ -444,6 +444,8 @@ pub struct QuestStateCatalogue {
     #[cfg(any(test, feature = "test-support"))]
     fixture_npc_rules: Option<std::sync::Arc<npc_rules::NpcRuleCatalog>>,
     #[cfg(any(test, feature = "test-support"))]
+    fixture_reward_callbacks: Vec<reward_callbacks::RewardCallback>,
+    #[cfg(any(test, feature = "test-support"))]
     fixture_source_deaths: Vec<source_deaths::Rule>,
     npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
     predecessors: BTreeMap<String, Vec<NpcDefinitionPredecessor>>,
@@ -655,6 +657,8 @@ impl QuestStateCatalogue {
             authored_bindings: None,
             #[cfg(any(test, feature = "test-support"))]
             fixture_npc_rules: None,
+            #[cfg(any(test, feature = "test-support"))]
+            fixture_reward_callbacks: Vec::new(),
             #[cfg(any(test, feature = "test-support"))]
             fixture_source_deaths: Vec::new(),
             native_recipe_evidence: None,

@@ -511,6 +511,8 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, 
     if let Some(bindings) = catalogue.authored_bindings() {
         callbacks.extend(bindings.reward_callbacks().cloned());
     }
+    #[cfg(any(test, feature = "test-support"))]
+    callbacks.extend(catalogue.fixture_reward_callbacks.iter().cloned());
     if callbacks.len() > super::authored_bindings::MAX_BOUND_STAGES
         || callbacks
             .iter()
@@ -538,10 +540,43 @@ pub fn load() -> Result<Vec<RewardCallback>, String> {
 
 fn embedded_document() -> Result<Document, String> {
     let mut document = parse_documents(DOCUMENTS)?;
+    for source in super::authored_bindings::embedded::native_item_self_rewards() {
+        let extra = parse_item_self_rewards(source)?;
+        document.tracks.extend(extra.tracks);
+        document.callbacks.extend(extra.callbacks);
+    }
     document
         .callbacks
         .extend(super::world_change_journals::npc_callbacks()?);
-    validate_document_with_capacity(document, 256 * DOCUMENTS.len())
+    validate_document_with_capacity(document, 256 * (DOCUMENTS.len() + 8))
+}
+
+fn parse_item_self_rewards(source: &str) -> Result<Document, String> {
+    let document = parse_documents(&[source])?;
+    if document.callbacks.is_empty()
+        || document.callbacks.iter().any(|callback| callback.temporary_outfit.is_none())
+        || !document.item_disguises.is_empty()
+    {
+        return Err("invalid item self-reward document".into());
+    }
+    Ok(document)
+}
+
+#[cfg(any(test, feature = "test-support"))]
+pub fn with_fixture_item_self_document(
+    catalogue: &QuestStateCatalogue, source: &str,
+) -> Result<QuestStateCatalogue, String> {
+    let document = parse_item_self_rewards(source)?;
+    let callbacks = document.callbacks.clone();
+    let mut extended = extend_document(catalogue.clone(), document)?;
+    extended.fixture_reward_callbacks.clone_from(&catalogue.fixture_reward_callbacks);
+    extended.fixture_reward_callbacks.extend(callbacks);
+    extended.authored_bindings.clone_from(&catalogue.authored_bindings);
+    extended.completion_sets.clone_from(&catalogue.completion_sets);
+    extended.fixture_npc_rules.clone_from(&catalogue.fixture_npc_rules);
+    extended.fixture_source_deaths.clone_from(&catalogue.fixture_source_deaths);
+    load_for(&extended)?;
+    Ok(extended)
 }
 
 pub(super) fn item_disguises() -> Result<Vec<super::item_disguises::Rule>, String> {
@@ -2202,7 +2237,8 @@ mod tests {
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
         // Shared, QuestPC7, other registered shards, M43 peer, Kingsday journal.
-        assert_eq!(load()?.len(), 207 + 59 + 125 + 1 + 1);
+        assert_eq!(load()?.into_iter().filter(|callback| callback.temporary_outfit.is_none()).count(),
+                   207 + 59 + 125 + 1 + 1);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;

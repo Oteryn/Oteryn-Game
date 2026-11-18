@@ -67,6 +67,11 @@ pub fn generate(root: &Path, out: &Path) -> Result<(), Box<dyn std::error::Error
         "death-reward-",
         16,
     )?;
+    let item_self_rewards = documents(
+        &repository.join("content/quests/native-reward-callbacks"),
+        "item-self-reward-",
+        8,
+    )?;
     let claims = documents(
         &repository.join("content/interactions/reward_claims"),
         "reward-claim-variants-",
@@ -78,6 +83,7 @@ pub fn generate(root: &Path, out: &Path) -> Result<(), Box<dyn std::error::Error
         ("CANONICAL_QUEST_SHARDS", definitions),
         ("NATIVE_CLAIM_SHARDS", claims),
         ("NATIVE_DEATH_REWARDS", death_rewards),
+        ("NATIVE_ITEM_SELF_REWARDS", item_self_rewards),
     ] {
         writeln!(
             generated,

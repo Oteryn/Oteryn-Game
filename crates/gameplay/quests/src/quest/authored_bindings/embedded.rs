@@ -13,6 +13,10 @@ pub(in crate::quest) fn native_death_rewards() -> impl Iterator<Item = &'static 
     NATIVE_DEATH_REWARDS.iter().map(|(_, document)| *document)
 }
 
+pub(in crate::quest) fn native_item_self_rewards() -> impl Iterator<Item = &'static str> {
+    NATIVE_ITEM_SELF_REWARDS.iter().map(|(_, document)| *document)
+}
+
 impl Bindings {
     /// Combine a complete trusted binding snapshot; names never imply another source document.
     pub fn parse_documents(documents: &[&str]) -> Result<Self, String> {
