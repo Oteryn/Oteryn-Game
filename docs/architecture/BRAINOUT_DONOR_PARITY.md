@@ -114,9 +114,9 @@ The table records the named local qualification steps.
 | Quest source-cohort loader | Passed: focused owner-scope test in 7.86 seconds |
 | Pin verification | Passed: source-fresh release compiler `pin-check`; World digest `0676b1568f55a55fbe994f344a8e0c60debf766751d12849f56c19f60c93aae5`; command exit status 0 |
 
-Post-merge qualification is in progress: remaining Clippy reruns are active;
-PG, pin-check, authoring checks, all 1464 unit tests, all 24 item-profile tests,
-content tree, focused quest-loader test and fmt passed.
+Post-merge qualification is complete: PG, pin-check, authoring checks, all 1464
+unit tests, all 24 item-profile tests, content tree, focused quest-loader test,
+fmt and Clippy on all four touched crates passed. No requested work remains.
 No PR was created. Migration 2889 is used; capability
 542 and command/mechanic ordinal 6277 are unnecessary because the existing USE
 command and custody owner carry the new effect.
