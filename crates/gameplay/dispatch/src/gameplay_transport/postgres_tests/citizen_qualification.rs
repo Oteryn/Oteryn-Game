@@ -29,6 +29,10 @@ const CITIZENS: [(u16, u32); 17] = [
 
 #[test]
 fn w23_all_citizen_uniques_and_svargrond_quest_boundary() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| scenario().map_err(|error| error.to_string()))?
@@ -143,7 +147,8 @@ fn scenario() -> TestResult {
                     sqlx::query("SET LOCAL session_replication_role=replica")
                         .execute(&mut *tx)
                         .await?;
-                    sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,'oteryn:quest-progress/storage/41174','oteryn:quest.barbarian_test',$2,2) ON CONFLICT(character_id,track_key) DO UPDATE SET value=EXCLUDED.value")
+                    // Crystal 201189f8 citizen.lua:39-40 reads the same questline Sven writes.
+                    sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,'oteryn:quest-progress/quest/u8_0/barbarian_test/questline','oteryn:quest.barbarian_test',$2,2) ON CONFLICT(character_id,track_key) DO UPDATE SET value=EXCLUDED.value")
                         .bind(id(41).as_slice()).bind(progress).execute(&mut *tx).await?;
                     tx.commit().await?;
                 }

@@ -85,6 +85,18 @@ pub fn source_is_ready(callback: &Callback, appearance: u16) -> bool {
     if callback.has_fenced_regrowth_reward() {
         return appearance == 21388;
     }
+    // Crystal 201189f8 actions_paint.lua:9-28 checks the current seal, which
+    // may already have been painted by another character.
+    if matches!(
+        callback.native_rule,
+        Some(super::native_rules::NativeRule::IceSealPaint { .. })
+    ) {
+        return callback
+            .selector
+            .native
+            .as_ref()
+            .is_some_and(|binding| binding.appearance == appearance);
+    }
     (match callback.key.as_str() {
         UNEASY_CRYSTAL => appearance == 10186,
         // Crystal 201189f movement_fire_bug_teleport.lua:9-14.

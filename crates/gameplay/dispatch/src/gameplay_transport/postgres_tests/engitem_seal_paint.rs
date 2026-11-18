@@ -56,9 +56,10 @@ pub(super) fn source_appearances(
 
 #[test]
 fn engitem_native_seal_paint_preserves_tool_counts_occurrences_and_resets() -> TestResult {
-    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
+    drop(admin);
     let started = std::time::Instant::now();
     let result = super::kill_reward_e2e::scenario_thread::run("engitem_seal_paint", || {
         super::quest_world_callbacks::scenario(
@@ -188,6 +189,56 @@ pub(super) async fn exercise(
         );
         let mut placement = map.overlay.base().digest().to_vec();
         placement.extend_from_slice(&key.to_be_bytes());
+        if phase == 0 {
+            // Crystal 201189f8 actions_paint.lua:9-28. Another player has
+            // painted this seal while our own target credit is still unset.
+            let painted = map
+                .facts
+                .quest_callback_replacement(key, 7252)
+                .ok_or("painted appearance")?;
+            let (cell, ordinal) = crate::map::view::placement_of(key).ok_or("seal placement")?;
+            let ready = map
+                .overlay
+                .base()
+                .tile(cell.x, cell.y, cell.floor)
+                .and_then(|tile| tile.ids().get(usize::from(ordinal)).copied())
+                .and_then(|id| map.facts.base_entry(cell, ordinal, id))
+                .ok_or("ready appearance")?;
+            let revision = map.facts.object_revision(key);
+            assert!(map.facts.apply_quest_callback(
+                key, revision, painted, &[], &[], false, None
+            ));
+            let painted_revision = map.facts.object_revision(key);
+            let payload = encode_item_use_intent(&UseIntent {
+                target: UseTarget::Item(std::num::NonZeroU64::new(3).ok_or("handle")?),
+                use_with: None,
+                use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
+                    placement: placement.clone(),
+                    expected_revision: painted_revision,
+                })),
+                use_with_position: None,
+            })
+            .map_err(debug)?;
+            let (next, refused, _) = super::item_craft::exchange(
+                owner,
+                *admitted,
+                admitted.continuity.next_command_id,
+                &payload,
+                Some(reference),
+            )
+            .await?;
+            *admitted = next;
+            assert_eq!(refused, UseDisposition::NothingToUse);
+            assert_eq!(map.facts.object_revision(key), painted_revision);
+            assert!(map.facts.apply_quest_callback(
+                key, painted_revision, ready, &[], &[], false, None
+            ));
+            owner.clock_origin = owner
+                .clock_origin
+                .checked_sub(std::time::Duration::from_secs(2))
+                .ok_or("clock")?;
+        }
+        let map = owner.bundle_map().ok_or("map")?;
         let payload = encode_item_use_intent(&UseIntent {
             target: UseTarget::Item(std::num::NonZeroU64::new(3).ok_or("handle")?),
             use_with: None,
