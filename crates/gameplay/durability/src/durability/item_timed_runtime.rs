@@ -238,8 +238,8 @@ impl DurabilityRoot {
             }
             let item_fence = fence.item_fence();
             let equipment_authorized = match house_origin {
-                Some(origin) => super::character_equipment::read_house_equipment_in_transaction(
-                    &mut tx, &node, &item_fence, origin, request.content_digest,
+                Some(origin) => super::character_equipment::assert_house_equipment_content(
+                    &mut tx, &node, &item_fence, origin, request.content_digest, super::character_equipment::HouseEquipmentAccess::Clock,
                 ).await.is_ok(),
                 None => super::character_equipment::assert_current_equipment_in_transaction(
                     &mut tx, &recovery, &node, &item_fence, None, request.content_digest,
@@ -269,13 +269,14 @@ async fn assert_timed_fence(
     house_origin: Option<[u8; 16]>,
 ) -> std::result::Result<bool, DurabilityError> {
     if let Some(origin) = house_origin {
-        if !super::house_hireling::fence::assert_house_inventory_fence(
+        if super::house_hireling::fence::assert_house_custody_fence(
             tx,
             node,
             &fence.item_fence(),
             origin,
         )
         .await?
+        .is_none()
         {
             return Ok(false);
         }

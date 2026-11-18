@@ -287,18 +287,50 @@ pub(super) async fn read_fenced_house_equipment(
     session: GameSessionId,
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
 ) -> Option<character_equipment::EquipmentSnapshot> {
+    read_house_equipment_for(admission, actor, session, fence, false).await
+}
+
+pub(super) async fn read_house_clock_equipment(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+) -> Option<character_equipment::EquipmentSnapshot> {
+    read_house_equipment_for(admission, actor, session, fence, true).await
+}
+
+async fn read_house_equipment_for(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    clock: bool,
+) -> Option<character_equipment::EquipmentSnapshot> {
     let digest = house_equipment_digest(admission, actor, session, fence).await?;
-    let read = admission
-        .root
-        .read_house_equipment(
-            admission.character,
-            admission.holder,
-            &fence,
-            *admission.channel_id.as_bytes(),
-            digest,
-        )
-        .await
-        .ok()?;
+    let read = if clock {
+        admission
+            .root
+            .read_house_clock_equipment(
+                admission.character,
+                admission.holder,
+                &fence,
+                *admission.channel_id.as_bytes(),
+                digest,
+            )
+            .await
+    } else {
+        admission
+            .root
+            .read_house_equipment(
+                admission.character,
+                admission.holder,
+                &fence,
+                *admission.channel_id.as_bytes(),
+                digest,
+            )
+            .await
+    }
+    .ok()?;
     if read.fence() != &fence
         || read.equipment().content_digest != digest
         || house_equipment_digest(admission, actor, session, fence).await != Some(digest)

@@ -20,7 +20,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             "oteryn:item.tibia.i3505".into(),
             "oteryn:item.tibia.i3505".into(),
         ),
-        Case::ResidentTimedEquip => (
+        Case::ResidentTimedEquip(_) => (
             "oteryn:item.tibia.i3051".into(),
             "oteryn:item.tibia.i3051".into(),
         ),
@@ -193,7 +193,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         Case::ResidentLetter
             | Case::ResidentMail
             | Case::ResidentEquip
-            | Case::ResidentTimedEquip
+            | Case::ResidentTimedEquip(_)
             | Case::ResidentMount
             | Case::ResidentTick
             | Case::ResidentAppearanceRevoked
@@ -203,7 +203,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     if matches!(
         case,
         Case::ResidentEquip
-            | Case::ResidentTimedEquip
+            | Case::ResidentTimedEquip(_)
             | Case::ResidentMount
             | Case::ResidentTick
             | Case::ResidentAppearanceRevoked
@@ -324,7 +324,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         Case::ResidentExpiryTick => &[3, 4, 6, 15, 49, 51, 86, 115, 165, 508, 509, 511],
         Case::ResidentLetter => &[4, 6, 15, 49, 86, 115, 508, 509, 511],
         Case::ResidentMail => &[4, 6, 86, 115],
-        Case::ResidentEquip | Case::ResidentTimedEquip => &[4, 6, 12, 15, 86],
+        Case::ResidentEquip | Case::ResidentTimedEquip(_) => &[4, 6, 12, 15, 86],
         Case::ResidentMount | Case::ResidentAppearanceRevoked => &[6, 13, 25, 49, 86, 502],
         Case::ResidentQuest => &[6, 49, 86, 500],
         Case::Carried | Case::Foreign => &[4, 6, 15, 49, 86],
@@ -380,7 +380,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             | Case::ResidentLetter
             | Case::ResidentMail
             | Case::ResidentEquip
-            | Case::ResidentTimedEquip
+            | Case::ResidentTimedEquip(_)
             | Case::ResidentMount
             | Case::ResidentAppearanceRevoked
             | Case::ResidentQuest
@@ -463,7 +463,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             | Case::ResidentLetter
             | Case::ResidentMail
             | Case::ResidentEquip
-            | Case::ResidentTimedEquip
+            | Case::ResidentTimedEquip(_)
     ) {
         return super::super::house_resident_reads::exchange(
             h, &mut owner, admitted, before_ref, case,

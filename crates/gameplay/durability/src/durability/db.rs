@@ -1317,7 +1317,16 @@ impl Drop for BootPassDeadline {
     }
 }
 
+tokio::task_local! {
+    static PERIODIC_LOCK_BUDGET: ();
+}
+
 impl DurabilityRoot {
+    /// Cap each PostgreSQL lock wait while periodic equipment maintenance owns the spell lane.
+    pub fn with_periodic_lock_budget<F: Future>(&self, future: F) -> impl Future<Output = F::Output> {
+        PERIODIC_LOCK_BUDGET.scope((), Box::pin(future))
+    }
+
     /// Classifies scheduled work, including its ordinary semantic passes, as background.
     /// Its independent owner key survives awaits and is inherited by `spawn_task`.
     /// Shared helpers cannot promote it to foreground or keep a retry ticket.
@@ -2132,14 +2141,20 @@ async fn begin_transaction<'a>(
         let millis = u64::try_from(remaining.as_millis().max(1))
             .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?;
         let timeout_value = format!("{millis}ms");
+        let lock_timeout = if PERIODIC_LOCK_BUDGET.try_with(|()| ()).is_ok() {
+            "1ms"
+        } else {
+            &timeout_value
+        };
         tokio::time::timeout(
             remaining,
             sqlx::query(
                 "SELECT set_config('transaction_timeout', $1, true), \
                  set_config('statement_timeout', $1, true), \
-                 set_config('lock_timeout', $1, true)",
+                 set_config('lock_timeout', $2, true)",
             )
-            .bind(timeout_value)
+            .bind(&timeout_value)
+            .bind(lock_timeout)
             .execute(&mut *transaction),
         )
         .await

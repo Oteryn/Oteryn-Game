@@ -15,7 +15,7 @@ mod house_read;
 #[path = "character_equipment/instance_read.rs"]
 mod instance_read;
 pub use cast_read::{CastEquipmentReader, read_cast_equipment_in_transaction};
-pub(crate) use house_read::read_house_equipment_in_transaction;
+pub(crate) use house_read::{HouseEquipmentAccess, assert_house_equipment_content, read_house_equipment_in_transaction};
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::equipment_policy_abi::{EquipmentPolicyLookup, claims};

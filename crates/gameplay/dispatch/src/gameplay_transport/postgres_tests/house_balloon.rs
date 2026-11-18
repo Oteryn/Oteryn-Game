@@ -170,7 +170,7 @@ pub(super) enum Case {
     ResidentLetter,
     ResidentMail,
     ResidentEquip,
-    ResidentTimedEquip,
+    ResidentTimedEquip(super::house_resident_reads::ClockCase),
     ResidentAppearanceRevoked,
     ResidentMount,
     ResidentQuest,

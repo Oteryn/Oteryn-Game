@@ -55,6 +55,10 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         }
         next.store(now.saturating_add(1_000), Ordering::Relaxed);
 
+        // Prune against a census taken under the same lane that moves a House clock.
+        let Some(census_permit) = self.spell_lane_permit().await else {
+            return;
+        };
         let mut sessions = {
             let runtime = self.runtime.lock().await;
             let Ok(census) = runtime.positioned_melee_census() else {
@@ -90,6 +94,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             active.retain(|session, _| present.contains(session));
             active.keys().copied().collect()
         };
+        drop(census_permit);
         // Stable order, one cursor across equipment, quests and converters as
         // well as the two scope projections. A refused unit cannot restart a prefix.
         sessions.sort_by_key(|(_, session, _)| *session.as_bytes());
@@ -111,7 +116,12 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                             return;
                         };
                         if (index - 2).is_multiple_of(2) {
-                            self.checkpoint_timed_equipment(actor, session, false).await;
+                            let checkpoint = self.checkpoint_timed_equipment(actor, session, false);
+                            if house {
+                                self.root.with_periodic_lock_budget(checkpoint).await;
+                            } else {
+                                checkpoint.await;
+                            }
                         } else {
                             self.drain_quest_timers(actor, session).await;
                         }
@@ -387,7 +397,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             if self
                 .refresh_clock_equipment_effects(actor, session, item_fence, true)
                 .await
-                .is_err()
+                != Ok(true)
             {
                 return false;
             }
@@ -464,7 +474,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         digest: [u8; 32],
     ) -> Option<EquipmentSnapshot> {
         if matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. }) {
-            return super::equipment_move::read_fenced_house_equipment(
+            return super::equipment_move::read_house_clock_equipment(
                 self,
                 actor,
                 fence.game_session_id,
@@ -490,7 +500,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         house: bool,
     ) -> Result<bool, ()> {
         let effects = if house {
-            self.read_house_admission_effects(actor, session, fence)
+            self.read_house_equipment_effects(actor, session, fence, true)
                 .await?
         } else {
             self.read_admission_effects(session).await?

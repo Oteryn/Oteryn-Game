@@ -44,7 +44,36 @@ fn house_resident_equip_moves_helmet_postgres() -> TestResult {
 
 #[test]
 fn house_resident_energy_ring_expires_postgres() -> TestResult {
-    run_case(Case::ResidentTimedEquip)
+    run_case(Case::ResidentTimedEquip(ClockCase::Expiry))
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum ClockCase {
+    Expiry,
+    Handoff,
+    Logout,
+    Grace,
+    Writer,
+}
+
+#[test]
+fn house_resident_ring_handoff_settles_elapsed_postgres() -> TestResult {
+    run_case(Case::ResidentTimedEquip(ClockCase::Handoff))
+}
+
+#[test]
+fn house_resident_ring_logout_after_acl_revocation_postgres() -> TestResult {
+    run_case(Case::ResidentTimedEquip(ClockCase::Logout))
+}
+
+#[test]
+fn house_resident_ring_expires_in_reconnect_grace_postgres() -> TestResult {
+    run_case(Case::ResidentTimedEquip(ClockCase::Grace))
+}
+
+#[test]
+fn house_resident_ring_tick_yields_to_registration_writer_postgres() -> TestResult {
+    run_case(Case::ResidentTimedEquip(ClockCase::Writer))
 }
 
 #[test]
@@ -329,7 +358,7 @@ pub(super) async fn exchange(
     .bind(id(41).as_slice())
     .execute(&mut *tx)
     .await?;
-    if case == Case::ResidentTimedEquip {
+    if matches!(case, Case::ResidentTimedEquip(_)) {
         // The native ring requires an eligible vocation before its clock can start.
         sqlx::query("INSERT INTO game_character_build_state(character_id,vocation,magic_level,mana_spent,fist_level,fist_tries,club_level,club_tries,sword_level,sword_tries,axe_level,axe_tries,distance_level,distance_tries,shielding_level,shielding_tries,fishing_level,fishing_tries,committed_character_revision,last_build_occurrence_id) VALUES(encode($1,'hex')::uuid,'monk',10,0,10,0,10,0,10,0,10,0,10,0,10,0,10,0,2,encode($2,'hex')::uuid) ON CONFLICT(character_id) DO UPDATE SET vocation='monk'")
             .bind(id(41).as_slice()).bind(id(30).as_slice()).execute(&mut *tx).await?;
@@ -469,7 +498,7 @@ pub(super) async fn exchange(
                         Case::ResidentLetter
                             | Case::ResidentMail
                             | Case::ResidentEquip
-                            | Case::ResidentTimedEquip
+                            | Case::ResidentTimedEquip(_)
                     ) =>
                 {
                     let (_, domains) =
@@ -481,7 +510,7 @@ pub(super) async fn exchange(
                         }
                         let inventory = item_view::decode_character_inventory_with_equip_drop(
                             domain.payload,
-                            matches!(case, Case::ResidentEquip | Case::ResidentTimedEquip),
+                            matches!(case, Case::ResidentEquip | Case::ResidentTimedEquip(_)),
                         )
                         .map_err(debug)?;
                         let handle = inventory
@@ -500,14 +529,14 @@ pub(super) async fn exchange(
                                 })
                                 .map_err(debug)?,
                             )
-                        } else if matches!(case, Case::ResidentEquip | Case::ResidentTimedEquip) {
+                        } else if matches!(case, Case::ResidentEquip | Case::ResidentTimedEquip(_)) {
                             (
                                 item_view::COMMAND_TYPE_ITEM_MOVE_INTENT,
                                 item_view::encode_item_move_intent_with_equip_drop(
                                     &item_view::ItemMoveIntent {
                                         source: handle,
                                         destination: item_view::ItemMoveDestination::Equipment(
-                                            if case == Case::ResidentTimedEquip {
+                                            if matches!(case, Case::ResidentTimedEquip(_)) {
                                                 item_view::EquipmentSlot::Ring
                                             } else {
                                                 item_view::EquipmentSlot::Head
@@ -544,7 +573,7 @@ pub(super) async fn exchange(
                 MessageType::CommandResult
                     if matches!(
                         case,
-                        Case::ResidentMail | Case::ResidentEquip | Case::ResidentTimedEquip
+                        Case::ResidentMail | Case::ResidentEquip | Case::ResidentTimedEquip(_)
                     ) =>
                 {
                     let reply = decode_command_result(envelope.payload()).map_err(debug)?;
@@ -695,7 +724,16 @@ pub(super) async fn exchange(
         .await?;
         assert_eq!(slot, Some(1));
     }
-    if case == Case::ResidentTimedEquip {
+    if let Case::ResidentTimedEquip(clock) = case
+        && clock != ClockCase::Expiry
+    {
+        let admitted = match end {
+            ConnectionEnd::AdmittedThenDisconnected(current) => current,
+            _ => return Err(format!("ring equip connection ended {end:?}").into()),
+        };
+        return check_ring_clock(h, owner, admitted, clock).await;
+    }
+    if matches!(case, Case::ResidentTimedEquip(_)) {
         owner.clock_origin -= std::time::Duration::from_secs(601);
         owner.tick_timed_items().await;
         let lifecycle: i16 = sqlx::query_scalar(
@@ -739,4 +777,119 @@ pub(super) async fn exchange(
 async fn decoration_phase(h: &Harness) -> TestResult<String> {
     Ok(sqlx::query_scalar("SELECT definition_production_key FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(id(80).as_slice()).fetch_one(&h.pool).await?)
+}
+
+async fn check_ring_clock(
+    h: &Harness,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    case: ClockCase,
+) -> TestResult {
+    use crate::gameplay_transport::connection::ControlLossResult;
+    use std::time::Duration;
+    let actor = admitted.runtime_actor.ok_or("House actor")?;
+    let session = admitted.game_session_id;
+    let budget = || async {
+        let remaining: Option<i64> = sqlx::query_scalar(
+            "SELECT remaining_ms FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid",
+        ).bind(id(71).as_slice()).fetch_optional(&h.pool).await?;
+        Ok::<_, sqlx::Error>(remaining.unwrap_or(600_000))
+    };
+    if case == ClockCase::Grace {
+        let (before, after) = mana_after_hit(owner, actor, session).await?;
+        assert!(after < before, "worn ring grants a shield");
+        assert_eq!(
+            owner.lose_control(admitted, Duration::ZERO, None).await,
+            ControlLossResult::Recorded
+        );
+        owner.clock_origin -= Duration::from_secs(601);
+        owner.tick_timed_items().await;
+        owner.clock_origin -= Duration::from_secs(2);
+        owner.tick_timed_items().await;
+        {
+            let runtime = owner.runtime.lock().await;
+            assert!(owner.states.spell_states.lock().await.resume_house(
+                &runtime,
+                actor,
+                session,
+                owner.owner_now(),
+            ));
+        }
+        let (before, after) = mana_after_hit(owner, actor, session).await?;
+        assert_eq!(before, after, "expired ring must leave no shield on resume");
+        return Ok(());
+    }
+
+    owner.clock_origin -= Duration::from_secs(30);
+    if case == ClockCase::Writer {
+        let mut writer = h.pool.begin().await?;
+        sqlx::query("SELECT node_id FROM game_node_registrations WHERE node_id=encode($1,'hex')::uuid FOR UPDATE")
+            .bind(owner.holder.fact().node_id().as_bytes().as_slice())
+            .fetch_one(&mut *writer).await?;
+        tokio::time::timeout(Duration::from_millis(500), owner.tick_timed_items())
+            .await
+            .map_err(|_| "resident clock held the spell lane behind the registration writer")?;
+        writer.rollback().await?;
+        return Ok(());
+    }
+
+    owner.tick_timed_items().await;
+    let before = budget().await?;
+    assert!(
+        before > 590_000,
+        "periodic checkpoint should defer the partial debit"
+    );
+    match case {
+        ClockCase::Handoff => {
+            let house = super::house_balloon::HOUSE;
+            let mut exit = vec![8, 2, 18, u8::try_from(house.len())?];
+            exit.extend_from_slice(house.as_bytes());
+            let (outside, _) = owner
+                .transfer_house(admitted, 2, &exit)
+                .await
+                .ok_or("House exit")?;
+            assert!(outside.is_some(), "the native handoff must commit");
+        }
+        ClockCase::Logout => {
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            let removed = sqlx::query("DELETE FROM game_house_acl_entries WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 AND list_key='guest' AND character_id=encode($3,'hex')::uuid")
+                .bind(id(42).as_slice()).bind(super::house_balloon::HOUSE)
+                .bind(id(41).as_slice()).execute(&mut *tx).await?;
+            assert_eq!(removed.rows_affected(), 1);
+            tx.commit().await?;
+            assert_eq!(
+                owner.logout(admitted).await,
+                crate::gameplay_transport::logout::LogoutReply::Result(
+                    oteryn_protocol_oteryn::logout::LogoutResult::Accepted,
+                ),
+            );
+        }
+        _ => return Err("unexpected energy ring clock case".into()),
+    }
+    let remaining = budget().await?;
+    assert!(
+        (560_000..=570_000).contains(&remaining),
+        "{case:?} must settle 30 seconds of equipped time, remaining {remaining}"
+    );
+    Ok(())
+}
+
+async fn mana_after_hit(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+) -> TestResult<(u32, u32)> {
+    let spells = owner.states.spell_states.lock().await;
+    let (_, _, state) = spells
+        .actors
+        .iter()
+        .find(|(held, id, _)| *held == actor && *id == session)
+        .ok_or("retained spell state")?;
+    let (hit, _) =
+        crate::spell::actor_conditions::stage_creature_hit(state, 5, owner.owner_now().get())
+            .map_err(debug)?;
+    Ok::<_, Box<dyn std::error::Error>>((state.vitals().mana, hit.vitals().mana))
 }

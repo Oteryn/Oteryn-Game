@@ -172,13 +172,14 @@ impl DurabilityRoot {
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &record).await?;
                     super::db::lock_admission_relations(&mut tx).await?;
-                    if !super::house_hireling::fence::assert_house_inventory_fence(
+                    if super::house_hireling::fence::assert_house_custody_fence(
                         &mut tx,
                         &node,
                         &fence.item_fence(),
                         origin_channel,
                     )
                     .await?
+                    .is_none()
                     {
                         return Err(DurabilityError::Unavailable);
                     }
@@ -228,9 +229,9 @@ impl DurabilityRoot {
             assert_recovery_fence(&mut tx, &record).await?;
             let authorized = if let Some(origin) = house_origin {
                 super::db::lock_admission_relations(&mut tx).await?;
-                super::house_hireling::fence::assert_house_inventory_fence(
+                super::house_hireling::fence::assert_house_custody_fence(
                     &mut tx, &node, &fence.item_fence(), origin,
-                ).await?
+                ).await?.is_some()
             } else {
                 assert_item_only_fence(&mut tx, &fence.item_fence(), &node).await?.is_ok()
             };

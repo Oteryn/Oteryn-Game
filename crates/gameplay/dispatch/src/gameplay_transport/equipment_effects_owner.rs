@@ -673,6 +673,17 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         session: crate::foundation::GameSessionId,
         fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     ) -> Result<Option<AdmissionEffects>, ()> {
+        self.read_house_equipment_effects(actor, session, fence, false)
+            .await
+    }
+
+    pub(in crate::gameplay_transport) async fn read_house_equipment_effects(
+        &self,
+        actor: crate::foundation::ExactActorRef,
+        session: crate::foundation::GameSessionId,
+        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+        clock: bool,
+    ) -> Result<Option<AdmissionEffects>, ()> {
         let Some(native) = self.active_generation.and_then(|a| a.native_gameplay()) else {
             return Ok(None);
         };
@@ -682,9 +693,15 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| ())?
             .filter(|current| current.item_fence() == fence)
             .ok_or(())?;
-        let equipment = super::read_fenced_house_equipment(self, actor, session, fence)
+        let equipment = if clock {
+            crate::gameplay_transport::equipment_move::read_house_clock_equipment(
+                self, actor, session, fence,
+            )
             .await
-            .ok_or(())?;
+        } else {
+            super::read_fenced_house_equipment(self, actor, session, fence).await
+        }
+        .ok_or(())?;
         self.equipment_effects_from_snapshot(
             session,
             equipment,
@@ -855,7 +872,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let (proficiency_weapon, proficiency_defense, proficiency_shield_modifier) =
                 self.equipped_proficiency_defense(session, &equipment)?;
             let mut states = self.states.spell_states.lock().await;
-            let state = states.house_state_mut(runtime, actor, session, fence)?;
+            let state = states.house_equipment_state_mut(runtime, actor, session, fence)?;
             state.install_wheel_equipment(wheel_hands);
             state.install_wheel_proficiency(
                 proficiency_weapon.as_deref(),
