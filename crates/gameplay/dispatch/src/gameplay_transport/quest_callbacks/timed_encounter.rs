@@ -133,20 +133,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let mut runtime = self.runtime.lock().await;
         let Some(map) = self.bundle_map() else { return };
+        let Some(native) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+        else {
+            return;
+        };
         if runtime.owner_fence().is_err()
-            || self
-                .active_generation
-                .and_then(|active| active.native_gameplay())
-                .is_none_or(|native| {
-                    native.source_digest() != runtime.content_pin().server_artifact_digest()
-                })
+            || native.source_digest() != runtime.content_pin().server_artifact_digest()
         {
             return;
         }
         let now = self.owner_now().get();
         {
             let mut states = self.states.spell_states.lock().await;
-            super::super::encounter_phases::tick_deadlines(&mut runtime, &mut states, now);
+            super::super::encounter_phases::tick_deadlines(&mut runtime, &mut states, now, native);
         }
         let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
             return;

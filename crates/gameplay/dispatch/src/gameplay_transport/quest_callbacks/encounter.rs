@@ -149,7 +149,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let grave_danger = matches!(
             encounter.phase,
             Some(
-                EncounterPhase::GraveDangerEarlOsam { .. }
+                EncounterPhase::GraveDangerDukeKrule { .. }
+                    | EncounterPhase::GraveDangerEarlOsam { .. }
                     | EncounterPhase::GraveDangerSirs { .. }
                     | EncounterPhase::GraveDangerZelos { .. }
             )

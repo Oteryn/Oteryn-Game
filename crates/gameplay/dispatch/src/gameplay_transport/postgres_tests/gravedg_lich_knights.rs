@@ -181,3 +181,64 @@ pub(super) async fn exercise_osam(
         .any(|actor| runtime.matches_live_creature_identity(actor, SPHERE.as_bytes())));
     Ok(())
 }
+
+#[test]
+fn gravedg_lich_knights_two_players_krule_cycles_forms_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::engenc2_cults::phase_scenario(super::engenc2_cults::PhaseScenario::DukeKrule)
+}
+
+const DUKE: &str = "oteryn:creature.duke_krule";
+
+pub(super) fn configure_duke(callback: &mut Callback) -> TestResult {
+    callback.key = "oteryn:quest-callback/grave-danger/duke-krule".into();
+    callback.storage.clear();
+    let encounter = callback.effects.encounter.as_mut().ok_or("encounter")?;
+    encounter.phase = Some(EncounterPhase::GraveDangerDukeKrule { exit: at(103, 100) });
+    encounter.minimum_level = 1;
+    encounter.monsters.truncate(1);
+    let monster = encounter.monsters.first_mut().ok_or("Duke Krule")?;
+    monster.creature = DUKE.into();
+    monster.position = at(118, 116);
+    encounter.players.get_mut(1).ok_or("second staging tile")?.to = at(110, 117);
+    Ok(())
+}
+
+pub(super) async fn exercise_duke(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    partner: ExactActorRef,
+) -> TestResult {
+    use crate::foundation::{ConditionValues, ConflictKey};
+    let player = admitted.runtime_actor.ok_or("admitted player")?;
+    let duke = {
+        let runtime = owner.runtime.lock().await;
+        runtime.current_live_creature_census().map_err(debug)?.into_iter()
+            .find(|&actor| runtime.matches_live_creature_identity(actor, DUKE.as_bytes()))
+            .ok_or("Duke admitted through USE")?
+    };
+    assert_position(owner, player, 116, 117).await?;
+    assert_position(owner, partner, 110, 117).await?;
+    hit(owner, admitted, duke, DUKE, 101).await?;
+    let now = owner.owner_now().get();
+    super::gravedg_zelos::tick_at(owner, now).await;
+    super::gravedg_zelos::tick_at(owner, now + 3_000_000).await;
+    {
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let current = states.get(&runtime, player, admitted.game_session_id).ok_or("admitted state")?;
+        let outfit = current.owned_conditions().active_at(ConflictKey::Outfit, now + 3_000_000)
+            .ok_or("Duke Krule elemental outfit")?;
+        assert!(matches!(outfit.definition().values(),
+            ConditionValues::Outfit { look_type: 49 | 286, duration_ms: 6000 }));
+        assert!(current.owned_conditions().active_at(ConflictKey::Outfit, now + 9_000_000).is_none());
+    }
+    super::gravedg_zelos::tick_at(owner, now + 20 * 60 * 1_000_000).await;
+    for actor in [player, partner] {
+        assert_position(owner, actor, 103, 100).await?;
+    }
+    Ok(())
+}

@@ -317,6 +317,8 @@ pub struct Encounter {
 pub enum EncounterPhase {
     #[serde(rename = "cults_boss_phase_closures")]
     Cults,
+    #[serde(rename = "grave_danger_duke_krule")]
+    GraveDangerDukeKrule { exit: Position },
     #[serde(rename = "grave_danger_earl_osam")]
     GraveDangerEarlOsam { exit: Position, centre: Position },
     #[serde(rename = "grave_danger_sirs")]
@@ -856,7 +858,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let source_party = encounter.phase.is_some();
         let player_limit = match encounter.phase {
             Some(
-                EncounterPhase::GraveDangerEarlOsam { .. } | EncounterPhase::GraveDangerSirs { .. },
+                EncounterPhase::GraveDangerDukeKrule { .. }
+                | EncounterPhase::GraveDangerEarlOsam { .. }
+                | EncounterPhase::GraveDangerSirs { .. },
             ) => 5,
             Some(EncounterPhase::GraveDangerZelos { .. }) => 10,
             Some(EncounterPhase::Cults) => 16,
@@ -885,6 +889,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                 .contains(&encounter.monsters.len())
             || (encounter.phase.is_some() && encounter.timing.is_some())
+            || matches!(encounter.phase, Some(EncounterPhase::GraveDangerDukeKrule { exit })
+                if !pos(exit) || in_room(exit))
             || matches!(encounter.phase, Some(EncounterPhase::GraveDangerEarlOsam { exit, centre })
                 if encounter.monsters.len() != 1 || !pos(exit) || in_room(exit)
                     || !pos(centre) || !in_room(centre))

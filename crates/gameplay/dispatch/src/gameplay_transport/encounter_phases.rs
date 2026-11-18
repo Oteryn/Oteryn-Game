@@ -5,6 +5,7 @@ use crate::foundation::{
     MovementPositionSnapshot,
 };
 use oteryn_gameplay_encounters::bosses::phase_controller::cults::{self, CultsEncounter};
+use oteryn_gameplay_encounters::bosses::phase_controller::duke_krule::DukeKruleEncounter;
 use oteryn_gameplay_encounters::bosses::phase_controller::zelos::ZelosEncounter;
 use oteryn_gameplay_encounters::bosses::phase_controller::{
     earl_osam::{self, EarlOsamEncounter},
@@ -13,6 +14,8 @@ use oteryn_gameplay_encounters::bosses::phase_controller::{
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, EncounterPhase};
 use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
 use std::sync::Mutex;
+
+mod duke_krule;
 
 const MAX_ENCOUNTERS: usize = 64;
 
@@ -54,6 +57,7 @@ impl TimedRoom {
 #[derive(Debug)]
 enum Fight {
     Cults(CultsEncounter),
+    DukeKrule(DukeKruleEncounter),
     EarlOsam(EarlOsamEncounter),
     Sirs(SirsEncounter),
     Zelos(ZelosEncounter),
@@ -63,6 +67,7 @@ impl Fight {
     fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
         match self {
             Self::Cults(fight) => fight.is_current(runtime),
+            Self::DukeKrule(fight) => fight.is_current(runtime),
             Self::EarlOsam(fight) => fight.is_current(runtime),
             Self::Sirs(fight) => fight.is_current(runtime),
             Self::Zelos(fight) => fight.is_current(runtime),
@@ -72,6 +77,7 @@ impl Fight {
     fn contains(&self, actor: ExactActorRef) -> bool {
         match self {
             Self::Cults(fight) => fight.contains(actor),
+            Self::DukeKrule(fight) => fight.contains(actor),
             Self::EarlOsam(fight) => fight.contains(actor),
             Self::Sirs(fight) => fight.contains(actor),
             Self::Zelos(fight) => fight.contains(actor),
@@ -81,7 +87,7 @@ impl Fight {
     fn contains_terminal(&self, actor: ExactActorRef) -> bool {
         match self {
             Self::Cults(fight) => fight.contains_terminal(actor),
-            Self::EarlOsam(_) | Self::Sirs(_) => false,
+            Self::DukeKrule(_) | Self::EarlOsam(_) | Self::Sirs(_) => false,
             Self::Zelos(fight) => fight.contains_terminal(actor),
         }
     }
@@ -92,6 +98,7 @@ impl Fight {
     ) -> Result<Option<&[(ExactActorRef, GameSessionId)]>, CarrierError> {
         match self {
             Self::Cults(fight) => fight.victors(runtime),
+            Self::DukeKrule(fight) => fight.victors(runtime),
             Self::EarlOsam(fight) => fight.victors(runtime),
             Self::Sirs(fight) => fight.victors(runtime),
             Self::Zelos(fight) => fight.victors(runtime),
@@ -105,6 +112,7 @@ impl Fight {
     ) -> Result<bool, CarrierError> {
         match self {
             Self::Cults(fight) => fight.projected_death(runtime, actor),
+            Self::DukeKrule(fight) => fight.projected_death(runtime, actor),
             Self::EarlOsam(fight) => fight.projected_death(runtime, actor),
             Self::Sirs(fight) => fight.projected_death(runtime, actor),
             Self::Zelos(fight) => fight.projected_death(runtime, actor),
@@ -114,6 +122,7 @@ impl Fight {
     fn timeout_participants(&self, now: u64) -> Option<&[(ExactActorRef, GameSessionId)]> {
         match self {
             Self::Cults(_) => None,
+            Self::DukeKrule(fight) => fight.timeout_participants(now),
             Self::EarlOsam(fight) => fight.timeout_participants(now),
             Self::Sirs(fight) => fight.timeout_participants(now),
             Self::Zelos(fight) => fight.timeout_participants(now),
@@ -123,6 +132,7 @@ impl Fight {
     fn retire(&self, runtime: &mut ChannelRuntimeV1) -> Result<(), CarrierError> {
         match self {
             Self::Cults(_) => Err(CarrierError::PlanConflict),
+            Self::DukeKrule(fight) => fight.retire(runtime),
             Self::EarlOsam(fight) => fight.retire(runtime),
             Self::Sirs(fight) => fight.retire(runtime),
             Self::Zelos(fight) => fight.retire(runtime),
@@ -148,6 +158,7 @@ impl Fight {
         };
         match self {
             Self::Cults(fight) => fight.advance(runtime, at).map(|_| true),
+            Self::DukeKrule(_) => Err(CarrierError::PlanConflict),
             Self::EarlOsam(fight) => match now {
                 Some(now) => fight.advance(runtime, now, at, relocate),
                 None => Ok(true),
@@ -180,6 +191,7 @@ impl Registry {
             .filter_map(|phase| {
                 phase.victory_exit_us.or_else(|| match &phase.fight {
                     Fight::Cults(_) => None,
+                    Fight::DukeKrule(fight) => Some(fight.next_due_us()),
                     Fight::EarlOsam(fight) => Some(fight.next_due_us()),
                     Fight::Sirs(fight) => Some(fight.next_due_us()),
                     Fight::Zelos(fight) => Some(fight.next_due_us()),
@@ -388,6 +400,16 @@ pub(super) fn bind(
         })
     };
     let timed = match encounter.phase {
+        Some(EncounterPhase::GraveDangerDukeKrule { exit }) => {
+            let room = make_room(exit, None)?;
+            if room.contains(room.exit) || !placement(&cells, runtime, room.exit) {
+                return Err(CarrierError::PlanConflict);
+            }
+            Some((
+                Fight::DukeKrule(DukeKruleEncounter::bind(runtime, players, actors, now)?),
+                room,
+            ))
+        }
         Some(EncounterPhase::GraveDangerEarlOsam { exit, centre }) => {
             let room = make_room(exit, None)?;
             let centre = local(centre);
@@ -557,27 +579,29 @@ fn placement(
 }
 
 pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &mut ChannelSpellStates, now: u64) {
-    tick_phase_kind(runtime, states, now, false);
+    tick_phase_kind(runtime, states, now, None);
 }
 
 pub(super) fn tick_deadlines(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
     now: u64,
+    native: &crate::content::native_gameplay::NativeGameplayState,
 ) {
-    tick_phase_kind(runtime, states, now, true);
+    tick_phase_kind(runtime, states, now, Some(native));
 }
 
 fn tick_phase_kind(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
     now: u64,
-    timed: bool,
+    native: Option<&crate::content::native_gameplay::NativeGameplayState>,
 ) {
     let Ok(mut active) = states.encounter_phases.active.lock() else {
         return;
     };
     let mut exits = Vec::new();
+    let mut duke_effects = Vec::new();
     active.retain(|phase| phase.fight.is_current(runtime));
     active.retain_mut(|phase| {
         let ActivePhase {
@@ -588,7 +612,7 @@ fn tick_phase_kind(
             victory_exit_us,
             ..
         } = phase;
-        if timed != timed_room.is_some() {
+        if native.is_some() != timed_room.is_some() {
             return true;
         }
         if let (Some(room), Some(due)) = (timed_room.as_ref(), *victory_exit_us) {
@@ -601,11 +625,19 @@ fn tick_phase_kind(
             return !evacuate(runtime, cells, room, victors, &mut exits)
                 || fight.retire(runtime).is_err();
         }
-        if let Some(room) = timed_room.as_ref()
-            && let Some(participants) = fight.timeout_participants(now)
-            && !evacuate(runtime, cells, room, participants, &mut exits)
-        {
-            return true;
+        if let Some(room) = timed_room.as_ref() {
+            if let Some(participants) = fight.timeout_participants(now) {
+                return !evacuate(runtime, cells, room, participants, &mut exits)
+                    || fight.retire(runtime).is_err();
+            }
+            if let Fight::DukeKrule(duke) = fight {
+                if let Ok((source, effects)) =
+                    duke.due_effects(runtime, now, |at| room.contains(at))
+                {
+                    duke_effects.extend(effects.into_iter().map(|effect| (source, effect)));
+                }
+                return true;
+            }
         }
         let osam_push = match fight {
             Fight::EarlOsam(osam) => osam
@@ -631,6 +663,11 @@ fn tick_phase_kind(
             .is_ok_and(|victors| victors.is_none())
     });
     drop(active);
+    if let Some(native) = native {
+        for (source, effect) in duke_effects {
+            duke_krule::apply(runtime, states, native, source, effect, now);
+        }
+    }
     for (cells, actor, session, before, after) in exits {
         let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
             cells.index()
