@@ -188,6 +188,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await;
         }
+        // Crystal 201189f8 demon_oak/movements_entrance.lua:22 checks same-floor
+        // player spectators before consuming the icon or writing entrance progress.
+        if callback.trigger == Trigger::StepIn
+            && callback.quest == "oteryn:quest.demon_oak"
+            && callback.selector.unique == Some(9000)
+            && runtime.positioned_melee_census().map_or(true, |census| {
+                census.iter().any(|(_, position, session)| {
+                    let at = position.position();
+                    session.is_some()
+                        && at.floor == 7
+                        && (32707..=32725).contains(&at.x)
+                        && (32345..=32357).contains(&at.y)
+                })
+            })
+        {
+            return UseDisposition::Occupied;
+        }
         let tree_reset = oteryn_gameplay_quests::quest::dreamer_death_ring::shared_reset(callback);
         let close = tree_reset
             || callback.trigger == Trigger::StepOut
