@@ -257,7 +257,7 @@ mod tests {
         callback.effects.target_transform = None;
         callback.effects.item_reward_per_use = true;
         callback.effects.restore_disguise = true;
-        callback.teleport = callback.selector.position;
+        callback.teleport = callback.selector.native.as_ref().map(|source| source.position);
         callback.storage = vec![Storage {
             track: callback.storage[0].track.clone(),
             minimum: 1,
