@@ -159,7 +159,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:c5863dba4042e4d49601c23fb5759c8e7d9757394a91b3c4e41540920e8080c6",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:bd8dc96734b56f8e905faf8f442b9bc5dd9d2ea05afac36e246c8ba9390c4244",
+        "content/world/placements/index.json:1:sha256:f4787325242eff822bd499c952091801c3ca102357d4511f8f0c3900da73d15d",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -229,7 +229,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:c5863dba4042e4d49601c23fb5759c8e7d9757394a91b3c4e41540920e8080c6",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:bd8dc96734b56f8e905faf8f442b9bc5dd9d2ea05afac36e246c8ba9390c4244",
+        "content/world/placements/index.json:1:sha256:f4787325242eff822bd499c952091801c3ca102357d4511f8f0c3900da73d15d",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
@@ -299,7 +299,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:c5863dba4042e4d49601c23fb5759c8e7d9757394a91b3c4e41540920e8080c6",
         "content/world/placements/region-z07-x129-y125.b3:1:sha256:d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f",
-        "content/world/placements/index.json:1:sha256:bd8dc96734b56f8e905faf8f442b9bc5dd9d2ea05afac36e246c8ba9390c4244",
+        "content/world/placements/index.json:1:sha256:f4787325242eff822bd499c952091801c3ca102357d4511f8f0c3900da73d15d",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:sha256:f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a"
       ]
     },
