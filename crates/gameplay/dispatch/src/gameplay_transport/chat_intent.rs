@@ -1162,9 +1162,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             quest_tracks.as_ref(),
         );
         if spoken.disposition == ChatDisposition::Ok
-            && let ChatIntent::Say { mode: ChatSpeechMode::Say, text } = intent
+            && let ChatIntent::Say {
+                mode: ChatSpeechMode::Say,
+                text,
+            } = intent
             && !states.is_dead(actor)
-            && runtime.player_control_facts(actor, session).is_ok_and(|facts| facts.control_loss.is_none())
+            && runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
         {
             self.oberon_reply(&mut runtime, actor, text, now.get() / 1_000_000);
         }

@@ -9,10 +9,7 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
         && callback.actor_kind == ActorKind::Player
         && callback.item_on_target.as_ref().is_some_and(|tool| {
             (tool.selected_instance && callback.requires_world_admission)
-                || matches!(
-                    callback.native_rule,
-                    Some(NativeRule::IceSealPaint { .. })
-                )
+                || matches!(callback.native_rule, Some(NativeRule::IceSealPaint { .. }))
         })
 }
 
