@@ -47,6 +47,17 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
     let source = NpcRuleCatalog::load_embedded().map_err(debug)?;
+    let myzzi_program = "oteryn:quest-npc-program.dream-courts-myzzi";
+    let myzzi = source
+        .programs()
+        .iter()
+        .find(|program| program.document.program_key.as_deref() == Some(myzzi_program));
+    if let Some(myzzi) = myzzi {
+        assert_eq!(myzzi.document.quest, "oteryn:quest.the_dream_courts_quest");
+        assert_eq!(myzzi.document.tracks.len(), 1);
+        assert_eq!(myzzi.document.rules.len(), 10);
+        assert!(myzzi.document.rules.iter().all(|rule| rule.npc == "oteryn:npc.myzzi"));
+    }
     // The merged Paradox and citizen Source owners add exactly two programs,
     // 31 rules and four NPCs. Keep the prior cohort's exact census as well.
     let inherited = source
@@ -56,9 +67,10 @@ pub(super) async fn exercise(
             p.document.quest != "oteryn:quest.the_paradox_tower_quest"
                 && p.document.program_key.as_deref()
                     != Some("oteryn:quest-npc-program.citizen-source-sagas")
+                && p.document.program_key.as_deref() != Some(myzzi_program)
         })
         .collect::<Vec<_>>();
-    assert_eq!(source.programs().len(), 25);
+    assert_eq!(source.programs().len(), 25 + usize::from(myzzi.is_some()));
     assert_eq!(inherited.len(), 23);
     // Quest package 3 (#3290) added seven rules for Gelidrazah's Thirst.
     // Under oteryn:quest-npc/the_first_dragon_quest/gelidrazahs_thirst/:

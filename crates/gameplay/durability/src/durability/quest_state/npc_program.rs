@@ -130,7 +130,7 @@ pub fn preview_with_appearance(
         player_name,
         appearance,
     };
-    let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
+    let Some(source) = NpcRuleCatalog::runtime_for(catalogue)?.admitted_for_npc(&request.npc, catalogue)? else {
         return Ok(None);
     };
     let cooking_inventory = if hot_cuisine_m42::owns(request) {
@@ -213,7 +213,7 @@ pub fn preview_with_inventory(
     appearance: (&BTreeMap<u16, u8>, u8),
     inventory: &NpcInventorySnapshot,
 ) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError> {
-    let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
+    let Some(source) = NpcRuleCatalog::runtime_for(catalogue)?.admitted_for_npc(&request.npc, catalogue)? else {
         return Ok(None);
     };
     evaluate_source(&source, request, tracks, catalogue, now,
@@ -347,16 +347,18 @@ impl DurabilityRoot {
         items: &C,
         premium: &G,
     ) -> Result<NpcProgramCommit> {
+        let source = NpcRuleCatalog::runtime_for(&catalogue)
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
         self.commit_npc_program_source(
             authority,
             node,
             permit,
             fence,
             request,
-            catalogue,
+            Arc::clone(&catalogue),
             items,
             premium,
-            NpcRuleCatalog::runtime().map_err(|_| CharacterProgressionError::InvalidInput)?,
+            source,
             None,
         )
         .await

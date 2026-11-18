@@ -1522,7 +1522,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     map.overlay.base(),
                     self.active_generation
                         .and_then(|active| active.native_gameplay())
-                        .and_then(|native| native.item_index()),
+                        .and_then(|native| native.item_index())
+                        .map(std::sync::Arc::as_ref),
                 )
                 .await
             } else {

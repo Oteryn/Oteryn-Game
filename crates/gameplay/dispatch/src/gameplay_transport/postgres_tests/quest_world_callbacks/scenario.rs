@@ -293,7 +293,7 @@ fn scenario_case(
         || name.starts_with("qengine-rewards-")
         || name == "questpc7-golden"
         || name == "questpc7-friends";
-    use super::super::nightmare_intruders_turn_in;
+    use super::super::{myzzi_court_entry, nightmare_intruders_turn_in};
     let classic_npc = shared_rewards
         || name.starts_with("engoutfit-")
         || qengine_reward
@@ -343,6 +343,7 @@ fn scenario_case(
                 | "questpc2-albinius-portals-exact"
                 | "questpc2-albinius-portals-combined"
                 | "classic-rottin-disrepair"
+                | myzzi_court_entry::NAME
                 | nightmare_intruders_turn_in::NAME
                 | "threatened-dreams-npc"
                 | "conditional-quest-greetings"
@@ -362,6 +363,8 @@ fn scenario_case(
     let color_grid = dreamers_color_grid::matches(name);
     let mut callback = if color_grid {
         dreamers_color_grid::binding(name)?
+    } else if name == myzzi_court_entry::NAME {
+        myzzi_court_entry::binding()?
     } else if kroazur {
         kroazur_solo_room::binding()?
     } else if lucifuga {
@@ -1726,6 +1729,12 @@ fn scenario_case(
         if name == nightmare_intruders_turn_in::NAME {
             owner.quest_catalogue = Some(nightmare_intruders_turn_in::catalogue(
                 owner.quest_catalogue.as_ref().ok_or("quest catalogue")?,
+            )?);
+        }
+        if name == myzzi_court_entry::NAME {
+            owner.quest_catalogue = Some(myzzi_court_entry::catalogue(
+                owner.quest_catalogue.as_ref().ok_or("quest catalogue")?,
+                &callback,
             )?);
         }
         if draconia_escape {
@@ -3098,6 +3107,8 @@ fn scenario_case(
                 &authority,
             ))
             .await?;
+        } else if name == myzzi_court_entry::NAME {
+            Box::pin(myzzi_court_entry::exercise(&mut owner, &mut admitted, &authority)).await?;
         } else if name == nightmare_intruders_turn_in::NAME {
             Box::pin(nightmare_intruders_turn_in::exercise(
                 &mut owner,

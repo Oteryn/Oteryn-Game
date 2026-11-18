@@ -441,6 +441,8 @@ pub struct QuestStateCatalogue {
     transitions: BTreeMap<String, QuestTransition>,
     hashes: BTreeMap<String, [u8; 32]>,
     authored_bindings: Option<std::sync::Arc<authored_bindings::RuntimeBindings>>,
+    #[cfg(any(test, feature = "test-support"))]
+    fixture_npc_rules: Option<std::sync::Arc<npc_rules::NpcRuleCatalog>>,
     npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
     predecessors: BTreeMap<String, Vec<NpcDefinitionPredecessor>>,
     native_recipe_evidence: Option<std::sync::Arc<authored_bindings::embedded::RecipeEvidence>>,
@@ -637,6 +639,8 @@ impl QuestStateCatalogue {
             npc_legacy: BTreeMap::new(),
             predecessors: BTreeMap::new(),
             authored_bindings: None,
+            #[cfg(any(test, feature = "test-support"))]
+            fixture_npc_rules: None,
             native_recipe_evidence: None,
         })
     }
@@ -669,6 +673,10 @@ impl QuestStateCatalogue {
         extended.npc_legacy = self.npc_legacy.clone();
         extended.predecessors = self.predecessors.clone();
         extended.authored_bindings = self.authored_bindings.clone();
+        #[cfg(any(test, feature = "test-support"))]
+        extended
+            .fixture_npc_rules
+            .clone_from(&self.fixture_npc_rules);
         extended.native_recipe_evidence = self.native_recipe_evidence.clone();
         Ok(extended)
     }
@@ -699,6 +707,9 @@ impl QuestStateCatalogue {
         updated.npc_legacy.clone_from(&self.npc_legacy);
         updated.predecessors = self.predecessors.clone();
         updated.authored_bindings = self.authored_bindings.clone();
+        updated
+            .fixture_npc_rules
+            .clone_from(&self.fixture_npc_rules);
         updated.native_recipe_evidence = self.native_recipe_evidence.clone();
         Ok(updated)
     }

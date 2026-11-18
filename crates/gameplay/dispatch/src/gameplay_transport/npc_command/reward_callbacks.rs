@@ -202,7 +202,7 @@ pub(super) fn prepare(
             // dedicated native dialogue and admitted programmes retain those stages;
             // the locked reward writer still proves every source predicate.
             if context.2 == oteryn_gameplay_quests::quest::grizzly_adams::NPC
-                || oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime()
+                || oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime_for(catalogue)
                     .ok()
                     .and_then(|source| {
                         source

@@ -336,13 +336,13 @@ fn npc_false(value: &bool) -> bool {
     !*value
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcRuleProgram {
     pub document: NpcRuleDocument,
     pub digest: [u8; 32],
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct NpcRuleCatalog {
     programs: Vec<NpcRuleProgram>,
 }
@@ -412,6 +412,38 @@ pub struct NpcRulePlan {
 }
 
 impl NpcRuleCatalog {
+    pub fn runtime_for(native: &super::QuestStateCatalogue) -> Result<&Self, NpcRuleError> {
+        #[cfg(any(test, feature = "test-support"))]
+        if let Some(source) = &native.fixture_npc_rules {
+            return Ok(source);
+        }
+        let _ = native;
+        Self::runtime()
+    }
+
+    /// Attach one source document and its definition pin to a test catalogue.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn with_fixture_document(
+        native: &super::QuestStateCatalogue,
+        document: &str,
+    ) -> Result<super::QuestStateCatalogue, NpcRuleError> {
+        let mut source = Self::runtime_for(native)?.clone();
+        let mut extra = Self::from_json_documents(&[document])?;
+        let program = extra
+            .programs
+            .pop()
+            .ok_or_else(|| NpcRuleError::Invalid("missing fixture NPC programme".into()))?;
+        let binding =
+            definition_binding(&program).map_err(|error| NpcRuleError::Invalid(error.into()))?;
+        source.programs.push(program);
+        validate::catalogue(&source)?;
+        let mut native = native
+            .with_fixture_transition(binding)
+            .map_err(|error| NpcRuleError::Invalid(format!("{error:?}")))?;
+        native.fixture_npc_rules = Some(std::sync::Arc::new(source));
+        Ok(native)
+    }
+
     /// Resolve only programmes explicitly bound into this catalogue for this NPC.
     pub fn admitted_for_npc(
         &self,
@@ -827,30 +859,8 @@ pub(super) fn extend(
         }
         // An unexecutable definition marker binds every guard, reply, effect and
         // source reference into the existing quest definition hash.
-        let first = program
-            .document
-            .tracks
-            .first()
-            .ok_or("NPC program has no tracks")?;
-        let key = admission::binding_key(program);
-        if transitions
-            .insert(
-                key.clone(),
-                super::QuestTransition {
-                    key,
-                    quest: program.document.quest.clone(),
-                    effects: vec![super::QuestEffect {
-                        track: first.key.clone(),
-                        from: super::QuestComparison::Any,
-                        effect: super::QuestEffectKind::Computed,
-                    }],
-                    completes: false,
-                    experience: None,
-                    world_change: None,
-                },
-            )
-            .is_some()
-        {
+        let binding = definition_binding(program)?;
+        if transitions.insert(binding.key.clone(), binding).is_some() {
             return Err("duplicate NPC source pin".into());
         }
     }
@@ -864,6 +874,26 @@ pub(super) fn extend(
     active.predecessors = predecessors;
     completion_predecessors::register(&mut active, source)?;
     Ok(active)
+}
+
+fn definition_binding(program: &NpcRuleProgram) -> Result<super::QuestTransition, &'static str> {
+    let first = program
+        .document
+        .tracks
+        .first()
+        .ok_or("NPC program has no tracks")?;
+    Ok(super::QuestTransition {
+        key: admission::binding_key(program),
+        quest: program.document.quest.clone(),
+        effects: vec![super::QuestEffect {
+            track: first.key.clone(),
+            from: super::QuestComparison::Any,
+            effect: super::QuestEffectKind::Computed,
+        }],
+        completes: false,
+        experience: None,
+        world_change: None,
+    })
 }
 
 /// Only an exact registered predecessor retains its old absent-track values.

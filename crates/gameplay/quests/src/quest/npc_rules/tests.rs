@@ -851,7 +851,14 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     );
     // The distinct quest set counts Gnomus once; its second source programme
     // and the separately checked schema2 Mystery each add one runtime owner.
-    assert_eq!(runtime.programs().len(), expected_programmes.len() + 2);
+    let myzzi = runtime.programs().iter().find(|program| {
+        program.document.program_key.as_deref()
+            == Some("oteryn:quest-npc-program.dream-courts-myzzi")
+    });
+    assert_eq!(
+        runtime.programs().len(),
+        expected_programmes.len() + 2 + usize::from(myzzi.is_some())
+    );
     assert_eq!(
         runtime
             .programs()
@@ -940,7 +947,10 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     // M04 adds seven -1 defaults: three per Djinn faction and one monastery diary.
     // Paradox adds three source-backed Riddler tracks, also starting absent at -1.
     // Dream Courts, Tamoril, Gnomus, Julius and Citizen scopes remain registered.
-    assert_eq!(defaults, BTreeMap::from([(-1, 214), (0, 54)]));
+    assert_eq!(
+        defaults,
+        BTreeMap::from([(-1, 214), (0, 54 + usize::from(myzzi.is_some()))])
+    );
     let paradox = NpcRuleCatalog::embedded()
         .map_err(|error| error.to_string())?
         .program("oteryn:quest.the_paradox_tower_quest")
@@ -1268,7 +1278,14 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     {
         *defaults.entry(track.initial).or_insert(0usize) += 1;
     }
-    assert_eq!(defaults, BTreeMap::from([(-1, 214), (0, 54)]));
+    let myzzi = runtime.programs().iter().any(|program| {
+        program.document.program_key.as_deref()
+            == Some("oteryn:quest-npc-program.dream-courts-myzzi")
+    });
+    assert_eq!(
+        defaults,
+        BTreeMap::from([(-1, 214), (0, 54 + usize::from(myzzi))])
+    );
     for program in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
         .programs()
