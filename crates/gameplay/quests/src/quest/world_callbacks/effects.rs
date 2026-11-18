@@ -51,6 +51,9 @@ pub struct CallbackEffects {
     /// Distinct carried definitions consumed atomically by the Quest receipt owner.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
+    /// Select the first carried item of the definition before checking its fluid subtype.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub first_carried_input_only: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub carried_tool_window: Option<CarriedToolWindow>,
     /// Opt in to source-script displacement onto a present blocked pad.
@@ -685,7 +688,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
     }
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
-    if inputs.len() > 8
+    if (effects.first_carried_input_only
+        && !matches!(inputs.as_slice(), [input] if input.count == 1 && input.fluid_subtype.is_some()))
+        || inputs.len() > 8
         || unique.len() != inputs.len()
         || inputs.iter().any(|input| {
             input.count == 0

@@ -48,6 +48,7 @@ fn binding() -> Value {
         "world_requirements":[{"position":STATUE,"appearance":8325}],
         "storage":[{"track":MISSION,"minimum":-1,"maximum":1,"set":1,"preserve":true}],
         "effects":{"player_speech":"AAAAH... THE SCENT OF A WOMAN... GIVE ME MORE...",
+            "first_carried_input_only":true,
             "carried_inputs":[{"item":"oteryn:item.tibia.i2874","count":1,"fluid_subtype":5}],
             "stationary_encounter":[
                 {"creature":BRIDE,"position":{"x":32938,"y":31458,"floor":-2}},
@@ -85,18 +86,22 @@ pub(super) async fn exercise(
         120,
     )
     .await?;
-    for (index, subtype) in [1, 5].into_iter().enumerate() {
-        super::m42_hot_cuisine::typed_fluids(
-            owner,
-            admitted,
-            h,
-            authority,
-            (2874, subtype, 1),
-            u64::try_from(index)?,
-        )
-        .await?;
+    // Crystal's breadth-first lookup checks the newest pouch first in the main bag's
+    // display order. The third step must leave the older blood vial untouched.
+    for (index, subtypes) in [&[1][..], &[5, 1], &[5]].into_iter().enumerate() {
+        for (offset, &subtype) in subtypes.iter().enumerate() {
+            super::m42_hot_cuisine::typed_fluids(
+                owner,
+                admitted,
+                h,
+                authority,
+                (2874, subtype, 1),
+                u64::try_from(2 * index + offset)?,
+            )
+            .await?;
+        }
         step(owner, admitted, StepDirection::East).await?;
-        let should_spawn = female && subtype == 5;
+        let should_spawn = female && index == 2;
         let runtime = owner.runtime.lock().await;
         let count = runtime
             .visible_entities()
@@ -109,7 +114,7 @@ pub(super) async fn exercise(
         let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_callback_consumptions WHERE transition_key='oteryn:quest-callback/fixture-marziels-blood'")
             .fetch_one(&h.pool).await?;
         assert_eq!(count, i64::from(should_spawn));
-        if index == 0 {
+        if index < 2 {
             step(owner, admitted, StepDirection::West).await?;
         }
     }

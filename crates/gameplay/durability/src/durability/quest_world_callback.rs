@@ -848,7 +848,14 @@ async fn consume_inputs(
     let mut carried = callback.effects.carried_inputs.iter().collect::<Vec<_>>();
     carried.sort_by(|left, right| left.item.cmp(&right.item));
     for required in carried {
-        let Some(resolved) = carried_batch::resolve(tx, fence, required).await? else {
+        let Some(resolved) = carried_batch::resolve(
+            tx,
+            fence,
+            required,
+            callback.effects.first_carried_input_only,
+        )
+        .await?
+        else {
             return Ok(false);
         };
         for input in &resolved {
