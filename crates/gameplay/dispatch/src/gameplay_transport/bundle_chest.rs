@@ -6,6 +6,7 @@ use super::connection::{EarnedNotice, UseCommand, UseOutcome};
 use super::item_ref_admission::{NativeItemWeights, generation_item_facts, pinned_index};
 use super::world_map::{MapViewSource, resolve_map_target};
 use crate::content::world_reward_claims::{bind_embedded_reward_claims, bind_reward_claims};
+use crate::durability::arena_match::donor;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::reward_claim_mint::{
     RewardClaimAchievement, RewardClaimMintContent, RewardClaimMintError, RewardClaimMintRequest,
@@ -212,6 +213,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return outcome(UseDisposition::Exhausted);
                     }
                 }
+                if claim.key.as_str().starts_with(donor::CHEST_CLAIM_PREFIX) {
+                    return self
+                        .use_arena_reward_chest(
+                            command,
+                            claim.key.as_str(),
+                            bound,
+                            target.expected_revision,
+                        )
+                        .await;
+                }
                 if bound.reward_callback.is_some() {
                     return self
                         .use_native_claim_reward(actor, command, map, claim, bound, &permit)
@@ -384,6 +395,95 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .unwrap_or_else(|_| outcome(UseDisposition::Rejected)),
         )
+    }
+
+    async fn use_arena_reward_chest(
+        &self,
+        command: UseCommand,
+        claim: &str,
+        bound: &crate::content::world_reward_claims::BoundPlacement,
+        object_revision: u64,
+    ) -> UseOutcome {
+        use oteryn_protocol_oteryn::arena::{self as wire, ArenaAction, ArenaDisposition};
+
+        let [reward] = bound.placement.items.as_slice() else {
+            return outcome(UseDisposition::Rejected);
+        };
+        let Some((rank, category, choice)) =
+            donor::chest_reward_selector(claim, reward.item.key().as_str())
+        else {
+            return outcome(UseDisposition::Rejected);
+        };
+        let (Ok(id), Ok(Some(mut fence))) = (
+            CommandId::new(command.command_id),
+            self.current_quest_fence(command.game_session_id).await,
+        ) else {
+            return outcome(UseDisposition::Rejected);
+        };
+        if reward.count != 1 || command.item_fence != Some(fence.item_fence()) {
+            return outcome(UseDisposition::Rejected);
+        }
+        let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+        let Ok(revision) = slot.cursor(self.root, self.character).await else {
+            return outcome(UseDisposition::Rejected);
+        };
+        fence.expected_character_revision = revision;
+        let command = CommandRef::new(command.game_session_id, id);
+        let Some(request) = self
+            .arena_reward_request(command, rank, category, choice)
+            .await
+        else {
+            return outcome(UseDisposition::Rejected);
+        };
+        let Some(native) = self
+            .active_generation
+            .and_then(|generation| generation.native_gameplay())
+        else {
+            return outcome(UseDisposition::Rejected);
+        };
+        // Bind a replay to this physical placement as well as the entitlement.
+        // A command receipt or another chest can never answer this USE.
+        let Ok(mut payload) = wire::encode_match_request(ArenaAction::ClaimReward {
+            rank,
+            category,
+            choice,
+        }) else {
+            return outcome(UseDisposition::Rejected);
+        };
+        // The arena command receipt has a 32-byte SQL payload limit.
+        payload.extend_from_slice(b"chest-v1");
+        payload.extend_from_slice(&bound.bundle_placement_key.to_be_bytes());
+        payload.extend_from_slice(&object_revision.to_be_bytes());
+        let response = self
+            .root
+            .claim_arena_reward(
+                self.character,
+                self.holder,
+                fence,
+                request,
+                rank,
+                category,
+                choice,
+                payload,
+                &NativeItemWeights(native),
+            )
+            .await;
+        let disposition = match response
+            .ok()
+            .and_then(|bytes| wire::decode_match_result(&bytes).ok())
+        {
+            Some(result) if result.disposition == ArenaDisposition::Applied => {
+                UseDisposition::Committed
+            }
+            Some(result) if result.disposition == ArenaDisposition::AlreadyClaimed => {
+                UseDisposition::NothingToUse
+            }
+            Some(result) if result.disposition == ArenaDisposition::InventoryFull => {
+                UseDisposition::NoRoom
+            }
+            _ => UseDisposition::Rejected,
+        };
+        outcome(disposition)
     }
 }
 

@@ -741,6 +741,22 @@ fn scenario_case(
                 (0, 0, 0),
                 "room/weight refusal must leave no partial or pending reward"
             );
+        } else if catalogue.is_some_and(|chest| chest.servable)
+            && claim.starts_with(crate::durability::arena_match::donor::CHEST_CLAIM_PREFIX)
+        {
+            // Crystal 201189f8 chest.lua:2307-2419. The generic fixture has
+            // never completed a rank, so even a correctly bound chest refuses.
+            let mut owner = deps.owner(&harness, &authority);
+            owner.active_generation = Some(generation);
+            owner.quest_catalogue = quest_catalogue.clone();
+            owner.movement_cells = (&cells).into();
+            owner.admit_progression_session(&mut admitted).await;
+            deps.initialize(&owner).await;
+            assert_eq!(wire_use_targets(&owner, admitted, &[(1, &target)]).await?,
+                [(CommandStatus::Rejected, UseDisposition::Rejected)]);
+            let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_reward_claims")
+                .fetch_one(&harness.pool).await?;
+            assert_eq!(count, 0);
         } else if catalogue.is_some_and(|chest| !chest.servable) {
             // A Canary-only UID cannot acquire a Crystal World binding just
             // because its numeric value matches. This negative source-alias

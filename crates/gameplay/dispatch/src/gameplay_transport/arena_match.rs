@@ -846,7 +846,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
     }
 
-    async fn arena_reward_request(
+    pub(super) async fn arena_reward_request(
         &self,
         command: CommandRef,
         rank: u8,

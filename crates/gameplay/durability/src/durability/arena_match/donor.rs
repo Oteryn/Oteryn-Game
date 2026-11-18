@@ -109,6 +109,34 @@ pub fn claim_key(rank: u8, category: u8) -> String {
     format!("oteryn:reward.svargrond-arena.{rank}.{category}")
 }
 
+/// Crystal 201189f8 startup/tables/chest.lua:2307-2419 groups the
+/// three weapon placements of each rank under one storage entitlement.
+pub const CHEST_CLAIM_PREFIX: &str = "oteryn:reward-claim.quest.u8_0.barbarian_arena.";
+const RANK_NAMES: [&str; 3] = ["greenhorn", "scrapper", "warlord"];
+const CHEST_CATEGORIES: [&str; 3] = ["present", "bp", "weapons"];
+
+pub fn chest_claim_key(rank: u8, category: u8) -> Option<String> {
+    let rank = RANK_NAMES.get(usize::from(rank.checked_sub(1)?))?;
+    let category = CHEST_CATEGORIES.get(usize::from(category.checked_sub(1)?))?;
+    Some(format!("{CHEST_CLAIM_PREFIX}reward_{rank}_{category}"))
+}
+
+pub fn chest_reward_selector(claim: &str, root: &str) -> Option<(u8, u8, u8)> {
+    for rank in 1..=3 {
+        for category in 1..=3 {
+            if chest_claim_key(rank, category).as_deref() != Some(claim) {
+                continue;
+            }
+            return (1..=3).find_map(|choice| {
+                let expected = reward(rank, category, choice)?;
+                (root == format!("oteryn:item.tibia.i{}", expected.root))
+                    .then_some((rank, category, choice))
+            });
+        }
+    }
+    None
+}
+
 pub const ACHIEVEMENTS: [&str; 3] = [
     "oteryn:achievement/greenhorn",
     "oteryn:achievement/scrapper",

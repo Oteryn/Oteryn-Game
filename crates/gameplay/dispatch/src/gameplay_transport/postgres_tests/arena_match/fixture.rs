@@ -9,25 +9,31 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 pub(in super::super) fn bundle(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false, false)
+    bundle_layout(native, true, false, false, false)
 }
 
 pub(in super::super) fn bundle_with_pillars(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false, false)
+    bundle_layout(native, true, false, false, false)
 }
 
 pub(in super::super) fn bundle_with_pillar_floors(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, false, true, false)
+    bundle_layout(native, false, true, false, false)
 }
 
 pub(in super::super) fn bundle_with_concession(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false, true)
+    bundle_layout(native, true, false, true, false)
+}
+
+pub(in super::super) fn bundle_with_reward_chest(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+    bundle_layout(native, true, false, false, true)
 }
 
 fn bundle_layout(
@@ -35,6 +41,7 @@ fn bundle_layout(
     with_pillars: bool,
     pillar_floors_only: bool,
     with_concession: bool,
+    with_reward_chest: bool,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::writer::{Extent, Sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
@@ -151,6 +158,37 @@ fn bundle_layout(
                 ..Default::default()
             },
         });
+    }
+    if with_reward_chest {
+        // Crystal 201189f8 chest.lua:2324-2329.
+        let appearance = u32::try_from(bundle.manifest.palette.len())?;
+        bundle.manifest.palette.push(oteryn_world_bundle::writer::PaletteEntry {
+            key: "oteryn:terrain.tibia.i2482".into(),
+            family: oteryn_world_bundle::bundle::Family::Terrain,
+            id: appearance,
+            terrain: Some(oteryn_world_bundle::writer::Terrain {
+                kind: oteryn_world_bundle::bundle::TerrainKind::Common,
+                walkable: None, ground_speed: None, blocks_projectile: None,
+            }),
+        });
+        for (y, unique) in [
+            (31064, Some(6224)),
+            (31066, Some(6223)),
+            (31067, None),
+            (31068, Some(6222)),
+        ] {
+            let mut tile = bundle.sectors[0].tiles[0].clone();
+            tile.x = 32235;
+            tile.y = y;
+            if let Some(unique) = unique {
+                tile.items.push(oteryn_world_bundle::sector::Item {
+                    palette: appearance,
+                    depth: 0,
+                    attrs: oteryn_world_bundle::sector::Attrs { unique: Some(unique), ..Default::default() },
+                });
+            }
+            tiles.insert((tile.x, tile.y, -7), tile);
+        }
     }
     let mut sectors = std::collections::BTreeMap::<(i8, u16, u16), Sector>::new();
     for ((x, y, z), tile) in tiles {

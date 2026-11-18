@@ -428,17 +428,35 @@ pub(super) async fn claimed_masks(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: CurrentCharacterGameplayFence,
 ) -> Result<[u8; 3], DurabilityError> {
-    let keys:Vec<String>=sqlx::query_scalar("SELECT claim_production_key FROM game_reward_claims WHERE character_id=encode($1,'hex')::uuid AND claim_family='RewardClaim' AND claim_production_key LIKE 'oteryn:reward.svargrond-arena.%' LIMIT 13")
-        .bind(fence.character_id.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
-    if keys.len() > 12 {
-        return Err(DurabilityError::InvalidStoredState);
-    }
+    let groups: Vec<_> = (1..=3)
+        .flat_map(|rank| {
+            (1..=4).map(move |category| {
+                (
+                    rank,
+                    category,
+                    donor::claim_key(rank, category),
+                    donor::chest_claim_key(rank, category),
+                )
+            })
+        })
+        .collect();
+    let keys: Vec<_> = groups
+        .iter()
+        .flat_map(|(_, _, claim, legacy)| std::iter::once(claim.as_str()).chain(legacy.as_deref()))
+        .collect();
+    let claimed: Vec<String> = sqlx::query_scalar(
+        "SELECT DISTINCT claim_production_key FROM game_reward_claims \
+         WHERE character_id=encode($1,'hex')::uuid AND claim_family='RewardClaim' \
+         AND claim_production_key=ANY($2::text[]) LIMIT 21",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(&keys)
+    .fetch_all(&mut **tx)
+    .await?;
     let mut masks = [0; 3];
-    for rank in 1..=3 {
-        for category in 1..=4 {
-            if keys.contains(&donor::claim_key(rank, category)) {
-                masks[usize::from(rank - 1)] |= 1 << (category - 1);
-            }
+    for (rank, category, claim, legacy) in groups {
+        if claimed.contains(&claim) || legacy.is_some_and(|key| claimed.contains(&key)) {
+            masks[usize::from(rank - 1)] |= 1 << (category - 1);
         }
     }
     Ok(masks)

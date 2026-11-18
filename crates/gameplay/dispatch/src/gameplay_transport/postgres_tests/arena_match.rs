@@ -41,7 +41,7 @@ fn arena_match_credited_portal_timeout_restores_pillar() -> TestResult {
     Ok(())
 }
 
-async fn command(
+pub(super) async fn command(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     action: A,
@@ -129,6 +129,7 @@ enum NativeScenario {
     Departure,
     Timeout,
     ResetMonsters,
+    SharedRewards,
 }
 
 #[test]
@@ -176,12 +177,17 @@ fn scenario_path(funded: bool, native_portals: bool) -> TestResult {
 fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
     scenario_route_with_expiry(funded, route, false)
 }
+pub(super) fn chest_and_wire_share_rewards() -> TestResult {
+    scenario_route(true, Some(NativeScenario::SharedRewards))
+}
+
 pub(super) fn south_portal_concession() -> TestResult {
     scenario_route(true, Some(NativeScenario::Concession))
 }
 
 fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expire: bool) -> TestResult {
     let native_portals = route.is_some();
+    let shared_rewards = matches!(route, Some(NativeScenario::SharedRewards));
     let concede = matches!(route, Some(NativeScenario::Concession));
     let leave_early = concede || matches!(route, Some(NativeScenario::Departure));
     let timeout_early = matches!(route, Some(NativeScenario::Timeout));
@@ -208,6 +214,8 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
             fixture::bundle_with_pillar_floors(native)?
         } else if concede {
             fixture::bundle_with_concession(native)?
+        } else if shared_rewards {
+            fixture::bundle_with_reward_chest(native)?
         } else if native_portals {
             fixture::bundle_with_pillars(native)?
         } else {
@@ -310,7 +318,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
             crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
-            &[4, 6, 17, 170],
+            if shared_rewards { &[4, 6, 11, 17, 170] } else { &[4, 6, 17, 170] },
         )
         .ok_or("capability selection")?;
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
@@ -785,6 +793,9 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
             assert!(projected.iter().any(|entry| entry.facts.appearance_id == 1841), "leaving resets the source pillar");
             assert!(!projected.iter().any(|entry| entry.facts.appearance_id == 5022));
 
+        }
+        if shared_rewards {
+            return super::qcx61_shared_rewards::after_first_rank(&mut owner, &mut admitted, &harness, deps.actor).await;
         }
         }
         let victories: i64 = sqlx::query_scalar("SELECT count(*) FROM game_arena_victories")
