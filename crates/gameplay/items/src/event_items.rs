@@ -71,15 +71,16 @@ pub fn conversion(
     reward_bag_conversion(native, used, reward_bag_draw(session, command, source))
 }
 
-pub fn plan(
+/// Plan a ground source with the actual position captured by the ground owner.
+pub fn ground_plan(
     native: &NativeGameplayState,
     used: &TypedDefinitionRef,
     session: [u8; 16],
     command: u64,
     source: [u8; 16],
-    ground: Option<GroundEffect>,
+    ground: GroundEffect,
 ) -> Option<NoveltyPlan> {
-    let effects = effects(&used.production_key, ground)?;
+    let effects = effects(&used.production_key, Some(ground))?;
     let conversion =
         reward_bag_conversion(native, used, reward_bag_draw(session, command, source))?;
     Some(NoveltyPlan {

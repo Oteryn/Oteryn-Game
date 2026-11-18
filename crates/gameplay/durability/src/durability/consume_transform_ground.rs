@@ -513,13 +513,13 @@ async fn write_reward<C: ItemLoopContent>(
 ) -> Result<ConsumeTransformResult, DurabilityError> {
     let source = &context.source;
     let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
-    let Some(selected) = oteryn_gameplay_items::event_items::plan(
+    let Some(selected) = oteryn_gameplay_items::event_items::ground_plan(
         native,
         &source.definition,
         *fence.game_session_id.as_bytes(),
         request.command.command_id().get(),
         request.source,
-        Some(context.effect_position()),
+        context.effect_position(),
     ) else {
         return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
     };

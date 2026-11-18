@@ -60,13 +60,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let plan = if oteryn_gameplay_items::event_items::is_event_reward(
                 &definition.production_key,
             ) {
-                oteryn_gameplay_items::event_items::plan(
+                oteryn_gameplay_items::event_items::ground_plan(
                     native,
                     &definition,
                     *command.game_session_id.as_bytes(),
                     command.command_id,
                     request.source,
-                    Some(context.effect_position()),
+                    context.effect_position(),
                 )
             } else {
                 novelty_items::plan_ground_for_actor(
