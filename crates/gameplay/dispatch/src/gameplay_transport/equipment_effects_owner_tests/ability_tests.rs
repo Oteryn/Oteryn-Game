@@ -151,6 +151,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // 28552..=28557, 35279..=35290, 44065..=44067, 50294/50295. All have speed_bonus=0.
     ("LOOP-TRAIN-1", 23),
     ("M01C-KEY-DOORS", 2),
+    ("M02-ITEMS", 3),
     // M06: the five door profiles 1628, 1646, 1647, 2967 and 2968
     // (tools/content-schema/native-gameplay/build_key_door_profiles.py). All have speed_bonus=0.
     ("M06-KEYS", 5),
@@ -743,6 +744,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
                     | "ENGNPC-M05"
                     | "ENGNPC2-SLUG-CORPSES"
                     | "M01C-KEY-DOORS"
+                    | "M02-ITEMS"
                     | "M07-CARROT"
                     | "M07-FIRE-BUG"
                     | "M07-LION-TRIALS"
@@ -791,7 +793,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         })
         .map(|(_, count)| count)
         .sum::<usize>();
-    assert_eq!(later_main_profiles, 2589);
+    assert_eq!(later_main_profiles, 2592);
     const QENGINE2_BASE_PROFILES: usize = 53;
     assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 103);
     let baseline = ORIGINAL_PROFILES

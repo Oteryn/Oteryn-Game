@@ -475,6 +475,11 @@ schedule_check(
     check=True,
 )
 
+schedule_check(
+    [sys.executable, str(ROOT / "tools/content-migration/test_m02_item_profiles.py")],
+    check=True,
+)
+
 # Keep the standalone Quest preservation guards on the migration workflow's test path.
 schedule_check(
     [
