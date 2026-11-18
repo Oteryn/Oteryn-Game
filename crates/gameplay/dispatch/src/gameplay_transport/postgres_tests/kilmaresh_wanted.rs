@@ -108,6 +108,10 @@ fn exercise(timeout: bool) -> TestResult {
                 .selected_capabilities
                 .contains(boss::CAPABILITY_BOSS_ENCOUNTER_V1)
         );
+        owner
+            .required_capabilities
+            .authenticate_resume_support(&supported, admitted.continuity.selected_capabilities)
+            .map_err(debug)?;
         super::srx3_activity_source_fixture::prepare_player(&h, &owner, &mut admitted, 250).await?;
         let peer = super::m25_ahau_push::prepare_peer_and_party(&h, &owner, &mut admitted).await?;
         if timeout {
