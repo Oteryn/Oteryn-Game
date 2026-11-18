@@ -110,6 +110,7 @@ fn ddepths_faction_step_uses_points_and_all_three_access_flags_postgres() -> Tes
                         current
                     } else {
                         let map = owner.bundle_map().ok_or("faction portal map")?;
+                        let doors = crate::map::floor::BundleDoors(map.facts.doors());
                         let proof = crate::map::floor::prepare_quest_callback_teleport(
                             &runtime,
                             &owner.movement_cells,
@@ -118,7 +119,7 @@ fn ddepths_faction_step_uses_points_and_all_three_access_flags_postgres() -> Tes
                             current,
                             start,
                             false,
-                            &crate::map::floor::BundleDoors(map.facts.doors()),
+                            &doors,
                         )
                         .map_err(debug)?;
                         runtime.commit_source_step(proof).map_err(debug)?
