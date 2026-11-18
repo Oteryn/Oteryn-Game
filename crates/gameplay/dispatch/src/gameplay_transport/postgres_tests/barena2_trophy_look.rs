@@ -39,9 +39,9 @@ pub(super) async fn check_trophy_look(
     .fetch_one(&harness.pool)
     .await?;
     for (offset, item_id, difficulty, punctuation) in [
-        (0, 5807, "greenhorn", ""),
-        (1, 5806, "scrapper", "."),
-        (2, 5805, "warlord", "."),
+        (2, 5807, "greenhorn", ""),
+        (3, 5806, "scrapper", "."),
+        (4, 5805, "warlord", "."),
     ] {
         route_trophy_step(owner, admitted, actor, offset).await?;
         let key = format!("oteryn:item.tibia.i{item_id}");
@@ -89,7 +89,7 @@ pub(super) async fn check_trophy_step(
 ) -> TestResult {
     seed_completion(harness, admitted).await?;
     let (x, y, floor) = crate::durability::arena_match::donor::REWARD_ROOM;
-    for (offset, item) in [(0, 5807), (1, 5806), (2, 5805)] {
+    for (offset, item) in [(2, 5807), (3, 5806), (4, 5805)] {
         let x = x + offset;
         route_trophy_step(owner, admitted, actor, offset).await?;
         route_trophy_step(owner, admitted, actor, offset).await?;

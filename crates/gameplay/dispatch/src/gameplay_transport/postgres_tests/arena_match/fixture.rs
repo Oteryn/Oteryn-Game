@@ -130,7 +130,7 @@ fn bundle_layout(
     }
     {
         let (x, y, floor) = donor::REWARD_ROOM;
-        for (offset, uid) in [(0, 3264), (1, 3265), (2, 3266)] {
+        for (offset, uid) in [(2, 3264), (3, 3265), (4, 3266)] {
             let tile = tiles
                 .get_mut(&(u16::try_from(x + offset)?, u16::try_from(y)?, -i8::try_from(floor)?))
                 .ok_or("arena trophy tile")?;

@@ -849,7 +849,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         owner.premium_coordinator = Some(&premium);
         owner.admit_premium(id(40), admitted.game_session_id);
         for (offset, rank) in (1..=3).enumerate() {
-            super::barena2_trophy_look::route_trophy_step(&owner, &admitted, deps.actor, i32::try_from(offset)?).await?;
+            super::barena2_trophy_look::route_trophy_step(&owner, &admitted, deps.actor, i32::try_from(offset)? + 2).await?;
             let status = command(&owner, &mut admitted, A::Status).await?;
             assert_eq!(status.state.claimed_masks[rank - 1] & 8, 8);
             let completed: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_states WHERE quest_key='oteryn:quest.barbarian_arena_quest' AND completed_character_revision IS NOT NULL")
