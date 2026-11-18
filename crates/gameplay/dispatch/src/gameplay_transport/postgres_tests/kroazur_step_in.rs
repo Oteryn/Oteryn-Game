@@ -138,10 +138,11 @@ async fn exercise(h: &Harness) -> TestResult {
         .ok_or("Kroazur source map view")
     };
     let view = make_view(ORIGIN)?;
-    let deps = Dependencies::with_content(
+    let deps = Dependencies::with_content_and_capacity(
         pin(ORIGIN),
         room.clone(),
         crate::spell::cast::v1_spell_book().map_err(debug)?,
+        4,
     )?;
     let mut owner = deps.owner(h, &authority);
     owner.evidence = &evidence.evidence;
@@ -317,18 +318,24 @@ async fn exercise(h: &Harness) -> TestResult {
     );
     assert_eq!(rooms(h).await?, 0);
 
+    let [npc] = super::classic_quests::install_positions(
+        &owner,
+        &players[0],
+        ["oteryn:npc.maelyrra"],
+        [oteryn_gameplay_quests::quest::world_callbacks::Position {
+            x: 33619,
+            y: 32308,
+            floor: -9,
+        }],
+    )
+    .await?;
+    let peer_session = players[1].game_session_id;
+    owner
+        .states
+        .chat
+        .admit(peer_session, "Quest witness", owner.owner_now());
+    owner.states.chat.set_npc_service(peer_session);
     for player in players {
-        let [npc] = super::classic_quests::install_positions(
-            &owner,
-            &player,
-            ["oteryn:npc.maelyrra"],
-            [oteryn_gameplay_quests::quest::world_callbacks::Position {
-                x: 33619,
-                y: 32308,
-                floor: -9,
-            }],
-        )
-        .await?;
         let talk = super::classic_quests::talk;
         talk(&mut owner, &player, npc, 1, "hi").await?;
         talk(&mut owner, &player, npc, 2, "mission").await?;
