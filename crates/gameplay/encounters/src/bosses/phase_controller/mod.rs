@@ -10,6 +10,7 @@ pub mod cults;
 pub mod gates;
 #[cfg(test)]
 mod tests;
+pub mod zelos;
 
 pub const MAX_ROLES: usize = 64;
 
@@ -82,7 +83,7 @@ impl Progress {
 
 /// One admitted encounter, tied to the existing runtime scope, content activation and
 /// exact player sessions. It grants no new activity, loot or quest-write authority.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct NativePhaseOwner {
     progress: Progress,
     actors: Vec<Option<ExactActorRef>>,

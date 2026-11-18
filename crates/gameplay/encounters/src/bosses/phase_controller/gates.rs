@@ -9,7 +9,7 @@ const MAX_PROTECTED_ACTORS: usize = 1024;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 struct DamageGates {
-    actors: Vec<ExactActorRef>,
+    actors: Vec<(ExactActorRef, u8)>,
 }
 
 /// A source stop form cannot be killed while the shared phase owner is preparing
@@ -17,6 +17,18 @@ struct DamageGates {
 pub fn protect(
     runtime: &mut ChannelRuntimeV1,
     actors: &[ExactActorRef],
+) -> Result<(), CarrierError> {
+    set_damage_divisor(runtime, actors, 0)
+}
+
+pub(super) fn halve(runtime: &mut ChannelRuntimeV1, actor: ExactActorRef) -> Result<(), CarrierError> {
+    set_damage_divisor(runtime, &[actor], 2)
+}
+
+fn set_damage_divisor(
+    runtime: &mut ChannelRuntimeV1,
+    actors: &[ExactActorRef],
+    divisor: u8,
 ) -> Result<(), CarrierError> {
     runtime.owner_fence()?;
     if actors.len() > MAX_PROTECTED_ACTORS
@@ -29,7 +41,7 @@ pub fn protect(
     runtime.with_encounter_hooks::<DamageGates, _, CarrierError>(|runtime, gates| {
         gates
             .actors
-            .retain(|actor| runtime.contains_live_creature(*actor));
+            .retain(|(actor, _)| runtime.contains_live_creature(*actor));
         if gates.actors.len().saturating_add(actors.len()) > MAX_PROTECTED_ACTORS {
             return Err(CarrierError::CapacityExceeded);
         }
@@ -38,8 +50,10 @@ pub fn protect(
             .try_reserve(actors.len())
             .map_err(|_| CarrierError::AllocationFailed)?;
         for actor in actors {
-            if !gates.actors.contains(actor) {
-                gates.actors.push(*actor);
+            if let Some((_, previous)) = gates.actors.iter_mut().find(|(saved, _)| saved == actor) {
+                *previous = divisor;
+            } else {
+                gates.actors.push((*actor, divisor));
             }
         }
         Ok(())
@@ -60,7 +74,7 @@ impl EncounterHooks for DamageGates {
         self
     }
     fn contains(&self, actor: ExactActorRef) -> bool {
-        self.actors.contains(&actor)
+        self.actors.iter().any(|(saved, _)| *saved == actor)
     }
     #[allow(
         clippy::too_many_arguments,
@@ -68,20 +82,24 @@ impl EncounterHooks for DamageGates {
     )]
     fn damage(
         &self,
-        _: &mut ChannelActorCarrier,
-        _: &NamespaceContinuityGuard,
+        carrier: &mut ChannelActorCarrier,
+        continuity: &NamespaceContinuityGuard,
         actor: ActorRef,
-        _: OwnerDamageCommand<'_>,
-        _: Option<AttackerCommand>,
-        _: bool,
+        mut command: OwnerDamageCommand<'_>,
+        attacker: Option<AttackerCommand>,
+        fail: bool,
         _: Option<&ChannelContentPin>,
-        _: Option<u16>,
-        _: Option<u64>,
+        max_sub_ordinal: Option<u16>,
+        now_ms: Option<u64>,
     ) -> Option<Result<OwnerDamageResult, CarrierError>> {
-        // Refusal grants no damage receipt or contribution and changes no health. Every
-        // normal, spell and periodic damage path uses this same physical owner hook.
-        self.contains(ExactActorRef(actor))
-            .then_some(Err(CarrierError::PlanConflict))
+        let (_, divisor) = self.actors.iter().find(|(saved, _)| *saved == ExactActorRef(actor))?;
+        if *divisor == 0 {
+            return Some(Err(CarrierError::PlanConflict));
+        }
+        command.damage /= i64::from(*divisor);
+        Some(carrier.commit_encounter_single_damage(
+            continuity, actor, command, attacker, fail, max_sub_ordinal, now_ms,
+        ))
     }
     fn projected_death(&mut self, _: ExactActorRef, _: CreatureDeathOccurrenceKey) {}
     fn expand_heals(

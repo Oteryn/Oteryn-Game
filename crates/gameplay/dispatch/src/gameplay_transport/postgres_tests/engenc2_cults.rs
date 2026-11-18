@@ -68,15 +68,15 @@ fn callback() -> TestResult<Callback> {
 
 #[test]
 fn engenc2_cults_callback_native_phases_and_settlement_postgres() -> TestResult {
-    cults_scenario(false)
+    phase_scenario(false, false)
 }
 
 #[test]
 fn qmrevfix_cults_second_lever_after_victory_postgres() -> TestResult {
-    cults_scenario(true)
+    phase_scenario(true, false)
 }
 
-fn cults_scenario(reenter: bool) -> TestResult {
+pub(super) fn phase_scenario(reenter: bool, zelos: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -87,13 +87,24 @@ fn cults_scenario(reenter: bool) -> TestResult {
             let h =
                 Harness::create_with_admission_seed(admin, "engenc2_cults", true, false).await?;
             prepare_current_session(&h).await?;
-            let callback = callback()?;
+            let mut callback = callback()?;
+            if zelos {
+                super::gravedg_zelos::configure(&mut callback)?;
+            }
             let trigger = Position {
                 x: 100,
                 y: 100,
                 floor: -7,
             };
-            let world = super::quest_world_callbacks::world(&callback, trigger)?;
+            let world = if zelos {
+                super::quest_world_callbacks::world_with_cells(
+                    &callback,
+                    trigger,
+                    &[Position { x: 115, y: 113, floor: -7 }],
+                )?
+            } else {
+                super::quest_world_callbacks::world(&callback, trigger)?
+            };
             let mut deps = Dependencies::new()?;
             let (controller, activated) =
                 super::death_ml_loss_composed::production_generation_with_pin(
@@ -267,6 +278,7 @@ fn cults_scenario(reenter: bool) -> TestResult {
                 for role in
                     oteryn_gameplay_encounters::bosses::phase_controller::cults::plan().roles
                 {
+                    if zelos { break; }
                     runtime.companion_policy(role.creature).map_err(|e| {
                         format!("production phase creature {}: {e:?}", role.creature)
                     })?;
@@ -307,6 +319,9 @@ fn cults_scenario(reenter: bool) -> TestResult {
                 UseDisposition::Committed,
                 "phase admission"
             );
+            if zelos {
+                return super::gravedg_zelos::exercise(&owner, &admitted).await;
+            }
             assert_eq!(
                 owner
                     .states
@@ -520,7 +535,7 @@ async fn value(h: &Harness) -> TestResult<i64> {
     .await?)
 }
 
-async fn kill(
+pub(super) async fn kill(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &crate::gameplay_transport::connection::AdmittedSession,
     target: ExactActorRef,

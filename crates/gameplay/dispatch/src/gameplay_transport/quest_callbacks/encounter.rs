@@ -152,11 +152,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut occupants = census
                 .iter()
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
-            let Some(&(who, expected, Some(member_session))) = occupants.next() else {
-                // Cults collects whoever stands on the five source staging tiles.
-                if encounter.phase
-                    == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults)
-                {
+            let occupant = occupants.next();
+            let Some(&(who, expected, Some(member_session))) = occupant else {
+                // Crystal boss levers collect whoever stands on the staging tiles.
+                if encounter.phase.is_some() && occupant.is_none() {
                     continue;
                 }
                 return UseDisposition::Rejected;
@@ -334,6 +333,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             &party,
                             credits,
                             self.movement_cells().clone(),
+                            self.owner_now().get(),
                         )
                     })
                     .transpose().map(|phase| (phase, actors.to_vec(), roster))

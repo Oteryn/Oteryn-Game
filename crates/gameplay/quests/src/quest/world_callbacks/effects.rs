@@ -317,6 +317,8 @@ pub struct Encounter {
 pub enum EncounterPhase {
     #[serde(rename = "cults_boss_phase_closures")]
     Cults,
+    #[serde(rename = "grave_danger_zelos")]
+    GraveDangerZelos { king: Position, exit: Position },
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -840,7 +842,12 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_from: BTreeSet<_> = encounter.players.iter().map(|p| p.from).collect();
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
-        let source_party = encounter.phase == Some(EncounterPhase::Cults);
+        let source_party = encounter.phase.is_some();
+        let player_limit = match encounter.phase {
+            Some(EncounterPhase::GraveDangerZelos { .. }) => 10,
+            Some(EncounterPhase::Cults) => 16,
+            None => 8,
+        };
         if (encounter.minimum_level == 0 && !source_party)
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
@@ -859,12 +866,15 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         * (u64::from(encounter.room_max.y.saturating_sub(encounter.room_min.y)) + 1)
                         > 4096
             } else {
-                !(1..=if encounter.phase.is_some() { 16 } else { 8 })
-                    .contains(&encounter.players.len())
+                !(1..=player_limit).contains(&encounter.players.len())
             }
             || !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                 .contains(&encounter.monsters.len())
             || (encounter.phase.is_some() && encounter.timing.is_some())
+            || matches!(encounter.phase, Some(EncounterPhase::GraveDangerZelos { king, exit })
+                if encounter.monsters.len() != 4 || !pos(king) || !in_room(king)
+                    || !pos(exit) || in_room(exit)
+                    || unique_monsters.contains(&king) || unique_to.contains(&king))
             || (callback.reversible && !source_party)
             || unique_from.len() != encounter.players.len()
             || (unique_to.len() != encounter.players.len() && !source_party)
