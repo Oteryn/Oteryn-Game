@@ -28,6 +28,7 @@ enum Route {
     TimedGroup,
     TimedPassage,
     Ashmunrah,
+    Lord,
     Combat,
     Complete,
     ObjectiveAtomicity,
@@ -70,6 +71,10 @@ pub(super) fn timed_passage(admin: String) -> TestResult {
     run_with_admin(Route::TimedPassage, admin)
 }
 
+pub(super) fn lord_switches(admin: String) -> TestResult {
+    run_with_admin(Route::Lord, admin)
+}
+
 pub(super) fn personal_switch_threshold(admin: String) -> TestResult {
     run_with_admin(Route::Ashmunrah, admin)
 }
@@ -80,8 +85,10 @@ fn run(route: Route) -> TestResult {
 }
 
 fn run_with_admin(route: Route, admin: String) -> TestResult {
-    let combat = !matches!(route, Route::Entry | Route::TimedGroup | Route::TimedPassage | Route::Ashmunrah);
-    let start = if route == Route::Ashmunrah {
+    let combat = !matches!(route, Route::Entry | Route::TimedGroup | Route::TimedPassage | Route::Ashmunrah | Route::Lord);
+    let start = if route == Route::Lord {
+        super::quest_switch_windows::LORD_START
+    } else if route == Route::Ashmunrah {
         super::l6_shared_gate_native::start("l6-tomb-gate-native-open-50138")?
     } else if matches!(
         route,
@@ -149,7 +156,7 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
                 .await?;
         let mut currents = Vec::new();
         let mut operations = Vec::new();
-        let participants = if route == Route::Ashmunrah { 2 } else { 4 };
+        let participants = if matches!(route, Route::Ashmunrah | Route::Lord) { 2 } else { 4 };
         for index in 0..participants {
             let (current, operation) =
                 crate::world_party_runtime_postgres_cases::committed_fresh_player_with_operation(
@@ -474,6 +481,14 @@ fn run_with_admin(route: Route, admin: String) -> TestResult {
             return Err("native bundle collision index".into());
         };
         let map = index.map();
+        if route == Route::Lord {
+            let result = super::quest_switch_windows::lord(&mut owner, &mut admitted, map).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
+        }
         if route == Route::Ashmunrah {
             let result =
                 super::quest_switch_windows::ashmunrah(&mut owner, &mut admitted, &h.pool).await;

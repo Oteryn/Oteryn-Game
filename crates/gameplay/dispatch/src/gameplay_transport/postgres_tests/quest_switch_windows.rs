@@ -116,3 +116,124 @@ pub(super) async fn reversible_passage(
     assert_eq!(map.facts.next_movement_decay_time(), None);
     Ok(())
 }
+
+use oteryn_gameplay_quests::quest::world_callbacks::Position;
+
+pub(super) const LORD_START: Position = at(33263, 31831, -12);
+const LORD_EXIT: Position = at(33265, 31838, -10);
+
+const fn at(x: u16, y: u16, floor: i8) -> Position {
+    Position { x, y, floor }
+}
+
+#[test]
+fn lord_chamber_last_switch_starts_the_window_and_expiry_resets_the_entire_circuit() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    super::annihilator_route::lord_switches(admin)
+}
+
+pub(super) async fn lord(
+    owner: &mut super::ComposedFreshAdmission<'_, '_, '_>,
+    members: &mut [super::AdmittedSession],
+    map: &crate::map::boot::BundleMap,
+) -> TestResult {
+    use super::{annihilator_route::use_target, fixture::debug, quest_world_callbacks::local};
+    use crate::map::{floor::BundleDoors, overlay::TilePos, view::{MapFacts, placement_key}};
+    use oteryn_gameplay_quests::quest::world_callbacks::Callback;
+    use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+    use std::sync::atomic::Ordering;
+
+    // Crystal 201189f8 actions_lord_of_elements_lever.lua:1-30,63-99,143-188.
+    let switches = [
+        (at(33273,31840,-12), at(33272,31840,-12), at(33275,31834,-12), at(33275,31838,-12), 5072),
+        (at(33262,31840,-12), at(33263,31840,-12), at(33266,31843,-12), at(33270,31843,-12), 5071),
+        (at(33262,31831,-12), LORD_START, at(33260,31834,-12), at(33260,31838,-12), 5072),
+        (at(33273,31831,-12), at(33272,31831,-12), at(33266,31828,-12), at(33270,31828,-12), 5071),
+    ];
+    let window: Vec<_> = switches.iter().map(|&(lever, station, from, to, appearance)| {
+        serde_json::json!({
+            "lever": lever, "station": station, "wall_from": from, "wall_to": to,
+            "wall_appearance": appearance
+        })
+    }).collect();
+    let mut callbacks = Vec::new();
+    for (index, &(lever, _, _, _, _)) in switches.iter().enumerate() {
+        callbacks.push(serde_json::from_value::<Callback>(serde_json::json!({
+            "key": format!("oteryn:quest-callback/lord-of-elements-switch-{}", index + 1),
+            "quest": "oteryn:quest.elemental_spheres_quest",
+            "trigger": "use",
+            "selector": {"position": lever, "appearance": 2772},
+            "lever": [2772, 2773],
+            "reversible": false,
+            "passages": [], "storage": [], "offerings": [],
+            "return_on_failure": false,
+            "effects": {
+                "encounter": {
+                    "minimum_level": 1,
+                    "players": [],
+                    "monsters": [{"position": at(33267,31836,-12), "creature": "oteryn:creature.lord_of_the_elements"}],
+                    "room_min": at(33238,31806,-12),
+                    "room_max": at(33297,31865,-12)
+                },
+                "timed_group_transfer": {"after_ms": 600_000, "destination": LORD_EXIT, "switches": window}
+            },
+            "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_lord_of_elements_lever.lua:63-188"],
+        }))?);
+    }
+    assert!(owner.states.quest_callbacks.fixture.set(callbacks).is_ok());
+
+    let target_for = |lever: Position| -> TestResult<WorldObjectTarget> {
+        let tile = TilePos { x: lever.x, y: lever.y, floor: lever.floor };
+        let base = map.overlay.base().tile(tile.x, tile.y, tile.floor).ok_or("lever tile")?;
+        let found = base.ids().iter().zip(base.depths()).filter(|(_, depth)| **depth == 0)
+            .enumerate().find_map(|(ordinal, (id, _))| {
+                let ordinal = u8::try_from(ordinal).ok()?;
+                let facts = map.facts.base_entry(tile, ordinal, *id)?;
+                [2772, 2773].contains(&facts.appearance_id)
+                    .then(|| placement_key(tile, ordinal)).flatten()
+            }).ok_or("source lever")?;
+        let mut placement = map.overlay.base().digest().to_vec();
+        placement.extend_from_slice(&found.to_be_bytes());
+        Ok(WorldObjectTarget { placement, expected_revision: map.facts.object_revision(found) })
+    };
+
+    // The east switch is deliberately used last. Only that use starts the 10-minute timer.
+    for (turn, (which_switch, which_member)) in [(2, 0), (3, 1), (1, 1), (0, 0)].into_iter().enumerate() {
+        let (lever, station, wall, _, _) = switches[which_switch];
+        let member = &mut members[which_member];
+        {
+            let actor = member.runtime_actor.ok_or("actor")?;
+            let mut runtime = owner.runtime.lock().await;
+            let expected = runtime.read_actor_position(actor).map_err(debug)?;
+            if expected.position() != local(station) {
+                let doors = BundleDoors(&map.facts);
+                let proof = crate::map::floor::prepare_quest_encounter_ejection(
+                    &runtime, owner.movement_cells(), actor, member.game_session_id, expected,
+                    local(station), &doors,
+                ).map_err(debug)?;
+                runtime.commit_source_step(proof).map_err(debug)?;
+            }
+        }
+        owner.states.test_owner_time.store(100_000_001 + u64::try_from(turn)? * 1_000_000, Ordering::Relaxed);
+        assert_eq!(use_target(owner, member, &target_for(lever)?).await?, UseDisposition::Committed);
+        let wall = TilePos { x: wall.x, y: wall.y, floor: wall.floor };
+        assert!(map.facts.quest_callback_blocked(map.overlay.base(), wall, false));
+        assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), (turn == 3).then_some(703_000_000));
+    }
+    assert_eq!(owner.runtime.lock().await.visible_entities().creatures.len(), 1);
+    owner.states.test_owner_time.store(703_000_001, Ordering::Relaxed);
+    owner.drain_quest_encounter_deadlines().await;
+    let runtime = owner.runtime.lock().await;
+    for member in members {
+        let actor = member.runtime_actor.ok_or("actor")?;
+        assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(), local(LORD_EXIT));
+    }
+    assert!(runtime.visible_entities().creatures.is_empty());
+    assert_eq!(owner.states.quest_callbacks.next_encounter_due_us(), None);
+    for (lever, _, wall, _, _) in switches {
+        assert_eq!(target_for(lever)?.expected_revision, 2);
+        let wall = TilePos { x: wall.x, y: wall.y, floor: wall.floor };
+        assert!(!map.facts.quest_callback_blocked(map.overlay.base(), wall, false));
+    }
+    Ok(())
+}

@@ -335,7 +335,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut restored_trees = Vec::new();
         let mut passages = Vec::new();
         let mut replacements = Vec::new();
-        for passage_definition in &callback.passages {
+        for passage_definition in callback
+            .passages
+            .iter()
+            .filter(|_| callback.effects.close_passages_after_ms.is_none())
+        {
             let passage = passage_definition;
             let p = tile(passage.position);
             if (close || passage_definition.replacement_passable == Some(false))
@@ -691,7 +695,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let source_flame =
             oteryn_gameplay_quests::quest::rotten_blood::flames::by_key(&callback.key).is_some();
-        if !callback.is_read_only()
+        if (!callback.is_read_only() || callback.is_character_guarded_switch())
             && !map.facts.quest_callback_capacity(
                 key,
                 if source_flame {
@@ -1515,7 +1519,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         );
                     }
                 }
-            } else if !callback.is_read_only() && !personal_gift_preserves_object && !apply_scene()
+            } else if (!callback.is_read_only() || callback.is_character_guarded_switch())
+                && !personal_gift_preserves_object
+                && !apply_scene()
             {
                 return UseDisposition::Rejected;
             }
@@ -1527,6 +1533,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | crate::map::facts::QuestCallbackProjection::TimedRemoteTransform { .. }
                     | crate::map::facts::QuestCallbackProjection::TimedEntrance { .. }
                     | crate::map::facts::QuestCallbackProjection::TimedDisplay { .. }
+                    | crate::map::facts::QuestCallbackProjection::DeferredPassageClose { .. }
             )
         ) || callback.effects.reset_after_ms.is_some()
             || callback.effects.passages_reset_after_ms.is_some()

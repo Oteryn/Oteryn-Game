@@ -337,3 +337,66 @@ mod tests {
         Ok(())
     }
 }
+
+/// Crystal 201189f8 movement-1-first_seal_close_mw.lua:10-18,35-43,60-67.
+pub(super) fn prepare_deferred_close(
+    map: &BundleMap,
+    callback: &Callback,
+    now: u64,
+    delay_ms: u32,
+) -> Result<QuestCallbackProjection, UseDisposition> {
+    let due = now
+        .checked_add(u64::from(delay_ms) * 1_000)
+        .ok_or(UseDisposition::Exhausted)?;
+    let mut entries = Vec::new();
+    for passage in &callback.passages {
+        let position = tile(passage.position);
+        if map.facts.house_tile(position) {
+            return Err(UseDisposition::Rejected);
+        }
+        let Some(base) = map
+            .overlay
+            .base()
+            .tile(position.x, position.y, position.floor)
+        else {
+            return Err(UseDisposition::Rejected);
+        };
+        let mut open = base
+            .ids()
+            .iter()
+            .zip(base.depths())
+            .filter(|(_, depth)| **depth == 0)
+            .enumerate()
+            .filter_map(|(ordinal, (id, _))| {
+                let ordinal = u8::try_from(ordinal).ok()?;
+                let key = placement_key(position, ordinal)?;
+                let facts = map.facts.base_entry(position, ordinal, *id)?;
+                let hidden = map.facts.base_hidden(key);
+                (!facts.pickupable
+                    && if let Some(open) = passage.replacement {
+                        !hidden && facts.appearance_id == open
+                    } else {
+                        hidden && facts.appearance_id == passage.appearance
+                    })
+                .then_some((key, facts))
+            });
+        let Some((key, before)) = open.next() else {
+            continue;
+        };
+        if open.next().is_some() {
+            return Err(UseDisposition::Rejected);
+        }
+        let after = map
+            .facts
+            .quest_callback_replacement(key, passage.appearance)
+            .ok_or(UseDisposition::Rejected)?;
+        entries.push(QuestTimedPassage {
+            key,
+            expected_revision: map.facts.object_revision(key),
+            before,
+            after: Some(after),
+            passable: false,
+        });
+    }
+    Ok(QuestCallbackProjection::DeferredPassageClose { due, entries })
+}

@@ -587,6 +587,16 @@ impl Callback {
             && actor.y.abs_diff(target.y) <= u16::from(self.use_range)
     }
 
+    /// Read the character's durable gate but change only the shared switch.
+    /// Crystal 201189f8 action-3-third_seal_lever.lua:18-35.
+    pub fn is_character_guarded_switch(&self) -> bool {
+        self.is_read_only()
+            && self.trigger == Trigger::Use
+            && self.actor_kind == ActorKind::Player
+            && self.lever.is_some()
+            && self.teleport.is_none()
+    }
+
     /// A pure quest-state predicate, with no Quest mutation or receipt.
     #[must_use]
     pub fn is_read_only(&self) -> bool {
@@ -1040,7 +1050,9 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     })
             })
             || (!callback.world_requirements.is_empty()
-                && ((callback.has_personal_state() && !callback.requires_world_admission)
+                && ((callback.has_personal_state()
+                    && !callback.requires_world_admission
+                    && !callback.is_character_guarded_switch())
                     || ((!callback.offerings.is_empty() || callback.item_on_target.is_some())
                         && !callback.requires_world_admission)
                     || (callback.minimum_level.is_some()
@@ -1103,10 +1115,19 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             })
             || (callback.storage.iter().any(|storage| storage.read_only)
                 && (!callback.is_read_only()
-                    || callback.teleport.is_none()
-                    || (callback.trigger == Trigger::StepIn && !callback.return_on_failure)
-                    || callback.lever.is_some()
-                    || !callback.passages.is_empty()
+                    || if callback.is_character_guarded_switch() {
+                        callback.reversible
+                            || callback.remote_teleport.is_some()
+                            || *callback.effects != CallbackEffects {
+                                magic: callback.effects.magic.clone(),
+                                ..Default::default()
+                            }
+                    } else {
+                        callback.teleport.is_none()
+                            || (callback.trigger == Trigger::StepIn && !callback.return_on_failure)
+                            || callback.lever.is_some()
+                            || !callback.passages.is_empty()
+                    }
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
                     || callback.minimum_level.is_some()

@@ -21,6 +21,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         close: bool,
         after: &mut EntryFacts,
     ) -> Result<Option<QuestCallbackProjection>, UseDisposition> {
+        if let Some(delay) = callback.effects.close_passages_after_ms {
+            return super::timed_passages::prepare_deferred_close(
+                map,
+                callback,
+                self.owner_now().get(),
+                delay,
+            )
+            .map(Some);
+        }
         if let Some(target) = &callback.effects.target_transform {
             return super::source_transforms::prepare(map, target).map(Some);
         }

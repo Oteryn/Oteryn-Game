@@ -99,6 +99,9 @@ pub struct CallbackEffects {
     /// Restore remote passage objects independently of the source object.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub passages_reset_after_ms: Option<u32>,
+    /// Close the currently open remote passages after a native StepIn.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub close_passages_after_ms: Option<u32>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
@@ -731,6 +734,23 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || effects.item_cycle.is_some()
                 || effects.encounter.is_some()
                 || (!callback.passages.is_empty() && effects.passages_reset_after_ms.is_none())
+        })
+        || effects.close_passages_after_ms.is_some_and(|delay| {
+            !(1..=3_600_000).contains(&delay)
+                || callback.trigger != Trigger::StepIn
+                || callback.actor_kind != ActorKind::Player
+                || callback.lever.is_some()
+                || callback.reversible
+                || callback.has_state()
+                || callback.teleport.is_some()
+                || callback.item_on_target.is_some()
+                || callback.native_rule.is_some()
+                || callback.passages.is_empty()
+                || *effects
+                    != CallbackEffects {
+                        close_passages_after_ms: Some(delay),
+                        ..Default::default()
+                    }
         })
         || effects.passages_reset_after_ms.is_some_and(|delay| {
             !(1..=3_600_000).contains(&delay)

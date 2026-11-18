@@ -106,6 +106,11 @@ pub enum QuestCallbackProjection {
         entries: Vec<QuestTimedPassage>,
         source_reset: Option<(u64, EntryFacts)>,
     },
+    /// Close a remote passage only if it is still the one this step observed.
+    DeferredPassageClose {
+        due: u64,
+        entries: Vec<QuestTimedPassage>,
+    },
     /// Each read revision, including cells which do not change, fences the batch.
     ReadsetTransforms {
         entries: Vec<(u64, u64, Option<EntryFacts>)>,
@@ -330,6 +335,39 @@ impl CallbackStates {
             } => {
                 if close || !self.project_timed_passages(owner, *due, entries, *source_reset) {
                     return false;
+                }
+            }
+            QuestCallbackProjection::DeferredPassageClose { due, entries } => {
+                let mut keys = BTreeSet::new();
+                if entries.len() > 8
+                    || entries.iter().any(|entry| {
+                        entry.key == owner
+                            || !keys.insert(entry.key)
+                            || entry.expected_revision == u64::MAX
+                            || self
+                                .changed
+                                .get(&entry.key)
+                                .map_or(0, |(revision, _)| *revision)
+                                != entry.expected_revision
+                    })
+                {
+                    return false;
+                }
+                for entry in entries {
+                    let Some(restore) = entry.after.filter(|facts| !facts.pickupable) else {
+                        return false;
+                    };
+                    self.changed
+                        .entry(entry.key)
+                        .or_insert((entry.expected_revision, entry.before));
+                    self.movement_decays.insert(
+                        (*due, entry.key),
+                        MovementDecay {
+                            revision: entry.expected_revision,
+                            restore,
+                            overlay: Some((false, entry.passable.then_some(true))),
+                        },
+                    );
                 }
             }
             QuestCallbackProjection::ReadsetTransforms { entries, reset } => {
@@ -1723,6 +1761,9 @@ impl BundleFacts {
                 mutations.len().saturating_mul(3).saturating_add(1)
             }
             Some(QuestCallbackProjection::SwitchWalls { walls }) => walls.len() * 2 + 2,
+            Some(QuestCallbackProjection::DeferredPassageClose { entries, .. }) => {
+                entries.len() * 2 + 1
+            }
             _ => usize::from(projection.is_some()) * 8,
         };
         if states
@@ -1747,6 +1788,9 @@ impl BundleFacts {
                 QuestCallbackProjection::Portals { endpoints, .. } => endpoints
                     .iter()
                     .any(|(pos, _, _)| states.position_reserved(*pos)),
+                QuestCallbackProjection::DeferredPassageClose { entries, .. } => {
+                    entries.iter().any(|entry| states.key_reserved(entry.key))
+                }
                 QuestCallbackProjection::TimedPassages { entries, .. } => entries
                     .iter()
                     .any(|entry| states.reserved.contains(&entry.key)),
@@ -1778,9 +1822,10 @@ impl BundleFacts {
         {
             return false;
         }
-        if replacements
+        if passages
             .iter()
-            .any(|(k, _, _)| states.changed.get(k).is_some_and(|(r, _)| *r == u64::MAX))
+            .chain(replacements.iter().map(|(k, _, _)| k))
+            .any(|key| states.changed.get(key).is_some_and(|(r, _)| *r == u64::MAX))
         {
             return false;
         }
@@ -1797,6 +1842,9 @@ impl BundleFacts {
         }
         let states = Arc::make_mut(&mut states);
         for passage in passages {
+            if let Some((revision, _)) = states.changed.get_mut(passage) {
+                *revision += 1;
+            }
             if close {
                 states.hidden.remove(passage);
             } else {
