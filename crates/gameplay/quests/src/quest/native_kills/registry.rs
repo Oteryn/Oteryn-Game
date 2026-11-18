@@ -58,12 +58,14 @@ pub fn active_for(catalogue: &QuestStateCatalogue, tracks: &BTreeMap<String, i64
         .filter(|key| counter_for(catalogue, key).is_some())
         .map(str::to_owned)
         .collect();
-    active.extend(super::roshamuul::COUNTERS.iter().filter_map(|counter| {
+    for counter in super::roshamuul::COUNTERS {
         let count = tracks.get(counter.track).copied().unwrap_or(0);
-        (catalogue.transition(counter.transition).is_some()
-            && (0..counter.maximum).contains(&count))
-        .then(|| counter.transition.to_owned())
-    }));
+        if catalogue.transition(counter.transition).is_some()
+            && (0..counter.maximum).contains(&count)
+        {
+            active.push(counter.transition.to_owned());
+        }
+    }
     if let Some(bindings) = catalogue.authored_bindings() {
         for quest in &bindings.quests {
             for stage in &quest.stages {

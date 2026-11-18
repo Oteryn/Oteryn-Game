@@ -202,7 +202,10 @@ pub fn preview_with_appearance(
 
 /// Classify against a real fenced snapshot. Unlike an optimistic route preview,
 /// this never substitutes synthetic counts when the actual branch is absent.
-#[allow(clippy::too_many_arguments, reason = "the actual snapshot shares the existing source preview facts")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the actual snapshot shares the existing source preview facts"
+)]
 pub fn preview_with_inventory(
     request: &NpcProgramRequest,
     tracks: &BTreeMap<String, i64>,
@@ -212,12 +215,24 @@ pub fn preview_with_inventory(
     player_name: Option<&str>,
     appearance: (&BTreeMap<u16, u8>, u8),
     inventory: &NpcInventorySnapshot,
-) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError> {
+) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError>
+{
     let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
         return Ok(None);
     };
-    evaluate_source(&source, request, tracks, catalogue, now,
-        NpcEvaluationFacts { eligibility, player_name, appearance }, Some(inventory))
+    evaluate_source(
+        &source,
+        request,
+        tracks,
+        catalogue,
+        now,
+        NpcEvaluationFacts {
+            eligibility,
+            player_name,
+            appearance,
+        },
+        Some(inventory),
+    )
 }
 
 #[derive(Clone, Copy)]
@@ -288,7 +303,11 @@ fn evaluate_source(
     };
     if request.npc == oteryn_gameplay_quests::quest::npc_rules::sandomo::NPC {
         let session = request.command.game_session_id();
-        let session_hex = session.as_bytes().iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+        let session_hex = session
+            .as_bytes()
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
         let occurrence = format!("{session_hex}/{}", request.command.command_id().get());
         source.plan_sandomo(&input, &occurrence)
     } else if hot_cuisine_m42::owns(request) {
@@ -460,6 +479,7 @@ impl DurabilityRoot {
             }
             let now:i64=sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint").fetch_one(&mut **tx).await?;
             let cooking_items = hot_cuisine_m42::owns(&request);
+            let sandomo = request.npc == oteryn_gameplay_quests::quest::npc_rules::sandomo::NPC;
             let father_items = fathers_burden::owns(&request);
             let marlin_items = marlin_trophy::owns(&request);
             let plain_keys = source.outfit_exchange_keys(&request.npc).or_else(|| source.item_exchange_keys(&request.npc));
@@ -581,7 +601,7 @@ impl DurabilityRoot {
                     .bind(id).fetch_one(&mut **tx).await?;
                 if pending >= QUESTGATE0_RL_10 as i64 { return Ok(Ok(refused(QuestRefusal::CapacityExceeded))); }
             }
-            let item_action = father_items || marlin_items || ((cooking_items || generic_items || request.npc == oteryn_gameplay_quests::quest::npc_rules::sandomo::NPC) && items::changes_items(&plan));
+            let item_action = father_items || marlin_items || ((cooking_items || generic_items || sandomo) && items::changes_items(&plan));
             let quest=&plan.quest;
             let hash=catalogue.definition_hash(quest).ok_or(DurabilityError::InvalidStoredState)?;
             let stored_state=sqlx::query("SELECT pinned_content_revision,definition_hash,completed_character_revision IS NOT NULL AS completed FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 FOR UPDATE").bind(id).bind(quest).fetch_optional(&mut **tx).await?;
@@ -615,7 +635,7 @@ impl DurabilityRoot {
                 }
                 let applied = if marlin_items {
                     marlin_trophy::apply(&mut tx, fence, &request, &plan, *content, &node).await?
-                } else if cooking_items || generic_items || request.npc == oteryn_gameplay_quests::quest::npc_rules::sandomo::NPC {
+                } else if cooking_items || generic_items || sandomo {
                     items::apply(&mut tx, fence, &request, &plan, *content, &node, permit).await?
                 } else {
                     fathers_burden::apply(&mut tx, fence, &request, &plan, *content, &node).await?
