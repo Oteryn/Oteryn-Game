@@ -933,9 +933,14 @@ async fn exercise_queen(
     .await?;
     assert_eq!(committed, (3, 1));
     let receipts: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_quest_npc_teleport_receipts
-         WHERE transition_key=$1 AND quest_changed AND tile_x=32202 AND tile_y=31812 AND tile_floor=8",
-    ).bind(KISS).fetch_one(&h.pool).await?;
+        "SELECT count(*) FROM game_quest_npc_teleport_receipts t
+         JOIN game_character_quest_receipts q USING (character_id, transition_key, created_xact_id)
+         WHERE t.transition_key=$1 AND t.quest_changed
+           AND t.tile_x=32202 AND t.tile_y=31812 AND t.tile_floor=8",
+    )
+    .bind(KISS)
+    .fetch_one(&h.pool)
+    .await?;
     assert_eq!(receipts, 1);
     Ok(())
 }
