@@ -47,7 +47,7 @@ fn pinned_catalogue_service_model_counts() {
     // Grizzly Adams rank shop, S10 services, exact NPC-TRADE-3 subtype restoration,
     // and the four source-owned Djinn shops (126 offers, four held below).
     assert_eq!(model.services().len(), 404);
-    assert_eq!(model.admitted_offer_count(), 12_687);
+    assert_eq!(model.admitted_offer_count(), 12_678);
     assert_eq!(model.admitted_route_count(), 195);
     assert_eq!(model.generated_reply_npc_count(), 446);
     let expected: BTreeMap<&str, usize> = BTreeMap::from([

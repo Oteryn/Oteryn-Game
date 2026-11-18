@@ -1,4 +1,4 @@
-//! Completion metadata preserves exact old NPC pins and existing absent-track semantics.
+//! NPC programme updates preserve exact old pins and existing absent-track semantics.
 use super::{NpcRuleCatalog, admission};
 use crate::quest::{NpcDefinitionPredecessor, QuestStateCatalogue};
 use sha2::{Digest, Sha256};
@@ -10,6 +10,7 @@ pub(super) fn register(
 ) -> Result<(), String> {
     for quest in [
         "oteryn:quest.a_father_s_burden_quest",
+        crate::quest::elemental_spheres::QUEST,
         "oteryn:quest.marlin_trophy_quest",
     ] {
         let mut transitions = active.transitions.clone();
@@ -19,12 +20,21 @@ pub(super) fn register(
             .iter()
             .filter(|p| p.document.quest == quest)
         {
-            if !program.document.rules.iter().any(|rule| rule.completes) {
-                continue;
-            }
             let mut previous = program.clone();
-            for rule in &mut previous.document.rules {
-                rule.completes = false;
+            if quest == crate::quest::elemental_spheres::QUEST {
+                previous.document.rules.retain(|rule| {
+                    !matches!(
+                        rule.key.rsplit('/').next(),
+                        Some("alverus" | "shrines" | "sphere" | "level-refusal")
+                    )
+                });
+            } else {
+                if !program.document.rules.iter().any(|rule| rule.completes) {
+                    continue;
+                }
+                for rule in &mut previous.document.rules {
+                    rule.completes = false;
+                }
             }
             previous.digest =
                 Sha256::digest(serde_json::to_vec(&previous.document).map_err(|e| e.to_string())?)
