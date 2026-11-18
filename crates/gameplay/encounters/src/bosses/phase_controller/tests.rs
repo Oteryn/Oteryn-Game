@@ -546,6 +546,32 @@ fn arbaziloth_replacement_retries_refused_placement() {
         encounter.advance(&mut runtime, 3102, |_, _| true).unwrap(),
         None
     );
+    assert!(!runtime.arbaziloth_doomforge_open());
+    assert!(encounter.projected_death(&mut runtime, enraged).is_err());
+    lethal(&mut runtime, enraged, enraged_key);
+    assert!(encounter.projected_death(&mut runtime, enraged).unwrap());
+    assert!(!encounter.projected_death(&mut runtime, enraged).unwrap());
+    assert!(runtime.arbaziloth_doomforge_open());
+    assert_eq!(
+        encounter.victors(&runtime).unwrap().unwrap(),
+        &[(player, session)]
+    );
     runtime.remove_encounter_actor(enraged).unwrap();
     assert!(!encounter.is_current(&runtime));
+    let actors = runtime
+        .commit_quest_creature_spawn(&[
+            (boss_key, 100, position),
+            (
+                forgemaster_key,
+                100,
+                MovementLocalPosition {
+                    x: 34031,
+                    ..position
+                },
+            ),
+        ])
+        .unwrap();
+    arbaziloth::ArbazilothEncounter::bind(&mut runtime, &[(player, session)], actors[0], actors[1])
+        .unwrap();
+    assert!(!runtime.arbaziloth_doomforge_open());
 }
