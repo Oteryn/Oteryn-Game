@@ -241,7 +241,10 @@ pub(super) async fn enter_in_transaction<
     let old: Option<(Vec<u8>, Vec<u8>)> = sqlx::query_as(
         "SELECT uuid_send(handoff_id), request_binding FROM game_activity_runtime_entries \
          WHERE initiating_character_id=encode($1,'hex')::uuid AND initiating_game_session_id=encode($2,'hex')::uuid \
-           AND initiating_connection_generation=$3::text::numeric AND command_id=$4::text::numeric")
+           AND initiating_connection_generation=$3::text::numeric AND command_id=$4::text::numeric
+         UNION ALL SELECT uuid_send(handoff_id), enrollment_request_binding FROM game_activity_handoff_participants
+         WHERE character_id=encode($1,'hex')::uuid AND source_game_session_id=encode($2,'hex')::uuid
+           AND source_connection_generation=$3::text::numeric AND enrollment_command_id=$4::text::numeric")
         .bind(r.initiating_character_id.as_bytes().as_slice()).bind(initiator.source.game_session_id.as_bytes().as_slice())
         .bind(initiator.source.connection_generation.get().to_string()).bind(r.command_id.to_string())
         .fetch_optional(&mut ***tx).await?;
@@ -265,7 +268,7 @@ pub(super) async fn enter_in_transaction<
             ));
         }
         return Ok(ActivityEnterOutcome::Replayed(
-            load_receipt(tx, bytes16(handoff)?).await?,
+            load_receipt(tx, bytes16(handoff)?, mode.window_ms().map(|_| r.initiating_character_id)).await?,
         ));
     }
     let guards = AdmissionGuardStore::from_root(root.clone());
@@ -281,6 +284,14 @@ pub(super) async fn enter_in_transaction<
     {
         return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::NoCapacity));
     }
+    let window_ms = mode.window_ms().map(|duration| i32::try_from(duration.get()))
+        .transpose().map_err(|_| DurabilityError::InvalidStoredState)?;
+    let now = quest_activity_now_ms(tx, root).await?;
+    let joining = if let Some(duration) = window_ms {
+        open_enrollment(tx, r, duration, now).await?
+    } else {
+        false
+    };
     let exact: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM game_runtime_scope_assignments a \
          WHERE a.scope_key=$1 AND a.source_revision=$2::text::numeric \
@@ -289,7 +300,7 @@ pub(super) async fn enter_in_transaction<
              AND s.runtime_scope_instance_id=a.activity_instance_id))")
         .bind(assignment_scope_key(r.destination_scope).as_slice()).bind(r.destination_assignment_source_revision.to_string())
         .fetch_one(&mut ***tx).await?;
-    if !exact {
+    if !exact && !joining {
         return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::NoCapacity));
     }
     let mut accounts = std::collections::BTreeSet::new();
@@ -336,7 +347,6 @@ pub(super) async fn enter_in_transaction<
             ));
         }
     }
-    let now = quest_activity_now_ms(tx, root).await?;
     let boss_plan = if mode.is_boss() {
         match super::boss_room::prepare_in_transaction(tx, r, now, premium).await? {
             Ok(plan) => Some(plan),
@@ -345,6 +355,17 @@ pub(super) async fn enter_in_transaction<
     } else {
         None
     };
+    if joining {
+        let plan = boss_plan.ok_or(DurabilityError::InvalidStoredState)?;
+        if !insert_participant(tx, r, initiator, Some(request_binding)).await? {
+            return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::NoCapacity));
+        }
+        issue_activity_successor(tx, root, r, initiator).await?;
+        super::boss_room::record_window_entrant(tx, r, plan).await?;
+        return Ok(ActivityEnterOutcome::Entered(
+            load_receipt(tx, r.handoff_id, Some(r.initiating_character_id)).await?,
+        ));
+    }
     let deadline = i64::try_from(r.time_limit_ms)
         .ok()
         .and_then(|v| now.checked_add(v))
@@ -356,8 +377,6 @@ pub(super) async fn enter_in_transaction<
     else {
         return Err(DurabilityError::InvalidStoredState);
     };
-    let window_ms = mode.window_ms().map(|duration| i32::try_from(duration.get()))
-        .transpose().map_err(|_| DurabilityError::InvalidStoredState)?;
     let capacity = if let (Some(plan), Some(_)) = (&boss_plan, window_ms) {
         plan.maximum_players()
     } else {
@@ -377,7 +396,9 @@ pub(super) async fn enter_in_transaction<
         .bind(r.destination_content.coordinate_frame_digest.as_slice()).bind(r.destination_content.map_revision_digest.as_slice())
         .bind(r.destination_content.server_artifact_digest.as_slice()).bind(deadline).execute(&mut ***tx).await?;
     for p in &r.participants {
-        insert_participant(tx, r, p).await?;
+        if !insert_participant(tx, r, p, None).await? {
+            return Err(DurabilityError::InvalidStoredState);
+        }
     }
     // Crystal 201189f data-global/scripts/quests/soulpit/soulpit_fight.lua:37-106:
     // validate the whole staging group and burn one core before entry. Keep the
@@ -409,38 +430,99 @@ pub(super) async fn enter_in_transaction<
     sqlx::query("UPDATE game_activity_handoff_groups SET state=2,decided_at=$2 WHERE handoff_id=encode($1,'hex')::uuid AND state=1")
         .bind(r.handoff_id.as_slice()).bind(now).execute(&mut ***tx).await?;
     for p in &r.participants {
-        let RuntimeScopeRefV1::Channel { channel_id, .. } = p.source.runtime_scope else {
-            return Err(DurabilityError::InvalidStoredState);
-        };
-        issue_successor(
-            tx,
-            root,
-            SuccessorSession {
-                terminal_security_return: false,
-                source: p.source,
-                destination: p.destination_game_session_id,
-                decision: r.handoff_id,
-                scope: r.destination_scope,
-                scope_generation: r.destination_generation,
-                origin: Some(*channel_id.as_bytes()),
-                transport: p.destination_transport,
-            },
-        )
-        .await?;
+        issue_activity_successor(tx, root, r, p).await?;
     }
     if let Some(plan) = boss_plan {
         super::boss_room::commit_in_transaction(tx, r, plan).await?;
     }
     Ok(ActivityEnterOutcome::Entered(
-        load_receipt(tx, r.handoff_id).await?,
+        load_receipt(tx, r.handoff_id, mode.window_ms().map(|_| r.initiating_character_id)).await?,
     ))
+}
+
+async fn open_enrollment(
+    tx: &mut Transaction<'_, Postgres>,
+    r: &ActivityEnterRequest,
+    duration: i32,
+    now: i64,
+) -> Result<bool> {
+    let RuntimeScopeRefV1::Instance { world_id, instance_id } = r.destination_scope else {
+        return Err(DurabilityError::InvalidStoredState);
+    };
+    let p = &r.participants[0];
+    let RuntimeScopeRefV1::Channel { channel_id, .. } = p.source.runtime_scope else {
+        return Err(DurabilityError::InvalidStoredState);
+    };
+    let matches = sqlx::query_scalar::<_, bool>(
+        "SELECT true FROM game_activity_handoff_groups g
+         JOIN game_activity_runtime_entries e USING (handoff_id)
+         JOIN game_boss_room_activities b ON b.admission=g.handoff_id
+         JOIN game_runtime_scope_assignments a ON a.scope_key=$1
+         WHERE g.handoff_id=encode($2,'hex')::uuid AND g.world_id=encode($3,'hex')::uuid
+           AND g.instance_id=encode($4,'hex')::uuid AND g.activity_key=$5
+           AND g.template_revision=$6 AND g.content_revision=$7
+           AND g.ownership_generation=$8::text::numeric AND g.admission_window_ms=$9
+           AND g.state=2 AND g.admission_closes_at>clock_timestamp()
+           AND b.state=1 AND b.deadline>$10 AND b.origin_channel_id=encode($11,'hex')::uuid
+           AND e.assignment_source_revision=$12::text::numeric
+           AND a.source_revision=e.assignment_source_revision
+           AND e.destination_coordinate_frame_digest=$13 AND e.destination_map_revision_digest=$14
+           AND e.destination_server_artifact_digest=$15
+         FOR UPDATE OF g,b",
+    )
+    .bind(assignment_scope_key(r.destination_scope).as_slice())
+    .bind(r.handoff_id.as_slice()).bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice())
+    .bind(&r.activity_key).bind(&r.template_revision).bind(&r.content_revision)
+    .bind(r.destination_generation.get().to_string()).bind(duration).bind(now)
+    .bind(channel_id.as_bytes().as_slice()).bind(r.destination_assignment_source_revision.to_string())
+    .bind(r.destination_content.coordinate_frame_digest.as_slice())
+    .bind(r.destination_content.map_revision_digest.as_slice())
+    .bind(r.destination_content.server_artifact_digest.as_slice())
+    .fetch_optional(&mut **tx).await?;
+    if matches.is_none() {
+        return Ok(false);
+    }
+    Ok(sqlx::query_scalar(
+        "SELECT (SELECT count(*) FROM game_activity_handoff_participants p
+                 WHERE p.handoff_id=g.handoff_id) < g.participant_count
+            AND NOT EXISTS (SELECT 1 FROM game_activity_handoff_participants p
+                JOIN game_character_roots c ON c.character_id=encode($2,'hex')::uuid
+                WHERE p.handoff_id=g.handoff_id
+                  AND (p.character_id=c.character_id OR p.account_id=c.account_id))
+         FROM game_activity_handoff_groups g WHERE handoff_id=encode($1,'hex')::uuid",
+    )
+    .bind(r.handoff_id.as_slice())
+    .bind(p.source.character_id.as_bytes().as_slice())
+    .fetch_one(&mut **tx).await?)
+}
+
+async fn issue_activity_successor(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &DurabilityRoot,
+    r: &ActivityEnterRequest,
+    p: &ActivityParticipant,
+) -> Result<()> {
+    let RuntimeScopeRefV1::Channel { channel_id, .. } = p.source.runtime_scope else {
+        return Err(DurabilityError::InvalidStoredState);
+    };
+    issue_successor(tx, root, SuccessorSession {
+        terminal_security_return: false,
+        source: p.source,
+        destination: p.destination_game_session_id,
+        decision: r.handoff_id,
+        scope: r.destination_scope,
+        scope_generation: r.destination_generation,
+        origin: Some(*channel_id.as_bytes()),
+        transport: p.destination_transport,
+    }).await
 }
 
 async fn insert_participant(
     tx: &mut Transaction<'_, Postgres>,
     r: &ActivityEnterRequest,
     p: &ActivityParticipant,
-) -> Result<()> {
+    enrollment_binding: Option<[u8; 32]>,
+) -> Result<bool> {
     let RuntimeScopeRefV1::Channel {
         world_id,
         channel_id,
@@ -449,14 +531,22 @@ async fn insert_participant(
         return Err(DurabilityError::InvalidStoredState);
     };
     let s = p.source_position;
-    sqlx::query("INSERT INTO game_activity_handoff_participants(handoff_id,world_id,character_id,account_id,origin_channel_id,source_game_session_id,destination_game_session_id,source_connection_generation,source_lease_generation,source_ownership_generation,profile_revision,ruleset_revision,content_revision,starter_template_revision,entry_x,entry_y,entry_floor,coordinate_frame_digest,map_revision_digest,server_artifact_digest) \
-        SELECT encode($1,'hex')::uuid, r.world_id,r.character_id,r.account_id,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric,$7::text::numeric,$8::text::numeric,r.profile_revision,r.ruleset_revision,r.content_revision,r.starter_template_revision,$9,$10,$11,$12,$13,$14 \
-        FROM game_character_roots r WHERE r.character_id=encode($2,'hex')::uuid AND r.world_id=encode($15,'hex')::uuid")
+    let inserted = sqlx::query("INSERT INTO game_activity_handoff_participants(handoff_id,world_id,character_id,account_id,origin_channel_id,source_game_session_id,destination_game_session_id,source_connection_generation,source_lease_generation,source_ownership_generation,profile_revision,ruleset_revision,content_revision,starter_template_revision,entry_x,entry_y,entry_floor,coordinate_frame_digest,map_revision_digest,server_artifact_digest,enrollment_command_id,enrollment_request_binding) \
+        SELECT encode($1,'hex')::uuid, r.world_id,r.character_id,r.account_id,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric,$7::text::numeric,$8::text::numeric,r.profile_revision,r.ruleset_revision,r.content_revision,r.starter_template_revision,$9,$10,$11,$12,$13,$14,$16::text::numeric,$17 \
+        FROM game_character_roots r WHERE r.character_id=encode($2,'hex')::uuid AND r.world_id=encode($15,'hex')::uuid
+          AND ($16::text IS NULL OR EXISTS (SELECT 1 FROM game_activity_handoff_groups g
+              WHERE g.handoff_id=encode($1,'hex')::uuid AND g.admission_closes_at>clock_timestamp()))")
         .bind(r.handoff_id.as_slice()).bind(p.source.character_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice())
         .bind(p.source.game_session_id.as_bytes().as_slice()).bind(p.destination_game_session_id.as_bytes().as_slice())
         .bind(p.source.connection_generation.get().to_string()).bind(p.source.character_lease_generation.to_string()).bind(p.source.scope_ownership_generation.get().to_string())
         .bind(s.cell.x).bind(s.cell.y).bind(s.cell.floor).bind(s.coordinate_frame_digest.as_slice()).bind(s.map_revision_digest.as_slice()).bind(s.server_artifact_digest.as_slice())
-        .bind(world_id.as_bytes().as_slice()).execute(&mut **tx).await?;
+        .bind(world_id.as_bytes().as_slice())
+        .bind(enrollment_binding.map(|_| r.command_id.to_string()))
+        .bind(enrollment_binding.as_ref().map(|binding| binding.as_slice()))
+        .execute(&mut **tx).await?;
+    if inserted.rows_affected() != 1 {
+        return Ok(false);
+    }
     let exit = p.exit_position;
     let rest = s
         .rest
@@ -477,7 +567,7 @@ async fn insert_participant(
         .bind(rest).bind(p.destination_transport.map(|t| t.to_bytes().to_vec()))
         .bind(p.selected_capabilities.iter().map(|id| i64::from(*id)).collect::<Vec<_>>())
         .execute(&mut **tx).await?;
-    Ok(())
+    Ok(true)
 }
 
 /// Inputs for one successor; issuance revalidates its source inside the transaction.
@@ -603,6 +693,7 @@ pub(super) async fn issue_successor(
 pub(super) async fn load_receipt(
     tx: &mut Transaction<'_, Postgres>,
     handoff: [u8; 16],
+    character: Option<CharacterId>,
 ) -> Result<ActivityEnterReceipt> {
     let row = sqlx::query("SELECT uuid_send(g.world_id) AS world,uuid_send(g.instance_id) AS instance,g.ownership_generation::text AS generation,e.deadline \
         FROM game_activity_handoff_groups g JOIN game_activity_runtime_entries e USING(handoff_id) WHERE g.handoff_id=encode($1,'hex')::uuid AND g.state=2")
@@ -615,8 +706,8 @@ pub(super) async fn load_receipt(
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     let rows = sqlx::query("SELECT uuid_send(p.character_id) AS character,uuid_send(p.source_game_session_id) AS source,uuid_send(p.destination_game_session_id) AS destination,p.source_lease_generation::text AS lease, \
         q.destination_x,q.destination_y,q.destination_floor,q.exit_x,q.exit_y,q.exit_floor,q.destination_transport_ref FROM game_activity_handoff_participants p \
-        JOIN game_activity_runtime_placements q USING(handoff_id,character_id) WHERE p.handoff_id=encode($1,'hex')::uuid ORDER BY p.character_id LIMIT 16")
-        .bind(handoff.as_slice()).fetch_all(&mut **tx).await?;
+        JOIN game_activity_runtime_placements q USING(handoff_id,character_id) WHERE p.handoff_id=encode($1,'hex')::uuid AND ($2::bytea IS NULL OR uuid_send(p.character_id)=$2) ORDER BY p.character_id LIMIT 16")
+        .bind(handoff.as_slice()).bind(character.as_ref().map(|id| id.as_bytes().as_slice())).fetch_all(&mut **tx).await?;
     if rows.is_empty() || rows.len() > ACTIVITY_PARTICIPANTS_MAX {
         return Err(DurabilityError::InvalidStoredState);
     }

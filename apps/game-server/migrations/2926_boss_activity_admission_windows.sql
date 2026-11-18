@@ -7,6 +7,13 @@ ALTER TABLE game_activity_handoff_groups
         (admission_closes_at IS NOT NULL) = (state = 2 AND admission_window_ms IS NOT NULL)
     );
 
+ALTER TABLE game_activity_handoff_participants
+    ADD COLUMN enrollment_command_id NUMERIC(20,0)
+        CHECK (enrollment_command_id BETWEEN 1 AND 18446744073709551615),
+    ADD COLUMN enrollment_request_binding BYTEA
+        CHECK (octet_length(enrollment_request_binding) = 32),
+    ADD CHECK ((enrollment_command_id IS NULL) = (enrollment_request_binding IS NULL));
+
 CREATE OR REPLACE FUNCTION game_activity_handoff_participant_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
 DECLARE
@@ -29,6 +36,10 @@ BEGIN
         )
     )) THEN
         RAISE EXCEPTION 'activity membership requires a prepared group' USING ERRCODE = '23514';
+    END IF;
+    IF (NEW.enrollment_command_id IS NOT NULL) <> (v_group.state = 2) THEN
+        RAISE EXCEPTION 'activity enrollment receipt requires an open committed window'
+            USING ERRCODE = '23514';
     END IF;
     SELECT count(*) INTO v_count FROM (
         SELECT 1 FROM game_activity_handoff_participants

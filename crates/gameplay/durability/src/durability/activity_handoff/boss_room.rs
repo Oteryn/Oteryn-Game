@@ -594,28 +594,7 @@ pub(super) async fn commit_in_transaction(
     r: &ActivityEnterRequest,
     plan: BossAdmissionPlan,
 ) -> Result<()> {
-    let keys = r
-        .participants
-        .iter()
-        .map(|p| BossRewardKey::new(p.source.character_id, &r.activity_key))
-        .collect::<std::result::Result<Vec<_>, _>>()
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
-    let result = set_boss_cooldowns_data(
-        tx,
-        &keys,
-        &BossCooldownAdmissionData {
-            admission: r.handoff_id,
-            now: plan.now,
-            reset_epoch: plan.reset_epoch,
-            cooldown_s: plan.definition.policy.cooldown_ms / 1000,
-            boosted: false,
-        },
-    )
-    .await
-    .map_err(|_| DurabilityError::Unavailable)?;
-    if result != BossCooldownChange::Applied {
-        return Err(DurabilityError::InvalidStoredState);
-    }
+    record_room_cooldowns(tx, r, &plan).await?;
     let RuntimeScopeRefV1::Instance {
         world_id,
         instance_id,
@@ -641,6 +620,52 @@ pub(super) async fn commit_in_transaction(
         sqlx::query("UPDATE game_boss_difficulty_contexts SET closed=true WHERE character_id=encode($1,'hex')::uuid AND NOT closed AND start_command_id=$2::text::numeric")
             .bind(r.initiating_character_id.as_bytes().as_slice()).bind(r.command_id.to_string()).execute(&mut **tx).await?;
     }
+    record_room_participants(tx, r).await
+}
+
+pub(super) async fn record_window_entrant(
+    tx: &mut Transaction<'_, Postgres>,
+    r: &ActivityEnterRequest,
+    plan: BossAdmissionPlan,
+) -> Result<()> {
+    record_room_cooldowns(tx, r, &plan).await?;
+    record_room_participants(tx, r).await
+}
+
+async fn record_room_cooldowns(
+    tx: &mut Transaction<'_, Postgres>,
+    r: &ActivityEnterRequest,
+    plan: &BossAdmissionPlan,
+) -> Result<()> {
+    let keys = r
+        .participants
+        .iter()
+        .map(|p| BossRewardKey::new(p.source.character_id, &r.activity_key))
+        .collect::<std::result::Result<Vec<_>, _>>()
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let result = set_boss_cooldowns_data(
+        tx,
+        &keys,
+        &BossCooldownAdmissionData {
+            admission: r.handoff_id,
+            now: plan.now,
+            reset_epoch: plan.reset_epoch,
+            cooldown_s: plan.definition.policy.cooldown_ms / 1000,
+            boosted: false,
+        },
+    )
+    .await
+    .map_err(|_| DurabilityError::Unavailable)?;
+    if result != BossCooldownChange::Applied {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(())
+}
+
+async fn record_room_participants(
+    tx: &mut Transaction<'_, Postgres>,
+    r: &ActivityEnterRequest,
+) -> Result<()> {
     for p in &r.participants {
         sqlx::query("INSERT INTO game_boss_room_participants(admission,character_id,origin_game_session_id,origin_lease_generation) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric)")
             .bind(r.handoff_id.as_slice()).bind(p.source.character_id.as_bytes().as_slice()).bind(p.source.game_session_id.as_bytes().as_slice()).bind(p.source.character_lease_generation.to_string()).execute(&mut **tx).await?;

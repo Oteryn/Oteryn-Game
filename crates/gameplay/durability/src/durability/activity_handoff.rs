@@ -304,9 +304,9 @@ impl ActivityHandoffOwner {
         self.enter_inner(authority, node, request, EntryMode::Boss { window_ms: None }, premium).await
     }
 
-    /// Start a room with a single entrant and reserve space for enrollment
-    /// until the admission deadline. The room catalogue sets the capacity.
-    pub async fn open_boss_admission_window(
+    /// Admit one entrant to a boss activity window, opening the room on the
+    /// first admission. The room catalogue sets the capacity.
+    pub async fn enter_boss_admission_window(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
