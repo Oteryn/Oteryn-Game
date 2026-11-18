@@ -443,6 +443,9 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                     oteryn_protocol_oteryn::house_wrap::Reply::decode(&payload),
                     Some(oteryn_protocol_oteryn::house_wrap::Reply::Committed(_))
                 )
+                || (command.command_type
+                    == u32::from(oteryn_protocol_oteryn::mail::COMMAND_TYPE_MAIL)
+                    && payload == [oteryn_protocol_oteryn::mail::MailOutcome::TextWritten as u8])
             {
                 services.inventory(stream, authority, &mut admitted).await?;
             }

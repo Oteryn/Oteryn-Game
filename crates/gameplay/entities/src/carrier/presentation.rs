@@ -71,10 +71,51 @@ impl ChannelRuntimeV1 {
         {
             return Err(CarrierError::PositionSnapshotMismatch);
         }
+        self.record_riding(actor, mount, speed_bonus);
+        Ok(())
+    }
+
+    pub fn set_house_riding(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        mount: u32,
+        speed_bonus: u16,
+    ) -> Result<(), CarrierError> {
+        if self
+            .house_player_control_facts(actor, session)?
+            .control_loss
+            .is_some()
+            || self.house_player_writes_fenced(actor, session)?
+        {
+            return Err(CarrierError::PositionSnapshotMismatch);
+        }
+        self.record_riding(actor, mount, speed_bonus);
+        Ok(())
+    }
+
+    pub fn house_actor_motion(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(u64, u32, u32, u16)> {
+        let movement = self.read_house_movement(actor, session).ok()?;
+        let entry = self
+            .presentations
+            .get(&actor.actor_local_id())
+            .filter(|p| p.actor == actor);
+        Some((
+            movement.revision(),
+            0,
+            entry.map_or(0, |p| p.mount),
+            entry.map_or(0, |p| p.speed_bonus),
+        ))
+    }
+
+    fn record_riding(&mut self, actor: ExactActorRef, mount: u32, speed_bonus: u16) {
         let entry = self.presentation_entry(actor);
         entry.mount = mount;
         entry.speed_bonus = if mount == 0 { 0 } else { speed_bonus };
-        Ok(())
     }
 
     pub fn actor_motion(&self, actor: ExactActorRef) -> Option<(u64, u32, u32, u16)> {

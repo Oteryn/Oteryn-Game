@@ -1543,6 +1543,24 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.observe_actor_vitals(actor, game_session_id).await
     }
 
+    async fn observe_house_vitals(
+        &self,
+        actor: ExactActorRef,
+        admitted: AdmittedSession,
+    ) -> Option<(u64, actor_spell::ActorVitals)> {
+        let fence = admitted.item_fence?;
+        if fence.connection_generation.get() != admitted.continuity.connection_generation {
+            return None;
+        }
+        let runtime = self.runtime.lock().await;
+        self.states.spell_states.lock().await.house_vitals(
+            &runtime,
+            actor,
+            admitted.game_session_id,
+            fence,
+        )
+    }
+
     /// One cast as one Channel-owner work item (`SPELL-RL-01` = 1), under the same runtime lock
     /// `step` and `use_object` take.
     async fn physical_native_cast_position(

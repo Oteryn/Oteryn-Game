@@ -434,7 +434,10 @@ async fn observe_once(
             condition_revision: note_none(
                 player.revision().checked_add(
                     note_none(
-                        runtime.actor_staff_visibility(*actor).ok(),
+                        runtime
+                            .actor_staff_visibility(*actor)
+                            .or_else(|_| runtime.house_staff_visibility(*actor, target_session))
+                            .ok(),
                         "visibility reason=staff_visibility_missing",
                     )?
                     .2,

@@ -174,9 +174,7 @@ impl State {
         }
         if enabled
             && selected.domain_selected(STATE_DOMAIN_ACTOR_VITALS)
-            && let Some((revision, vitals)) = authority
-                .observe_vitals(actor, admitted.game_session_id)
-                .await
+            && let Some((revision, vitals)) = authority.observe_house_vitals(actor, *admitted).await
         {
             payloads.push(OwnedDomain {
                 domain_id: STATE_DOMAIN_ACTOR_VITALS,
@@ -207,6 +205,7 @@ impl State {
                 appearances,
                 spatial_revision,
                 capacity: None,
+                capacity_vitals_max: None,
                 capacity_refresh_at: None,
                 emblems: Vec::new(),
                 movement_effect_revision: authority
