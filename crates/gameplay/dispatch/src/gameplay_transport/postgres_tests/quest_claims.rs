@@ -279,7 +279,7 @@ async fn assert_hoard_delivery(
 }
 
 async fn claim_hoard_gems(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
     before: &[(u16, i64)],
