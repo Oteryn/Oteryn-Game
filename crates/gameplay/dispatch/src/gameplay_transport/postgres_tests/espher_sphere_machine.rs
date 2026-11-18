@@ -230,7 +230,7 @@ async fn exercise(h: &Harness) -> TestResult {
     let left = machine_key(&owner, LEFT, 842)?;
     let right = machine_key(&owner, RIGHT, 843)?;
     assert_ne!(
-        charge(&owner, &admitted, 713, left, RUBY).await?,
+        charge(&mut owner, &admitted, 713, left, RUBY).await?,
         UseDisposition::Committed
     );
     assert_eq!(gems(h).await?, -1);
@@ -248,7 +248,7 @@ async fn exercise(h: &Harness) -> TestResult {
     );
     assert_eq!(gems(h).await?, -1);
     assert_ne!(
-        charge(&owner, &admitted, 715, right, EMERALD).await?,
+        charge(&mut owner, &admitted, 715, right, EMERALD).await?,
         UseDisposition::Committed
     );
     assert_eq!(carried(h, EMERALD).await?, 24);
@@ -266,7 +266,7 @@ async fn exercise(h: &Harness) -> TestResult {
     for count in 1..=23 {
         let key = if count % 2 == 1 { left } else { right };
         assert_eq!(
-            charge(&owner, &admitted, 720 + count, key, EMERALD).await?,
+            charge(&mut owner, &admitted, 720 + count, key, EMERALD).await?,
             UseDisposition::Committed,
             "gem {count}"
         );
@@ -400,12 +400,13 @@ fn target(owner: &ComposedFreshAdmission<'_, '_, '_>, key: u64) -> TestResult<Wo
 }
 
 async fn charge(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     command_id: u64,
     key: u64,
     item: &str,
 ) -> TestResult<UseDisposition> {
+    owner.clock_origin -= std::time::Duration::from_secs(2);
     let definition = owner
         .active_generation
         .and_then(|generation| generation.native_gameplay())
