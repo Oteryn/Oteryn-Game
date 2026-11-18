@@ -37,3 +37,6 @@ PARTIAL Orb callback and placement action, fortress field placement, Tibia Tales
 
 - The sharded PostgreSQL test ran against the baseline NPC callbacks with the promoted placement loaded. The greeting succeeded and the `mission` offer assertion failed as expected in 53.16 s.
 - Quest authoring checks passed all 44 commands, including 269 schema cases. NPC placement generator check and workspace formatting check passed.
+- PG via shard (pgsplit build files applied on 03120e801a733064f693f54e65cde3f8c7dd3690). `eroth_mirror_and_once_only_reward` passed in 35.60 s. The case verifies mirror grant, premature return refusal, exact hand-in quantities, completion and repeated hand-in. Removing the test database URL returned `Ok(())` in 0.00 s.
+- Dispatch Clippy passed with `--all-features --lib -- -D warnings`.
+- World pin check passed for one world with a temporary output directory. The compiled artifact contains Eroth's NPC key.
