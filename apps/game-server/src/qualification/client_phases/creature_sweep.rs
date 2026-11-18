@@ -1276,15 +1276,30 @@ async fn observe_xp_until<T>(
     mut read: impl AsyncFnMut(&mut T) -> TestResult<u64>,
     mut service: impl AsyncFnMut(&mut T) -> TestResult,
 ) -> TestResult<u64> {
+    let mut last = None;
     loop {
+        // Reserve the liveness quantum before beginning another stats exchange.
+        if let Some(xp) = last
+            && deadline.saturating_duration_since(tokio::time::Instant::now())
+                <= Duration::from_millis(250)
+        {
+            return Ok(xp);
+        }
         if tokio::time::Instant::now() >= deadline {
-            return Err("XP observation deadline".into());
+            return last.ok_or_else(|| "XP observation deadline".into());
         }
         let xp = tokio::time::timeout_at(deadline, read(client)).await??;
         if tokio::time::Instant::now() >= deadline {
             return Err("XP observation deadline".into());
         }
         if xp == expected_total {
+            return Ok(xp);
+        }
+        last = Some(xp);
+        // Finish servicing a complete exchange; only start another while budget remains.
+        if deadline.saturating_duration_since(tokio::time::Instant::now())
+            <= Duration::from_millis(250)
+        {
             return Ok(xp);
         }
         tokio::time::timeout_at(deadline, service(client)).await??;
@@ -1568,7 +1583,10 @@ async fn hunt(
     })?;
     let expected = u64::try_from(expected).map_err(|error| failure("xp", "content", error))?;
     let xp_deadline = tokio::time::Instant::now() + Duration::from_secs(20);
-    let xp_after = observe_xp_until(client, xp_deadline, settlement.total,
+    let observation = observe_xp_until(
+        client,
+        xp_deadline,
+        settlement.total,
         async |client| {
             verdict::Harness::global().progress("creature-sweep-xp-stats");
             read_stats(client).await.map(|(xp, _)| xp)
@@ -1578,9 +1596,21 @@ async fn hunt(
             client.service_liveness(Duration::from_millis(250)).await?;
             client.take_events();
             Ok(())
-        }).await.map_err(|error| failure("xp", "observation", format!(
-            "{error};expected:{expected};receipt_award:{};receipt_total:{};wire_before:{xp_before}",
-            settlement.award, settlement.total)))?;
+        },
+    )
+    .await;
+    let xp_after = match observation {
+        Ok(xp) => xp,
+        Err(error) => {
+            let detail = format!(
+                "{error};expected:{expected};receipt_award:{};receipt_total:{};wire_before:{xp_before}",
+                settlement.award, settlement.total
+            );
+            // Cancellation can leave a partial protocol exchange. Never logout or reuse it.
+            *session = None;
+            return Err(failure("xp", "observation", detail));
+        }
+    };
     let gained = xp_after.saturating_sub(xp_before);
     let xp_detail = format!(
         "authored:{};expected:{expected};gained:{gained};level:{level};receipt_award:{};receipt_total:{};wire_before:{xp_before};wire_after:{xp_after}",
@@ -1987,6 +2017,40 @@ mod review_tests {
     use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
     #[tokio::test(start_paused = true)]
+    async fn qualification_xp_mismatch_preserves_independent_rows() -> TestResult {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(1);
+        let value = observe_xp_until(
+            &mut (),
+            deadline,
+            123,
+            async |_| Ok(122),
+            async |_| {
+                tokio::time::sleep(Duration::from_millis(10)).await;
+                Ok(())
+            },
+        )
+        .await?;
+        assert_eq!(value, 122);
+        Ok(())
+    }
+
+    #[test]
+    fn qualification_xp_cancelled_exchange_is_discarded_before_release() -> TestResult {
+        let source = include_str!("creature_sweep.rs");
+        let observation = source
+            .split_once("let xp_deadline =")
+            .ok_or("production observation")?
+            .1
+            .split_once("let gained =")
+            .ok_or("XP verdict")?
+            .0;
+        assert!(observation.contains("*session = None;"));
+        assert!(observation.contains("Ok(xp) => xp"));
+        assert!(!observation.contains(".map_err("));
+        Ok(())
+    }
+
+    #[tokio::test(start_paused = true)]
     async fn qualification_next_round_xp_request_cannot_pass_after_deadline() -> TestResult {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
         let result = observe_xp_until(
@@ -2048,6 +2112,7 @@ mod review_tests {
         Ok(())
     }
 
+    #[cfg(feature = "test-support")]
     #[tokio::test]
     async fn qualification_next_round_exact_receipt_survives_clock_restart() -> TestResult {
         let url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
