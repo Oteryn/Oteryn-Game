@@ -501,6 +501,7 @@ impl QuestStateCatalogue {
                     || transition
                         .key
                         .starts_with(world_callbacks::GROUND_CLEANUP_PREFIX)
+                    || transition.key.starts_with(world_callbacks::RANKED_TOLL_PREFIX)
                     || transition
                         .key
                         .starts_with(world_callbacks::SOLO_ROOM_PREFIX))

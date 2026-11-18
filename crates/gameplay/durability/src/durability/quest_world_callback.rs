@@ -709,6 +709,22 @@ async fn consume_inputs(
     channel_id: crate::foundation::ChannelId,
 ) -> Result<bool, DurabilityError> {
     // Resolve and lock every input before any write, including replacement preconditions.
+    if let Some(toll) = &callback.effects.ranked_toll {
+        // Crystal movement_tower.lua:25-29. Both faction tracks are read under
+        // the same Character root held for the pearl's consumption and receipt.
+        let allowed: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks
+             WHERE character_id=encode($1,'hex')::uuid AND track_key=ANY($2::text[]) AND value >= $3)",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(&toll.tracks[..])
+        .bind(toll.minimum)
+        .fetch_one(&mut **tx)
+        .await?;
+        if !allowed {
+            return Ok(false);
+        }
+    }
     let mut inputs = Vec::new();
     let solid_repair = !callback.effects.cleanup_offerings
         && callback

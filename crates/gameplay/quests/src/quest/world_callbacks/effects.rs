@@ -47,6 +47,9 @@ pub struct ItemDisguiseRequirement {
 pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub board_portal: Option<BoardPortal>,
+    /// Qualification for a consumed toll, evaluated under the same Character root.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ranked_toll: Option<RankedToll>,
     /// Distinct carried definitions consumed atomically by the Quest receipt owner.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
@@ -505,6 +508,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
         return false;
     }
     let effects = &callback.effects;
+    if effects.ranked_toll.as_ref().is_some_and(|toll| !toll.valid(callback)) {
+        return false;
+    }
     if effects
         .color_grid
         .as_ref()

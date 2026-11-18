@@ -19,6 +19,7 @@ pub const MAX_CALLBACKS: usize = 512;
 pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1024;
 pub const MAX_EFFECTS: usize = 8;
 pub const GROUND_CLEANUP_PREFIX: &str = "oteryn:quest-callback/ground-cleanup/";
+pub const RANKED_TOLL_PREFIX: &str = "oteryn:quest-callback/ranked-toll/";
 pub const SOLO_ROOM_PREFIX: &str = "oteryn:quest-callback/solo-room/";
 pub const MAX_SELECTOR_POSITIONS: usize = 8;
 
@@ -76,6 +77,8 @@ mod per_use_reward;
 pub mod personal_trial;
 pub mod phase;
 mod questpc7_compat;
+mod ranked_toll;
+pub use ranked_toll::RankedToll;
 #[cfg(test)]
 mod scripted_teleport_tests;
 #[cfg(test)]
@@ -566,7 +569,9 @@ impl Callback {
     }
 
     pub fn uses_empty_world_transition(&self) -> bool {
-        self.effects.cleanup_offerings || self.standalone_solo_room()
+        self.effects.cleanup_offerings
+            || self.standalone_solo_room()
+            || self.effects.ranked_toll.is_some()
     }
 
     pub fn operations(&self) -> impl Iterator<Item = &super::reward_callbacks::StateOperation> {
@@ -1376,7 +1381,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || (item.reusable && (item.count != 1 || item.replacement.is_some()))
                     || !callback.requires_durable_commit()
                     || if item.on_step {
-                        !callback.has_personal_state()
+                        (!callback.has_personal_state() && callback.effects.ranked_toll.is_none())
                             || callback.trigger != Trigger::StepIn
                             || !callback.requires_world_admission
                             || callback.selector.native.is_none()
@@ -1479,6 +1484,15 @@ fn extend_callbacks(
     let published = published_markers::keys()?;
     super::ice_islands_seals::catalogue::declare(&mut tracks, callbacks)?;
     for callback in callbacks.iter().filter(|c| c.requires_durable_commit()) {
+        if let Some(toll) = &callback.effects.ranked_toll
+            && toll.tracks.iter().any(|key| {
+                catalogue.track(key).is_none_or(|track| {
+                    track.initial >= toll.minimum || track.max < toll.minimum
+                })
+            })
+        {
+            return Err(format!("invalid ranked toll tracks for {}", callback.key));
+        }
         for storage in &callback.storage {
             let maximum = if storage.increment {
                 storage
