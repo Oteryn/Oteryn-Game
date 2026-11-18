@@ -928,6 +928,57 @@ fn exclusive_snapshot_refuses_marker_edits_and_transfers() -> Result<(), Box<dyn
 }
 
 #[test]
+fn exclusive_reader_does_not_persist_character_exploration()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{PreferenceStore, SettingsState};
+
+    let root = std::env::temp_dir().join(format!("minimap-reader-settings-{}", std::process::id()));
+    let owner = review_view(&root)?;
+    let mut reader = review_view(&root)?;
+    let base = root.join("settings.json");
+    let character = [3; 16];
+    let mut settings = SettingsState::new(Some(base.clone()));
+    settings.select_character(Some(character));
+    let path = PreferenceStore::character_path(&base, character);
+    let before = std::fs::read(&path)?;
+    settings.restore(&mut reader, [960, 720])?;
+    reader.set_live_map(&review_snapshot(201, true))?;
+    settings.restore(&mut reader, [960, 720])?;
+    assert_eq!(lock(&reader.minimap).cells.get(&(-7, 201, 200)), Some(&55));
+    assert!(std::fs::read(path)? == before, "reader changed character settings");
+    drop(reader);
+    drop(owner);
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+
+#[test]
+fn exclusive_reader_loads_snapshot_when_lock_cannot_open()
+-> Result<(), Box<dyn std::error::Error>> {
+    let root = std::env::temp_dir().join(format!("minimap-lock-open-{}", std::process::id()));
+    let mut owner = review_view(&root)?;
+    owner.set_live_map(&review_snapshot(201, true))?;
+    let path = lock(&owner.minimap).path().ok_or("cache path")?;
+    lock(&owner.minimap).edit_marker(100, 200, -7, "Home".into(), 1)?;
+    drop(owner);
+    let before = std::fs::read(&path)?;
+    let lock_path = path.with_extension("lock");
+    // A directory at the lock path forces open to fail even for privileged test runners.
+    std::fs::remove_file(&lock_path)?;
+    std::fs::create_dir(&lock_path)?;
+
+    let mut reader = review_view(&root)?;
+    assert_eq!(lock(&reader.minimap).cells.get(&(-7, 201, 200)), Some(&55));
+    assert_eq!(lock(&reader.minimap).markers[0].label, "Home");
+    assert!(lock(&reader.minimap).create_mark_at((101, 200, -7)).is_err());
+    reader.set_live_map(&review_snapshot(202, true))?;
+    drop(reader);
+    assert_eq!(std::fs::read(path)?, before);
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+
+#[test]
 fn exclusive_import_is_not_overwritten_by_pre_import_recovery()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::SettingsState;
@@ -942,6 +993,7 @@ fn exclusive_import_is_not_overwritten_by_pre_import_recovery()
         let mut map = lock(&owner.minimap);
         map.set_cell_colour((-7, 100, 200), 24);
         map.export_to(&portable)?;
+        map.set_cell_colour((-7, 100, 200), 42);
     }
     let pending = path.with_extension("pending");
     std::fs::create_dir_all(&pending)?;
@@ -949,6 +1001,7 @@ fn exclusive_import_is_not_overwritten_by_pre_import_recovery()
     let mut settings = SettingsState::new(None);
     settings.request_minimap_transfer(true, portable);
     assert!(settings.apply_minimap_transfer(&mut owner)?);
+    assert_eq!(lock(&owner.minimap).cells.get(&(-7, 100, 200)), Some(&24));
     drop(owner);
     let reopened = review_view(&root)?;
     assert_eq!(

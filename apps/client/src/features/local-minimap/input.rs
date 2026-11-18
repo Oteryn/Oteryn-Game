@@ -128,8 +128,17 @@ impl PlayView {
         super::state::lock(&self.minimap).pending_edit.take()
     }
     #[cfg(bevy_shell)]
+    pub(crate) fn take_minimap_feedback(&self) -> String {
+        std::mem::take(&mut super::state::lock(&self.minimap).feedback)
+    }
+
+    #[cfg(bevy_shell)]
     pub(crate) fn edit_minimap_marker(&mut self, at: (i32, i32, i16), label: String, color: u8) -> std::io::Result<()> {
-        super::state::lock(&self.minimap).edit_marker(at.0, at.1, at.2, label, color)?;
-        self.rebuild().map_err(std::io::Error::other)
+        let edited = super::state::lock(&self.minimap).edit_marker(at.0, at.1, at.2, label, color);
+        edited
+            .and_then(|()| self.rebuild().map_err(std::io::Error::other))
+            .inspect_err(|error| {
+                super::state::lock(&self.minimap).feedback = format!("Map mark: {error}");
+            })
     }
 }

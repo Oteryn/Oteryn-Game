@@ -76,7 +76,7 @@ type CellPosition = (i16, i32, i32);
 #[derive(Debug)]
 enum CacheAccess {
     Owner { _lock: std::fs::File },
-    ReadOnly,
+    ReadOnly(io::Error),
 }
 
 type Binding = ([u8; 32], [u8; 32], u64);
@@ -476,7 +476,7 @@ impl Minimap {
             return Ok(());
         }
         match self.path() {
-            Some(path) if matches!(self.cache_access.get(&path), Some(CacheAccess::ReadOnly)) => {}
+            Some(path) if matches!(self.cache_access.get(&path), Some(CacheAccess::ReadOnly(_))) => {}
             Some(path) => {
                 self.require_cache_owner(&path)?;
                 return self.write_cache(&path, self.markers.clone());
@@ -490,10 +490,17 @@ impl Minimap {
         Ok(())
     }
 
+    pub(in crate::play) fn is_read_only(&self) -> bool {
+        self.path()
+            .is_some_and(|path| matches!(self.cache_access.get(&path), Some(CacheAccess::ReadOnly(_))))
+    }
+
     fn require_cache_owner(&self, path: &Path) -> io::Result<()> {
         match self.cache_access.get(path) {
             Some(CacheAccess::Owner { .. }) => Ok(()),
-            Some(CacheAccess::ReadOnly) => Err(transfer::cache_busy()),
+            Some(CacheAccess::ReadOnly(error)) => {
+                Err(io::Error::new(error.kind(), error.to_string()))
+            }
             None => Err(io::Error::other("Minimap storage is unavailable")),
         }
     }
@@ -530,8 +537,13 @@ impl Minimap {
         if let Entry::Vacant(entry) = self.cache_access.entry(path.clone()) {
             let access = match Saved::lock_cache(&path) {
                 Ok(lock) => CacheAccess::Owner { _lock: lock },
-                Err(error) if error.kind() == io::ErrorKind::WouldBlock => CacheAccess::ReadOnly,
-                Err(error) => return Err(error),
+                Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
+                    CacheAccess::ReadOnly(error)
+                }
+                Err(error) => CacheAccess::ReadOnly(io::Error::new(
+                    error.kind(),
+                    format!("Minimap storage is read-only: {error}"),
+                )),
             };
             entry.insert(access);
         }
