@@ -4,6 +4,7 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
 pub(super) const CLAIM: &str = "oteryn:reward-claim.nrwicked-forgemaster";
+const ACCESS_CALLBACK: &str = "oteryn:quest-reward/nrwicked-forgemaster-key";
 const QUEST: &str = "oteryn:quest.no_rest_for_the_wicked_quest";
 const ACCESS: &str = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forge_master/access_door";
 const CLAIMED: &str = "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forgemaster_door/reward";
@@ -106,7 +107,7 @@ pub(super) fn catalogue(
 ) -> TestResult<std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>> {
     use oteryn_gameplay_quests::quest::{QuestStateCatalogue, authored_bindings::Bindings};
     let digest: String = digest.iter().map(|b| format!("{b:02x}")).collect();
-    let stages: Vec<_> = selectors().zip(REWARDS).map(|((_, uid), reward)| json!({
+    let mut stages: Vec<_> = selectors().zip(REWARDS).map(|((_, uid), reward)| json!({
         "key":format!("claim-{uid}"),"completes":false,"trigger":{
             "kind":"npc_dialogue","callback":{
                 "key":callback_key(uid),"quest":QUEST,"npc":"","keywords":[],"topic":0,"next_topic":0,
@@ -118,6 +119,17 @@ pub(super) fn catalogue(
             }
         }
     })).collect();
+    stages.push(json!({
+        "key": "access", "completes": false, "trigger": {
+            "kind": "npc_dialogue", "callback": {
+                "key": ACCESS_CALLBACK, "quest": QUEST, "npc": "oteryn:npc.the_forgemaster",
+                "keywords": ["key"], "topic": 0, "next_topic": 0,
+                "storage": [{"track": ACCESS, "minimum": 0, "maximum": 0, "set": 1}],
+                "give": null, "outfit": null, "achievement": null, "take": [], "present": [],
+                "reply": ["You have proven yourself worthy."], "sources": ["Crystal Forgemaster key fixture"]
+            }
+        }
+    }));
     let bindings = Bindings::parse(&serde_json::to_vec(&json!({
         "schema":1,"quests":[{
             "quest":QUEST,"recipe_sha256":"1".repeat(64),"sources":["Crystal Forgemaster reward fixture"],
@@ -130,16 +142,62 @@ pub(super) fn catalogue(
     Ok(std::sync::Arc::new(bindings.attach(&base)?))
 }
 
-pub(super) async fn allow_access(harness: &Harness, character: &[u8; 16]) -> TestResult {
-    sqlx::query(
-        "INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision)
-         SELECT character_id,$2,$3,1,GREATEST(character_revision, 2) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
-    )
-    .bind(character.as_slice())
-    .bind(ACCESS)
-    .bind(QUEST)
-    .execute(&harness.pool)
-    .await?;
+pub(super) async fn allow_access(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult {
+    use crate::durability::quest_state::{
+        QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+    };
+    use crate::durability::reward_claim_mint::QuestRewardAdmission;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "Forgemaster key fence read failed")?
+        .ok_or("Forgemaster key fence")?;
+    let native = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .ok_or("Forgemaster native generation")?;
+    let catalogue = owner
+        .quest_catalogue
+        .clone()
+        .ok_or("Forgemaster catalogue")?;
+    let weights = NativeItemWeights(native);
+    let result = owner
+        .revision_sequencer
+        .acquire(fence.character_id)
+        .await
+        .commit_quest_reward(
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence,
+            QuestTransitionRequest {
+                transition_key: ACCESS_CALLBACK.into(),
+                cause: QuestCause::Command(CommandRef::new(
+                    admitted.game_session_id,
+                    CommandId::new(99).map_err(debug)?,
+                )),
+            },
+            catalogue,
+            QuestRewardAdmission {
+                native,
+                weights: &weights,
+                fee_payment: None,
+                actor_conditions: None,
+                carried_use: None,
+                creature_use: None,
+                peer_use: None,
+            },
+            &owner.premium_coordinator,
+        )
+        .await
+        .map_err(debug)?;
+    assert!(
+        matches!(result, QuestTransitionOutcome::Committed(_)),
+        "{result:?}"
+    );
     Ok(())
 }
 

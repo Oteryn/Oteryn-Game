@@ -606,7 +606,7 @@ fn scenario_case(
                 forgemaster::use_chest(&mut owner, &admitted, deps.actor, 1, &target).await?;
             assert_ne!(before, UseDisposition::Committed);
             assert_eq!(forgemaster::claim_count(&harness).await?, 0);
-            forgemaster::allow_access(&harness, fence.character_id.as_bytes()).await?;
+            forgemaster::allow_access(&owner, &admitted).await?;
             assert_eq!(
                 forgemaster::use_chest(&mut owner, &admitted, deps.actor, 2, &target).await?,
                 UseDisposition::Committed
