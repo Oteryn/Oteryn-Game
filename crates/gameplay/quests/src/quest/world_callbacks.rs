@@ -61,6 +61,7 @@ mod guarded_routes;
 mod ice_islands_tests;
 mod imported_explore;
 mod legacy_world_claims;
+mod lord_chamber;
 pub use legacy_world_claims::{legacy_world_claim, legacy_world_source_unique};
 mod live_admission;
 mod native_trials;
@@ -668,6 +669,7 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String
 
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
+    callbacks.extend(lord_chamber::callbacks()?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/questpc5-nomads-cabinet.json"
     ))?);

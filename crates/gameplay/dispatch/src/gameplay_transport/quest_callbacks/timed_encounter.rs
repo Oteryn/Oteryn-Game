@@ -164,7 +164,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(restore) = restore else {
                 return UseDisposition::Rejected;
             };
-            if memo.switches.len() >= 4 || memo.switches.iter().any(|(source, _, _)| {
+            if memo.switches.len() >= 4
+                || memo.switches.iter().any(|(source, _, _)| {
                     crate::map::view::placement_of(*source).map(|(tile, _)| tile)
                         == crate::map::view::placement_of(key).map(|(tile, _)| tile)
                 })
@@ -374,7 +375,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         );
                         states.stage_underwater_step(
                             &runtime,
-                            map,
                             actor,
                             session,
                             now,
