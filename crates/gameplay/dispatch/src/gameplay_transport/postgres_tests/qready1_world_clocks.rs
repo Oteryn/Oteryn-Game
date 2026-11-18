@@ -27,6 +27,24 @@ fn qready1_raven_herb_interval_real_dispatch() -> TestResult {
         },
     )
 }
+pub(super) const EXHAUSTED_EXIT_CASE: &str = "qready1-threatened-raven-herb-exit-expiry";
+
+#[test]
+fn exhausted_timed_pickup_exits_without_second_reward_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    run(
+        EXHAUSTED_EXIT_CASE,
+        Position {
+            x: 33497,
+            y: 32196,
+            floor: -7,
+        },
+    )
+}
+
 fn run(name: &'static str, position: Position) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -64,6 +82,49 @@ async fn use_command(
 async fn snapshot(h: &Harness, callback: &Callback) -> TestResult<(i64, i64, i64, i64)> {
     Ok(sqlx::query_as("SELECT coalesce((SELECT value FROM game_character_quest_tracks WHERE track_key=$1),-1),(SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$2),(SELECT count(*) FROM game_reward_claim_mint_receipts),(SELECT coalesce(sum(quantity),0)::bigint FROM game_quest_callback_consumptions WHERE transition_key=$2)")
         .bind(&callback.state_ops[0].track).bind(&callback.key).fetch_one(&h.pool).await?)
+}
+
+pub(super) async fn exercise_exhausted_exit(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    callback: &Callback,
+    actor: crate::foundation::ExactActorRef,
+) -> TestResult {
+    h.root.set_test_quest_clock(1_700_000_000)?;
+    let position = callback.selector.position.ok_or("source position")?;
+    let key = oteryn_world_bundle::bundle::placement_key(position.floor, position.x, position.y, 1)
+        .ok_or("source key")?;
+    let map = owner.bundle_map().ok_or("map")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let mut target = WorldObjectTarget {
+        placement,
+        expected_revision: map.facts.object_revision(key),
+    };
+    assert_eq!(
+        use_command(owner, admitted, &target, 1).await?,
+        UseDisposition::Committed
+    );
+    let reward = snapshot(h, callback).await?;
+    assert_eq!(reward, (1_700_000_000, 1, 1, 0));
+    target.expected_revision = map.facts.object_revision(key);
+    assert_eq!(
+        use_command(owner, admitted, &target, 2).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(snapshot(h, callback).await?, reward);
+    let destination = super::quest_world_callbacks::local(callback.failure_teleport.ok_or("exit")?);
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)?
+            .position(),
+        destination
+    );
+    Ok(())
 }
 
 pub(super) async fn exercise(

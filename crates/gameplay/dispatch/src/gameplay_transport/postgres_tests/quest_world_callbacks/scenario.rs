@@ -350,7 +350,10 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if m03_use {
+    let exhausted_exit = name == super::super::qready1_world_clocks::EXHAUSTED_EXIT_CASE;
+    let mut callback = if exhausted_exit {
+        callback("qready1-threatened-raven-herb")?
+    } else if m03_use {
         super::super::qengine_m03_use::callback()?
     } else if qd_world {
         super::super::qd_world::callback(name)?
@@ -463,6 +466,13 @@ fn scenario_case(
             name.strip_suffix("-expiry").unwrap_or(name)
         })?
     };
+    if exhausted_exit {
+        callback.return_on_failure = true;
+        callback.failure_teleport = Some(Position {
+            y: trigger.y + 1,
+            ..trigger
+        });
+    }
     if failure_landing {
         callback.selector.position = Some(trigger);
         callback.failure_teleport = Some(Position {
@@ -1933,6 +1943,15 @@ fn scenario_case(
                 &mut admitted,
                 &h,
                 &callback,
+            ))
+            .await?;
+        } else if exhausted_exit {
+            Box::pin(super::super::qready1_world_clocks::exercise_exhausted_exit(
+                &owner,
+                &mut admitted,
+                &h,
+                &callback,
+                deps.actor,
             ))
             .await?;
         } else if matches!(
