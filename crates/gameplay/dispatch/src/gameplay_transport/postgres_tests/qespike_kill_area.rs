@@ -33,7 +33,7 @@ fn spike_drillworm_death_keeps_actual_lethal_cell_through_quest_settlement() -> 
 }
 
 pub(super) async fn exercise(
-    owner: &mut ComposedFreshAdmission<'_, '_>,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     harness: &Harness,
 ) -> TestResult {
