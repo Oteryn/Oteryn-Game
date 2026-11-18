@@ -109,6 +109,51 @@ pub fn claim_key(rank: u8, category: u8) -> String {
     format!("oteryn:reward.svargrond-arena.{rank}.{category}")
 }
 
+// Crystal 201189f8 startup/tables/chest.lua:2307-2419. Each tier has
+// separate present, backpack and weapon flags; weapon variants share a flag.
+const CHEST_KEYS: [[&str; 3]; 3] = [
+    [
+        "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_present",
+        "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_bp",
+        "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_weapons",
+    ],
+    [
+        "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_present",
+        "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_bp",
+        "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_weapons",
+    ],
+    [
+        "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_present",
+        "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_bp",
+        "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_weapons",
+    ],
+];
+
+pub(super) fn chest_key(rank: u8, category: u8) -> Option<&'static str> {
+    CHEST_KEYS.get(usize::from(rank.checked_sub(1)?))?
+        .get(usize::from(category.checked_sub(1)?)).copied()
+}
+
+pub(in crate::durability) fn alternate_claim_key(key: &str) -> Option<String> {
+    if key.starts_with("oteryn:reward-claim.quest.u8_0.barbarian_arena.") {
+        for rank in 1..=3 {
+            for category in 1..=3 {
+                if chest_key(rank, category) == Some(key) {
+                    return Some(claim_key(rank, category));
+                }
+            }
+        }
+    } else if let Some(selector) = key.strip_prefix("oteryn:reward.svargrond-arena.") {
+        let (rank, category) = selector.split_once('.')?;
+        let rank = rank.parse().ok()?;
+        let category = category.parse().ok()?;
+        if claim_key(rank, category) == key {
+            return chest_key(rank, category).map(str::to_owned);
+        }
+    }
+    None
+}
+
 pub const ACHIEVEMENTS: [&str; 3] = [
     "oteryn:achievement/greenhorn",
     "oteryn:achievement/scrapper",

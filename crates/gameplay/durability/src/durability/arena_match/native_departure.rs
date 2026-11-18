@@ -26,13 +26,42 @@ impl NativeArenaDeparture {
         run: [u8; 16],
         pit: u8,
     ) -> Option<Self> {
+        Self::for_position(actor, session, at, epoch, run, pit, false)
+    }
+
+    /// The movement owner verifies the exact native forcefield before calling.
+    pub fn concession(
+        actor: ExactActorRef,
+        session: GameSessionId,
+        at: MovementPositionSnapshot,
+        epoch: u64,
+        run: [u8; 16],
+        pit: u8,
+    ) -> Option<Self> {
+        (at.position() == concession_position(pit)?)
+            .then(|| Self::for_position(actor, session, at, epoch, run, pit, true))?
+    }
+
+    fn for_position(
+        actor: ExactActorRef,
+        session: GameSessionId,
+        at: MovementPositionSnapshot,
+        epoch: u64,
+        run: [u8; 16],
+        pit: u8,
+        concession: bool,
+    ) -> Option<Self> {
         if actor.channel_id().is_none()
             || at.world_id() != actor.world_id()
-            || !outside_pit(pit, at.position())?
+            || (!concession && !outside_pit(pit, at.position())?)
         {
             return None;
         }
-        let mut binding = b"oteryn:svargrond-native-departure:v1".to_vec();
+        let mut binding = if concession {
+            b"oteryn:svargrond-native-concession:v1".to_vec()
+        } else {
+            b"oteryn:svargrond-native-departure:v1".to_vec()
+        };
         binding.extend_from_slice(&actor.placement_identity());
         binding.extend_from_slice(session.as_bytes());
         binding.extend_from_slice(&run);
@@ -77,6 +106,17 @@ impl NativeArenaDeparture {
             && self.actor.runtime_scope() == fence.runtime_scope
             && self.actor.scope_generation() == fence.scope_ownership_generation
     }
+}
+
+/// The retained south forcefields are one tile west of the pit centerline.
+pub fn concession_position(pit: u8) -> Option<MovementLocalPosition> {
+    let layout = oteryn_gameplay_quests::quest::barbarian_arena::Pit::new(pit)?.layout();
+    let [x, _, floor] = layout.center;
+    Some(MovementLocalPosition {
+        x: x - 1,
+        y: layout.reset_to[1] + 1,
+        floor: i16::try_from(-floor).ok()?,
+    })
 }
 
 fn outside_pit(pit: u8, at: MovementLocalPosition) -> Option<bool> {

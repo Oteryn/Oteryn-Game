@@ -9,25 +9,32 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 pub(in super::super) fn bundle(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false)
+    bundle_layout(native, true, false, false)
 }
 
 pub(in super::super) fn bundle_with_pillars(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false)
+    bundle_layout(native, true, false, false)
 }
 
 pub(in super::super) fn bundle_with_pillar_floors(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, false, true)
+    bundle_layout(native, false, true, false)
+}
+
+pub(in super::super) fn bundle_with_reward_chests(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+    bundle_layout(native, true, false, true)
 }
 
 fn bundle_layout(
     native: &crate::content::native_gameplay::NativeGameplayState,
     with_pillars: bool,
     pillar_floors_only: bool,
+    reward_chests: bool,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::writer::{Extent, Sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
@@ -44,7 +51,7 @@ fn bundle_layout(
     bundle.manifest.palette[0].key = ground.into();
     bundle.manifest.palette[0].family = oteryn_world_bundle::bundle::Family::Item;
     bundle.manifest.palette[0].id = reference.get() - 1;
-    for source in [1841, 5022] {
+    for source in [1841, 1949, 5022] {
         let key = format!("oteryn:item.tibia.i{source}");
         let reference = native
             .item_index()
@@ -74,7 +81,7 @@ fn bundle_layout(
         .chain([donor::KICK, donor::REWARD_ROOM])
     {
         for dx in -6..=5 {
-            for dy in -5..=5 {
+            for dy in -5..=6 {
                 let at = ((x + dx) as u16, (y + dy) as u16, -z as i8);
                 let mut tile = bundle.sectors[0].tiles[0].clone();
                 tile.x = at.0;
@@ -113,6 +120,24 @@ fn bundle_layout(
             });
         }
     }
+    let portal_palette = u32::try_from(
+        bundle.manifest.palette.iter()
+            .position(|entry| entry.key == "oteryn:item.tibia.i1949")
+            .ok_or("portal palette")?,
+    )?;
+    for number in 1..=10 {
+        let layout = oteryn_gameplay_quests::quest::barbarian_arena::Pit::new(number)
+            .ok_or("source pit")?
+            .layout();
+        let at = (u16::try_from(layout.center[0] - 1)?, u16::try_from(layout.reset_to[1] + 1)?, -7);
+        tiles.get_mut(&at).ok_or("south portal floor")?.items.push(
+            oteryn_world_bundle::sector::Item {
+                palette: portal_palette,
+                depth: 0,
+                attrs: Default::default(),
+            },
+        );
+    }
     // Crystal svargrond_arena.lua:235-244 recreates absent pillars on real floors.
     // Their definition facts remain available, but no pillar is placed in the base.
     if pillar_floors_only {
@@ -126,6 +151,34 @@ fn bundle_layout(
             tile.x = at.0;
             tile.y = at.1;
             tiles.insert(at, tile);
+        }
+    }
+    if reward_chests {
+        let key = "oteryn:item.tibia.i2482";
+        let reference = native.item_index()
+            .and_then(|index| index.definition_ref("Item", key, "definition-r1"))
+            .ok_or("reward chest reference")?;
+        let palette = u32::try_from(bundle.manifest.palette.len())?;
+        bundle.manifest.palette.push(oteryn_world_bundle::writer::PaletteEntry {
+            key: key.into(),
+            family: oteryn_world_bundle::bundle::Family::Item,
+            id: reference.get() - 1,
+            terrain: None,
+        });
+        for (y, unique) in [(31066, 6223), (31061, 6227)] {
+            for x in 32234..=32235 {
+                let mut tile = bundle.sectors[0].tiles[0].clone();
+                tile.x = x;
+                tile.y = y;
+                if x == 32235 {
+                    tile.items.push(oteryn_world_bundle::sector::Item {
+                        palette,
+                        depth: 0,
+                        attrs: oteryn_world_bundle::sector::Attrs { unique: Some(unique), ..Default::default() },
+                    });
+                }
+                tiles.insert((x, y, -7), tile);
+            }
         }
     }
     let mut sectors = std::collections::BTreeMap::<(i8, u16, u16), Sector>::new();

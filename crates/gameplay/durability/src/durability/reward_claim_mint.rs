@@ -1070,14 +1070,18 @@ async fn admit(
     let granter =
         FencedGrantingCharacter::after_fence(tx, fence.character_id, RewardClaimFenceChecked(()))
             .await?;
+    let alternate = super::arena_match::donor::alternate_claim_key(&request.claim.production_key);
+    let claim_keys: Vec<&str> = std::iter::once(request.claim.production_key.as_str())
+        .chain(alternate.as_deref())
+        .collect();
     let already_claimed: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM game_reward_claims \
                          WHERE character_id = encode($1,'hex')::uuid \
-                           AND claim_family = $2 AND claim_production_key = $3)",
+                           AND claim_family = $2 AND claim_production_key = ANY($3))",
     )
     .bind(fence.character_id.as_bytes().as_slice())
     .bind(&request.claim.family)
-    .bind(&request.claim.production_key)
+    .bind(&claim_keys)
     .fetch_one(&mut **tx)
     .await?;
     // §17.2: a pending MINT of this claim under another CommandRef. It is
@@ -1092,7 +1096,7 @@ async fn admit(
                             ON s.game_session_id = r.game_session_id \
                            AND s.session_state IN (1, 2) \
                          WHERE r.character_id = encode($1,'hex')::uuid \
-                           AND r.claim_family = $2 AND r.claim_production_key = $3 \
+                           AND r.claim_family = $2 AND r.claim_production_key = ANY($3) \
                            AND NOT (r.game_session_id = encode($4,'hex')::uuid \
                                     AND r.command_id = $5::text::numeric(20,0)) \
                            AND r.work_units_used < $6 \
@@ -1102,7 +1106,7 @@ async fn admit(
     )
     .bind(fence.character_id.as_bytes().as_slice())
     .bind(&request.claim.family)
-    .bind(&request.claim.production_key)
+    .bind(&claim_keys)
     .bind(request.command.game_session_id().as_bytes().as_slice())
     .bind(request.command.command_id().get().to_string())
     .bind(i16::from(RL08_RETRY_WORK_UNITS_MAX))

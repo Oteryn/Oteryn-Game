@@ -121,13 +121,47 @@ fn m51_postgres_native_departure_cancels_without_a_leave_command() -> TestResult
     Ok(())
 }
 
+#[test]
+fn barbarian_arena_south_portal_concedes_on_step_in() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty());
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario_route(true, Some(NativeScenario::Concession)).map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "arena concession worker panicked")??;
+    Ok(())
+}
+
+#[test]
+fn barbarian_arena_chest_and_command_share_weapon_entitlement() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty());
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario_route(true, Some(NativeScenario::SharedReward)).map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "arena shared reward worker panicked")??;
+    Ok(())
+}
+
 #[derive(Clone, Copy)]
 enum NativeScenario {
+    Concession,
     Portals,
     RecreatedPillars,
     Departure,
     Timeout,
     ResetMonsters,
+    SharedReward,
 }
 
 #[test]
@@ -200,6 +234,8 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         let native = active.native_gameplay().ok_or("native")?;
         let (bytes, pins) = if matches!(route, Some(NativeScenario::RecreatedPillars)) {
             fixture::bundle_with_pillar_floors(native)?
+        } else if matches!(route, Some(NativeScenario::SharedReward)) {
+            fixture::bundle_with_reward_chests(native)?
         } else if native_portals {
             fixture::bundle_with_pillars(native)?
         } else {
@@ -378,6 +414,9 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                 .await
                 .is_none()
         );
+        if matches!(route, Some(NativeScenario::SharedReward)) {
+            return verify_shared_reward(&harness, &owner, &mut admitted, deps.actor).await;
+        }
         if timeout_early {
             owner
                 .regression_arena_pit_time(5000)
@@ -530,6 +569,57 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                 .bind(i32::try_from(b"oteryn:svargrond-native-timeout:v1".len())?)
                 .bind(b"oteryn:svargrond-native-timeout:v1".as_slice()).fetch_one(&harness.pool).await?;
             assert_eq!(native, 1);
+            return Ok(());
+        }
+        if matches!(route, Some(NativeScenario::Concession)) {
+            use crate::foundation::MovementLocalPosition;
+            use oteryn_protocol_oteryn::world_spatial::StepDirection;
+            let start = {
+                let mut runtime = deps.runtime.lock().await;
+                let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
+                let at = before.position();
+                runtime
+                    .relocate_arena_player(
+                        deps.actor,
+                        admitted.game_session_id,
+                        before,
+                        MovementLocalPosition {
+                            x: at.x - 1,
+                            y: at.y + 5,
+                            ..at
+                        },
+                    )
+                    .map_err(debug)?;
+                runtime.read_actor_position(deps.actor).map_err(debug)?
+            };
+            let _ = owner
+                .ordinary_paced_step(
+                    deps.actor,
+                    admitted.game_session_id,
+                    StepDirection::South,
+                    Some(start),
+                    None,
+                )
+                .await;
+            let at = deps
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(deps.actor)
+                .map_err(debug)?
+                .position();
+            assert_eq!(
+                (at.x, at.y, at.floor),
+                crate::durability::arena_match::donor::KICK
+            );
+            let stored: (i32, i32) = sqlx::query_as(
+                    "SELECT (body->>'rank')::int,(body->>'phase')::int FROM game_character_arena_matches WHERE character_id=encode($1,'hex')::uuid"
+                ).bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(stored, (0, 0));
+            let leases: i64 = sqlx::query_scalar("SELECT count(*) FROM game_svargrond_pit_leases")
+                .fetch_one(&harness.pool)
+                .await?;
+            assert_eq!(leases, 0);
             return Ok(());
         }
         if leave_early {
@@ -907,6 +997,126 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
 
 
 // Positive setup uses the same fenced quest writer, never a raw state insert.
+async fn verify_shared_reward(
+    harness: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    actor: crate::foundation::ExactActorRef,
+) -> TestResult {
+    use crate::durability::arena_match::{MatchState, donor};
+    use crate::foundation::MovementLocalPosition;
+    use oteryn_protocol_oteryn::world_object as object;
+
+    let fence = admitted.item_fence.ok_or("item fence")?;
+    let session = admitted.game_session_id;
+    let completed = MatchState {
+        completed: 2,
+        rank: 2,
+        phase: 3,
+        session: *session.as_bytes(),
+        scope_generation: fence.scope_ownership_generation.get(),
+        ..MatchState::default()
+    };
+    let mut tx = harness.pool.begin().await?;
+    let state = serde_json::to_value(&completed)?;
+    let reply = wire::encode_match_result(&wire::ArenaResult {
+        disposition: D::Applied,
+        state: completed.wire(0, [0; 3]),
+    })
+    .map_err(debug)?;
+    sqlx::query("INSERT INTO game_arena_match_receipts(character_id,game_session_id,command_id,payload,before_state,after_state,reply)
+        VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,999999,$3,$4,$5,$6)")
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(session.as_bytes().as_slice())
+        .bind(wire::encode_match_request(A::Status).map_err(debug)?)
+        .bind(serde_json::to_value(MatchState::default())?)
+        .bind(&state).bind(reply).execute(&mut *tx).await?;
+    sqlx::query(
+        "INSERT INTO game_character_arena_matches(character_id,body,game_session_id,command_id)
+        VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,999999)",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(&state)
+    .bind(session.as_bytes().as_slice())
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+
+    let relocate = |(x, y, floor)| async move {
+        let mut runtime = owner.runtime.lock().await;
+        let before = runtime.read_actor_position(actor).map_err(debug)?;
+        runtime
+            .relocate_arena_player(
+                actor,
+                session,
+                before,
+                MovementLocalPosition { x, y, floor },
+            )
+            .map_err(debug)
+    };
+    relocate(donor::REWARD_ROOM).await?;
+    assert_eq!(
+        command(
+            owner,
+            admitted,
+            A::ClaimReward {
+                rank: 1,
+                category: 3,
+                choice: 1
+            }
+        )
+        .await?
+        .disposition,
+        D::Applied
+    );
+
+    let use_chest =
+        async |admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+               y: u16|
+               -> TestResult<object::UseDisposition> {
+            relocate((32234, i32::from(y), 7)).await?;
+            let map = owner.bundle_map().ok_or("bundle map")?;
+            let placement = oteryn_world_bundle::bundle::placement_key(-7, 32235, y, 1)
+                .ok_or("chest placement")?;
+            let mut key = map.overlay.base().digest().to_vec();
+            key.extend_from_slice(&placement.to_be_bytes());
+            let target = object::WorldObjectTarget {
+                placement: key,
+                expected_revision: 0,
+            };
+            let command_id = admitted.continuity.next_command_id;
+            let (_, result) = super::guild_wire::exchange(
+                owner,
+                admitted,
+                command_id,
+                object::COMMAND_TYPE_USE_INTENT,
+                &object::encode_use_intent(&target).map_err(debug)?,
+            )
+            .await?;
+            object::decode_use_result(&result).map_err(debug)
+        };
+    let greenhorn_use = use_chest(admitted, 31066).await?;
+    let scrapper_use = use_chest(admitted, 31061).await?;
+    assert_eq!(scrapper_use, object::UseDisposition::Committed);
+    relocate(donor::REWARD_ROOM).await?;
+    let scrapper_command = command(
+        owner,
+        admitted,
+        A::ClaimReward {
+            rank: 2,
+            category: 3,
+            choice: 2,
+        },
+    )
+    .await?;
+    assert_eq!(
+        (greenhorn_use, scrapper_command.disposition),
+        (object::UseDisposition::NothingToUse, D::AlreadyClaimed),
+    );
+    assert_eq!(scrapper_command.state.claimed_masks[..2], [4, 4]);
+    Ok(())
+}
+
 async fn finish_barbarian_test(owner: &ComposedFreshAdmission<'_, '_, '_>, session: crate::foundation::GameSessionId) -> TestResult {
     use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack, QuestTransition, QuestEffect, QuestComparison, QuestEffectKind};
     use crate::durability::quest_state::{QuestCause, QuestTransitionRequest, QuestTransitionOutcome};

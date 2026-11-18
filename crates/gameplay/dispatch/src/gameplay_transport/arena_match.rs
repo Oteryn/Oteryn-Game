@@ -15,6 +15,8 @@ use std::time::{Duration, Instant};
 #[path = "arena_match/pit_exit.rs"]
 mod pit_exit;
 
+#[path = "arena_match/concession_step.rs"]
+mod concession_step;
 #[path = "arena_match/death_poll.rs"]
 mod death_poll;
 #[path = "arena_match/departure_poll.rs"]

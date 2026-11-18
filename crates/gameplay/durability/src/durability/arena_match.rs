@@ -25,7 +25,7 @@ mod native_origin;
 mod native_step;
 mod native_timeout;
 pub use native_death::NativeArenaDeath;
-pub use native_departure::NativeArenaDeparture;
+pub use native_departure::{NativeArenaDeparture, concession_position};
 pub use native_origin::NativeArenaOrigin;
 pub use native_step::NativeArenaStep;
 pub use native_timeout::NativeArenaTimeout;
@@ -428,15 +428,17 @@ pub(super) async fn claimed_masks(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: CurrentCharacterGameplayFence,
 ) -> Result<[u8; 3], DurabilityError> {
-    let keys:Vec<String>=sqlx::query_scalar("SELECT claim_production_key FROM game_reward_claims WHERE character_id=encode($1,'hex')::uuid AND claim_family='RewardClaim' AND claim_production_key LIKE 'oteryn:reward.svargrond-arena.%' LIMIT 13")
+    let keys:Vec<String>=sqlx::query_scalar("SELECT claim_production_key FROM game_reward_claims WHERE character_id=encode($1,'hex')::uuid AND claim_family='RewardClaim' AND (claim_production_key LIKE 'oteryn:reward.svargrond-arena.%' OR claim_production_key LIKE 'oteryn:reward-claim.quest.u8_0.barbarian_arena.%') LIMIT 22")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
-    if keys.len() > 12 {
+    if keys.len() > 21 {
         return Err(DurabilityError::InvalidStoredState);
     }
     let mut masks = [0; 3];
     for rank in 1..=3 {
         for category in 1..=4 {
-            if keys.contains(&donor::claim_key(rank, category)) {
+            let command_key = donor::claim_key(rank, category);
+            let chest_key = donor::chest_key(rank, category);
+            if keys.iter().any(|key| *key == command_key || chest_key == Some(key.as_str())) {
                 masks[usize::from(rank - 1)] |= 1 << (category - 1);
             }
         }

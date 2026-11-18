@@ -43,7 +43,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return None;
         }
-        let _permit = self.spell_lane_permit().await?;
+        let permit = self.spell_lane_permit().await?;
+        self.commit_arena_departure(&permit, session, live, entered, cause).await
+    }
+
+    pub(super) async fn commit_arena_departure(
+        &self,
+        _permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        session: GameSessionId,
+        live: &LiveMatch,
+        entered: crate::foundation::MovementPositionSnapshot,
+        cause: durable::NativeArenaDeparture,
+    ) -> Option<()> {
         let mut fence = self.current_quest_fence(session).await.ok()??;
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         fence.expected_character_revision = slot.cursor(self.root, self.character).await.ok()?;
