@@ -3655,6 +3655,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         // Crystal grants BossStorage directly from the death's damage map. A missing
         // corpse reward row still has a canonical death and frozen quest recipients.
         if entry.row.is_none()
+            && entry.encounter_experience.is_none()
             && oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_some()
         {
             let Some(permit) = admission.spell_lane_permit().await else {
