@@ -797,6 +797,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
     }
     if effects.place_item.is_some_and(|appearance| {
         appearance != 12187
+            || callback.selector.appearance != Some(10480)
             || callback.trigger != Trigger::Use
             || callback.actor_kind != ActorKind::Player
             || !callback.requires_world_admission
