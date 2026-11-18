@@ -8,10 +8,12 @@ use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSess
 use crate::map::{overlay::TilePos, view::MapFacts};
 use oteryn_gameplay_quests::quest::authored_bindings::Bindings;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Offering, Position};
+use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, decode_use_result,
     encode_item_use_intent,
 };
+use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
 const SMALL_SAPPHIRE: &str = "authored-qh-small-sapphire";
 const SMALL_SAPPHIRE_CHEST: TilePos = TilePos {
@@ -19,7 +21,7 @@ const SMALL_SAPPHIRE_CHEST: TilePos = TilePos {
     y: 32429,
     floor: -7,
 };
-pub(super) const TOP_OF_THE_CITY: &str = "authored-qh-top-of-the-city";
+const TOP_OF_THE_CITY: &str = "authored-qh-top-of-the-city";
 const TOP_OF_THE_CITY_CRATE: TilePos = TilePos {
     x: 32807,
     y: 31252,
@@ -45,6 +47,10 @@ const DIG_CALLBACK: &str = "oteryn:quest-callback/authored-top-of-the-city-dig";
 const CITY_STAGE: &str = "oteryn:quest-progress/authored/top-of-the-city/stage";
 const PICK: &str = "oteryn:item.tibia.i3456";
 const SHOVEL: &str = "oteryn:item.tibia.i3457";
+
+pub(super) fn is_city(name: &str) -> bool {
+    name == TOP_OF_THE_CITY || is_dig(name)
+}
 
 pub(super) fn is_dig(name: &str) -> bool {
     matches!(name, DIG | BARE | WRONG_TOOL | NO_PICK)
@@ -262,28 +268,15 @@ async fn dig(
     admitted: &mut AdmittedSession,
     h: &Harness,
 ) -> TestResult {
-    owner.admit_premium(id(40), admitted.game_session_id);
-    admitted.continuity.selected_capabilities =
-        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
-            owner.offered_capabilities(),
-            &[4, 6, 11, 15, 18],
-        )
-        .ok_or("dig capabilities")?;
-    let fence = admitted.item_fence.ok_or("dig fence")?;
-    // Seed the predecessor state established by the separate NPC chain case.
-    sqlx::query(
-        "INSERT INTO game_character_quest_tracks \
-         (character_id, track_key, quest_key, value, committed_character_revision) \
-         SELECT character_id, $2, 'oteryn:quest.authored.top_of_the_city_quest', 2, character_revision \
-         FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
-    )
-    .bind(id(41).as_slice())
-    .bind(CITY_STAGE)
-    .execute(&h.pool)
-    .await?;
-    owner
-        .refresh_quest_session(admitted.game_session_id, false)
-        .await;
+    let npcs = prepare_city(owner, admitted).await?;
+    let mut sequence = 2000_u64;
+    start_city(owner, admitted, h, npcs, &mut sequence).await?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "dig fence")?
+        .ok_or("dig fence")?
+        .item_fence();
     for (index, item) in [(1, PICK), (2, SHOVEL)] {
         if (item == PICK && name != NO_PICK) || (item == SHOVEL && name == WRONG_TOOL) {
             quest_world_callbacks::input_item(
@@ -455,16 +448,10 @@ async fn small_sapphire(
     Ok(())
 }
 
-/// TibiaWiki curid 31073 oldid 1050120 (Top of the City Quest/Spoiler): Iriana sends the player
-/// to Jimmy, who wants a food crate from the tavern cellar in exchange for Iriana's Chest.
-/// The roof route, the sewer dig and the cross-floor rope are walked outside this one-floor crop.
-async fn top_of_the_city(
+async fn prepare_city(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
-    h: &Harness,
-) -> TestResult {
-    use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
-    const STAGE: &str = "oteryn:quest-progress/authored/top-of-the-city/stage";
+) -> TestResult<[EntityRef; 2]> {
     owner.admit_premium(id(40), admitted.game_session_id);
     let mut selected = admitted
         .continuity
@@ -481,12 +468,42 @@ async fn top_of_the_city(
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
             .ok_or("capabilities")?;
-    let [iriana, jimmy] =
+    let npcs =
         super::classic_quests::install(owner, admitted, ["oteryn:npc.iriana", "oteryn:npc.jimmy"])
             .await?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
+    Ok(npcs)
+}
+
+async fn start_city(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    [iriana, jimmy]: [EntityRef; 2],
+    sequence: &mut u64,
+) -> TestResult {
+    for (npc, word, stage) in [(iriana, "quest", 1), (jimmy, "iriana", 2)] {
+        assert_eq!(
+            super::questpc7_outfit_items::talk(owner, admitted, npc, sequence, word).await?,
+            NpcIntentDisposition::Ok,
+            "{word}"
+        );
+        assert_eq!(track(h, CITY_STAGE).await?, stage, "{word}");
+    }
+    Ok(())
+}
+
+/// TibiaWiki curid 31073 oldid 1050120 (Top of the City Quest/Spoiler): Iriana sends the player
+/// to Jimmy, who wants a food crate from the tavern cellar in exchange for Iriana's Chest.
+/// The roof route, the sewer dig and the cross-floor rope are walked outside this one-floor crop.
+async fn top_of_the_city(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    let [iriana, jimmy] = prepare_city(owner, admitted).await?;
     let mut sequence = 2000_u64;
     let crate_target = target(owner, TOP_OF_THE_CITY_CRATE)?;
     assert_eq!(
@@ -495,19 +512,12 @@ async fn top_of_the_city(
         "the cellar crate waits for Jimmy's mission"
     );
     assert_eq!(live(h, 8772).await?, 0);
-    for (npc, word, stage) in [(iriana, "quest", 1), (jimmy, "iriana", 2)] {
-        assert_eq!(
-            super::questpc7_outfit_items::talk(owner, admitted, npc, &mut sequence, word).await?,
-            NpcIntentDisposition::Ok,
-            "{word}"
-        );
-        assert_eq!(track(h, STAGE).await?, stage, "{word}");
-    }
+    start_city(owner, admitted, h, [iriana, jimmy], &mut sequence).await?;
     assert_eq!(
         use_target(owner, admitted, 2, &target(owner, TOP_OF_THE_CITY_CRATE)?).await?,
         UseDisposition::Committed
     );
-    assert_eq!(track(h, STAGE).await?, 3);
+    assert_eq!(track(h, CITY_STAGE).await?, 3);
     assert_eq!(live(h, 8772).await?, 1, "one food crate");
     assert_eq!(
         use_target(owner, admitted, 3, &target(owner, TOP_OF_THE_CITY_CRATE)?).await?,
@@ -519,13 +529,13 @@ async fn top_of_the_city(
         super::questpc7_outfit_items::talk(owner, admitted, jimmy, &mut sequence, "quest").await?,
         NpcIntentDisposition::Ok
     );
-    assert_eq!(track(h, STAGE).await?, 4);
+    assert_eq!(track(h, CITY_STAGE).await?, 4);
     assert_eq!((live(h, 8772).await?, live(h, 8773).await?), (0, 1));
     assert_eq!(
         super::questpc7_outfit_items::talk(owner, admitted, iriana, &mut sequence, "quest").await?,
         NpcIntentDisposition::Ok
     );
-    assert_eq!(track(h, STAGE).await?, 5);
+    assert_eq!(track(h, CITY_STAGE).await?, 5);
     assert_eq!((live(h, 8773).await?, live(h, 5921).await?), (0, 10));
     let completed: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1 AND completes",
