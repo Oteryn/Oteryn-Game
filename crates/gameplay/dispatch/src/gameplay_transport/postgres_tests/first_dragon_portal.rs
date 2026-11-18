@@ -34,7 +34,7 @@ pub(super) async fn exercise(
         .map(|state| (state.track.clone(), state.minimum))
         .collect();
     super::qengine_outfit_stories::seed_quest_prerequisites(
-        h, owner, admitted, owner.character, &requirements, 105,
+        h, owner, admitted, &requirements, 105,
     ).await?;
     owner.admit_quest_session(admitted).await;
     wire(owner, admitted, 2, 1, step).await?;
