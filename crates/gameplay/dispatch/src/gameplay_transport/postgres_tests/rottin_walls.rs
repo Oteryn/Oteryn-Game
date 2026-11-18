@@ -26,9 +26,10 @@ pub(super) const START: Position = Position {
 
 #[test]
 fn rottin_hammer_repairs_counts_and_resets_postgres() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    drop(admin);
     super::kill_reward_e2e::scenario_thread::run("rottin-walls", || {
         super::quest_world_callbacks::scenario(NAME, TARGET, false)
     })
@@ -88,6 +89,16 @@ pub(super) async fn exercise(
         floor: TARGET.floor,
     };
     let key = placement_key(position, 2).ok_or("wall key")?;
+    let source_id = *owner
+        .bundle_map()
+        .ok_or("map")?
+        .overlay
+        .base()
+        .tile(position.x, position.y, position.floor)
+        .ok_or("wall tile")?
+        .ids()
+        .get(2)
+        .ok_or("wall source")?;
     for count in 1..=7 {
         owner.clock_origin = owner
             .clock_origin
@@ -136,11 +147,25 @@ pub(super) async fn exercise(
             break;
         }
         let map = owner.bundle_map().ok_or("map")?;
+        assert_eq!(
+            map.facts
+                .base_entry(position, 2, source_id)
+                .ok_or("repaired wall")?
+                .appearance_id,
+            6474
+        );
         let now = owner.owner_now().get();
         let due = map.facts.next_movement_decay_time().ok_or("wall reset")?;
         assert!((119_000_000..=120_000_000).contains(&due.saturating_sub(now)));
         assert_eq!(map.facts.expire_movement_items(due - 1), 0);
         assert_eq!(map.facts.expire_movement_items(due), 1);
+        assert_eq!(
+            map.facts
+                .base_entry(position, 2, source_id)
+                .ok_or("restored wall")?
+                .appearance_id,
+            12183
+        );
         assert_eq!(map.facts.object_revision(key), u64::try_from(count)? * 2);
     }
     let hammer: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3460' AND lifecycle=1")

@@ -29,9 +29,10 @@ fn srx2_scavenge_production_use_minted_corpse_atomic_replay_postgres() -> TestRe
 }
 #[test]
 fn rottin_rabbit_skinning_uses_mature_corpse_and_keeps_decay_postgres() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    drop(admin);
     super::kill_reward_e2e::scenario_thread::run("rottin-rabbit-skinning", || scenario(true))
 }
 
@@ -1048,10 +1049,9 @@ async fn exercise_rabbit(
         sqlx::query_scalar::<_, String>("SELECT definition_production_key FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(corpse.as_slice()).fetch_one(&h.pool).await
     };
-    assert!(
-        !attempt()
-            .await
-            .is_some_and(|reply| reply.disposition == UseDisposition::Committed)
+    assert_eq!(
+        attempt().await.ok_or("rabbit refusal")?.disposition,
+        UseDisposition::NothingToUse
     );
     assert_eq!(body().await?, "oteryn:item.tibia.i6017");
 
@@ -1067,10 +1067,9 @@ async fn exercise_rabbit(
     tx.commit().await?;
     owner.drain_source_item_deadlines().await;
     assert_eq!(body().await?, "oteryn:item.tibia.i4301");
-    assert!(
-        !attempt()
-            .await
-            .is_some_and(|reply| reply.disposition == UseDisposition::Committed)
+    assert_eq!(
+        attempt().await.ok_or("rabbit refusal")?.disposition,
+        UseDisposition::NothingToUse
     );
 
     // Seed the Mission01 prerequisite, separate from the production skinning transaction.
