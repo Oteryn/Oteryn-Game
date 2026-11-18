@@ -47,3 +47,10 @@ Exact global mist threshold, the level/Premium enforcement point, crystal durati
 ## PARTIAL
 
 Audit only. Entry, claims, progression, rewards and a PostgreSQL dispatch regression remain open. The simple authored count corrections were attempted through the Quest tree generator. Its checked source receipt rejects changes to the compiler input with `ValueError: input/proof/compiler SHA mismatch: tools/content-schema/quest-authoring/quest_tree_authoring.py`. The attempted changes were removed. The existing ITEMHOLD repin tool only accepts its listed predecessors, which exclude this base compiler digest. The Monk receipt generator is scoped to its own approved inputs. The affected receipt therefore needs a scoped compiler repin before the inactive recipe values can be corrected. A dispatch test against the inactive candidate would provide no evidence for quest behavior.
+
+## Verification
+
+- Quest authoring `--part checks` passed all 44 checks, including 27 tests across three test scripts.
+- World bundle `pin-check . <temporary output directory>` passed for the one Oteryn world pin. The compiler at this base requires the output directory argument.
+- `cargo fmt --all -- --check` and dispatch library Clippy with all features and `-D warnings` passed.
+- PostgreSQL and route-less QCX70 runs have zero cases and no durations. This audit did not land an executable fix to exercise. The shard build files were never applied.
