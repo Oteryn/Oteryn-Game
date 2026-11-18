@@ -256,7 +256,8 @@ enum ProfileRegression {
 }
 
 fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>) -> TestResult {
-    run_case(async move |harness| {
+    let logout = matches!(regression, Some(ProfileRegression::Logout));
+    super::fixture::run_case_with_progression(logout, async move |harness| {
         prepare_current_session(harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
@@ -279,7 +280,7 @@ fn pass_cost(spread: bool, passive: bool, regression: Option<ProfileRegression>)
         owner.active_generation = Some(active);
         owner.movement_cells = deps.room.movement_cells().into();
         let mut admitted = deps.admitted;
-        if matches!(regression, Some(ProfileRegression::Logout)) {
+        if logout {
             deps.initialize(&owner).await;
             super::super::track(&owner, &deps)?;
             admitted.item_fence = Some(owner.current_quest_fence(admitted.game_session_id)
