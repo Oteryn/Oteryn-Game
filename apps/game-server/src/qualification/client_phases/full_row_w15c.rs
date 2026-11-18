@@ -30,11 +30,11 @@ const PORT_HOPE: TilePos = TilePos {
     y: 32784,
     floor: -6,
 };
-// A jungle trail tile east of the harbor, within the bounded search of both endpoints.
-const TRAIL: TilePos = TilePos {
-    x: 32647,
-    y: 32785,
-    floor: -7,
+// An enterable tile on the raised Port Hope walkway, east of the harbor.
+const WALKWAY: TilePos = TilePos {
+    x: 32682,
+    y: 32770,
+    floor: -6,
 };
 
 const NPC: &str = "oteryn:npc.grizzly_adams";
@@ -137,8 +137,8 @@ fn placement<'a>(
         .ok_or_else(|| format!("step=reach observed=missing-bundle-npc:{key}").into())
 }
 
-fn to_trail(world: &BundleWorld, from: TilePos) -> Option<Vec<StepDirection>> {
-    route(world, from, |at| at == TRAIL)
+fn to_walkway(world: &BundleWorld, from: TilePos) -> Option<Vec<StepDirection>> {
+    route(world, from, |at| at == WALKWAY)
 }
 
 fn near(at: TilePos, npc: &oteryn_world_bundle::npc::Npc) -> bool {
@@ -350,7 +350,7 @@ async fn reach(
         return actor_at(client, npc);
     }
 
-    let path = if let Some(path) = to_trail(world, from) {
+    let path = if let Some(path) = to_walkway(world, from) {
         path
     } else {
         sail(
@@ -360,12 +360,12 @@ async fn reach(
             &metadata.spawns,
         )
         .await?;
-        to_trail(world, PORT_HOPE)
-            .ok_or("step=reach observed=no-walk-route-from-port-hope-to-trail")?
+        to_walkway(world, PORT_HOPE)
+            .ok_or("step=reach observed=no-walk-route-from-port-hope-to-walkway")?
     };
-    walk_leg(client, world, "jungle-trail", &path).await?;
-    let path = route(world, TRAIL, |at| near(at, npc))
-        .ok_or("step=reach observed=no-walk-route-from-trail-to-grizzly-adams")?;
+    walk_leg(client, world, "port-hope-walkway", &path).await?;
+    let path = route(world, WALKWAY, |at| near(at, npc))
+        .ok_or("step=reach observed=no-walk-route-from-walkway-to-grizzly-adams")?;
     walk_leg(client, world, "grizzly-adams", &path).await?;
     actor_at(client, npc)
 }
@@ -465,8 +465,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         }
     };
     let from = tile(client.world_spatial().actor_position)?;
-    let path = to_trail(world, from).ok_or("step=replay observed=no-walk-route-back-to-trail")?;
-    walk_leg(&mut client, world, "return-to-trail", &path).await?;
+    let path =
+        to_walkway(world, from).ok_or("step=replay observed=no-walk-route-back-to-walkway")?;
+    walk_leg(&mut client, world, "return-to-walkway", &path).await?;
     logout(&mut client).await?;
     let mut client = connect_world(clients, 0xe5).await?;
     let actor = reach(&mut client, world, &bytes).await?;
@@ -545,18 +546,18 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
         Ok(at)
     };
     assert!(world.enterable(PORT_HOPE));
-    let trail = check_leg(
-        "Port Hope to jungle trail",
+    let walkway = check_leg(
+        "Port Hope to the raised walkway",
         PORT_HOPE,
-        to_trail(&world, PORT_HOPE).ok_or("trail unreachable")?,
+        to_walkway(&world, PORT_HOPE).ok_or("walkway unreachable")?,
     )?;
-    assert_eq!(trail, TRAIL);
+    assert_eq!(walkway, WALKWAY);
     assert!(route(&world, PORT_HOPE, |at| near(at, grizzly)).is_none());
     let approach =
-        route(&world, trail, |at| near(at, grizzly)).ok_or("Grizzly Adams unreachable")?;
+        route(&world, walkway, |at| near(at, grizzly)).ok_or("Grizzly Adams unreachable")?;
     let reached = check_leg(
-        "Jungle trail to Grizzly Adams, including replay",
-        trail,
+        "Walkway to Grizzly Adams, including replay",
+        walkway,
         approach,
     )?;
     assert!(near(reached, grizzly));
@@ -564,9 +565,9 @@ pub(crate) fn port_hope_route_smoke() -> TestResult {
         check_leg(
             "Grizzly Adams to replay logout tile",
             reached,
-            to_trail(&world, reached).ok_or("logout trail unreachable")?
+            to_walkway(&world, reached).ok_or("logout walkway unreachable")?
         )?,
-        TRAIL
+        WALKWAY
     );
     boarding_ladder_target(&world)?;
     check_leg(

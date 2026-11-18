@@ -7,7 +7,7 @@ regions `(126,125)`, `(126,126)`, `(127,127)` and `(127,128)` on every authored 
 compiler and its equivalence proof; the generated qualification digest is passed
 to the production loader. The committed full-world pin is unchanged. The third
 region retains the default start for ordinary home respawns. The fourth retains
-Port Hope and the jungle trail for the Grizzly Adams row. The full-world smoke
+Port Hope and its raised walkway for the Grizzly Adams row. The full-world smoke
 measured 176 seconds in the production loader before selecting this subset.
 It uses the shipped `serve` command's `[world_bundle]` composition and sets the
 Channel's existing first-entry start to Thais temple `(32369, 32238, -7)`. The pin
