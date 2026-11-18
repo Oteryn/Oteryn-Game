@@ -102,6 +102,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
+        if callback.effects.passages_independent_toggle {
+            // Crystal 201189f8 actions_mission01_lights.lua:17–29 clears the
+            // shared flag and restores the lamps before the next window opens.
+            let now = self.owner_now().get();
+            if map
+                .facts
+                .next_movement_decay_time()
+                .is_some_and(|due| due <= now)
+            {
+                map.facts.expire_movement_items(now);
+            }
+        }
         let (pos, mut after) =
             if oteryn_gameplay_items::event_planting::world_change_item_source(key).is_some() {
                 let Some(source) = shared_added_source(map, callback, key) else {

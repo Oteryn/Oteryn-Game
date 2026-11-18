@@ -162,6 +162,25 @@ pub(super) async fn exercise(
     let due = due.ok_or("passage window")?;
     assert_eq!(world.facts().expire_movement_items(due - 1), 0);
     owner.clock_origin -= Duration::from_secs(21);
+    let expected_lever = if lamp {
+        // Crystal's light resets at 20 seconds. Simulate a USE arriving before
+        // the background owner observes the expired window.
+        let command = admitted.continuity.next_command_id;
+        let payload = encode_use_intent(&WorldObjectTarget {
+            placement,
+            expected_revision: 2,
+        })
+        .map_err(debug)?;
+        let reply = super::quest_world_callbacks::wire(owner, admitted, command, 2, payload).await?;
+        assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Committed);
+        let renewed = world.facts().next_movement_decay_time().ok_or("renewed lamp deadline")?;
+        assert!(renewed > owner.owner_now().get() && renewed > due);
+        assert_eq!(appearance(remote, 1)?, toggled);
+        owner.clock_origin -= Duration::from_secs(21);
+        9126
+    } else {
+        9125
+    };
     let shutdown = oteryn_foundation::CancellationToken::new();
     let ((), expired) = tokio::join!(owner.run_source_owner_cycles(&shutdown), async {
         let expired = tokio::time::timeout(Duration::from_secs(3), async {
@@ -175,7 +194,7 @@ pub(super) async fn exercise(
     });
     expired?;
     assert_eq!(appearance(remote, 1)?, before);
-    assert_eq!(appearance(lever_at, 1)?, 9125);
+    assert_eq!(appearance(lever_at, 1)?, expected_lever);
     let retained = world.facts().movement_items(remote);
     if lamp {
         let unowned_lamp = crate::map::view::placement_key(remote, 2).ok_or("unowned lamp")?;
