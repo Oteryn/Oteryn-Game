@@ -244,9 +244,9 @@ async fn move_barrel(
         &ItemMoveIntent {
             source,
             destination: ItemMoveDestination::Ground(WorldTilePosition {
-                x: EAST.x.into(),
-                y: EAST.y.into(),
-                floor: EAST.floor.into(),
+                x: destination.x.into(),
+                y: destination.y.into(),
+                floor: destination.floor.into(),
             }),
         },
         selection,
