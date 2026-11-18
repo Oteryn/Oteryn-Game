@@ -61,6 +61,9 @@ pub struct CallbackEffects {
     pub requires_item_disguise: Option<ItemDisguiseRequirement>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub restore_disguise: bool,
+    /// A capture step confiscates a carried item when present.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub optional_step_input: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mount_reward: Option<MountReward>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -495,6 +498,23 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && (callback.trigger != Trigger::StepIn
                 || callback.actor_kind != ActorKind::Player
                 || callback.teleport.is_none()))
+    {
+        return false;
+    }
+    if effects.optional_step_input
+        && !(effects.restore_disguise
+            && callback.requires_world_admission
+            && callback.selector.native.is_some()
+            && callback.item_on_target.as_ref().is_some_and(|input| {
+                input.on_step
+                    && input.count == 1
+                    && !input.selected_instance
+                    && !input.target_remove
+                    && input.ingredients.is_empty()
+            })
+            && callback.offerings.is_empty()
+            && effects.carried_inputs.is_empty()
+            && callback.item_reward().is_none())
     {
         return false;
     }

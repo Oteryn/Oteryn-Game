@@ -721,7 +721,9 @@ async fn consume_inputs(
         .bind(context.selected_tool.as_ref().map(|tool| tool.source.to_vec()))
         .fetch_optional(&mut **tx)
         .await?;
-        let Some(row) = row else { return Ok(false) };
+        let Some(row) = row else {
+            return Ok(callback.effects.optional_step_input);
+        };
         let input = Input {
             item: row.try_get("item")?,
             before: row.try_get("before_item")?,
