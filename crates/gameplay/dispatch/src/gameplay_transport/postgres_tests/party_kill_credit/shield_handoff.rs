@@ -135,6 +135,7 @@ pub(super) async fn exercise(
     let cooldown_case = case == Case::ShieldCooldown;
     let revision_before_entry = map.facts.object_revision(key);
     if cooldown_case {
+        seed_cooldown_world(owner, pool).await?;
         // A prior admission for the second character must stop the whole party.
         sqlx::query(
             "INSERT INTO game_character_boss_cooldowns(character_id,boss_key,available_at,admission,reset_epoch)
@@ -345,6 +346,39 @@ pub(super) async fn exercise(
         assert_eq!(runtime.positioned_melee_census().map_err(debug)?.iter()
             .filter(|(actor, _, _)| runtime.matches_live_creature_identity(*actor, DEMON.as_bytes())).count(), 2);
     }
+    Ok(())
+}
+
+async fn seed_cooldown_world(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    pool: &sqlx::PgPool,
+) -> TestResult {
+    let map = owner.bundle_map().ok_or("cooldown world map")?;
+    let pin = owner.runtime.lock().await.content_pin().clone();
+    let world = owner.world_id.as_bytes().as_slice();
+    let epoch = owner.reset_epoch.to_string();
+    let mut tx = pool.begin().await?;
+    sqlx::query(
+        "INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,
+             server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month)
+         VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,$4,$5,$6,$7,
+                'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),to_char(clock_timestamp(),'YYYY-MM'))
+         ON CONFLICT DO NOTHING",
+    )
+    .bind(world)
+    .bind(&epoch)
+    .bind(map.overlay.base().digest().as_slice())
+    .bind(crate::map::overlay::map_revision(map.overlay.base()))
+    .bind(pin.server_artifact_digest().as_slice())
+    .bind(pin.client_artifact_digest().as_slice())
+    .bind(pin.frame_binding_digest().as_slice())
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_world_reset_active(world_id,reset_epoch)
+         VALUES(encode($1,'hex')::uuid,$2::text::numeric) ON CONFLICT DO NOTHING",
+    ).bind(world).bind(&epoch).execute(&mut *tx).await?;
+    tx.commit().await?;
     Ok(())
 }
 
