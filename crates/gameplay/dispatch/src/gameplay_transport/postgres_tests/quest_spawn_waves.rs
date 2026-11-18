@@ -6,6 +6,7 @@ use super::{
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition, NodeId,
 };
+use crate::gameplay_transport::{FenceHold, FenceStep, TransitionFence};
 use crate::map::view::MapFacts;
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
 use oteryn_gameplay_quests::quest::world_callbacks::{
@@ -968,13 +969,10 @@ async fn stations_scenario(
         .await
         .mint_transition_fence()
         .map_err(debug)?;
-    let mut hold = super::super::FenceHold::new(
-        admitted.game_session_id,
-        super::super::TransitionFence::Transition(token),
-    );
+    let mut hold = FenceHold::new(admitted.game_session_id, TransitionFence::Transition(token));
     assert!(matches!(
         owner.fence_transition(player, &mut hold, true).await,
-        super::super::FenceStep::Wait
+        FenceStep::Wait
     ));
     assert!(matches!(
         owner.logout_session(*admitted).await,
