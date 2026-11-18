@@ -7,8 +7,8 @@ use super::native_activity::NativeActivityOutcome;
 use crate::content::bosses::activity_template::{QualifiedBossExitTeleporter, vanguard_use_exit};
 use crate::durability::activity_handoff::ActivityNativeStepExit;
 use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition, MovementPositionSnapshot,
-    RuntimeScopeRefV1,
+    ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
+    MovementPositionSnapshot, RuntimeScopeRefV1,
 };
 use crate::map::overlay::TilePos;
 use oteryn_gameplay_entities::carrier::native_translation_events::CommittedMovementOccurrence;
@@ -58,12 +58,14 @@ impl SourceBossUseExit {
             content_generation: active.identity().client_artifact_digest(),
             reset_epoch: owner.reset_epoch,
         };
-        super::world_map::resolve_map_target(&source, target, |_| None::<()>).is_ok_and(|resolved| {
-            let trigger = exit.trigger();
-            i32::from(resolved.pos.x) == trigger.x
-                && i32::from(resolved.pos.y) == trigger.y
-                && -i32::from(resolved.pos.floor) == trigger.z
-        })
+        super::world_map::resolve_map_target(&source, target, |_| None::<()>).is_ok_and(
+            |resolved| {
+                let trigger = exit.trigger();
+                i32::from(resolved.pos.x) == trigger.x
+                    && i32::from(resolved.pos.y) == trigger.y
+                    && -i32::from(resolved.pos.floor) == trigger.z
+            },
+        )
     }
 }
 
@@ -135,12 +137,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         target: &WorldObjectTarget,
     ) -> Option<UseOutcome> {
         let fence = command.item_fence?;
-        let registered = self.activity_runtimes.get(
-            fence.runtime_scope,
-            fence.scope_ownership_generation.get(),
-        )?;
+        let registered = self
+            .activity_runtimes
+            .get(fence.runtime_scope, fence.scope_ownership_generation.get())?;
         let template = registered.template.as_ref()?;
-        let template = self.activity_runtimes.template(&template.key, &template.revision)?;
+        let template = self
+            .activity_runtimes
+            .template(&template.key, &template.revision)?;
         let exit = vanguard_use_exit(template.boss_key(), template.template_revision())?;
         if !SourceBossUseExit::trigger_matches(self, exit, target) {
             return None;
@@ -170,7 +173,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || i32::from(at.y).abs_diff(trigger.y) > 1
                 || floor != trigger.z
             {
-                return Some(UseOutcome { disposition: UseDisposition::TooFar, ..UseOutcome::rejected() });
+                return Some(UseOutcome {
+                    disposition: UseDisposition::TooFar,
+                    ..UseOutcome::rejected()
+                });
             }
             let pin = runtime.content_pin();
             if runtime.owner_fence().is_err()
@@ -187,15 +193,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return refused;
             }
-            if !self.states.world_gate.lock().is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed())) {
-                return Some(UseOutcome { disposition: UseDisposition::Exhausted, ..UseOutcome::rejected() });
+            if !self
+                .states
+                .world_gate
+                .lock()
+                .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()))
+            {
+                return Some(UseOutcome {
+                    disposition: UseDisposition::Exhausted,
+                    ..UseOutcome::rejected()
+                });
             }
-            SourceBossUseExit { exit, target: target.clone(), position }
+            SourceBossUseExit {
+                exit,
+                target: target.clone(),
+                position,
+            }
         };
         drop(permit);
         let at = native_position(proof.position.position());
-        let Ok(NativeActivityOutcome::Committed(commit)) =
-            self.return_source_boss_use_exit(admitted, command.command_id, proof).await
+        let Ok(NativeActivityOutcome::Committed(commit)) = self
+            .return_source_boss_use_exit(admitted, command.command_id, proof)
+            .await
         else {
             return refused;
         };
@@ -205,7 +224,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let (Some(map), Some(at)) = (self.bundle_map(), at) {
             let _ = map.facts.emit_movement_effect(at, 11);
         }
-        Some(UseOutcome { disposition: UseDisposition::Committed, ..UseOutcome::rejected() })
+        Some(UseOutcome {
+            disposition: UseDisposition::Committed,
+            ..UseOutcome::rejected()
+        })
     }
 
     /// Flush the existing position owner's immutable receipt only after the
