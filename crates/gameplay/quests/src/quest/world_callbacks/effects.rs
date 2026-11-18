@@ -302,6 +302,9 @@ pub struct EncounterMonster {
 pub struct Encounter {
     pub minimum_level: u32,
     pub players: Vec<EncounterPlayer>,
+    /// The fenced player on the UID-bound StepIn tile is the only entrant.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub step_destination: Option<Position>,
     pub monsters: Vec<EncounterMonster>,
     pub room_min: Position,
     pub room_max: Position,
@@ -772,7 +775,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && !callback.reversible
             && callback.offerings.is_empty()
             && callback.item_on_target.is_none()
-            && encounter.players.len() == 1
+            && (encounter.players.len() == 1 || encounter.step_destination.is_some())
             && encounter.timing.is_none()
             && effects.item_reward.is_none()
             && effects.outfit_reward.is_none()
@@ -841,7 +844,18 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
-        if (encounter.minimum_level == 0 && !source_party)
+        let step_entry = encounter.step_destination.is_some();
+        if (encounter.minimum_level == 0 && !source_party && !step_entry)
+            || encounter.step_destination.is_some_and(|to| {
+                !personal_encounter
+                    || callback.trigger != Trigger::StepIn
+                    || callback.selector.unique.is_none()
+                    || encounter.phase.is_some()
+                    || !encounter.players.is_empty()
+                    || !pos(to)
+                    || !in_room(to)
+                    || unique_monsters.contains(&to)
+            })
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()
@@ -858,6 +872,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     || (u64::from(encounter.room_max.x.saturating_sub(encounter.room_min.x)) + 1)
                         * (u64::from(encounter.room_max.y.saturating_sub(encounter.room_min.y)) + 1)
                         > 4096
+            } else if step_entry {
+                false
             } else {
                 !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                     .contains(&encounter.players.len())

@@ -135,7 +135,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && (i32::from(encounter.room_min.y)..=i32::from(encounter.room_max.y))
                     .contains(&at.y)
         };
-        let personal_entry = callback.personal_room_entry().map(local);
+        let step_entry = encounter.step_destination.and_then(|destination| {
+            let origin = runtime.read_actor_position(actor).ok()?.position();
+            Some((native(origin)?, destination))
+        });
+        let personal_entry = step_entry
+            .map(|(origin, _)| origin)
+            .or_else(|| callback.personal_room_entry())
+            .map(local);
         if census.iter().any(|(who, pos, occupant_session)| {
             occupant_session.is_some()
                 && in_room(pos.position())
@@ -148,10 +155,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let mut players = Vec::new();
         let mut proofs = Vec::new();
-        for member in &encounter.players {
+        for (from, to) in encounter
+            .players
+            .iter()
+            .map(|member| (member.from, member.to))
+            .chain(step_entry)
+        {
             let mut occupants = census
                 .iter()
-                .filter(|(_, pos, _)| pos.position() == local(member.from));
+                .filter(|(_, pos, _)| pos.position() == local(from));
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
                 // Cults collects whoever stands on the five source staging tiles.
                 if encounter.phase
@@ -209,7 +221,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 who,
                 member_session,
                 expected,
-                local(member.to),
+                local(to),
                 blocked,
                 &closed,
             ) else {
