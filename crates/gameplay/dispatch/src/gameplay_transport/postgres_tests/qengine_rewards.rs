@@ -1,7 +1,7 @@
 //! QENGINE-2: source rewards through the production NPC command dispatcher.
 use super::TestResult;
 use super::fixture::{Harness, debug};
-use super::{AdmittedSession, ComposedFreshAdmission};
+use super::{AdmittedSession, ComposedFreshAdmission, Dependencies};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::foundation::{CommandId, CommandRef};
@@ -918,6 +918,7 @@ pub(super) async fn exercise(
     admitted: &mut AdmittedSession,
     h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
+    deps: &Dependencies,
     name: &str,
 ) -> TestResult {
     // Keep each route's future state out of this shared dispatcher's inline state.
@@ -1109,7 +1110,7 @@ pub(super) async fn exercise(
         return Box::pin(super::l6_spirit::exercise(owner, admitted, h, authority)).await;
     }
     if name.starts_with(super::quest_claims::PREFIX) {
-        return Box::pin(super::quest_claims::exercise(owner, admitted, h, name)).await;
+        return Box::pin(super::quest_claims::exercise(owner, admitted, h, deps, name)).await;
     }
     if name.starts_with("qengine-rewards-world-clock") {
         return Box::pin(super::world_callback_clocks::exercise(

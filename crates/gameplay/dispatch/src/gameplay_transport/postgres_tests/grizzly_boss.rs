@@ -25,6 +25,7 @@ mod combat;
 mod vacancy;
 #[path = "grizzly_boss/world.rs"]
 pub(super) mod world;
+pub(super) use vacancy::second_player;
 
 #[test]
 fn grizzly_boss_portal_wire_occupied_spawn_expiry_and_relog_return() -> TestResult {

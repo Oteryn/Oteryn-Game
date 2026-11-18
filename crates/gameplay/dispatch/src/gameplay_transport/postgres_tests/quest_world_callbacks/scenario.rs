@@ -2690,6 +2690,7 @@ fn scenario_case(
                 &mut admitted,
                 &h,
                 &authority,
+                &deps,
                 name,
             ))
             .await?;

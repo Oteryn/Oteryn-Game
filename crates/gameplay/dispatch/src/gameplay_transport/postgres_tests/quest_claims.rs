@@ -6,7 +6,7 @@
 //! the_great_dragon_hunt_quest/actions_treasure.lua:19-40 and
 //! the_great_dragon_hunt_quest/creaturescripts_the_great_dragon_hunt.lua:12-25.
 use super::fixture::{Harness, debug};
-use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use super::{AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult};
 use crate::gameplay_transport::connection::UseCommand;
 use crate::map::view::MapFacts;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
@@ -23,6 +23,7 @@ pub(super) const PREFIX: &str = "qengine-rewards-qonce-";
 const WELL: &str = "qengine-rewards-qonce-well";
 const WELL_LOST_ACK: &str = "qengine-rewards-qonce-well-lost-ack";
 const WELL_ROLLBACK: &str = "qengine-rewards-qonce-well-rollback";
+const WELL_SHARED: &str = "qengine-rewards-qonce-well-shared";
 const DAILY: &str = "qengine-rewards-qonce-daily";
 const DAILY_HEART: &str = "qengine-rewards-qonce-daily-heart";
 const FOUNTAIN_TRANSFORM: &str = "qengine-rewards-qonce-fountain-transform";
@@ -99,6 +100,13 @@ fn well_achievement_write_failure_rolls_back_the_heal_and_claim_postgres() -> Te
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     drop(admin);
     super::qengine_rewards::scenario(WELL_ROLLBACK)
+}
+
+#[test]
+fn well_claim_is_independent_for_two_players_on_the_same_source_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::qengine_rewards::scenario(WELL_SHARED)
 }
 
 #[test]
@@ -457,6 +465,69 @@ async fn roll_back_well_grant(
         let reply = super::quest_world_callbacks::wire(owner, admitted, 2, 2, payload.to_vec()).await?;
         assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Committed);
     }
+    Ok(())
+}
+
+async fn claim_well_for_two_players(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    deps: &Dependencies,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::{decode_use_result, encode_use_intent};
+
+    let first_actor = admitted.runtime_actor.ok_or("first well claimant")?;
+    let first_position = owner.runtime.lock().await.read_actor_position(first_actor).map_err(debug)?.position();
+    let (peer_actor, mut peer) = super::grizzly_boss::second_player(
+        owner, deps, h, crate::foundation::MovementLocalPosition { x: first_position.x + 1, ..first_position },
+    ).await?;
+    let actors = [(admitted.game_session_id, first_actor), (peer.game_session_id, peer_actor)];
+    let mut full = [(0, 0); 2];
+    {
+        let runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        for (index, (session, actor)) in actors.into_iter().enumerate() {
+            let state = states.get_mut(&runtime, actor, session).ok_or("claimant state")?;
+            let vital = state.vitals();
+            assert!(vital.health > 1 && vital.mana > 0);
+            full[index] = (vital.health, vital.mana);
+            state.restore_saved_vitals(1, 0);
+        }
+    }
+
+    // Crystal actions_fountain.lua:3-10 scopes its consumed flag to the player.
+    let target = claim_target(owner)?;
+    let payload = encode_use_intent(&target).map_err(debug)?;
+    for (winner, claimant) in [&mut *admitted, &mut peer].into_iter().enumerate() {
+        advance_interaction(owner)?;
+        let reply = super::quest_world_callbacks::wire(owner, claimant, 1, 2, payload.clone()).await?;
+        assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Committed);
+        assert_eq!(claim_target(owner)?.expected_revision, target.expected_revision);
+        assert_eq!(receipts(h).await?, i64::try_from(winner + 1)?);
+        {
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            for (index, (session, actor)) in actors.into_iter().enumerate() {
+                let vital = states.get(&runtime, actor, session).ok_or("claimant state")?.vitals();
+                assert_eq!((vital.health, vital.mana), if index <= winner { full[index] } else { (1, 0) });
+            }
+        }
+        let character = claimant.item_fence.ok_or("claimant fence")?.character_id;
+        let saved: (i32, i32, i64) = sqlx::query_as(
+            "SELECT p.health,p.mana,t.value FROM game_character_last_positions p \
+             JOIN game_character_quest_tracks t USING(character_id) \
+             WHERE p.character_id=encode($1,'hex')::uuid AND t.track_key=$2",
+        ).bind(character.as_bytes().as_slice()).bind(LEDGER).fetch_one(&h.pool).await?;
+        assert_eq!(saved, (i32::try_from(full[winner].0)?, i32::try_from(full[winner].1)?, 1));
+    }
+
+    for claimant in [&mut *admitted, &mut peer] {
+        advance_interaction(owner)?;
+        let reply = super::quest_world_callbacks::wire(owner, claimant, 2, 2, payload.clone()).await?;
+        assert_eq!(decode_use_result(&reply).map_err(debug)?, UseDisposition::Rejected);
+    }
+    assert_eq!(receipts(h).await?, 2);
+    assert_eq!(achievements(h, WELL_ACHIEVEMENT).await?, 2);
     Ok(())
 }
 
@@ -1141,6 +1212,7 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    deps: &Dependencies,
     name: &str,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
@@ -1169,7 +1241,7 @@ pub(super) async fn exercise(
             "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_great_dragon_hunt_quest/actions_treasure.lua:19-40"
         ]
     });
-    let well = matches!(name, WELL | WELL_LOST_ACK | WELL_ROLLBACK);
+    let well = matches!(name, WELL | WELL_LOST_ACK | WELL_ROLLBACK | WELL_SHARED);
     let mut tracks = vec![];
     let mut effects;
     let period = match name {
@@ -1311,6 +1383,10 @@ pub(super) async fn exercise(
     let base = QuestStateCatalogue::empty(revision).ok_or("revision")?;
     owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
     owner.states.chat.admit(admitted.game_session_id, "Claimant", owner.owner_now());
+
+    if name == WELL_SHARED {
+        return Box::pin(claim_well_for_two_players(owner, admitted, h, deps)).await;
+    }
 
     if name == STEP {
         for (command, direction) in [(1, StepDirection::East), (2, StepDirection::West), (3, StepDirection::East)] {
