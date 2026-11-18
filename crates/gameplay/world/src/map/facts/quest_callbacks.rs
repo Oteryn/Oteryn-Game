@@ -240,7 +240,8 @@ impl CallbackStates {
                     })
             })
             .count();
-        if count != usize::from(window.count) || self.hidden.contains(&window.target)
+        if count != usize::from(window.count)
+            || self.hidden.contains(&window.target)
             || self.presence_openings.contains_key(&window.target)
         {
             return;
@@ -257,9 +258,17 @@ impl CallbackStates {
             && let Some((position, _)) = view::placement_of(window.target)
         {
             if let Some(source) = window.progress {
-                self.presence_openings.insert(window.target, PendingPresenceOpening {
-                    source, target: window.target, revision, after: window.after, position, effect: window.effect,
-                });
+                self.presence_openings.insert(
+                    window.target,
+                    PendingPresenceOpening {
+                        source,
+                        target: window.target,
+                        revision,
+                        after: window.after,
+                        position,
+                        effect: window.effect,
+                    },
+                );
             } else {
                 self.changed.insert(window.target, (revision, window.after));
                 self.record_effect(None, position, window.effect);
@@ -702,20 +711,44 @@ impl CallbackStates {
 
 impl BundleFacts {
     pub fn next_presence_opening(&self) -> Option<PendingPresenceOpening> {
-        self.callbacks.lock().ok()?.presence_openings.values().next().cloned()
+        self.callbacks
+            .lock()
+            .ok()?
+            .presence_openings
+            .values()
+            .next()
+            .cloned()
     }
 
     pub fn finish_presence_opening(&self, opening: &PendingPresenceOpening, publish: bool) -> bool {
-        let Ok(mut state) = self.callbacks.lock() else { return false };
-        if !state.presence_openings.get(&opening.target).is_some_and(|pending| {
-            pending.source == opening.source && pending.revision == opening.revision
-        }) {
+        let Ok(mut state) = self.callbacks.lock() else {
+            return false;
+        };
+        if !state
+            .presence_openings
+            .get(&opening.target)
+            .is_some_and(|pending| {
+                pending.source == opening.source && pending.revision == opening.revision
+            })
+        {
             return false;
         }
         let state = Arc::make_mut(&mut state);
         state.presence_openings.remove(&opening.target);
         if publish {
-            state.changed.insert(opening.target, (opening.revision, opening.after));
+            if state.hidden.contains(&opening.target)
+                || state
+                    .changed
+                    .get(&opening.target)
+                    .map_or(0, |(revision, _)| *revision)
+                    .checked_add(1)
+                    != Some(opening.revision)
+            {
+                return false;
+            }
+            state
+                .changed
+                .insert(opening.target, (opening.revision, opening.after));
             state.record_effect(None, opening.position, opening.effect);
         }
         true

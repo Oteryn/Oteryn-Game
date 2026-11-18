@@ -66,6 +66,7 @@ const CENTRE: Position = Position { x: AT.x - 2, y: AT.y + 1, ..AT };
 const SOCKET_PHASE: &str = "oteryn:quest-progress/qonce-dispatch/socket-phase";
 const THUNDER: u16 = 73;
 const SOCKET_SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/gems.lua:35-89,130-189";
+const ROOM_OPENS: &str = "Something happens at the center of the room ...";
 
 #[test]
 fn once_only_well_restores_saved_and_live_vitals_and_grants_achievement_postgres() -> TestResult {
@@ -246,7 +247,8 @@ async fn socket_window(
                 "effects":{"timed_presence":{"position":position,"appearance":field,
                     "spawn_after_ms":2000,"expires_after_ms":60000,"window":{
                         "position":CENTRE,"from":LIONS_SANCTUARY_ROCK,"to":LIONS_FOUNTAIN,
-                        "count":4,"effect":THUNDER,"repeat":{"claim_track":LEDGER,"count":3}
+                        "count":4,"effect":THUNDER,"repeat":{"claim_track":LEDGER,"count":3},
+                        "on_open":{"track":SOCKET_PHASE,"minimum":7,"value":10,"message":ROOM_OPENS}
                     }}}
             }}
         }));
@@ -277,6 +279,7 @@ async fn socket_window(
     let revision = owner.quest_catalogue.as_deref().ok_or("catalogue")?.content_revision();
     let base = QuestStateCatalogue::empty(revision).ok_or("revision")?;
     owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
+    owner.states.chat.admit(admitted.game_session_id, "Claimant", owner.owner_now());
     let _clock = owner.freeze_owner_clock_for_test();
     let centre = socket_key(CENTRE)?;
     if repeat {
@@ -307,10 +310,22 @@ async fn socket_window(
         assert!(!present());
         assert_eq!(map.facts.expire_movement_items(starts), 1);
         assert!(present());
+        assert_eq!(map.facts.object_revision(centre), 0, "wait for durable room progress");
+        owner.drain_paid_presence_opening().await;
         assert_eq!(map.facts.object_revision(centre), if index + 1 == count { 1 } else { 0 });
         expiry.push((at + 60_000_000, tile));
     }
     let map = owner.bundle_map().ok_or("socket map")?;
+    assert_eq!(track_value(h, SOCKET_PHASE).await?, 10);
+    owner.drain_paid_presence_opening().await;
+    let opened: Vec<(i64, i64)> = sqlx::query_as(
+        "SELECT values_before[1],values_after[1] FROM game_character_quest_receipts WHERE transition_key LIKE 'oteryn:quest-timed-presence/%'",
+    ).fetch_all(&h.pool).await?;
+    assert_eq!(opened, [(if repeat { 9 } else { 10 }, 10)]);
+    let messages = owner.states.chat.drain(admitted.game_session_id);
+    assert_eq!(messages.iter().filter(|line| matches!(
+        line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == ROOM_OPENS
+    )).count(), 1);
     let centre_tile = TilePos { x: CENTRE.x, y: CENTRE.y, floor: CENTRE.floor };
     assert_eq!(map.facts.movement_effects_since(0).into_iter()
         .filter(|(_, at, effect)| *at == centre_tile && *effect == THUNDER).count(), 1);

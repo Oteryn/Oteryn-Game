@@ -319,7 +319,13 @@ pub const PRESENCE_PROGRESS_PREFIX: &str = "oteryn:quest-timed-presence/";
 
 impl Callback {
     pub fn presence_progress(&self) -> Option<&PresenceProgress> {
-        self.effects.timed_presence.as_ref()?.window.as_ref()?.on_open.as_ref()
+        self.effects
+            .timed_presence
+            .as_ref()?
+            .window
+            .as_ref()?
+            .on_open
+            .as_ref()
     }
 
     pub fn presence_progress_transition(&self) -> Option<QuestTransition> {
@@ -843,9 +849,12 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     || !(1..=8).contains(&window.count)
                     || window.on_open.as_ref().is_some_and(|progress| {
                         progress.minimum >= progress.value
-                            || progress.message.is_empty() || progress.message.len() > 512
+                            || progress.message.is_empty()
+                            || progress.message.len() > 512
                             || !callback.storage.iter().any(|guard| {
-                                guard.track == progress.track && !guard.preserve && !guard.read_only
+                                guard.track == progress.track
+                                    && !guard.preserve
+                                    && !guard.read_only
                                     && (progress.minimum..=progress.value).contains(&guard.set)
                             })
                     })

@@ -245,12 +245,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return result;
                 }
             };
-        if callback.presence_progress().is_some()
-            && let Some(crate::map::facts::QuestCallbackProjection::TimedPresence { window: Some(window), .. }) = &mut projection
-            && let QuestCause::Use(command) = cause
-        {
+        if callback.presence_progress().is_some() {
+            let (
+                Some(crate::map::facts::QuestCallbackProjection::TimedPresence {
+                    window: Some(window),
+                    ..
+                }),
+                QuestCause::Use(command),
+            ) = (&mut projection, cause)
+            else {
+                return UseDisposition::Rejected;
+            };
             window.progress = Some(crate::map::facts::PresenceProgressSource {
-                callback: callback.key.clone(), actor, command,
+                callback: callback.key.clone(),
+                actor,
+                command,
             });
         }
         // Both lifecycle deadlines belong to this operation, even when preparing
