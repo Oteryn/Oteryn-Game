@@ -185,6 +185,8 @@ pub(super) async fn exercise(
         }
         assert_eq!(map.facts.object_revision(key), revision_before_entry);
         assert!(owner.runtime.lock().await.visible_entities().creatures.is_empty());
+        let committed_before_recovery = party_cooldowns(pool).await?;
+        assert_eq!(committed_before_recovery.len(), 2);
         assert!(owner.reconcile_quest_callbacks(players[1].session).await);
         for member in players {
             assert!(!owner.has_pending_quest_callback(member.session));
@@ -195,7 +197,7 @@ pub(super) async fn exercise(
         ), "the first acknowledgement was interrupted");
         let after_ms = database_ms(pool).await?;
         let rows = party_cooldowns(pool).await?;
-        assert_eq!(rows.len(), 2);
+        assert_eq!(rows, committed_before_recovery);
         assert_eq!(rows[0].0, sqlx::types::Uuid::from_bytes(id(60)));
         assert_eq!(rows[1].0, sqlx::types::Uuid::from_bytes(id(61)));
         assert_eq!(rows[0].1, rows[1].1);
