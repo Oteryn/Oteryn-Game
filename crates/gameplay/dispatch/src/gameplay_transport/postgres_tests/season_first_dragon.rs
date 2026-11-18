@@ -46,12 +46,12 @@ fn m18_selected_first_dragon_native_instance_timeout_postgres() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "M18 room thread failed")??;
     Ok(())
 }
-fn scenario(victory: bool) -> TestResult {
+fn scenario(victory: bool, two_players: bool) -> TestResult {
     run(async |admin| {
         let started = std::time::Instant::now();
         reset();
@@ -166,7 +166,7 @@ fn scenario(victory: bool) -> TestResult {
             .map_err(debug)?;
         // Reuse the actual native Premium gate's trusted clock and delivered
         // evidence. Session registration alone does not install this authority.
-        let (consumer, premium_clock, activation, _) =
+        let (consumer, premium_clock, activation, mut premium_proof) =
             crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(
                 fixture::id(40),
             );
@@ -178,6 +178,10 @@ fn scenario(victory: bool) -> TestResult {
             )
             .await
             .map_err(debug)?;
+        if two_players {
+            premium_proof.account_id = fixture::id(120);
+            consumer.prove_for_test(premium_proof);
+        }
         let premium =
             crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
                 consumer,
@@ -244,6 +248,11 @@ fn scenario(victory: bool) -> TestResult {
             "the source session must bind the native content-1 progression policy"
         );
         super::qengine_outfit_stories::earn_level(&owner, &admitted, &authority, 40).await?;
+        let peer = if two_players {
+            Some(prepare_peer(&owner, &h, &authority, &evidence.evidence, admitted).await?)
+        } else {
+            None
+        };
         // Prior personal trials are historical input to this encounter, not a synthetic death.
         let canonical =
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
@@ -290,6 +299,9 @@ fn scenario(victory: bool) -> TestResult {
         guard.rollback().await?;
         owner.quest_catalogue = Some(std::sync::Arc::new(catalogue.clone()));
         owner.admit_quest_session(&admitted).await;
+        if let Some(peer) = peer {
+            owner.admit_quest_session(&peer).await;
+        }
         {
             let sessions = owner
                 .states
@@ -319,6 +331,9 @@ fn scenario(victory: bool) -> TestResult {
             .activity_runtimes
             .remember(admitted)
             .map_err(|_| "remember source connection")?;
+        if let Some(peer) = peer {
+            owner.activity_runtimes.remember(peer).map_err(|_| "remember peer")?;
+        }
         owner
             .activity_runtimes
             .register_template(&template)
@@ -443,6 +458,16 @@ fn scenario(victory: bool) -> TestResult {
                 CREATURE
             );
         }
+        let entered_peer = if let Some(peer) = peer {
+            let next = owner.activity_runtimes.current_connection(peer);
+            assert_ne!(next.game_session_id, peer.game_session_id);
+            assert_eq!(next.item_fence.ok_or("entered peer fence")?.runtime_scope, instance);
+            assert_eq!(
+                destination.runtime.lock().await.read_actor_position(next.runtime_actor.ok_or("entered peer actor")?).map_err(debug)?.position(),
+                ENTRY,
+            );
+            Some(next)
+        } else { None };
         let timers: (i64,i64) = sqlx::query_as("SELECT a.deadline-a.opened_at,c.available_at-a.opened_at FROM game_boss_room_activities a JOIN game_character_boss_cooldowns c USING(boss_key) WHERE a.admission=encode($1,'hex')::uuid")
             .bind(handoff.as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(timers, (1_200_000, 72_000_000));
@@ -489,6 +514,18 @@ fn scenario(victory: bool) -> TestResult {
                 .position(),
             if victory { REWARD_ROOM } else { EXIT }
         );
+        if let Some(mut peer) = entered_peer {
+            let (_, reply, barrier) = super::boss_activity::exchange_command(
+                &owner, &mut peer, BOSS, true, wire::COMMAND_TYPE_BOSS_TIMEOUT,
+            ).await?;
+            assert!(matches!(reply, BossActivityReply::Accepted { .. }));
+            assert!(matches!(barrier.ok_or("peer return barrier")?.scope, ActivityScope::Channel { .. }));
+            assert_eq!(peer.item_fence.ok_or("returned peer fence")?.runtime_scope, expected.runtime_scope);
+            assert_eq!(owner.runtime.lock().await.read_actor_position(peer.runtime_actor.ok_or("returned peer actor")?).map_err(debug)?.position(), EXIT);
+            let returned: i64 = sqlx::query_scalar("SELECT count(*) FROM game_activity_runtime_returns WHERE handoff_id=encode($1,'hex')::uuid AND reason=2")
+                .bind(handoff.as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(returned, 2);
+        }
         owner
             .activity_lifecycle_pass()
             .await
@@ -544,11 +581,71 @@ fn m18_selected_first_dragon_native_victory_completes_once_postgres() -> TestRes
     };
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(true, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "M18 room thread failed")??;
     Ok(())
 }
+#[test]
+fn m18_first_dragon_two_players_enter_and_return_through_boss_dispatch_postgres() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("first-dragon-two-players", || {
+        scenario(false, true)
+    })
+}
+
+async fn prepare_peer(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    evidence: &crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
+    leader: super::AdmittedSession,
+) -> TestResult<super::AdmittedSession> {
+    use crate::foundation::AuthenticatedTransportRefV1;
+    use crate::gameplay_transport::connection::ControllerBinding;
+    use crate::gameplay_transport::spell_character_facts::{CastFactsLoad, load_character_cast_facts};
+
+    let character = super::desert_party_rite::create_peer(h, authority, evidence, 0).await?;
+    let session = super::activity_deadline_paging::admit_created_member(h, evidence, 0, character).await?;
+    let fence = item_fence_of(FreshAdmissionStore::from_root(h.root.clone()).current_session_at(session).await?.0)
+        .ok_or("peer source fence")?;
+    let actor = {
+        let mut runtime = owner.runtime.lock().await;
+        let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime.initialize_pinned_test_position(actor, MovementLocalPosition {
+            x: LEVER.x - 1, ..LEVER
+        }).map_err(debug)?;
+        runtime.bind_attacker_lease(
+            actor, session,
+            CharacterLease::new(crate::foundation::CharacterId::decode(&character).map_err(debug)?, fence.character_lease_generation).map_err(debug)?,
+        ).map_err(debug)?;
+        actor
+    };
+    let mut peer = super::AdmittedSession {
+        game_session_id: session,
+        runtime_actor: Some(actor),
+        item_fence: Some(fence),
+        controller: Some(ControllerBinding {
+            account_id: fixture::id(120),
+            transport: AuthenticatedTransportRefV1::decode(&[150; 16]).map_err(debug)?,
+        }),
+        ..leader
+    };
+    owner.admit_premium(fixture::id(120), session);
+    owner.admit_progression_session(&mut peer).await;
+    super::qengine_outfit_stories::earn_level(owner, &peer, authority, 40).await?;
+    let CastFactsLoad::Ready { facts, .. } =
+        load_character_cast_facts(&h.root, authority, fence.character_id).await
+    else { return Err("owned First Dragon peer facts unavailable".into()); };
+    let runtime = owner.runtime.lock().await;
+    let mut states = owner.states.spell_states.lock().await;
+    assert!(states.initialize(&runtime, actor, session, facts, (0, 0), owner.owner_now()).is_some());
+    Ok(peer)
+}
+
 async fn settle_selected_boss(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &crate::gameplay_transport::connection::AdmittedSession,

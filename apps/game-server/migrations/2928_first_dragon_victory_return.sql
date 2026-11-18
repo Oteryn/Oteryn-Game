@@ -1,11 +1,12 @@
 -- Crystal 201189f8, creaturescripts_death_first_dragon.lua:21-30.
 -- Only a recorded victory in this exact activity selects the reward room.
+-- The deferred return guard may see the room retired by the last return.
 CREATE FUNCTION game_first_dragon_reward_room(p_admission UUID)
 RETURNS TABLE (x INTEGER, y INTEGER, floor SMALLINT)
 LANGUAGE sql STABLE SET search_path=pg_catalog,public AS $$
     SELECT 33617, 31020, 13::smallint FROM public.game_boss_room_activities
     WHERE admission=p_admission AND boss_key='oteryn:boss.the_first_dragon'
-      AND state=2 AND defeat_id IS NOT NULL
+      AND state IN (2,4) AND defeat_id IS NOT NULL
 $$;
 REVOKE ALL ON FUNCTION game_first_dragon_reward_room(UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION game_first_dragon_reward_room(UUID) TO oteryn_game_runtime;
