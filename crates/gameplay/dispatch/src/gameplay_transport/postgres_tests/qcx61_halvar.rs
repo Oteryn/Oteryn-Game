@@ -5,6 +5,7 @@ use crate::foundation::{ExactActorRef, MovementLocalPosition};
 use oteryn_gameplay_quests::quest::world_callbacks::Callback;
 use oteryn_protocol_oteryn::{
     arena::{ArenaAction, ArenaDisposition},
+    world_object::{UseDisposition, WorldObjectTarget, decode_use_result, encode_use_intent},
     world_spatial::StepDirection,
 };
 use serde_json::json;
@@ -61,6 +62,12 @@ pub(super) async fn exercise(
             .map_err(debug)?;
     }
     let [halvar] = classic_quests::install(owner, admitted, ["oteryn:npc.halvar"]).await?;
+    if !pit_ground_reset {
+        assert_eq!(
+            use_sealed_door(owner, admitted, actor).await?,
+            UseDisposition::Locked
+        );
+    }
     let (unpaid, _) = owner
         .ordinary_paced_step(
             actor,
@@ -99,6 +106,12 @@ pub(super) async fn exercise(
     .await?;
     assert_eq!(staged, (1, 0));
     assert_eq!(fees(h).await?, 1);
+    if !pit_ground_reset {
+        assert_eq!(
+            use_sealed_door(owner, admitted, actor).await?,
+            UseDisposition::Committed
+        );
+    }
     assert_eq!(
         owner
             .runtime
@@ -133,6 +146,59 @@ pub(super) async fn exercise(
         super::qcx61_pit_ground_reset::assert_retirement(h, observed).await?;
     }
     Ok(())
+}
+
+async fn use_sealed_door(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    actor: ExactActorRef,
+) -> TestResult<UseDisposition> {
+    use crate::map::view::MapFacts;
+    let target = {
+        let map = owner.bundle_map().ok_or("arena map")?;
+        let key = oteryn_world_bundle::bundle::placement_key(-7, 32233, 31098, 1)
+            .ok_or("sealed door placement")?;
+        let mut placement = map.overlay.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        WorldObjectTarget {
+            placement,
+            expected_revision: map.facts.object_revision(key),
+        }
+    };
+    let session = admitted.game_session_id;
+    let previous = {
+        let mut runtime = owner.runtime.lock().await;
+        let current = runtime.read_actor_position(actor).map_err(debug)?;
+        runtime
+            .relocate_arena_player(
+                actor,
+                session,
+                current,
+                MovementLocalPosition {
+                    x: 32234,
+                    y: 31098,
+                    floor: 7,
+                },
+            )
+            .map_err(debug)?;
+        current.position()
+    };
+    owner.clock_origin -= std::time::Duration::from_secs(2);
+    let id = admitted.continuity.next_command_id;
+    let reply = super::quest_world_callbacks::wire(
+        owner,
+        admitted,
+        id,
+        2,
+        encode_use_intent(&target).map_err(debug)?,
+    )
+    .await?;
+    let mut runtime = owner.runtime.lock().await;
+    let current = runtime.read_actor_position(actor).map_err(debug)?;
+    runtime
+        .relocate_arena_player(actor, session, current, previous)
+        .map_err(debug)?;
+    Ok(decode_use_result(&reply).map_err(debug)?)
 }
 
 async fn fees(h: &Harness) -> TestResult<i64> {

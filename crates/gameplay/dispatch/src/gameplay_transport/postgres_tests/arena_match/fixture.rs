@@ -191,6 +191,33 @@ fn bundle_layout(
                 floor.y = y;
                 tiles.insert((floor.x, floor.y, -7), floor);
             }
+            // Native B3 region-z07-x125-y121, (32233,31098), ordinal 1.
+            // Crystal storages.lua:853 and halvar.lua:100-102.
+            let door_key = "oteryn:item.tibia.i5131";
+            let reference = native
+                .item_index()
+                .and_then(|index| index.definition_ref("Item", door_key, "definition-r1"))
+                .ok_or("sealed Arena door definition")?;
+            let door_palette = u32::try_from(bundle.manifest.palette.len())?;
+            bundle.manifest.palette.push(oteryn_world_bundle::writer::PaletteEntry {
+                key: door_key.into(),
+                family: oteryn_world_bundle::bundle::Family::Item,
+                id: reference.get() - 1,
+                terrain: None,
+            });
+            let mut near_door = bundle.sectors[0].tiles[0].clone();
+            (near_door.x, near_door.y) = (32234, 31098);
+            tiles.insert((32234, 31098, -7), near_door.clone());
+            near_door.x = 32233;
+            near_door.items.push(oteryn_world_bundle::sector::Item {
+                palette: door_palette,
+                depth: 0,
+                attrs: oteryn_world_bundle::sector::Attrs {
+                    action: Some(donor::PIT_DOOR_STORAGE),
+                    ..Default::default()
+                },
+            });
+            tiles.insert((32233, 31098, -7), near_door);
         }
     }
     if with_reward_chest {

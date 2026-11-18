@@ -265,10 +265,10 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                 let index = native.item_index()?;
                 Some(crate::map::facts::ItemDefinition {
                     reference: index.definition_ref("Item", key, "definition-r1")?,
-                    solid: Some(key.ends_with(".i1841")),
+                    solid: Some(key.ends_with(".i1841") || key.ends_with(".i5131")),
                     blocks_projectile: false,
                     pickupable: false,
-                    door: false,
+                    door: key.ends_with(".i5131") || key.ends_with(".i5132"),
                 })
             },
         )
@@ -344,7 +344,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
             crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
-            if shared_rewards { &[4, 6, 11, 17, 170] } else { &[4, 6, 17, 170] },
+            if shared_rewards || halvar { &[4, 6, 11, 17, 170] } else { &[4, 6, 17, 170] },
         )
         .ok_or("capability selection")?;
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
