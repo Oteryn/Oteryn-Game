@@ -353,11 +353,6 @@ async fn reach(
     let metadata = oteryn_world_bundle::bundle::visit(bytes, |_, _| Ok(()))?;
     let npc = placement(&metadata.npcs, NPC)?;
     let from = tile(client.world_spatial().actor_position)?;
-    if let Some(path) = route(world, from, |at| near(at, npc)) {
-        walk_leg(client, world, "grizzly-adams", &path).await?;
-        return actor_at(client, npc);
-    }
-
     let approach = from_walkway(world, npc)?;
     let path = if let Some(path) = to_walkway(world, from) {
         path
@@ -374,7 +369,21 @@ async fn reach(
         harbor
     };
     walk_leg(client, world, "port-hope-walkway", &path).await?;
-    walk_leg(client, world, "grizzly-adams", &approach).await?;
+    approach_grizzly(client, world, npc, "grizzly-adams", &approach).await
+}
+
+async fn approach_grizzly(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    npc: &oteryn_world_bundle::npc::Npc,
+    leg: &str,
+    path: &[StepDirection],
+) -> TestResult<EntityRef> {
+    let from = tile(client.world_spatial().actor_position)?;
+    if from != WALKWAY || path.is_empty() {
+        return Err(format!("step={leg} observed=invalid-approach-start:{from:?}").into());
+    }
+    walk_leg(client, world, leg, path).await?;
     actor_at(client, npc)
 }
 
@@ -478,7 +487,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
     walk_leg(&mut client, world, "return-to-walkway", &path).await?;
     logout(&mut client).await?;
     let mut client = connect_world(clients, 0xe5).await?;
-    let actor = reach(&mut client, world, &bytes).await?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let npc = placement(&metadata.npcs, NPC)?;
+    let actor = approach_grizzly(
+        &mut client,
+        world,
+        npc,
+        "fresh-admission-grizzly-adams",
+        &from_walkway(world, npc)?,
+    )
+    .await?;
     expect(
         &say(&mut client, actor, "hi").await?,
         "Welcome back",
