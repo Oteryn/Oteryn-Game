@@ -146,3 +146,11 @@ fn overlordcr_ended_secondary_keeps_principal_xp_chest_and_storage_postgres() ->
 fn overlordcr_ended_secondary_no_xp_completes_without_requeue_postgres() -> TestResult {
     super::srvenc_source_deaths::scenario("overlordcr_ended_secondary_no_xp", "earth_overlord")
 }
+
+#[test]
+fn overlordcr_live_secondary_conflicting_receipt_rolls_back_death_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::srvenc_source_deaths::scenario("overlordcr_live_conflict", "earth_overlord")
+}

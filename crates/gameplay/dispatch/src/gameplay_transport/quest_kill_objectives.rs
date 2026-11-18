@@ -262,11 +262,7 @@ pub(super) async fn apply_in_transaction(
             }) else {
                 continue;
             };
-            sqlx::query("SAVEPOINT overlord_quest_credit")
-                .execute(&mut **tx)
-                .await
-                .map_err(crate::durability::DurabilityError::from)?;
-            let outcome =
+            if let Some(receipt) =
                 crate::durability::quest_state::kill_objectives::apply_batch_in_transaction(
                     tx,
                     node,
@@ -274,23 +270,9 @@ pub(super) async fn apply_in_transaction(
                     &[(objective.transition, &objective.source)],
                     catalogue,
                 )
-                .await;
-            if outcome.is_err() {
-                sqlx::query("ROLLBACK TO SAVEPOINT overlord_quest_credit")
-                    .execute(&mut **tx)
-                    .await
-                    .map_err(crate::durability::DurabilityError::from)?;
-            }
-            sqlx::query("RELEASE SAVEPOINT overlord_quest_credit")
-                .execute(&mut **tx)
-                .await
-                .map_err(crate::durability::DurabilityError::from)?;
-            match outcome {
-                Ok(Some(receipt)) => committed.push(receipt),
-                // The savepoint isolates recipient refusals. A dependency
-                // failure still retries the atomic settlement.
-                Err(error @ CharacterProgressionError::Unavailable(_)) => return Err(error),
-                Ok(None) | Err(_) => {}
+                .await?
+            {
+                committed.push(receipt);
             }
         }
         return Ok(committed);

@@ -72,10 +72,38 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
         .await
         .map_err(debug)?;
     let mut deps = Dependencies::new()?;
-    let (controller, activated) = super::death_ml_loss_composed::production_generation_with_pin(
-        deps.admitted.world_id,
-        "content-1",
-    )?;
+    let (controller, activated) = if matches!(
+        mode,
+        "overlordcr_ended_secondary_xp" | "overlordcr_live_conflict"
+    ) {
+        use sha2::{Digest, Sha256};
+
+        let mut input = super::death_ml_loss_composed::production_input_with_source("content-1", None)?;
+        let loot = input.loot_tables.as_mut().ok_or("pinned loot section")?;
+        let mut section: serde_json::Value = serde_json::from_slice(&loot.bytes)?;
+        let table = section["tables"]
+            .as_array_mut()
+            .ok_or("pinned loot tables")?
+            .iter_mut()
+            .find(|table| table["identity"]["key"] == "oteryn:loot.creature.earth_overlord")
+            .ok_or("Earth Overlord loot table")?;
+        let entries = table["entries"].as_array_mut().ok_or("Earth Overlord loot entries")?;
+        // This fixture needs a private reward row. Its production pin contains a
+        // non-materializable drop, so exercise the chest path with the admitted subset.
+        entries.retain(|entry| entry["item"]["key"] != "oteryn:item.tibia.i947");
+        loot.bytes = serde_json::to_vec(&section)?;
+        loot.sha256 = Sha256::digest(&loot.bytes)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
+        crate::content::native_gameplay::test_support::try_activate_input(deps.admitted.world_id, &input)
+            .map_err(debug)?
+    } else {
+        super::death_ml_loss_composed::production_generation_with_pin(
+            deps.admitted.world_id,
+            "content-1",
+        )?
+    };
     let generation = controller.active().ok_or("generation")?;
     let native = generation.native_gameplay().ok_or("native policies")?;
     let without_rewards = crate::content::creature_reward::CreatureRewardTable::default();
@@ -764,6 +792,36 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             assert_eq!(ended.rows_affected(), 1);
             assert!(owner.current_quest_fence(peer_session).await.map_err(|_| "secondary fence read")?.is_none());
         }
+        if mode == "overlordcr_live_conflict" {
+            use crate::durability::character_progression::CharacterProgressionError;
+            use crate::durability::spell_owner_commit::SpellLane;
+            use crate::gameplay_transport::kill_reward::TakeOutcome;
+
+            let (_, peer_session, peer_character) = overlord_peers[0];
+            let peer_fence = owner.current_quest_fence(peer_session).await
+                .map_err(|_| "secondary fence read")?.ok_or("live secondary fence")?;
+            let lease = owner.runtime.lock().await.bound_attacker_lease(actor, session).map_err(debug)?;
+            let TakeOutcome::Taken(taken) = queue.take(session, lease.generation()) else {
+                return Err("captured Overlord queue entry".into());
+            };
+            let entry = taken.entry().ok_or("captured Overlord death")?;
+            assert!(crate::gameplay_transport::quest_kill_objectives::overlord_recipients(entry)
+                .contains(&(peer_fence.character_id, peer_session, peer_fence.character_lease_generation)));
+
+            assert!(entry.boss_reward.is_some(), "capture includes private rewards");
+            seed_conflicting_overlord_receipt(h, rule, entry, peer_character).await?;
+            let lane = SpellLane::new(admitted.world_id, admitted.channel_id);
+            let permit = lane.acquire().await.map_err(|_| "spell lane")?;
+            let outcome = owner.settle_party_experience(&permit, entry).await;
+            let counts: (i64, i64, i64) = sqlx::query_as(
+                "SELECT (SELECT count(*) FROM game_boss_death_settlements),
+                        (SELECT count(*) FROM game_character_boss_reward_chests),
+                        (SELECT count(*) FROM game_party_kill_xp_receipts)",
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(counts, (0, 0, 0), "live conflict rolls back death, chests and XP");
+            assert!(matches!(outcome.map(drop), Err(CharacterProgressionError::ConflictingOccurrence)));
+            return Ok(());
+        }
         if mode == "overlordcr_atomic" {
             for statement in [
                 "CREATE SEQUENCE overlordcr_second_receipt",
@@ -1005,5 +1063,52 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
         .await?;
         assert_eq!(counts, (1, 0, 0), "the death settles quest credit alone");
     }
+    Ok(())
+}
+
+
+async fn seed_conflicting_overlord_receipt(
+    h: &Harness,
+    rule: &source_deaths::Rule,
+    entry: &crate::gameplay_transport::kill_reward::PendingKillSettlement,
+    character: [u8; 16],
+) -> TestResult {
+    use sha2::{Digest, Sha256};
+
+    // Match the captured death's receipt key while injecting a different binding.
+    let death = crate::durability::party_kill_xp::encode_death_key(entry.facts.death);
+    let hash = Sha256::new()
+        .chain_update(b"oteryn:quest-native-death:v1")
+        .chain_update(death)
+        .chain_update(character)
+        .finalize();
+    let mut occurrence: [u8; 16] = hash[..16].try_into()?;
+    occurrence[6] = (occurrence[6] & 15) | 0x70;
+    occurrence[8] = (occurrence[8] & 63) | 0x80;
+
+    // Stage a historical conflicting receipt without advancing the live Character.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+    let inserted = sqlx::query(
+        "INSERT INTO game_character_quest_receipts (
+            character_id, cause_kind, cause_id, cause_ordinal, transition_key, quest_key,
+            request_binding, pinned_content_revision, definition_hash, completes,
+            track_keys, values_before, values_after, original_character_revision,
+            committed_character_revision, level_before, level_after, experience_before,
+            experience_after, profile_revision, ruleset_revision, content_revision,
+            simulation_revision, evidence_revision, declaration_revision, policy_revision,
+            reward_revision, committed_at
+        ) SELECT character_id, 'creature_death', encode($2,'hex')::uuid, 0, $3, $4,
+            decode('00','hex'), content_revision, decode(repeat('00',32),'hex'), false,
+            ARRAY[$5::text], ARRAY[0::bigint], ARRAY[1::bigint], character_revision,
+            character_revision+1, level, level, total_experience, total_experience,
+            profile_revision, ruleset_revision, content_revision, simulation_revision,
+            evidence_revision, declaration_revision, policy_revision, reward_revision, 0
+        FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(character.as_slice()).bind(occurrence.as_slice()).bind(&rule.transition)
+    .bind(&rule.quest).bind(&rule.effects[0].track).execute(&mut *tx).await?;
+    assert_eq!(inserted.rows_affected(), 1);
+    tx.commit().await?;
     Ok(())
 }
