@@ -59,7 +59,7 @@ fn bootstrap_v4_every_vocation_first_entry_without_progression_postgres() -> Tes
                 assert_eq!(facts.level, 1);
                 assert_eq!(facts.vocation, crate::spell::Vocation::from_key(&vocation.to_lowercase()).ok_or("vocation")?);
                 assert_eq!((facts.max_health, facts.max_mana, facts.max_soul), (150, 55, 100));
-                drop(owner); drop(authority); h.cleanup().await?;
+                drop(owner); drop(authority); drop(seal); h.cleanup().await?;
             }
             Ok(())
         })
