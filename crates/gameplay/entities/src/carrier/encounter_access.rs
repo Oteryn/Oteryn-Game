@@ -402,6 +402,37 @@ impl ChannelRuntimeV1 {
         result
     }
 
+    /// Retire the exact observed roster and publish its source map effects
+    /// together. Parent retirement can already have removed one of its children.
+    pub fn commit_quest_creature_sweep(
+        &mut self,
+        roster: &[ExactActorRef],
+        project: impl FnOnce() -> bool,
+    ) -> Result<(), CarrierError> {
+        if roster
+            .iter()
+            .any(|actor| !self.contains_live_creature(*actor))
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        let before = self.carrier.clone();
+        let result = (|| {
+            for actor in roster {
+                if self.contains_live_creature(*actor) {
+                    self.remove_encounter_actor(*actor)?;
+                }
+            }
+            if !project() {
+                return Err(CarrierError::PlanConflict);
+            }
+            Ok(())
+        })();
+        if result.is_err() {
+            self.carrier = before;
+        }
+        result
+    }
+
     pub fn encounter_owner_scope(&self) -> (RuntimeScopeRefV1, ScopeOwnershipGeneration) {
         (
             self.binding.runtime_scope,

@@ -54,6 +54,9 @@ pub struct CallbackEffects {
     /// Current native occupants must be absent before a previously started stage commits.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub clear_area: Option<ClearArea>,
+    /// Remove a bounded room's current monsters while preserving its boss.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sweep_creatures: Option<CreatureSweep>,
     /// Finish this quest only through its bound, irreversible native trial.
     #[serde(default, skip_serializing_if = "is_false")]
     pub completes_quest: bool,
@@ -320,6 +323,53 @@ pub struct OfferingSpawn {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
+pub struct CreatureSweep {
+    pub minimum: Position,
+    pub maximum: Position,
+    pub except: String,
+}
+
+impl CreatureSweep {
+    pub fn contains(&self, position: Position) -> bool {
+        position.floor == self.minimum.floor
+            && (self.minimum.x..=self.maximum.x).contains(&position.x)
+            && (self.minimum.y..=self.maximum.y).contains(&position.y)
+    }
+
+    fn valid(&self, callback: &Callback) -> bool {
+        callback.trigger == Trigger::StepIn
+            && callback.actor_kind == ActorKind::Player
+            && callback
+                .selector
+                .position
+                .is_some_and(|position| self.contains(position))
+            && !callback.world_requirements.is_empty()
+            && !callback.has_state()
+            && !callback.requires_world_admission
+            && callback.teleport.is_none()
+            && callback.remote_teleport.is_none()
+            && callback.lever.is_none()
+            && !callback.reversible
+            && callback.item_on_target.is_none()
+            && callback.offerings.is_empty()
+            && callback.effects.encounter.is_none()
+            && callback.effects.scene.is_none()
+            && callback.effects.portals.is_none()
+            && callback.effects.item_cycle.is_none()
+            && callback.effects.item_presence.is_none()
+            && (-15..=0).contains(&self.minimum.floor)
+            && self.minimum.floor == self.maximum.floor
+            && self.minimum.x <= self.maximum.x
+            && self.minimum.y <= self.maximum.y
+            && self.maximum.x - self.minimum.x < 32
+            && self.maximum.y - self.minimum.y < 32
+            && self.except.starts_with("oteryn:creature.")
+            && super::super::valid_quest_key(&self.except)
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct Encounter {
     pub minimum_level: u32,
     pub players: Vec<EncounterPlayer>,
@@ -450,6 +500,13 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects
+        .sweep_creatures
+        .as_ref()
+        .is_some_and(|sweep| !sweep.valid(callback))
+    {
+        return false;
+    }
     if let Some(spawn) = &effects.offering_spawn
         && (callback.trigger != Trigger::Use
             || callback.actor_kind != ActorKind::Player

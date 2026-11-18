@@ -1542,6 +1542,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         );
                     }
                 }
+            } else if let Some(sweep) = &callback.effects.sweep_creatures {
+                // Crystal 201189f8 movements_herald_red_floors.lua:59–64.
+                // The completed plates preserve the exact Herald and remove
+                // the live monsters in the same floor's spectator bounds.
+                let Ok(census) = runtime.current_live_creature_census() else {
+                    return UseDisposition::Rejected;
+                };
+                let mut remove = Vec::new();
+                for creature in census {
+                    let Some(at) = runtime
+                        .read_actor_position(creature)
+                        .ok()
+                        .and_then(|at| native(at.position()))
+                    else {
+                        return UseDisposition::Rejected;
+                    };
+                    if sweep.contains(Position {
+                        x: at.x,
+                        y: at.y,
+                        floor: at.floor,
+                    }) && !runtime
+                        .matches_live_creature_identity(creature, sweep.except.as_bytes())
+                    {
+                        remove.push(creature);
+                    }
+                }
+                if runtime
+                    .commit_quest_creature_sweep(&remove, apply_scene)
+                    .is_err()
+                {
+                    return UseDisposition::Rejected;
+                }
             } else if let Some((spawn, health, at)) = offering_spawn {
                 if runtime
                     .commit_quest_creature_spawn_with_projection(
