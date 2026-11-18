@@ -139,7 +139,24 @@ pub(super) fn spawn_initial(
             cell(33592, 31031),
         ],
     )?;
-    let spirit = spawn_in(runtime, cells, SPIRIT, 1, [cell(33625, 31021)])?[0];
+    // Crystal force-creates the Spirit at the water tile itself.
+    let spirit_at = cell(33625, 31021);
+    cells
+        .index()
+        .lookup(
+            cells.scope(),
+            LogicalCell {
+                x: spirit_at.x,
+                y: spirit_at.y,
+                z: i32::from(spirit_at.floor),
+            },
+        )
+        .map_err(|_| CarrierError::InvalidSpawnDefinition)?;
+    if !runtime.native_summon_cell_free(spirit_at) {
+        return Err(CarrierError::InvalidSpawnDefinition);
+    }
+    let health = runtime.companion_policy(SPIRIT)?.maximum_health;
+    let spirit = runtime.commit_quest_creature_spawn(&[(SPIRIT, health, spirit_at)])?[0];
     let positions = shuffled_room(
         runtime,
         spirit.placement_identity(),
