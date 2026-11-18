@@ -45,6 +45,60 @@ fn ddepths_disjoint_achievement_use_routes_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-authored-achievement-routes")
 }
 
+pub(super) const WARZONE_PORTAL: Position = Position { x: 33460, y: 32267, floor: -15 };
+
+#[test]
+fn ddepths_warzone_portal_paced_step_checks_cooldown_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    if admin.is_empty() {
+        return Err("empty PostgreSQL admin URL".into());
+    }
+    super::qengine_rewards::scenario("qengine-rewards-ddepths-portal")
+}
+
+pub(super) async fn exercise_warzone_portal_cooldown(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use crate::gameplay_transport::capabilities::{BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities};
+    use oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1;
+    use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+    let actor = admitted.runtime_actor.ok_or("portal actor")?;
+    let session = admitted.game_session_id;
+    let fence = admitted.item_fence.ok_or("portal Character fence")?;
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        BUNDLE_WORLD_OFFERED_CAPABILITIES, &[CAPABILITY_BOSS_ENCOUNTER_V1],
+    ).ok_or("boss capability")?;
+    owner.activity_runtimes.remember(*admitted).map_err(debug)?;
+
+    let until: i64 = sqlx::query_scalar(
+        "INSERT INTO game_character_boss_cooldowns(character_id,boss_key,available_at,admission,reset_epoch)
+         VALUES(encode($1,'hex')::uuid,'oteryn:boss.the_baron_from_below',
+            floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint + 36000000,
+            encode($2,'hex')::uuid,0) RETURNING available_at"
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(super::fixture::id(92).as_slice())
+    .fetch_one(&h.pool).await?;
+
+    let origin = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?;
+    assert_eq!((origin.position().x,origin.position().y,origin.position().floor), (33459,32267,15));
+    let (outcome, _) = owner.ordinary_paced_step(actor, session, StepDirection::East, Some(origin), None).await;
+    assert_eq!(outcome.disposition, StepDisposition::Moved);
+    let returned = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?;
+    assert_eq!(returned.position(), origin.position());
+    assert!(returned.revision() > origin.revision());
+    let preserved: i64 = sqlx::query_scalar(
+        "SELECT available_at FROM game_character_boss_cooldowns WHERE character_id=encode($1,'hex')::uuid
+           AND boss_key='oteryn:boss.the_baron_from_below'",
+    ).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(preserved, until);
+    Ok(())
+}
+
 pub(super) const WARZONE_PUMP: Position = Position { x: 33673, y: 32304, floor: -15 };
 
 #[test]

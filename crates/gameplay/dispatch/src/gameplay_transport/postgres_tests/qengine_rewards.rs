@@ -28,6 +28,8 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
             name,
             if name.starts_with("qengine-rewards-qworld-phase-") {
                 super::qworld_phase_steps::SOURCE
+            } else if name == "qengine-rewards-ddepths-portal" {
+                super::authored_world_rewards::WARZONE_PORTAL
             } else if name == "qengine-rewards-ddepths-pump" {
                 super::authored_world_rewards::WARZONE_PUMP
             } else if name == "qengine-rewards-l2-white-raven" {
@@ -1116,6 +1118,12 @@ pub(super) async fn exercise(
             admitted,
             h,
             name.ends_with("-full"),
+        ))
+        .await;
+    }
+    if name == "qengine-rewards-ddepths-portal" {
+        return Box::pin(super::authored_world_rewards::exercise_warzone_portal_cooldown(
+            owner, admitted, h,
         ))
         .await;
     }
