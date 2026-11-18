@@ -131,6 +131,7 @@ enum NativeScenario {
     Timeout,
     ResetMonsters,
     SharedRewards,
+    SpectatorTransfer,
     TrophyInscription,
 }
 
@@ -195,6 +196,10 @@ pub(super) fn halvar_paid_entrance() -> TestResult {
     scenario_route(true, Some(NativeScenario::Halvar))
 }
 
+pub(super) fn spectator_transfer() -> TestResult {
+    scenario_route(true, Some(NativeScenario::SpectatorTransfer))
+}
+
 fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expire: bool) -> TestResult {
     let native_portals = route.is_some();
     let shared_rewards = matches!(route, Some(NativeScenario::SharedRewards));
@@ -229,6 +234,8 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
             fixture::bundle_with_reward_chest(native)?
         } else if halvar {
             fixture::bundle_with_halvar(native)?
+        } else if matches!(route, Some(NativeScenario::SpectatorTransfer)) {
+            fixture::bundle_with_spectator(native)?
         } else if native_portals {
             fixture::bundle_with_pillars(native)?
         } else {
@@ -371,6 +378,9 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         }
         if halvar {
             return super::qcx61_halvar::exercise(&mut owner, &mut admitted, &harness, deps.actor).await;
+        }
+        if matches!(route, Some(NativeScenario::SpectatorTransfer)) {
+            return super::qcx61_pit_spectator::exercise(&owner, admitted, &harness, deps.actor).await;
         }
         assert_eq!(
             command(&owner, &mut admitted, A::Status)

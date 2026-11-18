@@ -9,37 +9,43 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 pub(in super::super) fn bundle(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false, false, false, false)
+    bundle_layout(native, true, false, false, false, false, false)
 }
 
 pub(in super::super) fn bundle_with_pillars(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false, false, false, false)
+    bundle_layout(native, true, false, false, false, false, false)
 }
 
 pub(in super::super) fn bundle_with_pillar_floors(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, false, true, false, false, false)
+    bundle_layout(native, false, true, false, false, false, false)
 }
 
 pub(in super::super) fn bundle_with_concession(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false, true, false, false)
+    bundle_layout(native, true, false, true, false, false, false)
 }
 
 pub(in super::super) fn bundle_with_reward_chest(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false, false, true, false)
+    bundle_layout(native, true, false, false, true, false, false)
 }
 
 pub(in super::super) fn bundle_with_halvar(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true, false, false, false, true)
+    bundle_layout(native, true, false, false, false, true, false)
+}
+
+pub(in super::super) fn bundle_with_spectator(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+    bundle_layout(native, true, false, false, false, false, true)
 }
 
 fn bundle_layout(
@@ -49,6 +55,7 @@ fn bundle_layout(
     with_concession: bool,
     with_reward_chest: bool,
     with_halvar: bool,
+    with_spectator: bool,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::writer::{Extent, Sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
@@ -103,6 +110,12 @@ fn bundle_layout(
                 tiles.insert(at, tile);
             }
         }
+    }
+    if with_spectator {
+        let (x, y) = donor::CENTERS[0];
+        let mut tile = bundle.sectors[0].tiles[0].clone();
+        (tile.x, tile.y) = (u16::try_from(x)?, u16::try_from(y)?);
+        tiles.insert((tile.x, tile.y, -6), tile);
     }
     // M51 source pillars and portal Item facts, without changing production
     // definitions. Crystal svargrond_arena.lua:25-115,207-246.
