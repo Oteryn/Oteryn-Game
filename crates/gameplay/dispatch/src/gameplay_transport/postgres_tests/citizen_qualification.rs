@@ -29,6 +29,10 @@ const CITIZENS: [(u16, u32); 17] = [
 
 #[test]
 fn w23_all_citizen_uniques_and_svargrond_quest_boundary() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| scenario().map_err(|error| error.to_string()))?
@@ -129,22 +133,53 @@ fn scenario() -> TestResult {
         let mut current_town = 8;
         let mut expected_receipts = 0_i64;
         for (index, (unique, town)) in CITIZENS.into_iter().enumerate() {
-            let progress_cases: &[Option<i64>] = if town == 16 {
-                &[None, Some(7), Some(8)]
+            let progress_cases = if town == 16 {
+                &[
+                    (None, None),
+                    (Some(7), None),
+                    (Some(8), None),
+                    (Some(7), Some(8)),
+                    (None, Some(7)),
+                    (None, Some(8)),
+                ][..]
             } else {
-                &[None]
+                &[(None, None)]
             };
-            for &progress in progress_cases {
+            for &(progress, legacy) in progress_cases {
                 let started = std::time::Instant::now();
-                if let Some(progress) = progress {
-                    // Administrator seeds only the predecessor quest fact, as in npc_paid_travel.
-                    // The movement and citizenship writer below retain all runtime SQL guards.
+                if town == 16 {
+                    // Start each qualification attempt with the same existing citizenship.
+                    if current_town == town {
+                        assert_eq!(owner.home_town(session, Some((actor, 15))).await, Some(15));
+                        current_town = 15;
+                        expected_receipts += 1;
+                    }
+                    // Seed the predecessor facts while leaving the movement and citizenship
+                    // writes on their normal entry points and under their normal fences.
                     let mut tx = h.pool.begin().await?;
                     sqlx::query("SET LOCAL session_replication_role=replica")
                         .execute(&mut *tx)
                         .await?;
-                    sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,'oteryn:quest-progress/storage/41174','oteryn:quest.barbarian_test',$2,2) ON CONFLICT(character_id,track_key) DO UPDATE SET value=EXCLUDED.value")
-                        .bind(id(41).as_slice()).bind(progress).execute(&mut *tx).await?;
+                    for (track, quest, value) in [
+                        (
+                            oteryn_gameplay_quests::quest::barbarian_mead::TRACKS[0],
+                            oteryn_gameplay_quests::quest::barbarian_mead::QUEST,
+                            progress,
+                        ),
+                        (
+                            "oteryn:quest-progress/storage/41174",
+                            "oteryn:quest.barbarian_test",
+                            legacy,
+                        ),
+                    ] {
+                        if let Some(value) = value {
+                            sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,2) ON CONFLICT(character_id,track_key) DO UPDATE SET value=EXCLUDED.value")
+                                .bind(id(41).as_slice()).bind(track).bind(quest).bind(value).execute(&mut *tx).await?;
+                        } else {
+                            sqlx::query("DELETE FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
+                                .bind(id(41).as_slice()).bind(track).execute(&mut *tx).await?;
+                        }
+                    }
                     tx.commit().await?;
                 }
                 // Set up the predecessor position only; the tested step uses the real movement lane.
@@ -162,7 +197,7 @@ fn scenario() -> TestResult {
                         },
                     )
                     .map_err(debug)?;
-                let accepted = town != 16 || progress.is_some_and(|value| value >= 8);
+                let accepted = town != 16 || progress.or(legacy).is_some_and(|value| value >= 8);
                 if accepted && current_town != town {
                     current_town = town;
                     expected_receipts += 1;
@@ -179,7 +214,7 @@ fn scenario() -> TestResult {
                 assert_eq!(
                     owner.home_town(session, None).await,
                     Some(current_town),
-                    "unique {unique}, progress {progress:?}"
+                    "unique {unique}, progress {progress:?}, legacy {legacy:?}"
                 );
                 let messages = owner.states.chat.drain(session);
                 let expected = if accepted {
@@ -190,12 +225,12 @@ fn scenario() -> TestResult {
                 };
                 assert!(messages.iter().any(|line| matches!(line,
                     oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == &expected)),
-                    "unique {unique}, progress {progress:?}: {messages:?}");
+                    "unique {unique}, progress {progress:?}, legacy {legacy:?}: {messages:?}");
                 let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_home_town_receipts WHERE character_id=encode($1,'hex')::uuid")
                     .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
                 assert_eq!(receipts, expected_receipts);
                 eprintln!(
-                    "W23_POSTGRES_EXECUTED unique={unique} town={town} progress={progress:?} accepted={accepted} duration={:.3}s",
+                    "W23_POSTGRES_EXECUTED unique={unique} town={town} progress={progress:?} legacy={legacy:?} accepted={accepted} duration={:.3}s",
                     started.elapsed().as_secs_f64()
                 );
             }
