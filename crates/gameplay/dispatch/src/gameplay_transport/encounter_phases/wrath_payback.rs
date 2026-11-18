@@ -90,7 +90,6 @@ impl Registry {
         Some(self.payback.lock().ok()?.as_ref()?.deadline)
     }
 
-
     pub(super) fn payback_death(&self, runtime: &mut ChannelRuntimeV1, actor: ExactActorRef) {
         let Ok(mut room) = self.payback.lock() else {
             return;
