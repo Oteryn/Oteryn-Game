@@ -45,6 +45,7 @@ fn bootstrap_v4_every_vocation_first_entry_without_progression_postgres() -> Tes
                 source.rows.retain(|row| !matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_)));
                 let publication = AdmissionAuthorityPublicationV1::prepare(&source, now).map_err(debug)?;
                 AdmissionGuardStore::from_root(h.root.clone()).publish(&publication).await.map_err(debug)?;
+                source.rows.extend(runtime.rows.iter().cloned());
                 let session = GameSessionId::decode(&id(50)).map_err(debug)?;
                 let transport = AuthenticatedTransportRefV1::decode(&[9;16]).map_err(debug)?;
                 let request = source.activity_room_request(session, transport, &uuid(character.as_bytes()), [60;32], now)?;
