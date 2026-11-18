@@ -15,3 +15,11 @@ The corrected bones callback checks Premium on use, grants one item 20357, and r
 PG via shard (pgsplit build files applied on `027777d6d1eb257b8c870cec4edd4d8b5f4dcca3`, with the new test fixture). Baseline 0 passed, 2 failed at the intended dispatch assertions. Direct use 82.824 s, 20-hour repeat 45.318 s.
 
 PARTIAL Seasonal entry and reward guards remain held. Main's chosen-recipe format represents once and daily repeats, so the imported approximation remains historical metadata. The new timer starts with the first claim under the corrected callback.
+
+## Validation on the corrected revision
+
+- PG via shard (pgsplit build files applied on `022b74f42662b31683befc60c1555d18c5dcb4e7`). 2 passed, 0 failed. Direct use 76.068 s, 20-hour repeat 46.206 s. The repeat case also checked the loader's predecessor registration.
+- With `OTERYN_TEST_POSTGRES_ADMIN_URL` unset, the same filter on the same Cargo-built test binary returned 2 passed, 0 failed in 0.00 s. The second Cargo invocation began rebuilding dependencies after the World compiler invocation, so the route-less check reused the exact binary.
+- Quest authoring passed all 44 check invocations, including 269/269 schema cases. The reward generator and formatting checks passed.
+- World pin refresh and pin-check passed for one pin, digest `0676b1568f55a55fbe994f344a8e0c60debf766751d12849f56c19f60c93aae5`. The first refresh invocation inherited the wrapper's four-job default and was interrupted. Both completed World commands used a local Cargo shim to enforce one job.
+- Dispatch library Clippy with all features and `-D warnings` passed.
