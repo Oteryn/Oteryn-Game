@@ -135,10 +135,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .iter()
                 .any(|(_, at, session)| session.is_some() && in_room(at.position()))
         {
-            match states
-                .encounter_phases
-                .reset_vacant_library_room(runtime, key)
-            {
+            match states.encounter_phases.retire_library_room(runtime, key) {
                 Ok(true) => {
                     let Ok(current) = runtime.positioned_melee_census() else {
                         return UseDisposition::Rejected;
@@ -400,14 +397,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         drop(phases);
         if let Some((mut timers, due, revision)) = timeout {
-            timers.push(super::timed_encounter::TimedEncounter::solo(
+            timers.push(super::timed_encounter::TimedEncounter::room(
                 runtime,
                 callback.clone(),
                 map,
                 key,
                 revision,
                 due,
-                (actor, session),
+                party,
                 actors.clone(),
             ));
             states.owner_wake.notify_one();

@@ -911,10 +911,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     || (in_room(p.from) && callback.personal_room_entry() != Some(p.from))
             })
             || encounter.room_timeout.is_some_and(|timeout| {
-                !personal_encounter
-                    || callback.personal_room_entry().is_none()
-                    || !callback.has_repeating_clock()
-                    || encounter.phase.is_some()
+                !(encounter.phase == Some(EncounterPhase::Ghulosh)
+                    || (personal_encounter
+                        && callback.personal_room_entry().is_some()
+                        && callback.has_repeating_clock()
+                        && encounter.phase.is_none()))
                     || !(1..=3_600_000).contains(&timeout.after_ms)
                     || !pos(timeout.exit)
                     || in_room(timeout.exit)

@@ -17,7 +17,7 @@ pub(super) struct TimedEncounter {
     spawn_at: u64,
     reset_at: u64,
     attempted_spawn: bool,
-    entrant: Option<(ExactActorRef, GameSessionId)>,
+    entrants: Vec<(ExactActorRef, GameSessionId)>,
     spawned: Vec<ExactActorRef>,
 }
 impl TimedEncounter {
@@ -25,14 +25,14 @@ impl TimedEncounter {
         clippy::too_many_arguments,
         reason = "binds one admitted room and its owner fences"
     )]
-    pub(super) fn solo(
+    pub(super) fn room(
         runtime: &ChannelRuntimeV1,
         callback: Callback,
         map: &BundleMap,
         key: u64,
         revision: u64,
         reset_at: u64,
-        entrant: (ExactActorRef, GameSessionId),
+        entrants: Vec<(ExactActorRef, GameSessionId)>,
         spawned: Vec<ExactActorRef>,
     ) -> Self {
         Self {
@@ -45,13 +45,13 @@ impl TimedEncounter {
             spawn_at: reset_at,
             reset_at,
             attempted_spawn: true,
-            entrant: Some(entrant),
+            entrants,
             spawned,
         }
     }
 
     pub(super) fn retire(mut self, runtime: &mut ChannelRuntimeV1) {
-        if self.entrant.is_some() && self.scope == runtime.encounter_owner_scope() {
+        if !self.entrants.is_empty() && self.scope == runtime.encounter_owner_scope() {
             super::personal_trial::cleanup(runtime, &mut self.spawned);
         }
     }
@@ -157,7 +157,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             spawn_at,
             reset_at,
             attempted_spawn: false,
-            entrant: None,
+            entrants: Vec::new(),
             spawned: Vec::new(),
         });
         states.owner_wake.notify_one();
@@ -204,49 +204,60 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 pending.remove(index);
                 continue;
             };
-            if let Some(((actor, session), timeout)) = memo.entrant.zip(encounter.room_timeout) {
-                let at = runtime.read_actor_position(actor).ok().filter(|snapshot| {
-                    runtime.player_control_facts(actor, session).is_ok()
-                        && in_room(encounter, snapshot.position())
-                });
-                if let Some(at) = at {
-                    let closed = crate::map::floor::BundleDoors(&map.facts);
-                    let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
-                        &runtime,
-                        &self.movement_cells,
-                        actor,
-                        session,
-                        at,
-                        local(timeout.exit),
-                        false,
-                        &closed,
-                    ) else {
-                        index += 1;
-                        continue;
-                    };
-                    let Ok(moved) = runtime.commit_source_step(proof) else {
-                        index += 1;
-                        continue;
-                    };
-                    states.stage_special_movement_step(
-                        &runtime,
-                        map,
-                        actor,
-                        session,
-                        now,
-                        Some(at.position()),
-                        moved.position(),
-                        None,
-                    );
-                    states.stage_underwater_step(
-                        &runtime,
-                        actor,
-                        session,
-                        now,
-                        underwater(map, at.position()),
-                        underwater(map, moved.position()),
-                    );
-                    map.facts.emit_movement_effect(tile(timeout.exit), 11);
+            if let Some(timeout) = encounter.room_timeout {
+                let mut retry = false;
+                for &(actor, session) in &memo.entrants {
+                    let at = runtime.read_actor_position(actor).ok().filter(|snapshot| {
+                        runtime.player_control_facts(actor, session).is_ok()
+                            && in_room(encounter, snapshot.position())
+                    });
+                    if let Some(at) = at {
+                        let closed = crate::map::floor::BundleDoors(&map.facts);
+                        let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
+                            &runtime,
+                            &self.movement_cells,
+                            actor,
+                            session,
+                            at,
+                            local(timeout.exit),
+                            &closed,
+                        ) else {
+                            retry = true;
+                            continue;
+                        };
+                        let Ok(moved) = runtime.commit_source_step(proof) else {
+                            retry = true;
+                            continue;
+                        };
+                        states.stage_special_movement_step(
+                            &runtime,
+                            map,
+                            actor,
+                            session,
+                            now,
+                            Some(at.position()),
+                            moved.position(),
+                            None,
+                        );
+                        states.stage_underwater_step(
+                            &runtime,
+                            actor,
+                            session,
+                            now,
+                            underwater(map, at.position()),
+                            underwater(map, moved.position()),
+                        );
+                        map.facts.emit_movement_effect(tile(timeout.exit), 11);
+                    }
+                }
+                if retry
+                    || states
+                        .encounter_phases
+                        .retire_library_room(&mut runtime, memo.key)
+                        .is_err()
+                {
+                    index += 1;
+                    continue;
                 }
                 super::personal_trial::cleanup(&mut runtime, &mut memo.spawned);
                 pending.remove(index);

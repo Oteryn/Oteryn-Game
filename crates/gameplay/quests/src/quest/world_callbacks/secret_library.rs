@@ -71,7 +71,8 @@ pub(super) fn ghulosh() -> Result<super::Callback, String> {
             ],
             "room_min":at(32748,32713),
             "room_max":at(32763,32729),
-            "phase":"library_ghulosh"
+            "phase":"library_ghulosh",
+            "room_timeout":{"after_ms":1200000,"exit":{"x":32660,"y":32713,"floor":-13}}
         }},
         "sources": [
             concat!("crystal:201189f871d23597b82caf88fd611454a2ddefb8:",

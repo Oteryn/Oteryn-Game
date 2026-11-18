@@ -122,8 +122,8 @@ impl Registry {
         Ok(active)
     }
 
-    /// The caller has proved the room vacant with the same Channel lock held.
-    pub(super) fn reset_vacant_library_room(
+    /// Retire the exact phase actors after the room clears or its admission expires.
+    pub(super) fn retire_library_room(
         &self,
         runtime: &mut ChannelRuntimeV1,
         key: u64,
