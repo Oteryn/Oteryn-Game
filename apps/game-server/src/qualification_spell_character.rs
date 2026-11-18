@@ -193,6 +193,33 @@ pub(super) async fn prepare_character_with_policy<const N: usize>(
     .await
 }
 
+fn profile_occurrence(seed: [u8; 16], vocation: &str, level: u32) -> [u8; 16] {
+    use sha2::{Digest, Sha256};
+    let digest = Sha256::new()
+        .chain_update(b"oteryn:qualification-build-profile:v1")
+        .chain_update(seed)
+        .chain_update(level.to_be_bytes())
+        .chain_update(vocation.as_bytes())
+        .finalize();
+    let mut occurrence = [0; 16];
+    occurrence.copy_from_slice(&digest[..16]);
+    occurrence[6] = (occurrence[6] & 0x0f) | 0x70;
+    occurrence[8] = (occurrence[8] & 0x3f) | 0x80;
+    occurrence
+}
+
+#[cfg(test)]
+mod qualification_next_round_profile_tests {
+    #[test]
+    fn qualification_next_round_profile_occurrences_bind_the_build() {
+        let seed = [7; 16];
+        let victim = super::profile_occurrence(seed, "none", 100);
+        assert_ne!(victim, super::profile_occurrence(seed, "knight", 100));
+        assert_ne!(victim, super::profile_occurrence(seed, "none", 101));
+        assert_eq!(victim, super::profile_occurrence(seed, "none", 100));
+    }
+}
+
 pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -207,9 +234,18 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     {
         return Err("qualification requires a base vocation and source level 1..1000".into());
     }
-    let xp_occurrence =
-        ExperienceRewardOccurrence::from_bytes(spec.xp_occurrence).map_err(debug)?;
-    let build_occurrence = BuildOccurrence::from_bytes(spec.build_occurrence).map_err(debug)?;
+    let xp_occurrence = ExperienceRewardOccurrence::from_bytes(profile_occurrence(
+        spec.xp_occurrence,
+        spec.vocation,
+        spec.level,
+    ))
+    .map_err(debug)?;
+    let build_occurrence = BuildOccurrence::from_bytes(profile_occurrence(
+        spec.build_occurrence,
+        spec.vocation,
+        spec.level,
+    ))
+    .map_err(debug)?;
     let QualificationBuildSpec {
         vocation,
         level,

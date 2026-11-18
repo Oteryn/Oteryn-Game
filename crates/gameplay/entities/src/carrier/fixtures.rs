@@ -100,33 +100,7 @@ impl ChannelRuntimeV1 {
         // are checked separately so qualification cannot displace another owner.
         self.positioned_actor_census()?;
         let context = self.pinned_position_context();
-        let cell = LocalPosition {
-            x: position.x,
-            y: position.y,
-            floor: position.floor,
-        };
-        if self.carrier.cell_occupied(context, cell)
-            || self.carrier.slots.iter().any(|slot| match slot {
-                Slot::Occupied {
-                    committed: true,
-                    position: None,
-                    ..
-                }
-                | Slot::CreatureOccupied { position: None, .. }
-                | Slot::Occupied {
-                    committed: false, ..
-                } => true,
-                Slot::Occupied { spell_combat, .. }
-                | Slot::CreatureOccupied { spell_combat, .. } => spell_combat
-                    .pending_owner
-                    .as_ref()
-                    .and_then(|p| p.destination())
-                    .is_some_and(|(_, destination)| destination == position),
-                _ => false,
-            })
-        {
-            return Err(CarrierError::PlanConflict);
-        }
+        self.qualification_cell_unreserved(position)?;
         let definition = SpawnDefinition::new(
             vec![(position.x, position.y, position.floor)],
             1,
@@ -158,6 +132,42 @@ impl ChannelRuntimeV1 {
         }
         result
     }
+    #[cfg(any(test, feature = "test-support"))]
+    fn qualification_cell_unreserved(
+        &self,
+        position: MovementLocalPosition,
+    ) -> Result<(), CarrierError> {
+        let context = self.pinned_position_context();
+        let cell = LocalPosition {
+            x: position.x,
+            y: position.y,
+            floor: position.floor,
+        };
+        if self.carrier.cell_occupied(context, cell)
+            || self.carrier.slots.iter().any(|slot| match slot {
+                Slot::Occupied {
+                    committed: true,
+                    position: None,
+                    ..
+                }
+                | Slot::CreatureOccupied { position: None, .. }
+                | Slot::Occupied {
+                    committed: false, ..
+                } => true,
+                Slot::Occupied { spell_combat, .. }
+                | Slot::CreatureOccupied { spell_combat, .. } => spell_combat
+                    .pending_owner
+                    .as_ref()
+                    .and_then(|p| p.destination())
+                    .is_some_and(|(_, destination)| destination == position),
+                _ => false,
+            })
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        Ok(())
+    }
+
     /// One-shot qualification encounter. The caller has fenced the exact qualified
     /// cell; the ordinary masterless owner still enforces pin, policy and occupancy.
     #[cfg(any(test, feature = "test-support"))]
@@ -172,6 +182,7 @@ impl ChannelRuntimeV1 {
             return Err(CarrierError::ContentPinWorldMismatch);
         }
         self.positioned_actor_census()?;
+        self.qualification_cell_unreserved(position)?;
         let policy = self.companion_policy(definition_key)?;
         if policy.is_familiar {
             return Err(CarrierError::InvalidCreatureTarget);

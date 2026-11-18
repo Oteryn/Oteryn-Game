@@ -253,77 +253,89 @@ async fn place(
     let fence = wild_spawn::SpawnRefusal::Fence;
     let session = crate::foundation::GameSessionId::decode(&session)
         .map_err(|_| wild_spawn::SpawnRefusal::SessionUnknown)?;
-    let source = wild_spawn::next_command_source()?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
     let mut specimens = owners.specimens.lock().await;
-    let ((plan, character), (permit, mut holder)) = prepare_and_checkout(
+    retry_publication(
         owners.runtime,
-        |mut runtime| {
-            let (actor, _) = runtime
-                .positioned_player_for_session(session)
-                .map_err(|error| fence(format!("spawn player: {error:?}")))?
-                .ok_or(wild_spawn::SpawnRefusal::SessionUnknown)?;
-            let lease = runtime
-                .bound_attacker_lease(actor, session)
-                .map_err(|error| fence(format!("spawn lease: {error:?}")))?;
-            let character = *lease.character_id().as_bytes();
-            cleanup_specimens(&mut runtime, &mut specimens, |specimen| {
-                specimen.character == character
-            })?;
-            Ok((
-                wild_spawn::prepare_placement_adjacent(
-                    owners.room,
-                    native,
-                    &mut runtime,
-                    key,
-                    session,
-                )?,
-                character,
-            ))
-        },
-        async |(plan, _)| {
-            let permit =
-                crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_scope(plan.scope)
+        deadline,
+        async || {
+            let ((plan, character), (permit, mut holder)) = prepare_and_checkout(
+                owners.runtime,
+                |mut runtime| {
+                    let (actor, _) = runtime
+                        .positioned_player_for_session(session)
+                        .map_err(|error| fence(format!("spawn player: {error:?}")))?
+                        .ok_or(wild_spawn::SpawnRefusal::SessionUnknown)?;
+                    let lease = runtime
+                        .bound_attacker_lease(actor, session)
+                        .map_err(|error| fence(format!("spawn lease: {error:?}")))?;
+                    let character = *lease.character_id().as_bytes();
+                    cleanup_specimens(&mut runtime, &mut specimens, |specimen| {
+                        specimen.character == character
+                    })?;
+                    Ok((
+                        wild_spawn::prepare_placement_adjacent(
+                            owners.room,
+                            native,
+                            &mut runtime,
+                            key,
+                            session,
+                        )?,
+                        character,
+                    ))
+                },
+                async |(plan, _)| {
+                    let permit =
+                        crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_scope(
+                            plan.scope,
+                        )
+                        .await
+                        .map_err(|error| fence(format!("spawn lane: {error:?}")))?;
+                    let holder = qualification_build::retry_holder(
+                        Some(root),
+                        deadline,
+                        |error| matches!(error, DurabilityError::RootUnavailable),
+                        async || root.try_acquire_ready(),
+                    )
                     .await
-                    .map_err(|error| fence(format!("spawn lane: {error:?}")))?;
-            let holder = qualification_build::retry_holder(
-                Some(root),
-                deadline,
-                |error| matches!(error, DurabilityError::RootUnavailable),
-                async || root.try_acquire_ready(),
+                    .map_err(|error| fence(format!("spawn holder: {error:?}")))?;
+                    Ok((permit, holder))
+                },
+            )
+            .await?;
+            let mut tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(
+                &mut holder,
+                deadline.into_std(),
             )
             .await
-            .map_err(|error| fence(format!("spawn holder: {error:?}")))?;
-            Ok((permit, holder))
+            .map_err(|error| fence(format!("qualification spawn transaction: {error:?}")))?;
+            let eligible =
+                wild_spawn::validate_placement(&mut tx, root, authority, proof, &permit, &plan)
+                    .await?;
+            if tokio::time::Instant::now() >= deadline {
+                return Err(wild_spawn::SpawnRefusal::Deadline);
+            }
+            // Busy returns from this attempt, dropping SQL and the holder before the retry waits.
+            let Ok(mut runtime) = owners.runtime.try_lock() else {
+                return Ok(None);
+            };
+            let creature = wild_spawn::publish_placement(&mut runtime, key, &plan, &eligible)?;
+            specimens.push(QualificationSpecimen {
+                session: *session.as_bytes(),
+                character,
+                actor: creature.actor,
+                key: key.to_owned(),
+                content: runtime.content_pin().server_artifact_digest(),
+            });
+            *published = Some(creature.clone());
+            drop(runtime);
+            // The spawn is runtime state, not a SQL mutation; the transaction only held the fences.
+            drop(tx);
+            Ok(Some(creature))
         },
-    )
-    .await?;
-    let mut tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(
-        &mut holder,
-        deadline.into_std(),
+        || wild_spawn::SpawnRefusal::Deadline,
     )
     .await
-    .map_err(|error| fence(format!("qualification spawn transaction: {error:?}")))?;
-    let eligible =
-        wild_spawn::validate_placement(&mut tx, root, authority, proof, &permit, &plan).await?;
-    // Never wait for the runtime while the sole durability holder is checked out.
-    let mut runtime = owners
-        .runtime
-        .try_lock()
-        .map_err(|_| fence("spawn runtime busy; retry from a new plan".into()))?;
-    let creature = wild_spawn::publish_placement(&mut runtime, key, source, &plan, &eligible)?;
-    specimens.push(QualificationSpecimen {
-        session: *session.as_bytes(),
-        character,
-        actor: creature.actor,
-        key: key.to_owned(),
-        content: runtime.content_pin().server_artifact_digest(),
-    });
-    *published = Some(creature.clone());
-    drop(runtime);
-    // The spawn is runtime state, not a SQL mutation; the transaction only held the fences.
-    drop(tx);
-    Ok(creature)
 }
 
 #[cfg(any(test, feature = "qualification-spawn"))]
@@ -361,6 +373,29 @@ fn classify_spawn_publication<T>(
                 "no publication witness".into(),
             ))
         }),
+    }
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+async fn retry_publication<T, R, E>(
+    runtime: &Mutex<T>,
+    deadline: tokio::time::Instant,
+    mut attempt: impl AsyncFnMut() -> Result<Option<R>, E>,
+    expired: impl Fn() -> E,
+) -> Result<R, E> {
+    loop {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(expired());
+        }
+        if let Some(published) = attempt().await? {
+            return Ok(published);
+        }
+        // The attempt owns and drops every transaction/holder before it returns Busy.
+        // Wait without either, then rebuild and revalidate the complete placement plan.
+        let available = tokio::time::timeout_at(deadline, runtime.lock())
+            .await
+            .map_err(|_| expired())?;
+        drop(available);
     }
 }
 
@@ -429,11 +464,20 @@ fn profile_build(profile: &str) -> (&str, u32) {
     }
 }
 
-// Session-scoped command identities survive a control socket retry of the same workflow.
-fn fixture_occurrence(session: crate::foundation::GameSessionId, stage: u8) -> [u8; 16] {
-    let mut bytes = *session.as_bytes();
-    bytes[0] ^= stage;
-    bytes
+// The session, named profile and stage identify one retryable control workflow.
+fn fixture_occurrence(session: &[u8; 16], profile: &str, stage: u8) -> [u8; 16] {
+    use sha2::{Digest, Sha256};
+    let digest = Sha256::new()
+        .chain_update(b"oteryn:qualification-control-profile:v1")
+        .chain_update(session)
+        .chain_update([stage])
+        .chain_update(profile.as_bytes())
+        .finalize();
+    let mut occurrence = [0; 16];
+    occurrence.copy_from_slice(&digest[..16]);
+    occurrence[6] = (occurrence[6] & 0x0f) | 0x70;
+    occurrence[8] = (occurrence[8] & 0x3f) | 0x80;
+    occurrence
 }
 
 async fn prepare_build(
@@ -497,8 +541,8 @@ async fn prepare_build(
             vocation,
             level,
             context,
-            xp_occurrence: fixture_occurrence(session, 1),
-            build_occurrence: fixture_occurrence(session, 2),
+            xp_occurrence: fixture_occurrence(session.as_bytes(), profile, 1),
+            build_occurrence: fixture_occurrence(session.as_bytes(), profile, 2),
         },
         policy,
         deadline,
@@ -654,6 +698,17 @@ mod tests {
         assert_eq!(rendered.lines().count(), 1);
     }
 
+    #[test]
+    fn qualification_next_round_named_profiles_have_distinct_workflows() {
+        let session = [7; 16];
+        let victim = fixture_occurrence(&session, "victim", 1);
+        let knight = fixture_occurrence(&session, "knight", 1);
+        assert_ne!(victim, knight);
+        assert_ne!(knight, fixture_occurrence(&session, "explorer", 1));
+        assert_ne!(knight, fixture_occurrence(&session, "knight", 2));
+        assert_eq!(knight, fixture_occurrence(&session, "knight", 1));
+    }
+
     #[tokio::test]
     async fn qualification_spawn_never_checks_out_the_holder_while_waiting_for_runtime()
     -> Result<(), Box<dyn std::error::Error>> {
@@ -684,6 +739,96 @@ mod tests {
         drop(blocked);
         preparing.await?;
         assert!(checked_out.load(Ordering::SeqCst));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn qualification_next_round_runtime_busy_retries_without_holder()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use std::cell::Cell;
+        let runtime = Mutex::new(0u32);
+        let blocked = runtime.lock().await;
+        let holding = Cell::new(false);
+        let attempts = Cell::new(0u32);
+        let mut operation = Box::pin(retry_publication(
+            &runtime,
+            tokio::time::Instant::now() + Duration::from_secs(1),
+            async || {
+                attempts.set(attempts.get() + 1);
+                holding.set(true);
+                let result = match runtime.try_lock() {
+                    Ok(mut value) => {
+                        *value += 1;
+                        Some(*value)
+                    }
+                    Err(_) => None,
+                };
+                holding.set(false);
+                Ok::<_, String>(result)
+            },
+            || "publication deadline".to_owned(),
+        ));
+        let first = std::future::poll_fn(|cx| {
+            std::task::Poll::Ready(std::future::Future::poll(operation.as_mut(), cx))
+        })
+        .await;
+        assert!(
+            first.is_pending(),
+            "transient contention must retry, not refuse"
+        );
+        assert!(!holding.get(), "the holder must be dropped before waiting");
+        drop(blocked);
+        assert_eq!(operation.await?, 1);
+        assert_eq!(attempts.get(), 2);
+        assert_eq!(*runtime.lock().await, 1);
+        Ok(())
+    }
+
+    #[test]
+    fn qualification_next_round_production_publication_has_no_await_boundary()
+    -> Result<(), Box<dyn std::error::Error>> {
+        // Check the real production attempt, rather than just an ordering helper.
+        // A synchronous runtime acquisition and tail are required while SQL is held.
+        let source = include_str!("qualification_fixture.rs");
+        let place = source
+            .split_once("async fn place(")
+            .ok_or("place")?
+            .1
+            .split_once("fn cleanup_specimens(")
+            .ok_or("cleanup")?
+            .0;
+        assert!(
+            !place.contains("next_command_source"),
+            "one-shot placement has no source-id budget"
+        );
+        let after_validation = place
+            .split_once("wild_spawn::validate_placement(")
+            .ok_or("validation")?
+            .1
+            .split_once(".await?;")
+            .ok_or("validation await")?
+            .1;
+        let acquisition = after_validation
+            .split_once("let creature =")
+            .ok_or("publication")?
+            .0;
+        assert!(acquisition.contains("owners.runtime.try_lock()"));
+        assert!(
+            !acquisition.contains(".await"),
+            "runtime waiting must release SQL first"
+        );
+        let publication = after_validation
+            .split_once("wild_spawn::publish_placement(")
+            .ok_or("publication")?
+            .1
+            .split_once("Ok(Some(creature))")
+            .ok_or("witness")?
+            .0;
+        assert!(
+            !publication.contains(".await"),
+            "publication must have a synchronous tail"
+        );
+        assert!(publication.contains("*published = Some(creature.clone())"));
         Ok(())
     }
 

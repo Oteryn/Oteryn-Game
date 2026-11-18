@@ -10,7 +10,6 @@ use crate::foundation::{
 };
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
-use std::sync::atomic::{AtomicU16, Ordering};
 
 #[cfg(test)]
 pub(crate) const POSITION: MovementLocalPosition = MovementLocalPosition {
@@ -22,10 +21,6 @@ pub(crate) const POSITION: MovementLocalPosition = MovementLocalPosition {
 pub(crate) const DECLARATION: &str = "oteryn:qualification.spawn/thalom-rat-r1";
 #[cfg(test)]
 const RAT_KEY: &str = "canary:creature/rat";
-
-/// Spawn source ids of the `spawn` control command; the harness Rat keeps `u16::MAX`.
-const FIRST_COMMAND_SOURCE: u16 = 40_000;
-static NEXT_COMMAND_SOURCE: AtomicU16 = AtomicU16::new(FIRST_COMMAND_SOURCE);
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum SpawnRefusal {
@@ -67,15 +62,6 @@ impl SpawnRefusal {
     }
 }
 
-/// A fresh spawn source id for one `spawn` command.
-pub(crate) fn next_command_source() -> Result<u16, SpawnRefusal> {
-    NEXT_COMMAND_SOURCE
-        .try_update(Ordering::Relaxed, Ordering::Relaxed, |next| {
-            (next < u16::MAX - 1).then_some(next + 1)
-        })
-        .map_err(|_| SpawnRefusal::Fence("qualification spawn sources exhausted".into()))
-}
-
 /// The eight neighbours of `center` on its floor, orthogonal first, in a fixed order.
 pub(crate) fn adjacent_cells(center: MovementLocalPosition) -> Vec<MovementLocalPosition> {
     [
@@ -104,7 +90,6 @@ pub(crate) fn adjacent_cells(center: MovementLocalPosition) -> Vec<MovementLocal
 pub(crate) fn place_first(
     runtime: &mut ChannelRuntimeV1,
     pin: &ChannelContentPin,
-    _source: u16,
     key: &str,
     candidates: &[MovementLocalPosition],
 ) -> Result<CompanionSnapshot, SpawnRefusal> {
@@ -155,7 +140,6 @@ pub(crate) async fn realize_rat_in_transaction(
         native,
         runtime,
         RAT_KEY,
-        u16::MAX,
         Placement::Fixed(POSITION),
     )
     .await
@@ -173,7 +157,6 @@ async fn realize_in_transaction(
     native: &NativeGameplayState,
     runtime: &mut ChannelRuntimeV1,
     key: &str,
-    source: u16,
     placement: Placement,
 ) -> Result<CompanionSnapshot, SpawnRefusal> {
     let plan = prepare_placement(room, native, runtime, key, placement)?;
@@ -181,7 +164,7 @@ async fn realize_in_transaction(
         .await
         .map_err(|error| SpawnRefusal::Fence(format!("spawn scope lane: {error:?}")))?;
     let eligible = validate_placement(tx, root, recovery, node, &permit, &plan).await?;
-    publish_placement(runtime, key, source, &plan, &eligible)
+    publish_placement(runtime, key, &plan, &eligible)
 }
 
 pub(crate) struct PreparedSpawn {
@@ -323,7 +306,6 @@ pub(crate) async fn validate_placement(
 pub(crate) fn publish_placement(
     runtime: &mut ChannelRuntimeV1,
     key: &str,
-    source: u16,
     plan: &PreparedSpawn,
     eligible: &[MovementLocalPosition],
 ) -> Result<CompanionSnapshot, SpawnRefusal> {
@@ -345,7 +327,7 @@ pub(crate) fn publish_placement(
             ));
         }
     }
-    place_first(runtime, &plan.pin, source, key, eligible)
+    place_first(runtime, &plan.pin, key, eligible)
 }
 
 /// The qualified tile and source-metadata rules of one spawn cell.
@@ -499,14 +481,8 @@ mod tests {
     fn qualification_creatures_do_not_register_a_respawning_source()
     -> Result<(), Box<dyn std::error::Error>> {
         let (mut runtime, pin, _session) = runtime_with_player();
-        let body = place_first(
-            &mut runtime,
-            &pin,
-            40_000,
-            SPIDER,
-            &adjacent_cells(PLAYER_AT),
-        )
-        .map_err(|error| format!("{error:?}"))?;
+        let body = place_first(&mut runtime, &pin, SPIDER, &adjacent_cells(PLAYER_AT))
+            .map_err(|error| format!("{error:?}"))?;
         runtime
             .remove_native_qualification_once(body.actor, SPIDER, pin.server_artifact_digest())
             .map_err(|error| format!("{error:?}"))?;
@@ -532,13 +508,13 @@ mod tests {
         assert_eq!(actor.position(), PLAYER_AT);
         let cells = adjacent_cells(actor.position());
         assert_eq!(cells.len(), 8);
-        let first = place_first(&mut runtime, &pin, 40_000, SPIDER, &cells).expect("first spawn");
+        let first = place_first(&mut runtime, &pin, SPIDER, &cells).expect("first spawn");
         assert_eq!(first.state.policy.definition_key, SPIDER);
         assert!(first.state.master.is_none());
         assert_eq!(first.position, cells[0]);
         assert!(adjacent(PLAYER_AT, first.position));
         // The first cell is now occupied, so the next creature takes the next free neighbour.
-        let second = place_first(&mut runtime, &pin, 40_001, SPIDER, &cells).expect("second spawn");
+        let second = place_first(&mut runtime, &pin, SPIDER, &cells).expect("second spawn");
         assert_eq!(second.position, cells[1]);
         assert!(adjacent(PLAYER_AT, second.position));
         assert_ne!(

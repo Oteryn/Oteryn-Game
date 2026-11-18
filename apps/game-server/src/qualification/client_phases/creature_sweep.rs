@@ -161,7 +161,6 @@ struct Rows<'a> {
     kill_seconds: Option<f64>,
     /// The error of a failed setup (logout, release or admission); the sweep recovers from it.
     setup_error: Option<String>,
-    spawn_session: Option<String>,
     dps: Option<f64>,
 }
 
@@ -174,7 +173,6 @@ impl<'a> Rows<'a> {
             counts: Tally::default(),
             kill_seconds: None,
             setup_error: None,
-            spawn_session: None,
             dps,
         }
     }
@@ -536,24 +534,31 @@ pub(super) async fn run(
         calibration.short = calibration_short("cyclops", attempt);
         last = "no-kill-measurement".to_owned();
         let mut outcome = SweepOutcome::default();
-        let indexed_result = verdict::indexed_advisory(
-            Box::leak(format!("CS.{}.full", calibration.short).into_boxed_str()),
-            Box::pin(async {
-                let result = sweep_species(
-                    clients,
-                    world,
-                    &items,
-                    &calibration,
-                    &mut session,
-                    &mut calibration_tally,
-                    &mut outcome,
+        let indexed_result = finish_indexed_sweep(
+            &mut outcome,
+            async |outcome| {
+                verdict::indexed_advisory(
+                    Box::leak(format!("CS.{}.full", calibration.short).into_boxed_str()),
+                    Box::pin(async {
+                        let result = sweep_species(
+                            clients,
+                            world,
+                            &items,
+                            &calibration,
+                            &mut session,
+                            &mut calibration_tally,
+                            outcome,
+                        )
+                        .await;
+                        if let Err(error) = &result {
+                            last = recover_cause(&error.to_string());
+                        }
+                        result
+                    }),
                 )
-                .await;
-                if let Err(error) = &result {
-                    last = recover_cause(&error.to_string());
-                }
-                result
-            }),
+                .await
+            },
+            cleanup_control,
         )
         .await;
         calibration_tally.fail = accounted_failures(
@@ -659,17 +664,24 @@ pub(super) async fn run(
         let started = std::time::Instant::now();
         let mut outcome = SweepOutcome::default();
         attempted += 1;
-        let indexed_result = verdict::indexed_checked(
-            scenario,
-            Box::pin(sweep_species(
-                clients,
-                world,
-                &items,
-                &species,
-                &mut session,
-                &mut tally,
-                &mut outcome,
-            )),
+        let indexed_result = finish_indexed_sweep(
+            &mut outcome,
+            async |outcome| {
+                verdict::indexed_checked(
+                    scenario,
+                    Box::pin(sweep_species(
+                        clients,
+                        world,
+                        &items,
+                        &species,
+                        &mut session,
+                        &mut tally,
+                        outcome,
+                    )),
+                )
+                .await
+            },
+            cleanup_control,
         )
         .await;
         tally.fail = accounted_failures(tally.fail, outcome.completed, indexed_result.is_err());
@@ -782,6 +794,41 @@ struct SweepOutcome {
     passed: bool,
     kill_seconds: Option<f64>,
     setup_error: Option<String>,
+    cleanup_session: Option<String>,
+}
+
+async fn finish_indexed_sweep(
+    outcome: &mut SweepOutcome,
+    run: impl AsyncFnOnce(&mut SweepOutcome) -> TestResult,
+    cleanup: impl AsyncFnMut(String) -> Result<String, String>,
+) -> TestResult {
+    let result = run(outcome).await;
+    let cleaned = cleanup_ticket(&mut outcome.cleanup_session, cleanup).await;
+    match (result, cleaned) {
+        (Err(error), Err(cleanup)) => Err(format!("{error}; specimen cleanup:{cleanup}").into()),
+        (Err(error), Ok(())) => Err(error),
+        (Ok(()), Err(cleanup)) => Err(format!("specimen cleanup:{cleanup}").into()),
+        (Ok(()), Ok(())) => Ok(()),
+    }
+}
+
+async fn cleanup_ticket(
+    ticket: &mut Option<String>,
+    mut cleanup: impl AsyncFnMut(String) -> Result<String, String>,
+) -> Result<(), String> {
+    if let Some(session) = ticket.clone() {
+        let answer = cleanup(session).await?;
+        if answer != "cleaned" {
+            return Err(format!("cleanup refused: {answer}"));
+        }
+        *ticket = None;
+    }
+    Ok(())
+}
+
+async fn cleanup_control(session: String) -> Result<String, String> {
+    verdict::Harness::global().progress("creature-sweep-cleanup");
+    request_spawn(session, "cleanup".into()).await
 }
 
 async fn sweep_species(
@@ -796,7 +843,17 @@ async fn sweep_species(
     let started = std::time::Instant::now();
     let mut rows = Rows::new(&species.short, species.dps);
     let mut journey_error = None;
-    if let Err(stop) = Box::pin(hunt(clients, world, items, species, session, &mut rows)).await {
+    if let Err(stop) = Box::pin(hunt(
+        clients,
+        world,
+        items,
+        species,
+        session,
+        &mut rows,
+        &mut outcome.cleanup_session,
+    ))
+    .await
+    {
         journey_error = Some(if stop.step == "spawn" {
             spawn_error(&stop)
         } else {
@@ -808,18 +865,15 @@ async fn sweep_species(
         rows.fail(stop.step, stop.cause, &stop.detail);
         rows.block_rest(stop.step);
     }
-    if let Some(spawn_session) = rows.spawn_session.take() {
-        verdict::Harness::global().progress("creature-sweep-cleanup");
-        if let Err(error) = request_spawn(spawn_session, "cleanup".into()).await {
-            rows.counts.fail += 1;
-            evidence(&format!(
-                "creature_sweep cleanup species={} status=FAIL evidence={}",
-                species.short,
-                token(&error)
-            ));
-            if journey_error.is_none() {
-                journey_error = Some(format!("specimen cleanup:{error}").into());
-            }
+    if let Err(error) = cleanup_ticket(&mut outcome.cleanup_session, cleanup_control).await {
+        rows.counts.fail += 1;
+        evidence(&format!(
+            "creature_sweep cleanup species={} status=FAIL evidence={}",
+            species.short,
+            token(&error)
+        ));
+        if journey_error.is_none() {
+            journey_error = Some(format!("specimen cleanup:{error}").into());
         }
     }
     outcome.kill_seconds = rows.kill_seconds;
@@ -1150,46 +1204,58 @@ fn death_identity(key: &[u8], domain: &[u8]) -> Option<[u8; 16]> {
     Some(identity)
 }
 
+async fn read_death_settlement(
+    connection: &mut sqlx::PgConnection,
+    character: [u8; 16],
+    target: oteryn_dev_client::EntityRef,
+) -> TestResult<Option<DeathSettlement>> {
+    use sqlx::Row;
+    let rows = sqlx::query("SELECT r.death_key,m.xp_awarded,p.total_experience FROM game_party_kill_xp_receipts r JOIN game_party_kill_xp_members m USING(death_key) JOIN game_character_progression_state p ON p.character_id=m.character_id WHERE m.character_id=encode($1,'hex')::uuid AND octet_length(r.death_key)=52 AND substring(sha256($2::bytea || r.death_key) from 1 for 16)=$3::bytea AND substring(r.death_key from 45 for 8)=$4::bytea LIMIT 1")
+        .bind(character.as_slice())
+        .bind(b"oteryn:runtime-player-placement:v1".as_slice())
+        .bind(target.identity.as_slice())
+        .bind(target.generation.to_be_bytes().as_slice())
+        .fetch_all(connection).await?;
+    for row in rows {
+        let key: Vec<u8> = row.try_get("death_key")?;
+        if death_identity(&key, b"oteryn:runtime-player-placement:v1") != Some(target.identity)
+            || key
+                .get(44..52)
+                .and_then(|bytes| bytes.try_into().ok())
+                .map(u64::from_be_bytes)
+                != Some(target.generation)
+        {
+            continue;
+        }
+        return Ok(Some(DeathSettlement {
+            corpse: death_identity(&key, b"oteryn:runtime-corpse-placement:v1")
+                .ok_or("invalid death key")?,
+            award: u64::try_from(row.try_get::<i64, _>("xp_awarded")?)?,
+            total: u64::try_from(row.try_get::<i64, _>("total_experience")?)?,
+        }));
+    }
+    Ok(None)
+}
+
 async fn death_settlement(
     clients: &SeamClients<'_>,
     client: &mut DevClientSession,
     target: oteryn_dev_client::EntityRef,
 ) -> TestResult<DeathSettlement> {
-    use sqlx::Row;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
     verdict::Harness::global().bounded_wait(deadline, "creature-sweep-death-settlement");
     let mut connection =
         tokio::time::timeout_at(deadline, sqlx::PgConnection::connect(clients.url)).await??;
     loop {
         verdict::Harness::global().progress("creature-sweep-death-settlement");
-        let rows = tokio::time::timeout_at(deadline, sqlx::query(
-            "SELECT r.death_key,m.xp_awarded,p.total_experience FROM game_party_kill_xp_receipts r \
-             JOIN game_party_kill_xp_members m USING(death_key) \
-             JOIN game_character_progression_state p ON p.character_id=m.character_id \
-             WHERE m.character_id=encode($1,'hex')::uuid \
-             ORDER BY r.death_at_us DESC LIMIT 64")
-            .bind(clients.characters[CORE_CHARACTER].as_slice()).fetch_all(&mut connection)).await??;
-        for row in rows {
-            let key: Vec<u8> = row.try_get("death_key")?;
-            if death_identity(&key, b"oteryn:runtime-player-placement:v1") != Some(target.identity)
-                || key
-                    .get(44..52)
-                    .and_then(|bytes| bytes.try_into().ok())
-                    .map(u64::from_be_bytes)
-                    != Some(target.generation)
-            {
-                continue;
-            }
-            let corpse = death_identity(&key, b"oteryn:runtime-corpse-placement:v1")
-                .ok_or("invalid death key")?;
-            let award = u64::try_from(row.try_get::<i64, _>("xp_awarded")?)?;
-            let total = u64::try_from(row.try_get::<i64, _>("total_experience")?)?;
+        if let Some(settlement) = tokio::time::timeout_at(
+            deadline,
+            read_death_settlement(&mut connection, clients.characters[CORE_CHARACTER], target),
+        )
+        .await??
+        {
             tokio::time::timeout_at(deadline, connection.close()).await??;
-            return Ok(DeathSettlement {
-                corpse,
-                award,
-                total,
-            });
+            return Ok(settlement);
         }
         if tokio::time::Instant::now() >= deadline {
             return Err("no committed receipt for the exact disappeared actor".into());
@@ -1203,6 +1269,28 @@ async fn death_settlement(
     }
 }
 
+async fn observe_xp_until<T>(
+    client: &mut T,
+    deadline: tokio::time::Instant,
+    expected_total: u64,
+    mut read: impl AsyncFnMut(&mut T) -> TestResult<u64>,
+    mut service: impl AsyncFnMut(&mut T) -> TestResult,
+) -> TestResult<u64> {
+    loop {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("XP observation deadline".into());
+        }
+        let xp = tokio::time::timeout_at(deadline, read(client)).await??;
+        if tokio::time::Instant::now() >= deadline {
+            return Err("XP observation deadline".into());
+        }
+        if xp == expected_total {
+            return Ok(xp);
+        }
+        tokio::time::timeout_at(deadline, service(client)).await??;
+    }
+}
+
 async fn hunt(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
@@ -1210,6 +1298,7 @@ async fn hunt(
     species: &Species,
     session: &mut Option<DevClientSession>,
     rows: &mut Rows<'_>,
+    cleanup_session: &mut Option<String>,
 ) -> Result<(), Failure> {
     let definition = species.definition.as_ref().ok_or_else(|| {
         failure(
@@ -1242,7 +1331,7 @@ async fn hunt(
         .map(|entry| entry.entity)
         .collect();
     let session_id = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    rows.spawn_session = Some(session_id.clone());
+    *cleanup_session = Some(session_id.clone());
     let answer = request_spawn(session_id, species.key.clone())
         .await
         .map_err(|reason| failure("spawn", "precondition", format!("rejected:{reason}")))?;
@@ -1410,6 +1499,7 @@ async fn hunt(
             ),
         ));
     }
+    let combat_seconds = combat_started.elapsed().as_secs_f64();
     let measured_seconds = first_damage.map(|first| first.elapsed().as_secs_f64());
     let settlement = death_settlement(clients, client, target.entity)
         .await
@@ -1432,7 +1522,7 @@ async fn hunt(
         "kill",
         &format!(
             "seconds:{:.1};damage_observed:{damaged};hp:{};{budget_detail};death_tile:{last_position:?}",
-            combat_started.elapsed().as_secs_f64(),
+            combat_seconds,
             definition.health
         ),
     );
@@ -1478,24 +1568,23 @@ async fn hunt(
     })?;
     let expected = u64::try_from(expected).map_err(|error| failure("xp", "content", error))?;
     let xp_deadline = tokio::time::Instant::now() + Duration::from_secs(20);
-    let xp_after = loop {
-        let (xp, _) = read_stats(client)
-            .await
-            .map_err(|error| failure("xp", "protocol", error))?;
-        if xp == settlement.total || tokio::time::Instant::now() >= xp_deadline {
-            break xp;
-        }
-        client
-            .service_liveness(Duration::from_millis(250))
-            .await
-            .map_err(|error| failure("xp", "protocol", error))?;
-        verdict::Harness::global().progress("creature-sweep-xp");
-        client.take_events();
-    };
+    let xp_after = observe_xp_until(client, xp_deadline, settlement.total,
+        async |client| {
+            verdict::Harness::global().progress("creature-sweep-xp-stats");
+            read_stats(client).await.map(|(xp, _)| xp)
+        },
+        async |client| {
+            verdict::Harness::global().progress("creature-sweep-xp-liveness");
+            client.service_liveness(Duration::from_millis(250)).await?;
+            client.take_events();
+            Ok(())
+        }).await.map_err(|error| failure("xp", "observation", format!(
+            "{error};expected:{expected};receipt_award:{};receipt_total:{};wire_before:{xp_before}",
+            settlement.award, settlement.total)))?;
     let gained = xp_after.saturating_sub(xp_before);
     let xp_detail = format!(
-        "authored:{};expected:{expected};gained:{gained};level:{level}",
-        definition.experience
+        "authored:{};expected:{expected};gained:{gained};level:{level};receipt_award:{};receipt_total:{};wire_before:{xp_before};wire_after:{xp_after}",
+        definition.experience, settlement.award, settlement.total
     );
     if xp_matches(
         xp_before,
@@ -1896,6 +1985,118 @@ mod review_tests {
     use super::*;
     use oteryn_protocol_oteryn::world_spatial::ActorPosition;
     use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+
+    #[tokio::test(start_paused = true)]
+    async fn qualification_next_round_xp_request_cannot_pass_after_deadline() -> TestResult {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
+        let result = observe_xp_until(
+            &mut (),
+            deadline,
+            123,
+            async |_| {
+                tokio::time::sleep(Duration::from_secs(21)).await;
+                Ok(123)
+            },
+            async |_| Ok(()),
+        )
+        .await;
+        assert!(
+            result.is_err(),
+            "late matching XP must fail its observation budget"
+        );
+        assert!(tokio::time::Instant::now() <= deadline);
+        Ok(())
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn qualification_next_round_cancelled_final_species_is_cleaned() -> TestResult {
+        let mut outcome = SweepOutcome::default();
+        let mut cleaned = Vec::new();
+        let result = finish_indexed_sweep(
+            &mut outcome,
+            async |outcome| {
+                outcome.cleanup_session = Some("published-session".into());
+                tokio::time::timeout(Duration::from_secs(1), std::future::pending::<()>()).await?;
+                Ok(())
+            },
+            async |session| {
+                cleaned.push(session);
+                Ok("cleaned".into())
+            },
+        )
+        .await;
+        assert!(result.is_err());
+        assert_eq!(cleaned, vec!["published-session"]);
+        assert!(outcome.cleanup_session.is_none());
+        Ok(())
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn qualification_next_round_cleanup_cancellation_retains_ticket() -> TestResult {
+        let mut ticket = Some("published-session".into());
+        let result = tokio::time::timeout(
+            Duration::from_secs(1),
+            cleanup_ticket(&mut ticket, async |_| {
+                std::future::pending::<Result<String, String>>().await
+            }),
+        )
+        .await;
+        assert!(result.is_err());
+        assert_eq!(ticket.as_deref(), Some("published-session"));
+        cleanup_ticket(&mut ticket, async |_| Ok("cleaned".into())).await?;
+        assert!(ticket.is_none());
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn qualification_next_round_exact_receipt_survives_clock_restart() -> TestResult {
+        let url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
+        let mut db = sqlx::PgConnection::connect(&url).await?;
+        sqlx::raw_sql("CREATE TEMP TABLE game_party_kill_xp_receipts(death_key bytea PRIMARY KEY,death_at_us bigint); CREATE TEMP TABLE game_party_kill_xp_members(death_key bytea,character_id uuid,xp_awarded bigint); CREATE TEMP TABLE game_character_progression_state(character_id uuid,total_experience bigint);").execute(&mut db).await?;
+        let character = [1; 16];
+        sqlx::query(
+            "INSERT INTO game_character_progression_state VALUES(encode($1,'hex')::uuid,123)",
+        )
+        .bind(character.as_slice())
+        .execute(&mut db)
+        .await?;
+        let mut target_key = vec![2; 52];
+        target_key[44..].copy_from_slice(&1u64.to_be_bytes());
+        for index in 0..66u64 {
+            let mut key = target_key.clone();
+            key[40..44].copy_from_slice(&(index as u32).to_be_bytes());
+            sqlx::query("INSERT INTO game_party_kill_xp_receipts VALUES($1,$2)")
+                .bind(&key)
+                .bind(if index == 65 {
+                    1i64
+                } else {
+                    10000 + index as i64
+                })
+                .execute(&mut db)
+                .await?;
+            sqlx::query(
+                "INSERT INTO game_party_kill_xp_members VALUES($1,encode($2,'hex')::uuid,23)",
+            )
+            .bind(&key)
+            .bind(character.as_slice())
+            .execute(&mut db)
+            .await?;
+            if index == 65 {
+                target_key = key;
+            }
+        }
+        let target = EntityRef {
+            identity: death_identity(&target_key, b"oteryn:runtime-player-placement:v1")
+                .ok_or("key")?,
+            generation: 1,
+        };
+        let receipt = read_death_settlement(&mut db, character, target)
+            .await?
+            .ok_or("exact committed death hidden behind earlier-clock receipts")?;
+        assert_eq!((receipt.award, receipt.total), (23, 123));
+        db.close().await?;
+        Ok(())
+    }
 
     #[test]
     fn a_cancelled_indexed_row_counts_even_before_the_reporter_updates_its_tally() {
