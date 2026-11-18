@@ -1,5 +1,6 @@
 //! Literal source USE callbacks must select the clicked object above ground.
 use super::*;
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 
 #[test]
 fn quest_world_callbacks_literal_use_accepts_clicked_nonzero_ordinal() -> TestResult {
@@ -112,6 +113,19 @@ fn position((x, y, floor): (u16, u16, i8)) -> Position {
 }
 
 fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>) -> TestResult {
+    exercise_use(callback, appearance, ordinal, stage, None)
+}
+
+pub(in crate::gameplay_transport::monk_save_postgres_tests) fn exercise_selected_tool(
+    callback: Callback, appearance: u16, ordinal: u8, stage: i64, tool: &str, allowed: bool,
+) -> TestResult {
+    exercise_use(callback, appearance, ordinal, Some(stage), Some((tool, allowed)))
+}
+
+fn exercise_use(
+    callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>,
+    selected: Option<(&str, bool)>,
+) -> TestResult {
     let started = std::time::Instant::now();
     let trigger = callback.selector.position.ok_or("position")?;
     let world = world_ordinal(&callback, trigger, appearance, ordinal)?;
@@ -274,6 +288,24 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
                 )
                 .map_err(debug)?,
             );
+            let catalogue = if selected.is_some() {
+                use sha2::Digest;
+                use oteryn_gameplay_quests::quest::authored_bindings::{Bindings, BoundQuest, Stage, Track, Trigger};
+                std::sync::Arc::new(Bindings {
+                    schema: 1,
+                    quests: vec![BoundQuest {
+                        quest: callback.quest.clone(),
+                        recipe_sha256: format!("{:x}", sha2::Sha256::digest(serde_json::to_vec(&callback)?)),
+                        occurrence: None,
+                        admission: None,
+                        tracks: vec![Track { key: storage.track.clone(), initial: -1, minimum: -1, maximum: 13 }],
+                        stages: vec![Stage { key: "isle-entry".into(), completes: false, trigger: Trigger::MapUse { callback: Box::new(callback.clone()) } }],
+                        sources: callback.sources.clone(),
+                    }],
+                }.attach(&catalogue)?)
+            } else {
+                catalogue
+            };
             let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
             let seeded = slot
                 .commit_quest_transition(
@@ -329,10 +361,32 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
             sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
                 .fetch_one(&h.pool)
                 .await?;
-        let allowed = callback
+        let allowed = selected.map(|(_, allowed)| allowed).unwrap_or_else(|| callback
             .storage
             .first()
-            .is_none_or(|storage| stage.is_some_and(|stage| stage >= storage.minimum));
+            .is_none_or(|storage| stage.is_some_and(|stage| stage >= storage.minimum)));
+        let disposition = if let Some((tool, _)) = selected {
+            use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseIntent, UseTarget, encode_item_use_intent};
+            input_item(&owner, fence.item_fence(), &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                position: trigger, item: tool.into(), count: 1,
+            }, 901, true).await?;
+            admitted.continuity.selected_capabilities =
+                crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+                    owner.offered_capabilities(), &[4, 6, 11, 15, 18],
+                ).ok_or("selected item capability")?;
+            let reference = native.item_index().and_then(|index| index.definition_ref("Item", tool, "definition-r1")).ok_or("scythe definition")?;
+            let payload = encode_item_use_intent(&UseIntent {
+                target: UseTarget::ItemByDefinition(reference),
+                use_with: None,
+                use_with_map_item: Some(MapUseTarget::Object(target)),
+                use_with_position: None,
+            }).map_err(debug)?;
+            let (next, disposition, _) = super::super::item_craft::exchange(
+                &owner, admitted, admitted.continuity.next_command_id, &payload, Some(reference),
+            ).await?;
+            admitted = next;
+            disposition
+        } else {
         let reply = wire(
             &owner,
             &mut admitted,
@@ -341,8 +395,10 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
             oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?,
         )
         .await?;
+        oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?
+        };
         assert_eq!(
-            oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
+            disposition,
             if allowed {
                 UseDisposition::Committed
             } else {
@@ -378,12 +434,19 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
             .read_character_quest_state(&authority, fence.character_id)
             .await
             .map_err(debug)?;
-        assert_eq!(before, after, "literal USE changed durable quest state");
+        if selected.is_some() {
+            assert_eq!(before.tracks(), after.tracks(), "entry must preserve permission");
+            let reads: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_world_tool_reads")
+                .fetch_one(&h.pool).await?;
+            assert_eq!(reads, i64::from(allowed));
+        } else {
+            assert_eq!(before, after, "literal USE changed durable quest state");
+        }
         let receipts: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
                 .fetch_one(&h.pool)
                 .await?;
-        assert_eq!(receipts, receipts_before);
+        assert_eq!(receipts, receipts_before + i64::from(selected.is_some() && allowed));
         eprintln!(
             "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED {} stage={stage:?} allowed={allowed} tracks_unchanged receipts_unchanged revision_unchanged duration={:?}",
             callback.key,

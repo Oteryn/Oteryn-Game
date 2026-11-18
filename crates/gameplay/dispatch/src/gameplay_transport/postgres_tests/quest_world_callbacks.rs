@@ -1236,7 +1236,7 @@ mod assertions;
 #[path = "quest_world_callbacks/lions_rock.rs"]
 mod lions_rock;
 #[path = "quest_world_callbacks/literal_uses.rs"]
-mod literal_uses;
+pub(super) mod literal_uses;
 #[path = "quest_world_callbacks/rotten_blood.rs"]
 mod rotten_blood;
 #[path = "quest_world_callbacks/scenario.rs"]
