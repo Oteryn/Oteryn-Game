@@ -906,6 +906,39 @@ pub(super) fn valid(callback: &Callback) -> bool {
 }
 
 #[cfg(test)]
+mod explicit_reset_tests {
+    use super::*;
+
+    #[test]
+    fn fknow_birch_reset_requires_a_timed_use_transform() -> Result<(), String> {
+        let callback: Callback = serde_json::from_value(serde_json::json!({
+            "key": "oteryn:quest-callback/forgotten-knowledge/grow-birch",
+            "quest": "oteryn:quest.forgotten_knowledge_quest",
+            "trigger": "use",
+            "selector": {"appearance": 23816},
+            "reversible": false,
+            "passages": [],
+            "effects": {"transform": 23815, "reset_after_ms": 600000, "reset_appearance": 26482},
+            "storage": [],
+            "offerings": [],
+            "return_on_failure": false,
+            "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/forgotten_knowledge/actions_plant.lua:425-431"]
+        }))
+        .map_err(|error| error.to_string())?;
+        assert!(valid(&callback));
+        assert_eq!(callback.effects.reset_appearance, Some(26482));
+
+        let mut missing_deadline = callback.clone();
+        missing_deadline.effects.reset_after_ms = None;
+        assert!(!valid(&missing_deadline));
+        let mut identical_transform = callback;
+        identical_transform.effects.reset_appearance = identical_transform.effects.transform;
+        assert!(!valid(&identical_transform));
+        Ok(())
+    }
+}
+
+#[cfg(test)]
 mod reward_door_tests {
     use super::*;
 
