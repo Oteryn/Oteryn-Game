@@ -1101,16 +1101,47 @@ async fn exercise_rabbit(
         UseDisposition::NothingToUse
     );
 
-    // Seed the Mission01 prerequisite, separate from the production skinning transaction.
+    // The exact active track must belong to Rottin Wood's quest.
+    let mission =
+        "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission01";
+    let quest = oteryn_gameplay_quests::quest::rottin_walls::QUEST;
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
     sqlx::query("INSERT INTO game_character_quest_tracks VALUES(encode($1,'hex')::uuid,$2,$3,1,2)")
         .bind(fence.character_id.as_bytes().as_slice())
-        .bind("oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission01")
-        .bind("oteryn:quest.rottin_wood_and_the_married_men_quest")
-        .execute(&mut *tx).await?;
+        .bind(mission)
+        .bind("oteryn:quest.an_uneasy_alliance_quest")
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    assert_eq!(
+        attempt(corpse, command, obsidian_knife)
+            .await
+            .ok_or("rabbit refusal for the wrong quest owner")?
+            .disposition,
+        UseDisposition::NothingToUse
+    );
+    assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4301");
+
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    assert_eq!(
+        sqlx::query(
+            "UPDATE game_character_quest_tracks SET quest_key=$3
+             WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(mission)
+        .bind(quest)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected(),
+        1
+    );
     tx.commit().await?;
     assert!(
         attempt(corpse, command, stake)
