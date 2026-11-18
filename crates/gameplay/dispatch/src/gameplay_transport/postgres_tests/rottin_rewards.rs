@@ -1,7 +1,7 @@
 //! Exercise the authored reward owner through live Rottin TALK and PostgreSQL.
 use super::classic_quests::{install, talk};
 use super::creature_push::scenario;
-use super::fixture::Harness;
+use super::fixture::{Harness, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use oteryn_gameplay_quests::quest::QuestStateCatalogue;
 use oteryn_gameplay_quests::quest::authored_bindings::Bindings;
@@ -64,15 +64,10 @@ pub(super) fn catalogue(repeat: bool) -> TestResult<QuestStateCatalogue> {
         .collect::<String>();
     // First completion grants the account achievement. Later completions can
     // reuse the item-only occurrence owner after the quest's daily cooldown.
-    let (prior_stamp, cooldown, achievement) = if repeat {
-        (
-            1,
-            json!({"kind": "elapsed_at_least", "seconds": 72000}),
-            None,
-        )
+    let (cooldown, achievement) = if repeat {
+        (json!({"kind": "elapsed_at_least", "seconds": 72000}), None)
     } else {
         (
-            0,
             json!({"kind": "between", "minimum": 0, "maximum": 0}),
             Some(ACHIEVEMENT),
         )
@@ -85,7 +80,7 @@ pub(super) fn catalogue(repeat: bool) -> TestResult<QuestStateCatalogue> {
             "sources": [DONOR],
             "tracks": [
                 {"key": TRACK, "initial": 1, "minimum": 1, "maximum": 2},
-                {"key": COOLDOWN, "initial": prior_stamp, "minimum": 0, "maximum": 9223372036854775807_i64}
+                {"key": COOLDOWN, "initial": 0, "minimum": 0, "maximum": i64::MAX}
             ],
             "stages": [{
                 "key": "lucky-loop",
@@ -129,15 +124,44 @@ pub(super) async fn exercise(
     h: &Harness,
     repeat: bool,
 ) -> TestResult {
+    if repeat {
+        // Import the previous completion's timestamp. The turn-in below uses
+        // production guards and compares it against the database clock.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query(
+            "INSERT INTO game_character_quest_tracks
+             (character_id, track_key, quest_key, value, committed_character_revision)
+             SELECT character_id, $2, $3, floor(extract(epoch from now()))::bigint - 72001,
+                    character_revision
+             FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(41).as_slice())
+        .bind(COOLDOWN)
+        .bind(QUEST)
+        .execute(&mut *tx)
+        .await?;
+        tx.commit().await?;
+    }
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
     let [npc] = install(owner, admitted, [ROTTIN]).await?;
     talk(owner, admitted, npc, 1701, "hi").await?;
+    let before_xp = experience(h).await?;
+    let before_stamp: i64 = sqlx::query_scalar(
+        "SELECT COALESCE((SELECT value FROM game_character_quest_tracks WHERE track_key=$1),0)",
+    )
+    .bind(COOLDOWN)
+    .fetch_one(&h.pool)
+    .await?;
     assert_eq!(
         talk(owner, admitted, npc, 1702, "yes").await?,
         ["Good hunt."]
     );
+    assert_eq!(experience(h).await?, before_xp + 100);
     let actual: (i64, i64, i64, i64) = sqlx::query_as(
         "SELECT
          (SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1),
@@ -146,6 +170,22 @@ pub(super) async fn exercise(
          (SELECT count(*) FROM game_quest_reward_sources WHERE transition_key=$4 AND mint_transaction_id IS NOT NULL)"
     ).bind(CHARM).bind(PLATINUM).bind(RING).bind(payout_key(repeat)).fetch_one(&h.pool).await?;
     assert!(matches!(actual, (0, 5, 0, 1) | (0, 3, 1, 1)), "{actual:?}");
+    let (awarded_bundle, retained_odds): (serde_json::Value, i32) = sqlx::query_as(
+        "SELECT plan->'give', (plan #>> '{weighted_rewards,0,chance}')::integer
+         FROM game_quest_reward_sources WHERE transition_key=$1",
+    )
+    .bind(payout_key(repeat))
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(retained_odds, 9);
+    assert_eq!(awarded_bundle["item"], PLATINUM);
+    assert_eq!(awarded_bundle["count"], actual.1);
+    if actual.2 == 1 {
+        assert_eq!(
+            awarded_bundle["additional"],
+            json!([{"item": RING, "count": 1}])
+        );
+    }
     let stage: i64 =
         sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
             .bind(TRACK)
@@ -154,14 +194,25 @@ pub(super) async fn exercise(
     assert_eq!(stage, 2);
     let (stamped, awarded): (bool, bool) = sqlx::query_as(
         "SELECT
-         EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE track_key=$1 AND value > 1),
+         EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE track_key=$1 AND value > $3),
          EXISTS(SELECT 1 FROM game_account_achievements WHERE achievement_key=$2)",
     )
     .bind(COOLDOWN)
     .bind(ACHIEVEMENT)
+    .bind(before_stamp)
     .fetch_one(&h.pool)
     .await?;
     assert!(stamped);
     assert_eq!(awarded, !repeat);
     Ok(())
+}
+
+async fn experience(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT total_experience FROM game_character_progression_state
+         WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(id(41).as_slice())
+    .fetch_one(&h.pool)
+    .await?)
 }
