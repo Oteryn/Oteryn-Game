@@ -1096,7 +1096,8 @@ fn check_scaled_context_menus(font_bytes: &[u8], fixture_size: Option<f32>) -> T
 
 #[test]
 fn close_flushes_unsettled_dock() -> TestResult {
-    let mut app = playing_app(preferences("dock-close"))?;
+    let fixture = tempfile::tempdir()?;
+    let mut app = playing_app(fixture.path().join("dock-close.json"))?;
     app.world_mut()
         .non_send_mut::<HostOwner>()
         .enter_character(Some([4; 16]));
