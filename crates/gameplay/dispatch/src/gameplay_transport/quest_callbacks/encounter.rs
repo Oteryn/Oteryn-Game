@@ -47,7 +47,7 @@ impl EncounterVisit {
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Crystal 201189f8, the_first_dragon/movements_entrance_teleport.lua:82-87.
-    /// Retire only this opening's exact actor and roster on the owning Channel.
+    /// Crystal data/libs/functions/functions.lua:226-239 removes all monsters in a swept room.
     pub(super) fn drain_personal_encounter_deadlines(
         &self,
         runtime: &mut ChannelRuntimeV1,
@@ -117,11 +117,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     map.facts.emit_movement_effect(pos, 11);
                 }
             }
-            visit.creatures.retain(|actor| {
-                runtime.contains_live_creature(*actor)
-                    && runtime.remove_encounter_actor(*actor).is_err()
-            });
-            if visit.creatures.is_empty() {
+            let needs_retry = if visit.room.personal_timeout_room_sweep {
+                runtime
+                    .current_live_creature_census()
+                    .map_or(true, |actors| {
+                        let mut needs_retry = false;
+                        for actor in actors {
+                            if runtime
+                                .read_actor_position(actor)
+                                .is_ok_and(|at| room_contains(&visit.room, at.position()))
+                            {
+                                needs_retry |= runtime.remove_encounter_actor(actor).is_err();
+                            }
+                        }
+                        needs_retry
+                    })
+            } else {
+                visit.creatures.retain(|actor| {
+                    runtime.contains_live_creature(*actor)
+                        && runtime.remove_encounter_actor(*actor).is_err()
+                });
+                !visit.creatures.is_empty()
+            };
+            if !needs_retry {
                 return false;
             }
             timeout.due_us = now.saturating_add(250_000);
@@ -550,6 +568,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         drop(phases);
         if let Some(visits) = &mut visits {
+            if let Some(timeout) = &timeout {
+                // An older sweep must not retire the monsters admitted by a later visit.
+                visits.retain(|visit| {
+                    !visit.room.personal_timeout_room_sweep
+                        || visit.room.room_min != encounter.room_min
+                        || visit.room.room_max != encounter.room_max
+                        || visit
+                            .timeout
+                            .as_ref()
+                            .is_none_or(|older| older.scope != timeout.scope)
+                });
+            }
             visits.push(EncounterVisit {
                 room: encounter.clone(),
                 participants: party,

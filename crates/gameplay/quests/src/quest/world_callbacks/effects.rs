@@ -421,6 +421,9 @@ pub struct Encounter {
     /// Expire the visit and return the admitted participant to the original step tile.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub personal_timeout_ms: Option<u32>,
+    /// Retire every live monster still within the timed visit's room.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub personal_timeout_room_sweep: bool,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -1445,6 +1448,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || encounter.personal_timeout_ms.is_some_and(|milliseconds| {
                 !(1..=3_600_000).contains(&milliseconds) || !personal_cooldown
             })
+            || (encounter.personal_timeout_room_sweep && encounter.personal_timeout_ms.is_none())
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()
