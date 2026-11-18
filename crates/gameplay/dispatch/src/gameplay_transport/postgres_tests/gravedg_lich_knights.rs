@@ -251,9 +251,12 @@ pub(super) fn configure_osam(callback: &mut Callback) -> TestResult {
 pub(super) async fn exercise_osam(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
-    partner: ExactActorRef,
+    partner: &AdmittedSession,
 ) -> TestResult {
+    use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+
     let player = admitted.runtime_actor.ok_or("admitted player")?;
+    let second = partner.runtime_actor.ok_or("second admitted player")?;
     let earl = {
         let runtime = owner.runtime.lock().await;
         runtime
@@ -263,11 +266,17 @@ pub(super) async fn exercise_osam(
             .find(|&actor| runtime.matches_live_creature_identity(actor, EARL.as_bytes()))
             .ok_or("Earl admitted through USE")?
     };
+    let (step, _) = owner
+        .ordinary_paced_step(second, partner.game_session_id, StepDirection::North, None, None)
+        .await;
+    assert_eq!(step.disposition, StepDisposition::Moved);
+    assert_position(owner, second, 116, 116).await?;
     hit(owner, admitted, earl, EARL, 101).await?;
     let now = owner.owner_now().get();
     super::gravedg_zelos::tick_at(owner, now).await;
     super::gravedg_zelos::tick_at(owner, now + 100_000).await;
     assert_position(owner, earl, 116, 116).await?;
+    assert_position(owner, second, 116, 118).await?;
     {
         let runtime = owner.runtime.lock().await;
         assert!(runtime.matches_live_creature_identity(earl, EARL.as_bytes()));
@@ -295,7 +304,7 @@ pub(super) async fn exercise_osam(
         assert_eq!(spheres, 4);
     }
     super::gravedg_zelos::tick_at(owner, now + 20 * 60 * 1_000_000).await;
-    for actor in [player, partner] {
+    for actor in [player, second] {
         assert_position(owner, actor, 103, 100).await?;
     }
     let runtime = owner.runtime.lock().await;

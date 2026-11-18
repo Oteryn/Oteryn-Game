@@ -86,7 +86,7 @@ pub(super) enum PhaseScenario {
     EarlOsam,
     LordAzaram,
     Sirs,
-    Zelos,
+    Zelos { full_party: bool },
 }
 
 pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
@@ -120,7 +120,7 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                     super::gravedg_lich_knights::configure_azaram(&mut callback)?
                 }
                 PhaseScenario::Sirs => super::gravedg_lich_knights::configure(&mut callback)?,
-                PhaseScenario::Zelos => super::gravedg_zelos::configure(&mut callback)?,
+                PhaseScenario::Zelos { .. } => super::gravedg_zelos::configure(&mut callback)?,
             }
             let sirs_catalogue = match scenario {
                 PhaseScenario::Sirs => {
@@ -339,20 +339,24 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                 None
             };
             let mut additional = Vec::new();
-            if matches!(scenario, PhaseScenario::FivePlayerCredit { .. }) {
-                for index in 2..=4 {
-                    additional.push(
-                        super::gravedg_zelos::admit_party_member(
-                            &h, &deps, &owner, &admitted, index,
-                        )
-                        .await?,
-                    );
-                }
+            let party_size = match scenario {
+                PhaseScenario::FivePlayerCredit { .. } => 5,
+                PhaseScenario::Zelos { full_party: true } => 10,
+                _ => 2,
+            };
+            for index in 2..party_size {
+                additional.push(
+                    super::gravedg_zelos::admit_party_member(
+                        &h, &deps, &owner, &admitted, index,
+                    )
+                    .await?,
+                );
             }
             let key =
                 oteryn_world_bundle::bundle::placement_key(-7, 100, 100, 1).ok_or("lever key")?;
             let mut placement = world.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
+            let before_admission = owner.owner_now().get();
             let outcome = owner
                 .use_object(
                     deps.actor,
@@ -396,9 +400,7 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                     return super::gravedg_lich_knights::exercise_osam(
                         &owner,
                         &admitted,
-                        second
-                            .and_then(|p| p.runtime_actor)
-                            .ok_or("second admitted player")?,
+                        &second.ok_or("second admitted player")?,
                     )
                     .await;
                 }
@@ -427,7 +429,18 @@ pub(super) fn phase_scenario(scenario: PhaseScenario) -> TestResult {
                     )
                     .await;
                 }
-                PhaseScenario::Zelos => {
+                PhaseScenario::Zelos { full_party: true } => {
+                    let mut party = vec![admitted, second.ok_or("second admitted player")?];
+                    party.extend(additional);
+                    return super::gravedg_zelos::exercise_full_party(
+                        &h,
+                        &owner,
+                        &party,
+                        before_admission,
+                    )
+                    .await;
+                }
+                PhaseScenario::Zelos { full_party: false } => {
                     let cooldowns: Vec<(Vec<u8>, i64)> = sqlx::query_as(
                         "SELECT uuid_send(character_id), available_at \
                          FROM game_character_boss_cooldowns WHERE boss_key = $1 ORDER BY character_id",

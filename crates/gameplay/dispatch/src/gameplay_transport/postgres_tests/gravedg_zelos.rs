@@ -21,7 +21,20 @@ fn gravedg_zelos_two_players_regeneration_and_timeout_postgres() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    super::engenc2_cults::phase_scenario(super::engenc2_cults::PhaseScenario::Zelos)
+    super::engenc2_cults::phase_scenario(super::engenc2_cults::PhaseScenario::Zelos {
+        full_party: false,
+    })
+}
+
+#[test]
+fn gravedg_zelos_ten_player_lever_and_timeout_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::engenc2_cults::phase_scenario(super::engenc2_cults::PhaseScenario::Zelos {
+        full_party: true,
+    })
 }
 
 pub(super) fn configure(callback: &mut Callback) -> TestResult {
@@ -140,8 +153,8 @@ pub(super) async fn admit_party_member(
             .initialize_pinned_test_position(
                 actor,
                 MovementLocalPosition {
-                    x: 100,
-                    y: 100 + i32::from(index),
+                    x: 100 + i32::from(index / 5),
+                    y: 100 + i32::from(index % 5),
                     floor: 7,
                 },
             )
@@ -160,6 +173,53 @@ pub(super) async fn admit_party_member(
     owner.admit_quest_session(&admitted).await;
     assert!(owner.refresh_source_party_presence(actor, session).await);
     Ok(admitted)
+}
+
+pub(super) async fn exercise_full_party(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    party: &[AdmittedSession],
+    before_admission: u64,
+) -> TestResult {
+    const WINDOW_US: u64 = 24 * 60 * 1_000_000;
+    let after_admission = owner.owner_now().get();
+    let assert_placement = async |expected| -> TestResult {
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(party.len(), 10);
+        for member in party {
+            let at = runtime
+                .read_actor_position(member.runtime_actor.ok_or("party actor")?)
+                .map_err(debug)?
+                .position();
+            assert_eq!((at.x, at.y, at.floor), expected);
+        }
+        Ok(())
+    };
+    assert_placement((116, 117, 7)).await?;
+    let first_poll = owner
+        .states
+        .spell_states
+        .lock()
+        .await
+        .encounter_phases
+        .next_due_us()
+        .ok_or("Zelos source deadline")?;
+    assert!(
+        (before_admission + 1_000_000..=after_admission + 1_000_000).contains(&first_poll),
+        "Rewar polls for entrants one second after the lever opens"
+    );
+    let cooldowns: (i64, i64) = sqlx::query_as(
+        "SELECT count(*), count(DISTINCT admission)
+         FROM game_character_boss_cooldowns WHERE boss_key = $1",
+    )
+    .bind("oteryn:creature.king_zelos")
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(cooldowns, (10, 1), "one durable decision for ten entrants");
+    tick_at(owner, before_admission + WINDOW_US - 1).await;
+    assert_placement((116, 117, 7)).await?;
+    tick_at(owner, after_admission + WINDOW_US).await;
+    assert_placement((103, 100, 7)).await
 }
 
 pub(super) async fn exercise(
