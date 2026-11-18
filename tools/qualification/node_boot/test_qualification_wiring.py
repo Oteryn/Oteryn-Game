@@ -43,9 +43,13 @@ class QualificationWiringTests(unittest.TestCase):
     def test_moving_target_must_pass_lane_budget_before_each_step(self):
         search = (PHASES / "world.rs").read_text().split("async fn approach_spawn_target", 1)[1]
         budget = search.find("if chase_steps == 32")
-        step = search.find("walk(client, world, &[direction])")
+        step = search.find("walk_until(client, world, &[direction]")
         self.assertGreaterEqual(budget, 0)
         self.assertLess(budget, step)
+        self.assertTrue("".join(search[budget:step].split()).startswith(
+            "ifchase_steps==32&&!remaining_lanes.is_empty()"
+            "||tokio::time::Instant::now()>=deadline{"
+        ))
         self.assertIn("search=true;continue;", "".join(search[budget:step].split()))
         self.assertIn("chase_steps+=1;", "".join(search[budget:step].split()))
 
@@ -53,7 +57,8 @@ class QualificationWiringTests(unittest.TestCase):
         earn = (PHASES / "full_gold.rs").read_text().split("async fn earn", 1)[1]
         first_pass = earn.split("let (candidate, target)", 1)[0]
         self.assertIn("SpawnRespawn::Skip", first_pass)
-        self.assertIn("SpawnRespawn::Wait", earn)
+        self.assertNotIn("SpawnRespawn::Wait", earn)
+        self.assertIn("Some(probe_deadline)", first_pass)
 
     def test_m04_resolves_action_before_cleanup_and_checks_collision_first(self):
         source = (PHASES / "full_e2ef1.rs").read_text()
@@ -77,6 +82,39 @@ class QualificationWiringTests(unittest.TestCase):
         )
         fixture = (GAME / "qualification_spell_character.rs").read_text()
         self.assertNotIn("let resumed = if before_level_up", fixture)
+
+    def test_pursuit_step_uses_cooperative_lane_deadline(self):
+        source = (PHASES / "world.rs").read_text()
+        compact = "".join(source.split())
+        self.assertTrue("walk_until(client,world,&[direction],Some(deadline),true)" in compact)
+
+    def test_gold_probes_with_a_species_deadline(self):
+        earn = (PHASES / "full_gold.rs").read_text()
+        self.assertTrue("Some(probe_deadline)" in earn)
+
+    def test_gold_reprobes_all_species_when_initial_scan_is_dry(self):
+        earn = (PHASES / "full_gold.rs").read_text()
+        self.assertTrue("if picked.is_none()" in earn and 'progress("gold-respawn")' in earn)
+
+    def test_item_replay_continues_for_same_and_replacement_sessions(self):
+        control = (GAME / "node/serve/qualification_fixture.rs").read_text()
+        self.assertTrue("RewardClaimMintOutcome::AlreadyCommitted" in control)
+        self.assertTrue("RewardClaimRefusal::AlreadyClaimed" in control)
+        items = control.split("async fn prepare_items", 1)[1]
+        claim_lookup = items.find("qualification_fixture_item_is_claimed(")
+        self.assertGreaterEqual(claim_lookup, 0)
+        self.assertLess(claim_lookup, items.index("freeze_reward_claim_mint("))
+
+    def test_player_setup_marks_its_stage_before_collision(self):
+        player = (PHASES / "full_e2ef1.rs").read_text().split("async fn player_push", 1)[1]
+        self.assertTrue(player.find('checks.active = Some("push-player")') >= 0)
+        self.assertLess(player.index('checks.active = Some("push-player")'),
+                        player.index('checks.active = Some("collision")'))
+
+    def test_live_push_validates_wire_refusals_with_the_classifier(self):
+        source = (PHASES / "full_e2ef1.rs").read_text()
+        push = source.split("async fn push", 1)[1].split("async fn m04", 1)[0]
+        self.assertTrue("expect_push(result.status, &result.payload, expected)" in push)
 
     def test_gold_cancellation_invalidates_the_session(self):
         source = (PHASES / "full_gold.rs").read_text()

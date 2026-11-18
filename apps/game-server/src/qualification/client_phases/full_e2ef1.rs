@@ -128,6 +128,7 @@ pub(super) mod e2ef1 {
         row: &'static str,
         passed: BTreeSet<&'static str>,
         missing: BTreeMap<&'static str, &'static str>,
+        active: Option<&'static str>,
     }
     impl Checks {
         fn pass(&mut self, case: &'static str, detail: impl std::fmt::Debug) {
@@ -149,15 +150,17 @@ pub(super) mod e2ef1 {
             required: &[&str],
             error: &(dyn std::error::Error + 'static),
         ) -> (String, verdict::Cause) {
-            let action = required
-                .iter()
-                .find(|action| **action != "relogin" && !self.passed.contains(**action))
-                .copied()
-                .unwrap_or(if self.row == "M04" {
-                    "protection-zone-return"
-                } else {
-                    "action"
-                });
+            let action = self.active.unwrap_or_else(|| {
+                required
+                    .iter()
+                    .find(|action| **action != "relogin" && !self.passed.contains(**action))
+                    .copied()
+                    .unwrap_or(if self.row == "M04" {
+                        "protection-zone-return"
+                    } else {
+                        "action"
+                    })
+            });
             (format!("{}/{action}", self.row), verdict::classify(error))
         }
         fn complete(&self, required: &[&str]) -> bool {
@@ -1221,11 +1224,14 @@ pub(super) mod e2ef1 {
         Ok(())
     }
 
+    use oteryn_protocol_oteryn::creature_push::CreaturePushDisposition;
+
     async fn push(
         client: &mut DevClientSession,
         reference: EntityRef,
         at: TilePos,
-    ) -> TestResult<u8> {
+        expected: CreaturePushDisposition,
+    ) -> TestResult {
         let basis = spatial_basis::current(client)?;
         use oteryn_protocol_oteryn::creature_push::*;
         let payload = encode_creature_push_intent(&CreaturePushIntent {
@@ -1241,13 +1247,41 @@ pub(super) mod e2ef1 {
                 &payload,
             )
             .await?;
-        if result.status != CommandStatus::Accepted
-            || result.payload.len() != 2
-            || result.payload[0] != 8
-        {
-            return Err(format!("push result: {result:?}").into());
+        expect_push(result.status, &result.payload, expected)
+    }
+
+    fn expect_push(
+        status: CommandStatus,
+        payload: &[u8],
+        expected: CreaturePushDisposition,
+    ) -> TestResult {
+        if status == CommandStatus::Rejected {
+            return Err(verdict::HarnessError::boxed(
+                verdict::Cause::ServerRefused {
+                    code: status as u32,
+                },
+                format!("push command refused: {status:?}, payload={payload:?}"),
+            ));
         }
-        Ok(result.payload[1])
+        let [8, code @ 1..=7] = payload else {
+            return Err(format!("malformed push reply: {status:?}, payload={payload:?}").into());
+        };
+        if status != CommandStatus::Accepted {
+            return Err(format!("unexpected push command status: {status:?}").into());
+        }
+        if *code == expected as u8 {
+            return Ok(());
+        }
+        let message = format!("push disposition {code}, expected {expected:?}");
+        if *code == CreaturePushDisposition::Moved as u8 {
+            return Err(message.into());
+        }
+        Err(verdict::HarnessError::boxed(
+            verdict::Cause::ServerRefused {
+                code: u32::from(*code),
+            },
+            message,
+        ))
     }
     async fn m04(
         client: &mut DevClientSession,
@@ -1257,9 +1291,11 @@ pub(super) mod e2ef1 {
         checks: &mut Checks,
     ) -> TestResult {
         let player = player_push(client, peer, world, checks).await;
+        let player_action = checks.active;
         if let Err(error) = &player {
             evidence(&format!("E2EF1_GAP row=M04 case=push-player error={error}"));
         }
+        checks.active = Some("push-creature");
         let creature = creature_push(client, world, bytes, checks).await;
         if let Err(error) = &creature {
             evidence(&format!(
@@ -1269,6 +1305,13 @@ pub(super) mod e2ef1 {
         // Leave the lethal encounter for the nearest authored protection zone.
         // The row's later origin return still enforces its fixture-town requirement.
         let left = return_to_protection_zone(client, world).await.map(|_| ());
+        checks.active = if player.is_err() {
+            player_action
+        } else if creature.is_err() {
+            Some("push-creature")
+        } else {
+            Some("protection-zone-return")
+        };
         player.and(creature).and(left)
     }
     async fn player_push(
@@ -1277,6 +1320,7 @@ pub(super) mod e2ef1 {
         world: &BundleWorld,
         checks: &mut Checks,
     ) -> TestResult {
+        checks.active = Some("push-player");
         let basis = spatial_basis::current(client)?;
         if spatial_basis::current(peer)? != basis {
             return Err("peer spatial basis differs from actor".into());
@@ -1301,19 +1345,23 @@ pub(super) mod e2ef1 {
             })
         })
         .await?;
-        if push(client, reference, here).await? != 5 {
-            return Err("occupied push destination did not refuse NotEnoughRoom".into());
-        }
+        checks.active = Some("collision");
+        push(
+            client,
+            reference,
+            here,
+            CreaturePushDisposition::NotEnoughRoom,
+        )
+        .await?;
         stable(peer, 300).await?;
         checks.pass("collision", (reference, here, original));
+        checks.active = Some("push-player");
         let landing = DIRS
             .into_iter()
             .filter_map(|d| destination(world, original, d))
             .find(|at| *at != here && distance(*at, here) == 1)
             .ok_or("free push landing")?;
-        if push(client, reference, landing).await? != 1 {
-            return Err("push-player did not move".into());
-        }
+        push(client, reference, landing, CreaturePushDisposition::Moved).await?;
         until_with_peer(peer, client, |c| {
             c.world_spatial().actor_position == position(landing, basis)
         })
@@ -1350,6 +1398,7 @@ pub(super) mod e2ef1 {
             &metadata.spawns,
             "oteryn:creature.rat",
             SpawnRespawn::Wait,
+            None,
         )
         .await?
         .ok_or("no reachable adjacent rat to push")?;
@@ -1364,11 +1413,9 @@ pub(super) mod e2ef1 {
             "E2EF1_PUSH phase=command command_type=98 from={from:?} to={landing:?} entity={:?}",
             creature.entity
         ));
-        if push(client, creature.entity, landing).await.inspect_err(|error| {
+        push(client, creature.entity, landing, CreaturePushDisposition::Moved).await.inspect_err(|error| {
             evidence(&format!("E2EF1_PUSH phase=command error={error} visibility_codec=domain:1,type:2 source=crates/session/src/domain_dispatch.rs:160"));
-        })? != 1 {
-            return Err("live creature push did not move".into());
-        }
+        })?;
         until(client, |c| {
             c.world_entities().is_some_and(|entities| {
                 entities
@@ -1819,20 +1866,48 @@ pub(super) mod e2ef1 {
     mod tests {
         use super::*;
         #[test]
-        fn m04_collision_verdict_keeps_the_classified_failure() {
-            let checks = Checks {
+        fn m04_collision_verdict_keeps_the_classified_failure() -> TestResult {
+            let mut checks = Checks {
                 row: "M04",
+                active: Some("push-player"),
                 ..Checks::default()
             };
-            let failure = verdict::HarnessError::boxed(
-                verdict::Cause::ServerRefused { code: 5 },
-                "collision refusal",
+            let setup: Box<dyn std::error::Error> = "peer lane unavailable".into();
+            let (root, cause) = checks.action_failure(ROWS[3].1, setup.as_ref());
+            assert_eq!(cause.suffix(&root), " cause=assertion root=M04/push-player");
+
+            checks.active = Some("collision");
+            for (status, payload, code) in [
+                (CommandStatus::Rejected, &[][..], 2),
+                (CommandStatus::Accepted, &[8, 7][..], 7),
+            ] {
+                let failure = expect_push(status, payload, CreaturePushDisposition::NotEnoughRoom)
+                    .err()
+                    .ok_or("command or disposition must be refused")?;
+                let (root, cause) = checks.action_failure(ROWS[3].1, failure.as_ref());
+                assert_eq!(cause, verdict::Cause::ServerRefused { code });
+                assert_eq!(
+                    cause.suffix(&root),
+                    " cause=server-refused root=M04/collision"
+                );
+            }
+            assert!(
+                expect_push(
+                    CommandStatus::Accepted,
+                    &[8, 5],
+                    CreaturePushDisposition::NotEnoughRoom
+                )
+                .is_ok()
             );
-            let (root, cause) = checks.action_failure(ROWS[3].1, failure.as_ref());
-            assert_eq!(
-                cause.suffix(&root),
-                " cause=server-refused root=M04/collision"
+            assert!(
+                expect_push(
+                    CommandStatus::Accepted,
+                    &[8, 1],
+                    CreaturePushDisposition::Moved
+                )
+                .is_ok()
             );
+            Ok(())
         }
 
         #[test]

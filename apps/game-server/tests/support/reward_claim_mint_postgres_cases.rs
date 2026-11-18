@@ -2609,6 +2609,25 @@ fn a_reservation_of_an_ended_session_does_not_block_the_new_session() -> TestRes
             .await
             .map_err(debug)?;
         harness.equip_backpack(&authority, 1).await?;
+        let fixture_claim = "oteryn:qualification.item.i3276";
+        let item_claimed = |current| {
+            harness.root.qualification_fixture_item_is_claimed(
+                &authority, &harness.node, current, 3276,
+            )
+        };
+        assert!(!item_claimed(fence()?).await.map_err(debug)?);
+        harness.claimed(&authority, coins(command(39)?, fixture_claim, 1)).await?;
+        let reservation_work = || async {
+            sqlx::query_scalar::<_, i16>(
+                "SELECT work_units_used FROM game_reward_claim_mint_reservations WHERE command_id = 39",
+            ).fetch_one(&harness.pool).await
+        };
+        let initial_work = reservation_work().await?;
+        for _ in 0..5 {
+            assert!(item_claimed(fence()?).await.map_err(debug)?);
+        }
+        assert_eq!(reservation_work().await?, initial_work);
+
         let claim = "fixture:chest.ended-session";
 
         let mut stranded = harness
@@ -2677,6 +2696,17 @@ fn a_reservation_of_an_ended_session_does_not_block_the_new_session() -> TestRes
         let second_session_command =
             CommandRef::new(current.game_session_id, CommandId::new(1).map_err(debug)?);
 
+        assert!(item_claimed(current).await.map_err(debug)?);
+        assert!(matches!(item_claimed(fence()?).await, Err(RewardClaimMintError::AuthorityRejected)));
+        refused(
+            harness.claim(&authority, current, coins(second_session_command, fixture_claim, 1)).await,
+            RewardClaimRefusal::AlreadyClaimed,
+        )?;
+        assert_eq!(reservation_work().await?, initial_work);
+        let second_session_command = CommandRef::new(
+            current.game_session_id, CommandId::new(2).map_err(debug)?,
+        );
+
         let outcome = harness
             .claim(&authority, current, coins(second_session_command, claim, 1))
             .await
@@ -2693,7 +2723,7 @@ fn a_reservation_of_an_ended_session_does_not_block_the_new_session() -> TestRes
                 .await,
             "ended session",
         )?;
-        assert_eq!(harness.count("game_reward_claims").await?, 1);
+        assert_eq!(harness.count("game_reward_claims").await?, 2);
 
         drop(authority);
         drop(seal);

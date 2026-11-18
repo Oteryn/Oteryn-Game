@@ -382,10 +382,18 @@ pub(super) fn creature_matches(entry: &oteryn_dev_client::WorldSpatialEntity, na
     )
 }
 
+fn species_probe_deadline(
+    now: tokio::time::Instant,
+    round_deadline: tokio::time::Instant,
+    species_left: u32,
+) -> tokio::time::Instant {
+    now + (round_deadline - now) / species_left
+}
+
 /// Hunt the best-paying reachable creature and loot its gold until the character carries
 /// `needed`; returns the carried gold.
 ///
-/// The deadline is the picked creature's own budget for the gold still missing.
+/// A change of species can extend the estimate within the row's earning allowance.
 pub(super) async fn earn(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -406,9 +414,11 @@ pub(super) async fn earn(
     if ranked.is_empty() && needed > start_gold {
         return Err(format!("{row}: no spawned creature pays coin gold at level {level}").into());
     }
+    let hard_limit = started + allowance(needed.saturating_sub(start_gold));
     let mut deadline = setup_limit;
     let mut selected = None;
     let mut kills = 0u64;
+    let mut next_species = 0;
     loop {
         let observed = coin_value(client)?;
         evidence(&format!(
@@ -423,40 +433,52 @@ pub(super) async fn earn(
             return Ok(observed);
         }
         let mut picked = None;
-        // Probe all ranked species before spending hunt time waiting for a respawn.
-        let searches = ranked.iter().map(|candidate| (candidate, SpawnRespawn::Skip))
-            .chain(selected.map(|candidate| (candidate, SpawnRespawn::Wait)));
-        for (candidate, respawn_wait) in searches {
+        // Give each species a share of this scan. Subsequent scans can find respawns
+        // across the entire ranking, including before the first kill.
+        let round_deadline = deadline.min(tokio::time::Instant::now() + Duration::from_secs(30));
+        for index in 0..ranked.len() {
+            let now = tokio::time::Instant::now();
+            if now >= round_deadline {
+                break;
+            }
+            let candidate = &ranked[next_species];
+            next_species = (next_species + 1) % ranked.len();
+            let species_left = u32::try_from(ranked.len() - index)?;
+            let probe_deadline = species_probe_deadline(now, round_deadline, species_left);
             let travel = tokio::time::timeout_at(
                 deadline,
-                approach_spawn_target(client, world, spawns, &candidate.key, respawn_wait),
+                approach_spawn_target(client, world, spawns, &candidate.key, SpawnRespawn::Skip, Some(probe_deadline)),
             )
             .await
             .map_err(|_| {
-            client.session_mut().invalidate_after_cancellation();
-            format!("{row}: gold-earning-budget during spawn approach")
-        })?;
-            match travel {
-                Ok(Some(target)) => {
-                    picked = Some((candidate, target));
-                    break;
-                }
-                Ok(None) => {
-                    evidence(&format!(
-                        "{row}_GOLD creature={} observed=no-reachable-live-target",
-                        candidate.key
-                    ));
-                }
-                Err(error) => return Err(error),
+                client.session_mut().invalidate_after_cancellation();
+                format!("{row}: gold-earning-budget during spawn approach")
+            })??;
+            if let Some(target) = travel {
+                next_species = 0;
+                picked = Some((candidate, target));
+                break;
             }
+        }
+        if picked.is_none() {
+            verdict::Harness::global().progress("gold-respawn");
+            if tokio::time::Instant::now() < deadline {
+                client.service_liveness(Duration::from_millis(100)).await?;
+                client.take_events();
+            }
+            continue;
         }
         let (candidate, target) =
             picked.ok_or_else(|| format!("{row}: no reachable gold creature at level {level}"))?;
-        if selected.is_none() {
-            let budget = candidate.budget(needed.saturating_sub(start_gold));
-            deadline = started
-                .checked_add(budget)
+        let now = tokio::time::Instant::now();
+        if now >= deadline {
+            return Err(format!("{row}: gold-earning-budget during spawn approach").into());
+        }
+        if selected != Some(candidate.key.as_str()) {
+            let budget = candidate.budget(needed.saturating_sub(observed));
+            let estimate = now.checked_add(budget)
                 .ok_or("gold-earning-budget overflow")?;
+            deadline = deadline.max(estimate).min(hard_limit);
             evidence(&format!(
                 "{row}_GOLD target creature={} health={} expected_milli_gold_per_kill={} kill_s={} level={level} budget_s={}",
                 candidate.key,
@@ -466,7 +488,7 @@ pub(super) async fn earn(
                 budget.as_secs()
             ));
         }
-        selected = Some(candidate);
+        selected = Some(candidate.key.as_str());
         let hunted = tokio::time::timeout_at(deadline, async {
             client_hunt::hunt_target(client, target).await?;
             loot_coins(client).await
@@ -668,6 +690,17 @@ pub(super) async fn equip(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn first_depleted_species_leaves_time_for_later_species() {
+        let now = tokio::time::Instant::now();
+        let round = now + Duration::from_secs(30);
+        let first = species_probe_deadline(now, round, 3);
+        let second = species_probe_deadline(first, round, 2);
+        assert_eq!(first - now, Duration::from_secs(10));
+        assert_eq!(second - first, Duration::from_secs(10));
+        assert_eq!(species_probe_deadline(second, round, 1), round);
+    }
 
     #[test]
     fn mixed_spawn_requires_the_ranked_species() {

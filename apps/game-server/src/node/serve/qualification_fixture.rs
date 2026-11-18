@@ -500,7 +500,9 @@ async fn prepare_items(
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
-    use crate::durability::reward_claim_mint::{RewardClaimMintOutcome, RewardClaimMintRequest};
+    use crate::durability::reward_claim_mint::{
+        RewardClaimMintError, RewardClaimMintRequest, RewardClaimRefusal,
+    };
     use oteryn_gameplay_items::item_ref_admission::generation_item_facts;
 
     let fence = CurrentCharacterItemFence {
@@ -540,6 +542,20 @@ async fn prepare_items(
     // Axe, rope, shovel. Every profile needs the same map/melee prerequisites;
     // vocation and level still come from the served progression policy.
     for (ordinal, id) in [3276, 3003, 3457].into_iter().enumerate() {
+        if qualification_build::retry_holder(
+            Some(root),
+            deadline,
+            fixture_item_holder_busy,
+            async || {
+                root.qualification_fixture_item_is_claimed(authority, proof, fence, id)
+                    .await
+            },
+        )
+        .await
+        .map_err(|error| format!("qualification Item claim lookup: {error:?}"))?
+        {
+            continue;
+        }
         let key = format!("oteryn:item.tibia.i{id}");
         let definition = TypedDefinitionRef {
             family: "Item".into(),
@@ -580,38 +596,97 @@ async fn prepare_items(
             key_number: None,
         };
         // Reservation replay retains the same CommandRef and frozen semantic intent.
-        let mut candidate = qualification_build::retry_holder(
+        let reservation = qualification_build::retry_holder(
             Some(root),
             deadline,
-            |error| {
-                matches!(
-                    error,
-                    crate::durability::reward_claim_mint::RewardClaimMintError::Unavailable(
-                        DurabilityError::RootUnavailable
-                    )
-                )
-            },
+            fixture_item_holder_busy,
             async || {
                 root.freeze_reward_claim_mint(authority, proof, fence, request.clone())
                     .await
             },
         )
-        .await
-        .map_err(|error| format!("qualification Item reserve: {error:?}"))?;
-        let outcome = root
-            .commit_reward_claim_mint_waiting(authority, proof, fence, &mut candidate, deadline)
-            .await
-            .map_err(|error| format!("qualification Item commit: {error:?}"))?;
-        if !matches!(outcome, RewardClaimMintOutcome::Committed(_)) {
-            return Err(format!("qualification Item not committed: {outcome:?}").into());
-        }
+        .await;
+        // The once-claim owner fences this exact Character and fixture claim key.
+        // A replacement session advances past the retained grant under its old command.
+        let mut candidate = match reservation {
+            Ok(candidate) => candidate,
+            Err(RewardClaimMintError::Refused(RewardClaimRefusal::AlreadyClaimed)) => continue,
+            Err(error) => return Err(format!("qualification Item reserve: {error:?}").into()),
+        };
+        finish_fixture_item(
+            root.commit_reward_claim_mint_waiting(
+                authority,
+                proof,
+                fence,
+                &mut candidate,
+                deadline,
+            )
+            .await,
+        )?;
     }
     Ok(())
+}
+
+fn fixture_item_holder_busy(
+    error: &crate::durability::reward_claim_mint::RewardClaimMintError,
+) -> bool {
+    matches!(
+        error,
+        crate::durability::reward_claim_mint::RewardClaimMintError::Unavailable(
+            DurabilityError::RootUnavailable
+        )
+    )
+}
+
+fn finish_fixture_item(
+    result: Result<
+        crate::durability::reward_claim_mint::RewardClaimMintOutcome,
+        crate::durability::reward_claim_mint::RewardClaimMintError,
+    >,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::durability::reward_claim_mint::{
+        RewardClaimMintError, RewardClaimMintOutcome, RewardClaimRefusal,
+    };
+    match result {
+        Ok(RewardClaimMintOutcome::Committed(_) | RewardClaimMintOutcome::AlreadyCommitted(_))
+        | Err(RewardClaimMintError::Refused(RewardClaimRefusal::AlreadyClaimed)) => Ok(()),
+        Err(error) => Err(format!("qualification Item commit: {error:?}").into()),
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn retained_fixture_item_accepts_both_session_replay_outcomes() {
+        use crate::durability::reward_claim_mint::{
+            CommittedRewardClaimMint, RewardClaimMintError, RewardClaimMintOutcome,
+            RewardClaimRefusal,
+        };
+        let retained = CommittedRewardClaimMint {
+            transaction_id: [1; 16],
+            event_id: [2; 16],
+            item_instance_id: [3; 16],
+            occurred_at_unix_ms: 1,
+            envelope_sha256: [4; 32],
+            quantity: 1,
+            destination: oteryn_gameplay_items::item_transfer::ContainerEntryPosition {
+                parent_item_instance_id: [5; 16],
+                placement_ordinal: 0,
+            },
+        };
+        assert!(
+            finish_fixture_item(Ok(RewardClaimMintOutcome::AlreadyCommitted(retained))).is_ok()
+        );
+        assert!(
+            finish_fixture_item(Err(RewardClaimMintError::Refused(
+                RewardClaimRefusal::AlreadyClaimed
+            )))
+            .is_ok()
+        );
+        assert!(finish_fixture_item(Err(RewardClaimMintError::AuthorityRejected)).is_err());
+    }
 
     fn assert_early_warning(reason: EarlyRefusal, expected: &str) {
         let line = early_refusal_warning(reason);

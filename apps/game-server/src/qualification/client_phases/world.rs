@@ -2192,8 +2192,44 @@ pub(super) async fn reach_route(
     from: TilePos,
     goal: impl Fn(TilePos) -> bool,
 ) -> TestResult<Result<Vec<StepDirection>, ReachFailure>> {
+    reach_route_until(client, world, from, goal, None).await
+}
+
+#[derive(Debug)]
+struct SpawnProbeExpired;
+
+impl std::fmt::Display for SpawnProbeExpired {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("spawn probe deadline")
+    }
+}
+
+impl std::error::Error for SpawnProbeExpired {}
+
+fn probe_expired(deadline: Option<tokio::time::Instant>) -> bool {
+    deadline.is_some_and(|limit| tokio::time::Instant::now() >= limit)
+}
+
+fn retry_fits_probe(
+    now: tokio::time::Instant,
+    deadline: Option<tokio::time::Instant>,
+    delay: Duration,
+) -> bool {
+    deadline.is_none_or(|limit| now + delay < limit)
+}
+
+async fn reach_route_until(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    from: TilePos,
+    goal: impl Fn(TilePos) -> bool,
+    deadline: Option<tokio::time::Instant>,
+) -> TestResult<Result<Vec<StepDirection>, ReachFailure>> {
     let mut origin = from;
     loop {
+        if probe_expired(deadline) {
+            return Err(SpawnProbeExpired.into());
+        }
         client.service_liveness(Duration::from_millis(1)).await?;
         client.take_events(); // Canonical session stores retain the applied observations.
         let observed = actor_tile(client)?;
@@ -2201,6 +2237,9 @@ pub(super) async fn reach_route(
             origin = observed;
         }
         let path = reach_route_serviced(world, origin, &goal, async || {
+            if probe_expired(deadline) {
+                return Err(SpawnProbeExpired.into());
+            }
             verdict::Harness::global().progress("route-search");
             client.service_liveness(Duration::from_millis(1)).await?;
             client.take_events();
@@ -2410,12 +2449,33 @@ async fn walk(
     world: &BundleWorld,
     path: &[StepDirection],
 ) -> TestResult {
+    walk_until(client, world, path, None, false).await?;
+    Ok(())
+}
+
+async fn walk_until(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+    deadline: Option<tokio::time::Instant>,
+    tolerate_refusal: bool,
+) -> TestResult<bool> {
     for &direction in path {
+        if probe_expired(deadline) {
+            return Ok(false);
+        }
         let before = client.world_spatial().actor_position;
         let basis = spatial_basis::current(client)?;
-        let mut outcome = client.step_retrying(direction).await?;
+        let mut outcome = if deadline.is_some() {
+            client.step(direction).await?
+        } else {
+            client.step_retrying(direction).await?
+        };
         for attempt in 1..=6 {
-            if outcome.disposition != StepDisposition::Rejected
+            if !matches!(
+                outcome.disposition,
+                StepDisposition::Rejected | StepDisposition::TooEarly
+            ) || (deadline.is_none() && outcome.disposition == StepDisposition::TooEarly)
                 || client.world_spatial().actor_position != before
             {
                 break;
@@ -2425,15 +2485,39 @@ async fn walk(
                 destination(world, served_tile(before, basis)?, direction),
                 client.world_spatial().actor_position,
             ));
-            let Some(delay) = town_route_retry_delay(
-                outcome.disposition,
-                client.world_spatial().actor_position == before,
-                attempt,
-            ) else {
-                break;
+            let delay = if outcome.disposition == StepDisposition::TooEarly {
+                Some(Duration::from_millis(50))
+            } else {
+                town_route_retry_delay(
+                    outcome.disposition,
+                    client.world_spatial().actor_position == before,
+                    attempt,
+                )
             };
+            let Some(delay) = delay else { break };
+            client.take_events();
+            if !retry_fits_probe(tokio::time::Instant::now(), deadline, delay) {
+                return Ok(false);
+            }
             tokio::time::sleep(delay).await;
-            outcome = client.step_retrying(direction).await?;
+            if probe_expired(deadline) {
+                return Ok(false);
+            }
+            outcome = if deadline.is_some() {
+                client.step(direction).await?
+            } else {
+                client.step_retrying(direction).await?
+            };
+        }
+        if tolerate_refusal
+            && matches!(
+                outcome.disposition,
+                StepDisposition::Rejected | StepDisposition::TooEarly | StepDisposition::Blocked
+            )
+            && client.world_spatial().actor_position == before
+        {
+            client.take_events();
+            return Ok(false);
         }
         if outcome.disposition != StepDisposition::Moved || outcome.world_spatial_delta.is_none() {
             return Err(format!(
@@ -2453,7 +2537,7 @@ async fn walk(
         }
         client.take_events();
     }
-    Ok(())
+    Ok(true)
 }
 
 pub(super) async fn logout_retrying_busy(
@@ -5138,7 +5222,7 @@ async fn travel_to_spawn(
     spawns: &oteryn_world_bundle::spawn::Table,
     creature: &str,
 ) -> TestResult {
-    approach_spawn_target(client, world, spawns, creature, SpawnRespawn::Wait)
+    approach_spawn_target(client, world, spawns, creature, SpawnRespawn::Wait, None)
         .await?
         .ok_or_else(|| format!("no reachable live {creature}").into())
         .map(|_| ())
@@ -5156,6 +5240,7 @@ async fn approach_spawn_target(
     spawns: &oteryn_world_bundle::spawn::Table,
     creature: &str,
     respawn_wait: SpawnRespawn,
+    probe_deadline: Option<tokio::time::Instant>,
 ) -> TestResult<Option<oteryn_dev_client::WorldSpatialEntity>> {
     let (name, _) = full_gold::creature_profile(creature)?;
     let authored: BTreeMap<_, _> = spawns
@@ -5197,31 +5282,54 @@ async fn approach_spawn_target(
     let mut chase_steps = 0;
     let mut deadline = tokio::time::Instant::now();
     loop {
+        if probe_expired(probe_deadline) {
+            return Ok(None);
+        }
         if search {
             chase_steps = 0;
             let from = actor_tile(client)?;
-            let path = reach_route(client, world, from, |at| {
-                outside(at)
-                    && (-1i16..=1).any(|dx| {
-                        (-1i16..=1).any(|dy| {
-                            (dx != 0 || dy != 0)
-                                && at
-                                    .x
-                                    .checked_add_signed(dx)
-                                    .zip(at.y.checked_add_signed(dy))
-                                    .is_some_and(|(x, y)| {
-                                        remaining_lanes.contains_key(&TilePos {
-                                            x,
-                                            y,
-                                            floor: at.floor,
+            let path = reach_route_until(
+                client,
+                world,
+                from,
+                |at| {
+                    outside(at)
+                        && (-1i16..=1).any(|dx| {
+                            (-1i16..=1).any(|dy| {
+                                (dx != 0 || dy != 0)
+                                    && at
+                                        .x
+                                        .checked_add_signed(dx)
+                                        .zip(at.y.checked_add_signed(dy))
+                                        .is_some_and(|(x, y)| {
+                                            remaining_lanes.contains_key(&TilePos {
+                                                x,
+                                                y,
+                                                floor: at.floor,
+                                            })
                                         })
-                                    })
+                            })
                         })
-                    })
-            })
-            .await?;
+                },
+                probe_deadline,
+            )
+            .await;
+            let path = match path {
+                Err(error) if error.is::<SpawnProbeExpired>() => return Ok(None),
+                result => result?,
+            };
             if let Ok(path) = path {
-                walk(client, world, &path).await?;
+                if !walk_until(
+                    client,
+                    world,
+                    &path,
+                    probe_deadline,
+                    probe_deadline.is_some(),
+                )
+                .await?
+                {
+                    return Ok(None);
+                }
                 let here = actor_tile(client)?;
                 let visited: Vec<_> = remaining_lanes
                     .keys()
@@ -5302,7 +5410,11 @@ async fn approach_spawn_target(
             .and_then(|path| path.first().copied())
         {
             chase_steps += 1;
-            walk(client, world, &[direction]).await?;
+            let deadline = probe_deadline.map_or(deadline, |limit| deadline.min(limit));
+            if !walk_until(client, world, &[direction], Some(deadline), true).await? {
+                // A declined or paced pursuit leaves the connection synchronized.
+                chase_steps = 32;
+            }
             continue;
         }
         client.service_liveness(Duration::from_millis(100)).await?;
@@ -5518,6 +5630,17 @@ fn qualification_nbfix_fresh_grants_for_reconnects_and_colliding_tags() -> TestR
 }
 
 #[cfg(test)]
+#[test]
+fn qualification_pursuit_retries_stop_before_lane_expiry() {
+    let now = tokio::time::Instant::now();
+    let delay = Duration::from_millis(50);
+    let limit = now + Duration::from_millis(500);
+    assert!(retry_fits_probe(now, Some(limit), delay));
+    assert!(!retry_fits_probe(limit - delay, Some(limit), delay));
+    assert!(!retry_fits_probe(limit, Some(limit), delay));
+    assert!(retry_fits_probe(limit, None, delay));
+}
+
 #[test]
 fn qualification_nbroute_retries_only_stationary_rejections_with_a_bound() {
     for attempt in 1..=6 {
