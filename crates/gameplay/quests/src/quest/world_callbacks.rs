@@ -2314,6 +2314,35 @@ mod tests {
     }
 
     #[test]
+    fn logic_lever_admits_optional_reversible_campfire_replacement() -> Result<(), String> {
+        let mut fixture = serde_json::json!({
+            "schema": 1,
+            "callbacks": [{
+                "key": "oteryn:quest-callback/banshees-logic-lever-30018",
+                "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+                "trigger": "use",
+                "selector": { "unique": 30018 },
+                "lever": [2772, 2773],
+                "reversible": true,
+                "storage": [],
+                "offerings": [],
+                "passages": [{
+                    "position": { "x": 32309, "y": 31975, "floor": -13 },
+                    "appearance": 1998,
+                    "replacement": 1996,
+                    "if_present": true
+                }],
+                "return_on_failure": false,
+                "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/action-6-sixth_seal_lever.lua:3"]
+            }]
+        });
+        parse(&fixture.to_string())?;
+        fixture["callbacks"][0]["reversible"] = false.into();
+        assert!(parse(&fixture.to_string()).is_err());
+        Ok(())
+    }
+
+    #[test]
     fn passage_state_guard_requires_a_reversible_removal_lever() -> Result<(), String> {
         let callback = parse(EMBEDDED)?
             .into_iter()
