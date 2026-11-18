@@ -408,7 +408,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || !(-15..=0).contains(&offering.position.floor)
             || callback.trigger != Trigger::StepIn
             || !callback.requires_world_admission
-            || callback.storage.is_empty()
+            || callback.actor_kind != ActorKind::Player
+            || !callback.has_state_writes()
             || callback.teleport.is_none()
             || callback.effects.scene.is_some()
             || callback.remote_teleport.is_some()
