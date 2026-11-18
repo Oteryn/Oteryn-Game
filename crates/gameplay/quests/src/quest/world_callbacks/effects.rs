@@ -87,6 +87,9 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub player_speech: Option<String>,
     pub transform: Option<u16>,
+    /// Restore the traversed portal's replacement and its collision in the same STEP.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub portal_reset_passable: Option<bool>,
     /// Restore the exact pre-transform source revision after this delay.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reset_after_ms: Option<u32>,
@@ -491,6 +494,27 @@ pub(super) fn valid(callback: &Callback) -> bool {
         .step_spawn
         .as_ref()
         .is_some_and(|spawn| !spawn.valid(callback))
+    {
+        return false;
+    }
+    if effects.portal_reset_passable.is_some()
+        && (callback.trigger != Trigger::StepIn
+            || callback.selector.position.is_none()
+            || callback.selector.appearance.is_none()
+            || callback.teleport.is_none()
+            || callback.has_personal_state()
+            || callback.lever.is_some()
+            || callback.passages.len() > 7
+            || callback.passages.iter().any(|p| {
+                Some(p.position) == callback.selector.position
+                    || !p.if_present
+                    || p.replacement.is_none()
+                    || p.create_on_close.is_some()
+            })
+            || effects.transform.is_none()
+            || effects.transform == callback.selector.appearance
+            || effects.passages_reset_after_ms.is_some()
+            || effects.reset_after_ms.is_some())
     {
         return false;
     }

@@ -361,8 +361,12 @@ fn scenario_case(
     let kroazur = name == kroazur_solo_room::NAME;
     use super::super::dreamers_color_grid;
     let color_grid = dreamers_color_grid::matches(name);
+    use super::super::dreamers_stone_exit;
+    let stone_exit = name == dreamers_stone_exit::NAME;
     let mut callback = if color_grid {
         dreamers_color_grid::binding(name)?
+    } else if stone_exit {
+        dreamers_stone_exit::binding()?
     } else if name == myzzi_court_entry::NAME {
         myzzi_court_entry::binding()?
     } else if kroazur {
@@ -669,6 +673,8 @@ fn scenario_case(
     }
     let world = if color_grid {
         dreamers_color_grid::world(&callback, name)?
+    } else if stone_exit {
+        dreamers_stone_exit::world(&callback)?
     } else if kroazur {
         super::world_with_cells(&callback, trigger, &[kroazur_solo_room::EXIT])?
     } else if dreamers_wall {
@@ -1727,6 +1733,15 @@ fn scenario_case(
                 &callback,
                 name,
             )?);
+        }
+        if stone_exit {
+            let binding = serde_json::json!({"schema":1,"callbacks":[&callback]}).to_string();
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                oteryn_gameplay_quests::quest::world_callbacks::with_fixture_world_document(
+                    owner.quest_catalogue.as_ref().ok_or("quest catalogue")?,
+                    &binding,
+                )?,
+            ));
         }
         if lucifuga {
             owner.quest_catalogue = Some(lucifuga_bait_spawn::catalogue(
@@ -2928,6 +2943,8 @@ fn scenario_case(
             .await?;
         } else if color_grid {
             Box::pin(dreamers_color_grid::exercise(&owner, &mut admitted, name)).await?;
+        } else if stone_exit {
+            Box::pin(dreamers_stone_exit::exercise(&owner, &mut admitted)).await?;
         } else if kroazur {
             Box::pin(kroazur_solo_room::exercise(&mut owner, &mut admitted, &h, fence)).await?;
         } else if lucifuga {

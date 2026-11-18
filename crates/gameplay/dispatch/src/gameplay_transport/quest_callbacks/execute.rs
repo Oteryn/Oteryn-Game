@@ -320,10 +320,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             after = replacement;
         }
-        let closes_source = callback
-            .passages
-            .iter()
-            .any(|p| p.replacement_passable == Some(false));
+        let closes_source = callback.effects.portal_reset_passable.is_none()
+            && callback
+                .passages
+                .iter()
+                .any(|p| p.replacement_passable == Some(false));
         let closing_position = if closes_source {
             Some(pos)
         } else if let Some(crate::map::facts::QuestCallbackProjection::ItemCycle {
@@ -351,6 +352,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut restored_trees = Vec::new();
         let mut passages = Vec::new();
         let mut replacements = Vec::new();
+        // Crystal movement_stone_teleport.lua:17-27 restores the traversed
+        // portal and clears each remote object that still has its active form.
+        if let Some(passable) = callback.effects.portal_reset_passable {
+            if before.pickupable || after.pickupable {
+                return UseDisposition::Rejected;
+            }
+            if !passable
+                && runtime
+                    .position_occupied_by_other(actor, expected.position())
+                    .unwrap_or(true)
+            {
+                return UseDisposition::Occupied;
+            }
+            replacements.push((key, after, passable));
+        }
         for passage_definition in &callback.passages {
             let passage = passage_definition;
             let p = tile(passage.position);
@@ -387,9 +403,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let k = placement_key(p, ordinal)?;
                     let f = map.facts.base_entry(p, ordinal, *id)?;
                     ((f.appearance_id == passage.appearance
-                        || passage.replacement == Some(f.appearance_id)
+                        || (callback.effects.portal_reset_passable.is_none()
+                            && passage.replacement == Some(f.appearance_id))
                         || passage.create_on_close == Some(f.appearance_id))
                         && !map.facts.house_tile(p)
+                        && (callback.effects.portal_reset_passable.is_none() || !f.pickupable)
                         && (!passage.if_present || !map.facts.base_hidden(k)))
                     .then_some(k)
                 })
@@ -458,6 +476,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ) else {
                     return UseDisposition::Rejected;
                 };
+                if callback.effects.portal_reset_passable.is_some() && facts.pickupable {
+                    return UseDisposition::Rejected;
+                }
                 replacements.push((
                     *passage,
                     facts,
@@ -733,6 +754,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     3
                 } else {
                     callback.passages.len()
+                        + usize::from(callback.effects.portal_reset_passable.is_some())
                 },
             )
         {
