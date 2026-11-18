@@ -2,6 +2,37 @@
   "schema": 1,
   "callbacks": [
     {
+      "key": "oteryn:quest-callback/targuna-matilda-return",
+      "quest": "oteryn:quest.targuna_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33478,
+          "y": 32729,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31925,
+        "y": 31907,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/targuna/movements_aragonia.lua:36-56",
+        "https://tibia.fandom.com/?curid=110238&oldid=1208547"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/targuna-temple-return",
       "quest": "oteryn:quest.targuna_quest",
       "trigger": "step_in",

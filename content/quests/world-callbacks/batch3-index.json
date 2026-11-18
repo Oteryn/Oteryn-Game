@@ -64,6 +64,7 @@
     {
       "path": "tools/content-schema/quest-authoring/batch3_c/world/targuna.json",
       "keys": [
+        "oteryn:quest-callback/targuna-matilda-return",
         "oteryn:quest-callback/targuna-temple-return"
       ]
     },

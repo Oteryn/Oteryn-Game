@@ -6,7 +6,7 @@ ROOT=Path(__file__).resolve().parents[3]
 REVISION="9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
 SOURCE_PATH="data-global/npc/sterling.lua"
 SOURCE_SHA256="3069d6f8265d9b414aedc6c50460268d5c3e98c0a65257cc48c54750e44516a9"
-# TibiaWiki curid 110238, oldid 1208547 adds the quest keyword and 3000 XP.
+# TibiaWiki curid 110238, oldid 1208547 uses the quest keyword for the turn-in.
 DOCUMENTS={'content/quests/npc-callbacks/m16-targuna-marker.json': {'schema': 1,
                                                             'callbacks': [{'key': 'oteryn:quest-reward/targuna/sterling-mark-treasure',
                                                                            'quest': 'oteryn:quest.targuna_quest',
@@ -27,7 +27,6 @@ DOCUMENTS={'content/quests/npc-callbacks/m16-targuna-marker.json': {'schema': 1,
                                                                                          'maximum': 1}],
                                                                            'take': [],
                                                                            'give': None,
-                                                                           'experience': 3000,
                                                                            'outfit': None,
                                                                            'achievement': None,
                                                                            'reply': ['Thank you for bringing '
@@ -41,8 +40,7 @@ DOCUMENTS={'content/quests/npc-callbacks/m16-targuna-marker.json': {'schema': 1,
                                                                                      "long to grab it. It'd "
                                                                                      'be a shame if you were '
                                                                                      'too late ...'],
-                                                                           'sources': ['https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/npc/sterling.lua#L142-L155',
-                                                                                       'https://tibia.fandom.com/?curid=110238&oldid=1208547'],
+                                                                           'sources': ['https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/npc/sterling.lua#L142-L155'],
                                                                            'map_mark': {'position': {'x': 31948,
                                                                                                      'y': 31924,
                                                                                                      'floor': -7},
