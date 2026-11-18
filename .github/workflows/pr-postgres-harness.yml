@@ -332,7 +332,6 @@ jobs:
         if: steps.scope.outputs.empty != 'true' && matrix.archive == 'lib'
         env:
           LIB_PACKAGES: ${{ steps.scope.outputs.lib_packages }}
-          CARGO_BUILD_JOBS: "1"
           LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
         run: |
           set -euo pipefail
